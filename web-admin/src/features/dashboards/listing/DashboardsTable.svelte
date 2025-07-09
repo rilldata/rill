@@ -1,5 +1,7 @@
 <script lang="ts">
   import ResourceHeader from "@rilldata/web-admin/components/table/ResourceHeader.svelte";
+  import NoResourceCTA from "@rilldata/web-admin/features/projects/NoResourceCTA.svelte";
+  import ResourceError from "@rilldata/web-admin/features/projects/ResourceError.svelte";
   import ExploreIcon from "@rilldata/web-common/components/icons/ExploreIcon.svelte";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -8,14 +10,19 @@
   import Table from "../../../components/table/Table.svelte";
   import DashboardsTableCompositeCell from "./DashboardsTableCompositeCell.svelte";
   import { useDashboardsV2, type DashboardResource } from "./selectors";
-  import NoResourceCTA from "@rilldata/web-admin/features/projects/NoResourceCTA.svelte";
-  import ResourceError from "@rilldata/web-admin/features/projects/ResourceError.svelte";
 
   export let isEmbedded = false;
 
   $: ({ instanceId } = $runtime);
 
   $: dashboards = useDashboardsV2(instanceId);
+  $: ({
+    data: dashboardsData,
+    isLoading,
+    isError,
+    isSuccess,
+    error,
+  } = $dashboards);
 
   /**
    * Table column definitions.
@@ -98,14 +105,14 @@
   }
 </script>
 
-{#if $dashboards.isLoading}
+{#if isLoading}
   <div class="m-auto mt-20">
-    <DelayedSpinner isLoading={$dashboards.isLoading} size="24px" />
+    <DelayedSpinner {isLoading} size="24px" />
   </div>
-{:else if $dashboards.isError}
-  <ResourceError kind="dashboard" />
-{:else if $dashboards.isSuccess}
-  {#if !$dashboards.data.length}
+{:else if isError}
+  <ResourceError kind="dashboard" {error} />
+{:else if isSuccess}
+  {#if !dashboardsData.length}
     <NoResourceCTA kind="dashboard">
       <svelte:fragment>
         Learn how to deploy a dashboard in our
@@ -115,7 +122,7 @@
   {:else}
     <Table
       kind="dashboard"
-      data={$dashboards?.data}
+      data={dashboardsData}
       {columns}
       {columnVisibility}
       on:click-row={handleClickRow}

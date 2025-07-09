@@ -1,6 +1,31 @@
 import { EditorView } from "@codemirror/view";
-export const editorTheme = () =>
-  EditorView.theme({
+import type { Extension } from "@codemirror/state";
+import { HighlightStyle, syntaxHighlighting } from "@codemirror/language";
+import { tags as t } from "@lezer/highlight";
+
+const blue = "var(--color-blue-800)";
+const purple = "var(--color-purple-700)";
+const invalid = "var(--color-red-600)";
+const emerald = "var(--color-emerald-700)";
+const gray = "var(--color-gray-700)";
+const amber = "var(--color-amber-600)";
+const highlightBackground = "var(--line-highlight)";
+const background = "var(--surface)";
+const tooltipBackground = "var(--popover)";
+const selection = "var(--editor-selection)";
+const cursor = "var(--color-gray-800)";
+const orange = "var(--color-orange-700)";
+
+export const editorTheme = EditorView.theme(
+  {
+    "&": {
+      color: emerald,
+      backgroundColor: background,
+    },
+
+    ".cm-content": {
+      caretColor: cursor,
+    },
     "&.cm-editor": {
       overflowX: "hidden",
       width: "100%",
@@ -10,120 +35,135 @@ export const editorTheme = () =>
         outline: "none",
       },
     },
-    ".cm-line.cm-line-error": {
-      // this is tailwind bg-red-50
-      backgroundColor: "#FEF2F2",
-      // this appears to be the best option for interaction with selections.
-      mixBlendMode: "hue",
-      color: "var(--ui-editor-error-foreground)",
-    },
 
-    // hovered line error styling on selections need this
-    ".cm-selectionLayer .cm-selectionBackground": {
-      // This is unfortunate but it does not seem possible to otherwise select
-      // the right element when the selection is focused.
-      backgroundColor: "hsla(214, 95%, 70%, 25%) !important",
-    },
-
-    ".cm-line-level.cm-activeLine": {
-      backgroundColor: "hsl(1,90%,80%)",
-    },
-
-    ".cm-line.cm-line-error.cm-activeLine": {
-      // tailwind bg-red-200
-      backgroundColor: "#FEE2E2",
-    },
-    "&.cm-focused .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection":
+    ".cm-cursor, .cm-dropCursor": { borderLeftColor: cursor },
+    "&.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection":
       {
-        backgroundColor: "hsla(214, 95%, 70%, 25%)",
-        backgroundBlendMode: "hue",
+        background: selection,
       },
 
-    // the color of the selectionMatch background
-    ".cm-selectionMatch": {
-      backgroundBlendMode: "multiply",
+    ".cm-panels": { backgroundColor: background, color: emerald },
+    ".cm-panels.cm-panels-top": { borderBottom: "2px solid black" },
+    ".cm-panels.cm-panels-bottom": { borderTop: "2px solid black" },
+
+    ".cm-searchMatch": {
+      backgroundColor: "#72a1ff59",
+      outline: "1px solid #457dff",
     },
-    ".cm-gutter": {
-      backgroundColor: "white",
+    ".cm-searchMatch.cm-searchMatch-selected": {
+      backgroundColor: selection,
     },
-    ".cm-gutters": {
-      borderRight: "none",
-    },
-    ".cm-scroller": {
+    "&.cm-editor .cm-scroller": {
       fontFamily: "var(--monospace)",
     },
-    ".cm-lineNumbers .cm-gutterElement": {
-      paddingLeft: "5px",
-      paddingRight: "10px",
-      minWidth: "32px",
-      backgroundColor: "white",
+    ".cm-activeLine": {
+      backgroundColor: highlightBackground,
     },
-    ".cm-gutterElement.cm-activeLineGutter": {
-      // backgroundColor: "hsla(214, 95%, 70%, 25%)",
-      // backgroundBlendMode: "hue",
-      backgroundColor: "#f3f9ff",
+    ".cm-selectionMatch": { backgroundColor: selection },
+
+    "&.cm-focused .cm-matchingBracket, &.cm-focused .cm-nonmatchingBracket": {
+      backgroundColor: "#bad0f847",
     },
+
+    ".cm-gutters": {
+      backgroundColor: background,
+      color: gray,
+      border: "none",
+    },
+
+    ".cm-indent-markers::before": {
+      backgroundImage:
+        "repeating-linear-gradient(to right, var(--color-gray-300) 0px, var(--color-gray-300) 1px, transparent 1px, transparent 2ch)",
+    },
+
+    ".cm-activeLineGutter": {
+      backgroundColor: highlightBackground,
+    },
+
+    ".cm-foldPlaceholder": {
+      backgroundColor: "transparent",
+      border: "none",
+      color: "#ddd",
+    },
+
+    // ".cm-tooltip": {
+    //   border: "var(--surface)",
+    //   color: emerald,
+    //   backgroundColor: tooltipBackground,
+    // },
+
     ".cm-tooltip": {
+      border: "solid 1px var(--color-gray-400)",
       borderRadius: "0.25rem",
       padding: "0.5rem",
-      color: "black",
+      color: "var(--color-gray-800)",
+      backgroundColor: tooltipBackground,
+    },
+    ".cm-tooltip .cm-tooltip-arrow:before": {
+      borderTopColor: "transparent",
+      borderBottomColor: "transparent",
+    },
+    ".cm-tooltip .cm-tooltip-arrow:after": {
+      borderTopColor: tooltipBackground,
+      borderBottomColor: tooltipBackground,
     },
     ".cm-tooltip-autocomplete": {
-      backgroundColor: "rgb(243 249 255)",
-      border: "none",
       "& > ul > li[aria-selected]": {
-        border: "none",
-        borderRadius: "0.25rem",
-        backgroundColor: "rgb(15 119 204 / .25)",
-        color: "black",
+        backgroundColor: highlightBackground,
+        color: emerald,
       },
     },
-    ".cm-completionLabel": {
-      fontSize: "13px",
-    },
-    ".cm-completionMatchedText": {
-      textDecoration: "none",
-      color: "rgb(15 119 204)",
-    },
-    ".cm-underline": {
-      backgroundColor: "rgb(254 240 138)",
-    },
+  },
+  { dark: true },
+);
 
-    // key
-    ".ͼc": {
-      color: "#2C2689",
-    },
-    // strings
-    // note: we have to code .cm-line as well since CodeMirror does not seem to always wrap
-    // strings in a classed span.
-    ".cm-line": {
-      color: "hsl(175, 77%, 26%)",
-    },
-    ".ͼe": {
-      color: "#00c",
-    },
-    ".ͼl": {
-      color: "hsl(263, 70%, 50%)",
-    },
-    // decimal / number
-    ".ͼd": {
-      color: "hsl(224, 76%, 48%)",
-    },
-    // boolean
-    ".ͼb": {
-      color: "hsl(35, 92%, 33%)",
-    },
-    ".ͼ5": {
-      color: "black",
-    },
-    // comment
-    ".ͼm": {
-      color: "hsl(215, 25%, 27%)",
-    },
+/// The highlighting style for code in the One Dark theme.
+export const highlightStyle = HighlightStyle.define([
+  { tag: t.keyword, color: amber },
+  {
+    tag: [t.deleted, t.character, t.propertyName, t.macroName],
+    color: purple,
+  },
+  { tag: [t.function(t.variableName), t.labelName], color: purple },
+  { tag: [t.color, t.constant(t.name), t.standard(t.name)], color: purple },
+  { tag: [t.definition(t.name), t.separator], color: emerald },
+  {
+    tag: [
+      t.typeName,
+      t.className,
+      t.number,
+      t.changed,
+      t.annotation,
+      t.modifier,
+      t.self,
+      t.namespace,
+    ],
+    color: blue,
+  },
+  {
+    tag: [
+      // t.operator,
+      t.operatorKeyword,
+      t.url,
+      t.escape,
+      t.regexp,
+      t.link,
+      t.special(t.string),
+    ],
+    color: orange,
+  },
+  { tag: [t.meta, t.comment], color: gray },
+  { tag: t.strong, fontWeight: "bold" },
+  { tag: t.emphasis, fontStyle: "italic" },
+  { tag: t.strikethrough, textDecoration: "line-through" },
+  { tag: t.link, color: purple, textDecoration: "underline" },
+  { tag: t.heading, fontWeight: "bold", color: purple },
+  { tag: [t.atom, t.bool, t.special(t.variableName)], color: purple },
+  { tag: [t.processingInstruction, t.string, t.inserted], color: blue },
+  { tag: t.invalid, color: invalid },
+]);
 
-    // make sure all the above colors are plain red when there is an error.
-    ".cm-line-error .ͼc, .cm-line-error .ͼ5, .cm-line-error .ͼb, .cm-line-error .ͼd, .cm-line-error .ͼe, .cm-line-error .ͼm":
-      {
-        color: "var(--ui-editor-error-foreground)",
-      },
-  });
+export const theme: Extension = [
+  editorTheme,
+  syntaxHighlighting(highlightStyle),
+];

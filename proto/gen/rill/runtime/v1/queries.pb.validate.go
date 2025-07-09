@@ -695,6 +695,39 @@ func (m *ExportRequest) validate(all bool) error {
 
 	// no validation rules for BakedQuery
 
+	// no validation rules for IncludeHeader
+
+	if all {
+		switch v := interface{}(m.GetOriginDashboard()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ExportRequestValidationError{
+					field:  "OriginDashboard",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ExportRequestValidationError{
+					field:  "OriginDashboard",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetOriginDashboard()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ExportRequestValidationError{
+				field:  "OriginDashboard",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	// no validation rules for OriginUrl
+
 	if len(errors) > 0 {
 		return ExportRequestMultiError(errors)
 	}
@@ -901,10 +934,6 @@ func (m *ExportReportRequest) validate(all bool) error {
 
 	// no validation rules for Report
 
-	// no validation rules for Limit
-
-	// no validation rules for Format
-
 	if all {
 		switch v := interface{}(m.GetExecutionTime()).(type) {
 		case interface{ ValidateAll() error }:
@@ -933,6 +962,8 @@ func (m *ExportReportRequest) validate(all bool) error {
 			}
 		}
 	}
+
+	// no validation rules for OriginBaseUrl
 
 	if len(errors) > 0 {
 		return ExportReportRequestMultiError(errors)
@@ -4026,6 +4057,47 @@ func (m *MetricsViewAggregationMeasure) validate(all bool) error {
 			}
 		}
 
+	case *MetricsViewAggregationMeasure_ComparisonTime:
+		if v == nil {
+			err := MetricsViewAggregationMeasureValidationError{
+				field:  "Compute",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetComparisonTime()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, MetricsViewAggregationMeasureValidationError{
+						field:  "ComparisonTime",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, MetricsViewAggregationMeasureValidationError{
+						field:  "ComparisonTime",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetComparisonTime()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return MetricsViewAggregationMeasureValidationError{
+					field:  "ComparisonTime",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
 	default:
 		_ = v // ensures v is used
 	}
@@ -4903,6 +4975,122 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = MetricsViewAggregationMeasureComputeURIValidationError{}
+
+// Validate checks the field values on
+// MetricsViewAggregationMeasureComputeComparisonTime with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *MetricsViewAggregationMeasureComputeComparisonTime) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on
+// MetricsViewAggregationMeasureComputeComparisonTime with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in
+// MetricsViewAggregationMeasureComputeComparisonTimeMultiError, or nil if
+// none found.
+func (m *MetricsViewAggregationMeasureComputeComparisonTime) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *MetricsViewAggregationMeasureComputeComparisonTime) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Dimension
+
+	if len(errors) > 0 {
+		return MetricsViewAggregationMeasureComputeComparisonTimeMultiError(errors)
+	}
+
+	return nil
+}
+
+// MetricsViewAggregationMeasureComputeComparisonTimeMultiError is an error
+// wrapping multiple validation errors returned by
+// MetricsViewAggregationMeasureComputeComparisonTime.ValidateAll() if the
+// designated constraints aren't met.
+type MetricsViewAggregationMeasureComputeComparisonTimeMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m MetricsViewAggregationMeasureComputeComparisonTimeMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m MetricsViewAggregationMeasureComputeComparisonTimeMultiError) AllErrors() []error { return m }
+
+// MetricsViewAggregationMeasureComputeComparisonTimeValidationError is the
+// validation error returned by
+// MetricsViewAggregationMeasureComputeComparisonTime.Validate if the
+// designated constraints aren't met.
+type MetricsViewAggregationMeasureComputeComparisonTimeValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e MetricsViewAggregationMeasureComputeComparisonTimeValidationError) Field() string {
+	return e.field
+}
+
+// Reason function returns reason value.
+func (e MetricsViewAggregationMeasureComputeComparisonTimeValidationError) Reason() string {
+	return e.reason
+}
+
+// Cause function returns cause value.
+func (e MetricsViewAggregationMeasureComputeComparisonTimeValidationError) Cause() error {
+	return e.cause
+}
+
+// Key function returns key value.
+func (e MetricsViewAggregationMeasureComputeComparisonTimeValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e MetricsViewAggregationMeasureComputeComparisonTimeValidationError) ErrorName() string {
+	return "MetricsViewAggregationMeasureComputeComparisonTimeValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e MetricsViewAggregationMeasureComputeComparisonTimeValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sMetricsViewAggregationMeasureComputeComparisonTime.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = MetricsViewAggregationMeasureComputeComparisonTimeValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = MetricsViewAggregationMeasureComputeComparisonTimeValidationError{}
 
 // Validate checks the field values on MetricsViewAggregationSort with the
 // rules defined in the proto definition for this message. If any rules are
@@ -6184,6 +6372,8 @@ func (m *TimeRange) validate(all bool) error {
 
 	// no validation rules for Expression
 
+	// no validation rules for TimeDimension
+
 	if len(errors) > 0 {
 		return TimeRangeMultiError(errors)
 	}
@@ -7086,6 +7276,8 @@ func (m *MetricsViewTimeSeriesRequest) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for TimeDimension
+
 	if len(errors) > 0 {
 		return MetricsViewTimeSeriesRequestMultiError(errors)
 	}
@@ -7507,6 +7699,8 @@ func (m *MetricsViewTotalsRequest) validate(all bool) error {
 			}
 		}
 	}
+
+	// no validation rules for TimeDimension
 
 	if len(errors) > 0 {
 		return MetricsViewTotalsRequestMultiError(errors)
@@ -7965,6 +8159,8 @@ func (m *MetricsViewRowsRequest) validate(all bool) error {
 			}
 		}
 	}
+
+	// no validation rules for TimeDimension
 
 	if len(errors) > 0 {
 		return MetricsViewRowsRequestMultiError(errors)
@@ -8765,6 +8961,8 @@ func (m *MetricsViewTimeRangeRequest) validate(all bool) error {
 	}
 
 	// no validation rules for Priority
+
+	// no validation rules for TimeDimension
 
 	if len(errors) > 0 {
 		return MetricsViewTimeRangeRequestMultiError(errors)
@@ -9618,6 +9816,8 @@ func (m *MetricsViewTimeRangesRequest) validate(all bool) error {
 	// no validation rules for Priority
 
 	// no validation rules for TimeZone
+
+	// no validation rules for TimeDimension
 
 	if len(errors) > 0 {
 		return MetricsViewTimeRangesRequestMultiError(errors)

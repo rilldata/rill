@@ -35,7 +35,7 @@ type ModelOutputProperties struct {
 	PartitionBy         string                      `mapstructure:"partition_by"`
 }
 
-func (p *ModelOutputProperties) Validate(opts *drivers.ModelExecuteOptions) error {
+func (p *ModelOutputProperties) validateAndApplyDefaults(opts *drivers.ModelExecuteOptions, ip *ModelInputProperties, op *ModelOutputProperties) error {
 	if opts.Incremental || opts.PartitionRun {
 		if p.Materialize != nil && !*p.Materialize {
 			return fmt.Errorf("incremental or partitioned models must be materialized")
@@ -64,12 +64,21 @@ func (p *ModelOutputProperties) Validate(opts *drivers.ModelExecuteOptions) erro
 		return fmt.Errorf(`must specify "partition_by" when "incremental_strategy" is %q`, p.IncrementalStrategy)
 	}
 
-	if p.IncrementalStrategy == drivers.IncrementalStrategyUnspecified {
-		if len(p.UniqueKey) == 0 {
-			p.IncrementalStrategy = drivers.IncrementalStrategyAppend
-		} else {
-			p.IncrementalStrategy = drivers.IncrementalStrategyMerge
+	// We want to use partition_overwrite as the default incremental strategy for models with partitions.
+	// This requires us to inject the partition key into the SQL query, so this only works for SQL models.
+	if op.IncrementalStrategy == drivers.IncrementalStrategyUnspecified {
+		if len(op.UniqueKey) > 0 {
+			op.IncrementalStrategy = drivers.IncrementalStrategyMerge
+		} else if opts.PartitionRun && ip != nil && ip.SQL != "" {
+			ip.SQL = fmt.Sprintf("SELECT %s AS __rill_partition, * FROM (%s\n)", safeSQLString(opts.PartitionKey), ip.SQL)
+			op.IncrementalStrategy = drivers.IncrementalStrategyPartitionOverwrite
+			op.PartitionBy = "__rill_partition"
 		}
+	}
+
+	// If we failed to apply a better incremental strategy, fall back to append.
+	if op.IncrementalStrategy == drivers.IncrementalStrategyUnspecified {
+		op.IncrementalStrategy = drivers.IncrementalStrategyAppend
 	}
 
 	return nil

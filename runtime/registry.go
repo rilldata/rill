@@ -28,6 +28,16 @@ var GlobalProjectParserName = &runtimev1.ResourceName{Kind: ResourceKindProjectP
 // instanceHeartbeatInterval is the interval at which instance heartbeat events are emitted.
 const instanceHeartbeatInterval = time.Minute
 
+// DefaultInstanceID returns the instance ID for the default instance.
+// It returns false on runtimes with none or multiple instances.
+func (r *Runtime) DefaultInstanceID() (string, bool) {
+	inst, ok := r.registryCache.getDefault()
+	if !ok {
+		return "", false
+	}
+	return inst.ID, true
+}
+
 // Instances returns all instances managed by the runtime.
 func (r *Runtime) Instances(ctx context.Context) ([]*drivers.Instance, error) {
 	return r.registryCache.list()
@@ -112,14 +122,12 @@ func (r *Runtime) DeleteInstance(ctx context.Context, instanceID string) error {
 		r.Logger.Error("could not drop instance data directory", zap.Error(err), zap.String("instance_id", instanceID), observability.ZapCtx(ctx))
 	}
 
-	// If catalog is not embedded, catalog data is in the metastore, and should be cleaned up
-	if !inst.EmbedCatalog {
-		catalog, ok := r.metastore.AsCatalogStore(instanceID)
-		if ok {
-			err = catalog.DeleteResources(ctx)
-			if err != nil {
-				r.Logger.Error("delete instance: error deleting catalog", zap.Error(err), zap.String("instance_id", instanceID), observability.ZapCtx(ctx))
-			}
+	// Cleanup catalog data
+	catalog, ok := r.metastore.AsCatalogStore(instanceID)
+	if ok {
+		err = catalog.DeleteResources(ctx)
+		if err != nil {
+			r.Logger.Error("delete instance: error deleting catalog", zap.Error(err), zap.String("instance_id", instanceID), observability.ZapCtx(ctx))
 		}
 	}
 
@@ -250,6 +258,19 @@ func (r *registryCache) get(instanceID string) (*drivers.Instance, error) {
 	}
 
 	return iwc.instance, nil
+}
+
+func (r *registryCache) getDefault() (*drivers.Instance, bool) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	if len(r.instances) == 1 {
+		for _, iwc := range r.instances {
+			return iwc.instance, true
+		}
+	}
+
+	return nil, false
 }
 
 func (r *registryCache) getController(ctx context.Context, instanceID string) (*Controller, error) {
@@ -404,16 +425,16 @@ func (r *registryCache) restartController(iwc *instanceWithController) {
 	go func() {
 		// Loop in case reopen gets set
 		for {
-			// Before starting the controller, sync the repo.
-			// This is necessary for resources (usually sources or models) that reference files in the repo,
-			// and may be triggered before the project parser is triggered and syncs the repo.
-			iwc.logger.Debug("syncing repo")
-			err := r.ensureRepoSync(iwc.ctx, iwc.instanceID)
+			// Before starting the controller, pull the repo.
+			// Even though the project parser will also do this, it needs to happen before the controller starts.
+			// This is necessary for models that reference files in the repo, since they may be triggered before the project parser is triggered.
+			iwc.logger.Debug("pulling repo")
+			err := r.ensureRepoReady(iwc.ctx, iwc.instanceID)
 			if err != nil {
-				iwc.logger.Warn("failed to sync repo", zap.Error(err))
-				// Even if repo sync failed, we'll start the controller
+				iwc.logger.Warn("failed to pull repo", zap.Error(err))
+				// Even if repo pull failed, we'll start the controller
 			} else {
-				iwc.logger.Debug("repo synced")
+				iwc.logger.Debug("repo pulled")
 			}
 
 			// Before starting the controller, update the project config.
@@ -492,14 +513,14 @@ func (r *registryCache) restartController(iwc *instanceWithController) {
 	}()
 }
 
-func (r *registryCache) ensureRepoSync(ctx context.Context, instanceID string) error {
+func (r *registryCache) ensureRepoReady(ctx context.Context, instanceID string) error {
 	repo, release, err := r.rt.Repo(ctx, instanceID)
 	if err != nil {
 		return err
 	}
 	defer release()
 
-	return repo.Sync(ctx)
+	return repo.Pull(ctx, false, false)
 }
 
 func (r *registryCache) ensureProjectParser(ctx context.Context, instanceID string, ctrl *Controller) {

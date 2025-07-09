@@ -53,7 +53,7 @@
       <button
         {...builder}
         use:builder.action
-        class="pointer-events-auto shadow-sm hover:shadow-md flex bg-white h-[84px] flex-col justify-center gap-2 items-center rounded-md border border-slate-200 w-full"
+        class="pointer-events-auto shadow-sm hover:shadow-md flex bg-surface h-[84px] flex-col justify-center gap-2 items-center rounded-md border border-slate-200 w-full"
       >
         <PlusCircle class="w-6 h-6 text-slate-500" />
         <span class="text-sm font-medium text-slate-500">Add widget</span>
@@ -82,7 +82,7 @@
         aria-label={getAriaLabel(rowIndex, columnIndex)}
         title="Insert widget"
         class:bg-gray-50={open}
-        class="pointer-events-auto active:bg-gray-100 disabled:pointer-events-none h-7 px-2 grid place-content-center z-50 hover:bg-gray-50 text-slate-500 disabled:opacity-50"
+        class="pointer-events-auto bg-surface active:bg-gray-100 disabled:pointer-events-none h-7 px-2 grid place-content-center z-50 hover:bg-gray-50 text-slate-500 disabled:opacity-50"
         on:mouseenter={onMouseEnter}
       >
         <PlusCircle size="15px" />
@@ -130,7 +130,7 @@
             class="flex flex-row gap-x-2"
             on:click={() => onItemClick(id)}
           >
-            <svelte:component this={icon} />
+            <svelte:component this={icon} color="var(--color-gray-600)" />
             {label}
           </DropdownMenu.Item>
         {/if}

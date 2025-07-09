@@ -232,16 +232,25 @@ func (b *sqlExprBuilder) writeBinaryCondition(exprs []*Expression, op Operator) 
 
 		// Generate unnest join
 		unnestTableAlias := b.ast.generateIdentifier()
-		unnestFrom, auto, err := b.ast.dialect.LateralUnnest(leftExpr, unnestTableAlias, left.Name)
+		unnestFrom, tupleStyle, auto, err := b.ast.dialect.LateralUnnest(leftExpr, unnestTableAlias, left.Name)
 		if err != nil {
 			return err
 		}
 		if auto {
 			// Means the DB automatically unnests, so we can treat it as a normal value
-			leftExpr = b.ast.dialect.AutoUnnest(leftExpr)
 			return b.writeBinaryConditionInner(nil, right, leftExpr, op)
 		}
-		unnestColAlias := b.ast.sqlForMember(unnestTableAlias, left.Name)
+		var unnestColAlias string
+		if tupleStyle {
+			unnestColAlias = b.ast.sqlForMember(unnestTableAlias, left.Name)
+		} else {
+			unnestColAlias = b.ast.sqlForMember("", left.Name)
+		}
+
+		if !tupleStyle { // if tupleStyle, then we cannot refer to the column by table alias
+			b.ast.unnests = append(b.ast.unnests, unnestFrom)
+			return b.writeBinaryConditionInner(nil, right, unnestColAlias, op)
+		}
 
 		// Need to move "NOT" to outside of the subquery
 		var not bool

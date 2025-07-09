@@ -6,12 +6,14 @@
   } from "@rilldata/web-admin/client";
   import AccessRequestContainer from "@rilldata/web-admin/features/access-request/AccessRequestContainer.svelte";
   import { Button } from "@rilldata/web-common/components/button";
-  import Lock from "@rilldata/web-common/components/icons/Lock.svelte";
   import Check from "@rilldata/web-common/components/icons/Check.svelte";
+  import Lock from "@rilldata/web-common/components/icons/Lock.svelte";
+  import { ProjectUserRoles } from "@rilldata/web-common/features/users/roles.ts";
   import type { AxiosError } from "axios";
 
   $: organization = $page.url.searchParams.get("organization");
   $: project = $page.url.searchParams.get("project");
+  $: role = $page.url.searchParams.get("role") ?? ProjectUserRoles.Viewer;
 
   let requested = false;
   $: requestAccess = createAdminServiceRequestProjectAccess();
@@ -20,7 +22,9 @@
     void $requestAccess.mutateAsync({
       organization,
       project,
-      data: {},
+      data: {
+        role,
+      },
     });
   }
 
@@ -51,7 +55,7 @@
   <Button
     type="primary"
     wide
-    on:click={onRequestAccess}
+    onClick={onRequestAccess}
     loading={isPending}
     disabled={requested}
   >

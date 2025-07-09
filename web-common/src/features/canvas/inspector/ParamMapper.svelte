@@ -118,7 +118,13 @@
               id={key}
               faint={!localParamValues[key]}
             />
-            <Switch bind:checked={$specStore[key]} small />
+            <Switch
+              checked={$specStore[key]}
+              on:click={() => {
+                component.updateProperty(key, !localParamValues[key]);
+              }}
+              small
+            />
           </div>
 
           <!-- TEXT AREA -->
@@ -238,6 +244,6 @@
 <style lang="postcss">
   .component-param {
     @apply py-3 px-5;
-    @apply border-t border-gray-200;
+    @apply border-t;
   }
 </style>

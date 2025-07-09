@@ -48,7 +48,7 @@
       unsubscribe,
       _rows,
     },
-  } = getCanvasStore(canvasName));
+  } = getCanvasStore(canvasName, instanceId));
 
   $: layoutRows = $_rows;
 
@@ -444,7 +444,7 @@
       {columnWidth}
       {dragComponent}
       {selectedComponent}
-      zIndex={50 - rowIndex * 2}
+      zIndex={layoutRows.length - rowIndex}
       {onDrop}
       {addItems}
       {spreadEvenly}

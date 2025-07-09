@@ -33,7 +33,7 @@ type Github interface {
 	AppClient() *github.Client
 	InstallationClient(installationID int64, repoID *int64) *github.Client
 	// InstallationToken returns a token for the installation ID limited to the repoID.
-	InstallationToken(ctx context.Context, installationID, repoID int64) (string, error)
+	InstallationToken(ctx context.Context, installationID, repoID int64) (token string, expiresAt time.Time, err error)
 
 	CreateManagedRepo(ctx context.Context, repoPrefix string) (*github.Repository, error)
 	ManagedOrgInstallationID() (int64, error)
@@ -130,13 +130,21 @@ func (g *githubClient) InstallationClient(installationID int64, repoID *int64) *
 	return installationClient
 }
 
-func (g *githubClient) InstallationToken(ctx context.Context, installationID, repoID int64) (string, error) {
+func (g *githubClient) InstallationToken(ctx context.Context, installationID, repoID int64) (string, time.Time, error) {
 	client := g.InstallationClient(installationID, &repoID)
 	tr, ok := client.Client().Transport.(*ghinstallation.Transport)
 	if !ok {
-		return "", fmt.Errorf("transport is not of type *ghinstallation.Transport")
+		return "", time.Time{}, fmt.Errorf("transport is not of type *ghinstallation.Transport")
 	}
-	return tr.Token(ctx)
+	t, err := tr.Token(ctx)
+	if err != nil {
+		return "", time.Time{}, err
+	}
+	_, expiry, err := tr.Expiry()
+	if err != nil {
+		return "", time.Time{}, err
+	}
+	return t, expiry, nil
 }
 
 func (g *githubClient) CreateManagedRepo(ctx context.Context, name string) (*github.Repository, error) {
@@ -210,13 +218,12 @@ func (s *Service) CreateManagedGitRepo(ctx context.Context, org *database.Organi
 	return repo, nil
 }
 
-// GetGithubInstallation returns a non zero Github installation ID if the Github App is installed on the repository
-// and is not in suspended state
-// The githubURL should be a HTTPS URL for a Github repository without the .git suffix.
-func (s *Service) GetGithubInstallation(ctx context.Context, githubURL string) (int64, error) {
-	account, repo, ok := gitutil.SplitGithubURL(githubURL)
+// GetGithubInstallation returns a non zero Github installation ID if the Github App is installed on the repository and is not in suspended state.
+// The remote should be a HTTPS URL for a github.com repository with the .git suffix.
+func (s *Service) GetGithubInstallation(ctx context.Context, remote string) (int64, error) {
+	account, repo, ok := gitutil.SplitGithubRemote(remote)
 	if !ok {
-		return 0, fmt.Errorf("invalid Github URL %q", githubURL)
+		return 0, fmt.Errorf("invalid Github remote %q", remote)
 	}
 
 	installation, resp, err := s.Github.AppClient().Apps.FindRepositoryInstallation(ctx, account, repo)
@@ -243,11 +250,11 @@ func (s *Service) GetGithubInstallation(ctx context.Context, githubURL string) (
 }
 
 // LookupGithubRepoForUser returns a Github repository iff the Github App is installed on the repository and user is a collaborator of the project.
-// The githubURL should be a HTTPS URL for a Github repository without the .git suffix.
-func (s *Service) LookupGithubRepoForUser(ctx context.Context, installationID int64, githubURL, gitUsername string) (*github.Repository, error) {
-	account, repo, ok := gitutil.SplitGithubURL(githubURL)
+// The remote should be a HTTPS URL for a github.com repository with the .git suffix.
+func (s *Service) LookupGithubRepoForUser(ctx context.Context, installationID int64, remote, gitUsername string) (*github.Repository, error) {
+	account, repo, ok := gitutil.SplitGithubRemote(remote)
 	if !ok {
-		return nil, fmt.Errorf("invalid Github URL %q", githubURL)
+		return nil, fmt.Errorf("invalid Github remote %q", remote)
 	}
 
 	if gitUsername == "" {
@@ -297,7 +304,7 @@ func (s *Service) ProcessGithubEvent(ctx context.Context, rawEvent any) error {
 func (s *Service) processGithubPush(ctx context.Context, event *github.PushEvent) error {
 	// Find Rill project matching the repo that was pushed to
 	repo := event.GetRepo()
-	projects, err := s.DB.FindProjectsByGithubURL(ctx, *repo.CloneURL)
+	projects, err := s.DB.FindProjectsByGitRemote(ctx, *repo.CloneURL)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
 			// App is installed on repo not currently deployed. Do nothing.

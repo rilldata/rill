@@ -10,12 +10,13 @@
   import { getOrganizationBillingContactUser } from "@rilldata/web-admin/features/billing/contact/selectors";
   import AddUsersDialog from "@rilldata/web-admin/features/organizations/users/AddUsersDialog.svelte";
   import ChangingBillingContactRoleDialog from "@rilldata/web-admin/features/organizations/users/ChangingBillingContactRoleDialog.svelte";
+  import OrgUsersFilters from "@rilldata/web-admin/features/organizations/users/OrgUsersFilters.svelte";
   import OrgUsersTable from "@rilldata/web-admin/features/organizations/users/OrgUsersTable.svelte";
   import RemovingBillingContactDialog from "@rilldata/web-admin/features/organizations/users/RemovingBillingContactDialog.svelte";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
-  import OrgUsersFilters from "@rilldata/web-admin/features/organizations/users/OrgUsersFilters.svelte";
   import { Search } from "@rilldata/web-common/components/search";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
+  import { OrgUserRoles } from "@rilldata/web-common/features/users/roles.ts";
   import { Plus } from "lucide-svelte";
 
   const PAGE_SIZE = 12;
@@ -31,6 +32,12 @@
 
   let searchText = "";
   let filterSelection: "all" | "members" | "guests" | "pending" = "all";
+
+  let scrollToTopTrigger = null;
+  $: {
+    // Update trigger when filter selection changes to scroll to top
+    scrollToTopTrigger = filterSelection;
+  }
 
   $: organization = $page.params.organization;
 
@@ -114,12 +121,12 @@
         // Only members (org admin, editor, viewer)
         matchesRole =
           !("invitedBy" in user) &&
-          (user.roleName === "admin" ||
-            user.roleName === "editor" ||
-            user.roleName === "viewer");
+          (user.roleName === OrgUserRoles.Admin ||
+            user.roleName === OrgUserRoles.Editor ||
+            user.roleName === OrgUserRoles.Viewer);
       } else if (filterSelection === "guests") {
         // Only guests
-        matchesRole = user.roleName === "guest";
+        matchesRole = user.roleName === OrgUserRoles.Guest;
       } else if (filterSelection === "pending") {
         // Only users with pending invites
         matchesRole = "invitedBy" in user;
@@ -164,7 +171,7 @@
         <Button
           type="primary"
           large
-          on:click={() => (isAddUserDialogOpen = true)}
+          onClick={() => (isAddUserDialogOpen = true)}
         >
           <Plus size="16px" />
           <span>Add users</span>
@@ -178,6 +185,7 @@
           currentUserEmail={$currentUser.data?.user.email}
           {currentUserRole}
           billingContact={$billingContactUser?.email}
+          {scrollToTopTrigger}
           onAttemptRemoveBillingContactUser={() =>
             (isRemovingBillingContactDialogOpen = true)}
           onAttemptChangeBillingContactUserRole={() =>

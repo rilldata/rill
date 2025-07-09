@@ -10,9 +10,9 @@
   import { BehaviourEventMedium } from "../../../metrics/service/BehaviourEventTypes";
   import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
   import { runtime } from "../../../runtime-client/runtime-store";
+  import { ResourceKind } from "../../entity-management/resource-selectors";
   import { featureFlags } from "../../feature-flags";
   import { useCreateMetricsViewFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
-  import { ResourceKind } from "../../entity-management/resource-selectors";
 
   export let connector: string;
   export let database: string = "";
@@ -51,7 +51,7 @@
     <svelte:fragment let:width={headerWidth} slot="cta">
       {@const collapse = isHeaderWidthSmall(headerWidth)}
       <PanelCTA side="right">
-        <Button on:click={createMetricsViewFromTable} type="primary">
+        <Button onClick={createMetricsViewFromTable} type="primary">
           <IconSpaceFixer pullLeft pullRight={collapse}>
             <Add />
           </IconSpaceFixer>

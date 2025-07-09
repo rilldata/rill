@@ -31,6 +31,7 @@
   import { flip } from "svelte/animate";
   import { fly } from "svelte/transition";
   import CanvasComparisonPill from "./CanvasComparisonPill.svelte";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
   export let readOnly = false;
   export let maxWidth: number;
@@ -38,6 +39,8 @@
 
   /** the height of a row of chips */
   const ROW_HEIGHT = "26px";
+
+  $: ({ instanceId } = $runtime);
   $: ({
     canvasEntity: {
       filters: {
@@ -73,7 +76,7 @@
         setInitialState,
       },
     },
-  } = getCanvasStore(canvasName));
+  } = getCanvasStore(canvasName, instanceId));
 
   let showDefaultItem = false;
 
@@ -390,7 +393,7 @@
         <!-- if filters are present, place a chip at the end of the flex container 
       that enables clearing all filters -->
         {#if hasFilters}
-          <Button type="text" on:click={clearAllFilters}>Clear filters</Button>
+          <Button type="text" onClick={clearAllFilters}>Clear filters</Button>
         {/if}
       {/if}
     </div>

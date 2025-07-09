@@ -8,8 +8,8 @@ import {
   type V1ComponentSpecRendererProperties,
   type V1MetricsViewSpec,
   type V1Resource,
+  type V1ThemeSpec,
 } from "@rilldata/web-common/runtime-client";
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import {
   derived,
   get,
@@ -31,6 +31,8 @@ import {
 } from "../components/util";
 import { Filters } from "./filters";
 import { Grid } from "./grid";
+import { TailwindColorSpacing } from "../../themes/color-config";
+import { updateThemeVariables } from "../../themes/actions";
 import { CanvasResolvedSpec } from "./spec";
 import { TimeControls } from "./time-control";
 
@@ -63,8 +65,9 @@ export class CanvasEntity {
   firstLoad = true;
   unsubscriber: Unsubscriber;
 
-  constructor(name: string) {
-    const instanceId = get(runtime).instanceId;
+  theme: Record<(typeof TailwindColorSpacing)[number], string>;
+
+  constructor(name: string, instanceId: string) {
     this.specStore = useCanvas(
       instanceId,
       name,
@@ -118,6 +121,10 @@ export class CanvasEntity {
   // Not currently being used
   unsubscribe = () => {
     // this.unsubscriber();
+  };
+
+  setTheme = (theme: V1ThemeSpec | undefined) => {
+    updateThemeVariables(theme);
   };
 
   duplicateItem = (id: string) => {

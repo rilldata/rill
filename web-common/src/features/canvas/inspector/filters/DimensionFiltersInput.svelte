@@ -12,6 +12,7 @@
   import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
   import { flip } from "svelte/animate";
   import type { CanvasComponentState } from "../../stores/canvas-component";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
   export let metricsView: string;
   export let componentStore: CanvasComponentState;
@@ -21,11 +22,13 @@
   export let canvasName: string;
   export let onChange: (filter: string) => void = () => {};
 
+  $: ({ instanceId } = $runtime);
+
   $: ({
     canvasEntity: {
       spec: { getDimensionsForMetricView, getSimpleMeasuresForMetricView },
     },
-  } = getCanvasStore(canvasName));
+  } = getCanvasStore(canvasName, instanceId));
 
   let filterToggle = false;
 
@@ -207,7 +210,7 @@
       </div>
       <div class="ml-auto">
         {#if hasFilters}
-          <Button type="text" on:click={clearAllFilters}>Clear filters</Button>
+          <Button type="text" onClick={clearAllFilters}>Clear filters</Button>
         {/if}
       </div>
     </div>

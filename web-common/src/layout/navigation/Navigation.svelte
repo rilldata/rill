@@ -207,7 +207,7 @@
 
   .connector-section {
     @apply flex flex-col flex-none h-fit;
-    @apply border-t border-t-gray-200 relative;
+    @apply border-t relative;
   }
 
   .connector-wrapper {

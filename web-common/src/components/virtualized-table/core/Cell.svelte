@@ -15,6 +15,7 @@
   import { STRING_LIKES } from "@rilldata/web-common/lib/duckdb-data-types";
   import { formatDataTypeAsDuckDbQueryString } from "@rilldata/web-common/lib/formatters";
   import { createEventDispatcher, getContext } from "svelte";
+  import { cellInspectorStore } from "@rilldata/web-common/features/dashboards/stores/cell-inspector-store";
   import BarAndLabel from "../../BarAndLabel.svelte";
   import type { VirtualizedTableConfig } from "../types";
 
@@ -44,6 +45,10 @@
   function onFocus() {
     dispatch("inspect", row.index);
     cellActive = true;
+    // Update the cell inspector store with the cell value
+    if (value !== undefined && value !== null) {
+      cellInspectorStore.updateValue(value.toString());
+    }
   }
 
   function onSelectItem(e: MouseEvent) {
@@ -69,9 +74,9 @@
     } else if (rowActive && !cellActive) {
       activityStatus = "bg-gray-100 ";
     } else if (colSelected) {
-      activityStatus = "surface";
+      activityStatus = "bg-surface";
     } else {
-      activityStatus = "surface";
+      activityStatus = "bg-surface";
     }
   }
 
@@ -133,6 +138,7 @@
     style:left="{column.start}px"
     style:top="{row.start}px"
     style:width="{column.size}px"
+    style:padding-right="10px"
     tabindex="0"
   >
     <BarAndLabel
@@ -168,7 +174,7 @@
   </div>
   <TooltipContent maxWidth="360px" slot="tooltip-content">
     <TooltipTitle>
-      <FormattedDataType dark slot="name" value={tooltipValue} />
+      <FormattedDataType slot="name" value={tooltipValue} />
     </TooltipTitle>
     <TooltipShortcutContainer>
       <div>

@@ -20,18 +20,16 @@ import type {
   ComponentPath,
 } from "../../../stores/canvas-entity";
 import { BaseChart, type BaseChartConfig } from "../BaseChart";
-import type {
-  ChartDataQuery,
-  ChartFieldsMap,
-  ChartSortDirection,
-  FieldConfig,
-} from "../types";
+import type { ChartDataQuery, ChartFieldsMap, FieldConfig } from "../types";
 
 export type CartesianChartSpec = BaseChartConfig & {
   x?: FieldConfig;
   y?: FieldConfig;
   color?: FieldConfig | string;
 };
+
+const DEFAULT_NOMINAL_LIMIT = 20;
+const DEFAULT_SPLIT_LIMIT = 10;
 
 export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
   static chartInputParams: Record<string, ComponentInputParam> = {
@@ -43,7 +41,7 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
           type: "dimension",
           axisTitleSelector: true,
           sortSelector: true,
-          limitSelector: true,
+          limitSelector: { defaultLimit: DEFAULT_NOMINAL_LIMIT },
           nullSelector: true,
           labelAngleSelector: true,
         },
@@ -57,6 +55,7 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
           type: "measure",
           axisTitleSelector: true,
           originSelector: true,
+          axisRangeSelector: true,
         },
       },
     },
@@ -69,6 +68,8 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
         chartFieldInput: {
           type: "dimension",
           defaultLegendOrientation: "top",
+          limitSelector: { defaultLimit: DEFAULT_SPLIT_LIMIT },
+          nullSelector: true,
         },
       },
     },
@@ -95,27 +96,31 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
       measures = [{ name: config.y?.field }];
     }
 
-    let sort: V1MetricsViewAggregationSort | undefined;
+    let xAxisSort: V1MetricsViewAggregationSort | undefined;
     let limit: number | undefined;
     let hasColorDimension = false;
+    let colorDimensionName = "";
+    let colorLimit: number | undefined;
 
     const dimensionName = config.x?.field;
 
     if (config.x?.type === "nominal" && dimensionName) {
       limit = config.x.limit ?? 100;
-      sort = this.vegaSortToAggregationSort(config.x?.sort, config);
+      xAxisSort = this.vegaSortToAggregationSort("x", config);
       dimensions = [{ name: dimensionName }];
     } else if (config.x?.type === "temporal" && dimensionName) {
       dimensions = [{ name: dimensionName }];
     }
 
     if (typeof config.color === "object" && config.color?.field) {
-      dimensions = [...dimensions, { name: config.color.field }];
+      colorDimensionName = config.color.field;
+      colorLimit = config.color.limit ?? DEFAULT_SPLIT_LIMIT;
+      dimensions = [...dimensions, { name: colorDimensionName }];
       hasColorDimension = true;
     }
 
-    // Create topN query options store
-    const topNQueryOptionsStore = derived(
+    // Create topN query for x dimension
+    const topNXQueryOptionsStore = derived(
       [ctx.runtime, timeAndFilterStore],
       ([runtime, $timeAndFilterStore]) => {
         const { timeRange, where } = $timeAndFilterStore;
@@ -123,7 +128,8 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
           !!timeRange?.start &&
           !!timeRange?.end &&
           hasColorDimension &&
-          config.x?.type === "nominal";
+          config.x?.type === "nominal" &&
+          !!dimensionName;
 
         const topNWhere = getFilterWithNullHandling(where, config.x);
 
@@ -133,7 +139,7 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
           {
             measures,
             dimensions: [{ name: dimensionName }],
-            sort: sort ? [sort] : undefined,
+            sort: xAxisSort ? [xAxisSort] : undefined,
             where: topNWhere,
             timeRange,
             limit: limit?.toString(),
@@ -148,34 +154,94 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
       },
     );
 
-    const topNQuery = createQuery(topNQueryOptionsStore);
+    const topNXQuery = createQuery(topNXQueryOptionsStore);
+
+    // Create topN query for color dimension
+    const topNColorQueryOptionsStore = derived(
+      [ctx.runtime, timeAndFilterStore],
+      ([runtime, $timeAndFilterStore]) => {
+        const { timeRange, where } = $timeAndFilterStore;
+        const enabled =
+          !!timeRange?.start &&
+          !!timeRange?.end &&
+          hasColorDimension &&
+          !!colorDimensionName &&
+          !!colorLimit;
+
+        const topNWhere = getFilterWithNullHandling(
+          where,
+          typeof config.color === "object" ? config.color : undefined,
+        );
+
+        return getQueryServiceMetricsViewAggregationQueryOptions(
+          runtime.instanceId,
+          config.metrics_view,
+          {
+            measures,
+            dimensions: [{ name: colorDimensionName }],
+            sort: config?.y?.field
+              ? [{ name: config.y.field, desc: true }]
+              : undefined,
+            where: topNWhere,
+            timeRange,
+            limit: colorLimit?.toString(),
+          },
+          {
+            query: {
+              enabled,
+              placeholderData: keepPreviousData,
+            },
+          },
+        );
+      },
+    );
+
+    const topNColorQuery = createQuery(topNColorQueryOptionsStore);
 
     const queryOptionsStore = derived(
-      [ctx.runtime, timeAndFilterStore, topNQuery],
-      ([runtime, $timeAndFilterStore, $topNQuery]) => {
+      [ctx.runtime, timeAndFilterStore, topNXQuery, topNColorQuery],
+      ([runtime, $timeAndFilterStore, $topNXQuery, $topNColorQuery]) => {
         const { timeRange, where, timeGrain } = $timeAndFilterStore;
-        const topNData = $topNQuery?.data?.data;
+        const topNXData = $topNXQuery?.data?.data;
+        const topNColorData = $topNColorQuery?.data?.data;
         const enabled =
           !!timeRange?.start &&
           !!timeRange?.end &&
           (hasColorDimension && config.x?.type === "nominal"
-            ? !!topNData?.length
+            ? !!topNXData?.length
+            : true) &&
+          (hasColorDimension && colorDimensionName && colorLimit
+            ? !!topNColorData?.length
             : true);
 
         let combinedWhere: V1Expression | undefined = getFilterWithNullHandling(
           where,
           config.x,
         );
-        if (topNData?.length && dimensionName) {
-          const topValues = topNData.map((d) => d[dimensionName] as string);
-          const filterForTopValues = createInExpression(
-            dimensionName,
-            topValues,
-          );
 
-          combinedWhere = mergeFilters(where, filterForTopValues);
+        // Apply topN filter for x dimension
+        if (topNXData?.length && dimensionName) {
+          const topXValues = topNXData.map((d) => d[dimensionName] as string);
+          const filterForTopXValues = createInExpression(
+            dimensionName,
+            topXValues,
+          );
+          combinedWhere = mergeFilters(combinedWhere, filterForTopXValues);
         }
 
+        // Apply topN filter for color dimension
+        if (topNColorData?.length && colorDimensionName) {
+          const topColorValues = topNColorData.map(
+            (d) => d[colorDimensionName] as string,
+          );
+          const filterForTopColorValues = createInExpression(
+            colorDimensionName,
+            topColorValues,
+          );
+          combinedWhere = mergeFilters(combinedWhere, filterForTopColorValues);
+        }
+
+        this.combinedWhere = combinedWhere;
         // Update dimensions with timeGrain if temporal
         if (config.x?.type === "temporal" && timeGrain) {
           dimensions = dimensions.map((d) =>
@@ -189,7 +255,7 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
           {
             measures,
             dimensions,
-            sort: sort ? [sort] : undefined,
+            sort: xAxisSort ? [xAxisSort] : undefined,
             where: combinedWhere,
             timeRange,
             limit: hasColorDimension || !limit ? "5000" : limit?.toString(),
@@ -234,7 +300,7 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
         type: timeDimension ? "temporal" : "nominal",
         field: timeDimension || randomDimension,
         sort: "-y",
-        limit: 20,
+        limit: DEFAULT_NOMINAL_LIMIT,
       },
       y: {
         type: "quantitative",
@@ -245,17 +311,30 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
   }
 
   private vegaSortToAggregationSort(
-    sort: ChartSortDirection | undefined,
+    encoder: "x" | "color",
     config: CartesianChartSpec,
   ): V1MetricsViewAggregationSort | undefined {
+    const encoderConfig = config[encoder];
+
+    if (typeof encoderConfig === "string") {
+      return undefined;
+    }
+
+    const sort = encoderConfig?.sort;
     if (!sort) return undefined;
+
+    const encoderField = encoderConfig?.field;
+
     const field =
-      sort === "x" || sort === "-x" ? config.x?.field : config.y?.field;
+      sort === "color" || sort === "-color" || sort === "x" || sort === "-x"
+        ? encoderField
+        : config?.y?.field;
+
     if (!field) return undefined;
 
     return {
       name: field,
-      desc: sort === "-x" || sort === "-y",
+      desc: sort === "-x" || sort === "-y" || sort === "-color",
     };
   }
 

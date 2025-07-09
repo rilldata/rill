@@ -5,6 +5,7 @@
   import type { ComponentInputParam } from "@rilldata/web-common/features/canvas/inspector/types";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import FieldConfigPopover from "./FieldConfigPopover.svelte";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
   export let key: string;
   export let config: ComponentInputParam;
@@ -14,11 +15,12 @@
 
   export let onChange: (updatedConfig: FieldConfig) => void;
 
+  $: ({ instanceId } = $runtime);
   $: ({
     canvasEntity: {
       spec: { getTimeDimensionForMetricView },
     },
-  } = getCanvasStore(canvasName));
+  } = getCanvasStore(canvasName, instanceId));
 
   $: chartFieldInput = config.meta?.chartFieldInput;
 
@@ -48,6 +50,10 @@
   }
 
   function updateFieldProperty(property: keyof FieldConfig, value: any) {
+    if (fieldConfig[property] === value) {
+      return;
+    }
+
     const updatedConfig: FieldConfig = {
       ...fieldConfig,
       [property]: value,
@@ -61,12 +67,14 @@
   <div class="flex justify-between items-center">
     <InputLabel small label={config.label ?? key} id={key} />
     {#if Object.keys(chartFieldInput ?? {}).length > 1}
-      <FieldConfigPopover
-        {fieldConfig}
-        label={config.label ?? key}
-        onChange={updateFieldProperty}
-        {chartFieldInput}
-      />
+      {#key fieldConfig}
+        <FieldConfigPopover
+          {fieldConfig}
+          label={config.label ?? key}
+          onChange={updateFieldProperty}
+          {chartFieldInput}
+        />
+      {/key}
     {/if}
   </div>
 

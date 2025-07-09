@@ -6,11 +6,10 @@
   import type { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
   import { getEmptyMeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
   import { Trash2Icon } from "lucide-svelte";
-  import { createForm } from "svelte-forms-lib";
+  import type { SuperForm } from "sveltekit-superforms/client";
 
-  export let formState: ReturnType<typeof createForm<AlertFormValues>>;
-
-  const { form } = formState;
+  export let superFormInstance: SuperForm<AlertFormValues>;
+  $: ({ form } = superFormInstance);
 
   function handleDeleteCriteria(index: number) {
     $form["criteria"] = $form["criteria"].filter((_, i: number) => i !== index);
@@ -47,9 +46,9 @@
             <Trash2Icon size="16px" />
           </button>
         </div>
-        <CriteriaForm {formState} {index} />
+        <CriteriaForm {superFormInstance} {index} />
       </div>
     {/each}
-    <Button type="dashed" on:click={handleAddCriteria}>+ Add Criteria</Button>
+    <Button type="dashed" onClick={handleAddCriteria}>+ Add Criteria</Button>
   </div>
 {/if}

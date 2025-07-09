@@ -1,27 +1,28 @@
 <script lang="ts">
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import TooltipDescription from "@rilldata/web-common/components/tooltip/TooltipDescription.svelte";
+  import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
   import type { MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
 
   export let measure: MetricsViewSpecMeasure;
   export let value = "";
 
+  $: description =
+    measure?.description || measure?.displayName || measure?.expression;
   $: name = measure?.displayName || measure?.expression;
 </script>
 
-<TooltipContent>
-  <div
-    class="grid gap-x-4 pointer-events-none pt-1 pb-1 items-baseline"
-    style="grid-template-columns: auto max-content"
-  >
-    <div class="truncate" aria-label="tooltip-name">
+<TooltipContent maxWidth="280px">
+  <TooltipTitle>
+    <svelte:fragment slot="name">
       {name}
-    </div>
-
-    <div
-      class="text-gray-300 justify-self-end"
-      aria-label="tooltip-name-description"
-    >
+    </svelte:fragment>
+    <svelte:fragment slot="description">
       {value}
-    </div>
-  </div>
+    </svelte:fragment>
+  </TooltipTitle>
+
+  <TooltipDescription>
+    {description}
+  </TooltipDescription>
 </TooltipContent>

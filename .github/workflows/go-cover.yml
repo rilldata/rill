@@ -2,6 +2,7 @@ on:
   push:
     branches:
       - main
+      - cover
     paths:
       - ".github/workflows/go-cover.yml"
       - "**.go"
@@ -10,7 +11,8 @@ on:
 name: Test Go code with coverage
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on:
+      labels: large-hosted
     steps:
     - name: Check out code
       uses: actions/checkout@v4

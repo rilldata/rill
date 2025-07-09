@@ -59,7 +59,8 @@ var spec = drivers.Spec{
 			Required:    true,
 			DisplayName: "Host",
 			Description: "Hostname or IP address of the ClickHouse server",
-			Placeholder: "localhost",
+			Placeholder: "your-instance.clickhouse.cloud or your.clickhouse.server.com",
+			Hint:        "Your ClickHouse hostname (e.g., your-instance.clickhouse.cloud or your-server.com)",
 		},
 		{
 			Key:         "port",
@@ -68,14 +69,18 @@ var spec = drivers.Spec{
 			DisplayName: "Port",
 			Description: "Port number of the ClickHouse server",
 			Placeholder: "9000",
+			Hint:        "Default port is 9000 for native protocol. Also commonly used: 8443 for ClickHouse Cloud (HTTPS), 8123 for HTTP",
+			Default:     "9000",
 		},
 		{
 			Key:         "username",
 			Type:        drivers.StringPropertyType,
-			Required:    false,
+			Required:    true,
 			DisplayName: "Username",
 			Description: "Username to connect to the ClickHouse server",
 			Placeholder: "default",
+			Hint:        "Username for authentication",
+			Default:     "default",
 		},
 		{
 			Key:         "password",
@@ -83,8 +88,9 @@ var spec = drivers.Spec{
 			Required:    false,
 			DisplayName: "Password",
 			Description: "Password to connect to the ClickHouse server",
-			Placeholder: "password",
+			Placeholder: "Database password",
 			Secret:      true,
+			Hint:        "Password to your database",
 		},
 		{
 			Key:         "database",
@@ -93,6 +99,17 @@ var spec = drivers.Spec{
 			DisplayName: "Database",
 			Description: "Name of the ClickHouse database to connect to",
 			Placeholder: "default",
+			Hint:        "Database name (default is 'default')",
+			Default:     "default",
+		},
+		{
+			Key:         "cluster",
+			Type:        drivers.StringPropertyType,
+			Required:    false,
+			DisplayName: "Cluster",
+			Description: "Cluster name. If set, Rill will create all models in the cluster as distributed tables.",
+			Placeholder: "Cluster name",
+			Hint:        "Cluster name (required for some self-hosted ClickHouse setups)",
 		},
 		{
 			Key:         "ssl",
@@ -100,6 +117,8 @@ var spec = drivers.Spec{
 			Required:    true,
 			DisplayName: "SSL",
 			Description: "Use SSL to connect to the ClickHouse server",
+			Hint:        "Enable SSL for secure connections",
+			Default:     "true",
 		},
 	},
 	ImplementsOLAP: true,
@@ -329,7 +348,7 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 	}
 
 	c.used()
-	go c.periodicallyEmitStats(time.Minute)
+	go c.periodicallyEmitStats()
 
 	return c, nil
 }
@@ -375,6 +394,8 @@ type Connection struct {
 	opts *clickhouse.Options
 	// embed is embedded clickhouse server for local run
 	embed *embedClickHouse
+	// billingTableExists cached state of whether the billing.events table exists in the database
+	billingTableExists *bool
 }
 
 // Ping implements drivers.Handle.
@@ -437,8 +458,12 @@ func (c *Connection) AsAI(instanceID string) (drivers.AIService, bool) {
 
 // OLAP implements drivers.Connection.
 func (c *Connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
-	c.instanceID = instanceID
 	return c, true
+}
+
+// AsInformationSchema implements drivers.Connection.
+func (c *Connection) AsInformationSchema() (drivers.InformationSchema, bool) {
+	return nil, false
 }
 
 // Migrate implements drivers.Connection.
@@ -508,20 +533,29 @@ func (c *Connection) lastUsedOn() time.Time {
 }
 
 // Periodically collects stats about the database and emit them as activity events.
-func (c *Connection) periodicallyEmitStats(d time.Duration) {
+func (c *Connection) periodicallyEmitStats() {
 	if c.activity == nil {
 		// Activity client isn't set, there is no need to report stats
 		return
 	}
 
-	ticker := time.NewTicker(d)
-	defer ticker.Stop()
+	// Sensitive ticker for sensitive stats
+	sensitiveTicker := time.NewTicker(time.Minute)
+	defer sensitiveTicker.Stop()
+
+	// Regular ticker for non-sensitive stats
+	regularTicker := time.NewTicker(10 * time.Minute)
+	defer regularTicker.Stop()
+
+	// Cache invalidation ticker to reset billing table existence cache
+	cacheInvalidationTicker := time.NewTicker(60 * time.Minute)
+	defer cacheInvalidationTicker.Stop()
 
 	for {
 		select {
-		case <-ticker.C:
+		case <-sensitiveTicker.C:
 			// Skip if it hasn't been used recently and may be scaled to zero.
-			if c.config.CanScaleToZero && time.Since(c.lastUsedOn()) > 2*d {
+			if c.config.CanScaleToZero && time.Since(c.lastUsedOn()) > 2*time.Minute {
 				continue
 			}
 
@@ -537,6 +571,33 @@ func (c *Connection) periodicallyEmitStats(d time.Duration) {
 
 				c.logger.Log(lvl, "failed to estimate clickhouse size", zap.Error(err), zap.Bool("managed", c.config.Managed))
 			}
+		case <-regularTicker.C:
+			billingTableExists, err := c.checkBillingTableExists(c.ctx, c.config.Cluster)
+			if err != nil {
+				if !errors.Is(err, c.ctx.Err()) {
+					c.logger.Warn("failed to check if billing table exists", zap.Error(err))
+				}
+				continue
+			}
+			if !billingTableExists {
+				c.logger.Debug("billing.events table does not exist in the database, RCU metrics will not be available", zap.String("clickhouse_host", c.config.Host), zap.String("clickhouse_dsn", c.config.DSN))
+				continue
+			}
+			// Emit the latest RCU per service.
+			latestRCU, err := c.latestRCUPerService(c.ctx)
+			if err == nil {
+				for service, value := range latestRCU {
+					c.activity.RecordMetric(c.ctx, "clickhouse_rcu", value, attribute.String("billing_service", service))
+				}
+				if len(latestRCU) == 0 {
+					c.logger.Warn("no RCU data found for any service", zap.String("clickhouse_host", c.config.Host))
+				}
+			} else if !errors.Is(err, c.ctx.Err()) {
+				c.logger.Warn("failed to fetch latest RCU per service", zap.Error(err))
+			}
+		case <-cacheInvalidationTicker.C:
+			// Invalidate the billing table existence cache every hour.
+			c.billingTableExists = nil
 		case <-c.ctx.Done():
 			return
 		}
@@ -552,4 +613,65 @@ func (c *Connection) estimateSize(ctx context.Context) (int64, error) {
 	}
 
 	return size, nil
+}
+
+// latestRCUPerService returns the sum latest RCU value reported for nodes in each service i.e. read/write.
+func (c *Connection) latestRCUPerService(ctx context.Context) (map[string]float64, error) {
+	var query string
+	if c.config.Cluster == "" {
+		query = "SELECT service as billing_service, anyLast(value) as latest_value from billing.events WHERE event_name = 'rcu' GROUP BY service"
+	} else {
+		query = fmt.Sprintf(`SELECT service as billing_service, sum(value) AS latest_value FROM (SELECT service, anyLast(value) as value FROM clusterAllReplicas('%s', billing.events) WHERE event_name = 'rcu' GROUP BY hostName(), service) GROUP BY billing_service`, c.config.Cluster)
+	}
+	rows, err := c.db.QueryxContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	latestRCU := make(map[string]float64)
+	for rows.Next() {
+		var service string
+		var value float64
+		if err := rows.Scan(&service, &value); err != nil {
+			return nil, fmt.Errorf("failed to scan row: %w", err)
+		}
+		latestRCU[service] = value
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating over rows: %w", err)
+	}
+
+	return latestRCU, nil
+}
+
+func (c *Connection) checkBillingTableExists(ctx context.Context, cluster string) (bool, error) {
+	if c.billingTableExists != nil {
+		return *c.billingTableExists, nil
+	}
+	var existsEverywhere bool
+	var existsSomewhere bool
+	if cluster == "" {
+		err := c.db.QueryRowxContext(ctx, `SELECT count() > 0 as exists FROM system.tables WHERE database = 'billing' AND name = 'events'`).Scan(&existsEverywhere)
+		if err != nil {
+			return false, fmt.Errorf("failed to check if billing table exists: %w", err)
+		}
+	} else {
+		err := c.db.QueryRowxContext(ctx, fmt.Sprintf(`
+				SELECT countIf(found) = count() AS exists_everywhere, countIf(found) > 0 AS exists_somewhere
+				FROM
+				(
+					SELECT hostName() AS host, max((database = 'billing') AND (name = 'events')) AS found
+					FROM clusterAllReplicas('%s', system.tables)
+					GROUP BY host
+				)`, cluster)).Scan(&existsEverywhere, &existsSomewhere)
+		if err != nil {
+			return false, fmt.Errorf("failed to check if billing table exists in cluster %q: %w", cluster, err)
+		}
+		if existsSomewhere && !existsEverywhere {
+			c.logger.Warn("billing.events table does not exists on all cluster nodes, RCU will not be reported", zap.String("clickhouse_host", c.config.Host), zap.String("clickhouse_dsn", c.config.DSN))
+		}
+	}
+	c.billingTableExists = &existsEverywhere
+	return existsEverywhere, nil
 }

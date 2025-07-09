@@ -1,4 +1,4 @@
-import { getExploreName } from "@rilldata/web-admin/features/dashboards/query-mappers/utils";
+import { getExploreName } from "@rilldata/web-common/features/explore-mappers/utils";
 import {
   getDayOfMonthFromCronExpression,
   getDayOfWeekFromCronExpression,
@@ -49,6 +49,7 @@ export function getNewReportInitialFormValues(userEmail: string | undefined) {
     timeZone: getLocalIANA(),
     exportFormat: V1ExportFormat.EXPORT_FORMAT_CSV as V1ExportFormat,
     exportLimit: "",
+    exportIncludeHeader: false,
     ...extractNotification(undefined, userEmail, false),
   };
 }
@@ -75,6 +76,7 @@ export function getExistingReportInitialFormValues(
     exportFormat:
       reportSpec?.exportFormat ?? V1ExportFormat.EXPORT_FORMAT_UNSPECIFIED,
     exportLimit: reportSpec.exportLimit === "0" ? "" : reportSpec.exportLimit,
+    exportIncludeHeader: reportSpec.exportIncludeHeader ?? false,
     ...extractNotification(reportSpec.notifiers, userEmail, true),
   };
 }

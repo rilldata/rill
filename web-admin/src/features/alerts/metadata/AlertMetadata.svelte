@@ -105,7 +105,7 @@
         </h1>
         <div class="grow" />
         {#if !$isAlertCreatedByCode.data}
-          <EditAlert {alertSpec} {metricsViewName} />
+          <EditAlert {alertSpec} />
           <DropdownMenu.Root>
             <DropdownMenu.Trigger>
               <IconButton>
@@ -141,7 +141,7 @@
               </div>
             {:else}
               <a
-                href={`/${organization}/${project}/explore/${$dashboardName.data}`}
+                href={`/${organization}/${project}/explore/${encodeURIComponent($dashboardName.data)}`}
               >
                 {dashboardTitle}
               </a>

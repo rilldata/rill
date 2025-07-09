@@ -14,8 +14,11 @@
   import { getChartData } from "./selector";
   import { generateSpec, isChartLineLike } from "./util";
   import { validateChartSchema } from "./validate";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
   export let component: BaseChart<ChartSpec>;
+
+  $: ({ instanceId } = $runtime);
 
   $: ({
     specStore,
@@ -26,7 +29,7 @@
 
   $: chartType = $type;
 
-  $: store = getCanvasStore(canvasName);
+  $: store = getCanvasStore(canvasName, instanceId);
   $: ({
     canvasEntity: {
       spec: { getMeasuresForMetricView },
@@ -91,6 +94,7 @@
         title={title || component.chartTitle($chartQuery?.fields)}
         {description}
         {filters}
+        {component}
       />
       {#if hasNoData}
         <div

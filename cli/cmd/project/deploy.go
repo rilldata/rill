@@ -15,7 +15,6 @@ import (
 	"github.com/rilldata/rill/cli/pkg/browser"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/dotrillcloud"
-	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/local"
 	"github.com/rilldata/rill/cli/pkg/printer"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
@@ -200,22 +199,11 @@ func DeployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployO
 		}
 		req.ArchiveAssetId = assetID
 	} else {
-		gitRepo, err := adminClient.CreateManagedGitRepo(ctx, &adminv1.CreateManagedGitRepoRequest{
-			Organization: ch.Org,
-			Name:         opts.Name,
-		})
+		gitRepo, err := ch.GitHelper(ch.Org, opts.Name, localProjectPath).PushToNewManagedRepo(ctx)
 		if err != nil {
 			return err
 		}
-		author, err := autoCommitGitSignature(ctx, adminClient, localProjectPath)
-		if err != nil {
-			return err
-		}
-		err = gitutil.CommitAndForcePush(ctx, localProjectPath, gitRepo.Remote, gitRepo.Username, gitRepo.Password, gitRepo.DefaultBranch, author)
-		if err != nil {
-			return err
-		}
-		req.GithubUrl = gitRepo.Remote
+		req.GitRemote = gitRepo.Remote
 	}
 	printer.ColorGreenBold.Printf("All files uploaded successfully.\n\n")
 
@@ -234,6 +222,13 @@ func DeployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployO
 	})
 	if err != nil {
 		return err
+	}
+	if req.GitRemote != "" {
+		// also commit dotrillcloud to the repo
+		err = ch.GitHelper(ch.Org, opts.Name, localProjectPath).PushToManagedRepo(ctx)
+		if err != nil {
+			return err
+		}
 	}
 
 	// Success!
@@ -268,27 +263,16 @@ func DeployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployO
 }
 
 func redeployUploadedProject(ctx context.Context, projResp *adminv1.GetProjectResponse, ch *cmdutil.Helper, adminClient *client.Client, localProjectPath string, opts *DeployOpts, repo drivers.RepoStore) error {
-	if projResp.Project.GithubUrl != "" && projResp.Project.ManagedGitId == "" {
+	if projResp.Project.GitRemote != "" && projResp.Project.ManagedGitId == "" {
 		// connected to user managed github
-		ch.PrintfError("Found existing project. But it is connected to a github repo.\nPush any changes to %q to deploy.\n", projResp.Project.GithubUrl)
+		ch.PrintfError("Found existing project. But it is already connected to a Github repository.\nPush changes to %q to deploy.\n", projResp.Project.GitRemote)
 		return nil
 	}
 	ch.Printer.Println("Found existing project. Starting re-upload.")
 	var updateProjReq *adminv1.UpdateProjectRequest
-	if projResp.Project.GithubUrl != "" {
+	if projResp.Project.GitRemote != "" {
 		// rill managed git
-		creds, err := adminClient.GetCloneCredentials(ctx, &adminv1.GetCloneCredentialsRequest{
-			Organization: ch.Org,
-			Project:      projResp.Project.Name,
-		})
-		if err != nil {
-			return err
-		}
-		author, err := autoCommitGitSignature(ctx, adminClient, localProjectPath)
-		if err != nil {
-			return err
-		}
-		err = gitutil.CommitAndForcePush(ctx, localProjectPath, projResp.Project.GithubUrl, creds.GitUsername, creds.GitPassword, creds.GitProdBranch, author)
+		err := ch.GitHelper(ch.Org, opts.Name, localProjectPath).PushToManagedRepo(ctx)
 		if err != nil {
 			return err
 		}
@@ -306,25 +290,14 @@ func redeployUploadedProject(ctx context.Context, projResp *adminv1.GetProjectRe
 			}
 		} else {
 			// need to migrate to rill managed git
-			gitRepo, err := adminClient.CreateManagedGitRepo(ctx, &adminv1.CreateManagedGitRepoRequest{
-				Organization: ch.Org,
-				Name:         projResp.Project.Name,
-			})
-			if err != nil {
-				return err
-			}
-			author, err := autoCommitGitSignature(ctx, adminClient, localProjectPath)
-			if err != nil {
-				return err
-			}
-			err = gitutil.CommitAndForcePush(ctx, localProjectPath, gitRepo.Remote, gitRepo.Username, gitRepo.Password, gitRepo.DefaultBranch, author)
+			gitRepo, err := ch.GitHelper(ch.Org, opts.Name, localProjectPath).PushToNewManagedRepo(ctx)
 			if err != nil {
 				return err
 			}
 			updateProjReq = &adminv1.UpdateProjectRequest{
 				OrganizationName: ch.Org,
 				Name:             opts.Name,
-				GithubUrl:        &gitRepo.Remote,
+				GitRemote:        &gitRepo.Remote,
 			}
 		}
 	}
