@@ -22,7 +22,7 @@
     submitAddOLAPConnectorForm,
     submitAddSourceForm,
   } from "./submitAddDataForm";
-  import type { AddDataFormType } from "./types";
+  import type { AddDataFormType, ConnectorType } from "./types";
   import { dsnSchema, getYupSchema } from "./yupSchemas";
   import AddClickHouseForm from "./AddClickHouseForm.svelte";
   import Checkbox from "@rilldata/web-common/components/forms/Checkbox.svelte";
@@ -40,7 +40,7 @@
   const isSourceForm = formType === "source";
   const isConnectorForm = formType === "connector";
 
-  let connectionTab = "parameters";
+  let connectionTab: ConnectorType = "parameters";
 
   // Form 1: Individual parameters
   const paramsFormId = `add-data-${connector.name}-form`;

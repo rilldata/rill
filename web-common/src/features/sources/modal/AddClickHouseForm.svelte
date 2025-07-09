@@ -22,7 +22,7 @@
     submitAddOLAPConnectorForm,
     submitAddSourceForm,
   } from "./submitAddDataForm";
-  import type { AddDataFormType } from "./types";
+  import type { AddDataFormType, ConnectorType } from "./types";
   import { dsnSchema, getYupSchema } from "./yupSchemas";
   import Checkbox from "@rilldata/web-common/components/forms/Checkbox.svelte";
 
@@ -56,8 +56,7 @@
   let paramsError: string | null = null;
   let paramsErrorDetails: string | undefined = undefined;
 
-  // DSN form
-  let connectionTab = "parameters";
+  let connectionTab: ConnectorType = "parameters";
 
   const dsnFormId = `add-clickhouse-data-${connector.name}-dsn-form`;
   const dsnProperties =
