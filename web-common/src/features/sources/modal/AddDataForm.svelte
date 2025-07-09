@@ -29,6 +29,7 @@
   import NeedHelpText from "./NeedHelpText.svelte";
   import Tabs from "@rilldata/web-common/components/forms/Tabs.svelte";
   import { TabsContent } from "@rilldata/web-common/components/tabs";
+  import { isEmpty } from "./utils";
 
   const dispatch = createEventDispatcher();
 
@@ -95,6 +96,32 @@
 
   let clickhouseError: string | null = null;
   let clickhouseErrorDetails: string | undefined = undefined;
+
+  // TODO: move to utils.ts
+  // Compute disabled state for the submit button
+  $: isSubmitDisabled = (() => {
+    if (connectionTab === "dsn") {
+      // DSN form: check required DSN properties
+      for (const property of dsnProperties) {
+        if (property.required) {
+          const key = String(property.key);
+          const value = $dsnForm[key];
+          if (isEmpty(value) || $dsnErrors[key]?.length) return true;
+        }
+      }
+      return false;
+    } else {
+      // Parameters form: check required properties
+      for (const property of properties) {
+        if (property.required) {
+          const key = String(property.key);
+          const value = $paramsForm[key];
+          if (isEmpty(value) || $paramsErrors[key]?.length) return true;
+        }
+      }
+      return false;
+    }
+  })();
 
   $: formId = connectionTab === "dsn" ? dsnFormId : paramsFormId;
   $: submitting = connectionTab === "dsn" ? $dsnSubmitting : $paramsSubmitting;
@@ -336,7 +363,12 @@
       >
         <Button onClick={onBack} type="secondary">Back</Button>
 
-        <Button disabled={submitting} form={formId} submitForm type="primary">
+        <Button
+          disabled={submitting || isSubmitDisabled}
+          form={formId}
+          submitForm
+          type="primary"
+        >
           {#if isConnectorForm}
             {#if submitting}
               Testing connection...

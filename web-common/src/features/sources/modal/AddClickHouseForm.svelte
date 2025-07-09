@@ -25,6 +25,7 @@
   import type { AddDataFormType, ConnectorType } from "./types";
   import { dsnSchema, getYupSchema } from "./yupSchemas";
   import Checkbox from "@rilldata/web-common/components/forms/Checkbox.svelte";
+  import { isEmpty } from "./utils";
 
   const dispatch = createEventDispatcher();
 
@@ -179,15 +180,7 @@
       ) ?? []);
   $: filteredProperties = properties.filter((property) => !property.noPrompt);
 
-  function isEmpty(val: any) {
-    return (
-      val === undefined ||
-      val === null ||
-      val === "" ||
-      (typeof val === "string" && val.trim() === "")
-    );
-  }
-
+  // TODO: move to utils.ts
   // Compute disabled state for the submit button
   // Refer to `runtime/drivers/clickhouse/clickhouse.go` for the required
   // Account for the managed property and the dsn property can be either true or false
