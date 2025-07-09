@@ -6,9 +6,7 @@ const compiledGrammar = nearley.Grammar.fromCompiled(grammar);
 export function parseRillTime(rillTimeRange: string): RillTime {
   const parser = new nearley.Parser(compiledGrammar);
   parser.feed(rillTimeRange);
-  const rt = parser.results[0] as RillTime;
-  rt.timeRange = rillTimeRange;
-  return rt;
+  return parser.results[0] as RillTime;
 }
 
 export function normaliseRillTime(rillTimeRange: string) {
@@ -29,4 +27,16 @@ export function validateRillTime(rillTime: string): Error | undefined {
     return err;
   }
   return undefined;
+}
+
+/**
+ * Overrides the ref part of a rill time range.
+ * @param rt RillTime instance to override
+ * @param refOverride Ref to override with, should be in the format of `watermark` or `watermark/Y` or `watermark/Y+1Y` etc
+ */
+export function overrideRillTimeRef(rt: RillTime, refOverride: string) {
+  const overriddenRillTime = parseRillTime(`7D as of ${refOverride}`);
+  const overriddenPoint = overriddenRillTime.anchorOverrides[0];
+  if (!overriddenPoint) throw new Error("No anchor overrides found");
+  rt.overrideRef(overriddenPoint);
 }
