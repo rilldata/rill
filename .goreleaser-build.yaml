@@ -9,6 +9,10 @@ before:
 builds:
   - main: ./cli/main.go
     binary: rill
+    goos:
+      - ${GOOS}
+    goarch:
+      - ${GOARCH}
     env:
       - >-
         {{- if eq .Os "darwin" }}CC=clang{{- end }}
