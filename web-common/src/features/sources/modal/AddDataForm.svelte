@@ -218,6 +218,7 @@
 </script>
 
 <div class="add-data-layout flex flex-col h-full w-full md:flex-row">
+  <!-- LEFT SIDE PANEL -->
   <div
     class="add-data-form-panel flex-1 flex flex-col min-w-0 md:pr-0 pr-0 relative"
   >
@@ -363,7 +364,7 @@
       {/if}
     </div>
 
-    <!-- Fixed action buttons at the bottom, always rendered -->
+    <!-- LEFT FOOTER -->
     <div
       class="w-full bg-white border-t border-gray-200 p-6 flex justify-between gap-2"
     >
@@ -402,6 +403,7 @@
     </div>
   </div>
 
+  <!-- RIGHT SIDE PANEL -->
   <div
     class="add-data-side-panel flex flex-col gap-6 p-6 bg-[#FAFAFA] w-full max-w-full border-l-0 border-t mt-6 pl-0 pt-6 md:w-96 md:min-w-[320px] md:max-w-[400px] md:border-l md:border-t-0 md:mt-0 md:pl-6"
   >

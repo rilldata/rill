@@ -364,27 +364,4 @@
       {/each}
     </form>
   {/if}
-
-  <!-- <div class="flex items-center space-x-2 ml-auto">
-    <Button onClick={onBack} type="secondary">Back</Button>
-
-    <Button
-      disabled={submitting || isSubmitDisabled}
-      form={formId}
-      submitForm
-      type="primary"
-    >
-      {#if $paramsForm.managed}
-        {#if submitting}
-          Connecting...
-        {:else}
-          Connect
-        {/if}
-      {:else if submitting}
-        Testing connection...
-      {:else}
-        Test and Connect
-      {/if}
-    </Button>
-  </div> -->
 </div>
