@@ -27,6 +27,7 @@
   import Checkbox from "@rilldata/web-common/components/forms/Checkbox.svelte";
   import { isEmpty } from "./utils";
   import { CONNECTOR_TYPE_OPTIONS } from "./constants";
+  import ConnectorTypeSelector from "@rilldata/web-common/components/forms/ConnectorTypeSelector.svelte";
 
   export let connector: V1ConnectorDriver;
   export let formType: AddDataFormType;
@@ -230,12 +231,10 @@
 
 <div class="h-full w-full flex flex-col">
   <div>
-    <div class="text-sm font-medium mb-2">Connector type</div>
-    <select id="managed" bind:value={$paramsForm.managed} class="form-select">
-      {#each CONNECTOR_TYPE_OPTIONS as option}
-        <option value={option.value}>{option.label}</option>
-      {/each}
-    </select>
+    <ConnectorTypeSelector
+      bind:value={$paramsForm.managed}
+      options={CONNECTOR_TYPE_OPTIONS}
+    />
     {#if $paramsForm.managed}
       <InformationalField
         description="This option uses ClickHouse as an OLAP engine with Rill-managed infrastructure. No additional configuration is required - Rill will handle the setup and management of your ClickHouse instance."
