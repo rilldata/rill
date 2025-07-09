@@ -148,7 +148,7 @@ func TestCompile(t *testing.T) {
 			nil,
 		},
 		{
-			"select pub, dom from ad_bids_metrics where timestamp > time_range_start('7D~') and timestamp <= time_range_end('7D~')",
+			"select pub, dom from ad_bids_metrics where timestamp > time_range_start('7D as of watermark/D+1D') and timestamp <= time_range_end('7D as of watermark/D+1D')",
 			"SELECT (\"publisher\") AS \"pub\", (\"domain\") AS \"dom\" FROM \"ad_bids\" WHERE (((\"timestamp\") > ?) AND ((\"timestamp\") <= ?)) GROUP BY 1, 2",
 			advancedMV,
 			[]any{parseTestTime(t, "2022-03-24T00:00:00Z"), parseTestTime(t, "2022-03-31T00:00:00Z")},

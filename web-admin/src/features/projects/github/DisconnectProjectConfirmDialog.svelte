@@ -1,6 +1,6 @@
 <script lang="ts">
   import {
-    createAdminServiceUploadProjectAssets,
+    createAdminServiceDisconnectProjectFromGithub,
     type RpcStatus,
   } from "@rilldata/web-admin/client";
   import { extractGithubDisconnectError } from "@rilldata/web-admin/features/projects/github/github-errors";
@@ -25,7 +25,8 @@
   export let organization: string;
   export let project: string;
 
-  const deleteProjectConnection = createAdminServiceUploadProjectAssets();
+  const deleteProjectConnection =
+    createAdminServiceDisconnectProjectFromGithub();
 
   $: ({ instanceId } = $runtime);
 
@@ -86,12 +87,12 @@
     <AlertDialogFooter>
       <Button
         type="secondary"
-        on:click={() => (open = false)}
+        onClick={() => (open = false)}
         disabled={isPending}>Cancel</Button
       >
       <Button
         type="primary"
-        on:click={onDisconnect}
+        onClick={onDisconnect}
         loading={isPending}
         disabled={isPending}
       >

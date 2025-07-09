@@ -5,8 +5,8 @@
   import { fly } from "svelte/transition";
   import Button from "../button/Button.svelte";
   import CaretDownIcon from "../icons/CaretDownIcon.svelte";
-  import TooltipContent from "../tooltip/TooltipContent.svelte";
   import SearchableMenuContent from "../searchable-filter-menu/SearchableMenuContent.svelte";
+  import TooltipContent from "../tooltip/TooltipContent.svelte";
 
   export let selectableItems: SearchableFilterSelectableItem[];
   export let selectedItems: string[];
@@ -38,7 +38,7 @@
       location="bottom"
       suppress={active}
     >
-      <Button builders={[builder]} type="text" label={tooltipText} on:click>
+      <Button builders={[builder]} type="text" label={tooltipText}>
         <div
           class="flex items-center gap-x-0.5 px-1 text-gray-700 hover:text-inherit"
         >

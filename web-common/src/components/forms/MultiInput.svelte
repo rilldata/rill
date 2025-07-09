@@ -1,11 +1,11 @@
 <script lang="ts">
   import { IconButton } from "@rilldata/web-common/components/button";
   import InfoCircle from "@rilldata/web-common/components/icons/InfoCircle.svelte";
-  import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
-  import { slide } from "svelte/transition";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
   import { XIcon } from "lucide-svelte";
+  import { slide } from "svelte/transition";
 
   /**
    * Input that allows to enter multiple items but appears within a single input box.
@@ -21,6 +21,7 @@
 
   export let singular: string;
   export let plural: string;
+  export let preventFocus = false;
 
   export let values: string[];
   export let errors: Record<string | number, string[]> | undefined;
@@ -121,7 +122,7 @@
   {/if}
   <div class="flex flex-row gap-1.5 items-center">
     <div
-      class="flex flex-row items-center bg-white rounded-sm px-1 py-[3px] w-full {contentClassName}"
+      class="flex flex-row items-center bg-surface rounded-sm px-1 py-[3px] w-full {contentClassName}"
       class:border={!hasSomeErrors}
       class:border-gray-300={!hasSomeErrors}
       class:outline={focused || hasSomeErrors}
@@ -143,7 +144,7 @@
             >
               {values[i]}
             </div>
-            <IconButton disableHover compact on:click={() => handleRemove(i)}>
+            <IconButton disableHover size={20} on:click={() => handleRemove(i)}>
               <XIcon
                 size="12px"
                 class="{hasError
@@ -161,6 +162,7 @@
           class="focus:outline-white group-hover:text-red-500 text-sm grow px-1"
           on:focusin={() => (focused = true)}
           on:focusout={() => (focused = false)}
+          on:click|preventDefault|stopPropagation={() => preventFocus}
           placeholder={!hasSomeValue ? placeholder : ""}
         />
       </div>

@@ -23,8 +23,9 @@ func GetCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 			res, err := client.GetProject(ctx, &adminv1.GetProjectRequest{
-				OrganizationName: args[0],
-				Name:             args[1],
+				OrganizationName:     args[0],
+				Name:                 args[1],
+				SuperuserForceAccess: true,
 			})
 			if err != nil {
 				return err
@@ -42,7 +43,7 @@ func GetCmd(ch *cmdutil.Helper) *cobra.Command {
 			fmt.Printf("Public: %t\n", project.Public)
 			fmt.Printf("Created by user ID: %s\n", project.CreatedByUserId)
 			fmt.Printf("Provisioner: %s\n", project.Provisioner)
-			fmt.Printf("Github URL: %s\n", project.GithubUrl)
+			fmt.Printf("Git remote: %s\n", project.GitRemote)
 			fmt.Printf("Subpath: %s\n", project.Subpath)
 			fmt.Printf("Prod version: %s\n", project.ProdVersion)
 			fmt.Printf("Prod branch: %s\n", project.ProdBranch)

@@ -26,7 +26,7 @@ More details on deploying Rill via Git in our [Deploy section](../deploy/deploy-
 
 :::warning macOS users
 
-If you previously installed Rill using `brew`, *the brew-managed binary will take precedent*. You can remove it by running `brew uninstall rill`.
+If you previously installed Rill using `brew`, *the brew-managed binary will take precedence*. You can remove it by running `brew uninstall rill`.
 
 :::
 

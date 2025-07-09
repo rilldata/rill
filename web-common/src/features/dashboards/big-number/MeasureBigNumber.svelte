@@ -12,6 +12,7 @@
   import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
   import { numberPartsToString } from "@rilldata/web-common/lib/number-formatting/utils/number-parts-utils";
   import { type MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
+  import { cellInspectorStore } from "../stores/cell-inspector-store";
   import {
     crossfade,
     fly,
@@ -91,6 +92,20 @@
     }
   };
   $: useDiv = isMeasureExpanded || !withTimeseries;
+
+  function handleMouseOver() {
+    if (value !== undefined && value !== null) {
+      // Always update the value in the store, but don't change visibility
+      cellInspectorStore.updateValue(value.toString());
+    }
+  }
+
+  function handleFocus() {
+    if (value !== undefined && value !== null) {
+      // Always update the value in the store, but don't change visibility
+      cellInspectorStore.updateValue(value.toString());
+    }
+  }
 </script>
 
 <Tooltip
@@ -102,7 +117,6 @@
   <BigNumberTooltipContent
     slot="tooltip-content"
     {measure}
-    isMeasureExpanded={useDiv}
     value={tooltipValue}
   />
 
@@ -110,7 +124,7 @@
     this={useDiv ? "div" : "a"}
     role={useDiv ? "presentation" : "button"}
     tabindex={useDiv ? -1 : 0}
-    class="group big-number"
+    class="group big-number outline-gray-200 dark:outline-gray-300"
     class:shadow-grad={!useDiv}
     class:cursor-pointer={!useDiv}
     on:click={modified({
@@ -126,15 +140,19 @@
     href={tddHref}
   >
     <h2
-      class="line-clamp-2 ui-header-primary font-semibold whitespace-normal"
+      class="line-clamp-2 ui-copy-muted hover:text-theme-700 group-hover:text-theme-700 font-semibold whitespace-normal"
       style:font-size={withTimeseries ? "" : "0.8rem"}
     >
       {name}
     </h2>
     <div
+      role="button"
       class="ui-copy-muted relative w-full h-full overflow-hidden text-ellipsis"
       style:font-size={withTimeseries ? "1.6rem" : "1.8rem"}
       style:font-weight="light"
+      on:mouseover={handleMouseOver}
+      on:focus={handleFocus}
+      tabindex="0"
     >
       {#if value !== null && status === EntityStatus.Idle}
         <WithTween {value} tweenProps={{ duration: 500 }} let:output>
@@ -223,20 +241,11 @@
 <style lang="postcss">
   .big-number {
     @apply h-fit w-[138px] m-0.5 rounded p-2 font-normal;
-    min-height: 85px;
     @apply items-start flex flex-col text-left;
+    min-height: 85px;
   }
 
   .shadow-grad:hover {
-    /* ui-card */
-    background: var(
-      --gradient_white-slate50,
-      linear-gradient(180deg, #fff 0%, #f8fafc 100%)
-    );
-    box-shadow:
-      0px 4px 6px 0px rgba(15, 23, 42, 0.09),
-      0px 0px 0px 1px rgba(15, 23, 42, 0.06),
-      0px 1px 3px 0px rgba(15, 23, 42, 0.04),
-      0px 2px 3px 0px rgba(15, 23, 42, 0.03);
+    @apply shadow-md bg-gradient-to-b from-surface to-gray-50 outline-1 outline;
   }
 </style>

@@ -59,10 +59,9 @@ func (c *Connection) WithConnection(ctx context.Context, priority int, fn driver
 }
 
 func (c *Connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
-	ctx = contextWithQueryID(ctx)
 	// Log query if enabled (usually disabled)
 	if c.config.LogQueries {
-		c.logger.Info("clickhouse query", zap.String("sql", stmt.Query), zap.Any("args", stmt.Args), observability.ZapCtx(ctx))
+		c.logger.Info("clickhouse query", zap.String("sql", c.Dialect().SanitizeQueryForLogging(stmt.Query)), zap.Any("args", stmt.Args), observability.ZapCtx(ctx))
 	}
 
 	settings := map[string]any{
@@ -72,6 +71,7 @@ func (c *Connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 		"session_timezone":          "UTC",
 		"join_use_nulls":            1,
 	}
+	ctx = contextWithQueryID(ctx)
 	ctx = clickhouse.Context(ctx, clickhouse.WithSettings(settings))
 
 	// We use the meta conn for dry run queries
@@ -90,27 +90,24 @@ func (c *Connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 	if err != nil {
 		return err
 	}
+	defer func() { _ = release() }()
 
-	// TODO: should we use timeout to acquire connection as well ?
 	var cancelFunc context.CancelFunc
 	if stmt.ExecutionTimeout != 0 {
 		ctx, cancelFunc = context.WithTimeout(ctx, stmt.ExecutionTimeout)
+		defer cancelFunc()
 	}
-	defer func() {
-		if cancelFunc != nil {
-			cancelFunc()
-		}
-		_ = release()
-	}()
+
 	_, err = conn.ExecContext(ctx, stmt.Query, stmt.Args...)
 	return err
 }
 
 func (c *Connection) Query(ctx context.Context, stmt *drivers.Statement) (res *drivers.Result, outErr error) {
 	ctx = contextWithQueryID(ctx)
+
 	// Log query if enabled (usually disabled)
 	if c.config.LogQueries {
-		c.logger.Info("clickhouse query", zap.String("sql", stmt.Query), zap.Any("args", stmt.Args))
+		c.logger.Info("clickhouse query", zap.String("sql", c.Dialect().SanitizeQueryForLogging(stmt.Query)), zap.Any("args", stmt.Args))
 	}
 
 	// We use the meta conn for dry run queries
@@ -125,8 +122,8 @@ func (c *Connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 		return nil, err
 	}
 
-	if c.config.SettingsOverride != "" {
-		stmt.Query += "\n SETTINGS " + c.config.SettingsOverride
+	if c.config.QuerySettingsOverride != "" {
+		stmt.Query += "\n SETTINGS " + c.config.QuerySettingsOverride
 	} else {
 		stmt.Query += "\n SETTINGS cast_keep_nullable = 1, join_use_nulls = 1, session_timezone = 'UTC', prefer_global_in_and_join = 1, insert_distributed_sync = 1"
 	}
@@ -208,6 +205,10 @@ func (c *Connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 	})
 
 	return res, nil
+}
+
+func (c *Connection) InformationSchema() drivers.OLAPInformationSchema {
+	return c
 }
 
 // acquireMetaConn gets a connection from the pool for "meta" queries like information schema (i.e. fast queries).

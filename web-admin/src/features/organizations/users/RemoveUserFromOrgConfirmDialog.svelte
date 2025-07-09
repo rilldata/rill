@@ -28,7 +28,7 @@
   <AlertDialogTrigger asChild>
     <div class="hidden"></div>
   </AlertDialogTrigger>
-  <AlertDialogContent>
+  <AlertDialogContent noCancel>
     <AlertDialogHeader>
       <AlertDialogTitle>Remove user from organization?</AlertDialogTitle>
       <AlertDialogDescription>
@@ -40,11 +40,11 @@
     <AlertDialogFooter>
       <Button
         type="plain"
-        on:click={() => {
+        onClick={() => {
           open = false;
         }}>Cancel</Button
       >
-      <Button type="primary" status="error" on:click={handleRemove}
+      <Button type="primary" status="error" onClick={handleRemove}
         >Yes, remove</Button
       >
     </AlertDialogFooter>

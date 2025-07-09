@@ -5,7 +5,7 @@
 </script>
 
 <a class="flex items-center" href="?{ExploreStateURLParams.WebView}=explore">
-  <Button type="link" forcedStyle="padding: 0; gap: 0px;">
+  <Button type="link" theme forcedStyle="padding: 0; gap: 0px;">
     <Back size="16px" />
     <span>All measures</span>
   </Button>

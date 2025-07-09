@@ -33,6 +33,7 @@ var spec = drivers.Spec{
 	DisplayName: "Druid",
 	Description: "Connect to Apache Druid.",
 	DocsURL:     "https://docs.rilldata.com/reference/olap-engines/druid",
+	// Important: Any edits to the below properties must be accompanied by changes to the client-side form validation schemas.
 	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:         "dsn",
@@ -278,6 +279,11 @@ func (c *connection) AsAI(instanceID string) (drivers.AIService, bool) {
 // OLAP implements drivers.Connection.
 func (c *connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
 	return c, true
+}
+
+// AsInformationSchema implements drivers.Connection.
+func (c *connection) AsInformationSchema() (drivers.InformationSchema, bool) {
+	return nil, false
 }
 
 // Migrate implements drivers.Connection.

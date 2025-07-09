@@ -1,11 +1,10 @@
 <script lang="ts">
   import { Button } from "@rilldata/web-common/components/button";
   import { Chip } from "@rilldata/web-common/components/chip";
+  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import Label from "@rilldata/web-common/components/forms/Label.svelte";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
-  import DimensionFilterChipBody from "@rilldata/web-common/features/dashboards/filters/dimension-filters/DimensionFilterChipBody.svelte";
-  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import LoadingSpinner from "@rilldata/web-common/components/icons/LoadingSpinner.svelte";
   import { Search } from "@rilldata/web-common/components/search";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
@@ -15,12 +14,20 @@
     DimensionFilterMode,
     DimensionFilterModeOptions,
   } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/dimension-filter-mode";
-  import { splitDimensionSearchText } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/split-dimension-search-text";
+  import {
+    mergeDimensionSearchValues,
+    splitDimensionSearchText,
+  } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/dimension-search-text-utils";
+  import DimensionFilterChipBody from "@rilldata/web-common/features/dashboards/filters/dimension-filters/DimensionFilterChipBody.svelte";
+  import { mergeDimensionAndMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
+  import { getFiltersForOtherDimensions } from "@rilldata/web-common/features/dashboards/selectors";
+  import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+  import type { V1Expression } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { fly } from "svelte/transition";
   import {
-    useDimensionSearch,
     useAllSearchResultsCount,
+    useDimensionSearch,
   } from "web-common/src/features/dashboards/filters/dimension-filters/dimension-filter-values";
 
   export let name: string;
@@ -36,17 +43,22 @@
   export let timeEnd: string | undefined;
   export let timeControlsReady: boolean | undefined;
   export let smallChip = false;
+  export let whereFilter: V1Expression;
   export let onRemove: () => void;
   export let onApplyInList: (values: string[]) => void;
   export let onSelect: (value: string) => void;
   export let onApplyContainsMode: (inputText: string) => void = () => {};
   export let onToggleFilterMode: () => void;
+  export let isUrlTooLongAfterInListFilter: (
+    values: string[],
+  ) => boolean = () => false;
 
   let open = openOnMount && !selectedValues.length && !inputText;
   $: sanitisedSearchText = inputText?.replace(/^%/, "").replace(/%$/, "");
   let curMode = mode;
   let curSearchText = "";
   let curExcludeMode = excludeMode;
+  let inListTooLong = false;
 
   $: ({ instanceId } = $runtime);
 
@@ -75,6 +87,13 @@
       timeStart,
       timeEnd,
       enabled: enableSearchQuery,
+      additionalFilter: sanitiseExpression(
+        mergeDimensionAndMeasureFilters(
+          getFiltersForOtherDimensions(whereFilter, name),
+          [],
+        ),
+        undefined,
+      ),
     },
   );
   $: ({
@@ -101,6 +120,13 @@
       timeStart,
       timeEnd,
       enabled: enableSearchCountQuery,
+      additionalFilter: sanitiseExpression(
+        mergeDimensionAndMeasureFilters(
+          getFiltersForOtherDimensions(whereFilter, name),
+          [],
+        ),
+        undefined,
+      ),
     },
   );
   $: ({
@@ -136,6 +162,11 @@
       ? selectedValues
       : (correctedSearchResults ?? []);
 
+  $: disableApplyButton =
+    curMode === DimensionFilterMode.Select ||
+    !enableSearchCountQuery ||
+    inListTooLong;
+
   /**
    * Reset filter settings based on params to the component.
    */
@@ -152,7 +183,7 @@
 
       case DimensionFilterMode.InList:
         curMode = DimensionFilterMode.InList;
-        curSearchText = selectedValues.join(",");
+        curSearchText = mergeDimensionSearchValues(selectedValues);
         break;
 
       case DimensionFilterMode.Contains:
@@ -163,6 +194,8 @@
   }
 
   function checkSearchText(inputText: string) {
+    inListTooLong = false;
+
     // Do not check search text and possibly switch to InList when mode is Contains
     if (curMode === DimensionFilterMode.Contains) return;
 
@@ -176,6 +209,7 @@
     }
     searchedBulkValues = values;
     curMode = DimensionFilterMode.InList;
+    inListTooLong = isUrlTooLongAfterInListFilter(values);
   }
 
   function handleModeChange(newMode: DimensionFilterMode) {
@@ -194,7 +228,7 @@
     if (open) {
       curSearchText =
         mode === DimensionFilterMode.InList
-          ? selectedValues.join(",")
+          ? mergeDimensionSearchValues(selectedValues)
           : (sanitisedSearchText ?? "");
     } else {
       if (selectedValues.length === 0 && !inputText) {
@@ -222,6 +256,7 @@
   }
 
   function onApply() {
+    if (disableApplyButton) return;
     switch (curMode) {
       case DimensionFilterMode.Select:
         onToggleSelectAll();
@@ -271,6 +306,7 @@
         active={open}
         exclude={curExcludeMode}
         label={`${name} filter`}
+        theme
         on:remove={onRemove}
         removable={!readOnly}
         {readOnly}
@@ -372,6 +408,10 @@
         </div>
       {:else if error}
         <div class="min-h-9 p-3 text-center text-red-600 text-xs">error</div>
+      {:else if inListTooLong}
+        <div class="min-h-9 p-3 text-center text-red-600 text-xs">
+          List is too long. Please remove some values.
+        </div>
       {:else if correctedSearchResults}
         <DropdownMenu.Group class="px-1" aria-label={`${name} results`}>
           {#each correctedSearchResults as name (name)}
@@ -421,7 +461,7 @@
         <Label class="font-normal text-xs" for="include-exclude">Exclude</Label>
       </div>
       {#if curMode === DimensionFilterMode.Select}
-        <Button on:click={onToggleSelectAll} type="plain" class="justify-end">
+        <Button onClick={onToggleSelectAll} type="plain" class="justify-end">
           {#if allSelected}
             Deselect all
           {:else}
@@ -430,10 +470,10 @@
         </Button>
       {:else}
         <Button
-          on:click={onApply}
+          onClick={onApply}
           type="primary"
           class="justify-end"
-          disabled={!enableSearchCountQuery}
+          disabled={disableApplyButton}
         >
           Apply
         </Button>

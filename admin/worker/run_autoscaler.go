@@ -15,6 +15,7 @@ const (
 	scaleThreshold        = 0.10 // 10%
 	smallServiceThreshold = 10
 	minScalingSlots       = 5.0
+	disableAutoscaler     = true
 
 	// Reasons for not scaling
 	scaledown      = "scaling down is temporarily disabled due to constraint"
@@ -23,6 +24,11 @@ const (
 )
 
 func (w *Worker) runAutoscaler(ctx context.Context) error {
+	if disableAutoscaler {
+		w.logger.Info("skipping autoscaler: disabled by configuration")
+		return nil
+	}
+
 	recs, ok, err := w.allRecommendations(ctx)
 	if err != nil {
 		w.logger.Error("failed to autoscale: unable to fetch recommended slots", zap.Error(err))
@@ -107,14 +113,18 @@ func (w *Worker) runAutoscaler(ctx context.Context) error {
 			Description:          targetProject.Description,
 			Public:               targetProject.Public,
 			ArchiveAssetID:       targetProject.ArchiveAssetID,
-			GithubURL:            targetProject.GithubURL,
+			GitRemote:            targetProject.GitRemote,
 			GithubInstallationID: targetProject.GithubInstallationID,
+			GithubRepoID:         targetProject.GithubRepoID,
+			ManagedGitRepoID:     targetProject.ManagedGitRepoID,
 			ProdVersion:          targetProject.ProdVersion,
 			ProdBranch:           targetProject.ProdBranch,
 			Subpath:              targetProject.Subpath,
 			ProdDeploymentID:     targetProject.ProdDeploymentID,
 			ProdSlots:            rec.RecommendedSlots,
 			ProdTTLSeconds:       targetProject.ProdTTLSeconds,
+			DevSlots:             targetProject.DevSlots,
+			DevTTLSeconds:        targetProject.DevTTLSeconds,
 			Provisioner:          targetProject.Provisioner,
 			Annotations:          targetProject.Annotations,
 		})

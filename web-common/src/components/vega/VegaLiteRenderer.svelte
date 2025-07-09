@@ -50,9 +50,9 @@
 
 <div
   bind:contentRect
-  class:bg-white={canvasDashboard}
+  class:bg-surface={canvasDashboard}
   class:px-2={canvasDashboard}
-  class="overflow-hidden size-full flex flex-col items-center justify-center"
+  class="overflow-y-auto overflow-x-hidden size-full flex flex-col items-center"
 >
   {#if error}
     <div

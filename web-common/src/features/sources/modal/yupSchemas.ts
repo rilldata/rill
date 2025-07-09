@@ -157,18 +157,19 @@ export const getYupSchema = {
   }),
 
   clickhouse: yup.object().shape({
-    host: yup
-      .string()
-      .required("Host is required")
-      .matches(
-        /^(?!https?:\/\/)[a-zA-Z0-9.-]+$/,
-        "Do not prefix the host with `http(s)://`", // It will be added by the runtime
-      ),
+    managed: yup.boolean().default(false),
+    host: yup.string(),
+    // .required("Host is required")
+    // .matches(
+    //   /^(?!https?:\/\/)[a-zA-Z0-9.-]+$/,
+    //   "Do not prefix the host with `http(s)://`", // It will be added by the runtime
+    // ),
     port: yup
       .string() // Purposefully using a string input, not a numeric input
       .matches(/^\d+$/, "Port must be a number"),
     username: yup.string(),
     password: yup.string(),
+    cluster: yup.string(),
     ssl: yup.boolean(),
     name: yup.string(), // Required for typing
     // User-provided connector names requires a little refactor. Commenting out for now.
@@ -201,14 +202,24 @@ export const getYupSchema = {
   }),
 
   pinot: yup.object().shape({
-    host: yup
+    broker_host: yup
       .string()
-      .required("Host is required")
+      .required("Broker host is required")
       .matches(
         /^(?!https?:\/\/)[a-zA-Z0-9.-]+$/,
         "Do not prefix the host with `http(s)://`", // It will be added by the runtime
       ),
-    port: yup
+    broker_port: yup
+      .string() // Purposefully using a string input, not a numeric input
+      .matches(/^\d+$/, "Port must be a number"),
+    controller_host: yup
+      .string()
+      .required("Controller host is required")
+      .matches(
+        /^(?!https?:\/\/)[a-zA-Z0-9.-]+$/,
+        "Do not prefix the host with `http(s)://`", // It will be added by the runtime
+      ),
+    controller_port: yup
       .string() // Purposefully using a string input, not a numeric input
       .matches(/^\d+$/, "Port must be a number"),
     username: yup.string(),

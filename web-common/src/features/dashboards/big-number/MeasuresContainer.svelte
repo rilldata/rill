@@ -152,10 +152,12 @@
     calculateGridColumns();
   }
 
-  function getValue(key: string | undefined): number | null {
+  $: totalsQueryRow = totalsQueryResult.data?.data?.[0];
+  // Make this reactive to totalsQueryRow so that data is updated if query is refetched
+  $: getValue = (key: string | undefined): number | null => {
     if (!key) return null;
-    return totalsQueryResult.data?.data?.[0]?.[key] as number | null;
-  }
+    return totalsQueryRow?.[key] as number | null;
+  };
 </script>
 
 <svelte:window on:resize={() => calculateGridColumns()} />
@@ -170,7 +172,7 @@
     class="grid grid-cols-{numColumns}"
     style:column-gap="{COLUMN_GAP}px"
   >
-    <div class="bg-white sticky top-0">
+    <div class="bg-surface sticky top-0">
       <DashboardVisibilityDropdown
         category="Measures"
         tooltipText="Choose measures to display"

@@ -22,7 +22,7 @@
   import { activeDivider } from "./stores/ui-stores";
 
   export let row: Row;
-  export let zIndex = 50;
+  export let zIndex: number;
   export let maxWidth: number;
   export let heightUnit: string = "px";
   export let rowIndex: number;
@@ -40,7 +40,7 @@
     event: MouseEvent;
   }) => void;
   export let onDuplicate: (params: { columnIndex: number }) => void;
-  export let onDelete: (params: { columnIndex: number }) => void;
+  export let onDelete: (params: { component: BaseCanvasComponent }) => void;
   export let onDrop: (row: number, column: number | null) => void;
   export let initializeRow: (row: number, type: CanvasComponentType) => void;
   export let updateRowHeight: (newHeight: number, index: number) => void;
@@ -219,7 +219,8 @@
         column={columnIndex}
         row={rowIndex}
         maxColumns={itemCount}
-        allowDrop={activelyDragging}
+        allowDrop={activelyDragging &&
+          (itemCount < 4 || dragComponent?.pathInYAML?.[1] === rowIndex)}
         {onDrop}
       />
 
@@ -229,7 +230,7 @@
           editable
           ghost={dragComponent === component}
           selected={$selectedComponent === id}
-          allowPointerEvents={!$activeDivider}
+          allowPointerEvents={!$activeDivider && !activelyDragging}
           onMouseDown={(event) => {
             onComponentMouseDown({
               event,
@@ -240,7 +241,7 @@
             onDuplicate({ columnIndex });
           }}
           onDelete={() => {
-            onDelete({ columnIndex });
+            onDelete({ component });
           }}
         />
       {:else}

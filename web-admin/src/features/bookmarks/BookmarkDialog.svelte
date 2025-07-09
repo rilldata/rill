@@ -11,7 +11,7 @@
   import type { BookmarkEntry } from "@rilldata/web-admin/features/bookmarks/selectors";
   import { useProjectId } from "@rilldata/web-admin/features/projects/selectors";
   import { Button } from "@rilldata/web-common/components/button";
-  import * as Dialog from "@rilldata/web-common/components/dialog-v2";
+  import * as Dialog from "@rilldata/web-common/components/dialog";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { useExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
@@ -121,8 +121,8 @@
 
     <div class="flex flex-row mt-4 gap-2">
       <div class="grow" />
-      <Button on:click={onClose} type="secondary">Cancel</Button>
-      <Button on:click={handleSubmit} type="primary">Save</Button>
+      <Button onClick={onClose} type="secondary">Cancel</Button>
+      <Button onClick={handleSubmit} type="primary">Save</Button>
     </div>
   </Dialog.Content>
 </Dialog.Root>

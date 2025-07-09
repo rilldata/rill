@@ -1,22 +1,23 @@
+import type { CartesianChartSpec } from "@rilldata/web-common/features/canvas/components/charts/cartesian-charts/CartesianChart";
+import type { CircularChartSpec } from "@rilldata/web-common/features/canvas/components/charts/circular-charts/CircularChart";
 import type { KPIGridSpec } from "@rilldata/web-common/features/canvas/components/kpi-grid";
-import type { ChartConfig, ChartType } from "./charts/types";
+import type { ChartType } from "./charts/types";
 import type { ImageSpec } from "./image";
 import type { KPISpec } from "./kpi";
 import type { LeaderboardSpec } from "./leaderboard";
 import type { MarkdownSpec } from "./markdown";
 import type { PivotSpec, TableSpec } from "./pivot";
-import type { ChartSpec } from "./charts";
 
-// First, let's create a union type for all possible specs
-export type ComponentSpec =
-  | ChartSpec
+export type ComponentWithMetricsView =
+  | CartesianChartSpec
+  | CircularChartSpec
   | PivotSpec
-  | ImageSpec
   | TableSpec
   | KPISpec
   | KPIGridSpec
-  | LeaderboardSpec
-  | MarkdownSpec;
+  | LeaderboardSpec;
+
+export type ComponentSpec = ComponentWithMetricsView | ImageSpec | MarkdownSpec;
 
 export interface ComponentCommonProperties {
   title?: string;
@@ -55,15 +56,15 @@ export type CanvasComponentType =
   | "leaderboard";
 
 interface LineChart {
-  line_chart: ChartConfig;
+  line_chart: CartesianChartSpec;
 }
 
 interface AreaChart {
-  area_chart: ChartConfig;
+  area_chart: CartesianChartSpec;
 }
 
 interface BarChart {
-  bar_chart: ChartConfig;
+  bar_chart: CartesianChartSpec;
 }
 
 export type ChartTemplates = LineChart | BarChart | AreaChart;

@@ -1,11 +1,8 @@
 <script lang="ts">
   import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
   import Spacer from "@rilldata/web-common/components/icons/Spacer.svelte";
-  import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
-  import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import { fly } from "svelte/transition";
   import DeltaChange from "../dimension-table/DeltaChange.svelte";
@@ -18,10 +15,10 @@
   export let isFetching: boolean;
   export let isValidPercentOfTotal: (measureName: string) => boolean;
   export let isTimeComparisonActive: boolean;
-  export let dimensionDescription: string;
   export let isBeingCompared: boolean;
   export let sortedAscending: boolean;
   export let displayName: string;
+  export let dimensionDescription: string;
   export let hovered: boolean;
   export let sortType: SortType;
   export let allowDimensionComparison: boolean;
@@ -61,38 +58,39 @@
     </th>
 
     <th data-dimension-header>
-      <Tooltip distance={16} location="top">
+      <Tooltip location="top">
         <button
           disabled={!allowExpandTable}
-          class="text-slate-600 {allowExpandTable
-            ? 'hover:text-primary-700'
+          class="text-slate-600 text-left {allowExpandTable
+            ? 'hover:text-theme-700'
             : ''}"
           aria-label="Open dimension details"
           on:click={() => setPrimaryDimension(dimensionName)}
         >
-          {displayName}
+          <span class="line-clamp-2">{displayName}</span>
         </button>
-        <TooltipContent slot="tooltip-content">
-          <TooltipTitle>
-            <svelte:fragment slot="name">
-              {displayName}
-            </svelte:fragment>
-            <svelte:fragment slot="description" />
-          </TooltipTitle>
-          <TooltipShortcutContainer>
-            <div class="line-clamp-2">
-              {#if dimensionDescription}
+        <TooltipContent slot="tooltip-content" maxWidth="280px">
+          <div
+            class="pointer-events-none items-baseline"
+            aria-label="tooltip-name"
+          >
+            {displayName}
+          </div>
+          {#if dimensionDescription}
+            <div
+              class="grid gap-x-2 pointer-events-none pt-1 pb-1 items-baseline"
+              style="grid-template-columns: auto max-content"
+              style:min-width="200px"
+            >
+              <div
+                class="text-gray-300 justify-self-start"
+                style:max-width="280px"
+                aria-label="tooltip-name-description"
+              >
                 {dimensionDescription}
-              {:else}
-                The leaderboard metrics for {displayName}
-              {/if}
+              </div>
             </div>
-            <Shortcut />
-            {#if allowExpandTable}
-              <div>Expand leaderboard</div>
-              <Shortcut>Click</Shortcut>
-            {/if}
-          </TooltipShortcutContainer>
+          {/if}
         </TooltipContent>
       </Tooltip>
     </th>

@@ -18,7 +18,7 @@
     createAdminServiceEditReport,
     createAdminServiceGetCurrentUser,
   } from "@rilldata/web-admin/client";
-  import * as Dialog from "@rilldata/web-common/components/dialog-v2";
+  import * as Dialog from "@rilldata/web-common/components/dialog";
   import {
     getDashboardNameFromReport,
     getExistingReportInitialFormValues,
@@ -135,6 +135,7 @@
             queryName: queryName,
             queryArgsJson: queryArgsJson,
             exportLimit: values.exportLimit || undefined,
+            exportIncludeHeader: values.exportIncludeHeader || false,
             exportFormat: values.exportFormat,
             emailRecipients: values.emailRecipients.filter(Boolean),
             slackChannels: values.enableSlackNotification
@@ -209,7 +210,7 @@
         <div class="text-red-500">{$mutation.error.message}</div>
       {/if}
       <div class="grow" />
-      <Button on:click={() => (open = false)} type="secondary">Cancel</Button>
+      <Button onClick={() => (open = false)} type="secondary">Cancel</Button>
       <Button
         disabled={$submitting || $form["emailRecipients"]?.length === 0}
         form="scheduled-report-form"

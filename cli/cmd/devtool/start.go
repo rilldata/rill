@@ -29,10 +29,10 @@ import (
 
 const (
 	composeFile    = "cli/cmd/devtool/data/cloud-deps.docker-compose.yml"
-	minGoVersion   = "1.23"
+	minGoVersion   = "1.24"
 	minNodeVersion = "18"
 	stateDirLocal  = "dev-project"
-	rillGithubURL  = "https://github.com/rilldata/rill"
+	rillGitRemote  = "https://github.com/rilldata/rill.git"
 )
 
 var (
@@ -41,7 +41,7 @@ var (
 	logInfo = color.New(color.FgHiGreen)
 )
 
-var presets = []string{"cloud", "local", "e2e"}
+var presets = []string{"cloud", "local", "e2e", "other"}
 
 func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 	var verbose, reset, refreshDotenv bool
@@ -97,6 +97,8 @@ func start(ch *cmdutil.Helper, preset string, verbose, reset, refreshDotenv bool
 		err = cloud{}.start(ctx, ch, verbose, reset, refreshDotenv, "cloud", services)
 	case "e2e":
 		err = cloud{}.start(ctx, ch, verbose, reset, refreshDotenv, "e2e", services)
+	case "other":
+		err = cloud{}.start(ctx, ch, verbose, reset, refreshDotenv, "other", services)
 	case "local":
 		err = local{}.start(ctx, verbose, reset, services)
 	default:
@@ -163,13 +165,14 @@ func checkRillRepo() error {
 		return fmt.Errorf("you must run `rill devtool` from the root of the rill repository")
 	}
 
-	_, githubURL, err := gitutil.ExtractGitRemote("", "", false)
+	remote, err := gitutil.ExtractGitRemote("", "", false)
 	if err != nil {
 		return fmt.Errorf("error extracting git remote: %w", err)
 	}
+	githubRemote, _ := remote.Github()
 
-	if githubURL != rillGithubURL {
-		return fmt.Errorf("you must run `rill devtool` from the rill repository (expected remote %q, got %q)", rillGithubURL, githubURL)
+	if githubRemote != rillGitRemote {
+		return fmt.Errorf("you must run `rill devtool` from the rill repository (expected remote %q, got %q)", rillGitRemote, githubRemote)
 	}
 
 	return nil
@@ -233,6 +236,10 @@ func (s cloud) start(ctx context.Context, ch *cmdutil.Helper, verbose, reset, re
 			return fmt.Errorf("failed to refresh .env: %w", err)
 		}
 		logInfo.Printf("Refreshed .env\n")
+	}
+
+	if preset == "other" {
+		preset = "e2e"
 	}
 
 	// Validate the .env file is well-formed.

@@ -2,10 +2,14 @@ package server
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/rilldata/rill/admin/database"
+	"github.com/rilldata/rill/admin/pkg/authtoken"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/pkg/observability"
@@ -130,7 +134,7 @@ func (s *Server) UpdateUserPreferences(ctx context.Context, req *adminv1.UpdateU
 	if req.Preferences.TimeZone != nil {
 		_, err := time.LoadLocation(*req.Preferences.TimeZone)
 		if err != nil {
-			return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("invalid time zone: %s", *req.Preferences.TimeZone))
+			return nil, status.Errorf(codes.InvalidArgument, "invalid time zone: %s", *req.Preferences.TimeZone)
 		}
 
 		observability.AddRequestAttributes(ctx, attribute.String("preferences_time_zone", *req.Preferences.TimeZone))
@@ -161,6 +165,172 @@ func (s *Server) UpdateUserPreferences(ctx context.Context, req *adminv1.UpdateU
 			TimeZone: &updatedUser.PreferenceTimeZone,
 		},
 	}, nil
+}
+
+func (s *Server) ListUserAuthTokens(ctx context.Context, req *adminv1.ListUserAuthTokensRequest) (*adminv1.ListUserAuthTokensResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.user_id", req.UserId),
+	)
+
+	claims := auth.GetClaims(ctx)
+	forceAccess := claims.Superuser(ctx) && req.SuperuserForceAccess
+
+	userID := req.UserId
+	if userID == "current" { // Special alias for the current user
+		if claims.OwnerType() != auth.OwnerTypeUser {
+			return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
+		}
+		userID = claims.OwnerID()
+	}
+	if userID != claims.OwnerID() && !forceAccess {
+		return nil, status.Error(codes.PermissionDenied, "not authorized to list auth tokens for other users")
+	}
+
+	pageSize := validPageSize(req.PageSize)
+	pageToken, err := unmarshalPageToken(req.PageToken)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	authTokens, err := s.admin.DB.FindUserAuthTokens(ctx, userID, pageToken.Val, pageSize)
+	if err != nil {
+		return nil, err
+	}
+
+	nextToken := ""
+	if len(authTokens) >= pageSize {
+		nextToken = marshalPageToken(authTokens[len(authTokens)-1].ID)
+	}
+
+	dtos := make([]*adminv1.UserAuthToken, len(authTokens))
+	for i, t := range authTokens {
+		var authClientID, authClientDisplayName, representingUserID string
+		var expiresOn *timestamppb.Timestamp
+		if t.AuthClientID != nil {
+			authClientID = *t.AuthClientID
+		}
+		if t.AuthClientDisplayName != nil {
+			authClientDisplayName = *t.AuthClientDisplayName
+		}
+		if t.RepresentingUserID != nil {
+			representingUserID = *t.RepresentingUserID
+		}
+		if t.ExpiresOn != nil {
+			expiresOn = timestamppb.New(*t.ExpiresOn)
+		}
+
+		id, err := uuid.Parse(t.ID)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "invalid token ID %q: %v", t.ID, err)
+		}
+
+		prefix := authtoken.FromID(authtoken.TypeUser, id).Prefix()
+
+		dtos[i] = &adminv1.UserAuthToken{
+			Id:                    t.ID,
+			DisplayName:           t.DisplayName,
+			AuthClientId:          authClientID,
+			AuthClientDisplayName: authClientDisplayName,
+			RepresentingUserId:    representingUserID,
+			CreatedOn:             timestamppb.New(t.CreatedOn),
+			ExpiresOn:             expiresOn,
+			UsedOn:                timestamppb.New(t.UsedOn),
+			Prefix:                prefix,
+		}
+	}
+
+	return &adminv1.ListUserAuthTokensResponse{
+		Tokens:        dtos,
+		NextPageToken: nextToken,
+	}, nil
+}
+
+func (s *Server) IssueUserAuthToken(ctx context.Context, req *adminv1.IssueUserAuthTokenRequest) (*adminv1.IssueUserAuthTokenResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.user_id", req.UserId),
+		attribute.String("args.client_id", req.ClientId),
+		attribute.String("args.display_name", req.DisplayName),
+		attribute.Int64("args.ttl_minutes", req.TtlMinutes),
+		attribute.Bool("args.has_represent_email", req.RepresentEmail != ""),
+	)
+
+	claims := auth.GetClaims(ctx)
+	forceAccess := claims.Superuser(ctx) && req.SuperuserForceAccess
+
+	userID := req.UserId
+	if userID == "current" { // Special alias for the current user
+		if claims.OwnerType() != auth.OwnerTypeUser {
+			return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
+		}
+		userID = claims.OwnerID()
+	}
+	if userID != claims.OwnerID() && !forceAccess {
+		return nil, status.Error(codes.PermissionDenied, "not authorized to issue auth tokens for other users")
+	}
+
+	var ttl *time.Duration
+	if req.TtlMinutes > 0 {
+		ttl = new(time.Duration)
+		*ttl = time.Duration(req.TtlMinutes) * time.Minute
+	}
+
+	var representingUserID *string
+	if req.RepresentEmail != "" {
+		if !forceAccess {
+			return nil, status.Error(codes.PermissionDenied, "not authorized to represent other users")
+		}
+		u, err := s.admin.DB.FindUserByEmail(ctx, req.RepresentEmail)
+		if err != nil {
+			return nil, status.Errorf(codes.NotFound, "user with email %q not found", req.RepresentEmail)
+		}
+		if u.ID == userID {
+			return nil, status.Error(codes.InvalidArgument, "cannot represent yourself")
+		}
+		representingUserID = &u.ID
+	}
+
+	authToken, err := s.admin.IssueUserAuthToken(ctx, userID, req.ClientId, req.DisplayName, representingUserID, ttl)
+	if err != nil {
+		return nil, err
+	}
+
+	return &adminv1.IssueUserAuthTokenResponse{
+		Token: authToken.Token().String(),
+	}, nil
+}
+
+func (s *Server) RevokeUserAuthToken(ctx context.Context, req *adminv1.RevokeUserAuthTokenRequest) (*adminv1.RevokeUserAuthTokenResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.token_id", req.TokenId),
+	)
+
+	var tokenID string
+	if req.TokenId == "current" { // Special alias for the current token
+		if auth.GetClaims(ctx).OwnerType() != auth.OwnerTypeUser {
+			return nil, status.Error(codes.PermissionDenied, "not authenticated with a user token")
+		}
+		tokenID = auth.GetClaims(ctx).AuthTokenID()
+	} else {
+		token, err := s.findUserAuthTokenFuzzy(ctx, req.TokenId)
+		if err != nil {
+			return nil, err
+		}
+
+		claims := auth.GetClaims(ctx)
+		forceAccess := claims.Superuser(ctx) && req.SuperuserForceAccess
+		if token.UserID != claims.OwnerID() && !forceAccess {
+			return nil, status.Error(codes.PermissionDenied, "not authorized to revoke auth tokens for other users")
+		}
+
+		tokenID = token.ID
+	}
+
+	err := s.admin.DB.DeleteUserAuthToken(ctx, tokenID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &adminv1.RevokeUserAuthTokenResponse{}, nil
 }
 
 // IssueRepresentativeAuthToken returns the temporary auth token for representing email
@@ -220,9 +390,7 @@ func (s *Server) RevokeCurrentAuthToken(ctx context.Context, req *adminv1.Revoke
 		return nil, err
 	}
 
-	return &adminv1.RevokeCurrentAuthTokenResponse{
-		TokenId: tokenID,
-	}, nil
+	return &adminv1.RevokeCurrentAuthTokenResponse{}, nil
 }
 
 func (s *Server) SudoGetResource(ctx context.Context, req *adminv1.SudoGetResourceRequest) (*adminv1.SudoGetResourceResponse, error) {
@@ -298,9 +466,8 @@ func (s *Server) DeleteUser(ctx context.Context, req *adminv1.DeleteUserRequest)
 
 	claims := auth.GetClaims(ctx)
 	isCurrentUser := claims.OwnerType() == auth.OwnerTypeUser && claims.OwnerID() == user.ID
-	isSuperuser := claims.Superuser(ctx)
-
-	if !isCurrentUser && !isSuperuser {
+	forceAccess := claims.Superuser(ctx) && req.SuperuserForceAccess
+	if !isCurrentUser && !forceAccess {
 		return nil, status.Error(codes.PermissionDenied, "you can only delete your own user unless you are a superuser")
 	}
 
@@ -430,6 +597,7 @@ func projMemberUserToPB(m *database.ProjectMemberUser) *adminv1.ProjectMemberUse
 		UserName:     m.DisplayName,
 		UserPhotoUrl: m.PhotoURL,
 		RoleName:     m.RoleName,
+		OrgRoleName:  m.OrgRoleName,
 		CreatedOn:    timestamppb.New(m.CreatedOn),
 		UpdatedOn:    timestamppb.New(m.UpdatedOn),
 	}
@@ -446,10 +614,84 @@ func usergroupMemberUserToPB(m *database.UsergroupMemberUser) *adminv1.Usergroup
 	}
 }
 
-func inviteToPB(i *database.Invite) *adminv1.UserInvite {
-	return &adminv1.UserInvite{
+func orgInviteToPB(i *database.OrganizationInviteWithRole) *adminv1.OrganizationInvite {
+	return &adminv1.OrganizationInvite{
 		Email:     i.Email,
-		Role:      i.Role,
+		RoleName:  i.RoleName,
 		InvitedBy: i.InvitedBy,
 	}
+}
+
+func projInviteToPB(i *database.ProjectInviteWithRole) *adminv1.ProjectInvite {
+	return &adminv1.ProjectInvite{
+		Email:       i.Email,
+		RoleName:    i.RoleName,
+		OrgRoleName: i.OrgRoleName,
+		InvitedBy:   i.InvitedBy,
+	}
+}
+
+// findUserAuthTokenFuzzy attempts to find a user auth token by exact ID, full token string, or unique prefix.
+func (s *Server) findUserAuthTokenFuzzy(ctx context.Context, input string) (*database.UserAuthToken, error) {
+	claims := auth.GetClaims(ctx)
+	userID := claims.OwnerID()
+
+	// Try exact ID match
+	token, err := s.admin.DB.FindUserAuthToken(ctx, input)
+	if err != nil && !errors.Is(err, database.ErrNotFound) {
+		return nil, err
+	}
+	if err == nil {
+		return token, nil
+	}
+
+	// Try full token string
+	tokenStr, err := authtoken.FromString(input)
+	if err == nil {
+		token, err := s.admin.DB.FindUserAuthToken(ctx, tokenStr.ID.String())
+		if err != nil && !errors.Is(err, database.ErrNotFound) {
+			return nil, err
+		}
+		if err == nil {
+			return token, nil
+		}
+	}
+
+	// Validate input length and prefix
+	if len(input) < 10 || !strings.HasPrefix(input, "rill_usr_") {
+		return nil, status.Error(codes.InvalidArgument, "invalid token ID (must be at least 10 characters and start with 'rill_usr_')")
+	}
+
+	// Find all tokens for the user and match by prefix
+	dbTokens, err := s.admin.DB.FindUserAuthTokens(ctx, userID, "", 1000)
+	if err != nil {
+		return nil, err
+	}
+
+	tokens := make([]*authtoken.Token, len(dbTokens))
+	for i, dbToken := range dbTokens {
+		id, err := uuid.Parse(dbToken.ID)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "invalid token ID %q: %v", dbToken.ID, err)
+		}
+		tokens[i] = authtoken.FromID(authtoken.TypeUser, id)
+	}
+
+	matches := authtoken.MatchByPrefix(input, tokens)
+
+	if len(matches) > 1 {
+		return nil, status.Error(codes.InvalidArgument, "multiple tokens match the given prefix (please use the full ID)")
+	}
+	if len(matches) == 1 {
+		for _, dbToken := range dbTokens {
+			id, err := uuid.Parse(dbToken.ID)
+			if err != nil {
+				continue
+			}
+			if id == matches[0].ID {
+				return dbToken, nil
+			}
+		}
+	}
+	return nil, status.Error(codes.NotFound, "token not found")
 }

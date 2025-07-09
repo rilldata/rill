@@ -2,11 +2,12 @@
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import type { FieldConfig } from "@rilldata/web-common/features/canvas/components/charts/types";
   import SingleFieldInput from "@rilldata/web-common/features/canvas/inspector/SingleFieldInput.svelte";
+  import type { ComponentInputParam } from "@rilldata/web-common/features/canvas/inspector/types";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
-  import FieldConfigDropdown from "./FieldConfigDropdown.svelte";
+  import FieldConfigPopover from "./FieldConfigPopover.svelte";
 
   export let key: string;
-  export let config: { label?: string };
+  export let config: ComponentInputParam;
   export let metricsView: string;
   export let fieldConfig: FieldConfig;
   export let canvasName: string;
@@ -19,7 +20,10 @@
     },
   } = getCanvasStore(canvasName));
 
-  $: isDimension = key === "x";
+  $: chartFieldInput = config.meta?.chartFieldInput;
+
+  $: isDimension = chartFieldInput?.type === "dimension";
+
   $: timeDimension = getTimeDimensionForMetricView(metricsView);
 
   function updateFieldConfig(fieldName: string) {
@@ -44,6 +48,10 @@
   }
 
   function updateFieldProperty(property: keyof FieldConfig, value: any) {
+    if (fieldConfig[property] === value) {
+      return;
+    }
+
     const updatedConfig: FieldConfig = {
       ...fieldConfig,
       [property]: value,
@@ -56,7 +64,16 @@
 <div class="gap-y-1">
   <div class="flex justify-between items-center">
     <InputLabel small label={config.label ?? key} id={key} />
-    <FieldConfigDropdown {key} {fieldConfig} onChange={updateFieldProperty} />
+    {#if Object.keys(chartFieldInput ?? {}).length > 1}
+      {#key fieldConfig}
+        <FieldConfigPopover
+          {fieldConfig}
+          label={config.label ?? key}
+          onChange={updateFieldProperty}
+          {chartFieldInput}
+        />
+      {/key}
+    {/if}
   </div>
 
   <SingleFieldInput
@@ -64,7 +81,7 @@
     metricName={metricsView}
     id={`${key}-field`}
     type={isDimension ? "dimension" : "measure"}
-    includeTime
+    includeTime={!chartFieldInput?.hideTimeDimension}
     selectedItem={fieldConfig?.field}
     onSelect={async (field) => {
       updateFieldConfig(field);

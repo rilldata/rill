@@ -1,6 +1,7 @@
 <script lang="ts">
   import DashboardMetricsDraggableList from "@rilldata/web-common/components/menu/DashboardMetricsDraggableList.svelte";
   import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
+  import { filterOutSomeAdvancedAggregationMeasures } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures.ts";
   import { metricsExplorerStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { getStateManagers } from "../state-managers/state-managers";
   import LeaderboardMeasureNamesDropdown from "@rilldata/web-common/components/menu/LeaderboardMeasureNamesDropdown.svelte";
@@ -12,11 +13,7 @@
   const {
     selectors: {
       measures: { getMeasureByName, visibleMeasures },
-      leaderboard: {
-        leaderboardSortByMeasureName,
-        leaderboardMeasureNames,
-        leaderboardShowContextForAllMeasures,
-      },
+      leaderboard: { leaderboardSortByMeasureName, leaderboardMeasureNames },
       dimensions: { visibleDimensions, allDimensions },
     },
     actions: {
@@ -25,14 +22,23 @@
       leaderboard: {
         setLeaderboardSortByMeasureName,
         setLeaderboardMeasureNames,
-        setLeaderboardShowContextForAllMeasures,
+        toggleLeaderboardShowContextForAllMeasures,
       },
     },
+    validSpecStore,
   } = StateManagers;
 
   let isLeaderboardActionsOpen = false;
 
-  $: metricsExplorer = $metricsExplorerStore.entities[exploreName];
+  $: exploreState = $metricsExplorerStore.entities[exploreName];
+  $: metricsViewSpec = $validSpecStore.data?.metricsView ?? {};
+
+  $: filteredMeasures = filterOutSomeAdvancedAggregationMeasures(
+    exploreState,
+    metricsViewSpec,
+    $visibleMeasures,
+    false,
+  );
 
   $: activeLeaderboardMeasure = $getMeasureByName(
     $leaderboardSortByMeasureName,
@@ -51,8 +57,7 @@
   // but it is not valid for this measure, then turn it off
   $: if (
     !validPercentOfTotal &&
-    metricsExplorer?.leaderboardContextColumn ===
-      LeaderboardContextColumn.PERCENT
+    exploreState?.leaderboardContextColumn === LeaderboardContextColumn.PERCENT
   ) {
     setContextColumn(LeaderboardContextColumn.HIDDEN);
   }
@@ -74,7 +79,7 @@
     selectedItems={visibleDimensionsNames}
   />
   <LeaderboardMeasureNamesDropdown
-    visibleMeasures={$visibleMeasures}
+    visibleMeasures={filteredMeasures}
     leaderboardSortByMeasureName={$leaderboardSortByMeasureName}
     selectedMeasureNames={$leaderboardMeasureNames}
     {setLeaderboardMeasureNames}
@@ -82,7 +87,6 @@
   />
   <LeaderboardAdvancedActions
     isOpen={isLeaderboardActionsOpen}
-    leaderboardShowContextForAllMeasures={$leaderboardShowContextForAllMeasures}
-    {setLeaderboardShowContextForAllMeasures}
+    toggle={toggleLeaderboardShowContextForAllMeasures}
   />
 </div>

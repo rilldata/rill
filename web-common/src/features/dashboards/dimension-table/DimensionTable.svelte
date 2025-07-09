@@ -7,7 +7,7 @@ TableCells – the cell contents.
   import ColumnHeaders from "@rilldata/web-common/components/virtualized-table/sections/ColumnHeaders.svelte";
   import TableCells from "@rilldata/web-common/components/virtualized-table/sections/TableCells.svelte";
   import type { VirtualizedTableColumns } from "@rilldata/web-common/components/virtualized-table/types";
-  import { selectedDimensionValuesV2 } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
+  import { selectedDimensionValues } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
   import { createVirtualizer } from "@tanstack/svelte-virtual";
   import { createEventDispatcher, setContext } from "svelte";
   import { getStateManagers } from "../state-managers/state-managers";
@@ -24,7 +24,7 @@ TableCells – the cell contents.
 
   export let rows: DimensionTableRow[];
   export let columns: VirtualizedTableColumns[];
-  export let selectedValues: ReturnType<typeof selectedDimensionValuesV2>;
+  export let selectedValues: ReturnType<typeof selectedDimensionValues>;
   export let dimensionName: string;
   export let isFetching: boolean;
 
@@ -207,7 +207,7 @@ TableCells – the cell contents.
       <div
         role="grid"
         tabindex="0"
-        class="relative surface"
+        class="relative bg-surface"
         on:mouseleave={clearActiveIndex}
         on:blur={clearActiveIndex}
         style:will-change="transform, contents"

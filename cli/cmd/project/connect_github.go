@@ -11,10 +11,7 @@ import (
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/config"
-	"github.com/go-git/go-git/v5/plumbing"
-	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
-	"github.com/google/go-github/v50/github"
+	"github.com/google/go-github/v71/github"
 	"github.com/rilldata/rill/cli/cmd/org"
 	"github.com/rilldata/rill/cli/pkg/browser"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
@@ -81,13 +78,13 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 	// The gitPath can be either a local path or a remote .git URL.
 	// Determine which it is.
 	var isLocalGitPath bool
-	var githubURL string
+	var gitRemote string
 	if opts.GitPath != "" {
 		u, err := url.Parse(opts.GitPath)
 		if err != nil || u.Scheme == "" {
 			isLocalGitPath = true
 		} else {
-			githubURL, err = gitutil.RemoteToGithubURL(opts.GitPath)
+			gitRemote, err = gitutil.NormalizeGithubRemote(opts.GitPath)
 			if err != nil {
 				return fmt.Errorf("failed to parse path as a Github remote: %w", err)
 			}
@@ -98,7 +95,7 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 	var localProjectPath string
 	var err error
 	if isLocalGitPath {
-		// If the Git path is local, we'll do some extra steps to infer the githubURL.
+		// If it's a local path, we need to do some extra validation and rewrites.
 		localGitPath, localProjectPath, err = ValidateLocalProject(ch, opts.GitPath, opts.SubPath)
 		if err != nil {
 			if errors.Is(err, ErrInvalidProject) {
@@ -134,20 +131,23 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 			}
 		}
 
-		if proj != nil && proj.GithubUrl != "" {
-			ch.PrintfError("Found existing project. But it is already connected to a github repo.\nPlease visit %s to update the github repo.\n", proj.FrontendUrl)
+		if proj != nil && proj.GitRemote != "" {
+			ch.PrintfError("Found existing project. But it is already connected to a Github repository.\nPlease visit %s to update the Github repository.\n", proj.FrontendUrl)
 			return nil
 		}
 	}
 
 	if isLocalGitPath {
-		// Extract the Git remote and infer the githubURL.
-		var remote *gitutil.Remote
-		remote, githubURL, err = gitutil.ExtractGitRemote(localGitPath, opts.RemoteName, false)
+		// Extract and infer the gitRemote.
+		remote, err := gitutil.ExtractGitRemote(localGitPath, opts.RemoteName, false)
 		if err != nil {
+			if !errors.Is(err, gitutil.ErrGitRemoteNotFound) && !errors.Is(err, git.ErrRepositoryNotExists) {
+				return err
+			}
+
 			// first check if user wants to create a github repo
 			ch.Print("No git remote was found.\n")
-			ok, confirmErr := cmdutil.ConfirmPrompt("Do you want to create a repo?", "", true)
+			ok, confirmErr := cmdutil.ConfirmPrompt("Do you want to create a Github repository?", "", true)
 			if confirmErr != nil {
 				return confirmErr
 			}
@@ -155,17 +155,14 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 				return nil
 			}
 
-			if !errors.Is(err, gitutil.ErrGitRemoteNotFound) && !errors.Is(err, git.ErrRepositoryNotExists) {
-				return err
-			}
-
 			if err := createGithubRepoFlow(ctx, ch, localGitPath); err != nil {
 				return err
 			}
+
 			// In the rest of the flow we still check for the github access.
 			// It just adds some delay and no user action should be required and handles any improbable edge case where we don't have access to newly created repository.
 			// Also keeps the code clean.
-			remote, githubURL, err = gitutil.ExtractGitRemote(localGitPath, opts.RemoteName, false)
+			remote, err = gitutil.ExtractGitRemote(localGitPath, opts.RemoteName, false)
 			if err != nil {
 				return err
 			}
@@ -180,19 +177,24 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 			ch.PrintfBold("You can run `rill project connect-github` again when you have pushed your local changes to the remote.\n")
 			return nil
 		}
+
+		// Set the gitRemote to the normalized Github URL.
+		gitRemote, err = remote.Github()
+		if err != nil {
+			return err
+		}
 	}
 
-	// We now have a githubURL.
+	// We now have a gitRemote.
 
-	// Extract Github account and repo name from the githubURL
-	ghAccount, ghRepo, ok := gitutil.SplitGithubURL(githubURL)
+	// Extract Github account and repo name from the gitRemote
+	ghAccount, ghRepo, ok := gitutil.SplitGithubRemote(gitRemote)
 	if !ok {
-		ch.PrintfError("Invalid Github URL %q\n", githubURL)
-		return nil
+		return fmt.Errorf("remote %q is not a valid github.com remote", gitRemote)
 	}
 
 	// Run flow for access to the Github remote (if necessary)
-	ghRes, err := githubFlow(ctx, ch, githubURL)
+	ghRes, err := githubFlow(ctx, ch, gitRemote)
 	if err != nil {
 		return fmt.Errorf("failed Github flow: %w", err)
 	}
@@ -218,13 +220,13 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 		ch.PrintfBold("Using org %q.\n\n", ch.Org)
 	}
 
-	// Check if a project matching githubURL already exists in this org
-	projects, err := ch.ProjectNamesByGithubURL(ctx, ch.Org, githubURL, opts.SubPath)
+	// Check if a project matching gitRemote already exists in this org
+	projects, err := ch.ProjectNamesByGitRemote(ctx, ch.Org, gitRemote, opts.SubPath)
 	if err == nil && len(projects) != 0 { // ignoring error since this is just for a confirmation prompt
 		for _, p := range projects {
 			if strings.EqualFold(opts.Name, p) {
 				ch.PrintfWarn("Can't deploy project %q.\n", opts.Name)
-				ch.PrintfWarn("It is connected to Github and continuously deploys when you commit to %q\n", githubURL)
+				ch.PrintfWarn("It is connected to Github and continuously deploys when you commit to %q\n", gitRemote)
 				ch.PrintfWarn("If you want to deploy to a new project, use `rill project connect-github --name new-name`\n")
 				return nil
 			}
@@ -244,7 +246,7 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 		Subpath:          opts.SubPath,
 		ProdBranch:       opts.ProdBranch,
 		Public:           opts.Public,
-		GithubUrl:        githubURL,
+		GitRemote:        gitRemote,
 	})
 	if err != nil {
 		if s, ok := status.FromError(err); ok && s.Code() == codes.PermissionDenied {
@@ -260,6 +262,14 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 		})
 		if err != nil {
 			return err
+		}
+		author, err := ch.GitSignature(ctx, localGitPath)
+		if err != nil {
+			return err
+		}
+		err = gitutil.CommitAndForcePush(ctx, localGitPath, &gitutil.Config{Remote: gitRemote, DefaultBranch: opts.ProdBranch}, "Autocommit .rillcloud directory", author)
+		if err != nil {
+			return fmt.Errorf("failed to push .rillcloud directory to remote: %w", err)
 		}
 	}
 
@@ -398,50 +408,25 @@ func createGithubRepoFlow(ctx context.Context, ch *cmdutil.Helper, localGitPath 
 
 	printer.ColorGreenBold.Printf("\nSuccessfully created repository on %q\n\n", *githubRepository.HTMLURL)
 	ch.Print("Pushing local project to Github\n\n")
-	// init git repo
-	repo, err := git.PlainInitWithOptions(localGitPath, &git.PlainInitOptions{
-		InitOptions: git.InitOptions{
-			DefaultBranch: plumbing.NewBranchReferenceName("main"),
-		},
-		Bare: false,
-	})
+	author, err := ch.GitSignature(ctx, localGitPath)
 	if err != nil {
-		if !errors.Is(err, git.ErrRepositoryAlreadyExists) {
-			return fmt.Errorf("failed to init git repo: %w", err)
-		}
-		repo, err = git.PlainOpen(localGitPath)
-		if err != nil {
-			return fmt.Errorf("failed to open git repo: %w", err)
-		}
+		return fmt.Errorf("failed to generate git commit signature: %w", err)
 	}
-
-	wt, err := repo.Worktree()
+	var branch string
+	if githubRepository.DefaultBranch != nil {
+		branch = *githubRepository.DefaultBranch
+	} else {
+		branch = "main"
+	}
+	config := &gitutil.Config{
+		Remote:        *githubRepository.CloneURL,
+		Username:      "x-access-token",
+		Password:      pollRes.AccessToken,
+		DefaultBranch: branch,
+	}
+	err = gitutil.CommitAndForcePush(ctx, localGitPath, config, "", author)
 	if err != nil {
-		return fmt.Errorf("failed to get worktree: %w", err)
-	}
-
-	// git add .
-	if err := wt.AddWithOptions(&git.AddOptions{All: true}); err != nil {
-		return fmt.Errorf("failed to add files to git: %w", err)
-	}
-
-	// git commit -m
-	_, err = wt.Commit("Auto committed by Rill", &git.CommitOptions{All: true})
-	if err != nil {
-		if !errors.Is(err, git.ErrEmptyCommit) {
-			return fmt.Errorf("failed to commit files to git: %w", err)
-		}
-	}
-
-	// Create the remote
-	_, err = repo.CreateRemote(&config.RemoteConfig{Name: "origin", URLs: []string{*githubRepository.HTMLURL}})
-	if err != nil {
-		return fmt.Errorf("failed to create remote: %w", err)
-	}
-
-	// push the changes
-	if err := repo.PushContext(ctx, &git.PushOptions{Auth: &githttp.BasicAuth{Username: "x-access-token", Password: pollRes.AccessToken}}); err != nil {
-		return fmt.Errorf("failed to push to remote %q : %w", *githubRepository.HTMLURL, err)
+		return fmt.Errorf("failed to push local project to Github: %w", err)
 	}
 
 	ch.Print("Successfully pushed your local project to Github\n\n")
@@ -509,7 +494,7 @@ func createGithubRepository(ctx context.Context, ch *cmdutil.Helper, pollRes *ad
 	return githubRepo, nil
 }
 
-func githubFlow(ctx context.Context, ch *cmdutil.Helper, githubURL string) (*adminv1.GetGithubRepoStatusResponse, error) {
+func githubFlow(ctx context.Context, ch *cmdutil.Helper, gitRemote string) (*adminv1.GetGithubRepoStatusResponse, error) {
 	// Get the admin client
 	c, err := ch.Client()
 	if err != nil {
@@ -518,7 +503,7 @@ func githubFlow(ctx context.Context, ch *cmdutil.Helper, githubURL string) (*adm
 
 	// Check for access to the Github repo
 	res, err := c.GetGithubRepoStatus(ctx, &adminv1.GetGithubRepoStatusRequest{
-		GithubUrl: githubURL,
+		Remote: gitRemote,
 	})
 	if err != nil {
 		return nil, err
@@ -554,7 +539,7 @@ func githubFlow(ctx context.Context, ch *cmdutil.Helper, githubURL string) (*adm
 
 			// Poll for access to the Github URL
 			pollRes, err := c.GetGithubRepoStatus(ctx, &adminv1.GetGithubRepoStatusRequest{
-				GithubUrl: githubURL,
+				Remote: gitRemote,
 			})
 			if err != nil {
 				return nil, err
@@ -564,8 +549,8 @@ func githubFlow(ctx context.Context, ch *cmdutil.Helper, githubURL string) (*adm
 				// Emit success telemetry
 				ch.Telemetry(ctx).RecordBehavioralLegacy(activity.BehavioralEventGithubConnectedSuccess)
 
-				_, ghRepo, _ := gitutil.SplitGithubURL(githubURL)
-				ch.PrintfSuccess("You have connected to the %q project in Github.\n", ghRepo)
+				_, ghRepo, _ := gitutil.SplitGithubRemote(gitRemote)
+				ch.PrintfSuccess("You have connected to the %q repository in Github.\n", ghRepo)
 				return pollRes, nil
 			}
 
@@ -633,8 +618,8 @@ func projectNamePrompt(ctx context.Context, ch *cmdutil.Helper, orgName string) 
 			Prompt: &survey.Input{
 				Message: "Enter a project name",
 			},
-			Validate: func(any interface{}) error {
-				name := any.(string)
+			Validate: func(v any) error {
+				name := v.(string)
 				if name == "" {
 					return fmt.Errorf("empty name")
 				}

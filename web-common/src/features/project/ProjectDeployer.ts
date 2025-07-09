@@ -1,6 +1,7 @@
 import { page } from "$app/stores";
 import type { ConnectError } from "@connectrpc/connect";
 import { getTrialIssue } from "@rilldata/web-common/features/billing/issues";
+import { featureFlags } from "@rilldata/web-common/features/feature-flags";
 import { sanitizeOrgName } from "@rilldata/web-common/features/organization/sanitizeOrgName";
 import {
   DeployErrorType,
@@ -136,14 +137,19 @@ export class ProjectDeployer {
 
     // Project already exists
     if (projectResp.project) {
-      if (projectResp.project.githubUrl) {
-        // we do not support pushing to a project already connected to github
+      if (projectResp.project.gitRemote && !projectResp.project.managedGitId) {
+        // we do not support pushing to a project already connected to user managed github
         return;
       }
 
+      const legacyArchiveDeploy = get(featureFlags.legacyArchiveDeploy);
+
       const resp = await get(this.redeployMutation).mutateAsync({
         projectId: projectResp.project.id,
-        reupload: true,
+        // If `legacyArchiveDeploy` is enabled, then use the archive route. Else use upload route.
+        // This is mainly set to true in E2E tests.
+        reupload: !legacyArchiveDeploy,
+        rearchive: legacyArchiveDeploy,
       });
       const projectUrl = resp.frontendUrl; // https://ui.rilldata.com/<org>/<project>
       const projectUrlWithSessionId = addPosthogSessionIdToUrl(projectUrl);
@@ -208,8 +214,8 @@ export class ProjectDeployer {
     checkNextOrg: boolean,
   ) {
     let i = 0;
+    const legacyArchiveDeploy = get(featureFlags.legacyArchiveDeploy);
 
-    // eslint-disable-next-line no-constant-condition
     while (true) {
       try {
         const tryOrgName = `${org}${i === 0 ? "" : "-" + i}`;
@@ -217,7 +223,10 @@ export class ProjectDeployer {
         const resp = await get(this.deployMutation).mutateAsync({
           projectName,
           org: tryOrgName,
-          upload: true,
+          // If `legacyArchiveDeploy` is enabled, then use the archive route. Else use upload route.
+          // This is mainly set to true in E2E tests.
+          upload: !legacyArchiveDeploy,
+          archive: legacyArchiveDeploy,
         });
         // wait for the telemetry to finish since the page will be redirected after a deploy success
         await behaviourEvent?.fireDeployEvent(

@@ -15,7 +15,7 @@
 
 <SettingsContainer title={plan?.displayName}>
   <div slot="body">
-    <div>You’re currently on a custom contract.</div>
+    <div>You're currently on a custom contract.</div>
     <PlanQuotas {organization} />
   </div>
   <svelte:fragment slot="contact">
@@ -24,7 +24,7 @@
   </svelte:fragment>
   <svelte:fragment slot="action">
     {#if hasPayment}
-      <Button type="primary" on:click={() => (open = true)}>
+      <Button type="primary" onClick={() => (open = true)}>
         Start Team plan
       </Button>
     {/if}

@@ -36,15 +36,20 @@ func TestUser(t *testing.T) {
 			Email: u2.Email,
 		})
 		require.NoError(t, err)
+		fix.Admin.PurgeAuthTokenCache()
+
 		_, err = c2.GetCurrentUser(ctx, &adminv1.GetCurrentUserRequest{})
 		require.Error(t, err)
 		require.Equal(t, codes.Unauthenticated, grpc.Code(err))
 
 		// A superuser can delete any user
 		_, err = sc1.DeleteUser(ctx, &adminv1.DeleteUserRequest{
-			Email: u3.Email,
+			Email:                u3.Email,
+			SuperuserForceAccess: true,
 		})
 		require.NoError(t, err)
+		fix.Admin.PurgeAuthTokenCache()
+
 		_, err = c3.GetCurrentUser(ctx, &adminv1.GetCurrentUserRequest{})
 		require.Error(t, err)
 		require.Equal(t, codes.Unauthenticated, grpc.Code(err))
@@ -74,5 +79,80 @@ func TestUser(t *testing.T) {
 		resp, err := c1.ListOrganizations(ctx, &adminv1.ListOrganizationsRequest{})
 		require.NoError(t, err)
 		require.Equal(t, 3, len(resp.Organizations))
+	})
+
+	t.Run("Token basics", func(t *testing.T) {
+		u1, c1 := fix.NewUser(t)
+
+		// Issue a plain token
+		res, err := c1.IssueUserAuthToken(ctx, &adminv1.IssueUserAuthTokenRequest{
+			UserId:      "current",
+			ClientId:    database.AuthClientIDRillManual,
+			DisplayName: "Foo",
+		})
+		require.NoError(t, err)
+		require.NotEmpty(t, res.Token)
+
+		// Check the token works
+		uTmp := fix.NewClient(t, res.Token)
+		res2, err := uTmp.GetCurrentUser(ctx, &adminv1.GetCurrentUserRequest{})
+		require.NoError(t, err)
+		require.Equal(t, res2.User.Email, u1.Email)
+
+		// Issue a token with an expiration
+		res3, err := c1.IssueUserAuthToken(ctx, &adminv1.IssueUserAuthTokenRequest{
+			UserId:     "current",
+			ClientId:   database.AuthClientIDRillManual,
+			TtlMinutes: 10,
+		})
+		require.NoError(t, err)
+		require.NotEmpty(t, res3.Token)
+
+		// Check the token were created
+		res4, err := c1.ListUserAuthTokens(ctx, &adminv1.ListUserAuthTokensRequest{
+			UserId: "current",
+		})
+		require.NoError(t, err)
+		require.GreaterOrEqual(t, len(res4.Tokens), 3) // 2 created above and 1 from fix.NewUser
+
+		// One should have description "Foo" and one should have an expiration
+		var foundFoo, foundExpiration bool
+		for _, token := range res4.Tokens {
+			if token.DisplayName == "Foo" {
+				foundFoo = true
+			}
+			if token.ExpiresOn != nil {
+				foundExpiration = true
+			}
+		}
+		require.True(t, foundFoo)
+		require.True(t, foundExpiration)
+
+		// Find an ID for the "Foo" token
+		var tokenID string
+		for _, token := range res4.Tokens {
+			if token.DisplayName == "Foo" {
+				tokenID = token.Id
+				break
+			}
+		}
+		require.NotEmpty(t, tokenID)
+
+		// Revoke the token
+		_, err = c1.RevokeUserAuthToken(ctx, &adminv1.RevokeUserAuthTokenRequest{
+			TokenId: tokenID,
+		})
+		require.NoError(t, err)
+
+		// Check the token is revoked
+		res5, err := c1.ListUserAuthTokens(ctx, &adminv1.ListUserAuthTokensRequest{
+			UserId: "current",
+		})
+		require.NoError(t, err)
+		require.Equal(t, 2, len(res5.Tokens))
+		for _, token := range res5.Tokens {
+			require.NotEqual(t, token.Id, tokenID)
+		}
+
 	})
 }

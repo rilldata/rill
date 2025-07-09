@@ -1053,9 +1053,7 @@ func (m *Instance) validate(all bool) error {
 
 	// no validation rules for Annotations
 
-	// no validation rules for EmbedCatalog
-
-	// no validation rules for WatchRepo
+	// no validation rules for AiInstructions
 
 	if len(errors) > 0 {
 		return InstanceMultiError(errors)
@@ -1849,10 +1847,6 @@ func (m *CreateInstanceRequest) validate(all bool) error {
 
 	// no validation rules for Annotations
 
-	// no validation rules for EmbedCatalog
-
-	// no validation rules for WatchRepo
-
 	if len(errors) > 0 {
 		return CreateInstanceRequestMultiError(errors)
 	}
@@ -2372,14 +2366,6 @@ func (m *EditInstanceRequest) validate(all bool) error {
 
 	if m.AiConnector != nil {
 		// no validation rules for AiConnector
-	}
-
-	if m.EmbedCatalog != nil {
-		// no validation rules for EmbedCatalog
-	}
-
-	if m.WatchRepo != nil {
-		// no validation rules for WatchRepo
 	}
 
 	if len(errors) > 0 {
@@ -6112,6 +6098,35 @@ func (m *QueryResolverResponse) validate(all bool) error {
 	var errors []error
 
 	if all {
+		switch v := interface{}(m.GetMeta()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, QueryResolverResponseValidationError{
+					field:  "Meta",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, QueryResolverResponseValidationError{
+					field:  "Meta",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetMeta()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return QueryResolverResponseValidationError{
+				field:  "Meta",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
 		switch v := interface{}(m.GetSchema()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
@@ -8488,9 +8503,9 @@ func (m *CreateTriggerRequest) validate(all bool) error {
 
 	// no validation rules for Parser
 
-	// no validation rules for AllSourcesModels
+	// no validation rules for All
 
-	// no validation rules for AllSourcesModelsFull
+	// no validation rules for AllFull
 
 	if len(errors) > 0 {
 		return CreateTriggerRequestMultiError(errors)
@@ -8769,6 +8784,8 @@ func (m *ConnectorDriver) validate(all bool) error {
 	// no validation rules for DisplayName
 
 	// no validation rules for Description
+
+	// no validation rules for DocsUrl
 
 	// no validation rules for ImplementsRegistry
 

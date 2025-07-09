@@ -26,6 +26,7 @@ var spec = drivers.Spec{
 	DisplayName: "Pinot",
 	Description: "Connect to Apache Pinot.",
 	DocsURL:     "https://docs.rilldata.com/reference/olap-engines/pinot",
+	// Important: Any edits to the below properties must be accompanied by changes to the client-side form validation schemas.
 	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:         "dsn",
@@ -113,6 +114,8 @@ type configProperties struct {
 	LogQueries bool `mapstructure:"log_queries"`
 	// MaxOpenConns is the maximum number of open connections to the database. Set to 0 to use the default value or -1 for unlimited.
 	MaxOpenConns int `mapstructure:"max_open_conns"`
+	// TimeoutMS is the timeout in milliseconds for queries. Set to 0 to use the cluster default.
+	TimeoutMS int64 `mapstructure:"timeout_ms"`
 }
 
 // Open a connection to Apache Pinot using HTTP API.
@@ -204,6 +207,7 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		schemaURL:  controller,
 		headers:    headers,
 		logQueries: conf.LogQueries,
+		timeoutMS:  conf.TimeoutMS,
 		logger:     logger,
 	}
 	return conn, nil
@@ -228,6 +232,7 @@ type connection struct {
 	schemaURL  string
 	headers    map[string]string
 	logQueries bool
+	timeoutMS  int64 // timeout in milliseconds for queries, 0 means use cluster default
 	logger     *zap.Logger
 }
 
@@ -273,6 +278,11 @@ func (c *connection) AsAI(instanceID string) (drivers.AIService, bool) {
 
 func (c *connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
 	return c, true
+}
+
+// AsInformationSchema implements drivers.Connection.
+func (c *connection) AsInformationSchema() (drivers.InformationSchema, bool) {
+	return nil, false
 }
 
 func (c *connection) Migrate(ctx context.Context) (err error) {

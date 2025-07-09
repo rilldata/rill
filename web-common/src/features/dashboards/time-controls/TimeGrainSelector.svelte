@@ -1,15 +1,13 @@
 <script lang="ts">
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
-  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
-  import type { AvailableTimeGrain } from "@rilldata/web-common/lib/time/types";
-  import type { V1TimeGrain } from "../../../runtime-client";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
-  import Switch from "@rilldata/web-common/components/button/Switch.svelte";
   import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
   import {
     getAllowedTimeGrains,
     isGrainBigger,
   } from "@rilldata/web-common/lib/time/grains";
+  import type { AvailableTimeGrain } from "@rilldata/web-common/lib/time/types";
+  import type { V1TimeGrain } from "../../../runtime-client";
 
   export let tdd = false;
   export let activeTimeGrain: V1TimeGrain | undefined;
@@ -17,12 +15,9 @@
   export let timeEnd: string | undefined;
   export let minTimeGrain: V1TimeGrain | undefined;
   export let onTimeGrainSelect: (timeGrain: V1TimeGrain) => void;
-  export let complete: boolean;
-  export let toggleComplete: () => void;
+  export let complete: boolean = false;
 
   let open = false;
-
-  const { rillTime } = featureFlags;
 
   $: timeGrainOptions =
     timeStart && timeEnd
@@ -92,16 +87,6 @@
           {option.main}
         </DropdownMenu.CheckboxItem>
       {/each}
-
-      {#if $rillTime}
-        <DropdownMenu.Separator />
-        <div class="flex justify-between px-2 py-1">
-          <label for="complete" class="select-none cursor-pointer">
-            Complete periods only
-          </label>
-          <Switch id="complete" checked={complete} on:click={toggleComplete} />
-        </div>
-      {/if}
     </DropdownMenu.Content>
   </DropdownMenu.Root>
 {/if}

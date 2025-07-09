@@ -83,32 +83,32 @@ export class TimeControls {
 
     this.minTimeGrain = derived(specStore, (spec) => {
       let metricsViews = spec?.data?.metricsViews || {};
-      const metricsViewName = getComponentMetricsViewFromSpec(
-        componentName,
-        spec,
-      );
-      if (metricsViewName && metricsViews[metricsViewName]) {
-        metricsViews = {
-          [metricsViewName]: metricsViews[metricsViewName],
-        };
+
+      if (componentName) {
+        const metricsViewName = getComponentMetricsViewFromSpec(
+          componentName,
+          spec,
+        );
+
+        if (metricsViewName && metricsViews[metricsViewName]) {
+          metricsViews = {
+            [metricsViewName]: metricsViews[metricsViewName],
+          };
+        }
       }
+      const minTimeGrain = Object.values(metricsViews).reduce<V1TimeGrain>(
+        (min: V1TimeGrain, metricsView) => {
+          const timeGrain = metricsView?.state?.validSpec?.smallestTimeGrain;
 
-      const minTimeGrain = Object.keys(metricsViews).reduce<V1TimeGrain>(
-        (min: V1TimeGrain, metricView) => {
-          const metricsViewSpec = metricsViews[metricView]?.state?.validSpec;
-
-          if (
-            !metricsViewSpec?.smallestTimeGrain ||
-            metricsViewSpec.smallestTimeGrain ===
-              V1TimeGrain.TIME_GRAIN_UNSPECIFIED
-          )
+          if (!timeGrain || timeGrain === V1TimeGrain.TIME_GRAIN_UNSPECIFIED) {
             return min;
-          const timeGrain = metricsViewSpec.smallestTimeGrain;
+          }
 
-          return !isGrainBigger(min, timeGrain) ? timeGrain : min;
+          return isGrainBigger(min, timeGrain) ? timeGrain : min;
         },
-        V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
+        V1TimeGrain.TIME_GRAIN_YEAR, // Use max time grain as starting point
       );
+
       return minTimeGrain;
     });
 
@@ -445,46 +445,11 @@ export class TimeControls {
   };
 
   setTimeFiltersFromText = (timeFilter: string) => {
-    const urlParams = new URLSearchParams(timeFilter);
-    const { preset, errors } = fromTimeRangesParams(urlParams, new Map());
-
-    if (errors?.length) {
-      console.warn(errors);
-      return;
-    }
-    let selectedTimeRange: DashboardTimeControls | undefined;
-    let selectedComparisonTimeRange: DashboardTimeControls | undefined;
-    let showTimeComparison = false;
-
-    if (preset.timeRange) {
-      selectedTimeRange = fromTimeRangeUrlParam(preset.timeRange, []);
-    }
-
-    if (preset.timeGrain && selectedTimeRange) {
-      selectedTimeRange.interval = FromURLParamTimeGrainMap[preset.timeGrain];
-    }
-
-    if (preset.compareTimeRange) {
-      selectedComparisonTimeRange = fromTimeRangeUrlParam(
-        preset.compareTimeRange,
-        [],
-      );
-      showTimeComparison = true;
-    } else if (
-      preset.comparisonMode ===
-      V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME
-    ) {
-      showTimeComparison = true;
-    }
-
-    if (
-      preset.comparisonMode ===
-      V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_NONE
-    ) {
-      // unset all comparison setting if mode is none
-      selectedComparisonTimeRange = undefined;
-      showTimeComparison = false;
-    }
+    const {
+      selectedTimeRange,
+      selectedComparisonTimeRange,
+      showTimeComparison,
+    } = getTimeRangeFromText(timeFilter);
 
     this.selectedTimeRange.set(selectedTimeRange);
     if (selectedComparisonTimeRange)
@@ -493,4 +458,51 @@ export class TimeControls {
 
     this.isInitialStateSet = true;
   };
+}
+
+export function getTimeRangeFromText(timeFilter: string) {
+  const urlParams = new URLSearchParams(timeFilter);
+  const { preset, errors } = fromTimeRangesParams(urlParams, new Map());
+
+  if (errors?.length) {
+    console.warn(errors);
+    return {
+      selectedTimeRange: undefined,
+      selectedComparisonTimeRange: undefined,
+      showTimeComparison: false,
+    };
+  }
+  let selectedTimeRange: DashboardTimeControls | undefined;
+  let selectedComparisonTimeRange: DashboardTimeControls | undefined;
+  let showTimeComparison = false;
+
+  if (preset.timeRange) {
+    selectedTimeRange = fromTimeRangeUrlParam(preset.timeRange);
+  }
+
+  if (preset.timeGrain && selectedTimeRange) {
+    selectedTimeRange.interval = FromURLParamTimeGrainMap[preset.timeGrain];
+  }
+
+  if (preset.compareTimeRange) {
+    selectedComparisonTimeRange = fromTimeRangeUrlParam(
+      preset.compareTimeRange,
+    );
+    showTimeComparison = true;
+  } else if (
+    preset.comparisonMode ===
+    V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME
+  ) {
+    showTimeComparison = true;
+  }
+
+  if (
+    preset.comparisonMode ===
+    V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_NONE
+  ) {
+    // unset all comparison setting if mode is none
+    selectedComparisonTimeRange = undefined;
+    showTimeComparison = false;
+  }
+  return { selectedTimeRange, selectedComparisonTimeRange, showTimeComparison };
 }

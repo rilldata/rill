@@ -9,12 +9,12 @@
     type V1ListResourcesResponse,
     type V1Resource,
   } from "@rilldata/web-common/runtime-client";
+  import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient, type Query } from "@tanstack/svelte-query";
   import Button from "web-common/src/components/button/Button.svelte";
   import ProjectResourcesTable from "./ProjectResourcesTable.svelte";
   import RefreshAllSourcesAndModelsConfirmDialog from "./RefreshAllSourcesAndModelsConfirmDialog.svelte";
-  import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 
   const queryClient = useQueryClient();
   const createTrigger = createRuntimeServiceCreateTrigger();
@@ -106,7 +106,7 @@
     void $createTrigger
       .mutateAsync({
         instanceId,
-        data: { allSourcesModels: true },
+        data: { all: true },
       })
       .then(() => {
         currentRefetchInterval = INITIAL_REFETCH_INTERVAL;
@@ -125,7 +125,7 @@
     <h2 class="text-lg font-medium">Resources</h2>
     <Button
       type="secondary"
-      on:click={() => {
+      onClick={() => {
         isConfirmDialogOpen = true;
       }}
       disabled={isRefreshButtonDisabled}

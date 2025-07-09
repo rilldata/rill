@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { createInfiniteQuery } from "@tanstack/svelte-query";
   import {
     type ColumnDef,
     type Row,
@@ -14,8 +13,7 @@
   import {
     type V1ModelPartition,
     type V1Resource,
-    getRuntimeServiceGetModelPartitionsQueryKey,
-    runtimeServiceGetModelPartitions,
+    createRuntimeServiceGetModelPartitionsInfinite,
   } from "../../../runtime-client";
 
   import { runtime } from "../../../runtime-client/runtime-store";
@@ -37,37 +35,25 @@
     ...(whereErrored ? { errored: true } : {}),
     ...(wherePending ? { pending: true } : {}),
   };
-  $: query = createInfiniteQuery({
-    initialPageParam: "1",
-    queryKey: getRuntimeServiceGetModelPartitionsQueryKey(
-      instanceId,
-      modelName,
-      baseParams,
-    ),
-    queryFn: ({ pageParam }) => {
-      const getModelPartitionsParams = {
-        ...baseParams,
-        ...(pageParam
-          ? {
-              pageToken: pageParam as string,
-            }
-          : {}),
-      };
-      return runtimeServiceGetModelPartitions(
-        instanceId,
-        modelName,
-        getModelPartitionsParams,
-      );
+  $: query = createRuntimeServiceGetModelPartitionsInfinite(
+    instanceId,
+    modelName,
+    {
+      ...baseParams,
     },
-    enabled: !!modelName,
-    getNextPageParam: (lastPage) => {
-      if (!lastPage.nextPageToken || lastPage.nextPageToken === "") {
-        return undefined;
-      }
-      return lastPage.nextPageToken;
+    {
+      query: {
+        getNextPageParam: (lastPage) => {
+          if (lastPage.nextPageToken !== "") {
+            return lastPage.nextPageToken;
+          }
+          return undefined;
+        },
+        enabled: !!modelName,
+        refetchOnMount: true,
+      },
     },
-    refetchOnMount: true,
-  });
+  );
   $: ({ error } = $query);
 
   // ==========================
@@ -262,7 +248,7 @@
           <tr>
             <td class="text-center h-16" colspan={columns.length}>
               <span class="text-red-500 font-semibold"
-                >Error: {error.message}</span
+                >Error: {error.response.data.message}</span
               >
             </td>
           </tr>
@@ -314,12 +300,12 @@
   table th,
   table td {
     @apply px-4 py-2;
-    @apply border-b border-gray-200;
+    @apply border-b;
   }
   thead tr th {
-    @apply border-t border-gray-200;
+    @apply border-t;
     @apply text-left font-semibold text-gray-500;
-    @apply sticky top-0 z-10 bg-white;
+    @apply sticky top-0 z-10 bg-surface;
   }
   thead tr th:first-child {
     @apply border-l rounded-tl-sm;
@@ -331,13 +317,13 @@
     @apply border-b;
   }
   tbody tr {
-    @apply border-t border-gray-200;
+    @apply border-t;
   }
   tbody tr:first-child {
     @apply border-t-0;
   }
   tbody td {
-    @apply border-b border-gray-200;
+    @apply border-b;
   }
   tbody td:first-child {
     @apply border-l;

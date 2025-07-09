@@ -83,8 +83,8 @@ type Handle interface {
 
 	// MigrationStatus returns the handle's current and desired migration version (if applicable).
 	MigrationStatus(ctx context.Context) (current int, desired int, err error)
-
 	// Close closes the handle.
+
 	Close() error
 
 	// AsRegistry returns a RegistryStore if the handle can serve as such, otherwise returns false.
@@ -111,6 +111,10 @@ type Handle interface {
 	// An OLAP store is used to serve interactive, low-latency, analytical queries.
 	// NOTE: We should consider merging the OLAPStore and SQLStore interfaces.
 	AsOLAP(instanceID string) (OLAPStore, bool)
+
+	// AsInformationSchema returns a InformationSchema if the handle can serve as such, otherwise returns false.
+	// InformationSchema provides metadata about existing tables in a driver.
+	AsInformationSchema() (InformationSchema, bool)
 
 	// AsObjectStore returns an ObjectStore if the driver can serve as such, otherwise returns false.
 	// An object store can store, list and retrieve files on a remote server.
@@ -139,17 +143,4 @@ type Handle interface {
 	// AsNotifier returns a Notifier (if the driver can serve as such) to send notifications: alerts, reports, etc.
 	// Examples: email notifier, slack notifier.
 	AsNotifier(properties map[string]any) (Notifier, error)
-}
-
-// PermissionDeniedError is returned when a driver cannot access some data due to insufficient permissions.
-type PermissionDeniedError struct {
-	msg string
-}
-
-func NewPermissionDeniedError(msg string) error {
-	return &PermissionDeniedError{msg: msg}
-}
-
-func (e *PermissionDeniedError) Error() string {
-	return e.msg
 }

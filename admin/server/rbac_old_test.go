@@ -234,7 +234,7 @@ func TestRBACOld(t *testing.T) {
 			require.NoError(t, err)
 			require.Equal(t, 1, len(invitesResp.Invites))
 			require.Equal(t, e, invitesResp.Invites[0].Email)
-			require.Equal(t, r, invitesResp.Invites[0].Role)
+			require.Equal(t, r, invitesResp.Invites[0].RoleName)
 			require.Equal(t, adminUser.Email, invitesResp.Invites[0].InvitedBy)
 
 			// clean up invite
@@ -561,7 +561,7 @@ func TestRBACOld(t *testing.T) {
 			require.NoError(t, err)
 			require.Equal(t, 1, len(invitesResp.Invites))
 			require.Equal(t, e, invitesResp.Invites[0].Email)
-			require.Equal(t, r, invitesResp.Invites[0].Role)
+			require.Equal(t, r, invitesResp.Invites[0].RoleName)
 			require.Equal(t, adminUser.Email, invitesResp.Invites[0].InvitedBy)
 
 			r = "admin"
@@ -580,7 +580,7 @@ func TestRBACOld(t *testing.T) {
 			require.NoError(t, err)
 			require.Equal(t, 1, len(invitesResp.Invites))
 			require.Equal(t, e, invitesResp.Invites[0].Email)
-			require.Equal(t, r, invitesResp.Invites[0].Role)
+			require.Equal(t, r, invitesResp.Invites[0].RoleName)
 			require.Equal(t, adminUser.Email, invitesResp.Invites[0].InvitedBy)
 		})
 	}

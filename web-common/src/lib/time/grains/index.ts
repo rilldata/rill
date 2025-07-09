@@ -91,6 +91,7 @@ export function getAllowedTimeGrains(start: Date, end: Date): TimeGrain[] {
     ];
   } else {
     return [
+      TIME_GRAIN.TIME_GRAIN_DAY,
       TIME_GRAIN.TIME_GRAIN_WEEK,
       TIME_GRAIN.TIME_GRAIN_MONTH,
       TIME_GRAIN.TIME_GRAIN_QUARTER,
@@ -119,6 +120,7 @@ export function isGrainBigger(
   const smallerIndex = APITimeGrainOrder.indexOf(possiblySmallerGrain);
   return biggerIndex > smallerIndex;
 }
+
 export function getMinGrain(...grains: V1TimeGrain[]) {
   let minGrain: V1TimeGrain = V1TimeGrain.TIME_GRAIN_UNSPECIFIED;
   let minGrainIndex = APITimeGrainOrder.length;

@@ -5,7 +5,8 @@
    * Create a table with the selected dimension and measures
    * to be displayed in explore
    */
-  import { selectedDimensionValuesV2 } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
+  import { selectedDimensionValues } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
+  import { filterOutSomeAdvancedAggregationMeasures } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures.ts";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import {
@@ -23,7 +24,7 @@
   import { getMeasuresForDimensionOrLeaderboardDisplay } from "../state-managers/selectors/dashboard-queries";
   import { dimensionSearchText } from "../stores/dashboard-stores";
   import { sanitiseExpression } from "../stores/filter-utils";
-  import type { DimensionThresholdFilter } from "../stores/metrics-explorer-entity";
+  import type { DimensionThresholdFilter } from "web-common/src/features/dashboards/stores/explore-state";
   import DimensionHeader from "./DimensionHeader.svelte";
   import DimensionTable from "./DimensionTable.svelte";
   import { getDimensionFilterWithSearch } from "./dimension-table-utils";
@@ -43,11 +44,7 @@
   const {
     selectors: {
       dimensionFilters: { unselectedDimensionValues },
-      dimensionTable: {
-        virtualizedTableColumns,
-        selectedDimensionValueNames,
-        prepareDimTableRows,
-      },
+      dimensionTable: { virtualizedTableColumns, prepareDimTableRows },
       sorting: { sortedAscending, sortType },
       leaderboard: {
         leaderboardShowContextForAllMeasures,
@@ -62,11 +59,23 @@
       },
     },
     dashboardStore,
+    validSpecStore,
   } = getStateManagers();
+
+  $: metricsViewSpec = $validSpecStore.data?.metricsView ?? {};
 
   $: ({ name: dimensionName = "" } = dimension);
 
   $: ({ instanceId } = $runtime);
+
+  $: selectedValues = selectedDimensionValues(
+    $runtime.instanceId,
+    [metricsViewName],
+    $dashboardStore.whereFilter,
+    dimensionName,
+    timeRange.start,
+    timeRange.end,
+  );
 
   $: filterSet = getDimensionFilterWithSearch(
     whereFilter,
@@ -74,13 +83,35 @@
     dimensionName,
   );
 
+  $: measures = [
+    ...getMeasuresForDimensionOrLeaderboardDisplay(
+      $leaderboardShowContextForAllMeasures
+        ? null
+        : $leaderboardSortByMeasureName,
+      dimensionThresholdFilters,
+      visibleMeasureNames,
+    ).map((name) => ({ name }) as V1MetricsViewAggregationMeasure),
+
+    // Add comparison measures if comparison time range exists
+    ...(comparisonTimeRange
+      ? ($leaderboardShowContextForAllMeasures
+          ? visibleMeasureNames
+          : [$leaderboardSortByMeasureName]
+        ).flatMap((name) => getComparisonRequestMeasures(name))
+      : []),
+  ];
+  $: filteredMeasures = filterOutSomeAdvancedAggregationMeasures(
+    $dashboardStore,
+    metricsViewSpec,
+    measures,
+    false,
+  );
+
   $: totalsQuery = createQueryServiceMetricsViewAggregation(
     instanceId,
     metricsViewName,
     {
-      measures: visibleMeasureNames.map((measureName) => ({
-        name: measureName,
-      })),
+      measures: filteredMeasures,
       where: sanitiseExpression(
         mergeDimensionAndMeasureFilters(
           getFiltersForOtherDimensions(whereFilter, dimensionName),
@@ -88,8 +119,8 @@
         ),
         undefined,
       ),
-      timeStart: timeRange.start,
-      timeEnd: timeRange.end,
+      timeRange,
+      comparisonTimeRange,
     },
     {
       query: {
@@ -116,24 +147,6 @@
     $leaderboardShowContextForAllMeasures ? visibleMeasureNames : undefined,
   );
 
-  $: measures = [
-    ...getMeasuresForDimensionOrLeaderboardDisplay(
-      $leaderboardShowContextForAllMeasures
-        ? null
-        : $leaderboardSortByMeasureName,
-      dimensionThresholdFilters,
-      visibleMeasureNames,
-    ).map((name) => ({ name }) as V1MetricsViewAggregationMeasure),
-
-    // Add comparison measures if comparison time range exists
-    ...(comparisonTimeRange
-      ? ($leaderboardShowContextForAllMeasures
-          ? visibleMeasureNames
-          : [$leaderboardSortByMeasureName]
-        ).flatMap((name) => getComparisonRequestMeasures(name))
-      : []),
-  ];
-
   $: sort = getSort(
     $sortedAscending,
     $sortType,
@@ -152,7 +165,7 @@
     metricsViewName,
     {
       dimensions: [{ name: dimensionName }],
-      measures,
+      measures: filteredMeasures,
       timeRange,
       comparisonTimeRange,
       sort,
@@ -170,7 +183,7 @@
   $: tableRows = $prepareDimTableRows($sortedQuery, unfilteredTotal);
 
   $: areAllTableRowsSelected = tableRows.every((row) =>
-    $selectedDimensionValueNames.includes(row[dimensionName] as string),
+    $selectedValues.data?.includes(row[dimensionName] as string),
   );
 
   function onSelectItem(event) {
@@ -243,14 +256,7 @@
           isFetching={$sortedQuery?.isFetching}
           {dimensionName}
           {columns}
-          selectedValues={selectedDimensionValuesV2(
-            $runtime.instanceId,
-            [metricsViewName],
-            $dashboardStore.whereFilter,
-            dimensionName,
-            timeRange.start,
-            timeRange.end,
-          )}
+          {selectedValues}
           rows={tableRows}
         />
       </div>

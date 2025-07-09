@@ -2,7 +2,7 @@ import type { V1Expression } from "@rilldata/web-admin/client/gen/index.schemas"
 import { getDimensionFilterWithSearch } from "../dashboards/dimension-table/dimension-table-utils";
 import { mergeDimensionAndMeasureFilters } from "../dashboards/filters/measure-filters/measure-filter-utils";
 import { sanitiseExpression } from "../dashboards/stores/filter-utils";
-import type { DimensionThresholdFilter } from "../dashboards/stores/metrics-explorer-entity";
+import type { DimensionThresholdFilter } from "web-common/src/features/dashboards/stores/explore-state";
 
 /**
  * If there's input in the search field, then all search results will be included in the export.

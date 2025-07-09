@@ -2,15 +2,39 @@ package resolvers
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/metricsview"
+	"github.com/rilldata/rill/runtime/pkg/jsonschemautil"
 )
 
 func init() {
+	expressionDefs := jsonschemautil.MustExtractReferencedDefs(metricsview.QueryJSONSchema, "Expression")
+	expressionDefsJSON, err := json.Marshal(expressionDefs)
+	if err != nil {
+		panic(fmt.Sprintf("failed to marshal expression defs: %v", err))
+	}
+
 	runtime.RegisterResolverInitializer("builtin_metrics_sql", newBuiltinMetricsSQL)
-	runtime.RegisterBuiltinAPI("metrics-sql", "builtin_metrics_sql", nil)
+	runtime.RegisterBuiltinAPI(&runtime.BuiltinAPIOptions{
+		Name:               "metrics-sql",
+		Resolver:           "builtin_metrics_sql",
+		ResolverProperties: nil,
+		OpenAPISummary:     "Query metrics with SQL",
+		OpenAPIRequestSchema: fmt.Sprintf(`{
+			"type":"object",
+			"properties": {
+				"sql": {"type":"string"},
+				"additional_where": {"$ref": "#/$defs/Expression"}
+			},
+			"required":["sql"],
+			"$defs": %s
+		}`, expressionDefsJSON),
+	})
 }
 
 type builtinMetricsSQLArgs struct {

@@ -68,7 +68,7 @@
           large
           builders={[builder]}
           type="primary"
-          on:click={createResource}
+          onClick={createResource}
         >
           Continue
         </Button>

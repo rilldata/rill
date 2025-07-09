@@ -31,7 +31,7 @@ func TestValidateMetricsView(t *testing.T) {
 	e, err := metricsview.NewExecutor(context.Background(), rt, instanceID, mv, false, runtime.ResolvedSecurityOpen, 0)
 	require.NoError(t, err)
 
-	res, err := e.ValidateMetricsView(context.Background())
+	res, err := e.ValidateAndNormalizeMetricsView(context.Background())
 	require.NoError(t, err)
 	require.Empty(t, res.TimeDimensionErr)
 	require.Empty(t, res.DimensionErrs)
@@ -49,7 +49,7 @@ func TestValidateMetricsViewClickHouseNames(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
 		TestConnectors: []string{"clickhouse"},
 		Files: map[string]string{
-			"rill.yaml": "",
+			"rill.yaml": "olap_connector: clickhouse",
 			"model.sql": `
 -- @connector: clickhouse
 select parseDateTimeBestEffort('2024-01-01T00:00:00Z') as time, 'DK' as country, 1 as val union all

@@ -62,7 +62,6 @@
     display: inline-block;
     width: calc((100% - 32px) * var(--width));
     position: absolute;
-    left: 16px;
     top: 0;
     height: 100%;
     pointer-events: none;

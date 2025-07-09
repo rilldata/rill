@@ -38,6 +38,7 @@
   export let activeTimeZone: string;
   export let timeStart: string | undefined;
   export let timeEnd: string | undefined;
+  export let usingRillTime: boolean;
   export let toggleComplete: () => void;
   export let onSelectRange: (range: NamedRange | ISODurationString) => void;
   export let onPan: (direction: "left" | "right") => void;
@@ -58,12 +59,13 @@
     {#if $newPicker}
       <RangePickerV2
         {context}
+        smallestTimeGrain={minTimeGrain}
         minDate={DateTime.fromJSDate(allTimeRange.start)}
         maxDate={DateTime.fromJSDate(allTimeRange.end)}
         {timeRanges}
         {showDefaultItem}
         {defaultTimeRange}
-        selected={selectedRangeAlias}
+        timeString={selectedRangeAlias}
         grain={activeTimeGrain}
         {onSelectRange}
         {interval}
@@ -112,14 +114,13 @@
     />
   {/if}
 
-  {#if !showPivot && minTimeGrain}
+  {#if !$newPicker && !showPivot && minTimeGrain}
     <TimeGrainSelector
       {activeTimeGrain}
       {minTimeGrain}
       {timeStart}
       {timeEnd}
       {complete}
-      {toggleComplete}
       {onTimeGrainSelect}
     />
   {/if}
@@ -142,7 +143,7 @@
 
   :global(.wrapper > button) {
     @apply border;
-    @apply px-2 flex items-center justify-center bg-white;
+    @apply px-2 flex items-center justify-center bg-surface;
   }
 
   :global(.wrapper > button:focus) {

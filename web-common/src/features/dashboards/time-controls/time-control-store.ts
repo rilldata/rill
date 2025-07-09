@@ -1,7 +1,7 @@
 import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import { useExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
-import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import { getValidComparisonOption } from "@rilldata/web-common/features/dashboards/time-controls/time-range-store";
 import { getOrderedStartEnd } from "@rilldata/web-common/features/dashboards/time-series/utils";
 import { normaliseRillTime } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser";
@@ -87,25 +87,25 @@ export const timeControlStateSelector = ([
   metricsView,
   explore,
   timeRangeResponse,
-  metricsExplorer,
+  exploreState,
 ]: [
   V1MetricsViewSpec | undefined,
   V1ExploreSpec | undefined,
   QueryObserverResult<V1MetricsViewTimeRangeResponse, unknown>,
-  MetricsExplorerEntity,
+  ExploreState,
 ]): TimeControlState => {
   const hasTimeSeries = Boolean(metricsView?.timeDimension);
   if (
     !metricsView ||
     !explore ||
-    !metricsExplorer ||
+    !exploreState ||
     !timeRangeResponse ||
     !timeRangeResponse.isSuccess ||
     !hasTimeSeries
   ) {
     return {
       isFetching: timeRangeResponse.isRefetching,
-      ready: !metricsExplorer || !hasTimeSeries,
+      ready: !exploreState || !hasTimeSeries,
     } as TimeControlState;
   }
 
@@ -113,7 +113,7 @@ export const timeControlStateSelector = ([
     metricsView,
     explore,
     timeRangeResponse.data?.timeRangeSummary,
-    metricsExplorer,
+    exploreState,
   );
 
   if (!state) {
@@ -139,7 +139,7 @@ export function getTimeControlState(
   metricsViewSpec: V1MetricsViewSpec,
   exploreSpec: V1ExploreSpec,
   timeRangeSummary: V1TimeRangeSummary | undefined,
-  exploreState: MetricsExplorerEntity,
+  exploreState: Partial<ExploreState>,
 ) {
   const hasTimeSeries = Boolean(metricsViewSpec.timeDimension);
   const timeDimension = metricsViewSpec.timeDimension;
@@ -187,7 +187,7 @@ export function getTimeControlState(
     selectedComparisonTimeRange,
     selectedTimezone,
     lastDefinedScrubRange,
-    showTimeComparison,
+    !!showTimeComparison,
     timeRangeState,
   );
 
@@ -252,7 +252,7 @@ export function calculateTimeRangePartial(
   allTimeRange: DashboardTimeControls,
   currentSelectedTimeRange: DashboardTimeControls | undefined,
   lastDefinedScrubRange: ScrubRange | undefined,
-  selectedTimezone: string,
+  selectedTimezone: string | undefined,
   defaultTimeRange: DashboardTimeControls,
   minTimeGrain: V1TimeGrain,
 ): TimeRangeState | undefined {
@@ -306,7 +306,7 @@ export function calculateComparisonTimeRangePartial(
   timeRanges: V1ExploreTimeRange[] | undefined,
   allTimeRange: DashboardTimeControls,
   currentComparisonTimeRange: DashboardTimeControls | undefined,
-  selectedTimezone: string,
+  selectedTimezone: string | undefined,
   lastDefinedScrubRange: ScrubRange | undefined,
   showTimeComparison: boolean,
   timeRangeState: TimeRangeState,
@@ -367,7 +367,7 @@ export function calculateComparisonTimeRangePartial(
 
 export function getTimeRange(
   selectedTimeRange: DashboardTimeControls | undefined,
-  selectedTimezone: string,
+  selectedTimezone: string | undefined,
   allTimeRange: DashboardTimeControls,
   defaultTimeRange: DashboardTimeControls,
 ) {
@@ -511,7 +511,7 @@ export function selectedTimeRangeSelector([
 ]: [
   V1ExploreSpec | undefined,
   QueryObserverResult<V1MetricsViewTimeRangeResponse, unknown>,
-  MetricsExplorerEntity,
+  ExploreState,
 ]) {
   if (
     !exploreSpec ||

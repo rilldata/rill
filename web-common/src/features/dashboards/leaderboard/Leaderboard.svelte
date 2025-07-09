@@ -26,7 +26,7 @@
     isExpressionUnsupported,
     sanitiseExpression,
   } from "../stores/filter-utils";
-  import type { DimensionThresholdFilter } from "../stores/metrics-explorer-entity";
+  import type { DimensionThresholdFilter } from "web-common/src/features/dashboards/stores/explore-state";
   import DelayedLoadingRows from "./DelayedLoadingRows.svelte";
   import LeaderboardHeader from "./LeaderboardHeader.svelte";
   import LeaderboardRow from "./LeaderboardRow.svelte";
@@ -37,7 +37,7 @@
     prepareLeaderboardItemData,
   } from "./leaderboard-utils";
   import { valueColumn, COMPARISON_COLUMN_WIDTH } from "./leaderboard-widths";
-  import type { selectedDimensionValuesV2 } from "../state-managers/selectors/dimension-filters";
+  import type { selectedDimensionValues } from "../state-managers/selectors/dimension-filters";
   import { getMeasuresForDimensionOrLeaderboardDisplay } from "../state-managers/selectors/dashboard-queries";
 
   const gutterWidth = 24;
@@ -45,7 +45,7 @@
   export let dimension: MetricsViewSpecDimension;
   export let timeRange: V1TimeRange;
   export let comparisonTimeRange: V1TimeRange | undefined;
-  export let selectedValues: ReturnType<typeof selectedDimensionValuesV2>;
+  export let selectedValues: ReturnType<typeof selectedDimensionValues>;
   export let instanceId: string;
   export let whereFilter: V1Expression;
   export let dimensionThresholdFilters: DimensionThresholdFilter[];
@@ -62,7 +62,6 @@
   export let filterExcludeMode: boolean;
   export let isBeingCompared: boolean;
   export let parentElement: HTMLElement;
-  export let suppressTooltip = false;
   export let allowExpandTable = true;
   export let allowDimensionComparison = true;
   export let formatters: Record<
@@ -254,10 +253,12 @@
 
   $: belowTheFoldData = data?.data?.length
     ? data?.data
-    : belowTheFoldValues.map((value) => ({
-        [dimensionName]: value,
-        [leaderboardSortByMeasureName]: null,
-      }));
+    : belowTheFoldValues
+        .map((value) => ({
+          [dimensionName]: value,
+          [leaderboardSortByMeasureName]: null,
+        }))
+        .slice(0, belowTheFoldDataLimit);
 
   $: belowTheFoldRows = belowTheFoldData.map((item) =>
     cleanUpComparisonValue(
@@ -355,7 +356,6 @@
       >
         {#each aboveTheFold as itemData (itemData.dimensionValue)}
           <LeaderboardRow
-            {suppressTooltip}
             {tableWidth}
             {isBeingCompared}
             {filterExcludeMode}
@@ -369,13 +369,13 @@
             {toggleDimensionValueSelection}
             {leaderboardSortByMeasureName}
             {formatters}
+            {dimensionColumnWidth}
           />
         {/each}
       </DelayedLoadingRows>
 
       {#each belowTheFoldRows as itemData, i (itemData.dimensionValue)}
         <LeaderboardRow
-          {suppressTooltip}
           {itemData}
           {tableWidth}
           {dimensionName}
@@ -391,6 +391,7 @@
           {toggleDimensionValueSelection}
           {leaderboardSortByMeasureName}
           {formatters}
+          {dimensionColumnWidth}
         />
       {/each}
     </tbody>

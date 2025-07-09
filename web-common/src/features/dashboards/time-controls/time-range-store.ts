@@ -1,4 +1,4 @@
-import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import {
   getAvailableComparisonsForTimeRange,
   getComparisonRange,
@@ -29,6 +29,8 @@ import {
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
 import type { QueryObserverResult } from "@tanstack/svelte-query";
+import { RillTime } from "../url-state/time-ranges/RillTime";
+import { parseRillTime } from "../url-state/time-ranges/parser";
 
 export type TimeRangeControlsState = {
   latestWindowTimeRanges: Array<TimeRangeOption>;
@@ -46,7 +48,7 @@ export function timeRangeSelectionsSelector([
   V1MetricsViewSpec | undefined,
   V1ExploreSpec | undefined,
   QueryObserverResult<V1MetricsViewTimeRangeResponse, unknown>,
-  MetricsExplorerEntity,
+  ExploreState,
 ]): TimeRangeControlsState {
   if (!metricsView || !explore || !timeRangeResponse?.data?.timeRangeSummary)
     return {
@@ -145,7 +147,7 @@ export function timeComparisonOptionsSelector([
   V1MetricsViewSpec | undefined,
   V1ExploreSpec | undefined,
   QueryObserverResult<V1MetricsViewTimeRangeResponse, unknown>,
-  MetricsExplorerEntity,
+  ExploreState,
   DashboardTimeControls | undefined,
 ]): Array<{
   name: TimeComparisonOption;
@@ -265,11 +267,14 @@ export function getValidComparisonOption(
 
 export type UITimeRange = V1ExploreTimeRange & {
   meta?: TimeRangeMeta;
+  enabled?: boolean;
+  parsed?: RillTime;
 };
 
 export function bucketTimeRanges(
   ranges: V1ExploreTimeRange[],
   defaultTimeRange: string | undefined,
+  smallestTimeGrain?: V1TimeGrain | undefined,
 ) {
   let latestWindowTimeRanges: UITimeRange[] = [];
   let periodToDateRanges: UITimeRange[] = [];
@@ -322,11 +327,22 @@ export function bucketTimeRanges(
     }
   } else {
     latestWindowTimeRanges = Object.entries(LATEST_WINDOW_TIME_RANGES).map(
-      ([range, meta]) => ({
-        range,
-        meta,
-        comparisonTimeRanges: [],
-      }),
+      ([range, meta]) => {
+        if (meta.rillSyntax) {
+          try {
+            const parsed = parseRillTime(meta.rillSyntax);
+            console.log({ parsed });
+          } catch {
+            // no-op
+          }
+        }
+
+        return {
+          range,
+          meta,
+          comparisonTimeRanges: [],
+        };
+      },
     );
     periodToDateRanges = Object.entries(PERIOD_TO_DATE_RANGES).map(
       ([range, meta]) => ({

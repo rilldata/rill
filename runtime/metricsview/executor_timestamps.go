@@ -14,24 +14,23 @@ const (
 	defaultExecutionTimeout = time.Minute * 3
 )
 
-func (e *Executor) resolveDuckDBClickHouseAndPinot(ctx context.Context) (TimestampsResult, error) {
+func (e *Executor) resolveDuckDBClickHouseAndPinot(ctx context.Context, timeExpr string) (TimestampsResult, error) {
 	filter := e.security.RowFilter()
 	if filter != "" {
 		filter = fmt.Sprintf(" WHERE %s", filter)
 	}
-	timeDim := e.olap.Dialect().EscapeIdentifier(e.metricsView.TimeDimension)
 	escapedTableName := e.olap.Dialect().EscapeTable(e.metricsView.Database, e.metricsView.DatabaseSchema, e.metricsView.Table)
 
 	var watermarkExpr string
 	if e.metricsView.WatermarkExpression != "" {
 		watermarkExpr = e.metricsView.WatermarkExpression
 	} else {
-		watermarkExpr = fmt.Sprintf("max(%s)", timeDim)
+		watermarkExpr = fmt.Sprintf("max(%s)", timeExpr)
 	}
 
 	rangeSQL := fmt.Sprintf(
 		"SELECT min(%[1]s) as \"min\", max(%[1]s) as \"max\", %[2]s as \"watermark\" FROM %[3]s %[4]s",
-		timeDim,
+		timeExpr,
 		watermarkExpr,
 		escapedTableName,
 		filter,
@@ -51,6 +50,19 @@ func (e *Executor) resolveDuckDBClickHouseAndPinot(ctx context.Context) (Timesta
 		var minTime, maxTime, watermark *time.Time
 		err = rows.Scan(&minTime, &maxTime, &watermark)
 		if err != nil {
+			if e.olap.Dialect() == drivers.DialectPinot {
+				// retry again with long type as pinot supports timestamp columns with long type
+				var minTime, maxTime, watermark int64
+				innerErr := rows.Scan(&minTime, &maxTime, &watermark)
+				if innerErr != nil {
+					return TimestampsResult{}, err
+				}
+				return TimestampsResult{
+					Min:       time.UnixMilli(minTime),
+					Max:       time.UnixMilli(maxTime),
+					Watermark: time.UnixMilli(watermark),
+				}, nil
+			}
 			return TimestampsResult{}, err
 		}
 		return TimestampsResult{
@@ -68,12 +80,11 @@ func (e *Executor) resolveDuckDBClickHouseAndPinot(ctx context.Context) (Timesta
 	return TimestampsResult{}, errors.New("no rows returned")
 }
 
-func (e *Executor) resolveDruid(ctx context.Context) (TimestampsResult, error) {
+func (e *Executor) resolveDruid(ctx context.Context, timeExpr string) (TimestampsResult, error) {
 	filter := e.security.RowFilter()
 	if filter != "" {
 		filter = fmt.Sprintf(" WHERE %s", filter)
 	}
-	timeDim := e.olap.Dialect().EscapeIdentifier(e.metricsView.TimeDimension)
 	escapedTableName := e.olap.Dialect().EscapeTable(e.metricsView.Database, e.metricsView.DatabaseSchema, e.metricsView.Table)
 
 	var ts TimestampsResult
@@ -86,7 +97,7 @@ func (e *Executor) resolveDruid(ctx context.Context) (TimestampsResult, error) {
 	group.Go(func() error {
 		minSQL := fmt.Sprintf(
 			"SELECT min(%[1]s) as \"min\" FROM %[2]s %[3]s",
-			timeDim,
+			timeExpr,
 			escapedTableName,
 			filter,
 		)
@@ -122,7 +133,7 @@ func (e *Executor) resolveDruid(ctx context.Context) (TimestampsResult, error) {
 	group.Go(func() error {
 		maxSQL := fmt.Sprintf(
 			"SELECT max(%[1]s) as \"max\" FROM %[2]s %[3]s",
-			timeDim,
+			timeExpr,
 			escapedTableName,
 			filter,
 		)

@@ -8,6 +8,7 @@ import {
   type V1ComponentSpecRendererProperties,
   type V1MetricsViewSpec,
   type V1Resource,
+  type V1ThemeSpec,
 } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import {
@@ -17,22 +18,24 @@ import {
   type Readable,
   type Unsubscriber,
 } from "svelte/store";
-import { Filters } from "./filters";
-import { CanvasResolvedSpec } from "./spec";
-import { TimeControls } from "./time-control";
+import { parseDocument } from "yaml";
+import type { FileArtifact } from "../../entity-management/file-artifact";
+import { fileArtifacts } from "../../entity-management/file-artifacts";
+import { ResourceKind } from "../../entity-management/resource-selectors";
 import type { BaseCanvasComponent } from "../components/BaseCanvasComponent";
+import type { CanvasComponentType, ComponentSpec } from "../components/types";
 import {
   COMPONENT_CLASS_MAP,
   createComponent,
   isChartComponentType,
   isTableComponentType,
 } from "../components/util";
-import type { FileArtifact } from "../../entity-management/file-artifact";
-import { parseDocument } from "yaml";
-import { fileArtifacts } from "../../entity-management/file-artifacts";
-import type { CanvasComponentType } from "../components/types";
-import { ResourceKind } from "../../entity-management/resource-selectors";
+import { Filters } from "./filters";
 import { Grid } from "./grid";
+import { TailwindColorSpacing } from "../../themes/color-config";
+import { updateThemeVariables } from "../../themes/actions";
+import { CanvasResolvedSpec } from "./spec";
+import { TimeControls } from "./time-control";
 
 export class CanvasEntity {
   name: string;
@@ -62,6 +65,8 @@ export class CanvasEntity {
   // Tracks whether the canvas been loaded (and rows processed) for the first time
   firstLoad = true;
   unsubscriber: Unsubscriber;
+
+  theme: Record<(typeof TailwindColorSpacing)[number], string>;
 
   constructor(name: string) {
     const instanceId = get(runtime).instanceId;
@@ -118,6 +123,10 @@ export class CanvasEntity {
   // Not currently being used
   unsubscribe = () => {
     // this.unsubscriber();
+  };
+
+  setTheme = (theme: V1ThemeSpec | undefined) => {
+    updateThemeVariables(theme);
   };
 
   duplicateItem = (id: string) => {
@@ -225,13 +234,16 @@ export class CanvasEntity {
     column: number;
     metricsViewName: string;
     metricsViewSpec: V1MetricsViewSpec | undefined;
+    spec?: ComponentSpec;
   }): V1Resource => {
     const { type, row, column, metricsViewName, metricsViewSpec } = options;
 
-    const spec = COMPONENT_CLASS_MAP[type].newComponentSpec(
-      metricsViewName,
-      metricsViewSpec,
-    );
+    const spec =
+      options.spec ??
+      COMPONENT_CLASS_MAP[type].newComponentSpec(
+        metricsViewName,
+        metricsViewSpec,
+      );
 
     return {
       meta: {
@@ -286,9 +298,28 @@ function areSameType(
   newType: CanvasComponentType,
   existingType: CanvasComponentType,
 ) {
-  return (
-    newType === existingType ||
-    (isTableComponentType(existingType) && isTableComponentType(newType)) ||
-    (isChartComponentType(existingType) && isChartComponentType(newType))
-  );
+  if (newType === existingType) return true;
+
+  // For chart types, check if they use the same component class
+  if (isChartComponentType(existingType) && isChartComponentType(newType)) {
+    const cartesian = [
+      "bar_chart",
+      "line_chart",
+      "area_chart",
+      "stacked_bar",
+      "stacked_bar_normalized",
+    ];
+
+    if (cartesian.includes(existingType) && cartesian.includes(newType)) {
+      return true;
+    }
+    return false;
+
+    // FIXME: The below causes a fatal crash through a dependency cycle
+    // const newComponent = CHART_CONFIG[newType].component;
+    // const existingComponent = CHART_CONFIG[existingType].component;
+    // return newComponent.name === existingComponent.name;
+  }
+
+  return isTableComponentType(existingType) && isTableComponentType(newType);
 }

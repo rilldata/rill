@@ -1,11 +1,11 @@
 <script lang="ts">
-  import { type V1ProjectPermissions } from "../../client";
-  import Tab from "@rilldata/web-admin/components/nav/Tab.svelte";
   import {
-    width,
     position,
+    width,
   } from "@rilldata/web-admin//components/nav/Tab.svelte";
+  import Tab from "@rilldata/web-admin/components/nav/Tab.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
+  import { type V1ProjectPermissions } from "../../client";
 
   export let projectPermissions: V1ProjectPermissions;
   export let organization: string;
@@ -29,6 +29,11 @@
       route: `/${organization}/${project}/-/alerts`,
       label: "Alerts",
       hasPermission: $alerts,
+    },
+    {
+      route: `/${organization}/${project}/-/ai`,
+      label: "AI",
+      hasPermission: true,
     },
     {
       route: `/${organization}/${project}/-/status`,

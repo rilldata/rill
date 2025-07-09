@@ -8,11 +8,15 @@
   export let organization: string;
 
   let orgPermissions: CreateQueryResult<V1OrganizationPermissions>;
-  $: orgPermissions = createAdminServiceGetOrganization(organization, {
-    query: {
-      select: (data) => data.permissions,
+  $: orgPermissions = createAdminServiceGetOrganization(
+    organization,
+    undefined,
+    {
+      query: {
+        select: (data) => data.permissions,
+      },
     },
-  });
+  );
 </script>
 
 {#if $orgPermissions?.data}

@@ -31,17 +31,14 @@
       dimensions: { getDimensionDisplayName },
       dimensionFilters: { isFilterExcludeMode },
       measures: { visibleMeasures },
-      leaderboard: {
-        leaderboardShowContextForAllMeasures,
-        leaderboardMeasureNames,
-      },
+      leaderboard: { leaderboardMeasureNames },
     },
     actions: {
       sorting: { toggleSort },
       dimensions: { setPrimaryDimension },
       dimensionsFilter: { toggleDimensionFilterMode },
       leaderboard: {
-        setLeaderboardShowContextForAllMeasures,
+        toggleLeaderboardShowContextForAllMeasures,
         setLeaderboardSortByMeasureName,
       },
     },
@@ -144,7 +141,7 @@
     <Button
       type="link"
       forcedStyle="padding: 0; gap: 4px;"
-      on:click={() => goBackToLeaderboard()}
+      onClick={() => goBackToLeaderboard()}
     >
       <Back size="16px" />
       <span>All Dimensions</span>
@@ -181,8 +178,7 @@
 
       <LeaderboardAdvancedActions
         isOpen={isLeaderboardActionsOpen}
-        leaderboardShowContextForAllMeasures={$leaderboardShowContextForAllMeasures}
-        {setLeaderboardShowContextForAllMeasures}
+        toggle={toggleLeaderboardShowContextForAllMeasures}
       />
     </div>
   </div>

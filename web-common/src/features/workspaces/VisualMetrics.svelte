@@ -663,7 +663,7 @@
 
       {#if totalSelected}
         <div
-          class="bg-white rounded-[2px] z-20 shadow-md flex gap-x-0 h-8 text-gray-700 border border-slate-100 absolute right-0"
+          class="bg-surface rounded-[2px] z-20 shadow-md flex gap-x-0 h-8 text-gray-700 border border-slate-100 absolute right-0"
         >
           <div class="px-2 flex items-center">
             {totalSelected}
@@ -706,7 +706,7 @@
               square
               gray
               noStroke
-              on:click={() => {
+              onClick={() => {
                 collapsed[type] = !collapsed[type];
               }}
             >
@@ -728,7 +728,7 @@
               gray
               noStroke
               label="Add new {type.slice(0, -1)}"
-              on:click={() => {
+              onClick={() => {
                 editingItemData.set({
                   type,
                   index: -1,

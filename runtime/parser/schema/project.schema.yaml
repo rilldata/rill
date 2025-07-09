@@ -1,0 +1,2019 @@
+$schema: 'http://json-schema.org/draft-07/schema#'
+$id: project.schema.yaml
+title: YAML Syntax
+type: object
+description: |
+  When you create models and dashboards, these objects are represented as object files on the file system. You can find these files in your `models` and `dashboards` folders in your project by default. 
+
+  :::info Working with resources outside their native folders
+
+  It is possible to define resources (such as [models](model.md), [metrics-views](metrics-view.md), [dashboards](explore.md), [custom APIs](api.md), or [themes](theme.md)) within <u>any</u> nested folder within your Rill project directory. However, for any YAML configuration file, it is then imperative that the `type` property is then appropriately defined within the underlying resource configuration or Rill will not able to resolve the resource type correctly!
+
+  :::
+
+  Projects can simply be rehydrated from Rill project files into an explorable data application as long as there is sufficient access and credentials to the source data - figuring out the dependencies, pulling down data, & validating your model queries and metrics configurations. The result is a set of functioning exploratory dashboards.
+
+  You can see a few different example projects by visiting our [example github repository](https://github.com/rilldata/rill-examples).
+
+  :::tip
+
+  For more information about using Git or cloning projects locally, please see our page on [GitHub Basics](/deploy/deploy-dashboard/github-101).
+
+  :::
+oneOf:
+  - $ref: '#/definitions/alert'
+  - $ref: '#/definitions/api'
+  - $ref: '#/definitions/canvas'
+  - $ref: '#/definitions/component'
+  - $ref: '#/definitions/connector'
+  - $ref: '#/definitions/explore'
+  - $ref: '#/definitions/metrics_view'
+  - $ref: '#/definitions/model'
+  - $ref: '#/definitions/theme'
+definitions:
+  alert:
+    type: object
+    title: Alert YAML
+    description: Along with alertings at the dashboard level and can be created via the UI, there might be more extensive alerting that you might want to develop and can be done so the an alert.yaml. When creating an alert via a YAML file, you'll see this denoted in the UI as `Created through code`.
+    examples:
+      - # Example: To send alert when data lags by more than 1 day to slack channel #rill-cloud-alerts
+        type: alert
+        display_name: Data lags by more than 1 day
+        # Check the alert every hour.
+        refresh:
+          cron: 0 * * * *
+        # Query that returns non-empty results if the metrics lag by more than 1 day.
+        data:
+          sql: |-
+            SELECT  *
+            FROM
+            (
+              SELECT  MAX(event_time) AS max_time
+              FROM rill_metrics_model
+            )
+            WHERE max_time < NOW() - INTERVAL '1 day'
+        # Send notifications in Slack.
+        notify:
+          slack:
+            channels:
+              - '#rill-cloud-alerts'
+    allOf:
+      - title: Properties
+        type: object
+        properties:
+          type:
+            type: string
+            const: alert
+            description: Refers to the resource type and must be `alert`
+          display_name:
+            type: string
+            description: Refers to the display name for the alert
+          refresh:
+            $ref: '#/definitions/schedule_properties'
+            description: Specifies the refresh schedule that Rill should follow to re-ingest and update the underlying data
+          intervals:
+            type: object
+            description: define the interval of the alert to check
+            properties:
+              duration:
+                type: string
+                description: a valid ISO8601 duration to define the interval duration
+              limit:
+                type: integer
+                description: maximum number of intervals to check for on invocation
+                minimum: 0
+              check_unclosed:
+                type: boolean
+                description: 'boolean, whether unclosed intervals should be checked'
+          watermark:
+            type: string
+            enum:
+              - trigger_time
+              - inherit
+            description: Specifies how the watermark is determined for incremental processing.  Use 'trigger_time' to set it at runtime or 'inherit' to use the upstream model's watermark.
+          timeout:
+            type: string
+            description: define the timeout of the alert in seconds (optional).
+          data:
+            description: Specifies one of the options to retrieve or compute the data used by alert
+            $ref: '#/definitions/data_properties'
+          for:
+            description: "Specifies how user identity or attributes should be evaluated for security policy enforcement."
+            oneOf:
+              - type: object
+                description: Specifies a unique user identifier for applying security policies.
+                properties:
+                  user_id:
+                    type: string
+                    description: "The unique user ID used to evaluate security policies."
+                required:
+                  - user_id
+                additionalProperties: false
+              - type: object
+                description: Specifies a user's email address for applying security policies.
+                properties:
+                  user_email:
+                    type: string
+                    description: "The user's email address used to evaluate security policies."
+                    format: email
+                required:
+                  - user_email
+                additionalProperties: false
+              - type: object
+                description: Specifies a set of arbitrary user attributes for applying security policies.
+                properties:
+                  attributes:
+                    type: object
+                    description: A dictionary of user attributes used to evaluate security policies.
+                    additionalProperties: true
+                required:
+                  - attributes
+                additionalProperties: false
+          on_recover:
+            type: boolean
+            description: Send an alert when a previously failing alert recovers. Defaults to false.
+          on_fail:
+            type: boolean
+            description: Send an alert when a failure occurs. Defaults to true.
+          on_error:
+            type: boolean
+            description: Send an alert when an error occurs during evaluation. Defaults to false.
+          renotify:
+            type: boolean
+            description: Enable repeated notifications for unresolved alerts. Defaults to false.
+          renotify_after:
+            type: string
+            description: Defines the re-notification interval for the alert (e.g., '10m','24h'), equivalent to snooze duration in UI, defaults to 'Off'
+          notify:
+            $ref: '#/definitions/notify_properties'
+            description: Defines how and where to send notifications. At least one method (email or Slack) is required.
+          annotations:
+            type: object
+            description: Key value pair used for annotations
+            additionalProperties:
+              type: string
+        required:
+          - type
+          - refresh
+          - data
+          - notify  
+      - $ref: '#/definitions/common_properties'
+  api:
+    type: object
+    title: API YAML
+    description: In your Rill project directory, create a new file name `<api-name>.yaml` in the `apis` directory containing a custom API definition. See comprehensive documentation on how to define and use [custom APIs](/integrate/custom-apis/index.md)
+    examples:
+      - # Example: This api returns the top 10 authors by net line changes since the specified date provided in the arguments.
+        type: api
+        name: metrics_view_api
+        metrics_sql: |-
+          SELECT author_name, net_line_changes
+          FROM advanced_metrics_view
+            where author_date > '{{ .args.date }}'
+            order by net_line_changes DESC
+            limit 10
+    allOf:
+      - title: Properties
+        type: object
+        properties:
+          type:
+            type: string
+            const: api
+            description: Refers to the resource type and must be `api`
+          openapi:
+            type: object
+            description: OpenAPI specification for the API endpoint
+            properties:
+              summary:
+                type: string
+                description: A brief description of what the API endpoint does
+              parameters:
+                type: array
+                description: List of parameters that the API endpoint accepts
+                items:
+                  type: object
+                  additionalProperties: true
+              request_schema:
+                type: object
+                description: JSON schema for the request body (use nested YAML instead of a JSON string)
+                additionalProperties: true
+              response_schema:
+                type: object
+                description: JSON schema for the response body (use nested YAML instead of a JSON string)
+                additionalProperties: true
+          security:
+            $ref: '#/definitions/security_policy_properties'
+          skip_nested_security:
+            type: boolean
+            description: Flag to control security inheritance
+        allOf:
+          - $ref: '#/definitions/data_properties'
+        required:
+          - type       
+  canvas:
+    type: object
+    title: Canvas YAML
+    description: In your Rill project directory, create a explore dashboard, `<dashboard_name>.yaml`, file in the `dashboards` directory. Rill will ingest the dashboard definition next time you run `rill start`.
+    allOf:
+      - title: Properties
+        type: object
+        properties:
+          type:
+            type: string
+            const: canvas
+            description: Refers to the resource type and must be `canvas`
+          display_name:
+            type: string
+            description: Refers to the display name for the canvas
+          banner:
+            type: string
+            description: Refers to the custom banner displayed at the header of an Canvas dashboard
+          max_width:
+            type: integer
+            description: Max width in pixels of the canvas
+            minimum: 0
+          gap_x:
+            type: integer
+            description: Horizontal gap in pixels of the canvas
+            minimum: 0
+          gap_y:
+            type: integer
+            description: Vertical gap in pixels of the canvas
+            minimum: 0
+          theme:
+            oneOf:
+              - type: string
+                description: Name of an existing theme to apply to the dashboard
+              - $ref: '#/definitions/theme/definitions/theme_properties'
+                description: Inline theme configuration.
+            description: Name of the theme to use. Only one of theme and embedded_theme can be set.
+          allow_custom_time_range:
+            type: boolean
+            description: Defaults to true, when set to false it will hide the ability to set a custom time range for the user. 
+          time_ranges:
+            type: array
+            description: Overrides the list of default time range selections available in the dropdown. It can be string or an object with a 'range' and optional 'comparison_offsets'
+            items:
+              $ref: '#/definitions/explore_time_range_properties'
+          time_zones:
+            type: array
+            description: Refers to the time zones that should be pinned to the top of the time zone selector. It should be a list of [IANA time zone identifiers](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones)
+            items:
+              type: string
+          filters:
+            type: object
+            description: Indicates if filters should be enabled for the canvas.
+            properties:
+              enable:
+                type: boolean
+                description: Toggles filtering functionality for the canvas dashboard.
+            additionalProperties: false
+          defaults:
+            type: object
+            description: Preset UI state to show by default
+            properties:
+              time_range:
+                type: string
+                description: Default time range to display when the dashboard loads
+              comparison_mode:
+                type: string
+                description: Default comparison mode for metrics (none, time, or dimension)
+              comparison_dimension:
+                type: string
+                description: Default dimension to use for comparison when comparison_mode is 'dimension'
+            additionalProperties: false
+          variables:
+            type: array
+            description: Variables that can be used in the canvas
+            items:
+              $ref: '#/definitions/component_variable_properties'
+          rows:
+            type: array
+            description: Refers to all of the rows displayed on the Canvas
+            items:
+              type: object
+              properties:
+                height:
+                  type: string
+                  description: Height of the row in px
+                items:
+                  type: array
+                  description: List of components to display in the row
+                  items:
+                    type: object
+                    properties:
+                      component:
+                        type: string
+                        description: Name of the component to display
+                      width:
+                        type:
+                          - string
+                          - integer
+                        description: Width of the component (can be a number or string with unit) 
+                    additionalProperties: true
+              additionalProperties: false
+          security:
+            $ref: '#/definitions/security_policy_properties'
+            description: Security rules to apply for access to the canvas
+        required:
+          - type
+          - rows
+      - $ref: '#/definitions/common_properties'          
+  component:
+    type: object
+    title: Component YAML
+    description: Defines a reusable dashboard component that can be embedded in canvas dashboards
+    allOf:
+      - title: Properties
+        type: object
+        properties:
+          type:
+            type: string
+            const: component
+            description: Refers to the resource type and must be `component`
+          display_name:
+            type: string
+            description: Refers to the display name for the component
+          description:
+            type: string
+            description: Detailed description of the component's purpose and functionality
+          input:
+            type: array
+            description: List of input variables that can be passed to the component
+            items:
+              $ref: '#/definitions/component_variable_properties'
+          output:
+            description: Output variable that the component produces
+            $ref: '#/definitions/component_variable_properties'
+        required:
+          - type
+      - $ref: '#/definitions/common_properties' 
+  connector:
+    type: object
+    title: Connector YAML
+    description: |
+      When you add olap_connector to your rill.yaml file, you will need to set up a `<connector_name>.yaml` file in the 'connectors' directory. This file requires the following parameters,type and driver (see below for more parameter options). Rill will automatically test the connectivity to the OLAP engine upon saving the file. This can be viewed in the connectors tab in the UI.
+
+      :::tip Did you know?
+
+      Starting from Rill 0.46, you can directly create OLAP engines from the UI! Select + Add -> Data -> Connect an OLAP engine
+
+      :::
+    allOf:
+      - title: Properties
+        type: object
+        properties:
+          type:
+            type: string
+            const: connector
+            description: Refers to the resource type and must be `connector`
+        required:
+          - type
+      - $ref: '#/definitions/common_properties'
+      - oneOf:
+          - $ref: '#/definitions/connector/definitions/athena'
+          - $ref: '#/definitions/connector/definitions/azure'
+          - $ref: '#/definitions/connector/definitions/bigquery'
+          - $ref: '#/definitions/connector/definitions/clickhouse'
+          - $ref: '#/definitions/connector/definitions/druid'
+          - $ref: '#/definitions/connector/definitions/duckdb'
+          - $ref: '#/definitions/connector/definitions/gcs'
+          - $ref: '#/definitions/connector/definitions/https'
+          - $ref: '#/definitions/connector/definitions/local_file'
+          - $ref: '#/definitions/connector/definitions/motherduck'
+          - $ref: '#/definitions/connector/definitions/mysql'
+          - $ref: '#/definitions/connector/definitions/pinot'
+          - $ref: '#/definitions/connector/definitions/postgres'
+          - $ref: '#/definitions/connector/definitions/redshift'
+          - $ref: '#/definitions/connector/definitions/s3'
+          - $ref: '#/definitions/connector/definitions/salesforce'
+          - $ref: '#/definitions/connector/definitions/slack'
+          - $ref: '#/definitions/connector/definitions/snowflake'
+          - $ref: '#/definitions/connector/definitions/sqlite'
+    definitions:
+      athena:
+        type: object
+        title: athena
+        description: Configuration properties specific to the athena
+        properties:
+          driver:
+            type: string
+            description: Refers to the driver type and must be driver `athena`
+            const: athena
+          aws_access_key_id:
+            type: string
+            description: AWS Access Key ID used for authentication. Required when using static credentials directly or as base credentials for assuming a role.
+          aws_secret_access_key:
+            type: string
+            description: AWS Secret Access Key paired with the Access Key ID. Required when using static credentials directly or as base credentials for assuming a role.
+          aws_access_token:
+            type: string
+            description: AWS session token used with temporary credentials. Required only if the Access Key and Secret Key are part of a temporary session credentials.
+          role_arn:
+            type: string
+            description: ARN of the IAM role to assume. When specified, the SDK uses the base credentials to call STS AssumeRole and obtain temporary credentials scoped to this role.
+          role_session_name:
+            type: string
+            description: Session name to associate with the STS AssumeRole session. Used only if 'role_arn' is specified. Useful for identifying and auditing the session.
+          external_id:
+            type: string
+            description: External ID required by some roles when assuming them, typically for cross-account access. Used only if 'role_arn' is specified and the role's trust policy requires it.
+          workgroup:
+            type: string
+            description: Athena workgroup to use for query execution. Defaults to 'primary' if not specified.
+          output_location:
+            type: string
+            description: S3 URI where Athena query results should be stored (e.g., s3://your-bucket/athena/results/). Optional if the selected workgroup has a default result configuration.
+          aws_region:
+            type: string
+            description: AWS region where Athena and the result S3 bucket are located (e.g., us-east-1). Defaults to 'us-east-1' if not specified.
+          allow_host_access:
+            type: boolean
+            description: Allow the Athena client to access host environment configurations such as environment variables or local AWS credential files. Defaults to true, enabling use of credentials and settings from the host environment unless explicitly disabled.
+        required:
+          - driver
+      azure:
+        type: object
+        title: azure
+        description: Configuration properties specific to the azure
+        properties:
+          driver:
+            type: string
+            description: Refers to the driver type and must be driver `azure`
+            const: azure
+          azure_storage_account:
+            type: string
+            description: Azure storage account name
+          azure_storage_key:
+            type: string
+            description: Azure storage access key
+          azure_storage_sas_token:
+            type: string
+            description: Optional azure SAS token for authentication
+          azure_storage_connection_string:
+            type: string
+            description: Optional azure connection string for storage account
+          azure_storage_bucket:
+            type: string
+            description: Name of the Azure Blob Storage container (equivalent to an S3 bucket)
+          allow_host_access:
+            type: boolean
+            description: Allow access to host environment configuration
+        required:
+          - driver
+          - azure_storage_bucket
+      bigquery:
+        type: object
+        title: bigquery
+        description: Configuration properties specific to the bigquery
+        properties:
+          driver:
+            type: string
+            description: Refers to the driver type and must be driver `bigquery`
+            const: bigquery
+          google_application_credentials:
+            type: string
+            description: Raw contents of the Google Cloud service account key (in JSON format) used for authentication.
+          project_id:
+            type: string
+            description: ID of the Google Cloud project to use for BigQuery operations. This can be omitted only if the project ID is included in the service account key.         
+          allow_host_access:
+            type: boolean
+            description: Enable the BigQuery client to use credentials from the host environment when no service account JSON is provided. This includes Application Default Credentials from environment variables, local credential files, or the Google Compute Engine metadata server. Defaults to true, allowing seamless authentication in GCP environments.
+        required:
+          - driver
+      clickhouse:
+        type: object
+        title: clickhouse
+        description: Configuration properties specific to the clickhouse
+        properties:
+          driver:
+            type: string
+            description: Refers to the driver type and must be driver `clickhouse`
+            const: clickhouse
+          managed:
+            type: boolean
+            description: '`true` means Rill will provision the connector using the default provisioner. `false` disables automatic provisioning.'
+          dsn:
+            type: string
+            description: DSN(Data Source Name) for the ClickHouse connection
+          username:
+            type: string
+            description: Username for authentication
+          password:
+            type: string
+            description: Password for authentication
+          host:
+            type: string
+            description: Host where the ClickHouse instance is running
+          port:
+            type: integer
+            description: Port where the ClickHouse instance is accessible
+          database:
+            type: string
+            description: Name of the ClickHouse database within the cluster
+          ssl:
+            type: boolean
+            description: Indicates whether a secured SSL connection is required
+          cluster:
+            type: string
+            description: 'Cluster name, required for running distributed queries'
+          log_queries:
+            type: boolean
+            description: Controls whether to log raw SQL queries
+          settings_override:
+            type: string
+            description: override the default settings used in queries. example `readonly = 1, session_timezone = 'UTC'`
+          embed_port:
+            type: integer
+            description: Port to run ClickHouse locally (0 for random port)
+          can_scale_to_zero:
+            type: boolean
+            description: Indicates if the database can scale to zero
+          max_open_conns:
+            type: integer
+            description: Maximum number of open connections to the database
+          max_idle_conns:
+            type: integer
+            description: Maximum number of idle connections in the pool
+          dial_timeout:
+            type: string
+            description: Timeout for dialing the ClickHouse server
+          conn_max_lifetime:
+            type: string
+            description: Maximum time a connection may be reused
+          read_timeout:
+            type: string
+            description: Maximum time for a connection to read data
+        required:
+          - driver
+      druid:
+        type: object
+        title: druid
+        description: Configuration properties specific to the druid
+        properties:
+          driver:
+            type: string
+            description: Refers to the driver type and must be driver `druid`
+            const: druid
+          dsn:
+            type: string
+            description: Data Source Name (DSN) for connecting to Druid
+          username:
+            type: string
+            description: Username for authenticating with Druid
+          password:
+            type: string
+            description: Password for authenticating with Druid
+          host:
+            type: string
+            description: Hostname of the Druid coordinator or broker
+          port:
+            type: integer
+            description: Port number of the Druid service
+          ssl:
+            type: boolean
+            description: Enable SSL for secure connection
+          log_queries:
+            type: boolean
+            description: Log raw SQL queries sent to Druid
+          max_open_conns:
+            type: integer
+            description: Maximum number of open database connections (0 = default, -1 = unlimited)
+          skip_version_check:
+            type: boolean
+            description: Skip checking Druid version compatibility
+        required:
+          - driver
+          - dsn
+      duckdb:
+        type: object
+        title: duckdb
+        description: Configuration properties specific to the duckdb
+        properties:
+          driver:
+            type: string
+            description: Refers to the driver type and must be driver `duckdb`
+            const: duckdb
+          pool_size:
+            type: integer
+            description: Number of concurrent connections and queries allowed
+          allow_host_access:
+            type: boolean
+            description: Whether access to the local environment and file system is allowed
+          cpu:
+            type: integer
+            description: Number of CPU cores available to the database
+          memory_limit_gb:
+            type: integer
+            description: Amount of memory in GB available to the database
+          read_write_ratio:
+            type: number
+            description: Ratio of resources allocated to the read database; used to divide CPU and memory
+          init_sql:
+            type: string
+            description: is executed during database initialization.
+          conn_init_sql:
+            type: string
+            description: is executed when a new connection is initialized.
+          secrets:
+            type: string
+            description: Comma-separated list of other connector names to create temporary secrets for in DuckDB before executing a model.
+          log_queries:
+            type: boolean
+            description: Whether to log raw SQL queries executed through OLAP
+        required:
+          - driver
+      gcs:
+        type: object
+        title: gcs
+        description: Configuration properties specific to the gcs
+        properties:
+          driver:
+            type: string
+            description: Refers to the driver type and must be driver `gcs`
+            const: gcs
+          google_application_credentials:
+            type: string
+            description: Google Cloud credentials JSON string
+          bucket:
+            type: string
+            description: Name of gcs bucket
+          allow_host_access:
+            type: boolean
+            description: Allow access to host environment configuration
+          key_id:
+            type: string
+            description: Optional S3-compatible Key ID when used in compatibility mode
+          secret:
+            type: string
+            description: Optional S3-compatible Secret when used in compatibility mode
+        required:
+          - driver
+          - bucket
+      https:
+        type: object
+        title: https
+        description: Configuration properties specific to the https
+        properties:
+          driver:
+            type: string
+            description: Refers to the driver type and must be driver `https`
+            const: https
+          path:
+            type: string
+            description: The full HTTPS URI to fetch data from
+          headers:
+            type: object
+            description: HTTP headers to include in the request
+            additionalProperties:
+              type: string
+        required:
+          - driver
+          - path
+      local_file:
+        type: object
+        title: local_file
+        description: Configuration properties specific to the local_file
+        properties:
+          driver:
+            type: string
+            description: Refers to the driver type and must be driver `local_file`
+            const: local_file
+          dsn:
+            type: string
+            description: Data Source Name (DSN) indicating the file path or location of the local file
+          allow_host_access:
+            type: boolean
+            description: Flag to indicate if access to host-level file paths is permitted
+        required:
+          - driver
+          - dsn
+      motherduck:
+        type: object
+        title: motherduck
+        description: Configuration properties specific to the motherduck
+        properties:
+          driver:
+            type: string
+            description: Refers to the driver type and must be driver `motherduck`
+            const: motherduck
+          dsn:
+            type: string
+            description: Data Source Name (DSN) specifying the MotherDuck connection endpoint
+          token:
+            type: string
+            description: Authentication token for accessing MotherDuck (secret)
+        required:
+          - driver
+          - dsn
+          - token
+      mysql:
+        type: object
+        title: mysql
+        description: Configuration properties specific to the mysql
+        properties:
+          driver:
+            type: string
+            description: Refers to the driver type and must be driver `mysql`
+            const: mysql
+          dsn:
+            type: string
+            description: DSN(Data Source Name) for the mysql connection
+        required:
+          - driver
+          - dsn
+      pinot:
+        type: object
+        title: pinot
+        description: Configuration properties specific to the pinot
+        properties:
+          driver:
+            type: string
+            description: Refers to the driver type and must be driver `pinot`
+            const: pinot
+          dsn:
+            type: string
+            description: DSN(Data Source Name) for the Pinot connection
+          username:
+            type: string
+            description: Username for authenticating with Pinot
+          password:
+            type: string
+            description: Password for authenticating with Pinot
+          broker_host:
+            type: string
+            description: Hostname of the Pinot broker
+          broker_port:
+            type: integer
+            description: Port number for the Pinot broker
+          controller_host:
+            type: string
+            description: Hostname of the Pinot controller
+          controller_port:
+            type: integer
+            description: Port number for the Pinot controller
+          ssl:
+            type: boolean
+            description: Enable SSL connection to Pinot
+          log_queries:
+            type: boolean
+            description: Log raw SQL queries executed through Pinot
+          max_open_conns:
+            type: integer
+            description: Maximum number of open connections to the Pinot database
+        required:
+          - driver
+          - dsn
+          - broker_host
+          - controller_host
+      postgres:
+        type: object
+        title: postgres
+        description: Configuration properties specific to the postgres
+        properties:
+          driver:
+            type: string
+            description: Refers to the driver type and must be driver `postgres`
+            const: postgres
+          dsn:
+            type: string
+            description: DSN(Data Source Name) for the postgres connection
+        required:
+          - driver
+          - dsn
+      redshift:
+        type: object
+        title: redshift
+        description: Configuration properties specific to the redshift
+        properties:
+          driver:
+            type: string
+            description: Refers to the driver type and must be driver `redshift`
+            const: redshift
+          aws_access_key_id:
+            type: string
+            description: AWS Access Key ID used for authenticating with Redshift.
+          aws_secret_access_key:
+            type: string
+            description: AWS Secret Access Key used for authenticating with Redshift.
+          aws_access_token:
+            type: string
+            description: AWS Session Token for temporary credentials (optional).
+          region:
+            type: string
+            description: AWS region where the Redshift cluster or workgroup is hosted (e.g., 'us-east-1').
+          database:
+            type: string
+            description: Name of the Redshift database to query.
+          workgroup:
+            type: string
+            description: Workgroup name for Redshift Serverless, in case of provisioned Redshift clusters use 'cluster_identifier'.
+          cluster_identifier:
+            type: string
+            description: Cluster identifier for provisioned Redshift clusters, in case of Redshift Serverless use 'workgroup' .
+        required:
+          - driver
+          - aws_access_key_id
+          - aws_secret_access_key
+          - database
+      s3:
+        type: object
+        title: s3
+        description: Configuration properties specific to the s3
+        properties:
+          driver:
+            type: string
+            description: Refers to the driver type and must be driver `s3`
+            const: s3
+          aws_access_key_id:
+            type: string
+            description: AWS Access Key ID used for authentication
+          aws_secret_access_key:
+            type: string
+            description: AWS Secret Access Key used for authentication
+          aws_access_token:
+            type: string
+            description: Optional AWS session token for temporary credentials
+          bucket:
+            type: string
+            description: Name of s3 bucket 
+          endpoint:
+            type: string
+            description: Optional custom endpoint URL for S3-compatible storage
+          region:
+            type: string
+            description: AWS region of the S3 bucket
+          allow_host_access:
+            type: boolean
+            description: Allow access to host environment configuration
+          retain_files:
+            type: boolean
+            description: Whether to retain intermediate files after processing
+        required:
+          - driver
+          - bucket
+      salesforce:
+        type: object
+        title: salesforce
+        description: Configuration properties specific to the salesforce
+        properties:
+          driver:
+            type: string
+            description: Refers to the driver type and must be driver `salesforce`
+            const: salesforce
+          username:
+            type: string
+            description: Salesforce account username
+          password:
+            type: string
+            description: Salesforce account password (secret)
+          key:
+            type: string
+            description: Authentication key for Salesforce (secret)
+          endpoint:
+            type: string
+            description: Salesforce API endpoint URL
+          client_id:
+            type: string
+            description: Client ID used for Salesforce OAuth authentication
+        required:
+          - driver
+          - username
+          - endpoint
+      slack:
+        type: object
+        title: slack
+        description: Configuration properties specific to the slack
+        properties:
+          driver:
+            type: string
+            description: Refers to the driver type and must be driver `slack`
+            const: slack
+          bot_token:
+            type: string
+            description: Bot token used for authenticating Slack API requests
+        required:
+          - driver
+          - bot_token
+      snowflake:
+        type: object
+        title: snowflake
+        description: Configuration properties specific to the snowflake
+        properties:
+          driver:
+            type: string
+            description: Refers to the driver type and must be driver `snowflake`
+            const: snowflake
+          dsn:
+            type: string
+            description: DSN (Data Source Name) for the Snowflake connection
+          parallel_fetch_limit:
+            type: integer
+            description: Maximum number of concurrent fetches during query execution
+        required:
+          - driver
+          - dsn
+      sqlite:
+        type: object
+        title: sqlite
+        description: Configuration properties specific to the sqlite
+        properties:
+          driver:
+            type: string
+            description: Refers to the driver type and must be driver `sqlite`
+            const: sqlite
+          dsn:
+            type: string
+            description: DSN(Data Source Name) for the sqlite connection
+        required:
+          - driver
+          - dsn
+  explore:
+    type: object
+    title: Explore YAML
+    description: In your Rill project directory, create a explore dashboard, `<dashboard_name>.yaml`, file in the `dashboards` directory. Rill will ingest the dashboard definition next time you run `rill start`.
+    allOf:
+      - title: Properties
+        type: object
+        properties:
+          type:
+            type: string
+            const: explore
+            description: Refers to the resource type and must be `explore`
+          display_name:
+            type: string
+            description: Refers to the display name for the explore dashboard
+          description:
+            type: string
+            description: Refers to the description of the explore dashboard
+          banner:
+            type: string
+            description: Refers to the custom banner displayed at the header of an explore dashboard
+          metrics_view:
+            type: string
+            description: Refers to the metrics view resource
+          dimensions:
+            description: List of dimension names. Use '*' to select all dimensions (default) 
+            $ref: '#/definitions/explore/definitions/field_selector_properties'
+          measures:
+            description: List of measure names. Use ''*'' to select all measures (default)
+            $ref: '#/definitions/explore/definitions/field_selector_properties'
+          theme:
+            oneOf:
+              - type: string
+                description: Name of an existing theme to apply to the dashboard
+              - $ref: '#/definitions/theme/definitions/theme_properties'
+                description: Inline theme configuration.
+            description: Name of the theme to use. Only one of theme and embedded_theme can be set.
+          time_ranges:
+            type: array
+            description: Overrides the list of default time range selections available in the dropdown. It can be string or an object with a 'range' and optional 'comparison_offsets'
+            items:
+              $ref: '#/definitions/explore_time_range_properties'
+          time_zones:
+            type: array
+            description: Refers to the time zones that should be pinned to the top of the time zone selector. It should be a list of [IANA time zone identifiers](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones)
+            items:
+              type: string
+          lock_time_zone:
+            type: boolean
+            description: When true, the dashboard will be locked to the first time provided in the time_zones list. When no time_zones are provided, the dashboard will be locked to UTC
+          allow_custom_time_range:
+            type: boolean
+            description: Defaults to true, when set to false it will hide the ability to set a custom time range for the user.
+          defaults:
+            type: object
+            description: defines the defaults YAML struct
+            properties:
+              dimensions:
+                description: Provides the default dimensions to load on viewing the dashboard
+                $ref: '#/definitions/explore/definitions/field_selector_properties'
+              measures:
+                description: Provides the default measures to load on viewing the dashboard
+                $ref: '#/definitions/explore/definitions/field_selector_properties'
+              time_range:
+                description: Refers to the default time range shown when a user initially loads the dashboard. The value must be either a valid [ISO 8601 duration](https://en.wikipedia.org/wiki/ISO_8601#Durations) (for example, PT12H for 12 hours, P1M for 1 month, or P26W for 26 weeks) or one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions)
+                type: string
+              comparison_mode:
+                description: 'Controls how to compare current data with historical or categorical baselines. Options: `none` (no comparison), `time` (compares with past based on default_time_range), `dimension` (compares based on comparison_dimension values)'
+                type: string
+              comparison_dimension:
+                description: 'for dimension mode, specify the comparison dimension by name'
+                type: string
+            additionalProperties: false
+          embeds:
+            type: object
+            description: Configuration options for embedded dashboard views
+            properties:
+              hide_pivot:
+                type: boolean
+                description: When true, hides the pivot table view in embedded mode
+            additionalProperties: false
+          security:
+            description: Security rules to apply for access to the explore dashboard
+            $ref: '#/definitions/security_policy_properties'
+        required:
+          - type       
+      - $ref: '#/definitions/common_properties'  
+    definitions:
+      field_selector_properties:
+        oneOf:
+          - type: string
+            const: '*'
+            description: Wildcard(*) selector that includes all available fields in the selection
+          - type: array
+            items:
+              type: string
+            description: Explicit list of fields to include in the selection
+          - type: object
+            description: 'Advanced matching using regex, DuckDB expression, or exclusion'
+            properties:
+              regex:
+                type: string
+                description: Select dimensions using a regular expression
+              expr:
+                type: string
+                description: DuckDB SQL expression to select fields based on custom logic
+              exclude:
+                type: object
+                description: Select all dimensions except those listed here
+            additionalProperties: false
+            oneOf:
+              - required:
+                  - regex
+              - required:
+                  - expr
+              - required:
+                  - exclude 
+  metrics_view:
+    type: object
+    title: Metrics View YAML
+    description: In your Rill project directory, create a metrics view, `<metrics_view>.yaml`, file in the `metrics` directory. Rill will ingest the metric view definition next time you run `rill start`.
+    allOf:
+      - title: Properties
+        type: object
+        properties:
+          type:
+            type: string
+            const: metrics_view
+            description: Refers to the resource type and must be `metrics_view`
+          display_name:
+            type: string
+            description: Refers to the display name for the metrics view
+          description:
+            type: string
+            description: Refers to the description for the metrics view
+          ai_instructions:
+            type: string
+            description: Extra instructions for AI agents. Used to guide natural language question answering and routing.
+          model:
+            type: string
+            description: Refers to the model powering the dashboard (either model or table is required)
+          database:
+            type: string
+            description: Refers to the database to use in the OLAP engine (to be used in conjunction with table). Otherwise, will use the default database or schema if not specified
+          database_schema:
+            type: string
+            description: Refers to the schema to use in the OLAP engine (to be used in conjunction with table). Otherwise, will use the default database or schema if not specified
+          table:
+            type: string
+            description: Refers to the table powering the dashboard, should be used instead of model for dashboards create from external OLAP tables (either table or model is required)
+          timeseries:
+            type: string
+            description: Refers to the timestamp column from your model that will underlie x-axis data in the line charts. If not specified, the line charts will not appear
+          watermark:
+            type: string
+            description: A SQL expression that tells us the max timestamp that the metrics are considered valid for. Usually does not need to be overwritten
+          smallest_time_grain:
+            type: string
+            description: 'Refers to the smallest time granularity the user is allowed to view. The valid values are: millisecond, second, minute, hour, day, week, month, quarter, year'
+          first_day_of_week:
+            type: integer
+            description: Refers to the first day of the week for time grain aggregation (for example, Sunday instead of Monday). The valid values are 1 through 7 where Monday=1 and Sunday=7
+          first_month_of_year:
+            type: integer
+            description: Refers to the first month of the year for time grain aggregation. The valid values are 1 through 12 where January=1 and December=12
+          dimensions:
+            type: array
+            description: Relates to exploring segments or dimensions of your data and filtering the dashboard
+            items:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: a stable identifier for the dimension
+                display_name:
+                  type: string
+                  description: a display name for your dimension
+                description:
+                  type: string
+                  description: a freeform text description of the dimension
+                column:
+                  type: string
+                  description: a categorical column
+                expression:
+                  type: string
+                  description: a non-aggregate expression such as string_split(domain, '.'). One of column and expression is required but cannot have both at the same time
+                unnest:
+                  type: boolean
+                  description: if true, allows multi-valued dimension to be unnested (such as lists) and filters will automatically switch to "contains" instead of exact match 
+                uri:
+                  type:
+                    - string
+                    - boolean
+                  description: enable if your dimension is a clickable URL to enable single click navigation (boolean or valid SQL expression) 
+              anyOf:
+                - required:
+                    - column
+                - required:
+                    - expression
+          measures:
+            type: array
+            description: Used to define the numeric aggregates of columns from your data model
+            items:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: a stable identifier for the measure
+                display_name:
+                  type: string
+                  description: the display name of your measure.
+                description:
+                  type: string
+                  description: a freeform text description of the dimension
+                type:
+                  type: string
+                  description: 'Measure calculation type: "simple" for basic aggregations, "derived" for calculations using other measures, or "time_comparison" for period-over-period analysis. Defaults to "simple" unless dependencies exist.'
+                expression:
+                  type: string
+                  description: a combination of operators and functions for aggregations
+                window:
+                  description: A measure window can be defined as a keyword string (e.g. 'time' or 'all') or an object with detailed window configuration.
+                  anyOf:
+                    - type: string
+                      enum:
+                        - time
+                        - 'true'
+                        - all
+                      description: 'Shorthand: `time` or `true` means time-partitioned, `all` means non-partitioned.'
+                    - type: object
+                      description: 'Detailed window configuration for measure calculations, allowing control over partitioning, ordering, and frame definition.'
+                      properties:
+                        partition:
+                          type: boolean
+                          description: 'Controls whether the window is partitioned. When true, calculations are performed within each partition separately.'
+                        order:
+                          $ref: '#/definitions/metrics_view/definitions/field_selectors_properties'
+                          description: 'Specifies the fields to order the window by, determining the sequence of rows within each partition.'
+                        frame:
+                          type: string
+                          description: 'Defines the window frame boundaries for calculations, specifying which rows are included in the window relative to the current row.'
+                      additionalProperties: false
+                per:
+                  $ref: '#/definitions/metrics_view/definitions/field_selectors_properties'
+                  description: for per dimensions
+                requires:
+                  $ref: '#/definitions/metrics_view/definitions/field_selectors_properties'
+                  description: using an available measure or dimension in your metrics view to set a required parameter, cannot be used with simple measures
+                format_preset:
+                  type: string
+                  description: |
+                    Controls the formatting of this measure using a predefined preset. Measures cannot have both `format_preset` and `format_d3`. If neither is supplied, the measure will be formatted using the `humanize` preset by default.
+                    
+                      Available options:
+                      - `humanize`: Round numbers into thousands (K), millions(M), billions (B), etc.
+                      - `none`: Raw output.
+                      - `currency_usd`: Round to 2 decimal points with a dollar sign ($).
+                      - `currency_eur`: Round to 2 decimal points with a euro sign (€).
+                      - `percentage`: Convert a rate into a percentage with a % sign.
+                      - `interval_ms`: Convert milliseconds into human-readable durations like hours (h), days (d), years (y), etc. (optional)
+                format_d3:
+                  type: string
+                  description: 'Controls the formatting of this measure using a [d3-format](https://d3js.org/d3-format) string. If an invalid format string is supplied, the measure will fall back to `format_preset: humanize`. A measure cannot have both `format_preset` and `format_d3`. If neither is provided, the humanize preset is used by default. Example: `format_d3: ".2f"` formats using fixed-point notation with two decimal places. Example: `format_d3: ",.2r"` formats using grouped thousands with two significant digits. (optional)'
+                format_d3_locale:
+                  type: object
+                  description: locale configuration passed through to D3, enabling changing the currency symbol among other things. For details, see the docs for D3's [formatLocale](https://d3js.org/d3-format#formatLocale)
+                  additionalProperties: true
+                valid_percent_of_total:
+                  type: boolean
+                  description: a boolean indicating whether percent-of-total values should be rendered for this measure 
+                treat_nulls_as:
+                  type: string
+                  description: used to configure what value to fill in for missing time buckets. This also works generally as COALESCING over non empty time buckets.
+            minItems: 1
+          security:
+            $ref: '#/definitions/security_policy_properties'
+            description: Defines a security policy for the dashboard
+        required:
+          - type
+      - $ref: '#/definitions/common_properties' 
+    definitions:
+      field_selectors_properties:
+        anyOf:
+          - type: string
+            description: 'Simple field name as a string.'
+          - type: array
+            description: 'List of field selectors, each can be a string or an object with detailed configuration.'
+            items:
+              anyOf:
+                - type: string
+                  description: 'Shorthand field selector, interpreted as the name.'
+                - type: object
+                  description: 'Detailed field selector configuration with name and optional time grain.'
+                  properties:
+                    name:
+                      type: string
+                      description: 'Name of the field to select.'
+                    time_grain:
+                      type: string
+                      description: 'Time grain for time-based dimensions.'
+                      enum:
+                        - ''
+                        - ms
+                        - millisecond
+                        - s
+                        - second
+                        - min
+                        - minute
+                        - h
+                        - hour
+                        - d
+                        - day
+                        - w
+                        - week
+                        - month
+                        - q
+                        - quarter
+                        - 'y'
+                        - year
+                  required:
+                    - name
+                  additionalProperties: false
+            minItems: 1
+  model:
+    type: object
+    title: Model YAML
+    allOf:
+      - title: Properties
+        type: object
+        properties:
+          type:
+            type: string
+            const: model
+            description: Refers to the resource type and must be `model`
+          refresh:
+            $ref: '#/definitions/schedule_properties'
+            description: Specifies the refresh schedule that Rill should follow to re-ingest and update the underlying model data 
+          connector:
+            type: string
+            description: |
+              Refers to the connector type  or [named connector](./connector.md#name) for the source.
+          sql:
+            type: string
+            description: Raw SQL query to run against source
+          timeout:
+            type: string
+            description: The maximum time to wait for model ingestion
+          incremental:
+            type: boolean
+            description: whether incremental modeling is required (optional)
+          change_mode:
+            type: string
+            enum:
+              - reset
+              - manual
+              - patch
+            description: Configure how changes to the model specifications are applied (optional). 'reset' will drop and recreate the model automatically, 'manual' will require a manual full or incremental refresh to apply changes, and 'patch' will switch to the new logic without re-processing historical data (only applies for incremental models).
+          state:
+            $ref: '#/definitions/data_properties'
+            description: Refers to the explicitly defined state of your model, cannot be used with partitions (optional)
+          partitions:
+            $ref: '#/definitions/data_properties'
+            description: Refers to the how your data is partitioned, cannot be used with state. (optional)
+          materialize:
+            type: boolean
+            description: models will be materialized in olap
+          partitions_watermark:
+            type: string
+            description: Refers to a customizable timestamp that can be set to check if an object has been updated (optional).
+          partitions_concurrency:
+            type: integer
+            description: Refers to the number of concurrent partitions that can be read at the same time (optional).
+          stage:
+            type: object
+            properties:
+              connector:
+                type: string
+                description: Refers to the connector type for the staging table
+            required:
+              - connector
+            description: in the case of staging models, where an input source does not support direct write to the output and a staging table is required
+            additionalProperties: true
+          output:
+            type: object
+            description: to define the properties of output
+            properties:
+              table:
+                type: string
+                description: Name of the output table. If not specified, the model name is used.
+              materialize:
+                type: boolean
+                description: Whether to materialize the model as a table or view
+              connector:
+                type: string
+                description: Refers to the connector type for the output table. Can be `clickhouse` or `duckdb` and their named connector 
+              incremental_strategy:
+                type: string
+                enum:
+                  - append
+                  - merge
+                  - partition_overwrite
+                description: Strategy to use for incremental updates. Can be 'append', 'merge' or 'partition_overwrite'
+              unique_key:
+                type: array
+                items:
+                  type: string
+                description: List of columns that uniquely identify a row for merge strategy
+              partition_by:
+                type: string
+                description: Column or expression to partition the table by
+            allOf:
+              - if:
+                  title: Additional properties for `output` when `connector` is `clickhouse`
+                  properties:
+                    connector:
+                      const: clickhouse
+                  required:
+                    - connector
+                then:
+                  properties:
+                    type:
+                      type: string
+                      description: Type to materialize the model into. Can be 'TABLE', 'VIEW' or 'DICTIONARY'
+                      enum:
+                        - TABLE
+                        - VIEW
+                        - DICTIONARY
+                    columns:
+                      type: string
+                      description: Column names and types. Can also include indexes. If unspecified, detected from the query.
+                    engine_full:
+                      type: string
+                      description: Full engine definition in SQL format. Can include partition keys, order, TTL, etc.
+                    engine:
+                      type: string
+                      description: Table engine to use. Default is MergeTree
+                    order_by:
+                      type: string
+                      description: ORDER BY clause.
+                    partition_by:
+                      type: string
+                      description: Partition BY clause.
+                    primary_key:
+                      type: string
+                      description: PRIMARY KEY clause.
+                    sample_by:
+                      type: string
+                      description: SAMPLE BY clause.
+                    ttl:
+                      type: string
+                      description: TTL settings for the table or columns.
+                    table_settings:
+                      type: string
+                      description: Table-specific settings.
+                    query_settings:
+                      type: string
+                      description: Settings used in insert/create table as select queries.
+                    distributed_settings:
+                      type: string
+                      description: Settings for distributed table.
+                    distributed_sharding_key:
+                      type: string
+                      description: Sharding key for distributed table.
+                    dictionary_source_user:
+                      type: string
+                      description: User for accessing the source dictionary table (used if type is DICTIONARY).
+                    dictionary_source_password:
+                      type: string
+                      description: Password for the dictionary source user.
+        required:
+          - type
+          - sql
+      - $ref: '#/definitions/common_properties'
+      - type: object
+        allOf:
+          - if:
+              title: Additional properties when `connector` is `athena` or [named connector](./connector.md#name) for athena
+              properties:
+                connector:
+                  const: athena
+              required:
+                - connector
+            then:
+              $ref: '#/definitions/model/definitions/athena'
+          - if:
+              title: Additional properties when `connector` is `azure` or [named connector](./connector.md#name) of azure
+              properties:
+                connector:
+                  const: azure
+              required:
+                - connector
+            then:
+              $ref: '#/definitions/model/definitions/azure'
+          - if:
+              title: Additional properties when `connector` is `bigquery` or [named connector](./connector.md#name) of bigquery
+              properties:
+                connector:
+                  const: bigquery
+              required:
+                - connector
+            then:
+              $ref: '#/definitions/model/definitions/bigquery'
+          - if:
+              title: Additional properties when `connector` is `duckdb` or [named connector](./connector.md#name) of duckdb
+              properties:
+                connector:
+                  const: duckdb
+              required:
+                - connector
+            then:
+              $ref: '#/definitions/model/definitions/duckdb'
+          - if:
+              title: Additional properties when `connector` is `gcs` or [named connector](./connector.md#name) of gcs
+              properties:
+                connector:
+                  const: gcs
+              required:
+                - connector
+            then:
+              $ref: '#/definitions/model/definitions/gcs'
+          - if:
+              title: Additional properties when `connector` is `local_file` or [named connector](./connector.md#name) of local_file
+              properties:
+                connector:
+                  const: local_file
+              required:
+                - connector
+            then:
+              $ref: '#/definitions/model/definitions/local_file'
+          - if:
+              title: Additional properties when `connector` is `redshift` or [named connector](./connector.md#name) of redshift
+              properties:
+                connector:
+                  const: redshift
+              required:
+                - connector
+            then:
+              $ref: '#/definitions/model/definitions/redshift'
+          - if:
+              title: Additional properties when `connector` is `s3` or [named connector](./connector.md#name) of s3
+              properties:
+                connector:
+                  const: s3
+              required:
+                - connector
+            then:
+              $ref: '#/definitions/model/definitions/s3'
+          - if:
+              title: Additional properties when `connector` is `salesforce` or [named connector](./connector.md#name) of salesforce
+              properties:
+                connector:
+                  const: salesforce
+              required:
+                - connector
+            then:
+              $ref: '#/definitions/model/definitions/salesforce'
+    definitions:
+      athena:
+        type: object
+        properties:
+          output_location:
+            type: string
+            description: Output location for query results in S3.
+          workgroup:
+            type: string
+            description: AWS Athena workgroup to use for queries.
+          region:
+            type: string
+            description: AWS region to connect to Athena and the output location.
+      azure:
+        type: object
+        properties:
+          path:
+            type: string
+            description: Path to the source
+          account:
+            type: string
+            description: Account identifier
+          uri:
+            type: string
+            description: Source URI
+          extract:
+            type: object
+            description: Arbitrary key-value pairs for extraction settings
+            additionalProperties: true
+          glob:
+            type: object
+            description: Settings related to glob file matching.
+            properties:
+              max_total_size:
+                type: integer
+                description: Maximum total size (in bytes) matched by glob
+              max_objects_matched:
+                type: integer
+                description: Maximum number of objects matched by glob
+              max_objects_listed:
+                type: integer
+                description: Maximum number of objects listed in glob
+              page_size:
+                type: integer
+                description: Page size for glob listing
+          batch_size:
+            type: string
+            description: 'Size of a batch (e.g., ''100MB'')'
+      bigquery:
+        type: object
+        properties:
+          project_id:
+            type: string
+            description: ID of the BigQuery project.
+      duckdb:
+        type: object
+        properties:
+          path:
+            type: string
+            description: Path to the data source.
+          format:
+            type: string
+            description: 'Format of the data source (e.g., csv, json, parquet).'
+          pre_exec:
+            type: string
+            description: 'refers to SQL queries to run before the main query, available for DuckDB-based models. _(optional)_. Ensure `pre_exec` queries are idempotent. Use `IF NOT EXISTS` statements when applicable.'
+          post_exec:
+            type: string
+            description: 'refers to a SQL query that is run after the main query, available for DuckDB-based models. _(optional)_. Ensure `post_exec` queries are idempotent. Use `IF EXISTS` statements when applicable.'
+            examples:
+            - pre_exec: ATTACH IF NOT EXISTS 'dbname=postgres host=localhost port=5432 user=postgres password=postgres' AS postgres_db (TYPE POSTGRES);
+              sql: SELECT * FROM postgres_query('postgres_db', 'SELECT * FROM USERS')
+              post_exec: DETACH DATABASE IF EXISTS postgres_db 
+      gcs:
+        type: object
+        properties:
+          path:
+            type: string
+            description: Path to the source
+          uri:
+            type: string
+            description: Source URI
+          extract:
+            type: object
+            description: key-value pairs for extraction settings
+            additionalProperties: true
+          glob:
+            type: object
+            description: Settings related to glob file matching.
+            properties:
+              max_total_size:
+                type: integer
+                description: Maximum total size (in bytes) matched by glob
+              max_objects_matched:
+                type: integer
+                description: Maximum number of objects matched by glob
+              max_objects_listed:
+                type: integer
+                description: Maximum number of objects listed in glob
+              page_size:
+                type: integer
+                description: Page size for glob listing
+          batch_size:
+            type: string
+            description: 'Size of a batch (e.g., ''100MB'')'
+      local_file:
+        type: object
+        properties:
+          path:
+            type: string
+            description: Path to the data source.
+          format:
+            type: string
+            description: 'Format of the data source (e.g., csv, json, parquet).'
+      redshift:
+        type: object
+        properties:
+          output_location:
+            type: string
+            description: S3 location where query results are stored.
+          workgroup:
+            type: string
+            description: Redshift Serverless workgroup to use.
+          database:
+            type: string
+            description: Name of the Redshift database.
+          cluster_identifier:
+            type: string
+            description: Identifier of the Redshift cluster.
+          role_arn:
+            type: string
+            description: ARN of the IAM role to assume for Redshift access.
+          region:
+            type: string
+            description: AWS region of the Redshift deployment.
+      s3:
+        type: object
+        properties:
+          region:
+            type: string
+            description: AWS region
+          endpoint:
+            type: string
+            description: AWS Endpoint
+          path:
+            type: string
+            description: Path to the source
+          uri:
+            type: string
+            description: Source URI
+          extract:
+            type: object
+            description: key-value pairs for extraction settings
+            additionalProperties: true
+          glob:
+            type: object
+            description: Settings related to glob file matching.
+            properties:
+              max_total_size:
+                type: integer
+                description: Maximum total size (in bytes) matched by glob
+              max_objects_matched:
+                type: integer
+                description: Maximum number of objects matched by glob
+              max_objects_listed:
+                type: integer
+                description: Maximum number of objects listed in glob
+              page_size:
+                type: integer
+                description: Page size for glob listing
+          batch_size:
+            type: string
+            description: 'Size of a batch (e.g., ''100MB'')'
+      salesforce:
+        type: object
+        properties:
+          soql:
+            type: string
+            description: SOQL query to execute against the Salesforce instance.
+          sobject:
+            type: string
+            description: Salesforce object (e.g., Account, Contact) targeted by the query.
+          queryAll:
+            type: boolean
+            description: Whether to include deleted and archived records in the query (uses queryAll API).
+
+  theme:
+    type: object
+    title: Theme YAML 
+    description: | 
+      In your Rill project directory, create a `<theme_name>.yaml` file in any directory containing `type: theme`. Rill will automatically ingest the theme next time you run `rill start` or deploy to Rill Cloud.
+      
+      To apply that theme to a dashboard, add `default_theme: <name of theme>` to the yaml file for that dashboard. Alternatively, you can add this to the end of the URL in your browser: `?theme=<name of theme>`
+    examples:
+      - # Example: You can copy this directly into your <theme_name>.yaml file
+        type: theme
+        colors:
+          primary: plum 
+          secondary: violet 
+    allOf:
+      - title: Properties
+        type: object
+        properties:
+          type:
+            type: string
+            const: theme
+            description: Refers to the resource type and must be `theme`
+        required:
+          - type
+      - $ref: '#/definitions/theme/definitions/theme_properties'
+        required:
+          - colors
+      - $ref: '#/definitions/common_properties'  
+    definitions:
+      theme_properties:
+        type: object
+        properties:
+          colors:
+            type: object
+            description: Used to override the dashboard colors. Either primary or secondary color must be provided.
+            properties:
+              primary:
+                type: string
+                description: Overrides the primary blue color in the dashboard. Can have any hex (without the '#' character), [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats. Note that the hue of the input colors is used for variants but the saturation and lightness is copied over from the [blue color palette](https://tailwindcss.com/docs/customizing-colors).
+              secondary:
+                type: string
+                description: Overrides the secondary color in the dashboard. Applies to the loading spinner only as of now. Can have any hex (without the '#' character), [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats.
+            anyOf:
+              - required:
+                  - primary
+              - required:
+                  - secondary
+  common_properties:
+    type: object
+    title: "Common Properties"
+    properties:
+      name:
+        type: string
+        description: Name is usually inferred from the filename, but can be specified manually.
+      refs:
+        type: array
+        description: 'List of resource references'
+        items:
+          type: string
+          description: A string reference like `<resource-name>` or `<type/resource-name>`.
+      dev:
+        type: object
+        description: Overrides any properties in development environment.
+      prod:
+        type: object
+        description: Overrides any properties in production environment.
+  component_variable_properties:
+    type: object
+    properties:
+      name:
+        type: string
+        description: Unique identifier for the variable
+      type:
+        type: string
+        description: Data type of the variable (e.g., string, number, boolean)
+      value:
+        description: Default value for the variable. Can be any valid JSON value type
+        type:
+          - string
+          - number
+          - boolean
+          - object
+          - array
+    required:
+      - name
+      - type
+    additionalProperties: false
+  data_properties:
+    oneOf:
+      - title: SQL Query
+        type: object
+        description: Executes a raw SQL query against the project's data models.
+        properties:
+          sql:
+            type: string
+            description: Raw SQL query to run against existing models in the project.
+          connector:
+            type: string
+            description: specifies the connector to use when running SQL or glob queries.
+        required:
+          - sql
+      - title: Metrics View Query
+        type: object
+        description: Executes a SQL query that targets a defined metrics view.
+        properties:
+          metrics_sql:
+            type: string
+            description: SQL query that targets a metrics view in the project
+        required:
+          - metrics_sql
+      - title: Custom API Call
+        type: object
+        description: Calls a custom API defined in the project to compute data.
+        properties:
+          api:
+            type: string
+            description: Name of a custom API defined in the project.
+          args:
+            type: object
+            description: Arguments to pass to the custom API.
+            additionalProperties: true
+        required:
+          - api
+      - title: File Glob Query
+        type: object
+        description: Uses a file-matching pattern (glob) to query data from a connector.
+        properties:
+          glob:
+            description:  Defines the file path or pattern to query from the specified connector.
+            anyOf:
+              - type: string
+                description: A simple file path/glob pattern as a string.
+              - type: object
+                description: An object-based configuration for specifying a file path/glob pattern with advanced options.
+                additionalProperties: true
+          connector:
+            type: string
+            description: Specifies the connector to use with the glob input.
+        required:
+          - glob
+      - title: Resource Status Check
+        type: object
+        description: Uses the status of a resource as data.
+        properties:
+          resource_status:
+            type: object
+            description: Based on resource status
+            properties:
+              where_error:
+                type: boolean
+                description: Indicates whether the condition should trigger when the resource is in an error state.
+            additionalProperties: true
+        required:
+          - resource_status
+  explore_time_range_properties:
+    oneOf:
+      - type: string
+        description: a valid [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations) duration or one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) extensions for the selection
+      - type: object
+        description: Object containing time range and comparison configuration
+        properties:
+          range:
+            type: string
+            description: a valid [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations) duration or one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) extensions for the selection
+          comparison_offsets:
+            type: array
+            description: list of time comparison options for this time range selection (optional). Must be one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions)
+            items:
+              oneOf:
+                - type: string
+                  description: Offset string only (range is inferred)
+                - type: object
+                  description: Object containing offset and range configuration for time comparison
+                  properties:
+                    offset:
+                      type: string
+                      description: Time offset for comparison (e.g., 'P1D' for one day ago)
+                    range:
+                      type: string
+                      description: Custom time range for comparison period
+                  additionalProperties: false
+        required:
+          - range
+        additionalProperties: false
+  notify_properties:
+    type: object
+    properties:
+      email:
+        type: object
+        description: Send notifications via email.
+        properties:
+          recipients:
+            type: array
+            description: An array of email addresses to notify.
+            items:
+              type: string
+            minItems: 1
+        required:
+          - recipients
+      slack:
+        type: object
+        description: Send notifications via Slack.
+        properties:
+          users:
+            type: array
+            description: An array of Slack user IDs to notify.
+            items:
+              type: string
+            minItems: 1
+          channels:
+            type: array
+            description: An array of Slack channel IDs to notify.
+            items:
+              type: string
+            minItems: 1
+          webhooks:
+            type: array
+            description: An array of Slack webhook URLs to send notifications to.
+            items:
+              type: string
+            minItems: 1
+        anyOf:
+          - required:
+              - channels
+          - required:
+              - users
+          - required:
+              - webhooks
+    anyOf:
+        - required:
+          - slack
+        - required:
+          - email
+  schedule_properties:
+    type: object
+    properties:
+      cron:
+        type: string
+        description: A cron expression that defines the execution schedule
+      time_zone:
+        type: string
+        description: Time zone to interpret the schedule in (e.g., 'UTC', 'America/Los_Angeles').
+      disable:
+        type: boolean
+        description: 'If true, disables the resource without deleting it.'
+      ref_update:
+        type: boolean
+        description: 'If true, allows the resource to run when a dependency updates.'
+      run_in_dev:
+        type: boolean
+        description: 'If true, allows the schedule to run in development mode.'
+  security_policy_properties:
+    type: object
+    description: Defines security rules and access control policies for resources
+    properties:
+      access:
+        oneOf:
+          - type: string
+            description: SQL expression that evaluates to a boolean to determine access
+          - type: boolean
+            description: Direct boolean value to allow or deny access
+        description: Expression indicating if the user should be granted access to the dashboard. If not defined, it will resolve to false and the dashboard won't be accessible to anyone. Needs to be a valid SQL expression that evaluates to a boolean.
+      row_filter:
+        type: string
+        description: SQL expression to filter the underlying model by. Can leverage templated user attributes to customize the filter for the requesting user. Needs to be a valid SQL expression that can be injected into a WHERE clause
+      include:
+        type: array
+        description: List of dimension or measure names to include in the dashboard. If include is defined all other dimensions and measures are excluded
+        items:
+          type: object
+          properties:
+            if:
+              type: string
+              description: Expression to decide if the column should be included or not. It can leverage templated user attributes. Needs to be a valid SQL expression that evaluates to a boolean
+            names:
+              anyOf:
+                - type: array
+                  description: List of specific field names to include
+                  items:
+                    type: string
+                - type: string
+                  description: Wildcard '*' to include all fields
+                  enum:
+                    - '*'
+              description: List of fields to include. Should match the name of one of the dashboard's dimensions or measures
+          required:
+            - if
+            - names
+      exclude:
+        type: array
+        description: List of dimension or measure names to exclude from the dashboard. If exclude is defined all other dimensions and measures are included
+        items:
+          type: object
+          properties:
+            if:
+              type: string
+              description: Expression to decide if the column should be excluded or not. It can leverage templated user attributes. Needs to be a valid SQL expression that evaluates to a boolean
+            names:
+              anyOf:
+                - type: array
+                  description: List of specific field names to exclude
+                  items:
+                    type: string
+                - type: string
+                  description: Wildcard '*' to exclude all fields
+                  enum:
+                    - '*'
+              description: List of fields to exclude. Should match the name of one of the dashboard's dimensions or measures
+          required:
+            - if
+            - names
+      rules:
+        type: array
+        description: List of detailed security rules that can be used to define complex access control policies
+        items:
+          type: object
+          description: Individual security rule definition
+          properties:
+            type:
+              type: string
+              enum:
+                - access
+                - field_access
+                - row_filter
+              description: Type of security rule - access (overall access), field_access (field-level access), or row_filter (row-level filtering)
+            action:
+              type: string
+              enum:
+                - allow
+                - deny
+              description: Whether to allow or deny access for this rule
+            if:
+              type: string
+              description: Conditional expression that determines when this rule applies. Must be a valid SQL expression that evaluates to a boolean
+            names:
+              type: array
+              items:
+                type: string
+              description: List of field names this rule applies to (for field_access type rules)
+            all:
+              type: boolean
+              description: When true, applies the rule to all fields (for field_access type rules)
+            sql:
+              type: string
+              description: SQL expression for row filtering (for row_filter type rules)
+          required:
+            - type

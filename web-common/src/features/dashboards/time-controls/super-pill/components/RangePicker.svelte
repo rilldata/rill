@@ -94,15 +94,17 @@
         />
       </div>
       {#if showSelector}
-        <CalendarPlusDateInput
-          {firstVisibleMonth}
-          {interval}
-          {zone}
-          {maxDate}
-          {minDate}
-          applyRange={applyCustomRange}
-          closeMenu={() => (open = false)}
-        />
+        <div class="bg-slate-50 border-l flex flex-col w-64 p-3">
+          <CalendarPlusDateInput
+            {firstVisibleMonth}
+            {interval}
+            {zone}
+            {maxDate}
+            {minDate}
+            applyRange={applyCustomRange}
+            closeMenu={() => (open = false)}
+          />
+        </div>
       {/if}
     </div>
   </DropdownMenu.Content>

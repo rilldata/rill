@@ -5,10 +5,10 @@
   import { Button } from "@rilldata/web-common/components/button";
   import {
     DropdownMenu,
-    DropdownMenuTrigger,
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuSeparator,
+    DropdownMenuTrigger,
   } from "@rilldata/web-common/components/dropdown-menu";
   import HomeBookmark from "@rilldata/web-common/components/icons/HomeBookmark.svelte";
   import HomeBookmarkPlus from "@rilldata/web-common/components/icons/HomeBookmarkPlus.svelte";
@@ -19,13 +19,12 @@
   export let project: string;
   export let exploreName: string;
   export let homeBookmark: BookmarkEntry | undefined;
+  export let urlForExploreYAMLDefaultState: string;
   export let manageProject: boolean;
   export let onCreate: () => void;
   export let onDelete: (bookmark: BookmarkEntry) => Promise<void>;
 
-  $: homeBookmarkUrl =
-    homeBookmark?.url ??
-    `${$page.url.protocol}//${$page.url.host}${$page.url.pathname}`;
+  $: homeBookmarkUrl = homeBookmark?.url ?? urlForExploreYAMLDefaultState;
   $: isHomeBookmarkActive = homeBookmarkUrl === $page.url.toString();
 
   function goToDashboardHome() {
@@ -104,7 +103,7 @@
         compact
         preload={false}
         href={homeBookmarkUrl}
-        on:click={goToDashboardHome}
+        onClick={goToDashboardHome}
         class="border border-primary-300"
         builders={[builder]}
         label="Go to home bookmark"

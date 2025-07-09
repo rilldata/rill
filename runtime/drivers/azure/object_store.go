@@ -4,71 +4,78 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"math"
-	"net/http"
 	"net/url"
 	"os"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/container"
-	"github.com/bmatcuk/doublestar/v4"
-	"github.com/c2h5oh/datasize"
-	"github.com/mitchellh/mapstructure"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/service"
 	"github.com/rilldata/rill/runtime/drivers"
-	rillblob "github.com/rilldata/rill/runtime/drivers/blob"
+	"github.com/rilldata/rill/runtime/pkg/blob"
 	"github.com/rilldata/rill/runtime/pkg/globutil"
-	"github.com/rilldata/rill/runtime/pkg/observability"
-	"go.uber.org/zap"
-	"gocloud.dev/blob"
 	"gocloud.dev/blob/azureblob"
-	"gocloud.dev/gcerrors"
 )
 
-type sourceProperties struct {
-	Path                  string         `mapstructure:"path"`
-	Account               string         `mapstructure:"account"`
-	URI                   string         `mapstructure:"uri"`
-	Extract               map[string]any `mapstructure:"extract"`
-	GlobMaxTotalSize      int64          `mapstructure:"glob.max_total_size"`
-	GlobMaxObjectsMatched int            `mapstructure:"glob.max_objects_matched"`
-	GlobMaxObjectsListed  int64          `mapstructure:"glob.max_objects_listed"`
-	GlobPageSize          int            `mapstructure:"glob.page_size"`
-	BatchSize             string         `mapstructure:"batch_size"`
-	url                   *globutil.URL
-	extractPolicy         *rillblob.ExtractPolicy
-}
+// ListObjects implements drivers.ObjectStore.
+func (c *Connection) ListObjects(ctx context.Context, path string) ([]drivers.ObjectStoreEntry, error) {
+	url, err := c.parseBucketURL(path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse path %q: %w", path, err)
+	}
 
-func parseSourceProperties(props map[string]any) (*sourceProperties, error) {
-	conf := &sourceProperties{}
-	err := mapstructure.WeakDecode(props, conf)
+	bucket, err := c.openBucket(ctx, url.Host, false)
 	if err != nil {
 		return nil, err
 	}
-	if !doublestar.ValidatePattern(conf.Path) {
-		return nil, fmt.Errorf("glob pattern %q is invalid", conf.Path)
-	}
-	bucketURL, err := globutil.ParseBucketURL(conf.Path)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse path %q: %w", conf.Path, err)
-	}
-	if bucketURL.Scheme != "azure" {
-		return nil, fmt.Errorf("invalid scheme %q in path %q", bucketURL.Scheme, conf.Path)
-	}
+	defer bucket.Close()
 
-	conf.url = bucketURL
-	return conf, nil
+	return bucket.ListObjects(ctx, url.Path)
 }
 
-// ListObjects implements drivers.ObjectStore.
-func (c *Connection) ListObjects(ctx context.Context, propsMap map[string]any) ([]drivers.ObjectStoreEntry, error) {
-	props, err := parseSourceProperties(propsMap)
+// DownloadFiles returns a file iterator over objects stored in azure blob storage.
+func (c *Connection) DownloadFiles(ctx context.Context, path string) (drivers.FileIterator, error) {
+	url, err := c.parseBucketURL(path)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse config: %w", err)
+		return nil, fmt.Errorf("failed to parse path %q: %w", path, err)
 	}
 
-	client, err := c.getClient(props)
+	bucket, err := c.openBucket(ctx, url.Host, false)
+	if err != nil {
+		return nil, err
+	}
+
+	tempDir, err := c.storage.TempDir()
+	if err != nil {
+		return nil, err
+	}
+
+	return bucket.Download(ctx, &blob.DownloadOptions{
+		Glob:        url.Path,
+		TempDir:     tempDir,
+		CloseBucket: true,
+	})
+}
+
+func (c *Connection) parseBucketURL(path string) (*globutil.URL, error) {
+	url, err := globutil.ParseBucketURL(path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse path %q: %w", path, err)
+	}
+	if url.Scheme != "az" && url.Scheme != "azure" {
+		return nil, fmt.Errorf("invalid Azure path %q: should start with az://", path)
+	}
+	return url, nil
+}
+
+func (c *Connection) openBucket(ctx context.Context, bucket string, anonymous bool) (*blob.Bucket, error) {
+	var client *container.Client
+	var err error
+	if anonymous {
+		client, err = c.newAnonymousClient(bucket)
+	} else {
+		client, err = c.newClient(bucket)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -78,101 +85,23 @@ func (c *Connection) ListObjects(ctx context.Context, propsMap map[string]any) (
 		return nil, err
 	}
 
-	bucket, err := rillblob.NewBucket(azureBucket, c.logger)
-	if err != nil {
-		return nil, err
-	}
-	defer bucket.Close()
-
-	return bucket.ListObjects(ctx, props.url.Path)
+	return blob.NewBucket(azureBucket, c.logger)
 }
 
-// DownloadFiles returns a file iterator over objects stored in azure blob storage.
-func (c *Connection) DownloadFiles(ctx context.Context, props map[string]any) (drivers.FileIterator, error) {
-	conf, err := parseSourceProperties(props)
+// newClient returns a new azure blob client.
+func (c *Connection) newClient(bucket string) (*container.Client, error) {
+	client, err := c.newStorageClient()
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse config: %w", err)
+		return nil, fmt.Errorf("failed to initialize Azure storage client: %w", err)
 	}
-
-	client, err := c.getClient(conf)
-	if err != nil {
-		return nil, err
-	}
-
-	// Create a *blob.Bucket.
-	bucketObj, err := azureblob.OpenBucket(ctx, client, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	var batchSize datasize.ByteSize
-	if conf.BatchSize == "-1" {
-		batchSize = math.MaxInt64 // download everything in one batch
-	} else {
-		batchSize, err = datasize.ParseString(conf.BatchSize)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	tempDir, err := c.storage.TempDir()
-	if err != nil {
-		return nil, err
-	}
-
-	// prepare fetch configs
-	opts := rillblob.Options{
-		GlobMaxTotalSize:      conf.GlobMaxTotalSize,
-		GlobMaxObjectsMatched: conf.GlobMaxObjectsMatched,
-		GlobMaxObjectsListed:  conf.GlobMaxObjectsListed,
-		GlobPageSize:          conf.GlobPageSize,
-		GlobPattern:           conf.url.Path,
-		ExtractPolicy:         conf.extractPolicy,
-		BatchSizeBytes:        int64(batchSize.Bytes()),
-		KeepFilesUntilClose:   conf.BatchSize == "-1",
-		TempDir:               tempDir,
-	}
-
-	iter, err := rillblob.NewIterator(ctx, bucketObj, opts, c.logger)
-	if err != nil {
-		// If the err is due to not using the anonymous client for a public container, we want to retry.
-		var respErr *azcore.ResponseError
-		if gcerrors.Code(err) == gcerrors.Unknown ||
-			(errors.As(err, &respErr) && respErr.RawResponse.StatusCode == http.StatusForbidden && (respErr.ErrorCode == "AuthorizationPermissionMismatch" || respErr.ErrorCode == "AuthenticationFailed")) {
-			c.logger.Debug("Azure Blob Storage account does not have permission to list blobs. Falling back to anonymous access.", zap.Error(err), observability.ZapCtx(ctx))
-
-			client, err := c.createAnonymousClient(conf)
-			if err != nil {
-				return nil, err
-			}
-
-			bucketObj, err := azureblob.OpenBucket(ctx, client, nil)
-			if err != nil {
-				return nil, err
-			}
-
-			anonIt, anonErr := rillblob.NewIterator(ctx, bucketObj, opts, c.logger)
-			if anonErr == nil {
-				return anonIt, nil
-			}
-		}
-
-		// If there's still an err, return it
-		respErr = nil
-		if errors.As(err, &respErr) && respErr.StatusCode == http.StatusForbidden {
-			return nil, drivers.NewPermissionDeniedError(fmt.Sprintf("failed to create iterator: %v", respErr))
-		}
-		return nil, err
-	}
-
-	return iter, nil
+	return client.NewContainerClient(bucket), nil
 }
 
-// getClient returns a new azure blob client.
-func (c *Connection) getClient(conf *sourceProperties) (*container.Client, error) {
+// newStorageClient returns a service client.
+func (c *Connection) newStorageClient() (*service.Client, error) {
 	var accountKey, sasToken, connectionString string
 
-	accountName, err := c.getAccountName(conf)
+	accountName, err := c.accountName()
 	if err != nil {
 		return nil, err
 	}
@@ -194,19 +123,15 @@ func (c *Connection) getClient(conf *sourceProperties) (*container.Client, error
 	}
 
 	if connectionString != "" {
-		client, err := container.NewClientFromConnectionString(connectionString, conf.url.Host, nil)
+		client, err := service.NewClientFromConnectionString(connectionString, nil)
 		if err != nil {
-			return nil, fmt.Errorf("failed container.NewClientFromConnectionString: %w", err)
+			return nil, fmt.Errorf("failed service.NewClientFromConnectionString: %w", err)
 		}
 		return client, nil
 	}
 
 	if accountName != "" {
-		svcURL := fmt.Sprintf("https://%s.blob.core.windows.net", accountName)
-		containerURL, err := url.JoinPath(svcURL, conf.url.Host)
-		if err != nil {
-			return nil, err
-		}
+		svcURL := fmt.Sprintf("https://%s.blob.core.windows.net/", accountName)
 
 		var sharedKeyCred *azblob.SharedKeyCredential
 
@@ -216,9 +141,9 @@ func (c *Connection) getClient(conf *sourceProperties) (*container.Client, error
 				return nil, fmt.Errorf("failed azblob.NewSharedKeyCredential: %w", err)
 			}
 
-			client, err := container.NewClientWithSharedKeyCredential(containerURL, sharedKeyCred, nil)
+			client, err := service.NewClientWithSharedKeyCredential(svcURL, sharedKeyCred, nil)
 			if err != nil {
-				return nil, fmt.Errorf("failed container.NewClientWithSharedKeyCredential: %w", err)
+				return nil, fmt.Errorf("failed service.NewClientWithSharedKeyCredential: %w", err)
 			}
 			return client, nil
 		}
@@ -232,14 +157,9 @@ func (c *Connection) getClient(conf *sourceProperties) (*container.Client, error
 				return nil, err
 			}
 
-			containerURL, err := url.JoinPath(string(serviceURL), conf.url.Host)
+			client, err := service.NewClientWithNoCredential(string(serviceURL), nil)
 			if err != nil {
-				return nil, err
-			}
-
-			client, err := container.NewClientWithNoCredential(containerURL, nil)
-			if err != nil {
-				return nil, fmt.Errorf("failed container.NewClientWithNoCredential: %w", err)
+				return nil, fmt.Errorf("failed service.NewClientWithNoCredential: %w", err)
 			}
 			return client, nil
 		}
@@ -250,25 +170,24 @@ func (c *Connection) getClient(conf *sourceProperties) (*container.Client, error
 		if err != nil {
 			return nil, fmt.Errorf("failed azidentity.NewDefaultAzureCredential: %w", err)
 		}
-		client, err := container.NewClient(containerURL, cred, nil)
+		client, err := service.NewClient(svcURL, cred, nil)
 		if err != nil {
-			return nil, fmt.Errorf("failed container.NewClient: %w", err)
+			return nil, fmt.Errorf("failed service.NewClient: %w", err)
 		}
 		return client, nil
 	}
 
-	return nil, drivers.NewPermissionDeniedError("can't access remote host without credentials: no credentials provided")
+	return nil, errors.New("can't access remote host without credentials: no credentials provided")
 }
 
-// Create anonymous azure blob client.
-func (c *Connection) createAnonymousClient(conf *sourceProperties) (*container.Client, error) {
-	accountName, err := c.getAccountName(conf)
+func (c *Connection) newAnonymousClient(bucket string) (*container.Client, error) {
+	accountName, err := c.accountName()
 	if err != nil {
 		return nil, err
 	}
 
 	svcURL := fmt.Sprintf("https://%s.blob.core.windows.net", accountName)
-	containerURL, err := url.JoinPath(svcURL, conf.url.Host)
+	containerURL, err := url.JoinPath(svcURL, bucket)
 	if err != nil {
 		return nil, err
 	}
@@ -280,32 +199,7 @@ func (c *Connection) createAnonymousClient(conf *sourceProperties) (*container.C
 	return client, nil
 }
 
-func (c *Connection) openBucketWithNoCredentials(ctx context.Context, conf *sourceProperties) (*blob.Bucket, error) {
-	// Create containerURL object.
-	accountName, err := c.getAccountName(conf)
-	if err != nil {
-		return nil, err
-	}
-	containerURL := fmt.Sprintf("https://%s.blob.core.windows.net/%s", accountName, conf.url.Host)
-	client, err := container.NewClientWithNoCredential(containerURL, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	// Create a *blob.Bucket.
-	bucketObj, err := azureblob.OpenBucket(ctx, client, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return bucketObj, nil
-}
-
-func (c *Connection) getAccountName(conf *sourceProperties) (string, error) {
-	if conf.Account != "" {
-		return conf.Account, nil
-	}
-
+func (c *Connection) accountName() (string, error) {
 	if c.config.Account != "" {
 		return c.config.Account, nil
 	}

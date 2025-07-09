@@ -1,26 +1,28 @@
 import { expect } from "@playwright/test";
+import { isServiceReady } from "@rilldata/web-common/tests/utils/is-service-ready.ts";
+import {
+  RILL_DEVTOOL_BACKGROUND_PROCESS_PID_FILE,
+  RILL_EMBED_SERVICE_TOKEN_FILE,
+} from "@rilldata/web-integration/tests/constants";
 import {
   execAsync,
   spawnAndMatch,
 } from "@rilldata/web-common/tests/utils/spawn";
-import axios from "axios";
 import { spawn } from "child_process";
 import dotenv from "dotenv";
 import { openSync } from "fs";
 import { mkdir } from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
-import { writeFileEnsuringDir } from "../utils/fs";
+import { writeFileEnsuringDir } from "@rilldata/web-common/tests/utils/fs";
 import { test as setup } from "./base";
 import {
   ADMIN_STORAGE_STATE,
-  RILL_DEVTOOL_BACKGROUND_PROCESS_PID_FILE,
-  RILL_EMBED_SERVICE_TOKEN_FILE,
   RILL_ORG_NAME,
   RILL_PROJECT_NAME,
   RILL_SERVICE_NAME,
 } from "./constants";
-import { cliLogin } from "./fixtures/cli";
+import { cliLogin } from "@rilldata/web-common/tests/fixtures/cli";
 
 setup.describe("global setup", () => {
   setup.describe.configure({
@@ -37,7 +39,7 @@ setup.describe("global setup", () => {
     // This will block until the services are ready
     await spawnAndMatch(
       "rill",
-      ["devtool", "start", "e2e", "--reset", "--only", "deps"],
+      ["devtool", "start", "other", "--reset", "--only", "deps"],
       /All services ready/,
       {
         cwd: repoRoot,
@@ -71,7 +73,7 @@ setup.describe("global setup", () => {
     // However, we need to be sure to clean-up the processes manually in the teardown project.
     const child = spawn(
       "rill",
-      ["devtool", "start", "e2e", "--only", "admin,runtime"],
+      ["devtool", "start", "other", "--only", "admin,runtime"],
       {
         detached: true,
         stdio: ["ignore", logFd, logFd],
@@ -166,12 +168,13 @@ setup.describe("global setup", () => {
 
     // create service and write access token to file
     const { stdout: orgCreateService } = await execAsync(
-      `rill service create ${RILL_SERVICE_NAME}`,
+      `rill service create ${RILL_SERVICE_NAME} --org-role admin`,
     );
     expect(orgCreateService).toContain("Created service");
 
     const serviceToken = orgCreateService.match(/Access token:\s+(\S+)/);
-    writeFileEnsuringDir(RILL_EMBED_SERVICE_TOKEN_FILE, serviceToken![1]);
+    const writePath = path.join(process.cwd(), RILL_EMBED_SERVICE_TOKEN_FILE);
+    writeFileEnsuringDir(writePath, serviceToken![1]);
 
     // Go to the organization's page
     await adminPage.goto(`/${RILL_ORG_NAME}`);
@@ -187,10 +190,10 @@ setup.describe("global setup", () => {
       [
         "deploy",
         "--path",
-        "tests/setup/projects/openrtb",
+        "../web-common/tests/projects/openrtb",
         "--project",
         RILL_PROJECT_NAME,
-        "--upload",
+        "--archive",
         "--interactive=false",
       ],
       /https?:\/\/[^\s]+/,
@@ -263,12 +266,3 @@ setup.describe("global setup", () => {
       .toContain("Last refreshed");
   });
 });
-
-async function isServiceReady(url: string): Promise<boolean> {
-  try {
-    const response = await axios.get(url);
-    return response.status === 200;
-  } catch {
-    return false;
-  }
-}

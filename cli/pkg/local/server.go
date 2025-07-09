@@ -3,6 +3,7 @@ package local
 import (
 	"context"
 	"crypto/rand"
+	"database/sql"
 	"embed"
 	"encoding/base64"
 	"encoding/json"
@@ -19,7 +20,7 @@ import (
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
 	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
-	"github.com/google/go-github/v50/github"
+	"github.com/google/go-github/v71/github"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/pkg/urlutil"
 	"github.com/rilldata/rill/cli/cmd/auth"
@@ -31,6 +32,7 @@ import (
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	localv1 "github.com/rilldata/rill/proto/gen/rill/local/v1"
 	"github.com/rilldata/rill/proto/gen/rill/local/v1/localv1connect"
+	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
@@ -138,9 +140,9 @@ func (s *Server) PushToGithub(ctx context.Context, r *connect.Request[localv1.Pu
 		return nil, err
 	}
 
+	// Check if the project already has a Git repo
 	initGit := false
-	// check if project has a git repo
-	remote, _, err := gitutil.ExtractGitRemote(s.app.ProjectPath, "", false)
+	remote, err := gitutil.ExtractGitRemote(s.app.ProjectPath, "", false)
 	if err != nil {
 		if errors.Is(err, git.ErrRepositoryNotExists) {
 			initGit = true
@@ -148,7 +150,7 @@ func (s *Server) PushToGithub(ctx context.Context, r *connect.Request[localv1.Pu
 			return nil, err
 		}
 	}
-	if remote != nil {
+	if remote.Name != "" {
 		return nil, errors.New("git repository is already initialized with a remote")
 	}
 
@@ -241,7 +243,11 @@ func (s *Server) PushToGithub(ctx context.Context, r *connect.Request[localv1.Pu
 	}
 
 	// git commit -m
-	_, err = wt.Commit("Auto committed by Rill", &git.CommitOptions{All: true})
+	author, err := s.app.ch.GitSignature(ctx, s.app.ProjectPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate git commit signature: %w", err)
+	}
+	_, err = wt.Commit("Auto committed by Rill", &git.CommitOptions{All: true, Author: author})
 	if err != nil {
 		if !errors.Is(err, git.ErrEmptyCommit) {
 			return nil, fmt.Errorf("failed to commit files to git: %w", err)
@@ -249,14 +255,14 @@ func (s *Server) PushToGithub(ctx context.Context, r *connect.Request[localv1.Pu
 	}
 
 	// Create the remote
-	_, err = repo.CreateRemote(&config.RemoteConfig{Name: "origin", URLs: []string{*githubRepo.HTMLURL}})
+	_, err = repo.CreateRemote(&config.RemoteConfig{Name: "origin", URLs: []string{*githubRepo.CloneURL}})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create remote: %w", err)
 	}
 
 	// push the changes
 	if err := repo.PushContext(ctx, &git.PushOptions{Auth: &githttp.BasicAuth{Username: "x-access-token", Password: gitStatus.AccessToken}}); err != nil {
-		return nil, fmt.Errorf("failed to push to remote %q : %w", *githubRepo.HTMLURL, err)
+		return nil, fmt.Errorf("failed to push to remote %q : %w", *githubRepo.CloneURL, err)
 	}
 
 	account := githubAccount
@@ -265,9 +271,9 @@ func (s *Server) PushToGithub(ctx context.Context, r *connect.Request[localv1.Pu
 	}
 
 	return connect.NewResponse(&localv1.PushToGithubResponse{
-		GithubUrl: *githubRepo.HTMLURL,
-		Account:   account,
-		Repo:      name,
+		Remote:  *githubRepo.CloneURL,
+		Account: account,
+		Repo:    name,
 	}), nil
 }
 
@@ -292,6 +298,7 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 			// create org if not exists
 			_, err = c.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{
 				Name:        r.Msg.Org,
+				DisplayName: r.Msg.NewOrgDisplayName,
 				Description: "Auto created by Rill",
 			})
 			if err != nil {
@@ -302,8 +309,16 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 		}
 	}
 
+	if s.app.ch.Org != r.Msg.Org {
+		// Switching to passed org
+		err = s.app.ch.SetOrg(r.Msg.Org)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	var projRequest *adminv1.CreateProjectRequest
-	if r.Msg.Upload { // upload repo to rill managed storage instead of github
+	if r.Msg.Archive { // old zip-and-ship, currently used only for testing until we figure out a good way to test using manged github repos
 		repo, release, err := s.app.Runtime.Repo(ctx, s.app.Instance.ID)
 		if err != nil {
 			return nil, err
@@ -328,6 +343,25 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 			Public:           false,
 			ArchiveAssetId:   assetID,
 		}
+	} else if r.Msg.Upload { // upload repo to rill managed storage instead of github
+		ghRepo, err := s.app.ch.GitHelper(r.Msg.Org, r.Msg.ProjectName, s.app.ProjectPath).PushToNewManagedRepo(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		// create project request
+		projRequest = &adminv1.CreateProjectRequest{
+			OrganizationName: r.Msg.Org,
+			Name:             r.Msg.ProjectName,
+			Description:      "Auto created by Rill",
+			Provisioner:      "",
+			ProdVersion:      "",
+			ProdOlapDriver:   "duckdb",
+			ProdOlapDsn:      "",
+			ProdSlots:        int64(DefaultProdSlots(s.app.ch)),
+			Public:           false,
+			GitRemote:        ghRepo.Remote,
+		}
 	} else {
 		userStatus, err := c.GetGithubUserStatus(ctx, &adminv1.GetGithubUserStatusRequest{})
 		if err != nil {
@@ -339,12 +373,16 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 		}
 
 		// check if project is a git repo
-		remote, ghURL, err := gitutil.ExtractGitRemote(s.app.ProjectPath, "", false)
+		remote, err := gitutil.ExtractGitRemote(s.app.ProjectPath, "", false)
 		if err != nil {
 			if errors.Is(err, gitutil.ErrGitRemoteNotFound) || errors.Is(err, git.ErrRepositoryNotExists) {
 				return nil, errors.New("project is not a valid git repository or not connected to a remote")
 			}
 			return nil, err
+		}
+		githubRemote, err := remote.Github()
+		if err != nil {
+			return nil, fmt.Errorf("failed to get github remote: %w", err)
 		}
 
 		// check if there are uncommitted changes
@@ -356,7 +394,7 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 
 		// Get github repo status
 		repoStatus, err := c.GetGithubRepoStatus(ctx, &adminv1.GetGithubRepoStatusRequest{
-			GithubUrl: ghURL,
+			Remote: githubRemote,
 		})
 		if err != nil {
 			return nil, err
@@ -375,7 +413,7 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 			ProdOlapDsn:      "",
 			ProdSlots:        int64(DefaultProdSlots(s.app.ch)),
 			Public:           false,
-			GithubUrl:        ghURL,
+			GitRemote:        githubRemote,
 			Subpath:          "",
 			ProdBranch:       repoStatus.DefaultBranch,
 		}
@@ -403,6 +441,23 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 	})
 	if err != nil {
 		return nil, err
+	}
+
+	// if the project is backed by git repo, we need to push the .rillcloud directory to the remote
+	if r.Msg.Upload {
+		err = s.app.ch.GitHelper(r.Msg.Org, r.Msg.ProjectName, s.app.ProjectPath).PushToManagedRepo(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to push .rillcloud directory to remote: %w", err)
+		}
+	} else if !r.Msg.Archive {
+		author, err := s.app.ch.GitSignature(ctx, s.app.ProjectPath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to generate git commit signature: %w", err)
+		}
+		err = gitutil.CommitAndForcePush(ctx, s.app.ProjectPath, &gitutil.Config{Remote: projResp.Project.GitRemote, DefaultBranch: projResp.Project.ProdBranch}, "Autocommit .rillcloud dir", author)
+		if err != nil {
+			return nil, fmt.Errorf("failed to push .rillcloud directory to remote: %w", err)
+		}
 	}
 
 	// Parse .env and push it as variables
@@ -447,7 +502,15 @@ func (s *Server) RedeployProject(ctx context.Context, r *connect.Request[localv1
 		return nil, err
 	}
 
-	if r.Msg.Reupload {
+	// if the org is not same as the default org, switch to the org
+	if s.app.ch.Org != projResp.Project.OrgName {
+		err = s.app.ch.SetOrg(projResp.Project.OrgName)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if r.Msg.Rearchive { // old zip-and-ship, currently used only for testing until we figure out a good way to test using manged github repos
 		repo, release, err := s.app.Runtime.Repo(ctx, s.app.Instance.ID)
 		if err != nil {
 			return nil, err
@@ -465,6 +528,29 @@ func (s *Server) RedeployProject(ctx context.Context, r *connect.Request[localv1
 		})
 		if err != nil {
 			return nil, err
+		}
+	} else if r.Msg.Reupload {
+		if projResp.Project.ArchiveAssetId != "" {
+			// project was previously deployed using zip and ship
+			ghRepo, err := s.app.ch.GitHelper(projResp.Project.OrgName, projResp.Project.Name, s.app.ProjectPath).PushToNewManagedRepo(ctx)
+			if err != nil {
+				return nil, err
+			}
+			_, err = c.UpdateProject(ctx, &adminv1.UpdateProjectRequest{
+				OrganizationName: projResp.Project.OrgName,
+				Name:             projResp.Project.Name,
+				GitRemote:        &ghRepo.Remote,
+			})
+			if err != nil {
+				return nil, err
+			}
+		} else if projResp.Project.ManagedGitId != "" {
+			err = s.app.ch.GitHelper(projResp.Project.OrgName, projResp.Project.Name, s.app.ProjectPath).PushToManagedRepo(ctx)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			return nil, fmt.Errorf("to update this deployment, use GitHub")
 		}
 	}
 
@@ -600,6 +686,101 @@ func (s *Server) ListOrganizationsAndBillingMetadata(ctx context.Context, r *con
 	}), nil
 }
 
+func (s *Server) CreateOrganization(ctx context.Context, r *connect.Request[localv1.CreateOrganizationRequest]) (*connect.Response[localv1.CreateOrganizationResponse], error) {
+	// Get authenticated admin client
+	if !s.app.ch.IsAuthenticated() {
+		return nil, errors.New("must authenticate before performing this action")
+	}
+	c, err := s.app.ch.Client()
+	if err != nil {
+		return nil, err
+	}
+
+	orgResp, err := c.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{
+		Name:        r.Msg.Name,
+		DisplayName: r.Msg.DisplayName,
+		Description: r.Msg.Description,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return connect.NewResponse(&localv1.CreateOrganizationResponse{
+		Organization: orgResp.Organization,
+	}), nil
+}
+
+func (s *Server) ListMatchingProjects(ctx context.Context, r *connect.Request[localv1.ListMatchingProjectsRequest]) (*connect.Response[localv1.ListMatchingProjectsResponse], error) {
+	// Get authenticated admin client
+	if !s.app.ch.IsAuthenticated() {
+		return nil, errors.New("must authenticate before performing this action")
+	}
+	c, err := s.app.ch.Client()
+	if err != nil {
+		return nil, err
+	}
+
+	projectName := fileutil.Stem(s.app.ProjectPath)
+	projResp, err := c.ListProjectsForUserByName(ctx, &adminv1.ListProjectsForUserByNameRequest{
+		Name: projectName,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return connect.NewResponse(&localv1.ListMatchingProjectsResponse{
+		Projects: projResp.Projects,
+	}), nil
+}
+
+func (s *Server) ListProjectsForOrg(ctx context.Context, r *connect.Request[localv1.ListProjectsForOrgRequest]) (*connect.Response[localv1.ListProjectsForOrgResponse], error) {
+	// Get authenticated admin client
+	if !s.app.ch.IsAuthenticated() {
+		return nil, errors.New("must authenticate before performing this action")
+	}
+	c, err := s.app.ch.Client()
+	if err != nil {
+		return nil, err
+	}
+
+	projsResp, err := c.ListProjectsForOrganization(ctx, &adminv1.ListProjectsForOrganizationRequest{
+		OrganizationName: r.Msg.Org,
+		PageToken:        r.Msg.PageToken,
+		PageSize:         r.Msg.PageSize,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return connect.NewResponse(&localv1.ListProjectsForOrgResponse{
+		Projects: projsResp.Projects,
+	}), nil
+}
+
+func (s *Server) GetProject(ctx context.Context, r *connect.Request[localv1.GetProjectRequest]) (*connect.Response[localv1.GetProjectResponse], error) {
+	// Get authenticated admin client
+	if !s.app.ch.IsAuthenticated() {
+		return nil, errors.New("must authenticate before performing this action")
+	}
+	c, err := s.app.ch.Client()
+	if err != nil {
+		return nil, err
+	}
+
+	projResp, err := c.GetProject(ctx, &adminv1.GetProjectRequest{
+		OrganizationName: r.Msg.OrganizationName,
+		Name:             r.Msg.Name,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return connect.NewResponse(&localv1.GetProjectResponse{
+		Project:            projResp.Project,
+		ProjectPermissions: projResp.ProjectPermissions,
+	}), nil
+}
+
 // authHandler starts the OAuth2 PKCE flow to authenticate the user and get a rill access token.
 func (s *Server) authHandler(httpPort int, secure bool) http.Handler {
 	scheme := "http"
@@ -698,11 +879,7 @@ func (s *Server) logoutHandler() http.Handler {
 		}
 
 		// Get URL for cloud auth.
-		// NOTE: This is temporary until we migrate to a server that can host HTTP and gRPC on the same port.
 		authURL := s.app.ch.AdminURL()
-		if strings.Contains(authURL, "http://localhost:9090") {
-			authURL = "http://localhost:8080"
-		}
 
 		// Logout on cloud as well
 		var qry map[string]string
@@ -851,6 +1028,10 @@ func (s *Server) traceHandler() http.Handler {
 
 		bytes, err := observability.SearchTracesFile(r.Context(), traceID, resourceName)
 		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				w.WriteHeader(http.StatusNotFound)
+				return
+			}
 			s.logger.Error("failed to search trace", zap.Error(err))
 			w.WriteHeader(http.StatusInternalServerError)
 			return

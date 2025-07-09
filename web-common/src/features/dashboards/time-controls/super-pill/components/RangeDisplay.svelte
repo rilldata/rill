@@ -5,21 +5,52 @@
   export let grain: string;
   export let abbreviation: string | undefined = undefined;
 
-  $: intervalStartsAndEndsAtMidnight =
-    interval.start.hour === 0 &&
-    interval.start.minute === 0 &&
-    interval.end.hour === 0 &&
-    interval.end.minute === 0;
+  $: shouldShowMilliseconds =
+    interval.start.millisecond !== 0 || interval.end.millisecond !== 0;
+
+  $: shouldShowSeconds =
+    interval.start.second !== 0 || interval.end.second !== 0;
+
+  $: showShouldMinutes =
+    interval.start.minute !== 0 || interval.end.minute !== 0;
+
+  $: shouldShowHours = interval.start.hour !== 0 || interval.end.hour !== 0;
 
   $: intervalStartsAndEndsOnHour =
     interval.start.minute === 0 && interval.end.minute === 0;
 
-  $: timeFormat = intervalStartsAndEndsOnHour ? "h a" : "h:mm a";
+  const fullTimeFormat = "h:mm:ss:SSS";
+
+  function getTimeFormat(
+    hours: boolean,
+    minutes: boolean,
+    seconds: boolean,
+    milliseconds: boolean,
+  ) {
+    if (milliseconds) {
+      return fullTimeFormat;
+    } else if (seconds) {
+      return fullTimeFormat.replace(/:SSS/, "");
+    } else if (minutes) {
+      return fullTimeFormat.replace(/:SSS/, "").replace(/:ss/, "");
+    } else if (hours) {
+      return "h";
+    }
+  }
+
+  $: timeFormat =
+    getTimeFormat(
+      intervalStartsAndEndsOnHour,
+      showShouldMinutes,
+      shouldShowSeconds,
+      shouldShowMilliseconds,
+    ) + " a";
 
   $: showTime =
-    !intervalStartsAndEndsAtMidnight ||
-    grain === "TIME_GRAIN_HOUR" ||
-    grain === "TIME_GRAIN_MINUTE";
+    shouldShowMilliseconds ||
+    shouldShowSeconds ||
+    showShouldMinutes ||
+    shouldShowHours;
 
   $: inclusiveInterval = interval.set({
     end: interval.end.minus({ millisecond: 1 }),
@@ -32,7 +63,7 @@
   $: time = displayedInterval.toFormat(timeFormat, { separator: "-" });
 </script>
 
-<div class="flex gap-x-1 whitespace-nowrap truncate" title="{date} {time}">
+<div class="flex gap-x-1 whitespace-nowrap truncate" title={interval.toISO()}>
   <span class="line-clamp-1 text-left">
     {date}
     {#if showTime}

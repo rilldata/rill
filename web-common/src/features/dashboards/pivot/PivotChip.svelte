@@ -1,21 +1,19 @@
 <script context="module" lang="ts">
   import { Chip } from "@rilldata/web-common/components/chip";
-  import { createEventDispatcher } from "svelte";
   import type { PivotChipData } from "./types";
   import { PivotChipType } from "./types";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
 </script>
 
 <script lang="ts">
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-
   export let item: PivotChipData;
   export let removable = false;
   export let grab = false;
   export let slideDuration = 150;
   export let active = false;
-
-  const dispatch = createEventDispatcher();
+  export let fullWidth = false;
+  export let onRemove: () => void = () => {};
 </script>
 
 <Tooltip
@@ -25,19 +23,19 @@
   activeDelay={200}
 >
   <Chip
+    theme
     type={item.type}
-    label={`${item.title} pivot chip`}
+    label="{item.title} pivot chip"
     caret={false}
     {grab}
     {active}
     {slideDuration}
     {removable}
+    {fullWidth}
     supressTooltip
     on:mousedown
     on:click
-    on:remove={() => {
-      dispatch("remove", item);
-    }}
+    on:remove={onRemove}
   >
     <div slot="body" class="flex gap-x-1 items-center">
       {#if item.type === PivotChipType.Time}

@@ -20,6 +20,7 @@ type MetricsViewYAML struct {
 	DisplayName       string           `yaml:"display_name"`
 	Title             string           `yaml:"title"` // Deprecated: use display_name
 	Description       string           `yaml:"description"`
+	AIInstructions    string           `yaml:"ai_instructions"`
 	Model             string           `yaml:"model"`
 	Database          string           `yaml:"database"`
 	DatabaseSchema    string           `yaml:"database_schema"`
@@ -30,16 +31,20 @@ type MetricsViewYAML struct {
 	FirstDayOfWeek    uint32           `yaml:"first_day_of_week"`
 	FirstMonthOfYear  uint32           `yaml:"first_month_of_year"`
 	Dimensions        []*struct {
-		Name        string
-		DisplayName string `yaml:"display_name"`
-		Label       string // Deprecated: use display_name
-		Description string
-		Column      string
-		Expression  string
-		Property    string // For backwards compatibility
-		Ignore      bool   `yaml:"ignore"` // Deprecated
-		Unnest      bool
-		URI         string
+		Name                    string
+		DisplayName             string `yaml:"display_name"`
+		Label                   string // Deprecated: use display_name
+		Description             string
+		Column                  string
+		Expression              string
+		Property                string // For backwards compatibility
+		Ignore                  bool   `yaml:"ignore"` // Deprecated
+		Unnest                  bool
+		URI                     string
+		LookupTable             string `yaml:"lookup_table"`
+		LookupKeyColumn         string `yaml:"lookup_key_column"`
+		LookupValueColumn       string `yaml:"lookup_value_column"`
+		LookupDefaultExpression string `yaml:"lookup_default_expression"`
 	}
 	Measures []*struct {
 		Name                string
@@ -257,6 +262,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 
 	names := make(map[string]uint8)
 	names[strings.ToLower(tmp.TimeDimension)] = nameIsDimension
+	timeSeen := false
 
 	for i, dim := range tmp.Dimensions {
 		if dim == nil || dim.Ignore {
@@ -290,9 +296,29 @@ func (p *Parser) parseMetricsView(node *Node) error {
 			return fmt.Errorf("exactly one of column or expression should be set for dimension: %q", dim.Name)
 		}
 
+		// Validate the lookup table fields
+		if dim.LookupTable != "" || dim.LookupKeyColumn != "" || dim.LookupValueColumn != "" {
+			if dim.LookupTable == "" || dim.LookupKeyColumn == "" || dim.LookupValueColumn == "" {
+				return fmt.Errorf("all lookup fields should be defined (lookup_table, lookup_key_column and lookup_value_column should be defined")
+			}
+			if strings.Contains(dim.Expression, "dictGet") {
+				return fmt.Errorf("dictGet expression and lookup fields cannot be used together")
+			}
+		}
+
 		lower := strings.ToLower(dim.Name)
 		if _, ok := names[lower]; ok {
-			return fmt.Errorf("found duplicate dimension or measure name %q", dim.Name)
+			// allow time dimension to be defined in the dimensions list once
+			if strings.EqualFold(lower, tmp.TimeDimension) {
+				if timeSeen {
+					return fmt.Errorf("time dimension %q defined multiple times", tmp.TimeDimension)
+				} else if dim.Name != tmp.TimeDimension {
+					return fmt.Errorf("dimension name %q does not match the case of time dimension %q", dim.Name, tmp.TimeDimension)
+				}
+				timeSeen = true
+			} else {
+				return fmt.Errorf("found duplicate dimension or measure name %q", dim.Name)
+			}
 		}
 		names[lower] = nameIsDimension
 	}
@@ -504,6 +530,17 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		}
 	}
 
+	// Gather all lookup table names
+	var lookupTableNames map[string]bool
+	for _, dim := range tmp.Dimensions {
+		if dim != nil && dim.LookupTable != "" {
+			if lookupTableNames == nil {
+				lookupTableNames = make(map[string]bool)
+			}
+			lookupTableNames[dim.LookupTable] = true
+		}
+	}
+
 	securityRules, err := tmp.Security.Proto()
 	if err != nil {
 		return err
@@ -518,6 +555,13 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		// We may want to remove this at some point, but the cases where it would not be desired are very rare.
 		// Not setting Kind so that inference kicks in.
 		node.Refs = append(node.Refs, ResourceName{Name: tmp.Table})
+	}
+
+	// Attempt to link the lookup tables in the DAG in case they are models.
+	// If they are not models, the upstream logic for refs will filter them out.
+	for lookupTable := range lookupTableNames {
+		// Not setting Kind so that inference kicks in.
+		node.Refs = append(node.Refs, ResourceName{Name: lookupTable})
 	}
 
 	if tmp.DefaultTheme != "" {
@@ -555,6 +599,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		spec.DisplayName = ToDisplayName(node.Name)
 	}
 	spec.Description = tmp.Description
+	spec.AiInstructions = tmp.AIInstructions
 	spec.TimeDimension = tmp.TimeDimension
 	spec.WatermarkExpression = tmp.Watermark
 	spec.SmallestTimeGrain = smallestTimeGrain
@@ -567,13 +612,17 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		}
 
 		spec.Dimensions = append(spec.Dimensions, &runtimev1.MetricsViewSpec_Dimension{
-			Name:        dim.Name,
-			DisplayName: dim.DisplayName,
-			Description: dim.Description,
-			Column:      dim.Column,
-			Expression:  dim.Expression,
-			Unnest:      dim.Unnest,
-			Uri:         dim.URI,
+			Name:                    dim.Name,
+			DisplayName:             dim.DisplayName,
+			Description:             dim.Description,
+			Column:                  dim.Column,
+			Expression:              dim.Expression,
+			Unnest:                  dim.Unnest,
+			Uri:                     dim.URI,
+			LookupTable:             dim.LookupTable,
+			LookupKeyColumn:         dim.LookupKeyColumn,
+			LookupValueColumn:       dim.LookupValueColumn,
+			LookupDefaultExpression: dim.LookupDefaultExpression,
 		})
 	}
 
@@ -650,6 +699,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 	}
 	// Backwards compatibility: explore parser will default to true so also emit true on the emitted explore spec
 	e.ExploreSpec.AllowCustomTimeRange = true
+	e.ExploreSpec.DefinedInMetricsView = true
 
 	return nil
 }

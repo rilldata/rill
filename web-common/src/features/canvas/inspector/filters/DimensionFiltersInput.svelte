@@ -171,6 +171,7 @@
                   timeEnd={new Date().toISOString()}
                   timeControlsReady
                   excludeMode={$isFilterExcludeMode(name)}
+                  whereFilter={$whereFilter}
                   onRemove={() => removeDimensionFilter(name)}
                   onToggleFilterMode={() => toggleDimensionFilterMode(name)}
                   onSelect={(value) =>
@@ -206,7 +207,7 @@
       </div>
       <div class="ml-auto">
         {#if hasFilters}
-          <Button type="text" on:click={clearAllFilters}>Clear filters</Button>
+          <Button type="text" onClick={clearAllFilters}>Clear filters</Button>
         {/if}
       </div>
     </div>

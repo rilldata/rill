@@ -7,9 +7,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"slices"
 	"strings"
+	"time"
 
+	"github.com/r3labs/sse/v2"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -18,7 +21,9 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -301,10 +306,10 @@ func (s *Server) GetModelPartitions(ctx context.Context, req *runtimev1.GetModel
 		return &runtimev1.GetModelPartitionsResponse{}, nil
 	}
 
-	afterIdx := 0
+	var beforeExecutedOn time.Time
 	afterKey := ""
 	if req.PageToken != "" {
-		err := unmarshalPageToken(req.PageToken, &afterIdx, &afterKey)
+		err := unmarshalPageToken(req.PageToken, &beforeExecutedOn, &afterKey)
 		if err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "failed to parse page token: %v", err)
 		}
@@ -317,12 +322,12 @@ func (s *Server) GetModelPartitions(ctx context.Context, req *runtimev1.GetModel
 	defer release()
 
 	opts := &drivers.FindModelPartitionsOptions{
-		ModelID:      partitionsModelID,
-		WherePending: req.Pending,
-		WhereErrored: req.Errored,
-		AfterIndex:   afterIdx,
-		AfterKey:     afterKey,
-		Limit:        validPageSize(req.PageSize),
+		ModelID:          partitionsModelID,
+		WherePending:     req.Pending,
+		WhereErrored:     req.Errored,
+		BeforeExecutedOn: beforeExecutedOn,
+		AfterKey:         afterKey,
+		Limit:            validPageSize(req.PageSize),
 	}
 
 	partitions, err := catalog.FindModelPartitions(ctx, opts)
@@ -369,28 +374,34 @@ func (s *Server) CreateTrigger(ctx context.Context, req *runtimev1.CreateTrigger
 		spec.Resources = append(spec.Resources, runtime.GlobalProjectParserName)
 	}
 
-	// Handle the convenience flags for all sources and models.
-	if req.AllSourcesModels || req.AllSourcesModelsFull {
-		// Add all sources.
-		// Note: Don't need to handle "full" here since source refreshes are always full refreshes.
-		rs, err := ctrl.List(ctx, runtime.ResourceKindSource, "", false)
-		if err != nil {
-			return nil, status.Error(codes.InvalidArgument, fmt.Errorf("failed to list sources: %w", err).Error())
+	// Handle the convenience flags for all (user-facing) resources.
+	// In practice, we only refresh the major user declared resources that impact serving.
+	// For example, we don't currently trigger alerts or reports.
+	if req.All || req.AllFull {
+		kinds := []string{
+			runtime.ResourceKindProjectParser,
+			runtime.ResourceKindConnector,
+			runtime.ResourceKindModel,
+			runtime.ResourceKindMetricsView,
+			runtime.ResourceKindExplore,
+			runtime.ResourceKindComponent,
+			runtime.ResourceKindCanvas,
 		}
-		for _, r := range rs {
-			spec.Resources = append(spec.Resources, r.Meta.Name)
-		}
-
-		// Add all models.
-		rs, err = ctrl.List(ctx, runtime.ResourceKindModel, "", false)
-		if err != nil {
-			return nil, status.Error(codes.InvalidArgument, fmt.Errorf("failed to list models: %w", err).Error())
-		}
-		for _, r := range rs {
-			spec.Models = append(spec.Models, &runtimev1.RefreshModelTrigger{
-				Model: r.Meta.Name.Name,
-				Full:  req.AllSourcesModelsFull,
-			})
+		for _, kind := range kinds {
+			rs, err := ctrl.List(ctx, kind, "", false)
+			if err != nil {
+				return nil, status.Error(codes.InvalidArgument, fmt.Errorf("failed to list resources of kind %q: %w", kind, err).Error())
+			}
+			for _, r := range rs {
+				if kind == runtime.ResourceKindModel {
+					spec.Models = append(spec.Models, &runtimev1.RefreshModelTrigger{
+						Model: r.Meta.Name.Name,
+						Full:  req.AllFull,
+					})
+					continue
+				}
+				spec.Resources = append(spec.Resources, r.Meta.Name)
+			}
 		}
 	}
 
@@ -404,6 +415,57 @@ func (s *Server) CreateTrigger(ctx context.Context, req *runtimev1.CreateTrigger
 	}
 
 	return &runtimev1.CreateTriggerResponse{}, nil
+}
+
+// WatchResourcesHandler implements an HTTP handler for runtimev1.RuntimeServiceServer
+func (s *Server) WatchResourcesHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	instanceID := r.PathValue("instance_id")
+	kind := r.URL.Query().Get("kind")
+	replay := r.URL.Query().Get("replay") == "true"
+
+	if !auth.GetClaims(ctx).CanInstance(instanceID, auth.ReadObjects) {
+		http.Error(w, "forbidden", http.StatusForbidden)
+		return
+	}
+
+	eventServer := sse.New()
+	eventServer.CreateStream("resources")
+	eventServer.Headers = map[string]string{
+		"Content-Type":  "text/event-stream",
+		"Cache-Control": "no-cache",
+		"Connection":    "keep-alive",
+	}
+
+	// Create a shim that adapts the SSE server to the WatchResources gRPC server
+	shim := &watchResourcesServerShim{r: r, sse: eventServer}
+
+	// Use the existing WatchResources implementation in a goroutine
+	go func() {
+		err := s.WatchResources(&runtimev1.WatchResourcesRequest{
+			InstanceId: instanceID,
+			Kind:       kind,
+			Replay:     replay,
+		}, shim)
+		if err != nil {
+			if !errors.Is(err, context.Canceled) {
+				s.logger.Warn("watch resources error", zap.String("instance_id", instanceID), zap.String("kind", kind), zap.Error(err))
+			}
+
+			errJSON, err := json.Marshal(map[string]string{"error": err.Error()})
+			if err != nil {
+				s.logger.Error("failed to marshal error as json", zap.Error(err))
+			}
+
+			eventServer.Publish("resources", &sse.Event{
+				Data:  errJSON,
+				Event: []byte("error"),
+			})
+		}
+		eventServer.Close()
+	}()
+
+	eventServer.ServeHTTP(w, r)
 }
 
 // applySecurityPolicy applies relevant security policies to the resource.
@@ -615,4 +677,51 @@ func must[T any](v T, err error) T {
 		panic(err)
 	}
 	return v
+}
+
+// A shim for runtimev1.RuntimeService_WatchResourcesServer
+type watchResourcesServerShim struct {
+	r   *http.Request
+	sse *sse.Server
+}
+
+// Context returns the context from the HTTP request
+func (s *watchResourcesServerShim) Context() context.Context {
+	return s.r.Context()
+}
+
+// Send adapts the WatchResourcesResponse to SSE events
+func (s *watchResourcesServerShim) Send(e *runtimev1.WatchResourcesResponse) error {
+	data, err := protojson.Marshal(e)
+	if err != nil {
+		return err
+	}
+
+	s.sse.Publish("resources", &sse.Event{Data: data})
+	return nil
+}
+
+// SetHeader implements the grpc.ServerStream interface
+func (s *watchResourcesServerShim) SetHeader(metadata.MD) error {
+	return nil // No-op for HTTP/SSE
+}
+
+// SendHeader implements the grpc.ServerStream interface
+func (s *watchResourcesServerShim) SendHeader(metadata.MD) error {
+	return nil // No-op for HTTP/SSE
+}
+
+// SetTrailer implements the grpc.ServerStream interface
+func (s *watchResourcesServerShim) SetTrailer(metadata.MD) {
+	// No-op for HTTP/SSE
+}
+
+// SendMsg implements the grpc.ServerStream interface
+func (s *watchResourcesServerShim) SendMsg(m any) error {
+	return errors.New("not implemented")
+}
+
+// RecvMsg implements the grpc.ServerStream interface
+func (s *watchResourcesServerShim) RecvMsg(m any) error {
+	return errors.New("not implemented")
 }
