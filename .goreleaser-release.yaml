@@ -2,38 +2,25 @@ version: 2
 
 project_name: rill
 
-before:
-  hooks:
-    - go mod tidy
+release:
+  prerelease: auto
+  draft: false
 
 builds:
-  - id: darwin_arm64
+  - builder: prebuilt
     main: ./cli/main.go
     binary: rill
     goos:
-      - darwin
+      - {{.Env.GOOS}}
     goarch:
-      - arm64
+      - {{.Env.GOARCH}}
     env:
-      - CC=clang
-      - CXX=clang++
+      - CC={{.Env.CC}}
+      - CXX={{.Env.CXX}}
     flags:
       - "-mod=readonly"
     ldflags:
       - -s -w -X main.Version={{.Version}} -X main.Commit={{.ShortCommit}} -X main.BuildDate={{.Date}}
-
-blobs:
-  - provider: gs
-    bucket: prod-cdn.rilldata.com
-    directory: "rill/v{{ .Version }}"
-    extra_files:
-      - glob: ./dist/**/*
-
-  - provider: gs
-    bucket: prod-cdn.rilldata.com
-    directory: "rill/latest"
-    extra_files:
-      - glob: ./dist/**/*
 
 brews:
   - homepage: https://github.com/rilldata/rill
@@ -62,7 +49,7 @@ archives:
     format: zip
 
 checksum:
-  name_template: checksums_darwin_arm64.txt
+  name_template: checksums_{{.Env.GOOS}}_{{.Env.GOARCH}}.txt
 
 snapshot:
   name_template: "{{ incminor .Version }}-nightly"

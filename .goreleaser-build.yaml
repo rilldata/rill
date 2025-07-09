@@ -2,25 +2,21 @@ version: 2
 
 project_name: rill
 
-release:
-  prerelease: auto
-  draft: false
-
 before:
   hooks:
     - go mod tidy
 
 builds:
-  - id: linux
+  - id: {{.Env.GOOS}}_{{.Env.GOARCH}}
     main: ./cli/main.go
     binary: rill
     goos:
-      - linux
+      - {{.Env.GOOS}}
     goarch:
-      - amd64
+      - {{.Env.GOARCH}}
     env:
-      - CC=x86_64-linux-gnu-gcc
-      - CXX=x86_64-linux-gnu-g++
+      - CC={{.Env.CC}}
+      - CXX={{.Env.CXX}}
     flags:
       - "-mod=readonly"
     ldflags:
@@ -44,18 +40,8 @@ dockers:
       - rilldata/rill:latest
       - rilldata/rill:{{ .Tag }}
 
-archives:
-  - files:
-      - README.md
-      - LICENSE*
-    name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
-    formats: ["zip"]
-
 checksum:
-  name_template: checksums_linux_amd64.txt
+  name_template: checksums_{{.Env.GOOS}}_{{.Env.GOARCH}}.txt
 
 snapshot:
-  version_template: "{{ incminor .Version }}-nightly"
-
-changelog:
-  sort: asc
+  name_template: "{{ incminor .Version }}-nightly"
