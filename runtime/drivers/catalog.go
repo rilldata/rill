@@ -128,7 +128,7 @@ type Message struct {
 // GetContent returns the parsed message content
 func (m *Message) GetContent() ([]MessageContent, error) {
 	if len(m.ContentJSON) == 0 {
-		return []MessageContent{}, nil
+		return nil, nil
 	}
 	var content []MessageContent
 	err := json.Unmarshal(m.ContentJSON, &content)
