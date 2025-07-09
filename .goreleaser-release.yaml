@@ -37,6 +37,11 @@ brews:
       name: rilldata
       email: support@rilldata.com
 
+dockers:
+  - image_templates:
+      - rilldata/rill:latest
+      - rilldata/rill:{{ .Tag }}
+
 archives:
   - files:
       - README.md

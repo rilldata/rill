@@ -37,8 +37,8 @@ jobs:
       run: |
         ./scripts/check_migrations.sh runtime/drivers/sqlite/migrations
 
-  release:
-    name: Release rill
+  build:
+    name: Build rill
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -191,9 +191,10 @@ jobs:
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_ANNOUNCE_DD }}
 
-  combine-checksums:
+  release:
+    name: Release rill
     runs-on: ubuntu-latest
-    needs: release
+    needs: build
 
     steps:
       - name: Checkout code
