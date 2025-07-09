@@ -17,6 +17,7 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/rilldata/rill/runtime/storage"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
@@ -315,18 +316,20 @@ func (c *Connection) executeQuery(ctx context.Context, client *athena.Client, sq
 		return "", err
 	}
 
-	queryID := *queryExecutionOutput.QueryExecutionId
-
+	ticker := time.NewTicker(time.Second)
+	defer ticker.Stop()
 	for {
 		select {
 		case <-ctx.Done():
+			ctx, cancel := graceful.WithMinimumDuration(ctx, 15*time.Second)
 			_, stopErr := client.StopQueryExecution(ctx, &athena.StopQueryExecutionInput{
-				QueryExecutionId: aws.String(queryID),
+				QueryExecutionId: queryExecutionOutput.QueryExecutionId,
 			})
+			cancel()
 			return "", errors.Join(ctx.Err(), stopErr)
-		default:
+		case <-ticker.C:
 			status, err := client.GetQueryExecution(ctx, &athena.GetQueryExecutionInput{
-				QueryExecutionId: aws.String(queryID),
+				QueryExecutionId: queryExecutionOutput.QueryExecutionId,
 			})
 			if err != nil {
 				return "", err
@@ -334,7 +337,7 @@ func (c *Connection) executeQuery(ctx context.Context, client *athena.Client, sq
 
 			switch status.QueryExecution.Status.State {
 			case types2.QueryExecutionStateSucceeded:
-				return queryID, nil
+				return *queryExecutionOutput.QueryExecutionId, nil
 			case types2.QueryExecutionStateCancelled:
 				return "", fmt.Errorf("Athena query execution cancelled")
 			case types2.QueryExecutionStateFailed:
