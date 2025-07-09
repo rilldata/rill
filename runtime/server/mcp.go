@@ -62,6 +62,7 @@ func (s *Server) newMCPHandler() http.Handler {
 	mcpServer.AddTool(s.mcpGetMetricsView())
 	mcpServer.AddTool(s.mcpQueryMetricsViewTimeRange())
 	mcpServer.AddTool(s.mcpQueryMetricsView())
+	mcpServer.AddTool(s.mcpQueryMetricsViewSummary())
 
 	httpServer := server.NewStreamableHTTPServer(
 		mcpServer,
@@ -168,6 +169,67 @@ func (s *Server) mcpGetMetricsView() (mcp.Tool, server.ToolHandlerFunc) {
 		}
 
 		return mcpNewToolResultJSON(mv.State.ValidSpec)
+	}
+
+	return tool, handler
+}
+
+func (s *Server) mcpQueryMetricsViewSummary() (mcp.Tool, server.ToolHandlerFunc) {
+	tool := mcp.NewTool("query_metrics_view_summary",
+		mcp.WithDescription(`
+			Retrieve summary statistics for a metrics view including:
+			- Total time range available
+			- Sample values and data types for each dimension
+			- Basic statistics for each measures (optional)
+			Note: All subsequent queries should be constrained to the returned time range.
+		`),
+		mcp.WithString("metrics_view",
+			mcp.Required(),
+			mcp.Description("Name of the metrics view"),
+		),
+		mcp.WithString("time_dimension",
+			mcp.Description("Optional time dimension to use for resolving the time range"),
+		),
+		mcp.WithBoolean("include_measures",
+			mcp.Description("Whether to include basic statistics for measures (default: false)"),
+		),
+	)
+	handler := func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		instanceID := mcpInstanceIDFromContext(ctx)
+		metricsViewName, err := req.RequireString("metrics_view")
+		if err != nil {
+			return nil, err
+		}
+
+		timeDimension := req.GetString("time_dimension", "")
+
+		claims := auth.GetClaims(ctx)
+		if !claims.CanInstance(instanceID, auth.ReadMetrics) {
+			return nil, ErrForbidden
+		}
+
+		res, err := s.runtime.Resolve(ctx, &runtime.ResolveOptions{
+			InstanceID: instanceID,
+			Resolver:   "metrics_summary",
+			ResolverProperties: map[string]any{
+				"metrics_view": metricsViewName,
+			},
+			Args: map[string]any{
+				"time_dimension": timeDimension,
+			},
+			Claims: claims.SecurityClaims(),
+		})
+		if err != nil {
+			return nil, err
+		}
+		defer res.Close()
+
+		data, err := res.MarshalJSON()
+		if err != nil {
+			return nil, err
+		}
+
+		return mcp.NewToolResultText(string(data)), nil
 	}
 
 	return tool, handler
