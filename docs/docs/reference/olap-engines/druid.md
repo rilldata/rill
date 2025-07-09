@@ -64,7 +64,7 @@ connector.druid.dsn="https://user:password@localhost:8888/druid/v2/sql"
 
 :::info Need help connecting to Druid?
 
-If you would like to connect Rill to an existing Druid instance, please don't hesitate to [contact us](../../contact.md). We'd love to help!
+If you would like to connect Rill to an existing Druid instance, please don't hesitate to [contact us](/contact). We'd love to help!
 
 :::
 
@@ -111,5 +111,5 @@ Rill supports connecting to Druid v28.0 or newer versions.
 
 ## Additional Notes
 
-- At the moment, we do not support modeling with Druid. If this is something you're interested in, please [contact us](../../contact.md).
+- At the moment, we do not support modeling with Druid. If this is something you're interested in, please [contact us](/contact).
 - For dashboards powered by Druid, [measure definitions](/build/metrics-view/metrics-view.md#measures) are required to follow standard [Druid SQL](https://druid.apache.org/docs/latest/querying/sql/) syntax.

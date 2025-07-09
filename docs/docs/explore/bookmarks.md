@@ -19,7 +19,7 @@ Common use cases for Bookmarks include:
 
 On the top right portion of the screen, you will see the Bookmark icon to bring up the option to save a bookmark. Clicking that icon brings up options to save the current page as your home screen, create a new bookmark page, or to see your list of bookmarks (and shared bookmarks).
 
-<img src = '/img/tutorials/205/bookmark.gif' class='rounded-gif' />
+<img src = '/img/tutorials/rill-advanced/bookmark.gif' class='rounded-gif' />
 <br />
 
 On the bookmark screen, you'll then be able to set the options related to the saved view:
