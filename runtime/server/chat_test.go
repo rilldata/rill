@@ -17,6 +17,7 @@ import (
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 func TestConversationLifecycle(t *testing.T) {
@@ -539,4 +540,194 @@ func newConversationTestServer(t *testing.T) (*server.Server, string) {
 	require.NoError(t, err)
 
 	return server, inst.ID
+}
+
+// TestConversationWithAppContext tests that app context generates system messages and saves them before user messages
+func TestConversationWithAppContext(t *testing.T) {
+	server, instanceID := newConversationTestServer(t)
+	ctx := testCtx()
+
+	// Test 1: General chat context
+	t.Run("general_chat_context", func(t *testing.T) {
+		appContext := &runtimev1.AppContext{
+			ContextType:     "general_chat",
+			ContextMetadata: &structpb.Struct{},
+		}
+
+		resp, err := server.Complete(ctx, &runtimev1.CompleteRequest{
+			InstanceId: instanceID,
+			AppContext: appContext,
+			Messages: []*runtimev1.Message{
+				createTestTextMessage("user", "What metrics are available?"),
+			},
+		})
+		require.NoError(t, err)
+		require.NotEmpty(t, resp.ConversationId)
+
+		// Get the conversation with system messages to verify message order
+		includeSystem := true
+		conv, err := server.GetConversation(ctx, &runtimev1.GetConversationRequest{
+			InstanceId:            instanceID,
+			ConversationId:        resp.ConversationId,
+			IncludeSystemMessages: &includeSystem,
+		})
+		require.NoError(t, err)
+		require.NotNil(t, conv.Conversation)
+
+		messages := conv.Conversation.Messages
+		require.Len(t, messages, 3) // Exactly: system, user, assistant
+
+		// Verify system message is first and contains expected content
+		require.Equal(t, "system", messages[0].Role)
+		require.Contains(t, messages[0].Content[0].GetText(), "Available metrics views")
+		t.Logf("✓ System message: %s", messages[0].Content[0].GetText())
+
+		// Verify user message is second
+		require.Equal(t, "user", messages[1].Role)
+		require.Equal(t, "What metrics are available?", messages[1].Content[0].GetText())
+
+		// Verify assistant message is third
+		require.Equal(t, "assistant", messages[2].Role)
+		require.Equal(t, "Echo: What metrics are available?", messages[2].Content[0].GetText())
+	})
+
+	// Test 2: Explore dashboard context with metadata
+	t.Run("explore_dashboard_context", func(t *testing.T) {
+		metadata, err := structpb.NewStruct(map[string]interface{}{
+			"dashboard_name": "test_dashboard",
+		})
+		require.NoError(t, err)
+
+		appContext := &runtimev1.AppContext{
+			ContextType:     "explore_dashboard",
+			ContextMetadata: metadata,
+		}
+
+		resp, err := server.Complete(ctx, &runtimev1.CompleteRequest{
+			InstanceId: instanceID,
+			AppContext: appContext,
+			Messages: []*runtimev1.Message{
+				createTestTextMessage("user", "Tell me about this dashboard"),
+			},
+		})
+		require.NoError(t, err)
+		require.NotEmpty(t, resp.ConversationId)
+
+		// Get the conversation with system messages to verify message order
+		includeSystem := true
+		conv, err := server.GetConversation(ctx, &runtimev1.GetConversationRequest{
+			InstanceId:            instanceID,
+			ConversationId:        resp.ConversationId,
+			IncludeSystemMessages: &includeSystem,
+		})
+		require.NoError(t, err)
+		require.NotNil(t, conv.Conversation)
+
+		messages := conv.Conversation.Messages
+		require.Len(t, messages, 3) // Exactly: system, user, assistant
+
+		// Verify system message is first and contains dashboard context
+		require.Equal(t, "system", messages[0].Role)
+		systemText := messages[0].Content[0].GetText()
+		require.Contains(t, systemText, "test_dashboard")
+		require.Contains(t, systemText, "exploring")
+		t.Logf("✓ Dashboard system message: %s", systemText)
+
+		// Verify user message is second
+		require.Equal(t, "user", messages[1].Role)
+		require.Equal(t, "Tell me about this dashboard", messages[1].Content[0].GetText())
+
+		// Verify assistant message is third
+		require.Equal(t, "assistant", messages[2].Role)
+		require.Equal(t, "Echo: Tell me about this dashboard", messages[2].Content[0].GetText())
+	})
+
+	// Test 3: No app context (should work normally)
+	t.Run("no_app_context", func(t *testing.T) {
+		resp, err := server.Complete(ctx, &runtimev1.CompleteRequest{
+			InstanceId: instanceID,
+			AppContext: nil, // No app context
+			Messages: []*runtimev1.Message{
+				createTestTextMessage("user", "Hello without context"),
+			},
+		})
+		require.NoError(t, err)
+		require.NotEmpty(t, resp.ConversationId)
+
+		// Get the conversation to verify message order
+		conv, err := server.GetConversation(ctx, &runtimev1.GetConversationRequest{
+			InstanceId:     instanceID,
+			ConversationId: resp.ConversationId,
+		})
+		require.NoError(t, err)
+		require.NotNil(t, conv.Conversation)
+
+		messages := conv.Conversation.Messages
+		require.Len(t, messages, 2) // Only: user, assistant (no system message)
+
+		// Verify user message is first
+		require.Equal(t, "user", messages[0].Role)
+		require.Equal(t, "Hello without context", messages[0].Content[0].GetText())
+
+		// Verify assistant message is second
+		require.Equal(t, "assistant", messages[1].Role)
+		require.Equal(t, "Echo: Hello without context", messages[1].Content[0].GetText())
+	})
+
+	// Test 4: Continuing conversation with app context (should not re-add system messages)
+	t.Run("continue_conversation_with_app_context", func(t *testing.T) {
+		// First message with app context
+		appContext := &runtimev1.AppContext{
+			ContextType:     "general_chat",
+			ContextMetadata: &structpb.Struct{},
+		}
+
+		resp1, err := server.Complete(ctx, &runtimev1.CompleteRequest{
+			InstanceId: instanceID,
+			AppContext: appContext,
+			Messages: []*runtimev1.Message{
+				createTestTextMessage("user", "First message with context"),
+			},
+		})
+		require.NoError(t, err)
+		conversationID := resp1.ConversationId
+
+		// Continue the conversation (app context should not add new system messages)
+		resp2, err := server.Complete(ctx, &runtimev1.CompleteRequest{
+			InstanceId:     instanceID,
+			ConversationId: &conversationID,
+			AppContext:     appContext, // Same app context
+			Messages: []*runtimev1.Message{
+				createTestTextMessage("user", "Second message in same conversation"),
+			},
+		})
+		require.NoError(t, err)
+		require.Equal(t, conversationID, resp2.ConversationId)
+
+		// Get the conversation to verify no duplicate system messages
+		includeSystem := true
+		conv, err := server.GetConversation(ctx, &runtimev1.GetConversationRequest{
+			InstanceId:            instanceID,
+			ConversationId:        conversationID,
+			IncludeSystemMessages: &includeSystem,
+		})
+		require.NoError(t, err)
+		require.NotNil(t, conv.Conversation)
+
+		messages := conv.Conversation.Messages
+		require.Len(t, messages, 5) // system, user1, assistant1, user2, assistant2
+
+		// Verify only one system message (at the beginning)
+		systemMessages := 0
+		for _, msg := range messages {
+			if msg.Role == "system" {
+				systemMessages++
+			}
+		}
+		require.Equal(t, 1, systemMessages, "Should have exactly one system message")
+
+		// Verify system message is still first
+		require.Equal(t, "system", messages[0].Role)
+		require.Contains(t, messages[0].Content[0].GetText(), "Available metrics views")
+	})
 }

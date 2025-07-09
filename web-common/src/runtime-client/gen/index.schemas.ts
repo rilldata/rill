@@ -328,6 +328,13 @@ export interface V1AnalyzedVariable {
   usedBy?: V1ResourceName[];
 }
 
+export type V1AppContextContextMetadata = { [key: string]: unknown };
+
+export interface V1AppContext {
+  contextType?: string;
+  contextMetadata?: V1AppContextContextMetadata;
+}
+
 export type V1AssertionResultFailRow = { [key: string]: unknown };
 
 export interface V1AssertionResult {
@@ -2416,6 +2423,14 @@ export type RuntimeServiceCompleteBody = {
   conversationId?: string;
   messages?: V1Message[];
   toolNames?: string[];
+  appContext?: V1AppContext;
+};
+
+export type RuntimeServiceGetConversationParams = {
+  /**
+   * Whether to include system messages in the response (defaults to false for UI use)
+   */
+  includeSystemMessages?: boolean;
 };
 
 export type RuntimeServiceListFilesParams = {
