@@ -9,7 +9,6 @@ import (
 
 	"encoding/json"
 
-	"github.com/mark3labs/mcp-go/mcp"
 	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -211,9 +210,42 @@ func (r *Runtime) processExploreDashboardContext(ctx context.Context, instanceID
 		return nil, fmt.Errorf("missing dashboard_name in explore_dashboard context")
 	}
 
+	// Get the controller to access resources
+	ctrl, err := r.Controller(ctx, instanceID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get the explore resource to find its associated metrics view
+	exploreResource, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: ResourceKindExplore, Name: dashboardName}, false)
+	if err != nil {
+		return nil, fmt.Errorf("could not find explore '%s': %w", dashboardName, err)
+	}
+
+	explore := exploreResource.GetExplore()
+	if explore == nil || explore.State == nil || explore.State.ValidSpec == nil {
+		return nil, fmt.Errorf("explore '%s' does not have a valid spec", dashboardName)
+	}
+
+	metricsViewName := explore.State.ValidSpec.MetricsView
+
+	// Verify that the MetricsView resource exists before calling tools
+	_, err = ctrl.Get(ctx, &runtimev1.ResourceName{Kind: ResourceKindMetricsView, Name: metricsViewName}, false)
+	if err != nil {
+		return nil, fmt.Errorf("could not find metrics view '%s' referenced by explore '%s': %w", metricsViewName, dashboardName, err)
+	}
+
 	// Get specific metrics view details
-	result, err := toolService.ExecuteTool(ctx, "get_metrics_view", map[string]any{
-		"metrics_view": dashboardName,
+	metricsViewResult, err := toolService.ExecuteTool(ctx, "get_metrics_view", map[string]any{
+		"metrics_view": metricsViewName,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// Get time range information for the metrics view
+	timeRangeResult, err := toolService.ExecuteTool(ctx, "query_metrics_view_time_range", map[string]any{
+		"metrics_view": metricsViewName,
 	})
 	if err != nil {
 		return nil, err
@@ -223,7 +255,23 @@ func (r *Runtime) processExploreDashboardContext(ctx context.Context, instanceID
 		Role: "system",
 		Content: []*aiv1.ContentBlock{{
 			BlockType: &aiv1.ContentBlock_Text{
-				Text: fmt.Sprintf("You are exploring the '%s' dashboard. Metrics view details: %s", dashboardName, result),
+				Text: fmt.Sprintf(`You are a data analyst designed to be helpful, insightful, and accurate. Your role is to assist users in understanding their data by answering questions, identifying trends, performing calculations, and providing actionable insights.
+
+## Current Context
+The user is actively viewing the '%s' explore dashboard. When they refer to "this dashboard," "the current view," or similar contextual references, they are referring to this dashboard.
+
+**IMPORTANT: This dashboard is based on the "%s" metrics view. Every invocation of the "query_metrics_view" tool must include "metrics_view": "%s" in the payload.**
+
+## Metrics View Details:
+%s
+
+## Time Range Information:
+%s
+
+## Your Capabilities
+You can use "query_metrics_view" to run queries and get aggregated results from this metrics view. The metrics view spec above shows all available dimensions and measures, and the time range information shows what time periods are available for analysis. Use this information to craft meaningful queries that answer the user's questions and provide valuable insights.
+
+If a response contains an "ai_instructions" field, interpret it as additional instructions for how to behave in subsequent responses related to that tool call.`, dashboardName, metricsViewName, metricsViewName, metricsViewResult, timeRangeResult),
 			},
 		}},
 	}}, nil
@@ -380,20 +428,9 @@ func (r *Runtime) executeAICompletion(ctx context.Context, instanceID string, al
 			} else {
 				logger.Debug("tool executed successfully", zap.String("tool_name", toolCall.Name), zap.String("tool_id", toolCall.Id), observability.ZapCtx(ctx))
 				// Convert response to ToolResult
-				var result string
-				if respContent, ok := resp.([]mcp.Content); ok && len(respContent) > 0 {
-					if textContent, ok := respContent[0].(mcp.TextContent); ok {
-						result = textContent.Text
-					} else {
-						result = fmt.Sprintf("%v", respContent[0])
-					}
-				} else {
-					result = fmt.Sprintf("%v", resp)
-				}
-
 				toolResult = &aiv1.ToolResult{
 					Id:      toolCall.Id,
-					Content: result,
+					Content: fmt.Sprintf("%v", resp),
 					IsError: false,
 				}
 			}
@@ -500,18 +537,21 @@ func (r *Runtime) buildCompletionResult(ctx context.Context, instanceID, convers
 		messages[i] = pbMessage
 	}
 
-	// Collect all messages that were added during this Complete call
+	// Collect all messages that were added during this Complete call, excluding system messages
 	var addedMessages []*runtimev1.Message
 	for _, messageID := range addedMessageIDs {
 		for _, msg := range messages {
 			if msg.Id == messageID {
-				addedMessages = append(addedMessages, msg)
+				// Filter out system messages
+				if msg.Role != "system" {
+					addedMessages = append(addedMessages, msg)
+				}
 				break
 			}
 		}
 	}
 
-	// Return final result with all messages added during this Complete call
+	// Return final result with all messages added during this Complete call (excluding system messages)
 	return &CompleteWithToolsResult{
 		ConversationID: conversationID,
 		Messages:       addedMessages,

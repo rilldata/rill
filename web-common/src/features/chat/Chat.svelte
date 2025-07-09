@@ -58,6 +58,7 @@
       getRuntimeServiceGetConversationQueryOptions(
         $runtime.instanceId,
         $currentConversationId || "",
+        undefined,
         {
           query: {
             enabled:

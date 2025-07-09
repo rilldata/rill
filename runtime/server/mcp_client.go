@@ -87,5 +87,15 @@ func (s *Server) mcpExecuteTool(ctx context.Context, instanceID, toolName string
 		return nil, err
 	}
 
+	// Extract text content from MCP response for cleaner consumption
+	if len(resp.Content) > 0 {
+		if textContent, ok := resp.Content[0].(mcp.TextContent); ok {
+			return textContent.Text, nil
+		}
+		// Fallback for other content types
+		return fmt.Sprintf("%v", resp.Content[0]), nil
+	}
+
+	// Fallback for empty response
 	return resp.Content, nil
 }
