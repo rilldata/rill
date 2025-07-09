@@ -100,7 +100,7 @@ var spec = drivers.Spec{
 		{
 			Key:         "password",
 			Type:        drivers.StringPropertyType,
-			Required:    false,
+			Required:    true,
 			DisplayName: "Password",
 			Description: "Password to connect to the ClickHouse server",
 			Placeholder: "Database password",
@@ -129,7 +129,7 @@ var spec = drivers.Spec{
 		{
 			Key:         "ssl",
 			Type:        drivers.BooleanPropertyType,
-			Required:    true,
+			Required:    false,
 			DisplayName: "SSL",
 			Description: "Use SSL to connect to the ClickHouse server",
 			Hint:        "Enable SSL for secure connections",

@@ -2,14 +2,12 @@
   import { Button } from "@rilldata/web-common/components/button";
   import InformationalField from "@rilldata/web-common/components/forms/InformationalField.svelte";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
-  import SubmissionError from "@rilldata/web-common/components/forms/SubmissionError.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import {
     ConnectorDriverPropertyType,
     type V1ConnectorDriver,
   } from "@rilldata/web-common/runtime-client";
   import { createEventDispatcher } from "svelte";
-  import { slide } from "svelte/transition";
   import {
     defaults,
     superForm,
@@ -27,17 +25,20 @@
   import { dsnSchema, getYupSchema } from "./yupSchemas";
   import Checkbox from "@rilldata/web-common/components/forms/Checkbox.svelte";
 
-  const FORM_TRANSITION_DURATION = 150;
   const dispatch = createEventDispatcher();
 
   export let connector: V1ConnectorDriver;
   export let formType: AddDataFormType;
   export let onBack: () => void;
   export let onClose: () => void;
+  export let setError: (
+    error: string | null,
+    details?: string,
+  ) => void = () => {};
 
   // Always include 'managed' in the schema for ClickHouse
   const clickhouseSchema = yup(getYupSchema["clickhouse"]);
-  const paramsFormId = `add-data-${connector.name}-form`;
+  const paramsFormId = `add-clickhouse-data-${connector.name}-form`;
   const {
     form: paramsForm,
     errors: paramsErrors,
@@ -57,7 +58,7 @@
   // DSN form
   let useDsn = false;
 
-  const dsnFormId = `add-data-${connector.name}-dsn-form`;
+  const dsnFormId = `add-clickhouse-data-${connector.name}-dsn-form`;
   const dsnProperties =
     connector.configProperties?.filter((property) => property.key === "dsn") ??
     [];
@@ -166,9 +167,11 @@
       if (useDsn) {
         dsnError = error;
         dsnErrorDetails = details;
+        setError(dsnError, dsnErrorDetails);
       } else {
         paramsError = error;
         paramsErrorDetails = details;
+        setError(paramsError, paramsErrorDetails);
       }
     }
   }
@@ -179,22 +182,77 @@
         !useDsn ? p.key !== "dsn" : true,
       ) ?? []);
   $: filteredProperties = properties.filter((property) => !property.noPrompt);
+
+  function isEmpty(val: any) {
+    return (
+      val === undefined ||
+      val === null ||
+      val === "" ||
+      (typeof val === "string" && val.trim() === "")
+    );
+  }
+
+  // Compute disabled state for the submit button
+  // Refer to `runtime/drivers/clickhouse/clickhouse.go` for the required
+  // Account for the managed property and the dsn property can be either true or false
+  $: isSubmitDisabled = (() => {
+    if ($paramsForm.managed) {
+      // Managed form: only check required properties where property.key === 'managed' or property.key is not 'managed'
+      for (const property of filteredProperties) {
+        if (
+          property.required &&
+          (property.key === "managed" || property.key !== "managed")
+        ) {
+          const key = String(property.key);
+          const value = $paramsForm[key];
+          if (isEmpty(value) || $paramsErrors[key]?.length) return true;
+        }
+      }
+      return false;
+    } else if (useDsn) {
+      // Self-managed DSN form
+      for (const property of dsnProperties) {
+        if (property.required) {
+          const key = String(property.key);
+          const value = $dsnForm[key];
+          if (isEmpty(value) || $dsnErrors[key]?.length) return true;
+        }
+      }
+      return false;
+    } else {
+      // Self-managed parameters form: only check required properties where property.key !== 'managed'
+      for (const property of filteredProperties) {
+        if (property.required && property.key !== "managed") {
+          const key = String(property.key);
+          const value = $paramsForm[key];
+          if (isEmpty(value) || $paramsErrors[key]?.length) return true;
+        }
+      }
+      return false;
+    }
+  })();
 </script>
 
 <div class="h-full w-full flex flex-col">
-  <!-- Managed toggle -->
-  <div class="pt-3">
+  <!-- FIXME: ConnectorTypeSelector -->
+  <div>
     <div class="text-sm font-medium mb-2">Connector type</div>
     <select id="managed" bind:value={$paramsForm.managed} class="form-select">
       <option value={true}>Rill-managed ClickHouse</option>
       <option value={false}>Self-managed ClickHouse</option>
     </select>
+    {#if $paramsForm.managed}
+      <InformationalField
+        description="This option uses ClickHouse as an OLAP engine with Rill-managed infrastructure. No additional configuration is required - Rill will handle the setup and management of your ClickHouse instance."
+      />
+    {/if}
   </div>
 
   <!-- Connection method selector -->
   {#if !$paramsForm.managed}
     <div class="py-3">
       <div class="text-sm font-medium mb-2">Connection method</div>
+      <!-- FIXME: use Tabs, not ButtonGroup -->
       <ButtonGroup
         selected={[useDsn ? "dsn" : "parameters"]}
         on:subbutton-click={handleConnectionTypeChange}
@@ -212,15 +270,11 @@
   <!-- Parameters form -->
   {#if !useDsn}
     <!-- Form 1: Individual parameters -->
-    {#if paramsError}
-      <SubmissionError message={paramsError} details={paramsErrorDetails} />
-    {/if}
     <form
       id={paramsFormId}
       class="pb-5 flex-grow overflow-y-auto"
       use:paramsEnhance
       on:submit|preventDefault={paramsSubmit}
-      transition:slide={{ duration: FORM_TRANSITION_DURATION }}
     >
       {#each filteredProperties as property (property.key)}
         {@const propertyKey = property.key ?? ""}
@@ -259,15 +313,11 @@
     </form>
   {:else}
     <!-- Connection string form -->
-    {#if dsnError}
-      <SubmissionError message={dsnError} details={dsnErrorDetails} />
-    {/if}
     <form
       id={dsnFormId}
       class="pb-5 flex-grow overflow-y-auto"
       use:dsnEnhance
       on:submit|preventDefault={dsnSubmit}
-      transition:slide={{ duration: FORM_TRANSITION_DURATION }}
     >
       {#each dsnProperties as property (property.key)}
         {@const propertyKey = property.key ?? ""}
@@ -289,15 +339,24 @@
 
   <div class="flex items-center space-x-2 ml-auto">
     <Button onClick={onBack} type="secondary">Back</Button>
-    <Button disabled={submitting} form={formId} submitForm type="primary">
-      {#if formType === "connector"}
+
+    <!-- FIXME: use Connect when managed is true -->
+    <Button
+      disabled={submitting || isSubmitDisabled}
+      form={formId}
+      submitForm
+      type="primary"
+    >
+      {#if $paramsForm.managed}
         {#if submitting}
-          Testing connection...
+          Connecting...
         {:else}
           Connect
         {/if}
+      {:else if submitting}
+        Testing connection...
       {:else}
-        Add data
+        Test and Connect
       {/if}
     </Button>
   </div>
