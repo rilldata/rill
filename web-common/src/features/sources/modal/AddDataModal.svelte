@@ -63,6 +63,14 @@
 
   const OLAP_CONNECTORS = ["clickhouse", "druid", "pinot"];
 
+  // TODO: figure out a better abstraction.
+  const PARAMETERS_CONNECTION_STRING_TOGGLE_CONNECTORS = [
+    "snowflake",
+    "clickhouse",
+    "druid",
+    "pinot",
+  ];
+
   const SORT_ORDER = [...SOURCES, ...OLAP_CONNECTORS];
 
   const ICONS = {
@@ -170,19 +178,6 @@
 
   $: isModelingSupportedForDefaultOlapDriver =
     useIsModelingSupportedForDefaultOlapDriver($runtime.instanceId);
-
-  // TODO: figure out a better abstraction.
-  const PARAMETERS_CONNECTION_STRING_TOGGLE_CONNECTORS = [
-    "snowflake",
-    "clickhouse",
-    "druid",
-    "pinot",
-  ];
-  function isConfigurableConnector(connector: V1ConnectorDriver) {
-    return PARAMETERS_CONNECTION_STRING_TOGGLE_CONNECTORS.includes(
-      connector.name ?? "",
-    );
-  }
 </script>
 
 {#if step >= 1 || $duplicateSourceName}
@@ -268,7 +263,9 @@
         {:else if selectedConnector.name}
           <AddDataForm
             connector={selectedConnector}
-            formType={isConfigurableConnector(selectedConnector)
+            formType={PARAMETERS_CONNECTION_STRING_TOGGLE_CONNECTORS.includes(
+              selectedConnector.name,
+            )
               ? "connector"
               : "source"}
             onClose={resetModal}
