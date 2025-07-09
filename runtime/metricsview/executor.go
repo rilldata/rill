@@ -155,19 +155,17 @@ func (e *Executor) Summary(ctx context.Context) (map[string]SummaryResult, error
 		return nil, fmt.Errorf("no accessible dimensions found in metrics view")
 	}
 
-	querySelection := []string{}
+	unionQueries := []string{}
 	for _, dim := range dims {
-		querySelection = append(querySelection, fmt.Sprintf(
-			"'%s' AS dimension_name, typeof(%s) AS data_type, %s AS sample_value",
-			dim.Name, dim.Column, dim.Column,
+		unionQueries = append(unionQueries, fmt.Sprintf(
+			"SELECT '%s' AS dimension_name, CAST(%s AS STRING) AS column_name FROM %s WHERE %s IS NOT NULL",
+			dim.Name, dim.Column, e.metricsView.Table, dim.Column,
 		))
 	}
 
 	query := fmt.Sprintf(
-		"SELECT %s FROM %s WHERE %s IS NOT NULL LIMIT 1",
-		strings.Join(querySelection, " UNION ALL SELECT "),
-		e.metricsView.Table,
-		e.metricsView.TimeDimension,
+		"SELECT dimension_name, typeof(ANY_VALUE(column_name)) AS data_type, ANY_VALUE(column_name) AS sample_value FROM (%s) GROUP BY dimension_name",
+		strings.Join(unionQueries, " UNION ALL "),
 	)
 
 	res, err := e.olap.Query(ctx, &drivers.Statement{
