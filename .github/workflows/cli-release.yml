@@ -126,7 +126,7 @@ jobs:
         run: |-
           if [[ ${{ env.PUBLISH_NIGHTLY }} == 'true' ]]; then
             BUCKET_DIR=nightly
-            LATEST_TAG=$(git describe --tags $(git rev-list --tags --max-count=1))
+            LATEST_TAG=$(git describe --tags $(git rev-list --tags --max-count=1) | sed 's/r/v/')
             echo "NIGHTLY=--nightly" >> $GITHUB_ENV
             echo "GORELEASER_CURRENT_TAG=$(echo ${LATEST_TAG})" >> $GITHUB_ENV
           else
