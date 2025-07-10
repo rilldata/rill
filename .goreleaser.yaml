@@ -38,12 +38,20 @@ brews:
       email: support@rilldata.com
 
 blobs:
-  - provider: gs
+  - disable: {{ .IsNightly }}
+    provider: gs
     bucket: prod-cdn.rilldata.com
     directory: "rill/v{{ .Version }}"
     extra_files:
       - glob: ./dist/**/*
-  - provider: gs
+  - disable: {{ .IsRelease }}
+    provider: gs
+    bucket: prod-cdn.rilldata.com
+    directory: "rill/nightly"
+    extra_files:
+      - glob: ./dist/**/*
+  - disable: {{ .IsNightly }}
+    provider: gs
     bucket: prod-cdn.rilldata.com
     directory: "rill"
     extra_files:
