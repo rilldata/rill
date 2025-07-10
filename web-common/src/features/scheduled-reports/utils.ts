@@ -1,4 +1,13 @@
+import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils.ts";
+import { includeExcludeModeFromFilters } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores.ts";
+import {
+  mapV1TimeRangeToSelectedComparisonTimeRange,
+  mapV1TimeRangeToSelectedTimeRange,
+} from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers.ts";
 import { getExploreName } from "@rilldata/web-common/features/explore-mappers/utils";
+import { Filters } from "@rilldata/web-common/features/dashboards/stores/Filters.ts";
+import { ExploreMetricsViewMetadata } from "@rilldata/web-common/features/dashboards/stores/ExploreMetricsViewMetadata.ts";
+import { TimeControls } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
 import {
   getDayOfMonthFromCronExpression,
   getDayOfWeekFromCronExpression,
@@ -11,10 +20,17 @@ import {
 } from "@rilldata/web-common/features/scheduled-reports/time-utils";
 import { getLocalIANA } from "@rilldata/web-common/lib/time/timezone";
 import {
+  type DashboardTimeControls,
+  TimeRangePreset,
+} from "@rilldata/web-common/lib/time/types.ts";
+import {
   V1ExportFormat,
+  type V1MetricsViewAggregationRequest,
   type V1Notifier,
   type V1Query,
   type V1ReportSpec,
+  type V1TimeRange,
+  type V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
 
 export type ReportValues = ReturnType<typeof getNewReportInitialFormValues>;
@@ -96,6 +112,59 @@ export function getDashboardNameFromReport(reportSpec: V1ReportSpec): string {
     queryArgsJson?.metricsView ??
     ""
   );
+}
+
+export function getFiltersAndTimeControlsFromAggregationRequest(
+  instanceId: string,
+  metricsViewName: string,
+  exploreName: string,
+  aggregationRequest: V1MetricsViewAggregationRequest,
+  timeRangeSummary: V1TimeRangeSummary | undefined,
+) {
+  const timeRange = (aggregationRequest.timeRange as V1TimeRange) ?? {
+    isoDuration: TimeRangePreset.ALL_TIME,
+  };
+
+  let selectedTimeRange: DashboardTimeControls | undefined = undefined;
+  let selectedComparisonTimeRange: DashboardTimeControls | undefined =
+    undefined;
+  if (timeRangeSummary?.max) {
+    selectedTimeRange = mapV1TimeRangeToSelectedTimeRange(
+      timeRange,
+      timeRangeSummary,
+      timeRangeSummary.max,
+    );
+    if (aggregationRequest.comparisonTimeRange) {
+      selectedComparisonTimeRange = mapV1TimeRangeToSelectedComparisonTimeRange(
+        aggregationRequest.comparisonTimeRange,
+        timeRangeSummary,
+        timeRangeSummary.max,
+      );
+    }
+  }
+
+  const { dimensionFilters, dimensionThresholdFilters } = splitWhereFilter(
+    aggregationRequest.where,
+  );
+
+  const metricsViewMetadata = new ExploreMetricsViewMetadata(
+    instanceId,
+    metricsViewName,
+    exploreName,
+  );
+  const filters = new Filters(metricsViewMetadata, {
+    whereFilter: dimensionFilters,
+    dimensionsWithInlistFilter: [],
+    dimensionThresholdFilters: dimensionThresholdFilters,
+    dimensionFilterExcludeMode: includeExcludeModeFromFilters(dimensionFilters),
+  });
+  const timeControls = new TimeControls(metricsViewMetadata, {
+    selectedTimeRange,
+    selectedComparisonTimeRange,
+    showTimeComparison: !!selectedComparisonTimeRange,
+    selectedTimezone: timeRange?.timeZone ?? "UTC",
+  });
+  return { filters, timeControls };
 }
 
 function extractNotification(

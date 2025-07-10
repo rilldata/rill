@@ -33,6 +33,7 @@
     start: Date,
     end: Date,
   ) => void;
+  export let allowCustomTimeRange: boolean = true;
 
   let open = false;
   let showSelector = false;
@@ -104,6 +105,7 @@
       use:builder.action
       {...builder}
       aria-label="Select time comparison option"
+      type="button"
     >
       <div class="gap-x-2 flex" class:opacity-50={!showComparison}>
         {#if !timeComparisonOptionsState.length && !showComparison}
@@ -146,23 +148,25 @@
             <DropdownMenu.Separator />
           {/if}
         {/each}
-        {#if timeComparisonOptionsState.length}
-          <DropdownMenu.Separator />
-        {/if}
+        {#if allowCustomTimeRange}
+          {#if timeComparisonOptionsState.length}
+            <DropdownMenu.Separator />
+          {/if}
 
-        <DropdownMenu.Item
-          data-range="custom"
-          on:click={() => {
-            showSelector = !showSelector;
-          }}
-        >
-          <span
-            class:font-bold={comparisonOption === TimeComparisonOption.CUSTOM &&
-              showComparison}
+          <DropdownMenu.Item
+            data-range="custom"
+            on:click={() => {
+              showSelector = !showSelector;
+            }}
           >
-            Custom
-          </span>
-        </DropdownMenu.Item>
+            <span
+              class:font-bold={comparisonOption ===
+                TimeComparisonOption.CUSTOM && showComparison}
+            >
+              Custom
+            </span>
+          </DropdownMenu.Item>
+        {/if}
       </div>
       {#if showSelector}
         <div class="bg-slate-50 flex flex-col w-64 px-2 py-1">

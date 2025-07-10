@@ -26,7 +26,10 @@
   } from "@rilldata/web-admin/features/alerts/selectors.ts";
   import { DialogTitle } from "@rilldata/web-common/components/dialog";
   import * as DialogTabs from "@rilldata/web-common/components/dialog/tabs";
-  import { getNewAlertInitialFormValues } from "@rilldata/web-common/features/alerts/create-alert-utils.ts";
+  import {
+    getNewAlertInitialFiltersFormValues,
+    getNewAlertInitialFormValues,
+  } from "@rilldata/web-common/features/alerts/create-alert-utils.ts";
   import AlertDialogCriteriaTab from "@rilldata/web-common/features/alerts/criteria-tab/AlertDialogCriteriaTab.svelte";
   import AlertDialogDataTab from "@rilldata/web-common/features/alerts/data-tab/AlertDialogDataTab.svelte";
   import AlertDialogDeliveryTab from "@rilldata/web-common/features/alerts/delivery-tab/AlertDialogDeliveryTab.svelte";
@@ -48,6 +51,7 @@
   import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state.ts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors.ts";
+  import { getFiltersAndTimeControlsFromAggregationRequest } from "@rilldata/web-common/features/scheduled-reports/utils.ts";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
   import {
@@ -104,18 +108,33 @@
       ? getNewAlertInitialFormValues(
           metricsViewName,
           exploreName,
-          metricsViewSpec,
-          exploreSpec,
-          $allTimeRangeResp.data?.timeRangeSummary,
           $exploreState!,
           $user.data?.user,
         )
-      : getExistingAlertInitialFormValues(
-          props.alertSpec,
+      : getExistingAlertInitialFormValues(props.alertSpec, metricsViewName);
+
+  $: ({ filters, timeControls } =
+    props.mode === "create"
+      ? getNewAlertInitialFiltersFormValues(
+          instanceId,
           metricsViewName,
-          $allTimeRangeResp.data?.timeRangeSummary,
+          exploreName,
           $exploreState!,
-        );
+        )
+      : getFiltersAndTimeControlsFromAggregationRequest(
+          instanceId,
+          metricsViewName,
+          exploreName,
+          JSON.parse(
+            props.alertSpec.queryArgsJson ||
+              (props.alertSpec.resolverProperties?.query_args_json as
+                | string
+                | undefined) ||
+              "{}",
+          ),
+          $allTimeRangeResp.data?.timeRangeSummary,
+        ));
+  $: ({ selectedComparisonTimeRange } = timeControls);
 
   $: superFormInstance = superForm(
     defaults(initialValues, alertFormValidationSchema),
@@ -135,8 +154,8 @@
   $: ({ form, errors, enhance, submit, submitting, tainted, validate } =
     superFormInstance);
 
-  const formId = isCreateForm ? "create-alert-form" : "edit-alert-form";
-  const dialogTitle = isCreateForm ? "Create Alert" : "Edit Alert";
+  $: formId = isCreateForm ? "create-alert-form" : "edit-alert-form";
+  $: dialogTitle = isCreateForm ? "Create Alert" : "Edit Alert";
 
   const tabs = ["Data", "Criteria", "Delivery"];
 
@@ -160,7 +179,12 @@
           displayName: values.name,
           queryName: "MetricsViewAggregation",
           queryArgsJson: JSON.stringify(
-            getAlertQueryArgsFromFormValues(values),
+            getAlertQueryArgsFromFormValues(
+              values,
+              filters.toState(),
+              timeControls.toState(),
+              exploreSpec,
+            ),
           ),
           metricsViewName: values.metricsViewName,
           slackChannels: values.enableSlackNotification
@@ -233,7 +257,11 @@
       return;
     }
     // if the user came to the delivery tab and name was not changed then auto generate it
-    const name = generateAlertName($form, metricsViewSpec);
+    const name = generateAlertName(
+      $form,
+      $selectedComparisonTimeRange,
+      metricsViewSpec,
+    );
     if (!name) return;
     $form.name = name;
   }
@@ -265,10 +293,10 @@
     </DialogTabs.List>
     <div class="p-3 bg-slate-100 h-[600px] overflow-auto">
       <DialogTabs.Content {currentTabIndex} tabIndex={0} value={tabs[0]}>
-        <AlertDialogDataTab {superFormInstance} />
+        <AlertDialogDataTab {superFormInstance} {filters} {timeControls} />
       </DialogTabs.Content>
       <DialogTabs.Content {currentTabIndex} tabIndex={1} value={tabs[1]}>
-        <AlertDialogCriteriaTab {superFormInstance} />
+        <AlertDialogCriteriaTab {superFormInstance} {filters} {timeControls} />
       </DialogTabs.Content>
       <DialogTabs.Content {currentTabIndex} tabIndex={2} value={tabs[2]}>
         <AlertDialogDeliveryTab {superFormInstance} />
