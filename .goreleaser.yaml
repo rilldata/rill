@@ -37,22 +37,23 @@ brews:
       email: support@rilldata.com
 
 blobs:
-  - disable: {{ toString .IsRelease }}
+  - disable: "{{ .IsRelease }}"
     provider: gs
     bucket: prod-cdn.rilldata.com
     directory: "rill/nightly"
     extra_files:
       - glob: ./dist/**/*
-  - disable: {{ toString .IsNightly }}
+  - disable: "{{ .IsNightly }}"
     provider: gs
     bucket: prod-cdn.rilldata.com
     directory: "rill/v{{ .Version }}"
     extra_files:
       - glob: ./dist/**/*
-  - disable: {{ toString .IsNightly }}
+  - disable: "{{ .IsNightly }}"
     provider: gs
     bucket: prod-cdn.rilldata.com
     directory: "rill"
+    extra_files_only: true
     extra_files:
       - glob: latest.txt
       - glob: scripts/install.sh
@@ -74,4 +75,4 @@ nightly:
 
 changelog:
   sort: asc
-  disable: {{ .IsNightly }}
+  disable: "{{ .IsNightly }}"
