@@ -44,9 +44,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Fetch tags required by goreleaser
-        run: git fetch --prune --unshallow
-
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
@@ -68,7 +65,18 @@ jobs:
           NODE_OPTIONS: --max-old-space-size=4096
 
       - name: Build rill cli
-        run: go build -o rill cli/main.go
+        run: |-
+          if [[ ${{ env.PUBLISH_NIGHTLY }} == 'true' ]]; then
+            VERSION=$(git describe --tags $(git rev-list --tags --max-count=1) | sed 's/r/v/')
+          else
+            VERSION='${{ github.ref_name }}'
+          fi   
+          echo "VERSION=$VERSION"
+          echo "Commit=${{ github.sha }}"
+          
+          go build -o rill cli/main.go \
+            -mod=readonly \
+            -ldflags="-s -w -X main.Version=$VERSION -X main.Commit=${{ github.sha }} -X main.BuildDate=$(date +%FT%TZ)"
 
       - name: Authenticate GCS
         uses: google-github-actions/auth@v2
@@ -80,7 +88,7 @@ jobs:
         uses: google-github-actions/upload-cloud-storage@v2
         with:
           path: rill
-          destination: prod-cdn.rilldata.com/rill/nightly/{{ matrix.platform }}/
+          destination: prod-cdn.rilldata.com/rill/nightly/${{ matrix.platform }}/
           headers: |-
             cache-control: no-store
 
@@ -89,7 +97,7 @@ jobs:
         uses: google-github-actions/upload-cloud-storage@v2
         with:
           path: rill
-          destination: prod-cdn.rilldata.com/rill/${GITHUB_REF#refs/tags/}/{{ matrix.platform }}/
+          destination: prod-cdn.rilldata.com/rill/${GITHUB_REF#refs/tags/}/${{ matrix.platform }}/
           headers: |-
             cache-control: no-store
 
@@ -101,6 +109,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Fetch tags required by goreleaser
+        run: git fetch --prune --unshallow
 
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
@@ -119,17 +130,20 @@ jobs:
           fi
 
       - name: Set GORELEASER_CURRENT_TAG and NIGHTLY
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
         run: |
           echo '${{ github.ref_name }}' >> latest.txt
           if [[ ${{ env.PUBLISH_NIGHTLY }} == 'true' ]]; then
             echo "NIGHTLY=--snapshot" >> $GITHUB_ENV
-            echo "VERSION=nightly" >> $GITHUB_ENV
+            echo "VERSION=--nightly" >> $GITHUB_ENV
             LATEST_TAG=$(git describe --tags $(git rev-list --tags --max-count=1))
             echo "GORELEASER_CURRENT_TAG=$(echo ${LATEST_TAG} | sed 's/r/v/')" >> $GITHUB_ENV
           else
             echo "NIGHTLY=" >> $GITHUB_ENV
             echo "VERSION='~> v2'" >> $GITHUB_ENV
-          fi   
+          fi
 
       - name: Login to Docker Hub
         uses: docker/login-action@v3
@@ -138,26 +152,9 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USER }}
           password: ${{ secrets.DOCKERHUB_PASS }}
 
-      - run: |
-          envsubst < .goreleaser-build.yaml > .goreleaser.yml
-        env:
-          GOOS: ${{ matrix.goos }}
-          GOARCH: ${{ matrix.goarch }}
-
-      - name: Build Rill using Goreleaser
-        uses: goreleaser/goreleaser-action@v6
-        with:
-          distribution: goreleaser
-          version: ${{ env.VERSION }}
-          args: release
-        env:
-          CGO_ENABLED: 1
-          GITHUB_TOKEN: ${{ secrets.GORELEASER_ACCESS_TOKEN }}
-          GORELEASER_CURRENT_TAG: ${{ env.GORELEASER_CURRENT_TAG }}
-
-
       - name: Download binaries/checksum files from GCS
         run: |-
+          echo '${{ github.ref_name }}' >> latest.txt
           gsutil -m cp -r gs://prod-cdn.rilldata.com/rill/$BUCKET_DIR/ .
 
       - name: Release Rill using Goreleaser
