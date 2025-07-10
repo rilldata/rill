@@ -129,9 +129,11 @@ jobs:
             BUCKET_DIR=nightly
             LATEST_TAG=$(git describe --tags $(git rev-list --tags --max-count=1))
             echo "NIGHTLY=--snapshot" >> $GITHUB_ENV
+            echo "VERSION=nightly" >> $GITHUB_ENV
             echo "GORELEASER_CURRENT_TAG=$(echo ${LATEST_TAG} | sed 's/r/v/')" >> $GITHUB_ENV
           else
             echo "NIGHTLY=" >> $GITHUB_ENV
+            echo "VERSION='~> v2'" >> $GITHUB_ENV
             BUCKET_DIR=$(echo "${GITHUB_REF#refs/tags/}")
           fi
 
@@ -148,7 +150,7 @@ jobs:
         uses: goreleaser/goreleaser-action@v6
         with:
           distribution: goreleaser-pro
-          version: '~> v2'
+          version: ${{ env.VERSION }}
           args: release ${{ env.NIGHTLY }}
         env:
           CGO_ENABLED: 1
