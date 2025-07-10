@@ -35,6 +35,7 @@ import {
 import { copyParamsToTarget } from "@rilldata/web-common/lib/url-utils";
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import { type V1ExploreSpec } from "@rilldata/web-common/runtime-client";
+import { isValidDateTime } from "../../../lib/time/is-valid-datetime";
 
 /**
  * getCleanedUrlParamsForGoto returns url params with defaults removed.
@@ -214,6 +215,8 @@ export function toTimeRangeParam(timeRange: TimeRange | undefined) {
 
   if (!timeRange.start || !timeRange.end) return "";
 
+  if (!isValidDateTime(timeRange.start) || !isValidDateTime(timeRange.end))
+    return "";
   return `${timeRange.start.toISOString()},${timeRange.end.toISOString()}`;
 }
 

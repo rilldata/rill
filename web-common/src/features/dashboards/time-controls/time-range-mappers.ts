@@ -11,6 +11,7 @@ import {
   type V1TimeRange,
   type V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
+import { isValidDateTime } from "../../../lib/time/is-valid-datetime";
 
 // Temporary fix to split previous complete ranges to duration and round to grain to get it working on backend
 // TODO: Eventually we should support this in the backend.
@@ -63,8 +64,12 @@ export function mapSelectedTimeRangeToV1TimeRange(
       break;
 
     case TimeRangePreset.CUSTOM:
-      timeRange.start = selectedTimeRange.start.toISOString();
-      timeRange.end = selectedTimeRange.end.toISOString();
+      timeRange.start = isValidDateTime(selectedTimeRange.start)
+        ? selectedTimeRange.start.toISOString()
+        : "";
+      timeRange.end = isValidDateTime(selectedTimeRange.end)
+        ? selectedTimeRange.end.toISOString()
+        : "";
       break;
 
     default:
@@ -108,9 +113,14 @@ export function mapSelectedComparisonTimeRangeToV1TimeRange(
       break;
 
     case TimeComparisonOption.CUSTOM:
-      comparisonTimeRange.start =
-        selectedComparisonTimeRange.start.toISOString();
-      comparisonTimeRange.end = selectedComparisonTimeRange.end.toISOString();
+      comparisonTimeRange.start = isValidDateTime(
+        selectedComparisonTimeRange.start,
+      )
+        ? selectedComparisonTimeRange.start.toISOString()
+        : "";
+      comparisonTimeRange.end = isValidDateTime(selectedComparisonTimeRange.end)
+        ? selectedComparisonTimeRange.end.toISOString()
+        : "";
       break;
   }
   return comparisonTimeRange;

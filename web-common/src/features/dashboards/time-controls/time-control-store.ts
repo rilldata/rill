@@ -42,6 +42,7 @@ import type { Readable } from "svelte/store";
 import { derived } from "svelte/store";
 import { memoizeMetricsStore } from "../state-managers/memoize-metrics-store";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+import { isValidDateTime } from "../../../lib/time/is-valid-datetime";
 
 export type TimeRangeState = {
   // Selected ranges with start and end filled based on time range type
@@ -289,9 +290,9 @@ export function calculateTimeRangePartial(
 
   return {
     selectedTimeRange,
-    timeStart: timeStart.toISOString(),
+    timeStart: isValidDateTime(timeStart) ? timeStart.toISOString() : "",
     adjustedStart,
-    timeEnd: timeEnd.toISOString(),
+    timeEnd: isValidDateTime(timeEnd) ? timeEnd.toISOString() : "",
     adjustedEnd,
   };
 }
@@ -356,9 +357,15 @@ export function calculateComparisonTimeRangePartial(
   return {
     showTimeComparison: showTimeComparison,
     selectedComparisonTimeRange,
-    comparisonTimeStart: comparisonTimeStart?.toISOString(),
+    comparisonTimeStart:
+      comparisonTimeStart && isValidDateTime(comparisonTimeStart)
+        ? comparisonTimeStart.toISOString()
+        : "",
     comparisonAdjustedStart,
-    comparisonTimeEnd: comparisonTimeEnd?.toISOString(),
+    comparisonTimeEnd:
+      comparisonTimeEnd && isValidDateTime(comparisonTimeEnd)
+        ? comparisonTimeEnd.toISOString()
+        : "",
     comparisonAdjustedEnd,
   };
 }

@@ -36,6 +36,7 @@ import {
   type TimeRangeOption,
   TimeRangePreset,
 } from "../types";
+import { isValidDateTime } from "../is-valid-datetime";
 
 // Loop through all presets to check if they can be a part of subset of given start and end date
 export function getChildTimeRanges(
@@ -334,7 +335,10 @@ export function getAdjustedFetchTime(
   interval: V1TimeGrain | undefined,
 ) {
   if (!startTime || !endTime || !interval)
-    return { start: startTime?.toISOString(), end: endTime?.toISOString() };
+    return {
+      start: isValidDateTime(startTime) ? startTime.toISOString() : "",
+      end: isValidDateTime(endTime) ? endTime.toISOString() : "",
+    };
   const offsetedStartTime = getOffset(
     startTime,
     TIME_GRAIN[interval].duration,
@@ -362,8 +366,8 @@ export function getAdjustedFetchTime(
   );
 
   return {
-    start: fetchStartTime.toISOString(),
-    end: fetchEndTime.toISOString(),
+    start: isValidDateTime(fetchStartTime) ? fetchStartTime.toISOString() : "",
+    end: isValidDateTime(fetchEndTime) ? fetchEndTime.toISOString() : "",
   };
 }
 
