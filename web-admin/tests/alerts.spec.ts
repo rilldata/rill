@@ -90,7 +90,7 @@ test.describe.serial("Alerts", () => {
     await expect(adminPage.getByLabel("Notification")).toHaveText(
       " Alert created Go to alerts  ",
     );
-    // Clicking "Go to alerts" takes us to the newly created alert
+    // Clicking "Go to alerts" takes us to the alerts page
     await adminPage.getByRole("link", { name: "Go to alerts" }).click();
 
     // Go to the newly created alert
@@ -238,7 +238,7 @@ test.describe.serial("Alerts", () => {
       })
       .click();
 
-    // Update the alert
+    // Delete the alert
     await adminPage.getByLabel("Alert context menu").click();
     await adminPage.getByRole("menuitem", { name: "Delete Alert" }).click();
 

@@ -105,7 +105,7 @@
         </span>
       </div>
       <div class="flex gap-x-2 items-center">
-        <h1 class="text-gray-700 text-lg font-bold">
+        <h1 class="text-gray-700 text-lg font-bold" aria-label="Report name">
           {reportSpec.displayName}
         </h1>
         <div class="grow" />
@@ -113,7 +113,7 @@
         {#if !$isReportCreatedByCode.data}
           <DropdownMenu.Root>
             <DropdownMenu.Trigger>
-              <IconButton>
+              <IconButton ariaLabel="Report context menu">
                 <ThreeDot size="16px" />
               </IconButton>
             </DropdownMenu.Trigger>
@@ -133,7 +133,7 @@
     <!-- Three columns of metadata -->
     <div class="flex flex-wrap gap-x-16 gap-y-6">
       <!-- Dashboard -->
-      <div class="flex flex-col gap-y-3">
+      <div class="flex flex-col gap-y-3" aria-label="Report dashboard name">
         {#if dashboardTitle}
           <MetadataLabel>Dashboard</MetadataLabel>
           <MetadataValue>

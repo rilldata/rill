@@ -19,12 +19,15 @@
     createAdminServiceGetCurrentUser,
   } from "@rilldata/web-admin/client";
   import * as Dialog from "@rilldata/web-common/components/dialog";
+  import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors.ts";
+  import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors.ts";
   import {
     getDashboardNameFromReport,
     getExistingReportInitialFormValues,
+    getFiltersAndTimeControlsFromAggregationRequest,
     getNewReportInitialFormValues,
-    getQueryArgsJsonFromQuery,
     getQueryNameFromQuery,
+    getUpdatedAggregationRequest,
     type ReportValues,
   } from "@rilldata/web-common/features/scheduled-reports/utils";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
@@ -37,6 +40,7 @@
   import {
     getRuntimeServiceGetResourceQueryKey,
     getRuntimeServiceListResourcesQueryKey,
+    type V1MetricsViewAggregationRequest,
     type V1Query,
     type V1ReportSpec,
     type V1ReportSpecAnnotations,
@@ -55,6 +59,22 @@
   $: ({ organization, project, report: reportName } = $page.params);
   $: ({ instanceId } = $runtime);
 
+  $: exploreName =
+    props.mode === "create"
+      ? props.exploreName
+      : getDashboardNameFromReport(props.reportSpec);
+
+  $: validExploreSpec = useExploreValidSpec(instanceId, exploreName);
+  $: exploreSpec = $validExploreSpec.data?.explore ?? {};
+  $: metricsViewName = exploreSpec.metricsView ?? "";
+
+  $: allTimeRangeResp = useMetricsViewTimeRange(
+    instanceId,
+    metricsViewName,
+    undefined,
+    queryClient,
+  );
+
   $: mutation =
     props.mode === "create"
       ? createAdminServiceCreateReport()
@@ -64,15 +84,20 @@
     props.mode === "create"
       ? getQueryNameFromQuery(props.query)
       : props.reportSpec.queryName;
-  $: queryArgsJson =
+  $: aggregationRequest = (
     props.mode === "create"
-      ? getQueryArgsJsonFromQuery(props.query)
-      : props.reportSpec.queryArgsJson;
+      ? props.query.metricsViewAggregationRequest
+      : JSON.parse(props.reportSpec.queryArgsJson || "{}")
+  ) as V1MetricsViewAggregationRequest;
 
-  $: exploreName =
-    props.mode === "create"
-      ? props.exploreName
-      : getDashboardNameFromReport(props.reportSpec);
+  $: ({ filters, timeControls } =
+    getFiltersAndTimeControlsFromAggregationRequest(
+      instanceId,
+      metricsViewName,
+      exploreName,
+      aggregationRequest,
+      $allTimeRangeResp.data?.timeRangeSummary,
+    ));
 
   let currentProtobufState: string | undefined = undefined;
   if (open && props.mode === "create") {
@@ -133,7 +158,14 @@
             refreshTimeZone: values.timeZone,
             explore: exploreName,
             queryName: queryName,
-            queryArgsJson: queryArgsJson,
+            queryArgsJson: JSON.stringify(
+              getUpdatedAggregationRequest(
+                aggregationRequest,
+                filters.toState(),
+                timeControls.toState(),
+                exploreSpec,
+              ),
+            ),
             exportLimit: values.exportLimit || undefined,
             exportIncludeHeader: values.exportIncludeHeader || false,
             exportFormat: values.exportFormat,
@@ -203,6 +235,8 @@
       {submit}
       {enhance}
       exploreName={exploreName ?? ""}
+      {filters}
+      {timeControls}
     />
 
     <div class="flex items-center gap-x-2 mt-5">
@@ -216,6 +250,7 @@
         form="scheduled-report-form"
         submitForm
         type="primary"
+        label={props.mode === "create" ? "Create report" : "Save report"}
       >
         {props.mode === "create" ? "Create" : "Save"}
       </Button>
