@@ -31,17 +31,13 @@ jobs:
         os: [ubuntu-22.04, ubuntu-22.04-arm, macos-13, macos-14]
         include:
           - os: ubuntu-22.04
-            goos: linux
-            goarch: amd64
+            platform: linux_amd64
           - os: ubuntu-22.04-arm
-            goos: linux
-            goarch: arm64
+            platform: linux_arm64
           - os: macos-13
-            goos: darwin
-            goarch: amd64
+            platform: darwin_amd64
           - os: macos-14
-            goos: darwin
-            goarch: arm64
+            platform: darwin_arm64
       fail-fast: false
 
     steps:
@@ -83,8 +79,8 @@ jobs:
         if: env.PUBLISH_NIGHTLY == 'true'
         uses: google-github-actions/upload-cloud-storage@v2
         with:
-          path: nightly/
-          destination: prod-cdn.rilldata.com/rill/
+          path: rill
+          destination: prod-cdn.rilldata.com/rill/nightly/{{ matrix.platform }}/
           headers: |-
             cache-control: no-store
 
@@ -92,8 +88,8 @@ jobs:
         if: env.PUBLISH_RELEASE == 'true'
         uses: google-github-actions/upload-cloud-storage@v2
         with:
-          path: ${GITHUB_REF#refs/tags/}/{{ matrix.goos }}_{{ matrix.goarch }}/
-          destination: prod-cdn.rilldata.com/rill/
+          path: rill
+          destination: prod-cdn.rilldata.com/rill/${GITHUB_REF#refs/tags/}/{{ matrix.platform }}/
           headers: |-
             cache-control: no-store
 
