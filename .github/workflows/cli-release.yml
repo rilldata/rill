@@ -70,8 +70,6 @@ jobs:
           else
             VERSION='${{ github.ref_name }}'
           fi   
-          echo "VERSION=${VERSION}"
-          echo "Commit=${{ github.sha }}"
           
           go build -o rill \
             -mod=readonly \
