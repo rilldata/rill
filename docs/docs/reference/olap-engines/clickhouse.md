@@ -28,9 +28,6 @@ When using ClickHouse for local development, you can connect via connection para
 
 1. Connect to an OLAP engine via Add Data. This will automatically create the `clickhouse.yaml` file in your `connectors` folder and populate the `.env` file with `connector.clickhouse.password` or `connector.clickhouse.dsn` depending on which you select in the UI. 
 
-<img src = '/img/reference/olap-engines/clickhouse/clickhouse-parameters.png' class='rounded-gif' />
-<br />
-
 ```yaml
 # Connector YAML
 # Reference documentation: https://docs.rilldata.com/reference/project-files/connectors
@@ -139,10 +136,6 @@ Please see our [Using Multiple OLAP Engines](multiple-olap.md) page.
 ## Reading from multiple schemas
 
 Rill supports reading from multiple schemas in ClickHouse from within the same project in Rill Developer and all accessible tables (given the permission set of the underlying user) should automatically be listed in the lower left-hand tab, which can then be used to [create dashboards](/build/dashboards/).
-
-
-<img src = '/img/reference/olap-engines/clickhouse/clickhouse-multiple-schemas.png' class='rounded-gif' />
-<br />
 
 
 ## Additional Notes
