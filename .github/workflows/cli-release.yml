@@ -28,8 +28,6 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-22.04]
-        #os: [ubuntu-22.04, ubuntu-22.04-arm, macos-13, macos-14]
         include:
           - os: ubuntu-22.04
             platform: linux_amd64
@@ -130,7 +128,7 @@ jobs:
             BUCKET_DIR=nightly
             LATEST_TAG=$(git describe --tags $(git rev-list --tags --max-count=1))
             echo "NIGHTLY=--nightly" >> $GITHUB_ENV
-            echo "GORELEASER_CURRENT_TAG=$(echo ${LATEST_TAG}')" >> $GITHUB_ENV
+            echo "GORELEASER_CURRENT_TAG=$(echo ${LATEST_TAG})" >> $GITHUB_ENV
           else
             echo "NIGHTLY=" >> $GITHUB_ENV
             BUCKET_DIR=$(echo "${GITHUB_REF#refs/tags/}")
