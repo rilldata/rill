@@ -1,5 +1,6 @@
 <script lang="ts">
   import { DateTime, Interval } from "luxon";
+  import { isValidDateTime } from "@rilldata/web-common/lib/time/is-valid-datetime";
 
   export let interval: Interval<true>;
   export let grain: string;
@@ -14,15 +15,19 @@
 
   $: displayedInterval = showTime ? interval : inclusiveInterval;
 
-  $: date = displayedInterval.toLocaleString(DateTime.DATE_MED);
-
-  $: time = displayedInterval.toFormat(timeFormat, { separator: "-" });
+  $: isValidInterval = displayedInterval?.isValid;
+  $: date = isValidInterval
+    ? displayedInterval.toLocaleString(DateTime.DATE_MED)
+    : "-";
+  $: time = isValidInterval
+    ? displayedInterval.toFormat(timeFormat, { separator: "-" })
+    : "-";
 </script>
 
 <div class="flex gap-x-1 whitespace-nowrap truncate" title="{date} {time}">
   <span class="line-clamp-1 text-left">
     {date}
-    {#if showTime}
+    {#if showTime && isValidInterval}
       ({time})
     {/if}
     {#if abbreviation}

@@ -6,6 +6,7 @@
   import { humaniseISODuration } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
   import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
   import type { V1TimeRange } from "@rilldata/web-common/runtime-client";
+  import { isValidDateTime } from "@rilldata/web-common/lib/time/is-valid-datetime";
 
   export let timeRange: V1TimeRange;
   export let comparisonTimeRange: V1TimeRange | undefined;
@@ -27,12 +28,16 @@
         </div>
       {:else if timeRange.start && timeRange.end}
         <div class:font-bold={hasBoldTimeRange}>
-          {prettyFormatTimeRange(
-            new Date(timeRange.start),
-            new Date(timeRange.end),
-            TimeRangePreset.CUSTOM,
-            "UTC", // TODO
-          )}
+          {#if isValidDateTime(timeRange.start) && isValidDateTime(timeRange.end)}
+            {prettyFormatTimeRange(
+              new Date(timeRange.start),
+              new Date(timeRange.end),
+              TimeRangePreset.CUSTOM,
+              "UTC", // TODO
+            )}
+          {:else}
+            -
+          {/if}
         </div>
       {/if}
     </div>
