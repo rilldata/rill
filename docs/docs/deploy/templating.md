@@ -96,7 +96,7 @@ Let's say that we have a [GCS](/reference/connectors/gcs.md) source created wher
 # Source YAML
 # Reference documentation: https://docs.rilldata.com/reference/project-files/sources
 
-type: source
+type: model
 
 connector: "duckdb"
 dev:
@@ -122,7 +122,7 @@ Fortunately, we can leverage DuckDB's ability to read from S3 files directly and
 
 
 ```yaml
-type: source
+type: model
 connector: "duckdb"
 sql: SELECT * FROM read_parquet('s3://bucket/path/*.parquet') {{ if dev }} where updated_at > CURRENT_DATE - INTERVAL 7 DAY {{ end }}
 ```
