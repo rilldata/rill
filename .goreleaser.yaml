@@ -83,9 +83,7 @@ dockers:
     skip_build: "{{ .IsRelease }}"
     skip_push: "{{ .IsRelease }}"
 
-
 nightly:
   version_template: "{{ incminor .Version }}-nightly"
   publish_release: false
   keep_single_release: true
-
