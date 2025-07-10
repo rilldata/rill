@@ -1,6 +1,5 @@
 <script lang="ts">
   import { DateTime, Interval } from "luxon";
-  import { isValidDateTime } from "@rilldata/web-common/lib/time/is-valid-datetime";
 
   export let interval: Interval<true>;
   export let grain: string;
