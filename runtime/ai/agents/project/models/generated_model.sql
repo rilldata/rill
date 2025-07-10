@@ -19,5 +19,7 @@ SELECT
     ['Confirmed', 'Tentative', 'Declined'][((random() * 3)::int + 1)] AS response_status,
     (random() * 100)::decimal(10,2) AS satisfaction_score,
     (random() * 20)::int AS follow_up_tasks,
-    (random() * 500)::decimal(10,2) AS revenue_generated
+    (random() * 500)::decimal(10,2) AS revenue_generated,
+    -- Added new column for total duration in minutes
+    ((random() * 8 + 1)::int * 60) + (random() * 60)::int AS total_duration_minutes
 FROM generate_series(1, 7000)

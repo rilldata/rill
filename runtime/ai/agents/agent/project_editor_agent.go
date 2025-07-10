@@ -103,25 +103,15 @@ When working with files:
 		p.createListModelsToool(),
 		p.createReadModelTool(),
 		p.createWriteModelTool(),
-		p.createHandoffToModelEditorTool(),
-		p.createHandoffToSyntheticDataTool(),
 	)
 }
 
 func (p *ProjectEditorAgent) setupHandoffs() {
-	var handoffAgents []*agent.Agent
-	
-	if p.syntheticDataAgent != nil {
-		handoffAgents = append(handoffAgents, p.syntheticDataAgent.Agent)
-	}
-	
-	if p.modelEditorAgent != nil {
-		handoffAgents = append(handoffAgents, p.modelEditorAgent.Agent)
-	}
-	
-	if len(handoffAgents) > 0 {
-		p.WithHandoffs(handoffAgents...)
-	}
+    // Register proper agent handoffs instead of custom tool wrappers
+    p.Agent.WithHandoffs(
+        p.modelEditorAgent.Agent,
+        p.syntheticDataAgent.Agent,
+    )
 }
 
 func (p *ProjectEditorAgent) createListModelsToool() tool.Tool {
@@ -188,57 +178,7 @@ func (p *ProjectEditorAgent) createWriteModelTool() tool.Tool {
 	return t
 }
 
-func (p *ProjectEditorAgent) createHandoffToModelEditorTool() tool.Tool {
-	schema := map[string]interface{}{
-		"type": "object",
-		"properties": map[string]interface{}{
-			"model_name": map[string]interface{}{
-				"type":        "string",
-				"description": "Name of the model file to edit (without .sql extension)",
-			},
-			"edit_instructions": map[string]interface{}{
-				"type":        "string",
-				"description": "Instructions for how to modify the existing model",
-			},
-		},
-		"required": []string{"model_name", "edit_instructions"},
-	}
 
-	t := tool.NewFunctionTool(
-		"handoff_to_model_editor",
-		"Hands off to ModelEditorAgent to edit an existing model with full context awareness",
-		p.handoffToModelEditor,
-	)
-
-	t.WithSchema(schema)
-	return t
-}
-
-func (p *ProjectEditorAgent) createHandoffToSyntheticDataTool() tool.Tool {
-	schema := map[string]interface{}{
-		"type": "object",
-		"properties": map[string]interface{}{
-			"description": map[string]interface{}{
-				"type":        "string",
-				"description": "Description of the synthetic data to generate",
-			},
-			"model_name": map[string]interface{}{
-				"type":        "string",
-				"description": "Name for the model file (will be inferred if not provided)",
-			},
-		},
-		"required": []string{"description"},
-	}
-
-	t := tool.NewFunctionTool(
-		"handoff_to_synthetic_data",
-		"Hands off to SyntheticDataAgent to generate synthetic data SQL",
-		p.handoffToSyntheticData,
-	)
-
-	t.WithSchema(schema)
-	return t
-}
 
 func (p *ProjectEditorAgent) listModels(ctx context.Context, params map[string]interface{}) (interface{}, error) {
 	// Ensure models directory exists
