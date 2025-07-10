@@ -54,7 +54,6 @@ jobs:
           node-version-file: '.nvmrc'
 
       - name: Build and embed static UI
-        if: false #TODO: Remove me
         run: make cli.prepare
         env:
           RILL_UI_PUBLIC_INTAKE_USER: "data-modeler"
