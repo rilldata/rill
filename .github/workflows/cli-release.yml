@@ -67,16 +67,17 @@ jobs:
       - name: Build rill cli
         run: |-
           if [[ ${{ env.PUBLISH_NIGHTLY }} == 'true' ]]; then
-            VERSION=$(git describe --tags $(git rev-list --tags --max-count=1) | sed 's/r/v/')
+            VERSION="$(git describe --tags $(git rev-list --tags --max-count=1) | sed 's/r/v/')-nightly"
           else
             VERSION='${{ github.ref_name }}'
           fi   
-          echo "VERSION=$VERSION"
+          echo "VERSION=${VERSION}"
           echo "Commit=${{ github.sha }}"
           
-          go build -o rill cli/main.go \
+          go build -o rill \
             -mod=readonly \
-            -ldflags="-s -w -X main.Version=$VERSION -X main.Commit=${{ github.sha }} -X main.BuildDate=$(date +%FT%TZ)"
+            -ldflags="-s -w -X main.Version=${VERSION} -X main.Commit=${{ github.sha }} -X main.BuildDate=$(date +%FT%TZ)" \
+            cli/main.go
 
       - name: Authenticate GCS
         uses: google-github-actions/auth@v2
