@@ -1,4 +1,4 @@
-// Command agent-demo demonstrates the SyntheticDataAgent with OpenAI.
+// Command agent-demo demonstrates the ProjectEditor Agent with handoff to SyntheticDataAgent using OpenAI.
 package main
 
 import (
@@ -34,16 +34,21 @@ const htmlTemplate = `
 </head>
 <body>
     <div class="container">
-        <h1>🦆 Synthetic Data Generator</h1>
-        <p>Describe the data you want to generate in natural language:</p>
-        <textarea id="prompt" placeholder="e.g., Create a table for e-commerce orders with order ID, customer details, and product information"></textarea>
+        <h1>🏗️ Rill Project Editor</h1>
+        <p>Describe what you want to do with your project models:</p>
+        <textarea id="prompt" placeholder="Examples:
+• Generate synthetic sales data with customer info
+• Edit the customer model to add demographics  
+• Create a marketing campaign tracking model
+• List all existing model files
+• Generate sample e-commerce transaction data"></textarea>
         <div>
-            <button onclick="generateSQL()" id="generateBtn">Generate SQL</button>
+            <button onclick="generateSQL()" id="generateBtn">Process Request</button>
             <span id="loading" class="loading">Generating... (this may take a moment)</span>
         </div>
         <div>
-            <h3>Generated SQL:</h3>
-            <pre id="output">Your generated SQL will appear here...</pre>
+            <h3>Result:</h3>
+            <pre id="output">Your result will appear here...</pre>
         </div>
     </div>
 
@@ -71,11 +76,11 @@ const htmlTemplate = `
                 });
 
                 if (!response.ok) {
-                    throw new Error('Failed to generate SQL');
+                    throw new Error('Failed to process request');
                 }
 
                 const data = await response.json();
-                output.textContent = data.sql || 'No SQL generated';
+                output.textContent = data.sql || 'No result generated';
             } catch (error) {
                 output.textContent = 'Error: ' + error.message;
                 console.error('Error:', error);
@@ -192,8 +197,9 @@ func (m *openAIModel) StreamResponse(ctx context.Context, req *model.Request) (<
 func main() {
 	// Parse command line flags
 	apiKey := flag.String("api-key", "", "OpenAI API key (or set OPENAI_API_KEY environment variable)")
-	model := flag.String("model", "gpt-4o-mini", "OpenAI model to use")
+	model := flag.String("model", "gpt-4o", "OpenAI model to use")
 	port := flag.String("port", "8080", "Port to run the web server on")
+	projectDir := flag.String("project-dir", "./project", "Project directory for storing model files")
 	flag.Parse()
 
 	// Get API key from flag or environment variable
@@ -217,6 +223,9 @@ func main() {
 	// Create the SyntheticDataAgent with the model name and runner
 	syntheticAgent := agent.NewSyntheticDataAgent(*model, runnerInstance)
 
+	// Create the ProjectEditor Agent with handoff capability
+	projectEditor := agent.NewProjectEditorAgent(*model, runnerInstance, syntheticAgent, *projectDir)
+
 	// HTTP Handlers
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {
@@ -239,22 +248,80 @@ func main() {
 			return
 		}
 
-		// Use the agent's GenerateSQL method which includes validation
-		log.Printf("Running agent with prompt: %s", req.Prompt)
-		
-		output, err := syntheticAgent.GenerateSQL(req.Prompt)
+		// Use the ProjectEditor agent to process the request with context
+		log.Printf("Running ProjectEditor agent with prompt: %s", req.Prompt)
+
+		ctx := context.Background()
+		result, err := projectEditor.ProcessUserRequestWithContext(ctx, req.Prompt)
 		if err != nil {
-			errMsg := fmt.Sprintf("Error generating SQL: %v", err)
+			errMsg := fmt.Sprintf("Error processing request: %v", err)
 			log.Printf("%s", errMsg)
 			http.Error(w, errMsg, http.StatusInternalServerError)
 			return
 		}
 
-		log.Printf("Final validated SQL: %s", output)
+		log.Printf("ProjectEditor result: %+v", result)
+
+		// Extract meaningful output from the result for the web interface
+		var sqlOutput string
+
+		// Handle different result types from ProjectEditor
+		if resultMap, ok := result.(map[string]interface{}); ok {
+			// Check for different handoff result types
+			if handoffSuccessful, ok := resultMap["handoff_successful"].(bool); ok && handoffSuccessful {
+				// Handle handoff results (ModelEditor or SyntheticData)
+				if agentUsed, ok := resultMap["agent_used"].(string); ok {
+					sqlOutput = fmt.Sprintf("Successfully handed off to %s\n\n", agentUsed)
+				}
+
+				// Add validation information for ModelEditor results
+				if agentUsed, ok := resultMap["agent_used"].(string); ok && agentUsed == "ModelEditorAgent" {
+					if validationPassed, ok := resultMap["validation_passed"].(bool); ok {
+						if validationPassed {
+							sqlOutput += "✅ Validation: PASSED\n"
+						} else {
+							sqlOutput += "❌ Validation: FAILED\n"
+						}
+					}
+					
+					if fileSaved, ok := resultMap["file_saved"].(bool); ok {
+						if fileSaved {
+							sqlOutput += "💾 File: SAVED\n"
+						} else {
+							sqlOutput += "⚠️  File: NOT SAVED (validation failed)\n"
+						}
+					}
+					sqlOutput += "\n"
+				}
+
+				// Add the actual SQL/result content
+				if updatedSQL, ok := resultMap["updated_sql"].(string); ok {
+					sqlOutput += fmt.Sprintf("Updated SQL:\n%s", updatedSQL)
+				} else if generatedSQL, ok := resultMap["generated_sql"].(string); ok {
+					sqlOutput += fmt.Sprintf("Generated SQL:\n%s", generatedSQL)
+				} else {
+					sqlOutput += "Operation completed successfully"
+				}
+
+				// Add model information
+				if modelName, ok := resultMap["model_name"].(string); ok {
+					sqlOutput = fmt.Sprintf("Model: %s\n%s", modelName, sqlOutput)
+				}
+			} else {
+				// Handle other map results
+				sqlOutput = fmt.Sprintf("Result: %+v", resultMap)
+			}
+		} else if str, ok := result.(string); ok {
+			// Handle direct string results
+			sqlOutput = str
+		} else {
+			// Handle any other result type
+			sqlOutput = fmt.Sprintf("Result: %+v", result)
+		}
 
 		// Return the result as JSON
 		json.NewEncoder(w).Encode(GenerateResponse{
-			SQL: output,
+			SQL: sqlOutput,
 		})
 	})
 

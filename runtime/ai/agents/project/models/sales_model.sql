@@ -1,0 +1,26 @@
+SELECT 
+    generate_series AS order_id,
+    current_date - (random() * 90)::int AS order_date,
+    'CUST_' || (generate_series % 1000)::text AS customer_id,
+    ['Electronics', 'Clothing', 'Books', 'Home', 'Toys'][((random() * 5)::int + 1)] AS product_category,
+    ['ProductA', 'ProductB', 'ProductC', 'ProductD', 'ProductE'][((random() * 5)::int + 1)] AS product_name,
+    ['Online', 'In-Store'][((random() * 2)::int + 1)] AS sales_channel,
+    (random() * 500 + 10)::decimal(10,2) AS price,
+    (random() * 10 + 1)::int AS quantity,
+    (random() * 100)::int AS discount_percentage,
+    ((random() * 2000) + 100)::decimal(10,2) AS total_sales,
+    (random() * 100)::int AS customer_age,
+    ['Male', 'Female', 'Other'][((random() * 3)::int + 1)] AS customer_gender,
+    ['NY', 'CA', 'TX', 'FL', 'WA'][((random() * 5)::int + 1)] AS customer_state,
+    (random() * 500 + 100)::decimal(10,2) AS shipping_cost,
+    random() < 0.2 AS is_returned,
+    random() < 0.1 AS is_gift_wrapped,
+    (random() * 50)::int AS loyalty_points_earned,
+    (random() * 5000 + 1000)::decimal(10,2) AS lifetime_value,
+    ['Standard', 'Express', 'Overnight'][((random() * 3)::int + 1)] AS shipping_method,
+    (random() * 10)::int AS days_to_ship,
+    random() < 0.05 AS is_first_order,
+    ['Visa', 'MasterCard', 'PayPal', 'Amex'][((random() * 4)::int + 1)] AS payment_method,
+    -- Calculate ship_date based on order_date and days_to_ship
+    (current_date - (random() * 90)::int + (random() * 10)::int) AS ship_date
+FROM generate_series(1, 7000)

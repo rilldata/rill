@@ -118,6 +118,24 @@ func (s *SyntheticDataAgent) createValidateSQLTool() tool.Tool {
 	return t
 }
 
+// sanitizeSQL strips markdown code fences and trims whitespace.
+func sanitizeSQL(sql string) string {
+    s := strings.TrimSpace(sql)
+    if strings.HasPrefix(s, "```") {
+        newline := strings.Index(s, "\n")
+        if newline != -1 {
+            rest := s[newline+1:]
+            end := strings.Index(rest, "```")
+            if end != -1 {
+                s = rest[:end]
+            } else {
+                s = rest
+            }
+        }
+    }
+    return strings.TrimSpace(s)
+}
+
 func (s *SyntheticDataAgent) GenerateSQL(description string) (string, error) {
 	if description == "" {
 		return "", fmt.Errorf("description parameter is required")
@@ -129,7 +147,7 @@ func (s *SyntheticDataAgent) GenerateSQL(description string) (string, error) {
 	log.Printf("🚀 Starting SQL generation for: %s", description)
 	
 	// Initial prompt to generate SQL
-	prompt := fmt.Sprintf("Generate synthetic data SQL for: %s", description)
+	prompt := fmt.Sprintf("Generate synthetic data SQL for: %s\n\nRequirements:\n1. Output ONLY raw SQL.\n2. Do NOT wrap with markdown code fences or add any explanatory text.", description)
 	
 	for attempt := 1; attempt <= maxAttempts; attempt++ {
 		log.Printf("🔄 Attempt %d/%d", attempt, maxAttempts)
@@ -152,7 +170,7 @@ func (s *SyntheticDataAgent) GenerateSQL(description string) (string, error) {
 		var sql string
 		if runResult != nil && runResult.FinalOutput != nil {
 			if str, ok := runResult.FinalOutput.(string); ok {
-				sql = str
+				sql = sanitizeSQL(str)
 				log.Printf("🤖 AI Generated SQL:\n%s", sql)
 			} else {
 				log.Printf("❌ Non-string response from agent on attempt %d: %T", attempt, runResult.FinalOutput)
@@ -178,7 +196,7 @@ func (s *SyntheticDataAgent) GenerateSQL(description string) (string, error) {
 				return "", fmt.Errorf("failed to generate valid SQL after %d attempts. Last error: %w", maxAttempts, validationErr)
 			}
 			// Update prompt with error feedback for next attempt
-			prompt = fmt.Sprintf("The previous SQL had an error. Please fix this SQL:\n\n%s\n\nError: %s\n\nGenerate corrected SQL for: %s", sql, validationErr.Error(), description)
+			prompt = fmt.Sprintf("The previous SQL had an error. Please fix the SQL below. Return ONLY raw SQL (no fences, no explanation):\n\n%s\n\nError: %s\n\nGenerate corrected SQL for: %s", sql, validationErr.Error(), description)
 			log.Printf("🔧 Updated prompt with error feedback for next attempt")
 			continue
 		}
@@ -194,37 +212,39 @@ func (s *SyntheticDataAgent) GenerateSQL(description string) (string, error) {
 }
 
 
-func (s *SyntheticDataAgent) validateSQL(ctx context.Context, params map[string]interface{}) (interface{}, error) {
-	sqlQuery, ok := params["sql"].(string)
-	if !ok {
-		log.Printf("❌ validateSQL tool called without SQL parameter")
-		return nil, fmt.Errorf("sql parameter is required")
-	}
 
-	log.Printf("🔧 validateSQL tool called with SQL:\n%s", sqlQuery)
+	func (s *SyntheticDataAgent) validateSQL(ctx context.Context, params map[string]interface{}) (interface{}, error) {
+    sqlQuery, ok := params["sql"].(string)
+    if !ok {
+        return nil, fmt.Errorf("sql parameter is required")
+    }
 
-	// Validate SQL by executing it against embedded DuckDB
-	valid, err := s.validateSQLWithDuckDB(ctx, sqlQuery)
-	if err != nil {
-		log.Printf("❌ validateSQL tool: validation failed - %v", err)
-		return map[string]interface{}{
-			"valid":   false,
-			"message": fmt.Sprintf("SQL validation failed: %v", err),
-			"details": map[string]interface{}{
-				"sql":   sqlQuery,
-				"error": err.Error(),
-			},
-		}, nil
-	}
+    // Sanitize in case markdown fences slipped in
+    sqlQuery = sanitizeSQL(sqlQuery)
 
-	log.Printf("✅ validateSQL tool: validation passed")
-	return map[string]interface{}{
-		"valid":   valid,
-		"message": "SQL is valid and executable",
-		"details": map[string]interface{}{
-			"sql": sqlQuery,
-		},
-	}, nil
+    valid, err := s.validateSQLWithDuckDB(ctx, sqlQuery)
+    if err != nil || !valid {
+        msg := "SQL validation failed"
+        if err != nil {
+            msg = err.Error()
+        }
+        return map[string]interface{}{
+            "valid":   false,
+            "message": msg,
+            "details": map[string]interface{}{
+                "sql":   sqlQuery,
+                "error": msg,
+            },
+        }, nil
+    }
+
+    return map[string]interface{}{
+        "valid":   true,
+        "message": "SQL is valid and executable",
+        "details": map[string]interface{}{
+            "sql": sqlQuery,
+        },
+    }, nil
 }
 
 // validateSQLWithDuckDB validates SQL by creating a temporary view in DuckDB

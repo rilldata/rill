@@ -1,0 +1,22 @@
+SELECT 
+    generate_series AS order_id,
+    current_date - (random() * 180)::int AS order_date,
+    'CUST_' || (generate_series % 1000)::text AS customer_id,
+    ['Electronics', 'Clothing', 'Books', 'Home', 'Toys'][((random() * 5)::int + 1)] AS category,
+    ['Product A', 'Product B', 'Product C', 'Product D', 'Product E'][((random() * 5)::int + 1)] AS product_name,
+    (random() * 100)::int + 1 AS quantity,
+    (random() * 500 + 10)::decimal(10,2) AS price,
+    (random() * 1000)::decimal(10,2) AS discount,
+    (random() < 0.5) AS is_returned,
+    (random() * 1000)::decimal(10,2) AS shipping_cost,
+    (random() * 5)::decimal(10,2) AS rating,
+    ['Credit Card', 'PayPal', 'Gift Card'][((random() * 3)::int + 1)] AS payment_method,
+    ['USA', 'Canada', 'UK', 'Germany', 'Australia'][((random() * 5)::int + 1)] AS shipping_country,
+    (random() * 1000)::int AS customer_age,
+    (random() * 1000)::decimal(10,2) AS lifetime_value,
+    (random() < 0.2) AS is_first_purchase,
+    ['New', 'Processing', 'Shipped', 'Delivered'][((random() * 4)::int + 1)] AS order_status,
+    (random() * 100)::int AS days_to_ship,
+    (random() * 20)::int AS num_items_in_cart,
+    (random() * 50)::int AS customer_reviews
+FROM generate_series(1, 10000)
