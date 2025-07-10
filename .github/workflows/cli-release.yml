@@ -147,12 +147,13 @@ jobs:
       - name: Release Rill using Goreleaser
         uses: goreleaser/goreleaser-action@v6
         with:
-          distribution: goreleaser
+          distribution: goreleaser-pro
           version: '~> v2'
           args: release ${{ env.NIGHTLY }}
         env:
           CGO_ENABLED: 1
           GITHUB_TOKEN: ${{ secrets.GORELEASER_ACCESS_TOKEN }}
+          GORELEASER_KEY: ${{ secrets.GORELEASER_KEY }}
           GORELEASER_CURRENT_TAG: ${{ env.GORELEASER_CURRENT_TAG }}
           PUBLISH_NIGHTLY: ${{ env.PUBLISH_NIGHTLY }}
 
