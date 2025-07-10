@@ -191,7 +191,9 @@
     : (connector.configProperties?.filter((p) =>
         connectionTab !== "dsn" ? p.key !== "dsn" : true,
       ) ?? []);
+  $: console.log("properties: ", properties);
   $: filteredProperties = properties.filter((property) => !property.noPrompt);
+  $: console.log("filteredProperties: ", filteredProperties);
 
   // TODO: move to utils.ts
   // Compute disabled state for the submit button
@@ -233,6 +235,14 @@
       return false;
     }
   })();
+
+  function normalizeErrors(err: any): string | string[] | null | undefined {
+    if (!err) return undefined;
+    if (Array.isArray(err)) return err;
+    if (typeof err === "string") return err;
+    if (err._errors && Array.isArray(err._errors)) return err._errors;
+    return undefined;
+  }
 </script>
 
 <div class="h-full w-full flex flex-col">
@@ -274,7 +284,7 @@
                   optional={!property.required}
                   secret={property.secret}
                   hint={property.hint}
-                  errors={$paramsErrors[propertyKey]}
+                  errors={normalizeErrors($paramsErrors[propertyKey])}
                   bind:value={$paramsForm[propertyKey]}
                   onInput={(_, e) => onStringInputChange(e)}
                   alwaysShowError
@@ -313,7 +323,7 @@
                 placeholder={property.placeholder}
                 secret={property.secret}
                 hint={property.hint}
-                errors={$dsnErrors[propertyKey]}
+                errors={normalizeErrors($dsnErrors[propertyKey])}
                 bind:value={$dsnForm[propertyKey]}
                 alwaysShowError
               />
@@ -343,7 +353,7 @@
               optional={!property.required}
               secret={property.secret}
               hint={property.hint}
-              errors={$paramsErrors[propertyKey]}
+              errors={normalizeErrors($paramsErrors[propertyKey])}
               bind:value={$paramsForm[propertyKey]}
               onInput={(_, e) => onStringInputChange(e)}
               alwaysShowError
