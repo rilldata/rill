@@ -139,7 +139,7 @@ func (e *Executor) ValidateQuery(qry *Query) error {
 type SummaryResult struct {
 	DimensionName string
 	DataType      string
-	Values        []any
+	Samples       []any
 }
 
 // Summary provides a data type and a sample value for each dimension in the metrics view.
@@ -179,7 +179,7 @@ func (e *Executor) Summary(ctx context.Context) (map[string]SummaryResult, error
 		summary[dim.Name] = SummaryResult{
 			DimensionName: dim.Name,
 			DataType:      dim.DataType.Code.String(),
-			Values:        values,
+			Samples:       values,
 		}
 		res.Close()
 	}
