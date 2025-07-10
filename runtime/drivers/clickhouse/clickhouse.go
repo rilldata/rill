@@ -47,7 +47,6 @@ var spec = drivers.Spec{
 			Description: "Use a managed ClickHouse instance. This will start an embedded ClickHouse server in development.",
 			Placeholder: "false",
 			Default:     "false",
-			NoPrompt:    true,
 		},
 		{
 			Key:         "mode",
