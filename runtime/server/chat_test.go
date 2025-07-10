@@ -520,8 +520,37 @@ func newConversationTestServer(t *testing.T) (*server.Server, string) {
 		Variables: map[string]string{"rill.stage_changes": "false"},
 	}
 
-	// Add required files
-	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "rill.yaml"), []byte(""), 0o644))
+	// Add required files for testing explore dashboard context
+	files := map[string]string{
+		"rill.yaml":             ``,
+		"models/test_model.sql": `SELECT 1 as id, 'test' as name, now() as created_at`,
+		"metrics/test_metrics.yaml": `
+type: metrics_view
+table: test_model
+timeseries: created_at
+dimensions:
+  - name: name
+    column: name
+measures:
+  - name: count
+    expression: count(*)
+    type: simple
+`,
+		"explores/test_dashboard.yaml": `
+type: explore
+metrics_view: test_metrics
+dimensions:
+  - name
+measures:
+  - count
+`,
+	}
+
+	for path, content := range files {
+		fullPath := filepath.Join(tmpDir, path)
+		require.NoError(t, os.MkdirAll(filepath.Dir(fullPath), 0o755))
+		require.NoError(t, os.WriteFile(fullPath, []byte(content), 0o644))
+	}
 
 	ctx := context.Background()
 	err := rt.CreateInstance(ctx, inst)
@@ -547,10 +576,13 @@ func TestConversationWithAppContext(t *testing.T) {
 	server, instanceID := newConversationTestServer(t)
 	ctx := testCtx()
 
-	// Test 1: General chat context
-	t.Run("general_chat_context", func(t *testing.T) {
+	// Test 1: Project chat context
+	t.Run("project_chat_context", func(t *testing.T) {
+		// TODO: Implement PROJECT_CHAT context handling
+		t.Skip("Project chat context not implemented yet")
+
 		appContext := &runtimev1.AppContext{
-			ContextType:     "general_chat",
+			ContextType:     runtimev1.AppContextType_APP_CONTEXT_TYPE_PROJECT_CHAT,
 			ContextMetadata: &structpb.Struct{},
 		}
 
@@ -565,11 +597,10 @@ func TestConversationWithAppContext(t *testing.T) {
 		require.NotEmpty(t, resp.ConversationId)
 
 		// Get the conversation with system messages to verify message order
-		includeSystem := true
 		conv, err := server.GetConversation(ctx, &runtimev1.GetConversationRequest{
 			InstanceId:            instanceID,
 			ConversationId:        resp.ConversationId,
-			IncludeSystemMessages: &includeSystem,
+			IncludeSystemMessages: true,
 		})
 		require.NoError(t, err)
 		require.NotNil(t, conv.Conversation)
@@ -599,7 +630,7 @@ func TestConversationWithAppContext(t *testing.T) {
 		require.NoError(t, err)
 
 		appContext := &runtimev1.AppContext{
-			ContextType:     "explore_dashboard",
+			ContextType:     runtimev1.AppContextType_APP_CONTEXT_TYPE_EXPLORE_DASHBOARD,
 			ContextMetadata: metadata,
 		}
 
@@ -614,11 +645,10 @@ func TestConversationWithAppContext(t *testing.T) {
 		require.NotEmpty(t, resp.ConversationId)
 
 		// Get the conversation with system messages to verify message order
-		includeSystem := true
 		conv, err := server.GetConversation(ctx, &runtimev1.GetConversationRequest{
 			InstanceId:            instanceID,
 			ConversationId:        resp.ConversationId,
-			IncludeSystemMessages: &includeSystem,
+			IncludeSystemMessages: true,
 		})
 		require.NoError(t, err)
 		require.NotNil(t, conv.Conversation)
@@ -630,7 +660,7 @@ func TestConversationWithAppContext(t *testing.T) {
 		require.Equal(t, "system", messages[0].Role)
 		systemText := messages[0].Content[0].GetText()
 		require.Contains(t, systemText, "test_dashboard")
-		require.Contains(t, systemText, "exploring")
+		require.Contains(t, systemText, "actively viewing")
 		t.Logf("✓ Dashboard system message: %s", systemText)
 
 		// Verify user message is second
@@ -676,12 +706,18 @@ func TestConversationWithAppContext(t *testing.T) {
 
 	// Test 4: Continuing conversation with app context (should not re-add system messages)
 	t.Run("continue_conversation_with_app_context", func(t *testing.T) {
-		// First message with app context
+		// Use explore dashboard context for testing conversation continuation
+		metadata, err := structpb.NewStruct(map[string]interface{}{
+			"dashboard_name": "test_dashboard",
+		})
+		require.NoError(t, err)
+
 		appContext := &runtimev1.AppContext{
-			ContextType:     "general_chat",
-			ContextMetadata: &structpb.Struct{},
+			ContextType:     runtimev1.AppContextType_APP_CONTEXT_TYPE_EXPLORE_DASHBOARD,
+			ContextMetadata: metadata,
 		}
 
+		// First message with app context
 		resp1, err := server.Complete(ctx, &runtimev1.CompleteRequest{
 			InstanceId: instanceID,
 			AppContext: appContext,
@@ -705,11 +741,10 @@ func TestConversationWithAppContext(t *testing.T) {
 		require.Equal(t, conversationID, resp2.ConversationId)
 
 		// Get the conversation to verify no duplicate system messages
-		includeSystem := true
 		conv, err := server.GetConversation(ctx, &runtimev1.GetConversationRequest{
 			InstanceId:            instanceID,
 			ConversationId:        conversationID,
-			IncludeSystemMessages: &includeSystem,
+			IncludeSystemMessages: true,
 		})
 		require.NoError(t, err)
 		require.NotNil(t, conv.Conversation)
@@ -726,8 +761,9 @@ func TestConversationWithAppContext(t *testing.T) {
 		}
 		require.Equal(t, 1, systemMessages, "Should have exactly one system message")
 
-		// Verify system message is still first
+		// Verify system message is still first and contains dashboard context
 		require.Equal(t, "system", messages[0].Role)
-		require.Contains(t, messages[0].Content[0].GetText(), "Available metrics views")
+		require.Contains(t, messages[0].Content[0].GetText(), "test_dashboard")
+		require.Contains(t, messages[0].Content[0].GetText(), "actively viewing")
 	})
 }

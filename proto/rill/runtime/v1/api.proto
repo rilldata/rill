@@ -899,8 +899,14 @@ message Message {
 }
 
 // Application context for AI conversations
+enum AppContextType {
+  APP_CONTEXT_TYPE_UNSPECIFIED = 0;
+  APP_CONTEXT_TYPE_PROJECT_CHAT = 1;
+  APP_CONTEXT_TYPE_EXPLORE_DASHBOARD = 2;
+}
+
 message AppContext {
-  string context_type = 1;
+  AppContextType context_type = 1;
   google.protobuf.Struct context_metadata = 2;
 }
 
@@ -944,7 +950,7 @@ message GetConversationRequest {
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
   string conversation_id = 2;
   // Whether to include system messages in the response (defaults to false for UI use)
-  optional bool include_system_messages = 3;
+  bool include_system_messages = 3;
 }
 
 // Response message for RuntimeService.GetConversation

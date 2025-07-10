@@ -10946,9 +10946,7 @@ func (m *GetConversationRequest) validate(all bool) error {
 
 	// no validation rules for ConversationId
 
-	if m.IncludeSystemMessages != nil {
-		// no validation rules for IncludeSystemMessages
-	}
+	// no validation rules for IncludeSystemMessages
 
 	if len(errors) > 0 {
 		return GetConversationRequestMultiError(errors)

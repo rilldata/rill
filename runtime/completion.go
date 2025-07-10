@@ -2,12 +2,11 @@ package runtime
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
 	"time"
-
-	"encoding/json"
 
 	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -175,31 +174,11 @@ func (r *Runtime) processAppContext(ctx context.Context, instanceID string, appC
 	}
 
 	switch appContext.ContextType {
-	case "general_chat":
-		return r.processGeneralChatContext(ctx, instanceID, appContext.ContextMetadata, toolService)
-	case "explore_dashboard":
+	case runtimev1.AppContextType_APP_CONTEXT_TYPE_EXPLORE_DASHBOARD:
 		return r.processExploreDashboardContext(ctx, instanceID, appContext.ContextMetadata, toolService)
 	default:
-		return nil, nil // Unknown context type, no processing
+		return nil, nil // Unknown context type, no system message will be added
 	}
-}
-
-// processGeneralChatContext provides general context by listing available metrics views
-func (r *Runtime) processGeneralChatContext(ctx context.Context, instanceID string, metadata *structpb.Struct, toolService ToolService) ([]*runtimev1.Message, error) {
-	// Get list of metrics views to provide context
-	result, err := toolService.ExecuteTool(ctx, "list_metrics_views", map[string]any{})
-	if err != nil {
-		return nil, err
-	}
-
-	return []*runtimev1.Message{{
-		Role: "system",
-		Content: []*aiv1.ContentBlock{{
-			BlockType: &aiv1.ContentBlock_Text{
-				Text: fmt.Sprintf("Available metrics views: %s", result),
-			},
-		}},
-	}}, nil
 }
 
 // processExploreDashboardContext provides specific dashboard context
@@ -228,12 +207,6 @@ func (r *Runtime) processExploreDashboardContext(ctx context.Context, instanceID
 	}
 
 	metricsViewName := explore.State.ValidSpec.MetricsView
-
-	// Verify that the MetricsView resource exists before calling tools
-	_, err = ctrl.Get(ctx, &runtimev1.ResourceName{Kind: ResourceKindMetricsView, Name: metricsViewName}, false)
-	if err != nil {
-		return nil, fmt.Errorf("could not find metrics view '%s' referenced by explore '%s': %w", metricsViewName, dashboardName, err)
-	}
 
 	// Get specific metrics view details
 	metricsViewResult, err := toolService.ExecuteTool(ctx, "get_metrics_view", map[string]any{
@@ -603,15 +576,17 @@ func (r *Runtime) createConversation(ctx context.Context, instanceID, ownerID, t
 	}
 	defer release()
 
-	var contextType *string
-	var contextMetadataJSON *string
+	var contextType string
+	var contextMetadataJSON string
 
 	if appContext != nil {
-		contextType = &appContext.ContextType
+		contextType = appContext.ContextType.String()
 		if appContext.ContextMetadata != nil {
-			metadataBytes, _ := json.Marshal(appContext.ContextMetadata.AsMap())
-			metadataStr := string(metadataBytes)
-			contextMetadataJSON = &metadataStr
+			metadataBytes, err := json.Marshal(appContext.ContextMetadata.AsMap())
+			if err != nil {
+				return nil, fmt.Errorf("failed to marshal context metadata: %w", err)
+			}
+			contextMetadataJSON = string(metadataBytes)
 		}
 	}
 

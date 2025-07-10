@@ -331,9 +331,19 @@ export interface V1AnalyzedVariable {
 export type V1AppContextContextMetadata = { [key: string]: unknown };
 
 export interface V1AppContext {
-  contextType?: string;
+  contextType?: V1AppContextType;
   contextMetadata?: V1AppContextContextMetadata;
 }
+
+export type V1AppContextType =
+  (typeof V1AppContextType)[keyof typeof V1AppContextType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1AppContextType = {
+  APP_CONTEXT_TYPE_UNSPECIFIED: "APP_CONTEXT_TYPE_UNSPECIFIED",
+  APP_CONTEXT_TYPE_PROJECT_CHAT: "APP_CONTEXT_TYPE_PROJECT_CHAT",
+  APP_CONTEXT_TYPE_EXPLORE_DASHBOARD: "APP_CONTEXT_TYPE_EXPLORE_DASHBOARD",
+} as const;
 
 export type V1AssertionResultFailRow = { [key: string]: unknown };
 

@@ -69,7 +69,7 @@ func (s *Server) mcpListTools(ctx context.Context, instanceID string) ([]*aiv1.T
 	return aiTools, nil
 }
 
-func (s *Server) mcpExecuteTool(ctx context.Context, instanceID, toolName string, toolArgs map[string]any) (any, error) {
+func (s *Server) mcpExecuteTool(ctx context.Context, instanceID, toolName string, toolArgs map[string]any) (string, error) {
 	// Add instance ID to context for internal MCP server tools
 	ctxWithInstance := context.WithValue(ctx, mcpInstanceIDKey{}, instanceID)
 
@@ -83,19 +83,21 @@ func (s *Server) mcpExecuteTool(ctx context.Context, instanceID, toolName string
 			Arguments: toolArgs,
 		},
 	})
+
+	// Handle errors
 	if err != nil {
-		return nil, err
+		return "", err
+	} else if len(resp.Content) == 0 {
+		return "", nil
+	} else if len(resp.Content) > 1 {
+		return "", fmt.Errorf("multiple content items not supported, got %d items", len(resp.Content))
 	}
 
-	// Extract text content from MCP response for cleaner consumption
-	if len(resp.Content) > 0 {
-		if textContent, ok := resp.Content[0].(mcp.TextContent); ok {
-			return textContent.Text, nil
-		}
-		// Fallback for other content types
-		return fmt.Sprintf("%v", resp.Content[0]), nil
+	// Extract text content from MCP response
+	switch content := resp.Content[0].(type) {
+	case mcp.TextContent:
+		return content.Text, nil
+	default:
+		return "", fmt.Errorf("unsupported content type: %T", content) // Future work: support other content types
 	}
-
-	// Fallback for empty response
-	return resp.Content, nil
 }

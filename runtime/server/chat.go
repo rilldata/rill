@@ -80,7 +80,7 @@ func (s *Server) GetConversation(ctx context.Context, req *runtimev1.GetConversa
 		}
 
 		// Filter out system messages unless explicitly requested
-		if msg.Role == "system" && (req.IncludeSystemMessages == nil || !*req.IncludeSystemMessages) {
+		if msg.Role == "system" && !req.IncludeSystemMessages {
 			continue
 		}
 

@@ -406,7 +406,7 @@ func (c *catalogStore) FindConversation(ctx context.Context, conversationID stri
 }
 
 // InsertConversation inserts a new conversation.
-func (c *catalogStore) InsertConversation(ctx context.Context, ownerID, title string, appContextType *string, appContextMetadataJSON *string) (string, error) {
+func (c *catalogStore) InsertConversation(ctx context.Context, ownerID, title, appContextType, appContextMetadataJSON string) (string, error) {
 	conversationID := uuid.NewString()
 	_, err := c.db.ExecContext(ctx, `
 		INSERT INTO conversations (instance_id, conversation_id, owner_id, title, app_context_type, app_context_metadata_json, created_on, updated_on)

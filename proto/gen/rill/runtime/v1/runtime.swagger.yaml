@@ -3712,9 +3712,16 @@ definitions:
     type: object
     properties:
       contextType:
-        type: string
+        $ref: '#/definitions/v1AppContextType'
       contextMetadata:
         type: object
+  v1AppContextType:
+    type: string
+    enum:
+      - APP_CONTEXT_TYPE_UNSPECIFIED
+      - APP_CONTEXT_TYPE_PROJECT_CHAT
+      - APP_CONTEXT_TYPE_EXPLORE_DASHBOARD
+    default: APP_CONTEXT_TYPE_UNSPECIFIED
     title: Application context for AI conversations
   v1AssertionResult:
     type: object

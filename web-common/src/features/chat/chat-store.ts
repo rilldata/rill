@@ -14,6 +14,7 @@ import {
   createRuntimeServiceComplete,
   getRuntimeServiceGetConversationQueryKey,
   getRuntimeServiceListConversationsQueryKey,
+  V1AppContextType,
 } from "../../runtime-client";
 import { runtime } from "../../runtime-client/runtime-store";
 
@@ -60,7 +61,7 @@ function detectAppContext($page: Page): V1AppContext | null {
   switch (routeId) {
     case "/[organization]/[project]/explore/[dashboard]":
       return {
-        contextType: "explore_dashboard",
+        contextType: V1AppContextType.APP_CONTEXT_TYPE_EXPLORE_DASHBOARD,
         contextMetadata: {
           dashboard_name: $page.params.dashboard,
         },
