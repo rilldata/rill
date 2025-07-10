@@ -15,7 +15,7 @@ builds:
       - amd64
       - arm64
     prebuilt:
-      path: v{{ .Version }}/{{ .Os }}_{{ .Arch }}/rill
+      path: binaries/{{ .Os }}_{{ .Arch }}/rill
     binary: rill
 
 brews:
@@ -61,7 +61,7 @@ checksum:
   name_template: checksums.txt
 
 snapshot:
-  name_template: "{{ incminor .Version }}-nightly"
+  version_template: "{{ incminor .Version }}-nightly"
 
 changelog:
   sort: asc

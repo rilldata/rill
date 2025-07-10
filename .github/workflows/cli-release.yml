@@ -67,6 +67,7 @@ jobs:
       - name: Build rill cli
         run: |-
           if [[ ${{ env.PUBLISH_NIGHTLY }} == 'true' ]]; then
+            git fetch --prune --unshallow
             VERSION="$(git describe --tags $(git rev-list --tags --max-count=1) | sed 's/r/v/')-nightly"
           else
             VERSION='${{ github.ref_name }}'
@@ -89,7 +90,7 @@ jobs:
         uses: google-github-actions/upload-cloud-storage@v2
         with:
           path: rill
-          destination: prod-cdn.rilldata.com/rill/nightly/${{ matrix.platform }}/
+          destination: prod-cdn.rilldata.com/rill/nightly/binaries/${{ matrix.platform }}/
           headers: |-
             cache-control: no-store
 
@@ -98,7 +99,7 @@ jobs:
         uses: google-github-actions/upload-cloud-storage@v2
         with:
           path: rill
-          destination: prod-cdn.rilldata.com/rill/${GITHUB_REF#refs/tags/}/${{ matrix.platform }}/
+          destination: prod-cdn.rilldata.com/rill/${GITHUB_REF#refs/tags/}/binaries/${{ matrix.platform }}/
           headers: |-
             cache-control: no-store
 
@@ -122,21 +123,13 @@ jobs:
       - name: Set up gcloud CLI
         uses: google-github-actions/setup-gcloud@v2
 
-      - name: Evaluate release specific bucket dir
-        run: |
-          if [[ ${{ env.PUBLISH_NIGHTLY }} == 'true' ]]; then
-            echo "BUCKET_DIR=nightly" >> $GITHUB_ENV
-          else
-            echo "BUCKET_DIR=$(echo "${GITHUB_REF#refs/tags/}")" >> $GITHUB_ENV
-          fi
-
       - name: Set GORELEASER_CURRENT_TAG and NIGHTLY
         env:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
         run: |
-          echo '${{ github.ref_name }}' >> latest.txt
           if [[ ${{ env.PUBLISH_NIGHTLY }} == 'true' ]]; then
+            echo "BUCKET_DIR=nightly" >> $GITHUB_ENV
             echo "NIGHTLY=--snapshot" >> $GITHUB_ENV
             echo "VERSION=--nightly" >> $GITHUB_ENV
             LATEST_TAG=$(git describe --tags $(git rev-list --tags --max-count=1))
@@ -144,19 +137,17 @@ jobs:
           else
             echo "NIGHTLY=" >> $GITHUB_ENV
             echo "VERSION='~> v2'" >> $GITHUB_ENV
+            echo "BUCKET_DIR=$(echo "${GITHUB_REF#refs/tags/}")" >> $GITHUB_ENV
           fi
+
+          echo '${{ github.ref_name }}' >> latest.txt
+          gsutil -m cp -r gs://prod-cdn.rilldata.com/rill/$BUCKET_DIR/binaries .
 
       - name: Login to Docker Hub
         uses: docker/login-action@v3
-        if:  matrix.goarch == 'linux'
         with:
           username: ${{ secrets.DOCKERHUB_USER }}
           password: ${{ secrets.DOCKERHUB_PASS }}
-
-      - name: Download binaries/checksum files from GCS
-        run: |-
-          echo '${{ github.ref_name }}' >> latest.txt
-          gsutil -m cp -r gs://prod-cdn.rilldata.com/rill/$BUCKET_DIR/ .
 
       - name: Release Rill using Goreleaser
         uses: goreleaser/goreleaser-action@v6
