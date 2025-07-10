@@ -143,11 +143,7 @@
     >;
   }) {
     if (!event.form.valid) return;
-    let values = event.form.data;
-    // Only submit managed if managed is true
-    if (values.managed === true) {
-      values = { managed: true };
-    }
+    const values = event.form.data;
     try {
       if (formType === "source") {
         await submitAddSourceForm(queryClient, connector, values);
