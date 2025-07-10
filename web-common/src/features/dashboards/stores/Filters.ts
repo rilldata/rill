@@ -80,7 +80,7 @@ export class Filters {
   public readonly hasFilters: Readable<boolean>;
 
   constructor(
-    public readonly data: ExploreMetricsViewMetadata,
+    public readonly metricsViewMetadata: ExploreMetricsViewMetadata,
     {
       whereFilter,
       dimensionsWithInlistFilter,
@@ -106,7 +106,7 @@ export class Filters {
     // MEASURE SELECTORS
     // -------------------------------
     this.measureFilterItems = derived(
-      [this.data.measureNameMap, this.dimensionThresholdFilters],
+      [this.metricsViewMetadata.measureNameMap, this.dimensionThresholdFilters],
       ([$measureNameMap, $dimensionThresholdFilters]) => {
         return this.getMeasureFilters(
           $measureNameMap,
@@ -117,7 +117,7 @@ export class Filters {
 
     this.allMeasureFilterItems = derived(
       [
-        this.data.measureNameMap,
+        this.metricsViewMetadata.measureNameMap,
         this.measureFilterItems,
         this.temporaryFilterName,
       ],
@@ -151,7 +151,7 @@ export class Filters {
     // -------------------------------
     this.dimensionFilterItems = derived(
       [
-        this.data.dimensionNameMap,
+        this.metricsViewMetadata.dimensionNameMap,
         this.whereFilter,
         this.dimensionsWithInlistFilter,
       ],
@@ -167,14 +167,14 @@ export class Filters {
 
     this.allDimensionFilterItems = derived(
       [
-        this.data.dimensionNameMap,
+        this.metricsViewMetadata.dimensionNameMap,
         this.dimensionFilterItems,
         this.temporaryFilterName,
       ],
       ([$dimensionNameMap, $dimensionFilterItems, tempFilter]) => {
         const merged = $dimensionFilterItems.map((dfi) => ({
           ...dfi,
-          metricsViewNames: [this.data.metricsViewName],
+          metricsViewNames: [this.metricsViewMetadata.metricsViewName],
         }));
         if (tempFilter && $dimensionNameMap.has(tempFilter)) {
           merged.push({
@@ -183,7 +183,7 @@ export class Filters {
             label: getDimensionDisplayName($dimensionNameMap.get(tempFilter)),
             selectedValues: [],
             isInclude: true,
-            metricsViewNames: [this.data.metricsViewName],
+            metricsViewNames: [this.metricsViewMetadata.metricsViewName],
           });
         }
         return merged.sort(filterItemsSortFunction);

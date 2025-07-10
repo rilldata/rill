@@ -54,19 +54,19 @@ export function getNewAlertInitialFiltersFormValues(
   exploreName: string,
   exploreState: Partial<ExploreState>,
 ) {
-  const metricsViewData = new ExploreMetricsViewMetadata(
+  const metricsViewMetadata = new ExploreMetricsViewMetadata(
     instanceId,
     metricsViewName,
     exploreName,
   );
-  const filters = new Filters(metricsViewData, {
+  const filters = new Filters(metricsViewMetadata, {
     whereFilter: exploreState.whereFilter ?? createAndExpression([]),
     dimensionsWithInlistFilter: exploreState.dimensionsWithInlistFilter ?? [],
     dimensionThresholdFilters: exploreState.dimensionThresholdFilters ?? [],
     dimensionFilterExcludeMode:
       exploreState.dimensionFilterExcludeMode ?? new Map<string, boolean>(),
   });
-  const timeControls = new TimeControls(metricsViewData, {
+  const timeControls = new TimeControls(metricsViewMetadata, {
     selectedTimeRange: exploreState.selectedTimeRange,
     selectedComparisonTimeRange: exploreState.selectedComparisonTimeRange,
     showTimeComparison: exploreState.showTimeComparison ?? false,

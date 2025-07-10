@@ -56,7 +56,7 @@ export class TimeControls {
   >;
 
   public constructor(
-    data: ExploreMetricsViewMetadata,
+    metricsViewMetadata: ExploreMetricsViewMetadata,
     {
       selectedTimeRange,
       selectedComparisonTimeRange,
@@ -70,7 +70,7 @@ export class TimeControls {
     this.selectedTimezone = writable(selectedTimezone);
 
     this.allTimeRange = derived(
-      data.timeRangeSummary,
+      metricsViewMetadata.timeRangeSummary,
       (timeRangeSummaryResp) => {
         if (!timeRangeSummaryResp.data?.timeRangeSummary) return undefined;
         return {
@@ -81,21 +81,28 @@ export class TimeControls {
       },
     );
 
-    this.hasTimeSeries = derived(data.validSpecQuery, (validSpecResp) => {
-      const metricsViewSpec = validSpecResp.data?.metricsView ?? {};
-      return Boolean(metricsViewSpec.timeDimension);
-    });
+    this.hasTimeSeries = derived(
+      metricsViewMetadata.validSpecQuery,
+      (validSpecResp) => {
+        const metricsViewSpec = validSpecResp.data?.metricsView ?? {};
+        return Boolean(metricsViewSpec.timeDimension);
+      },
+    );
 
-    this.minTimeGrain = derived(data.validSpecQuery, (validSpecResp) => {
-      const metricsViewSpec = validSpecResp.data?.metricsView ?? {};
-      return (
-        metricsViewSpec.smallestTimeGrain ?? V1TimeGrain.TIME_GRAIN_UNSPECIFIED
-      );
-    });
+    this.minTimeGrain = derived(
+      metricsViewMetadata.validSpecQuery,
+      (validSpecResp) => {
+        const metricsViewSpec = validSpecResp.data?.metricsView ?? {};
+        return (
+          metricsViewSpec.smallestTimeGrain ??
+          V1TimeGrain.TIME_GRAIN_UNSPECIFIED
+        );
+      },
+    );
 
     this.timeRangeStateStore = derived(
       [
-        data.validSpecQuery,
+        metricsViewMetadata.validSpecQuery,
         this.allTimeRange,
         this.selectedTimeRange,
         this.selectedTimezone,
@@ -148,7 +155,7 @@ export class TimeControls {
 
     this.comparisonRangeStateStore = derived(
       [
-        data.validSpecQuery,
+        metricsViewMetadata.validSpecQuery,
         this.allTimeRange,
         this.selectedComparisonTimeRange,
         this.selectedTimezone,

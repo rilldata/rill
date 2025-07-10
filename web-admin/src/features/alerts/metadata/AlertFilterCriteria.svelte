@@ -21,7 +21,6 @@
   $: comparisonLabel =
     TIME_COMPARISON[comparisonTimeRange?.isoOffset]?.label?.toLowerCase() ??
     "previous period";
-  $: console.log(comparisonTimeRange?.isoOffset, comparisonLabel);
 </script>
 
 <div class="flex flex-col gap-y-3" aria-label="Alert criteria">

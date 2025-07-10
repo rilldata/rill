@@ -60,7 +60,7 @@
     setTemporaryFilterName,
     clearAllFilters,
 
-    data: { allDimensions, allSimpleMeasures, validSpecQuery },
+    metricsViewMetadata: { allDimensions, allSimpleMeasures, validSpecQuery },
   } = filters);
   $: ({
     selectedTimezone,

@@ -147,18 +147,18 @@ export function getFiltersAndTimeControlsFromAggregationRequest(
     aggregationRequest.where,
   );
 
-  const metricsViewData = new ExploreMetricsViewMetadata(
+  const metricsViewMetadata = new ExploreMetricsViewMetadata(
     instanceId,
     metricsViewName,
     exploreName,
   );
-  const filters = new Filters(metricsViewData, {
+  const filters = new Filters(metricsViewMetadata, {
     whereFilter: dimensionFilters,
     dimensionsWithInlistFilter: [],
     dimensionThresholdFilters: dimensionThresholdFilters,
     dimensionFilterExcludeMode: includeExcludeModeFromFilters(dimensionFilters),
   });
-  const timeControls = new TimeControls(metricsViewData, {
+  const timeControls = new TimeControls(metricsViewMetadata, {
     selectedTimeRange,
     selectedComparisonTimeRange,
     showTimeComparison: !!selectedComparisonTimeRange,
