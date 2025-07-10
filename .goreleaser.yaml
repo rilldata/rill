@@ -67,3 +67,4 @@ nightly:
 
 changelog:
   sort: asc
+  disable: {{ .IsNightly }}
