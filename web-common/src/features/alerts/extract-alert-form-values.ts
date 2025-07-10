@@ -5,28 +5,18 @@ import {
   mapExprToMeasureFilter,
   type MeasureFilterEntry,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
-import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
-import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import { getExploreName } from "@rilldata/web-common/features/explore-mappers/utils.ts";
-import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import {
   type V1AlertSpec,
   type V1MetricsViewAggregationDimension,
   type V1MetricsViewAggregationMeasure,
   type V1MetricsViewAggregationRequest,
   V1Operation,
-  type V1TimeRange,
-  type V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
 
 export type AlertFormValuesSubset = Pick<
   AlertFormValues,
   | "metricsViewName"
-  | "whereFilter"
-  | "dimensionsWithInlistFilter"
-  | "dimensionThresholdFilters"
-  | "timeRange"
-  | "comparisonTimeRange"
   | "measure"
   | "splitByDimension"
   | "criteria"
@@ -35,38 +25,12 @@ export type AlertFormValuesSubset = Pick<
 
 export function extractAlertFormValues(
   queryArgs: V1MetricsViewAggregationRequest,
-  timeRangeSummary: V1TimeRangeSummary | undefined,
-  partialExploreState: Partial<ExploreState>,
 ): AlertFormValuesSubset {
   if (!queryArgs) return {} as AlertFormValuesSubset;
 
   const measures = queryArgs.measures as V1MetricsViewAggregationMeasure[];
   const dimensions =
     queryArgs.dimensions as V1MetricsViewAggregationDimension[];
-
-  const timeRange = (queryArgs.timeRange as V1TimeRange) ?? {
-    isoDuration: TimeRangePreset.ALL_TIME,
-  };
-  if (!timeRange.end && timeRangeSummary?.max) {
-    // alerts only have duration optionally offset, end is added during execution by reconciler
-    // so, we add end here to get a valid query
-    timeRange.end = timeRangeSummary?.max;
-  }
-
-  const comparisonTimeRange = queryArgs.comparisonTimeRange;
-  if (
-    comparisonTimeRange &&
-    !comparisonTimeRange.end &&
-    timeRangeSummary?.max
-  ) {
-    // alerts only have duration and offset, end is added during execution by reconciler
-    // so, we add end here to get a valid query
-    comparisonTimeRange.end = timeRangeSummary?.max;
-  }
-
-  const { dimensionFilters, dimensionThresholdFilters } = splitWhereFilter(
-    queryArgs.where,
-  );
 
   return {
     measure: measures[0]?.name ?? "",
@@ -79,12 +43,6 @@ export function extractAlertFormValues(
 
     // These are not part of the form, but are used to track the state of the form
     metricsViewName: queryArgs.metricsView as string,
-    whereFilter: dimensionFilters,
-    dimensionsWithInlistFilter:
-      partialExploreState.dimensionsWithInlistFilter ?? [],
-    dimensionThresholdFilters,
-    timeRange,
-    comparisonTimeRange,
   };
 }
 
@@ -133,8 +91,6 @@ export function extractAlertNotification(
 export function getExistingAlertInitialFormValues(
   alertSpec: V1AlertSpec,
   metricsViewName: string,
-  timeRangeSummary: V1TimeRangeSummary | undefined,
-  exploreState: Partial<ExploreState>,
 ): AlertFormValues {
   const queryArgsJson = JSON.parse(
     (alertSpec.resolverProperties?.query_args_json ??
@@ -151,6 +107,6 @@ export function getExistingAlertInitialFormValues(
     snooze: getSnoozeValueFromAlertSpec(alertSpec),
     evaluationInterval: alertSpec.intervalsIsoDuration ?? "",
     ...extractAlertNotification(alertSpec),
-    ...extractAlertFormValues(queryArgsJson, timeRangeSummary, exploreState),
+    ...extractAlertFormValues(queryArgsJson),
   };
 }

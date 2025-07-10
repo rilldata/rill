@@ -48,3 +48,13 @@ export function arrayOrderedEquals<T>(src: T[], tar: T[]) {
 export function getMissingValues<T>(src: T[], tar: T[]) {
   return tar.filter((v) => !src.includes(v));
 }
+
+export function dedupe<T, K>(array: T[], keyGetter: (entry: T) => K) {
+  const seen = new Set<K>();
+  return array.filter((entry) => {
+    const key = keyGetter(entry);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}

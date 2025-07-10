@@ -13,6 +13,7 @@
   export let inputType: "text" | "number" = "text";
   export let id = "";
   export let label = "";
+  export let title = ""; // Fallback title attribute if label is empty
   export let description = "";
   export let errors: string | string[] | null | undefined = null;
   export let placeholder = "";
@@ -168,7 +169,7 @@
         />
       {:else}
         <input
-          title={label}
+          title={label || title}
           {id}
           {type}
           {placeholder}

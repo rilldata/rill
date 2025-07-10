@@ -19,6 +19,7 @@
   export let activeTimeZone: string;
   export let onDisplayTimeComparison: (show: boolean) => void;
   export let onSetSelectedComparisonRange: (range: TimeRange) => void;
+  export let allowCustomTimeRange: boolean = true;
 
   $: interval = selectedTimeRange
     ? Interval.fromDateTimes(
@@ -29,7 +30,10 @@
 
   $: activeTimeGrain = selectedTimeRange?.interval;
 
-  $: comparisonOptions = getComparisonOptionsForCanvas(selectedTimeRange);
+  $: comparisonOptions = getComparisonOptionsForCanvas(
+    selectedTimeRange,
+    allowCustomTimeRange,
+  );
 
   function onSelectComparisonRange(
     name: TimeComparisonOption,
@@ -61,6 +65,8 @@
     on:click={() => {
       onDisplayTimeComparison(!showTimeComparison);
     }}
+    type="button"
+    aria-label="Toggle time comparison"
   >
     <div class="pointer-events-none flex items-center gap-x-1.5">
       <Switch
@@ -88,6 +94,7 @@
       {onSelectComparisonRange}
       {showFullRange}
       disabled={disabled ?? false}
+      {allowCustomTimeRange}
     />
   {/if}
 </div>

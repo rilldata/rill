@@ -60,6 +60,7 @@
       aria-label="Timezone selector"
       title={!availableTimeZones.length ? "No timezones configured" : ""}
       disabled={lockTimeZone}
+      type="button"
     >
       {getAbbreviationForIANA(watermark, activeTimeZone)}
       {#if !lockTimeZone}
