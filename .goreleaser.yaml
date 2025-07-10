@@ -1,5 +1,4 @@
 version: 2
-
 project_name: rill
 
 release:
@@ -38,19 +37,19 @@ brews:
       email: support@rilldata.com
 
 blobs:
-  - disable: {{ toString .IsNightly }}
-    provider: gs
-    bucket: prod-cdn.rilldata.com
-    directory: "rill/v{{ .Version }}"
-    extra_files:
-      - glob: ./dist/**/*
   - disable: {{ toString .IsRelease }}
     provider: gs
     bucket: prod-cdn.rilldata.com
     directory: "rill/nightly"
     extra_files:
       - glob: ./dist/**/*
-  - disable: {{ if .IsSnapshot }} true {{ else }} false {{ end }}
+  - disable: {{ toString .IsNightly }}
+    provider: gs
+    bucket: prod-cdn.rilldata.com
+    directory: "rill/v{{ .Version }}"
+    extra_files:
+      - glob: ./dist/**/*
+  - disable: {{ toString .IsNightly }}
     provider: gs
     bucket: prod-cdn.rilldata.com
     directory: "rill"
