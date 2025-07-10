@@ -62,7 +62,7 @@ checksum:
 
 nightly:
   version_template: "{{ incminor .Version }}-nightly"
-  publish_release: true
+  publish_release: false
   keep_single_release: true
 
 changelog:
