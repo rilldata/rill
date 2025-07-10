@@ -14,11 +14,11 @@ import { getExploreName } from "@rilldata/web-common/features/explore-mappers/ut
 import {
   Filters,
   type FiltersState,
-} from "@rilldata/web-common/features/scheduled-reports/filters/Filters.ts";
+} from "@rilldata/web-common/features/dashboards/stores/Filters.ts";
 import {
   TimeControls,
   type TimeControlState,
-} from "@rilldata/web-common/features/scheduled-reports/filters/TimeControls.ts";
+} from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
 import { ExploreMetricsViewMetadata } from "@rilldata/web-common/features/dashboards/stores/ExploreMetricsViewMetadata.ts";
 import {
   getDayOfMonthFromCronExpression,
