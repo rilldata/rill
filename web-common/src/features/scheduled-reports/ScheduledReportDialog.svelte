@@ -24,7 +24,7 @@
   import {
     getDashboardNameFromReport,
     getExistingReportInitialFormValues,
-    getFiltersFormValuesAggregationRequest,
+    getFiltersAndTimeControlsFromAggregationRequest,
     getNewReportInitialFormValues,
     getQueryNameFromQuery,
     getUpdatedAggregationRequest,
@@ -90,13 +90,14 @@
       : JSON.parse(props.reportSpec.queryArgsJson || "{}")
   ) as V1MetricsViewAggregationRequest;
 
-  $: ({ filters, timeControls } = getFiltersFormValuesAggregationRequest(
-    instanceId,
-    metricsViewName,
-    exploreName,
-    aggregationRequest,
-    $allTimeRangeResp.data?.timeRangeSummary,
-  ));
+  $: ({ filters, timeControls } =
+    getFiltersAndTimeControlsFromAggregationRequest(
+      instanceId,
+      metricsViewName,
+      exploreName,
+      aggregationRequest,
+      $allTimeRangeResp.data?.timeRangeSummary,
+    ));
 
   let currentProtobufState: string | undefined = undefined;
   if (open && props.mode === "create") {
@@ -249,6 +250,7 @@
         form="scheduled-report-form"
         submitForm
         type="primary"
+        label={props.mode === "create" ? "Create report" : "Save report"}
       >
         {props.mode === "create" ? "Create" : "Save"}
       </Button>
