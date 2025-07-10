@@ -139,7 +139,7 @@ func (e *Executor) ValidateQuery(qry *Query) error {
 type SummaryResult struct {
 	DimensionName string
 	DataType      string
-	SampleValue   any
+	Values        []any
 }
 
 // Summary provides a data type and a sample value for each dimension in the metrics view.
@@ -151,49 +151,37 @@ func (e *Executor) Summary(ctx context.Context) (map[string]SummaryResult, error
 		}
 	}
 
-	if len(dims) == 0 {
-		return nil, fmt.Errorf("no accessible dimensions found in metrics view")
-	}
-
-	unionQueries := []string{}
-	for _, dim := range dims {
-		unionQueries = append(unionQueries, fmt.Sprintf(
-			"SELECT '%s' AS dimension_name, CAST(%s AS STRING) AS column_name FROM %s WHERE %s IS NOT NULL",
-			dim.Name, dim.Column, e.metricsView.Table, dim.Column,
-		))
-	}
-
-	query := fmt.Sprintf(
-		"SELECT dimension_name, typeof(ANY_VALUE(column_name)) AS data_type, ANY_VALUE(column_name) AS sample_value FROM (%s) GROUP BY dimension_name",
-		strings.Join(unionQueries, " UNION ALL "),
-	)
-
-	res, err := e.olap.Query(ctx, &drivers.Statement{
-		Query:            query,
-		Priority:         e.priority,
-		ExecutionTimeout: defaultInteractiveTimeout,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to execute summary query: %w", err)
-	}
-	defer res.Close()
-
 	summary := make(map[string]SummaryResult)
-	for res.Next() {
-		var dimensionName, dataType string
-		var sampleValue any
-		if err := res.Scan(&dimensionName, &dataType, &sampleValue); err != nil {
-			return nil, fmt.Errorf("failed to scan summary query result: %w", err)
-		}
-		summary[dimensionName] = SummaryResult{
-			DimensionName: dimensionName,
-			DataType:      dataType,
-			SampleValue:   sampleValue,
-		}
-	}
+	for _, dim := range dims {
+		query := fmt.Sprintf(
+			"SELECT DISTINCT CAST(%s AS STRING) AS sample_value FROM %s LIMIT 5",
+			dim.Name, e.metricsView.Table)
 
-	if err := res.Err(); err != nil {
-		return nil, fmt.Errorf("error iterating summary results: %w", err)
+		res, err := e.olap.Query(ctx, &drivers.Statement{Query: query, Priority: e.priority})
+		if err != nil {
+			return nil, fmt.Errorf("failed to query dimension %s: %w", dim.Name, err)
+		}
+
+		var values []any
+		for res.Next() {
+			var value any
+			if err := res.Scan(&value); err != nil {
+				res.Close()
+				return nil, fmt.Errorf("failed to scan value for dimension %s: %w", dim.Name, err)
+			}
+			values = append(values, value)
+		}
+		if err := res.Err(); err != nil {
+			res.Close()
+			return nil, fmt.Errorf("error iterating results for dimension %s: %w", dim.Name, err)
+		}
+
+		summary[dim.Name] = SummaryResult{
+			DimensionName: dim.Name,
+			DataType:      dim.DataType.Code.String(),
+			Values:        values,
+		}
+		res.Close()
 	}
 
 	return summary, nil
