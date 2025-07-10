@@ -175,14 +175,16 @@ export function mapV1TimeRangeToSelectedComparisonTimeRange(
       name: TimeComparisonOption.CONTIGUOUS,
     } as DashboardTimeControls;
   } else if (duration && timeRangeSummary.min) {
+    let isoDuration = duration;
     if (duration in TIME_COMPARISON) {
-      duration = TIME_COMPARISON[duration].offsetIso;
+      isoDuration = TIME_COMPARISON[duration].offsetIso;
     }
     selectedTimeRange = isoDurationToFullTimeRange(
-      duration,
+      isoDuration,
       new Date(timeRangeSummary.min),
       new Date(end),
     );
+    selectedTimeRange.name = duration as TimeComparisonOption;
   } else {
     return undefined;
   }

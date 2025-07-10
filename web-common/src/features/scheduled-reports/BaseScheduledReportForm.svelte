@@ -122,7 +122,7 @@
       bind:checked={$data["exportIncludeHeader"]}
       id="exportIncludeHeader"
       onCheckedChange={(checked) => {
-        $data["exportIncludeHeader"] = checked;
+        $data["exportIncludeHeader"] = Boolean(checked);
       }}
       inverse
       disabled={$data["exportFormat"] === V1ExportFormat.EXPORT_FORMAT_PARQUET}

@@ -15,11 +15,11 @@ import {
   Filters,
   type FiltersState,
 } from "@rilldata/web-common/features/scheduled-reports/filters/Filters.ts";
-import { MetricsViewData } from "@rilldata/web-common/features/scheduled-reports/filters/MetricsViewData.ts";
 import {
   TimeControls,
   type TimeControlState,
 } from "@rilldata/web-common/features/scheduled-reports/filters/TimeControls.ts";
+import { ExploreMetricsViewMetadata } from "@rilldata/web-common/features/dashboards/stores/ExploreMetricsViewMetadata.ts";
 import {
   getDayOfMonthFromCronExpression,
   getDayOfWeekFromCronExpression,
@@ -117,7 +117,7 @@ export function getDashboardNameFromReport(reportSpec: V1ReportSpec): string {
   );
 }
 
-export function getFiltersFormValuesAggregationRequest(
+export function getFiltersAndTimeControlsFromAggregationRequest(
   instanceId: string,
   metricsViewName: string,
   exploreName: string,
@@ -150,18 +150,18 @@ export function getFiltersFormValuesAggregationRequest(
     aggregationRequest.where,
   );
 
-  const metricsViewData = new MetricsViewData(
+  const metricsViewMetadata = new ExploreMetricsViewMetadata(
     instanceId,
     metricsViewName,
     exploreName,
   );
-  const filters = new Filters(metricsViewData, {
+  const filters = new Filters(metricsViewMetadata, {
     whereFilter: dimensionFilters,
     dimensionsWithInlistFilter: [],
     dimensionThresholdFilters: dimensionThresholdFilters,
     dimensionFilterExcludeMode: includeExcludeModeFromFilters(dimensionFilters),
   });
-  const timeControls = new TimeControls(metricsViewData, {
+  const timeControls = new TimeControls(metricsViewMetadata, {
     selectedTimeRange,
     selectedComparisonTimeRange,
     showTimeComparison: !!selectedComparisonTimeRange,

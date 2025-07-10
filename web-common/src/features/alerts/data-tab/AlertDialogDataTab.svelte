@@ -1,9 +1,9 @@
 <script lang="ts">
   import DataPreview from "@rilldata/web-common/features/alerts/data-tab/DataPreview.svelte";
   import type { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
-  import type { Filters } from "@rilldata/web-common/features/scheduled-reports/filters/Filters.ts";
-  import FiltersForm from "@rilldata/web-common/features/scheduled-reports/filters/FiltersForm.svelte";
-  import type { TimeControls } from "@rilldata/web-common/features/scheduled-reports/filters/TimeControls.ts";
+  import type { Filters } from "@rilldata/web-common/features/dashboards/stores/Filters.ts";
+  import FiltersForm from "@rilldata/web-common/features/scheduled-reports/FiltersForm.svelte";
+  import type { TimeControls } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
   import { MetricsViewSpecMeasureType } from "@rilldata/web-common/runtime-client";
   import type { SuperForm } from "sveltekit-superforms/client";
   import FormSection from "../../../components/forms/FormSection.svelte";

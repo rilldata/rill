@@ -79,10 +79,6 @@ export function fillTimeRange(
           timeRangeSummary,
           executionTime,
         );
-      if (exploreState.selectedComparisonTimeRange) {
-        exploreState.selectedComparisonTimeRange.name =
-          TimeComparisonOption.CUSTOM;
-      }
     }
 
     if (exploreState.selectedComparisonTimeRange) {

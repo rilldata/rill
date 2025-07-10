@@ -100,7 +100,7 @@
         </ProjectAccessControls>
       </div>
       <div class="flex gap-x-2 items-center">
-        <h1 class="text-gray-700 text-lg font-bold">
+        <h1 class="text-gray-700 text-lg font-bold" aria-label="Alert name">
           {alertSpec.displayName}
         </h1>
         <div class="grow" />
@@ -108,7 +108,7 @@
           <EditAlert {alertSpec} />
           <DropdownMenu.Root>
             <DropdownMenu.Trigger>
-              <IconButton>
+              <IconButton ariaLabel="Alert context menu">
                 <ThreeDot size="16px" />
               </IconButton>
             </DropdownMenu.Trigger>
@@ -125,7 +125,7 @@
     <!-- Five columns of metadata -->
     <div class="flex flex-wrap gap-x-16 gap-y-6">
       <!-- Dashboard -->
-      <div class="flex flex-col gap-y-3">
+      <div class="flex flex-col gap-y-3" aria-label="Alert dashboard name">
         {#if dashboardTitle}
           <MetadataLabel>Dashboard</MetadataLabel>
           <MetadataValue>
@@ -156,7 +156,7 @@
       </div>
 
       <!-- Split by dimension -->
-      <div class="flex flex-col gap-y-3">
+      <div class="flex flex-col gap-y-3" aria-label="Alert split by dimension">
         <MetadataLabel>Split by dimension</MetadataLabel>
         <MetadataValue>
           {metricsViewAggregationRequest?.dimensions?.[0]?.name ?? "None"}

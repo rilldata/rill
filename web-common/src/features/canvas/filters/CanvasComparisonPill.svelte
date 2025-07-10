@@ -66,6 +66,7 @@
       onDisplayTimeComparison(!showTimeComparison);
     }}
     type="button"
+    aria-label="Toggle time comparison"
   >
     <div class="pointer-events-none flex items-center gap-x-1.5">
       <Switch
