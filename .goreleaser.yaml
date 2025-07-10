@@ -45,7 +45,7 @@ blobs:
       - glob: ./dist/**/*
   - provider: gs
     bucket: prod-cdn.rilldata.com
-    directory: "rill/v{{ .Version }}"
+    directory: "rill"
     extra_files:
       - glob: latest.txt
       - glob: scripts/install.sh
