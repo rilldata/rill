@@ -5,7 +5,10 @@
   import VegaLiteRenderer from "@rilldata/web-common/components/vega/VegaLiteRenderer.svelte";
   import type { VirtualizedTableColumns } from "@rilldata/web-common/components/virtualized-table/types";
   import ReconcilingSpinner from "@rilldata/web-common/features/entity-management/ReconcilingSpinner.svelte";
-  import { createRuntimeServiceQueryResolver } from "@rilldata/web-common/runtime-client";
+  import {
+    createRuntimeServiceQueryResolver,
+    type V1Expression,
+  } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import type { View, VisualizationSpec } from "svelte-vega";
   import { derived } from "svelte/store";
@@ -13,6 +16,7 @@
   export let spec: string | undefined = undefined;
   export let metricsSQL: string[] = [];
   export let renderer: "canvas" | "svg" = "svg";
+  export let whereFilter: V1Expression | undefined = undefined;
   export let showDataTable = false;
   export let name: string = "Custom Chart";
 
@@ -27,18 +31,24 @@
 
   $: instanceId = $runtime.instanceId;
 
-  $: dataQueries = metricsSQL.map((sql) =>
+  // Create a unique key that includes whereFilter to ensure queries are invalidated when it changes
+  $: filterKey = JSON.stringify(whereFilter);
+
+  // Create queries that are reactive to whereFilter changes
+  $: dataQueries = metricsSQL.map((sql, index) =>
     createRuntimeServiceQueryResolver(
       instanceId,
       {
         resolver: "metrics_sql",
         resolverProperties: {
           sql,
+          ...(whereFilter ? { addition_where: whereFilter } : {}),
         },
       },
       {
         query: {
           enabled: !!sql,
+          queryKey: [`metrics_sql_${index}_${filterKey}`],
         },
       },
     ),

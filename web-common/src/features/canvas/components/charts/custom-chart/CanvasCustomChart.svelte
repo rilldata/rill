@@ -5,7 +5,7 @@
   export let component: CustomChartComponent;
   export let editable: boolean = false;
 
-  $: ({ specStore } = component);
+  $: ({ specStore, timeAndFilterStore } = component);
 
   $: ({ metrics_sql, vega_spec } = $specStore);
 </script>
@@ -13,6 +13,7 @@
 <CustomChartRenderer
   name={component.id}
   spec={vega_spec}
+  whereFilter={$timeAndFilterStore?.where}
   metricsSQL={metrics_sql}
   showDataTable={editable}
 />
