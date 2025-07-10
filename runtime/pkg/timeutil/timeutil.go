@@ -200,7 +200,6 @@ func ApproximateBins(start, end time.Time, tg TimeGrain) int {
 func OffsetTime(tm time.Time, tg TimeGrain, n int) time.Time {
 	switch tg {
 	case TimeGrainUnspecified:
-		return tm
 	case TimeGrainMillisecond:
 		return tm.Add(time.Duration(n) * time.Millisecond)
 	case TimeGrainSecond:
