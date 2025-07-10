@@ -1,10 +1,12 @@
+import { isGrainBigger } from "@rilldata/web-common/lib/time/grains";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
-import { DateTime } from "luxon";
+import { DateTime, Duration } from "luxon";
 import type { DateObjectUnits } from "luxon/src/datetime";
 import {
   getMinGrain,
   grainAliasToDateTimeUnit,
   GrainAliasToV1TimeGrain,
+  V1TimeGrainToDateTimeUnit,
 } from "@rilldata/web-common/lib/time/new-grains";
 
 const absTimeRegex =
@@ -53,9 +55,7 @@ export class RillTime {
   }
 
   public getLabel() {
-    const [offset, offsetSupported] = this.getAnchorOverridesOffset();
-    if (!offsetSupported) return this.toString();
-
+    const offset = this.getAnchorOverridesOffset();
     const [label, supported] = this.interval.getLabel(offset);
     return supported ? capitalizeFirstChar(label) : this.toString();
   }
@@ -76,51 +76,39 @@ export class RillTime {
     let timeRange = this.interval.toString();
 
     timeRange += this.anchorOverrides
-      .map((anchor) => ` AS OF ${anchor.toString()}`)
+      .map((anchor) => ` as of ${anchor.toString()}`)
       .join("");
 
     if (this.byGrain) {
-      timeRange += ` BY ${this.byGrain}`;
+      timeRange += ` by ${this.byGrain}`;
     }
 
     if (this.timezone) {
-      timeRange += ` TZ ${this.timezone}`;
+      timeRange += ` tz ${this.timezone}`;
     }
 
     return timeRange;
   }
 
   private updateIsComplete() {
-    const [offset, offsetSupported] = this.getAnchorOverridesOffset();
-    if (!offsetSupported) this.isComplete = false;
-    else this.isComplete = this.interval.isComplete(offset);
+    const offset = this.getAnchorOverridesOffset();
+    this.interval.isComplete(offset);
   }
 
-  private getAnchorOverridesOffset(): [
-    offset: RillGrainOffset | undefined,
-    supported: boolean,
-  ] {
-    let offset: RillGrainOffset | undefined = undefined;
-    let supported = true;
+  private getAnchorOverridesOffset(): Duration {
+    let offset = Duration.fromObject({});
 
     this.anchorOverrides.forEach((anchor) => {
-      const overrideOffset = anchor.getGrainOffset(offset);
-      if (!overrideOffset) {
-        supported = false;
-        return;
-      }
-      offset = overrideOffset;
+      offset = offset.plus(anchor.offset);
     });
 
-    return [offset, supported];
+    return offset;
   }
 }
 
 interface RillTimeInterval {
-  isComplete(offset: RillGrainOffset | undefined): boolean;
-  getLabel(
-    offset: RillGrainOffset | undefined,
-  ): [label: string, supported: boolean];
+  isComplete(offset: Duration): boolean;
+  getLabel(offset: Duration): [label: string, supported: boolean];
   getGrains(): V1TimeGrain | undefined;
   toString(): string;
 }
@@ -145,13 +133,11 @@ export class RillShorthandInterval implements RillTimeInterval {
     );
   }
 
-  public isComplete(offset: RillGrainOffset | undefined) {
+  public isComplete(offset: Duration) {
     return this.expandedInterval.isComplete(offset);
   }
 
-  public getLabel(
-    offset: RillGrainOffset | undefined,
-  ): [label: string, supported: boolean] {
+  public getLabel(offset: Duration): [label: string, supported: boolean] {
     return this.expandedInterval.getLabel(offset);
   }
 
@@ -189,18 +175,17 @@ export class RillPeriodToGrainInterval implements RillTimeInterval {
     );
   }
 
-  public isComplete(offset: RillGrainOffset | undefined) {
+  public isComplete(offset: Duration) {
     return this.expandedInterval.isComplete(offset);
   }
 
-  public getLabel(
-    offset: RillGrainOffset | undefined,
-  ): [label: string, supported: boolean] {
-    return this.expandedInterval.getLabel(offset);
+  public getLabel(): [label: string, supported: boolean] {
+    const grain = grainAliasToDateTimeUnit(this.grain as any);
+    return [`${grain} to date`, true];
   }
 
   public getGrains() {
-    return this.expandedInterval.getGrains();
+    return GrainAliasToV1TimeGrain[this.grain];
   }
 
   public toString() {
@@ -240,45 +225,67 @@ export class RillTimeStartEndInterval implements RillTimeInterval {
     public readonly end: RillPointInTime,
   ) {}
 
-  public isComplete(offset: RillGrainOffset | undefined) {
-    const start = this.start.getGrainOffset(offset);
-    const startIsComplete =
-      start?.offset !== undefined ? start.offset <= 0 : true;
-    const end = this.end.getGrainOffset(offset);
-    const endIsComplete = end?.offset !== undefined ? end.offset <= 0 : true;
-    return startIsComplete && endIsComplete;
+  public isComplete(offset: Duration) {
+    const endOffset = this.end.offset.plus(offset);
+    const now = DateTime.now().setZone("utc");
+    const offsetTime = now.plus(endOffset);
+    return now.toMillis() < offsetTime.toMillis();
   }
 
-  public getLabel(
-    offset: RillGrainOffset | undefined,
-  ): [label: string, supported: boolean] {
-    const start = this.start.getGrainOffset(offset);
-    const end = this.end.getGrainOffset(offset);
-    if (!start || !end) return ["", false];
-    if (start.grain && end.grain && start.grain !== end.grain) {
+  public getLabel(offset: Duration): [label: string, supported: boolean] {
+    let startOffset = this.start.offset.toObject();
+    let endOffset = this.end.offset.toObject();
+    const parentOffset = offset.toObject();
+
+    if (
+      Object.keys(startOffset).length > 1 ||
+      Object.keys(endOffset).length > 1 ||
+      Object.keys(parentOffset).length > 1
+    ) {
       return ["", false];
     }
 
-    const grain = start.grain || end.grain || "";
-    const numDiff = Math.abs(start.offset - end.offset);
+    const startGrain = Object.keys(startOffset)[0];
+    const endGrain = Object.keys(endOffset)[0];
+    if (startGrain && endGrain && startGrain !== endGrain) {
+      return ["", false];
+    }
 
-    const grainPart = grainAliasToDateTimeUnit(grain as any);
+    const grain = startGrain || endGrain || "";
+
+    const offsetGrain = Object.keys(parentOffset)[0];
+    if (
+      isGrainBigger(
+        GrainAliasToV1TimeGrain[offsetGrain],
+        GrainAliasToV1TimeGrain[grain],
+      )
+    ) {
+      return ["", false];
+    }
+    startOffset = this.start.offset.plus(offset).toObject();
+    endOffset = this.end.offset.plus(offset).toObject();
+
+    const startOffsetAmount = startOffset[grain] ?? 0;
+    const endOffsetAmount = endOffset[grain] ?? 0;
+    const numDiff = Math.abs(startOffsetAmount - endOffsetAmount);
+
+    const grainSingular = grain.replace(/s$/, "");
     const grainSuffix = numDiff > 1 ? "s" : "";
     const grainPrefix = numDiff ? numDiff + " " : "";
-    const grainLabel = `${grainPrefix}${grainPart}${grainSuffix}`;
+    const grainLabel = `${grainPrefix}${grainSingular}${grainSuffix}`;
 
-    if (start.offset === 0 || start.offset === 1) {
+    if (startOffsetAmount === 0 || startOffsetAmount === 1) {
       if (numDiff === 1) {
-        const prefix = start.offset === 0 ? "this" : "next";
-        return [`${prefix} ${grainPart}`, true];
+        const prefix = startOffsetAmount === 0 ? "this" : "next";
+        return [`${prefix} ${grainSingular}`, true];
       }
       return [`next ${grainLabel}`, true];
     }
 
-    if (end.offset === 0 || end.offset === 1) {
+    if (endOffsetAmount === 0 || endOffsetAmount === 1) {
       if (numDiff === 1) {
-        const prefix = end.offset === 1 ? "this" : "previous";
-        return [`${prefix} ${grainPart}`, true];
+        const prefix = endOffsetAmount === 1 ? "this" : "previous";
+        return [`${prefix} ${grainSingular}`, true];
       }
       return [`last ${grainLabel}`, true];
     }
@@ -297,7 +304,7 @@ export class RillTimeStartEndInterval implements RillTimeInterval {
   }
 
   public toString() {
-    return `${this.start.toString()} TO ${this.end.toString()}`;
+    return `${this.start.toString()} to ${this.end.toString()}`;
   }
 }
 
@@ -322,48 +329,21 @@ export class RillIsoInterval implements RillTimeInterval {
   public toString() {
     let timeRange = this.start.toString();
     if (this.end) {
-      timeRange += ` TO ${this.end.toString()}`;
+      timeRange += ` to ${this.end.toString()}`;
     }
     return timeRange;
   }
 }
 
 export class RillPointInTime {
-  public constructor(public readonly parts: RillPointInTimeWithSnap[]) {}
+  public readonly offset: Duration;
 
-  public getGrainOffset(
-    offset: RillGrainOffset | undefined,
-  ): RillGrainOffset | undefined {
-    let returnGrainOffset: RillGrainOffset | undefined = offset
-      ? {
-          ...offset,
-        }
-      : undefined;
-    let notSupported = false;
-    this.parts.forEach((part) => {
-      const grainOffset = part.getGrainOffset();
-      if (!grainOffset) {
-        notSupported = true;
-        return;
-      }
-
-      if (
-        returnGrainOffset?.grain &&
-        grainOffset.grain &&
-        returnGrainOffset.grain !== grainOffset.grain
-      ) {
-        notSupported = true;
-        return;
-      }
-
-      if (!returnGrainOffset) {
-        returnGrainOffset = grainOffset;
-      } else {
-        returnGrainOffset.offset += grainOffset.offset;
-      }
+  public constructor(public readonly parts: RillPointInTimeWithSnap[]) {
+    let offset = Duration.fromObject({});
+    parts.forEach((part) => {
+      offset = offset.plus(part.offset);
     });
-
-    return notSupported ? undefined : returnGrainOffset;
+    this.offset = offset.normalize();
   }
 
   public getGrain(): V1TimeGrain | undefined {
@@ -384,30 +364,19 @@ export class RillPointInTime {
 }
 
 export class RillPointInTimeWithSnap {
+  public readonly offset = Duration.fromObject({});
+
   public constructor(
     public readonly point: RillPointInTimeVariant,
     private snaps: string[],
-  ) {}
+  ) {
+    if (this.point instanceof RillGrainPointInTime) {
+      this.offset = this.point.offset;
+    }
+  }
 
   public toString() {
     return `${this.point.toString()}${this.snaps.map((s) => "/" + s).join("")}`;
-  }
-
-  public getGrainOffset() {
-    if (this.point instanceof RillGrainPointInTime) {
-      const grainOffset = this.point.getGrainOffset();
-      if (!grainOffset) return undefined;
-      return this.snaps.every((s) => s === grainOffset.grain)
-        ? grainOffset
-        : undefined;
-    } else if (this.point instanceof RillLabelledPointInTime) {
-      return {
-        grain: this.snaps[0],
-        offset: 0,
-      };
-    } else {
-      return undefined;
-    }
   }
 }
 
@@ -422,24 +391,18 @@ export type RillOrdinal = {
 };
 
 export class RillGrainPointInTime implements RillPointInTimeVariant {
-  public constructor(public readonly parts: RillGrainPointInTimePart[]) {}
+  public readonly offset: Duration;
 
-  public getGrainOffset(): RillGrainOffset | undefined {
-    if (this.parts.length !== 1) return undefined;
-    const firstPart = this.parts[0];
-    if (firstPart.grains.length !== 1) return undefined;
-    const firstGrain = firstPart.grains[0];
-
-    let offset = firstGrain.num ?? 0;
-    if (firstPart.prefix === "-" && offset) {
-      // Grain doesn't have a `-` inbuilt, make the offset negative.
-      offset = -offset;
-    }
-
-    return {
-      grain: firstGrain.grain,
-      offset,
-    };
+  public constructor(public readonly parts: RillGrainPointInTimePart[]) {
+    let offset = Duration.fromObject({});
+    parts.forEach((part) => {
+      if (part.prefix === "+") {
+        offset = offset.plus(part.offset);
+      } else {
+        offset = offset.minus(part.offset);
+      }
+    });
+    this.offset = offset.normalize();
   }
 
   public getGrain(): V1TimeGrain | undefined {
@@ -463,10 +426,21 @@ export class RillGrainPointInTime implements RillPointInTimeVariant {
 }
 
 export class RillGrainPointInTimePart {
+  public readonly offset: Duration;
+
   public constructor(
     public readonly prefix: string,
     public readonly grains: RillGrain[],
-  ) {}
+  ) {
+    let offset = Duration.fromObject({});
+    grains.forEach(({ grain, num }) => {
+      const luxonGrain =
+        V1TimeGrainToDateTimeUnit[GrainAliasToV1TimeGrain[grain]];
+      if (!luxonGrain || !num) return;
+      offset = offset.plus({ [luxonGrain]: num });
+    });
+    this.offset = offset.normalize();
+  }
 
   public toString() {
     const grainLabels = this.grains
@@ -557,11 +531,7 @@ type RillGrain = {
   grain: string;
   num?: number;
 };
-type RillGrainOffset = {
-  grain: string | undefined;
-  offset: number;
-};
 
-function capitalizeFirstChar(str: string): string {
+export function capitalizeFirstChar(str: string): string {
   return str.charAt(0).toUpperCase() + str.slice(1);
 }

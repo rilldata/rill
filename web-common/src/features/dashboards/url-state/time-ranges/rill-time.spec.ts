@@ -2,6 +2,7 @@ import {
   overrideRillTimeRef,
   parseRillTime,
 } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser";
+import { capitalizeFirstChar } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/RillTime.ts";
 import { GrainAliasToV1TimeGrain } from "@rilldata/web-common/lib/time/new-grains";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import type { DateTimeUnit } from "luxon";
@@ -91,23 +92,51 @@ function getMultiPeriodTestCases(n: number): TestCase[] {
   }).flat();
 }
 
+function getPeriodToDateTestCases(): TestCase[] {
+  return GRAINS.map((g) => {
+    const protoGrain = GrainAliasToV1TimeGrain[g];
+    const label = capitalizeFirstChar(`${GRAIN_TO_LUXON[g]} to date`);
+    return <TestCase[]>[
+      [`${g}TD as of watermark/${g}`, label, false, protoGrain, undefined],
+      [
+        `${g}TD as of watermark/${g}+1${g}`,
+        label,
+        false,
+        protoGrain,
+        undefined,
+      ],
+
+      [`${g}TD as of watermark/h`, label, false, protoGrain, undefined],
+    ];
+  }).flat();
+}
+
 describe("rill time", () => {
   describe("positive cases", () => {
     const Cases: TestCase[] = [
       ...getSinglePeriodTestCases(),
       ...getMultiPeriodTestCases(7),
+      ...getPeriodToDateTestCases(),
       [
         "-5W4M3Q2Y to -4W3M2Q1Y",
         "-5W4M3Q2Y to -4W3M2Q1Y",
-        true,
+        false,
         V1TimeGrain.TIME_GRAIN_WEEK,
         undefined,
       ],
       [
         "-5W-4M-3Q-2Y to -4W-3M-2Q-1Y",
         "-5W-4M-3Q-2Y to -4W-3M-2Q-1Y",
-        true,
+        false,
         V1TimeGrain.TIME_GRAIN_WEEK,
+        undefined,
+      ],
+
+      [
+        `7D as of watermark/h+1h`,
+        `Last 7 days`,
+        false,
+        V1TimeGrain.TIME_GRAIN_DAY,
         undefined,
       ],
     ];
