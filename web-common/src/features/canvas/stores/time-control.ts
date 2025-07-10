@@ -104,9 +104,13 @@ export class TimeControls {
             return min;
           }
 
-          return isGrainBigger(min, timeGrain) ? timeGrain : min;
+          if (min === V1TimeGrain.TIME_GRAIN_UNSPECIFIED) {
+            return timeGrain;
+          }
+
+          return isGrainBigger(timeGrain, min) ? timeGrain : min;
         },
-        V1TimeGrain.TIME_GRAIN_YEAR, // Use max time grain as starting point
+        V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
       );
 
       return minTimeGrain;
