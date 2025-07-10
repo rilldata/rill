@@ -124,20 +124,15 @@ jobs:
         uses: google-github-actions/setup-gcloud@v2
 
       - name: Set GORELEASER_CURRENT_TAG and NIGHTLY
-        env:
-          GOOS: ${{ matrix.goos }}
-          GOARCH: ${{ matrix.goarch }}
         run: |
           if [[ ${{ env.PUBLISH_NIGHTLY }} == 'true' ]]; then
-            echo "BUCKET_DIR=nightly" >> $GITHUB_ENV
-            echo "NIGHTLY=--snapshot" >> $GITHUB_ENV
-            echo "VERSION=--nightly" >> $GITHUB_ENV
+            BUCKET_DIR=nightly
             LATEST_TAG=$(git describe --tags $(git rev-list --tags --max-count=1))
+            echo "NIGHTLY=--snapshot" >> $GITHUB_ENV
             echo "GORELEASER_CURRENT_TAG=$(echo ${LATEST_TAG} | sed 's/r/v/')" >> $GITHUB_ENV
           else
             echo "NIGHTLY=" >> $GITHUB_ENV
-            echo "VERSION='~> v2'" >> $GITHUB_ENV
-            echo "BUCKET_DIR=$(echo "${GITHUB_REF#refs/tags/}")" >> $GITHUB_ENV
+            BUCKET_DIR=$(echo "${GITHUB_REF#refs/tags/}")
           fi
 
           echo '${{ github.ref_name }}' >> latest.txt
@@ -154,10 +149,10 @@ jobs:
         with:
           distribution: goreleaser
           version: '~> v2'
-          args: release ${{ env.NIGHTLY }} --config .goreleaser-release.yaml
+          args: release ${{ env.NIGHTLY }}
         env:
-          GITHUB_TOKEN: ${{ secrets.GORELEASER_ACCESS_TOKEN }}
           CGO_ENABLED: 1
+          GITHUB_TOKEN: ${{ secrets.GORELEASER_ACCESS_TOKEN }}
           GORELEASER_CURRENT_TAG: ${{ env.GORELEASER_CURRENT_TAG }}
           PUBLISH_NIGHTLY: ${{ env.PUBLISH_NIGHTLY }}
 
