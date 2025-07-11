@@ -123,6 +123,7 @@ var spec = drivers.Spec{
 			Required:    false,
 			Default:     defaultClientID,
 			Hint:        "The client ID (consumer key) from your Salesforce Connected App. Required for JWT authentication.",
+			NoPrompt:    true,
 		},
 		{
 			Key:         "name",
