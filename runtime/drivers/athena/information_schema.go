@@ -5,13 +5,14 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/athena"
 	"github.com/aws/smithy-go"
 	"github.com/aws/smithy-go/tracing/smithyoteltracing"
 	"github.com/rilldata/rill/runtime/drivers"
 	"go.opentelemetry.io/otel"
+	"golang.org/x/sync/errgroup"
 )
 
 func (c *Connection) ListDatabaseSchemas(ctx context.Context) ([]*drivers.DatabaseSchemaInfo, error) {
@@ -31,16 +32,28 @@ func (c *Connection) ListDatabaseSchemas(ctx context.Context) ([]*drivers.Databa
 	if len(catalogs) == 0 {
 		return c.listSchemasForCatalog(ctx, client, "")
 	}
-
-	var res []*drivers.DatabaseSchemaInfo
+	var (
+		mu  sync.Mutex
+		res []*drivers.DatabaseSchemaInfo
+	)
+	g, ctx := errgroup.WithContext(ctx)
+	g.SetLimit(5)
 	for _, catalog := range catalogs {
-		schemas, err := c.listSchemasForCatalog(ctx, client, catalog)
-		if err != nil {
-			return nil, fmt.Errorf("failed to list schemas for catalog %s: %w", catalog, err)
-		}
-		res = append(res, schemas...)
+		catalogName := catalog
+		g.Go(func() error {
+			schemas, err := c.listSchemasForCatalog(ctx, client, catalogName)
+			if err != nil {
+				return fmt.Errorf("failed to list schemas for catalog %q: %w", catalog, err)
+			}
+			mu.Lock()
+			res = append(res, schemas...)
+			mu.Unlock()
+			return nil
+		})
 	}
-
+	if err := g.Wait(); err != nil {
+		return nil, err
+	}
 	return res, nil
 }
 
@@ -68,7 +81,7 @@ func (c *Connection) ListTables(ctx context.Context, database, databaseSchema st
 	}
 
 	results, err := client.GetQueryResults(ctx, &athena.GetQueryResultsInput{
-		QueryExecutionId: aws.String(queryID),
+		QueryExecutionId: queryID,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get query results: %w", err)
@@ -113,7 +126,7 @@ func (c *Connection) GetTable(ctx context.Context, database, databaseSchema, tab
 	}
 
 	results, err := client.GetQueryResults(ctx, &athena.GetQueryResultsInput{
-		QueryExecutionId: aws.String(queryID),
+		QueryExecutionId: queryID,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get query results: %w", err)
@@ -184,7 +197,7 @@ func (c *Connection) listSchemasForCatalog(ctx context.Context, client *athena.C
 
 	// Fetch results
 	results, err := client.GetQueryResults(ctx, &athena.GetQueryResultsInput{
-		QueryExecutionId: aws.String(queryID),
+		QueryExecutionId: queryID,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get query results: %w", err)

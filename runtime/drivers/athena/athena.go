@@ -295,7 +295,7 @@ func (c *Connection) awsConfig(ctx context.Context, awsRegion string) (aws.Confi
 	return awsConfig, nil
 }
 
-func (c *Connection) executeQuery(ctx context.Context, client *athena.Client, sql, workgroup, outputLocation string) (string, error) {
+func (c *Connection) executeQuery(ctx context.Context, client *athena.Client, sql, workgroup, outputLocation string) (*string, error) {
 	executeParams := &athena.StartQueryExecutionInput{
 		QueryString: aws.String(sql),
 	}
@@ -313,7 +313,7 @@ func (c *Connection) executeQuery(ctx context.Context, client *athena.Client, sq
 
 	queryExecutionOutput, err := client.StartQueryExecution(ctx, executeParams)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	ticker := time.NewTicker(time.Second)
@@ -326,22 +326,22 @@ func (c *Connection) executeQuery(ctx context.Context, client *athena.Client, sq
 				QueryExecutionId: queryExecutionOutput.QueryExecutionId,
 			})
 			cancel()
-			return "", errors.Join(ctx.Err(), stopErr)
+			return nil, errors.Join(ctx.Err(), stopErr)
 		case <-ticker.C:
 			status, err := client.GetQueryExecution(ctx, &athena.GetQueryExecutionInput{
 				QueryExecutionId: queryExecutionOutput.QueryExecutionId,
 			})
 			if err != nil {
-				return "", err
+				return nil, err
 			}
 
 			switch status.QueryExecution.Status.State {
 			case types2.QueryExecutionStateSucceeded:
-				return *queryExecutionOutput.QueryExecutionId, nil
+				return queryExecutionOutput.QueryExecutionId, nil
 			case types2.QueryExecutionStateCancelled:
-				return "", fmt.Errorf("Athena query execution cancelled")
+				return nil, fmt.Errorf("Athena query execution cancelled")
 			case types2.QueryExecutionStateFailed:
-				return "", fmt.Errorf("Athena query execution failed: %s", aws.ToString(status.QueryExecution.Status.AthenaError.ErrorMessage))
+				return nil, fmt.Errorf("Athena query execution failed: %s", aws.ToString(status.QueryExecution.Status.AthenaError.ErrorMessage))
 			}
 		}
 		time.Sleep(time.Second)
