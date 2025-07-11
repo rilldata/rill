@@ -108,6 +108,34 @@ proto3.util.setEnumType(ResourceEvent, "rill.runtime.v1.ResourceEvent", [
 ]);
 
 /**
+ * Application context for AI conversations
+ *
+ * @generated from enum rill.runtime.v1.AppContextType
+ */
+export enum AppContextType {
+  /**
+   * @generated from enum value: APP_CONTEXT_TYPE_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: APP_CONTEXT_TYPE_PROJECT_CHAT = 1;
+   */
+  PROJECT_CHAT = 1,
+
+  /**
+   * @generated from enum value: APP_CONTEXT_TYPE_EXPLORE_DASHBOARD = 2;
+   */
+  EXPLORE_DASHBOARD = 2,
+}
+// Retrieve enum metadata with: proto3.getEnumType(AppContextType)
+proto3.util.setEnumType(AppContextType, "rill.runtime.v1.AppContextType", [
+  { no: 0, name: "APP_CONTEXT_TYPE_UNSPECIFIED" },
+  { no: 1, name: "APP_CONTEXT_TYPE_PROJECT_CHAT" },
+  { no: 2, name: "APP_CONTEXT_TYPE_EXPLORE_DASHBOARD" },
+]);
+
+/**
  * Request message for RuntimeService.Ping
  *
  * @generated from message rill.runtime.v1.PingRequest
@@ -4181,6 +4209,49 @@ export class Message extends Message$1<Message> {
 }
 
 /**
+ * @generated from message rill.runtime.v1.AppContext
+ */
+export class AppContext extends Message$1<AppContext> {
+  /**
+   * @generated from field: rill.runtime.v1.AppContextType context_type = 1;
+   */
+  contextType = AppContextType.UNSPECIFIED;
+
+  /**
+   * @generated from field: google.protobuf.Struct context_metadata = 2;
+   */
+  contextMetadata?: Struct;
+
+  constructor(data?: PartialMessage<AppContext>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.AppContext";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "context_type", kind: "enum", T: proto3.getEnumType(AppContextType) },
+    { no: 2, name: "context_metadata", kind: "message", T: Struct },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AppContext {
+    return new AppContext().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): AppContext {
+    return new AppContext().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): AppContext {
+    return new AppContext().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: AppContext | PlainMessage<AppContext> | undefined, b: AppContext | PlainMessage<AppContext> | undefined): boolean {
+    return proto3.util.equals(AppContext, a, b);
+  }
+}
+
+/**
  * Conversation metadata and messages
  *
  * @generated from message rill.runtime.v1.Conversation
@@ -4277,6 +4348,11 @@ export class CompleteRequest extends Message$1<CompleteRequest> {
    */
   toolNames: string[] = [];
 
+  /**
+   * @generated from field: optional rill.runtime.v1.AppContext app_context = 5;
+   */
+  appContext?: AppContext;
+
   constructor(data?: PartialMessage<CompleteRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4289,6 +4365,7 @@ export class CompleteRequest extends Message$1<CompleteRequest> {
     { no: 2, name: "conversation_id", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 3, name: "messages", kind: "message", T: Message, repeated: true },
     { no: 4, name: "tool_names", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 5, name: "app_context", kind: "message", T: AppContext, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CompleteRequest {
@@ -4447,6 +4524,13 @@ export class GetConversationRequest extends Message$1<GetConversationRequest> {
    */
   conversationId = "";
 
+  /**
+   * Whether to include system messages in the response (defaults to false for UI use)
+   *
+   * @generated from field: bool include_system_messages = 3;
+   */
+  includeSystemMessages = false;
+
   constructor(data?: PartialMessage<GetConversationRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4457,6 +4541,7 @@ export class GetConversationRequest extends Message$1<GetConversationRequest> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "conversation_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "include_system_messages", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetConversationRequest {
