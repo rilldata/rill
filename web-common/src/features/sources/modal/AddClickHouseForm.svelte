@@ -24,7 +24,7 @@
   import type { AddDataFormType, ConnectorType } from "./types";
   import { dsnSchema, getYupSchema } from "./yupSchemas";
   import Checkbox from "@rilldata/web-common/components/forms/Checkbox.svelte";
-  import { isEmpty } from "./utils";
+  import { isEmpty, normalizeErrors } from "./utils";
   import { CONNECTOR_TYPE_OPTIONS, CONNECTION_TAB_OPTIONS } from "./constants";
   import ConnectorTypeSelector from "@rilldata/web-common/components/forms/ConnectorTypeSelector.svelte";
   import { getInitialFormValuesFromProperties } from "../sourceUtils";
@@ -245,14 +245,6 @@
       return false;
     }
   })();
-
-  function normalizeErrors(err: any): string | string[] | null | undefined {
-    if (!err) return undefined;
-    if (Array.isArray(err)) return err;
-    if (typeof err === "string") return err;
-    if (err._errors && Array.isArray(err._errors)) return err._errors;
-    return undefined;
-  }
 </script>
 
 <div class="h-full w-full flex flex-col">
