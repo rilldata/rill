@@ -18,21 +18,21 @@ import (
 // and to ModelEditorAgent for editing existing models
 type ProjectEditorAgent struct {
 	*agent.Agent
-	runner              *runner.Runner
-	syntheticDataAgent  *SyntheticDataAgent
-	modelEditorAgent    *ModelEditorAgent
-	projectDir          string
-	modelsDir           string
+	runner             *runner.Runner
+	syntheticDataAgent *SyntheticDataAgent
+	modelEditorAgent   *ModelEditorAgent
+	projectDir         string
+	modelsDir          string
 }
 
 // NewProjectEditorAgent creates a new ProjectEditorAgent with handoff capabilities
 func NewProjectEditorAgent(modelName string, runner *runner.Runner, syntheticDataAgent *SyntheticDataAgent, projectDir string) *ProjectEditorAgent {
 	a := agent.NewAgent("ProjectEditorAgent")
 	modelsDir := filepath.Join(projectDir, "models")
-	
+
 	// Create the ModelEditor Agent
 	modelEditorAgent := NewModelEditorAgent(modelName, runner, modelsDir)
-	
+
 	pea := &ProjectEditorAgent{
 		Agent:              a,
 		runner:             runner,
@@ -41,7 +41,7 @@ func NewProjectEditorAgent(modelName string, runner *runner.Runner, syntheticDat
 		projectDir:         projectDir,
 		modelsDir:          modelsDir,
 	}
-	
+
 	pea.WithModel(modelName)
 	pea.configure()
 	pea.setupHandoffs()
@@ -107,16 +107,16 @@ When working with files:
 }
 
 func (p *ProjectEditorAgent) setupHandoffs() {
-    // Register proper agent handoffs instead of custom tool wrappers
-    p.Agent.WithHandoffs(
-        p.modelEditorAgent.Agent,
-        p.syntheticDataAgent.Agent,
-    )
+	// Register proper agent handoffs instead of custom tool wrappers
+	p.Agent.WithHandoffs(
+		p.modelEditorAgent.Agent,
+		p.syntheticDataAgent.Agent,
+	)
 }
 
 func (p *ProjectEditorAgent) createListModelsToool() tool.Tool {
 	schema := map[string]interface{}{
-		"type": "object",
+		"type":       "object",
 		"properties": map[string]interface{}{},
 	}
 
@@ -178,8 +178,6 @@ func (p *ProjectEditorAgent) createWriteModelTool() tool.Tool {
 	return t
 }
 
-
-
 func (p *ProjectEditorAgent) listModels(ctx context.Context, params map[string]interface{}) (interface{}, error) {
 	// Ensure models directory exists
 	if err := os.MkdirAll(p.modelsDir, 0755); err != nil {
@@ -200,8 +198,8 @@ func (p *ProjectEditorAgent) listModels(ctx context.Context, params map[string]i
 	}
 
 	return map[string]interface{}{
-		"models": models,
-		"count":  len(models),
+		"models":    models,
+		"count":     len(models),
 		"directory": p.modelsDir,
 	}, nil
 }
@@ -252,7 +250,7 @@ func (p *ProjectEditorAgent) writeModel(ctx context.Context, params map[string]i
 	}
 
 	filePath := filepath.Join(p.modelsDir, modelName)
-	
+
 	// Check if file exists to determine if this is create or update
 	var operation string
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
@@ -306,15 +304,15 @@ func (p *ProjectEditorAgent) handoffToModelEditor(ctx context.Context, params ma
 
 		// Check if the error is due to validation
 		if strings.Contains(err.Error(), "validation failed") || strings.Contains(err.Error(), "SQL edit validation failed") {
-				log.Printf("⚠️ Validation error on attempt %d: %v", attempt, err)
+			log.Printf("⚠️ Validation error on attempt %d: %v", attempt, err)
 			// Append validation feedback to instructions and retry
 			attempt++
 			currentInstructions = fmt.Sprintf("%s\n\nPlease fix the following validation errors and try again: %v", editInstructions, err)
 			continue
 		}
 		// Non-validation error, abort
-			log.Printf("❌ Non-validation error on attempt %d: %v", attempt, err)
-			return nil, fmt.Errorf("failed to edit model via ModelEditorAgent: %w", err)
+		log.Printf("❌ Non-validation error on attempt %d: %v", attempt, err)
+		return nil, fmt.Errorf("failed to edit model via ModelEditorAgent: %w", err)
 	}
 
 	if err != nil {
@@ -322,16 +320,16 @@ func (p *ProjectEditorAgent) handoffToModelEditor(ctx context.Context, params ma
 	}
 
 	return map[string]interface{}{
-		"handoff_successful":  true,
-		"agent_used":          "ModelEditorAgent",
-		"model_name":          editResult.ModelName,
-		"original_sql":        editResult.OriginalSQL,
-		"updated_sql":         editResult.UpdatedSQL,
-		"edit_instructions":   editResult.EditInstructions,
-		"edit_successful":     editResult.Success,
-		"validation_passed":   editResult.ValidationPassed,
-		"file_saved":          editResult.FileSaved,
-		"validation_result":   editResult.ValidationResult,
+		"handoff_successful": true,
+		"agent_used":         "ModelEditorAgent",
+		"model_name":         editResult.ModelName,
+		"original_sql":       editResult.OriginalSQL,
+		"updated_sql":        editResult.UpdatedSQL,
+		"edit_instructions":  editResult.EditInstructions,
+		"edit_successful":    editResult.Success,
+		"validation_passed":  editResult.ValidationPassed,
+		"file_saved":         editResult.FileSaved,
+		"validation_result":  editResult.ValidationResult,
 	}, nil
 }
 
@@ -382,67 +380,9 @@ func (p *ProjectEditorAgent) handoffToSyntheticData(ctx context.Context, params 
 // Helper function to infer model name from description
 func (p *ProjectEditorAgent) inferModelName(description string) string {
 	description = strings.ToLower(description)
-	
+
 	// Common data types and their model names
-	keywords := map[string]string{
-		"sales":       "sales_model",
-		"customer":    "customer_model", 
-		"product":     "product_model",
-		"order":       "order_model",
-		"transaction": "transaction_model",
-		"user":        "user_model",
-		"marketing":   "marketing_model",
-		"campaign":    "campaign_model",
-		"revenue":     "revenue_model",
-		"finance":     "finance_model",
-		"inventory":   "inventory_model",
-		"analytics":   "analytics_model",
-		"ecommerce":   "ecommerce_model",
-		"e-commerce":  "ecommerce_model",
-		"subscription": "subscription_model",
-		"payment":     "payment_model",
-		"account":     "account_model",
-		"lead":        "lead_model",
-		"conversion":  "conversion_model",
-		"engagement":  "engagement_model",
-		"activity":    "activity_model",
-		"event":       "event_model",
-		"log":         "log_model",
-		"audit":       "audit_model",
-		"report":      "report_model",
-		"dashboard":   "dashboard_model",
-		"metric":      "metric_model",
-		"kpi":         "kpi_model",
-		"performance": "performance_model",
-		"growth":      "growth_model",
-		"retention":   "retention_model",
-		"churn":       "churn_model",
-		"acquisition": "acquisition_model",
-		"funnel":      "funnel_model",
-		"cohort":      "cohort_model",
-		"segment":     "segment_model",
-		"demographic": "demographic_model",
-		"geographic":  "geographic_model",
-		"behavioral":  "behavioral_model",
-		"operational": "operational_model",
-		"supply":      "supply_model",
-		"demand":      "demand_model",
-		"forecast":    "forecast_model",
-		"prediction":  "prediction_model",
-		"trend":       "trend_model",
-		"anomaly":     "anomaly_model",
-		"quality":     "quality_model",
-		"satisfaction": "satisfaction_model",
-		"feedback":    "feedback_model",
-		"review":      "review_model",
-		"rating":      "rating_model",
-		"survey":      "survey_model",
-		"test":        "test_model",
-		"sample":      "sample_model",
-		"synthetic":   "synthetic_model",
-		"demo":        "demo_model",
-		"example":     "example_model",
-	}
+	keywords := map[string]string{}
 
 	// Check for keywords in description
 	for keyword, modelName := range keywords {
@@ -461,7 +401,7 @@ func (p *ProjectEditorAgent) normalizeModelName(modelName string) string {
 	modelName = strings.ToLower(modelName)
 	modelName = strings.ReplaceAll(modelName, " ", "_")
 	modelName = strings.ReplaceAll(modelName, "-", "_")
-	
+
 	// Remove any non-alphanumeric characters except underscores
 	var result strings.Builder
 	for _, char := range modelName {
@@ -470,12 +410,12 @@ func (p *ProjectEditorAgent) normalizeModelName(modelName string) string {
 		}
 	}
 	modelName = result.String()
-	
+
 	// Ensure it ends with _model if not already
 	if !strings.HasSuffix(modelName, "_model") {
 		modelName += "_model"
 	}
-	
+
 	return modelName
 }
 
@@ -486,32 +426,32 @@ func (p *ProjectEditorAgent) ProcessUserRequest(ctx context.Context, userPrompt 
 		Input:    userPrompt,
 		MaxTurns: 10,
 	})
-	
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to process user request: %w", err)
 	}
-	
+
 	return runResult, nil
 }
 
 // InferOperationType determines whether to create new or edit existing model
 func (p *ProjectEditorAgent) InferOperationType(ctx context.Context, userPrompt string) (string, string, error) {
 	userPrompt = strings.ToLower(userPrompt)
-	
+
 	// Check for edit keywords
 	editKeywords := []string{"edit", "update", "modify", "change", "fix", "improve", "alter", "add", "append", "insert"}
 	for _, keyword := range editKeywords {
 		if strings.Contains(userPrompt, keyword) {
 			// Try to infer which model to edit
 			modelName := p.inferModelName(userPrompt)
-			
+
 			// Check if the model exists
 			readParams := map[string]interface{}{"model_name": modelName}
 			_, err := p.readModel(ctx, readParams)
 			if err == nil {
 				return "edit_with_context", modelName, nil
 			}
-			
+
 			// If inferred model doesn't exist, try to find similar models
 			listResult, listErr := p.listModels(ctx, map[string]interface{}{})
 			if listErr == nil {
@@ -528,7 +468,7 @@ func (p *ProjectEditorAgent) InferOperationType(ctx context.Context, userPrompt 
 			}
 		}
 	}
-	
+
 	// Check for synthetic data keywords
 	syntheticKeywords := []string{"synthetic", "generate", "sample", "test data", "demo data", "fake data"}
 	for _, keyword := range syntheticKeywords {
@@ -537,7 +477,7 @@ func (p *ProjectEditorAgent) InferOperationType(ctx context.Context, userPrompt 
 			return "synthetic", modelName, nil
 		}
 	}
-	
+
 	// Default to create new
 	modelName := p.inferModelName(userPrompt)
 	return "create", modelName, nil
@@ -560,7 +500,7 @@ func (p *ProjectEditorAgent) ProcessUserRequestWithContext(ctx context.Context, 
 			"edit_instructions": userPrompt,
 		}
 		return p.handoffToModelEditor(ctx, editParams)
-		
+
 	case "synthetic":
 		// Hand off to SyntheticDataAgent
 		syntheticParams := map[string]interface{}{
@@ -568,7 +508,7 @@ func (p *ProjectEditorAgent) ProcessUserRequestWithContext(ctx context.Context, 
 			"model_name":  modelName,
 		}
 		return p.handoffToSyntheticData(ctx, syntheticParams)
-		
+
 	default:
 		// For create operations or other cases, use the standard processing
 		return p.ProcessUserRequest(ctx, userPrompt)

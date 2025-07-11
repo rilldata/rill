@@ -1,0 +1,94 @@
+# Metrics view YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/dashboards
+# This file was generated using AI.
+
+version: 1
+type: metrics_view 
+
+display_name: Generated Model Metrics
+model: generated_model
+timeseries: commit_date
+
+dimensions:
+  - name: user_id
+    display_name: User Id
+    column: user_id
+  - name: commit_type
+    display_name: Commit Type
+    column: commit_type
+  - name: language
+    display_name: Language
+    column: language
+  - name: is_merge_commit
+    display_name: Is Merge Commit
+    column: is_merge_commit
+  - name: branch
+    display_name: Branch
+    column: branch
+  - name: os
+    display_name: Os
+    column: os
+  - name: has_conflicts
+    display_name: Has Conflicts
+    column: has_conflicts
+  - name: is_reverted
+    display_name: Is Reverted
+    column: is_reverted
+  - name: is_squash_commit
+    display_name: Is Squash Commit
+    column: is_squash_commit
+  - name: repository_id
+    display_name: Repository Id
+    column: repository_id
+
+measures:
+  - name: total_commits_measure
+    display_name: Total Commits
+    expression: COUNT(commit_id)
+    description: Total number of commits in the dataset.
+    format_preset: humanize
+  - name: average_lines_added_measure
+    display_name: Average Lines Added
+    expression: AVG(lines_added)
+    description: Average number of lines added per commit.
+    format_preset: humanize
+  - name: average_lines_deleted_measure
+    display_name: Average Lines Deleted
+    expression: AVG(lines_deleted)
+    description: Average number of lines deleted per commit.
+    format_preset: humanize
+  - name: total_files_changed_measure
+    display_name: Total Files Changed
+    expression: SUM(files_changed)
+    description: Total number of files changed across all commits.
+    format_preset: humanize
+  - name: average_review_comments_measure
+    display_name: Average Review Comments
+    expression: AVG(review_comments)
+    description: Average number of review comments per commit.
+    format_preset: humanize
+  - name: total_approvals_measure
+    display_name: Total Approvals
+    expression: SUM(approvals)
+    description: Total number of approvals across all commits.
+    format_preset: humanize
+  - name: average_code_coverage_measure
+    display_name: Average Code Coverage
+    expression: AVG(code_coverage)
+    description: Average code coverage percentage across all commits.
+    format_preset: humanize
+  - name: max_build_duration_measure
+    display_name: Max Build Duration
+    expression: MAX(build_duration_seconds)
+    description: Maximum build duration in seconds for any commit.
+    format_preset: humanize
+  - name: total_linked_issues_measure
+    display_name: Total Linked Issues
+    expression: SUM(linked_issues)
+    description: Total number of linked issues across all commits.
+    format_preset: humanize
+  - name: average_total_lines_of_code_measure
+    display_name: Average Total Lines of Code
+    expression: AVG(total_lines_of_code)
+    description: Average total lines of code per commit.
+    format_preset: humanize

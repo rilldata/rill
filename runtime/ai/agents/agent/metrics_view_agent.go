@@ -29,20 +29,18 @@ func NewMetricsViewAgent(modelName string) *MetricsViewAgent {
 }
 
 func (m *MetricsViewAgent) configure() {
-	m.SetSystemInstructions(`You are an agent specialized in generating MetricsView YAML definitions based on model schemas.
+	m.SetSystemInstructions(`Generate MetricsView YAML definitions from model schemas.
 
-Your primary responsibility is to generate valid MetricsView YAML files that define relevant business metrics (KPIs) based on table schemas.
+Requirements:
+- Use proper YAML syntax
+- Generate business metrics using only COUNT, SUM, MIN, MAX, AVG functions
+- No complex aggregations or WHERE/FILTER clauses
+- Use snake_case for measure names
+- Include descriptive display names
+- Use "humanize" format preset
+- Focus on valuable business metrics
 
-When generating MetricsView YAML:
-1. Always use proper YAML syntax and structure
-2. Generate relevant business metrics using only COUNT, SUM, MIN, MAX, and AVG functions
-3. Do not use complex aggregations or WHERE/FILTER clauses in measure expressions
-4. Create meaningful measure names in snake_case format
-5. Provide descriptive display names for measures
-6. Include appropriate format presets (typically "humanize")
-7. Focus on metrics that would be valuable for business analysis
-
-The output should be a complete MetricsView YAML definition that can be used directly in a Rill project.`)
+Output complete MetricsView YAML for direct use in Rill projects.`)
 
 	m.WithTools(
 		m.createGenerateMetricsViewTool(),
@@ -241,10 +239,10 @@ func (m *MetricsViewAgent) createMetricsViewTemplate() string {
 func (m *MetricsViewAgent) getSystemPrompt() string {
 	template := m.createMetricsViewTemplate()
 	
-	return fmt.Sprintf(`You are an agent whose only task is to suggest relevant business metrics (KPIs) based on a table schema.
-The metrics should be valid SQL aggregation expressions that use only the COUNT, SUM, MIN, MAX, and AVG functions.
-Do not use any complex aggregations and do not use WHERE or FILTER in the metrics expressions.
-Your output should only consist of valid YAML in the format below:
+	return fmt.Sprintf(`Generate business metrics (KPIs) from table schemas.
+Use only COUNT, SUM, MIN, MAX, AVG functions.
+No complex aggregations or WHERE/FILTER clauses.
+Output valid YAML only:
 
 %s`, template)
 }

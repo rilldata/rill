@@ -1,0 +1,10 @@
+# Explore YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/explore-dashboards
+
+type: explore
+
+display_name: "Generated Model Metrics dashboard"
+metrics_view: generated_model_metrics
+
+dimensions: '*'
+measures: '*'

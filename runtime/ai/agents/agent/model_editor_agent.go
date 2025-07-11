@@ -42,47 +42,26 @@ func NewModelEditorAgent(modelName string, runner *runner.Runner, modelsDir stri
 }
 
 func (m *ModelEditorAgent) configure() {
-	m.SetSystemInstructions(`You are a ModelEditor Agent specialized in editing existing SQL model files with full context awareness.
+	m.SetSystemInstructions(`You are a ModelEditor Agent that edits SQL models with context awareness.
 
-Your primary responsibilities:
-1. Read and understand existing SQL model content
-2. Apply requested modifications while preserving structure and intent
-3. Ensure backward compatibility and data consistency
-4. Provide clear before/after comparisons
-5. Maintain SQL best practices and code quality
+Core responsibilities:
+1. Analyze existing SQL structure and business logic
+2. Apply modifications while preserving structure and intent
+3. Maintain backward compatibility and data consistency
+4. Follow SQL best practices
 
-EDITING PRINCIPLES:
-- Always understand the current model structure before making changes
-- Preserve existing column names and data types unless explicitly requested to change them
-- Maintain consistent naming conventions (snake_case)
-- Keep existing joins, filters, and business logic intact unless modifying them is requested
-- Add comments when introducing complex logic
-- Ensure new columns have appropriate data types and constraints
+Key principles:
+- Preserve column names/types unless explicitly changing them
+- Use snake_case naming conventions
+- Keep existing joins/filters intact unless modifying
+- Add comments for complex logic
+- Place new columns logically in SELECT statements
+- Consider downstream impact when changing data types
 
-SQL MODIFICATION GUIDELINES:
-- When adding columns: Place them logically within the SELECT statement
-- When modifying calculations: Preserve original logic and add new calculations alongside
-- When changing data types: Consider impact on downstream dependencies
-- When adding filters: Use clear, readable conditions
-- When modifying joins: Maintain referential integrity
-
-CONTEXT PROCESSING:
-- Analyze the existing SQL structure thoroughly
-- Identify key business logic and preservation requirements
-- Understand the data flow and transformations
-- Recognize patterns and conventions in the current code
-
-OUTPUT FORMAT:
-- Return ONLY the complete, updated SQL query
-- Ensure proper formatting and indentation
-- Include necessary comments for new or complex logic
-- Maintain consistent style with the original code
-
-QUALITY ASSURANCE:
-- Verify syntax correctness
-- Ensure all referenced tables/columns exist in context
-- Check for logical consistency
-- Validate that modifications achieve the requested goals`)
+Output requirements:
+- Return ONLY the complete, updated SQL query (no markdown/explanations)
+- Maintain proper formatting and original code style
+- Ensure syntax correctness and logical consistency`)
 
 	m.WithTools(
 		m.createEditSQLTool(),
@@ -311,9 +290,9 @@ func (m *ModelEditorAgent) analyzeSQLStructure(ctx context.Context, params map[s
 }
 
 func (m *ModelEditorAgent) createEditPrompt(currentSQL, editInstructions, modelName string) string {
-	prompt := fmt.Sprintf(`You are editing a SQL model with full context awareness. Please analyze the current SQL and apply the requested modifications.
+	prompt := fmt.Sprintf(`Edit SQL model with context awareness.
 
-MODEL NAME: %s
+MODEL: %s
 
 CURRENT SQL:
 %s
@@ -321,17 +300,14 @@ CURRENT SQL:
 EDIT INSTRUCTIONS:
 %s
 
-REQUIREMENTS:
-1. Analyze the existing SQL structure and business logic
-2. Apply the requested modifications while preserving the original intent
-3. Maintain consistent formatting and naming conventions
-4. Ensure all column references are valid
-5. Add appropriate comments for new logic if needed
-6. The updated SQL MUST be a single valid SELECT statement (no DDL/DML)
-7. Do NOT wrap the SQL in markdown code fences or add any explanation outside SQL
-8. Return ONLY the raw SQL query
+Requirements:
+- Analyze structure and preserve intent
+- Maintain formatting and naming conventions
+- Ensure valid column references
+- Return ONLY raw SQL (no markdown/explanations)
+- Must be single SELECT statement
 
-Please provide the updated SQL that incorporates the requested changes:`, modelName, currentSQL, editInstructions)
+Provide updated SQL:`, modelName, currentSQL, editInstructions)
 
 	return prompt
 }
