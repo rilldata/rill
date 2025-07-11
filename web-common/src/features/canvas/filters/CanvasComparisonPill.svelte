@@ -20,6 +20,7 @@
   export let onDisplayTimeComparison: (show: boolean) => void;
   export let onSetSelectedComparisonRange: (range: TimeRange) => void;
   export let allowCustomTimeRange: boolean = true;
+  export let side: "top" | "right" | "bottom" | "left" = "bottom";
 
   $: interval = selectedTimeRange
     ? Interval.fromDateTimes(
@@ -95,6 +96,7 @@
       {showFullRange}
       disabled={disabled ?? false}
       {allowCustomTimeRange}
+      {side}
     />
   {/if}
 </div>
@@ -130,7 +132,9 @@
     @apply bg-gray-50 cursor-pointer;
   }
 
+  /* Doest apply to all instances except alert/report. So this seems unintentional
   :global(.wrapper > [data-state="open"]) {
     @apply bg-gray-50 border-gray-400 z-50;
   }
+  */
 </style>

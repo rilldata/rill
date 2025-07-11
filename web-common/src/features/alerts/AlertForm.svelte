@@ -234,6 +234,12 @@
     }
   }
 
+  $: measure = $form.measure;
+  function measureUpdated(mes: string) {
+    $form.criteria.forEach((c) => (c.measure = mes));
+  }
+  $: measureUpdated(measure);
+
   function handleCancel() {
     if ($tainted && isSomeFieldTainted($tainted)) {
       onCancel();
