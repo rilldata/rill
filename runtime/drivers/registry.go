@@ -105,7 +105,11 @@ func (i *Instance) ResolveOLAPConnector() string {
 	if i.ProjectOLAPConnector != "" {
 		return i.ProjectOLAPConnector
 	}
-	return i.OLAPConnector
+	if i.OLAPConnector != "" {
+		return i.OLAPConnector
+	}
+	// Fallback to duckdb for backwards compatibility with projects that don't specify an OLAP connector
+	return "duckdb"
 }
 
 // ResolveVariables returns the final resolved variables

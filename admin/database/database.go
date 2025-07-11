@@ -439,8 +439,6 @@ type Project struct {
 	ProdBranch                   string            `db:"prod_branch"`
 	ProdVariables                map[string]string `db:"prod_variables"`
 	ProdVariablesEncryptionKeyID string            `db:"prod_variables_encryption_key_id"`
-	ProdOLAPDriver               string            `db:"prod_olap_driver"`
-	ProdOLAPDSN                  string            `db:"prod_olap_dsn"`
 	ProdSlots                    int               `db:"prod_slots"`
 	ProdTTLSeconds               *int64            `db:"prod_ttl_seconds"`
 	ProdDeploymentID             *string           `db:"prod_deployment_id"`
@@ -467,8 +465,6 @@ type InsertProjectOptions struct {
 	Subpath              string
 	ProdVersion          string
 	ProdBranch           string
-	ProdOLAPDriver       string
-	ProdOLAPDSN          string
 	ProdSlots            int
 	ProdTTLSeconds       *int64
 	DevSlots             int

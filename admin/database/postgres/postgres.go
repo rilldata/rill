@@ -388,9 +388,9 @@ func (c *connection) InsertProject(ctx context.Context, opts *database.InsertPro
 
 	res := &projectDTO{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		INSERT INTO projects (org_id, name, description, public, created_by_user_id, provisioner, prod_olap_driver, prod_olap_dsn, prod_slots, subpath, prod_branch, archive_asset_id, git_remote, github_installation_id, github_repo_id, managed_git_repo_id, prod_ttl_seconds, prod_version, dev_slots, dev_ttl_seconds)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20) RETURNING *`,
-		opts.OrganizationID, opts.Name, opts.Description, opts.Public, opts.CreatedByUserID, opts.Provisioner, opts.ProdOLAPDriver, opts.ProdOLAPDSN, opts.ProdSlots, opts.Subpath, opts.ProdBranch, opts.ArchiveAssetID, opts.GitRemote, opts.GithubInstallationID, opts.GithubRepoID, opts.ManagedGitRepoID, opts.ProdTTLSeconds, opts.ProdVersion, opts.DevSlots, opts.DevTTLSeconds,
+		INSERT INTO projects (org_id, name, description, public, created_by_user_id, provisioner, prod_slots, subpath, prod_branch, archive_asset_id, git_remote, github_installation_id, github_repo_id, managed_git_repo_id, prod_ttl_seconds, prod_version, dev_slots, dev_ttl_seconds)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18) RETURNING *`,
+		opts.OrganizationID, opts.Name, opts.Description, opts.Public, opts.CreatedByUserID, opts.Provisioner, opts.ProdSlots, opts.Subpath, opts.ProdBranch, opts.ArchiveAssetID, opts.GitRemote, opts.GithubInstallationID, opts.GithubRepoID, opts.ManagedGitRepoID, opts.ProdTTLSeconds, opts.ProdVersion, opts.DevSlots, opts.DevTTLSeconds,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("project", err)

@@ -47,8 +47,6 @@ func GetCmd(ch *cmdutil.Helper) *cobra.Command {
 			fmt.Printf("Subpath: %s\n", project.Subpath)
 			fmt.Printf("Prod version: %s\n", project.ProdVersion)
 			fmt.Printf("Prod branch: %s\n", project.ProdBranch)
-			fmt.Printf("Prod OLAP driver: %s\n", project.ProdOlapDriver)
-			fmt.Printf("Prod OLAP DSN: %s\n", project.ProdOlapDsn)
 			fmt.Printf("Prod slots: %d\n", project.ProdSlots)
 			fmt.Printf("Prod deployment ID: %s\n", project.ProdDeploymentId)
 			fmt.Printf("Prod hibernation TTL: %s\n", time.Duration(project.ProdTtlSeconds)*time.Second)
