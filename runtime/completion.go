@@ -225,7 +225,7 @@ func (r *Runtime) processExploreDashboardContext(ctx context.Context, instanceID
 	}
 
 	// Find instance-wide AI context
-	aiInstructions := ""
+	var aiInstructions string
 	instance, err := r.Instance(ctx, instanceID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get instance %q: %w", instanceID, err)
@@ -628,12 +628,12 @@ func buildExploreDashboardSystemPrompt(dashboardName, metricsViewName string, me
 
 	// 2. WHERE: Set the current context and location
 	prompt.WriteString("## Current Context\n")
-	prompt.WriteString(fmt.Sprintf("The user is actively viewing the '%s' explore dashboard. ", dashboardName))
+	prompt.WriteString(fmt.Sprintf("The user is actively viewing the %q explore dashboard. ", dashboardName))
 	prompt.WriteString("When they refer to \"this dashboard,\" \"the current view,\" or similar contextual references, they are referring to this dashboard.\n\n")
 
 	// 3. WHAT: Describe the available data and constraints
 	prompt.WriteString("## Available Data\n")
-	prompt.WriteString(fmt.Sprintf("This dashboard is based on the \"%s\" metrics view.\n\n", metricsViewName))
+	prompt.WriteString(fmt.Sprintf("This dashboard is based on the %q metrics view.\n\n", metricsViewName))
 
 	prompt.WriteString("### Metrics View Details:\n")
 	prompt.WriteString(fmt.Sprintf("%v\n\n", metricsViewSpec))
@@ -648,7 +648,7 @@ func buildExploreDashboardSystemPrompt(dashboardName, metricsViewName string, me
 	prompt.WriteString("The metrics view spec above shows all available dimensions and measures, and the time range information shows what time periods are available for analysis. ")
 	prompt.WriteString("Use this information to craft meaningful queries that answer the user's questions and provide valuable insights.\n\n")
 
-	prompt.WriteString(fmt.Sprintf("**IMPORTANT: Every invocation of the \"query_metrics_view\" tool must include \"metrics_view\": \"%s\" in the payload.**\n\n", metricsViewName))
+	prompt.WriteString(fmt.Sprintf("**IMPORTANT: Every invocation of the \"query_metrics_view\" tool must include \"metrics_view\": %q in the payload.**\n\n", metricsViewName))
 
 	// 5. CUSTOMIZE: Provide user-specific instructions
 	if aiInstructions != "" {
