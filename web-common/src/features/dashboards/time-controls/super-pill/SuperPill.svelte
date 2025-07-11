@@ -9,6 +9,7 @@
   } from "@rilldata/web-common/runtime-client";
   import { DateTime, Interval } from "luxon";
   import {
+    bucketYamlRanges,
     type ISODurationString,
     type NamedRange,
   } from "../new-time-controls";
@@ -38,8 +39,7 @@
   export let activeTimeZone: string;
   export let timeStart: string | undefined;
   export let timeEnd: string | undefined;
-  export let usingRillTime: boolean;
-  export let toggleComplete: () => void;
+  export let watermark: DateTime | undefined;
   export let onSelectRange: (range: NamedRange | ISODurationString) => void;
   export let onPan: (direction: "left" | "right") => void;
   export let onTimeGrainSelect: (timeGrain: V1TimeGrain) => void;
@@ -47,6 +47,8 @@
   export let applyRange: (range: TimeRange) => void;
 
   const newPicker = featureFlags.rillTime;
+
+  $: rangeBuckets = bucketYamlRanges(timeRanges);
 </script>
 
 <div class="wrapper">
@@ -62,33 +64,26 @@
         smallestTimeGrain={minTimeGrain}
         minDate={DateTime.fromJSDate(allTimeRange.start)}
         maxDate={DateTime.fromJSDate(allTimeRange.end)}
-        {timeRanges}
+        {watermark}
         {showDefaultItem}
         {defaultTimeRange}
         timeString={selectedRangeAlias}
         grain={activeTimeGrain}
-        {onSelectRange}
         {interval}
         zone={activeTimeZone}
-        applyCustomRange={(interval) => {
-          applyRange({
-            name: TimeRangePreset.CUSTOM,
-            start: interval.start.toJSDate(),
-            end: interval.end.toJSDate(),
-          });
-        }}
+        {onSelectRange}
+        {onTimeGrainSelect}
       />
     {:else}
       <Elements.RangePicker
         minDate={DateTime.fromJSDate(allTimeRange.start)}
         maxDate={DateTime.fromJSDate(allTimeRange.end)}
-        {timeRanges}
+        ranges={rangeBuckets}
         {showDefaultItem}
         {showFullRange}
         {defaultTimeRange}
         {allowCustomTimeRange}
         selected={selectedRangeAlias ?? ""}
-        grain={activeTimeGrain}
         {onSelectRange}
         {interval}
         zone={activeTimeZone}

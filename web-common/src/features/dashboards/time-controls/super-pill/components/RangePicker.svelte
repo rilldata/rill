@@ -11,15 +11,12 @@
   import CalendarPlusDateInput from "./CalendarPlusDateInput.svelte";
   import RangeDisplay from "./RangeDisplay.svelte";
   import TimeRangeMenu from "./TimeRangeMenu.svelte";
-  import type { V1ExploreTimeRange } from "@rilldata/web-common/runtime-client";
-  import { bucketTimeRanges } from "../../time-range-store";
 
-  export let timeRanges: V1ExploreTimeRange[];
+  export let ranges: RangeBuckets;
   export let selected: NamedRange | ISODurationString;
   export let interval: Interval<true>;
   export let zone: string;
   export let showDefaultItem: boolean;
-  export let grain: string;
   export let minDate: DateTime | undefined = undefined;
   export let maxDate: DateTime | undefined = undefined;
   export let showFullRange: boolean;
@@ -31,23 +28,6 @@
   let firstVisibleMonth: DateTime<true> = interval.start;
   let open = false;
   let showSelector = false;
-
-  $: buckets = bucketTimeRanges(timeRanges, defaultTimeRange);
-
-  $: ranges = <RangeBuckets>{
-    latest: buckets.ranges[0].map((range) => ({
-      range: range.range,
-      label: range.meta?.label,
-    })),
-    periodToDate: buckets.ranges[1].map((range) => ({
-      range: range.range,
-      label: range.meta?.label,
-    })),
-    previous: buckets.ranges[2].map((range) => ({
-      range: range.range,
-      label: range.meta?.label,
-    })),
-  };
 </script>
 
 <DropdownMenu.Root
@@ -67,10 +47,11 @@
       use:builder.action
       class="flex gap-x-1"
       aria-label="Select time range"
+      type="button"
     >
       <b class="mr-1 line-clamp-1 flex-none">{getRangeLabel(selected)}</b>
       {#if interval.isValid && showFullRange}
-        <RangeDisplay {interval} {grain} />
+        <RangeDisplay {interval} />
       {/if}
       <span class="flex-none transition-transform" class:-rotate-180={open}>
         <CaretDownIcon />
@@ -88,13 +69,14 @@
           {allowCustomTimeRange}
           onSelectRange={(selected) => {
             onSelectRange(selected);
+
             open = false;
           }}
           onSelectCustomOption={() => (showSelector = !showSelector)}
         />
       </div>
       {#if showSelector}
-        <div class="bg-slate-50 border-l flex flex-col w-64 p-3">
+        <div class="bg-slate-50 border-l flex flex-col w-64 p-2 py-1">
           <CalendarPlusDateInput
             {firstVisibleMonth}
             {interval}

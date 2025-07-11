@@ -1,5 +1,5 @@
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
-import type { DateTime, DateTimeUnit } from "luxon";
+import type { DateTimeUnit } from "luxon";
 
 type TimeGrainAlias =
   | "ms"
@@ -21,7 +21,7 @@ type TimeGrainAlias =
 
 export const grainAliasRegex = /(ms|s|S|m|h|H|d|D|w|W|M|q|Q|y|Y)/;
 
-const GRAINS = ["Y", "Q", "M", "W", "d", "h", "m", "s"] as const;
+// const GRAINS = ["Y", "Q", "M", "W", "d", "h", "m", "s"] as const;
 
 export function getGrainAliasFromString(
   range: string,
@@ -37,13 +37,10 @@ export function getAllowedEndingGrains(
   syntax: string | undefined,
   smallestTimeGrain?: V1TimeGrain,
 ) {
-  console.log("syntax", syntax);
   if (!syntax || syntax.startsWith("P") || syntax.startsWith("rill")) {
     return [];
   }
   const alias = getGrainAliasFromString(syntax);
-
-  console.log("alias", alias);
 
   if (!alias) {
     return [];
@@ -53,22 +50,13 @@ export function getAllowedEndingGrains(
     return [];
   }
 
-  console.log("v1TimeGrain", v1TimeGrain);
-
   const order = getGrainOrder(v1TimeGrain);
 
   if (order === undefined) {
     return [];
   }
 
-  console.log("order", order);
-  const okay = getSmallerGrainsFromOrders(
-    order,
-    getGrainOrder(smallestTimeGrain),
-  );
-
-  console.log("okay", okay);
-  return okay;
+  return getSmallerGrainsFromOrders(order, getGrainOrder(smallestTimeGrain));
 }
 
 type Order = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | typeof Infinity;
@@ -196,7 +184,7 @@ export function isGrainWithinMinimum(
 }
 
 export function getGrainOrder(
-  grain: V1TimeGrain | TimeGrainAlias | DateTimeUnit | undefined,
+  grain: V1TimeGrain | TimeGrainAlias | DateTimeUnit | null | undefined,
 ): Order {
   if (!grain) return Infinity;
 
@@ -325,7 +313,7 @@ const lengths = {
   [V1TimeGrain.TIME_GRAIN_YEAR]: 12,
 };
 
-export function getLowerOrderGrain(grain: V1TimeGrain) {
+export function getLowerOrderGrain(grain: V1TimeGrain): V1TimeGrain {
   switch (grain) {
     case V1TimeGrain.TIME_GRAIN_MILLISECOND:
       return V1TimeGrain.TIME_GRAIN_MILLISECOND;
@@ -346,6 +334,34 @@ export function getLowerOrderGrain(grain: V1TimeGrain) {
     case V1TimeGrain.TIME_GRAIN_YEAR:
       return V1TimeGrain.TIME_GRAIN_QUARTER;
     default:
-      return V1TimeGrain.TIME_GRAIN_UNSPECIFIED;
+      return V1TimeGrain.TIME_GRAIN_MINUTE;
   }
+}
+
+export function getSmallestGrainFromISODuration(
+  duration: string,
+): V1TimeGrain | null {
+  const grains: V1TimeGrain[] = [];
+
+  const upper = duration.toUpperCase();
+  const [datePartRaw, timePartRaw] = upper.split("T");
+  const datePart = datePartRaw ?? "";
+  const timePart = timePartRaw ?? "";
+
+  if (/\d+Y/.test(datePart)) grains.push(V1TimeGrain.TIME_GRAIN_YEAR);
+  if (/\d+M/.test(datePart)) grains.push(V1TimeGrain.TIME_GRAIN_MONTH);
+  if (/\d+W/.test(datePart)) grains.push(V1TimeGrain.TIME_GRAIN_WEEK);
+  if (/\d+D/.test(datePart)) grains.push(V1TimeGrain.TIME_GRAIN_DAY);
+
+  if (/\d+H/.test(timePart)) grains.push(V1TimeGrain.TIME_GRAIN_HOUR);
+  if (/\d+M/.test(timePart)) grains.push(V1TimeGrain.TIME_GRAIN_MINUTE);
+  if (/\d+S/.test(timePart)) grains.push(V1TimeGrain.TIME_GRAIN_SECOND);
+
+  if (grains.length === 0) return null;
+
+  return grains.reduce((smallest, current) => {
+    return V1TimeGrainToOrder[current] < V1TimeGrainToOrder[smallest]
+      ? current
+      : smallest;
+  });
 }

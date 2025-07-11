@@ -5,7 +5,7 @@
   export let filter = "";
   export let options: TimeRangeMenuOption[];
   export let timeString: string | undefined;
-  export let onClick: (range: string, syntax: boolean) => void;
+  export let onClick: (range: string) => void;
 
   $: filtered = options.filter(({ string, label }) => {
     return (

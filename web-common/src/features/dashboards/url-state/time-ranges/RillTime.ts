@@ -3,6 +3,7 @@ import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import { DateTime, Duration } from "luxon";
 import type { DateObjectUnits } from "luxon/src/datetime";
 import {
+  getLowerOrderGrain,
   getMinGrain,
   grainAliasToDateTimeUnit,
   GrainAliasToV1TimeGrain,
@@ -185,7 +186,7 @@ export class RillPeriodToGrainInterval implements RillTimeInterval {
   }
 
   public getGrains() {
-    return GrainAliasToV1TimeGrain[this.grain];
+    return getLowerOrderGrain(GrainAliasToV1TimeGrain[this.grain]);
   }
 
   public toString() {

@@ -180,9 +180,10 @@ class MetricsTimeControls {
         iso,
         rightAnchor,
         this._metricsViewName,
+        get(this._zone).name,
       );
-      if (interval?.isValid) {
-        this._visibleRange.updateInterval(interval);
+      if (interval?.interval.isValid) {
+        this._visibleRange.updateInterval(interval.interval);
         this._selected.set(iso);
       }
     }
@@ -195,9 +196,10 @@ class MetricsTimeControls {
         name,
         rightAnchor,
         this._metricsViewName,
+        get(this._zone).name,
       );
-      if (interval?.isValid) {
-        this._visibleRange.updateInterval(interval);
+      if (interval?.interval.isValid) {
+        this._visibleRange.updateInterval(interval.interval);
         this._selected.set(name);
       }
     }
@@ -306,6 +308,7 @@ export async function deriveInterval(
   name: RillPeriodToDate | RillPreviousPeriod | ISODurationString,
   anchor: DateTime,
   metricsViewName: string,
+  activeTimeZone: string,
 ): Promise<{ interval: Interval; grain?: V1TimeGrain | undefined }> {
   if (name === ALL_TIME_RANGE_ALIAS || name === CUSTOM_TIME_RANGE_ALIAS) {
     throw new Error("Cannot derive interval for all time or custom range");
@@ -329,13 +332,11 @@ export async function deriveInterval(
 
   const parsed = parseRillTime(name);
 
-  console.log("HERE", { parsed });
-
   // We have a RillTime string
   const response = await queryServiceMetricsViewTimeRanges(
     get(runtime).instanceId,
     metricsViewName,
-    { expressions: [name] },
+    { expressions: [name], timeZone: activeTimeZone },
   );
 
   const timeRange = response.timeRanges?.[0];
@@ -349,7 +350,7 @@ export async function deriveInterval(
       DateTime.fromISO(timeRange.start),
       DateTime.fromISO(timeRange.end),
     ),
-    grain: parsed.inGrain,
+    grain: parsed.byGrain,
   };
 }
 

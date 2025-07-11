@@ -1,8 +1,9 @@
 <script lang="ts">
   import { DateTime, Interval } from "luxon";
 
+  const fullTimeFormat = "h:mm:ss:SSS";
+
   export let interval: Interval<true>;
-  export let grain: string;
   export let abbreviation: string | undefined = undefined;
 
   $: shouldShowMilliseconds =
@@ -18,8 +19,6 @@
 
   $: intervalStartsAndEndsOnHour =
     interval.start.minute === 0 && interval.end.minute === 0;
-
-  const fullTimeFormat = "h:mm:ss:SSS";
 
   function getTimeFormat(
     hours: boolean,

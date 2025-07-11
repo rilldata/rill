@@ -1,8 +1,5 @@
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
-import {
-  V1TimeGrainToAlias,
-  V1TimeGrainToDateTimeUnit,
-} from "@rilldata/web-common/lib/time/new-grains";
+import { V1TimeGrainToAlias } from "@rilldata/web-common/lib/time/new-grains";
 import { parseRillTime } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser";
 
 const defaultLastNValues: Record<V1TimeGrain, number[]> = {
@@ -37,39 +34,37 @@ export interface TimeGrainOptions {
 
 export function getTimeRangeOptionsByGrain(
   grain: V1TimeGrain,
-  smallestTimeGrain: V1TimeGrain,
 ): TimeGrainOptions {
   const primaryGrainAlias = V1TimeGrainToAlias[grain];
-  const primaryGrainUnit = V1TimeGrainToDateTimeUnit[grain];
-  // const allowedGrains = getAllowedGrains(smallestTimeGrain);
 
-  const lastN: TimeRangeMenuOption[] = defaultLastNValues[grain].map((v) => {
+  const lastN: TimeRangeMenuOption[] = [];
+  const previous: TimeRangeMenuOption[] = [];
+
+  defaultLastNValues[grain].forEach((v) => {
     const timeRange = `${v}${primaryGrainAlias}`;
 
     try {
       const parsed = parseRillTime(timeRange);
-      return {
+      lastN.push({
         string: timeRange,
         label: parsed.getLabel(),
-      };
+      });
     } catch {
       // no-op
     }
   });
 
-  const previous: TimeRangeMenuOption[] = Array.from({ length: 1 }, (_, i) => {
-    const timeRange = `-${i + 1}${primaryGrainAlias}^ to ${primaryGrainAlias}^`;
+  const timeRange = `-1${primaryGrainAlias}/${primaryGrainAlias} to ref/${primaryGrainAlias}`;
 
-    try {
-      const parsed = parseRillTime(timeRange);
-      return {
-        string: timeRange,
-        label: parsed.getLabel(),
-      };
-    } catch {
-      // no-op
-    }
-  });
+  try {
+    const parsed = parseRillTime(timeRange);
+    previous.push({
+      string: timeRange,
+      label: parsed.getLabel(),
+    });
+  } catch {
+    // no-op
+  }
 
   if (grain === V1TimeGrain.TIME_GRAIN_MINUTE) {
     return {

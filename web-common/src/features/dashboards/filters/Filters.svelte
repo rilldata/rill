@@ -39,13 +39,17 @@
   import { useTimeControlStore } from "../time-controls/time-control-store";
   import FilterButton from "./FilterButton.svelte";
   import DimensionFilter from "./dimension-filters/DimensionFilter.svelte";
-
+  import { createQueryServiceMetricsViewTimeRange } from "@rilldata/web-common/runtime-client";
+  import { featureFlags } from "../../feature-flags";
   import Timestamp from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/Timestamp.svelte";
   import { getDefaultTimeGrain } from "@rilldata/web-common/lib/time/grains";
   import { Tooltip } from "bits-ui";
   import Metadata from "../time-controls/super-pill/components/Metadata.svelte";
   import { getValidComparisonOption } from "../time-controls/time-range-store";
   import { getPinnedTimeZones } from "../url-state/getDefaultExplorePreset";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+
+  const { rillTime } = featureFlags;
 
   export let readOnly = false;
   export let timeRanges: V1ExploreTimeRange[];
@@ -95,6 +99,18 @@
   const dashboardStateSync = DashboardStateSync.getFromContext();
 
   let showDefaultItem = false;
+
+  $: ({ instanceId } = $runtime);
+
+  $: timeRangeQuery = createQueryServiceMetricsViewTimeRange(
+    instanceId,
+    metricsViewName,
+    {},
+  );
+
+  $: timeRangeSummary = $timeRangeQuery.data?.timeRangeSummary;
+
+  $: watermark = timeRangeSummary?.watermark;
 
   $: ({
     selectedTimeRange,
@@ -204,7 +220,6 @@
   }
 
   async function onSelectRange(alias: string) {
-    console.log({ alias });
     // If we don't have a valid time range, early return
     if (!allTimeRange?.end) return;
 
@@ -229,6 +244,7 @@
       alias,
       DateTime.fromJSDate(allTimeRange.end),
       metricsViewName,
+      activeTimeZone,
     );
 
     if (interval.isValid) {
@@ -265,7 +281,6 @@
   function selectRange(range: TimeRange, grain?: V1TimeGrain) {
     const timeGrain =
       grain ?? getDefaultTimeGrain(range.start, range.end).grain;
-    console.log({ timeGrain });
 
     // Get valid option for the new time range
     const validComparison =
@@ -309,10 +324,11 @@
   function onTimeGrainSelect(timeGrain: V1TimeGrain) {
     if (usingRillTime && selectedRangeAlias) {
       // Move this to method on RilltTime class after "by" bug is fixed
-      const [range] = selectedRangeAlias.split(" by");
-      const shorthandGrain = TIME_GRAIN_TO_SHORTHAND[timeGrain];
-      if (!shorthandGrain) return;
-      onSelectRange(range + ` by ${shorthandGrain}`);
+      // const [range] = selectedRangeAlias.split(" by");
+      // const shorthandGrain = TIME_GRAIN_TO_SHORTHAND[timeGrain];
+      // if (!shorthandGrain) return;
+      metricsExplorerStore.setTimeGrain($exploreName, timeGrain);
+      // onSelectRange(range + ` by ${shorthandGrain}`);
     } else if (baseTimeRange) {
       makeTimeSeriesTimeRangeAndUpdateAppState(
         baseTimeRange,
@@ -349,12 +365,10 @@
           {selectedRangeAlias}
           showPivot={$showPivot}
           {minTimeGrain}
-          {usingRillTime}
           {defaultTimeRange}
           {availableTimeZones}
           {timeRanges}
           complete={false}
-          toggleComplete={() => {}}
           {interval}
           context={$exploreName}
           {timeStart}
@@ -367,6 +381,7 @@
           canPanRight={$canPanRight}
           showPan
           {showDefaultItem}
+          watermark={watermark ? DateTime.fromISO(watermark) : undefined}
           applyRange={selectRange}
           {onSelectRange}
           {onTimeGrainSelect}
@@ -381,7 +396,7 @@
         />
       {/if}
 
-      {#if allTimeRangeInterval?.end?.isValid}
+      {#if !$rillTime && allTimeRangeInterval?.end?.isValid}
         <Tooltip.Root openDelay={0}>
           <Tooltip.Trigger>
             <span class="text-gray-600 italic">

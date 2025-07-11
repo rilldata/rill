@@ -99,7 +99,7 @@
       fit
       compact
       type="subtle"
-      on:click={() => {
+      onClick={() => {
         const mapped = calendarInterval?.set({
           end: calendarInterval.end?.plus({ day: 1 }).startOf("day"),
         });

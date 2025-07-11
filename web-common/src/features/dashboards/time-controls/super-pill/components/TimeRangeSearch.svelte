@@ -6,16 +6,14 @@
   export let context: string;
   export let width: number;
   export let searchValue = "";
-  export let onSelectRange: (range: string, isSearch: boolean) => void;
+  export let onSelectRange: (range: string) => void;
 
   let searchElement: HTMLInputElement;
 
   const latestNSearches = localStorageStore(`${context}-recent-searches`, [
-    "Y^ to M^",
-    "<6H of D^ to D$",
-    // "D1 of M3 of -2Y",
-    // "H1 to H8 of -1D",
-    // "W23 of Y~",
+    "-7d/d to -3d/d",
+    "-1d/d to -1d/d+6h",
+    "D3 of M11",
   ]);
 
   export function updateSearch(value: string) {
@@ -34,7 +32,7 @@
       latestNSearches.update((searches) => {
         return Array.from(new Set([searchValue, ...searches].slice(0, 20)));
       });
-      onSelectRange(searchValue, true);
+      onSelectRange(searchValue);
       searchValue = "";
     }}
   >

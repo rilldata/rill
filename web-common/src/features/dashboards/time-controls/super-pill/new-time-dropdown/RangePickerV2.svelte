@@ -9,54 +9,50 @@
     RILL_TO_LABEL,
   } from "../../new-time-controls";
   import CalendarPlusDateInput from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/CalendarPlusDateInput.svelte";
-  import {
-    V1TimeGrain,
-    type V1ExploreTimeRange,
-  } from "@rilldata/web-common/runtime-client";
+  import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
   import { humaniseISODuration } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
-  import {
-    LATEST_WINDOW_TIME_RANGES,
-    PERIOD_TO_DATE_RANGES,
-    PREVIOUS_COMPLETE_DATE_RANGES,
-  } from "@rilldata/web-common/lib/time/config";
   import TimeRangeSearch from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/TimeRangeSearch.svelte";
   import { parseRillTime } from "../../../url-state/time-ranges/parser";
-  import type { RillTime } from "../../../url-state/time-ranges/RillTime";
+  import { type RillTime } from "../../../url-state/time-ranges/RillTime";
   import { getTimeRangeOptionsByGrain } from "@rilldata/web-common/lib/time/defaults";
   import {
-    getAllowedEndingGrains,
     getAllowedGrains,
+    getGrainOrder,
+    getSmallestGrainFromISODuration,
+    GrainAliasToV1TimeGrain,
     V1TimeGrainToAlias,
   } from "@rilldata/web-common/lib/time/new-grains";
   import * as Popover from "@rilldata/web-common/components/popover";
   import type { TimeGrainOptions } from "@rilldata/web-common/lib/time/defaults";
   import TimeRangeOptionGroup from "./TimeRangeOptionGroup.svelte";
   import RangeDisplay from "../components/RangeDisplay.svelte";
-  import InControl from "./InControl.svelte";
+  import TruncationSelector from "./TruncationSelector.svelte";
+  import { overrideRillTimeRef } from "../../../url-state/time-ranges/parser";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
 
   export let timeString: string | undefined;
-  export let timeRanges: V1ExploreTimeRange[];
   export let interval: Interval<true>;
   export let zone: string;
   export let showDefaultItem: boolean;
-  export let grain: V1TimeGrain;
   export let context: string;
   export let minDate: DateTime;
   export let maxDate: DateTime;
+  export let watermark: DateTime | undefined;
   export let smallestTimeGrain: V1TimeGrain | undefined;
   export let defaultTimeRange: NamedRange | ISODurationString | undefined;
   export let allowCustomTimeRange = true;
-  export let onSelectRange: (range: string, syntax?: boolean) => void;
-  export let applyCustomRange: (range: Interval<true>) => void;
+  export let onSelectRange: (range: string) => void;
+  export let onTimeGrainSelect: (grain: V1TimeGrain) => void;
 
   let firstVisibleMonth: DateTime<true> = interval.start;
   let open = false;
   let allTimeAllowed = true;
   let searchComponent: TimeRangeSearch;
-  let showPanel = false;
   let filter = "";
   let parsedTime: RillTime | undefined = undefined;
   let showCustomSelector = false;
+  let asOfOpen = false;
 
   $: if (timeString) {
     try {
@@ -66,28 +62,23 @@
     }
   }
 
-  $: console.log({ parsedTime });
+  $: usingLegacyTime = isUsingLegacyTime(timeString);
+
+  $: ({ ref, truncationGrain, forwardAligned } = parse(timeString ?? ""));
+
+  $: dateTimeAnchor = returnAnchor(ref);
+
+  $: humanReadableAsOf = humanizeAsOf(ref);
 
   $: selectedLabel = timeString && getRangeLabel(timeString);
-
-  $: isShortHandSyntax = parsedTime?.isShorthandSyntax;
-
-  $: canShowEndingControl = parsedTime && selectedLabel !== timeString;
 
   $: hasCustomSelected = !parsedTime;
 
   $: timeGrainOptions = getAllowedGrains(smallestTimeGrain);
 
-  $: allowedEndingGrains = getAllowedEndingGrains(
-    timeString,
-    smallestTimeGrain,
-  );
+  $: allOptions = timeGrainOptions.map(getTimeRangeOptionsByGrain);
 
-  $: allOptions = timeGrainOptions.map((grain) => {
-    return getTimeRangeOptionsByGrain(grain, smallestTimeGrain);
-  });
-
-  // $: console.log({ groups });
+  $: onTimeGrainSelect(truncationGrain);
 
   $: groups = allOptions.reduce(
     (acc, options) => {
@@ -105,17 +96,37 @@
     } as TimeGrainOptions,
   );
 
-  $: console.log({ groups });
+  function isUsingLegacyTime(timeString: string | undefined): boolean {
+    return (
+      timeString?.startsWith("rill") ||
+      timeString?.startsWith("P") ||
+      timeString?.startsWith("p") ||
+      false
+    );
+  }
 
-  $: selectedMeta = timeString?.startsWith("P")
-    ? LATEST_WINDOW_TIME_RANGES[timeString]
-    : timeString?.startsWith("rill")
-      ? (PERIOD_TO_DATE_RANGES[timeString] ??
-        PREVIOUS_COMPLETE_DATE_RANGES[timeString])
-      : undefined;
+  function handleRangeSelect(range: string, ignoreSnap?: boolean) {
+    const parsed = parseRillTime(range);
 
-  function handleRangeSelect(range: string, syntax = false) {
-    onSelectRange(range, syntax);
+    const rangeGrainOrder = getGrainOrder(parsed.rangeGrain);
+    const asOfGrainOrder = getGrainOrder(truncationGrain);
+
+    if (asOfGrainOrder > rangeGrainOrder) {
+      truncationGrain = parsed.rangeGrain;
+    }
+
+    const newAsOfString = constructAsOfString(
+      ref,
+      ignoreSnap
+        ? undefined
+        : (truncationGrain ??
+            smallestTimeGrain ??
+            V1TimeGrain.TIME_GRAIN_MINUTE),
+      forwardAligned,
+    );
+
+    overrideRillTimeRef(parsed, newAsOfString);
+    onSelectRange(parsed.toString());
 
     closeMenu();
   }
@@ -123,11 +134,215 @@
   function closeMenu() {
     open = false;
   }
+
+  function humanizeAsOf(asOf: string): string {
+    switch (asOf) {
+      case "latest":
+        return "latest data";
+      case "watermark":
+        return "watermark";
+      case "now":
+        return "now";
+
+      default:
+        return "custom";
+    }
+  }
+
+  function onSelectGrain(grain: V1TimeGrain | undefined) {
+    if (!timeString) return;
+
+    const newString = constructNewString({
+      currentString: timeString,
+      truncationGrain: grain,
+      inclusive: forwardAligned,
+      ref: ref,
+    });
+
+    onSelectRange(newString);
+  }
+
+  function constructAsOfString(
+    asOf: string,
+    grain: V1TimeGrain | undefined | null,
+    forwardAlign: boolean,
+  ): string {
+    if (!grain) {
+      return asOf;
+    }
+
+    const alias = V1TimeGrainToAlias[grain];
+
+    let base: string;
+
+    if (asOf === "latest" || asOf === undefined) {
+      base = `latest/${alias}`;
+    } else if (asOf === "watermark") {
+      base = `watermark/${alias}`;
+    } else if (asOf === "now") {
+      base = `now/${alias}`;
+    } else {
+      base = `${asOf}/${alias}`;
+    }
+
+    if (forwardAlign) {
+      return `${base}+1${alias}`;
+    } else {
+      return base;
+    }
+  }
+
+  //
+  function convertLegacyTime(timeString: string) {
+    if (timeString.startsWith("rill-")) {
+      if (timeString === "rill-TD") return "DTD";
+      return timeString.replace("rill-", "");
+    } else if (timeString.startsWith("P") || timeString.startsWith("p")) {
+      return convertIsoToRillTime(timeString);
+    }
+    return timeString;
+  }
+
+  function convertIsoToRillTime(iso: string): string {
+    const upper = iso.toUpperCase();
+
+    if (!upper.startsWith("P")) {
+      throw new Error("Invalid ISO duration: must start with P");
+    }
+
+    const result: string[] = [];
+
+    const [datePartRaw, timePartRaw] = upper.slice(1).split("T");
+    const datePart = datePartRaw || "";
+    const timePart = timePartRaw || "";
+
+    // Date units: Y, M (Month), W, D
+    const dateUnits: Record<string, string> = {
+      Y: "Y",
+      M: "M", // Month
+      W: "W",
+      D: "D",
+    };
+
+    // Time units: H, M (Minute), S
+    const timeUnits: Record<string, string> = {
+      H: "H",
+      M: "m", // Minute (lowercase in Rill)
+      S: "S",
+    };
+
+    for (const [unit, rill] of Object.entries(dateUnits)) {
+      const match = datePart.match(new RegExp(`(\\d+(\\.\\d+)?)${unit}`));
+      if (match) result.push(`${match[1]}${rill}`);
+    }
+
+    for (const [unit, rill] of Object.entries(timeUnits)) {
+      const match = timePart.match(new RegExp(`(\\d+(\\.\\d+)?)${unit}`));
+      if (match) result.push(`${match[1]}${rill}`);
+    }
+
+    return result.join("");
+  }
+
+  function constructNewString({
+    currentString,
+    truncationGrain,
+    inclusive,
+    ref,
+  }: {
+    currentString: string;
+    truncationGrain: V1TimeGrain | undefined | null;
+    inclusive: boolean;
+    ref: "watermark" | "latest" | "now" | string;
+  }): string {
+    const legacy = isUsingLegacyTime(currentString);
+
+    const rillTime = parseRillTime(
+      legacy ? convertLegacyTime(currentString) : currentString,
+    );
+
+    const newAsOfString = constructAsOfString(ref, truncationGrain, inclusive);
+
+    overrideRillTimeRef(rillTime, newAsOfString);
+
+    return rillTime.toString();
+  }
+
+  function onSelectAsOfOption(
+    ref: "latest" | "watermark" | "now" | string,
+    inclusive: boolean,
+  ) {
+    console.log({ ref, inclusive });
+    if (!timeString) return;
+    const newString = constructNewString({
+      currentString: timeString,
+      truncationGrain: truncationGrain,
+      inclusive: ref === "watermark" ? false : inclusive,
+      ref,
+    });
+
+    onSelectRange(newString);
+  }
+
+  function returnAnchor(asOf: string) {
+    if (asOf === "latest") {
+      return maxDate.setZone(zone);
+    } else if (asOf === "watermark" && watermark) {
+      return watermark.setZone(zone);
+    } else if (asOf === "now") {
+      return DateTime.now().setZone(zone);
+    }
+  }
+
+  function parse(timeString: string) {
+    if (usingLegacyTime) {
+      return {
+        ref: "latest",
+        truncationGrain: timeString.startsWith("rill")
+          ? "TIME_GRAIN_DAY"
+          : getSmallestGrainFromISODuration(timeString),
+        forwardAligned: true,
+      };
+    }
+
+    const patterns = {
+      asOfClause: /as of (.+)$/i,
+      timeWithGrain:
+        /^(latest|watermark|now)\/([HhMmSsQqDdYyWw]+)(?:\+1[HhMmSsQqDdYyWw]+)?$/,
+      justType: /^(latest|watermark|now)$/,
+    };
+
+    let ref: string = "now";
+    let truncationGrain: V1TimeGrain | undefined = undefined;
+    let forwardAligned = false;
+
+    const asOfMatch = timeString.match(patterns.asOfClause);
+    const clauseToCheck = asOfMatch ? asOfMatch[1] : timeString;
+
+    const timeWithGrainMatch = clauseToCheck.match(patterns.timeWithGrain);
+
+    if (timeWithGrainMatch) {
+      ref = timeWithGrainMatch[1];
+      truncationGrain = GrainAliasToV1TimeGrain[timeWithGrainMatch[2]];
+    } else {
+      const justTypeMatch = clauseToCheck.match(patterns.justType);
+      if (justTypeMatch) {
+        ref = justTypeMatch[1];
+      } else if (clauseToCheck !== timeString) {
+        ref = clauseToCheck;
+      }
+    }
+
+    if (clauseToCheck.includes("+1")) {
+      forwardAligned = true;
+    }
+
+    return { ref, truncationGrain, forwardAligned };
+  }
 </script>
 
 <svelte:window
   on:keydown={(e) => {
-    console.log(e);
     if (e.metaKey && e.key === "k") {
       open = !open;
     }
@@ -155,7 +370,7 @@
       {/if}
 
       {#if interval.isValid}
-        <RangeDisplay {interval} {grain} />
+        <RangeDisplay {interval} />
       {/if}
 
       <span class="flex-none transition-transform" class:-rotate-180={open}>
@@ -172,9 +387,9 @@
       width={showCustomSelector ? 456 : 224}
       bind:this={searchComponent}
       {context}
-      onSelectRange={(range, syntax) => {
+      onSelectRange={(range) => {
         open = false;
-        onSelectRange(range, syntax);
+        onSelectRange(range);
       }}
     />
 
@@ -219,7 +434,9 @@
             {filter}
             {timeString}
             options={groups.previous}
-            onClick={handleRangeSelect}
+            onClick={(r) => {
+              handleRangeSelect(r, true);
+            }}
           />
 
           {#if allowCustomTimeRange}
@@ -258,7 +475,10 @@
             {zone}
             {maxDate}
             {minDate}
-            applyRange={applyCustomRange}
+            applyRange={(interval) => {
+              const string = `${interval.start.toFormat("yyyy-MM-dd")} to ${interval.end.toFormat("yyyy-MM-dd")}`;
+              onSelectRange(string);
+            }}
             closeMenu={() => (open = false)}
           />
         </div>
@@ -267,71 +487,89 @@
   </Popover.Content>
 </Popover.Root>
 
-{#if isShortHandSyntax && parsedTime?.rangeGrain}
-  <InControl
-    {parsedTime}
-    inGrain={parsedTime.rangeGrain}
-    rangeGrain={parsedTime.rangeGrain}
-    isComplete={parsedTime.isComplete}
+{#if truncationGrain && dateTimeAnchor}
+  <TruncationSelector
+    {dateTimeAnchor}
+    grain={truncationGrain}
+    rangeGrain={parsedTime?.rangeGrain ?? truncationGrain}
     {smallestTimeGrain}
-    onSelectEnding={(grain, complete) => {
-      console.log(grain, complete);
-
-      if (!timeString) return;
-
-      // ??= grain;
-
-      const [firstPart] = timeString.split("in");
-      const newString =
-        firstPart.trim() +
-        ` in ${V1TimeGrainToAlias[grain]}${complete ? "!" : ""}`;
-      console.log({ newString });
-      onSelectRange(newString, true);
+    inclusive={forwardAligned}
+    {ref}
+    onSelectEnding={onSelectGrain}
+    onToggleAlignment={(inclusive) => {
+      onSelectAsOfOption(ref, inclusive);
     }}
   />
 {/if}
 
-<!-- <Popover.Root
-  bind:open={calendarOpen}
-  onOpenChange={(open) => {
-    if (open) {
-      firstVisibleMonth = interval.start;
-    }
-  }}
->
-  <Popover.Trigger asChild let:builder>
-    <button
-      {...builder}
-      use:builder.action
-      class="flex"
-      aria-label="Select time range"
-      data-state={calendarOpen ? "open" : "closed"}
-    >
-      {#if interval.isValid}
-        <RangeDisplay {interval} {grain} />
-      {/if}
+<DropdownMenu.Root bind:open={asOfOpen}>
+  <DropdownMenu.Trigger class="flex gap-x-1">
+    as of <b>{humanReadableAsOf}</b>
 
-      <span
-        class="flex-none transition-transform"
-        class:-rotate-180={calendarOpen}
+    <span class="flex-none transition-transform" class:-rotate-180={asOfOpen}>
+      <CaretDownIcon />
+    </span>
+  </DropdownMenu.Trigger>
+
+  <DropdownMenu.Content align="start">
+    <Tooltip alignment="end" location="right" distance={8}>
+      <DropdownMenu.CheckboxItem
+        checked={ref === "latest"}
+        checkRight
+        class="flex justify-between"
+        on:click={() => {
+          onSelectAsOfOption("latest", forwardAligned);
+        }}
       >
-        <CaretDownIcon />
-      </span>
-    </button>
-  </Popover.Trigger>
+        latest data
+      </DropdownMenu.CheckboxItem>
+      <TooltipContent slot="tooltip-content" maxWidth="600px">
+        {maxDate
+          .setZone(zone)
+          .toLocaleString(DateTime.DATETIME_MED_WITH_SECONDS)}
+      </TooltipContent>
+    </Tooltip>
 
-  <Popover.Content align="start" class="w-fit overflow-hidden flex flex-col">
-    <CalendarPlusDateInput
-      {firstVisibleMonth}
-      {interval}
-      {zone}
-      {maxDate}
-      {minDate}
-      applyRange={applyCustomRange}
-      closeMenu={() => (calendarOpen = false)}
-    />
-  </Popover.Content>
-</Popover.Root> -->
+    {#if watermark}
+      <Tooltip alignment="end" location="right" distance={8}>
+        <DropdownMenu.CheckboxItem
+          checkRight
+          checked={ref === "watermark"}
+          class="flex justify-between"
+          on:click={() => {
+            onSelectAsOfOption("watermark", forwardAligned);
+          }}
+        >
+          watermark
+        </DropdownMenu.CheckboxItem>
+
+        <TooltipContent slot="tooltip-content" maxWidth="600px">
+          {watermark
+            .setZone(zone)
+            .toLocaleString(DateTime.DATETIME_MED_WITH_SECONDS)}
+        </TooltipContent>
+      </Tooltip>
+    {/if}
+
+    <Tooltip alignment="end" location="right" distance={8}>
+      <DropdownMenu.CheckboxItem
+        checkRight
+        checked={ref === "now"}
+        class="flex justify-between"
+        on:click={() => {
+          onSelectAsOfOption("now", forwardAligned);
+        }}
+      >
+        now
+      </DropdownMenu.CheckboxItem>
+      <TooltipContent slot="tooltip-content" maxWidth="600px">
+        {DateTime.now()
+          .setZone(zone)
+          .toLocaleString(DateTime.DATETIME_MED_WITH_SECONDS)}
+      </TooltipContent>
+    </Tooltip>
+  </DropdownMenu.Content>
+</DropdownMenu.Root>
 
 <style>
   /* The wrapper shrinks to the width of its content */
