@@ -8,6 +8,7 @@ import (
 	"sync"
 
 	"github.com/aws/aws-sdk-go-v2/service/athena"
+	"github.com/aws/aws-sdk-go-v2/service/athena/types"
 	"github.com/aws/smithy-go"
 	"github.com/aws/smithy-go/tracing/smithyoteltracing"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -71,7 +72,7 @@ func (c *Connection) ListTables(ctx context.Context, database, databaseSchema st
 	SELECT
 		table_name,
 		table_type
-	FROM %s.information_schema.tables 
+	FROM %s.information_schema.tables
 	WHERE table_schema = %s
 	`, sqlSafeName(database), escapeStringValue(databaseSchema))
 
@@ -115,7 +116,7 @@ func (c *Connection) GetTable(ctx context.Context, database, databaseSchema, tab
 	SELECT
 		column_name,
 		data_type
-	FROM %s.information_schema.columns 
+	FROM %s.information_schema.columns
 	WHERE table_schema = %s AND table_name = %s
 	ORDER BY ordinal_position
 	`, sqlSafeName(database), escapeStringValue(databaseSchema), escapeStringValue(table))
@@ -163,7 +164,9 @@ func (c *Connection) listCatalogs(ctx context.Context, client *athena.Client) ([
 			return nil, err
 		}
 		for _, summary := range page.DataCatalogsSummary {
-			catalogs = append(catalogs, *summary.CatalogName)
+			if summary.Status == types.DataCatalogStatusCreateComplete && summary.Type == types.DataCatalogTypeGlue {
+				catalogs = append(catalogs, *summary.CatalogName)
+			}
 		}
 	}
 
@@ -177,8 +180,9 @@ func (c *Connection) listSchemasForCatalog(ctx context.Context, client *athena.C
 		q = fmt.Sprintf(`
 		SELECT
 			catalog_name,
-			schema_name 
+			schema_name
 		FROM %s.information_schema.schemata
+		WHERE schema_name NOT IN ('information_schema', 'performance_schema', 'sys') OR schema_name = current_schema
 		`, sqlSafeName(catalog))
 	} else {
 		q = `
@@ -186,6 +190,7 @@ func (c *Connection) listSchemasForCatalog(ctx context.Context, client *athena.C
 			catalog_name, 
 			schema_name 
 		FROM information_schema.schemata
+		WHERE schema_name NOT IN ('information_schema', 'performance_schema', 'sys') OR schema_name = current_schema
 		`
 	}
 
@@ -203,6 +208,7 @@ func (c *Connection) listSchemasForCatalog(ctx context.Context, client *athena.C
 		return nil, fmt.Errorf("failed to get query results: %w", err)
 	}
 
+	// first row is header of skipping it
 	res := make([]*drivers.DatabaseSchemaInfo, 0, len(results.ResultSet.Rows)-1)
 	for _, row := range results.ResultSet.Rows[1:] {
 		if len(row.Data) < 2 || row.Data[0].VarCharValue == nil || row.Data[1].VarCharValue == nil {
