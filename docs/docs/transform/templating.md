@@ -33,17 +33,7 @@ In this example, the `ref` tag ensures that the model `my_model` will not be cre
 
 Environments are also useful when you wish to apply environment-specific SQL logic to your sources and models. One common use case would be to apply a filter or limit for models automatically when developing locally (in Rill Developer), but not have these same conditions applied to production models deployed on Rill Cloud. These same principles could also be extended to apply more advanced logic and conditional statements based on your requirements. This is all possible by combining environments with Rill's ability to leverage [templating](/connect/templating.md).
 
-Similar to the example in the previous section, let's say we had a S3 source defined but this time we did not have a partitioned bucket. However, it contains an `updated_at` timestamp column that allows us to leverage DuckDB's ability to read from the S3 file directly and then apply a filter post-download (but we only want to do this locally). In production, we still want to make sure that our models and dashboards are using the full data present in the S3 source.
-
-Now, for your `source.yaml` file (and combined with templating), you could do something like:
-
-```yaml
-type: source
-connector: "duckdb"
-sql: SELECT * FROM read_parquet('s3://path/to/bucket/*.parquet') {{ if dev }} where updated_at >= '2024-01-01' AND updated_at < '2024-02-01' {{ end }}
-```
-
-On the other hand, let's say we had some kind of intermediate model where we wanted to apply a limit of 10000 _(but only for local development)_, our `model.sql` file may look something like the following instead:
+Let's say we had some kind of intermediate model where we wanted to apply a limit of 10000 _(but only for local development)_, our `model.sql` file may look something like the following instead:
 
 ```sql
 SELECT * FROM {{ ref "<source_name>" }}
