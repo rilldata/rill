@@ -109,7 +109,6 @@ var spec = drivers.Spec{
 			Type:        drivers.StringPropertyType,
 			DisplayName: "Login Endpoint",
 			Required:    false,
-			Default:     "login.salesforce.com",
 			Placeholder: "login.salesforce.com",
 			Hint:        "Either set this or pass --env connector.salesforce.endpoint=... to rill start",
 		},
