@@ -10,20 +10,15 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/athena"
 	"github.com/aws/aws-sdk-go-v2/service/athena/types"
 	"github.com/aws/smithy-go"
-	"github.com/aws/smithy-go/tracing/smithyoteltracing"
 	"github.com/rilldata/rill/runtime/drivers"
-	"go.opentelemetry.io/otel"
 	"golang.org/x/sync/errgroup"
 )
 
 func (c *Connection) ListDatabaseSchemas(ctx context.Context) ([]*drivers.DatabaseSchemaInfo, error) {
-	awsConfig, err := c.awsConfig(ctx, c.config.AWSRegion)
+	client, err := c.getClient(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get AWS config: %w", err)
+		return nil, err
 	}
-	client := athena.NewFromConfig(awsConfig, func(o *athena.Options) {
-		o.TracerProvider = smithyoteltracing.Adapt(otel.GetTracerProvider())
-	})
 
 	catalogs, err := c.listCatalogs(ctx, client)
 	if err != nil {
@@ -59,15 +54,6 @@ func (c *Connection) ListDatabaseSchemas(ctx context.Context) ([]*drivers.Databa
 }
 
 func (c *Connection) ListTables(ctx context.Context, database, databaseSchema string) ([]*drivers.TableInfo, error) {
-	awsConfig, err := c.awsConfig(ctx, c.config.AWSRegion)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get AWS config: %w", err)
-	}
-
-	client := athena.NewFromConfig(awsConfig, func(o *athena.Options) {
-		o.TracerProvider = smithyoteltracing.Adapt(otel.GetTracerProvider())
-	})
-
 	q := fmt.Sprintf(`
 	SELECT
 		table_name,
@@ -75,6 +61,11 @@ func (c *Connection) ListTables(ctx context.Context, database, databaseSchema st
 	FROM %s.information_schema.tables
 	WHERE table_schema = %s
 	`, sqlSafeName(database), escapeStringValue(databaseSchema))
+
+	client, err := c.getClient(ctx)
+	if err != nil {
+		return nil, err
+	}
 
 	queryID, err := c.executeQuery(ctx, client, q, c.config.Workgroup, c.config.OutputLocation)
 	if err != nil {
@@ -103,16 +94,7 @@ func (c *Connection) ListTables(ctx context.Context, database, databaseSchema st
 }
 
 func (c *Connection) GetTable(ctx context.Context, database, databaseSchema, table string) (*drivers.TableMetadata, error) {
-	awsConfig, err := c.awsConfig(ctx, c.config.AWSRegion)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get AWS config: %w", err)
-	}
-
-	client := athena.NewFromConfig(awsConfig, func(o *athena.Options) {
-		o.TracerProvider = smithyoteltracing.Adapt(otel.GetTracerProvider())
-	})
-
-	query := fmt.Sprintf(`
+	q := fmt.Sprintf(`
 	SELECT
 		column_name,
 		data_type
@@ -121,7 +103,12 @@ func (c *Connection) GetTable(ctx context.Context, database, databaseSchema, tab
 	ORDER BY ordinal_position
 	`, sqlSafeName(database), escapeStringValue(databaseSchema), escapeStringValue(table))
 
-	queryID, err := c.executeQuery(ctx, client, query, c.config.Workgroup, c.config.OutputLocation)
+	client, err := c.getClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	queryID, err := c.executeQuery(ctx, client, q, c.config.Workgroup, c.config.OutputLocation)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute columns query: %w", err)
 	}

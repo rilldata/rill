@@ -146,16 +146,10 @@ var _ drivers.Handle = &Connection{}
 
 // Ping implements drivers.Handle.
 func (c *Connection) Ping(ctx context.Context) error {
-	// Get AWS config with configured region
-	awsConfig, err := c.awsConfig(ctx, c.config.AWSRegion)
+	client, err := c.getClient(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to get AWS config: %w", err)
+		return err
 	}
-
-	// Create Athena client
-	client := athena.NewFromConfig(awsConfig, func(o *athena.Options) {
-		o.TracerProvider = smithyoteltracing.Adapt(otel.GetTracerProvider())
-	})
 
 	// Execute a simple query to verify connection
 	_, err = c.executeQuery(ctx, client, "SELECT 1", c.config.Workgroup, c.config.OutputLocation)
@@ -293,6 +287,18 @@ func (c *Connection) awsConfig(ctx context.Context, awsRegion string) (aws.Confi
 	}
 
 	return awsConfig, nil
+}
+
+func (c *Connection) getClient(ctx context.Context) (*athena.Client, error) {
+	awsConfig, err := c.awsConfig(ctx, c.config.AWSRegion)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get AWS config: %w", err)
+	}
+
+	client := athena.NewFromConfig(awsConfig, func(o *athena.Options) {
+		o.TracerProvider = smithyoteltracing.Adapt(otel.GetTracerProvider())
+	})
+	return client, nil
 }
 
 func (c *Connection) executeQuery(ctx context.Context, client *athena.Client, sql, workgroup, outputLocation string) (*string, error) {
