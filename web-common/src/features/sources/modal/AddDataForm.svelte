@@ -54,10 +54,7 @@
           (property) => property.key !== "dsn",
         )) ?? [];
   const schema = yup(getYupSchema[connector.name as keyof typeof getYupSchema]);
-  const propertyDefaults = getInitialFormValuesFromProperties(properties);
-  // NOTE: we used to use defaults(schema) here, removing it so we can ENG-840
-  // TODO: rethink this, prep for Template API
-  const initialFormValues = propertyDefaults;
+  const initialFormValues = getInitialFormValuesFromProperties(properties);
   const {
     form: paramsForm,
     errors: paramsErrors,

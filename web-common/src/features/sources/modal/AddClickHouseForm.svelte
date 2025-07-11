@@ -47,12 +47,9 @@
 
   // Always include 'managed' in the schema for ClickHouse
   const clickhouseSchema = yup(getYupSchema["clickhouse"]);
-  const propertyDefaults = getInitialFormValuesFromProperties(
+  const initialFormValues = getInitialFormValuesFromProperties(
     connector.configProperties ?? [],
   );
-  // NOTE: we used to use defaults(schema) here, removing it so we can ENG-840
-  // TODO: rethink this, prep for Template API
-  const initialFormValues = propertyDefaults;
   const paramsFormId = `add-clickhouse-data-${connector.name}-form`;
   const {
     form: paramsForm,
@@ -118,7 +115,7 @@
     }
     // Switching to self-managed: restore defaults
     else if (prevManaged && !$paramsForm.managed) {
-      paramsForm.update(() => ({ ...propertyDefaults, managed: false }), {
+      paramsForm.update(() => ({ ...initialFormValues, managed: false }), {
         taint: false,
       });
     }
