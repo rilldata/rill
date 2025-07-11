@@ -217,6 +217,7 @@ func (s *Service) startDeploymentInner(ctx context.Context, depl *database.Deplo
 	_, err = rt.CreateInstance(ctx, &runtimev1.CreateInstanceRequest{
 		InstanceId:     instanceID,
 		Environment:    depl.Environment,
+		OlapConnector:  "duckdb", // Default OLAP connector for backwards compatibility with projects that don't specify olap_connector in rill.yaml
 		RepoConnector:  "admin",
 		AdminConnector: "admin",
 		AiConnector:    "admin",

@@ -76,6 +76,14 @@ type AppOptions struct {
 }
 
 func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
+	// Set default OLAP driver and DSN if not specified (for backwards compatibility)
+	if opts.OlapDriver == "" {
+		opts.OlapDriver = DefaultOLAPDriver
+	}
+	if opts.OlapDSN == "" {
+		opts.OlapDSN = DefaultOLAPDSN
+	}
+
 	// Setup logger
 	logPath, err := opts.Ch.DotRill.ResolveFilename("rill.log", true)
 	if err != nil {
