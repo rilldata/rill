@@ -322,8 +322,6 @@ func (c *Connection) executeQuery(ctx context.Context, client *athena.Client, sq
 		return nil, err
 	}
 
-	ticker := time.NewTicker(time.Second)
-	defer ticker.Stop()
 	for {
 		select {
 		case <-ctx.Done():
@@ -333,7 +331,7 @@ func (c *Connection) executeQuery(ctx context.Context, client *athena.Client, sq
 			})
 			cancel()
 			return nil, errors.Join(ctx.Err(), stopErr)
-		case <-ticker.C:
+		default:
 			status, err := client.GetQueryExecution(ctx, &athena.GetQueryExecutionInput{
 				QueryExecutionId: queryExecutionOutput.QueryExecutionId,
 			})
