@@ -39,7 +39,7 @@ func createScriptFile(ctx context.Context, version string) (string, error) {
 	case "latest", "":
 		url = "https://cdn.rilldata.com/rill/latest/install.sh"
 	default:
-		url = fmt.Sprintf("https://raw.githubusercontent.com/rilldata/rill/install.sh", version)
+		url = fmt.Sprintf("https://raw.githubusercontent.com/rilldata/rill/%s/scripts/install.sh", version)
 	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
