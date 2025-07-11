@@ -3,7 +3,6 @@ import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import { DateTime, Duration } from "luxon";
 import type { DateObjectUnits } from "luxon/src/datetime";
 import {
-  getLowerOrderGrain,
   getMinGrain,
   grainAliasToDateTimeUnit,
   GrainAliasToV1TimeGrain,
@@ -21,6 +20,12 @@ export enum RillTimeLabel {
   Ref = "ref",
 }
 
+export type RillTimeAsOfLabel = {
+  label: RillTimeLabel;
+  snap: string | undefined;
+  offset: number;
+};
+
 export class RillTime {
   public isComplete: boolean = false;
   public timezone: string | undefined;
@@ -29,6 +34,7 @@ export class RillTime {
   public readonly rangeGrain: V1TimeGrain | undefined;
   public byGrain: V1TimeGrain | undefined;
   public readonly isShorthandSyntax: boolean;
+  public asOfLabel: RillTimeAsOfLabel | undefined = undefined;
 
   public constructor(public readonly interval: RillTimeInterval) {
     this.updateIsComplete();
@@ -36,7 +42,7 @@ export class RillTime {
     this.isShorthandSyntax =
       interval instanceof RillShorthandInterval ||
       interval instanceof RillPeriodToGrainInterval;
-    this.rangeGrain = this.interval.getGrains();
+    this.rangeGrain = this.interval.getGrain();
   }
 
   public withGrain(grain: string) {
@@ -51,6 +57,7 @@ export class RillTime {
 
   public withAnchorOverrides(anchorOverrides: RillPointInTime[]) {
     this.anchorOverrides = anchorOverrides;
+    this.asOfLabel = this.getAsOfLabel();
     this.updateIsComplete();
     return this;
   }
@@ -66,11 +73,14 @@ export class RillTime {
       pt.hasLabelledPart(),
     );
     if (pointUsingRefIndex >= 0) {
-      this.anchorOverrides[pointUsingRefIndex] = override;
+      this.withAnchorOverrides([
+        ...this.anchorOverrides.slice(0, pointUsingRefIndex),
+        override,
+        ...this.anchorOverrides.slice(pointUsingRefIndex + 1),
+      ]);
     } else {
-      this.anchorOverrides.push(override);
+      this.withAnchorOverrides([...this.anchorOverrides, override]);
     }
-    this.updateIsComplete();
   }
 
   public toString() {
@@ -93,7 +103,7 @@ export class RillTime {
 
   private updateIsComplete() {
     const offset = this.getAnchorOverridesOffset();
-    this.interval.isComplete(offset);
+    this.isComplete = this.interval.isComplete(offset, this.asOfLabel);
   }
 
   private getAnchorOverridesOffset(): Duration {
@@ -105,12 +115,38 @@ export class RillTime {
 
     return offset;
   }
+
+  private getAsOfLabel(): RillTimeAsOfLabel | undefined {
+    const labelledAnchor = this.anchorOverrides.find((anchor) =>
+      anchor.hasLabelledPart(),
+    );
+    if (!labelledAnchor) return undefined;
+
+    const labelledPart = labelledAnchor.getLabelledPart();
+    if (!labelledPart || labelledPart.snaps.length > 1) return undefined;
+    const labelledPoint = labelledPart.point as RillLabelledPointInTime;
+
+    const snap = labelledPart.snaps[0];
+    const offsetForSnap =
+      labelledAnchor.offset[
+        V1TimeGrainToDateTimeUnit[GrainAliasToV1TimeGrain[snap]] + "s"
+      ] ?? 0;
+
+    return {
+      label: labelledPoint.label,
+      snap,
+      offset: offsetForSnap,
+    };
+  }
 }
 
 interface RillTimeInterval {
-  isComplete(offset: Duration): boolean;
+  isComplete(
+    offset: Duration,
+    asOfLabel: RillTimeAsOfLabel | undefined,
+  ): boolean;
   getLabel(offset: Duration): [label: string, supported: boolean];
-  getGrains(): V1TimeGrain | undefined;
+  getGrain(): V1TimeGrain | undefined;
   toString(): string;
 }
 
@@ -134,16 +170,19 @@ export class RillShorthandInterval implements RillTimeInterval {
     );
   }
 
-  public isComplete(offset: Duration) {
-    return this.expandedInterval.isComplete(offset);
+  public isComplete(
+    offset: Duration,
+    asOfLabel: RillTimeAsOfLabel | undefined,
+  ) {
+    return this.expandedInterval.isComplete(offset, asOfLabel);
   }
 
   public getLabel(offset: Duration): [label: string, supported: boolean] {
     return this.expandedInterval.getLabel(offset);
   }
 
-  public getGrains() {
-    return this.expandedInterval.getGrains();
+  public getGrain() {
+    return this.expandedInterval.getGrain();
   }
 
   public toString() {
@@ -176,8 +215,11 @@ export class RillPeriodToGrainInterval implements RillTimeInterval {
     );
   }
 
-  public isComplete(offset: Duration) {
-    return this.expandedInterval.isComplete(offset);
+  public isComplete(
+    offset: Duration,
+    asOfLabel: RillTimeAsOfLabel | undefined,
+  ) {
+    return this.expandedInterval.isComplete(offset, asOfLabel);
   }
 
   public getLabel(): [label: string, supported: boolean] {
@@ -185,8 +227,8 @@ export class RillPeriodToGrainInterval implements RillTimeInterval {
     return [`${grain} to date`, true];
   }
 
-  public getGrains() {
-    return getLowerOrderGrain(GrainAliasToV1TimeGrain[this.grain]);
+  public getGrain() {
+    return GrainAliasToV1TimeGrain[this.grain];
   }
 
   public toString() {
@@ -205,7 +247,7 @@ export class RillTimeOrdinalInterval implements RillTimeInterval {
     return ["", false];
   }
 
-  public getGrains() {
+  public getGrain() {
     let rangeGrain: V1TimeGrain | undefined = undefined;
 
     this.parts.forEach((part) => {
@@ -226,11 +268,21 @@ export class RillTimeStartEndInterval implements RillTimeInterval {
     public readonly end: RillPointInTime,
   ) {}
 
-  public isComplete(offset: Duration) {
-    const endOffset = this.end.offset.plus(offset);
-    const now = DateTime.now().setZone("utc");
-    const offsetTime = now.plus(endOffset);
-    return now.toMillis() < offsetTime.toMillis();
+  public isComplete(
+    offset: Duration,
+    asOfLabel: RillTimeAsOfLabel | undefined,
+  ) {
+    const endOffset = this.end.offset.plus(offset).toObject();
+    const grains = Object.keys(endOffset);
+    if (grains.length !== 1)
+      return this.end.hasSnap() || !!asOfLabel?.snap || grains.length > 0;
+
+    const grain = grains[0];
+    const offsetAmount = endOffset[grain];
+    if (offsetAmount < 0) return true;
+    else if (offsetAmount > 0) return false;
+
+    return this.end.hasSnap() || asOfLabel?.snap === grain;
   }
 
   public getLabel(offset: Duration): [label: string, supported: boolean] {
@@ -294,7 +346,7 @@ export class RillTimeStartEndInterval implements RillTimeInterval {
     return ["", false];
   }
 
-  public getGrains() {
+  public getGrain() {
     const startRangeGrain = this.start.getGrain();
     const endRangeGrain =
       typeof this.end?.getGrain === "function"
@@ -323,7 +375,7 @@ export class RillIsoInterval implements RillTimeInterval {
     return ["", false];
   }
 
-  public getGrains() {
+  public getGrain() {
     return undefined;
   }
 
@@ -359,6 +411,14 @@ export class RillPointInTime {
     return this.parts.some((p) => p.point instanceof RillLabelledPointInTime);
   }
 
+  public getLabelledPart() {
+    return this.parts.find((p) => p.point instanceof RillLabelledPointInTime);
+  }
+
+  public hasSnap() {
+    return this.parts.some((p) => p.snaps.length);
+  }
+
   public toString() {
     return this.parts.map((part) => part.toString()).join("");
   }
@@ -369,7 +429,7 @@ export class RillPointInTimeWithSnap {
 
   public constructor(
     public readonly point: RillPointInTimeVariant,
-    private snaps: string[],
+    public snaps: string[],
   ) {
     if (this.point instanceof RillGrainPointInTime) {
       this.offset = this.point.offset;
@@ -455,7 +515,7 @@ export class RillGrainPointInTimePart {
 }
 
 export class RillLabelledPointInTime implements RillPointInTimeVariant {
-  public constructor(private readonly label: RillTimeLabel) {}
+  public constructor(public readonly label: RillTimeLabel) {}
 
   public static postProcessor([label]: string[]) {
     return new RillLabelledPointInTime(label.toLowerCase() as RillTimeLabel);

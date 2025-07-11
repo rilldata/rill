@@ -2,13 +2,17 @@ import {
   overrideRillTimeRef,
   parseRillTime,
 } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser";
-import { capitalizeFirstChar } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/RillTime.ts";
+import {
+  capitalizeFirstChar,
+  type RillTimeAsOfLabel,
+  RillTimeLabel,
+} from "@rilldata/web-common/features/dashboards/url-state/time-ranges/RillTime.ts";
 import { GrainAliasToV1TimeGrain } from "@rilldata/web-common/lib/time/new-grains";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import type { DateTimeUnit } from "luxon";
+import nearley from "nearley";
 import { describe, expect, it } from "vitest";
 import grammar from "./rill-time.cjs";
-import nearley from "nearley";
 
 const GRAINS = ["Y", "Q", "M", "W", "D", "H", "m", "s"] as const;
 const GRAIN_TO_LUXON: Record<string, DateTimeUnit> = {
@@ -87,7 +91,7 @@ function getMultiPeriodTestCases(n: number): TestCase[] {
         undefined,
       ],
       [`-7${g} to ref as of watermark/${g}`, last, true, protoGrain, undefined],
-      [`7${g}`, last, true, protoGrain, undefined],
+      [`7${g}`, last, false, protoGrain, undefined],
     ];
   }).flat();
 }
@@ -97,7 +101,7 @@ function getPeriodToDateTestCases(): TestCase[] {
     const protoGrain = GrainAliasToV1TimeGrain[g];
     const label = capitalizeFirstChar(`${GRAIN_TO_LUXON[g]} to date`);
     return <TestCase[]>[
-      [`${g}TD as of watermark/${g}`, label, false, protoGrain, undefined],
+      [`${g}TD as of watermark/${g}`, label, true, protoGrain, undefined],
       [
         `${g}TD as of watermark/${g}+1${g}`,
         label,
@@ -106,7 +110,7 @@ function getPeriodToDateTestCases(): TestCase[] {
         undefined,
       ],
 
-      [`${g}TD as of watermark/h`, label, false, protoGrain, undefined],
+      [`${g}TD as of watermark/h`, label, true, protoGrain, undefined],
     ];
   }).flat();
 }
@@ -120,14 +124,14 @@ describe("rill time", () => {
       [
         "-5W4M3Q2Y to -4W3M2Q1Y",
         "-5W4M3Q2Y to -4W3M2Q1Y",
-        false,
+        true,
         V1TimeGrain.TIME_GRAIN_WEEK,
         undefined,
       ],
       [
         "-5W-4M-3Q-2Y to -4W-3M-2Q-1Y",
         "-5W-4M-3Q-2Y to -4W-3M-2Q-1Y",
-        false,
+        true,
         V1TimeGrain.TIME_GRAIN_WEEK,
         undefined,
       ],
@@ -179,6 +183,43 @@ describe("rill time", () => {
         const rt = parseRillTime(rillTime);
         overrideRillTimeRef(rt, refOverride);
         expect(rt.toString(), updatedRillTime);
+      });
+    }
+  });
+
+  describe("as of label", () => {
+    const Cases: [
+      rillTime: string,
+      asOfLabel: RillTimeAsOfLabel | undefined,
+    ][] = [
+      ["7D", undefined],
+      ["7D as of -2D", undefined],
+      [
+        "7D as of -2D as of watermark",
+        { label: RillTimeLabel.Watermark, snap: undefined, offset: 0 },
+      ],
+      [
+        "7D as of -2D as of watermark/D",
+        { label: RillTimeLabel.Watermark, snap: "D", offset: 0 },
+      ],
+      [
+        "7D as of -2D as of watermark/D+1D",
+        { label: RillTimeLabel.Watermark, snap: "D", offset: 1 },
+      ],
+      [
+        "7D as of -2D as of watermark/D+1h",
+        { label: RillTimeLabel.Watermark, snap: "D", offset: 0 },
+      ],
+      [
+        "7D as of -2D as of watermark/h+1h",
+        { label: RillTimeLabel.Watermark, snap: "h", offset: 1 },
+      ],
+    ];
+
+    for (const [rillTime, asOfLabel] of Cases) {
+      it(rillTime, () => {
+        const rt = parseRillTime(rillTime);
+        expect(rt.asOfLabel).toEqual(asOfLabel);
       });
     }
   });
