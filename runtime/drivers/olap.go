@@ -9,13 +9,14 @@ import (
 	"regexp"
 	"strings"
 	"time"
-	// Load IANA time zone data
-	_ "time/tzdata"
 
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/timeutil"
+
+	// Load IANA time zone data
+	_ "time/tzdata"
 )
 
 var (
