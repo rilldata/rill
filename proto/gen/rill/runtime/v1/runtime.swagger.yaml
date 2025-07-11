@@ -591,6 +591,8 @@ paths:
                 type: array
                 items:
                   type: string
+              appContext:
+                $ref: '#/definitions/v1AppContext'
             title: Request message for RuntimeService.Complete
       tags:
         - RuntimeService
@@ -636,6 +638,11 @@ paths:
           in: path
           required: true
           type: string
+        - name: includeSystemMessages
+          description: Whether to include system messages in the response (defaults to false for UI use)
+          in: query
+          required: false
+          type: boolean
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/connectors/analyze:
@@ -3701,6 +3708,21 @@ definitions:
           type: object
           $ref: '#/definitions/v1ResourceName'
         description: List of resources that appear to use the connector.
+  v1AppContext:
+    type: object
+    properties:
+      contextType:
+        $ref: '#/definitions/v1AppContextType'
+      contextMetadata:
+        type: object
+  v1AppContextType:
+    type: string
+    enum:
+      - APP_CONTEXT_TYPE_UNSPECIFIED
+      - APP_CONTEXT_TYPE_PROJECT_CHAT
+      - APP_CONTEXT_TYPE_EXPLORE_DASHBOARD
+    default: APP_CONTEXT_TYPE_UNSPECIFIED
+    title: Application context for AI conversations
   v1AssertionResult:
     type: object
     properties:

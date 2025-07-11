@@ -363,7 +363,7 @@ func (c *catalogStore) UpsertInstanceHealth(ctx context.Context, h *drivers.Inst
 // FindConversations fetches all conversations in an instance for a given owner.
 func (c *catalogStore) FindConversations(ctx context.Context, ownerID string) ([]*drivers.Conversation, error) {
 	rows, err := c.db.QueryxContext(ctx, `
-		SELECT conversation_id, owner_id, title, created_on, updated_on
+		SELECT conversation_id, owner_id, title, app_context_type, app_context_metadata_json, created_on, updated_on
 		FROM conversations
 		WHERE instance_id = ? AND owner_id = ?
 		ORDER BY updated_on DESC
@@ -376,7 +376,7 @@ func (c *catalogStore) FindConversations(ctx context.Context, ownerID string) ([
 	var result []*drivers.Conversation
 	for rows.Next() {
 		var conv drivers.Conversation
-		if err := rows.Scan(&conv.ID, &conv.OwnerID, &conv.Title, &conv.CreatedOn, &conv.UpdatedOn); err != nil {
+		if err := rows.Scan(&conv.ID, &conv.OwnerID, &conv.Title, &conv.AppContextType, &conv.AppContextMetadataJSON, &conv.CreatedOn, &conv.UpdatedOn); err != nil {
 			return nil, err
 		}
 		result = append(result, &conv)
@@ -392,13 +392,13 @@ func (c *catalogStore) FindConversations(ctx context.Context, ownerID string) ([
 // FindConversation fetches a conversation by ID.
 func (c *catalogStore) FindConversation(ctx context.Context, conversationID string) (*drivers.Conversation, error) {
 	row := c.db.QueryRowxContext(ctx, `
-		SELECT conversation_id, owner_id, title, created_on, updated_on
+		SELECT conversation_id, owner_id, title, app_context_type, app_context_metadata_json, created_on, updated_on
 		FROM conversations
 		WHERE instance_id = ? AND conversation_id = ?
 	`, c.instanceID, conversationID)
 
 	var conv drivers.Conversation
-	if err := row.Scan(&conv.ID, &conv.OwnerID, &conv.Title, &conv.CreatedOn, &conv.UpdatedOn); err != nil {
+	if err := row.Scan(&conv.ID, &conv.OwnerID, &conv.Title, &conv.AppContextType, &conv.AppContextMetadataJSON, &conv.CreatedOn, &conv.UpdatedOn); err != nil {
 		return nil, err
 	}
 
@@ -406,12 +406,12 @@ func (c *catalogStore) FindConversation(ctx context.Context, conversationID stri
 }
 
 // InsertConversation inserts a new conversation.
-func (c *catalogStore) InsertConversation(ctx context.Context, ownerID, title string) (string, error) {
+func (c *catalogStore) InsertConversation(ctx context.Context, ownerID, title, appContextType, appContextMetadataJSON string) (string, error) {
 	conversationID := uuid.NewString()
 	_, err := c.db.ExecContext(ctx, `
-		INSERT INTO conversations (instance_id, conversation_id, owner_id, title, created_on, updated_on)
-		VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-  `, c.instanceID, conversationID, ownerID, title)
+		INSERT INTO conversations (instance_id, conversation_id, owner_id, title, app_context_type, app_context_metadata_json, created_on, updated_on)
+		VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+  `, c.instanceID, conversationID, ownerID, title, appContextType, appContextMetadataJSON)
 	return conversationID, err
 }
 
