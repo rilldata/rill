@@ -15,11 +15,12 @@ import {
   type V1MetricsViewAggregationMeasure,
   type V1MetricsViewAggregationResponse,
   type V1MetricsViewAggregationResponseDataItem,
-  createQueryServiceMetricsViewAggregation,
+  getQueryServiceMetricsViewAggregationQueryOptions,
 } from "@rilldata/web-common/runtime-client";
 import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 import {
   type CreateQueryResult,
+  createQuery,
   keepPreviousData,
 } from "@tanstack/svelte-query";
 import { type Readable, type Writable, derived, writable } from "svelte/store";
@@ -59,14 +60,14 @@ export function createMetricsViewTimeSeriesFromAggregation(
   measureNames: string[],
   includeTimeComparison = false,
 ): CreateQueryResult<V1MetricsViewAggregationResponse, HTTPError> {
-  return derived(
+  const queryOptionsStore = derived(
     [
       ctx.runtime,
       ctx.metricsViewName,
       ctx.dashboardStore,
       useTimeControlStore(ctx),
     ],
-    ([runtime, metricsViewName, dashboardStore, timeControls], set) => {
+    ([runtime, metricsViewName, dashboardStore, timeControls]) => {
       const timeGrain =
         timeControls?.selectedTimeRange?.interval ?? timeControls.minTimeGrain;
       const timeZone = dashboardStore?.selectedTimezone;
@@ -98,7 +99,15 @@ export function createMetricsViewTimeSeriesFromAggregation(
         ];
       }
 
-      return createQueryServiceMetricsViewAggregation(
+      const enabled =
+        !!timeControls.ready &&
+        !!ctx.dashboardStore &&
+        !!timeDimension &&
+        !!timeGrain &&
+        // in case of comparison, we need to wait for the comparison start time to be available
+        (!includeTimeComparison || !!timeControls.comparisonAdjustedStart);
+
+      return getQueryServiceMetricsViewAggregationQueryOptions(
         runtime.instanceId,
         metricsViewName,
         {
@@ -126,23 +135,16 @@ export function createMetricsViewTimeSeriesFromAggregation(
         },
         {
           query: {
-            enabled:
-              !!timeControls.ready &&
-              !!ctx.dashboardStore &&
-              !!timeDimension &&
-              !!timeGrain &&
-              // in case of comparison, we need to wait for the comparison start time to be available
-              (!includeTimeComparison ||
-                !!timeControls.comparisonAdjustedStart),
-
+            enabled,
             placeholderData: keepPreviousData,
             refetchOnMount: false,
           },
         },
-        ctx.queryClient,
-      ).subscribe(set);
+      );
     },
   );
+
+  return createQuery(queryOptionsStore, ctx.queryClient);
 }
 
 export function createTimeSeriesDataStore(

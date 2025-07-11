@@ -100,6 +100,11 @@ export function updateChartInteractionStore(
   }
 }
 
+/**
+ * This function processes raw metrics aggregation data and:
+ * - Adjusts timestamps to the specified timezone for rendering
+ * - Calculates positioning offsets for centering data points within time grain intervals
+ */
 export function prepareTimeSeriesOffsets(
   timeSeriesData: V1MetricsViewAggregationResponseDataItem[],
   timeDimension: string | undefined,
