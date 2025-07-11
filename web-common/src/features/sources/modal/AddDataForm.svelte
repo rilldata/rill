@@ -29,7 +29,7 @@
   import NeedHelpText from "./NeedHelpText.svelte";
   import Tabs from "@rilldata/web-common/components/forms/Tabs.svelte";
   import { TabsContent } from "@rilldata/web-common/components/tabs";
-  import { isEmpty } from "./utils";
+  import { isEmpty, normalizeErrors } from "./utils";
   import { CONNECTION_TAB_OPTIONS } from "./constants";
   import { getInitialFormValuesFromProperties } from "../sourceUtils";
 
@@ -271,7 +271,7 @@
                       optional={!property.required}
                       secret={property.secret}
                       hint={property.hint}
-                      errors={$paramsErrors[propertyKey]}
+                      errors={normalizeErrors($paramsErrors[propertyKey])}
                       bind:value={$paramsForm[propertyKey]}
                       onInput={(_, e) => onStringInputChange(e)}
                       alwaysShowError
@@ -339,7 +339,7 @@
                   optional={!property.required}
                   secret={property.secret}
                   hint={property.hint}
-                  errors={$paramsErrors[propertyKey]}
+                  errors={normalizeErrors($paramsErrors[propertyKey])}
                   bind:value={$paramsForm[propertyKey]}
                   onInput={(_, e) => onStringInputChange(e)}
                   alwaysShowError
