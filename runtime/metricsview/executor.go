@@ -155,8 +155,12 @@ func (e *Executor) Timestamps(ctx context.Context, timeDim string) (TimestampsRe
 
 	var res TimestampsResult
 	switch e.olap.Dialect() {
-	case drivers.DialectDuckDB, drivers.DialectClickHouse, drivers.DialectPinot:
-		res, err = e.resolveDuckDBClickHouseAndPinot(ctx, timeExpr)
+	case drivers.DialectDuckDB:
+		res, err = e.resolveDuckDB(ctx, timeExpr)
+	case drivers.DialectClickHouse:
+		res, err = e.resolveClickHouse(ctx, timeExpr)
+	case drivers.DialectPinot:
+		res, err = e.resolvePinot(ctx, timeExpr)
 	case drivers.DialectDruid:
 		res, err = e.resolveDruid(ctx, timeExpr)
 	default:

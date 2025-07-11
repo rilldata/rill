@@ -6,6 +6,7 @@
   import { parseCriteriaError } from "@rilldata/web-common/features/alerts/criteria-tab/parseCriteriaError";
   import type { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
   import { useMetricsViewValidSpec } from "@rilldata/web-common/features/dashboards/selectors";
+  import type { TimeControls } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
   import { debounce } from "@rilldata/web-common/lib/create-debouncer";
   import { onMount } from "svelte";
   import { slide } from "svelte/transition";
@@ -13,9 +14,11 @@
   import { runtime } from "../../../runtime-client/runtime-store";
 
   export let superFormInstance: SuperForm<AlertFormValues>;
+  export let timeControls: TimeControls;
   export let index: number;
 
   $: ({ form, errors, validate } = superFormInstance);
+  $: ({ selectedComparisonTimeRange } = timeControls);
 
   $: ({ instanceId } = $runtime);
 
@@ -39,7 +42,11 @@
     (m) => m.name === $form["criteria"][index].measure,
   );
 
-  $: typeOptions = getTypeOptions($form, selectedMeasure);
+  $: typeOptions = getTypeOptions(
+    $form,
+    $selectedComparisonTimeRange,
+    selectedMeasure,
+  );
 
   // Debounce the update of value. This avoids constant refetches
   let value: string = "0";
@@ -61,11 +68,12 @@
   });
 </script>
 
-<div class="flex flex-row gap-2">
+<div class="flex flex-row gap-2" aria-label="criteria-{index}">
   <Select
     bind:value={$form["criteria"][index].measure}
     id="field"
     label=""
+    ariaLabel="Criteria measure"
     options={measureOptions}
     placeholder="Measure"
     width={160}
@@ -74,6 +82,7 @@
     bind:value={$form["criteria"][index].type}
     id="type"
     label=""
+    ariaLabel="Criteria type"
     options={typeOptions}
     placeholder="type"
     width={256}
@@ -82,6 +91,7 @@
     bind:value={$form["criteria"][index].operation}
     id="operation"
     label=""
+    ariaLabel="Criteria operator"
     options={CriteriaOperationOptions}
     placeholder="Operator"
     width={70}
@@ -91,6 +101,7 @@
     alwaysShowError
     bind:value
     id="value"
+    title="Criteria value"
     onInput={valueUpdater}
     placeholder={"0"}
     width="auto"

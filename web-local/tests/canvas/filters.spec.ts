@@ -29,7 +29,10 @@ test.describe("canvas time filters", () => {
       .getByLabel("Select time range")
       .click();
     await page.getByText("Last 7 Days").click();
-    await page.getByRole("button", { name: "Comparing", exact: true }).click();
+    await page
+      .getByRole("complementary", { name: "Inspector Panel" })
+      .getByLabel("Toggle time comparison")
+      .click();
 
     await expect(
       page.getByText("Total records 7,863 -15 ~0% vs previous week"),

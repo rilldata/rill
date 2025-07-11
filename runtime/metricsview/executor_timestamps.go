@@ -14,7 +14,7 @@ const (
 	defaultExecutionTimeout = time.Minute * 3
 )
 
-func (e *Executor) resolveDuckDBClickHouseAndPinot(ctx context.Context, timeExpr string) (TimestampsResult, error) {
+func (e *Executor) resolveDuckDB(ctx context.Context, timeExpr string) (TimestampsResult, error) {
 	filter := e.security.RowFilter()
 	if filter != "" {
 		filter = fmt.Sprintf(" WHERE %s", filter)
@@ -50,20 +50,124 @@ func (e *Executor) resolveDuckDBClickHouseAndPinot(ctx context.Context, timeExpr
 		var minTime, maxTime, watermark *time.Time
 		err = rows.Scan(&minTime, &maxTime, &watermark)
 		if err != nil {
-			if e.olap.Dialect() == drivers.DialectPinot {
-				// retry again with long type as pinot supports timestamp columns with long type
-				var minTime, maxTime, watermark int64
-				innerErr := rows.Scan(&minTime, &maxTime, &watermark)
-				if innerErr != nil {
-					return TimestampsResult{}, err
-				}
-				return TimestampsResult{
-					Min:       time.UnixMilli(minTime),
-					Max:       time.UnixMilli(maxTime),
-					Watermark: time.UnixMilli(watermark),
-				}, nil
-			}
 			return TimestampsResult{}, err
+		}
+		return TimestampsResult{
+			Min:       safeTime(minTime),
+			Max:       safeTime(maxTime),
+			Watermark: safeTime(watermark),
+		}, nil
+	}
+
+	err = rows.Err()
+	if err != nil {
+		return TimestampsResult{}, err
+	}
+
+	return TimestampsResult{}, errors.New("no rows returned")
+}
+
+func (e *Executor) resolveClickHouse(ctx context.Context, timeExpr string) (TimestampsResult, error) {
+	filter := e.security.RowFilter()
+	if filter != "" {
+		filter = fmt.Sprintf(" WHERE %s", filter)
+	}
+	escapedTableName := e.olap.Dialect().EscapeTable(e.metricsView.Database, e.metricsView.DatabaseSchema, e.metricsView.Table)
+
+	var watermarkExpr string
+	if e.metricsView.WatermarkExpression != "" {
+		watermarkExpr = e.metricsView.WatermarkExpression
+	} else {
+		watermarkExpr = fmt.Sprintf("max(%s)", timeExpr)
+	}
+
+	// if datetime column is not nullable then ch returns 0 value instead of NULL when there are no rows so set aggregate_functions_null_for_empty
+	rangeSQL := fmt.Sprintf(
+		"SELECT min(%[1]s) as \"min\", max(%[1]s) as \"max\", %[2]s as \"watermark\" FROM %[3]s %[4]s SETTINGS aggregate_functions_null_for_empty = 1",
+		timeExpr,
+		watermarkExpr,
+		escapedTableName,
+		filter,
+	)
+
+	rows, err := e.olap.Query(ctx, &drivers.Statement{
+		Query:            rangeSQL,
+		Priority:         e.priority,
+		ExecutionTimeout: defaultExecutionTimeout,
+	})
+	if err != nil {
+		return TimestampsResult{}, err
+	}
+	defer rows.Close()
+
+	if rows.Next() {
+		var minTime, maxTime, watermark *time.Time
+		err = rows.Scan(&minTime, &maxTime, &watermark)
+		if err != nil {
+			return TimestampsResult{}, err
+		}
+		return TimestampsResult{
+			Min:       safeTime(minTime),
+			Max:       safeTime(maxTime),
+			Watermark: safeTime(watermark),
+		}, nil
+	}
+
+	err = rows.Err()
+	if err != nil {
+		return TimestampsResult{}, err
+	}
+
+	return TimestampsResult{}, errors.New("no rows returned")
+}
+
+func (e *Executor) resolvePinot(ctx context.Context, timeExpr string) (TimestampsResult, error) {
+	filter := e.security.RowFilter()
+	if filter != "" {
+		filter = fmt.Sprintf(" WHERE %s", filter)
+	}
+	escapedTableName := e.olap.Dialect().EscapeTable(e.metricsView.Database, e.metricsView.DatabaseSchema, e.metricsView.Table)
+
+	var watermarkExpr string
+	if e.metricsView.WatermarkExpression != "" {
+		watermarkExpr = e.metricsView.WatermarkExpression
+	} else {
+		watermarkExpr = fmt.Sprintf("max(%s)", timeExpr)
+	}
+
+	rangeSQL := fmt.Sprintf(
+		"SELECT min(%[1]s) as \"min\", max(%[1]s) as \"max\", %[2]s as \"watermark\" FROM %[3]s %[4]s",
+		timeExpr,
+		watermarkExpr,
+		escapedTableName,
+		filter,
+	)
+
+	rows, err := e.olap.Query(ctx, &drivers.Statement{
+		Query:            rangeSQL,
+		Priority:         e.priority,
+		ExecutionTimeout: defaultExecutionTimeout,
+	})
+	if err != nil {
+		return TimestampsResult{}, err
+	}
+	defer rows.Close()
+
+	if rows.Next() {
+		var minTime, maxTime, watermark *time.Time
+		err = rows.Scan(&minTime, &maxTime, &watermark)
+		if err != nil {
+			// retry again with long type as pinot supports timestamp columns with long type
+			var minTime, maxTime, watermark int64
+			innerErr := rows.Scan(&minTime, &maxTime, &watermark)
+			if innerErr != nil {
+				return TimestampsResult{}, err
+			}
+			return TimestampsResult{
+				Min:       time.UnixMilli(minTime),
+				Max:       time.UnixMilli(maxTime),
+				Watermark: time.UnixMilli(watermark),
+			}, nil
 		}
 		return TimestampsResult{
 			Min:       safeTime(minTime),

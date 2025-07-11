@@ -20,6 +20,13 @@ import {
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { derived, get, readable, type Readable } from "svelte/store";
 
+type MapQueryResponse = {
+  isFetching: boolean;
+  isLoading: boolean;
+  error: Error | null;
+  data?: { exploreState: ExploreState; exploreName: string };
+};
+
 /**
  * Builds the dashboard url from query name and args.
  * Used to show the relevant dashboard for a report/alert.
@@ -30,12 +37,7 @@ export function mapQueryToDashboard(
   queryArgsJson: string | undefined,
   executionTime: string | undefined,
   annotations: Record<string, string>,
-): Readable<{
-  isFetching: boolean;
-  isLoading: boolean;
-  error: Error;
-  data?: { exploreState: ExploreState; exploreName: string };
-}> {
+): Readable<MapQueryResponse> {
   if (!queryName || !queryArgsJson || !executionTime)
     return readable({
       isFetching: false,
@@ -62,12 +64,7 @@ export function mapObjectToExploreState(
   transformerProperties: TransformerProperties,
   executionTime: string,
   annotations: Record<string, string>,
-): Readable<{
-  isFetching: boolean;
-  isLoading: boolean;
-  error: Error;
-  data?: { exploreState: ExploreState; exploreName: string };
-}> {
+): Readable<MapQueryResponse> {
   if (!executionTime)
     return readable({
       isFetching: false,
@@ -133,7 +130,7 @@ export function mapObjectToExploreState(
         set({
           isFetching: true,
           isLoading: true,
-          error: new Error(""),
+          error: null,
         });
         return;
       }
@@ -205,7 +202,7 @@ export function mapObjectToExploreState(
           set({
             isFetching: false,
             isLoading: false,
-            error: new Error(),
+            error: null,
             data: {
               exploreState: newExploreState,
               exploreName,

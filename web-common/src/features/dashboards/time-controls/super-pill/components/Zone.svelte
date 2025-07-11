@@ -20,6 +20,7 @@
   export let activeTimeZone: string;
   export let context: string;
   export let lockTimeZone = false;
+  export let side: "top" | "right" | "bottom" | "left" = "bottom";
   export let onSelectTimeZone: (timeZone: string) => void;
 
   const recents = localStorageStore<string[]>(`${context}-recent-zones`, []);
@@ -60,6 +61,7 @@
       aria-label="Timezone selector"
       title={!availableTimeZones.length ? "No timezones configured" : ""}
       disabled={lockTimeZone}
+      type="button"
     >
       {getAbbreviationForIANA(watermark, activeTimeZone)}
       {#if !lockTimeZone}
@@ -70,7 +72,7 @@
     </button>
   </DropdownMenu.Trigger>
 
-  <DropdownMenu.Content align="start" class="w-80">
+  <DropdownMenu.Content align="start" {side} class="w-80">
     <div class="p-1.5 pb-1 flex items-center gap-x-2">
       <Search bind:value={searchValue} autofocus={false} />
     </div>
