@@ -76,6 +76,7 @@ dist/*
 rill-binary-sa.json
 gha-creds*
 .release-env
+binaries/
 # runtime test resources
 !runtime/testdata/**
 sysroot/

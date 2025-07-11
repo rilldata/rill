@@ -72,13 +72,19 @@ func (s *Server) GetConversation(ctx context.Context, req *runtimev1.GetConversa
 		return nil, err
 	}
 
-	messages := make([]*runtimev1.Message, len(catalogMessages))
-	for i, msg := range catalogMessages {
+	messages := make([]*runtimev1.Message, 0, len(catalogMessages))
+	for _, msg := range catalogMessages {
 		pbMessage, err := runtime.MessageToPB(msg)
 		if err != nil {
 			return nil, err
 		}
-		messages[i] = pbMessage
+
+		// Filter out system messages unless explicitly requested
+		if msg.Role == "system" && !req.IncludeSystemMessages {
+			continue
+		}
+
+		messages = append(messages, pbMessage)
 	}
 	conversation.Messages = messages
 
@@ -130,6 +136,7 @@ func (s *Server) Complete(ctx context.Context, req *runtimev1.CompleteRequest) (
 		OwnerID:        ownerID,
 		InstanceID:     req.InstanceId,
 		ConversationID: conversationID,
+		AppContext:     req.AppContext,
 		Messages:       req.Messages,
 		ToolService:    toolService,
 	})

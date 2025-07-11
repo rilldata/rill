@@ -225,7 +225,7 @@
 </script>
 
 <Dialog.Root bind:open>
-  <Dialog.Content>
+  <Dialog.Content class="min-w-[802px]">
     <Dialog.Title>Schedule report</Dialog.Title>
 
     <BaseScheduledReportForm

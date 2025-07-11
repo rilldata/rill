@@ -10013,6 +10013,136 @@ var _ interface {
 	ErrorName() string
 } = MessageValidationError{}
 
+// Validate checks the field values on AppContext with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *AppContext) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on AppContext with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in AppContextMultiError, or
+// nil if none found.
+func (m *AppContext) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *AppContext) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for ContextType
+
+	if all {
+		switch v := interface{}(m.GetContextMetadata()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, AppContextValidationError{
+					field:  "ContextMetadata",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, AppContextValidationError{
+					field:  "ContextMetadata",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetContextMetadata()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return AppContextValidationError{
+				field:  "ContextMetadata",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return AppContextMultiError(errors)
+	}
+
+	return nil
+}
+
+// AppContextMultiError is an error wrapping multiple validation errors
+// returned by AppContext.ValidateAll() if the designated constraints aren't met.
+type AppContextMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m AppContextMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m AppContextMultiError) AllErrors() []error { return m }
+
+// AppContextValidationError is the validation error returned by
+// AppContext.Validate if the designated constraints aren't met.
+type AppContextValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e AppContextValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e AppContextValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e AppContextValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e AppContextValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e AppContextValidationError) ErrorName() string { return "AppContextValidationError" }
+
+// Error satisfies the builtin error interface
+func (e AppContextValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sAppContext.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = AppContextValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = AppContextValidationError{}
+
 // Validate checks the field values on Conversation with the rules defined in
 // the proto definition for this message. If any rules are violated, the first
 // error encountered is returned, or nil if there are no violations.
@@ -10279,6 +10409,39 @@ func (m *CompleteRequest) validate(all bool) error {
 
 	if m.ConversationId != nil {
 		// no validation rules for ConversationId
+	}
+
+	if m.AppContext != nil {
+
+		if all {
+			switch v := interface{}(m.GetAppContext()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, CompleteRequestValidationError{
+						field:  "AppContext",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, CompleteRequestValidationError{
+						field:  "AppContext",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetAppContext()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return CompleteRequestValidationError{
+					field:  "AppContext",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
 	}
 
 	if len(errors) > 0 {
@@ -10782,6 +10945,8 @@ func (m *GetConversationRequest) validate(all bool) error {
 	}
 
 	// no validation rules for ConversationId
+
+	// no validation rules for IncludeSystemMessages
 
 	if len(errors) > 0 {
 		return GetConversationRequestMultiError(errors)
