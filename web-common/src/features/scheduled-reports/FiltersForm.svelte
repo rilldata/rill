@@ -33,6 +33,7 @@
   export let timeControls: TimeControls;
   export let readOnly = false;
   export let maxWidth: number;
+  export let side: "top" | "right" | "bottom" | "left" = "bottom";
 
   /** the height of a row of chips */
   const ROW_HEIGHT = "26px";
@@ -245,6 +246,7 @@
         canPanRight={false}
         onPan={() => {}}
         minTimeGrain={undefined}
+        {side}
       />
       <CanvasComparisonPill
         allTimeRange={$allTimeRange}
@@ -256,6 +258,7 @@
         onDisplayTimeComparison={displayTimeComparison}
         onSetSelectedComparisonRange={setSelectedComparisonRange}
         allowCustomTimeRange={false}
+        {side}
       />
     {/if}
   </div>
@@ -293,6 +296,7 @@
                 {inputText}
                 {timeStart}
                 {timeEnd}
+                {side}
                 timeControlsReady
                 excludeMode={$isFilterExcludeMode(name)}
                 whereFilter={$whereFilter}
@@ -316,6 +320,7 @@
               {label}
               {dimensionName}
               {filter}
+              {side}
               onRemove={() => removeMeasureFilter(dimensionName, name)}
               onApply={({ dimension, oldDimension, filter }) =>
                 handleMeasureFilterApply(dimension, name, oldDimension, filter)}
@@ -331,6 +336,7 @@
           dimensionHasFilter={$dimensionHasFilter}
           measureHasFilter={$measureHasFilter}
           {setTemporaryFilterName}
+          {side}
         />
         <!-- if filters are present, place a chip at the end of the flex container
       that enables clearing all filters -->

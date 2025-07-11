@@ -139,7 +139,7 @@
     </Tooltip>
   </div>
 
-  <FiltersForm {filters} {timeControls} maxWidth={750} />
+  <FiltersForm {filters} {timeControls} maxWidth={750} side="top" />
 
   <MultiInput
     id="emailRecipients"

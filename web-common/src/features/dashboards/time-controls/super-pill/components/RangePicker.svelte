@@ -22,6 +22,7 @@
   export let maxDate: DateTime | undefined = undefined;
   export let showFullRange: boolean;
   export let defaultTimeRange: NamedRange | ISODurationString | undefined;
+  export let side: "top" | "right" | "bottom" | "left" = "bottom";
   export let onSelectRange: (range: NamedRange | ISODurationString) => void;
   export let applyCustomRange: (range: Interval<true>) => void;
   export let allowCustomTimeRange = true;
@@ -59,7 +60,7 @@
       </span>
     </button>
   </DropdownMenu.Trigger>
-  <DropdownMenu.Content align="start" class="p-0 overflow-hidden">
+  <DropdownMenu.Content align="start" {side} class="p-0 overflow-hidden">
     <div class="flex">
       <div class="flex flex-col w-48 p-1">
         <TimeRangeMenu

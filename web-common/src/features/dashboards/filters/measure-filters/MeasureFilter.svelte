@@ -21,6 +21,7 @@
     filter: MeasureFilterEntry;
   }) => void;
   export let allDimensions: MetricsViewSpecDimension[];
+  export let side: "top" | "right" | "bottom" | "left" = "bottom";
 
   let open = !filter;
 </script>
@@ -82,6 +83,7 @@
       {dimensionName}
       {allDimensions}
       {onApply}
+      {side}
     />
   {/if}
 </Popover.Root>
