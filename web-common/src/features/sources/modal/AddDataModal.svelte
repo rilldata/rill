@@ -37,6 +37,8 @@
   import DuplicateSource from "./DuplicateSource.svelte";
   import LocalSourceUpload from "./LocalSourceUpload.svelte";
   import RequestConnectorForm from "./RequestConnectorForm.svelte";
+  import { connectorIconMapping } from "../../connectors/connector-icon-mapping";
+  import { cn } from "@rilldata/web-common/lib/shadcn";
 
   let step = 0;
   let selectedConnector: null | V1ConnectorDriver = null;
@@ -183,7 +185,13 @@
     closeOnEscape={!isSubmittingForm}
     closeOnOutsideClick={!isSubmittingForm}
   >
-    <Dialog.Content noClose>
+    <Dialog.Content
+      class={cn(
+        "overflow-hidden",
+        step === 2 ? "max-w-4xl p-0 gap-0" : "p-6 gap-4",
+      )}
+      noClose={step === 1}
+    >
       {#if step === 1}
         {#if $isModelingSupportedForDefaultOlapDriver}
           <Dialog.Title>Add a source</Dialog.Title>
@@ -240,11 +248,21 @@
       {/if}
 
       {#if step === 2 && selectedConnector}
-        <Dialog.Title>
+        <Dialog.Title class="p-4 border-b border-gray-200">
           {#if $duplicateSourceName !== null}
             Duplicate source
           {:else}
-            {selectedConnector.displayName}
+            <div class="flex items-center gap-[6px]">
+              {#if selectedConnector?.name}
+                <svelte:component
+                  this={connectorIconMapping[selectedConnector.name]}
+                  size="18px"
+                />
+              {/if}
+              <span class="text-lg leading-none font-semibold"
+                >{selectedConnector.displayName}</span
+              >
+            </div>
           {/if}
         </Dialog.Title>
 

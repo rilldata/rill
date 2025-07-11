@@ -5,10 +5,12 @@
   import { CriteriaGroupOptions } from "@rilldata/web-common/features/alerts/criteria-tab/operations";
   import type { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
   import { getEmptyMeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
+  import type { TimeControls } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
   import { Trash2Icon } from "lucide-svelte";
   import type { SuperForm } from "sveltekit-superforms/client";
 
   export let superFormInstance: SuperForm<AlertFormValues>;
+  export let timeControls: TimeControls;
   $: ({ form } = superFormInstance);
 
   function handleDeleteCriteria(index: number) {
@@ -33,6 +35,7 @@
               bind:value={$form["criteriaOperation"]}
               id="field"
               label=""
+              ariaLabel="Criteria group operation"
               options={CriteriaGroupOptions}
               placeholder="Measure"
             />
@@ -46,7 +49,7 @@
             <Trash2Icon size="16px" />
           </button>
         </div>
-        <CriteriaForm {superFormInstance} {index} />
+        <CriteriaForm {superFormInstance} {timeControls} {index} />
       </div>
     {/each}
     <Button type="dashed" onClick={handleAddCriteria}>+ Add Criteria</Button>

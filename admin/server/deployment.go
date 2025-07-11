@@ -227,6 +227,7 @@ func (s *Server) GetDeployment(ctx context.Context, req *adminv1.GetDeploymentRe
 		runtimeauth.ReadObjects,
 		runtimeauth.ReadMetrics,
 		runtimeauth.ReadAPI,
+		runtimeauth.UseAI,
 	}
 	if depl.Environment == "dev" {
 		instancePermissions = append(instancePermissions,
@@ -615,6 +616,7 @@ func (s *Server) GetDeploymentCredentials(ctx context.Context, req *adminv1.GetD
 				runtimeauth.ReadObjects,
 				runtimeauth.ReadMetrics,
 				runtimeauth.ReadAPI,
+				runtimeauth.UseAI,
 			},
 		},
 		Attributes: attr,
@@ -709,6 +711,7 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 				runtimeauth.ReadObjects,
 				runtimeauth.ReadMetrics,
 				runtimeauth.ReadAPI,
+				runtimeauth.UseAI,
 			},
 		},
 		Attributes: attr,
