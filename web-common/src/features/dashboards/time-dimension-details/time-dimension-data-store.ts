@@ -1,4 +1,5 @@
 import { createSparkline } from "@rilldata/web-common/components/data-graphic/marks/sparkline";
+import { ComparisonDeltaPreviousSuffix } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { useSelectedValuesForCompareDimension } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
@@ -7,8 +8,8 @@ import {
   type DimensionDataItem,
 } from "@rilldata/web-common/features/dashboards/time-series/multiple-dimension-queries";
 import {
-  type TimeSeriesDatum,
   useTimeSeriesDataStore,
+  type TimeSeriesDatum,
 } from "@rilldata/web-common/features/dashboards/time-series/timeseries-data-store";
 import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
 import { formatProperFractionAsPercent } from "@rilldata/web-common/lib/number-formatting/proper-fraction-formatter";
@@ -239,6 +240,8 @@ function prepareTimeData(
 
   const body: TDDCellData[][] = [];
 
+  const comparisonMeasureName = measureName + ComparisonDeltaPreviousSuffix;
+
   if (hasTimeComparison) {
     rowHeaderData = rowHeaderData.concat([
       [
@@ -255,8 +258,8 @@ function prepareTimeData(
         {
           value: comparisonTotal?.toString() ?? "",
           spark: createSparkline(tableData, (v) =>
-            typeof v?.[`comparison.${measureName}`] === "number"
-              ? (v[`comparison.${measureName}`] as number)
+            typeof v?.[comparisonMeasureName] === "number"
+              ? v[comparisonMeasureName]
               : 0,
           ),
         },
@@ -268,12 +271,12 @@ function prepareTimeData(
     // Push totals
     body.push(
       tableData?.map((v) => {
-        if (v[measureName] === null && v[`comparison.${measureName}`] === null)
+        if (v[measureName] === null && v[comparisonMeasureName] === null)
           return null;
 
         const total =
           (sanitizeMeasure(v[measureName]) || 0) +
-          (sanitizeMeasure(v[`comparison.${measureName}`]) || 0);
+          (sanitizeMeasure(v[comparisonMeasureName]) || 0);
         return total;
       }),
     );
@@ -281,14 +284,12 @@ function prepareTimeData(
     // Push current range
     body.push(tableData?.map((v) => sanitizeMeasure(v[measureName])));
 
-    body.push(
-      tableData?.map((v) => sanitizeMeasure(v[`comparison.${measureName}`])),
-    );
+    body.push(tableData?.map((v) => sanitizeMeasure(v[comparisonMeasureName])));
 
     // Push percentage change
     body.push(
       tableData?.map((v) => {
-        const comparisonValue = v[`comparison.${measureName}`] as
+        const comparisonValue = v[comparisonMeasureName] as
           | number
           | null
           | undefined;
@@ -307,7 +308,7 @@ function prepareTimeData(
     // Push absolute change
     body.push(
       tableData?.map((v) => {
-        const comparisonValue = v[`comparison.${measureName}`] as
+        const comparisonValue = v[comparisonMeasureName] as
           | number
           | null
           | undefined;
@@ -404,7 +405,8 @@ export function createTimeDimensionDataStore(
       const unfilteredTotal =
         timeSeries?.unfilteredTotal && timeSeries?.unfilteredTotal[measureName];
       const comparisonTotal =
-        timeSeries?.comparisonTotal && timeSeries?.comparisonTotal[measureName];
+        timeSeries?.total &&
+        timeSeries?.total[measureName + ComparisonDeltaPreviousSuffix];
       const isAllTime =
         timeControls?.selectedTimeRange?.name === TimeRangePreset.ALL_TIME;
 
