@@ -112,6 +112,7 @@
     // Switching to managed: strip all but managed
     if ($paramsForm.managed && Object.keys($paramsForm).length > 1) {
       paramsForm.update(() => ({ managed: true }), { taint: false });
+      resetError();
     }
     // Switching to self-managed: restore defaults
     else if (prevManaged && !$paramsForm.managed) {
@@ -245,6 +246,14 @@
       return false;
     }
   })();
+
+  function resetError() {
+    paramsError = null;
+    paramsErrorDetails = undefined;
+    dsnError = null;
+    dsnErrorDetails = undefined;
+    setError(null, undefined);
+  }
 </script>
 
 <div class="h-full w-full flex flex-col">
