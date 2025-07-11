@@ -50,6 +50,7 @@ blobs:
     directory: "rill/nightly"
     extra_files:
       - glob: ./dist/**/*
+      - glob: scripts/install.sh            
   - disable: "{{ .IsNightly }}"
     provider: gs
     bucket: prod-cdn.rilldata.com
