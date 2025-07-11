@@ -1,2 +1,3 @@
 compiler: rill-beta
 title: "Test Project"
+olap_connector: duckdb

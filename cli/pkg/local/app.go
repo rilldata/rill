@@ -34,6 +34,8 @@ import (
 // Default instance config on local.
 const (
 	DefaultInstanceID   = "default"
+	DefaultOLAPDriver   = "duckdb"
+	DefaultOLAPDSN      = "main.db"
 	DefaultCatalogStore = "meta.db"
 	DefaultDBDir        = "tmp"
 )
@@ -64,6 +66,8 @@ type AppOptions struct {
 	Debug          bool
 	Reset          bool
 	Environment    string
+	OlapDriver     string
+	OlapDSN        string
 	ProjectPath    string
 	LogFormat      LogFormat
 	Variables      map[string]string
@@ -193,22 +197,21 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 	}
 
 	olapCfg := make(map[string]string)
+	if opts.OlapDriver == "duckdb" {
+		if opts.OlapDSN != DefaultOLAPDSN {
+			return nil, fmt.Errorf("setting DSN for DuckDB is not supported")
+		}
+		// Set default DuckDB pool size to 4
+		olapCfg["pool_size"] = "4"
+	}
 	if opts.Debug {
 		olapCfg["log_queries"] = "true"
 	}
 
-	// Add OLAP connector - read from rill.yaml or default to duckdb
-	olapConnectorName := "duckdb" // default
-	olapConnectorType := "duckdb" // default
-
-	// Set default DuckDB config if using duckdb
-	if olapConnectorType == "duckdb" {
-		olapCfg["pool_size"] = "4"
-	}
-
+	// Add OLAP connector
 	olapConnector := &runtimev1.Connector{
-		Type:   olapConnectorType,
-		Name:   olapConnectorName,
+		Type:   opts.OlapDriver,
+		Name:   opts.OlapDriver,
 		Config: olapCfg,
 	}
 	connectors = append(connectors, olapConnector)
@@ -250,14 +253,14 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 	inst := &drivers.Instance{
 		ID:                               DefaultInstanceID,
 		Environment:                      opts.Environment,
-		OLAPConnector:                    olapConnectorName,
+		OLAPConnector:                    olapConnector.Name,
 		RepoConnector:                    repoConnector.Name,
 		AIConnector:                      aiConnector.Name,
 		CatalogConnector:                 catalogConnector.Name,
 		Connectors:                       connectors,
 		Variables:                        vars,
 		Annotations:                      map[string]string{},
-		IgnoreInitialInvalidProjectError: !isInit,
+		IgnoreInitialInvalidProjectError: !isInit, // See ProjectParser reconciler for details
 	}
 	err = rt.CreateInstance(ctx, inst)
 	if err != nil {

@@ -240,9 +240,8 @@ setup.describe("global setup", () => {
         async () => {
           await adminPage.reload();
           const listing = adminPage.getByRole("link", {
-            name: "Programmatic Ads Auction",
+            name: "Programmatic Ads Auction auction_explore",
           });
-          console.log("Listing text content:", await listing.textContent());
           return listing.textContent();
         },
         {
