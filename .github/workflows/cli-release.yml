@@ -95,7 +95,7 @@ jobs:
         uses: google-github-actions/upload-cloud-storage@v2
         with:
           path: rill
-          destination: prod-cdn.rilldata.com/rill/${GITHUB_REF#refs/tags/}/binaries/${{ matrix.platform }}/
+          destination: prod-cdn.rilldata.com/rill/${{ github.ref_name }}/binaries/${{ matrix.platform }}/
           headers: |-
             cache-control: no-store
 
