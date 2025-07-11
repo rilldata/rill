@@ -53,6 +53,9 @@
       : connector.configProperties?.filter(
           (property) => property.key !== "dsn",
         )) ?? [];
+  const filteredProperties = properties.filter(
+    (property) => !property.noPrompt,
+  );
   const schema = yup(getYupSchema[connector.name as keyof typeof getYupSchema]);
   const initialFormValues = getInitialFormValuesFromProperties(properties);
   const {
@@ -80,6 +83,9 @@
   const dsnProperties =
     connector.configProperties?.filter((property) => property.key === "dsn") ??
     [];
+  const filteredDsnProperties = dsnProperties.filter(
+    (property) => !property.noPrompt,
+  );
   const dsnYupSchema = yup(dsnSchema);
   const {
     form: dsnForm,
@@ -257,7 +263,7 @@
               use:paramsEnhance
               on:submit|preventDefault={paramsSubmit}
             >
-              {#each properties as property (property.key)}
+              {#each filteredProperties as property (property.key)}
                 {@const propertyKey = property.key ?? ""}
                 {@const label =
                   property.displayName +
@@ -301,7 +307,7 @@
               use:dsnEnhance
               on:submit|preventDefault={dsnSubmit}
             >
-              {#each dsnProperties as property (property.key)}
+              {#each filteredDsnProperties as property (property.key)}
                 {@const propertyKey = property.key ?? ""}
                 <div class="py-1.5 first:pt-0 last:pb-0">
                   <Input
@@ -326,7 +332,7 @@
           use:paramsEnhance
           on:submit|preventDefault={paramsSubmit}
         >
-          {#each properties as property (property.key)}
+          {#each filteredProperties as property (property.key)}
             {@const propertyKey = property.key ?? ""}
             {@const label =
               property.displayName + (property.required ? "" : " (optional)")}
