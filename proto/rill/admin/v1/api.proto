@@ -1417,8 +1417,8 @@ message CreateProjectRequest {
   string description = 3;
   bool public = 4;
   string provisioner = 5;
-  string prod_olap_driver = 6;
-  string prod_olap_dsn = 7;
+  // Fields 6 and 7 are reserved for backwards compatibility (prod_olap_driver and prod_olap_dsn)
+  reserved 6, 7;
   int64 prod_slots = 8;
   string subpath = 12;
   string prod_branch = 9;
@@ -2740,8 +2740,8 @@ message Project {
   string subpath = 17;
   string prod_branch = 9;
   string archive_asset_id = 23;
-  string prod_olap_driver = 10;
-  string prod_olap_dsn = 11;
+  // Fields 10 and 11 are reserved for backwards compatibility (prod_olap_driver and prod_olap_dsn)
+  reserved 10, 11;
   int64 prod_slots = 12;
   string prod_deployment_id = 13;
   int64 dev_slots = 25;

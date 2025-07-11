@@ -557,8 +557,6 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		ProdBranch:           "",          // Populated below
 		Subpath:              req.Subpath, // Populated below
 		ProdVersion:          req.ProdVersion,
-		ProdOLAPDriver:       req.ProdOlapDriver,
-		ProdOLAPDSN:          req.ProdOlapDsn,
 		ProdSlots:            int(req.ProdSlots),
 		ProdTTLSeconds:       prodTTL,
 		DevSlots:             devSlots,
@@ -1888,8 +1886,6 @@ func (s *Server) projToDTO(p *database.Project, orgName string) *adminv1.Project
 		CreatedByUserId:  safeStr(p.CreatedByUserID),
 		Provisioner:      p.Provisioner,
 		ProdVersion:      p.ProdVersion,
-		ProdOlapDriver:   p.ProdOLAPDriver,
-		ProdOlapDsn:      p.ProdOLAPDSN,
 		ProdSlots:        int64(p.ProdSlots),
 		ProdBranch:       p.ProdBranch,
 		Subpath:          p.Subpath,
