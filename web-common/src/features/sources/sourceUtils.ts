@@ -240,7 +240,9 @@ export function getInitialFormValuesFromProperties(
     ) {
       let value: any = prop.default;
       if (prop.type === ConnectorDriverPropertyType.TYPE_NUMBER) {
-        value = Number(value);
+        // NOTE: store number type prop as String, not Number, so that we can use the same form for both number and string properties
+        // See `yupSchemas.ts` for more details
+        value = String(value);
       } else if (prop.type === ConnectorDriverPropertyType.TYPE_BOOLEAN) {
         value = value === "true" || value === true;
       }
