@@ -305,39 +305,14 @@
       };
     }
 
-    const patterns = {
-      asOfClause: /as of (.+)$/i,
-      timeWithGrain:
-        /^(latest|watermark|now)\/([HhMmSsQqDdYyWw]+)(?:\+1[HhMmSsQqDdYyWw]+)?$/,
-      justType: /^(latest|watermark|now)$/,
+    const rt = parseRillTime(timeString);
+    return {
+      ref: rt.asOfLabel?.label ?? "latest",
+      truncationGrain: rt.asOfLabel?.snap
+        ? GrainAliasToV1TimeGrain[rt.asOfLabel?.snap]
+        : V1TimeGrain.TIME_GRAIN_DAY,
+      forwardAligned: rt.asOfLabel?.offset && rt.asOfLabel.offset !== 1,
     };
-
-    let ref: string = "now";
-    let truncationGrain: V1TimeGrain | undefined = undefined;
-    let forwardAligned = false;
-
-    const asOfMatch = timeString.match(patterns.asOfClause);
-    const clauseToCheck = asOfMatch ? asOfMatch[1] : timeString;
-
-    const timeWithGrainMatch = clauseToCheck.match(patterns.timeWithGrain);
-
-    if (timeWithGrainMatch) {
-      ref = timeWithGrainMatch[1];
-      truncationGrain = GrainAliasToV1TimeGrain[timeWithGrainMatch[2]];
-    } else {
-      const justTypeMatch = clauseToCheck.match(patterns.justType);
-      if (justTypeMatch) {
-        ref = justTypeMatch[1];
-      } else if (clauseToCheck !== timeString) {
-        ref = clauseToCheck;
-      }
-    }
-
-    if (clauseToCheck.includes("+1")) {
-      forwardAligned = true;
-    }
-
-    return { ref, truncationGrain, forwardAligned };
   }
 </script>
 
