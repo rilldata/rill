@@ -256,9 +256,6 @@
     if (err._errors && Array.isArray(err._errors)) return err._errors;
     return undefined;
   }
-
-  $: console.log("paramsForm: ", $paramsForm);
-  $: console.log("dsnForm: ", $dsnForm);
 </script>
 
 <div class="h-full w-full flex flex-col">
