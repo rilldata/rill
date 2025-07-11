@@ -23,10 +23,15 @@ models:
 When adding an OLAP connector to your project, this will automatically populate with the new OLAP connector. IE: `ClickHouse`, `Druid`
 
 ## `ai_instructions`
-With our new MCP feature, you may want to pass some project context to the Agent so that it can understand better what this project is used for. A classic example is that this project is a QA project and you dont want to include it in the analysis. In this case, you can add something like below.
+With our new MCP feature, you may want to pass some project context to the Agent so that it can understand better what this project is used for. A classic example is that this project is a QA set of dashboard and metrics internally and you don't want to include it in the analysis. In this case, you can add something like below.
 
 ```
-ai_instructions: This project is a QA project, do not include this project in any of the MCP calls. If a user asks for this project specifically, always indicate in the answer's header and footer, "This project is a QA project and its number's are not verified. You should not be using this for any purposes other than QA."
+ai_instructions: |
+  You are a data analyst, responding to questions from business users with precision, clarity, and concision.
+
+  Any time you are asked about metrics or business data: First use list_metrics, then use get_metrics_view and query_metrics_view_time_range to get the latest information about what dimensions, measures and time ranges are available.
+
+  When you run queries for actual data, run up to three queries in a row, and then provide the user with a summary, any insights you can see in the data, and suggest up to three things to investigate as a next step.
 ```
 
 ## Mock Users 
