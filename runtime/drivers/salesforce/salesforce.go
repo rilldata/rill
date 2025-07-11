@@ -120,6 +120,7 @@ var spec = drivers.Spec{
 			Required:    false,
 			Default:     defaultClientID,
 			Hint:        "Either set this or pass --env connector.salesforce.client_id=... to rill start",
+			NoPrompt:    true,
 		},
 		{
 			Key:         "name",
