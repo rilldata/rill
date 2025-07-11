@@ -92,8 +92,6 @@
   let dsnErrorDetails: string | undefined = undefined;
 
   $: managed = $paramsForm.managed;
-
-  // Managed toggle
   $: submitting = connectionTab === "dsn" ? $dsnSubmitting : $paramsSubmitting;
   $: formId = connectionTab === "dsn" ? dsnFormId : paramsFormId;
 
@@ -111,6 +109,21 @@
 
   // Emit the submitting state to the parent
   $: dispatch("submitting", { submitting });
+
+  let prevManaged = $paramsForm.managed;
+  $: {
+    // Switching to managed: strip all but managed
+    if ($paramsForm.managed && Object.keys($paramsForm).length > 1) {
+      paramsForm.update(() => ({ managed: true }), { taint: false });
+    }
+    // Switching to self-managed: restore defaults
+    else if (prevManaged && !$paramsForm.managed) {
+      paramsForm.update(() => ({ ...propertyDefaults, managed: false }), {
+        taint: false,
+      });
+    }
+    prevManaged = $paramsForm.managed;
+  }
 
   function onStringInputChange(event: Event) {
     const target = event.target as HTMLInputElement;
@@ -191,9 +204,9 @@
     : (connector.configProperties?.filter((p) =>
         connectionTab !== "dsn" ? p.key !== "dsn" : true,
       ) ?? []);
-  $: console.log("properties: ", properties);
-  $: filteredProperties = properties.filter((property) => !property.noPrompt);
-  $: console.log("filteredProperties: ", filteredProperties);
+  $: filteredProperties = properties.filter(
+    (property) => !property.noPrompt && property.key !== "managed",
+  );
 
   // TODO: move to utils.ts
   // Compute disabled state for the submit button
@@ -243,6 +256,9 @@
     if (err._errors && Array.isArray(err._errors)) return err._errors;
     return undefined;
   }
+
+  $: console.log("paramsForm: ", $paramsForm);
+  $: console.log("dsnForm: ", $dsnForm);
 </script>
 
 <div class="h-full w-full flex flex-col">
