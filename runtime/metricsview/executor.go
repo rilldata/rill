@@ -135,58 +135,6 @@ func (e *Executor) ValidateQuery(qry *Query) error {
 	panic("not implemented")
 }
 
-// SummaryResult provides the data type and one sample value for each dimension in the metrics view.
-type SummaryResult struct {
-	DimensionName string
-	DataType      string
-	Samples       []any
-}
-
-// Summary provides a data type and a sample value for each dimension in the metrics view.
-func (e *Executor) Summary(ctx context.Context) (map[string]SummaryResult, error) {
-	dims := []*runtimev1.MetricsViewSpec_Dimension{}
-	for _, dim := range e.metricsView.Dimensions {
-		if e.security.CanAccessField(dim.Name) {
-			dims = append(dims, dim)
-		}
-	}
-
-	summary := make(map[string]SummaryResult)
-	for _, dim := range dims {
-		query := fmt.Sprintf(
-			"SELECT DISTINCT CAST(%s AS STRING) AS sample_value FROM %s LIMIT 5",
-			dim.Name, e.metricsView.Table)
-
-		res, err := e.olap.Query(ctx, &drivers.Statement{Query: query, Priority: e.priority})
-		if err != nil {
-			return nil, fmt.Errorf("failed to query dimension %s: %w", dim.Name, err)
-		}
-
-		var values []any
-		for res.Next() {
-			var value any
-			if err := res.Scan(&value); err != nil {
-				res.Close()
-				return nil, fmt.Errorf("failed to scan value for dimension %s: %w", dim.Name, err)
-			}
-			values = append(values, value)
-		}
-		if err := res.Err(); err != nil {
-			res.Close()
-			return nil, fmt.Errorf("error iterating results for dimension %s: %w", dim.Name, err)
-		}
-
-		summary[dim.Name] = SummaryResult{
-			DimensionName: dim.Name,
-			DataType:      dim.DataType.Code.String(),
-			Samples:       values,
-		}
-		res.Close()
-	}
-
-	return summary, nil
-}
-
 // Timestamps queries min, max and watermark for the metrics view.
 func (e *Executor) Timestamps(ctx context.Context, timeDim string) (TimestampsResult, error) {
 	if timeDim == "" {
@@ -805,6 +753,28 @@ func whereExprForSearch(where *Expression, dimension, search string) *Expression
 			},
 		},
 	}
+}
+
+func (e *Executor) count(ctx context.Context) (int64, error) {
+	query := fmt.Sprintf("SELECT COUNT(*) FROM %s", e.metricsView.Table)
+
+	res, err := e.olap.Query(ctx, &drivers.Statement{Query: query, Priority: e.priority})
+	if err != nil {
+		return 0, fmt.Errorf("failed to query total row count: %w", err)
+	}
+	defer res.Close()
+
+	var count int64
+	if res.Next() {
+		if err := res.Scan(&count); err != nil {
+			return 0, fmt.Errorf("failed to scan total row count: %w", err)
+		}
+	}
+	if err := res.Err(); err != nil {
+		return 0, fmt.Errorf("error reading total row count: %w", err)
+	}
+
+	return count, nil
 }
 
 var errDruidNativeSearchUnimplemented = fmt.Errorf("native search is not implemented")

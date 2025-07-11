@@ -111,30 +111,22 @@ func (r *metricsViewSummaryResolver) Validate(ctx context.Context) error {
 }
 
 func (r *metricsViewSummaryResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverResult, error) {
-	ts, err := r.executor.Timestamps(ctx, r.args.TimeDimension)
+	summary, err := r.executor.Summary(ctx, r.args.TimeDimension)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch timestamps for metrics view '%s': %w", r.mvName, err)
-	}
-
-	// Fetch summary statistics (data type and sample value for each dimension)
-	summary, err := r.executor.Summary(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to fetch summary statistics for metrics view '%s': %w", r.mvName, err)
+		return nil, fmt.Errorf("failed to fetch summary for metrics view '%s': %w", r.mvName, err)
 	}
 
 	row := map[string]any{
-		"min":       ts.Min,
-		"max":       ts.Max,
-		"watermark": ts.Watermark,
-		"summary":   summary,
+		"metadata":   summary.Metadata,
+		"dimensions": summary.Dimensions,
+		"time_range": summary.TimeRange,
 	}
 
 	schema := &runtimev1.StructType{
 		Fields: []*runtimev1.StructType_Field{
-			{Name: "min", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_TIMESTAMP, Nullable: true}},
-			{Name: "max", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_TIMESTAMP, Nullable: true}},
-			{Name: "watermark", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_TIMESTAMP, Nullable: true}},
-			{Name: "summary", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_STRUCT, Nullable: true}},
+			{Name: "metadata", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_STRUCT, Nullable: true}},
+			{Name: "time_range", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_STRUCT, Nullable: true}},
+			{Name: "dimensions", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_ARRAY, Nullable: true}},
 		},
 	}
 
