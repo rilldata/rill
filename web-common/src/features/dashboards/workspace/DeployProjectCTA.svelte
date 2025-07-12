@@ -4,28 +4,33 @@
 
 <script lang="ts">
   import { page } from "$app/stores";
+  import type { ConnectError } from "@connectrpc/connect";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { getNeverSubscribedIssue } from "@rilldata/web-common/features/billing/issues";
   import TrialDetailsDialog from "@rilldata/web-common/features/billing/TrialDetailsDialog.svelte";
+  import ProjectContainsRemoteChangesDialog from "@rilldata/web-common/features/project/ProjectContainsRemoteChangesDialog.svelte";
   import ProjectRedeployConfirmDialog from "@rilldata/web-common/features/project/ProjectRedeployConfirmDialog.svelte";
-  import PushToGitForDeployDialog from "@rilldata/web-common/features/project/PushToGitForDeployDialog.svelte";
-  import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
   import { BehaviourEventAction } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import {
     createLocalServiceGetCurrentProject,
     createLocalServiceGetCurrentUser,
     createLocalServiceGetMetadata,
+    createLocalServiceGitPull,
+    createLocalServiceGitStatus,
     createLocalServiceListOrganizationsAndBillingMetadataRequest,
+    getLocalServiceGitStatusQueryKey,
   } from "@rilldata/web-common/runtime-client/local-service";
   import Rocket from "svelte-radix/Rocket.svelte";
-  import { get, writable } from "svelte/store";
+  import { writable } from "svelte/store";
   import { Button } from "../../../components/button";
 
   export let hasValidDashboard: boolean;
 
-  let pushThroughGitOpen = false;
+  let remoteChangeDialog = false;
   let deployConfirmOpen = false;
   let deployCTAUrl: string;
 
@@ -45,6 +50,19 @@
   $: isFirstTimeDeploy =
     !isDeployed && (userNotLoggedIn || everyOrgHasNeverSubscribed);
 
+  const gitStatusQuery = createLocalServiceGitStatus();
+  $: hasRemoteChanges =
+    $gitStatusQuery.data && $gitStatusQuery.data.remoteCommits > 0;
+  const gitPullMutation = createLocalServiceGitPull();
+
+  $: ({ isPending: githubPullPending, error: githubPullError } =
+    $gitPullMutation);
+  let errorFromGitCommand: ConnectError | null = null;
+  $: error = githubPullError ?? errorFromGitCommand;
+
+  // gitStatusQuery is refetched. So we have to check `isFetching` to get the correct loading status.
+  $: loading = $gitStatusQuery.isFetching || $currentProject.isLoading;
+
   $: allowPrimary.set(isDeployed || !hasValidDashboard);
 
   $: user = createLocalServiceGetCurrentUser();
@@ -58,21 +76,21 @@
     deployCTAUrl = deployPageUrl;
   }
 
-  $: managedGit = $currentProject.data?.project?.managedGitId ? true : false;
-
-  async function onRedeploy() {
-    void behaviourEvent?.fireDeployEvent(BehaviourEventAction.DeployIntent);
-
-    await waitUntil(() => !get(currentProject).isFetching);
-    if (get(currentProject).data?.project?.gitRemote && !managedGit) {
-      pushThroughGitOpen = true;
+  function onRedeploy() {
+    if (hasRemoteChanges) {
       return;
     }
+
+    void behaviourEvent?.fireDeployEvent(BehaviourEventAction.DeployIntent);
 
     window.open(deployCTAUrl, "_blank");
   }
 
   function onShowDeploy() {
+    if (hasRemoteChanges) {
+      return;
+    }
+
     if (!isFirstTimeDeploy) {
       // do not show the confirmation dialog for successive deploys
       void behaviourEvent?.fireDeployEvent(BehaviourEventAction.DeployIntent);
@@ -83,17 +101,39 @@
     deployConfirmOpen = true;
     void behaviourEvent?.fireDeployEvent(BehaviourEventAction.DeployIntent);
   }
+
+  async function handleForceFetchRemoteCommits() {
+    errorFromGitCommand = null;
+    const resp = await $gitPullMutation.mutateAsync({
+      discardLocal: true,
+    });
+    // TODO: download diff once API is ready
+
+    void queryClient.invalidateQueries({
+      queryKey: getLocalServiceGitStatusQueryKey(),
+    });
+
+    if (!resp.output) {
+      remoteChangeDialog = false;
+      eventBus.emit("notification", {
+        message:
+          "Remote project changes fetched and merged. Your changes have been stashed.",
+      });
+      return;
+    }
+
+    errorFromGitCommand = {
+      message: resp.output,
+    } as ConnectError;
+  }
 </script>
 
 {#if isDeployed}
-  <ProjectRedeployConfirmDialog
-    isLoading={$currentProject.isLoading}
-    onConfirm={onRedeploy}
-  />
+  <ProjectRedeployConfirmDialog isLoading={loading} onConfirm={onRedeploy} />
 {:else}
   <Tooltip distance={8}>
     <Button
-      loading={$currentProject.isLoading}
+      {loading}
       onClick={onShowDeploy}
       type={hasValidDashboard ? "primary" : "secondary"}
     >
@@ -109,8 +149,9 @@
 
 <TrialDetailsDialog bind:open={deployConfirmOpen} {deployCTAUrl} />
 
-<PushToGitForDeployDialog
-  bind:open={pushThroughGitOpen}
-  gitRemote={$currentProject.data?.project?.gitRemote ?? ""}
-  subpath={$currentProject.data?.project?.subpath ?? ""}
+<ProjectContainsRemoteChangesDialog
+  bind:open={remoteChangeDialog}
+  loading={githubPullPending}
+  {error}
+  onFetchAndMerge={handleForceFetchRemoteCommits}
 />
