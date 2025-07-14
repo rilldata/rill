@@ -78,6 +78,7 @@
 
   function onRedeploy() {
     if (hasRemoteChanges) {
+      remoteChangeDialog = true;
       return;
     }
 
@@ -88,6 +89,7 @@
 
   function onShowDeploy() {
     if (hasRemoteChanges) {
+      remoteChangeDialog = true;
       return;
     }
 
