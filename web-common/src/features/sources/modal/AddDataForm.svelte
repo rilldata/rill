@@ -32,6 +32,7 @@
   import { isEmpty, normalizeErrors } from "./utils";
   import { CONNECTION_TAB_OPTIONS } from "./constants";
   import { getInitialFormValuesFromProperties } from "../sourceUtils";
+  import yaml from "js-yaml";
 
   const dispatch = createEventDispatcher();
 
@@ -149,6 +150,27 @@
 
   // Emit the submitting state to the parent
   $: dispatch("submitting", { submitting });
+
+  // Generate YAML preview from form state
+  $: yamlPreview = (() => {
+    let values = connectionTab === "dsn" ? $dsnForm : $paramsForm;
+    let props = connectionTab === "dsn" ? dsnProperties : properties;
+    let out: Record<string, unknown> = {};
+    for (const property of props) {
+      const key = property.key;
+      if (!key) continue;
+      let value = values[key];
+      if (property.secret && value) {
+        value = "********";
+      }
+      if (value !== undefined && value !== null && value !== "") {
+        out[key] = value;
+      }
+    }
+    const title = `connector: ${connector.name}`;
+    if (Object.keys(out).length === 0) return title;
+    return `${title}\n${yaml.dump(out, { lineWidth: 80 })}`;
+  })();
 
   function onStringInputChange(event: Event) {
     const target = event.target as HTMLInputElement;
@@ -423,6 +445,12 @@
           ""}
       />
     {/if}
+
+    <div>
+      <div class="text-sm leading-none font-medium mb-4">Connector preview</div>
+      <pre
+        class="bg-muted p-3 rounded text-xs border border-gray-200 whitespace-pre-wrap overflow-x-visible">{yamlPreview}</pre>
+    </div>
 
     <NeedHelpText {connector} />
   </div>
