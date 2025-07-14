@@ -2991,6 +2991,94 @@ paths:
                 type: string
       tags:
         - AdminService
+  /v1/organizations/{organizationName}/projects/{projectName}/services:
+    get:
+      summary: ListProjectMemberServices returns all the services for the project for an organization
+      operationId: AdminService_ListProjectMemberServices
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListProjectMemberServicesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organizationName
+          in: path
+          required: true
+          type: string
+        - name: projectName
+          in: path
+          required: true
+          type: string
+      tags:
+        - AdminService
+  /v1/organizations/{organizationName}/projects/{projectName}/services/{name}:
+    delete:
+      summary: RemoveProjectMemberService removes the service from the project
+      operationId: AdminService_RemoveProjectMemberService
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1RemoveProjectMemberServiceResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organizationName
+          in: path
+          required: true
+          type: string
+        - name: projectName
+          in: path
+          required: true
+          type: string
+        - name: name
+          in: path
+          required: true
+          type: string
+      tags:
+        - AdminService
+  /v1/organizations/{organizationName}/projects/{projectName}/services/{name}/role:
+    put:
+      summary: SetProjectMemberServiceRole updates the project role for the service
+      operationId: AdminService_SetProjectMemberServiceRole
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1SetProjectMemberServiceRoleResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organizationName
+          in: path
+          required: true
+          type: string
+        - name: projectName
+          in: path
+          required: true
+          type: string
+        - name: name
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              role:
+                type: string
+      tags:
+        - AdminService
   /v1/organizations/{organizationName}/services:
     get:
       summary: ListService returns all the services per organization
@@ -3028,13 +3116,51 @@ paths:
           in: path
           required: true
           type: string
-        - name: name
-          in: query
-          required: false
-          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              name:
+                type: string
+              orgRoleName:
+                type: string
+                title: Optional org role to assign
+              projectName:
+                type: string
+                title: Optional project to assign role to
+              projectRoleName:
+                type: string
+                title: Optional project role to assign
+              attributes:
+                type: object
       tags:
         - AdminService
   /v1/organizations/{organizationName}/services/{name}:
+    get:
+      summary: GetService returns information about a specific service
+      operationId: AdminService_GetService
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetServiceResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organizationName
+          in: path
+          required: true
+          type: string
+        - name: name
+          in: path
+          required: true
+          type: string
+      tags:
+        - AdminService
     delete:
       summary: DeleteService deletes a service per organization
       operationId: AdminService_DeleteService
@@ -3086,6 +3212,63 @@ paths:
             type: object
             properties:
               newName:
+                type: string
+              attributes:
+                type: object
+      tags:
+        - AdminService
+  /v1/organizations/{organizationName}/services/{name}/role:
+    delete:
+      summary: RemoveOrganizationMemberService removes the organization role for the service
+      operationId: AdminService_RemoveOrganizationMemberService
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1RemoveOrganizationMemberServiceResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organizationName
+          in: path
+          required: true
+          type: string
+        - name: name
+          in: path
+          required: true
+          type: string
+      tags:
+        - AdminService
+    put:
+      summary: SetOrganizationMemberServiceRole sets or updates the role of the service in the organization
+      operationId: AdminService_SetOrganizationMemberServiceRole
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1SetOrganizationMemberServiceRoleResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organizationName
+          in: path
+          required: true
+          type: string
+        - name: name
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              role:
                 type: string
       tags:
         - AdminService
@@ -4476,6 +4659,12 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1CompletionMessage'
+      tools:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1Tool'
+        title: Optional list of tools that the AI can use during completion
   v1CompleteResponse:
     type: object
     properties:
@@ -4488,6 +4677,13 @@ definitions:
         type: string
       data:
         type: string
+        title: Deprecated in favor of content
+      content:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ContentBlock'
+    title: Completion message for AI API calls
   v1Condition:
     type: object
     properties:
@@ -4500,6 +4696,16 @@ definitions:
           $ref: '#/definitions/v1Expression'
   v1ConnectProjectToGithubResponse:
     type: object
+  v1ContentBlock:
+    type: object
+    properties:
+      text:
+        type: string
+      toolCall:
+        $ref: '#/definitions/v1ToolCall'
+      toolResult:
+        $ref: '#/definitions/v1ToolResult'
+    title: Content block within a message
   v1CreateAlertResponse:
     type: object
     properties:
@@ -4941,6 +5147,17 @@ definitions:
         type: object
         additionalProperties:
           $ref: '#/definitions/GetReportMetaResponseURLs'
+  v1GetServiceResponse:
+    type: object
+    properties:
+      service:
+        $ref: '#/definitions/v1OrganizationMemberService'
+      projectMemberships:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ProjectMemberService'
+        title: All projects that the service is a member of
   v1GetUserResponse:
     type: object
     properties:
@@ -5095,6 +5312,14 @@ definitions:
           $ref: '#/definitions/v1ProjectInvite'
       nextPageToken:
         type: string
+  v1ListProjectMemberServicesResponse:
+    type: object
+    properties:
+      services:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ProjectMemberService'
   v1ListProjectMemberUsergroupsResponse:
     type: object
     properties:
@@ -5187,7 +5412,7 @@ definitions:
         type: array
         items:
           type: object
-          $ref: '#/definitions/v1Service'
+          $ref: '#/definitions/v1OrganizationMemberService'
   v1ListSuperusersResponse:
     type: object
     properties:
@@ -5367,6 +5592,30 @@ definitions:
         type: string
       invitedBy:
         type: string
+  v1OrganizationMemberService:
+    type: object
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+      orgId:
+        type: string
+      orgName:
+        type: string
+      roleName:
+        type: string
+      hasProjectRoles:
+        type: boolean
+        description: True if the user has a project role in any project in the organization.
+      attributes:
+        type: object
+      createdOn:
+        type: string
+        format: date-time
+      updatedOn:
+        type: string
+        format: date-time
   v1OrganizationMemberUser:
     type: object
     properties:
@@ -5525,6 +5774,33 @@ definitions:
         type: string
       invitedBy:
         type: string
+  v1ProjectMemberService:
+    type: object
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+      orgId:
+        type: string
+      orgName:
+        type: string
+      orgRoleName:
+        type: string
+      projectId:
+        type: string
+      projectName:
+        type: string
+      projectRoleName:
+        type: string
+      attributes:
+        type: object
+      createdOn:
+        type: string
+        format: date-time
+      updatedOn:
+        type: string
+        format: date-time
   v1ProjectMemberUser:
     type: object
     properties:
@@ -5690,9 +5966,13 @@ definitions:
     type: object
   v1RemoveBookmarkResponse:
     type: object
+  v1RemoveOrganizationMemberServiceResponse:
+    type: object
   v1RemoveOrganizationMemberUserResponse:
     type: object
   v1RemoveOrganizationMemberUsergroupResponse:
+    type: object
+  v1RemoveProjectMemberServiceResponse:
     type: object
   v1RemoveProjectMemberUserResponse:
     type: object
@@ -5830,6 +6110,8 @@ definitions:
         type: string
       orgName:
         type: string
+      attributes:
+        type: object
       createdOn:
         type: string
         format: date-time
@@ -5849,9 +6131,13 @@ definitions:
       expiresOn:
         type: string
         format: date-time
+  v1SetOrganizationMemberServiceRoleResponse:
+    type: object
   v1SetOrganizationMemberUserRoleResponse:
     type: object
   v1SetOrganizationMemberUsergroupRoleResponse:
+    type: object
+  v1SetProjectMemberServiceRoleResponse:
     type: object
   v1SetProjectMemberUserRoleResponse:
     type: object
@@ -6042,6 +6328,39 @@ definitions:
     properties:
       user:
         $ref: '#/definitions/v1User'
+  v1Tool:
+    type: object
+    properties:
+      name:
+        type: string
+        title: The name of the tool
+      description:
+        type: string
+        title: A human-readable description of the tool
+      inputSchema:
+        type: string
+        title: JSON Schema defining the expected parameters for the tool (as JSON string)
+    title: Tool represents a tool definition for AI usage
+  v1ToolCall:
+    type: object
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+      input:
+        type: object
+    title: Tool call specification
+  v1ToolResult:
+    type: object
+    properties:
+      id:
+        type: string
+      content:
+        type: string
+      isError:
+        type: boolean
+    title: Tool execution result
   v1TriggerReconcileResponse:
     type: object
   v1TriggerRedeployRequest:

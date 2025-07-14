@@ -4,19 +4,17 @@ import (
 	"context"
 
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
-	"github.com/rilldata/rill/runtime/drivers"
+	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
 )
 
-func (h *Handle) Complete(ctx context.Context, msgs []*drivers.CompletionMessage) (*drivers.CompletionMessage, error) {
-	reqMsgs := make([]*adminv1.CompletionMessage, len(msgs))
-	for i, msg := range msgs {
-		reqMsgs[i] = &adminv1.CompletionMessage{Role: msg.Role, Data: msg.Data}
-	}
-
-	res, err := h.admin.Complete(ctx, &adminv1.CompleteRequest{Messages: reqMsgs})
+func (h *Handle) Complete(ctx context.Context, msgs []*aiv1.CompletionMessage, tools []*aiv1.Tool) (*aiv1.CompletionMessage, error) {
+	res, err := h.admin.Complete(ctx, &adminv1.CompleteRequest{
+		Messages: msgs,
+		Tools:    tools,
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	return &drivers.CompletionMessage{Role: res.Message.Role, Data: res.Message.Data}, nil
+	return res.Message, nil
 }

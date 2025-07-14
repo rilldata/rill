@@ -377,7 +377,7 @@ export class TimeControls {
             end = new Date(Math.max(end.getTime(), metricsEndDate.getTime()));
           }
         });
-        if (start.getTime() >= end.getTime()) {
+        if (start.getTime() > end.getTime()) {
           start = new Date(0);
           end = new Date();
         }

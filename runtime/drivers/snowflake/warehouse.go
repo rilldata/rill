@@ -10,11 +10,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/apache/arrow/go/v15/arrow"
-	"github.com/apache/arrow/go/v15/arrow/memory"
-	"github.com/apache/arrow/go/v15/parquet"
-	"github.com/apache/arrow/go/v15/parquet/compress"
-	"github.com/apache/arrow/go/v15/parquet/pqarrow"
+	"github.com/apache/arrow-go/v18/arrow"
+	"github.com/apache/arrow-go/v18/arrow/memory"
+	"github.com/apache/arrow-go/v18/parquet"
+	"github.com/apache/arrow-go/v18/parquet/compress"
+	"github.com/apache/arrow-go/v18/parquet/pqarrow"
 	"github.com/c2h5oh/datasize"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -259,7 +259,7 @@ func (f *fileIterator) Next(ctx context.Context) ([]string, error) {
 			mu.Lock()
 			defer mu.Unlock()
 
-			for _, rec := range *records {
+			for i, rec := range *records {
 				if writer.RowGroupTotalBytesWritten() >= rowGroupBufferSize {
 					writer.NewBufferedRowGroup()
 					f.logger.Debug(
@@ -270,8 +270,13 @@ func (f *fileIterator) Next(ctx context.Context) ([]string, error) {
 					)
 				}
 				if err := writer.WriteBuffered(rec); err != nil {
+					// Release current and remaining records to avoid memory leak
+					for j := i; j < len(*records); j++ {
+						(*records)[j].Release()
+					}
 					return err
 				}
+				rec.Release()
 			}
 			batchesLeft--
 			f.totalRecords += int64(b.GetRowCount())

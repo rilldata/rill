@@ -219,7 +219,7 @@ export interface V1APISpec {
   openapiParametersJson?: string;
   openapiRequestSchemaJson?: string;
   openapiResponseSchemaJson?: string;
-  openapiDefsPrefixng;
+  openapiDefsPrefix?: string;
   securityRules?: V1SecurityRule[];
   skipNestedSecurity?: boolean;
 }
@@ -327,6 +327,23 @@ export interface V1AnalyzedVariable {
   /** List of resources that appear to use the connector. */
   usedBy?: V1ResourceName[];
 }
+
+export type V1AppContextContextMetadata = { [key: string]: unknown };
+
+export interface V1AppContext {
+  contextType?: V1AppContextType;
+  contextMetadata?: V1AppContextContextMetadata;
+}
+
+export type V1AppContextType =
+  (typeof V1AppContextType)[keyof typeof V1AppContextType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1AppContextType = {
+  APP_CONTEXT_TYPE_UNSPECIFIED: "APP_CONTEXT_TYPE_UNSPECIFIED",
+  APP_CONTEXT_TYPE_PROJECT_CHAT: "APP_CONTEXT_TYPE_PROJECT_CHAT",
+  APP_CONTEXT_TYPE_EXPLORE_DASHBOARD: "APP_CONTEXT_TYPE_EXPLORE_DASHBOARD",
+} as const;
 
 export type V1AssertionResultFailRow = { [key: string]: unknown };
 
@@ -608,6 +625,11 @@ export interface V1ColumnTopKResponse {
   categoricalSummary?: V1CategoricalSummary;
 }
 
+export interface V1CompleteResponse {
+  conversationId?: string;
+  messages?: V1Message[];
+}
+
 export interface V1Component {
   spec?: V1ComponentSpec;
   state?: V1ComponentState;
@@ -699,6 +721,21 @@ export interface V1ConnectorState {
 export interface V1ConnectorV2 {
   spec?: V1ConnectorSpec;
   state?: V1ConnectorState;
+}
+
+export interface V1ContentBlock {
+  text?: string;
+  toolCall?: V1ToolCall;
+  toolResult?: V1ToolResult;
+}
+
+export interface V1Conversation {
+  id?: string;
+  ownerId?: string;
+  title?: string;
+  createdOn?: string;
+  updatedOn?: string;
+  messages?: V1Message[];
 }
 
 export interface V1CreateDirectoryResponse {
@@ -997,6 +1034,10 @@ export interface V1GenerateResolverResponse {
   resolverProperties?: V1GenerateResolverResponseResolverProperties;
 }
 
+export interface V1GetConversationResponse {
+  conversation?: V1Conversation;
+}
+
 export interface V1GetExploreResponse {
   explore?: V1Resource;
   metricsView?: V1Resource;
@@ -1125,6 +1166,10 @@ export interface V1ListConnectorDriversResponse {
   connectors?: V1ConnectorDriver[];
 }
 
+export interface V1ListConversationsResponse {
+  conversations?: V1Conversation[];
+}
+
 export interface V1ListDatabaseSchemasResponse {
   databaseSchemas?: V1DatabaseSchemaInfo[];
 }
@@ -1177,6 +1222,14 @@ export const V1LogLevel = {
 export interface V1MapType {
   keyType?: Runtimev1Type;
   valueType?: Runtimev1Type;
+}
+
+export interface V1Message {
+  id?: string;
+  role?: string;
+  content?: V1ContentBlock[];
+  createdOn?: string;
+  updatedOn?: string;
 }
 
 export interface V1MetricsView {
@@ -1603,6 +1656,7 @@ export interface V1ModelSpec {
   outputConnector?: string;
   outputProperties?: V1ModelSpecOutputProperties;
   changeMode?: V1ModelChangeMode;
+  tests?: V1ModelTest[];
   trigger?: boolean;
   triggerFull?: boolean;
   /** defined_as_source is true if it was defined by user as a source but converted internally to a model. */
@@ -1632,6 +1686,10 @@ export interface V1ModelState {
   specHash?: string;
   /** refs_hash is a hash of the model's refs current state. It is used to determine if the model's refs have changed. */
   refsHash?: string;
+  /** test_hash is a hash of the model's tests current state. It is used to determine if the model's tests have changed. */
+  testHash?: string;
+  /** test_errors contains the results of the model's tests. */
+  testErrors?: string[];
   /** refreshed_on is the time the model was last executed. */
   refreshedOn?: string;
   /** incremental_state contains the result of the most recent invocation of the model's incremental state resolver. */
@@ -1647,6 +1705,14 @@ This is not the time it took to refresh the model which also includes other stuf
   totalExecutionDurationMs?: string;
   /** latest_execution_duration_ms is the time user queries took to execute in the last successful refresh. */
   latestExecutionDurationMs?: string;
+}
+
+export type V1ModelTestResolverProperties = { [key: string]: unknown };
+
+export interface V1ModelTest {
+  name?: string;
+  resolver?: string;
+  resolverProperties?: V1ModelTestResolverProperties;
 }
 
 export type V1NotifierProperties = { [key: string]: unknown };
@@ -2223,6 +2289,20 @@ export interface V1TimeSeriesValue {
   records?: V1TimeSeriesValueRecords;
 }
 
+export type V1ToolCallInput = { [key: string]: unknown };
+
+export interface V1ToolCall {
+  id?: string;
+  name?: string;
+  input?: V1ToolCallInput;
+}
+
+export interface V1ToolResult {
+  id?: string;
+  content?: string;
+  isError?: boolean;
+}
+
 export interface V1TopK {
   entries?: TopKEntry[];
 }
@@ -2347,6 +2427,20 @@ export type RuntimeServiceEditInstanceBody = {
   connectors?: V1Connector[];
   variables?: RuntimeServiceEditInstanceBodyVariables;
   annotations?: RuntimeServiceEditInstanceBodyAnnotations;
+};
+
+export type RuntimeServiceCompleteBody = {
+  conversationId?: string;
+  messages?: V1Message[];
+  toolNames?: string[];
+  appContext?: V1AppContext;
+};
+
+export type RuntimeServiceGetConversationParams = {
+  /**
+   * Whether to include system messages in the response (defaults to false for UI use)
+   */
+  includeSystemMessages?: boolean;
 };
 
 export type RuntimeServiceListFilesParams = {

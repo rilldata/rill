@@ -237,7 +237,10 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 			return nil, err
 		}
 	} else if claims.OwnerType() == auth.OwnerTypeService {
-		attr = map[string]any{"admin": true}
+		attr, err = s.jwtAttributesForService(ctx, claims.OwnerID(), permissions)
+		if err != nil {
+			return nil, err
+		}
 	} else if claims.OwnerType() == auth.OwnerTypeMagicAuthToken {
 		mdl, ok := claims.AuthTokenModel().(*database.MagicAuthToken)
 		if !ok {
@@ -344,6 +347,7 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 		runtimeauth.ReadObjects,
 		runtimeauth.ReadMetrics,
 		runtimeauth.ReadAPI,
+		runtimeauth.UseAI,
 	}
 	if permissions.ManageProject {
 		instancePermissions = append(instancePermissions, runtimeauth.EditTrigger, runtimeauth.ReadResolvers)

@@ -8,12 +8,13 @@
 
   let theme: ReturnType<typeof useTheme>;
 
+  $: ({ instanceId } = $runtime);
+
   $: ({
     canvasEntity: { setTheme, spec },
-  } = getCanvasStore(canvasName));
+  } = getCanvasStore(canvasName, instanceId));
 
   $: ({ canvasSpec: cs } = spec);
-  $: ({ instanceId } = $runtime);
 
   $: themeFromUrl = $page.url.searchParams.get("theme");
 
