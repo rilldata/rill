@@ -153,8 +153,17 @@
 
   // Generate YAML preview from form state
   $: yamlPreview = (() => {
-    const values = connectionTab === "dsn" ? $dsnForm : $paramsForm;
-    return compileConnectorYAML(connector, values);
+    if (connector.name === "clickhouse") {
+      // Always inject the current managed state for clickhouse
+      const values = connectionTab === "dsn" ? $dsnForm : $paramsForm;
+      return compileConnectorYAML(connector, {
+        ...values,
+        managed: clickhouseManaged,
+      });
+    } else {
+      const values = connectionTab === "dsn" ? $dsnForm : $paramsForm;
+      return compileConnectorYAML(connector, values);
+    }
   })();
 
   function onStringInputChange(event: Event) {
