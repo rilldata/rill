@@ -111,6 +111,8 @@
   let clickhouseSubmitting: boolean;
   let clickhouseIsSubmitDisabled: boolean;
   let clickhouseManaged: boolean;
+  let clickhouseParamsForm;
+  let clickhouseDsnForm;
 
   // TODO: move to utils.ts
   // Compute disabled state for the submit button
@@ -154,8 +156,9 @@
   // Generate YAML preview from form state
   $: yamlPreview = (() => {
     if (connector.name === "clickhouse") {
-      // Always inject the current managed state for clickhouse
-      const values = connectionTab === "dsn" ? $dsnForm : $paramsForm;
+      // Use the value of the child form state for clickhouse
+      const values =
+        connectionTab === "dsn" ? $clickhouseDsnForm : $clickhouseParamsForm;
       return compileConnectorYAML(connector, {
         ...values,
         managed: clickhouseManaged,
@@ -264,6 +267,8 @@
           bind:isSubmitDisabled={clickhouseIsSubmitDisabled}
           bind:managed={clickhouseManaged}
           bind:connectionTab
+          bind:paramsForm={clickhouseParamsForm}
+          bind:dsnForm={clickhouseDsnForm}
           on:submitting
         />
       {:else if hasDsnFormOption}

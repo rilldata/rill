@@ -41,6 +41,7 @@
     details?: string,
   ) => void = () => {};
   export let connectionTab: ConnectorType = "parameters";
+  export { paramsForm, dsnForm };
 
   const dispatch = createEventDispatcher();
 
