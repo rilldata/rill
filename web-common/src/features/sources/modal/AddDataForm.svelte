@@ -32,7 +32,6 @@
   import { isEmpty, normalizeErrors } from "./utils";
   import { CONNECTION_TAB_OPTIONS } from "./constants";
   import { getInitialFormValuesFromProperties } from "../sourceUtils";
-  import yaml from "js-yaml";
   import { compileConnectorYAML } from "../../connectors/code-utils";
 
   const dispatch = createEventDispatcher();
