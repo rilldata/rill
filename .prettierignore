@@ -19,6 +19,7 @@ playwright-report/
 web-admin/tests/setup/projects
 web-common/tests/projects
 web-local/tests/data/projects
+web-local/tests/data
 
 .env
 *.sql
@@ -53,6 +54,7 @@ docs
 _redirects
 Makefile
 .nvmrc
+*.mdc
 
 # Java SQL lib
 sql/
