@@ -50,8 +50,6 @@ log
 Dockerfile
 Duckdb-Dockerfile
 docs
-*.json
-*.cjs
 _redirects
 Makefile
 .nvmrc
