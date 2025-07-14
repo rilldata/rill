@@ -66,6 +66,13 @@ function detectAppContext($page: Page): V1AppContext | null {
           dashboard_name: $page.params.dashboard,
         },
       };
+    case "/(viz)/explore/[name]":
+      return {
+        contextType: V1AppContextType.APP_CONTEXT_TYPE_EXPLORE_DASHBOARD,
+        contextMetadata: {
+          dashboard_name: $page.params.name,
+        },
+      };
 
     default:
       return null;
