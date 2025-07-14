@@ -139,7 +139,7 @@
     </Tooltip>
   </div>
 
-  <FormSection title="Filters">
+  <FormSection title="Filters" padding="">
     <FiltersForm {filters} {timeControls} maxWidth={750} side="top" />
   </FormSection>
 

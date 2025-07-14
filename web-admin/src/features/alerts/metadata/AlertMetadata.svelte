@@ -111,9 +111,7 @@
         </h1>
         <div class="grow" />
         {#if !$isAlertCreatedByCode.data}
-          {#if $exploreIsValid}
-            <EditAlert {alertSpec} />
-          {/if}
+          <EditAlert {alertSpec} disabled={!$exploreIsValid} />
           <DropdownMenu.Root>
             <DropdownMenu.Trigger>
               <IconButton ariaLabel="Alert context menu">

@@ -124,11 +124,12 @@
               </IconButton>
             </DropdownMenu.Trigger>
             <DropdownMenu.Content align="start">
-              {#if $exploreIsValid}
-                <DropdownMenu.Item on:click={handleEditReport}>
-                  Edit report
-                </DropdownMenu.Item>
-              {/if}
+              <DropdownMenu.Item
+                on:click={handleEditReport}
+                disabled={!$exploreIsValid}
+              >
+                Edit report
+              </DropdownMenu.Item>
               <DropdownMenu.Item on:click={handleDeleteReport}>
                 Delete report
               </DropdownMenu.Item>
