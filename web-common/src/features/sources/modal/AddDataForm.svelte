@@ -33,6 +33,7 @@
   import { CONNECTION_TAB_OPTIONS } from "./constants";
   import { getInitialFormValuesFromProperties } from "../sourceUtils";
   import yaml from "js-yaml";
+  import { compileConnectorYAML } from "../../connectors/code-utils";
 
   const dispatch = createEventDispatcher();
 
@@ -153,23 +154,8 @@
 
   // Generate YAML preview from form state
   $: yamlPreview = (() => {
-    let values = connectionTab === "dsn" ? $dsnForm : $paramsForm;
-    let props = connectionTab === "dsn" ? dsnProperties : properties;
-    let out: Record<string, unknown> = {};
-    for (const property of props) {
-      const key = property.key;
-      if (!key) continue;
-      let value = values[key];
-      if (property.secret && value) {
-        value = "********";
-      }
-      if (value !== undefined && value !== null && value !== "") {
-        out[key] = value;
-      }
-    }
-    const title = `connector: ${connector.name}`;
-    if (Object.keys(out).length === 0) return title;
-    return `${title}\n${yaml.dump(out, { lineWidth: 80 })}`;
+    const values = connectionTab === "dsn" ? $dsnForm : $paramsForm;
+    return compileConnectorYAML(connector, values);
   })();
 
   function onStringInputChange(event: Event) {
