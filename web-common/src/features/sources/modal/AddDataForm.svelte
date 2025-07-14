@@ -434,7 +434,7 @@
     <div>
       <div class="text-sm leading-none font-medium mb-4">Connector preview</div>
       <pre
-        class="bg-muted p-3 rounded text-xs border border-gray-200 whitespace-pre-wrap overflow-x-visible">{yamlPreview}</pre>
+        class="bg-muted p-3 rounded text-xs border border-gray-200 overflow-x-auto">{yamlPreview}</pre>
     </div>
 
     <NeedHelpText {connector} />
