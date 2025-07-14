@@ -8,6 +8,7 @@
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { hasValidMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors.ts";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
   import ScheduledReportDialog from "@rilldata/web-common/features/scheduled-reports/ScheduledReportDialog.svelte";
   import { getRuntimeServiceListResourcesQueryKey } from "@rilldata/web-common/runtime-client";
@@ -40,11 +41,16 @@
   $: isReportCreatedByCode = useIsReportCreatedByCode(instanceId, report);
 
   // Get dashboard
-  $: dashboardName = useReportDashboardName(instanceId, report);
-  $: dashboard = useExploreValidSpec(instanceId, $dashboardName.data);
-  $: dashboardTitle =
-    $dashboard.data?.explore?.displayName || $dashboardName.data;
-  $: dashboardDoesNotExist = $dashboard.error?.response?.status === 404;
+  $: exploreName = useReportDashboardName(instanceId, report);
+  $: validSpecResp = useExploreValidSpec(instanceId, $exploreName.data);
+  $: exploreSpec = $validSpecResp.data?.explore;
+  $: dashboardTitle = exploreSpec?.displayName || $exploreName.data;
+  $: dashboardDoesNotExist = $validSpecResp.error?.response?.status === 404;
+
+  $: exploreIsValid = hasValidMetricsViewTimeRange(
+    instanceId,
+    $exploreName.data,
+  );
 
   $: reportSpec = $reportQuery.data?.resource?.report?.spec;
 
@@ -118,7 +124,10 @@
               </IconButton>
             </DropdownMenu.Trigger>
             <DropdownMenu.Content align="start">
-              <DropdownMenu.Item on:click={handleEditReport}>
+              <DropdownMenu.Item
+                on:click={handleEditReport}
+                disabled={!$exploreIsValid}
+              >
                 Edit report
               </DropdownMenu.Item>
               <DropdownMenu.Item on:click={handleDeleteReport}>
@@ -149,7 +158,7 @@
               </div>
             {:else}
               <a
-                href={`/${organization}/${project}/explore/${$dashboardName.data}`}
+                href={`/${organization}/${project}/explore/${$exploreName.data}`}
               >
                 {dashboardTitle}
               </a>
