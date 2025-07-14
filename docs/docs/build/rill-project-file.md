@@ -23,17 +23,19 @@ models:
 When adding an OLAP connector to your project, this will automatically populate with the new OLAP connector. IE: `ClickHouse`, `Druid`
 
 ## `ai_instructions`
-While the answers returned by the Agent might be enough, there may be situations where you need to give the agent a bit of guidance on how to retrieve, handle or process the data. This is possible via the instructions in the project level. You can limit the number of queries that the Agent will run, have the Agent return certain type of results back, or even set up the Agent ask follow up questions.
+Use the `ai_instructions` field to provide information that is **unique to your project**. This helps the agent deliver more relevant and actionable insights tailored to your specific needs.
 
+**What to include:**
+- Guidance on which metrics views are most important or should be prioritized for your project.
+- Any custom business logic, definitions, or terminology unique to your data or organization.
+- Preferences for aggregations, filters, or dimensions that are especially relevant to your use case.
+
+**Example:**
 ```yaml
 ai_instructions: |
-  You are a data analyst supporting business users with questions about metrics and business data. Your responses should be precise, clear, and actionable.
-
-  When running data queries:
-    - Run up to three queries in sequence to explore the data from different perspectives or to answer follow-up aspects of the question.
-    - After running the queries, provide a summary of the results, highlight any notable trends or insights, and suggest up to three additional questions or areas that could be explored further based on the findings.
-
-  Your goal is to guide users to actionable insights, ensure transparency in your process, and help them make informed decisions based on the data. Instead of assuming what the user might want to see, ask the user with follow up questions on exactly what they are looking for.
+  Focus on the `ad_performance` and `revenue_overview` metrics views, as these are most critical for our business users.
+  When possible, highlight trends by region and product category.
+  Use our internal terminology: "campaign" refers to a single ad initiative, and "placement" refers to a specific ad slot.
 ```
 
 :::note 
