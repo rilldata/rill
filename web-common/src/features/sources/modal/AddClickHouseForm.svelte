@@ -40,10 +40,9 @@
     error: string | null,
     details?: string,
   ) => void = () => {};
+  export let connectionTab: ConnectorType = "parameters";
 
   const dispatch = createEventDispatcher();
-
-  let connectionTab: ConnectorType = "parameters";
 
   // Always include 'managed' in the schema for ClickHouse
   const clickhouseSchema = yup(getYupSchema["clickhouse"]);
@@ -270,11 +269,7 @@
   </div>
 
   {#if !$paramsForm.managed}
-    <Tabs
-      value={connectionTab}
-      options={CONNECTION_TAB_OPTIONS}
-      on:change={(event) => (connectionTab = event.detail)}
-    >
+    <Tabs bind:value={connectionTab} options={CONNECTION_TAB_OPTIONS}>
       <TabsContent value="parameters">
         <form
           id={paramsFormId}

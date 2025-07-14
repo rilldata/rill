@@ -254,13 +254,13 @@
           bind:submitting={clickhouseSubmitting}
           bind:isSubmitDisabled={clickhouseIsSubmitDisabled}
           bind:managed={clickhouseManaged}
+          bind:connectionTab
           on:submitting
         />
       {:else if hasDsnFormOption}
         <Tabs
-          value={connectionTab}
+          bind:value={connectionTab}
           options={CONNECTION_TAB_OPTIONS}
-          on:change={(event) => (connectionTab = event.detail)}
           disableMarginTop
         >
           <TabsContent value="parameters">

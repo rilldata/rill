@@ -12,12 +12,13 @@
 
   const dispatch = createEventDispatcher();
 
-  function handleChange(e: CustomEvent) {
-    dispatch("change", e.detail);
+  function handleValueChange(newValue: string) {
+    value = newValue;
+    dispatch("value", newValue);
   }
 </script>
 
-<Tabs {value} on:change={handleChange} class="w-full">
+<Tabs {value} onValueChange={handleValueChange} class="w-full">
   <TabsList
     class="bg-muted h-9 rounded-[10px] w-full border border-gray-200 flex my-4 {disableMarginTop
       ? 'mt-0'
