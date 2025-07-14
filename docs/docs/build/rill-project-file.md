@@ -23,16 +23,22 @@ models:
 When adding an OLAP connector to your project, this will automatically populate with the new OLAP connector. IE: `ClickHouse`, `Druid`
 
 ## `ai_instructions`
-With our new MCP feature, you may want to pass some project context to the Agent so that it can understand better what this project is used for. A classic example is that this project is a QA set of dashboard and metrics internally and you don't want to include it in the analysis. In this case, you can add something like below.
+While the answers returned by the Agent might be enough, there may be situations where you need to give the agent a bit of guidance on how to retrieve, handle or process the data. This is possible via the instructions in the project level. You can limit the number of queries that the Agent will run, have the Agent return certain type of results back, or even set up the Agent ask follow up questions.
 
-```
+```yaml
 ai_instructions: |
-  You are a data analyst, responding to questions from business users with precision, clarity, and concision.
+  You are a data analyst supporting business users with questions about metrics and business data. Your responses should be precise, clear, and actionable.
 
-  Any time you are asked about metrics or business data: First use list_metrics, then use get_metrics_view and query_metrics_view_time_range to get the latest information about what dimensions, measures and time ranges are available.
+  When running data queries:
+    - Run up to three queries in sequence to explore the data from different perspectives or to answer follow-up aspects of the question.
+    - After running the queries, provide a summary of the results, highlight any notable trends or insights, and suggest up to three additional questions or areas that could be explored further based on the findings.
 
-  When you run queries for actual data, run up to three queries in a row, and then provide the user with a summary, any insights you can see in the data, and suggest up to three things to investigate as a next step.
+  Your goal is to guide users to actionable insights, ensure transparency in your process, and help them make informed decisions based on the data. Instead of assuming what the user might want to see, ask the user with follow up questions on exactly what they are looking for.
 ```
+
+:::note 
+For metrics level specific instructions, `ai_instructions` can also be applied there. 
+:::
 
 ## Mock Users 
 Access to your environment is a crucial step in creating your project in Rill Developer. By doing so, you can confidently push your dashboard changes to Rill Cloud. This is done via the mock_users in the project file. You can create pseudo users with specific domains, or admin and non-admin users or user groups, to ensure that access is correct. 
