@@ -2975,6 +2975,8 @@ message ReportOptions {
 
 message AlertOptions {
   string display_name = 1;
+  string refresh_cron = 16;
+  string refresh_time_zone = 17;
   string interval_duration = 2;
   string resolver = 13;
   google.protobuf.Struct resolver_properties = 14;

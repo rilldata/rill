@@ -4431,6 +4431,10 @@ definitions:
     properties:
       displayName:
         type: string
+      refreshCron:
+        type: string
+      refreshTimeZone:
+        type: string
       intervalDuration:
         type: string
       resolver:
