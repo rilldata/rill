@@ -23,6 +23,7 @@
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { hasValidMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors.ts";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
   import {
     getRuntimeServiceListResourcesQueryKey,
@@ -41,12 +42,17 @@
   $: isAlertCreatedByCode = useIsAlertCreatedByCode(instanceId, alert);
 
   // Get dashboard
-  $: dashboardName = useAlertDashboardName(instanceId, alert);
-  $: dashboard = useExploreValidSpec(instanceId, $dashboardName.data);
-  $: metricsViewName = $dashboard.data?.explore?.metricsView;
-  $: dashboardTitle =
-    $dashboard.data?.explore?.displayName || $dashboardName.data;
-  $: dashboardDoesNotExist = $dashboard.error?.response?.status === 404;
+  $: exploreName = useAlertDashboardName(instanceId, alert);
+  $: validSpecResp = useExploreValidSpec(instanceId, $exploreName.data);
+  $: exploreSpec = $validSpecResp.data?.explore;
+  $: metricsViewName = exploreSpec?.metricsView;
+  $: dashboardTitle = exploreSpec?.displayName || $exploreName.data;
+  $: dashboardDoesNotExist = $validSpecResp.error?.response?.status === 404;
+
+  $: exploreIsValid = hasValidMetricsViewTimeRange(
+    instanceId,
+    $exploreName.data,
+  );
 
   $: alertSpec = $alertQuery.data?.resource?.alert?.spec;
 
@@ -105,7 +111,9 @@
         </h1>
         <div class="grow" />
         {#if !$isAlertCreatedByCode.data}
-          <EditAlert {alertSpec} />
+          {#if $exploreIsValid}
+            <EditAlert {alertSpec} />
+          {/if}
           <DropdownMenu.Root>
             <DropdownMenu.Trigger>
               <IconButton ariaLabel="Alert context menu">
@@ -141,7 +149,7 @@
               </div>
             {:else}
               <a
-                href={`/${organization}/${project}/explore/${encodeURIComponent($dashboardName.data)}`}
+                href={`/${organization}/${project}/explore/${encodeURIComponent($exploreName.data)}`}
               >
                 {dashboardTitle}
               </a>
