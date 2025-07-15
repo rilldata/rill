@@ -188,7 +188,11 @@
     <Dialog.Content
       class={cn(
         "overflow-hidden",
-        step === 2 ? "max-w-4xl p-0 gap-0" : "p-6 gap-4",
+        step === 2
+          ? requestConnector
+            ? "max-w-4xl p-6 gap-4"
+            : "max-w-4xl p-0 gap-0"
+          : "p-6 gap-4",
       )}
       noClose={step === 1}
     >
