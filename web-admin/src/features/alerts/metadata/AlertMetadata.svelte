@@ -170,7 +170,7 @@
       </div>
 
       <!-- Schedule: TODO: change based on non UI settings -->
-      <div class="flex flex-col gap-y-3">
+      <div class="flex flex-col gap-y-3" aria-label="Alert schedule">
         <MetadataLabel>Schedule</MetadataLabel>
         <MetadataValue>{humanReadableFrequency}</MetadataValue>
       </div>
