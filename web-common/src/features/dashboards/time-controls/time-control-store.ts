@@ -462,13 +462,11 @@ export function getComparisonTimeRange(
       timeRange.end,
     );
 
-    if (range.start && range.end) {
-      return {
-        start: range.start,
-        end: range.end,
-        name: comparisonOption,
-      };
-    }
+    return {
+      start: range.start,
+      end: range.end,
+      name: comparisonOption,
+    };
   } else if (
     comparisonTimeRange.name === TimeComparisonOption.CUSTOM ||
     // 1st step towards using a single `Custom` variable

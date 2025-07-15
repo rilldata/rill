@@ -3,6 +3,7 @@ import type { CanvasSpecResponseStore } from "@rilldata/web-common/features/canv
 import {
   calculateComparisonTimeRangePartial,
   calculateTimeRangePartial,
+  getComparisonTimeRange,
   type ComparisonTimeRangeState,
   type TimeRangeState,
 } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
@@ -221,19 +222,27 @@ export class TimeControls {
     if (!componentName) {
       this.specStore.subscribe((spec) => {
         const defaultPreset = spec.data?.canvas?.defaultPreset;
+        const timeRanges = spec?.data?.canvas?.timeRanges;
         if (!defaultPreset) return;
 
-        const didSet = this.set.range(
-          defaultPreset.timeRange as TimeRangePreset,
-          true,
+        const defaultRange = defaultPreset.timeRange as TimeRangePreset;
+
+        const didSet = this.set.range(defaultRange, true);
+
+        const newComparisonRange = getComparisonTimeRange(
+          timeRanges,
+          get(this.allTimeRange),
+          { name: defaultRange } as DashboardTimeControls,
+          undefined,
         );
 
         if (
+          newComparisonRange?.name &&
           didSet &&
           defaultPreset.comparisonMode ===
             V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME
         ) {
-          this.set.comparison("rill-PP", true);
+          this.set.comparison(newComparisonRange.name, true);
         }
       });
     }
