@@ -52,6 +52,7 @@ export async function testOLAPConnector(
   }
 }
 
+// TODO: can move to features/connectors/sources/test-connection.ts
 export async function testListDatabaseSchemas(
   instanceId: string,
   params: ConnectorServiceListDatabaseSchemasParams,
@@ -83,6 +84,7 @@ export async function testListDatabaseSchemas(
   }
 }
 
+// TODO: can move to features/connectors/sources/test-connection.ts
 export async function testListTables(
   instanceId: string,
   params: ConnectorServiceListTablesParams,
@@ -114,6 +116,7 @@ export async function testListTables(
   }
 }
 
+// TODO: can move to features/connectors/sources/test-connection.ts
 export async function testGetTable(
   instanceId: string,
   params: ConnectorServiceGetTableParams,
