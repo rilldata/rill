@@ -47,7 +47,7 @@ On the second tab, you will have the opportunity to specify the criteria for whi
 ### Delivery
 
 On the final tab, you will choose how and where your alert is delivered. By default, the alert will be checked whenever the source data is [refreshed](/build/connect/source-refresh). There are a few additional things worth noting:
-1. To limit the number of alerts, you can set an optional **Snooz**e** period after an alert is triggered.
+1. To limit the number of alerts, you can set an optional **Snooze** period after an alert is triggered.
 2. Depending on the available notification targets (see next section), choose which targets and/or users to subscribe to the alert.
 
 Afterwards, click **Create** to finish creating the alert.
@@ -97,10 +97,10 @@ To view or make changes to existing alerts, navigate to the project home page an
 ## Common use cases
 
 ### Troubleshooting 
-Alerts for troubleshooting purposes are useful for making sure that applications are running as expected, campaigns are set up correctly, or any use case where the outcome is binary. For these alerts, the criteria is often is the amount > 0 or is the amount below a threshold. These alerts are best mixed with dimension filters to be alerted on any instance or split (e.g. Impressions > 0 for all Campaign_ID).
+Alerts for troubleshooting purposes are useful for making sure that applications are running as expected, campaigns are set up correctly, or any use case where the outcome is binary. For these alerts, the criteria is often: is the amount > 0 or is the amount below a threshold. These alerts are best mixed with dimension filters to be alerted on any instance or split (e.g. Impressions > 0 for all Campaign_ID).
 
 ### Pacing 
-Alerts for pacing purposes are good for budgeting and threshold use cases - where a pre-defined range can be applied to evaluate progress towards a goal. There alerts tend to be more specific (setting up filters and criteria for specifics values) and marking progress towards that goal. Consider setting up multiple threshold alerts like 50%, 75% attainment.
+Alerts for pacing purposes are good for budgeting and threshold use cases - where a pre-defined range can be applied to evaluate progress towards a goal. There alerts tend to be more specific (setting up filters and criteria for specific values) and marking progress towards that goal. Consider setting up multiple threshold alerts like 50%, 75% attainment.
 
 ### Monitoring & Comparison
 Alerts for monitoring purposes are probably the most common alerting use case, i.e. wanting to be alerted based on relative values to prior periods. For these alerts, rather than absolutes, create criteria for % change of values. 

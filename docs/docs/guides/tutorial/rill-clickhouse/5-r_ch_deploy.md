@@ -23,7 +23,7 @@ Select the `Deploy to share` button in the top right corner of a dashboard.
 Steps to deploy to Rill Cloud:
 1. Select the `Deploy to share` button.
 2. Select `continue` on the free trial [link to article of free trial explanation]
-    - If you have multiple organizaitons, please select Rill_Learn and `continue`.
+    - If you have multiple organizations, please select Rill_Learn and `continue`.
 3. Select `continue` on user invites.
 4. You will be navigated to the /status page of your deployed project.
 

@@ -6,7 +6,7 @@ sidebar_position: 38
 ---
 
 ## Overview 
-Rill provides the ability to export data from multiple locations - leaderboards, Time Dimension detail and Pivot Tables (_coming soon_). In addition to direct downloads, you can also set up reoccurring reports to your inbox. Scheduled Reports allow you to effortlessly generate and manage email reports for any exportable content within your Rill cloud dashboard. 
+Rill provides the ability to export data from multiple locations - leaderboards, Time Dimension detail, and Pivot Tables (_coming soon_). In addition to direct downloads, you can also set up recurring reports to your inbox. Scheduled Reports allow you to effortlessly generate and manage email reports for any exportable content within your Rill Cloud dashboard. 
 
 - [Overview](#overview)
 - [Exporting from Rill](#exporting-from-rill)

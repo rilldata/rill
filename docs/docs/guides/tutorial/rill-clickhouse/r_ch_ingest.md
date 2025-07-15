@@ -12,7 +12,7 @@ tags:
 
 Currently, ClickHouse lacks some [direct ingestion](https://clickhouse.com/docs/en/migrations/snowflake) from certain providers. You can navigate to their website for a full list of data sources in which they support [direct ingestion](https://clickhouse.com/docs/en/integrations), via manual import or [ClickPipes](https://clickhouse.com/cloud/clickpipes).
 
-### How does this effect Rill?
+### How does this affect Rill?
 
 When switching from DuckDB, you may have noticed some changes to the capabilities of Rill. By default, we disable modeling when ClickHouse is enabled as the default OLAP engine. However, we can change this behavior by enabling the feature flag `clickhouseModeling`.
 
@@ -50,7 +50,7 @@ output:
   materialize: true
 ```
 
-In order to use this method you will need to set your credentials in .env. If the .env does not already exist (it will be created default if you have created a source), you can create a .env file in the rill directoy by running `touch .env` and this should now be visible in Rill Developer.
+In order to use this method you will need to set your credentials in .env. If the .env does not already exist (it will be created by default if you have created a source), you can create a .env file in the rill directory by running `touch .env` and this should now be visible in Rill Developer.
 
 ```
 connector.clickhouse.host="localhost"
