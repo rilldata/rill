@@ -193,8 +193,7 @@ export class WatchResourcesClient {
 
             // If it's a new source, show the "Source imported successfully" modal
             const isSourceModel =
-              res.resource.model?.spec?.inputConnector !==
-              res.resource.model?.spec?.outputConnector;
+              res.resource.meta?.filePaths?.[0]?.startsWith("/sources/");
             const isNewSource =
               res.name.kind === ResourceKind.Model &&
               isSourceModel &&
