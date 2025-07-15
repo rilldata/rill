@@ -26,6 +26,7 @@
   import { QueryClientProvider } from "@tanstack/svelte-query";
   import type { AxiosError } from "axios";
   import { onMount } from "svelte";
+  import { goto } from "$app/navigation";
   import type { LayoutData } from "./$types";
   import "@rilldata/web-common/app.css";
 
@@ -67,12 +68,30 @@
     return () => removeJavascriptListeners?.();
   });
 
+  // Global keyboard shortcut handler
+  function handleKeyDown(event: KeyboardEvent) {
+    // Shift + L to toggle chat
+    if (event.shiftKey && event.key === "L") {
+      event.preventDefault();
+      // Toggle between current page and chat
+      if ($page.url.pathname === "/ai") {
+        // Go back to previous page or home
+        history.back();
+      } else {
+        // Go to chat page
+        goto("/ai");
+      }
+    }
+  }
+
   $: ({ host, instanceId } = $runtime);
 
   $: ({ route } = $page);
 
   $: mode = route.id?.includes("(viz)") ? "Preview" : "Developer";
 </script>
+
+<svelte:window on:keydown={handleKeyDown} />
 
 <QueryClientProvider client={queryClient}>
   <ResourceWatcher {host} {instanceId}>
