@@ -117,10 +117,14 @@
 
   $: initialValues =
     props.mode === "create"
-      ? getNewReportInitialFormValues($user.data?.user?.email)
+      ? getNewReportInitialFormValues(
+          $user.data?.user?.email,
+          aggregationRequest,
+        )
       : getExistingReportInitialFormValues(
           props.reportSpec,
           $user.data?.user?.email,
+          aggregationRequest,
         );
 
   $: ({ form, errors, enhance, submit, submitting } = superForm(
@@ -163,6 +167,8 @@
                 aggregationRequest,
                 filters.toState(),
                 timeControls.toState(),
+                values.rows,
+                values.columns,
                 exploreSpec,
               ),
             ),
@@ -222,6 +228,18 @@
       // showing error below
     }
   }
+
+  $: console.log("aggregationRequest", aggregationRequest);
+  // $: console.log(
+  //   getUpdatedAggregationRequest(
+  //     aggregationRequest,
+  //     filters.toState(),
+  //     timeControls.toState(),
+  //     $form.rows,
+  //     $form.columns,
+  //     exploreSpec,
+  //   ),
+  // );
 </script>
 
 <Dialog.Root bind:open>

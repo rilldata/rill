@@ -7,6 +7,7 @@
   import type { TimeControls } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
   import FiltersForm from "@rilldata/web-common/features/scheduled-reports/FiltersForm.svelte";
+  import RowsAndColumnsForm from "@rilldata/web-common/features/scheduled-reports/fields/RowsAndColumnsForm.svelte";
   import type { ReportValues } from "@rilldata/web-common/features/scheduled-reports/utils";
   import { V1ExportFormat } from "@rilldata/web-common/runtime-client";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
@@ -142,6 +143,13 @@
   <FormSection title="Filters" padding="">
     <FiltersForm {filters} {timeControls} maxWidth={750} side="top" />
   </FormSection>
+
+  <RowsAndColumnsForm
+    bind:rows={$data["rows"]}
+    bind:columns={$data["columns"]}
+    {instanceId}
+    {exploreName}
+  />
 
   <MultiInput
     id="emailRecipients"

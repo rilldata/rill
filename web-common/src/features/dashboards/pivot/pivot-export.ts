@@ -1,3 +1,4 @@
+import { getDimensionForTimeField } from "@rilldata/web-common/features/dashboards/aggregation-request/dimension-utils.ts";
 import { mergeDimensionAndMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
@@ -5,7 +6,6 @@ import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/ti
 import { mapSelectedTimeRangeToV1TimeRange } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers";
 import { type TimeRangeString } from "@rilldata/web-common/lib/time/types";
 import {
-  V1TimeGrain,
   type V1MetricsViewAggregationRequest,
   type V1MetricsViewAggregationSort,
   type V1Query,
@@ -106,12 +106,12 @@ function getPivotAggregationRequest(
 
   const allDimensions = [...rows, ...columns.dimension].map((d) =>
     d.type === PivotChipType.Time
-      ? {
-          name: timeDimension,
-          timeGrain: d.id as V1TimeGrain,
-          timeZone: exploreState.selectedTimezone,
-          alias: isFlat ? `${timeDimension}_rill_${d.id}` : `Time ${d.title}`,
-        }
+      ? getDimensionForTimeField(
+          timeDimension,
+          exploreState.selectedTimezone,
+          d,
+          !isFlat,
+        )
       : {
           name: d.id,
         },
@@ -125,12 +125,12 @@ function getPivotAggregationRequest(
 
   const rowDimensions = rows.map((d) =>
     d.type === PivotChipType.Time
-      ? {
-          name: timeDimension,
-          timeGrain: d.id as V1TimeGrain,
-          timeZone: exploreState.selectedTimezone,
-          alias: `Time ${d.title}`,
-        }
+      ? getDimensionForTimeField(
+          timeDimension,
+          exploreState.selectedTimezone,
+          d,
+          true,
+        )
       : {
           name: d.id,
         },

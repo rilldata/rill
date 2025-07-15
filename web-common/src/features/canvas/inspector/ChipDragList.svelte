@@ -14,6 +14,7 @@
   export let items: string[] = [];
   export let displayMap: Record<string, { label: string; type: FieldType }>;
   export let onUpdate: (items: string[]) => void;
+  export let orientation: "horizontal" | "vertical" = "vertical";
 
   let dragData: PivotChipData | null = null;
   let dragStart = { left: 0, top: 0 };
@@ -91,13 +92,13 @@
 </script>
 
 <div
-  class="flex flex-col gap-1"
+  class="flex {orientation === 'vertical' ? 'flex-col' : 'flex-row'} gap-1"
   use:swapListener={{
     condition: !!dragData,
     ghostIndex: _ghostIndex,
     canMixTypes: true,
     chipType: undefined,
-    orientation: "vertical",
+    orientation,
   }}
   style:--ghost-width="{draggedItemWidth}px"
 >
