@@ -38,6 +38,9 @@ import { TimeControls } from "./time-control";
 import { page } from "$app/stores";
 import { goto } from "$app/navigation";
 
+// Store for managing URL search parameters
+// Which may be in the URL or in the Canvas YAML
+// Set returns a boolean indicating whether the value was set
 export type SearchParamsStore = {
   subscribe: (run: (value: URLSearchParams) => void) => Unsubscriber;
   set: (key: string, value?: string, checkIfSet?: boolean) => boolean;

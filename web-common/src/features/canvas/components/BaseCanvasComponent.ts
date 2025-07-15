@@ -97,6 +97,19 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
             "time_filters" as AllKeys<T>,
             searchParams.toString() as T[AllKeys<T>],
           );
+          return true;
+        },
+        clearAll: () => {
+          const searchParams = get(store);
+
+          searchParams.forEach((_, key) => {
+            searchParams.delete(key);
+          });
+
+          this.updateProperty(
+            "time_filters" as AllKeys<T>,
+            searchParams.toString() as T[AllKeys<T>],
+          );
         },
       };
     })();
@@ -125,6 +138,20 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
           this.updateProperty(
             "dimension_filters" as AllKeys<T>,
             value as T[AllKeys<T>],
+          );
+
+          return true;
+        },
+        clearAll: () => {
+          const searchParams = get(store);
+
+          searchParams.forEach((_, key) => {
+            searchParams.delete(key);
+          });
+
+          this.updateProperty(
+            "dimension_filters" as AllKeys<T>,
+            searchParams.toString() as T[AllKeys<T>],
           );
         },
       };
