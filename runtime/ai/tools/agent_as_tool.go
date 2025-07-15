@@ -43,7 +43,7 @@ func RunAgent(a *agent.Agent, r *runner.Runner, name, description string) (*tool
 				return nil, err
 			}
 			result, err := r.Run(ctx, a, &runner.RunOptions{
-				Input:    userInput,
+				Input:    userInput.Input,
 				MaxTurns: 10,
 			})
 			if err != nil {
@@ -58,7 +58,7 @@ func RunAgent(a *agent.Agent, r *runner.Runner, name, description string) (*tool
 		"properties": map[string]any{
 			"input": map[string]any{
 				"type":        "string",
-				"description": "Input to the tool",
+				"description": "input to the tool",
 			},
 		},
 		"required": []string{"input"},

@@ -47,10 +47,12 @@ func (i *generateMetricsViewInput) validate() error {
 	return nil
 }
 
+// GenerateMetricsViewYAML creates a tool that generates a metrics view YAML based on the provided model name.
+// To keep things simple it also generates a dashboard YAML for the metrics view.
 func GenerateMetricsViewYAML(instanceID string, rt *runtime.Runtime) *tool.FunctionTool {
 	tool := tool.NewFunctionTool(
 		"generate_metrics_view_yaml",
-		"Generates a YAML configuration for a metrics view based on the provided model name",
+		"Generates a YAML configuration for a metrics ,view based on the provided model name",
 		func(ctx context.Context, params map[string]any) (any, error) {
 			input, err := newGenerateMetricsViewInput(params)
 			if err != nil {
@@ -75,7 +77,7 @@ func GenerateMetricsViewYAML(instanceID string, rt *runtime.Runtime) *tool.Funct
 
 			_, err = putResourceAndWaitForReconcile(ctx, rt, instanceID, fmt.Sprintf("metrics_views/%s.yaml", input.MetricsViewName), yaml, &runtimev1.ResourceName{
 				Kind: runtime.ResourceKindMetricsView,
-				Name: input.ModelName,
+				Name: input.MetricsViewName,
 			})
 			if err != nil {
 				return map[string]any{

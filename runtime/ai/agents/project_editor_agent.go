@@ -23,7 +23,7 @@ func NewProjectEditorAgent(ctx context.Context, instanceID, modelName string, r 
 
 Your primary responsibilities:
 - Ingest sample data as models using "create_model" tool
-- Create metrics views using "create_metrics_view" tool
+- Create metrics views using "create_metrics_view" tool. You must always pass the model name to the tool.
 - Edits existing models using "edit_model" tool
 - You can get existing resources using "list_resources" tool
 - Try to infer the resource from the context provided in the user input

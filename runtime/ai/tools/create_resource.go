@@ -133,10 +133,10 @@ func putResourceAndWaitForReconcile(ctx context.Context, rt *runtime.Runtime, in
 	}
 
 	// TODO : Find a better way to handle this than just waiting for full reconciliation
-	// wait for 2 seconds for reconciler to pick up the changes
+	// wait for 5 seconds for reconciler to pick up the changes
 	// Find a better way to wait for reconciliation for a specific resource
 	// May be just subscribe to resource events and wait for the specific resource to be reconciled
-	time.Sleep(2 * time.Second)
+	time.Sleep(5 * time.Second)
 	err = ctrl.WaitUntilIdle(ctx, true)
 	if err != nil {
 		return nil, err
