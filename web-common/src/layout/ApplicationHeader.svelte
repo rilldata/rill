@@ -35,9 +35,9 @@
   $: ({ size: unsavedFileCount } = $unsavedFiles);
   $: onDeployPage = isDeployPage($page);
 
-  $: exploresQuery = useValidExplores(instanceId);
-  $: canvasQuery = useValidCanvases(instanceId);
-  $: projectTitleQuery = useProjectTitle(instanceId);
+  $: exploresQuery = instanceId ? useValidExplores(instanceId) : null;
+  $: canvasQuery = instanceId ? useValidCanvases(instanceId) : null;
+  $: projectTitleQuery = instanceId ? useProjectTitle(instanceId) : null;
 
   $: projectTitle = $projectTitleQuery?.data ?? "Untitled Rill Project";
 
@@ -120,10 +120,14 @@
       <DeployProjectCTA {hasValidDashboard} />
     {/if}
     <!-- AI Chat button -->
-    <a
-      href="/ai"
+    <button
+      type="button"
       class="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-      title="AI Chat (Shift+L)"
+      title="AI Chat"
+      on:click={() => {
+        // Dispatch custom event to toggle chat
+        window.dispatchEvent(new CustomEvent("toggle-chat"));
+      }}
     >
       <svg
         class="w-4 h-4 mr-1.5"
@@ -139,7 +143,7 @@
         />
       </svg>
       AI Chat
-    </a>
+    </button>
     <LocalAvatarButton darkMode={$darkMode} />
   </div>
 </header>

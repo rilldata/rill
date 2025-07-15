@@ -26,8 +26,9 @@
   import { QueryClientProvider } from "@tanstack/svelte-query";
   import type { AxiosError } from "axios";
   import { onMount } from "svelte";
-  import { goto } from "$app/navigation";
   import type { LayoutData } from "./$types";
+  import ChatWidget from "../lib/components/ChatWidget.svelte";
+  import { chatOpen } from "../lib/stores/chat-store";
   import "@rilldata/web-common/app.css";
 
   export let data: LayoutData;
@@ -68,22 +69,6 @@
     return () => removeJavascriptListeners?.();
   });
 
-  // Global keyboard shortcut handler
-  function handleKeyDown(event: KeyboardEvent) {
-    // Shift + L to toggle chat
-    if (event.shiftKey && event.key === "L") {
-      event.preventDefault();
-      // Toggle between current page and chat
-      if ($page.url.pathname === "/ai") {
-        // Go back to previous page or home
-        history.back();
-      } else {
-        // Go to chat page
-        goto("/ai");
-      }
-    }
-  }
-
   $: ({ host, instanceId } = $runtime);
 
   $: ({ route } = $page);
@@ -91,11 +76,12 @@
   $: mode = route.id?.includes("(viz)") ? "Preview" : "Developer";
 </script>
 
-<svelte:window on:keydown={handleKeyDown} />
-
 <QueryClientProvider client={queryClient}>
   <ResourceWatcher {host} {instanceId}>
-    <div class="body h-screen w-screen overflow-hidden absolute flex flex-col">
+    <div
+      class="body h-screen w-screen overflow-hidden absolute flex flex-col transition-all duration-300 ease-in-out"
+      class:pr-96={$chatOpen}
+    >
       {#if data.initialized}
         <BannerCenter />
         <RepresentingUserBanner />
@@ -104,6 +90,9 @@
 
       <slot />
     </div>
+
+    <!-- Chat Widget -->
+    <ChatWidget />
   </ResourceWatcher>
 </QueryClientProvider>
 
