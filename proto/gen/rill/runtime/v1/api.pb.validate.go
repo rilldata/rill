@@ -10407,6 +10407,8 @@ func (m *CompleteRequest) validate(all bool) error {
 
 	}
 
+	// no validation rules for UseAgent
+
 	if m.ConversationId != nil {
 		// no validation rules for ConversationId
 	}

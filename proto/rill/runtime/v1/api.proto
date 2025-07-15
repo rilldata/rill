@@ -927,6 +927,7 @@ message CompleteRequest {
   repeated Message messages = 3;
   repeated string tool_names = 4;
   optional AppContext app_context = 5;
+  bool use_agent = 6; // If true, uses the project editor agent instead of the standard completion
 }
 
 // Response message for RuntimeService.Complete

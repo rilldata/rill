@@ -4353,6 +4353,13 @@ export class CompleteRequest extends Message$1<CompleteRequest> {
    */
   appContext?: AppContext;
 
+  /**
+   * If true, uses the project editor agent instead of the standard completion
+   *
+   * @generated from field: bool use_agent = 6;
+   */
+  useAgent = false;
+
   constructor(data?: PartialMessage<CompleteRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4366,6 +4373,7 @@ export class CompleteRequest extends Message$1<CompleteRequest> {
     { no: 3, name: "messages", kind: "message", T: Message, repeated: true },
     { no: 4, name: "tool_names", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 5, name: "app_context", kind: "message", T: AppContext, opt: true },
+    { no: 6, name: "use_agent", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CompleteRequest {

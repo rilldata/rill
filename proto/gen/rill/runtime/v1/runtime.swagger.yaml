@@ -593,6 +593,9 @@ paths:
                   type: string
               appContext:
                 $ref: '#/definitions/v1AppContext'
+              useAgent:
+                type: boolean
+                title: If true, uses the project editor agent instead of the standard completion
             title: Request message for RuntimeService.Complete
       tags:
         - RuntimeService
