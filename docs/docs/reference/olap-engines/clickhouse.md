@@ -2,7 +2,7 @@
 title: ClickHouse
 description: Power Rill dashboards using ClickHouse
 sidebar_label: ClickHouse
-sidebar_position: 3
+sidebar_position: 2
 ---
 import LoomVideo from '@site/src/components/LoomVideo'; // Adjust the path as needed
 

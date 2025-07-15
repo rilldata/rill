@@ -2,7 +2,7 @@
 title: Druid
 description: Power Rill dashboards using Druid
 sidebar_label: Druid
-sidebar_position: 2
+sidebar_position: 3
 ---
 
 ## Overview
