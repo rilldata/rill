@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/mark3labs/mcp-go/mcp"
@@ -363,15 +364,93 @@ Example: Get the top 10 demographic segments (by country, gender, and age group)
 		}
 		defer res.Close()
 
+		// Get the raw response data
 		data, err := res.MarshalJSON()
 		if err != nil {
 			return nil, err
 		}
 
-		return mcp.NewToolResultText(string(data)), nil
+		// Generate open URL for the query
+		openURL, err := s.generateOpenURL(ctx, instanceID, metricsProps)
+		if err != nil {
+			return nil, fmt.Errorf("failed to generate open URL: %w", err)
+		}
+
+		// Parse the response to add the URL
+		response, err := s.addOpenURLToResponse(data, openURL)
+		if err != nil {
+			return nil, fmt.Errorf("failed to add open URL to response: %w", err)
+		}
+
+		return mcp.NewToolResultText(string(response)), nil
 	}
 
 	return tool, handler
+}
+
+// generateOpenURL generates an open URL for the given query parameters
+func (s *Server) generateOpenURL(ctx context.Context, instanceID string, metricsProps map[string]any) (string, error) {
+	// Get instance to access annotations
+	instance, err := s.runtime.Instance(ctx, instanceID)
+	if err != nil {
+		return "", fmt.Errorf("failed to get instance: %w", err)
+	}
+
+	// Determine the base URL based on deployment context
+	var baseURL string
+
+	// Check if this is a cloud instance by looking for organization in annotations
+	organization, hasOrg := instance.Annotations["organization"]
+	project, hasProject := instance.Annotations["project"]
+
+	if hasOrg && hasProject {
+		// Cloud context: Use admin URLs utility with custom domain support
+		customDomain := instance.Annotations["organization_custom_domain"]
+		baseURL = s.urls.WithCustomDomain(customDomain).Frontend()
+		baseURL = fmt.Sprintf("%s/%s/%s", baseURL, organization, project)
+	} else {
+		// Local context: Use `localhost` for the base URL
+		if s.opts.ServeUI {
+			// In production: The runtime serves the UI
+			baseURL = fmt.Sprintf("http://localhost:%d", s.opts.HTTPPort)
+		} else {
+			// In development: The frontend runs on a separate port (3001)
+			baseURL = "http://localhost:3001"
+		}
+	}
+
+	// Serialize the MCP query properties to JSON and URL encode for query parameter
+	jsonBytes, err := json.Marshal(metricsProps)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal MCP query to JSON: %w", err)
+	}
+	encodedQuery := url.QueryEscape(string(jsonBytes))
+
+	// Construct the URL to the frontend router with JSON-encoded parameters
+	return fmt.Sprintf("%s/open-query?mcp_query=%s", baseURL, encodedQuery), nil
+}
+
+// addOpenURLToResponse adds the open URL to the response data
+func (s *Server) addOpenURLToResponse(data []byte, openURL string) ([]byte, error) {
+	// Parse the JSON response to understand its structure
+	var response any
+	if err := json.Unmarshal(data, &response); err != nil {
+		return nil, fmt.Errorf("failed to parse response JSON: %w", err)
+	}
+
+	// Create a wrapper object with the response data and open URL
+	wrappedResponse := map[string]any{
+		"response": response,
+		"open_url": openURL,
+	}
+
+	// Marshal back to JSON
+	modifiedData, err := json.Marshal(wrappedResponse)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal modified response: %w", err)
+	}
+
+	return modifiedData, nil
 }
 
 // mcpHTTPContextFunc is an MCP server middleware that adds the current instance ID to the context.

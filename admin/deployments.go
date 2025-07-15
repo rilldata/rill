@@ -540,6 +540,7 @@ func (s *Service) NewDeploymentAnnotations(org *database.Organization, proj *dat
 		orgID:              org.ID,
 		orgName:            org.Name,
 		orgBillingPlanName: orgBillingPlanName,
+		orgCustomDomain:    org.CustomDomain,
 		projID:             proj.ID,
 		projName:           proj.Name,
 		projProdSlots:      fmt.Sprint(proj.ProdSlots),
@@ -552,6 +553,7 @@ type DeploymentAnnotations struct {
 	orgID              string
 	orgName            string
 	orgBillingPlanName string
+	orgCustomDomain    string
 	projID             string
 	projName           string
 	projProdSlots      string
@@ -560,13 +562,14 @@ type DeploymentAnnotations struct {
 }
 
 func (da *DeploymentAnnotations) ToMap() map[string]string {
-	res := make(map[string]string, len(da.projAnnotations)+7)
+	res := make(map[string]string, len(da.projAnnotations)+8)
 	for k, v := range da.projAnnotations {
 		res[k] = v
 	}
 	res["organization_id"] = da.orgID
 	res["organization_name"] = da.orgName
 	res["organization_plan"] = da.orgBillingPlanName
+	res["organization_custom_domain"] = da.orgCustomDomain
 	res["project_id"] = da.projID
 	res["project_name"] = da.projName
 	res["project_prod_slots"] = da.projProdSlots

@@ -15,6 +15,7 @@ import (
 	"github.com/mark3labs/mcp-go/client"
 	"github.com/mark3labs/mcp-go/server"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/rilldata/rill/admin"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/activity"
@@ -48,6 +49,12 @@ type Options struct {
 	AuthAudienceURL string
 	TLSCertPath     string
 	TLSKeyPath      string
+	// FrontendURL is the base URL for the frontend (e.g., "https://ui.rilldata.com").
+	// If empty, defaults to runtime server's own HTTP port for local development.
+	FrontendURL string
+	// ServeUI indicates whether the runtime server serves the UI (Rill Developer mode)
+	// If false, assumes separate frontend on port 3001 (development mode)
+	ServeUI bool
 }
 
 type Server struct {
@@ -64,6 +71,8 @@ type Server struct {
 	// MCP server and client for tool calling and API functionality
 	mcpServer *server.MCPServer
 	mcpClient *client.Client
+	// URLs utility for generating frontend URLs
+	urls *admin.URLs
 }
 
 var (
@@ -108,6 +117,17 @@ func NewServer(ctx context.Context, opts *Options, rt *runtime.Runtime, logger *
 		return nil, fmt.Errorf("failed to create MCP client: %w", err)
 	}
 	srv.mcpClient = mcpClient
+
+	// Initialize URLs utility for generating frontend URLs (only needed for cloud deployments)
+	if opts.FrontendURL != "" {
+		// Use a placeholder for external URL since runtime server doesn't need it
+		externalURL := "https://localhost:8080"
+		urls, err := admin.NewURLs(externalURL, opts.FrontendURL)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create URLs utility: %w", err)
+		}
+		srv.urls = urls
+	}
 
 	return srv, nil
 }
