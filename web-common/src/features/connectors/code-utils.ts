@@ -11,6 +11,7 @@ import { runtime } from "../../runtime-client/runtime-store";
 export function compileConnectorYAML(
   connector: V1ConnectorDriver,
   formValues: Record<string, unknown>,
+  options?: { skipNoPrompt?: boolean },
 ) {
   // Add instructions to the top of the file
   const topOfFile = `# Connector YAML
@@ -19,6 +20,21 @@ export function compileConnectorYAML(
 type: connector
 
 driver: ${connector.name}`;
+
+  let filteredFormValues = formValues;
+  if (options?.skipNoPrompt) {
+    // Prefer configProperties, fallback to sourceProperties
+    const properties =
+      connector.configProperties ?? connector.sourceProperties ?? [];
+    const noPromptKeys = new Set(
+      properties
+        .filter((property) => property.noPrompt)
+        .map((property) => property.key),
+    );
+    filteredFormValues = Object.fromEntries(
+      Object.entries(formValues).filter(([key]) => !noPromptKeys.has(key)),
+    );
+  }
 
   // Get the secret property keys
   const secretPropertyKeys =
@@ -35,10 +51,10 @@ driver: ${connector.name}`;
       .map((property) => property.key) || [];
 
   // Compile key value pairs
-  const compiledKeyValues = Object.keys(formValues)
-    .filter((key) => formValues[key] !== undefined)
+  const compiledKeyValues = Object.keys(filteredFormValues)
+    .filter((key) => filteredFormValues[key] !== undefined)
     .map((key) => {
-      const value = formValues[key] as string;
+      const value = filteredFormValues[key] as string;
 
       const isSecretProperty = secretPropertyKeys.includes(key);
       if (isSecretProperty) {

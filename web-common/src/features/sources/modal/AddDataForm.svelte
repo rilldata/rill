@@ -159,13 +159,21 @@
       // Use the value of the child form state for clickhouse
       const values =
         connectionTab === "dsn" ? $clickhouseDsnForm : $clickhouseParamsForm;
-      return compileConnectorYAML(connector, {
-        ...values,
-        managed: clickhouseManaged,
-      });
+      return compileConnectorYAML(
+        connector,
+        {
+          ...values,
+          managed: clickhouseManaged,
+        },
+        {
+          skipNoPrompt: true,
+        },
+      );
     } else {
       const values = connectionTab === "dsn" ? $dsnForm : $paramsForm;
-      return compileConnectorYAML(connector, values);
+      return compileConnectorYAML(connector, values, {
+        skipNoPrompt: true,
+      });
     }
   })();
 
