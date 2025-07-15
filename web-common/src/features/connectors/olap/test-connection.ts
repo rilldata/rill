@@ -8,6 +8,9 @@ import {
   getConnectorServiceListTablesQueryKey,
   connectorServiceGetTable,
   getConnectorServiceGetTableQueryKey,
+  type ConnectorServiceListDatabaseSchemasParams,
+  type ConnectorServiceListTablesParams,
+  type ConnectorServiceGetTableParams,
 } from "../../../runtime-client";
 import { humanReadableErrorMessage } from "../../sources/errors/errors";
 
@@ -50,7 +53,10 @@ export async function testOLAPConnector(
   }
 }
 
-export async function testListDatabaseSchemas(instanceId: string, params: any) {
+export async function testListDatabaseSchemas(
+  instanceId: string,
+  params: ConnectorServiceListDatabaseSchemasParams,
+) {
   const queryKey = getConnectorServiceListDatabaseSchemasQueryKey({
     instanceId,
     ...params,
@@ -69,7 +75,7 @@ export async function testListDatabaseSchemas(instanceId: string, params: any) {
     return {
       success: false,
       error: humanReadableErrorMessage(
-        params?.source || "source",
+        params?.connector,
         e?.response?.data?.code,
         originalMessage,
       ),
@@ -78,7 +84,10 @@ export async function testListDatabaseSchemas(instanceId: string, params: any) {
   }
 }
 
-export async function testListTables(instanceId: string, params: any) {
+export async function testListTables(
+  instanceId: string,
+  params: ConnectorServiceListTablesParams,
+) {
   const queryKey = getConnectorServiceListTablesQueryKey({
     instanceId,
     ...params,
@@ -97,7 +106,7 @@ export async function testListTables(instanceId: string, params: any) {
     return {
       success: false,
       error: humanReadableErrorMessage(
-        params?.source || "source",
+        params?.connector,
         e?.response?.data?.code,
         originalMessage,
       ),
@@ -106,7 +115,10 @@ export async function testListTables(instanceId: string, params: any) {
   }
 }
 
-export async function testGetTable(instanceId: string, params: any) {
+export async function testGetTable(
+  instanceId: string,
+  params: ConnectorServiceGetTableParams,
+) {
   const queryKey = getConnectorServiceGetTableQueryKey({
     instanceId,
     ...params,
@@ -125,7 +137,7 @@ export async function testGetTable(instanceId: string, params: any) {
     return {
       success: false,
       error: humanReadableErrorMessage(
-        params?.source || "source",
+        params?.connector,
         e?.response?.data?.code,
         originalMessage,
       ),
