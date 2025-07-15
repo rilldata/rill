@@ -54,7 +54,7 @@
       : connector.configProperties?.filter(
           (property) => property.key !== "dsn",
         )) ?? [];
-  const filteredProperties = properties.filter(
+  const filteredParamsProperties = properties.filter(
     (property) => !property.noPrompt,
   );
   const schema = yup(getYupSchema[connector.name as keyof typeof getYupSchema]);
@@ -284,7 +284,7 @@
               use:paramsEnhance
               on:submit|preventDefault={paramsSubmit}
             >
-              {#each filteredProperties as property (property.key)}
+              {#each filteredParamsProperties as property (property.key)}
                 {@const propertyKey = property.key ?? ""}
                 {@const label =
                   property.displayName +
@@ -353,7 +353,7 @@
           use:paramsEnhance
           on:submit|preventDefault={paramsSubmit}
         >
-          {#each filteredProperties as property (property.key)}
+          {#each filteredParamsProperties as property (property.key)}
             {@const propertyKey = property.key ?? ""}
             {@const label =
               property.displayName + (property.required ? "" : " (optional)")}

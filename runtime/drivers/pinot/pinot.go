@@ -35,7 +35,6 @@ var spec = drivers.Spec{
 			DisplayName: "Connection string",
 			Placeholder: "http(s)://username:password@localhost:8000?controller=localhost:9000",
 			Secret:      true,
-			NoPrompt:    true,
 		},
 		{
 			Key:         "broker_host",
