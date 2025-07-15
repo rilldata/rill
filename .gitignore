@@ -84,3 +84,7 @@ latest.txt
 
 /postgres/
 /clickhouse/
+
+# Claude resources
+CLAUDE.md
+.claude/
