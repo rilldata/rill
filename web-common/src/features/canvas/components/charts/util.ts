@@ -1,3 +1,4 @@
+import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
 import { adjustOffsetForZone } from "@rilldata/web-common/lib/convertTimestampPreview";
 import { timeGrainToDuration } from "@rilldata/web-common/lib/time/grains";
 import {
@@ -7,8 +8,16 @@ import {
 import merge from "deepmerge";
 import type { Config } from "vega-lite";
 import { CHART_CONFIG, type ChartSpec } from "./";
-import type { ChartDataResult, ChartType } from "./types";
+import type { ChartDataResult, ChartType, FieldConfig } from "./types";
 
+export function isFieldConfig(field: unknown): field is FieldConfig {
+  return (
+    typeof field === "object" &&
+    field !== null &&
+    "type" in field &&
+    "field" in field
+  );
+}
 export function generateSpec(
   chartType: ChartType,
   rillChartSpec: ChartSpec,
@@ -66,7 +75,7 @@ export function getFieldsByType(spec: ChartSpec): FieldsByType {
     }
 
     // Check if current object is a FieldConfig with type and field
-    if ("type" in obj && "field" in obj && typeof obj.field === "string") {
+    if (isFieldConfig(obj)) {
       const type = obj.type as string;
       const field = obj.field;
 
@@ -117,4 +126,62 @@ export function adjustDataForTimeZone(
     });
     return datum;
   });
+}
+
+const allowedTimeDimensionDetailTypes = [
+  "line_chart",
+  "area_chart",
+  "stacked_bar",
+  "stacked_bar_normalized",
+  "bar_chart",
+];
+
+export const CanvasChartTypeToTDDChartType = {
+  line_chart: TDDChart.DEFAULT,
+  area_chart: TDDChart.STACKED_AREA,
+  stacked_bar: TDDChart.STACKED_BAR,
+  stacked_bar_normalized: TDDChart.STACKED_BAR,
+  bar_chart: TDDChart.GROUPED_BAR,
+};
+
+export function canLinkTimeDimensionDetail(
+  spec: ChartSpec,
+  type: ChartType,
+): {
+  canLink: boolean;
+  measureName?: string;
+  dimensionName?: string;
+} {
+  if (!allowedTimeDimensionDetailTypes.includes(type))
+    return {
+      canLink: false,
+    };
+
+  const hasXAxis = "x" in spec;
+  if (!hasXAxis)
+    return {
+      canLink: false,
+    };
+
+  const xAxis = spec.x;
+  const yAxis = spec.y;
+
+  if (isFieldConfig(xAxis) && isFieldConfig(yAxis)) {
+    const colorDimension = spec.color;
+    if (isFieldConfig(colorDimension)) {
+      return {
+        canLink: xAxis.type === "temporal",
+        measureName: yAxis.field,
+        dimensionName: colorDimension.field,
+      };
+    }
+
+    return {
+      canLink: xAxis.type === "temporal",
+      measureName: yAxis.field,
+    };
+  }
+  return {
+    canLink: false,
+  };
 }

@@ -1,6 +1,10 @@
 import { BaseCanvasComponent } from "@rilldata/web-common/features/canvas/components/BaseCanvasComponent";
 import { CHART_CONFIG } from "@rilldata/web-common/features/canvas/components/charts";
 import {
+  canLinkTimeDimensionDetail,
+  CanvasChartTypeToTDDChartType,
+} from "@rilldata/web-common/features/canvas/components/charts/util";
+import {
   commonOptions,
   createComponent,
   getFilterOptions,
@@ -108,13 +112,27 @@ export abstract class BaseChart<
     );
 
     const timeGrain = get(this.timeAndFilterStore)?.timeGrain;
+    const showTDD = canLinkTimeDimensionDetail(spec, this.type);
 
     return {
       whereFilter: dimensionFilters,
       dimensionThresholdFilters,
       showTimeComparison: false,
-      activePage: DashboardState_ActivePage.PIVOT,
+      activePage: showTDD.canLink
+        ? DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL
+        : DashboardState_ActivePage.PIVOT,
       pivot: getPivotStateFromChartSpec(spec, timeGrain),
+      ...(showTDD.canLink &&
+        showTDD.measureName && {
+          tdd: {
+            expandedMeasureName: showTDD.measureName,
+            pinIndex: 0,
+            chartType: CanvasChartTypeToTDDChartType[this.type],
+          },
+        }),
+      ...(showTDD.dimensionName && {
+        selectedComparisonDimension: showTDD.dimensionName,
+      }),
     };
   }
 
