@@ -26,7 +26,7 @@ Depending on the source type, you will either need to explicitly provide credent
 By default, Rill uses DuckDB as the underlying OLAP engine (see <a href='https://docs.rilldata.com/build/olap/' target="_blank">Connect OLAP engines</a>).
 Please see our docs for the <a href="https://docs.rilldata.com/build/connect/" target="_blank">supported list</a> of connectors.
 
-We support various OLAP engines. If you have a different OLAP engine that you're interested in using, please let us know! Looking for a ClickHouse tutorial? Click [here!](/tutorials/rill-clickhouse/)
+We support various OLAP engines. If you have a different OLAP engine that you're interested in using, please let us know! Looking for a ClickHouse tutorial? Click [here!](/guides/rill-clickhouse/)
 :::
 
 ### Add a Data Source
@@ -47,7 +47,7 @@ gs://rilldata-public/github-analytics/Clickhouse/2025/03/commits_*.parquet
 
 
 :::tip Data
-These are datasets derived from the commit history and modified files of our friends at ClickHouse's GitHub repository. In our example, we'll ingest a single month of data. However, Rill supports glob patterns, so you could modify the URL to `gs://rilldata-public/github-analytics/Clickhouse/**/modified_files_*.parquet` to ingest all years and months of data. However, that's a lot of data to ingest! We discuss [incremental modeling](/tutorials/rill_developer_advanced_features/incremental_models/cloud-storage-partitions) in a future lesson.
+These are datasets derived from the commit history and modified files of our friends at ClickHouse's GitHub repository. In our example, we'll ingest a single month of data. However, Rill supports glob patterns, so you could modify the URL to `gs://rilldata-public/github-analytics/Clickhouse/**/modified_files_*.parquet` to ingest all years and months of data. However, that's a lot of data to ingest! 
 :::
 
 Once imported, you'll see the UI change with several things:
