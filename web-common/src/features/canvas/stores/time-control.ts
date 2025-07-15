@@ -3,8 +3,6 @@ import type { CanvasSpecResponseStore } from "@rilldata/web-common/features/canv
 import {
   calculateComparisonTimeRangePartial,
   calculateTimeRangePartial,
-  getComparisonTimeRange,
-  getTimeGrain,
   type ComparisonTimeRangeState,
   type TimeRangeState,
 } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
@@ -43,7 +41,6 @@ import {
 } from "svelte/store";
 import { normalizeWeekday } from "../../dashboards/time-controls/new-time-controls";
 import type { SearchParamsStore } from "./canvas-entity";
-import Timer from "@rilldata/web-common/components/icons/Timer.svelte";
 
 type AllTimeRange = TimeRange & { isFetching: boolean };
 
@@ -218,76 +215,29 @@ export class TimeControls {
     );
 
     this.searchParamsStore.subscribe((searchParams) => {
-      const string = searchParams.toString();
-
-      if (!string) return;
-
-      this.setTimeFiltersFromText(string);
+      this.setTimeFiltersFromText(searchParams.toString());
     });
 
-    // this.setInitialState();
+    if (!componentName) {
+      this.specStore.subscribe((spec) => {
+        const defaultPreset = spec.data?.canvas?.defaultPreset;
+        if (!defaultPreset) return;
+
+        const didSet = this.set.range(
+          defaultPreset.timeRange as TimeRangePreset,
+          true,
+        );
+
+        if (
+          didSet &&
+          defaultPreset.comparisonMode ===
+            V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME
+        ) {
+          this.set.comparison("rill-PP", true);
+        }
+      });
+    }
   }
-
-  // setInitialState = () => {
-  //   const defaultStore = derived(
-  //     [this.allTimeRange, this.specStore],
-  //     ([allTimeRange, spec]) => {
-  //       if (!spec?.data || allTimeRange.isFetching || this.isInitialStateSet) {
-  //         return;
-  //       }
-
-  //       const isLocalComponentControl = Boolean(this.componentName);
-
-  //       const selectedTimezone = get(this.selectedTimezone);
-  //       const comparisonTimeRange = get(this.selectedComparisonTimeRange);
-
-  //       const { defaultPreset } = spec.data?.canvas || {};
-  //       const timeRanges = spec?.data?.canvas?.timeRanges;
-
-  //       const defaultTimeRange = isoDurationToFullTimeRange(
-  //         defaultPreset?.timeRange,
-  //         allTimeRange.start,
-  //         allTimeRange.end,
-  //         selectedTimezone,
-  //       );
-
-  //       const newTimeRange: DashboardTimeControls = {
-  //         name: defaultTimeRange.name,
-  //         start: defaultTimeRange.start,
-  //         end: defaultTimeRange.end,
-  //       };
-
-  //       newTimeRange.interval = getTimeGrain(
-  //         undefined,
-  //         newTimeRange,
-  //         V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
-  //       );
-
-  //       const newComparisonRange = getComparisonTimeRange(
-  //         timeRanges,
-  //         allTimeRange,
-  //         newTimeRange,
-  //         comparisonTimeRange,
-  //       );
-
-  //       this.selectedComparisonTimeRange.set(newComparisonRange);
-
-  //       if (
-  //         defaultPreset?.comparisonMode ===
-  //           V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME &&
-  //         !isLocalComponentControl
-  //       ) {
-  //         this.showTimeComparison.set(true);
-  //       }
-
-  //       this.selectedTimeRange.set(newTimeRange);
-  //       this.isInitialStateSet = true;
-  //     },
-  //   );
-
-  //   // Subscribe to ensure the derived code runs
-  //   defaultStore.subscribe(() => {});
-  // };
 
   combinedTimeRangeSummaryStore = (
     runtime: Writable<Runtime>,
@@ -352,7 +302,7 @@ export class TimeControls {
             end = new Date(Math.max(end.getTime(), metricsEndDate.getTime()));
           }
         });
-        if (start.getTime() >= end.getTime()) {
+        if (start.getTime() > end.getTime()) {
           start = new Date(0);
           end = new Date();
         }
@@ -389,44 +339,58 @@ export class TimeControls {
   };
 
   set = {
-    zone: (timeZone: string) => {
-      this.searchParamsStore.set(ExploreStateURLParams.TimeZone, timeZone);
+    zone: (timeZone: string, checkIfSet = false) => {
+      return this.searchParamsStore.set(
+        ExploreStateURLParams.TimeZone,
+        timeZone,
+        checkIfSet,
+      );
     },
-    range: (range: string) => {
-      this.searchParamsStore.set(ExploreStateURLParams.TimeRange, range);
+    range: (range: string, checkIfSet = false) => {
+      return this.searchParamsStore.set(
+        ExploreStateURLParams.TimeRange,
+        range,
+        checkIfSet,
+      );
     },
-    grain: (timeGrain: V1TimeGrain) => {
+    grain: (timeGrain: V1TimeGrain, checkIfSet = false) => {
       const mappedTimeGrain = ToURLParamTimeGrainMapMap[timeGrain];
       if (mappedTimeGrain) {
-        this.searchParamsStore.set(
+        return this.searchParamsStore.set(
           ExploreStateURLParams.TimeGrain,
           mappedTimeGrain,
+          checkIfSet,
         );
       }
     },
-    comparison: (range: boolean | string) => {
+    comparison: (range: boolean | string, checkIfSet = false) => {
       const showTimeComparison = Boolean(range);
-      this.showTimeComparison.set(showTimeComparison);
+
       if (showTimeComparison) {
         if (range === true) {
           const comparisonStore = get(this.comparisonRangeStateStore);
           const selectedComparisonTimeRange =
             comparisonStore?.selectedComparisonTimeRange;
+
           if (!selectedComparisonTimeRange) return;
-          this.searchParamsStore.set(
+
+          return this.searchParamsStore.set(
             ExploreStateURLParams.ComparisonTimeRange,
             toTimeRangeParam(selectedComparisonTimeRange),
+            checkIfSet,
           );
         } else if (typeof range === "string") {
-          this.searchParamsStore.set(
+          return this.searchParamsStore.set(
             ExploreStateURLParams.ComparisonTimeRange,
             range,
+            checkIfSet,
           );
         }
       } else {
-        this.searchParamsStore.set(
+        return this.searchParamsStore.set(
           ExploreStateURLParams.ComparisonTimeRange,
           undefined,
+          checkIfSet,
         );
       }
     },
@@ -446,10 +410,6 @@ export class TimeControls {
     this.selectedComparisonTimeRange.set(comparisonTimeRange);
   };
 
-  displayTimeComparison = (showTimeComparison: boolean) => {
-    this.showTimeComparison.set(showTimeComparison);
-  };
-
   setTimeFiltersFromText = (timeFilter: string) => {
     const {
       selectedTimeRange,
@@ -458,26 +418,20 @@ export class TimeControls {
       timeZone,
     } = getTimeRangeFromText(timeFilter);
 
-    console.log({
-      cn: this.componentName,
-      selectedTimeRange,
-      selectedComparisonTimeRange,
-      showTimeComparison,
-      timeZone,
-    });
-
     if (!selectedTimeRange) {
       const specStore = get(this.specStore);
 
       const { defaultPreset } = specStore.data?.canvas || {};
       const timeRanges = specStore?.data?.canvas?.timeRanges;
 
-      this.selectedTimeRange.set({
-        name:
-          (defaultPreset?.timeRange as TimeRangePreset) ||
-          timeRanges?.[0] ||
-          TimeRangePreset.LAST_24_HOURS,
-      } as DashboardTimeControls);
+      const finalRange =
+        (defaultPreset?.timeRange as TimeRangePreset) || timeRanges?.[0];
+
+      if (finalRange) {
+        this.selectedTimeRange.set({
+          name: finalRange,
+        } as DashboardTimeControls);
+      }
     } else {
       this.selectedTimeRange.set(selectedTimeRange);
     }

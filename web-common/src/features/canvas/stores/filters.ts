@@ -317,32 +317,6 @@ export class Filters {
 
       this.setFiltersFromText(filterText ?? "");
     });
-
-    // if (!this.componentName) {
-    //   page.subscribe(($page) => {
-    //     const { searchParams } = $page.url;
-    //     const filterText = searchParams.get(ExploreStateURLParams.Filters);
-
-    //     this.whereFilter.set(getFiltersFromText(filterText ?? "").expr);
-    //   });
-
-    //   this.filterText.subscribe((text) => {
-    //     const pageStore = get(page);
-    //     const url = pageStore.url;
-
-    //     const existingFilter = url.searchParams.get(
-    //       ExploreStateURLParams.Filters,
-    //     );
-
-    //     if (text && existingFilter !== text) {
-    //       url.searchParams.set(ExploreStateURLParams.Filters, text);
-    //     } else if (!text) {
-    //       url.searchParams.delete(ExploreStateURLParams.Filters);
-    //     }
-
-    //     goto(url.toString(), { replaceState: true }).catch(console.error);
-    //   });
-    // }
   }
 
   private getMeasureFilters = (
@@ -713,17 +687,6 @@ export class Filters {
   };
 
   clearAllFilters = () => {
-    // const wf = get(this.whereFilter);
-    // const dtfs = get(this.dimensionThresholdFilters);
-    // const hasFilters = wf.cond?.exprs?.length || dtfs.length;
-    // if (!hasFilters) return;
-    // this.whereFilter.set(createAndExpression([]));
-    // this.dimensionThresholdFilters.set([]);
-
-    // const excludeMode = get(this.dimensionFilterExcludeMode);
-    // excludeMode.clear();
-    // this.dimensionFilterExcludeMode.set(excludeMode);
-
     this.temporaryFilterName.set(null);
     this.searchParamsStore.set(ExploreStateURLParams.Filters, undefined);
   };

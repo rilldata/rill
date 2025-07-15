@@ -1,7 +1,7 @@
 <script lang="ts">
   import CancelCircle from "../../../components/icons/CancelCircle.svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import { humanReadableErrorMessage } from "../modal/errors";
+  import { humanReadableErrorMessage } from "./errors";
   import { useSourceFromYaml } from "../selectors";
 
   export let filePath: string;

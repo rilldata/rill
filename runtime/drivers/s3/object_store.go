@@ -54,6 +54,24 @@ func (c *Connection) DownloadFiles(ctx context.Context, path string) (drivers.Fi
 	})
 }
 
+// BucketRegion returns the region to use for the given bucket.
+func (c *Connection) BucketRegion(ctx context.Context, bucket string) (string, error) {
+	creds, err := c.newCredentials()
+	if err != nil {
+		return "", err
+	}
+
+	sess, err := c.newSessionForBucket(ctx, bucket, c.config.Endpoint, c.config.Region, creds)
+	if err != nil {
+		return "", err
+	}
+
+	if sess.Config.Region != nil {
+		return *sess.Config.Region, nil
+	}
+	return "", fmt.Errorf("unable to get region")
+}
+
 func (c *Connection) parseBucketURL(path string) (*globutil.URL, error) {
 	url, err := globutil.ParseBucketURL(path)
 	if err != nil {

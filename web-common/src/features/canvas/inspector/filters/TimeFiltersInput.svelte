@@ -5,19 +5,29 @@
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import SuperPill from "@rilldata/web-common/features/dashboards/time-controls/super-pill/SuperPill.svelte";
   import { DateTime, Interval } from "luxon";
+  import { tick } from "svelte";
+  import type { CanvasComponentState } from "../../stores/canvas-component";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import type { TimeControls } from "../../stores/time-control";
 
-  export let canvasName: string;
   export let id: string;
   export let localTimeControls: TimeControls;
   export let showComparison: boolean;
   export let showGrain: boolean;
+  export let timeFilter: string;
+  export let canvasName: string;
+  export let componentStore: CanvasComponentState;
+  export let onChange: (filter: string) => void = () => {};
+
+  $: ({ instanceId } = $runtime);
 
   $: ({
     canvasEntity: {
       spec: { canvasSpec },
     },
-  } = getCanvasStore(canvasName));
+  } = getCanvasStore(canvasName, instanceId));
+
+  $: showLocalFilters = Boolean(timeFilter && timeFilter !== "");
 
   $: ({
     allTimeRange,

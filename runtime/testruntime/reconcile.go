@@ -2,7 +2,6 @@ package testruntime
 
 import (
 	"bytes"
-	"context"
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
@@ -17,7 +16,7 @@ import (
 )
 
 func PutFiles(t testing.TB, rt *runtime.Runtime, id string, files map[string]string) {
-	ctx := context.Background()
+	ctx := t.Context()
 	repo, release, err := rt.Repo(ctx, id)
 	require.NoError(t, err)
 	defer release()
@@ -29,7 +28,7 @@ func PutFiles(t testing.TB, rt *runtime.Runtime, id string, files map[string]str
 }
 
 func RenameFile(t testing.TB, rt *runtime.Runtime, id, from, to string) {
-	ctx := context.Background()
+	ctx := t.Context()
 	repo, release, err := rt.Repo(ctx, id)
 	require.NoError(t, err)
 	defer release()
@@ -38,7 +37,7 @@ func RenameFile(t testing.TB, rt *runtime.Runtime, id, from, to string) {
 }
 
 func DeleteFiles(t testing.TB, rt *runtime.Runtime, id string, files ...string) {
-	ctx := context.Background()
+	ctx := t.Context()
 	repo, release, err := rt.Repo(ctx, id)
 	require.NoError(t, err)
 	defer release()
@@ -54,27 +53,29 @@ func ReconcileParserAndWait(t testing.TB, rt *runtime.Runtime, id string) {
 }
 
 func ReconcileAndWait(t testing.TB, rt *runtime.Runtime, id string, n *runtimev1.ResourceName) {
-	ctrl, err := rt.Controller(context.Background(), id)
+	ctx := t.Context()
+	ctrl, err := rt.Controller(ctx, id)
 	require.NoError(t, err)
 
-	err = ctrl.Reconcile(context.Background(), n)
+	err = ctrl.Reconcile(ctx, n)
 	require.NoError(t, err)
 
-	err = ctrl.WaitUntilIdle(context.Background(), false)
+	err = ctrl.WaitUntilIdle(ctx, false)
 	require.NoError(t, err)
 }
 
 func RefreshAndWait(t testing.TB, rt *runtime.Runtime, id string, n *runtimev1.ResourceName) {
-	ctrl, err := rt.Controller(context.Background(), id)
+	ctx := t.Context()
+	ctrl, err := rt.Controller(ctx, id)
 	require.NoError(t, err)
 
 	// Get resource before refresh
-	rPrev, err := ctrl.Get(context.Background(), n, false)
+	rPrev, err := ctrl.Get(ctx, n, false)
 	require.NoError(t, err)
 
 	// Create refresh trigger
 	trgName := &runtimev1.ResourceName{Kind: runtime.ResourceKindRefreshTrigger, Name: time.Now().String()}
-	err = ctrl.Create(context.Background(), trgName, nil, nil, nil, false, &runtimev1.Resource{
+	err = ctrl.Create(ctx, trgName, nil, nil, nil, false, &runtimev1.Resource{
 		Resource: &runtimev1.Resource_RefreshTrigger{
 			RefreshTrigger: &runtimev1.RefreshTrigger{
 				Spec: &runtimev1.RefreshTriggerSpec{
@@ -86,11 +87,11 @@ func RefreshAndWait(t testing.TB, rt *runtime.Runtime, id string, n *runtimev1.R
 	require.NoError(t, err)
 
 	// Wait for refresh to complete
-	err = ctrl.WaitUntilIdle(context.Background(), false)
+	err = ctrl.WaitUntilIdle(ctx, false)
 	require.NoError(t, err)
 
 	// Get resource after refresh
-	rNew, err := ctrl.Get(context.Background(), n, false)
+	rNew, err := ctrl.Get(ctx, n, false)
 	require.NoError(t, err)
 
 	// Check the resource's spec version has increased
@@ -98,10 +99,11 @@ func RefreshAndWait(t testing.TB, rt *runtime.Runtime, id string, n *runtimev1.R
 }
 
 func RequireReconcileState(t testing.TB, rt *runtime.Runtime, id string, lenResources, lenReconcileErrs, lenParseErrs int) {
-	ctrl, err := rt.Controller(context.Background(), id)
+	ctx := t.Context()
+	ctrl, err := rt.Controller(ctx, id)
 	require.NoError(t, err)
 
-	rs, err := ctrl.List(context.Background(), "", "", false)
+	rs, err := ctrl.List(ctx, "", "", false)
 	require.NoError(t, err)
 
 	var reconcileErrs, parseErrs []string
@@ -134,20 +136,22 @@ func RequireReconcileState(t testing.TB, rt *runtime.Runtime, id string, lenReso
 }
 
 func GetResource(t testing.TB, rt *runtime.Runtime, id, kind, name string) *runtimev1.Resource {
-	ctrl, err := rt.Controller(context.Background(), id)
+	ctx := t.Context()
+	ctrl, err := rt.Controller(ctx, id)
 	require.NoError(t, err)
 
-	r, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: kind, Name: name}, true)
+	r, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: kind, Name: name}, true)
 	require.NoError(t, err)
 
 	return r
 }
 
 func RequireResource(t testing.TB, rt *runtime.Runtime, id string, a *runtimev1.Resource) {
-	ctrl, err := rt.Controller(context.Background(), id)
+	ctx := t.Context()
+	ctrl, err := rt.Controller(ctx, id)
 	require.NoError(t, err)
 
-	b, err := ctrl.Get(context.Background(), a.Meta.Name, true) // Set clone=true because we may manipulate it before comparing
+	b, err := ctrl.Get(ctx, a.Meta.Name, true) // Set clone=true because we may manipulate it before comparing
 	require.NoError(t, err)
 
 	require.True(t, proto.Equal(a.Meta.Name, b.Meta.Name), "expected: %v\nactual: %v", a.Meta.Name, b.Meta.Name)
@@ -187,6 +191,7 @@ func RequireResource(t testing.TB, rt *runtime.Runtime, id string, a *runtimev1.
 		state.RefreshedOn = nil
 		state.SpecHash = ""
 		state.RefsHash = ""
+		state.TestHash = ""
 		state.LatestExecutionDurationMs = 0
 		state.TotalExecutionDurationMs = 0
 	case runtime.ResourceKindMetricsView:
@@ -227,10 +232,11 @@ func RequireResource(t testing.TB, rt *runtime.Runtime, id string, a *runtimev1.
 }
 
 func DumpResources(t testing.TB, rt *runtime.Runtime, id string) {
-	ctrl, err := rt.Controller(context.Background(), id)
+	ctx := t.Context()
+	ctrl, err := rt.Controller(ctx, id)
 	require.NoError(t, err)
 
-	rs, err := ctrl.List(context.Background(), "", "", false)
+	rs, err := ctrl.List(ctx, "", "", false)
 	require.NoError(t, err)
 
 	for _, r := range rs {
@@ -239,10 +245,11 @@ func DumpResources(t testing.TB, rt *runtime.Runtime, id string) {
 }
 
 func RequireParseErrors(t testing.TB, rt *runtime.Runtime, id string, expectedParseErrors map[string]string) {
-	ctrl, err := rt.Controller(context.Background(), id)
+	ctx := t.Context()
+	ctrl, err := rt.Controller(ctx, id)
 	require.NoError(t, err)
 
-	pp, err := ctrl.Get(context.Background(), runtime.GlobalProjectParserName, true)
+	pp, err := ctrl.Get(ctx, runtime.GlobalProjectParserName, true)
 	require.NoError(t, err)
 
 	parseErrs := map[string]string{}
@@ -272,7 +279,7 @@ type RequireResolveOptions struct {
 
 func RequireResolve(t testing.TB, rt *runtime.Runtime, id string, opts *RequireResolveOptions) {
 	// Run the resolver.
-	ctx := context.Background()
+	ctx := t.Context()
 	res, err := rt.Resolve(ctx, &runtime.ResolveOptions{
 		InstanceID:         id,
 		Resolver:           opts.Resolver,

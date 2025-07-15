@@ -10,7 +10,6 @@ import {
   type V1Resource,
   type V1ThemeSpec,
 } from "@rilldata/web-common/runtime-client";
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import {
   derived,
   get,
@@ -41,7 +40,7 @@ import { goto } from "$app/navigation";
 
 export type SearchParamsStore = {
   subscribe: (run: (value: URLSearchParams) => void) => Unsubscriber;
-  set: (key: string, value?: string) => void;
+  set: (key: string, value?: string, checkIfSet?: boolean) => boolean;
   clearAll: () => void;
 };
 
@@ -71,8 +70,7 @@ export class CanvasEntity {
 
   theme: Record<(typeof TailwindColorSpacing)[number], string>;
 
-  constructor(name: string) {
-    const instanceId = get(runtime).instanceId;
+  constructor(name: string, instanceId: string) {
     this.specStore = useCanvas(
       instanceId,
       name,
@@ -88,20 +86,22 @@ export class CanvasEntity {
 
     const searchParamsStore: SearchParamsStore = (() => {
       return {
-        subscribe: derived(page, ($page) => {
-          return $page.url.searchParams;
-        }).subscribe,
-        set: (key: string, value: string | undefined) => {
+        subscribe: derived(page, ({ url: { searchParams } }) => searchParams)
+          .subscribe,
+        set: (key: string, value: string | undefined, checkIfSet = false) => {
           const url = get(page).url;
+
+          if (checkIfSet && url.searchParams.has(key)) return false;
+
           if (value === undefined || value === null || value === "") {
             url.searchParams.delete(key);
           } else {
             url.searchParams.set(key, value);
           }
-
           goto(url.toString(), { replaceState: true }).catch(console.error);
+          return true;
         },
-        clear: () => {
+        clearAll: () => {
           const url = get(page).url;
           url.searchParams.forEach((_, key) => {
             url.searchParams.delete(key);

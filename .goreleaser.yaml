@@ -1,100 +1,21 @@
 version: 2
-
 project_name: rill
 
 release:
   prerelease: auto
   draft: false
 
-before:
-  hooks:
-    - docker login -u {{ .Env.DOCKERHUB_USER }} -p {{ .Env.DOCKERHUB_PASS }}
-
 builds:
-  - id: darwin_amd64
-    main: ./cli/main.go
-    binary: rill
+  - builder: prebuilt
     goos:
+      - linux
       - darwin
     goarch:
       - amd64
-    env:
-      - PKG_CONFIG_SYSROOT_DIR=/sysroot/macos/amd64
-      - PKG_CONFIG_PATH=/sysroot/macos/amd64/usr/local/lib/pkgconfig
-      - CC=o64-clang
-      - CXX=o64-clang++
-    flags:
-      - "-mod=readonly"
-    ldflags:
-      - -s -w -X main.Version={{.Version}} -X main.Commit={{.ShortCommit}} -X main.BuildDate={{.Date}}
-
-  - id: darwin_arm64
-    main: ./cli/main.go
-    binary: rill
-    goos:
-      - darwin
-    goarch:
       - arm64
-    env:
-      - PKG_CONFIG_SYSROOT_DIR=/sysroot/macos/amd64
-      - PKG_CONFIG_PATH=/sysroot/macos/amd64/usr/local/lib/pkgconfig
-      - CC=oa64-clang
-      - CXX=oa64-clang++
-    flags:
-      - "-mod=readonly"
-    ldflags:
-      - -s -w -X main.Version={{.Version}} -X main.Commit={{.ShortCommit}} -X main.BuildDate={{.Date}}
-
-  - id: linux
-    main: ./cli/main.go
+    prebuilt:
+      path: binaries/{{ .Os }}_{{ .Arch }}/rill
     binary: rill
-    goos:
-      - linux
-    goarch:
-      - amd64
-    env:
-      - CC=x86_64-linux-gnu-gcc
-      - CXX=x86_64-linux-gnu-g++
-      - CGO_CFLAGS=--sysroot=/sysroot/linux/amd64
-      - CGO_LDFLAGS=--sysroot=/sysroot/linux/amd64
-      - PKG_CONFIG_SYSROOT_DIR=/sysroot/linux/amd64
-      - PKG_CONFIG_PATH=/sysroot/linux/amd64/usr/local/lib/pkgconfig
-    flags:
-      - "-mod=readonly"
-    ldflags:
-      - -s -w -X main.Version={{.Version}} -X main.Commit={{.ShortCommit}} -X main.BuildDate={{.Date}}
-
-  - id: linux_aarch64
-    main: ./cli/main.go
-    binary: rill
-    goos:
-      - linux
-    goarch:
-      - arm64
-    env:
-      - CC=aarch64-linux-gnu-gcc
-      - CXX=aarch64-linux-gnu-g++
-      - CGO_CFLAGS=--sysroot=/sysroot/linux/arm64
-      - CGO_LDFLAGS=--sysroot=/sysroot/linux/arm64
-      - PKG_CONFIG_SYSROOT_DIR=/sysroot/linux/arm64
-      - PKG_CONFIG_PATH=/sysroot/linux/arm64/usr/local/lib/pkgconfig
-    flags:
-      - "-mod=readonly"
-    ldflags:
-      - -s -w -X main.Version={{.Version}} -X main.Commit={{.ShortCommit}} -X main.BuildDate={{.Date}}
-
-blobs:
-  - provider: gs
-    bucket: prod-cdn.rilldata.com
-    directory: "rill/v{{ .Version }}"
-    extra_files:
-      - glob: ./dist/**/*
-
-  - provider: gs
-    bucket: prod-cdn.rilldata.com
-    directory: "rill/latest"
-    extra_files:
-      - glob: ./dist/**/*
 
 brews:
   - homepage: https://github.com/rilldata/rill
@@ -115,23 +36,55 @@ brews:
       name: rilldata
       email: support@rilldata.com
 
-dockers:
-  - image_templates:
-      - rilldata/rill:latest
-      - rilldata/rill:{{ .Tag }}
-
 archives:
   - files:
       - README.md
       - LICENSE*
     name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
-    format: zip
+    formats: ["zip"]
+
+blobs:
+  - disable: "{{ .IsRelease }}"
+    provider: gs
+    bucket: prod-cdn.rilldata.com
+    directory: "rill/nightly"
+    extra_files:
+      - glob: ./dist/**/*
+      - glob: scripts/install.sh
+  - disable: "{{ .IsNightly }}"
+    provider: gs
+    bucket: prod-cdn.rilldata.com
+    directory: "rill/v{{ .Version }}"
+    extra_files:
+      - glob: ./dist/**/*
+  - disable: "{{ .IsNightly }}"
+    provider: gs
+    bucket: prod-cdn.rilldata.com
+    directory: "rill"
+    extra_files_only: true
+    extra_files:
+      - glob: latest.txt
+      - glob: scripts/install.sh
+
+changelog:
+  sort: asc
+  disable: "{{ .IsNightly }}"
 
 checksum:
   name_template: checksums.txt
 
-snapshot:
-  name_template: "{{ incminor .Version }}-nightly"
+dockers:
+  - image_templates:
+      - rilldata/rill:latest
+      - rilldata/rill:{{ .Tag }}
+    skip_build: "{{ .IsNightly }}"
+    skip_push: "{{ .IsNightly }}"
+  - image_templates:
+      - rilldata/rill:nightly
+    skip_build: "{{ .IsRelease }}"
+    skip_push: "{{ .IsRelease }}"
 
-changelog:
-  sort: asc
+nightly:
+  version_template: "{{ incminor .Version }}-nightly"
+  publish_release: false
+  keep_single_release: true

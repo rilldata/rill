@@ -13,6 +13,7 @@
   import { flip } from "svelte/animate";
   import type { Filters } from "../../stores/filters";
   import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
   export let id: string;
   export let canvasName: string;
@@ -22,11 +23,13 @@
 
   let localFiltersEnabled = false;
 
+  $: ({ instanceId } = $runtime);
+
   $: ({
     canvasEntity: {
       spec: { getDimensionsForMetricView, getSimpleMeasuresForMetricView },
     },
-  } = getCanvasStore(canvasName));
+  } = getCanvasStore(canvasName, instanceId));
 
   $: ({
     whereFilter,

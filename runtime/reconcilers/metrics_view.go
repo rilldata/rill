@@ -108,7 +108,7 @@ func (r *MetricsViewReconciler) Reconcile(ctx context.Context, n *runtimev1.Reso
 		return runtime.ReconcileResult{Err: fmt.Errorf("failed to create metrics view executor: %w", err)}
 	}
 	defer e.Close()
-	validateResult, validateErr := e.ValidateMetricsView(ctx)
+	validateResult, validateErr := e.ValidateAndNormalizeMetricsView(ctx)
 	if validateErr == nil {
 		validateErr = validateResult.Error()
 	}

@@ -44,17 +44,22 @@
   export let timeControlsReady: boolean | undefined;
   export let smallChip = false;
   export let whereFilter: V1Expression;
+  export let side: "top" | "right" | "bottom" | "left" = "bottom";
   export let onRemove: () => void;
   export let onApplyInList: (values: string[]) => void;
   export let onSelect: (value: string) => void;
   export let onApplyContainsMode: (inputText: string) => void = () => {};
   export let onToggleFilterMode: () => void;
+  export let isUrlTooLongAfterInListFilter: (
+    values: string[],
+  ) => boolean = () => false;
 
   let open = openOnMount && !selectedValues.length && !inputText;
   $: sanitisedSearchText = inputText?.replace(/^%/, "").replace(/%$/, "");
   let curMode = mode;
   let curSearchText = "";
   let curExcludeMode = excludeMode;
+  let inListTooLong = false;
 
   $: ({ instanceId } = $runtime);
 
@@ -158,6 +163,11 @@
       ? selectedValues
       : (correctedSearchResults ?? []);
 
+  $: disableApplyButton =
+    curMode === DimensionFilterMode.Select ||
+    !enableSearchCountQuery ||
+    inListTooLong;
+
   /**
    * Reset filter settings based on params to the component.
    */
@@ -185,6 +195,8 @@
   }
 
   function checkSearchText(inputText: string) {
+    inListTooLong = false;
+
     // Do not check search text and possibly switch to InList when mode is Contains
     if (curMode === DimensionFilterMode.Contains) return;
 
@@ -198,6 +210,7 @@
     }
     searchedBulkValues = values;
     curMode = DimensionFilterMode.InList;
+    inListTooLong = isUrlTooLongAfterInListFilter(values);
   }
 
   function handleModeChange(newMode: DimensionFilterMode) {
@@ -244,6 +257,7 @@
   }
 
   function onApply() {
+    if (disableApplyButton) return;
     switch (curMode) {
       case DimensionFilterMode.Select:
         onToggleSelectAll();
@@ -333,6 +347,7 @@
        So we have a custom implementation here to not overload SearchableMenuContent unnecessarily. -->
   <DropdownMenu.Content
     align="start"
+    {side}
     class="flex flex-col max-h-96 w-[400px] overflow-hidden p-0"
   >
     <div class="flex flex-col px-3 pt-3">
@@ -397,6 +412,10 @@
         </div>
       {:else if error}
         <div class="min-h-9 p-3 text-center text-red-600 text-xs">error</div>
+      {:else if inListTooLong}
+        <div class="min-h-9 p-3 text-center text-red-600 text-xs">
+          List is too long. Please remove some values.
+        </div>
       {:else if correctedSearchResults}
         <DropdownMenu.Group class="px-1" aria-label={`${name} results`}>
           {#each correctedSearchResults as name (name)}
@@ -458,7 +477,7 @@
           onClick={onApply}
           type="primary"
           class="justify-end"
-          disabled={!enableSearchCountQuery}
+          disabled={disableApplyButton}
         >
           Apply
         </Button>

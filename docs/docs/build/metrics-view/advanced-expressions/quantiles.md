@@ -16,9 +16,9 @@ In addition to common aggregates, you may wish to look at the value of a metric 
 Using [DuckDB aggregate function](https://duckdb.org/docs/stable/sql/functions/aggregates.html#quantile_contx-pos), you can easily calculate various quantiles.
 
 :::tip Not on DuckDB?
-If you are using a different OLAP engine to power your dashboard, simply use the correct function for quantile. 
+If you are using a different OLAP engine to power your dashboard, simply use the correct function for quantile calculation. 
 
-IE: [Clickhouse quantile](https://clickhouse.com/docs/sql-reference/aggregate-functions/reference/quantile), [Pinot percentile](https://docs.pinot.apache.org/configuration-reference/functions/percentile)
+IE: [ClickHouse quantile](https://clickhouse.com/docs/sql-reference/aggregate-functions/reference/quantile), [Pinot percentile](https://docs.pinot.apache.org/configuration-reference/functions/percentile)
 :::
 Please review the reference documentation, [here.](/reference/project-files/metrics-views)
 
@@ -37,7 +37,7 @@ In this example we see the values of P95 and P99 are calculated using the follow
   - name: p99_quantile_global_intensity
     expression: QUANTILE_CONT(Global_intensity, 0.99)
     format_d3: ".4f"
-    description: P95 of Global Intensity
+    description: P99 of Global Intensity
 ```
 
 ## Demo

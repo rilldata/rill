@@ -123,6 +123,7 @@ message ModelSpec {
   google.protobuf.Struct output_properties = 12;
   // change_mode is the mode of change detection to use for the model.
   ModelChangeMode change_mode = 24;
+  repeated ModelTest tests = 25;
   bool trigger = 9;
   bool trigger_full = 22;
   // defined_as_source is true if it was defined by user as a source but converted internally to a model.
@@ -143,6 +144,10 @@ message ModelState {
   string spec_hash = 3;
   // refs_hash is a hash of the model's refs current state. It is used to determine if the model's refs have changed.
   string refs_hash = 9;
+  // test_hash is a hash of the model's tests current state. It is used to determine if the model's tests have changed.
+  string test_hash = 27;
+  // test_errors contains the results of the model's tests.
+  repeated string test_errors = 28;
   // refreshed_on is the time the model was last executed.
   google.protobuf.Timestamp refreshed_on = 4;
   // incremental_state contains the result of the most recent invocation of the model's incremental state resolver.
@@ -168,6 +173,12 @@ enum ModelChangeMode {
   MODEL_CHANGE_MODE_PATCH = 3;
 }
 
+message ModelTest {
+  string name = 1;
+  string resolver = 2;
+  google.protobuf.Struct resolver_properties = 3;
+}
+
 message MetricsView {
   MetricsViewSpec spec = 1;
   MetricsViewState state = 2;
@@ -188,6 +199,8 @@ message MetricsViewSpec {
     string lookup_key_column = 9;
     string lookup_value_column = 10;
     string lookup_default_expression = 11;
+    // The data type of the dimension. Only populated in ValidSpec.
+    Type data_type = 12;
   }
   // Selector for a dimension
   message DimensionSelector {
@@ -227,6 +240,8 @@ message MetricsViewSpec {
     google.protobuf.Struct format_d3_locale = 13;
     bool valid_percent_of_total = 6;
     string treat_nulls_as = 14;
+    // The data type of the measure. Only populated in ValidSpec.
+    Type data_type = 15;
   }
   // Connector containing the table
   string connector = 1;
@@ -761,6 +776,7 @@ message APISpec {
   string openapi_parameters_json = 8;
   string openapi_request_schema_json = 9;
   string openapi_response_schema_json = 10;
+  string openapi_defs_prefix = 11;
   repeated SecurityRule security_rules = 6;
   bool skip_nested_security = 7;
 }

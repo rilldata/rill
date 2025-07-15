@@ -10,11 +10,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/apache/arrow/go/v15/arrow"
-	"github.com/apache/arrow/go/v15/arrow/memory"
-	"github.com/apache/arrow/go/v15/parquet"
-	"github.com/apache/arrow/go/v15/parquet/compress"
-	"github.com/apache/arrow/go/v15/parquet/pqarrow"
+	"github.com/apache/arrow-go/v18/arrow"
+	"github.com/apache/arrow-go/v18/arrow/memory"
+	"github.com/apache/arrow-go/v18/parquet"
+	"github.com/apache/arrow-go/v18/parquet/compress"
+	"github.com/apache/arrow-go/v18/parquet/pqarrow"
 	"github.com/c2h5oh/datasize"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -54,10 +54,12 @@ func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any) (ou
 	var dsn string
 	if srcProps.DSN != "" { // get from src properties
 		dsn = srcProps.DSN
-	} else if c.configProperties.DSN != "" { // get from driver configs
-		dsn = c.configProperties.DSN
 	} else {
-		return nil, fmt.Errorf("the property 'dsn' is required for Snowflake: configure it in the YAML properties or set the 'connector.snowflake.dsn' environment variable")
+		dsnResolved, err := c.configProperties.resolveDSN()
+		if err != nil {
+			return nil, err
+		}
+		dsn = dsnResolved
 	}
 
 	parallelFetchLimit := 5
@@ -257,7 +259,7 @@ func (f *fileIterator) Next(ctx context.Context) ([]string, error) {
 			mu.Lock()
 			defer mu.Unlock()
 
-			for _, rec := range *records {
+			for i, rec := range *records {
 				if writer.RowGroupTotalBytesWritten() >= rowGroupBufferSize {
 					writer.NewBufferedRowGroup()
 					f.logger.Debug(
@@ -268,8 +270,13 @@ func (f *fileIterator) Next(ctx context.Context) ([]string, error) {
 					)
 				}
 				if err := writer.WriteBuffered(rec); err != nil {
+					// Release current and remaining records to avoid memory leak
+					for j := i; j < len(*records); j++ {
+						(*records)[j].Release()
+					}
 					return err
 				}
+				rec.Release()
 			}
 			batchesLeft--
 			f.totalRecords += int64(b.GetRowCount())

@@ -14,10 +14,10 @@
   import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
   import { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
   import { DateTime, Interval } from "luxon";
-  import { onMount } from "svelte";
   import { flip } from "svelte/animate";
   import { fly } from "svelte/transition";
   import CanvasComparisonPill from "./CanvasComparisonPill.svelte";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
   export let readOnly = false;
   export let maxWidth: number;
@@ -25,6 +25,8 @@
 
   /** the height of a row of chips */
   const ROW_HEIGHT = "26px";
+
+  $: ({ instanceId } = $runtime);
   $: ({
     canvasEntity: {
       filters: {
@@ -51,12 +53,12 @@
         timeRangeStateStore,
         comparisonRangeStateStore,
         selectedTimezone,
+
         minTimeGrain,
         set,
-        // setInitialState,
       },
     },
-  } = getCanvasStore(canvasName));
+  } = getCanvasStore(canvasName, instanceId));
 
   let showDefaultItem = false;
 
@@ -132,12 +134,6 @@
     set.range(`${start.toISOString()},${end.toISOString()}`);
     set.comparison(TimeComparisonOption.CONTIGUOUS);
   }
-
-  // onMount(() => {
-  //   if (!$timeRangeStateStore) {
-  //     setInitialState();
-  //   }
-  // });
 </script>
 
 <div
