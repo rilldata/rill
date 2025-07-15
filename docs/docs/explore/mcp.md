@@ -45,9 +45,6 @@ rill token issue
 ```
 
 ### Configure Claude Desktop
-:::warning
-As of 2025/05/08, it's recommended to use Claude Desktop as your MCP client. Cursor currently struggles to compose complex structured payloads (see [issue](https://forum.cursor.com/t/issue-with-mcp-server-and-pydantic-model-object-as-tool-parameter-in-cursor/77110/5)), and Windsurf often thinks it can find the answer in your current code project. Other MCP clients have not yet been tested.
-:::
 
 Edit your `claude_desktop_config.json` file. 
 By default, the JSON is found in the following directories:

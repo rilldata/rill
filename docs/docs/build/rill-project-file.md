@@ -23,11 +23,24 @@ models:
 When adding an OLAP connector to your project, this will automatically populate with the new OLAP connector. IE: `ClickHouse`, `Druid`
 
 ## `ai_instructions`
-With our new MCP feature, you may want to pass some project context to the Agent so that it can understand better what this project is used for. A classic example is that this project is a QA project and you dont want to include it in the analysis. In this case, you can add something like below.
+Use the `ai_instructions` field to provide information that is **unique to your project**. This helps the agent deliver more relevant and actionable insights tailored to your specific needs.
 
+**What to include:**
+- Guidance on which metrics views are most important or should be prioritized for your project.
+- Any custom business logic, definitions, or terminology unique to your data or organization.
+- Preferences for aggregations, filters, or dimensions that are especially relevant to your use case.
+
+**Example:**
+```yaml
+ai_instructions: |
+  Focus on the `ad_performance` and `revenue_overview` metrics views, as these are most critical for our business users.
+  When possible, highlight trends by region and product category.
+  Use our internal terminology: "campaign" refers to a single ad initiative, and "placement" refers to a specific ad slot.
 ```
-ai_instructions: This project is a QA project, do not include this project in any of the MCP calls. If a user asks for this project specifically, always indicate in the answer's header and footer, "This project is a QA project and its number's are not verified. You should not be using this for any purposes other than QA."
-```
+
+:::note 
+For metrics level specific instructions, `ai_instructions` can also be applied there. 
+:::
 
 ## Mock Users 
 Access to your environment is a crucial step in creating your project in Rill Developer. By doing so, you can confidently push your dashboard changes to Rill Cloud. This is done via the mock_users in the project file. You can create pseudo users with specific domains, or admin and non-admin users or user groups, to ensure that access is correct. 
