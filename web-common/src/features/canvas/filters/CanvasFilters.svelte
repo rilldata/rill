@@ -53,7 +53,6 @@
         timeRangeStateStore,
         comparisonRangeStateStore,
         selectedTimezone,
-
         minTimeGrain,
         set,
       },

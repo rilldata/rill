@@ -52,7 +52,6 @@
           {localFilters}
           {excludedDimensions}
           id={key}
-          filter={localParamValues[key]}
         />
       {/if}
     </div>
