@@ -22,18 +22,17 @@ interface TestConnectorResult {
 
 export async function testOLAPConnector(
   instanceId: string,
-  newConnectorName: string,
+  params: { connector: string },
 ): Promise<TestConnectorResult> {
   // Test the connection by calling `ListTables`
-
   const queryKey = getConnectorServiceOLAPListTablesQueryKey({
     instanceId,
-    connector: newConnectorName,
+    ...params,
   });
   const queryFn = () =>
     connectorServiceOLAPListTables({
       instanceId,
-      connector: newConnectorName,
+      ...params,
     });
 
   try {
@@ -44,7 +43,7 @@ export async function testOLAPConnector(
     return {
       success: false,
       error: humanReadableErrorMessage(
-        newConnectorName,
+        params.connector,
         e?.response?.data?.code,
         originalMessage,
       ),
