@@ -263,18 +263,18 @@ export async function submitAddOLAPConnectorForm(
 
   // Test the connection to the OLAP database
   // If the connection test fails, rollback the changes
-  const result = await testOLAPConnector(instanceId, {
+  const testResult = await testOLAPConnector(instanceId, {
     connector: connector.name as string,
   });
-  if (!result.success) {
+  if (!testResult.success) {
     await rollbackConnectorChanges(
       instanceId,
       newConnectorFilePath,
       originalEnvBlob,
     );
     throw {
-      message: result.error || "Unable to establish a connection",
-      details: result.details,
+      message: testResult.error || "Unable to establish a connection",
+      details: testResult.details,
     };
   }
 
