@@ -86,6 +86,7 @@ Whether you need to see the full value of a long JSON, or copy a value, there ar
 List of commands:
 - __*Copy values*__ ( ``shift + click`` ) - Copy the value of the row value. 
 - __*Value previewer*__ ( ``space`` ) - See the full text value of the row value.
+- __*Lock Insepector*__ ( ``L`` ) - Lock the inspector (allows scrolling through long values)
 
 <img src = '/img/explore/dashboard101/preview-value.png' class='rounded-gif' />
 <br />
