@@ -113,7 +113,7 @@ export abstract class BaseChart<
       whereFilter: dimensionFilters,
       dimensionThresholdFilters,
       showTimeComparison: false,
-      activePage: DashboardState_ActivePage.PIVOT,
+      activePage: DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL,
       pivot: getPivotStateFromChartSpec(spec, timeGrain),
     };
   }

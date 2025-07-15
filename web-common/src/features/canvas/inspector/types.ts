@@ -23,7 +23,7 @@ export type ChartFieldInput = {
   axisTitleSelector?: boolean;
   hideTimeDimension?: boolean;
   originSelector?: boolean;
-  sortSelector?: boolean;
+  sortSelector?: { enable: boolean; customSortItems?: string[] };
   limitSelector?: { defaultLimit: number };
   nullSelector?: boolean;
   labelAngleSelector?: boolean;

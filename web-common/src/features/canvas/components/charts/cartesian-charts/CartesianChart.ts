@@ -32,6 +32,8 @@ const DEFAULT_NOMINAL_LIMIT = 20;
 const DEFAULT_SPLIT_LIMIT = 10;
 
 export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
+  customSortXItems: string[] = [];
+
   static chartInputParams: Record<string, ComponentInputParam> = {
     x: {
       type: "positional",
@@ -40,7 +42,7 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
         chartFieldInput: {
           type: "dimension",
           axisTitleSelector: true,
-          sortSelector: true,
+          sortSelector: { enable: true },
           limitSelector: { defaultLimit: DEFAULT_NOMINAL_LIMIT },
           nullSelector: true,
           labelAngleSelector: true,
@@ -80,7 +82,12 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
   }
 
   getChartSpecificOptions(): Record<string, ComponentInputParam> {
-    return CartesianChartComponent.chartInputParams;
+    const inputParams = CartesianChartComponent.chartInputParams;
+    const sortSelector = inputParams.x.meta?.chartFieldInput?.sortSelector;
+    if (sortSelector) {
+      sortSelector.customSortItems = this.customSortXItems;
+    }
+    return inputParams;
   }
 
   createChartDataQuery(
@@ -222,6 +229,9 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
         // Apply topN filter for x dimension
         if (topNXData?.length && dimensionName) {
           const topXValues = topNXData.map((d) => d[dimensionName] as string);
+          this.customSortXItems = Array.isArray(config.x?.sort)
+            ? config.x?.sort
+            : topXValues;
           const filterForTopXValues = createInExpression(
             dimensionName,
             topXValues,
