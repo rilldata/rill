@@ -33,6 +33,9 @@
   import { CONNECTION_TAB_OPTIONS } from "./constants";
   import { getInitialFormValuesFromProperties } from "../sourceUtils";
   import { compileConnectorYAML } from "../../connectors/code-utils";
+  import CopyIcon from "@rilldata/web-common/components/icons/CopyIcon.svelte";
+  import Check from "@rilldata/web-common/components/icons/Check.svelte";
+  import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
 
   const dispatch = createEventDispatcher();
 
@@ -44,6 +47,7 @@
   const isSourceForm = formType === "source";
   const isConnectorForm = formType === "connector";
 
+  let copied = false;
   let connectionTab: ConnectorType = "parameters";
 
   // Form 1: Individual parameters
@@ -176,6 +180,14 @@
       });
     }
   })();
+
+  function copyYamlPreview() {
+    navigator.clipboard.writeText(yamlPreview);
+    copied = true;
+    setTimeout(() => {
+      copied = false;
+    }, 2_000);
+  }
 
   function onStringInputChange(event: Event) {
     const target = event.target as HTMLInputElement;
@@ -455,8 +467,22 @@
 
     <div>
       <div class="text-sm leading-none font-medium mb-4">Connector preview</div>
-      <pre
-        class="bg-muted p-3 rounded text-xs border border-gray-200 overflow-x-auto">{yamlPreview}</pre>
+      <div class="relative">
+        <button
+          class="absolute top-2 right-2 p-1 rounded"
+          type="button"
+          aria-label="Copy YAML"
+          on:click={copyYamlPreview}
+        >
+          {#if copied}
+            <Check size="16px" />
+          {:else}
+            <CopyIcon size="16px" />
+          {/if}
+        </button>
+        <pre
+          class="bg-muted p-3 rounded text-xs border border-gray-200 overflow-x-auto">{yamlPreview}</pre>
+      </div>
     </div>
 
     <NeedHelpText {connector} />
