@@ -328,6 +328,7 @@
                       bind:checked={$paramsForm[propertyKey]}
                       {label}
                       hint={property.hint}
+                      optional={!property.required}
                     />
                   {:else if property.type === ConnectorDriverPropertyType.TYPE_INFORMATIONAL}
                     <InformationalField
@@ -374,8 +375,6 @@
         >
           {#each filteredParamsProperties as property (property.key)}
             {@const propertyKey = property.key ?? ""}
-            {@const label =
-              property.displayName + (property.required ? "" : " (optional)")}
             <div class="py-1.5 first:pt-0 last:pb-0">
               {#if property.type === ConnectorDriverPropertyType.TYPE_STRING || property.type === ConnectorDriverPropertyType.TYPE_NUMBER}
                 <Input
@@ -394,8 +393,9 @@
                 <Checkbox
                   id={propertyKey}
                   bind:checked={$paramsForm[propertyKey]}
-                  {label}
+                  label={property.displayName}
                   hint={property.hint}
+                  optional={!property.required}
                 />
               {:else if property.type === ConnectorDriverPropertyType.TYPE_INFORMATIONAL}
                 <InformationalField
