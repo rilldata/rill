@@ -11,6 +11,7 @@ import {
   type ConnectorServiceListDatabaseSchemasParams,
   type ConnectorServiceListTablesParams,
   type ConnectorServiceGetTableParams,
+  type V1ConnectorDriver,
 } from "../../../runtime-client";
 import { humanReadableErrorMessage } from "../../sources/errors/errors";
 
@@ -18,6 +19,17 @@ interface TestConnectorResult {
   success: boolean;
   error?: string;
   details?: string;
+}
+
+// Decide which test API(s) to call based on connector type and form values
+export async function testSourceConnection(
+  instanceId: string,
+  connector: V1ConnectorDriver,
+) {
+  // Use ListDatabaseSchemas for all connectors for a generic test connection
+  return await testListDatabaseSchemas(instanceId, {
+    connector: connector.name,
+  });
 }
 
 export async function testOLAPConnector(

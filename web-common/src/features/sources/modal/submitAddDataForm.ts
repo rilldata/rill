@@ -22,7 +22,10 @@ import {
   updateDotEnvWithSecrets,
   updateRillYAMLWithOlapConnector,
 } from "../../connectors/code-utils";
-import { testOLAPConnector } from "../../connectors/olap/test-connection";
+import {
+  testOLAPConnector,
+  testSourceConnection,
+} from "../../connectors/olap/test-connection";
 import { runtimeServicePutFileAndWaitForReconciliation } from "../../entity-management/actions";
 import { getFileAPIPathFromNameAndType } from "../../entity-management/entity-mappers";
 import { fileArtifacts } from "../../entity-management/file-artifacts";
@@ -32,79 +35,10 @@ import { EntityType } from "../../entity-management/types";
 import { EMPTY_PROJECT_TITLE } from "../../welcome/constants";
 import { isProjectInitialized } from "../../welcome/is-project-initialized";
 import { compileSourceYAML, maybeRewriteToDuckDb } from "../sourceUtils";
-import {
-  testListTables,
-  testGetTable,
-  testListDatabaseSchemas,
-} from "../../connectors/olap/test-connection";
 
 interface AddDataFormValues {
   // name: string; // Commenting out until we add user-provided names for Connectors
   [key: string]: unknown;
-}
-
-// Decide which test API(s) to call based on connector type and form values
-export async function testSourceConnection(
-  instanceId: string,
-  connector: V1ConnectorDriver,
-  formValues: Record<string, any>,
-) {
-  if (!connector.name) {
-    throw new Error(
-      "Connector name is required for testing source connection.",
-    );
-  }
-
-  // FIXME
-  const fileBased = ["s3", "gcs", "azure", "https", "local_file"];
-  // FIXME
-  const dbBased = [
-    "sqlite",
-    "duckdb",
-    "bigquery",
-    "athena",
-    "redshift",
-    "postgres",
-    "mysql",
-    "snowflake",
-  ];
-
-  if (fileBased.includes(connector.name)) {
-    if (formValues.path) {
-      return await testGetTable(instanceId, {
-        connector: connector.name,
-        table: String(formValues.path),
-      });
-    }
-    return await testListTables(instanceId, {
-      connector: connector.name,
-    });
-  }
-
-  if (dbBased.includes(connector.name)) {
-    if (formValues.schema) {
-      const schemaResult = await testListDatabaseSchemas(instanceId, {
-        connector: connector.name,
-      });
-      if (!schemaResult.success) return schemaResult;
-    }
-    const tablesParams: any = { connector: connector.name };
-    if (formValues.schema) tablesParams.schema = String(formValues.schema);
-    const tablesResult = await testListTables(instanceId, tablesParams);
-    if (!tablesResult.success) return tablesResult;
-    if (formValues.table) {
-      const getTableParams: any = { connector: connector.name };
-      if (formValues.schema) getTableParams.schema = String(formValues.schema);
-      getTableParams.table = String(formValues.table);
-      return await testGetTable(instanceId, getTableParams);
-    }
-    return tablesResult;
-  }
-
-  // Fallback: just try listing tables
-  return await testListTables(instanceId, {
-    connector: connector.name,
-  });
 }
 
 export async function submitAddSourceForm(
@@ -157,11 +91,7 @@ export async function submitAddSourceForm(
   }
 
   // Test the connection to the source using the strategy function
-  const testResult = await testSourceConnection(
-    instanceId,
-    rewrittenConnector,
-    rewrittenFormValues,
-  );
+  const testResult = await testSourceConnection(instanceId, rewrittenConnector);
   if (!testResult.success) {
     await rollbackConnectorChanges(instanceId, newSourceFilePath, undefined);
     throw {
