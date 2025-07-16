@@ -79,7 +79,12 @@ const config = {
         appId: "4U01DM4NS4",
         apiKey: "c0399915ae21a35c6d34a473d017c15b",
         indexName: "rilldata",
-        debug: false // Set debug to true if you want to inspect the modal        
+        debug: false, // Set debug to true if you want to inspect the modal      
+        contextualSearch: true,
+        searchParameters: {
+          optionalFilters: ['type:doc', 'type:guide', 'type:reference'],
+          hitsPerPage: 10,
+        },
       },
       metadata: [
         {

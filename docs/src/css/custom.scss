@@ -179,11 +179,10 @@ li.theme-doc-sidebar-item-category-level-2 .menu__list-item-collapsible {
 }
 
 .menu__link {
-  padding-top: 4px;
-  padding-bottom: 4px;
+  padding-top: 5px;
+  padding-bottom: 5px;
   padding-left: 8px;
   font-size: 14px !important;
-
   &--active {
     font-weight: 600;
   }
@@ -199,8 +198,7 @@ li.theme-doc-sidebar-item-category-level-2 .menu__list-item-collapsible {
 
 .menu__caret {
   padding-top: 0px !important;
-  padding-bottom: 0px !important;
-
+  padding-bottom: 1px !important;
 }
 
 .theme-doc-sidebar-item-link-level-3,
@@ -246,6 +244,7 @@ li.theme-doc-sidebar-item-category-level-2 .menu__list-item-collapsible {
 
 .sub-menu-link .menu__link--sublist {
   font-weight: 700;
+
 }
 
 .center-content {
@@ -279,8 +278,6 @@ li.theme-doc-sidebar-item-category-level-2 .menu__list-item-collapsible {
   margin-right: auto;
   width: 100%;
   box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.2); 
-
-
 }
 
 .centered {
@@ -334,6 +331,7 @@ li.theme-doc-sidebar-item-category-level-2 .menu__list-item-collapsible {
   min-height: 0; /* This is important for flexbox scrolling */
   padding-bottom: 72px; /* Add some bottom padding for better scroll experience */
 }
+
 
 // Dark mode override
 [data-theme='dark'] .sidebar-release-notes-section {
