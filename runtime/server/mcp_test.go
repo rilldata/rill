@@ -36,15 +36,13 @@ measures:
   name: total_revenue
 `,
 		},
+		FrontendURL: "https://ui.rilldata.com/test-org/test-project",
 	})
 
 	// Wait for reconciliation to complete (model, metrics_view)
 	testruntime.RequireReconcileState(t, rt, instanceID, 3, 0, 0)
 
-	srv, err := NewServer(context.Background(), &Options{
-		HTTPPort: 3000,
-		ServeUI:  false, // Development mode: frontend on separate port (3001)
-	}, rt, nil, ratelimit.NewNoop(), activity.NewNoopClient())
+	srv, err := NewServer(context.Background(), &Options{}, rt, nil, ratelimit.NewNoop(), activity.NewNoopClient())
 	require.NoError(t, err)
 
 	return srv, instanceID
@@ -104,12 +102,13 @@ func TestMCPExecuteTool_Success(t *testing.T) {
 	ctx := testCtx()
 
 	// Test executing list_metrics_views tool (no parameters required)
-	textResult, err := srv.mcpExecuteTool(ctx, instanceID, "list_metrics_views", map[string]any{})
+	result, err := srv.mcpExecuteTool(ctx, instanceID, "list_metrics_views", map[string]any{})
 	require.NoError(t, err)
+	require.NotEmpty(t, result)
 
 	// The response should be valid JSON with metrics view data
 	var jsonData map[string]interface{}
-	err = json.Unmarshal([]byte(textResult), &jsonData)
+	err = json.Unmarshal([]byte(result), &jsonData)
 	require.NoError(t, err, "expected valid JSON response from successful tool execution")
 
 	// Verify the response contains the expected structure
@@ -146,252 +145,36 @@ func TestMCPExecuteTool_MissingParam(t *testing.T) {
 }
 
 func TestMCPQueryMetricsView_IncludesURL(t *testing.T) {
-	t.Run("Local", func(t *testing.T) {
-		srv, instanceID := newMCPTestServer(t)
+	srv, instanceID := newMCPTestServer(t)
 
-		ctx := testCtx()
+	ctx := testCtx()
 
-		// Test executing query_metrics_view tool with basic parameters
-		queryParams := map[string]any{
-			"metrics_view": "test_metrics",
-			"dimensions":   []map[string]any{{"name": "country"}},
-			"measures":     []map[string]any{{"name": "total_revenue"}},
-		}
+	// Test executing query_metrics_view tool with basic parameters
+	queryParams := map[string]any{
+		"metrics_view": "test_metrics",
+		"dimensions":   []map[string]any{{"name": "country"}},
+		"measures":     []map[string]any{{"name": "total_revenue"}},
+	}
 
-		textResult, err := srv.mcpExecuteTool(ctx, instanceID, "query_metrics_view", queryParams)
-		require.NoError(t, err)
+	textResult, err := srv.mcpExecuteTool(ctx, instanceID, "query_metrics_view", queryParams)
+	require.NoError(t, err)
 
-		// The response should be valid JSON with query results and explore URL
-		var jsonData map[string]interface{}
-		err = json.Unmarshal([]byte(textResult), &jsonData)
-		require.NoError(t, err, "expected valid JSON response from query_metrics_view")
+	// Parse the response
+	var jsonData map[string]interface{}
+	err = json.Unmarshal([]byte(textResult), &jsonData)
+	require.NoError(t, err)
 
-		// Verify the response contains the expected structure
-		require.Contains(t, jsonData, "response", "response should contain response field")
-		require.Contains(t, jsonData, "open_url", "response should contain open_url field")
+	// Verify the open URL is included
+	require.Contains(t, jsonData, "response", "response should contain response field")
+	require.Contains(t, jsonData, "open_url", "response should contain open_url field")
 
-		// The inner response should contain the actual query results
-		require.NotNil(t, jsonData["response"], "response field should not be nil")
+	openURL, ok := jsonData["open_url"].(string)
+	require.True(t, ok, "open_url should be a string")
+	require.NotEmpty(t, openURL, "open_url should not be empty")
 
-		// Most importantly, verify the open URL is included
-		openURL, ok := jsonData["open_url"].(string)
-		require.True(t, ok, "open_url should be a string")
-		require.NotEmpty(t, openURL, "open_url should not be empty")
+	// Verify the URL has the expected format for cloud deployment
+	require.Contains(t, openURL, "https://ui.rilldata.com/test-org/test-project", "URL should use configured frontend URL")
+	require.Contains(t, openURL, "/-/open-query?mcp_query=", "URL should route to frontend query processor")
 
-		// Verify the URL has the expected format for local deployment
-		require.Contains(t, openURL, "http://localhost:3001", "URL should use frontend port for local development")
-		require.Contains(t, openURL, "/open-query?mcp_query=", "URL should route to frontend query processor")
-
-		t.Logf("Generated open URL: %s", openURL)
-	})
-
-	t.Run("Cloud", func(t *testing.T) {
-		// Create a cloud instance with organization and project annotations
-		rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
-			Files: map[string]string{
-				"rill.yaml":     ``,
-				"test_data.sql": `SELECT 'US' AS country, 100 AS revenue, NOW() AS timestamp`,
-				"test_metrics.yaml": `
-type: metrics_view
-version: 1
-model: test_data
-dimensions:
-- column: country
-measures:
-- expression: SUM(revenue)
-  name: total_revenue
-`,
-			},
-		})
-
-		// Wait for reconciliation to complete (model, metrics_view)
-		testruntime.RequireReconcileState(t, rt, instanceID, 3, 0, 0)
-
-		// Add annotations to simulate cloud instance
-		ctx := context.Background()
-		instance, err := rt.Instance(ctx, instanceID)
-		require.NoError(t, err)
-
-		// Add organization and project annotations
-		instance.Annotations = map[string]string{
-			"organization": "test-org",
-			"project":      "test-project",
-		}
-
-		// Update the instance with annotations
-		err = rt.EditInstance(ctx, instance, false)
-		require.NoError(t, err)
-
-		srv, err := NewServer(context.Background(), &Options{
-			FrontendURL: "https://ui.rilldata.com",
-		}, rt, nil, ratelimit.NewNoop(), activity.NewNoopClient())
-		require.NoError(t, err)
-
-		testCtx := testCtx()
-
-		// Test executing query_metrics_view tool with basic parameters
-		queryParams := map[string]any{
-			"metrics_view": "test_metrics",
-			"dimensions":   []map[string]any{{"name": "country"}},
-			"measures":     []map[string]any{{"name": "total_revenue"}},
-		}
-
-		textResult, err := srv.mcpExecuteTool(testCtx, instanceID, "query_metrics_view", queryParams)
-		require.NoError(t, err)
-
-		// Parse the response
-		var jsonData map[string]interface{}
-		err = json.Unmarshal([]byte(textResult), &jsonData)
-		require.NoError(t, err)
-
-		// Verify the open URL is included and has cloud format
-		require.Contains(t, jsonData, "response", "response should contain response field")
-		require.Contains(t, jsonData, "open_url", "response should contain open_url field")
-
-		openURL, ok := jsonData["open_url"].(string)
-		require.True(t, ok, "open_url should be a string")
-		require.NotEmpty(t, openURL, "open_url should not be empty")
-
-		// Verify the URL has the expected format for cloud deployment
-		require.Contains(t, openURL, "https://ui.rilldata.com", "URL should use configured frontend URL")
-		require.Contains(t, openURL, "/open-query?mcp_query=", "URL should route to frontend query processor")
-
-		t.Logf("Generated cloud open URL: %s", openURL)
-	})
-
-	t.Run("CloudWithCustomDomain", func(t *testing.T) {
-		// Create a cloud instance with custom domain
-		rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
-			Files: map[string]string{
-				"rill.yaml":     ``,
-				"test_data.sql": `SELECT 'US' AS country, 100 AS revenue, NOW() AS timestamp`,
-				"test_metrics.yaml": `
-type: metrics_view
-version: 1
-model: test_data
-dimensions:
-- column: country
-measures:
-- expression: SUM(revenue)
-  name: total_revenue
-`,
-			},
-		})
-
-		// Wait for reconciliation to complete (model, metrics_view)
-		testruntime.RequireReconcileState(t, rt, instanceID, 3, 0, 0)
-
-		// Add annotations to simulate cloud instance with custom domain
-		ctx := context.Background()
-		instance, err := rt.Instance(ctx, instanceID)
-		require.NoError(t, err)
-
-		// Add organization, project, and custom domain annotations
-		instance.Annotations = map[string]string{
-			"organization":               "test-org",
-			"project":                    "test-project",
-			"organization_custom_domain": "analytics.example.com",
-		}
-
-		// Update the instance with annotations
-		err = rt.EditInstance(ctx, instance, false)
-		require.NoError(t, err)
-
-		srv, err := NewServer(context.Background(), &Options{
-			FrontendURL: "https://ui.rilldata.com",
-		}, rt, nil, ratelimit.NewNoop(), activity.NewNoopClient())
-		require.NoError(t, err)
-
-		testCtx := testCtx()
-
-		// Test executing query_metrics_view tool with basic parameters
-		queryParams := map[string]any{
-			"metrics_view": "test_metrics",
-			"dimensions":   []map[string]any{{"name": "country"}},
-			"measures":     []map[string]any{{"name": "total_revenue"}},
-		}
-
-		textResult, err := srv.mcpExecuteTool(testCtx, instanceID, "query_metrics_view", queryParams)
-		require.NoError(t, err)
-
-		// Parse the response
-		var jsonData map[string]interface{}
-		err = json.Unmarshal([]byte(textResult), &jsonData)
-		require.NoError(t, err)
-
-		// Verify the open URL is included and uses custom domain
-		require.Contains(t, jsonData, "response", "response should contain response field")
-		require.Contains(t, jsonData, "open_url", "response should contain open_url field")
-
-		openURL, ok := jsonData["open_url"].(string)
-		require.True(t, ok, "open_url should be a string")
-		require.NotEmpty(t, openURL, "open_url should not be empty")
-
-		// Verify the URL uses the custom domain
-		require.Contains(t, openURL, "https://analytics.example.com", "URL should use custom domain")
-		require.Contains(t, openURL, "/open-query?mcp_query=", "URL should route to frontend query processor")
-
-		t.Logf("Generated custom domain open URL: %s", openURL)
-	})
-
-	t.Run("LocalRillDeveloper", func(t *testing.T) {
-		// Create a local instance for Rill Developer mode
-		rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
-			Files: map[string]string{
-				"rill.yaml":     ``,
-				"test_data.sql": `SELECT 'US' AS country, 100 AS revenue, NOW() AS timestamp`,
-				"test_metrics.yaml": `
-type: metrics_view
-version: 1
-model: test_data
-dimensions:
-- column: country
-measures:
-- expression: SUM(revenue)
-  name: total_revenue
-`,
-			},
-		})
-
-		// Wait for reconciliation to complete (model, metrics_view)
-		testruntime.RequireReconcileState(t, rt, instanceID, 3, 0, 0)
-
-		srv, err := NewServer(context.Background(), &Options{
-			HTTPPort: 9009,
-			ServeUI:  true, // Rill Developer mode: runtime serves UI
-		}, rt, nil, ratelimit.NewNoop(), activity.NewNoopClient())
-		require.NoError(t, err)
-
-		ctx := testCtx()
-
-		// Test executing query_metrics_view tool with basic parameters
-		queryParams := map[string]any{
-			"metrics_view": "test_metrics",
-			"dimensions":   []map[string]any{{"name": "country"}},
-			"measures":     []map[string]any{{"name": "total_revenue"}},
-		}
-
-		textResult, err := srv.mcpExecuteTool(ctx, instanceID, "query_metrics_view", queryParams)
-		require.NoError(t, err)
-
-		// The response should be valid JSON with query results and explore URL
-		var jsonData map[string]interface{}
-		err = json.Unmarshal([]byte(textResult), &jsonData)
-		require.NoError(t, err, "expected valid JSON response from query_metrics_view")
-
-		// Verify the response contains the expected structure
-		require.Contains(t, jsonData, "response", "response should contain response field")
-		require.Contains(t, jsonData, "open_url", "response should contain open_url field")
-
-		// Most importantly, verify the open URL is included
-		openURL, ok := jsonData["open_url"].(string)
-		require.True(t, ok, "open_url should be a string")
-		require.NotEmpty(t, openURL, "open_url should not be empty")
-
-		// Verify the URL uses the runtime server's port for Rill Developer mode
-		require.Contains(t, openURL, "http://localhost:9009", "URL should use runtime server port for Rill Developer mode")
-		require.Contains(t, openURL, "/open-query?mcp_query=", "URL should route to frontend query processor")
-
-		t.Logf("Generated Rill Developer open URL: %s", openURL)
-	})
+	t.Logf("Generated cloud open URL: %s", openURL)
 }

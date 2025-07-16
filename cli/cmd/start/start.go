@@ -169,6 +169,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				Variables:      envVarsMap,
 				LocalURL:       localURL,
 				AllowedOrigins: allowedOrigins,
+				ServeUI:        !noUI,
 			})
 			if err != nil {
 				return err

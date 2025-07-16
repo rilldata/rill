@@ -390,44 +390,27 @@ Example: Get the top 10 demographic segments (by country, gender, and age group)
 
 // generateOpenURL generates an open URL for the given query parameters
 func (s *Server) generateOpenURL(ctx context.Context, instanceID string, metricsProps map[string]any) (string, error) {
-	// Get instance to access annotations
+	// Get instance to access the configured frontend URL
 	instance, err := s.runtime.Instance(ctx, instanceID)
 	if err != nil {
 		return "", fmt.Errorf("failed to get instance: %w", err)
 	}
 
-	// Determine the base URL based on deployment context
-	var baseURL string
-
-	// Check if this is a cloud instance by looking for organization in annotations
-	organization, hasOrg := instance.Annotations["organization"]
-	project, hasProject := instance.Annotations["project"]
-
-	if hasOrg && hasProject {
-		// Cloud context: Use admin URLs utility with custom domain support
-		customDomain := instance.Annotations["organization_custom_domain"]
-		baseURL = s.urls.WithCustomDomain(customDomain).Frontend()
-		baseURL = fmt.Sprintf("%s/%s/%s", baseURL, organization, project)
-	} else {
-		// Local context: Use `localhost` for the base URL
-		if s.opts.ServeUI {
-			// In production: The runtime serves the UI
-			baseURL = fmt.Sprintf("http://localhost:%d", s.opts.HTTPPort)
-		} else {
-			// In development: The frontend runs on a separate port (3001)
-			baseURL = "http://localhost:3001"
-		}
+	// Use the instance's configured frontend URL (which includes org/project and custom domain for cloud, or the correct localhost URL)
+	if instance.FrontendURL == "" {
+		return "", fmt.Errorf("instance %s has no frontend URL configured", instanceID)
 	}
 
-	// Serialize the MCP query properties to JSON and URL encode for query parameter
+	// Build the complete URL for the query
 	jsonBytes, err := json.Marshal(metricsProps)
 	if err != nil {
 		return "", fmt.Errorf("failed to marshal MCP query to JSON: %w", err)
 	}
-	encodedQuery := url.QueryEscape(string(jsonBytes))
 
-	// Construct the URL to the frontend router with JSON-encoded parameters
-	return fmt.Sprintf("%s/open-query?mcp_query=%s", baseURL, encodedQuery), nil
+	values := make(url.Values)
+	values.Set("mcp_query", string(jsonBytes))
+
+	return fmt.Sprintf("%s/-/open-query?%s", instance.FrontendURL, values.Encode()), nil
 }
 
 // addOpenURLToResponse adds the open URL to the response data
