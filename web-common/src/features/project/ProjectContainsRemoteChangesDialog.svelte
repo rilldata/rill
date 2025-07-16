@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { ConnectError } from "@connectrpc/connect";
+  import { noCancel } from "@rilldata/web-common/components/alert-dialog";
   import * as Alert from "@rilldata/web-common/components/alert-dialog/index.js";
   import CTACard from "@rilldata/web-common/components/calls-to-action/CTACard.svelte";
 
@@ -13,7 +14,7 @@
   <Alert.Trigger asChild>
     <div class="hidden"></div>
   </Alert.Trigger>
-  <Alert.Content class="min-w-[675px]">
+  <Alert.Content class="min-w-[675px]" noCancel>
     <Alert.Header>
       <Alert.Title>Project updates available</Alert.Title>
       <Alert.Description>
