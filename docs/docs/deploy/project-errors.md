@@ -20,7 +20,7 @@ To help you quickly identify and fix errors, you can configure a Rill alert that
 
 :::tip Want to learn more about alerts?
 
-Besides alerting on project errors, it is possible to configure generic alerts in your dashboards based on specific thresholds or conditions being met. For more details, check our our [alerts documentation](/explore/alerts/alerts.md)!
+Besides alerting on project errors, it is possible to configure generic alerts in your dashboards based on specific thresholds or conditions being met. For more details, check out our [alerts documentation](/explore/alerts/alerts.md)!
 
 :::
 

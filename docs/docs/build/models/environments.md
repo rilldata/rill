@@ -10,12 +10,12 @@ sidebar_position: 10
 Environments allow the separation of logic between different deployments of Rill, most commonly when using a project in Rill Developer and Rill Cloud. Generally speaking, Rill Developer is meant primarily for local development purposes, where the developer may want to use a segment or sample of data for modeling purposes to help validate the model logic is correct and producing expected results. Then, once finalized and a project is ready to be deployed to Rill Cloud, the focus is on shared collaboration at scale and where most of the dashboard consumption in production will happen.
 
 There could be a few reasons to have separate logic for sources, models, and dashboards for Rill Developer and Rill Cloud, respectively:
-1. As the size of data starts growing, the locally embedded OLAP engine (using DuckDB) may start to face scaling challenges, which can impact performance and the "snappiness" of models and dashboards. Furthermore, for model development, the full data is often not needed and working with a sample is sufficient. For production though, where analysts and business users are interacting with Rill dashboards to perform interactive, exploratory analysis or make decisions, it is important that these same models and dashboards are powered by the entire range of data available.
-2. For certain organizations, there might be a development and production version of source data. Therefore, you can develop your models and validate the results in Rill Developer against development. When deployed to Rill Cloud, these same models and dashboards can then be powered by your production source, reflecting the most correct and up-to-date version of your business data.
+1. As the size of data grows, the locally embedded OLAP engine (using DuckDB) may start to face scaling challenges, which can impact performance and the "snappiness" of models and dashboards. Furthermore, for model development, the full data is often not needed and working with a sample is sufficient. For production, though, where analysts and business users are interacting with Rill dashboards to perform interactive, exploratory analysis or make decisions, it is important that these same models and dashboards are powered by the entire range of data available.
+2. For certain organizations, there might be a development and production version of source data. Therefore, you can develop your models and validate the results in Rill Developer against development data. When deployed to Rill Cloud, these same models and dashboards can then be powered by your production source, reflecting the most correct and up-to-date version of your business data.
 
 ## Default dev and prod environments
 
-Rill comes with default `dev` and `prod` properties defined, corresponding to Rill Developer and Rill Cloud respectively. You can use these keys to set environment-specific YAML overrides or SQL logic.
+Rill comes with default `dev` and `prod` properties defined, corresponding to Rill Developer and Rill Cloud, respectively. You can use these keys to set environment-specific YAML overrides or SQL logic.
 
 For example, the following `rill.yaml` file explicitly sets the default materialization setting for models to `false` in development and `true` in production:
 ```yaml
@@ -48,7 +48,7 @@ dev:
   path: s3://path/to/bucket/Y=2024/M=01/*.parquet
 ```
 
-Similarly, if you wanted to set a project-wide default in `rill.yaml` where models are [materialized](/reference/project-files/models.md#model-materialization) only on Rill Cloud (i.e. `prod) and dashboards use a different default [theme](../dashboards/customize.md#changing-themes--colors) in production compared to locally, you could do this by:
+Similarly, if you wanted to set a project-wide default in `rill.yaml` where models are [materialized](/reference/project-files/models.md#model-materialization) only on Rill Cloud (i.e., `prod`) and dashboards use a different default [theme](../dashboards/customize.md#changing-themes--colors) in production compared to locally, you could do this by:
 
 ```yaml
 prod:
@@ -60,9 +60,9 @@ prod:
 
 :::info Hierarchy of inheritance and property overrides
 
-As a general rule of thumb, properties that have been specified at a more _granular_ level will supercede or override higher level properties that have been inherited. Therefore, in order of inheritance, Rill will prioritize properties in the following order:
+As a general rule of thumb, properties that have been specified at a more _granular_ level will supersede or override higher-level properties that have been inherited. Therefore, in order of inheritance, Rill will prioritize properties in the following order:
 1. Individual [source](/reference/project-files/sources.md)/[model](/reference/project-files/models.md)/[dashboard](/reference/project-files/explore-dashboards.md) object level properties (e.g. `source.yaml` or `dashboard.yaml`)
-2. [Environment](/docs/build/models/environments.md) level properties (e.g. a specific property that have been set for `dev`)
+2. [Environment](/docs/build/models/environments.md) level properties (e.g., a specific property that has been set for `dev`)
 3. [Project-wide defaults](/reference/project-files/rill-yaml.md#project-wide-defaults) for a specific property and resource type
 
 :::
@@ -96,7 +96,7 @@ connector: "duckdb"
 sql: SELECT * FROM read_parquet('s3://path/to/bucket/*.parquet') {{ if dev }} where updated_at >= '2024-01-01' AND updated_at < '2024-02-01' {{ end }}
 ```
 
-On the other hand, let's say we had some kind of intermediate model where we wanted to apply a limit of 10000 _(but only for local development)_, our `model.sql` file may look something like the following instead:
+On the other hand, let's say we had some kind of intermediate model where we wanted to apply a limit of 10,000 _(but only for local development)_, our `model.sql` file may look something like the following instead:
 
 ```sql
 SELECT * FROM {{ ref "<source_name>" }}
@@ -105,6 +105,6 @@ SELECT * FROM {{ ref "<source_name>" }}
 
 :::warning When applying templated logic to model SQL, make sure to leverage the `ref` function
 
-If you use templating in SQL models, you must replace references to tables / models created by other sources or models with `ref` tags. See this section on ["Referencing other tables or models in SQL when using templating"](../../deploy/templating.md#referencing-other-tables-or-models-in-sql-when-using-templating). This ensures that the native Go templating engine used by Rill is able to resolve and correctly compile the SQL syntax during runtime (to avoid any potential downstream errors).
+If you use templating in SQL models, you must replace references to tables/models created by other sources or models with `ref` tags. See this section on ["Referencing other tables or models in SQL when using templating"](../../deploy/templating.md#referencing-other-tables-or-models-in-sql-when-using-templating). This ensures that the native Go templating engine used by Rill is able to resolve and correctly compile the SQL syntax during runtime (to avoid any potential downstream errors).
 
 :::

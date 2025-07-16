@@ -7,7 +7,7 @@ sidebar_position: 35
 
 ## Overview
 
-Bookmarks are useful to return to regular analyses and filter sets commonly used for reporting or deep dives. If you have a regular view of the data, a bookmark is also a good replacement rather than creating an entirely new dashboard as it contains a subset of the view while retaining all of the fields available for analysis.
+Bookmarks are useful to return to regular analyses and filter sets commonly used for reporting or deep dives. If you have a regular view of the data, a bookmark is also a good alternative to creating an entirely new dashboard, as it contains a subset of the view while retaining all of the fields available for analysis.
 
 Common use cases for Bookmarks include:
 - Weekly/Monthly reporting

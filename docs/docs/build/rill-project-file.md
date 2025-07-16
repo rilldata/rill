@@ -6,13 +6,13 @@ sidebar_position: 45
 ---
 
 
-The Rill project file `rill.yaml` is often overlooked but is a powerful tool as it sets defaults, environmental variables, and connector settings. Let's walk through setting up [`mock_users`](/manage/security#in-rill-developer) to test row access policies, default security settings for your metrics views and explore dashboards, refresh schedules, MCP `ai_instructions`, and the default OLAP connector.
+The Rill project file `rill.yaml` is often overlooked but is a powerful tool, as it sets defaults, environment variables, and connector settings. Let's walk through setting up [`mock_users`](/manage/security#in-rill-developer) to test row access policies, default security settings for your metrics views and explore dashboards, refresh schedules, MCP `ai_instructions`, and the default OLAP connector.
 
 <img src = '/img/tutorials/admin/project.png' class='rounded-gif' />
 <br />
 
 ## Project Refresh Schedule
-Setup your project's model refresh schedule. You can override this in the model's YAML file if you need.
+Set up your project's model refresh schedule. You can override this in the model's YAML file if needed.
 ```yaml
 models:
     refresh:
@@ -20,7 +20,7 @@ models:
 ```
 
 ## Default OLAP Connector
-When adding an OLAP connector to your project, this will automatically populate with the new OLAP connector. IE: `ClickHouse`, `Druid`
+When adding an OLAP connector to your project, this will automatically populate with the new OLAP connector. e.g., `ClickHouse`, `Druid`
 
 ## `ai_instructions`
 Use the `ai_instructions` field to provide information that is **unique to your project**. This helps the agent deliver more relevant and actionable insights tailored to your specific needs.
@@ -39,11 +39,11 @@ ai_instructions: |
 ```
 
 :::note 
-For metrics level specific instructions, `ai_instructions` can also be applied there. 
+For metric-level specific instructions, `ai_instructions` can also be applied there. 
 :::
 
 ## Mock Users 
-Access to your environment is a crucial step in creating your project in Rill Developer. By doing so, you can confidently push your dashboard changes to Rill Cloud. This is done via the mock_users in the project file. You can create pseudo users with specific domains, or admin and non-admin users or user groups, to ensure that access is correct. 
+Access to your environment is a crucial step in creating your project in Rill Developer. By doing so, you can confidently push your dashboard changes to Rill Cloud. This is done via the `mock_users` in the project file. You can create pseudo-users with specific domains, or admin and non-admin users or user groups, to ensure that access is correct. 
 
 Let's assume that the following are applied to the metrics view.
 
@@ -53,7 +53,7 @@ security:
     row_filter: "domain = '{{ .user.domain }}'"
 ```
 
-In order to test both the access to the dashboard, as well as the row filter, we can create the following in the project YAML.
+In order to test both access to the dashboard, as well as the row filter, you can create the following in the project YAML.
 
 ```yaml
 mock_users:
@@ -65,17 +65,17 @@ mock_users:
   - email: your_email2@another_domain.com
 ```
 
-### Embedded dashboard Mock Users
-Embedded dashboards are another type of dashboards that you'll want to test in Rill Developer. Mainly because there is no way to pass the custom variables in Rill Cloud to ensure that access and data is being presented correctly. In order to do this, you'll need to add the following to your mock_users:
+### Embedded Dashboard Mock Users
+Embedded dashboards are another type of dashboard that you'll want to test in Rill Developer, mainly because there is no way to pass custom variables in Rill Cloud to ensure that access and data are being presented correctly. To do this, you'll need to add the following to your `mock_users`:
 ```yaml
 - email: embed@rilldata.com
   name: embed
   custom_variable_1: Value_1 #this is passed at embed creation
   custom_variable_2: Value_2 #this is passed at embed creation
 ```
-See our [Custom Attributes Embedded dashboard](https://rill-embedding-example.netlify.app/rowaccesspolicy/custom) live!
+See our [Custom Attributes Embedded Dashboard](https://rill-embedding-example.netlify.app/rowaccesspolicy/custom) live!
 
-Let's assume a similar set up to the above example. Within the metrics view, we define:
+Let's assume a similar setup to the above example. Within the metrics view, we define:
 
 ```yaml
 security:
@@ -92,7 +92,7 @@ app_site_name='Sling'
 pub_name='MobilityWare'
 ```
 
-You can do a test mock user to ensure that this dashboard is working as designed with the following:
+You can create a test mock user to ensure that this dashboard is working as designed with the following:
 
 ```yaml
 - email: embed@rilldata.com
@@ -106,13 +106,13 @@ You can do a test mock user to ensure that this dashboard is working as designed
 
 
 ## Metrics Views Defaults
-By default, Rill is open to access (to your organization users), unless otherwise defined. To add project-level access to the Rill project, you can add a default metrics view security policy in the rill.yaml file. Like a metrics_view, you can define the security as shown below. For more information, read our [dashboard access documentation](/manage/security#examples).
+By default, Rill is open to access (to your organization users), unless otherwise defined. To add project-level access to the Rill project, you can add a default metrics view security policy in the `rill.yaml` file. Like a metrics_view, you can define the security as shown below. For more information, read our [dashboard access documentation](/manage/security#examples).
 
 ```
 metrics_views:
   security:
     access:
-    row_fitler:
+    row_filter:
 ```
 
 Other parameters that can be set in the defaults are `first_day_of_week` and `smallest_time_grain`.
@@ -123,9 +123,9 @@ Rill YAML settings < Metrics View YAML
 :::
 
 ## Explore Defaults
-Similar to metrics views, you can set similar security to an explore dashboard. (Note that only `access` can be set on the dashboard level.)
+Similar to metrics views, you can set security for an explore dashboard. (Note that only `access` can be set at the dashboard level.)
 
-You are also able to set the `defaults` parameter in the explores dashboard to define your default time range, as well as the available time_zones and time_ranges in an Explore dashboard.
+You are also able to set the `defaults` parameter in the explore dashboard to define your default time range, as well as the available time_zones and time_ranges in an Explore dashboard.
 ```yaml
 explores:
     defaults:
