@@ -228,18 +228,6 @@
       // showing error below
     }
   }
-
-  $: console.log("aggregationRequest", aggregationRequest);
-  // $: console.log(
-  //   getUpdatedAggregationRequest(
-  //     aggregationRequest,
-  //     filters.toState(),
-  //     timeControls.toState(),
-  //     $form.rows,
-  //     $form.columns,
-  //     exploreSpec,
-  //   ),
-  // );
 </script>
 
 <Dialog.Root bind:open>

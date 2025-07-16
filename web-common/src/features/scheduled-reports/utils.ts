@@ -1,4 +1,7 @@
-import { getDimensionNameFromAggregationDimension } from "@rilldata/web-common/features/dashboards/aggregation-request/dimension-utils.ts";
+import {
+  getDimensionNameFromAggregationDimension,
+  getTimestampAndGrainFromTimeDimension,
+} from "@rilldata/web-common/features/dashboards/aggregation-request/dimension-utils.ts";
 import { MeasureModifierSuffixRegex } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry.ts";
 import {
   mergeDimensionAndMeasureFilters,
@@ -207,7 +210,7 @@ export function getUpdatedAggregationRequest(
   );
 
   const allFields = new Set<string>([...rows, ...columns]);
-  const isFlat = rows.length > 0;
+  const isFlat = rows.length === 0;
   const pivotOn: string[] = [];
 
   const measures = columns
@@ -236,12 +239,10 @@ export function getUpdatedAggregationRequest(
         return;
       }
 
-      const grain = col.replace(/^.*_rill_/, "");
-      const alias = isFlat
-        ? `${col}_rill_${col}`
-        : `Time ${TIME_GRAIN[grain].label}`;
+      const { timeCol, grain } = getTimestampAndGrainFromTimeDimension(col);
+      const alias = `Time ${TIME_GRAIN[grain].label}`;
       dimensions.push({
-        name: col,
+        name: timeCol,
         timeGrain: grain as V1TimeGrain,
         timeZone: timeControlArgs.selectedTimezone,
         alias,
@@ -262,7 +263,7 @@ export function getUpdatedAggregationRequest(
     ...aggregationRequest,
     measures,
     dimensions,
-    pivotOn: isFlat ? undefined : pivotOn,
+    pivotOn: isFlat || !pivotOn.length ? undefined : pivotOn,
     sort,
     where: sanitiseExpression(
       mergeDimensionAndMeasureFilters(

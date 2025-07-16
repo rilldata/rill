@@ -55,7 +55,7 @@
         errorEventHandler.addJavascriptErrorListeners();
     }
 
-    featureFlags.set(true, "adminServer");
+    featureFlags.set(false, "adminServer");
     featureFlags.set(config.readonly, "readOnly");
   });
 

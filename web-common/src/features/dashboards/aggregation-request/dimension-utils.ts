@@ -26,3 +26,20 @@ export function getDimensionNameFromAggregationDimension(
   if (!dimension.timeGrain) return dimension.name!;
   return `${dimension.name}_rill_${dimension.timeGrain}`;
 }
+
+const timeDimensionNameRegex = /^(.*)_rill_(.*)$/;
+export function getTimestampAndGrainFromTimeDimension(colName: string) {
+  const match = timeDimensionNameRegex.exec(colName);
+  if (!match) {
+    return {
+      timeCol: colName,
+      grain: V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
+    };
+  }
+
+  const [, timeCol, grain] = match;
+  return {
+    timeCol,
+    grain,
+  };
+}

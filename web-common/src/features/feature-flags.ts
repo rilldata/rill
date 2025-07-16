@@ -30,7 +30,7 @@ class FeatureFlags {
   ready: Promise<void>;
   private _resolveReady!: () => void;
 
-  adminServer = new FeatureFlag("rill", true);
+  adminServer = new FeatureFlag("rill", false);
   readOnly = new FeatureFlag("rill", false);
   // Until we figure out a good way to test managed github we need to use the legacy archive method.
   // Right now this is true only in an E2E environment.
