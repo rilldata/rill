@@ -57,9 +57,9 @@
       : connector.configProperties?.filter(
           (property) => property.key !== "dsn",
         )) ?? [];
-  const filteredParamsProperties = properties.filter(
-    (property) => !property.noPrompt,
-  );
+
+  // FIXME: APP-209
+  const filteredParamsProperties = properties;
   const schema = yup(getYupSchema[connector.name as keyof typeof getYupSchema]);
   const initialFormValues = getInitialFormValuesFromProperties(properties);
   const {
@@ -87,9 +87,9 @@
   const dsnProperties =
     connector.configProperties?.filter((property) => property.key === "dsn") ??
     [];
-  const filteredDsnProperties = dsnProperties.filter(
-    (property) => !property.noPrompt,
-  );
+
+  // FIXME: APP-209
+  const filteredDsnProperties = dsnProperties;
   const dsnYupSchema = yup(dsnSchema);
   const {
     form: dsnForm,
