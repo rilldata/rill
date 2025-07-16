@@ -1,4 +1,5 @@
 import type { PivotChipData } from "@rilldata/web-common/features/dashboards/pivot/types.ts";
+import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config.ts";
 import {
   type V1MetricsViewAggregationDimension,
   V1TimeGrain,
@@ -28,18 +29,23 @@ export function getDimensionNameFromAggregationDimension(
 }
 
 const timeDimensionNameRegex = /^(.*)_rill_(.*)$/;
-export function getTimestampAndGrainFromTimeDimension(colName: string) {
+export function getAggregationDimensionFromTimeDimension(
+  colName: string,
+  timeZone: string,
+) {
   const match = timeDimensionNameRegex.exec(colName);
   if (!match) {
-    return {
-      timeCol: colName,
-      grain: V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
+    return <V1MetricsViewAggregationDimension>{
+      name: colName,
     };
   }
 
   const [, timeCol, grain] = match;
-  return {
-    timeCol,
-    grain,
+  const alias = `Time ${TIME_GRAIN[grain].label}`;
+  return <V1MetricsViewAggregationDimension>{
+    name: timeCol,
+    timeGrain: grain as V1TimeGrain,
+    timeZone,
+    alias,
   };
 }

@@ -1,6 +1,6 @@
 import {
   getDimensionNameFromAggregationDimension,
-  getTimestampAndGrainFromTimeDimension,
+  getAggregationDimensionFromTimeDimension,
 } from "@rilldata/web-common/features/dashboards/aggregation-request/dimension-utils.ts";
 import { MeasureModifierSuffixRegex } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry.ts";
 import {
@@ -39,7 +39,6 @@ import {
   getTodaysDayOfWeek,
   ReportFrequency,
 } from "@rilldata/web-common/features/scheduled-reports/time-utils";
-import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config.ts";
 import { getLocalIANA } from "@rilldata/web-common/lib/time/timezone";
 import {
   type DashboardTimeControls,
@@ -51,11 +50,9 @@ import {
   type V1MetricsViewAggregationDimension,
   type V1MetricsViewAggregationRequest,
   type V1MetricsViewAggregationSort,
-  type V1MetricsViewSpec,
   type V1Notifier,
   type V1Query,
   type V1ReportSpec,
-  V1TimeGrain,
   type V1TimeRange,
   type V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
@@ -227,9 +224,12 @@ export function getUpdatedAggregationRequest(
 
       return group;
     });
-  const dimensions: V1MetricsViewAggregationDimension[] = rows
-    .filter((row) => exploreSpec.dimensions?.includes(row))
-    .map((d) => ({ name: d }));
+  const dimensions: V1MetricsViewAggregationDimension[] = rows.map((d) =>
+    getAggregationDimensionFromTimeDimension(
+      d,
+      timeControlArgs.selectedTimezone,
+    ),
+  );
   columns
     .filter((col) => !exploreSpec.measures?.includes(col))
     .forEach((col) => {
@@ -239,15 +239,12 @@ export function getUpdatedAggregationRequest(
         return;
       }
 
-      const { timeCol, grain } = getTimestampAndGrainFromTimeDimension(col);
-      const alias = `Time ${TIME_GRAIN[grain].label}`;
-      dimensions.push({
-        name: timeCol,
-        timeGrain: grain as V1TimeGrain,
-        timeZone: timeControlArgs.selectedTimezone,
-        alias,
-      });
-      pivotOn.push(alias);
+      const dimension = getAggregationDimensionFromTimeDimension(
+        col,
+        timeControlArgs.selectedTimezone,
+      );
+      dimensions.push(dimension);
+      pivotOn.push(dimension.alias ?? dimension.name!);
     });
 
   const sort: V1MetricsViewAggregationSort[] =
@@ -274,6 +271,37 @@ export function getUpdatedAggregationRequest(
     ),
     timeRange,
     comparisonTimeRange,
+  };
+}
+
+export function extractRowsAndColumns(
+  aggregationRequest: V1MetricsViewAggregationRequest,
+) {
+  const pivotedOn = new Set<string>(aggregationRequest.pivotOn ?? []);
+  const rows: string[] = [];
+  const columns: string[] = [];
+  const isFlat = aggregationRequest.pivotOn === undefined;
+
+  aggregationRequest.dimensions?.forEach((dimension) => {
+    const dimensionName = getDimensionNameFromAggregationDimension(dimension);
+    if (
+      isFlat ||
+      pivotedOn.has(dimension.alias!) ||
+      pivotedOn.has(dimension.name!)
+    ) {
+      columns.push(dimensionName);
+    } else {
+      rows.push(dimensionName);
+    }
+  });
+  aggregationRequest.measures?.forEach((measure) => {
+    if (MeasureModifierSuffixRegex.test(measure.name!)) return;
+    columns.push(measure.name!);
+  });
+
+  return {
+    rows,
+    columns,
   };
 }
 
@@ -314,30 +342,4 @@ function mapAndAddEmptyEntry(entries: string[] | undefined) {
   const finalEntries = entries ? [...entries] : [];
   finalEntries.push("");
   return finalEntries;
-}
-
-function extractRowsAndColumns(
-  aggregationRequest: V1MetricsViewAggregationRequest,
-) {
-  const pivotedOn = new Set<string>(aggregationRequest.pivotOn ?? []);
-  const rows: string[] = [];
-  const columns: string[] = [];
-
-  aggregationRequest.dimensions?.forEach((dimension) => {
-    const dimensionName = getDimensionNameFromAggregationDimension(dimension);
-    if (pivotedOn.has(dimension.alias!) || pivotedOn.has(dimension.name!)) {
-      columns.push(dimensionName);
-    } else {
-      rows.push(dimensionName);
-    }
-  });
-  aggregationRequest.measures?.forEach((measure) => {
-    if (MeasureModifierSuffixRegex.test(measure.name!)) return;
-    columns.push(measure.name!);
-  });
-
-  return {
-    rows,
-    columns,
-  };
 }

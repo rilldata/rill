@@ -78,7 +78,7 @@ export function getPivotExportQuery(ctx: StateManagers, isScheduled: boolean) {
   return query;
 }
 
-function getPivotAggregationRequest(
+export function getPivotAggregationRequest(
   metricsView: string,
   timeDimension: string,
   exploreState: ExploreState,
