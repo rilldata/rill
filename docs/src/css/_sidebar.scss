@@ -84,3 +84,51 @@ li.theme-doc-sidebar-item-category-level-2 > .menu__list {
 .sub-menu-link .menu__link--sublist {
   font-weight: 700;
 } 
+
+// Custom DocSidebar styling
+.custom-doc-sidebar {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  .sidebar-release-notes-section {
+    position: sticky;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: #fff;
+    z-index: 2;
+    padding: var(--space-2);
+    text-align: left;
+    border-top: 1px solid var(--ifm-toc-border-color);
+    flex-shrink: 0; 
+    .release-notes-link {
+      display: block;
+      padding: var(--space-2) 0.75rem;
+      color: var(--ifm-menu-color);
+      text-decoration: none;
+      font-size: var(--default-font);
+      font-weight: bold;
+      border-radius: 0.25rem;
+      transition: background-color 0.2s ease;
+      &:hover {
+        background-color: var(--ifm-menu-color-background-hover);
+        text-decoration: none;
+        color: var(--ifm-menu-color);
+      }
+    }
+  }
+}
+
+.custom-doc-sidebar nav.menu {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 0;
+  padding-bottom: var(--sidebar-scroll-padding);
+}
+
+// Dark mode override
+[data-theme='dark'] .sidebar-release-notes-section {
+  background: var(--ifm-background-color, #18191A);
+} 
