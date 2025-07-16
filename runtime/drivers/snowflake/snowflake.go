@@ -47,7 +47,7 @@ var spec = drivers.Spec{
 		{
 			Key:         "dsn",
 			Type:        drivers.StringPropertyType,
-			DisplayName: "Snowflake Connection String",
+			DisplayName: "Connection String",
 			Required:    false,
 			DocsURL:     "https://docs.rilldata.com/reference/connectors/snowflake",
 			Placeholder: "<username>@<account_identifier>/<database>/<schema>?warehouse=<warehouse>&role=<role>&authenticator=SNOWFLAKE_JWT&privateKey=<privateKey_base64_url_encoded>",
