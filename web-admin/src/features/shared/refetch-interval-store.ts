@@ -1,5 +1,3 @@
-import { writable } from "svelte/store";
-
 import type { V1Resource } from "@rilldata/web-common/runtime-client";
 
 export const INITIAL_REFETCH_INTERVAL = 200; // Start at 200ms for immediate feedback
@@ -17,36 +15,28 @@ export function isResourceReconciling(resource: V1Resource) {
   );
 }
 
-// Store for the current refetch interval
-export const refetchInterval = writable<number | false>(
-  INITIAL_REFETCH_INTERVAL,
-);
-
-// Helper to reset the interval
-export function resetRefetchInterval() {
-  refetchInterval.set(INITIAL_REFETCH_INTERVAL);
-}
-
 /**
- * Call this function with the latest resources array after each query update.
- * It will update the refetchInterval store appropriately.
+ * Updates the meta object with a smart refetch interval based on resource states.
+ * @param resources Array of resources to check
+ * @param prevMeta Previous meta object (should contain refetchInterval)
+ * @returns Updated meta object with new refetchInterval
  */
-export function updateSmartRefetchInterval(resources: any[] | undefined) {
+export function updateSmartRefetchMeta(
+  resources: any[] | undefined,
+  prevMeta: { refetchInterval?: number | false } = {},
+): { refetchInterval: number | false } {
   if (!resources) {
-    refetchInterval.set(false);
-    return;
+    return { ...prevMeta, refetchInterval: false };
   }
   const hasReconciling = resources.some(isResourceReconciling);
   if (!hasReconciling) {
-    refetchInterval.set(false);
-    return;
+    return { ...prevMeta, refetchInterval: false };
   }
   // Backoff logic: update the interval, but reset if a new cycle starts
-  refetchInterval.update((current) => {
-    if (typeof current !== "number") {
-      return INITIAL_REFETCH_INTERVAL;
-    }
-    const next = Math.min(current * BACKOFF_FACTOR, MAX_REFETCH_INTERVAL);
-    return next;
-  });
+  const current =
+    typeof prevMeta.refetchInterval === "number"
+      ? prevMeta.refetchInterval
+      : INITIAL_REFETCH_INTERVAL;
+  const next = Math.min(current * BACKOFF_FACTOR, MAX_REFETCH_INTERVAL);
+  return { ...prevMeta, refetchInterval: next };
 }
