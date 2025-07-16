@@ -11,7 +11,6 @@
   import { getPanRangeForTimeRange } from "@rilldata/web-common/features/dashboards/state-managers/selectors/charts";
   import { isExpressionUnsupported } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
   import SuperPill from "@rilldata/web-common/features/dashboards/time-controls/super-pill/SuperPill.svelte";
-  import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
   import { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
   import { DateTime, Interval } from "luxon";
   import { flip } from "svelte/animate";
@@ -25,6 +24,9 @@
 
   /** the height of a row of chips */
   const ROW_HEIGHT = "26px";
+
+  let showDefaultItem = false;
+  let justAdded = false;
 
   $: ({ instanceId } = $runtime);
   $: ({
@@ -41,10 +43,9 @@
         setTemporaryFilterName,
         clearAllFilters,
         dimensionHasFilter,
-        getDimensionFilterItems,
-        getAllDimensionFilterItems,
-        getMeasureFilterItems,
-        getAllMeasureFilterItems,
+        temporaryFilters,
+        allDimensionFilterItems,
+        allMeasureFilterItems,
         measureHasFilter,
       },
       spec: { canvasSpec, allDimensions, allSimpleMeasures },
@@ -58,8 +59,6 @@
       },
     },
   } = getCanvasStore(canvasName, instanceId));
-
-  let showDefaultItem = false;
 
   $: ({ selectedTimeRange, timeStart, timeEnd } = $timeRangeStateStore || {});
 
@@ -79,31 +78,14 @@
       )
     : Interval.fromDateTimes($allTimeRange.start, $allTimeRange.end);
 
-  $: dimensionIdMap = getMapFromArray(
-    $allDimensions,
-    (dimension) => (dimension.name || dimension.column) as string,
-  );
+  $: allDimensionFilters = $allDimensionFilterItems;
 
-  $: measureIdMap = getMapFromArray(
-    $allSimpleMeasures,
-    (m) => m.name as string,
-  );
-
-  $: currentDimensionFilters = $getDimensionFilterItems(dimensionIdMap);
-  $: allDimensionFilters = $getAllDimensionFilterItems(
-    currentDimensionFilters,
-    dimensionIdMap,
-  );
-
-  $: currentMeasureFilters = $getMeasureFilterItems(measureIdMap);
-  $: allMeasureFilters = $getAllMeasureFilterItems(
-    currentMeasureFilters,
-    measureIdMap,
-  );
+  $: allMeasureFilters = $allMeasureFilterItems;
 
   // hasFilter only checks for complete filters and excludes temporary ones
   $: hasFilters =
-    currentDimensionFilters.length > 0 || currentMeasureFilters.length > 0;
+    allDimensionFilters.size + allMeasureFilters.length >
+    $temporaryFilters.size;
 
   $: isComplexFilter = isExpressionUnsupported($whereFilter);
 
@@ -198,7 +180,7 @@
     >
       {#if isComplexFilter}
         <AdvancedFilter advancedFilter={$whereFilter} />
-      {:else if !allDimensionFilters.length && !allMeasureFilters.length}
+      {:else if !allDimensionFilters.size && !allMeasureFilters.length}
         <div
           in:fly={{ duration: 200, x: 8 }}
           class="ui-copy-disabled grid ml-1 items-center"
@@ -207,7 +189,7 @@
           No filters selected
         </div>
       {:else}
-        {#each allDimensionFilters as { name, isInclude, label, mode, selectedValues, inputText, metricsViewNames } (name)}
+        {#each allDimensionFilters as [name, { isInclude, label, mode, selectedValues, inputText, metricsViewNames }] (name)}
           {@const dimension = $allDimensions.find(
             (d) => d.name === name || d.column === name,
           )}
@@ -224,6 +206,7 @@
                 {inputText}
                 {timeStart}
                 {timeEnd}
+                openOnMount={justAdded}
                 timeControlsReady={!!$timeRangeStateStore}
                 excludeMode={!isInclude}
                 whereFilter={$whereFilter}
@@ -261,7 +244,10 @@
           filteredSimpleMeasures={$allSimpleMeasures}
           dimensionHasFilter={$dimensionHasFilter}
           measureHasFilter={$measureHasFilter}
-          {setTemporaryFilterName}
+          setTemporaryFilterName={(n) => {
+            justAdded = true;
+            setTemporaryFilterName(n);
+          }}
         />
         <!-- if filters are present, place a chip at the end of the flex container 
       that enables clearing all filters -->

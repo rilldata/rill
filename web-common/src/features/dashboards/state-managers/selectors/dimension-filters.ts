@@ -142,10 +142,12 @@ export function getDimensionFilterItems(
   dashData: AtLeast<DashboardDataSources, "dashboard">,
 ) {
   return (dimensionIdMap: Map<string, MetricsViewSpecDimension>) => {
-    return getDimensionFilters(
-      dimensionIdMap,
-      dashData.dashboard.whereFilter,
-      dashData.dashboard.dimensionsWithInlistFilter,
+    return Array.from(
+      getDimensionFilters(
+        dimensionIdMap,
+        dashData.dashboard.whereFilter,
+        dashData.dashboard.dimensionsWithInlistFilter,
+      ).values(),
     );
   };
 }
@@ -154,9 +156,9 @@ export function getDimensionFilters(
   dimensionIdMap: Map<string, MetricsViewSpecDimension>,
   filter: V1Expression | undefined,
   dimensionsWithInlistFilter: string[],
-) {
-  if (!filter) return [];
-  const filteredDimensions: DimensionFilterItem[] = [];
+): Map<string, DimensionFilterItem> {
+  if (!filter) return new Map();
+  const filteredDimensions: Map<string, DimensionFilterItem> = new Map();
   const addedDimension = new Set<string>();
   forEachIdentifier(filter, (e, ident) => {
     if (addedDimension.has(ident) || !dimensionIdMap.has(ident)) return;
@@ -169,7 +171,7 @@ export function getDimensionFilters(
     const op = e.cond?.op;
     if (op === V1Operation.OPERATION_IN || op === V1Operation.OPERATION_NIN) {
       const isInListMode = dimensionsWithInlistFilter.includes(ident);
-      filteredDimensions.push({
+      filteredDimensions.set(ident, {
         name: ident,
         label: getDimensionDisplayName(dim),
         mode: isInListMode
@@ -182,7 +184,7 @@ export function getDimensionFilters(
       op === V1Operation.OPERATION_LIKE ||
       op === V1Operation.OPERATION_NLIKE
     ) {
-      filteredDimensions.push({
+      filteredDimensions.set(ident, {
         name: ident,
         label: getDimensionDisplayName(dim),
         mode: DimensionFilterMode.Contains,
@@ -193,8 +195,7 @@ export function getDimensionFilters(
     }
   });
 
-  // sort based on name to make sure toggling include/exclude is not jarring
-  return filteredDimensions.sort(filterItemsSortFunction);
+  return filteredDimensions;
 }
 
 export const getAllDimensionFilterItems = (

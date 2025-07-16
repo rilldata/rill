@@ -318,7 +318,7 @@ export function calculateComparisonTimeRangePartial(
 
   let comparisonAdjustedStart: string | undefined = undefined;
   let comparisonAdjustedEnd: string | undefined = undefined;
-  if (selectedComparisonTimeRange) {
+  if (selectedComparisonTimeRange?.start && selectedComparisonTimeRange?.end) {
     const adjustedComparisonTime = getAdjustedFetchTime(
       selectedComparisonTimeRange.start,
       selectedComparisonTimeRange.end,
@@ -331,7 +331,11 @@ export function calculateComparisonTimeRangePartial(
 
   let comparisonTimeStart = selectedComparisonTimeRange?.start;
   let comparisonTimeEnd = selectedComparisonTimeRange?.end;
-  if (selectedComparisonTimeRange && lastDefinedScrubRange) {
+  if (
+    selectedComparisonTimeRange?.start &&
+    selectedComparisonTimeRange?.end &&
+    lastDefinedScrubRange
+  ) {
     const { start, end } = getOrderedStartEnd(
       lastDefinedScrubRange.start,
       lastDefinedScrubRange.end,

@@ -9,7 +9,6 @@
   import MeasureFilter from "@rilldata/web-common/features/dashboards/filters/measure-filters/MeasureFilter.svelte";
   import type { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
   import { isExpressionUnsupported } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-  import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
   import { flip } from "svelte/animate";
   import type { Filters } from "../../stores/filters";
   import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
@@ -43,10 +42,9 @@
     setTemporaryFilterName,
     clearAllFilters,
     dimensionHasFilter,
-    getDimensionFilterItems,
-    getAllDimensionFilterItems,
-    getMeasureFilterItems,
-    getAllMeasureFilterItems,
+    temporaryFilters,
+    allDimensionFilterItems,
+    allMeasureFilterItems,
     measureHasFilter,
     searchParamsStore,
   } = localFilters);
@@ -61,31 +59,13 @@
   );
   $: allSimpleMeasures = getSimpleMeasuresForMetricView(metricsView);
 
-  $: dimensionIdMap = getMapFromArray(
-    allValidDimensions,
-    (dimension) => (dimension.name || dimension.column) as string,
-  );
-
-  $: measureIdMap = getMapFromArray(
-    $allSimpleMeasures,
-    (m) => m.name as string,
-  );
-
-  $: currentDimensionFilters = $getDimensionFilterItems(dimensionIdMap);
-  $: allDimensionFilters = $getAllDimensionFilterItems(
-    currentDimensionFilters,
-    dimensionIdMap,
-  );
-
-  $: currentMeasureFilters = $getMeasureFilterItems(measureIdMap);
-  $: allMeasureFilters = $getAllMeasureFilterItems(
-    currentMeasureFilters,
-    measureIdMap,
-  );
+  $: allDimensionFilters = $allDimensionFilterItems;
+  $: allMeasureFilters = $allMeasureFilterItems;
 
   // hasFilter only checks for complete filters and excludes temporary ones
   $: hasFilters =
-    currentDimensionFilters.length > 0 || currentMeasureFilters.length > 0;
+    allDimensionFilters.size + allMeasureFilters.length >
+    $temporaryFilters.size;
 
   $: isComplexFilter = isExpressionUnsupported($whereFilter);
 
@@ -149,8 +129,8 @@
       <div class="relative flex flex-row flex-wrap gap-x-2 gap-y-2">
         {#if isComplexFilter}
           <AdvancedFilter advancedFilter={$whereFilter} />
-        {:else if allDimensionFilters.length || allMeasureFilters.length}
-          {#each allDimensionFilters as { name, label, isInclude, mode, selectedValues, inputText } (name)}
+        {:else if allDimensionFilters.size || allMeasureFilters.length}
+          {#each allDimensionFilters as [name, { label, isInclude, mode, selectedValues, inputText }] (name)}
             {@const dimension = allValidDimensions.find(
               (d) => d.name === name || d.column === name,
             )}
