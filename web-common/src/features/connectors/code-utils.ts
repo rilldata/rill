@@ -3,6 +3,7 @@ import { get } from "svelte/store";
 import {
   ConnectorDriverPropertyType,
   type V1ConnectorDriver,
+  type ConnectorDriverProperty,
   getRuntimeServiceGetFileQueryKey,
   runtimeServiceGetFile,
 } from "../../runtime-client";
@@ -11,7 +12,7 @@ import { runtime } from "../../runtime-client/runtime-store";
 export function compileConnectorYAML(
   connector: V1ConnectorDriver,
   formValues: Record<string, unknown>,
-  options?: { skipNoPrompt?: boolean },
+  options?: { fieldFilter?: (property: ConnectorDriverProperty) => boolean },
 ) {
   // Add instructions to the top of the file
   const topOfFile = `# Connector YAML
@@ -22,17 +23,15 @@ type: connector
 driver: ${connector.name}`;
 
   let filteredFormValues = formValues;
-  if (options?.skipNoPrompt) {
+  if (options?.fieldFilter) {
     // Prefer configProperties, fallback to sourceProperties
     const properties =
       connector.configProperties ?? connector.sourceProperties ?? [];
-    const noPromptKeys = new Set(
-      properties
-        .filter((property) => property.noPrompt)
-        .map((property) => property.key),
+    const allowedKeys = new Set(
+      properties.filter(options.fieldFilter).map((property) => property.key),
     );
     filteredFormValues = Object.fromEntries(
-      Object.entries(formValues).filter(([key]) => !noPromptKeys.has(key)),
+      Object.entries(formValues).filter(([key]) => allowedKeys.has(key)),
     );
   }
 

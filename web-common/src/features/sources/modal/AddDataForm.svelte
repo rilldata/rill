@@ -169,13 +169,13 @@
           managed: clickhouseManaged,
         },
         {
-          skipNoPrompt: true,
+          fieldFilter: (property) => !property.noPrompt,
         },
       );
     } else {
       const values = connectionTab === "dsn" ? $dsnForm : $paramsForm;
       return compileConnectorYAML(connector, values, {
-        skipNoPrompt: true,
+        fieldFilter: (property) => !property.noPrompt,
       });
     }
   })();
