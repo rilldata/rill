@@ -1,27 +1,6 @@
 /* =========================
    Utility Classes
    ========================= */
-.center-content {
-  display: flex;
-  justify-content: center;
-}
-
-.docsRating {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  margin-top: var(--space-4);
-}
-.docsRating button {
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 1.5rem;
-}
-.docsRating button:disabled {
-  cursor: not-allowed;
-  opacity: 0.5;
-}
 
 .rounded-gif {
   border-radius: 0.625rem; /* 10px */
@@ -94,4 +73,20 @@
     background: none;
     box-shadow: none;
   }
+} 
+
+/* =========================
+   Navbar Icon Link Styles
+   ========================= */
+.navbar-icon-link {
+  color: var(--ifm-menu-color) !important;
+  text-decoration: none !important;
+  background: none;
+  box-shadow: none;
+  transition: color 0.2s;
+}
+.navbar-icon-link:hover,
+.navbar-icon-link:focus {
+  color: var(--ifm-menu-color-active) !important;
+  text-decoration: none !important;
 } 

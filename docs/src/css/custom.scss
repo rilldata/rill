@@ -1,8 +1,19 @@
-@import 'variables';
-@import 'base';
-@import 'sidebar';
-@import 'headings';
-@import 'utilities';
-@import 'custom-doc-sidebar';
+@use 'variables';
+@use 'sidebar';
+@use 'headings';
+@use 'utilities';
+@use 'custom-doc-sidebar';
 
 
+/* =========================
+   Base Styles
+   ========================= */
+body {
+  font-size: var(--default-font);
+  line-height: var(--default-line-height);
+  font-family: var(--ifm-font-family-base), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
+}
+
+.hidden {
+  display: none !important;
+} 
