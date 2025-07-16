@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { createEventDispatcher } from "svelte";
   import {
     Tabs,
     TabsList,
@@ -10,11 +9,8 @@
   export let options: { value: string; label: string }[];
   export let disableMarginTop: boolean = false;
 
-  const dispatch = createEventDispatcher();
-
   function handleValueChange(newValue: string) {
     value = newValue;
-    dispatch("value", newValue);
   }
 </script>
 
