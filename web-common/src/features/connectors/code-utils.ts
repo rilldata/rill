@@ -12,7 +12,10 @@ import { runtime } from "../../runtime-client/runtime-store";
 export function compileConnectorYAML(
   connector: V1ConnectorDriver,
   formValues: Record<string, unknown>,
-  options?: { fieldFilter?: (property: ConnectorDriverProperty) => boolean },
+  options?: {
+    fieldFilter?: (property: ConnectorDriverProperty) => boolean;
+    orderedProperties?: ConnectorDriverProperty[];
+  },
 ) {
   // Add instructions to the top of the file
   const topOfFile = `# Connector YAML
@@ -22,17 +25,16 @@ type: connector
 
 driver: ${connector.name}`;
 
-  let filteredFormValues = formValues;
+  // Use the provided orderedProperties if available, otherwise fall back to configProperties/sourceProperties
+  let properties =
+    options?.orderedProperties ??
+    connector.configProperties ??
+    connector.sourceProperties ??
+    [];
+
+  // Optionally filter properties
   if (options?.fieldFilter) {
-    // Prefer configProperties, fallback to sourceProperties
-    const properties =
-      connector.configProperties ?? connector.sourceProperties ?? [];
-    const allowedKeys = new Set(
-      properties.filter(options.fieldFilter).map((property) => property.key),
-    );
-    filteredFormValues = Object.fromEntries(
-      Object.entries(formValues).filter(([key]) => allowedKeys.has(key)),
-    );
+    properties = properties.filter(options.fieldFilter);
   }
 
   // Get the secret property keys
@@ -49,11 +51,14 @@ driver: ${connector.name}`;
       )
       .map((property) => property.key) || [];
 
-  // Compile key value pairs
-  const compiledKeyValues = Object.keys(filteredFormValues)
-    .filter((key) => filteredFormValues[key] !== undefined)
-    .map((key) => {
-      const value = filteredFormValues[key] as string;
+  // Compile key value pairs in the order of properties
+  const compiledKeyValues = properties
+    .filter(
+      (property) => property.key && formValues[property.key] !== undefined,
+    )
+    .map((property) => {
+      const key = property.key as string;
+      const value = formValues[key] as string;
 
       const isSecretProperty = secretPropertyKeys.includes(key);
       if (isSecretProperty) {

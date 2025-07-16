@@ -170,12 +170,20 @@
         },
         {
           fieldFilter: (property) => !property.noPrompt,
+          orderedProperties:
+            connectionTab === "dsn"
+              ? filteredDsnProperties
+              : filteredParamsProperties,
         },
       );
     } else {
       const values = connectionTab === "dsn" ? $dsnForm : $paramsForm;
       return compileConnectorYAML(connector, values, {
         fieldFilter: (property) => !property.noPrompt,
+        orderedProperties:
+          connectionTab === "dsn"
+            ? filteredDsnProperties
+            : filteredParamsProperties,
       });
     }
   })();
