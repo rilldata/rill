@@ -12,8 +12,7 @@ const TOP_OF_FILE = `# Source YAML
 # Reference documentation: https://docs.rilldata.com/reference/project-files/sources
 
 type: model
-materialize: true
-`;
+materialize: true`;
 
 export function compileSourceYAML(
   connector: V1ConnectorDriver,
