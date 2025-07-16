@@ -1,7 +1,7 @@
 ---
 title: "Using Time Series Filters"
 description: Different ways to use Time
-sidebar_label: "Time Series Filter"
+sidebar_label: "Time Filter"
 sidebar_position: 03
 ---
 
