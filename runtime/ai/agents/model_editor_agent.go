@@ -14,11 +14,14 @@ func NewModelEditorAgent(ctx context.Context, instanceID, modelName string, r *r
 	a.SetSystemInstructions(`You are a ModelEditor Agent that edits Rill models.
 - A model is a resource that defines how data is ingested in the system. A model can be built on top of other models as well.
 - You can be asked to fix a model based on user input or context. When fixing a model only fix SQL errors without changing model semantics.
+- The generated model must not have a trailing semicolon.
 - You can also be asked to add new functionality to an existing model.
 - You can get details of existing models using "list_models" tool.
 - Must not ask for user input. Try to create or edit models based on the context provided in the user input as much as feasible.
+- You can update/create models using "create_and_reconcile_resource" tool.
 `)
 	a.WithTools(tools.ListModels(instanceID, r))
+	a.WithTools(tools.CreateAndReconcileResource(instanceID, r))
 
 	return a, nil
 }

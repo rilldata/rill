@@ -463,3 +463,5 @@ replace github.com/dgrijalva/jwt-go => github.com/golang-jwt/jwt v3.2.1+incompat
 
 // https://github.com/googleapis/google-cloud-go/pull/12065
 replace cloud.google.com/go/bigquery v1.66.2 => github.com/rilldata/google-cloud-go/bigquery v0.0.0-20250426042021-091fd79360f3
+
+replace github.com/pontus-devoteam/agent-sdk-go => github.com/k-anshul/agent-sdk-go v0.0.0-20250715161046-444e2d44d272

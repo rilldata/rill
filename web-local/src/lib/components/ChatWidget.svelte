@@ -26,6 +26,12 @@
   onMount(() => {
     featureFlags.set(true, "chat");
 
+    // Restore conversation ID from localStorage if available
+    const savedConversationId = localStorage.getItem('rill-chat-conversation-id');
+    if (savedConversationId) {
+      loadConversation(savedConversationId);
+    }
+
     // Listen for toggle-chat event from header button
     const handleToggleChat = () => {
       chatActions.toggleChat();
@@ -107,16 +113,20 @@
         data: requestBody,
       });
 
-      if (result.conversationId && !currentConversationId) {
+      // Set conversation ID from response for new conversations
+      if (result.conversationId) {
         currentConversationId = result.conversationId;
+        // Store in localStorage for persistence across page reloads
+        localStorage.setItem('rill-chat-conversation-id', result.conversationId);
       }
 
       if (result.messages) {
-        messages = [...messages, ...result.messages];
+        // Replace all messages with the server response to maintain consistency
+        messages = result.messages;
         scrollToBottom();
       }
 
-      // Refresh conversations list
+      // Refresh conversations list to show the new/updated conversation
       await $listConversationsQuery.refetch();
     } catch (error) {
       console.error("Failed to send message:", error);
@@ -138,11 +148,21 @@
     currentConversationId = null;
     messages = [];
     inputValue = "";
+    // Clear the saved conversation ID
+    localStorage.removeItem('rill-chat-conversation-id');
+    // Clear the current conversation query
+    getConversationQuery = null;
   }
 
   function loadConversation(conversationId: string | undefined) {
     if (!conversationId) return;
+    
+    // Set the current conversation ID
     currentConversationId = conversationId;
+    
+    // Store in localStorage for persistence
+    localStorage.setItem('rill-chat-conversation-id', conversationId);
+    
     // Create new query for this conversation
     getConversationQuery = createRuntimeServiceGetConversation(
       instanceId,
@@ -175,7 +195,11 @@
       <div>
         <h2 class="text-lg font-semibold text-gray-900">AI Assistant</h2>
         <p class="text-sm text-gray-500">
-          Ask me about your data and analytics
+          {#if currentConversationId}
+            {conversations.find(c => c.id === currentConversationId)?.title || 'Current conversation'}
+          {:else}
+            Ask me about your data and analytics
+          {/if}
         </p>
       </div>
       <button
@@ -224,10 +248,15 @@
                 <div class="font-medium text-gray-900 truncate">
                   {conversation.title || "Untitled Chat"}
                 </div>
-                <div class="text-xs text-gray-500">
-                  {conversation.createdOn
-                    ? new Date(conversation.createdOn).toLocaleDateString()
-                    : ""}
+                <div class="text-xs text-gray-500 flex justify-between">
+                  <span>
+                    {conversation.createdOn
+                      ? new Date(conversation.createdOn).toLocaleDateString()
+                      : ""}
+                  </span>
+                  {#if conversation.id === currentConversationId}
+                    <span class="text-blue-600 font-medium">Active</span>
+                  {/if}
                 </div>
               </button>
             {/each}
@@ -327,8 +356,13 @@
           {/if}
         </button>
       </div>
-      <div class="text-xs text-gray-500 mt-1">
-        Press Enter to send, Shift+Enter for new line
+      <div class="text-xs text-gray-500 mt-1 flex justify-between">
+        <span>Press Enter to send, Shift+Enter for new line</span>
+        {#if currentConversationId}
+          <span class="text-blue-600">
+            Conversation: {currentConversationId.substring(0, 8)}...
+          </span>
+        {/if}
       </div>
     </div>
   </div>

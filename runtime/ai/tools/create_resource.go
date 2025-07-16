@@ -56,16 +56,14 @@ func CreateAndReconcileResource(instanceID string, rt *runtime.Runtime) *tool.Fu
 				return nil, err
 			}
 
-			res, err = putResourceAndWaitForReconcile(ctx, rt, instanceID, input.Path, input.Contents, &runtimev1.ResourceName{
+			err = putResourceAndWaitForReconcile(ctx, rt, instanceID, input.Path, input.Contents, &runtimev1.ResourceName{
 				Kind: runtime.ResourceKindFromShorthand(input.ResourceType),
 				Name: input.ResourceName,
 			})
 			if err != nil {
-				return map[string]any{
-					"error": fmt.Sprintf("Encountered error while creating or reconciling resource '%s' of type '%s': %s", input.ResourceName, input.ResourceType, err.Error()),
-				}, nil
+				return nil, err
 			}
-			return res, nil
+			return fmt.Sprintf("Resource %q of type %q created and reconciled successfully", input.ResourceName, input.ResourceType), nil
 		},
 	)
 
@@ -94,10 +92,10 @@ func CreateAndReconcileResource(instanceID string, rt *runtime.Runtime) *tool.Fu
 	return tool
 }
 
-func putResourceAndWaitForReconcile(ctx context.Context, rt *runtime.Runtime, instanceID, path, contents string, resource *runtimev1.ResourceName) (res map[string]any, resErr error) {
+func putResourceAndWaitForReconcile(ctx context.Context, rt *runtime.Runtime, instanceID, path, contents string, resource *runtimev1.ResourceName) (resErr error) {
 	repo, release, err := rt.Repo(ctx, instanceID)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer release()
 
@@ -106,19 +104,19 @@ func putResourceAndWaitForReconcile(ctx context.Context, rt *runtime.Runtime, in
 	case runtime.ResourceKindModel:
 		err = repo.MkdirAll(ctx, "models")
 		if err != nil {
-			return nil, err
+			return err
 		}
 	case runtime.ResourceKindMetricsView:
 		err = repo.MkdirAll(ctx, "metrics_views")
 		if err != nil {
-			return nil, err
+			return err
 		}
 	}
 
 	// Create the resource in the repository
 	err = repo.Put(ctx, path, strings.NewReader(contents))
 	if err != nil {
-		return nil, fmt.Errorf("failed to put resource at path '%s': %w", path, err)
+		return fmt.Errorf("failed to put resource at path '%s': %w", path, err)
 	}
 	defer func() {
 		if resErr != nil {
@@ -127,28 +125,33 @@ func putResourceAndWaitForReconcile(ctx context.Context, rt *runtime.Runtime, in
 		}
 	}()
 
+	return waitForReconcile(ctx, rt, instanceID, resource)
+}
+
+func waitForReconcile(ctx context.Context, rt *runtime.Runtime, instanceID string, resource *runtimev1.ResourceName) error {
 	ctrl, err := rt.Controller(ctx, instanceID)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// TODO : Find a better way to handle this than just waiting for full reconciliation
-	// wait for 5 seconds for reconciler to pick up the changes
+	// wait for 2 seconds for reconciler to pick up the changes
 	// Find a better way to wait for reconciliation for a specific resource
+	//
 	// May be just subscribe to resource events and wait for the specific resource to be reconciled
-	time.Sleep(5 * time.Second)
+	time.Sleep(2 * time.Second)
 	err = ctrl.WaitUntilIdle(ctx, true)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// get the resource
 	r, err := ctrl.Get(ctx, resource, false)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	if r.Meta.ReconcileError == "" {
-		return newToolResult(fmt.Sprintf("Resource '%s' of type '%s' created and reconciled successfully", resource.Name, resource.Kind), nil), nil
+	if r.Meta.ReconcileError != "" {
+		return fmt.Errorf("Reconilation of resource %q of type %q failed: %s", resource.Name, resource.Kind, r.Meta.ReconcileError)
 	}
-	return newToolResult(fmt.Sprintf("Reconilation of resource '%s' of type '%s' failed: %s", resource.Name, resource.Kind, r.Meta.ReconcileError), nil), nil
+	return nil
 }

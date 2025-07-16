@@ -33,6 +33,7 @@ func ListModels(instanceID string, r *runtime.Runtime) *tool.FunctionTool {
 					"name":            model.Meta.Name,
 					"reconcile_error": model.Meta.ReconcileError,
 					"sql":             props["sql"],
+					"path":            model.Meta.FilePaths,
 				}
 			}
 			return map[string]any{"models": modelsMap}, nil

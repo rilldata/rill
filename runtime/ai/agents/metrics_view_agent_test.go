@@ -32,7 +32,7 @@ func TestNewMetricsViewAgent(t *testing.T) {
 	// Configure retry settings
 	provider.WithRetryConfig(3, 2*time.Second)
 
-	agent, err := NewMetricsViewAgent(ctx, instanceID, modelName, rt)
+	agent, err := NewMetricsViewAgent(ctx, instanceID, modelName, rt, nil)
 	if err != nil {
 		t.Fatalf("NewMetricsViewAgent failed: %v", err)
 	}

@@ -9,7 +9,7 @@ import (
 )
 
 // NewMetricsViewAgent creates a new MetricsViewAgent
-func NewMetricsViewAgent(ctx context.Context, instanceID, modelName string, r *runtime.Runtime) (*agent.Agent, error) {
+func NewMetricsViewAgent(ctx context.Context, instanceID, modelName string, r *runtime.Runtime, s tools.ServerTools) (*agent.Agent, error) {
 	a := agent.NewAgent("MetricsViewAgent")
 	a.WithModel(modelName)
 
@@ -19,7 +19,7 @@ func NewMetricsViewAgent(ctx context.Context, instanceID, modelName string, r *r
 	`)
 
 	a.WithTools(
-		tools.GenerateMetricsViewYAML(instanceID, r),
+		tools.GenerateMetricsViewYAML(instanceID, r, s),
 	)
 	return a, nil
 }
