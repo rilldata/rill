@@ -30,7 +30,7 @@ If creating a new DuckDB source from the UI, you should provide the appropriate 
 Alternatively, if you are creating the source YAML file directly, the definition should look something like:
 
 ```yaml
-type: "source"
+type: "model"
 connector: "duckdb"
 sql: "SELECT * from <duckdb_table>"
 db: "<path_to_duckdb_db_file>"
@@ -57,7 +57,7 @@ If the DuckDB database file is external to your Rill project directory, you will
 If you are creating the source YAML file directly, the definition should look something like:
 
 ```yaml
-type: "source"
+type: "model"
 connector: "motherduck"
 sql: "SELECT * from <my_db>.<duckdb_table>"
 db: "md:<my_db>"

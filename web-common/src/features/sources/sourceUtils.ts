@@ -12,7 +12,8 @@ import { sanitizeEntityName } from "../entity-management/name-utils";
 const TOP_OF_FILE = `# Source YAML
 # Reference documentation: https://docs.rilldata.com/reference/project-files/sources
 
-type: source`;
+type: model
+materialize: true`;
 
 export function compileSourceYAML(
   connector: V1ConnectorDriver,
