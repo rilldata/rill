@@ -1,4 +1,4 @@
-package worker
+package river
 
 import (
 	"context"
@@ -6,14 +6,45 @@ import (
 	"fmt"
 	"net/url"
 	"strings"
+	"time"
 
 	"cloud.google.com/go/storage"
+	"github.com/rilldata/rill/admin"
+	"github.com/riverqueue/river"
 	"golang.org/x/sync/errgroup"
 )
 
 const _unusedAssetsPageSize = 100
 
-func (w *Worker) deleteUnusedAssets(ctx context.Context) error {
+type DeleteExpiredVirtualFilesArgs struct{}
+
+func (DeleteExpiredVirtualFilesArgs) Kind() string { return "delete_expired_virtual_files" }
+
+type DeleteExpiredVirtualFilesWorker struct {
+	river.WorkerDefaults[DeleteExpiredVirtualFilesArgs]
+	admin *admin.Service
+}
+
+func (w *DeleteExpiredVirtualFilesWorker) Work(ctx context.Context, job *river.Job[DeleteExpiredVirtualFilesArgs]) error {
+	// Delete virtual files that have been soft deleted for more than 24 hours
+	retention := 24 * time.Hour
+	err := w.admin.DB.DeleteExpiredVirtualFiles(ctx, retention)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type DeleteUnusedAssetsArgs struct{}
+
+func (DeleteUnusedAssetsArgs) Kind() string { return "delete_unused_assets" }
+
+type DeleteUnusedAssetsWorker struct {
+	river.WorkerDefaults[DeleteUnusedAssetsArgs]
+	admin *admin.Service
+}
+
+func (w *DeleteUnusedAssetsWorker) Work(ctx context.Context, job *river.Job[DeleteUnusedAssetsArgs]) error {
 	for {
 		// 1. Fetch unused assets
 		assets, err := w.admin.DB.FindUnusedAssets(ctx, _unusedAssetsPageSize)
@@ -60,6 +91,5 @@ func (w *Worker) deleteUnusedAssets(ctx context.Context) error {
 			// no more assets to delete
 			return nil
 		}
-		// fetch again could be more unused assets
 	}
 }
