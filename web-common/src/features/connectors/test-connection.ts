@@ -1,4 +1,4 @@
-import { queryClient } from "../../../lib/svelte-query/globalQueryClient";
+import { queryClient } from "../../lib/svelte-query/globalQueryClient";
 import {
   connectorServiceOLAPListTables,
   getConnectorServiceOLAPListTablesQueryKey,
@@ -11,9 +11,8 @@ import {
   type ConnectorServiceListDatabaseSchemasParams,
   type ConnectorServiceListTablesParams,
   type ConnectorServiceGetTableParams,
-  type V1ConnectorDriver,
-} from "../../../runtime-client";
-import { humanReadableErrorMessage } from "../../sources/errors/errors";
+} from "../../runtime-client";
+import { humanReadableErrorMessage } from "../sources/errors/errors";
 
 interface TestConnectorResult {
   success: boolean;
@@ -21,16 +20,7 @@ interface TestConnectorResult {
   details?: string;
 }
 
-// Decide which test API(s) to call based on connector type and form values
-export async function testSourceConnection(
-  instanceId: string,
-  connector: V1ConnectorDriver,
-) {
-  // Use ListDatabaseSchemas for all connectors for a generic test connection
-  return await testListDatabaseSchemas(instanceId, {
-    connector: connector.name,
-  });
-}
+// FIXME: based on the connector name, decide which test API(s) to call
 
 export async function testOLAPConnector(
   instanceId: string,
@@ -64,7 +54,6 @@ export async function testOLAPConnector(
   }
 }
 
-// TODO: can move to features/connectors/sources/test-connection.ts
 export async function testListDatabaseSchemas(
   instanceId: string,
   params: ConnectorServiceListDatabaseSchemasParams,
@@ -96,7 +85,6 @@ export async function testListDatabaseSchemas(
   }
 }
 
-// TODO: can move to features/connectors/sources/test-connection.ts
 export async function testListTables(
   instanceId: string,
   params: ConnectorServiceListTablesParams,
@@ -128,7 +116,6 @@ export async function testListTables(
   }
 }
 
-// TODO: can move to features/connectors/sources/test-connection.ts
 export async function testGetTable(
   instanceId: string,
   params: ConnectorServiceGetTableParams,

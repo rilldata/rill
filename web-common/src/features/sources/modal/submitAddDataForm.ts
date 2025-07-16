@@ -23,9 +23,9 @@ import {
   updateRillYAMLWithOlapConnector,
 } from "../../connectors/code-utils";
 import {
+  testListDatabaseSchemas,
   testOLAPConnector,
-  testSourceConnection,
-} from "../../connectors/olap/test-connection";
+} from "../../connectors/test-connection";
 import { runtimeServicePutFileAndWaitForReconciliation } from "../../entity-management/actions";
 import { getFileAPIPathFromNameAndType } from "../../entity-management/entity-mappers";
 import { fileArtifacts } from "../../entity-management/file-artifacts";
@@ -90,8 +90,11 @@ export async function submitAddSourceForm(
     throw new Error(errorMessage);
   }
 
+  // TODO: focus on snowflake for now
   // Test the connection to the source using the strategy function
-  const testResult = await testSourceConnection(instanceId, rewrittenConnector);
+  const testResult = await testListDatabaseSchemas(instanceId, {
+    connector: rewrittenConnector.name,
+  });
   if (!testResult.success) {
     await rollbackConnectorChanges(instanceId, newSourceFilePath, undefined);
     throw {
