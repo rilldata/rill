@@ -142,17 +142,15 @@ export function getDimensionFilterItems(
   dashData: AtLeast<DashboardDataSources, "dashboard">,
 ) {
   return (dimensionIdMap: Map<string, MetricsViewSpecDimension>) => {
-    return Array.from(
-      getDimensionFilters(
-        dimensionIdMap,
-        dashData.dashboard.whereFilter,
-        dashData.dashboard.dimensionsWithInlistFilter,
-      ).values(),
+    return getDimensionFilters(
+      dimensionIdMap,
+      dashData.dashboard.whereFilter,
+      dashData.dashboard.dimensionsWithInlistFilter,
     );
   };
 }
 
-export function getDimensionFilters(
+export function getDimensionFiltersMap(
   dimensionIdMap: Map<string, MetricsViewSpecDimension>,
   filter: V1Expression | undefined,
   dimensionsWithInlistFilter: string[],
@@ -196,6 +194,20 @@ export function getDimensionFilters(
   });
 
   return filteredDimensions;
+}
+
+export function getDimensionFilters(
+  dimensionIdMap: Map<string, MetricsViewSpecDimension>,
+  filter: V1Expression | undefined,
+  dimensionsWithInlistFilter: string[],
+) {
+  return Array.from(
+    getDimensionFiltersMap(
+      dimensionIdMap,
+      filter,
+      dimensionsWithInlistFilter,
+    ).values(),
+  );
 }
 
 export const getAllDimensionFilterItems = (

@@ -157,12 +157,10 @@ export class Filters {
       ],
       ([$dimensionNameMap, $whereFilter, $dimensionsWithInlistFilter]) => {
         // TODO: fill in metricsViewNames for each dimension filter item when integrated into canvas
-        return Array.from(
-          getDimensionFilters(
-            $dimensionNameMap,
-            $whereFilter,
-            $dimensionsWithInlistFilter,
-          ).values(),
+        return getDimensionFilters(
+          $dimensionNameMap,
+          $whereFilter,
+          $dimensionsWithInlistFilter,
         );
       },
     );

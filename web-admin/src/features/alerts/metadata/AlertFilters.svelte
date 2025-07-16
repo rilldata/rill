@@ -63,7 +63,7 @@
       {#if hasTimeRange}
         <TimeRangeReadOnly {timeRange} {comparisonTimeRange} />
       {/if}
-      {#each currentDimensionFilters as [name, { label, mode, selectedValues, inputText, isInclude }] (name)}
+      {#each currentDimensionFilters as { name, label, mode, selectedValues, inputText, isInclude } (name)}
         {@const dimension = dimensionIdMap.get(name)}
         <div animate:flip={{ duration: 200 }}>
           {#if dimension?.column}

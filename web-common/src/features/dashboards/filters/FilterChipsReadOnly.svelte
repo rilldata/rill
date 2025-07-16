@@ -76,8 +76,8 @@ The main feature-set component for dashboard filters
       {hasBoldTimeRange}
     />
   {/if}
-  {#if dimensionFilters.size > 0}
-    {#each dimensionFilters as [name, { label, mode, selectedValues, inputText, isInclude }] (name)}
+  {#if dimensionFilters.length > 0}
+    {#each dimensionFilters as { name, label, mode, selectedValues, inputText, isInclude } (name)}
       {@const dimension = dimensions.find((d) => d.name === name)}
       <div animate:flip={{ duration: 200 }}>
         {#if dimension?.column || dimension?.expression}

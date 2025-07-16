@@ -12,7 +12,7 @@ import {
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import {
   type DimensionFilterItem,
-  getDimensionFilters,
+  getDimensionFiltersMap,
 } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
 import type { MeasureFilterItem } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measure-filters";
 import type { DimensionThresholdFilter } from "@rilldata/web-common/features/dashboards/stores/explore-state";
@@ -171,7 +171,7 @@ export class Filters {
     this.dimensionFilterItems = derived(
       [this.whereFilter, this.dimensionsWithInlistFilter, this.allDimensions],
       ([$whereFilter, $dimensionsWithInlistFilter, $allDimensions]) => {
-        const dimensionFilters = getDimensionFilters(
+        const dimensionFilters = getDimensionFiltersMap(
           $allDimensions,
           $whereFilter,
           $dimensionsWithInlistFilter,
