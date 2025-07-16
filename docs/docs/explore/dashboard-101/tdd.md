@@ -5,6 +5,33 @@ sidebar_label: "Time Dimension Detail"
 sidebar_position: 25
 ---
 
+<div style={{ 
+  position: "relative", 
+  width: "100%", 
+  paddingTop: "56.25%", 
+  borderRadius: "15px",  /* Softer corners */
+  boxShadow: "0px 4px 15px rgba(0, 0, 0, 0.2)"  /* Shadow effect */
+}}>
+  <iframe credentialless="true"
+    src="https://www.youtube.com/embed/KnMKjahnjeU?si=bnXO82HXIRsnd3Xv"
+    frameBorder="0"
+    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+    allowFullScreen
+    style={{
+      position: "absolute",
+      top: 0,
+      left: 0,
+      width: "100%",
+      height: "100%",
+      borderRadius: "10px", 
+    }}
+  ></iframe>
+</div>
+<br/>
+
+Prefer video? Check out our [YouTube playlist](https://www.youtube.com/watch?v=wTP46eOzoCk&list=PL_ZoDsg2yFKgi7ud_fOOD33AH8ONWQS7I&index=1) for a quick start!
+
+
 ## Overview
 
 The Time Dimension Detail is a separate visualization accessed by clicking on any time series chart in Explore. Expanding the time series allows for more surface area to compare a larger number of dimensions trended over time. Additionally, you can create rapid pivot tables based on time across any dimension
