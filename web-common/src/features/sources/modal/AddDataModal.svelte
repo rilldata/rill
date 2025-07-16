@@ -188,11 +188,7 @@
     <Dialog.Content
       class={cn(
         "overflow-hidden",
-        step === 2
-          ? requestConnector
-            ? "max-w-4xl p-6 gap-4"
-            : "max-w-4xl p-0 gap-0"
-          : "p-6 gap-4",
+        step === 2 ? "max-w-4xl p-0 gap-0" : "p-6 gap-4",
       )}
       noClose={step === 1}
     >
@@ -271,7 +267,9 @@
         </Dialog.Title>
 
         {#if $duplicateSourceName !== null}
-          <DuplicateSource onCancel={resetModal} onComplete={resetModal} />
+          <div class="p-6">
+            <DuplicateSource onCancel={resetModal} onComplete={resetModal} />
+          </div>
         {:else if selectedConnector.name === "local_file"}
           <LocalSourceUpload on:close={resetModal} on:back={back} />
         {:else if selectedConnector.name}
@@ -288,8 +286,10 @@
       {/if}
 
       {#if step === 2 && requestConnector}
-        <Dialog.Title>Request a connector</Dialog.Title>
-        <RequestConnectorForm on:close={resetModal} on:back={back} />
+        <div class="p-6">
+          <Dialog.Title>Request a connector</Dialog.Title>
+          <RequestConnectorForm on:close={resetModal} on:back={back} />
+        </div>
       {/if}
     </Dialog.Content>
   </Dialog.Root>
