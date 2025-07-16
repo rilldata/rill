@@ -6,6 +6,7 @@
    * to be displayed in explore
    */
   import { selectedDimensionValues } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
+  import { filterOutSomeAdvancedAggregationMeasures } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures.ts";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import {
@@ -58,7 +59,10 @@
       },
     },
     dashboardStore,
+    validSpecStore,
   } = getStateManagers();
+
+  $: metricsViewSpec = $validSpecStore.data?.metricsView ?? {};
 
   $: ({ name: dimensionName = "" } = dimension);
 
@@ -79,13 +83,35 @@
     dimensionName,
   );
 
+  $: measures = [
+    ...getMeasuresForDimensionOrLeaderboardDisplay(
+      $leaderboardShowContextForAllMeasures
+        ? null
+        : $leaderboardSortByMeasureName,
+      dimensionThresholdFilters,
+      visibleMeasureNames,
+    ).map((name) => ({ name }) as V1MetricsViewAggregationMeasure),
+
+    // Add comparison measures if comparison time range exists
+    ...(comparisonTimeRange
+      ? ($leaderboardShowContextForAllMeasures
+          ? visibleMeasureNames
+          : [$leaderboardSortByMeasureName]
+        ).flatMap((name) => getComparisonRequestMeasures(name))
+      : []),
+  ];
+  $: filteredMeasures = filterOutSomeAdvancedAggregationMeasures(
+    $dashboardStore,
+    metricsViewSpec,
+    measures,
+    false,
+  );
+
   $: totalsQuery = createQueryServiceMetricsViewAggregation(
     instanceId,
     metricsViewName,
     {
-      measures: visibleMeasureNames.map((measureName) => ({
-        name: measureName,
-      })),
+      measures: filteredMeasures,
       where: sanitiseExpression(
         mergeDimensionAndMeasureFilters(
           getFiltersForOtherDimensions(whereFilter, dimensionName),
@@ -93,8 +119,8 @@
         ),
         undefined,
       ),
-      timeStart: timeRange.start,
-      timeEnd: timeRange.end,
+      timeRange,
+      comparisonTimeRange,
     },
     {
       query: {
@@ -121,24 +147,6 @@
     $leaderboardShowContextForAllMeasures ? visibleMeasureNames : undefined,
   );
 
-  $: measures = [
-    ...getMeasuresForDimensionOrLeaderboardDisplay(
-      $leaderboardShowContextForAllMeasures
-        ? null
-        : $leaderboardSortByMeasureName,
-      dimensionThresholdFilters,
-      visibleMeasureNames,
-    ).map((name) => ({ name }) as V1MetricsViewAggregationMeasure),
-
-    // Add comparison measures if comparison time range exists
-    ...(comparisonTimeRange
-      ? ($leaderboardShowContextForAllMeasures
-          ? visibleMeasureNames
-          : [$leaderboardSortByMeasureName]
-        ).flatMap((name) => getComparisonRequestMeasures(name))
-      : []),
-  ];
-
   $: sort = getSort(
     $sortedAscending,
     $sortType,
@@ -157,7 +165,7 @@
     metricsViewName,
     {
       dimensions: [{ name: dimensionName }],
-      measures,
+      measures: filteredMeasures,
       timeRange,
       comparisonTimeRange,
       sort,

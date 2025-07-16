@@ -1,6 +1,7 @@
 import { extractFileExtension } from "@rilldata/web-common/features/entity-management/file-path-utils";
 import {
   ConnectorDriverPropertyType,
+  type ConnectorDriverProperty,
   type V1ConnectorDriver,
   type V1Source,
 } from "@rilldata/web-common/runtime-client";
@@ -218,4 +219,35 @@ export function formatConnectorType(source: V1Source) {
     default:
       return source?.state?.connector ?? "";
   }
+}
+
+/**
+ * Extracts initial form values from connector property specs, using the Default field if present.
+ * @param properties Array of property specs (e.g., connector.configProperties)
+ * @returns Object mapping property keys to their default values
+ */
+export function getInitialFormValuesFromProperties(
+  properties: Array<ConnectorDriverProperty>,
+) {
+  const initialValues: Record<string, any> = {};
+  for (const prop of properties) {
+    // Only set if default is not undefined/null/empty string
+    if (
+      prop.key &&
+      prop.default !== undefined &&
+      prop.default !== null &&
+      prop.default !== ""
+    ) {
+      let value: any = prop.default;
+      if (prop.type === ConnectorDriverPropertyType.TYPE_NUMBER) {
+        // NOTE: store number type prop as String, not Number, so that we can use the same form for both number and string properties
+        // See `yupSchemas.ts` for more details
+        value = String(value);
+      } else if (prop.type === ConnectorDriverPropertyType.TYPE_BOOLEAN) {
+        value = value === "true" || value === true;
+      }
+      initialValues[prop.key] = value;
+    }
+  }
+  return initialValues;
 }

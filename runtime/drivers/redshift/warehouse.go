@@ -9,10 +9,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/redshiftdata"
-	redshift_types "github.com/aws/aws-sdk-go-v2/service/redshiftdata/types"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/aws/smithy-go/tracing/smithyoteltracing"
@@ -40,12 +37,12 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any) (ou
 		span.End()
 	}()
 
-	conf, err := parseSourceProperties(props)
+	sourceProperties, err := parseSourceProperties(props)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse config: %w", err)
 	}
 
-	awsConfig, err := c.awsConfig(ctx, conf.AWSRegion)
+	awsConfig, err := c.awsConfig(ctx, sourceProperties.ResolveRegion(c.config))
 	if err != nil {
 		return nil, err
 	}
@@ -54,7 +51,7 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any) (ou
 		o.TracerProvider = smithyoteltracing.Adapt(otel.GetTracerProvider())
 	})
 
-	outputURL, err := url.Parse(conf.OutputLocation)
+	outputURL, err := url.Parse(sourceProperties.OutputLocation)
 	if err != nil {
 		return nil, err
 	}
@@ -74,7 +71,7 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any) (ou
 		return deleteObjectsInPrefix(ctx, awsConfig, bucketName, unloadPath)
 	}
 
-	err = c.unload(ctx, client, conf, unloadLocation)
+	err = c.unload(ctx, client, sourceProperties, unloadLocation)
 	if err != nil {
 		unloadErr := fmt.Errorf("failed to unload: %w", err)
 		cleanupErr := cleanupFn()
@@ -119,77 +116,14 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any) (ou
 	}, nil
 }
 
-func (c *Connection) awsConfig(ctx context.Context, awsRegion string) (aws.Config, error) {
-	loadOptions := []func(*config.LoadOptions) error{
-		// Setting the default region to an empty string, will result in the default region value being ignored
-		config.WithDefaultRegion("us-east-1"),
-		// Setting the region to an empty string, will result in the region value being ignored
-		config.WithRegion(awsRegion),
-	}
+func (c *Connection) unload(ctx context.Context, client *redshiftdata.Client, sourceProperties *sourceProperties, unloadLocation string) error {
+	finalSQL := fmt.Sprintf("UNLOAD ('%s') TO '%s/' IAM_ROLE '%s' FORMAT AS PARQUET", sourceProperties.SQL, unloadLocation, sourceProperties.RoleARN)
 
-	// If one of the static properties is specified: access key, secret key, or session token, use static credentials,
-	// Else fallback to the SDK's default credential chain (environment, instance, etc) unless AllowHostAccess is false
-	if c.config.AccessKeyID != "" || c.config.SecretAccessKey != "" {
-		p := credentials.NewStaticCredentialsProvider(c.config.AccessKeyID, c.config.SecretAccessKey, c.config.SessionToken)
-		loadOptions = append(loadOptions, config.WithCredentialsProvider(p))
-	} else if !c.config.AllowHostAccess {
-		return aws.Config{}, fmt.Errorf("static creds are not provided, and host access is not allowed")
-	}
-
-	return config.LoadDefaultConfig(ctx, loadOptions...)
-}
-
-func (c *Connection) unload(ctx context.Context, client *redshiftdata.Client, conf *sourceProperties, unloadLocation string) error {
-	finalSQL := fmt.Sprintf("UNLOAD ('%s') TO '%s/' IAM_ROLE '%s' FORMAT AS PARQUET", conf.SQL, unloadLocation, conf.RoleARN)
-
-	executeParams := &redshiftdata.ExecuteStatementInput{
-		Sql:      &finalSQL,
-		Database: &conf.Database,
-	}
-
-	if conf.ClusterIdentifier != "" { // ClusterIdentifier and Workgroup are interchangeable
-		executeParams.ClusterIdentifier = aws.String(conf.ClusterIdentifier)
-	}
-
-	if conf.Workgroup != "" {
-		executeParams.WorkgroupName = &conf.Workgroup
-	}
-
-	queryExecutionOutput, err := client.ExecuteStatement(ctx, executeParams)
-	if err != nil {
-		return err
-	}
-
-	ticker := time.NewTicker(time.Second)
-	defer ticker.Stop()
-	for {
-		select {
-		case <-ctx.Done():
-			cancelCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-			_, err = client.CancelStatement(cancelCtx, &redshiftdata.CancelStatementInput{
-				Id: queryExecutionOutput.Id,
-			})
-			cancel()
-			return errors.Join(ctx.Err(), err)
-		case <-ticker.C:
-			status, err := client.DescribeStatement(ctx, &redshiftdata.DescribeStatementInput{
-				Id: queryExecutionOutput.Id,
-			})
-			if err != nil {
-				return err
-			}
-
-			state := status.Status
-
-			if status.Error != nil {
-				return fmt.Errorf("Redshift query execution failed %s", *status.Error)
-			}
-
-			if state != redshift_types.StatusStringSubmitted && state != redshift_types.StatusStringStarted && state != redshift_types.StatusStringPicked {
-				return nil
-			}
-		}
-	}
+	_, err := c.executeQuery(ctx, client, finalSQL,
+		sourceProperties.ResolveDatabase(c.config),
+		sourceProperties.ResolveWorkgroup(c.config),
+		sourceProperties.ResolveClusterIdentifier(c.config))
+	return err
 }
 
 func parseSourceProperties(props map[string]any) (*sourceProperties, error) {
@@ -266,6 +200,34 @@ type sourceProperties struct {
 	ClusterIdentifier string `mapstructure:"cluster_identifier"`
 	RoleARN           string `mapstructure:"role_arn"`
 	AWSRegion         string `mapstructure:"region"`
+}
+
+func (s *sourceProperties) ResolveRegion(config *configProperties) string {
+	if s.AWSRegion != "" {
+		return s.AWSRegion
+	}
+	return config.AWSRegion
+}
+
+func (s *sourceProperties) ResolveWorkgroup(config *configProperties) string {
+	if s.Workgroup != "" {
+		return s.Workgroup
+	}
+	return config.Workgroup
+}
+
+func (s *sourceProperties) ResolveDatabase(config *configProperties) string {
+	if s.Database != "" {
+		return s.Database
+	}
+	return config.Database
+}
+
+func (s *sourceProperties) ResolveClusterIdentifier(config *configProperties) string {
+	if s.ClusterIdentifier != "" {
+		return s.ClusterIdentifier
+	}
+	return config.ClusterIdentifier
 }
 
 type autoDeleteFileIterator struct {

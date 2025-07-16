@@ -189,10 +189,10 @@
       class:saturate-0={primarySparklineResult.isFetching}
     >
       {#if primarySparklineResult.isError}
-        <AlertTriangleIcon class=" text-red-300" size="34px" />
+        <AlertTriangleIcon class="text-red-300" size="34px" />
       {:else if primarySparklineResult.isLoading || !timeGrain || !timeZone || !measure?.name}
         <div
-          class="size-full mt-2 !bg-primary-50 loading !rounded-md min-h-10"
+          class="size-full mt-2 !bg-theme-50 loading !rounded-md min-h-10"
         ></div>
       {:else if primarySparklineResult.data}
         <Chart
@@ -231,7 +231,11 @@
 
   .measure-name {
     @apply w-full truncate flex-none;
-    @apply text-center font-medium text-sm text-gray-600;
+    @apply text-center font-medium text-sm text-gray-800;
+  }
+
+  :global(.dark) .measure-name {
+    @apply text-gray-900;
   }
 
   .spark-right .measure-name {
@@ -239,11 +243,15 @@
   }
 
   .big-number {
-    @apply text-3xl font-medium text-gray-600;
+    @apply text-3xl font-medium text-gray-800;
+  }
+
+  :global(.dark) .big-number {
+    @apply text-gray-900;
   }
 
   .hovered-value {
-    @apply text-primary-500;
+    @apply text-theme-500;
   }
 
   .comparison-value-wrapper {

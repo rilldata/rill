@@ -80,7 +80,7 @@
 
 <style lang="postcss">
   td {
-    @apply truncate p-0 bg-white;
+    @apply truncate p-0 bg-surface;
     height: var(--row-height);
   }
 

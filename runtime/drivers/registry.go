@@ -57,8 +57,6 @@ type Instance struct {
 	FeatureFlags map[string]bool `db:"feature_flags"`
 	// Annotations to enrich activity events (like usage tracking)
 	Annotations map[string]string
-	// WatchRepo indicates whether to watch the repo for file changes and reconcile them automatically.
-	WatchRepo bool `db:"watch_repo"`
 	// Paths to expose over HTTP (defaults to ./public)
 	PublicPaths []string `db:"public_paths"`
 	// IgnoreInitialInvalidProjectError indicates whether to ignore an invalid project error when the instance is initially created.
@@ -78,6 +76,8 @@ type InstanceConfig struct {
 	InteractiveSQLRowLimit int64 `mapstructure:"rill.interactive_sql_row_limit"`
 	// StageChanges indicates whether to keep previously ingested tables for sources/models, and only override them if ingestion of a new table is successful.
 	StageChanges bool `mapstructure:"rill.stage_changes"`
+	// WatchRepo configures the project parser to setup a file watcher to instantly detect and parse changes to the project files.
+	WatchRepo bool `mapstructure:"rill.watch_repo"`
 	// ModelDefaultMaterialize indicates whether to materialize models by default.
 	ModelDefaultMaterialize bool `mapstructure:"rill.models.default_materialize"`
 	// ModelMaterializeDelaySeconds adds a delay before materializing models.
@@ -138,6 +138,7 @@ func (i *Instance) Config() (InstanceConfig, error) {
 		DownloadLimitBytes:                   int64(datasize.MB * 128),
 		InteractiveSQLRowLimit:               10_000,
 		StageChanges:                         true,
+		WatchRepo:                            i.Environment == "dev",
 		ModelDefaultMaterialize:              false,
 		ModelMaterializeDelaySeconds:         0,
 		ModelConcurrentExecutionLimit:        5,

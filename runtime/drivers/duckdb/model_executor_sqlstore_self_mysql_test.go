@@ -15,7 +15,6 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 	"go.uber.org/zap"
 
-	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
 	_ "github.com/rilldata/rill/runtime/drivers/mysql"
 )
@@ -100,7 +99,7 @@ func TestMySQLToDuckDBTransfer(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Run("model_executor_mysql_to_duckDB", func(t *testing.T) {
-		mysqlToDuckDB(t, fmt.Sprintf("host=%s port=%v database=mydb user=myuser password=mypassword", host, port.Int()))
+		mysqlToDuckDB(t, dsn)
 	})
 }
 

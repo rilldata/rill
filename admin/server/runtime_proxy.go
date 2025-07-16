@@ -83,7 +83,10 @@ func (s *Server) runtimeProxyForOrgAndProject(w http.ResponseWriter, r *http.Req
 				return httputil.Error(http.StatusInternalServerError, err)
 			}
 		case auth.OwnerTypeService:
-			attr = map[string]any{"admin": true}
+			attr, err = s.jwtAttributesForService(r.Context(), claims.OwnerID(), permissions)
+			if err != nil {
+				return httputil.Error(http.StatusInternalServerError, err)
+			}
 		default:
 			return httputil.Errorf(http.StatusBadRequest, "runtime proxy not available for owner type %q", claims.OwnerType())
 		}
@@ -92,6 +95,7 @@ func (s *Server) runtimeProxyForOrgAndProject(w http.ResponseWriter, r *http.Req
 			runtimeauth.ReadObjects,
 			runtimeauth.ReadMetrics,
 			runtimeauth.ReadAPI,
+			runtimeauth.UseAI,
 		}
 		if permissions.ManageProject {
 			instancePermissions = append(instancePermissions, runtimeauth.EditTrigger)

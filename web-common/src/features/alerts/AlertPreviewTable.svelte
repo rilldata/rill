@@ -97,7 +97,7 @@
     <div
       role="grid"
       tabindex="0"
-      class="relative surface"
+      class="relative bg-surface"
       style:will-change="transform, contents"
       style:width="{virtualWidth}px"
       style:height="{virtualHeight}px"
@@ -115,7 +115,7 @@
           {columns}
           {rows}
           activeIndex={-1}
-          cellLabel="Filter dimension value"
+          cellLabel="Preview cell"
         />
       {/if}
     </div>

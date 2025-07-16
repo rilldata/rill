@@ -54,7 +54,7 @@ func (e *Executor) rewriteApproxComparisonNode(a *AST, n *SelectNode, isMultiPha
 		// if there are unnests in the query, we can't rewrite the query for Druid
 		// it fails with join on cte having multi value dimension, issue - https://github.com/apache/druid/issues/16896
 		for _, dim := range n.FromSelect.DimFields {
-			if dim.AutoUnnest {
+			if dim.Unnest {
 				return false
 			}
 		}

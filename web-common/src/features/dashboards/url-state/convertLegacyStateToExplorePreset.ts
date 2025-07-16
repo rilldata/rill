@@ -44,6 +44,7 @@ import {
   type V1Expression,
   type V1MetricsViewSpec,
 } from "@rilldata/web-common/runtime-client";
+import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 
 export function convertLegacyStateToExplorePreset(
   legacyState: DashboardState,
@@ -134,8 +135,15 @@ function fromLegacyTimeRangeFields(
   const errors: Error[] = [];
 
   if (legacyState.timeRange?.name) {
-    preset.timeRange = legacyState.timeRange.name;
-    // TODO: custom time range
+    if (
+      legacyState.timeRange.name === TimeRangePreset.CUSTOM &&
+      legacyState.timeRange.timeStart &&
+      legacyState.timeRange.timeEnd
+    ) {
+      preset.timeRange = `${new Date(Number(legacyState.timeRange.timeStart.seconds)).toISOString()},${new Date(Number(legacyState.timeRange.timeEnd.seconds)).toISOString()}`;
+    } else {
+      preset.timeRange = legacyState.timeRange.name;
+    }
   }
   if (legacyState.timeGrain) {
     preset.timeGrain =

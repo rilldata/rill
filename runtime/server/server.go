@@ -8,11 +8,12 @@ import (
 	"strings"
 	"time"
 
-	"connectrpc.com/vanguard"
 	"connectrpc.com/vanguard/vanguardgrpc"
 	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
 	grpc_validator "github.com/grpc-ecosystem/go-grpc-middleware/validator"
 	gateway "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"github.com/mark3labs/mcp-go/client"
+	"github.com/mark3labs/mcp-go/server"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -60,6 +61,9 @@ type Server struct {
 	codec    *securetoken.Codec
 	limiter  ratelimit.Limiter
 	activity *activity.Client
+	// MCP server and client for tool calling and API functionality
+	mcpServer *server.MCPServer
+	mcpClient *client.Client
 }
 
 var (
@@ -97,6 +101,14 @@ func NewServer(ctx context.Context, opts *Options, rt *runtime.Runtime, logger *
 		srv.aud = aud
 	}
 
+	// Initialize MCP server and client for shared use across the runtime
+	srv.mcpServer = srv.newMCPServer()
+	mcpClient, err := srv.newMCPClient(srv.mcpServer)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create MCP client: %w", err)
+	}
+	srv.mcpClient = mcpClient
+
 	return srv, nil
 }
 
@@ -106,6 +118,10 @@ func (s *Server) Close() error {
 
 	if s.aud != nil {
 		s.aud.Close()
+	}
+
+	if s.mcpClient != nil {
+		s.mcpClient.Close()
 	}
 
 	return nil
@@ -120,9 +136,28 @@ func (s *Server) Ping(ctx context.Context, req *runtimev1.PingRequest) (*runtime
 	return resp, nil
 }
 
-// ServeGRPC Starts the gRPC server.
-func (s *Server) ServeGRPC(ctx context.Context) (*vanguard.Transcoder, error) {
-	server := grpc.NewServer(
+// Starts the HTTP server.
+func (s *Server) ServeHTTP(ctx context.Context, registerAdditionalHandlers func(mux *http.ServeMux), local bool) error {
+	handler, err := s.HTTPHandler(ctx, registerAdditionalHandlers, local)
+	if err != nil {
+		return err
+	}
+
+	return graceful.ServeHTTP(ctx, handler, graceful.ServeOptions{
+		Port:     s.opts.HTTPPort,
+		GRPCPort: s.opts.GRPCPort,
+		CertPath: s.opts.TLSCertPath,
+		KeyPath:  s.opts.TLSKeyPath,
+		Logger:   s.logger,
+	})
+}
+
+// HTTPHandler returns a HTTP handler that serves REST and gRPC.
+func (s *Server) HTTPHandler(ctx context.Context, registerAdditionalHandlers func(mux *http.ServeMux), local bool) (http.Handler, error) {
+	httpMux := http.NewServeMux()
+
+	// Create gRPC server
+	grpcServer := grpc.NewServer(
 		grpc.ChainStreamInterceptor(
 			middleware.TimeoutStreamServerInterceptor(timeoutSelector),
 			observability.LoggingStreamServerInterceptor(s.logger),
@@ -143,41 +178,16 @@ func (s *Server) ServeGRPC(ctx context.Context) (*vanguard.Transcoder, error) {
 		),
 		grpc.StatsHandler(otelgrpc.NewServerHandler()),
 	)
+	runtimev1.RegisterRuntimeServiceServer(grpcServer, s)
+	runtimev1.RegisterQueryServiceServer(grpcServer, s)
+	runtimev1.RegisterConnectorServiceServer(grpcServer, s)
 
-	runtimev1.RegisterRuntimeServiceServer(server, s)
-	runtimev1.RegisterQueryServiceServer(server, s)
-	runtimev1.RegisterConnectorServiceServer(server, s)
-
-	return vanguardgrpc.NewTranscoder(server)
-}
-
-// Starts the HTTP server.
-func (s *Server) ServeHTTP(ctx context.Context, registerAdditionalHandlers func(mux *http.ServeMux), local bool) error {
-	transcoder, err := s.ServeGRPC(ctx)
+	// Add gRPC and gRPC-to-REST transcoder.
+	// This will be the fallback for REST routes like `/v1/ping` and GPRC routes like `/rill.admin.v1.RuntimeService/Ping`.
+	transcoder, err := vanguardgrpc.NewTranscoder(grpcServer)
 	if err != nil {
-		return err
+		return nil, fmt.Errorf("failed to create transcoder: %w", err)
 	}
-
-	handler, err := s.HTTPHandler(ctx, registerAdditionalHandlers, transcoder, local)
-	if err != nil {
-		return err
-	}
-
-	server := &http.Server{Handler: handler}
-	s.logger.Sugar().Infof("serving HTTP on port:%v", s.opts.HTTPPort)
-	options := graceful.ServeOptions{
-		Port:     s.opts.HTTPPort,
-		CertPath: s.opts.TLSCertPath,
-		KeyPath:  s.opts.TLSKeyPath,
-	}
-	return graceful.ServeHTTP(ctx, server, options)
-}
-
-// HTTPHandler HTTP handler serving REST gateway.
-func (s *Server) HTTPHandler(ctx context.Context, registerAdditionalHandlers func(mux *http.ServeMux), transcoder *vanguard.Transcoder, local bool) (http.Handler, error) {
-	httpMux := http.NewServeMux()
-
-	// Register the Vanguard handler for gRPC transcoding
 	httpMux.Handle("/v1/", transcoder)
 	httpMux.Handle("/rill.runtime.v1.RuntimeService/", transcoder)
 	httpMux.Handle("/rill.runtime.v1.QueryService/", transcoder)
@@ -220,7 +230,7 @@ func (s *Server) HTTPHandler(ctx context.Context, registerAdditionalHandlers fun
 
 	// Adds the MCP server handlers.
 	// The path without an instance ID is a convenience path intended for Rill Developer (localhost). In this case, the implementation falls back to using the default instance ID.
-	mcpHandler := observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, s.newMCPHandler()))
+	mcpHandler := observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, s.newMCPHTTPHandler(s.mcpServer)))
 	observability.MuxHandle(httpMux, "/mcp", mcpHandler)                                    // Routes to the default instance ID (for Rill Developer on localhost)
 	observability.MuxHandle(httpMux, "/v1/instances/{instance_id}/mcp", mcpHandler)         // The MCP handler will extract the instance ID from the request path.
 	observability.MuxHandle(httpMux, "/mcp/sse", mcpHandler)                                // Backwards compatibility

@@ -10,11 +10,11 @@ After creating your initial set of sources, models, and dashboards, you may have
 - [Metrics Views](/reference/project-files/metrics-views)
 - [Dashboards](/reference/project-files/explore-dashboards)
 
-By default, any new sources, models, metrics view and dashboards will be created in their respective native folder. However, this does not necessarily have to be the case and Rill Developer allows a flexible project directory structure, including nested folders or even storing objects in non-native folders. This is a powerful feature that allows you as a developer to organize your project to meet your specific team needs.
+By default, any new sources, models, metrics views, and dashboards will be created in their respective native folders. However, this does not necessarily have to be the case and Rill Developer allows a flexible project directory structure, including nested folders or even storing objects in non-native folders. This is a powerful feature that allows you, as a developer, to organize your project to meet your team's specific needs.
 
 ## Adding new resources or parent folders
 
-Within Rill Developer, from the left-hand side (file explorer), you should be able to click on the `Add` button to add a new base resource, such as a new source, model, or dashboard. Furthermore, you will also have the ability to add a new parent folder to store groups of resources (can be mixed). If you choose to add a new folder, you should see the folder structure reflected if you check the project directory via the CLI. 
+Within Rill Developer, from the left-hand side (file explorer), you should be able to click on the `Add` button to add a new base resource, such as a new source, model, or dashboard. Furthermore, you will also have the ability to add a new parent folder to store groups of resources (can be mixed). If you choose to add a new folder, you should see the folder structure reflected when you check the project directory via the CLI. 
 
 <img src = '/img/build/structure/adding-objects.png' class='rounded-gif' />
 <br />
@@ -39,7 +39,7 @@ From the UI, within the file explorer, you should be able to drag resources / ob
 
 :::info Using the CLI
 
-For developers who prefer to use the CLI, the project structure can still be controlled or adjusted directly via the CLI and/or using your preferred IDE of choice (e.g. VSCode).
+For developers who prefer to use the CLI, the project structure can still be controlled or adjusted directly via the CLI or your preferred IDE (e.g., VSCode).
 
 :::
 

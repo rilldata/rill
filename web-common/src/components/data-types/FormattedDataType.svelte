@@ -17,7 +17,6 @@
   export let type = "VARCHAR";
   export let isNull = false;
   export let inTable = false;
-  export let dark = false;
   export let value:
     | string
     | boolean
@@ -52,16 +51,15 @@ so instantiating these directly clears a ton of warnings
 about unknown props.
 -->
 {#if type === "RILL_PERCENTAGE_CHANGE" && typeof value !== "boolean"}
-  <PercentageChange {value} {isNull} {inTable} {customStyle} {dark} />
+  <PercentageChange {value} {isNull} {inTable} {customStyle} />
 {:else if type === "RILL_CHANGE" && typeof value !== "boolean"}
-  <MeasureChange {value} {inTable} {customStyle} {dark} />
+  <MeasureChange {value} {inTable} {customStyle} />
 {:else}
   <svelte:component
     this={dataType}
     isNull={isNull || value === null}
     {inTable}
     {customStyle}
-    {dark}
     {type}
     {value}
     {truncate}

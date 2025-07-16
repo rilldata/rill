@@ -8,9 +8,9 @@ import (
 	"strings"
 	"time"
 
+	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
-	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/queries"
@@ -139,9 +139,30 @@ var semiColonRegex = regexp.MustCompile(`(?m);\s*$`)
 
 func (s *Server) generateResolverForTable(ctx context.Context, instanceID, userPrompt, tblName, dialect string, schema *runtimev1.StructType) (string, map[string]interface{}, error) {
 	// Build messages
-	msgs := []*drivers.CompletionMessage{
-		{Role: "system", Data: resolverForTableSystemPrompt()},
-		{Role: "user", Data: resolverUserPrompt(userPrompt, tblName, dialect, schema)},
+	systemPrompt := resolverForTableSystemPrompt()
+	fullUserPrompt := resolverUserPrompt(userPrompt, tblName, dialect, schema)
+
+	msgs := []*aiv1.CompletionMessage{
+		{
+			Role: "system",
+			Content: []*aiv1.ContentBlock{
+				{
+					BlockType: &aiv1.ContentBlock_Text{
+						Text: systemPrompt,
+					},
+				},
+			},
+		},
+		{
+			Role: "user",
+			Content: []*aiv1.ContentBlock{
+				{
+					BlockType: &aiv1.ContentBlock_Text{
+						Text: fullUserPrompt,
+					},
+				},
+			},
+		},
 	}
 
 	// Connect to the AI service configured for the instance
@@ -156,20 +177,34 @@ func (s *Server) generateResolverForTable(ctx context.Context, instanceID, userP
 	defer cancel()
 
 	// Call AI service to infer a metrics view YAML
-	res, err := ai.Complete(ctx, msgs)
+	res, err := ai.Complete(ctx, msgs, nil)
 	if err != nil {
 		return "", nil, err
 	}
 
+	// Extract text from content blocks
+	var responseText string
+	for _, block := range res.Content {
+		switch blockType := block.GetBlockType().(type) {
+		case *aiv1.ContentBlock_Text:
+			if text := blockType.Text; text != "" {
+				responseText += text
+			}
+		default:
+			// For resolver generation, we only expect text responses
+			return "", nil, fmt.Errorf("unexpected content block type in AI response: %T", blockType)
+		}
+	}
+
 	// The AI may produce Markdown output. Remove the code tags around the SQL.
-	res.Data = strings.TrimPrefix(res.Data, "```sql")
-	res.Data = strings.TrimPrefix(res.Data, "```")
-	res.Data = strings.TrimSuffix(res.Data, "```")
+	responseText = strings.TrimPrefix(responseText, "```sql")
+	responseText = strings.TrimPrefix(responseText, "```")
+	responseText = strings.TrimSuffix(responseText, "```")
 	// Remove the trailing semicolon
-	res.Data = semiColonRegex.ReplaceAllString(res.Data, "")
+	responseText = semiColonRegex.ReplaceAllString(responseText, "")
 
 	return "sql", map[string]interface{}{
-		"sql": res.Data,
+		"sql": responseText,
 	}, nil
 }
 
@@ -187,9 +222,30 @@ var aggregateCorrections = regexp.MustCompile(`(?i)AGGREGATE(.*?)\s*AS\s*`)
 // generateResolverForMetricsView uses AI to generate a MetricsSQL resolver
 func (s *Server) generateResolverForMetricsView(ctx context.Context, instanceID, userPrompt, metricsView, dialect string, schema *runtimev1.StructType) (string, map[string]interface{}, error) {
 	// Build messages
-	msgs := []*drivers.CompletionMessage{
-		{Role: "system", Data: resolverForMetricsViewSystemPrompt()},
-		{Role: "user", Data: resolverUserPrompt(userPrompt, metricsView, dialect, schema)},
+	systemPrompt := resolverForMetricsViewSystemPrompt()
+	fullUserPrompt := resolverUserPrompt(userPrompt, metricsView, dialect, schema)
+
+	msgs := []*aiv1.CompletionMessage{
+		{
+			Role: "system",
+			Content: []*aiv1.ContentBlock{
+				{
+					BlockType: &aiv1.ContentBlock_Text{
+						Text: systemPrompt,
+					},
+				},
+			},
+		},
+		{
+			Role: "user",
+			Content: []*aiv1.ContentBlock{
+				{
+					BlockType: &aiv1.ContentBlock_Text{
+						Text: fullUserPrompt,
+					},
+				},
+			},
+		},
 	}
 
 	// Connect to the AI service configured for the instance
@@ -204,24 +260,38 @@ func (s *Server) generateResolverForMetricsView(ctx context.Context, instanceID,
 	defer cancel()
 
 	// Call AI service to infer a metrics view YAML
-	res, err := ai.Complete(ctx, msgs)
+	res, err := ai.Complete(ctx, msgs, nil)
 	if err != nil {
 		return "", nil, err
 	}
 
+	// Extract text from content blocks
+	var responseText string
+	for _, block := range res.Content {
+		switch blockType := block.GetBlockType().(type) {
+		case *aiv1.ContentBlock_Text:
+			if text := blockType.Text; text != "" {
+				responseText += text
+			}
+		default:
+			// For resolver generation, we only expect text responses
+			return "", nil, fmt.Errorf("unexpected content block type in AI response: %T", blockType)
+		}
+	}
+
 	// The AI may produce Markdown output. Remove the code tags around the SQL.
-	res.Data = strings.TrimPrefix(res.Data, "```sql")
-	res.Data = strings.TrimPrefix(res.Data, "```")
-	res.Data = strings.TrimSuffix(res.Data, "```")
+	responseText = strings.TrimPrefix(responseText, "```sql")
+	responseText = strings.TrimPrefix(responseText, "```")
+	responseText = strings.TrimSuffix(responseText, "```")
 	// Remove the trailing semicolon
-	res.Data = semiColonRegex.ReplaceAllString(res.Data, "")
+	responseText = semiColonRegex.ReplaceAllString(responseText, "")
 
 	// Asking chatgpt to not add aggregations is not always honoured.
 	// It is more consistent to ask it to wrap with AGGREGATE and strip it.
-	res.Data = aggregateCorrections.ReplaceAllString(res.Data, "")
+	responseText = aggregateCorrections.ReplaceAllString(responseText, "")
 
 	return "metrics_sql", map[string]interface{}{
-		"sql": res.Data,
+		"sql": responseText,
 	}, nil
 }
 

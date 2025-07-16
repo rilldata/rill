@@ -117,6 +117,15 @@ func FromParts(typ Type, id uuid.UUID, secret []byte) (*Token, error) {
 	}, nil
 }
 
+// FromID returns a Token with the given type and id, and a zero secret.
+func FromID(typ Type, id uuid.UUID) *Token {
+	return &Token{
+		Type:   typ,
+		ID:     id,
+		Secret: [24]byte{},
+	}
+}
+
 // String canonically encodes the token as string.
 func (t *Token) String() string {
 	payload := make([]byte, 40)
@@ -129,6 +138,30 @@ func (t *Token) String() string {
 func (t *Token) SecretHash() []byte {
 	hashed := sha256.Sum256(t.Secret[:])
 	return hashed[:]
+}
+
+// Prefix returns a safe, partial display string for the token, e.g., "rill_usr_abcdefghij".
+// This works even if t.Secret is empty (all zeroes), as long as t.ID is set.
+func (t *Token) Prefix() string {
+	payload := make([]byte, 40)
+	copy(payload[0:16], t.ID[:])
+
+	n := len(Prefix) + len(t.Type) + 12
+	return t.String()[0:n]
+}
+
+// MatchByPrefix attempts to match a decoded token by its prefix.
+func MatchByPrefix(input string, tokens []*Token) []*Token {
+	if len(input) < 10 || !strings.HasPrefix(input, Prefix+"_") {
+		return nil
+	}
+	var matches []*Token
+	for _, t := range tokens {
+		if strings.HasPrefix(t.Prefix(), input) {
+			matches = append(matches, t)
+		}
+	}
+	return matches
 }
 
 // marshalBase62 marshals a byte slice to a string of [0-9A-Za-z] characters.

@@ -1,0 +1,44 @@
+syntax = "proto3";
+package rill.ai.v1;
+
+import "google/protobuf/struct.proto";
+
+// Tool represents a tool definition for AI usage
+message Tool {
+  // The name of the tool
+  string name = 1;
+  // A human-readable description of the tool
+  string description = 2;
+  // JSON Schema defining the expected parameters for the tool (as JSON string)
+  string input_schema = 3;
+}
+
+// Tool call specification
+message ToolCall {
+  string id = 1;
+  string name = 2;
+  google.protobuf.Struct input = 3;
+}
+
+// Tool execution result
+message ToolResult {
+  string id = 1;
+  string content = 2;
+  bool is_error = 3;
+}
+
+// Content block within a message
+message ContentBlock {
+  oneof block_type {
+    string text = 1;
+    ToolCall tool_call = 2;
+    ToolResult tool_result = 3;
+  }
+}
+
+// Completion message for AI API calls
+message CompletionMessage {
+  string role = 1;
+  string data = 2; // Deprecated in favor of content
+  repeated ContentBlock content = 3;
+}

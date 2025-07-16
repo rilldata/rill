@@ -17,9 +17,16 @@ func ServiceCmd(ch *cmdutil.Helper) *cobra.Command {
 
 	serviceCmd.AddCommand(ListCmd(ch))
 	serviceCmd.AddCommand(CreateCmd(ch))
-	serviceCmd.AddCommand(RenameCmd(ch))
+	serviceCmd.AddCommand(ShowCmd(ch))
+	serviceCmd.AddCommand(EditCmd(ch))
+	serviceCmd.AddCommand(SetRoleCmd(ch))
+	serviceCmd.AddCommand(RemoveCmd(ch))
 	serviceCmd.AddCommand(DeleteCmd(ch))
 	serviceCmd.AddCommand(token.TokenCmd(ch))
 
 	return serviceCmd
 }
+
+var orgRoles = []string{"admin", "editor", "viewer", "guest"}
+
+var projectRoles = []string{"admin", "editor", "viewer"}

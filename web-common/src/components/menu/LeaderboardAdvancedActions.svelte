@@ -41,6 +41,7 @@
   >
     <span>Show context for all measures</span>
     <Switch
+      theme
       onCheckedChange={() => {
         ensureTimeComparisonEnabled();
 

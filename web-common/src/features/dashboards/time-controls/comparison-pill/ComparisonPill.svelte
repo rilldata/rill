@@ -98,6 +98,7 @@
         checked={showTimeComparison}
         id="comparing"
         small
+        theme
         disabled={disabled ?? false}
       />
 
@@ -140,7 +141,7 @@
 
   :global(.wrapper > button) {
     @apply border;
-    @apply px-2 flex items-center justify-center bg-white;
+    @apply px-2 flex items-center justify-center bg-surface;
   }
 
   :global(.wrapper > button:first-child) {
@@ -154,7 +155,9 @@
     @apply bg-gray-50 cursor-pointer;
   }
 
+  /* Doest apply to all instances except alert/report. So this seems unintentional
   :global(.wrapper > [data-state="open"]) {
     @apply bg-gray-50 border-gray-400 z-50;
   }
+  */
 </style>

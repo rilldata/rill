@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -97,9 +98,22 @@ func (s *Server) WatchFilesHandler(w http.ResponseWriter, req *http.Request) {
 
 		// Call the existing WatchFiles implementation with our shim
 		err := s.WatchFiles(watchReq, shim)
-		if err != nil && !errors.Is(err, context.Canceled) {
-			s.logger.Info("watch error", zap.Error(err))
+		if err != nil {
+			if !errors.Is(err, context.Canceled) {
+				s.logger.Warn("watch files error", zap.String("instance_id", instanceID), zap.Error(err))
+			}
+
+			errJSON, err := json.Marshal(map[string]string{"error": err.Error()})
+			if err != nil {
+				s.logger.Error("failed to marshal error as json", zap.Error(err))
+			}
+
+			eventServer.Publish("files", &sse.Event{
+				Data:  errJSON,
+				Event: []byte("error"),
+			})
 		}
+		eventServer.Close()
 	}()
 
 	// Serve the SSE stream
@@ -124,7 +138,7 @@ func (s *Server) WatchFiles(req *runtimev1.WatchFilesRequest, ss runtimev1.Runti
 	defer release()
 
 	if req.Replay {
-		files, err := repo.ListRecursive(ss.Context(), "**", false)
+		files, err := repo.ListGlob(ss.Context(), "**", false)
 		if err != nil {
 			return err
 		}
@@ -211,7 +225,7 @@ func (s *Server) CreateDirectory(ctx context.Context, req *runtimev1.CreateDirec
 		return nil, ErrForbidden
 	}
 
-	err := s.runtime.MakeDir(ctx, req.InstanceId, req.Path)
+	err := s.runtime.MkdirAll(ctx, req.InstanceId, req.Path)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}

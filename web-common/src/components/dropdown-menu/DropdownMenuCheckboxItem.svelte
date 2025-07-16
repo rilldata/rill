@@ -23,7 +23,7 @@
   export let checkRight: $$Props["checkRight"] = false;
   export { className as class };
 
-  const iconColor = "#15141A";
+  const iconColor = "var(--color-gray-800)";
 </script>
 
 <svelte:element

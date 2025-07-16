@@ -113,6 +113,15 @@ export function createOpacityEncoding(paramName: string) {
   };
 }
 
+export function createOrderEncoding(field: FieldConfig | undefined) {
+  if (!field) return {};
+  return {
+    field: sanitizeValueForVega(field.field),
+    type: field.type,
+    order: "descending",
+  };
+}
+
 export function createLegendParam(
   paramName: string,
   field: string,

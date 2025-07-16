@@ -22,7 +22,7 @@
   import { activeDivider } from "./stores/ui-stores";
 
   export let row: Row;
-  export let zIndex = 50;
+  export let zIndex: number;
   export let maxWidth: number;
   export let heightUnit: string = "px";
   export let rowIndex: number;

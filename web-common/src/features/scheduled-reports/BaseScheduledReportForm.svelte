@@ -3,7 +3,10 @@
   import TimePicker from "@rilldata/web-common/components/forms/TimePicker.svelte";
   import FormSection from "@rilldata/web-common/components/forms/FormSection.svelte";
   import { getHasSlackConnection } from "@rilldata/web-common/features/alerts/delivery-tab/notifiers-utils";
+  import type { Filters } from "@rilldata/web-common/features/dashboards/stores/Filters.ts";
+  import type { TimeControls } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
+  import FiltersForm from "@rilldata/web-common/features/scheduled-reports/FiltersForm.svelte";
   import type { ReportValues } from "@rilldata/web-common/features/scheduled-reports/utils";
   import { V1ExportFormat } from "@rilldata/web-common/runtime-client";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
@@ -23,6 +26,8 @@
   export let submit: () => void;
   export let enhance;
   export let exploreName: string;
+  export let filters: Filters;
+  export let timeControls: TimeControls;
 
   $: ({ instanceId } = $runtime);
 
@@ -117,7 +122,7 @@
       bind:checked={$data["exportIncludeHeader"]}
       id="exportIncludeHeader"
       onCheckedChange={(checked) => {
-        $data["exportIncludeHeader"] = checked;
+        $data["exportIncludeHeader"] = Boolean(checked);
       }}
       inverse
       disabled={$data["exportFormat"] === V1ExportFormat.EXPORT_FORMAT_PARQUET}
@@ -133,6 +138,11 @@
       </TooltipContent>
     </Tooltip>
   </div>
+
+  <FormSection title="Filters" padding="">
+    <FiltersForm {filters} {timeControls} maxWidth={750} side="top" />
+  </FormSection>
+
   <MultiInput
     id="emailRecipients"
     label="Email Recipients"

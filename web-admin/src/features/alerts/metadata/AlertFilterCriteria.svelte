@@ -19,10 +19,11 @@
   $: measureFilters = filters?.cond?.exprs?.map(mapExprToMeasureFilter) ?? [];
 
   $: comparisonLabel =
-    TIME_COMPARISON[comparisonTimeRange?.isoOffset]?.label?.toLowerCase();
+    TIME_COMPARISON[comparisonTimeRange?.isoOffset]?.label?.toLowerCase() ??
+    "previous period";
 </script>
 
-<div class="flex flex-col gap-y-3">
+<div class="flex flex-col gap-y-3" aria-label="Alert criteria">
   <MetadataLabel>Criteria</MetadataLabel>
   <div class="flex flex-wrap gap-2">
     {#if filtersLength}

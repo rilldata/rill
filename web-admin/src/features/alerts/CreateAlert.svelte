@@ -7,7 +7,7 @@
   } from "@rilldata/web-common/components/dialog/index";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import CreateAlertForm from "@rilldata/web-common/features/alerts/CreateAlertForm.svelte";
+  import AlertForm from "@rilldata/web-common/features/alerts/AlertForm.svelte";
   import { useMetricsViewValidSpec } from "@rilldata/web-common/features/dashboards/selectors";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -18,6 +18,8 @@
       timeRangeSelectors: { isCustomTimeRange },
     },
     metricsViewName,
+    exploreName,
+    dashboardStore,
   } = getStateManagers();
 
   $: ({ instanceId } = $runtime);
@@ -28,7 +30,7 @@
   let open = false;
 </script>
 
-{#if hasTimeDimension}
+{#if hasTimeDimension && $dashboardStore}
   <GuardedDialog
     title="Close without saving?"
     description="You haven’t saved changes to this alert yet, so closing this window will lose your work."
@@ -45,6 +47,7 @@
           disabled={$isCustomTimeRange}
           type="secondary"
           builders={[builder]}
+          label="Create alert"
         >
           <BellPlusIcon class="inline-flex" size="16px" />
         </Button>
@@ -54,7 +57,11 @@
       </Tooltip>
     </DialogTrigger>
     <DialogContent class="p-0 m-0 w-[802px] max-w-fit rounded-md" noClose>
-      <CreateAlertForm on:cancel={onCancel} on:close={onClose} />
+      <AlertForm
+        props={{ mode: "create", exploreName: $exploreName }}
+        {onCancel}
+        {onClose}
+      />
     </DialogContent>
   </GuardedDialog>
 {/if}

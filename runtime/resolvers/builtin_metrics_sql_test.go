@@ -14,13 +14,16 @@ func TestBuiltinMetricsSQL(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
 		Files: map[string]string{
 			`rill.yaml`:      ``,
-			`models/foo.sql`: `SELECT 10 AS a`,
+			`models/foo.sql`: `SELECT 10 AS a, '2024-01-01T00:00:00Z'::TIMESTAMP as time`,
 			`metrics/bar.yaml`: `
 version: 1
 type: metrics_view
 model: foo
+timeseries: time
 dimensions:
 - column: a
+- name: time_7d
+  expression: time + INTERVAL 7 DAYS
 measures:
 - name: count
   expression: count(*)
@@ -50,6 +53,31 @@ measures:
 			want:  `[{"count":1}]`,
 		},
 		{
+			args:  map[string]any{"sql": "SELECT count FROM bar where time >= '2024-01-01T00:00:00Z' and time < '2024-01-05T00:00:00Z'"},
+			attrs: map[string]any{"admin": true},
+			want:  `[{"count":1}]`,
+		},
+		{
+			args:  map[string]any{"sql": "SELECT count FROM bar where time_7d >= '2024-01-10T00:00:00Z' OR time_7d < '2024-01-10T00:00:00Z'"},
+			attrs: map[string]any{"admin": true},
+			want:  `[{"count":1}]`,
+		},
+		{
+			args:  map[string]any{"sql": "SELECT count FROM bar where time_7d >= time_range_start('P1D') AND time_7d < time_range_start('P3D')"},
+			attrs: map[string]any{"admin": true},
+			want:  `[{"count":0}]`,
+		},
+		{
+			args:  map[string]any{"sql": "SELECT count FROM bar where time_7d BETWEEN time_range_start('P14D') AND '2024-01-05T00:00:00Z'"},
+			attrs: map[string]any{"admin": true},
+			want:  `[{"count":0}]`, // this time range falls in range of time but not time_7d
+		},
+		{
+			args:  map[string]any{"sql": "SELECT count FROM bar where time >= '2024-01-01T00:00:00Z' and time_7d < '2024-01-05T00:00:00Z'"},
+			attrs: map[string]any{"admin": true},
+			want:  `[{"count":0}]`,
+		},
+		{
 			args:    map[string]any{"sql": "SELECT count FROM bar"},
 			attrs:   map[string]any{"admin": false},
 			wantErr: `must be an admin to run arbitrary SQL queries`,
@@ -66,10 +94,27 @@ measures:
 		})
 		if tc.wantErr != "" {
 			require.Equal(t, tc.wantErr, err.Error())
-		} else {
-			require.NoError(t, err)
-			defer res.Close()
-			require.Equal(t, []byte(tc.want), must(res.MarshalJSON()))
+			continue
 		}
+		defer res.Close()
+		require.NoError(t, err)
+		require.Equal(t, []byte(tc.want), must(res.MarshalJSON()))
+
+		meta := res.Meta()
+		require.NotNil(t, meta)
+
+		schemaFields := map[string]bool{}
+		for _, f := range res.Schema().Fields {
+			schemaFields[f.Name] = true
+		}
+
+		for _, m := range meta["fields"].([]map[string]any) {
+			name, ok := m["name"].(string)
+			require.True(t, ok)
+			_, exists := schemaFields[name]
+			require.True(t, exists, "meta contains field not in schema: %s", name)
+			delete(schemaFields, name)
+		}
+		require.Empty(t, schemaFields, "schema fields missing in meta: %v", schemaFields)
 	}
 }

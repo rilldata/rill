@@ -50,7 +50,7 @@ func (e *localFileToSelfExecutor) Execute(ctx context.Context, opts *drivers.Mod
 	if err := mapstructure.WeakDecode(opts.OutputProperties, outputProps); err != nil {
 		return nil, fmt.Errorf("failed to parse output properties: %w", err)
 	}
-	if err := outputProps.Validate(opts); err != nil {
+	if err := outputProps.validateAndApplyDefaults(opts, &ModelInputProperties{}, outputProps); err != nil {
 		return nil, fmt.Errorf("invalid output properties: %w", err)
 	}
 

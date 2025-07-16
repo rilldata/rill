@@ -27,7 +27,7 @@ func JwtCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			// Handle interactive project selection if no project specified
 			if !cmd.Flags().Changed("project") && len(args) == 0 && ch.Interactive {
-				names, err := projectNames(ctx, ch)
+				names, err := ProjectNames(ctx, ch)
 				if err != nil {
 					return err
 				}

@@ -2,10 +2,10 @@ package snowflake
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"net/url"
 
-	"github.com/XSAM/otelsql"
 	"github.com/google/uuid"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -13,8 +13,8 @@ import (
 )
 
 type selfToObjectStoreExecutor struct {
-	c     *connection
-	store drivers.ObjectStore
+	c           *connection
+	objectStore drivers.Handle
 }
 
 var _ drivers.ModelExecutor = &selfToObjectStoreExecutor{}
@@ -55,25 +55,23 @@ func (e *selfToObjectStoreExecutor) Execute(ctx context.Context, opts *drivers.M
 }
 
 func (e *selfToObjectStoreExecutor) export(ctx context.Context, props map[string]any, outputLocation string, format drivers.FileFormat) (string, error) {
-	conf := &sourceProperties{}
-	err := mapstructure.Decode(props, conf)
+	srcProps, err := parseSourceProperties(props)
 	if err != nil {
 		return "", err
 	}
-	if conf.SQL == "" {
-		return "", fmt.Errorf("property 'sql' is mandatory for connector \"snowflake\"")
-	}
 
 	var dsn string
-	if conf.DSN != "" { // get from src properties
-		dsn = conf.DSN
-	} else if e.c.configProperties.DSN != "" { // get from driver configs
-		dsn = e.c.configProperties.DSN
+	if srcProps.DSN != "" { // get from src properties
+		dsn = srcProps.DSN
 	} else {
-		return "", fmt.Errorf("the property 'dsn' is required for Snowflake: configure it in the YAML properties or set the 'connector.snowflake.dsn' environment variable")
+		dsnResolved, err := e.c.configProperties.resolveDSN()
+		if err != nil {
+			return "", err
+		}
+		dsn = dsnResolved
 	}
 
-	db, err := otelsql.Open("snowflake", dsn)
+	db, err := sql.Open("snowflake", dsn)
 	if err != nil {
 		return "", err
 	}
@@ -84,7 +82,7 @@ func (e *selfToObjectStoreExecutor) export(ctx context.Context, props map[string
 		return "", err
 	}
 
-	creds, err := creds(e.store)
+	creds, err := e.creds()
 	if err != nil {
 		return "", err
 	}
@@ -96,7 +94,7 @@ func (e *selfToObjectStoreExecutor) export(ctx context.Context, props map[string
 		CREDENTIALS = %s
 		HEADER = TRUE
 		MAX_FILE_SIZE = 536870912 
-		FILE_FORMAT = (TYPE='%s' COMPRESSION = 'SNAPPY')`, outputLocation, conf.SQL, creds, string(format))
+		FILE_FORMAT = (TYPE='%s' COMPRESSION = 'SNAPPY')`, outputLocation, srcProps.SQL, creds, string(format))
 	_, err = db.ExecContext(ctx, query)
 	if err != nil {
 		return "", err
@@ -104,18 +102,17 @@ func (e *selfToObjectStoreExecutor) export(ctx context.Context, props map[string
 	return outputLocation, nil
 }
 
-func creds(store drivers.ObjectStore) (string, error) {
-	h := store.(drivers.Handle)
-	switch h.Driver() {
+func (e *selfToObjectStoreExecutor) creds() (string, error) {
+	switch e.objectStore.Driver() {
 	case "s3":
 		conf := &s3.ConfigProperties{}
-		if err := mapstructure.Decode(h.Config(), conf); err != nil {
+		if err := mapstructure.Decode(e.objectStore.Config(), conf); err != nil {
 			return "", err
 		}
 		return fmt.Sprintf("(AWS_KEY_ID='%s' AWS_SECRET_KEY='%s' AWS_TOKEN='%s')", conf.AccessKeyID, conf.SecretAccessKey, conf.SessionToken), nil
 	case "gcs":
 		return "", fmt.Errorf("snowflake connector can't export to connector 'gcs'. Use s3 compatibility.")
 	default:
-		return "", fmt.Errorf("snowflake connector can't export to connector %q", h.Driver())
+		return "", fmt.Errorf("snowflake connector can't export to connector %q", e.objectStore.Driver())
 	}
 }

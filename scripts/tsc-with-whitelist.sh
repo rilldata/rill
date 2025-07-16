@@ -9,8 +9,6 @@ web-admin/src/features/dashboards/listing/selectors.ts: error TS2345
 web-admin/src/features/dashboards/listing/selectors.ts: error TS2769
 web-admin/src/components/errors/error-utils.ts: error TS18048
 web-admin/src/components/errors/error-utils.ts: error TS2322
-web-admin/src/features/dashboards/query-mappers/mapQueryToDashboard.ts: error TS2322
-web-admin/src/features/dashboards/query-mappers/getDashboardFromAggregationRequest.ts: error TS2322
 web-admin/src/features/scheduled-reports/selectors.ts: error TS18048
 web-admin/src/features/scheduled-reports/selectors.ts: error TS2345
 web-admin/src/features/billing/issues/getMessageForTrialPlan.ts: error TS18048

@@ -73,7 +73,7 @@
   }
 
   .border-overlay {
-    @apply absolute border-[12.5px] pointer-events-none border-white size-full;
+    @apply absolute border-[12.5px] pointer-events-none border-surface size-full;
     z-index: 50;
   }
 

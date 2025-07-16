@@ -263,6 +263,14 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 		if err != nil {
 			return err
 		}
+		author, err := ch.GitSignature(ctx, localGitPath)
+		if err != nil {
+			return err
+		}
+		err = gitutil.CommitAndForcePush(ctx, localGitPath, &gitutil.Config{Remote: gitRemote, DefaultBranch: opts.ProdBranch}, "Autocommit .rillcloud directory", author)
+		if err != nil {
+			return fmt.Errorf("failed to push .rillcloud directory to remote: %w", err)
+		}
 	}
 
 	// Success!
@@ -410,7 +418,13 @@ func createGithubRepoFlow(ctx context.Context, ch *cmdutil.Helper, localGitPath 
 	} else {
 		branch = "main"
 	}
-	err = gitutil.CommitAndForcePush(ctx, localGitPath, *githubRepository.CloneURL, "x-access-token", pollRes.AccessToken, branch, author, true)
+	config := &gitutil.Config{
+		Remote:        *githubRepository.CloneURL,
+		Username:      "x-access-token",
+		Password:      pollRes.AccessToken,
+		DefaultBranch: branch,
+	}
+	err = gitutil.CommitAndForcePush(ctx, localGitPath, config, "", author)
 	if err != nil {
 		return fmt.Errorf("failed to push local project to Github: %w", err)
 	}

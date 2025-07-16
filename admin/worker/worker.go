@@ -173,12 +173,8 @@ func (h *pingHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func StartPingServer(ctx context.Context, port int) error {
 	httpMux := http.NewServeMux()
 	httpMux.Handle("/ping", &pingHandler{})
-	srv := &http.Server{
-		Addr:    fmt.Sprintf(":%d", port),
-		Handler: httpMux,
-	}
 
-	return graceful.ServeHTTP(ctx, srv, graceful.ServeOptions{
+	return graceful.ServeHTTP(ctx, httpMux, graceful.ServeOptions{
 		Port: port,
 	})
 }

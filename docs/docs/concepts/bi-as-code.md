@@ -17,7 +17,7 @@ BI-as-code is a modern approach to business intelligence that treats analytics a
 Rill implements BI-as-code through a combination of:
 
 1. **SQL-based Definitions**: Define your models via SQL to connect to your various sources
-2. **YAML Configuration**: Configure your metrics view, dashboards, and project settings via YAML
+2. **YAML Configuration**: Configure your metrics views, dashboards, and project settings via YAML
 3. **Git Integration**: Version control your analytics assets
 4. **CLI Tools**: Deploy and manage your analytics stack from the command line
    
@@ -44,7 +44,7 @@ This approach allows engineering teams to maintain control over their analytics 
 
 ### Developer Experience
 - Use familiar tools and workflows (Git, CLI, IDEs)
-- Write [SQL for last time ETL](/build/models/)
+- Write [SQL for last-mile ETL](/build/models/)
 - Maintain analytics as part of your codebase
 - Leverage existing development practices
 
@@ -64,4 +64,4 @@ For a deeper dive into BI-as-code and its benefits, check out our blog post: [Wh
 - [Learn about Rill's Architecture](/concepts/architecture)
 - [Get started with Rill](/home/install)
 - [Explore the Reference](/reference/connectors/)
-- [Step by step Tutorial](/tutorials)
+- [Step-by-step Tutorial](/guides)

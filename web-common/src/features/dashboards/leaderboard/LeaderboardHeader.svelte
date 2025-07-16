@@ -62,7 +62,7 @@
         <button
           disabled={!allowExpandTable}
           class="text-slate-600 text-left {allowExpandTable
-            ? 'hover:text-primary-700'
+            ? 'hover:text-theme-700'
             : ''}"
           aria-label="Open dimension details"
           on:click={() => setPrimaryDimension(dimensionName)}

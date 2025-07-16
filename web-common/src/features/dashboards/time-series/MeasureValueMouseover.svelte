@@ -3,6 +3,7 @@
   import WithGraphicContexts from "@rilldata/web-common/components/data-graphic/functional-components/WithGraphicContexts.svelte";
   import MultiMetricMouseoverLabel from "@rilldata/web-common/components/data-graphic/marks/MultiMetricMouseoverLabel.svelte";
   import type { Point } from "@rilldata/web-common/components/data-graphic/marks/types";
+  import { ComparisonDeltaPreviousSuffix } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 
   import { NumberKind } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
   import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
@@ -14,7 +15,8 @@
   export let showComparison = false;
   export let mouseoverFormat;
   export let numberKind: NumberKind;
-  $: comparisonYAccessor = `comparison.${yAccessor}`;
+
+  $: comparisonYAccessor = yAccessor + ComparisonDeltaPreviousSuffix;
 
   $: x = point?.[xAccessor];
   $: y = point?.[yAccessor];
@@ -51,7 +53,7 @@
     y: currentPointIsNull ? lastAvailableCurrentY : y,
     yOverride: currentPointIsNull,
     yOverrideLabel: "no current data",
-    yOverrideStyleClass: "fill-gray-400 italic",
+    yOverrideStyleClass: "fill-gray-500 italic",
     key: "main",
     label:
       showComparison &&
@@ -62,7 +64,7 @@
       isDiffValid
         ? `(${diffLabel})`
         : "",
-    pointColor: "var(--color-primary-700)",
+    pointColor: "var(--color-theme-700)",
     valueStyleClass: "font-semibold",
     valueColorClass: "fill-gray-600",
     labelColorClass:
@@ -78,11 +80,11 @@
           y: comparisonPointIsNull ? lastAvailableComparisonY : comparisonY,
           yOverride: comparisonPointIsNull,
           yOverrideLabel: "no comparison data",
-          yOverrideStyleClass: "fill-gray-400 italic",
+          yOverrideStyleClass: "fill-gray-500 italic",
           label: "prev.",
           key: "comparison",
           valueStyleClass: "font-normal",
-          pointColor: "var(--color-primary-300)",
+          pointColor: "var(--color-theme-300)",
           valueColorClass: "fill-gray-500",
           labelColorClass: "fill-gray-500",
         }
@@ -136,7 +138,7 @@
           {@const yLoc = output.y + bufferSize * sign}
           {@const show =
             Math.abs(output.y - output.dy) > 16 && hasValidComparisonPoint}
-          <!-- arrows -->
+          arrows
           <g>
             {#if show}
               <line
@@ -144,7 +146,7 @@
                 x2={xArrow + dist}
                 y1={yLoc}
                 y2={yLoc + signedDist}
-                stroke="white"
+                stroke="var(--surface)"
                 stroke-width={strokeWidth + 3}
                 stroke-linecap="round"
               />
@@ -153,7 +155,7 @@
                 x2={xArrow - dist}
                 y1={yLoc}
                 y2={yLoc + signedDist}
-                stroke="white"
+                stroke="var(--surface)"
                 stroke-width={strokeWidth + 3}
                 stroke-linecap="round"
               />
@@ -164,7 +166,7 @@
               x2={xArrow}
               y1={output.y + yBuffer}
               y2={output.dy - yBuffer}
-              stroke="white"
+              stroke="var(--surface)"
               stroke-width={strokeWidth + 3}
               stroke-linecap="round"
             />
@@ -212,7 +214,7 @@
           y1={yScale(0)}
           y2={output.y}
           stroke-width="4"
-          class={"stroke-primary-300"}
+          class="stroke-theme-300"
         />
       {/if}
     </WithTween>
@@ -224,7 +226,4 @@
     formatValue={mouseoverFormat}
     point={pointSet || []}
   />
-
-  <!-- {/if} -->
 </WithGraphicContexts>
-<!-- lines and such -->

@@ -21,7 +21,7 @@ There could be reasons why you wish to configure multiple OLAP engines within th
 
 :::info Don't see an OLAP engine?
 
-If there's an OLAP engine you're interested that isn't available, please don't hesitate to [contact us](../../contact.md). We'd love to hear from you and learn more!
+If there's an OLAP engine you're interested that isn't available, please don't hesitate to [contact us](/contact). We'd love to hear from you and learn more!
 
 :::
 

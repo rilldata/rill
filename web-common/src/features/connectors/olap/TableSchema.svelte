@@ -38,7 +38,7 @@
             {column.name}
           </TooltipContent>
         </Tooltip>
-        <span class="uppercase text-gray-700">
+        <span class="uppercase text-gray-800">
           {prettyPrintType(column.type ?? "")}
         </span>
       </li>

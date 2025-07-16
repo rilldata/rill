@@ -270,7 +270,7 @@
     @apply border-b border-gray-200;
   }
   thead {
-    @apply sticky top-0 z-30 bg-white;
+    @apply sticky top-0 z-30 bg-surface;
   }
   thead tr th {
     @apply border-t border-gray-200;

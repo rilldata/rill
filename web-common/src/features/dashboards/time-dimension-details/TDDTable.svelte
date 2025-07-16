@@ -82,8 +82,7 @@
     const classesToAdd = ["text-right"];
     const classesToRemove = [
       "border-b",
-      "border-gray-200",
-      "bg-white",
+      "bg-surface",
       "bg-gray-100",
       "bg-gray-200",
       "bg-primary-50",
@@ -95,11 +94,11 @@
     ];
 
     if (pinIndex > -1 && comparing === "dimension" && data.y === pinIndex + 1) {
-      classesToAdd.push("border-b", "border-gray-200");
+      classesToAdd.push("border-b");
     }
 
     if (comparing === "time" && data.y === 2) {
-      classesToAdd.push("border-b", "border-gray-200");
+      classesToAdd.push("border-b");
     }
 
     const isScrubbed =
@@ -162,7 +161,7 @@
 
     if (comparing === "time") {
       let icon = "";
-      if (y == 1) icon = SelectedCheckmark("var(--color-primary-500)");
+      if (y == 1) icon = SelectedCheckmark("var(--color-theme-500)");
       else if (y == 2) icon = SelectedCheckmark(SELECTED_NOT_COMPARED_COLOR);
       return { icon, muted: false };
     }
@@ -192,9 +191,9 @@
       (pinIndex > -1 && comparing === "dimension" && y === pinIndex + 1) ||
       (comparing === "time" && y === 2);
     if (showBorder) {
-      element.classList.add("border-b", "border-gray-200");
+      element.classList.add("border-b");
     } else {
-      element.classList.remove("border-b", "border-gray-200");
+      element.classList.remove("border-b");
     }
     const total =
       value.value !== undefined
@@ -239,7 +238,7 @@
   };
 
   const renderRowCorner: PivotRenderCallback = (data) => {
-    data.element.classList.add("bg-white", "z-10");
+    data.element.classList.add("bg-surface", "z-10");
     if (data.x === 0) {
       const pinIcon = getPinIcon();
       return `
@@ -423,8 +422,13 @@
   :global(regular-table table, regular-table div[sort]) {
     cursor: var(--cursor, default);
   }
+
   :global(regular-table table tbody tr:first-child, regular-table thead) {
     cursor: default;
+  }
+
+  :global(regular-table thead tr:last-child th) {
+    border-bottom: solid 1px var(--border);
   }
   :global(.pin) {
     cursor: pointer;

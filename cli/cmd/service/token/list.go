@@ -1,6 +1,8 @@
 package token
 
 import (
+	"fmt"
+
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
@@ -21,7 +23,9 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 			if len(args) > 0 {
 				name = args[0]
 			}
-
+			if name == "" {
+				return fmt.Errorf("service name is required. Use --service flag or provide as an argument")
+			}
 			res, err := client.ListServiceAuthTokens(cmd.Context(), &adminv1.ListServiceAuthTokensRequest{
 				ServiceName:      name,
 				OrganizationName: ch.Org,

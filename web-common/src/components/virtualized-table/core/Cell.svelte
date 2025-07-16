@@ -74,9 +74,9 @@
     } else if (rowActive && !cellActive) {
       activityStatus = "bg-gray-100 ";
     } else if (colSelected) {
-      activityStatus = "surface";
+      activityStatus = "bg-surface";
     } else {
-      activityStatus = "surface";
+      activityStatus = "bg-surface";
     }
   }
 
@@ -138,6 +138,7 @@
     style:left="{column.start}px"
     style:top="{row.start}px"
     style:width="{column.size}px"
+    style:padding-right="10px"
     tabindex="0"
   >
     <BarAndLabel
@@ -173,7 +174,7 @@
   </div>
   <TooltipContent maxWidth="360px" slot="tooltip-content">
     <TooltipTitle>
-      <FormattedDataType dark slot="name" value={tooltipValue} />
+      <FormattedDataType slot="name" value={tooltipValue} />
     </TooltipTitle>
     <TooltipShortcutContainer>
       <div>

@@ -2,7 +2,6 @@
   import OnboardingWorkspace from "@rilldata/web-common/features/onboarding/OnboardingWorkspace.svelte";
   import ProjectCards from "@rilldata/web-common/features/welcome/ProjectCards.svelte";
   import TitleContent from "@rilldata/web-common/features/welcome/TitleContent.svelte";
-  import UserTestCta from "@rilldata/web-common/features/welcome/UserTestCTA.svelte";
   import { fly } from "svelte/transition";
   import type { LayoutData } from "../$types";
 
@@ -21,7 +20,6 @@
       <TitleContent />
       <div class="column" in:fly={{ duration: 1600, delay: 1200, y: 4 }}>
         <ProjectCards />
-        <UserTestCta />
       </div>
     </div>
   </div>

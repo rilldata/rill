@@ -2,15 +2,15 @@ export type ResizeEvent = UIEvent & { detail: { size: number } };
 
 export function dragTableCell(node) {
   let moving = false;
+
   function mousedown() {
     moving = true;
   }
 
-  function mousemove(e) {
+  function mousemove(e: MouseEvent) {
     if (moving) {
       const rect = node.parentNode.getBoundingClientRect();
       const left = rect.left;
-      // do we set the size here?
 
       node.dispatchEvent(
         new CustomEvent("resize", {
@@ -23,11 +23,16 @@ export function dragTableCell(node) {
   }
 
   function mouseup() {
-    moving = false;
+    if (moving) {
+      moving = false;
+      node.dispatchEvent(new CustomEvent("resizeend"));
+    }
   }
+
   node.addEventListener("mousedown", mousedown);
   window.addEventListener("mousemove", mousemove);
   window.addEventListener("mouseup", mouseup);
+
   return {
     update() {
       moving = false;

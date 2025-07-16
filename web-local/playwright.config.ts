@@ -28,22 +28,15 @@ export default defineConfig({
   /* Configure projects for major browsers */
   projects: [
     {
-      name: "setup",
-      testMatch: "setup.ts",
-    },
-    {
       name: "e2e-chrome",
-      dependencies: ["setup"],
       use: { ...devices["Desktop Chrome"] },
     },
     {
       name: "e2e-safari",
-      dependencies: ["setup"],
       use: { ...devices["Desktop Safari"] },
     },
     {
       name: "e2e-firefox",
-      dependencies: ["setup"],
       use: { ...devices["Desktop Firefox"] },
     },
   ],

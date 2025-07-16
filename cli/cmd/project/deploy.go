@@ -199,7 +199,7 @@ func DeployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployO
 		}
 		req.ArchiveAssetId = assetID
 	} else {
-		gitRepo, err := ch.GitHelper(opts.Name, localProjectPath).PushToNewManagedRepo(ctx)
+		gitRepo, err := ch.GitHelper(ch.Org, opts.Name, localProjectPath).PushToNewManagedRepo(ctx)
 		if err != nil {
 			return err
 		}
@@ -222,6 +222,13 @@ func DeployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployO
 	})
 	if err != nil {
 		return err
+	}
+	if req.GitRemote != "" {
+		// also commit dotrillcloud to the repo
+		err = ch.GitHelper(ch.Org, opts.Name, localProjectPath).PushToManagedRepo(ctx)
+		if err != nil {
+			return err
+		}
 	}
 
 	// Success!
@@ -265,7 +272,7 @@ func redeployUploadedProject(ctx context.Context, projResp *adminv1.GetProjectRe
 	var updateProjReq *adminv1.UpdateProjectRequest
 	if projResp.Project.GitRemote != "" {
 		// rill managed git
-		err := ch.GitHelper(opts.Name, localProjectPath).PushToManagedRepo(ctx)
+		err := ch.GitHelper(ch.Org, opts.Name, localProjectPath).PushToManagedRepo(ctx)
 		if err != nil {
 			return err
 		}
@@ -283,7 +290,7 @@ func redeployUploadedProject(ctx context.Context, projResp *adminv1.GetProjectRe
 			}
 		} else {
 			// need to migrate to rill managed git
-			gitRepo, err := ch.GitHelper(opts.Name, localProjectPath).PushToNewManagedRepo(ctx)
+			gitRepo, err := ch.GitHelper(ch.Org, opts.Name, localProjectPath).PushToNewManagedRepo(ctx)
 			if err != nil {
 				return err
 			}

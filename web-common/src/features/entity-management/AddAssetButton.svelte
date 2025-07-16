@@ -170,7 +170,10 @@
       </div>
     </Button>
   </DropdownMenu.Trigger>
-  <DropdownMenu.Content align="start" class="w-[240px]">
+  <DropdownMenu.Content
+    align="start"
+    class={`w-[${metricsViews.length === 0 ? "280px" : "240px"}]`}
+  >
     <DropdownMenu.Item
       aria-label="Add Data"
       class="flex gap-x-2"
@@ -205,49 +208,61 @@
       />
       Metrics view
     </DropdownMenu.Item>
-    {#if metricsViews.length}
-      <DropdownMenu.Separator />
-      <DropdownMenu.Item
-        aria-label="Add Explore Dashboard"
-        class="flex gap-x-2"
-        on:click={async () => {
-          if (metricsViews.length === 1) {
-            const newFilePath = await createResourceFile(
-              ResourceKind.Explore,
-              metricsViews.pop(),
-            );
-            await wrapNavigation(newFilePath);
-          } else {
-            showExploreDialog = true;
-          }
-        }}
-      >
+    <DropdownMenu.Separator />
+    <DropdownMenu.Item
+      aria-label="Add Explore Dashboard"
+      class="flex gap-x-2"
+      disabled={metricsViews.length === 0}
+      on:click={async () => {
+        if (metricsViews.length === 1) {
+          const newFilePath = await createResourceFile(
+            ResourceKind.Explore,
+            metricsViews.pop(),
+          );
+          await wrapNavigation(newFilePath);
+        } else {
+          showExploreDialog = true;
+        }
+      }}
+    >
+      <div class="flex gap-x-2 items-center">
         <svelte:component
           this={resourceIconMapping[ResourceKind.Explore]}
           color={resourceColorMapping[ResourceKind.Explore]}
           size="16px"
         />
-        Explore dashboard
-      </DropdownMenu.Item>
-
-      <DropdownMenu.Item
-        class="flex items-center justify-between gap-x-2"
-        on:click={async () => {
-          const newFilePath = await createResourceFile(ResourceKind.Canvas);
-          await wrapNavigation(newFilePath);
-        }}
-      >
-        <div class="flex gap-x-2">
-          <svelte:component
-            this={resourceIconMapping[ResourceKind.Canvas]}
-            color={resourceColorMapping[ResourceKind.Canvas]}
-            size="16px"
-          />
-          Canvas dashboard
+        <div class="flex flex-col items-start">
+          Explore dashboard
+          {#if metricsViews.length === 0}
+            <span class="text-gray-500 text-xs"> Requires a metrics view </span>
+          {/if}
         </div>
-        <Tag height={16} color="blue">BETA</Tag>
-      </DropdownMenu.Item>
-    {/if}
+      </div>
+    </DropdownMenu.Item>
+
+    <DropdownMenu.Item
+      class="flex items-center justify-between gap-x-2"
+      on:click={async () => {
+        const newFilePath = await createResourceFile(ResourceKind.Canvas);
+        await wrapNavigation(newFilePath);
+      }}
+      disabled={metricsViews.length === 0}
+    >
+      <div class="flex gap-x-2 items-center">
+        <svelte:component
+          this={resourceIconMapping[ResourceKind.Canvas]}
+          color={resourceColorMapping[ResourceKind.Canvas]}
+          size="16px"
+        />
+        <div class="flex flex-col items-start">
+          Canvas dashboard
+          {#if metricsViews.length === 0}
+            <span class="text-gray-500 text-xs"> Requires a metrics view </span>
+          {/if}
+        </div>
+      </div>
+      <Tag height={16} color="blue">BETA</Tag>
+    </DropdownMenu.Item>
     <DropdownMenu.Separator />
     <DropdownMenu.Sub>
       <DropdownMenu.SubTrigger>More</DropdownMenu.SubTrigger>

@@ -18,7 +18,7 @@ import (
 func TestClickhouseSingle(t *testing.T) {
 	dsn := testclickhouse.Start(t)
 
-	conn, err := driver{}.Open("default", map[string]any{"dsn": dsn}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	conn, err := driver{}.Open("default", map[string]any{"dsn": dsn, "mode": "readwrite"}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	defer conn.Close()
 	prepareConn(t, conn)
@@ -46,7 +46,7 @@ func TestClickhouseCluster(t *testing.T) {
 
 	dsn, cluster := testclickhouse.StartCluster(t)
 
-	conn, err := drivers.Open("clickhouse", "default", map[string]any{"dsn": dsn, "cluster": cluster}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	conn, err := drivers.Open("clickhouse", "default", map[string]any{"dsn": dsn, "cluster": cluster, "mode": "readwrite"}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	defer conn.Close()
 
@@ -54,7 +54,7 @@ func TestClickhouseCluster(t *testing.T) {
 	olap, ok := conn.AsOLAP("default")
 	require.True(t, ok)
 
-	prepareClusterConn(t, c, olap, cluster)
+	prepareClusterConn(t, olap, cluster)
 
 	t.Run("WithConnection", func(t *testing.T) { testWithConnection(t, olap) })
 	t.Run("RenameView", func(t *testing.T) { testRenameView(t, c, olap) })
@@ -112,8 +112,8 @@ func testRenameView(t *testing.T, c *Connection, olap drivers.OLAPStore) {
 	require.NoError(t, err)
 
 	// check that views no longer exist
-	notExists(t, c, olap, "foo_view")
-	notExists(t, c, olap, "foo_view1")
+	notExists(t, olap, "foo_view")
+	notExists(t, olap, "foo_view1")
 
 	res, err := olap.Query(ctx, &drivers.Statement{Query: "SELECT id FROM bar_view"})
 	require.NoError(t, err)
@@ -132,11 +132,11 @@ func testRenameTable(t *testing.T, c *Connection, olap drivers.OLAPStore) {
 	err = c.renameEntity(ctx, "foo1", "bar")
 	require.NoError(t, err)
 
-	notExists(t, c, olap, "foo")
-	notExists(t, c, olap, "foo1")
+	notExists(t, olap, "foo")
+	notExists(t, olap, "foo1")
 }
 
-func notExists(t *testing.T, c *Connection, olap drivers.OLAPStore, tbl string) {
+func notExists(t *testing.T, olap drivers.OLAPStore, tbl string) {
 	result, err := olap.Query(context.Background(), &drivers.Statement{
 		Query: "EXISTS " + tbl,
 	})
@@ -456,7 +456,7 @@ func testIntervalType(t *testing.T, olap drivers.OLAPStore) {
 	}
 }
 
-func prepareClusterConn(t *testing.T, c *Connection, olap drivers.OLAPStore, cluster string) {
+func prepareClusterConn(t *testing.T, olap drivers.OLAPStore, cluster string) {
 	err := olap.Exec(context.Background(), &drivers.Statement{
 		Query: fmt.Sprintf("CREATE OR REPLACE TABLE foo_local ON CLUSTER %s (bar VARCHAR, baz INTEGER) engine=MergeTree ORDER BY tuple()", cluster),
 	})
@@ -486,4 +486,131 @@ func prepareClusterConn(t *testing.T, c *Connection, olap drivers.OLAPStore, clu
 		Query: "INSERT INTO bar VALUES ('a', 1), ('a', 2), ('b', 3), ('c', 4)",
 	})
 	require.NoError(t, err)
+}
+
+func TestClickhouseReadWriteMode(t *testing.T) {
+	dsn := testclickhouse.Start(t)
+
+	t.Run("ReadOnlyMode_DisablesModelExecution", func(t *testing.T) {
+		// Test default mode (read-only) with BYODB
+		conn, err := driver{}.Open("default", map[string]any{"dsn": dsn}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+		require.NoError(t, err)
+		defer conn.Close()
+
+		// Should not be able to get model executor in read-only mode
+		opts := &drivers.ModelExecutorOptions{
+			InputHandle:     conn,
+			InputConnector:  "clickhouse",
+			OutputHandle:    conn,
+			OutputConnector: "clickhouse",
+		}
+		executor, ok := conn.AsModelExecutor("default", opts)
+		require.False(t, ok, "Model executor should not be available in read-only mode")
+		require.Nil(t, executor)
+
+		// Should not be able to get model manager in read-only mode
+		manager, ok := conn.AsModelManager("default")
+		require.False(t, ok, "Model manager should not be available in read-only mode")
+		require.Nil(t, manager)
+	})
+
+	t.Run("ExplicitReadOnlyMode_DisablesModelExecution", func(t *testing.T) {
+		// Test explicit read-only mode
+		conn, err := driver{}.Open("default", map[string]any{
+			"dsn":  dsn,
+			"mode": "read",
+		}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+		require.NoError(t, err)
+		defer conn.Close()
+
+		// Should not be able to get model executor
+		opts := &drivers.ModelExecutorOptions{
+			InputHandle:     conn,
+			InputConnector:  "clickhouse",
+			OutputHandle:    conn,
+			OutputConnector: "clickhouse",
+		}
+		executor, ok := conn.AsModelExecutor("default", opts)
+		require.False(t, ok, "Model executor should not be available in explicit read-only mode")
+		require.Nil(t, executor)
+
+		// Should not be able to get model manager
+		manager, ok := conn.AsModelManager("default")
+		require.False(t, ok, "Model manager should not be available in explicit read-only mode")
+		require.Nil(t, manager)
+	})
+
+	t.Run("ReadWriteMode_EnablesModelExecution", func(t *testing.T) {
+		// Test readwrite mode for BYODB
+		conn, err := driver{}.Open("default", map[string]any{
+			"dsn":  dsn,
+			"mode": "readwrite",
+		}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+		require.NoError(t, err)
+		defer conn.Close()
+
+		// Should be able to get model executor in readwrite mode
+		opts := &drivers.ModelExecutorOptions{
+			InputHandle:     conn,
+			InputConnector:  "clickhouse",
+			OutputHandle:    conn,
+			OutputConnector: "clickhouse",
+		}
+		executor, ok := conn.AsModelExecutor("default", opts)
+		require.True(t, ok, "Model executor should be available in readwrite mode")
+		require.NotNil(t, executor)
+
+		// Should be able to get model manager in readwrite mode
+		manager, ok := conn.AsModelManager("default")
+		require.True(t, ok, "Model manager should be available in readwrite mode")
+		require.NotNil(t, manager)
+	})
+
+	t.Run("ManagedMode_EnablesModelExecution", func(t *testing.T) {
+		// Test that managed mode automatically enables readwrite
+		conn, err := driver{}.Open("default", map[string]any{
+			"dsn":     dsn,
+			"managed": true,
+		}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+		require.NoError(t, err)
+		defer conn.Close()
+
+		// Should be able to get model executor when managed=true
+		opts := &drivers.ModelExecutorOptions{
+			InputHandle:     conn,
+			InputConnector:  "clickhouse",
+			OutputHandle:    conn,
+			OutputConnector: "clickhouse",
+		}
+		executor, ok := conn.AsModelExecutor("default", opts)
+		require.True(t, ok, "Model executor should be available when managed=true")
+		require.NotNil(t, executor)
+
+		// Should be able to get model manager when managed=true
+		manager, ok := conn.AsModelManager("default")
+		require.True(t, ok, "Model manager should be available when managed=true")
+		require.NotNil(t, manager)
+	})
+
+	t.Run("ManagedOverridesMode", func(t *testing.T) {
+		// Test that managed=true overrides mode setting
+		conn, err := driver{}.Open("default", map[string]any{
+			"dsn":     dsn,
+			"managed": true,
+			"mode":    "read", // This should be overridden
+		}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+		require.NoError(t, err)
+		defer conn.Close()
+
+		// Should still be able to get model executor because managed=true overrides mode
+		opts := &drivers.ModelExecutorOptions{
+			InputHandle:     conn,
+			InputConnector:  "clickhouse",
+			OutputHandle:    conn,
+			OutputConnector: "clickhouse",
+		}
+		executor, ok := conn.AsModelExecutor("default", opts)
+		require.True(t, ok, "Model executor should be available when managed=true overrides read mode")
+		require.NotNil(t, executor)
+	})
 }

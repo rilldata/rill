@@ -12,16 +12,20 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
-type informationSchema struct {
-	c *Connection
+func (c *Connection) ListDatabaseSchemas(ctx context.Context) ([]*drivers.DatabaseSchemaInfo, error) {
+	return nil, nil
 }
 
-func (c *Connection) InformationSchema() drivers.InformationSchema {
-	return informationSchema{c: c}
+func (c *Connection) ListTables(ctx context.Context, database, schema string) ([]*drivers.TableInfo, error) {
+	return nil, nil
 }
 
-func (i informationSchema) All(ctx context.Context, like string) ([]*drivers.Table, error) {
-	conn, release, err := i.c.acquireMetaConn(ctx)
+func (c *Connection) GetTable(ctx context.Context, database, schema, table string) (*drivers.TableMetadata, error) {
+	return nil, nil
+}
+
+func (c *Connection) All(ctx context.Context, like string) ([]*drivers.OlapTable, error) {
+	conn, release, err := c.acquireMetaConn(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -35,8 +39,8 @@ func (i informationSchema) All(ctx context.Context, like string) ([]*drivers.Tab
 	}
 
 	var dbFilter string
-	if i.c.config.DatabaseWhitelist != "" {
-		dbs := strings.Split(i.c.config.DatabaseWhitelist, ",")
+	if c.config.DatabaseWhitelist != "" {
+		dbs := strings.Split(c.config.DatabaseWhitelist, ",")
 		var filter strings.Builder
 		for i, db := range dbs {
 			if i > 0 {
@@ -75,15 +79,15 @@ func (i informationSchema) All(ctx context.Context, like string) ([]*drivers.Tab
 	}
 	defer rows.Close()
 
-	tables, err := i.scanTables(rows)
+	tables, err := scanTables(rows)
 	if err != nil {
 		return nil, err
 	}
 	return tables, nil
 }
 
-func (i informationSchema) Lookup(ctx context.Context, db, schema, name string) (*drivers.Table, error) {
-	conn, release, err := i.c.acquireMetaConn(ctx)
+func (c *Connection) Lookup(ctx context.Context, db, schema, name string) (*drivers.OlapTable, error) {
+	conn, release, err := c.acquireMetaConn(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -117,7 +121,7 @@ func (i informationSchema) Lookup(ctx context.Context, db, schema, name string) 
 	}
 	defer rows.Close()
 
-	tables, err := i.scanTables(rows)
+	tables, err := scanTables(rows)
 	if err != nil {
 		return nil, err
 	}
@@ -129,11 +133,11 @@ func (i informationSchema) Lookup(ctx context.Context, db, schema, name string) 
 	return tables[0], nil
 }
 
-func (i informationSchema) LoadPhysicalSize(ctx context.Context, tables []*drivers.Table) error {
+func (c *Connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.OlapTable) error {
 	if len(tables) == 0 {
 		return nil
 	}
-	conn, release, err := i.c.acquireMetaConn(ctx)
+	conn, release, err := c.acquireMetaConn(ctx)
 	if err != nil {
 		return err
 	}
@@ -197,8 +201,8 @@ func (i informationSchema) LoadPhysicalSize(ctx context.Context, tables []*drive
 	return err
 }
 
-func (i informationSchema) scanTables(rows *sqlx.Rows) ([]*drivers.Table, error) {
-	var res []*drivers.Table
+func scanTables(rows *sqlx.Rows) ([]*drivers.OlapTable, error) {
+	var res []*drivers.OlapTable
 
 	for rows.Next() {
 		var databaseSchema string
@@ -215,7 +219,7 @@ func (i informationSchema) scanTables(rows *sqlx.Rows) ([]*drivers.Table, error)
 		}
 
 		// set t to res[len(res)-1] if it's the same table, else set t to a new table and append it
-		var t *drivers.Table
+		var t *drivers.OlapTable
 		if len(res) > 0 {
 			t = res[len(res)-1]
 			if !(t.DatabaseSchema == databaseSchema && t.Name == name) {
@@ -223,7 +227,7 @@ func (i informationSchema) scanTables(rows *sqlx.Rows) ([]*drivers.Table, error)
 			}
 		}
 		if t == nil {
-			t = &drivers.Table{
+			t = &drivers.OlapTable{
 				DatabaseSchema:          databaseSchema,
 				IsDefaultDatabaseSchema: isDefaultSchema,
 				Name:                    name,
@@ -263,15 +267,15 @@ func (i informationSchema) scanTables(rows *sqlx.Rows) ([]*drivers.Table, error)
 	return res, nil
 }
 
-func (i informationSchema) entityType(ctx context.Context, db, name string) (typ string, onCluster bool, err error) {
-	conn, release, err := i.c.acquireMetaConn(ctx)
+func (c *Connection) entityType(ctx context.Context, db, name string) (typ string, onCluster bool, err error) {
+	conn, release, err := c.acquireMetaConn(ctx)
 	if err != nil {
 		return "", false, err
 	}
 	defer func() { _ = release() }()
 
 	var q string
-	if i.c.config.Cluster == "" {
+	if c.config.Cluster == "" {
 		q = `SELECT
     			multiIf(engine IN ('MaterializedView', 'View'), 'VIEW', engine = 'Dictionary', 'DICTIONARY', 'TABLE') AS type,
     			0 AS is_on_cluster
@@ -282,7 +286,7 @@ func (i informationSchema) entityType(ctx context.Context, db, name string) (typ
 		q = `SELECT
     			multiIf(engine IN ('MaterializedView', 'View'), 'VIEW', engine = 'Dictionary', 'DICTIONARY', 'TABLE') AS type,
     			countDistinct(_shard_num) > 1 AS is_on_cluster
-			FROM clusterAllReplicas(` + safeSQLName(i.c.config.Cluster) + `, system.tables) AS t
+			FROM clusterAllReplicas(` + safeSQLName(c.config.Cluster) + `, system.tables) AS t
 			JOIN system.databases AS db ON t.database = db.name
 			WHERE t.database = coalesce(?, currentDatabase()) AND t.name = ?
 			GROUP BY engine, t.name`

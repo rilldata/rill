@@ -3,6 +3,7 @@
   import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import { page } from "$app/stores";
+  import { OrgUserRoles } from "@rilldata/web-common/features/users/roles.ts";
   import { useQueryClient } from "@tanstack/svelte-query";
   import {
     createAdminServiceAddOrganizationMemberUsergroup,
@@ -28,6 +29,14 @@
     createAdminServiceSetOrganizationMemberUsergroupRole();
   const revokeUserGroupRole =
     createAdminServiceRemoveOrganizationMemberUsergroup();
+
+  async function handleRoleSelect(selectedRole: string) {
+    if (role) {
+      return handleSetRole(selectedRole);
+    } else {
+      return handleAddRole(selectedRole);
+    }
+  }
 
   async function handleAddRole(role: string) {
     try {
@@ -119,13 +128,7 @@
         class="font-normal flex flex-col items-start py-2 {role === 'admin'
           ? 'bg-slate-100'
           : ''}"
-        on:click={() => {
-          if (role) {
-            handleSetRole("admin");
-          } else {
-            handleAddRole("admin");
-          }
-        }}
+        on:click={() => handleRoleSelect(OrgUserRoles.Admin)}
       >
         <span class="font-medium">Admin</span>
         <span class="text-xs text-gray-600"
@@ -137,13 +140,7 @@
       class="font-normal flex flex-col items-start py-2 {role === 'editor'
         ? 'bg-slate-100'
         : ''}"
-      on:click={() => {
-        if (role) {
-          handleSetRole("editor");
-        } else {
-          handleAddRole("editor");
-        }
-      }}
+      on:click={() => handleRoleSelect(OrgUserRoles.Editor)}
     >
       <span class="font-medium">Editor</span>
       <span class="text-xs text-gray-600"
@@ -154,13 +151,7 @@
       class="font-normal flex flex-col items-start py-2 {role === 'viewer'
         ? 'bg-slate-100'
         : ''}"
-      on:click={() => {
-        if (role) {
-          handleSetRole("viewer");
-        } else {
-          handleAddRole("viewer");
-        }
-      }}
+      on:click={() => handleRoleSelect(OrgUserRoles.Viewer)}
     >
       <span class="font-medium">Viewer</span>
       <span class="text-xs text-gray-600"

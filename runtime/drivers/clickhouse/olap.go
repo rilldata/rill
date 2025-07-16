@@ -207,6 +207,10 @@ func (c *Connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 	return res, nil
 }
 
+func (c *Connection) InformationSchema() drivers.OLAPInformationSchema {
+	return c
+}
+
 // acquireMetaConn gets a connection from the pool for "meta" queries like information schema (i.e. fast queries).
 // It returns a function that puts the connection back in the pool (if applicable).
 func (c *Connection) acquireMetaConn(ctx context.Context) (*sqlx.Conn, func() error, error) {

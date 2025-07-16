@@ -35,7 +35,7 @@ test.describe.serial("Public URLs", () => {
       .fill("Test Public URL - Disney");
     await page.getByLabel("Set expiration").click();
     await page.locator('[aria-label="Edit expiration date"]').click(); // Hides the popover
-    await page.getByRole("button", { name: "Create" }).click();
+    await page.getByRole("button", { name: "Create", exact: true }).click();
 
     // Wait for the "Copy Public URL" button to appear
     const copyButton = page.getByRole("button", { name: /Copy Public URL/ });

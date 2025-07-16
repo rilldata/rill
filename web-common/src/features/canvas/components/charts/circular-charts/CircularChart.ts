@@ -99,6 +99,7 @@ export class CircularChartComponent extends BaseChart<CircularChartSpec> {
 
         const nullHandledWhere = getFilterWithNullHandling(where, config.color);
 
+        this.combinedWhere = nullHandledWhere;
         const queryOptions = getQueryServiceMetricsViewAggregationQueryOptions(
           runtime.instanceId,
           config.metrics_view,

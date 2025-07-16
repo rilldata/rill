@@ -20,6 +20,7 @@
   import { DateTime, Interval } from "luxon";
   import { tick } from "svelte";
   import type { CanvasComponentState } from "../../stores/canvas-component";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
   export let id: string;
   export let timeFilter: string;
@@ -29,11 +30,13 @@
   export let componentStore: CanvasComponentState;
   export let onChange: (filter: string) => void = () => {};
 
+  $: ({ instanceId } = $runtime);
+
   $: ({
     canvasEntity: {
       spec: { canvasSpec },
     },
-  } = getCanvasStore(canvasName));
+  } = getCanvasStore(canvasName, instanceId));
 
   $: showLocalFilters = Boolean(timeFilter && timeFilter !== "");
 

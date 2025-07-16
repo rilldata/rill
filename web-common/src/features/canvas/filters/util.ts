@@ -62,6 +62,7 @@ export function getTimeRangeForCanvas(
 
 export function getComparisonOptionsForCanvas(
   selectedTimeRange: DashboardTimeControls | undefined,
+  allowCustomTimeRange: boolean,
 ) {
   if (!selectedTimeRange) {
     return [];
@@ -73,6 +74,9 @@ export function getComparisonOptionsForCanvas(
   };
 
   let allOptions = [...Object.values(TimeComparisonOption)];
+  if (!allowCustomTimeRange) {
+    allOptions = allOptions.filter((o) => o !== TimeComparisonOption.CUSTOM);
+  }
 
   if (
     selectedTimeRange?.name &&
@@ -80,7 +84,8 @@ export function getComparisonOptionsForCanvas(
   ) {
     // Previous complete ranges should only have previous period.
     // Other options dont make sense with our current wording of the comparison ranges.
-    allOptions = [TimeComparisonOption.CONTIGUOUS, TimeComparisonOption.CUSTOM];
+    allOptions = [TimeComparisonOption.CONTIGUOUS];
+    if (allowCustomTimeRange) allOptions.push(TimeComparisonOption.CUSTOM);
   }
 
   const timeComparisonOptions = getAvailableComparisonsForTimeRange(

@@ -1,9 +1,8 @@
-import { expect } from "@playwright/test";
-import type { Page } from "playwright";
+import { expect, type Locator, type Page } from "@playwright/test";
 
 // Helper that opens the time range menu, calls your interactions, and then waits until the menu closes
 export async function interactWithTimeRangeMenu(
-  page: Page,
+  page: Page | Locator,
   cb: () => void | Promise<void>,
 ) {
   // Open the menu

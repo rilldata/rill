@@ -8,7 +8,7 @@
   export let description: string | undefined = undefined;
   export let filters: ComponentFilterProperties | undefined = undefined;
   export let faint: boolean = false;
-  export let component: BaseCanvasComponent;
+  export let component: BaseCanvasComponent<any>;
 
   const WIDTH_THRESHOLD = 480;
 
@@ -35,7 +35,7 @@
 {#if title || description}
   <div
     bind:this={container}
-    class="component-header-container w-full h-fit flex flex-col bg-white px-4 pt-2 pb-1 items-start {wide
+    class="component-header-container w-full h-fit flex flex-col bg-surface px-4 pt-2 pb-1 items-start {wide
       ? 'wide'
       : ''}"
   >
@@ -75,7 +75,7 @@
     font-size: 15px;
     line-height: 26px;
     @apply flex-shrink-0;
-    @apply font-medium text-gray-700 truncate;
+    @apply font-medium text-gray-800 truncate;
   }
 
   .title.faint {

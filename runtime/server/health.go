@@ -45,7 +45,7 @@ func (s *Server) Health(ctx context.Context, req *runtimev1.HealthRequest) (*run
 	}
 	resp.InstancesHealth = make(map[string]*runtimev1.InstanceHealth, len(status.InstancesHealth))
 	for id, h := range status.InstancesHealth {
-		resp.InstancesHealth[id] = h.To()
+		resp.InstancesHealth[id] = h.Proto()
 	}
 
 	return resp, nil
@@ -67,7 +67,7 @@ func (s *Server) InstanceHealth(ctx context.Context, req *runtimev1.InstanceHeal
 		return nil, err
 	}
 	return &runtimev1.InstanceHealthResponse{
-		InstanceHealth: h.To(),
+		InstanceHealth: h.Proto(),
 	}, nil
 }
 

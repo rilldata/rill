@@ -35,7 +35,6 @@
     autoSave,
     path: filePath,
     fileName,
-
     getResource,
     getAllErrors,
     remoteContent,
@@ -44,7 +43,7 @@
 
   $: ({
     canvasEntity: { _rows },
-  } = getCanvasStore(canvasName));
+  } = getCanvasStore(canvasName, instanceId));
 
   $: resourceQuery = getResource(queryClient, instanceId);
 

@@ -7,6 +7,7 @@
   import { useExplore } from "@rilldata/web-common/features/explores/selectors";
   import { Button } from "../../components/button";
   import { runtime } from "../../runtime-client/runtime-store";
+  import ChatToggle from "../chat/ChatToggle.svelte";
   import ViewAsButton from "../dashboards/granular-access-policies/ViewAsButton.svelte";
   import { useDashboardPolicyCheck } from "../dashboards/granular-access-policies/useDashboardPolicyCheck";
   import StateManagersProvider from "../dashboards/state-managers/StateManagersProvider.svelte";
@@ -30,7 +31,7 @@
     metricsViewFilePath,
   );
 
-  const { readOnly } = featureFlags;
+  const { readOnly, chat } = featureFlags;
 </script>
 
 <div class="flex gap-2 flex-shrink-0 ml-auto">
@@ -38,6 +39,9 @@
     <ViewAsButton />
   {/if}
   <StateManagersProvider {metricsViewName} {exploreName}>
+    {#if $chat}
+      <ChatToggle />
+    {/if}
     <GlobalDimensionSearch />
   </StateManagersProvider>
   {#if !$readOnly}

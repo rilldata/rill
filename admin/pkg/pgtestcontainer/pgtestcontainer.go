@@ -1,7 +1,6 @@
 package pgtestcontainer
 
 import (
-	"context"
 	"fmt"
 	"testing"
 	"time"
@@ -19,7 +18,7 @@ type Container struct {
 
 // New creates and starts a new Postgres testcontainer. Call Terminate() when done using it.
 func New(t *testing.T) Container {
-	ctx := context.Background()
+	ctx := t.Context()
 	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		Started: true,
 		ContainerRequest: testcontainers.ContainerRequest{
@@ -49,7 +48,6 @@ func New(t *testing.T) Container {
 
 // Terminate stops and removes the container.
 func (c Container) Terminate(t *testing.T) {
-	ctx := context.Background()
-	err := c.Container.Terminate(ctx)
-	require.NoError(t, err)
+	err := c.Container.Terminate(t.Context())
+	require.ErrorIs(t, err, t.Context().Err())
 }

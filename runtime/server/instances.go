@@ -96,7 +96,6 @@ func (s *Server) CreateInstance(ctx context.Context, req *runtimev1.CreateInstan
 		Connectors:     req.Connectors,
 		Variables:      req.Variables,
 		Annotations:    req.Annotations,
-		WatchRepo:      req.WatchRepo,
 	}
 
 	err := s.runtime.CreateInstance(ctx, inst)
@@ -167,13 +166,25 @@ func (s *Server) EditInstance(ctx context.Context, req *runtimev1.EditInstanceRe
 		ProjectVariables:     oldInst.ProjectVariables,
 		FeatureFlags:         oldInst.FeatureFlags,
 		Annotations:          annotations,
-		WatchRepo:            valOrDefault(req.WatchRepo, oldInst.WatchRepo),
 		AIInstructions:       oldInst.AIInstructions,
 	}
 
 	err = s.runtime.EditInstance(ctx, inst, true)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	// Force the repo to refresh its handshake.
+	// NOTE: When we move from push-based config to pull-based config, this should ideally be done only when repo-related properties change.
+	repo, release, err := s.runtime.Repo(ctx, req.InstanceId)
+	if err == nil {
+		defer release()
+		err = repo.Pull(ctx, false, true)
+		if err != nil {
+			s.logger.Error("failed to pull repo after editing instance", zap.String("instance_id", req.InstanceId), zap.Error(err), observability.ZapCtx(ctx))
+		}
+	} else {
+		s.logger.Error("failed to acquire repo after editing instance", zap.String("instance_id", req.InstanceId), zap.Error(err), observability.ZapCtx(ctx))
 	}
 
 	return &runtimev1.EditInstanceResponse{
@@ -292,7 +303,6 @@ func instanceToPB(inst *drivers.Instance, sensitive bool) *runtimev1.Instance {
 		pb.Variables = inst.Variables
 		pb.ProjectVariables = inst.ProjectVariables
 		pb.Annotations = inst.Annotations
-		pb.WatchRepo = inst.WatchRepo
 	}
 
 	return pb

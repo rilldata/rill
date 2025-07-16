@@ -27,6 +27,7 @@
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
   import { object, string } from "yup";
+  import { SLUG_REGEX } from "../constants";
 
   export let open = false;
   export let groupName: string;
@@ -171,10 +172,11 @@
     object({
       newName: string()
         .required("Name is required")
-        .min(3, "Name must be at least 3 characters")
+        .min(1, "Name must be at least 1 character")
+        .max(40, "Name must be at most 40 characters")
         .matches(
-          /^[a-zA-Z0-9]+(-[a-zA-Z0-9]+)*$/,
-          "Name can only include letters, numbers, and hyphens — no spaces or special characters",
+          SLUG_REGEX,
+          "Name can only include letters, numbers, underscores, and hyphens — no spaces or special characters",
         ),
     }),
   );

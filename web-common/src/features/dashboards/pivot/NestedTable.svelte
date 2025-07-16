@@ -425,12 +425,12 @@
 
   .with-row-dimension tr > th:first-of-type {
     @apply sticky left-0 z-20;
-    @apply bg-white;
+    @apply bg-surface;
   }
 
   .with-row-dimension tr > td:first-of-type {
     @apply sticky left-0 z-10;
-    @apply bg-white;
+    @apply bg-surface;
   }
 
   .with-row-dimension tr:hover > td:first-of-type {
@@ -443,7 +443,7 @@
 
   /* The totals row */
   tbody > tr:nth-of-type(2) {
-    @apply bg-white sticky z-20;
+    @apply bg-surface sticky z-20;
     top: var(--total-header-height);
     height: calc(var(--row-height) + 2px);
   }

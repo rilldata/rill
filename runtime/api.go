@@ -49,6 +49,7 @@ func RegisterBuiltinAPI(opts *BuiltinAPIOptions) {
 			OpenapiSummary:            opts.OpenAPISummary,
 			OpenapiRequestSchemaJson:  opts.OpenAPIRequestSchema,
 			OpenapiResponseSchemaJson: opts.OpenAPIResponseSchema,
+			OpenapiDefsPrefix:         "", // Not adding definitions prefix for built-in APIs
 		},
 		State: &runtimev1.APIState{},
 	}

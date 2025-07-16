@@ -1,19 +1,19 @@
 import { createAdminServiceSearchProjectUsers } from "@rilldata/web-admin/client";
-import { getExploreName } from "@rilldata/web-admin/features/dashboards/query-mappers/utils";
 import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+import { getExploreName } from "@rilldata/web-common/features/explore-mappers/utils";
 import {
   createRuntimeServiceGetExplore,
   createRuntimeServiceGetResource,
   createRuntimeServiceListResources,
   type V1AlertSpec,
 } from "@rilldata/web-common/runtime-client";
-import { readable, get } from "svelte/store";
 import {
   refetchInterval,
   updateSmartRefetchInterval,
 } from "../shared/refetch-interval-store";
+import { derived, type Readable, readable, get } from "svelte/store";
 
 export function useAlerts(instanceId: string, enabled = true) {
   return createRuntimeServiceListResources(
@@ -54,24 +54,28 @@ export function useAlertDashboardName(instanceId: string, name: string) {
         select: (data) => {
           const alertSpec = data.resource?.alert?.spec;
           if (!alertSpec) return "";
-
-          if (alertSpec.annotations.web_open_path)
-            return getExploreName(alertSpec.annotations.web_open_path);
-
-          const queryArgsJson = JSON.parse(
-            (alertSpec.resolverProperties?.query_args_json ||
-              alertSpec.queryArgsJson ||
-              "{}") as string,
-          );
-
-          return (
-            queryArgsJson?.metrics_view_name ??
-            queryArgsJson?.metricsViewName ??
-            queryArgsJson?.metricsView
-          );
+          return getAlertDashboardName(alertSpec);
         },
       },
     },
+  );
+}
+
+export function getAlertDashboardName(alertSpec: V1AlertSpec): string {
+  if (alertSpec.annotations.web_open_path)
+    return getExploreName(alertSpec.annotations.web_open_path);
+
+  const queryArgsJson = JSON.parse(
+    alertSpec.resolverProperties.query_args_json ||
+      alertSpec.queryArgsJson ||
+      "{}",
+  );
+
+  return (
+    queryArgsJson?.metrics_view_name ??
+    queryArgsJson?.metricsViewName ??
+    queryArgsJson?.metricsView ??
+    ""
   );
 }
 
@@ -147,4 +151,8 @@ export function useAlertDashboardState(
       },
     },
   );
+}
+
+export function unwrapQueryData<T>(query: Readable<{ data: T }>) {
+  return derived(query, (queryResponse) => queryResponse.data);
 }

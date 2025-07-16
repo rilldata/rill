@@ -28,7 +28,7 @@
 </script>
 
 <div
-  class="flex flex-col pt-3 pb-3 gap-y-1 bg-gray-50 border-t border-gray-200 sticky bottom-0"
+  class="flex flex-col pt-3 pb-3 gap-y-1 bg-background border-t sticky bottom-0"
 >
   {#each lineItems as lineItem, i (i)}
     <a href={lineItem.href} target="_blank" rel="noreferrer noopener"

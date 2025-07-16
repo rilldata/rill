@@ -73,7 +73,7 @@ After drilling into a leaderboard (or what we sometimes refer to as a _toplist_ 
 
 
 :::tip Don't have a Rill project or dashboard deployed yet?
-If you want to get hands on and see what interacting with a Rill dashboard feels like, we have a set of [demo projects](https://ui.rilldata.com/demo) already deployed on Rill Cloud and publicly available for everyone to try out. These [same projects](/home/get-started#example-projects-repository) are also available on GitHub and can be deployed locally using Rill Developer.
+If you want to get hands on and see what interacting with a Rill dashboard feels like, we have a set of [demo projects](https://ui.rilldata.com/demo) already deployed on Rill Cloud and publicly available for everyone to try out. These [same projects](/home/example-repository) are also available on GitHub and can be deployed locally using Rill Developer.
 :::
 
 
@@ -86,6 +86,7 @@ Whether you need to see the full value of a long JSON, or copy a value, there ar
 List of commands:
 - __*Copy values*__ ( ``shift + click`` ) - Copy the value of the row value. 
 - __*Value previewer*__ ( ``space`` ) - See the full text value of the row value.
+- __*Lock Insepector*__ ( ``L`` ) - Lock the inspector (allows scrolling through long values)
 
 <img src = '/img/explore/dashboard101/preview-value.png' class='rounded-gif' />
 <br />

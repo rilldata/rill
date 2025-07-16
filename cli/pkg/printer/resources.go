@@ -160,6 +160,54 @@ func (p *Printer) PrintProjectMemberUsers(members []*adminv1.ProjectMemberUser) 
 	p.PrintData(allMembers)
 }
 
+func (p *Printer) PrintOrganizationMemberServices(members []*adminv1.OrganizationMemberService) {
+	if len(members) == 0 {
+		p.PrintfWarn("No services found\n")
+		return
+	}
+
+	allMembers := make([]*orgMemberService, 0, len(members))
+	for _, m := range members {
+		attrBytes, err := json.Marshal(m.Attributes)
+		if err != nil {
+			panic(fmt.Errorf("failed to marshal service attributes: %w", err))
+		}
+		allMembers = append(allMembers, &orgMemberService{
+			Name:            m.Name,
+			RoleName:        m.RoleName,
+			HasProjectRoles: m.HasProjectRoles,
+			Attributes:      string(attrBytes),
+		})
+	}
+
+	p.PrintData(allMembers)
+}
+
+func (p *Printer) PrintProjectMemberServices(members []*adminv1.ProjectMemberService) {
+	if len(members) == 0 {
+		p.PrintfWarn("No services found\n")
+		return
+	}
+
+	allMembers := make([]*projectMemberService, 0, len(members))
+	for _, m := range members {
+		attrBytes, err := json.Marshal(m.Attributes)
+		if err != nil {
+			panic(fmt.Errorf("failed to marshal service attributes: %w", err))
+		}
+
+		allMembers = append(allMembers, &projectMemberService{
+			Name:            m.Name,
+			ProjectName:     m.ProjectName,
+			ProjectRoleName: m.ProjectRoleName,
+			OrgRoleName:     m.OrgRoleName,
+			Attributes:      string(attrBytes),
+		})
+	}
+
+	p.PrintData(allMembers)
+}
+
 func (p *Printer) PrintUsergroupMemberUsers(members []*adminv1.UsergroupMemberUser) {
 	if len(members) == 0 {
 		p.PrintfWarn("No members found\n")
@@ -186,6 +234,21 @@ type memberUserWithRole struct {
 	Email    string `header:"email" json:"email"`
 	Name     string `header:"name" json:"display_name"`
 	RoleName string `header:"role" json:"role_name"`
+}
+
+type orgMemberService struct {
+	Name            string `header:"name" json:"name"`
+	RoleName        string `header:"org_role" json:"role_name"`
+	HasProjectRoles bool   `header:"has_project_roles" json:"has_project_roles"`
+	Attributes      string `header:"attributes" json:"attributes"`
+}
+
+type projectMemberService struct {
+	Name            string `header:"name" json:"name"`
+	ProjectName     string `header:"project" json:"project_name"`
+	ProjectRoleName string `header:"project_role" json:"project_role_name"`
+	OrgRoleName     string `header:"org_role" json:"org_role_name"`
+	Attributes      string `header:"attributes" json:"attributes"`
 }
 
 func (p *Printer) PrintOrganizationInvites(invites []*adminv1.OrganizationInvite) {
@@ -250,17 +313,24 @@ func toServicesTable(sv []*adminv1.Service) []*service {
 }
 
 func toServiceRow(s *adminv1.Service) *service {
+	attrBytes, err := json.Marshal(s.Attributes)
+	if err != nil {
+		panic(fmt.Errorf("failed to marshal service attributes: %w", err))
+	}
+
 	return &service{
-		Name:      s.Name,
-		OrgName:   s.OrgName,
-		CreatedAt: s.CreatedOn.AsTime().Local().Format(time.DateTime),
+		Name:       s.Name,
+		OrgName:    s.OrgName,
+		Attributes: string(attrBytes),
+		CreatedAt:  s.CreatedOn.AsTime().Local().Format(time.DateTime),
 	}
 }
 
 type service struct {
-	Name      string `header:"name" json:"name"`
-	OrgName   string `header:"org_name" json:"org_name"`
-	CreatedAt string `header:"created_at,timestamp(ms|utc|human)" json:"created_at"`
+	Name       string `header:"name" json:"name"`
+	OrgName    string `header:"org_name" json:"org_name"`
+	Attributes string `header:"attributes" json:"attributes"`
+	CreatedAt  string `header:"created_at,timestamp(ms|utc|human)" json:"created_at"`
 }
 
 func (p *Printer) PrintServiceTokens(sts []*adminv1.ServiceToken) {
@@ -282,6 +352,7 @@ func toServiceTokenRow(s *adminv1.ServiceToken) *serviceToken {
 
 	return &serviceToken{
 		ID:        s.Id,
+		Prefix:    s.Prefix,
 		CreatedOn: s.CreatedOn.AsTime().Local().Format(time.DateTime),
 		ExpiresOn: expiresOn,
 	}
@@ -289,6 +360,7 @@ func toServiceTokenRow(s *adminv1.ServiceToken) *serviceToken {
 
 type serviceToken struct {
 	ID        string `header:"id" json:"id"`
+	Prefix    string `header:"prefix" json:"prefix"`
 	CreatedOn string `header:"created_on,timestamp(ms|utc|human)" json:"created_on"`
 	ExpiresOn string `header:"expires_on,timestamp(ms|utc|human)" json:"expires_on"`
 }
@@ -316,6 +388,7 @@ func toUserTokenRow(u *adminv1.UserAuthToken) *userToken {
 	return &userToken{
 		ID:          u.Id,
 		ClientName:  u.AuthClientDisplayName,
+		Prefix:      u.Prefix,
 		Description: u.DisplayName,
 		CreatedOn:   u.CreatedOn.AsTime().Local().Format(time.DateTime),
 		ExpiresOn:   expiresOn,
@@ -326,6 +399,7 @@ func toUserTokenRow(u *adminv1.UserAuthToken) *userToken {
 type userToken struct {
 	ID          string `header:"id" json:"id"`
 	Description string `header:"description" json:"description"`
+	Prefix      string `header:"prefix" json:"prefix"`
 	ClientName  string `header:"client" json:"client"`
 	CreatedOn   string `header:"created,timestamp(ms|utc|human)" json:"created_on"`
 	ExpiresOn   string `header:"expires,timestamp(ms|utc|human)" json:"expires_on"`

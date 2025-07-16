@@ -41,7 +41,7 @@
       spec: { canvasSpec },
       filters: { setFilters },
     },
-  } = getCanvasStore(canvasName));
+  } = getCanvasStore(canvasName, instanceId));
 
   $: ({ instanceId } = $runtime);
 
@@ -242,6 +242,6 @@
 <style lang="postcss">
   .page-param {
     @apply py-3 px-5;
-    @apply border-t border-gray-200;
+    @apply border-t;
   }
 </style>
