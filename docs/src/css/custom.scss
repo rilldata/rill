@@ -179,10 +179,11 @@ li.theme-doc-sidebar-item-category-level-2 .menu__list-item-collapsible {
 }
 
 .menu__link {
-  padding-top: 5px;
-  padding-bottom: 5px;
+  padding-top: 4px;
+  padding-bottom: 4px;
   padding-left: 8px;
   font-size: 14px !important;
+
   &--active {
     font-weight: 600;
   }
@@ -198,7 +199,8 @@ li.theme-doc-sidebar-item-category-level-2 .menu__list-item-collapsible {
 
 .menu__caret {
   padding-top: 0px !important;
-  padding-bottom: 1px !important;
+  padding-bottom: 0px !important;
+
 }
 
 .theme-doc-sidebar-item-link-level-3,
