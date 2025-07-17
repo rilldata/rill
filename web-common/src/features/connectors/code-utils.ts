@@ -53,9 +53,22 @@ driver: ${connector.name}`;
 
   // Compile key value pairs in the order of properties
   const compiledKeyValues = properties
-    .filter(
-      (property) => property.key && formValues[property.key] !== undefined,
-    )
+    .filter((property) => {
+      if (!property.key) return false;
+      const value = formValues[property.key];
+      if (value === undefined) return false;
+      // Filter out empty strings for optional fields
+      if (typeof value === "string" && value.trim() === "") return false;
+      // For ClickHouse, exclude managed: false as it's the default behavior
+      // When managed=false, it's the default self-managed mode and doesn't need to be explicit
+      if (
+        connector.name === "clickhouse" &&
+        property.key === "managed" &&
+        value === false
+      )
+        return false;
+      return true;
+    })
     .map((property) => {
       const key = property.key as string;
       const value = formValues[key] as string;
