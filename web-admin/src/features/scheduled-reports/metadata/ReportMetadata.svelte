@@ -206,7 +206,7 @@
   </div>
 {/if}
 
-{#if reportSpec}
+{#if reportSpec && $exploreIsValid && !$validSpecResp.isPending}
   <ScheduledReportDialog
     bind:open={showEditReportDialog}
     props={{

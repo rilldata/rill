@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { Chip } from "@rilldata/web-common/components/chip";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import type { SearchableFilterSelectableGroup } from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterSelectableItem.ts";
   import SearchableMenuContent from "@rilldata/web-common/components/searchable-filter-menu/SearchableMenuContent.svelte";
@@ -10,6 +11,8 @@
   export let allowedFields: string[];
   export let displayMap: Record<string, { label: string; type: FieldType }>;
   export let label: string;
+  export let disableDragDrop: boolean = false;
+  export let onUpdate: (newFields: string[]) => void;
 
   let open = false;
   let searchValue = "";
@@ -71,24 +74,50 @@
   function handleSelect(name: string) {
     const index = fields.indexOf(name);
     if (index === -1) {
-      fields = [...fields, name];
+      onUpdate([...fields, name]);
     } else {
-      fields = [...fields.slice(0, index), ...fields.slice(index + 1)];
+      onUpdate([...fields.slice(0, index), ...fields.slice(index + 1)]);
     }
     open = false;
+  }
+
+  function handleRemove(item: string) {
+    const temp = [...fields];
+    const index = temp.indexOf(item);
+    if (index !== -1) {
+      temp.splice(index, 1);
+      onUpdate(temp);
+    }
   }
 </script>
 
 <div class="flex flex-col gap-y-1">
   <div>{label}</div>
 
-  <div class="flex flex-row items-center">
-    <ChipDragList
-      items={fields}
-      onUpdate={(newFields) => (fields = newFields)}
-      orientation="horizontal"
-      {displayMap}
-    />
+  <div class="flex flex-row items-center" aria-label="{label} field list">
+    {#if disableDragDrop}
+      <div class="flex flex-row flex-wrap gap-1">
+        {#each fields as field (field)}
+          <Chip
+            removable
+            fullWidth
+            type={displayMap[field]?.type ?? "dimension"}
+            on:remove={() => handleRemove(field)}
+          >
+            <span class="font-bold truncate" slot="body">
+              {displayMap[field]?.label || field}
+            </span>
+          </Chip>
+        {/each}
+      </div>
+    {:else}
+      <ChipDragList
+        items={fields}
+        {onUpdate}
+        orientation="horizontal"
+        {displayMap}
+      />
+    {/if}
 
     <DropdownMenu.Root bind:open typeahead={false} closeOnItemClick={false}>
       <DropdownMenu.Trigger asChild let:builder>

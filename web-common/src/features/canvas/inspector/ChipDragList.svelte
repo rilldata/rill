@@ -41,7 +41,7 @@
 
     dragData = {
       id: item,
-      title: displayMap[item]?.label || item,
+      title: displayMap[item]?.label?.replace(/Time /, "") || item,
       type:
         displayMap[item]?.type === "measure"
           ? PivotChipType.Measure
@@ -92,7 +92,9 @@
 </script>
 
 <div
-  class="flex {orientation === 'vertical' ? 'flex-col' : 'flex-row'} gap-1"
+  class="flex {orientation === 'vertical'
+    ? 'flex-col'
+    : 'flex-row flex-wrap'} gap-1"
   use:swapListener={{
     condition: !!dragData,
     ghostIndex: _ghostIndex,
@@ -122,6 +124,7 @@
         fullWidth
         type={displayMap[item]?.type ?? "dimension"}
         on:remove={() => handleRemove(item)}
+        label="{item} chip"
       >
         <span class="font-bold truncate" slot="body">
           {displayMap[item]?.label || item}

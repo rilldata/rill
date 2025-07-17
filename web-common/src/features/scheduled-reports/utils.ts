@@ -10,6 +10,7 @@ import {
 import {
   COMPARISON_DELTA,
   COMPARISON_PERCENT,
+  ComparisonModifierSuffixRegex,
 } from "@rilldata/web-common/features/dashboards/pivot/types.ts";
 import { includeExcludeModeFromFilters } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores.ts";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
@@ -295,7 +296,11 @@ export function extractRowsAndColumns(
     }
   });
   aggregationRequest.measures?.forEach((measure) => {
-    if (MeasureModifierSuffixRegex.test(measure.name!)) return;
+    if (
+      MeasureModifierSuffixRegex.test(measure.name!) ||
+      ComparisonModifierSuffixRegex.test(measure.name!)
+    )
+      return;
     columns.push(measure.name!);
   });
 
