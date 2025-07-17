@@ -65,6 +65,14 @@
 
   const OLAP_CONNECTORS = ["clickhouse", "druid", "pinot"];
 
+  // TODO: figure out a better abstraction.
+  const PARAMETERS_CONNECTION_STRING_TOGGLE_CONNECTORS = [
+    "snowflake",
+    "clickhouse",
+    "druid",
+    "pinot",
+  ];
+
   const SORT_ORDER = [...SOURCES, ...OLAP_CONNECTORS];
 
   const ICONS = {
@@ -273,7 +281,9 @@
         {:else if selectedConnector.name}
           <AddDataForm
             connector={selectedConnector}
-            formType={OLAP_CONNECTORS.includes(selectedConnector.name)
+            formType={PARAMETERS_CONNECTION_STRING_TOGGLE_CONNECTORS.includes(
+              selectedConnector.name,
+            )
               ? "connector"
               : "source"}
             onClose={resetModal}
