@@ -359,7 +359,8 @@ export function calculateComparisonTimeRangePartial(
 
   return {
     showTimeComparison: showTimeComparison,
-    selectedComparisonTimeRange,
+    selectedComparisonTimeRange:
+      selectedComparisonTimeRange as DashboardTimeControls,
     comparisonTimeStart: comparisonTimeStart?.toISOString(),
     comparisonAdjustedStart,
     comparisonTimeEnd: comparisonTimeEnd?.toISOString(),
