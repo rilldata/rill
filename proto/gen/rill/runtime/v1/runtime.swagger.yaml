@@ -81,6 +81,30 @@ paths:
           type: string
       tags:
         - ConnectorService
+  /v1/connectors/database_schemas:
+    get:
+      summary: ListDatabaseSchemas list all schemas across databases
+      operationId: ConnectorService_ListDatabaseSchemas
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListDatabaseSchemasResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: query
+          required: false
+          type: string
+        - name: connector
+          in: query
+          required: false
+          type: string
+      tags:
+        - ConnectorService
   /v1/connectors/meta:
     get:
       summary: |-
@@ -129,6 +153,74 @@ paths:
           required: false
           type: string
         - name: table
+          in: query
+          required: false
+          type: string
+      tags:
+        - ConnectorService
+  /v1/connectors/table_metadata:
+    get:
+      summary: GetTable returns metadata about a table or view
+      operationId: ConnectorService_GetTable
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetTableResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: query
+          required: false
+          type: string
+        - name: connector
+          in: query
+          required: false
+          type: string
+        - name: database
+          in: query
+          required: false
+          type: string
+        - name: databaseSchema
+          in: query
+          required: false
+          type: string
+        - name: table
+          in: query
+          required: false
+          type: string
+      tags:
+        - ConnectorService
+  /v1/connectors/tables:
+    get:
+      summary: ListTables list all tables for database and database_schema provided
+      operationId: ConnectorService_ListTables
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListTablesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: query
+          required: false
+          type: string
+        - name: connector
+          in: query
+          required: false
+          type: string
+        - name: database
+          in: query
+          required: false
+          type: string
+        - name: databaseSchema
           in: query
           required: false
           type: string
@@ -458,11 +550,99 @@ paths:
                 type: object
                 additionalProperties:
                   type: string
-              watchRepo:
-                type: boolean
             description: |-
               Request message for RuntimeService.EditInstance.
               See message Instance for field descriptions.
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/ai/complete:
+    post:
+      summary: Complete runs a language model completion (LLM chat) using the configured AI connector.
+      operationId: RuntimeService_Complete
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1CompleteResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              conversationId:
+                type: string
+                title: If not provided, creates a new conversation
+              messages:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1Message'
+              toolNames:
+                type: array
+                items:
+                  type: string
+              appContext:
+                $ref: '#/definitions/v1AppContext'
+            title: Request message for RuntimeService.Complete
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/ai/conversations:
+    get:
+      summary: ListConversations lists all AI chat conversations for an instance.
+      operationId: RuntimeService_ListConversations
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListConversationsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/ai/conversations/{conversationId}:
+    get:
+      summary: GetConversation returns a specific AI chat conversation.
+      operationId: RuntimeService_GetConversation
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetConversationResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: conversationId
+          in: path
+          required: true
+          type: string
+        - name: includeSystemMessages
+          description: Whether to include system messages in the response (defaults to false for UI use)
+          in: query
+          required: false
+          type: boolean
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/connectors/analyze:
@@ -1590,6 +1770,9 @@ paths:
               filter:
                 $ref: '#/definitions/v1MetricsViewFilter'
                 title: Deprecated. should be removed once UI is moved to use new filters
+              timeDimension:
+                type: string
+                title: Optional. If not specified, falls back to the primary time dimension in the metrics view spec
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/schema:
@@ -1704,6 +1887,9 @@ paths:
               priority:
                 type: integer
                 format: int32
+              timeDimension:
+                type: string
+                title: Optional. If not specified, falls back to the primary time dimension in the metrics view spec
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/time-ranges:
@@ -1743,6 +1929,9 @@ paths:
               timeZone:
                 type: string
                 title: Optional timezone param to easily override time-range expressions
+              timeDimension:
+                type: string
+                title: Optional. If not specified, falls back to the primary time dimension in the metrics view spec
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/timeseries:
@@ -1811,6 +2000,9 @@ paths:
               filter:
                 $ref: '#/definitions/v1MetricsViewFilter'
                 title: Deprecated. should be removed once UI is moved to use new filters
+              timeDimension:
+                type: string
+                title: Optional. If not specified, falls back to the primary time dimension in the metrics view spec
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/toplist:
@@ -1938,6 +2130,9 @@ paths:
               filter:
                 $ref: '#/definitions/v1MetricsViewFilter'
                 title: Deprecated. should be removed once UI is moved to use new filters
+              timeDimension:
+                type: string
+                title: Optional. If not specified, falls back to the primary time dimension in the metrics view spec
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/null-count/tables/{tableName}:
@@ -2789,7 +2984,7 @@ paths:
         - RuntimeService
   /v1/olap/tables:
     get:
-      summary: OLAPListTables list all tables across all databases on motherduck
+      summary: OLAPListTables list all tables across all databases in an OLAP
       operationId: ConnectorService_OLAPListTables
       responses:
         "200":
@@ -3074,6 +3269,9 @@ definitions:
         type: string
       lookupDefaultExpression:
         type: string
+      dataType:
+        $ref: '#/definitions/runtimev1Type'
+        description: The data type of the dimension. Only populated in ValidSpec.
     title: Dimensions are columns to filter and group by
   MetricsViewSpecDimensionSelector:
     type: object
@@ -3126,6 +3324,9 @@ definitions:
         type: boolean
       treatNullsAs:
         type: string
+      dataType:
+        $ref: '#/definitions/runtimev1Type'
+        description: The data type of the measure. Only populated in ValidSpec.
     title: Measures are aggregated computed values
   MetricsViewSpecMeasureType:
     type: string
@@ -3308,6 +3509,8 @@ definitions:
       openapiRequestSchemaJson:
         type: string
       openapiResponseSchemaJson:
+        type: string
+      openapiDefsPrefix:
         type: string
       securityRules:
         type: array
@@ -3505,6 +3708,21 @@ definitions:
           type: object
           $ref: '#/definitions/v1ResourceName'
         description: List of resources that appear to use the connector.
+  v1AppContext:
+    type: object
+    properties:
+      contextType:
+        $ref: '#/definitions/v1AppContextType'
+      contextMetadata:
+        type: object
+  v1AppContextType:
+    type: string
+    enum:
+      - APP_CONTEXT_TYPE_UNSPECIFIED
+      - APP_CONTEXT_TYPE_PROJECT_CHAT
+      - APP_CONTEXT_TYPE_EXPLORE_DASHBOARD
+    default: APP_CONTEXT_TYPE_UNSPECIFIED
+    title: Application context for AI conversations
   v1AssertionResult:
     type: object
     properties:
@@ -4001,6 +4219,17 @@ definitions:
     properties:
       categoricalSummary:
         $ref: '#/definitions/v1CategoricalSummary'
+  v1CompleteResponse:
+    type: object
+    properties:
+      conversationId:
+        type: string
+      messages:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1Message'
+    title: Response message for RuntimeService.Complete
   v1Component:
     type: object
     properties:
@@ -4162,6 +4391,37 @@ definitions:
         $ref: '#/definitions/v1ConnectorSpec'
       state:
         $ref: '#/definitions/v1ConnectorState'
+  v1ContentBlock:
+    type: object
+    properties:
+      text:
+        type: string
+      toolCall:
+        $ref: '#/definitions/v1ToolCall'
+      toolResult:
+        $ref: '#/definitions/v1ToolResult'
+    title: Content block within a message
+  v1Conversation:
+    type: object
+    properties:
+      id:
+        type: string
+      ownerId:
+        type: string
+      title:
+        type: string
+      createdOn:
+        type: string
+        format: date-time
+      updatedOn:
+        type: string
+        format: date-time
+      messages:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1Message'
+    title: Conversation metadata and messages
   v1CreateDirectoryResponse:
     type: object
     title: Response message for RuntimeService.CreateDirectory
@@ -4193,8 +4453,6 @@ definitions:
         type: object
         additionalProperties:
           type: string
-      watchRepo:
-        type: boolean
     description: |-
       Request message for RuntimeService.CreateInstance.
       See message Instance for field descriptions.
@@ -4206,6 +4464,13 @@ definitions:
     title: Response message for RuntimeService.CreateInstance
   v1CreateTriggerResponse:
     type: object
+  v1DatabaseSchemaInfo:
+    type: object
+    properties:
+      database:
+        type: string
+      databaseSchema:
+        type: string
   v1DeleteFileResponse:
     type: object
     title: Response message for RuntimeService.DeleteFile
@@ -4586,6 +4851,12 @@ definitions:
         type: string
       resolverProperties:
         type: object
+  v1GetConversationResponse:
+    type: object
+    properties:
+      conversation:
+        $ref: '#/definitions/v1Conversation'
+    title: Response message for RuntimeService.GetConversation
   v1GetExploreResponse:
     type: object
     properties:
@@ -4631,6 +4902,13 @@ definitions:
     properties:
       resource:
         $ref: '#/definitions/v1Resource'
+  v1GetTableResponse:
+    type: object
+    properties:
+      schema:
+        type: object
+        additionalProperties:
+          type: string
   v1HealthResponse:
     type: object
     properties:
@@ -4700,8 +4978,6 @@ definitions:
         type: object
         additionalProperties:
           type: string
-      watchRepo:
-        type: boolean
       aiInstructions:
         type: string
     description: |-
@@ -4769,6 +5045,23 @@ definitions:
           type: object
           $ref: '#/definitions/v1ConnectorDriver'
     title: Response message for RuntimeService.ListConnectorDrivers
+  v1ListConversationsResponse:
+    type: object
+    properties:
+      conversations:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1Conversation'
+    title: Response message for RuntimeService.ListConversations
+  v1ListDatabaseSchemasResponse:
+    type: object
+    properties:
+      databaseSchemas:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1DatabaseSchemaInfo'
   v1ListExamplesResponse:
     type: object
     properties:
@@ -4816,6 +5109,14 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1Resource'
+  v1ListTablesResponse:
+    type: object
+    properties:
+      tables:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1TableInfo'
   v1Log:
     type: object
     properties:
@@ -4846,6 +5147,25 @@ definitions:
       valueType:
         $ref: '#/definitions/runtimev1Type'
     title: MapType is a complex type for mapping keys to values
+  v1Message:
+    type: object
+    properties:
+      id:
+        type: string
+      role:
+        type: string
+      content:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ContentBlock'
+      createdOn:
+        type: string
+        format: date-time
+      updatedOn:
+        type: string
+        format: date-time
+    title: Message exchanged in a conversation
   v1MetricsView:
     type: object
     properties:
@@ -4896,6 +5216,8 @@ definitions:
         $ref: '#/definitions/v1MetricsViewAggregationMeasureComputePercentOfTotal'
       uri:
         $ref: '#/definitions/v1MetricsViewAggregationMeasureComputeURI'
+      comparisonTime:
+        $ref: '#/definitions/v1MetricsViewAggregationMeasureComputeComparisonTime'
   v1MetricsViewAggregationMeasureComputeComparisonDelta:
     type: object
     properties:
@@ -4905,6 +5227,11 @@ definitions:
     type: object
     properties:
       measure:
+        type: string
+  v1MetricsViewAggregationMeasureComputeComparisonTime:
+    type: object
+    properties:
+      dimension:
         type: string
   v1MetricsViewAggregationMeasureComputeComparisonValue:
     type: object
@@ -5253,6 +5580,9 @@ definitions:
       filter:
         $ref: '#/definitions/v1MetricsViewFilter'
         title: Deprecated. should be removed once UI is moved to use new filters
+      timeDimension:
+        type: string
+        title: Optional. If not specified, falls back to the primary time dimension in the metrics view spec
   v1MetricsViewRowsResponse:
     type: object
     properties:
@@ -5435,6 +5765,9 @@ definitions:
       filter:
         $ref: '#/definitions/v1MetricsViewFilter'
         title: Deprecated. should be removed once UI is moved to use new filters
+      timeDimension:
+        type: string
+        title: Optional. If not specified, falls back to the primary time dimension in the metrics view spec
   v1MetricsViewTimeSeriesResponse:
     type: object
     properties:
@@ -5540,6 +5873,9 @@ definitions:
       filter:
         $ref: '#/definitions/v1MetricsViewFilter'
         title: Deprecated. should be removed once UI is moved to use new filters
+      timeDimension:
+        type: string
+        title: Optional. If not specified, falls back to the primary time dimension in the metrics view spec
   v1MetricsViewTotalsResponse:
     type: object
     properties:
@@ -5647,6 +5983,11 @@ definitions:
       changeMode:
         $ref: '#/definitions/v1ModelChangeMode'
         description: change_mode is the mode of change detection to use for the model.
+      tests:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ModelTest'
       trigger:
         type: boolean
       triggerFull:
@@ -5675,6 +6016,14 @@ definitions:
       refsHash:
         type: string
         description: refs_hash is a hash of the model's refs current state. It is used to determine if the model's refs have changed.
+      testHash:
+        type: string
+        description: test_hash is a hash of the model's tests current state. It is used to determine if the model's tests have changed.
+      testErrors:
+        type: array
+        items:
+          type: string
+        description: test_errors contains the results of the model's tests.
       refreshedOn:
         type: string
         format: date-time
@@ -5702,6 +6051,15 @@ definitions:
         type: string
         format: int64
         description: latest_execution_duration_ms is the time user queries took to execute in the last successful refresh.
+  v1ModelTest:
+    type: object
+    properties:
+      name:
+        type: string
+      resolver:
+        type: string
+      resolverProperties:
+        type: object
   v1Notifier:
     type: object
     properties:
@@ -5784,7 +6142,27 @@ definitions:
         type: array
         items:
           type: object
-          $ref: '#/definitions/v1TableInfo'
+          $ref: '#/definitions/v1OlapTableInfo'
+  v1OlapTableInfo:
+    type: object
+    properties:
+      database:
+        type: string
+      databaseSchema:
+        type: string
+      isDefaultDatabase:
+        type: boolean
+      isDefaultDatabaseSchema:
+        type: boolean
+      name:
+        type: string
+      hasUnsupportedDataTypes:
+        type: boolean
+        title: has_unsupported_data_types indicates if the underlying table has any column with an unsupported OLAP engine datatype
+      physicalSizeBytes:
+        type: string
+        format: int64
+        description: physical_size_bytes is the physical size of the table. Set to -1 if the size cannot be determined.
   v1Operation:
     type: string
     enum:
@@ -5922,6 +6300,8 @@ definitions:
   v1QueryResolverResponse:
     type: object
     properties:
+      meta:
+        type: object
       schema:
         $ref: '#/definitions/v1StructType'
       data:
@@ -6458,23 +6838,10 @@ definitions:
   v1TableInfo:
     type: object
     properties:
-      database:
-        type: string
-      databaseSchema:
-        type: string
-      isDefaultDatabase:
-        type: boolean
-      isDefaultDatabaseSchema:
-        type: boolean
       name:
         type: string
-      hasUnsupportedDataTypes:
+      view:
         type: boolean
-        title: has_unsupported_data_types indicates if the underlying table has any column with an unsupported OLAP engine datatype
-      physicalSizeBytes:
-        type: string
-        format: int64
-        description: physical_size_bytes is the physical size of the table. Set to -1 if the size cannot be determined.
   v1TableRowsRequest:
     type: object
     properties:
@@ -6562,6 +6929,9 @@ definitions:
         description: |-
           Optional. Rill format time range. Should only be used for alerts and reports.
           For dashboard call ResolveTimeRanges.
+      timeDimension:
+        type: string
+        title: Optional. If not specified, falls back to the primary time dimension in the metrics view spec
     title: 2 of the (start, end, iso_duration) should be set
   v1TimeRangeSummary:
     type: object
@@ -6626,6 +6996,26 @@ definitions:
       records:
         type: object
         title: Not optional, not null
+  v1ToolCall:
+    type: object
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+      input:
+        type: object
+    title: Tool call specification
+  v1ToolResult:
+    type: object
+    properties:
+      id:
+        type: string
+      content:
+        type: string
+      isError:
+        type: boolean
+    title: Tool execution result
   v1TopK:
     type: object
     properties:

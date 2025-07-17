@@ -6,6 +6,7 @@
     YValue,
   } from "@rilldata/web-common/components/data-graphic/marks/types";
   import { bisectData } from "@rilldata/web-common/components/data-graphic/utils";
+  import { ComparisonDeltaPreviousSuffix } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
   import type { DimensionDataItem } from "@rilldata/web-common/features/dashboards/time-series/multiple-dimension-queries";
   import type { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
   import type { TimeSeriesDatum } from "./timeseries-data-store";
@@ -78,7 +79,8 @@
           );
 
           if (bisectedComparison !== undefined) {
-            const comparisonY = bisectedComparison[`comparison.${yAccessor}`];
+            const comparisonY =
+              bisectedComparison[yAccessor + ComparisonDeltaPreviousSuffix];
             yValues.push({
               y: comparisonY,
               color: dimension?.color,

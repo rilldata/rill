@@ -44,6 +44,35 @@ func TestGlobUnpartitioned(t *testing.T) {
 	require.Equal(t, "file1.csv", rows[2]["path"])
 }
 
+func TestGlobTrimsWhitespace(t *testing.T) {
+	rt, instanceID := prepareGlobTest(t, "mock", map[string]string{
+		"file1.csv":     ``,
+		"dir/file2.csv": ``,
+		"dir/file3.csv": ``,
+	})
+
+	res, err := rt.Resolve(context.Background(), &runtime.ResolveOptions{
+		InstanceID: instanceID,
+		Resolver:   "glob",
+		ResolverProperties: map[string]any{
+			"connector": "mock",
+			"path":      "\n mock://bucket/**/*.csv \n",
+		},
+		Args:   nil,
+		Claims: &runtime.SecurityClaims{},
+	})
+	require.NoError(t, err)
+	defer res.Close()
+
+	var rows []map[string]interface{}
+	require.NoError(t, json.Unmarshal(must(res.MarshalJSON()), &rows))
+
+	require.Len(t, rows, 3)
+	require.Equal(t, "dir/file2.csv", rows[0]["path"])
+	require.Equal(t, "dir/file3.csv", rows[1]["path"])
+	require.Equal(t, "file1.csv", rows[2]["path"])
+}
+
 func TestGlobDirectoryPartitioned(t *testing.T) {
 	rt, instanceID := prepareGlobTest(t, "mock", map[string]string{
 		"dir/file1.csv":        ``,

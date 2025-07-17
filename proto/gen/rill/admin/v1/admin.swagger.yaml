@@ -68,6 +68,61 @@ paths:
             $ref: '#/definitions/rpcStatus'
       tags:
         - AdminService
+  /v1/deployments/{deploymentId}:
+    delete:
+      summary: DeleteDeployment deletes a deployment.
+      operationId: AdminService_DeleteDeployment
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1DeleteDeploymentResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: deploymentId
+          in: path
+          required: true
+          type: string
+      tags:
+        - AdminService
+  /v1/deployments/{deploymentId}/credentials:
+    post:
+      summary: GetDeployment returns runtime info and access token on behalf of a specific user, or alternatively for a raw set of JWT attributes
+      operationId: AdminService_GetDeployment
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetDeploymentResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: deploymentId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              accessTokenTtlSeconds:
+                type: integer
+                format: int64
+              userId:
+                type: string
+              userEmail:
+                type: string
+              attributes:
+                type: object
+      tags:
+        - AdminService
   /v1/deployments/{deploymentId}/provision:
     post:
       summary: |-
@@ -167,6 +222,56 @@ paths:
                 type: array
                 items:
                   type: string
+      tags:
+        - AdminService
+  /v1/deployments/{deploymentId}/start:
+    post:
+      summary: StartDeployment starts a deployment.
+      operationId: AdminService_StartDeployment
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1StartDeploymentResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: deploymentId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+      tags:
+        - AdminService
+  /v1/deployments/{deploymentId}/stop:
+    post:
+      summary: StopDeployment stops a deployment.
+      operationId: AdminService_StopDeployment
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1StopDeploymentResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: deploymentId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
       tags:
         - AdminService
   /v1/github/repositories:
@@ -1107,7 +1212,9 @@ paths:
         - AdminService
   /v1/organizations/{organization}/projects/{project}/credentials:
     post:
-      summary: GetDeploymentCredentials returns runtime info and access token on behalf of a specific user, or alternatively for a raw set of JWT attributes
+      summary: |-
+        GetDeploymentCredentials returns runtime info and access token on behalf of a specific user, or alternatively for a raw set of JWT attributes
+        DEPRECATED: Clients should call GetDeployment instead.
       operationId: AdminService_GetDeploymentCredentials
       responses:
         "200":
@@ -1672,6 +1779,9 @@ paths:
           required: true
           schema:
             type: object
+            properties:
+              role:
+                type: string
       tags:
         - AdminService
   /v1/organizations/{organization}/projects/{project}/tokens/magic:
@@ -2818,6 +2928,157 @@ paths:
                 type: boolean
       tags:
         - AdminService
+  /v1/organizations/{organizationName}/projects/{projectName}/deployments:
+    get:
+      summary: ListDeployments lists deployments for a project.
+      operationId: AdminService_ListDeployments
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListDeploymentsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organizationName
+          in: path
+          required: true
+          type: string
+        - name: projectName
+          in: path
+          required: true
+          type: string
+        - name: environment
+          in: query
+          required: false
+          type: string
+        - name: userId
+          in: query
+          required: false
+          type: string
+      tags:
+        - AdminService
+    post:
+      summary: CreateDeployment creates a new deployment for a project.
+      operationId: AdminService_CreateDeployment
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1CreateDeploymentResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organizationName
+          in: path
+          required: true
+          type: string
+        - name: projectName
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              environment:
+                type: string
+      tags:
+        - AdminService
+  /v1/organizations/{organizationName}/projects/{projectName}/services:
+    get:
+      summary: ListProjectMemberServices returns all the services for the project for an organization
+      operationId: AdminService_ListProjectMemberServices
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListProjectMemberServicesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organizationName
+          in: path
+          required: true
+          type: string
+        - name: projectName
+          in: path
+          required: true
+          type: string
+      tags:
+        - AdminService
+  /v1/organizations/{organizationName}/projects/{projectName}/services/{name}:
+    delete:
+      summary: RemoveProjectMemberService removes the service from the project
+      operationId: AdminService_RemoveProjectMemberService
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1RemoveProjectMemberServiceResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organizationName
+          in: path
+          required: true
+          type: string
+        - name: projectName
+          in: path
+          required: true
+          type: string
+        - name: name
+          in: path
+          required: true
+          type: string
+      tags:
+        - AdminService
+  /v1/organizations/{organizationName}/projects/{projectName}/services/{name}/role:
+    put:
+      summary: SetProjectMemberServiceRole updates the project role for the service
+      operationId: AdminService_SetProjectMemberServiceRole
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1SetProjectMemberServiceRoleResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organizationName
+          in: path
+          required: true
+          type: string
+        - name: projectName
+          in: path
+          required: true
+          type: string
+        - name: name
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              role:
+                type: string
+      tags:
+        - AdminService
   /v1/organizations/{organizationName}/services:
     get:
       summary: ListService returns all the services per organization
@@ -2855,13 +3116,51 @@ paths:
           in: path
           required: true
           type: string
-        - name: name
-          in: query
-          required: false
-          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              name:
+                type: string
+              orgRoleName:
+                type: string
+                title: Optional org role to assign
+              projectName:
+                type: string
+                title: Optional project to assign role to
+              projectRoleName:
+                type: string
+                title: Optional project role to assign
+              attributes:
+                type: object
       tags:
         - AdminService
   /v1/organizations/{organizationName}/services/{name}:
+    get:
+      summary: GetService returns information about a specific service
+      operationId: AdminService_GetService
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetServiceResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organizationName
+          in: path
+          required: true
+          type: string
+        - name: name
+          in: path
+          required: true
+          type: string
+      tags:
+        - AdminService
     delete:
       summary: DeleteService deletes a service per organization
       operationId: AdminService_DeleteService
@@ -2913,6 +3212,63 @@ paths:
             type: object
             properties:
               newName:
+                type: string
+              attributes:
+                type: object
+      tags:
+        - AdminService
+  /v1/organizations/{organizationName}/services/{name}/role:
+    delete:
+      summary: RemoveOrganizationMemberService removes the organization role for the service
+      operationId: AdminService_RemoveOrganizationMemberService
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1RemoveOrganizationMemberServiceResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organizationName
+          in: path
+          required: true
+          type: string
+        - name: name
+          in: path
+          required: true
+          type: string
+      tags:
+        - AdminService
+    put:
+      summary: SetOrganizationMemberServiceRole sets or updates the role of the service in the organization
+      operationId: AdminService_SetOrganizationMemberServiceRole
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1SetOrganizationMemberServiceRoleResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organizationName
+          in: path
+          required: true
+          type: string
+        - name: name
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              role:
                 type: string
       tags:
         - AdminService
@@ -3167,12 +3523,9 @@ paths:
             $ref: '#/definitions/rpcStatus'
       parameters:
         - name: projectId
+          description: The project ID to get repository metadata for.
           in: path
           required: true
-          type: string
-        - name: branch
-          in: query
-          required: false
           type: string
       tags:
         - AdminService
@@ -3191,15 +3544,25 @@ paths:
             $ref: '#/definitions/rpcStatus'
       parameters:
         - name: projectId
+          description: The project ID to pull virtual files for.
           in: path
           required: true
           type: string
+        - name: environment
+          description: |-
+            The environment to pull virtual files for.
+            It is optional. If the call is made with a deployment access token, it defaults to the environment of the deployment. Otherwise, it defaults to "prod".
+          in: query
+          required: false
+          type: string
         - name: pageSize
+          description: Page size for pagination.
           in: query
           required: false
           type: integer
           format: int64
         - name: pageToken
+          description: Page token for pagination.
           in: query
           required: false
           type: string
@@ -4296,6 +4659,12 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1CompletionMessage'
+      tools:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1Tool'
+        title: Optional list of tools that the AI can use during completion
   v1CompleteResponse:
     type: object
     properties:
@@ -4308,6 +4677,13 @@ definitions:
         type: string
       data:
         type: string
+        title: Deprecated in favor of content
+      content:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ContentBlock'
+    title: Completion message for AI API calls
   v1Condition:
     type: object
     properties:
@@ -4320,6 +4696,16 @@ definitions:
           $ref: '#/definitions/v1Expression'
   v1ConnectProjectToGithubResponse:
     type: object
+  v1ContentBlock:
+    type: object
+    properties:
+      text:
+        type: string
+      toolCall:
+        $ref: '#/definitions/v1ToolCall'
+      toolResult:
+        $ref: '#/definitions/v1ToolResult'
+    title: Content block within a message
   v1CreateAlertResponse:
     type: object
     properties:
@@ -4361,6 +4747,11 @@ definitions:
     properties:
       bookmark:
         $ref: '#/definitions/v1Bookmark'
+  v1CreateDeploymentResponse:
+    type: object
+    properties:
+      deployment:
+        $ref: '#/definitions/v1Deployment'
   v1CreateManagedGitRepoResponse:
     type: object
     properties:
@@ -4415,6 +4806,11 @@ definitions:
     type: object
   v1DeleteAlertResponse:
     type: object
+  v1DeleteDeploymentResponse:
+    type: object
+    properties:
+      deploymentId:
+        type: string
   v1DeleteOrganizationResponse:
     type: object
   v1DeleteProjectResponse:
@@ -4442,6 +4838,10 @@ definitions:
         type: string
       projectId:
         type: string
+      ownerUserId:
+        type: string
+      environment:
+        type: string
       branch:
         type: string
       runtimeHost:
@@ -4465,6 +4865,7 @@ definitions:
       - DEPLOYMENT_STATUS_PENDING
       - DEPLOYMENT_STATUS_OK
       - DEPLOYMENT_STATUS_ERROR
+      - DEPLOYMENT_STATUS_STOPPED
     default: DEPLOYMENT_STATUS_UNSPECIFIED
   v1DisconnectProjectFromGithubResponse:
     type: object
@@ -4563,6 +4964,8 @@ definitions:
         type: string
       gitProdBranch:
         type: string
+      gitManagedRepo:
+        type: boolean
       archiveDownloadUrl:
         type: string
         title: either archive_download_url or git related details will be set
@@ -4579,6 +4982,18 @@ definitions:
       preferences:
         $ref: '#/definitions/v1UserPreferences'
   v1GetDeploymentCredentialsResponse:
+    type: object
+    properties:
+      runtimeHost:
+        type: string
+      instanceId:
+        type: string
+      accessToken:
+        type: string
+      ttlSeconds:
+        type: integer
+        format: int64
+  v1GetDeploymentResponse:
     type: object
     properties:
       runtimeHost:
@@ -4691,21 +5106,40 @@ definitions:
   v1GetRepoMetaResponse:
     type: object
     properties:
-      gitUrl:
-        type: string
-        description: If the Git-related fields are set, the archive-related fields will not be set (and vice versa).
-      gitUrlExpiresOn:
+      expiresOn:
         type: string
         format: date-time
+        description: How long the returned config is valid for. Clients should call GetRepoMeta again after this time.
+      lastUpdatedOn:
+        type: string
+        format: date-time
+        description: When the returned config was last modified. This covers all fields in the response except the ephemeral credentials embedded in git_url and archive_download_url.
+      gitUrl:
+        type: string
+        description: |-
+          Git remote for cloning (and maybe pushing) a Git repository.
+          The URL uses HTTPS with embedded username/password.
       gitSubpath:
         type: string
+        description: Optional subpath within the Git repository to use as the project root.
+      gitBranch:
+        type: string
+        description: The branch to use for the deployment.
+      gitEditBranch:
+        type: string
+        description: |-
+          A unique branch name generated for temporary/ephemeral use in edit mode where files may be mutated.
+          This enables checkpointing progress across hibernations and also more easily pinning to a specific commit of the base branch to delay conflict resolution.
       archiveDownloadUrl:
         type: string
+        description: Signed URL for downloading a tarball of project files. If this is set, the git_* fields will be empty (and vice versa).
       archiveId:
         type: string
+        description: A stable ID for the archive returned from archive_download_url.
       archiveCreatedOn:
         type: string
         format: date-time
+        description: The creation time of the archive returned from archive_download_url.
   v1GetReportMetaResponse:
     type: object
     properties:
@@ -4713,6 +5147,17 @@ definitions:
         type: object
         additionalProperties:
           $ref: '#/definitions/GetReportMetaResponseURLs'
+  v1GetServiceResponse:
+    type: object
+    properties:
+      service:
+        $ref: '#/definitions/v1OrganizationMemberService'
+      projectMemberships:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ProjectMemberService'
+        title: All projects that the service is a member of
   v1GetUserResponse:
     type: object
     properties:
@@ -4775,6 +5220,14 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1Bookmark'
+  v1ListDeploymentsResponse:
+    type: object
+    properties:
+      deployments:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1Deployment'
   v1ListGithubUserReposResponse:
     type: object
     properties:
@@ -4809,6 +5262,10 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1OrganizationInvite'
+      totalCount:
+        type: integer
+        format: int64
+        title: Total number of invites in the organization
       nextPageToken:
         type: string
   v1ListOrganizationMemberUsergroupsResponse:
@@ -4829,6 +5286,10 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1OrganizationMemberUser'
+      totalCount:
+        type: integer
+        format: int64
+        title: Total number of members in the organization
       nextPageToken:
         type: string
   v1ListOrganizationsResponse:
@@ -4851,6 +5312,14 @@ definitions:
           $ref: '#/definitions/v1ProjectInvite'
       nextPageToken:
         type: string
+  v1ListProjectMemberServicesResponse:
+    type: object
+    properties:
+      services:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ProjectMemberService'
   v1ListProjectMemberUsergroupsResponse:
     type: object
     properties:
@@ -4943,7 +5412,7 @@ definitions:
         type: array
         items:
           type: object
-          $ref: '#/definitions/v1Service'
+          $ref: '#/definitions/v1OrganizationMemberService'
   v1ListSuperusersResponse:
     type: object
     properties:
@@ -5123,6 +5592,30 @@ definitions:
         type: string
       invitedBy:
         type: string
+  v1OrganizationMemberService:
+    type: object
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+      orgId:
+        type: string
+      orgName:
+        type: string
+      roleName:
+        type: string
+      hasProjectRoles:
+        type: boolean
+        description: True if the user has a project role in any project in the organization.
+      attributes:
+        type: object
+      createdOn:
+        type: string
+        format: date-time
+      updatedOn:
+        type: string
+        format: date-time
   v1OrganizationMemberUser:
     type: object
     properties:
@@ -5249,6 +5742,9 @@ definitions:
         format: int64
       prodDeploymentId:
         type: string
+      devSlots:
+        type: string
+        format: int64
       frontendUrl:
         type: string
         description: 'Note: Does NOT incorporate the parent org''s custom domain.'
@@ -5278,6 +5774,33 @@ definitions:
         type: string
       invitedBy:
         type: string
+  v1ProjectMemberService:
+    type: object
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+      orgId:
+        type: string
+      orgName:
+        type: string
+      orgRoleName:
+        type: string
+      projectId:
+        type: string
+      projectName:
+        type: string
+      projectRoleName:
+        type: string
+      attributes:
+        type: object
+      createdOn:
+        type: string
+        format: date-time
+      updatedOn:
+        type: string
+        format: date-time
   v1ProjectMemberUser:
     type: object
     properties:
@@ -5411,8 +5934,10 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1VirtualFile'
+        description: List of virtual files ordered by update time, most recent last.
       nextPageToken:
         type: string
+        description: Next page token for pagination.
   v1Quotas:
     type: object
     properties:
@@ -5441,9 +5966,13 @@ definitions:
     type: object
   v1RemoveBookmarkResponse:
     type: object
+  v1RemoveOrganizationMemberServiceResponse:
+    type: object
   v1RemoveOrganizationMemberUserResponse:
     type: object
   v1RemoveOrganizationMemberUsergroupResponse:
+    type: object
+  v1RemoveProjectMemberServiceResponse:
     type: object
   v1RemoveProjectMemberUserResponse:
     type: object
@@ -5581,6 +6110,8 @@ definitions:
         type: string
       orgName:
         type: string
+      attributes:
+        type: object
       createdOn:
         type: string
         format: date-time
@@ -5592,15 +6123,21 @@ definitions:
     properties:
       id:
         type: string
+      prefix:
+        type: string
       createdOn:
         type: string
         format: date-time
       expiresOn:
         type: string
         format: date-time
+  v1SetOrganizationMemberServiceRoleResponse:
+    type: object
   v1SetOrganizationMemberUserRoleResponse:
     type: object
   v1SetOrganizationMemberUsergroupRoleResponse:
+    type: object
+  v1SetProjectMemberServiceRoleResponse:
     type: object
   v1SetProjectMemberUserRoleResponse:
     type: object
@@ -5615,6 +6152,16 @@ definitions:
         type: boolean
   v1SetSuperuserResponse:
     type: object
+  v1StartDeploymentResponse:
+    type: object
+    properties:
+      deployment:
+        $ref: '#/definitions/v1Deployment'
+  v1StopDeploymentResponse:
+    type: object
+    properties:
+      deploymentId:
+        type: string
   v1Subquery:
     type: object
     properties:
@@ -5781,6 +6328,39 @@ definitions:
     properties:
       user:
         $ref: '#/definitions/v1User'
+  v1Tool:
+    type: object
+    properties:
+      name:
+        type: string
+        title: The name of the tool
+      description:
+        type: string
+        title: A human-readable description of the tool
+      inputSchema:
+        type: string
+        title: JSON Schema defining the expected parameters for the tool (as JSON string)
+    title: Tool represents a tool definition for AI usage
+  v1ToolCall:
+    type: object
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+      input:
+        type: object
+    title: Tool call specification
+  v1ToolResult:
+    type: object
+    properties:
+      id:
+        type: string
+      content:
+        type: string
+      isError:
+        type: boolean
+    title: Tool execution result
   v1TriggerReconcileResponse:
     type: object
   v1TriggerRedeployRequest:
@@ -5895,6 +6475,8 @@ definitions:
       authClientDisplayName:
         type: string
       representingUserId:
+        type: string
+      prefix:
         type: string
       createdOn:
         type: string

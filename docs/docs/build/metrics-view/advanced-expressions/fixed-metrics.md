@@ -5,12 +5,12 @@ sidebar_label: "Fixed Metrics"
 sidebar_position: 04
 ---
 
-Some metrics may be at a different level of granularity where a sum across the metric is no longer accurate. As an example, perhaps you have have a campaign with a daily budget of $5000 across five line items. Summing `daily_budget` column would give an inaccurate total of $25,000 budget per day. For those familiar Tableau, this is referred to as a `FIXED metric`. 
+Some metrics may be at a different level of granularity where a sum across the metric is no longer accurate. As an example, perhaps you have a campaign with a daily budget of $5000 across five line items. Summing the `daily_budget` column would give an inaccurate total of $25,000 budget per day. For those familiar with Tableau, this is referred to as a `FIXED metric`. 
 
 <img src = '/img/build/metrics-view/examples/incorrect-sum.png' class='rounded-gif' />
 <br />
 
-To create the correct value, you can utilize DuckDB's unnest functionality. In the example below, you would be pulling a single value of `daily_budget` based on `campaign_id` to get the sum of budget for the day by campaign ids. Note that you can use mutliple keys if your granularity is defined by mulitple dimensions.
+To create the correct value, you can utilize DuckDB's unnest functionality. In the example below, you would be pulling a single value of `daily_budget` based on `campaign_id` to get the sum of budget for the day by campaign ids. Note that you can use multiple keys if your granularity is defined by multiple dimensions.
 
 ```yaml 
 expression: |
@@ -28,7 +28,7 @@ expression: |
 
 :::note 
 
-The syntax for fixed metrics is specific to DuckDB as an OLAP engine as it required DuckDB specific commands. However, you can create a similar SQL expression using a different OLAP engine, too!
+The syntax for fixed metrics is specific to DuckDB as an OLAP engine as it requires DuckDB-specific commands. However, you can create a similar SQL expression using a different OLAP engine, too!
 
 :::
 Please review the reference documentation, [here.](/reference/project-files/metrics-views)
@@ -36,7 +36,7 @@ Please review the reference documentation, [here.](/reference/project-files/metr
 
 ## Example
 
-In the following example, each publishing company has a monthly minimum guarantee. As you'll see in the measure, `incorrect_sum_of_guarantee`, you'll get an incorrect value as this will sum multiple values as there are multiple shows and days per publisher. Another workaround would be to use MIN, MAX or AVG but when selecting multiple publishers, the values will not be accurate. 
+In the following example, each publishing company has a monthly minimum guarantee. As you'll see in the measure, `incorrect_sum_of_guarantee`, you'll get an incorrect value as this will sum multiple values as there are multiple shows and days per publisher. Another workaround would be to use MIN, MAX, or AVG, but when selecting multiple publishers, the values will not be accurate. 
 
 <img src = '/img/build/metrics-view/examples/selecting-publishers.png' class='rounded-gif' />
 <br />

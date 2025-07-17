@@ -3,11 +3,19 @@ package admin
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"errors"
 	"fmt"
 	"time"
 
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/pkg/authtoken"
+)
+
+// Cache settings for s.authCache.
+const (
+	_authCacheSize = 500              // Number of tokens to cache
+	_authCacheTTL  = 10 * time.Second // How long to cache a token before revalidating
 )
 
 // AuthToken is the interface package admin uses to provide a consolidated view of a token string and its DB model.
@@ -211,8 +219,72 @@ func (s *Service) IssueMagicAuthToken(ctx context.Context, opts *IssueMagicAuthT
 	return &magicAuthToken{model: dat, token: tkn}, nil
 }
 
+// RevokeAuthToken removes an auth token from persistent storage.
+func (s *Service) RevokeAuthToken(ctx context.Context, token string) error {
+	parsed, err := authtoken.FromString(token)
+	if err != nil {
+		return err
+	}
+	switch parsed.Type {
+	case authtoken.TypeUser:
+		return s.DB.DeleteUserAuthToken(ctx, parsed.ID.String())
+	case authtoken.TypeService:
+		return s.DB.DeleteServiceAuthToken(ctx, parsed.ID.String())
+	case authtoken.TypeDeployment:
+		return fmt.Errorf("deployment auth tokens cannot be revoked")
+	case authtoken.TypeMagic:
+		return s.DB.DeleteMagicAuthToken(ctx, parsed.ID.String())
+	default:
+		return fmt.Errorf("unknown auth token type %q", parsed.Type)
+	}
+}
+
+// PurgeAuthTokenCache purges the short-term in-memory auth token cache.
+func (s *Service) PurgeAuthTokenCache() {
+	s.authCache.Purge()
+}
+
 // ValidateAuthToken validates an auth token against persistent storage.
+// It includes a short-term in-memory cache to prevent
 func (s *Service) ValidateAuthToken(ctx context.Context, token string) (AuthToken, error) {
+	// Wrapper type for cache entries
+	type authCacheEntry struct {
+		token AuthToken
+		err   error
+		time  time.Time
+	}
+
+	// Use a secure hash of the token string as the cache key to avoid storing raw tokens in memory.
+	tokenHash := sha256.Sum256([]byte(token))
+	cacheKey := fmt.Sprintf("%x", tokenHash[:])
+
+	// Try cache
+	val, ok := s.authCache.Get(cacheKey)
+	if ok {
+		entry, ok := val.(authCacheEntry)
+		if ok && time.Since(entry.time) < _authCacheTTL {
+			return entry.token, entry.err
+		}
+		// Even if its expired, we don't remove it from the cache as it'll be replaced below.
+	}
+
+	// Not cached or expired, validate
+	authTok, err := s.validateAuthTokenUncached(ctx, token)
+	if err != nil && errors.Is(err, ctx.Err()) { // Only exit early for context errors
+		return nil, err
+	}
+
+	// Cache the validation result (both token and error)
+	s.authCache.Add(cacheKey, authCacheEntry{
+		token: authTok,
+		err:   err,
+		time:  time.Now(),
+	})
+
+	return authTok, err
+}
+
+func (s *Service) validateAuthTokenUncached(ctx context.Context, token string) (AuthToken, error) {
 	parsed, err := authtoken.FromString(token)
 	if err != nil {
 		return nil, err
@@ -291,25 +363,5 @@ func (s *Service) ValidateAuthToken(ctx context.Context, token string) (AuthToke
 		return &magicAuthToken{model: mat, token: parsed}, nil
 	default:
 		return nil, fmt.Errorf("unknown auth token type %q", parsed.Type)
-	}
-}
-
-// RevokeAuthToken removes an auth token from persistent storage.
-func (s *Service) RevokeAuthToken(ctx context.Context, token string) error {
-	parsed, err := authtoken.FromString(token)
-	if err != nil {
-		return err
-	}
-	switch parsed.Type {
-	case authtoken.TypeUser:
-		return s.DB.DeleteUserAuthToken(ctx, parsed.ID.String())
-	case authtoken.TypeService:
-		return s.DB.DeleteServiceAuthToken(ctx, parsed.ID.String())
-	case authtoken.TypeDeployment:
-		return fmt.Errorf("deployment auth tokens cannot be revoked")
-	case authtoken.TypeMagic:
-		return s.DB.DeleteMagicAuthToken(ctx, parsed.ID.String())
-	default:
-		return fmt.Errorf("unknown auth token type %q", parsed.Type)
 	}
 }

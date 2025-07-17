@@ -288,7 +288,7 @@
     <h3>Success! A public URL has been created.</h3>
     <Button
       type="secondary"
-      on:click={onCopy}
+      onClick={onCopy}
       dataAttributes={{ "data-public-url": url }}
     >
       {#if copied}

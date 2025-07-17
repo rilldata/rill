@@ -7,7 +7,7 @@
   import ResourceWatcher from "@rilldata/web-common/features/entity-management/ResourceWatcher.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { initPylonWidget } from "@rilldata/web-common/features/help/initPylonWidget";
-
+  import RemoteProjectManager from "@rilldata/web-common/features/project/RemoteProjectManager.svelte";
   import ApplicationHeader from "@rilldata/web-common/layout/ApplicationHeader.svelte";
   import BlockingOverlayContainer from "@rilldata/web-common/layout/BlockingOverlayContainer.svelte";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
@@ -30,8 +30,6 @@
   import "@rilldata/web-common/app.css";
 
   export let data: LayoutData;
-
-  const { rillDevCloudFeatures } = featureFlags;
 
   queryClient.getQueryCache().config.onError = (
     error: AxiosError,
@@ -81,10 +79,9 @@
     <div class="body h-screen w-screen overflow-hidden absolute flex flex-col">
       {#if data.initialized}
         <BannerCenter />
-        {#if $rillDevCloudFeatures}
-          <RepresentingUserBanner />
-        {/if}
+        <RepresentingUserBanner />
         <ApplicationHeader {mode} />
+        <RemoteProjectManager />
       {/if}
 
       <slot />

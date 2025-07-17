@@ -8,13 +8,13 @@ sidebar_position: 00
 <img src = '/img/build/advanced-models/advanced-model.png' class='rounded-gif' />
 <br />
 
-Unlike SQL models, YAML file models allow the ability to fine tune a model to perform additional capabilities such as pre-exec, post-exec SQL, partitioning, and incremental modeling. This is an important addition to modeling as it allows the user to customize the model's method of building. In the case of partitions and incremental modeling, this will reduce the amount of data ingested into Rill at each interval and allow insight into specific issues per partition. Another use case is when using [multiple OLAP engines](../connect/multiple-connectors.md), this allows you to define where a SQL query is run. 
+Unlike SQL models, YAML file models allow you to fine-tune a model to perform additional capabilities such as pre-exec, post-exec SQL, partitioning, and incremental modeling. This is an important addition to modeling, as it allows the user to customize the model's build process. In the case of partitions and incremental modeling, this will reduce the amount of data ingested into Rill at each interval and allow insight into specific issues per partition. Another use case is when using [multiple OLAP engines](../connect/multiple-connectors.md), this allows you to define where a SQL query is run. 
 
 ## When to use Advanced Models? 
 
-For the majority of users on a DuckDB backed Rill project, advanced models are not required. When a project gets larger and refreshing the whole datasets becomes a time-consuming and costly task, we introduce incremental ingestion to help alleviate the problem. Along with incremental modeling, we use partitions to divide a dataset into smaller to manage datasets. When enabling partitions, you are able to refresh single sections of data if required. 
+For the majority of users on a DuckDB backed Rill project, advanced models are not required. When a project gets larger and refreshing the whole datasets becomes a time-consuming and costly task, we introduce incremental ingestion to help alleviate the problem. Along with incremental modeling, we use partitions to divide a dataset into smaller, more manageable datasets. When enabling partitions, you are able to refresh individual sections of data if required. 
 
-Another use case is when using multiple OLAP engines. This allows you to specify where you SQL is running. While we do not officially support ClickHouse modeling, this is available behind a feature flag `clickhouseModeling`. When both DuckDB and ClickHouse are enabled in a single environment, you will need to define `connector: duckdb/clickhouse` in the YAML to tell Rill where to run the SQL query.
+Another use case is when using multiple OLAP engines. This allows you to specify where your SQL is running. While we do not officially support ClickHouse modeling, this is available behind a feature flag `clickhouseModeling`. When both DuckDB and ClickHouse are enabled in a single environment, you will need to define `connector: duckdb/clickhouse` in the YAML to tell Rill where to run the SQL query.
 
 
 ## Types of Advanced Models
@@ -50,7 +50,7 @@ Currently, there isn't a UI button to start off with an advanced model YAML. Cre
 
 ## DuckDB Model's pre-exec, SQL, post-exec 
 
-While we install a set of core libraries and extensions with our embed DuckDB, there might be specific use-cases where you might want to add a different one. In order to do this, you will need to use the pre-exec parameter to ensure that everything is loaded before running your SQL query. 
+While we install a set of core libraries and extensions with our embedded DuckDB, there might be specific use cases where you want to add a different one. In order to do this, you will need to use the pre-exec parameter to ensure that everything is loaded before running your SQL query. 
 
 Take the example of [`gsheets` community extension](https://duckdb.org/community_extensions/extensions/gsheets.html). In order to use this extension in Rill, you'll need to install and load the plugin. Once that's done you can define the secret and finally run the SQL. 
 
@@ -74,7 +74,7 @@ Another example is attaching a database to DuckDB, running some queries against 
 ```yaml
 pre_exec: ATTACH IF NOT EXISTS 'dbname=postgres host=localhost port=5432 user=postgres password=postgres' AS postgres_db (TYPE POSTGRES);
 sql: SELECT * FROM postgres_query('postgres_db', 'SELECT * FROM USERS')
-post_exec: DETACH postgres_db # Note : this is not mandatory but nice to have 
+post_exec: DETACH DATABASE IF EXISTS postgres_db # Note : this is not mandatory but nice to have 
 ```
 
 ## Similar Considerations to Note

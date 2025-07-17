@@ -6,10 +6,10 @@ sidebar_position: 05
 ---
 
 
-Putting the two concepts together, it is possible to create an incremental partitioned model. Doing so will allow you to not only partition the model but refresh only the partition that you need and incrementally ingest partitions.
+Putting the two concepts together, it is possible to create an incremental partitioned model. Doing so will allow you to not only partition the model but also refresh only the partition that you need and incrementally ingest partitions.
 
 :::note Need help?
-If you need any assistance with setting up an incremental partitioned model, [reach out](contact.md) to us for assistance! 
+If you need any assistance with setting up an incremental partitioned model, [reach out](/contact) to us for assistance! 
 :::
 
 :::tip Looking for an example?
@@ -41,7 +41,7 @@ sql: |
 
 ### Refreshing Partitions in Incremental Models
 
-When this model loads, you will be able to both view the partitions and select a specific partition to refresh via the UI in Rill Developer. Unlike **partitioned only** models, a new button is added in each of the partitons. 
+When this model loads, you will be able to both view the partitions and select a specific partition to refresh via the UI in Rill Developer. Unlike **partitioned-only** models, a new button is added in each of the partitions. 
 
 
 
@@ -63,7 +63,7 @@ Refresh initiated. Check the project logs for status updates.
 ## How Incremental Partitioned Models Work
 
 ### Initial Ingestion:
-When a model is first created, an initial ingestion will occur to bring in all the data, also known as a `Full Refresh`. All refreshed after this will be considered an `incremental refresh` Not in the below image, the source table writes each section of data to a specific partition as mapped in the YAML file. 
+When a model is first created, an initial ingestion will occur to bring in all the data, also known as a `Full Refresh`. All refreshes after this will be considered an `incremental refresh`. Note in the below image, the source table writes each section of data to a specific partition as mapped in the YAML file. 
 
 
 
@@ -80,7 +80,7 @@ If you add an additional partition to the source table, on the next manual or au
 <br />
 
 ### Modify Existing Partition:
-If you modify any of the already existing partition, **yellow**, Rill will re-ingest just the modified file during the scheduled refresh by checking the `last_modified_date` parameter.
+If you modify any of the already existing partitions, **yellow**, Rill will re-ingest just the modified file during the scheduled refresh by checking the `last_modified_date` parameter.
 
 
 <img src = '/img/build/advanced-models/modified-partition.png' class='rounded-gif' />

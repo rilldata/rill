@@ -93,6 +93,8 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 	// Start using original context again since transaction in txCtx is done.
 	depl, err := s.CreateDeployment(ctx, &CreateDeploymentOptions{
 		ProjectID:   proj.ID,
+		OwnerUserID: nil,
+		Environment: "prod",
 		Annotations: s.NewDeploymentAnnotations(org, proj),
 		Branch:      proj.ProdBranch,
 		Provisioner: proj.Provisioner,
@@ -123,6 +125,8 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 		ProdSlots:            proj.ProdSlots,
 		ProdTTLSeconds:       proj.ProdTTLSeconds,
 		ProdDeploymentID:     &depl.ID,
+		DevSlots:             proj.DevSlots,
+		DevTTLSeconds:        proj.DevTTLSeconds,
 		Annotations:          proj.Annotations,
 	})
 	if err != nil {
@@ -203,7 +207,6 @@ func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opt
 		Annotations:     annotations,
 		Branch:          opts.ProdBranch,
 		Version:         opts.ProdVersion,
-		Variables:       nil,
 		EvictCachedRepo: true,
 	})
 	if err != nil {
@@ -258,16 +261,10 @@ func (s *Service) UpdateProjectVariables(ctx context.Context, project *database.
 
 	annotations := s.NewDeploymentAnnotations(org, project)
 
-	vars, err = s.ResolveVariables(ctx, project.ID, "prod", true)
-	if err != nil {
-		return err
-	}
-
 	err = s.UpdateDeploymentsForProject(ctx, project, &UpdateDeploymentOptions{
 		Annotations:     annotations,
 		Branch:          project.ProdBranch,
 		Version:         project.ProdVersion,
-		Variables:       vars,
 		EvictCachedRepo: true,
 	})
 	if err != nil {
@@ -294,7 +291,6 @@ func (s *Service) UpdateOrgDeploymentAnnotations(ctx context.Context, org *datab
 				Annotations:     s.NewDeploymentAnnotations(org, proj),
 				Branch:          proj.ProdBranch,
 				Version:         proj.ProdVersion,
-				Variables:       nil,
 				EvictCachedRepo: false,
 			})
 			if err != nil {
@@ -327,6 +323,8 @@ func (s *Service) RedeployProject(ctx context.Context, proj *database.Project, p
 	// Provision new deployment
 	newDepl, err := s.CreateDeployment(ctx, &CreateDeploymentOptions{
 		ProjectID:   proj.ID,
+		OwnerUserID: nil,
+		Environment: "prod",
 		Annotations: s.NewDeploymentAnnotations(org, proj),
 		Branch:      proj.ProdBranch,
 		Provisioner: proj.Provisioner,
@@ -357,6 +355,8 @@ func (s *Service) RedeployProject(ctx context.Context, proj *database.Project, p
 		ProdDeploymentID:     &newDepl.ID,
 		ProdSlots:            proj.ProdSlots,
 		ProdTTLSeconds:       proj.ProdTTLSeconds,
+		DevSlots:             proj.DevSlots,
+		DevTTLSeconds:        proj.DevTTLSeconds,
 		Annotations:          proj.Annotations,
 	})
 	if err != nil {
@@ -375,7 +375,7 @@ func (s *Service) RedeployProject(ctx context.Context, proj *database.Project, p
 	return proj, nil
 }
 
-// HibernateProject hibernates a project by tearing down its prod deployment.
+// HibernateProject hibernates a project by tearing down its deployment.
 func (s *Service) HibernateProject(ctx context.Context, proj *database.Project) (*database.Project, error) {
 	depls, err := s.DB.FindDeploymentsForProject(ctx, proj.ID)
 	if err != nil {
@@ -383,7 +383,7 @@ func (s *Service) HibernateProject(ctx context.Context, proj *database.Project) 
 	}
 
 	for _, depl := range depls {
-		err = s.TeardownDeployment(ctx, depl)
+		err = s.StopDeployment(ctx, depl)
 		if err != nil {
 			return nil, err
 		}
@@ -405,6 +405,8 @@ func (s *Service) HibernateProject(ctx context.Context, proj *database.Project) 
 		ProdDeploymentID:     nil,
 		ProdSlots:            proj.ProdSlots,
 		ProdTTLSeconds:       proj.ProdTTLSeconds,
+		DevSlots:             proj.DevSlots,
+		DevTTLSeconds:        proj.DevTTLSeconds,
 		Annotations:          proj.Annotations,
 	})
 	if err != nil {

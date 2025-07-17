@@ -2494,6 +2494,40 @@ func (m *ModelSpec) validate(all bool) error {
 
 	// no validation rules for ChangeMode
 
+	for idx, item := range m.GetTests() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ModelSpecValidationError{
+						field:  fmt.Sprintf("Tests[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ModelSpecValidationError{
+						field:  fmt.Sprintf("Tests[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ModelSpecValidationError{
+					field:  fmt.Sprintf("Tests[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
 	// no validation rules for Trigger
 
 	// no validation rules for TriggerFull
@@ -2637,6 +2671,8 @@ func (m *ModelState) validate(all bool) error {
 	// no validation rules for SpecHash
 
 	// no validation rules for RefsHash
+
+	// no validation rules for TestHash
 
 	if all {
 		switch v := interface{}(m.GetRefreshedOn()).(type) {
@@ -2809,6 +2845,138 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = ModelStateValidationError{}
+
+// Validate checks the field values on ModelTest with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *ModelTest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ModelTest with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in ModelTestMultiError, or nil
+// if none found.
+func (m *ModelTest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ModelTest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Name
+
+	// no validation rules for Resolver
+
+	if all {
+		switch v := interface{}(m.GetResolverProperties()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ModelTestValidationError{
+					field:  "ResolverProperties",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ModelTestValidationError{
+					field:  "ResolverProperties",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetResolverProperties()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ModelTestValidationError{
+				field:  "ResolverProperties",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return ModelTestMultiError(errors)
+	}
+
+	return nil
+}
+
+// ModelTestMultiError is an error wrapping multiple validation errors returned
+// by ModelTest.ValidateAll() if the designated constraints aren't met.
+type ModelTestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ModelTestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ModelTestMultiError) AllErrors() []error { return m }
+
+// ModelTestValidationError is the validation error returned by
+// ModelTest.Validate if the designated constraints aren't met.
+type ModelTestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ModelTestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ModelTestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ModelTestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ModelTestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ModelTestValidationError) ErrorName() string { return "ModelTestValidationError" }
+
+// Error satisfies the builtin error interface
+func (e ModelTestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sModelTest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ModelTestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ModelTestValidationError{}
 
 // Validate checks the field values on MetricsView with the rules defined in
 // the proto definition for this message. If any rules are violated, the first
@@ -10406,6 +10574,8 @@ func (m *APISpec) validate(all bool) error {
 
 	// no validation rules for OpenapiResponseSchemaJson
 
+	// no validation rules for OpenapiDefsPrefix
+
 	for idx, item := range m.GetSecurityRules() {
 		_, _ = idx, item
 
@@ -11708,6 +11878,35 @@ func (m *MetricsViewSpec_Dimension) validate(all bool) error {
 
 	// no validation rules for LookupDefaultExpression
 
+	if all {
+		switch v := interface{}(m.GetDataType()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, MetricsViewSpec_DimensionValidationError{
+					field:  "DataType",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, MetricsViewSpec_DimensionValidationError{
+					field:  "DataType",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetDataType()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return MetricsViewSpec_DimensionValidationError{
+				field:  "DataType",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
 	if len(errors) > 0 {
 		return MetricsViewSpec_DimensionMultiError(errors)
 	}
@@ -12205,6 +12404,35 @@ func (m *MetricsViewSpec_Measure) validate(all bool) error {
 	// no validation rules for ValidPercentOfTotal
 
 	// no validation rules for TreatNullsAs
+
+	if all {
+		switch v := interface{}(m.GetDataType()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, MetricsViewSpec_MeasureValidationError{
+					field:  "DataType",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, MetricsViewSpec_MeasureValidationError{
+					field:  "DataType",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetDataType()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return MetricsViewSpec_MeasureValidationError{
+				field:  "DataType",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
 
 	if len(errors) > 0 {
 		return MetricsViewSpec_MeasureMultiError(errors)

@@ -7,7 +7,7 @@ sidebar_position: 36
 
 ## Overview
 
-Sharing your dashboard is a key way to promote collaboration within other users and allows for quick access to your dashboards. As an admin, you also have the ability to create public shareable URLs, meaning that you can generate an expirable public link to a dashboard with specific filters pre-applied. The receiver of the link will then be able to engage and interact with this dashboard as if they were logged in (with the parent filters locked).
+Sharing your dashboard is a key way to promote collaboration with other users and allows for quick access to your dashboards. As an admin, you also have the ability to create public shareable URLs, meaning that you can generate an expirable public link to a dashboard with specific filters pre-applied. The receiver of the link will then be able to engage and interact with this dashboard as if they were logged in (with the parent filters locked).
 
 <img src ='/img/explore/dashboard101/public-url.gif' class='rounded-gif'/>
 <br />

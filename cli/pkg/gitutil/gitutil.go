@@ -28,6 +28,7 @@ type Config struct {
 	PasswordExpiresAt time.Time
 	DefaultBranch     string
 	Subpath           string
+	ManagedRepo       bool
 }
 
 func (g *Config) IsExpired() bool {
@@ -50,6 +51,13 @@ func (g *Config) FullyQualifiedRemote() (string, error) {
 		}
 	}
 	return u.String(), nil
+}
+
+func (g *Config) RemoteName() string {
+	if g.ManagedRepo {
+		return "__rill_remote"
+	}
+	return "origin"
 }
 
 func CloneRepo(repoURL string) (string, error) {
@@ -209,7 +217,7 @@ func GetSyncStatus(repoPath, branch, remote string) (SyncStatus, error) {
 	return SyncStatusSynced, nil
 }
 
-func CommitAndForcePush(ctx context.Context, projectPath string, config *Config, commitMsg string, author *object.Signature, allowEmptyCommits bool) error {
+func CommitAndForcePush(ctx context.Context, projectPath string, config *Config, commitMsg string, author *object.Signature) error {
 	// init git repo
 	repo, err := git.PlainInitWithOptions(projectPath, &git.PlainInitOptions{
 		InitOptions: git.InitOptions{
@@ -241,7 +249,7 @@ func CommitAndForcePush(ctx context.Context, projectPath string, config *Config,
 	if commitMsg == "" {
 		commitMsg = "Auto committed by Rill"
 	}
-	_, err = wt.Commit(commitMsg, &git.CommitOptions{All: true, Author: author, AllowEmptyCommits: allowEmptyCommits})
+	_, err = wt.Commit(commitMsg, &git.CommitOptions{All: true, Author: author, AllowEmptyCommits: true})
 	if err != nil {
 		if !errors.Is(err, git.ErrEmptyCommit) {
 			return fmt.Errorf("failed to commit files to git: %w", err)
@@ -250,21 +258,13 @@ func CommitAndForcePush(ctx context.Context, projectPath string, config *Config,
 		return nil
 	}
 
-	// set remote
-	_, err = repo.CreateRemote(&gitConfig.RemoteConfig{
-		Name: "origin",
-		URLs: []string{config.Remote},
-	})
+	// set remote and push the changes
+	err = SetRemote(projectPath, config)
 	if err != nil {
-		if !errors.Is(err, git.ErrRemoteExists) {
-			return fmt.Errorf("failed to create remote: %w", err)
-		}
-		// remote already exists do nothing we can override the URL while pushing
+		return err
 	}
-
-	// push the changes
 	pushOpts := &git.PushOptions{
-		RemoteName: "origin",
+		RemoteName: config.RemoteName(),
 		RemoteURL:  config.Remote,
 		Force:      true,
 	}
@@ -284,6 +284,7 @@ func CommitAndForcePush(ctx context.Context, projectPath string, config *Config,
 func Clone(ctx context.Context, path string, c *Config) (*git.Repository, error) {
 	return git.PlainCloneContext(ctx, path, false, &git.CloneOptions{
 		URL:           c.Remote,
+		RemoteName:    c.RemoteName(),
 		Auth:          &githttp.BasicAuth{Username: c.Username, Password: c.Password},
 		ReferenceName: plumbing.NewBranchReferenceName(c.DefaultBranch),
 		SingleBranch:  true,
@@ -308,4 +309,66 @@ func NativeGitSignature(ctx context.Context, path string) (*object.Signature, er
 		}, nil
 	}
 	return nil, fmt.Errorf("git user email or name is not set in git config")
+}
+
+func GitFetch(ctx context.Context, path string, config *Config) error {
+	repo, err := git.PlainOpen(path)
+	if err != nil {
+		return fmt.Errorf("failed to open git repository: %w", err)
+	}
+	if config == nil {
+		// uses default git configuration
+		// go-git does not support fetching from a private repo without auth
+		// so we will trigger the git command directly
+		return RunGitFetch(ctx, path, "origin")
+	}
+	err = repo.FetchContext(ctx, &git.FetchOptions{
+		RemoteName: config.RemoteName(),
+		RemoteURL:  config.Remote,
+		Auth: &githttp.BasicAuth{
+			Username: config.Username,
+			Password: config.Password,
+		},
+	})
+	if err != nil {
+		if errors.Is(err, git.NoErrAlreadyUpToDate) {
+			// no new changes to fetch, this is not an error
+			return nil
+		}
+		return fmt.Errorf("failed to fetch from remote: %w", err)
+	}
+	return nil
+}
+
+// SetRemote sets the remote by name Rill for the given repository to the provided remote URL.
+func SetRemote(path string, config *Config) error {
+	if config.Remote == "" {
+		return nil
+	}
+	repo, err := git.PlainOpen(path)
+	if err != nil {
+		return fmt.Errorf("failed to open git repository: %w", err)
+	}
+
+	remote, err := repo.Remote(config.RemoteName())
+	if err != nil && !errors.Is(err, git.ErrRemoteNotFound) {
+		return fmt.Errorf("failed to get remote: %w", err)
+	}
+	if remote != nil {
+		if remote.Config().URLs[0] == config.Remote {
+			// remote already exists with the same URL, no need to create it again
+			return nil
+		}
+		// if the remote already exists with a different URL, delete it
+		err = repo.DeleteRemote(config.RemoteName())
+		if err != nil {
+			return fmt.Errorf("failed to delete existing remote: %w", err)
+		}
+	}
+
+	_, err = repo.CreateRemote(&gitConfig.RemoteConfig{
+		Name: config.RemoteName(),
+		URLs: []string{config.Remote},
+	})
+	return err
 }
