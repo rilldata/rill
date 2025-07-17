@@ -22,7 +22,10 @@ import {
   updateDotEnvWithSecrets,
   updateRillYAMLWithOlapConnector,
 } from "../../connectors/code-utils";
-import { testOLAPConnector } from "../../connectors/olap/test-connection";
+import {
+  testListDatabaseSchemas,
+  testOLAPConnector,
+} from "../../connectors/test-connection";
 import { runtimeServicePutFileAndWaitForReconciliation } from "../../entity-management/actions";
 import { getFileAPIPathFromNameAndType } from "../../entity-management/entity-mappers";
 import { fileArtifacts } from "../../entity-management/file-artifacts";
@@ -63,8 +66,8 @@ export async function submitAddSourceForm(
     createOnly: false, // The modal might be opened from a YAML file with placeholder text, so the file might already exist
   });
 
-  // Create or update the `.env` file
-  await runtimeServicePutFile(instanceId, {
+  // Create or update the `.env` file and wait for reconciliation
+  await runtimeServicePutFileAndWaitForReconciliation(instanceId, {
     path: ".env",
     blob: await updateDotEnvWithSecrets(
       queryClient,
@@ -75,6 +78,30 @@ export async function submitAddSourceForm(
     create: true,
     createOnly: false,
   });
+
+  // Check for file errors
+  const errorMessage = await fileArtifacts.checkFileErrors(
+    queryClient,
+    instanceId,
+    newSourceFilePath,
+  );
+  if (errorMessage) {
+    await rollbackConnectorChanges(instanceId, newSourceFilePath, undefined);
+    throw new Error(errorMessage);
+  }
+
+  // TODO: focus on snowflake for now
+  // Test the connection to the source using the strategy function
+  const testResult = await testListDatabaseSchemas(instanceId, {
+    connector: rewrittenConnector.name,
+  });
+  if (!testResult.success) {
+    await rollbackConnectorChanges(instanceId, newSourceFilePath, undefined);
+    throw {
+      message: testResult.error || "Unable to establish a connection",
+      details: testResult.details,
+    };
+  }
 
   await goto(`/files/${newSourceFilePath}`);
 }
@@ -169,16 +196,18 @@ export async function submitAddOLAPConnectorForm(
 
   // Test the connection to the OLAP database
   // If the connection test fails, rollback the changes
-  const result = await testOLAPConnector(instanceId, connector.name as string);
-  if (!result.success) {
+  const testResult = await testOLAPConnector(instanceId, {
+    connector: connector.name as string,
+  });
+  if (!testResult.success) {
     await rollbackConnectorChanges(
       instanceId,
       newConnectorFilePath,
       originalEnvBlob,
     );
     throw {
-      message: result.error || "Unable to establish a connection",
-      details: result.details,
+      message: testResult.error || "Unable to establish a connection",
+      details: testResult.details,
     };
   }
 

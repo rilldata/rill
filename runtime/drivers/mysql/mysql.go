@@ -47,7 +47,7 @@ var spec = drivers.Spec{
 		{
 			Key:         "dsn",
 			Type:        drivers.StringPropertyType,
-			DisplayName: "MySQL Connection String",
+			DisplayName: "Connection String",
 			Required:    false,
 			DocsURL:     "https://github.com/go-sql-driver/mysql?tab=readme-ov-file#dsn-data-source-name",
 			Placeholder: "username:password@tcp(example.com:3306)/my-db",
