@@ -10,6 +10,7 @@
     label?: string;
     inverse?: boolean;
     hint?: string;
+    optional?: boolean;
   };
 
   export let checked: $$Props["checked"] = undefined;
@@ -17,6 +18,7 @@
   export let label: $$Props["label"] = undefined;
   export let inverse = false;
   export let hint: string | undefined = undefined;
+  export let optional: boolean = false;
   export { className as class };
 
   let className: $$Props["class"] = undefined;
@@ -48,6 +50,11 @@
   {#if label}
     <label for={$$props.id} class="flex items-center text-sm gap-x-1">
       {label}
+      {#if optional}
+        <span class="text-gray-500 text-[12px] font-normal capitalize"
+          >(optional)</span
+        >
+      {/if}
       {#if hint}
         <Tooltip location="right" alignment="middle" distance={8}>
           <div class="text-gray-500">
