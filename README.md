@@ -1,8 +1,8 @@
 # Welcome to Rill
 
-[Rill](https://docs.rilldata.com/) is the fastest path from data lake to dashboard. 
+[Rill](https://docs.rilldata.com/) is the fastest path from data lake to dashboard.
 
-Unlike most BI tools, Rill comes with its own embedded in-memory database. Data and compute are co-located, and queries return in milliseconds.   
+Unlike most BI tools, Rill comes with its own embedded in-memory database. Data and compute are co-located, and queries return in milliseconds.  
 So you can pivot, slice, and drill-down into your data instantly.
 
 Download Rill to start modeling data and create fast, exploratory dashboards.
@@ -11,7 +11,6 @@ Download Rill to start modeling data and create fast, exploratory dashboards.
 curl https://rill.sh | sh
 rill start my-rill-project
 ```
-
 
 <h3 align="center">
   <a href="https://docs.rilldata.com/home/get-started">Quickstart</a>
@@ -28,6 +27,7 @@ rill start my-rill-project
 ![home-demo](https://github.com/rilldata/rill/assets/1181922/1430f272-3fa4-495a-8e45-1bd6fa56f5d2)
 
 Rill's design principles:
+
 - _**Feels good to use**_ – powered by Sveltekit & DuckDB = conversation-fast, not wait-ten-seconds-for-result-set fast
 - _**Works with your local and remote datasets**_ – imports and exports Parquet and CSV (s3, gcs, https, local)
 - _**No more data analysis "side-quests"**_ – helps you build intuition about your dataset through automatic profiling
