@@ -32,8 +32,6 @@ type CreateDeploymentOptions struct {
 	Slots       int
 	Version     string
 	Variables   map[string]string
-	OLAPDriver  string
-	OLAPDSN     string
 }
 
 func (s *Service) CreateDeployment(ctx context.Context, opts *CreateDeploymentOptions) (*database.Deployment, error) {
@@ -60,8 +58,6 @@ func (s *Service) CreateDeployment(ctx context.Context, opts *CreateDeploymentOp
 		Slots:       opts.Slots,
 		Version:     opts.Version,
 		Variables:   opts.Variables,
-		OLAPDriver:  opts.OLAPDriver,
-		OLAPDSN:     opts.OLAPDSN,
 	})
 	if err != nil {
 		return nil, err
@@ -76,8 +72,6 @@ type StartDeploymentOptions struct {
 	Slots       int
 	Version     string
 	Variables   map[string]string
-	OLAPDriver  string
-	OLAPDSN     string
 }
 
 func (s *Service) StartDeployment(ctx context.Context, depl *database.Deployment, opts *StartDeploymentOptions) (*database.Deployment, error) {
@@ -219,32 +213,11 @@ func (s *Service) startDeploymentInner(ctx context.Context, depl *database.Deplo
 		},
 	}
 
-	// Determine the default OLAP connector.
-	// TODO: Remove this because it is deprecated and can now be configured directly using `rill.yaml` and `rill env`.
-	var olapConnector string
-	switch opts.OLAPDriver {
-	case "duckdb", "duckdb-ext-storage":
-		if opts.Slots == 0 {
-			return fmt.Errorf("slot count can't be 0 for OLAP driver 'duckdb'")
-		}
-		olapConnector = "duckdb"
-		// Already configured DuckDB above
-	default:
-		olapConnector = opts.OLAPDriver
-		connectors = append(connectors, &runtimev1.Connector{
-			Name: opts.OLAPDriver,
-			Type: opts.OLAPDriver,
-			Config: map[string]string{
-				"dsn": opts.OLAPDSN,
-			},
-		})
-	}
-
 	// Create the instance
 	_, err = rt.CreateInstance(ctx, &runtimev1.CreateInstanceRequest{
 		InstanceId:     instanceID,
 		Environment:    depl.Environment,
-		OlapConnector:  olapConnector,
+		OlapConnector:  "duckdb", // Default OLAP connector for backwards compatibility with projects that don't specify olap_connector in rill.yaml
 		RepoConnector:  "admin",
 		AdminConnector: "admin",
 		AiConnector:    "admin",

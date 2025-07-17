@@ -366,8 +366,6 @@ func (s *Server) CreateDeployment(ctx context.Context, req *adminv1.CreateDeploy
 		Slots:       slots,
 		Version:     proj.ProdVersion,
 		Variables:   vars,
-		OLAPDriver:  "",
-		OLAPDSN:     "",
 	})
 	if err != nil {
 		return nil, err
@@ -459,8 +457,6 @@ func (s *Server) StartDeployment(ctx context.Context, req *adminv1.StartDeployme
 		Slots:       slots,
 		Version:     proj.ProdVersion,
 		Variables:   vars,
-		OLAPDriver:  "",
-		OLAPDSN:     "",
 	})
 	if err != nil {
 		return nil, err
