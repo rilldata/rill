@@ -5,22 +5,65 @@ sidebar_position: 01
 ---
 import Video from '@site/src/components/Video';
 
-
 <!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->
 
-
 :::tip Rill's Default Engine
-The below guide contents assume that you will be using our 'default' embedded engine. If you're looking for a guide with setting up Rill with ClickHouse, see our [ClickHouse Guide](/guides/rill-clickhouse/)!
+This guide assumes you'll be using Rill's default embedded engine. If you're looking to set up Rill with ClickHouse, check out our [ClickHouse Guide](/guides/rill-clickhouse/)!
 :::
-<!-- <div style={{ 
+
+## What is Rill Developer?
+
+Rill Developer is your comprehensive toolkit for transforming raw data into actionable insights. It's designed to streamline the entire analytics workflow—from data ingestion to dashboard creation—all within a single, intuitive interface.
+
+**Key capabilities:**
+- **Connect to any data source** - Support for databases, cloud storage, APIs, and more
+- **Transform data with ease** - Built-in ETL capabilities for data cleaning and preparation
+- **Build metrics layer** - Define business KPIs and calculations
+- **Create interactive dashboards** - AI-powered insights and visualizations
+- **Deploy to production** - Seamlessly publish and share with your team
+
+## Quick Start: From Zero to Dashboard in Minutes
+
+### Step 1: Install and Launch Rill
+
+Get started with just two commands:
+
+```bash
+curl https://rill.sh | sh
+rill start my-rill-project
+```
+
+This will:
+- Download and install Rill Developer
+- Create a new project directory
+- Launch the Rill interface in your browser
+
+<img src = '/img/tutorials/rill-basics/new-rill-project.png' class='rounded-gif' />
+
+<br/>
+:::note Rill Developer vs Rill Cloud
+Rill Developer is your local development environment where you build and test your analytics projects. Once ready, you can deploy to Rill Cloud for team collaboration and production use. For more details, see our [Developer vs Cloud comparison](/concepts/developerVsCloud.md).
+:::
+
+### Step 2: Connect Your Data
+
+Rill supports a wide range of data sources through our [connector library](/reference/connectors/). For this tutorial, we'll use a sample dataset hosted on Google Cloud Storage.
+
+**What happens when you connect data:**
+- Rill automatically detects your data schema
+- Provides a preview of the first 150 rows
+- Analyzes data types, value ranges, and patterns
+- Creates a foundation for your analytics
+
+<div style={{ 
   position: "relative", 
   width: "100%", 
   paddingTop: "56.25%", 
-  borderRadius: "15px",  /* Softer corners */
-  boxShadow: "0px 4px 15px rgba(0, 0, 0, 0.2)"  /* Shadow effect */
+  borderRadius: "15px",
+  boxShadow: "0px 4px 15px rgba(0, 0, 0, 0.2)"
 }}>
   <iframe credentialless="true"
-    src="https://www.youtube.com/embed/7TlO6E5gZzY?autoplay=1&mute=1&rel=0&si=CMltjZI4S5oAAAtg"
+    src="https://www.youtube.com/embed/SWiEy0JgOgU?si=9rAdpgf5zqjZZ56K"
     frameBorder="0"
     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
     allowFullScreen
@@ -30,45 +73,64 @@ The below guide contents assume that you will be using our 'default' embedded en
       left: 0,
       width: "100%",
       height: "100%",
-      borderRadius: "10px", // Apply to iframe as well for rounded effect
+      borderRadius: "10px", 
     }}
   ></iframe>
 </div>
-<br/> -->
 
-Rill Developer is your all-in-one tool for exploring data and building insightful dashboards with ease. Whether you're ingesting new datasets, prototyping dashboards, or analyzing schema relationships, Rill streamlines the process. Use Rill to quickly visualize your data, iterate on dashboard designs, and uncover actionable insights. When you're ready, publish your dashboards to the Cloud and collaborate with your team. 
+### Step 3: Create Your First Dashboard
 
-## Install and start Rill
+Rill's AI-powered dashboard creation makes it easy to go from data to insights in seconds. The system automatically generates relevant visualizations and suggests key metrics based on your data.
 
-If you haven't already, install and start Rill with the simple command below!
-```bash
-curl https://rill.sh | sh
-rill start my-rill-project
-```
+<div style={{ 
+  position: "relative", 
+  width: "100%", 
+  paddingTop: "56.25%", 
+  borderRadius: "15px",
+  boxShadow: "0px 4px 15px rgba(0, 0, 0, 0.2)"
+}}>
+  <iframe credentialless="true"
+    src="https://www.youtube.com/embed/_e_IbPKbA6k?si=Jm4jUT5aszL0oNJl"
+    frameBorder="0"
+    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+    allowFullScreen
+    style={{
+      position: "absolute",
+      top: 0,
+      left: 0,
+      width: "100%",
+      height: "100%",
+      borderRadius: "10px", 
+    }}
+  ></iframe>
+</div>
 
+### Step 4: Explore and Analyze
 
-<img src = '/img/tutorials/rill-basics/new-rill-project.png' class='rounded-gif' />
-<br />
+Once your dashboard is created, you can:
 
-:::note What is Rill Developer? 
-Rill Developer is used to develop your Rill project, as editing in Rill Cloud is not yet available. In Rill Developer, you will create connections to your source files, perform last-mile ETL, define metrics in the metrics layer, and finally create a dashboard. For more details on the differences between Rill Developer and Rill Cloud, see our documentation [here](/concepts/developerVsCloud.md).
-:::
+- **Navigate different views** - Pivot tables, time-series analysis, and multi-measure charts
+- **Drill down into data** - Click on any element to explore deeper insights
+- **Customize visualizations** - Adjust charts, filters, and layouts
+- **Export insights** - Share findings with your team
 
+## What You've Accomplished
 
-### Importing Data and Schema Information
+In just a few minutes, you've:
 
-Rill supports many different sources for ingestion into our embedded analytical engine. See our list of available [connectors](/reference/connectors/). The below is using a publically available dataset hosted on our GCS bucket. 
+1.  **Connected to a data source** and analyzed its structure  
+2.  **Created an interactive dashboard** with AI assistance  
+3.  **Explored your data** through multiple visualization types  
+4.  **Gained actionable insights** from your analytics  
 
-Note that after the dataset is ingested, you can see a sample of the data (first 150 rows) and more information about the column schema, information about the data (types, ranges of values, etc)
+All that's left is to publish your dashboard to Rill Cloud and start sharing with your colleagues! 
 
-<img src = '/img/tutorials/rill-basics/Adding-Data.gif' class='rounded-gif' />
-<br />
+## Next Steps
 
+This quick start covered the basics, but Rill offers much more:
 
-### Create a Dashboard with AI
+- **[Data Modeling](/build/models/)** - Transform and prepare your data with SQL
+- **[Metrics Layer](/build/metrics-view/)** - Define business KPIs and calculations
+- **[Deployment](/deploy/)** - Share your dashboards with your team
 
-
-
-## Key Take Aways
-
-Skipped a few steps, metrics-view, last mile ETL modeling, but also showed how quick to go from data to dashboard. For more in depth steps and instructions, see our in-depth guide.
+Ready to build something more complex? Check out our [comprehensive tutorial](/guides/tutorial/rill-basics/launch) for a complete walkthrough of Rill's advanced features.

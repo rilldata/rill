@@ -130,13 +130,6 @@ import TileIcon from '@site/src/components/TileIcon';
   link="/explore/dashboard-101"
 />
 <TileIcon
-  header="See Demo Project"
-  content="Explore our demo projects to see Rill in action with real data."
-  link="https://ui.rilldata.com/demo"
-  target="_blank"
-  rel="noopener noreferrer"
-/>
-<TileIcon
   header="Embed Dashboard"
   content="Embed Rill dashboards into your applications and workflows."
   link="/integrate/embedding/"
@@ -150,5 +143,12 @@ import TileIcon from '@site/src/components/TileIcon';
   header="Deploy to Cloud"
   content="Deploy your Rill project to production and share with your team."
   link="/deploy/deploy-dashboard/"
+/>
+<TileIcon
+  header="See Demo Project"
+  content="Explore our demo projects to see Rill in action with real data."
+  link="https://ui.rilldata.com/demo"
+  target="_blank"
+  rel="noopener noreferrer"
 />
 </div>
