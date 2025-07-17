@@ -9,9 +9,17 @@ import {
   createRuntimeServiceListResources,
   type V1AlertSpec,
 } from "@rilldata/web-common/runtime-client";
-import { derived, type Readable, readable } from "svelte/store";
+import {
+  updateSmartRefetchMeta,
+  INITIAL_REFETCH_INTERVAL,
+} from "../shared/refetch-interval-store";
+import { derived, type Readable, readable, get, writable } from "svelte/store";
 
 export function useAlerts(instanceId: string, enabled = true) {
+  // Local store for per-query refetch interval
+  const refetchIntervalStore = writable<number | false>(
+    INITIAL_REFETCH_INTERVAL,
+  );
   return createRuntimeServiceListResources(
     instanceId,
     {
@@ -21,6 +29,15 @@ export function useAlerts(instanceId: string, enabled = true) {
       query: {
         enabled: enabled && !!instanceId,
         refetchOnMount: true,
+        select: (data) => {
+          // Update the local refetch interval store
+          const meta = updateSmartRefetchMeta(data?.resources, {
+            refetchInterval: get(refetchIntervalStore),
+          });
+          refetchIntervalStore.set(meta.refetchInterval);
+          return data;
+        },
+        refetchInterval: () => get(refetchIntervalStore),
       },
     },
   );
