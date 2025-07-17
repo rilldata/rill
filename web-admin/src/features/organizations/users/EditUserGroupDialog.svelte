@@ -256,6 +256,7 @@
           label="Name"
           placeholder="Untitled"
           errors={$errors.newName}
+          alwaysShowError={true}
         />
 
         <div class="flex flex-col gap-y-1">
