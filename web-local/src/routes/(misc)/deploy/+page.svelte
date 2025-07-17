@@ -25,6 +25,7 @@
   const project = createLocalServiceGetCurrentProject();
 
   $: loading = $user.isPending || $metadata.isPending || $project.isPending;
+  let error: Error | null = null;
   $: error = $user.error ?? $metadata.error ?? $project.error;
 
   $: if (!loading && !error) {
@@ -34,9 +35,7 @@
   function handleDeploy() {
     // Should not happen if the servers are up. If not, there should be a query error.
     if (!$user.data || !$metadata.data?.loginUrl) {
-      error = {
-        message: "Failed to fetch login URL.",
-      } as ConnectError;
+      error = new Error("Failed to fetch login URL.");
       return;
     }
 
@@ -71,10 +70,9 @@
       !$project.data.project.managedGitId
     ) {
       // we do not support pushing to a project already connected to user managed github
-      error = {
-        message: `This project has already been connected to a GitHub repo.
-Please push changes directly to GitHub and the project in Rill Cloud will automatically be updated.`,
-      } as ConnectError;
+      error =
+        new Error(`This project has already been connected to a GitHub repo.
+Please push changes directly to GitHub and the project in Rill Cloud will automatically be updated.`);
       return;
     }
     // Cloud project already exists. Run a redeploy

@@ -1,5 +1,4 @@
 <script lang="ts">
-  import type { ConnectError } from "@connectrpc/connect";
   import { Button } from "@rilldata/web-common/components/button";
   import CTAButton from "@rilldata/web-common/components/calls-to-action/CTAButton.svelte";
   import CTAHeader from "@rilldata/web-common/components/calls-to-action/CTAHeader.svelte";
@@ -12,7 +11,7 @@
     getPrettyDeployError,
   } from "@rilldata/web-common/features/project/deploy-errors";
 
-  export let error: ConnectError;
+  export let error: Error;
   export let orgIsOnTrial: boolean;
   export let planUpgradeUrl: string;
   export let onRetry: () => void;

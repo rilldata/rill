@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import type { ConnectError } from "@connectrpc/connect";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
   import {
     getOrgIsOnTrial,
     getPlanUpgradeUrl,
@@ -20,7 +20,9 @@
 
   const redeployMutation = createLocalServiceRedeploy();
 
-  $: error = $redeployMutation.error as ConnectError;
+  $: ({ legacyArchiveDeploy } = featureFlags);
+
+  $: error = $redeployMutation.error as Error | null;
 
   $: planUpgradeUrl = getPlanUpgradeUrl(orgParam ?? "");
   $: orgIsOnTrial = getOrgIsOnTrial(orgParam ?? "");
@@ -28,7 +30,10 @@
   async function redeploy(projectId: string) {
     const resp = await $redeployMutation.mutateAsync({
       projectId,
-      reupload: true,
+      // If `legacyArchiveDeploy` is enabled, then use the archive route. Else use upload route.
+      // This is mainly set to true in E2E tests.
+      reupload: !$legacyArchiveDeploy,
+      rearchive: $legacyArchiveDeploy,
     });
     const projectUrl = resp.frontendUrl; // https://ui.rilldata.com/<org>/<project>
     const projectUrlWithSessionId = addPosthogSessionIdToUrl(projectUrl);

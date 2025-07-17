@@ -2,11 +2,13 @@
   import { page } from "$app/stores";
   import type { ConnectError } from "@connectrpc/connect";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
   import {
     getOrgIsOnTrial,
     getPlanUpgradeUrl,
   } from "@rilldata/web-common/features/organization/utils";
   import { addPosthogSessionIdToUrl } from "@rilldata/web-common/lib/analytics/posthog";
+  import { waitUntil } from "@rilldata/web-common/lib/waitUtils.ts";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
   import { BehaviourEventAction } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import { GetCurrentProjectResponse } from "@rilldata/web-common/proto/gen/rill/local/v1/api_pb";
@@ -26,18 +28,24 @@
   const project = createLocalServiceGetCurrentProject();
   const deployMutation = createLocalServiceDeploy();
 
+  $: ({ legacyArchiveDeploy } = featureFlags);
+
   $: error = $deployMutation.error as ConnectError;
 
   $: planUpgradeUrl = getPlanUpgradeUrl(orgParam ?? "");
   $: orgIsOnTrial = getOrgIsOnTrial(orgParam ?? "");
 
   async function freshDeploy(orgName: string) {
+    await waitUntil(() => !!$project.data);
     const projectResp = $project.data as GetCurrentProjectResponse;
 
     const resp = await $deployMutation.mutateAsync({
       org: orgName,
       projectName: projectResp.localProjectName,
-      upload: true,
+      // If `legacyArchiveDeploy` is enabled, then use the archive route. Else use upload route.
+      // This is mainly set to true in E2E tests.
+      upload: !$legacyArchiveDeploy,
+      archive: $legacyArchiveDeploy,
     });
     // wait for the telemetry to finish since the page will be redirected after a deploy success
     await behaviourEvent?.fireDeployEvent(BehaviourEventAction.DeploySuccess);

@@ -9,6 +9,7 @@ import { isOrgDeleted } from "@rilldata/web-common/tests/utils/is-org-deleted";
 
 test.describe("Deploy journey", () => {
   const cliHomeDir = makeTempDir("deploy_home");
+  const deployOrgName = "e2e-org";
 
   test.use({
     cliHomeDir,
@@ -18,13 +19,13 @@ test.describe("Deploy journey", () => {
   test.afterAll(async () => {
     await execAsync(
       // We need to set the home to get the correct creds
-      `HOME=${cliHomeDir} rill org delete e2e-admin --interactive=false`,
+      `HOME=${cliHomeDir} rill org delete ${deployOrgName} --interactive=false`,
     );
 
     // Wait for the organization to be deleted
     // This includes deleting the org from Orb and Stripe, which we'd like to do to keep those environments clean.
     await expect
-      .poll(async () => await isOrgDeleted("e2e-admin", cliHomeDir), {
+      .poll(async () => await isOrgDeleted(deployOrgName, cliHomeDir), {
         intervals: [1_000],
         timeout: 15_000,
       })
@@ -92,6 +93,25 @@ test.describe("Deploy journey", () => {
       .click();
 
     // Deploy should continue after logging in
+
+    // Org creation page is opened.
+    await expect(
+      deployPage.getByText("Let’s create your first organization"),
+    ).toBeVisible();
+    // Enter the org display name
+    await deployPage.getByLabel("Organization display name").fill("E2E Org");
+    // Org name should be auto-generated
+    await expect(deployPage.getByLabel("URL")).toHaveValue("E2E-Org");
+    // Update the org name directly
+    await deployPage.getByLabel("URL").fill(deployOrgName);
+    // Update the display name
+    await deployPage
+      .getByLabel("Organization display name")
+      .fill("E2E Test Org");
+    // Org name should not be updated
+    await expect(deployPage.getByLabel("URL")).toHaveValue(deployOrgName);
+    // Click the continue button to deploy
+    await deployPage.getByRole("button", { name: "Continue" }).click();
 
     // Deploy loader should show up.
     await expect(

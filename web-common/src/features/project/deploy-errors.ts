@@ -1,5 +1,3 @@
-import type { ConnectError } from "@connectrpc/connect";
-
 // rpc error: code = PermissionDenied desc = does not have permission to create assets
 const RPCErrorExtractor = /rpc error: code = (.*) desc = (.*)/;
 const ProjectQuotaErrorMatcher =
@@ -42,7 +40,7 @@ export type DeployError = {
 };
 
 export function getPrettyDeployError(
-  error: ConnectError,
+  error: Error,
   orgOnTrial: boolean,
 ): DeployError {
   if (!error) {

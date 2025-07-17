@@ -188,6 +188,7 @@
                 } else {
                   value = e.currentTarget.valueAsNumber;
                 }
+                return;
               }
               value = e.currentTarget.value;
               onInput(value, e);
