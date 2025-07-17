@@ -1,7 +1,8 @@
 ---
 title: FAQ
 sidebar_label: FAQ
-sidebar_position: 20
+sidebar_position: 40
+
 ---
 
 ## Technical requirements
