@@ -232,25 +232,49 @@ func (e *Executor) ReconcileWithParentMetricsView(ctx context.Context) (*runtime
 	newSpec.Measures = e.metricsView.Measures
 
 	securityRules := make([]*runtimev1.SecurityRule, 0)
-	// handle security rules, override access and append row_filter
-	for _, rule := range e.metricsView.SecurityRules {
+	var access, fieldAccess, rowFilter, parentAccess, parentRowFilter []*runtimev1.SecurityRule
+	for _, rule := range newSpec.SecurityRules {
 		if rule.GetAccess() != nil {
-			securityRules = append(securityRules, rule)
-		} else if rule.GetFieldAccess() != nil {
-			// validate field access rules against the parent metrics view dimensions and measures
-			return nil, fmt.Errorf("field access rules are not supported in derived metrics views, use dimensions and measures selectors to include/exclude fields from parent metrics view %q", e.metricsView.Parent)
+			parentAccess = append(parentAccess, rule)
 		} else if rule.GetRowFilter() != nil {
-			// If the parent metrics view has a row filter, we need to AND the row filer with parent row filter
-			for _, parentRule := range newSpec.SecurityRules {
-				if parentRule.GetRowFilter() != nil {
-					// Combine the row filters with AND
-					rule.GetRowFilter().Sql = fmt.Sprintf("(%s) AND (%s)", parentRule.GetRowFilter().Sql, rule.GetRowFilter().Sql)
-					break
-				}
-			}
-			securityRules = append(securityRules, rule)
+			parentRowFilter = append(parentRowFilter, rule)
 		}
 	}
+
+	for _, rule := range e.metricsView.SecurityRules {
+		if rule.GetAccess() != nil {
+			access = append(access, rule)
+		} else if rule.GetFieldAccess() != nil {
+			fieldAccess = append(fieldAccess, rule)
+		} else if rule.GetRowFilter() != nil {
+			if len(parentRowFilter) > 1 || len(rowFilter) > 1 {
+				return nil, fmt.Errorf("unable to merge multiple row filters into one")
+			}
+			rowFilter = append(rowFilter, rule)
+		}
+	}
+
+	if len(access) > 0 {
+		securityRules = append(securityRules, access...)
+	} else if len(parentAccess) > 0 {
+		securityRules = append(securityRules, parentAccess...)
+	}
+
+	if len(fieldAccess) > 0 {
+		securityRules = append(securityRules, fieldAccess...)
+	} // field access cannot be inherited from parent metrics view, so we ignore parentFieldAccess
+
+	if len(rowFilter) > 0 {
+		// If the metrics view has a row filter, we need to AND the row filter with parent row filter
+		if len(parentRowFilter) > 0 {
+			rowFilter[0].GetRowFilter().Sql = fmt.Sprintf("(%s) AND (%s)", parentRowFilter[0].GetRowFilter().Sql, rowFilter[0].GetRowFilter().Sql)
+		}
+		securityRules = append(securityRules, rowFilter[0])
+	} else if len(parentRowFilter) > 0 {
+		// If the metrics view does not have a row filter, we need to inherit the parent row filter
+		securityRules = append(securityRules, parentRowFilter...)
+	}
+
 	newSpec.SecurityRules = securityRules
 	newSpec.DisplayName = e.metricsView.DisplayName
 	newSpec.Description = e.metricsView.Description
