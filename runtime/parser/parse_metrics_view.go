@@ -17,6 +17,7 @@ import (
 // MetricsViewYAML is the raw structure of a MetricsView resource defined in YAML
 type MetricsViewYAML struct {
 	commonYAML        `yaml:",inline"` // Not accessed here, only setting it so we can use KnownFields for YAML parsing
+	Parent            string           `yaml:"parent"` // Parent metrics view, if any
 	DisplayName       string           `yaml:"display_name"`
 	Title             string           `yaml:"title"` // Deprecated: use display_name
 	Description       string           `yaml:"description"`
@@ -63,7 +64,9 @@ type MetricsViewYAML struct {
 		ValidPercentOfTotal bool           `yaml:"valid_percent_of_total"`
 		TreatNullsAs        string         `yaml:"treat_nulls_as"`
 	}
-	Security *SecurityPolicyYAML
+	DimensionsSelector *FieldSelectorYAML `yaml:"dimensions_selector"`
+	MeasuresSelector   *FieldSelectorYAML `yaml:"measures_selector"`
+	Security           *SecurityPolicyYAML
 
 	// DEPRECATED FIELDS
 	DefaultTimeRange   string   `yaml:"default_time_range"`
@@ -81,6 +84,7 @@ type MetricsViewYAML struct {
 		KeySQL  string `yaml:"key_sql"`
 		KeyTTL  string `yaml:"key_ttl"`
 	} `yaml:"cache"`
+	ExploreYAML yaml.Node `yaml:"explore"`
 }
 
 type MetricsViewFieldSelectorYAML struct {
@@ -237,7 +241,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 	if tmp.Table != "" && tmp.Model != "" {
 		return fmt.Errorf(`cannot set both the "model" field and the "table" field`)
 	}
-	if tmp.Table == "" && tmp.Model == "" {
+	if tmp.Table == "" && tmp.Model == "" && tmp.Parent == "" {
 		return fmt.Errorf(`must set a value for either the "model" field or the "table" field`)
 	}
 
@@ -258,6 +262,30 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		if err != nil {
 			return err
 		}
+	}
+
+	if tmp.Parent != "" {
+		if len(tmp.Dimensions) > 0 || len(tmp.Measures) > 0 {
+			return fmt.Errorf("cannot define dimensions or measures in a derviced metrics view, use dimension_selector and measure_selector to select from parent %q", tmp.Parent)
+		}
+		if tmp.Database != "" || tmp.DatabaseSchema != "" || tmp.Table != "" || tmp.Model != "" {
+			return fmt.Errorf("cannot set data source in a derived metrics view (parent %q)", tmp.Parent)
+		}
+		if tmp.Watermark != "" {
+			return fmt.Errorf("cannot set watermark in a derived metrics view (parent %q)", tmp.Parent)
+		}
+		if tmp.Security != nil && (len(tmp.Security.Include) > 0 || len(tmp.Security.Exclude) > 0) {
+			return fmt.Errorf("cannot set includes/excludes in derived metrics view security, use dimension selectors to inherit subset from (parent %q)", tmp.Parent)
+		}
+		if tmp.Cache.Enabled != nil || tmp.Cache.KeySQL != "" || tmp.Cache.KeyTTL != "" {
+			return fmt.Errorf("cannot set cache in a derived metrics view (parent %q)", tmp.Parent)
+		}
+		// disallow deprecated fields in derived metrics views
+		if tmp.DefaultTimeRange != "" || tmp.DefaultTheme != "" || len(tmp.DefaultDimensions) > 0 || len(tmp.DefaultMeasures) > 0 || tmp.DefaultComparison.Mode != "" || tmp.DefaultComparison.Dimension != "" {
+			return fmt.Errorf("cannot set defaults in derived metrics view (parent %q), defaults can be set under explore key", tmp.Parent)
+		}
+
+		node.Refs = append(node.Refs, ResourceName{Kind: ResourceKindMetricsView, Name: tmp.Parent})
 	}
 
 	names := make(map[string]uint8)
@@ -485,7 +513,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 			TreatNullsAs:        measure.TreatNullsAs,
 		})
 	}
-	if len(measures) == 0 {
+	if len(measures) == 0 && tmp.Parent == "" {
 		return fmt.Errorf("must define at least one measure")
 	}
 
@@ -589,6 +617,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 	// NOTE: After calling insertResource, an error must not be returned. Any validation should be done before calling it.
 	spec := r.MetricsViewSpec
 
+	spec.Parent = tmp.Parent
 	spec.Connector = node.Connector
 	spec.Database = tmp.Database
 	spec.DatabaseSchema = tmp.DatabaseSchema
@@ -628,10 +657,37 @@ func (p *Parser) parseMetricsView(node *Node) error {
 
 	spec.Measures = measures
 
+	// Parse the dimensions and measures selectors
+	spec.DimensionsSelector = tmp.DimensionsSelector.Proto()
+	spec.MeasuresSelector = tmp.MeasuresSelector.Proto()
+
 	spec.SecurityRules = securityRules
 	spec.CacheEnabled = tmp.Cache.Enabled
 	spec.CacheKeySql = tmp.Cache.KeySQL
 	spec.CacheKeyTtlSeconds = int64(cacheTTLDuration.Seconds())
+
+	if !tmp.ExploreYAML.IsZero() {
+		ymlBytes, err := yaml.Marshal(tmp.ExploreYAML)
+		if err != nil {
+			return fmt.Errorf("failed to marshal explore YAML: %w", err)
+		}
+		yml := string(ymlBytes)
+		refs := []ResourceName{{Kind: ResourceKindMetricsView, Name: node.Name}}
+		exploreNode := &Node{
+			Name:     node.Name,
+			Kind:     ResourceKindExplore,
+			Paths:    node.Paths,
+			Refs:     refs,
+			YAML:     &tmp.ExploreYAML,
+			YAMLRaw:  yml,
+			YAMLPath: node.YAMLPath,
+		}
+
+		// parse the explore YAML node
+		err = p.parseExplore(exploreNode, true)
+
+		return err
+	}
 
 	// Backwards compatibility: When the version is 0, also emit an Explore resource for the metrics view.
 	if node.Version > 0 {

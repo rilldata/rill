@@ -19,9 +19,9 @@ type ExploreYAML struct {
 	Description          string                 `yaml:"description"`
 	Banner               string                 `yaml:"banner"`
 	MetricsView          string                 `yaml:"metrics_view"`
-	Dimensions           *FieldSelectorYAML     `yaml:"dimensions"`
-	Measures             *FieldSelectorYAML     `yaml:"measures"`
-	Theme                yaml.Node              `yaml:"theme"` // Name (string) or inline theme definition (map)
+	Dimensions           *FieldSelectorYAML     `yaml:"dimensions"` // deprecated while explore is defined inline, rely on mv dimensions selector
+	Measures             *FieldSelectorYAML     `yaml:"measures"`   // deprecated while explore is defined inline, rely on mv measures selector
+	Theme                yaml.Node              `yaml:"theme"`      // Name (string) or inline theme definition (map)
 	TimeRanges           []ExploreTimeRangeYAML `yaml:"time_ranges"`
 	TimeZones            []string               `yaml:"time_zones"` // Single time zone or list of time zones
 	LockTimeZone         bool                   `yaml:"lock_time_zone"`
@@ -36,7 +36,7 @@ type ExploreYAML struct {
 	Embeds struct {
 		HidePivot bool `yaml:"hide_pivot"`
 	} `yaml:"embeds"`
-	Security *SecurityPolicyYAML `yaml:"security"`
+	Security *SecurityPolicyYAML `yaml:"security"` // deprecated while explore is defined inline, rely on mv security rules
 }
 
 // ExploreTimeRangeYAML represents a time range in an ExploreYAML.
@@ -117,7 +117,7 @@ var exploreComparisonModes = map[string]runtimev1.ExploreComparisonMode{
 	"dimension": runtimev1.ExploreComparisonMode_EXPLORE_COMPARISON_MODE_DIMENSION,
 }
 
-func (p *Parser) parseExplore(node *Node) error {
+func (p *Parser) parseExplore(node *Node, inline bool) error {
 	// Parse YAML
 	tmp := &ExploreYAML{}
 	err := p.decodeNodeYAML(node, true, tmp)
@@ -144,11 +144,23 @@ func (p *Parser) parseExplore(node *Node) error {
 		allowCustomTimeRange = *tmp.AllowCustomTimeRange
 	}
 
-	// Validate metrics_view
-	if tmp.MetricsView == "" {
-		return errors.New("metrics_view is required")
+	if inline {
+		if tmp.MetricsView != "" {
+			return errors.New("defining metrics_view is not supported on inline explore")
+		}
+		if tmp.Security != nil {
+			return errors.New("security rules are not supported on inline explores, please define them on the metrics view")
+		}
+		if tmp.Dimensions != nil || tmp.Measures != nil {
+			return errors.New("dimensions and measures are not supported on inline explores, please define them on the metrics view")
+		}
+	} else {
+		// Validate metrics_view
+		if tmp.MetricsView == "" {
+			return errors.New("metrics_view is required")
+		}
+		node.Refs = append(node.Refs, ResourceName{Kind: ResourceKindMetricsView, Name: tmp.MetricsView})
 	}
-	node.Refs = append(node.Refs, ResourceName{Kind: ResourceKindMetricsView, Name: tmp.MetricsView})
 
 	// Parse the dimensions and measures selectors
 	var dimensionsSelector *runtimev1.FieldSelector
@@ -291,6 +303,7 @@ func (p *Parser) parseExplore(node *Node) error {
 	r.ExploreSpec.SecurityRules = rules
 	r.ExploreSpec.LockTimeZone = tmp.LockTimeZone
 	r.ExploreSpec.AllowCustomTimeRange = allowCustomTimeRange
+	r.ExploreSpec.DefinedInMetricsView = inline
 
 	return nil
 }

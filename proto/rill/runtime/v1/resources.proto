@@ -185,6 +185,9 @@ message MetricsView {
 }
 
 message MetricsViewSpec {
+  string parent = 29; // Parent metrics view, if this is a child metrics view.
+  FieldSelector dimensions_selector = 30; // Dynamic selector for dimensions from parent metrics view.
+  FieldSelector measures_selector = 31; // Dynamic selector for measures from parent metrics view.
   // Dimensions are columns to filter and group by
   message Dimension {
     string name = 1;

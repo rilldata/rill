@@ -1414,6 +1414,10 @@ export interface V1MetricsViewSort {
 }
 
 export interface V1MetricsViewSpec {
+  /** Parent metrics view, if this is a child metrics view. */
+  parent?: string;
+  dimensionsSelector?: V1FieldSelector;
+  measuresSelector?: V1FieldSelector;
   connector?: string;
   database?: string;
   databaseSchema?: string;

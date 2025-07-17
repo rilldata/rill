@@ -5441,6 +5441,15 @@ definitions:
   v1MetricsViewSpec:
     type: object
     properties:
+      parent:
+        type: string
+        description: Parent metrics view, if this is a child metrics view.
+      dimensionsSelector:
+        $ref: '#/definitions/v1FieldSelector'
+        description: Dynamic selector for dimensions from parent metrics view.
+      measuresSelector:
+        $ref: '#/definitions/v1FieldSelector'
+        description: Dynamic selector for measures from parent metrics view.
       connector:
         type: string
         title: Connector containing the table

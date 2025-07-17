@@ -1291,6 +1291,27 @@ export class MetricsView extends Message<MetricsView> {
  */
 export class MetricsViewSpec extends Message<MetricsViewSpec> {
   /**
+   * Parent metrics view, if this is a child metrics view.
+   *
+   * @generated from field: string parent = 29;
+   */
+  parent = "";
+
+  /**
+   * Dynamic selector for dimensions from parent metrics view.
+   *
+   * @generated from field: rill.runtime.v1.FieldSelector dimensions_selector = 30;
+   */
+  dimensionsSelector?: FieldSelector;
+
+  /**
+   * Dynamic selector for measures from parent metrics view.
+   *
+   * @generated from field: rill.runtime.v1.FieldSelector measures_selector = 31;
+   */
+  measuresSelector?: FieldSelector;
+
+  /**
    * Connector containing the table
    *
    * @generated from field: string connector = 1;
@@ -1428,6 +1449,9 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.MetricsViewSpec";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 29, name: "parent", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 30, name: "dimensions_selector", kind: "message", T: FieldSelector },
+    { no: 31, name: "measures_selector", kind: "message", T: FieldSelector },
     { no: 1, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 21, name: "database", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 22, name: "database_schema", kind: "scalar", T: 9 /* ScalarType.STRING */ },

@@ -10,7 +10,9 @@ import (
 	"sync"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/fieldselectorpb"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -145,6 +147,155 @@ func (e *Executor) ValidateAndNormalizeMetricsView(ctx context.Context) (*Valida
 		res.OtherErrs = append(res.OtherErrs, fmt.Errorf("failed to get cache key: %w", err))
 	}
 
+	return res, nil
+}
+
+// ReconcileWithParentMetricsView resolves the parent metrics view and inherits all its dimensions and measures unless they are overridden in the current metrics view.
+func (e *Executor) ReconcileWithParentMetricsView(ctx context.Context) (*runtimev1.MetricsViewSpec, error) {
+	if e.metricsView.Parent == "" {
+		// No parent metrics view to normalize
+		return nil, nil
+	}
+	// Resolve the parent metrics view
+	ctrl, err := e.rt.Controller(ctx, e.instanceID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get controller: %w", err)
+	}
+	// deep copy of parent metrics view that will be modified
+	parent, err := ctrl.Get(ctx, &runtimev1.ResourceName{
+		Name: e.metricsView.Parent,
+		Kind: runtime.ResourceKindMetricsView,
+	}, true)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get parent metrics view %q: %w", e.metricsView.Parent, err)
+	}
+	if parent.GetMetricsView() == nil {
+		return nil, fmt.Errorf("parent resource %q is not a metrics view", e.metricsView.Parent)
+	}
+	newSpec := parent.GetMetricsView().State.ValidSpec
+	newSpec.Parent = e.metricsView.Parent
+
+	// Override the dimensions and measures in the normalized metrics view if defined in the current metrics view.
+	allDims := make(map[string]*runtimev1.MetricsViewSpec_Dimension, len(newSpec.Dimensions))
+	all := make([]string, 0, len(newSpec.Dimensions))
+	for _, d := range newSpec.Dimensions {
+		allDims[d.Name] = d
+		all = append(all, d.Name)
+	}
+
+	var dimNames []string
+	dimSelector := e.metricsView.DimensionsSelector
+	if dimSelector != nil && !dimSelector.Invert && dimSelector.GetFields() != nil && len(dimSelector.GetFields().Values) > 0 {
+		dimNames = dimSelector.GetFields().Values
+	} else {
+		dimNames, err = e.resolveFields(dimSelector, all)
+		if err != nil {
+			return nil, fmt.Errorf("failed to resolve dimensions selector: %w", err)
+		}
+	}
+
+	// resolve dim names to actual dimension spec
+	for _, dimName := range dimNames {
+		dim, ok := allDims[dimName]
+		if !ok {
+			return nil, fmt.Errorf("dimension %q not found in parent metrics view %q", dimName, e.metricsView.Parent)
+		}
+		e.metricsView.Dimensions = append(e.metricsView.Dimensions, dim)
+	}
+	newSpec.Dimensions = e.metricsView.Dimensions
+
+	allMeasures := make(map[string]*runtimev1.MetricsViewSpec_Measure, len(newSpec.Measures))
+	all = make([]string, 0, len(newSpec.Measures))
+	for _, m := range newSpec.Measures {
+		allMeasures[m.Name] = m
+		all = append(all, m.Name)
+	}
+	var measureNames []string
+	measureSelector := e.metricsView.MeasuresSelector
+	if measureSelector != nil && !measureSelector.Invert && measureSelector.GetFields() != nil && len(measureSelector.GetFields().Values) > 0 {
+		measureNames = measureSelector.GetFields().Values
+	} else {
+		measureNames, err = e.resolveFields(measureSelector, all)
+		if err != nil {
+			return nil, fmt.Errorf("failed to resolve measures selector: %w", err)
+		}
+	}
+
+	// resolve measure names to actual measure spec
+	for _, measureName := range measureNames {
+		measure, ok := allMeasures[measureName]
+		if !ok {
+			return nil, fmt.Errorf("measure %q not found in parent metrics view %q", measureName, e.metricsView.Parent)
+		}
+		e.metricsView.Measures = append(e.metricsView.Measures, measure)
+	}
+	newSpec.Measures = e.metricsView.Measures
+
+	securityRules := make([]*runtimev1.SecurityRule, 0)
+	// handle security rules, override access and append row_filter
+	for _, rule := range e.metricsView.SecurityRules {
+		if rule.GetAccess() != nil {
+			securityRules = append(securityRules, rule)
+		} else if rule.GetFieldAccess() != nil {
+			// validate field access rules against the parent metrics view dimensions and measures
+			return nil, fmt.Errorf("field access rules are not supported in derived metrics views, use dimensions and measures selectors to include/exclude fields from parent metrics view %q", e.metricsView.Parent)
+		} else if rule.GetRowFilter() != nil {
+			// If the parent metrics view has a row filter, we need to AND the row filer with parent row filter
+			for _, parentRule := range newSpec.SecurityRules {
+				if parentRule.GetRowFilter() != nil {
+					// Combine the row filters with AND
+					rule.GetRowFilter().Sql = fmt.Sprintf("(%s) AND (%s)", parentRule.GetRowFilter().Sql, rule.GetRowFilter().Sql)
+					break
+				}
+			}
+			securityRules = append(securityRules, rule)
+		}
+	}
+	newSpec.SecurityRules = securityRules
+	newSpec.DisplayName = e.metricsView.DisplayName
+	newSpec.Description = e.metricsView.Description
+
+	// If the metrics view has a time dimension, override the parent metrics view time dimension
+	if e.metricsView.TimeDimension != "" {
+		newSpec.TimeDimension = e.metricsView.TimeDimension
+	}
+	// If the metrics view has a first day of week, override the parent metrics view first day of week
+	if e.metricsView.FirstDayOfWeek > 0 {
+		if e.metricsView.FirstDayOfWeek < 1 || e.metricsView.FirstDayOfWeek > 7 {
+			return nil, fmt.Errorf("invalid first day of week %d in metrics view %q, must be between 1 and 7", e.metricsView.FirstDayOfWeek, e.metricsView.Parent)
+		}
+		newSpec.FirstDayOfWeek = e.metricsView.FirstDayOfWeek
+	}
+	// If the metrics view has a first month of year, override the parent metrics view first month of year
+	if e.metricsView.FirstMonthOfYear > 0 {
+		if e.metricsView.FirstMonthOfYear < 1 || e.metricsView.FirstMonthOfYear > 12 {
+			return nil, fmt.Errorf("invalid first month of year %d in metrics view %q, must be between 1 and 12", e.metricsView.FirstMonthOfYear, e.metricsView.Parent)
+		}
+		newSpec.FirstMonthOfYear = e.metricsView.FirstMonthOfYear
+	}
+	// If the metrics view has a smallest time grain, override the parent metrics view smallest time grain
+	if e.metricsView.SmallestTimeGrain != runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
+		if e.metricsView.SmallestTimeGrain < newSpec.SmallestTimeGrain {
+			return nil, fmt.Errorf("invalid smallest time grain %s in metrics view %q, must be greater than or equal to parent metrics view smallest time grain %s", e.metricsView.SmallestTimeGrain, e.metricsView.Parent, newSpec.SmallestTimeGrain)
+		}
+		newSpec.SmallestTimeGrain = e.metricsView.SmallestTimeGrain
+	}
+	// If the metrics view has ai instructions, override the parent metrics view ai instructions
+	if e.metricsView.AiInstructions != "" {
+		newSpec.AiInstructions = e.metricsView.AiInstructions
+	}
+
+	e.metricsView = newSpec
+
+	return newSpec, nil
+}
+
+func (e *Executor) resolveFields(selector *runtimev1.FieldSelector, all []string) ([]string, error) {
+	// Resolve the selector (it includes validation of the resulting fields against `all` if needed).
+	res, err := fieldselectorpb.Resolve(selector, all)
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve dimension or measure name selector: %w", err)
+	}
 	return res, nil
 }
 
