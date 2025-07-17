@@ -108,6 +108,16 @@ func (r *MetricsViewReconciler) Reconcile(ctx context.Context, n *runtimev1.Reso
 		return runtime.ReconcileResult{Err: fmt.Errorf("failed to create metrics view executor: %w", err)}
 	}
 	defer e.Close()
+
+	reconciled, err := e.ReconcileWithParentMetricsView(ctx)
+	if err != nil {
+		return runtime.ReconcileResult{Err: fmt.Errorf("failed to normalize parent metrics view: %w", err)}
+	}
+	if reconciled != nil {
+		// If the parent metrics view was normalized, we update the spec to match.
+		mv.Spec = reconciled
+	}
+
 	validateResult, validateErr := e.ValidateAndNormalizeMetricsView(ctx)
 	if validateErr == nil {
 		validateErr = validateResult.Error()
@@ -131,6 +141,10 @@ func (r *MetricsViewReconciler) Reconcile(ctx context.Context, n *runtimev1.Reso
 		// Return the validation error
 		return runtime.ReconcileResult{Err: validateErr}
 	}
+
+	// set selectors to nil now that they are resolved
+	mv.Spec.DimensionsSelector = nil
+	mv.Spec.MeasuresSelector = nil
 
 	// Capture the spec, which we now know to be valid.
 	mv.State.ValidSpec = mv.Spec
