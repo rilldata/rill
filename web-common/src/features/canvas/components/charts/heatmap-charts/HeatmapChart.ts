@@ -121,7 +121,6 @@ export class HeatmapChartComponent extends BaseChart<HeatmapChartSpec> {
           {
             query: {
               enabled,
-              placeholderData: keepPreviousData,
             },
           },
         );
@@ -162,7 +161,6 @@ export class HeatmapChartComponent extends BaseChart<HeatmapChartSpec> {
           {
             query: {
               enabled,
-              placeholderData: keepPreviousData,
             },
           },
         );
