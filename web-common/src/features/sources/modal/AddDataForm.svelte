@@ -156,7 +156,11 @@
   // Emit the submitting state to the parent
   $: dispatch("submitting", { submitting });
 
-  // Generate YAML preview from form state
+  // ClickHouse requires special handling because it supports both managed and self-managed modes:
+  // - When managed=true: uses sourceProperties and minimal configuration
+  // - When managed=false: uses configProperties and full connection details
+  // - The form state is managed by the child AddClickHouseForm component
+  // - Other connectors use a simpler single-form approach
   $: yamlPreview = (() => {
     if (connector.name === "clickhouse") {
       // Use the value of the child form state for clickhouse
