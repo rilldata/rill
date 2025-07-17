@@ -194,7 +194,6 @@
   bind:open
   onOutsideClick={(e) => {
     e.preventDefault();
-    handleClose();
   }}
   onOpenChange={(open) => {
     if (!open) {
