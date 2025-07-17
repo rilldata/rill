@@ -142,6 +142,10 @@ func (r *MetricsViewReconciler) Reconcile(ctx context.Context, n *runtimev1.Reso
 		return runtime.ReconcileResult{Err: validateErr}
 	}
 
+	// set selectors to nil now that they are resolved
+	mv.Spec.DimensionsSelector = nil
+	mv.Spec.MeasuresSelector = nil
+
 	// Capture the spec, which we now know to be valid.
 	mv.State.ValidSpec = mv.Spec
 	// If there's no internal ref, we assume the metrics view is based on an externally managed table and set the streaming state to true.

@@ -286,6 +286,8 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		}
 
 		node.Refs = append(node.Refs, ResourceName{Kind: ResourceKindMetricsView, Name: tmp.Parent})
+	} else if tmp.DimensionsSelector != nil || tmp.MeasuresSelector != nil {
+		return fmt.Errorf("dimensions_selector and measures_selector can only be set in derived metrics views, use dimensions and measures instead")
 	}
 
 	names := make(map[string]uint8)
