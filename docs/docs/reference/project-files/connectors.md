@@ -1,9 +1,15 @@
 ---
 title: Connector YAML
 sidebar_label: Connector YAML 
-sidebar_position: 70
+sidebar_position: 00
 hide_table_of_contents: true
 ---
+
+:::note /connectors/duckdb.yaml
+
+
+
+:::
 
 
 When you add olap_connector to your rill.yaml file, you will need to set up a `<connector_name>.yaml` file in the 'connectors' directory. This file requires the following parameters,`type` and `driver` (see below for more parameter options). Rill will automatically test the connectivity to the OLAP engine upon saving the file. This can be viewed in the connectors tab in the UI.
