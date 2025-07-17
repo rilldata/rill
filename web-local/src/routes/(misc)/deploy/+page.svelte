@@ -1,7 +1,6 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
-  import type { ConnectError } from "@connectrpc/connect";
   import CTAMessage from "@rilldata/web-common/components/calls-to-action/CTAMessage.svelte";
   import CancelCircleInverse from "@rilldata/web-common/components/icons/CancelCircleInverse.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
