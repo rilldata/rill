@@ -7,7 +7,7 @@ hide_table_of_contents: true
 
 :::tip
 
-Both regular models and source models can use the Model YAML specification described on this page. While [SQL models](model) are perfect for simple transformations, Model YAML files provide advanced capabilities for complex data processing scenarios.
+Both regular models and source models can use the Model YAML specification described on this page. While [SQL models](./models) are perfect for simple transformations, Model YAML files provide advanced capabilities for complex data processing scenarios.
 
 **When to use Model YAML:**
 - **Partitions** - Optimize performance with data partitioning strategies
