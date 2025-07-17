@@ -60,7 +60,7 @@ Explore our [example repository](https://github.com/rilldata/rill-examples/) to 
   target="_blank"
   rel="noopener noreferrer"
   githubLink="https://github.com/rilldata/rill-examples/tree/main/my-rill-tutorial"
-  walkthroughLink="/guides/tutorial/rill-basics/launch"
+  walkthroughLink="/guides/rill-basics/launch"
 />
 <TileIcon
   header="App Engagement"
