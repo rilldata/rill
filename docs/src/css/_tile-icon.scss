@@ -38,24 +38,28 @@
   font-weight: 600;
   margin-bottom: 0.5rem;
   color: #383838;
+  display: flex;
+  align-items: center;
+
+}
+
+.tile-icon-img {
+  height: 2rem;
+  width: 100%;
+  margin-right: 8px;
+  vertical-align: middle;
 }
 
 .tile-icon-content {
-  font-size: 1rem;
-  color: #777676;
-  margin-bottom: 1.25rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: #6b7280;
+  margin-bottom: 1rem;
+  flex-grow: 1;
 }
 
 .tile-icon-footer {
   margin-top: auto;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
   width: 100%;
 }
 
@@ -66,14 +70,13 @@
 }
 
 .tile-icon-action-link {
-  font-size: 0.875rem;
-  color: #0057ff;
+  font-size: 0.8rem;
+  color: #3b82f6;
   text-decoration: none;
   font-weight: 500;
   
   &:hover {
     text-decoration: underline;
-    color: #0057ff;
   }
 }
 
