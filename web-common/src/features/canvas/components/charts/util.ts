@@ -144,7 +144,7 @@ export const CanvasChartTypeToTDDChartType = {
   bar_chart: TDDChart.GROUPED_BAR,
 };
 
-export function canLinkTimeDimensionDetail(
+export function getLinkStateForTimeDimensionDetail(
   spec: ChartSpec,
   type: ChartType,
 ): {
