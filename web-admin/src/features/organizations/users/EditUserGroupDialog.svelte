@@ -352,7 +352,9 @@
       <Button type="plain" onClick={handleClose}>Cancel</Button>
       <Button
         type="primary"
-        disabled={$submitting || $form.newName.trim() === ""}
+        disabled={$submitting ||
+          $form.newName.trim() === "" ||
+          !!$errors.newName}
         form={formId}
         submitForm
       >
