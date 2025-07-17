@@ -5444,12 +5444,6 @@ definitions:
       parent:
         type: string
         description: Parent metrics view, if this is a child metrics view.
-      dimensionsSelector:
-        $ref: '#/definitions/v1FieldSelector'
-        description: Dynamic selector for dimensions from parent metrics view.
-      measuresSelector:
-        $ref: '#/definitions/v1FieldSelector'
-        description: Dynamic selector for measures from parent metrics view.
       connector:
         type: string
         title: Connector containing the table
@@ -5497,6 +5491,12 @@ definitions:
           type: object
           $ref: '#/definitions/MetricsViewSpecMeasure'
         title: Measures in the metrics view
+      dimensionsSelector:
+        $ref: '#/definitions/v1FieldSelector'
+        description: Dynamic selector for dimensions from parent metrics view. Will be processed during validation, so it will always be empty in `state.valid_spec`. Can only be used if parent is set.
+      measuresSelector:
+        $ref: '#/definitions/v1FieldSelector'
+        description: Dynamic selector for measures from parent metrics view. Will be processed during validation, so it will always be empty in `state.valid_spec`. Can only be used if parent is set.
       securityRules:
         type: array
         items:
@@ -5519,6 +5519,9 @@ definitions:
       cacheKeyTtlSeconds:
         type: string
         format: int64
+      noExplore:
+        type: boolean
+        description: If true, no explore will be generated for this metrics view automatically.
   v1MetricsViewState:
     type: object
     properties:

@@ -1416,8 +1416,6 @@ export interface V1MetricsViewSort {
 export interface V1MetricsViewSpec {
   /** Parent metrics view, if this is a child metrics view. */
   parent?: string;
-  dimensionsSelector?: V1FieldSelector;
-  measuresSelector?: V1FieldSelector;
   connector?: string;
   database?: string;
   databaseSchema?: string;
@@ -1434,6 +1432,8 @@ export interface V1MetricsViewSpec {
   watermarkExpression?: string;
   dimensions?: MetricsViewSpecDimension[];
   measures?: MetricsViewSpecMeasure[];
+  dimensionsSelector?: V1FieldSelector;
+  measuresSelector?: V1FieldSelector;
   securityRules?: V1SecurityRule[];
   /** ISO 8601 weekday number to use as the base for time aggregations by week. Defaults to 1 (Monday). */
   firstDayOfWeek?: number;
@@ -1443,6 +1443,8 @@ export interface V1MetricsViewSpec {
   cacheEnabled?: boolean;
   cacheKeySql?: string;
   cacheKeyTtlSeconds?: string;
+  /** If true, no explore will be generated for this metrics view automatically. */
+  noExplore?: boolean;
 }
 
 export interface V1MetricsViewState {

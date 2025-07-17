@@ -3159,64 +3159,6 @@ func (m *MetricsViewSpec) validate(all bool) error {
 
 	// no validation rules for Parent
 
-	if all {
-		switch v := interface{}(m.GetDimensionsSelector()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, MetricsViewSpecValidationError{
-					field:  "DimensionsSelector",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, MetricsViewSpecValidationError{
-					field:  "DimensionsSelector",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetDimensionsSelector()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return MetricsViewSpecValidationError{
-				field:  "DimensionsSelector",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
-
-	if all {
-		switch v := interface{}(m.GetMeasuresSelector()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, MetricsViewSpecValidationError{
-					field:  "MeasuresSelector",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, MetricsViewSpecValidationError{
-					field:  "MeasuresSelector",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetMeasuresSelector()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return MetricsViewSpecValidationError{
-				field:  "MeasuresSelector",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
-
 	// no validation rules for Connector
 
 	// no validation rules for Database
@@ -3307,6 +3249,64 @@ func (m *MetricsViewSpec) validate(all bool) error {
 
 	}
 
+	if all {
+		switch v := interface{}(m.GetDimensionsSelector()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, MetricsViewSpecValidationError{
+					field:  "DimensionsSelector",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, MetricsViewSpecValidationError{
+					field:  "DimensionsSelector",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetDimensionsSelector()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return MetricsViewSpecValidationError{
+				field:  "DimensionsSelector",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetMeasuresSelector()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, MetricsViewSpecValidationError{
+					field:  "MeasuresSelector",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, MetricsViewSpecValidationError{
+					field:  "MeasuresSelector",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetMeasuresSelector()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return MetricsViewSpecValidationError{
+				field:  "MeasuresSelector",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
 	for idx, item := range m.GetSecurityRules() {
 		_, _ = idx, item
 
@@ -3348,6 +3348,8 @@ func (m *MetricsViewSpec) validate(all bool) error {
 	// no validation rules for CacheKeySql
 
 	// no validation rules for CacheKeyTtlSeconds
+
+	// no validation rules for NoExplore
 
 	if m.CacheEnabled != nil {
 		// no validation rules for CacheEnabled

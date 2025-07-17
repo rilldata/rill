@@ -186,8 +186,6 @@ message MetricsView {
 
 message MetricsViewSpec {
   string parent = 29; // Parent metrics view, if this is a child metrics view.
-  FieldSelector dimensions_selector = 30; // Dynamic selector for dimensions from parent metrics view.
-  FieldSelector measures_selector = 31; // Dynamic selector for measures from parent metrics view.
   // Dimensions are columns to filter and group by
   message Dimension {
     string name = 1;
@@ -273,6 +271,10 @@ message MetricsViewSpec {
   repeated Dimension dimensions = 6;
   // Measures in the metrics view
   repeated Measure measures = 7;
+  // Dynamic selector for dimensions from parent metrics view. Will be processed during validation, so it will always be empty in `state.valid_spec`. Can only be used if parent is set.
+  FieldSelector dimensions_selector = 30;
+  // Dynamic selector for measures from parent metrics view. Will be processed during validation, so it will always be empty in `state.valid_spec`. Can only be used if parent is set.
+  FieldSelector measures_selector = 31;
   // Security for the metrics view
   repeated SecurityRule security_rules = 23;
   // ISO 8601 weekday number to use as the base for time aggregations by week. Defaults to 1 (Monday).
@@ -283,6 +285,8 @@ message MetricsViewSpec {
   optional bool cache_enabled = 25;
   string cache_key_sql = 26;
   int64 cache_key_ttl_seconds = 27;
+  // If true, no explore will be generated for this metrics view automatically.
+  bool no_explore = 32;
 }
 
 message SecurityRule {
