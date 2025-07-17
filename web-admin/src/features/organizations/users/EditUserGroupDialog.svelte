@@ -214,6 +214,9 @@
       : undefined;
   }
 
+  // Check if form has been modified
+  $: hasFormChanges = $form.newName !== initialValues.newName;
+
   function handleClose() {
     open = false;
     searchText = "";
@@ -221,6 +224,10 @@
     pendingAdditions = [];
     pendingRemovals = [];
     initialized = false;
+    // Only reset the form if it has been modified
+    if (hasFormChanges) {
+      $form.newName = initialValues.newName;
+    }
   }
 </script>
 
@@ -255,6 +262,7 @@
           label="Name"
           placeholder="Untitled"
           errors={$errors.newName}
+          alwaysShowError={true}
         />
 
         <div class="flex flex-col gap-y-1">
@@ -343,7 +351,9 @@
       <Button type="plain" onClick={handleClose}>Cancel</Button>
       <Button
         type="primary"
-        disabled={$submitting || $form.newName.trim() === ""}
+        disabled={$submitting ||
+          $form.newName.trim() === "" ||
+          !!$errors.newName}
         form={formId}
         submitForm
       >
