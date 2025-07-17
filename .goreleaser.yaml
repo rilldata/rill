@@ -40,7 +40,6 @@ archives:
   - files:
       - README.md
       - LICENSE*
-      - scripts/install.sh
     name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
     formats: ["zip"]
 
