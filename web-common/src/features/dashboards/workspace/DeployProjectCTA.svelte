@@ -4,7 +4,6 @@
 
 <script lang="ts">
   import { page } from "$app/stores";
-  import type { ConnectError } from "@connectrpc/connect";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { getNeverSubscribedIssue } from "@rilldata/web-common/features/billing/issues";
@@ -57,7 +56,7 @@
 
   $: ({ isPending: githubPullPending, error: githubPullError } =
     $gitPullMutation);
-  let errorFromGitCommand: ConnectError | null = null;
+  let errorFromGitCommand: Error | null = null;
   $: error = githubPullError ?? errorFromGitCommand;
 
   // gitStatusQuery is refetched. So we have to check `isFetching` to get the correct loading status.
@@ -124,9 +123,7 @@
       return;
     }
 
-    errorFromGitCommand = {
-      message: resp.output,
-    } as ConnectError;
+    errorFromGitCommand = new Error(resp.output);
   }
 </script>
 

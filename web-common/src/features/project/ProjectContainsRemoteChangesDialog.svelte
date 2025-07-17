@@ -1,12 +1,10 @@
 <script lang="ts">
-  import type { ConnectError } from "@connectrpc/connect";
-  import { noCancel } from "@rilldata/web-common/components/alert-dialog";
   import * as Alert from "@rilldata/web-common/components/alert-dialog/index.js";
   import CTACard from "@rilldata/web-common/components/calls-to-action/CTACard.svelte";
 
   export let open = false;
   export let loading = false;
-  export let error: ConnectError | null = null;
+  export let error: Error | null = null;
   export let onFetchAndMerge: () => void = () => {};
 </script>
 
