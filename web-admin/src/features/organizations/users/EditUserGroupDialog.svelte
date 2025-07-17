@@ -214,6 +214,9 @@
       : undefined;
   }
 
+  // Check if form has been modified
+  $: hasFormChanges = $form.newName !== initialValues.newName;
+
   function handleClose() {
     open = false;
     searchText = "";
@@ -221,6 +224,10 @@
     pendingAdditions = [];
     pendingRemovals = [];
     initialized = false;
+    // Only reset the form if it has been modified
+    if (hasFormChanges) {
+      $form.newName = initialValues.newName;
+    }
   }
 </script>
 
