@@ -5,12 +5,9 @@ sidebar_label: "OLAP Engines"
 sidebar_position: 00
 ---
 
-import TileIcon from '@site/src/components/TileIcon';
-
-
+import ConnectorIcon from '@site/src/components/ConnectorIcon';
 
 Rill supports a multitude of connectors to ingest data from various sources: local files, S3 or GCS buckets, downloads using HTTP(S), databases, data warehouses, and more. Rill supports ingestion of `.csv`, `.tsv`, `.json`, and `.parquet` files, including compressed versions (`.gz`). This can be done either through the UI directly, when working with Rill Developer, or by pushing the logic into the [source YAML](/reference/project-files/sources) definition directly (see _Using Code_ sections below).
-
 
 ## How to connect to your OLAP Engine?
 
@@ -25,52 +22,47 @@ The OLAP engine set on the dashboard will take precedence over the project-level
 
 Rill supports the use of several different OLAP engines to power your dashboards, including:
 
-<div className="tile-icon-grid">
-  <TileIcon
+<div className="connector-icon-grid">
+  <ConnectorIcon
     icon={<img src="/img/connect/icons/Logo-DuckDB.png" alt="DuckDB" />}
-
     content="DuckDB is the default engine for Rill Developer."
     link="/connect/olap/olap-engines/duckdb"
     linkLabel="Learn more"
     referenceLink="/reference/project-files/connectors#duckdb"
   />
 
-<TileIcon
-    icon={<img src="/img/connect/icons/Logo-Clickhouse.png" alt="ClicKhouse" />}
-
+  <ConnectorIcon
+    icon={<img src="/img/connect/icons/Logo-Clickhouse.png" alt="ClickHouse" />}
     content="High-performance columnar database for real-time analytics and data warehousing."
     link="/connect/olap/olap-engines/clickhouse"
     linkLabel="Learn more"
     referenceLink="/reference/project-files/connectors#clickhouse"
   />
 
-  <TileIcon
+  <ConnectorIcon
     icon={<img src="/img/connect/icons/Logo-Motherduck.png" alt="MotherDuck" />}
-
     content="Cloud-native DuckDB service for scalable analytics and data processing."
     link="/connect/olap/olap-engines/motherduck"
     linkLabel="Learn more"
     referenceLink="/reference/project-files/connectors#motherduck"
   />
 
-  <TileIcon
+  <ConnectorIcon
     icon={<img src="/img/connect/icons/Logo-Druid.png" alt="Druid" />}
-
     content="Real-time analytics database designed for high-performance OLAP queries."
     link="/connect/olap/olap-engines/druid"
     linkLabel="Learn more"
     referenceLink="/reference/project-files/connectors#druid"
   />
 
-  <TileIcon
+  <ConnectorIcon
     icon={<img src="/img/connect/icons/Logo-Pinot.png" alt="Pinot" />}
-
     content="Distributed OLAP datastore for real-time analytics and business intelligence."
     link="/connect/olap/olap-engines/pinot"
     linkLabel="Learn more"
     referenceLink="/reference/project-files/connectors#pinot"
   />
-  </div>
+</div>
 
 
 :::note Additional OLAP Engines
