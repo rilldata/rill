@@ -309,7 +309,7 @@ func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
 
 		ct.ScanType()
 
-		t, err := databaseTypeToPB(ct.DatabaseTypeName(), nullable)
+		t, err := DatabaseTypeToPB(ct.DatabaseTypeName(), nullable)
 		if err != nil {
 			return nil, err
 		}
@@ -323,21 +323,21 @@ func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
 	return &runtimev1.StructType{Fields: fields}, nil
 }
 
-// databaseTypeToPB converts Clickhouse types to Rill's generic schema type.
+// DatabaseTypeToPB converts Clickhouse types to Rill's generic schema type.
 // Refer the list of types here: https://clickhouse.com/docs/en/sql-reference/data-types
-func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
+func DatabaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 	dbt = strings.ToUpper(dbt)
 
 	// For nullable the datatype is Nullable(X)
 	if strings.HasPrefix(dbt, "NULLABLE(") {
 		dbt = dbt[9 : len(dbt)-1]
-		return databaseTypeToPB(dbt, true)
+		return DatabaseTypeToPB(dbt, true)
 	}
 
 	// For LowCardinality the datatype is LowCardinality(X)
 	if strings.HasPrefix(dbt, "LOWCARDINALITY(") {
 		dbt = dbt[15 : len(dbt)-1]
-		return databaseTypeToPB(dbt, nullable)
+		return DatabaseTypeToPB(dbt, nullable)
 	}
 
 	match := true
@@ -401,17 +401,17 @@ func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 	case "NOTHING":
 		t.Code = runtimev1.Type_CODE_STRING
 	case "POINT":
-		return databaseTypeToPB("Array(Float64)", nullable)
+		return DatabaseTypeToPB("Array(Float64)", nullable)
 	case "RING":
-		return databaseTypeToPB("Array(Point)", nullable)
+		return DatabaseTypeToPB("Array(Point)", nullable)
 	case "LINESTRING":
-		return databaseTypeToPB("Array(Point)", nullable)
+		return DatabaseTypeToPB("Array(Point)", nullable)
 	case "MULTILINESTRING":
-		return databaseTypeToPB("Array(LineString)", nullable)
+		return DatabaseTypeToPB("Array(LineString)", nullable)
 	case "POLYGON":
-		return databaseTypeToPB("Array(Ring)", nullable)
+		return DatabaseTypeToPB("Array(Ring)", nullable)
 	case "MULTIPOLYGON":
-		return databaseTypeToPB("Array(Polygon)", nullable)
+		return DatabaseTypeToPB("Array(Polygon)", nullable)
 	default:
 		match = false
 	}
@@ -446,7 +446,7 @@ func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 	case "ARRAY":
 		t.Code = runtimev1.Type_CODE_ARRAY
 		var err error
-		t.ArrayElementType, err = databaseTypeToPB(dbt[6:len(dbt)-1], true)
+		t.ArrayElementType, err = DatabaseTypeToPB(dbt[6:len(dbt)-1], true)
 		if err != nil {
 			return nil, err
 		}
@@ -457,12 +457,12 @@ func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 			return nil, errUnsupportedType
 		}
 
-		keyType, err := databaseTypeToPB(strings.TrimSpace(fieldStrs[0]), true)
+		keyType, err := DatabaseTypeToPB(strings.TrimSpace(fieldStrs[0]), true)
 		if err != nil {
 			return nil, err
 		}
 
-		valType, err := databaseTypeToPB(strings.TrimSpace(fieldStrs[1]), true)
+		valType, err := DatabaseTypeToPB(strings.TrimSpace(fieldStrs[1]), true)
 		if err != nil {
 			return nil, err
 		}
@@ -489,7 +489,7 @@ func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 				if !ok {
 					return nil, errUnsupportedType
 				}
-				fieldType, err := databaseTypeToPB(typ, false)
+				fieldType, err := DatabaseTypeToPB(typ, false)
 				if err != nil {
 					return nil, err
 				}
@@ -498,7 +498,7 @@ func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 					Type: fieldType,
 				})
 			} else {
-				fieldType, err := databaseTypeToPB(fieldStr, true)
+				fieldType, err := DatabaseTypeToPB(fieldStr, true)
 				if err != nil {
 					return nil, err
 				}

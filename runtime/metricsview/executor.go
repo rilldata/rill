@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/rilldata/rill/runtime/drivers/clickhouse"
 	"os"
 	"strings"
 	"time"
@@ -256,6 +257,10 @@ func (e *Executor) Schema(ctx context.Context) (*runtimev1.StructType, error) {
 		return nil, err
 	}
 
+	if e.olap.Dialect() == drivers.DialectClickHouse {
+		return e.resolveSchemaForClickhouse(ctx, sql, args)
+	}
+
 	res, err := e.olap.Query(ctx, &drivers.Statement{
 		Query:            sql,
 		Args:             args,
@@ -268,6 +273,47 @@ func (e *Executor) Schema(ctx context.Context) (*runtimev1.StructType, error) {
 	defer res.Close()
 
 	return res.Schema, nil
+}
+
+func (e *Executor) resolveSchemaForClickhouse(ctx context.Context, sql string, args []any) (*runtimev1.StructType, error) {
+	// ClickHouse does not return schema with LIMIT 0, so we need to wrap query inside DESCRIBE to explicitly get the schema.
+	sql = fmt.Sprintf("DESCRIBE(%s)", sql)
+	res, err := e.olap.Query(ctx, &drivers.Statement{
+		Query:            sql,
+		Args:             args,
+		Priority:         e.priority,
+		ExecutionTimeout: defaultInteractiveTimeout,
+	})
+	if err != nil {
+		return nil, err
+	}
+	defer res.Close()
+
+	schema := &runtimev1.StructType{
+		Fields: make([]*runtimev1.StructType_Field, 0),
+	}
+
+	var name, dtype string
+	for res.Next() {
+		if err = res.Scan(&name, &dtype, new(any), new(any), new(any), new(any), new(any)); err != nil {
+			return nil, fmt.Errorf("failed to scan schema: %w", err)
+		}
+		// Convert ClickHouse data type to runtimev1.StructType_Field_Type
+		t, err := clickhouse.DatabaseTypeToPB(dtype, false)
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert clickHouse type '%s': %w", dtype, err)
+		}
+		schema.Fields = append(schema.Fields, &runtimev1.StructType_Field{
+			Name: name,
+			Type: t,
+		})
+	}
+
+	if err := res.Err(); err != nil {
+		return nil, fmt.Errorf("error scanning schema: %w", err)
+	}
+
+	return schema, nil
 }
 
 // Query executes the provided query against the metrics view.

@@ -241,7 +241,7 @@ func scanTables(rows *sqlx.Rows) ([]*drivers.OlapTable, error) {
 		}
 
 		// parse column type
-		colType, err := databaseTypeToPB(columnType, false)
+		colType, err := DatabaseTypeToPB(columnType, false)
 		if err != nil {
 			if !errors.Is(err, errUnsupportedType) {
 				return nil, err

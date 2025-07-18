@@ -285,17 +285,34 @@ func (e *Executor) validateTimeDimension(ctx context.Context, t *drivers.OlapTab
 			res.TimeDimensionErr = fmt.Errorf("failed to validate time dimension %q: %w", e.metricsView.TimeDimension, err)
 			return
 		}
-		// Validate time dimension type with a query
-		rows, err := e.olap.Query(ctx, &drivers.Statement{
-			Query: fmt.Sprintf("SELECT %s FROM %s LIMIT 0", expr, dialect.EscapeTable(t.Database, t.DatabaseSchema, t.Name)),
-		})
-		if err != nil {
-			res.TimeDimensionErr = fmt.Errorf("failed to validate time dimension %q: %w", e.metricsView.TimeDimension, err)
-			return
-		}
-		rows.Close() // Close rows immediately
 
-		typeCode := rows.Schema.Fields[0].Type.Code
+		sql := fmt.Sprintf("SELECT %s FROM %s LIMIT 0", expr, dialect.EscapeTable(t.Database, t.DatabaseSchema, t.Name))
+		var typeCode runtimev1.Type_Code
+		if e.olap.Dialect() != drivers.DialectClickHouse {
+			// Validate time dimension type with a query
+			rows, err := e.olap.Query(ctx, &drivers.Statement{
+				Query: sql,
+			})
+			if err != nil {
+				res.TimeDimensionErr = fmt.Errorf("failed to validate time dimension %q: %w", e.metricsView.TimeDimension, err)
+				return
+			}
+			rows.Close() // Close rows immediately
+
+			typeCode = rows.Schema.Fields[0].Type.Code
+		} else {
+			schema, err := e.resolveSchemaForClickhouse(ctx, sql, nil)
+			if err != nil {
+				res.TimeDimensionErr = fmt.Errorf("failed to validate time dimension %q: %w", e.metricsView.TimeDimension, err)
+				return
+			}
+			if len(schema.Fields) == 0 {
+				res.TimeDimensionErr = fmt.Errorf("could not validate time dimension %q type", e.metricsView.TimeDimension)
+				return
+			}
+			typeCode = schema.Fields[0].Type.Code
+		}
+
 		if typeCode != runtimev1.Type_CODE_TIMESTAMP && typeCode != runtimev1.Type_CODE_DATE && !(e.olap.Dialect() == drivers.DialectPinot && typeCode == runtimev1.Type_CODE_INT64) {
 			res.TimeDimensionErr = fmt.Errorf("time dimension %q is not a TIMESTAMP column, got %s", e.metricsView.TimeDimension, typeCode)
 		}
