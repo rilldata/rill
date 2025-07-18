@@ -16,7 +16,7 @@ Rill supports a multitude of connectors to ingest data from various sources: loc
   <ConnectorIcon
     icon={<img src="/img/connect/icons/Logo-Snowflake.png" alt="Snowflake" />}
     content="Connect to Snowflake data warehouse with support for individual credentials and JWT authentication."
-    link="/connect/source/connectors/snowflake"
+    link="/connect/connector/sources/snowflake"
     linkLabel="Learn more"
     referenceLink="/reference/project-files/connectors#snowflake"
   />
@@ -24,7 +24,7 @@ Rill supports a multitude of connectors to ingest data from various sources: loc
   <ConnectorIcon
     icon={<img src="/img/connect/icons/Logo-Bigquery.png" alt="BigQuery" />}
     content="Connect to Google BigQuery for analytics and data warehousing with service account authentication."
-    link="/connect/source/connectors/bigquery"
+    link="/connect/connector/sources/bigquery"
     linkLabel="Learn more"
     referenceLink="/reference/project-files/connectors#bigquery"
   />
@@ -32,7 +32,7 @@ Rill supports a multitude of connectors to ingest data from various sources: loc
   <ConnectorIcon
     icon={<img src="/img/connect/icons/Logo-Redshift.png" alt="Redshift" />}
     content="Connect to Amazon Redshift data warehouse with AWS credentials and support for both provisioned and serverless clusters."
-    link="/connect/source/connectors/redshift"
+    link="/connect/connector/sources/redshift"
     linkLabel="Learn more"
     referenceLink="/reference/project-files/connectors#redshift"
   />
@@ -40,7 +40,7 @@ Rill supports a multitude of connectors to ingest data from various sources: loc
   <ConnectorIcon
     icon={<img src="/img/connect/icons/Logo-Postgres.png" alt="PostgreSQL" />}
     content="Connect to PostgreSQL databases with support for SSL connections and various authentication methods."
-    link="/connect/source/connectors/postgres"
+    link="/connect/connector/sources/postgres"
     linkLabel="Learn more"
     referenceLink="/reference/project-files/connectors#postgres"
   />
@@ -48,7 +48,7 @@ Rill supports a multitude of connectors to ingest data from various sources: loc
   <ConnectorIcon
     icon={<img src="/img/connect/icons/Logo-Athena.png" alt="Athena" />}
     content="Connect to Amazon Athena for serverless querying of data stored in S3 using standard SQL."
-    link="/connect/source/connectors/athena"
+    link="/connect/connector/sources/athena"
     linkLabel="Learn more"
     referenceLink="/reference/project-files/connectors#athena"
   />
@@ -56,7 +56,7 @@ Rill supports a multitude of connectors to ingest data from various sources: loc
   <ConnectorIcon
     icon={<img src="/img/connect/icons/Logo-mysql.png" alt="MySQL" />}
     content="Connect to MySQL databases with support for various authentication methods and SSL connections."
-    link="/connect/source/connectors/mysql"
+    link="/connect/connector/sources/mysql"
     linkLabel="Learn more"
     referenceLink="/reference/project-files/connectors#mysql"
   />
@@ -64,7 +64,7 @@ Rill supports a multitude of connectors to ingest data from various sources: loc
   <ConnectorIcon
     icon={<img src="/img/connect/icons/Logo-SQLite.png" alt="SQLite" />}
     content="Connect to SQLite databases for lightweight, file-based data storage and querying."
-    link="/connect/source/connectors/sqlite"
+    link="/connect/connector/sources/sqlite"
     linkLabel="Learn more"
     referenceLink="/reference/project-files/connectors#sqlite"
   />
@@ -76,7 +76,7 @@ Rill supports a multitude of connectors to ingest data from various sources: loc
   <ConnectorIcon
     icon={<img src="/img/connect/icons/Logo-S3.png" alt="Amazon S3" />}
     content="Connect to Amazon S3 buckets to read data files including CSV, JSON, Parquet, and compressed formats."
-    link="/connect/source/connectors/s3"
+    link="/connect/connector/sources/s3"
     linkLabel="Learn more"
     referenceLink="/reference/project-files/connectors#s3"
   />
@@ -84,7 +84,7 @@ Rill supports a multitude of connectors to ingest data from various sources: loc
   <ConnectorIcon
     icon={<img src="/img/connect/icons/Logo-GCS.png" alt="Google Cloud Storage" />}
     content="Google Cloud Storage for scalable object storage and data lakes."
-    link="/connect/source/connectors/gcs"
+    link="/connect/connector/sources/gcs"
     linkLabel="Learn more"
     referenceLink="/reference/project-files/connectors#gcs"
   />
@@ -92,7 +92,7 @@ Rill supports a multitude of connectors to ingest data from various sources: loc
   <ConnectorIcon
     icon={<img src="/img/connect/icons/Logo-Azure.png" alt="Microsoft Azure" />}
     content="Connect to Microsoft Azure Blob Storage to read data files with support for various formats."
-    link="/connect/source/connectors/azure"
+    link="/connect/connector/sources/azure"
     linkLabel="Learn more"
     referenceLink="/reference/project-files/connectors#azure"
   />
@@ -104,7 +104,7 @@ Rill supports a multitude of connectors to ingest data from various sources: loc
   <ConnectorIcon
     icon={<img src="/img/connect/icons/Logo-Salesforce.png" alt="Salesforce" />}
     content="Connect to Salesforce to extract data from objects and queries using the Salesforce API."
-    link="/connect/source/connectors/salesforce"
+    link="/connect/connector/sources/salesforce"
     linkLabel="Learn more"
     referenceLink="/reference/project-files/connectors#salesforce"
   />
@@ -112,7 +112,7 @@ Rill supports a multitude of connectors to ingest data from various sources: loc
   <ConnectorIcon
     icon={<img src="/img/connect/icons/Logo-Sheets.png" alt="Google Sheets" className="sheets-icon" />}
     content="Connect to Google Sheets to read data from spreadsheets with support for multiple sheets."
-    link="/connect/source/connectors/sheets"
+    link="/connect/connector/sources/sheets"
     linkLabel="Learn more"
     referenceLink="/reference/project-files/connectors#googlesheets"
   />
@@ -120,7 +120,7 @@ Rill supports a multitude of connectors to ingest data from various sources: loc
   <ConnectorIcon
     icon={<img src="/img/connect/icons/Logo-Slack.png" alt="Slack" className="sheets-icon" />}
     content="Connect to Slack to extract data from channels, messages, and other workspace information."
-    link="/connect/source/connectors/slack"
+    link="/connect/connector/sources/slack"
     linkLabel="Learn more"
     referenceLink="/reference/project-files/connectors#slack"
   />
@@ -128,7 +128,7 @@ Rill supports a multitude of connectors to ingest data from various sources: loc
   <ConnectorIcon
     icon={<img src="/img/connect/icons/Logo-Local.png" alt="Local File" />}
     content="Read data from local files including CSV, JSON, Parquet, and compressed formats."
-    link="/connect/source/connectors/local-file"
+    link="/connect/connector/sources/local-file"
     linkLabel="Learn more"
     referenceLink="/reference/project-files/connectors#local-file"
   />
@@ -136,7 +136,7 @@ Rill supports a multitude of connectors to ingest data from various sources: loc
   <ConnectorIcon
     icon={<p className="https-icon">https:// </p>}
     content="Download data from HTTP/HTTPS URLs with support for various authentication methods."
-    link="/connect/source/connectors/https"
+    link="/connect/connector/sources/https"
     linkLabel="Learn more"
     referenceLink="/reference/project-files/connectors#https"
   />
