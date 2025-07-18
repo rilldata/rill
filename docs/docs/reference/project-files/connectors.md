@@ -2,16 +2,13 @@
 title: Connector YAML
 sidebar_label: Connector YAML 
 sidebar_position: 00
-hide_table_of_contents: true
+toc_max_heading_level: 4
+
 ---
 
 Connector YAML files define how Rill connects to external data sources and OLAP engines. Each connector specifies a driver type and its required connection parameters. 
 
 For newly created projects, Rill automatically generates a `/connectors/duckdb.yaml` file. This file allows you to configure custom database connections and SQL initialization commands through the `init_sql` parameter. This approach provides transparency and control over how Rill connects to your data sources, making it easier to understand and customize your setup.
-
-:::warning Security Best Practice
-**Never store plain text credentials in your YAML files!** Instead, use environment variables and reference them with `{{.env.<connector_type>.<parameter_name>}}` syntax. See our [credentials documentation](/build/credentials/) for detailed setup instructions.
-:::
 
 ## Required Properties
 
@@ -19,12 +16,10 @@ For newly created projects, Rill automatically generates a `/connectors/duckdb.y
 
 **`driver`** - The type of connector (required)
 
-## Driver Types
-
 ### Data Source Drivers
 When connecting to a data source, you can either explicitly define the connection in a YAML file or allow Rill to automatically infer this for you based on the file type.
 
-**Data Warehouse**
+#### _Data Warehouse_
 - **[Snowflake](#snowflake)** - Snowflake data warehouse
 - **[BigQuery](#bigquery)** - Google BigQuery
 - **[Redshift](#redshift)** - Amazon Redshift
@@ -34,16 +29,17 @@ When connecting to a data source, you can either explicitly define the connectio
 - **[sqlite](#sqlite)** - SQLite databases
 - **[MotherDuck](#motherduck-source)** - MotherDuck cloud data warehouse
 
-**Cloud Storage**
+#### _Cloud Storage_
 - **[GCS](#gcs)** - Google Cloud Storage
 - **[S3](#s3)** - Amazon S3 storage
 - **[Azure](#azure)** - Azure Blob Storage
 
-**Other**
-<!-- - **[https](#https)** - Public files via HTTP/HTTPS
-- **[local_file](#local_file)** - Local files (CSV, Parquet, etc.) -->
+#### _Other_
+- **[https](#https)** - Public files via HTTP/HTTPS
+<!-- - **[local_file](#local_file)** - Local files (CSV, Parquet, etc.) -->
 - **[Salesforce](#salesforce)** - Salesforce data
-- **[slack](#slack)** - Slack data
+- **[Slack](#slack)** - Slack data
+- **[Google Sheets](#googlesheets) - Public Google Sheets
 
 ### OLAP Engine Drivers
 When connecting to your own OLAP engine (e.g., ClickHouse, Druid, or Pinot), Rill will automatically generate the corresponding connector file and add the `olap_connector` parameter to your `rill.yaml` file. This will change the behavior of your Rill Developer slightly as not all features are supported across engines. Please see our documentation about [olap-engines](/reference/olap-engines/) for more information.
@@ -58,17 +54,14 @@ When connecting to your own OLAP engine (e.g., ClickHouse, Druid, or Pinot), Ril
 [Contact us](/contact) if you need support for a specific data source or OLAP engine!
 :::
 
-## Connection Parameters
 
-Each driver type has specific connection parameters. Click on any driver above to see its detailed configuration options, or refer to the [complete connector reference](/hidden/yaml/connector) for all available parameters.
+## Data Source Parameters
 
-:::tip Security Recommendation
+:::warning Security Recommendation
 For all credential parameters (passwords, tokens, keys), use environment variables with the syntax `{{.env.<connector_type>.<parameter_name>}}`. This keeps sensitive data out of your YAML files and version control. See our [credentials documentation](/build/credentials/) for complete setup instructions.
 :::
 
-### Data Source Parameters
-
-#### Athena
+### Athena
 ```yaml
 type: connector                                  # Must be `connector` (required)
 driver: athena                                   # Must be `athena` _(required)_
@@ -85,11 +78,7 @@ aws_region: "us-east-1"                          # AWS region (defaults to 'us-e
 allow_host_access: true                          # Allow host environment access _(default: true)_
 ```
 
-:::warning Security Note
-Replace credential values like `aws_access_key_id` and `aws_secret_access_key` with environment variables: `{{.env.athena.aws_access_key_id}}`
-:::
-
-#### Azure
+### Azure
 ```yaml
 type: connector                                  # Must be `connector` (required)
 driver: azure                                    # Must be `azure` _(required)_
@@ -102,11 +91,7 @@ azure_storage_bucket: "mycontainer"              # Azure Blob Storage container 
 allow_host_access: true                          # Allow host environment access
 ```
 
-:::warning Security Note
-Replace credential values like `azure_storage_key` with environment variables: `{{.env.azure.azure_storage_key}}`
-:::
-
-#### BigQuery
+### BigQuery
 ```yaml
 type: connector                                  # Must be `connector` (required)
 driver: bigquery                                 # Must be `bigquery` _(required)_
@@ -116,11 +101,7 @@ project_id: "my-project-id"                      # Google Cloud project ID
 allow_host_access: true                          # Allow host environment access _(default: true)_
 ```
 
-:::warning Security Note
-Replace credential values like `google_application_credentials` with environment variables: `{{.env.bigquery.google_application_credentials}}`
-:::
-
-#### GCS
+### GCS
 ```yaml
 type: connector                                  # Must be `connector` (required)
 driver: gcs                                      # Must be `gcs` _(required)_
@@ -132,11 +113,7 @@ key_id: "myaccesskey"                            # Optional S3-compatible Key ID
 secret: "mysecret"                               # Optional S3-compatible Secret
 ```
 
-:::warning Security Note
-Replace credential values like `google_application_credentials` and `secret` with environment variables: `{{.env.gcs.google_application_credentials}}`
-:::
-
-<!-- #### HTTPS
+### HTTPS
 ```yaml
 type: connector                                  # Must be `connector` (required)
 driver: https                                    # Must be `https` _(required)_
@@ -145,7 +122,7 @@ path: "https://example.com/data.csv"             # Full HTTPS URI to fetch data 
 headers: "Authorization: Bearer token"           # HTTP headers to include in the request
 ```
 
-#### Local File
+<!-- ### Local File
 ```yaml
 type: connector                                  # Must be `connector` (required)
 driver: local_file                               # Must be `local_file` _(required)_
@@ -154,7 +131,7 @@ dsn: "./data/file.csv"                           # File path or location _(requi
 allow_host_access: true                          # Allow host-level file path access
 ``` -->
 
-#### MotherDuck Source
+### MotherDuck Source
 ```yaml
 type: connector                                  # Must be `connector` (required)
 driver: motherduck                               # Must be `motherduck` _(required)_
@@ -163,11 +140,7 @@ dsn: "md:?motherduck_token=mymotherducktoken"    # MotherDuck connection endpoin
 token: "mymotherducktoken"                       # Authentication token _(required)_
 ```
 
-:::warning Security Note
-Replace credential values like `token` with environment variables: `{{.env.motherduck.token}}`
-:::
-
-#### MySQL
+### MySQL
 ```yaml
 type: connector                                  # Must be `connector` (required)
 driver: mysql                                    # Must be `mysql` _(required)_
@@ -175,11 +148,7 @@ driver: mysql                                    # Must be `mysql` _(required)_
 dsn: "user:password@tcp(localhost:3306)/database" # MySQL connection DSN _(required)_
 ```
 
-:::warning Security Note
-Replace credential values in the DSN with environment variables: `{{.env.mysql.dsn}}`
-:::
-
-#### PostgreSQL
+### PostgreSQL
 ```yaml
 type: connector                                  # Must be `connector` (required)
 driver: postgres                                 # Must be `postgres` _(required)_
@@ -187,11 +156,7 @@ driver: postgres                                 # Must be `postgres` _(required
 dsn: "postgres://user:password@localhost:5432/database" # PostgreSQL connection DSN _(required)_
 ```
 
-:::warning Security Note
-Replace credential values in the DSN with environment variables: `{{.env.postgres.dsn}}`
-:::
-
-#### Redshift
+### Redshift
 ```yaml
 type: connector                                  # Must be `connector` (required)
 driver: redshift                                 # Must be `redshift` _(required)_
@@ -205,11 +170,7 @@ workgroup: "my-workgroup"                        # Workgroup name for Redshift S
 cluster_identifier: "my-cluster"                 # Cluster identifier for provisioned clusters
 ```
 
-:::warning Security Note
-Replace credential values like `aws_access_key_id` and `aws_secret_access_key` with environment variables: `{{.env.redshift.aws_access_key_id}}`
-:::
-
-#### S3
+### S3
 ```yaml
 type: connector                                  # Must be `connector` (required)
 driver: s3                                       # Must be `s3` _(required)_
@@ -224,11 +185,7 @@ allow_host_access: true                          # Allow host environment access
 retain_files: false                              # Retain intermediate files after processing
 ```
 
-:::warning Security Note
-Replace credential values like `aws_access_key_id` and `aws_secret_access_key` with environment variables: `{{.env.s3.aws_access_key_id}}`
-:::
-
-#### Salesforce
+### Salesforce
 ```yaml
 type: connector                                  # Must be `connector` (required)
 driver: salesforce                               # Must be `salesforce` _(required)_
@@ -240,11 +197,7 @@ endpoint: "https://login.salesforce.com"         # Salesforce API endpoint URL _
 client_id: "myclientid"                          # Client ID for OAuth authentication
 ```
 
-:::warning Security Note
-Replace credential values like `password` and `key` with environment variables: `{{.env.salesforce.password}}`
-:::
-
-#### Slack
+### Slack
 ```yaml
 type: connector                                  # Must be `connector` (required)
 driver: slack                                    # Must be `slack` _(required)_
@@ -252,11 +205,7 @@ driver: slack                                    # Must be `slack` _(required)_
 bot_token: "xoxb-myslackbottoken"                # Bot token for Slack API authentication _(required)_
 ```
 
-:::warning Security Note
-Replace credential values like `bot_token` with environment variables: `{{.env.slack.bot_token}}`
-:::
-
-#### Snowflake
+### Snowflake
 ```yaml
 type: connector                                  # Must be `connector` (required)
 driver: snowflake                                # Must be `snowflake` _(required)_
@@ -274,11 +223,7 @@ privateKey: "myprivatekey"                       # RSA private key for JWT authe
 parallel_fetch_limit: 5                          # Maximum concurrent fetches during query execution
 ```
 
-:::warning Security Note
-Replace credential values like `password` and `privateKey` with environment variables: `{{.env.snowflake.password}}`
-:::
-
-#### SQLite
+### SQLite
 ```yaml
 type: connector                                  # Must be `connector` (required)
 driver: sqlite                                   # Must be `sqlite` _(required)_
@@ -286,9 +231,15 @@ driver: sqlite                                   # Must be `sqlite` _(required)_
 dsn: "./data/database.db"                        # SQLite connection DSN _(required)_
 ```
 
-### OLAP Engine Parameters
+## OLAP Engine Parameters
 
-#### ClickHouse
+:::warning Security Recommendation
+For all credential parameters (passwords, tokens, keys), use environment variables with the syntax `{{.env.<connector_type>.<parameter_name>}}`. This keeps sensitive data out of your YAML files and version control. See our [credentials documentation](/build/credentials/) for complete setup instructions.
+:::
+
+
+
+### ClickHouse
 ```yaml
 type: connector                                  # Must be `connector` (required)
 driver: clickhouse                               # Must be `clickhouse` _(required)_
@@ -314,11 +265,7 @@ conn_max_lifetime: "1h"                          # Maximum connection reuse time
 read_timeout: "30s"                              # Maximum read timeout
 ```
 
-:::warning Security Note
-Replace credential values like `password` with environment variables: `{{.env.clickhouse.password}}`
-:::
-
-#### Druid
+### Druid
 ```yaml
 type: connector                                  # Must be `connector` (required)
 driver: druid                                    # Must be `druid` _(required)_
@@ -334,11 +281,7 @@ max_open_conns: 10                               # Maximum open connections (0=d
 skip_version_check: false                        # Skip Druid version compatibility check
 ```
 
-:::warning Security Note
-Replace credential values like `password` with environment variables: `{{.env.druid.password}}`
-:::
-
-#### DuckDB
+### DuckDB
 ```yaml
 type: connector                                  # Must be `connector` (required)
 driver: duckdb                                   # Must be `duckdb` _(required)_
@@ -354,7 +297,7 @@ secrets: "s3,gcs"                                # Comma-separated list of conne
 log_queries: false                               # Log raw SQL queries through OLAP
 ```
 
-#### Pinot
+### Pinot
 ```yaml
 type: connector                                  # Must be `connector` (required)
 driver: pinot                                    # Must be `pinot` _(required)_
@@ -371,11 +314,7 @@ log_queries: false                               # Log raw SQL queries
 max_open_conns: 10                               # Maximum open connections
 ```
 
-:::warning Security Note
-Replace credential values like `password` with environment variables: `{{.env.pinot.password}}`
-:::
-
-#### Motherduck
+### Motherduck
 
 ```yaml
 ---
