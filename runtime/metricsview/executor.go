@@ -12,7 +12,6 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
-	"github.com/rilldata/rill/runtime/drivers/clickhouse"
 	"github.com/rilldata/rill/runtime/drivers/druid"
 	"github.com/rilldata/rill/runtime/pkg/jsonval"
 )
@@ -257,11 +256,7 @@ func (e *Executor) Schema(ctx context.Context) (*runtimev1.StructType, error) {
 		return nil, err
 	}
 
-	if e.olap.Dialect() == drivers.DialectClickHouse {
-		return e.resolveSchemaForClickhouse(ctx, sql, args)
-	}
-
-	res, err := e.olap.Query(ctx, &drivers.Statement{
+	schema, err := e.olap.QuerySchema(ctx, &drivers.Statement{
 		Query:            sql,
 		Args:             args,
 		Priority:         e.priority,
@@ -269,59 +264,6 @@ func (e *Executor) Schema(ctx context.Context) (*runtimev1.StructType, error) {
 	})
 	if err != nil {
 		return nil, err
-	}
-	defer res.Close()
-
-	return res.Schema, nil
-}
-
-func (e *Executor) resolveSchemaForClickhouse(ctx context.Context, sql string, args []any) (*runtimev1.StructType, error) {
-	schema := &runtimev1.StructType{}
-
-	// ClickHouse does not return schema with LIMIT 0, so we need to wrap query inside DESCRIBE to explicitly get the schema.
-	sql = fmt.Sprintf("DESCRIBE(%s)", sql)
-	res, err := e.olap.Query(ctx, &drivers.Statement{
-		Query:            sql,
-		Args:             args,
-		Priority:         e.priority,
-		ExecutionTimeout: defaultInteractiveTimeout,
-	})
-	if err != nil {
-		return nil, err
-	}
-	defer res.Close()
-
-	cols := make([]any, len(res.Schema.Fields))
-	colPtrs := make([]any, len(cols))
-	var nameIdx, typeIndex int
-	for i := range cols {
-		colPtrs[i] = &cols[i]
-		if strings.EqualFold(res.Schema.Fields[i].Name, "name") {
-			nameIdx = i
-		}
-		if strings.EqualFold(res.Schema.Fields[i].Name, "type") {
-			typeIndex = i
-		}
-	}
-	for res.Next() {
-		if err = res.Scan(colPtrs...); err != nil {
-			return nil, fmt.Errorf("failed to scan schema: %w", err)
-		}
-		name := cols[nameIdx].(string)
-		dtype := cols[typeIndex].(string)
-		// Convert ClickHouse data type to runtimev1.StructType_Field_Type
-		t, err := clickhouse.DatabaseTypeToPB(dtype, false)
-		if err != nil {
-			return nil, fmt.Errorf("failed to convert clickHouse type '%s': %w", dtype, err)
-		}
-		schema.Fields = append(schema.Fields, &runtimev1.StructType_Field{
-			Name: name,
-			Type: t,
-		})
-	}
-
-	if err := res.Err(); err != nil {
-		return nil, fmt.Errorf("error scanning schema: %w", err)
 	}
 
 	return schema, nil

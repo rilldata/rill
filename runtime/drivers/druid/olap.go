@@ -119,6 +119,18 @@ func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (*drive
 	return r, nil
 }
 
+func (c *connection) QuerySchema(ctx context.Context, stmt *drivers.Statement) (*runtimev1.StructType, error) {
+	stmt.Query = fmt.Sprintf("SELECT * FROM (%s) LIMIT 0", stmt.Query)
+
+	res, err := c.Query(ctx, stmt)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Close()
+
+	return res.Schema, nil
+}
+
 func (c *connection) InformationSchema() drivers.OLAPInformationSchema {
 	return c
 }

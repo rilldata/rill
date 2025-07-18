@@ -207,6 +207,54 @@ func (c *Connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 	return res, nil
 }
 
+func (c *Connection) QuerySchema(ctx context.Context, stmt *drivers.Statement) (*runtimev1.StructType, error) {
+	// ClickHouse does not return schema with LIMIT 0, so we need to wrap query inside DESCRIBE to explicitly get the schema.
+	stmt.Query = fmt.Sprintf("DESCRIBE (%s)", stmt.Query)
+
+	res, err := c.Query(ctx, stmt)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Close()
+
+	cols := make([]any, len(res.Schema.Fields))
+	colPtrs := make([]any, len(cols))
+	var nameIdx, typeIndex int
+	for i := range cols {
+		colPtrs[i] = &cols[i]
+		if strings.EqualFold(res.Schema.Fields[i].Name, "name") {
+			nameIdx = i
+		}
+		if strings.EqualFold(res.Schema.Fields[i].Name, "type") {
+			typeIndex = i
+		}
+	}
+
+	schema := &runtimev1.StructType{}
+	for res.Next() {
+		if err = res.Scan(colPtrs...); err != nil {
+			return nil, fmt.Errorf("failed to scan schema: %w", err)
+		}
+		name := cols[nameIdx].(string)
+		dtype := cols[typeIndex].(string)
+		// Convert ClickHouse data type to runtimev1.StructType_Field_Type
+		t, err := databaseTypeToPB(dtype, false)
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert clickHouse type '%s': %w", dtype, err)
+		}
+		schema.Fields = append(schema.Fields, &runtimev1.StructType_Field{
+			Name: name,
+			Type: t,
+		})
+	}
+
+	if err := res.Err(); err != nil {
+		return nil, fmt.Errorf("error scanning schema: %w", err)
+	}
+
+	return schema, nil
+}
+
 func (c *Connection) InformationSchema() drivers.OLAPInformationSchema {
 	return c
 }
@@ -309,7 +357,7 @@ func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
 
 		ct.ScanType()
 
-		t, err := DatabaseTypeToPB(ct.DatabaseTypeName(), nullable)
+		t, err := databaseTypeToPB(ct.DatabaseTypeName(), nullable)
 		if err != nil {
 			return nil, err
 		}
@@ -323,21 +371,21 @@ func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
 	return &runtimev1.StructType{Fields: fields}, nil
 }
 
-// DatabaseTypeToPB converts Clickhouse types to Rill's generic schema type.
+// databaseTypeToPB converts Clickhouse types to Rill's generic schema type.
 // Refer the list of types here: https://clickhouse.com/docs/en/sql-reference/data-types
-func DatabaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
+func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 	dbt = strings.ToUpper(dbt)
 
 	// For nullable the datatype is Nullable(X)
 	if strings.HasPrefix(dbt, "NULLABLE(") {
 		dbt = dbt[9 : len(dbt)-1]
-		return DatabaseTypeToPB(dbt, true)
+		return databaseTypeToPB(dbt, true)
 	}
 
 	// For LowCardinality the datatype is LowCardinality(X)
 	if strings.HasPrefix(dbt, "LOWCARDINALITY(") {
 		dbt = dbt[15 : len(dbt)-1]
-		return DatabaseTypeToPB(dbt, nullable)
+		return databaseTypeToPB(dbt, nullable)
 	}
 
 	match := true
@@ -401,17 +449,17 @@ func DatabaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 	case "NOTHING":
 		t.Code = runtimev1.Type_CODE_STRING
 	case "POINT":
-		return DatabaseTypeToPB("Array(Float64)", nullable)
+		return databaseTypeToPB("Array(Float64)", nullable)
 	case "RING":
-		return DatabaseTypeToPB("Array(Point)", nullable)
+		return databaseTypeToPB("Array(Point)", nullable)
 	case "LINESTRING":
-		return DatabaseTypeToPB("Array(Point)", nullable)
+		return databaseTypeToPB("Array(Point)", nullable)
 	case "MULTILINESTRING":
-		return DatabaseTypeToPB("Array(LineString)", nullable)
+		return databaseTypeToPB("Array(LineString)", nullable)
 	case "POLYGON":
-		return DatabaseTypeToPB("Array(Ring)", nullable)
+		return databaseTypeToPB("Array(Ring)", nullable)
 	case "MULTIPOLYGON":
-		return DatabaseTypeToPB("Array(Polygon)", nullable)
+		return databaseTypeToPB("Array(Polygon)", nullable)
 	default:
 		match = false
 	}
@@ -446,7 +494,7 @@ func DatabaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 	case "ARRAY":
 		t.Code = runtimev1.Type_CODE_ARRAY
 		var err error
-		t.ArrayElementType, err = DatabaseTypeToPB(dbt[6:len(dbt)-1], true)
+		t.ArrayElementType, err = databaseTypeToPB(dbt[6:len(dbt)-1], true)
 		if err != nil {
 			return nil, err
 		}
@@ -457,12 +505,12 @@ func DatabaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 			return nil, errUnsupportedType
 		}
 
-		keyType, err := DatabaseTypeToPB(strings.TrimSpace(fieldStrs[0]), true)
+		keyType, err := databaseTypeToPB(strings.TrimSpace(fieldStrs[0]), true)
 		if err != nil {
 			return nil, err
 		}
 
-		valType, err := DatabaseTypeToPB(strings.TrimSpace(fieldStrs[1]), true)
+		valType, err := databaseTypeToPB(strings.TrimSpace(fieldStrs[1]), true)
 		if err != nil {
 			return nil, err
 		}
@@ -489,7 +537,7 @@ func DatabaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 				if !ok {
 					return nil, errUnsupportedType
 				}
-				fieldType, err := DatabaseTypeToPB(typ, false)
+				fieldType, err := databaseTypeToPB(typ, false)
 				if err != nil {
 					return nil, err
 				}
@@ -498,7 +546,7 @@ func DatabaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 					Type: fieldType,
 				})
 			} else {
-				fieldType, err := DatabaseTypeToPB(fieldStr, true)
+				fieldType, err := databaseTypeToPB(fieldStr, true)
 				if err != nil {
 					return nil, err
 				}
