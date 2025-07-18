@@ -200,7 +200,7 @@ const config = {
           },
           {
             from: '/develop/import-data',
-            to: '/build/connect'
+            to: '/connect/connector/'
           },
           {
             from: '/develop/sql-models',
@@ -216,47 +216,51 @@ const config = {
           },
           {
             from: '/deploy/credentials/',
-            to: '/build/credentials'
+            to: '/connect/credentials/'
+          },
+          {
+            from: '/build/credentials',
+            to: '/connect/credentials/'
           },
           {
             from: '/deploy/credentials/s3',
-            to: '/reference/connectors/s3'
+            to: '/connect/connector/sources/s3'
           },
           {
             from: '/deploy/credentials/gcs',
-            to: '/reference/connectors/gcs'
+            to: '/connect/connector/sources/gcs'
           },
           {
             from: '/deploy/credentials/azure',
-            to: '/reference/connectors/azure'
+            to: '/connect/connector/sources/azure'
           },
           {
             from: '/deploy/credentials/athena',
-            to: '/reference/connectors/athena'
+            to: '/connect/connector/sources/athena'
           },
           {
             from: '/deploy/credentials/bigquery',
-            to: '/reference/connectors/bigquery'
+            to: '/connect/connector/sources/bigquery'
           },
           {
             from: '/deploy/credentials/snowflake',
-            to: '/reference/connectors/snowflake'
+            to: '/connect/connector/sources/snowflake'
           },
           {
             from: '/deploy/credentials/postgres',
-            to: '/reference/connectors/postgres'
+            to: '/connect/connector/sources/postgres'
           },
           {
             from: '/deploy/credentials/salesforce',
-            to: '/reference/connectors/salesforce'
+            to: '/connect/connector/sources/salesforce'
           },
           {
             from: '/deploy/credentials/motherduck',
-            to: '/reference/connectors/motherduck'
+            to: '/connect/connector/sources/motherduck'
           },
           {
             from: '/deploy/source-refresh',
-            to: '/build/connect/source-refresh'
+            to: '/connect/connector/source-refresh'
           },
           {
             from: '/reference/templating',
@@ -281,7 +285,102 @@ const config = {
           {
             from: '/share/scheduled-reports',
             to: '/explore/exports'
-          }
+          },
+          // OLAP Engine redirects
+          {
+            from: '/reference/olap-engines/',
+            to: '/connect/olap/'
+          },
+          {
+            from: '/reference/olap-engines/duckdb',
+            to: '/connect/olap/olap-engines/duckdb'
+          },
+          {
+            from: '/reference/olap-engines/clickhouse',
+            to: '/connect/olap/olap-engines/clickhouse'
+          },
+          {
+            from: '/reference/olap-engines/pinot',
+            to: '/connect/olap/olap-engines/pinot'
+          },
+          {
+            from: '/reference/olap-engines/druid',
+            to: '/connect/olap/olap-engines/druid'
+          },
+          {
+            from: '/reference/olap-engines/multiple-olap',
+            to: '/connect/olap/multiple-olap'
+          },
+          // Connector redirects
+          {
+            from: '/reference/connectors/',
+            to: '/connect/connector/'
+          },
+          {
+            from: '/reference/connectors/gcs',
+            to: '/connect/connector/sources/gcs'
+          },
+          {
+            from: '/reference/connectors/azure',
+            to: '/connect/connector/sources/azure'
+          },
+          {
+            from: '/reference/connectors/s3',
+            to: '/connect/connector/sources/s3'
+          },
+          {
+            from: '/reference/connectors/snowflake',
+            to: '/connect/connector/sources/snowflake'
+          },
+          {
+            from: '/reference/connectors/bigquery',
+            to: '/connect/connector/sources/bigquery'
+          },
+          {
+            from: '/reference/connectors/redshift',
+            to: '/connect/connector/sources/redshift'
+          },
+          {
+            from: '/reference/connectors/postgres',
+            to: '/connect/connector/sources/postgres'
+          },
+          {
+            from: '/reference/connectors/athena',
+            to: '/connect/connector/sources/athena'
+          },
+          {
+            from: '/reference/connectors/mysql',
+            to: '/connect/connector/sources/mysql'
+          },
+          {
+            from: '/reference/connectors/sqlite',
+            to: '/connect/connector/sources/sqlite'
+          },
+          {
+            from: '/reference/connectors/salesforce',
+            to: '/connect/connector/sources/salesforce'
+          },
+          {
+            from: '/reference/connectors/sheets',
+            to: '/connect/connector/sources/googlesheets'
+          },
+          {
+            from: '/reference/connectors/slack',
+            to: '/connect/connector/sources/slack'
+          },
+          {
+            from: '/reference/connectors/local-file',
+            to: '/connect/connector/sources/local-file'
+          },
+          {
+            from: '/reference/connectors/https',
+            to: '/connect/connector/sources/https'
+          },
+          // Example: Add new redirects here
+          // {
+          //   from: '/old-page',
+          //   to: '/new-page',
+          // }
         ],
       },
     ],

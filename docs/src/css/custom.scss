@@ -2,6 +2,9 @@
 @use 'sidebar';
 @use 'headings';
 @use 'utilities';
+@use 'tile-icon';
+@use 'connector-icon';
+
 
 
 /* =========================
@@ -16,3 +19,25 @@ body {
 .hidden {
   display: none !important;
 } 
+
+
+// Remove border from Docusaurus pagination navigation
+.pagination-nav__link {
+  border: none !important;
+  background: transparent !important;
+  transition: none !important;
+  padding: 0.25rem 0.5rem !important;
+  display: inline-block !important;
+  width: auto !important;
+}
+
+.pagination-nav__link:hover {
+  background: transparent !important;
+  transform: none !important;
+}
+
+[data-theme='dark'] .pagination-nav__link:hover {
+  background: transparent !important;
+}
+
+
