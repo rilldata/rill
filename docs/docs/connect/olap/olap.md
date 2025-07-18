@@ -90,7 +90,7 @@ If you have a firewall in front of your externally hosted service, you will need
 
 <!-- ## DuckDB
 
-DuckDB is unique in that it can act as both a [source](/connect/source/connectors/motherduck) and an [OLAP engine](/connect/olap/olap-engines/duckdb) for Rill. If you wish to connect to existing tables in DuckDB, you can simply use the [DuckDB connector](/connect/source/connectors/motherduck#connecting-to-external-duckdb-as-a-source) to read a specific table or view from an accessible DuckDB database file and ingest the data into Rill.
+DuckDB is unique in that it can act as both a [source](/connect/connector/sources/motherduck) and an [OLAP engine](/connect/olap/olap-engines/duckdb) for Rill. If you wish to connect to existing tables in DuckDB, you can simply use the [DuckDB connector](/connect/connector/sources/motherduck#connecting-to-external-duckdb-as-a-source) to read a specific table or view from an accessible DuckDB database file and ingest the data into Rill.
 
 <img src = '/img/build/connect/duckdb.png' class='rounded-gif' />
 <br />

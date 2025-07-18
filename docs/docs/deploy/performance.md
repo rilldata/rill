@@ -48,7 +48,7 @@ There are a few ways to achieve this:
 
 #### Limiting the source data to a smaller time range
 
-There are different ways this can be achieved and the method also depends heavily on the data source being used. For example, assuming we had a [S3 source](/connect/source/connectors/s3.md) that was well partitioned by year and month (and written into a partitioned bucket), the recommended pattern would be to leverage the `path` [source property](/reference/project-files/sources.md) and a glob pattern to limit the size of the ingestion in your development environment. Something like (as your `source.yaml`):
+There are different ways this can be achieved and the method also depends heavily on the data source being used. For example, assuming we had a [S3 source](/connect/connector/sources/s3.md) that was well partitioned by year and month (and written into a partitioned bucket), the recommended pattern would be to leverage the `path` [source property](/reference/project-files/sources.md) and a glob pattern to limit the size of the ingestion in your development environment. Something like (as your `source.yaml`):
 ```yaml
 type: source
 connector: s3

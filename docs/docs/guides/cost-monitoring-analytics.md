@@ -59,7 +59,7 @@ rill-cost-monitoring/
 
 ## Step 3: Data Sources
 
-The source connects to our static public dataset containing operational cost and revenue data. You can modify this [source](/connect/source/) to point to your own data export.
+The source connects to our static public dataset containing operational cost and revenue data. You can modify this [source](/connect/connector/) to point to your own data export.
 
 ```yaml
 # Visit https://docs.rilldata.com/ to learn more about Rill code artifacts.
