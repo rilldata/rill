@@ -18,6 +18,7 @@
   $: ({ instanceId } = $runtime);
   $: ({
     canvasEntity: {
+      selectedComponent,
       spec: { getTimeDimensionForMetricView },
     },
   } = getCanvasStore(canvasName, instanceId));
@@ -65,19 +66,23 @@
 
     onChange(updatedConfig);
   }
+
+  $: console.log("selectedComponent", $selectedComponent);
 </script>
 
 <div class="gap-y-1">
   <div class="flex justify-between items-center">
     <InputLabel small label={config.label ?? key} id={key} />
-    {#if Object.keys(chartFieldInput ?? {}).length > 1}
-      <FieldConfigPopover
-        {fieldConfig}
-        label={config.label ?? key}
-        onChange={updateFieldProperty}
-        {chartFieldInput}
-      />
-    {/if}
+    {#key `${$selectedComponent}-${key}`}
+      {#if Object.keys(chartFieldInput ?? {}).length > 1}
+        <FieldConfigPopover
+          {fieldConfig}
+          label={config.label ?? key}
+          onChange={updateFieldProperty}
+          {chartFieldInput}
+        />
+      {/if}
+    {/key}
   </div>
 
   <SingleFieldInput

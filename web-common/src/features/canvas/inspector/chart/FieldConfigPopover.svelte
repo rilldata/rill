@@ -5,7 +5,6 @@
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import DragHandle from "@rilldata/web-common/components/icons/DragHandle.svelte";
-  import List from "@rilldata/web-common/components/icons/List.svelte";
   import SettingsSlider from "@rilldata/web-common/components/icons/SettingsSlider.svelte";
   import * as Popover from "@rilldata/web-common/components/popover";
   import type {
@@ -13,6 +12,7 @@
     FieldConfig,
   } from "@rilldata/web-common/features/canvas/components/charts/types";
   import type { ChartFieldInput } from "@rilldata/web-common/features/canvas/inspector/types";
+  import { List } from "lucide-svelte";
 
   export let fieldConfig: FieldConfig;
   export let onChange: (property: keyof FieldConfig, value: any) => void;
@@ -22,11 +22,11 @@
   $: isDimension = fieldConfig?.type === "nominal";
   $: isMeasure = fieldConfig?.type === "quantitative";
 
-  let limit =
+  $: limit =
     fieldConfig?.limit || chartFieldInput?.limitSelector?.defaultLimit || 5000;
-  let min = fieldConfig?.min;
-  let max = fieldConfig?.max;
-  let labelAngle =
+  $: min = fieldConfig?.min;
+  $: max = fieldConfig?.max;
+  $: labelAngle =
     fieldConfig?.labelAngle ?? (fieldConfig?.type === "temporal" ? 0 : -90);
   let isDropdownOpen = false;
   let isCustomSortDropdownOpen = false;
@@ -140,7 +140,7 @@
               <Select
                 size="sm"
                 id="sort-select"
-                width={180}
+                width={190}
                 options={sortOptions}
                 value={sortValue}
                 on:change={(e) => onChange("sort", e.detail)}
@@ -165,7 +165,11 @@
                       <div slot="empty" class="px-2 py-2 text-xs text-gray-500">
                         No sort item found
                       </div>
-                      <div slot="item" let:item class="flex items-center">
+                      <div
+                        slot="item"
+                        let:item
+                        class="flex items-center gap-x-1"
+                      >
                         <DragHandle size="16px" className="text-gray-400" />
 
                         <span class="text-xs truncate">{item.value}</span>

@@ -228,6 +228,9 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
         // Apply topN filter for x dimension
         if (topNXData?.length && dimensionName) {
           const topXValues = topNXData.map((d) => d[dimensionName] as string);
+          this.customSortXItems = Array.isArray(config.x?.sort)
+            ? config.x?.sort
+            : topXValues;
           const filterForTopXValues = createInExpression(
             dimensionName,
             topXValues,

@@ -207,7 +207,7 @@
             class:mb-7={isLastItem}
             style:pointer-events={isDragItem ? "none" : "auto"}
             style:height="{ITEM_HEIGHT}px"
-            class="w-full flex gap-x-1 flex-none px-2 py-1 pointer-events-auto cursor-grab items-center hover:bg-slate-50 rounded-sm"
+            class="w-full flex gap-x-1 flex-none py-1 pointer-events-auto cursor-grab items-center hover:bg-slate-50 rounded-sm"
             class:cursor-not-allowed={items.length === 1}
             on:click={() => handleItemClick(item, i)}
             on:keydown={(e) => {
