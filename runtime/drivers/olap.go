@@ -812,6 +812,17 @@ func (d Dialect) SanitizeQueryForLogging(sql string) string {
 	return sql
 }
 
+func (d Dialect) MinRowsForQuerySchema() int {
+	switch d {
+	case DialectDuckDB, DialectDruid, DialectPinot:
+		return 0 // no rows needed
+	case DialectClickHouse:
+		return 1 // Clickhouse requires at least one row to be returned
+	default:
+		panic(fmt.Sprintf("unsupported dialect %q", d))
+	}
+}
+
 func (d Dialect) checkTypeCompatibility(f *runtimev1.StructType_Field) bool {
 	switch f.Type.Code {
 	// types that align with native go types are supported

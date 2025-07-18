@@ -287,7 +287,7 @@ func (e *Executor) validateTimeDimension(ctx context.Context, t *drivers.OlapTab
 		}
 		// Validate time dimension type with a query
 		rows, err := e.olap.Query(ctx, &drivers.Statement{
-			Query: fmt.Sprintf("SELECT %s FROM %s LIMIT 0", expr, dialect.EscapeTable(t.Database, t.DatabaseSchema, t.Name)),
+			Query: fmt.Sprintf("SELECT %s FROM %s LIMIT %d", expr, dialect.EscapeTable(t.Database, t.DatabaseSchema, t.Name), dialect.MinRowsForQuerySchema()),
 		})
 		if err != nil {
 			res.TimeDimensionErr = fmt.Errorf("failed to validate time dimension %q: %w", e.metricsView.TimeDimension, err)

@@ -241,9 +241,9 @@ func (e *Executor) Schema(ctx context.Context) (*runtimev1.StructType, error) {
 		}
 	}
 
-	// Importantly, limit to 0 rows
-	zero := int64(0)
-	qry.Limit = &zero
+	// Importantly, limit to min rows required to get the schema. Except for CH it should be zero
+	minRows := int64(e.olap.Dialect().MinRowsForQuerySchema())
+	qry.Limit = &minRows
 
 	// Execute the query to get the schema
 	ast, err := NewAST(e.metricsView, e.security, qry, e.olap.Dialect())
