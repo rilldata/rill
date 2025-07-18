@@ -3,12 +3,10 @@ import PropTypes from 'prop-types';
 
 /**
  * TileIcon component for documentation tiles.
- * Displays a header, content, and multiple action links.
- * Main card links to demo, with additional links for GitHub and walkthrough.
+ * Displays a header and content.
+ * Main card links to the specified destination.
  */
-function TileIcon({ header, content, link, linkLabel = '', target, rel, githubLink, walkthroughLink }) {
-    const showArrow = linkLabel !== '';
-
+function TileIcon({ header, content, link, linkLabel = '', target, rel }) {
     return (
         <a className="tile-icon" href={link} target={target} rel={rel}>
             <div className="tile-icon-header">{header}</div>
@@ -16,29 +14,7 @@ function TileIcon({ header, content, link, linkLabel = '', target, rel, githubLi
                 {content}
             </div>
             <div className="tile-icon-footer">
-                <div className="tile-icon-actions">
-                    {githubLink && (
-                        <a
-                            href={githubLink}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="tile-icon-action-link"
-                            onClick={(e) => e.stopPropagation()}
-                        >
-                            GitHub
-                        </a>
-                    )}
-                    {walkthroughLink && (
-                        <a
-                            href={walkthroughLink}
-                            className="tile-icon-action-link"
-                            onClick={(e) => e.stopPropagation()}
-                        >
-                            Walkthrough
-                        </a>
-                    )}
-                </div>
-                <span className={`tile-icon-link-right ${showArrow ? 'with-arrow' : 'no-arrow'}`}>
+                <span className={`tile-icon-link-right ${linkLabel ? 'with-arrow' : 'no-arrow'}`}>
                     {linkLabel}
                 </span>
             </div>
@@ -53,8 +29,6 @@ TileIcon.propTypes = {
     linkLabel: PropTypes.string,
     target: PropTypes.string,
     rel: PropTypes.string,
-    githubLink: PropTypes.string,
-    walkthroughLink: PropTypes.string,
 };
 
 export default TileIcon; 

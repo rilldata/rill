@@ -226,8 +226,11 @@
 }
 
 // Hide arrow at specific screen width to prevent overlap
-@media (max-width: 1450px) and (min-width: 1001px) {
-  .Connector-icon-link::after {
+@media (max-width: 1500px) and (min-width: 997px) {
+  .Connector-icon-link {
+    display: none;
+  }
+  .Connector-icon-action-link:after {
     content: none;
   }
 }

@@ -6,6 +6,8 @@ sidebar_position: 00
 hide_table_of_contents: true
 ---
 
+import TileIcon from '@site/src/components/TileIcon';
+
 ## Install 
 Install Rill using the command below, then launch your first project to explore core features hands-on.
 
@@ -19,81 +21,45 @@ rill start my-rill-project
 
 ##  Examples
 
-Explore our [example repository](https://github.com/rilldata/rill-examples/) to kickstart your project or see them in action in our [demo project](https://ui.rilldata.com/demo).
-
-<div className="tile-icon-grid">
-<TileIcon
-  header="Programmatic Ads / OpenRTB"
-  content="Bidstream data for programmatic advertisers to optimize pricing strategies and improve campaign performance."
-  link="https://ui.rilldata.com/demo/rill-openrtb-prog-ads/explore/auction_explore"
-  linkLabel="Explore Demo"
-  target="_blank"
-  rel="noopener noreferrer"
-  githubLink="https://github.com/rilldata/rill-examples/tree/main/rill-openrtb-prog-ads"
-  walkthroughLink="/guides/openrtb-analytics"
-/>
-<TileIcon
-  header="GitHub Analytics"
-  content="Analyze GitHub activity to understand codebase activity, contributor productivity, and commit patterns."
-  link="https://ui.rilldata.com/demo/rill-github-analytics/explore/mcp_servers_commits_explore?tr=rill-YTD&grain=week"
-  linkLabel="Explore Demo"
-  target="_blank"
-  rel="noopener noreferrer"
-  githubLink="https://github.com/rilldata/rill-examples/tree/main/rill-github-analytics"
-  walkthroughLink="/guides/github-analytics"
-/>
-<TileIcon
-  header="Cost Monitoring"
-  content="Cloud infrastructure data merged with customer data to analyze bottlenecks and find efficiencies."
-  link="https://ui.rilldata.com/demo/rill-cost-monitoring/explore/metrics_margin_explore"
-  linkLabel="Explore Demo"
-  target="_blank"
-  rel="noopener noreferrer"
-  githubLink="https://github.com/rilldata/rill-examples/tree/main/rill-cost-monitoring"
-  walkthroughLink="/guides/cost-monitoring-analytics"
-/>
-<TileIcon
-  header="Tutorial Project"
-  content="A comprehensive tutorial project with working examples — perfect reference for newer features."
-  link="https://ui.rilldata.com/demo/my-rill-tutorial/explore/advanced_explore?tr=P30D"
-  linkLabel="Explore Demo"
-  target="_blank"
-  rel="noopener noreferrer"
-  githubLink="https://github.com/rilldata/rill-examples/tree/main/my-rill-tutorial"
-  walkthroughLink="/guides/rill-basics/launch"
-/>
-<TileIcon
-  header="App Engagement"
-  content="Conversion dataset for marketers and product teams to analyze funnel steps and user behavior."
-  link="https://ui.rilldata.com/demo/rill-app-engagement/explore/mobile_events_explore"
-  linkLabel="Explore Demo"
-  target="_blank"
-  rel="noopener noreferrer"
-  githubLink="https://github.com/rilldata/rill-examples/tree/main/rill-app-engagement"
-/>
-<TileIcon
-  header="Podcasting"
-  content="Podcast analytics for creators and platforms to track engagement and episode performance."
-  link="https://ui.rilldata.com/demo/sample-podcast-project/canvas/amplify"
-  linkLabel="Explore Demo"
-  target="_blank"
-  rel="noopener noreferrer"
-  githubLink="https://github.com/rilldata/rill-examples/tree/main/sample-podcast-project"
-/>
-</div>
-
-
-Clone the repository and launch any example project to get started:
+Browse our [example repository](https://github.com/rilldata/rill-examples/) to find a project that suites your needs or see them in action in our demo project by hitting [Live Demo →](https://ui.rilldata.com/demo). Some projects have a walkthrough, too! 
 
 ```bash
 git clone https://github.com/rilldata/rill-examples.git
 cd rill-examples/rill-openrtb-prog-ads
-curl https://rill.sh | sh rill start
+curl https://rill.sh | sh
+rill start
 ```
+
+
+  **Programmatic Ads/OpenRTB**: bidstream data for programmatic advertisers to optimize pricing strategies, look for inventory opportunities, and improve campaign performance
+  
+  [GitHub →](https://github.com/rilldata/rill-examples/tree/main/rill-openrtb-prog-ads) | [Walkthrough →](/guides/openrtb-analytics) | [Live Demo →](https://ui.rilldata.com/demo/rill-openrtb-prog-ads)
+
+
+  **Cost Monitoring**: based on Rill's own internal dashboards, cloud infrastructure data (compute, storage, pipeline statistics, etc.) merged with customer data to analyze bottlenecks and look for efficiencies
+
+  [GitHub →](https://github.com/rilldata/rill-examples/tree/main/rill-cost-monitoring) | [Walkthrough →](/guides/cost-monitoring-analytics) | [Live Demo →](https://ui.rilldata.com/demo/rill-cost-monitoring)
+
+
+  **GitHub Analytics**: analyze GitHub activity to understand what parts of your codebase are most active, analyze contributor productivity, and evaluate the intersections between commits and files
+
+  [GitHub →](https://github.com/rilldata/rill-examples/tree/main/rill-github-analytics) | [Walkthrough →](/guides/github-analytics) | [Live Demo →](https://ui.rilldata.com/demo/rill-github-analytics)
+
+
+  **Final Tutorial Project**: A finalized version of the tutorial project with many working examples. It's a good place to reference any newer features and is updated regularly
+
+  [GitHub →](https://github.com/rilldata/rill-examples/tree/main/my-rill-tutorial) | [Walkthrough →](/guides/rill-basics/launch) | [Live Demo →](https://ui.rilldata.com/demo/my-rill-tutorial)
+  
+
+  **App Engagement**: a conversion dataset used by marketers, mobile developers, or product teams to analyze funnel steps
+
+  [GitHub →](https://github.com/rilldata/rill-examples/tree/main/rill-app-engagement) | [Live Demo →](https://ui.rilldata.com/demo/rill-app-engagement)
+
+
 
 ## Quickstart
 
-Take a look at our [Start Guide](get-started/get-started.md) for a quick guide to get started with your own data! We use a public GCS dataset but you can follow along with your own data. Take a look at our [connectors docs](/connect/source/) for the exact steps to connect to your data.
+Take a look at our [Quick start](get-started/get-started.md) for a quick guide to get started with your own data! We use a public GCS dataset but you can follow along with your own data. Take a look at our [connectors docs](/reference/connectors/) for the exact steps to connect to your data.
 
 Or, if you're looking for more guides, check out our [Guides](/guides/) section!
 
@@ -106,13 +72,12 @@ Curious about what's new? Check out our latest and greatest updates in the [rele
 
 
 ## Next Steps
-import TileIcon from '@site/src/components/TileIcon';
 
 <div className="tile-icon-grid">
 <TileIcon
   header="Connect Sources"
   content="Connect to your data sources and start ingesting data into Rill for analysis."
-  link="/connect/source/connectors/"
+  link="/connect/source/"
 />
 <TileIcon
   header="Last Mile ETL"

@@ -4,9 +4,9 @@ import PropTypes from 'prop-types';
 /**
  * ConnectorIcon component for documentation Connectors.
  * Displays an icon, header, content, and multiple action links.
- * Main card links to demo, with additional links for GitHub, walkthrough, and reference.
+ * Main card links to demo, with additional links for reference.
  */
-function ConnectorIcon({ icon, header, content, link, linkLabel = 'Learn more', target, rel, githubLink, walkthroughLink, referenceLink }) {
+function ConnectorIcon({ icon, header, content, link, linkLabel = 'Learn more', target, rel, referenceLink }) {
     return (
         <a className="Connector-icon" href={link} target={target} rel={rel}>
             {icon && (
@@ -19,28 +19,7 @@ function ConnectorIcon({ icon, header, content, link, linkLabel = 'Learn more', 
                 {content}
             </div>
             <div className="Connector-icon-footer">
-                <span className="Connector-icon-link">{linkLabel}</span>
                 <div className="Connector-icon-actions">
-                    {githubLink && (
-                        <a
-                            href={githubLink}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="Connector-icon-action-link"
-                            onClick={(e) => e.stopPropagation()}
-                        >
-                            GitHub
-                        </a>
-                    )}
-                    {walkthroughLink && (
-                        <a
-                            href={walkthroughLink}
-                            className="Connector-icon-action-link"
-                            onClick={(e) => e.stopPropagation()}
-                        >
-                            Walkthrough
-                        </a>
-                    )}
                     {referenceLink && (
                         <a
                             href={referenceLink}
@@ -51,6 +30,7 @@ function ConnectorIcon({ icon, header, content, link, linkLabel = 'Learn more', 
                         </a>
                     )}
                 </div>
+                <span className="Connector-icon-link">{linkLabel}</span>
             </div>
         </a>
     );
@@ -64,8 +44,6 @@ ConnectorIcon.propTypes = {
     linkLabel: PropTypes.string,
     target: PropTypes.string,
     rel: PropTypes.string,
-    githubLink: PropTypes.string,
-    walkthroughLink: PropTypes.string,
     referenceLink: PropTypes.string,
 };
 
