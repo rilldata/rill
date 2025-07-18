@@ -17,6 +17,7 @@
   import MetadataList from "@rilldata/web-admin/features/scheduled-reports/metadata/MetadataList.svelte";
   import MetadataValue from "@rilldata/web-admin/features/scheduled-reports/metadata/MetadataValue.svelte";
   import { extractNotifier } from "@rilldata/web-admin/features/scheduled-reports/metadata/notifiers-utils";
+  import { formatRefreshSchedule } from "@rilldata/web-admin/features/scheduled-reports/metadata/utils.ts";
   import { IconButton } from "@rilldata/web-common/components/button";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
@@ -55,6 +56,11 @@
   );
 
   $: alertSpec = $alertQuery.data?.resource?.alert?.spec;
+
+  // Get human-readable frequency
+  $: humanReadableFrequency = alertSpec?.refreshSchedule?.cron
+    ? formatRefreshSchedule(alertSpec.refreshSchedule.cron)
+    : "Whenever your data refreshes";
 
   $: metricsViewAggregationRequest = JSON.parse(
     (alertSpec?.resolverProperties?.query_args_json as string) ||
@@ -170,9 +176,9 @@
       </div>
 
       <!-- Schedule: TODO: change based on non UI settings -->
-      <div class="flex flex-col gap-y-3">
+      <div class="flex flex-col gap-y-3" aria-label="Alert schedule">
         <MetadataLabel>Schedule</MetadataLabel>
-        <MetadataValue>Whenever your data refreshes</MetadataValue>
+        <MetadataValue>{humanReadableFrequency}</MetadataValue>
       </div>
 
       <!-- Snooze -->

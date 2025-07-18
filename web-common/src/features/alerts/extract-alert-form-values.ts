@@ -6,6 +6,7 @@ import {
   type MeasureFilterEntry,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { getExploreName } from "@rilldata/web-common/features/explore-mappers/utils.ts";
+import { getExistingScheduleFormValues } from "@rilldata/web-common/features/scheduled-reports/time-utils.ts";
 import {
   type V1AlertSpec,
   type V1MetricsViewAggregationDimension,
@@ -106,6 +107,8 @@ export function getExistingAlertInitialFormValues(
     exploreName: exploreName ?? metricsViewName,
     snooze: getSnoozeValueFromAlertSpec(alertSpec),
     evaluationInterval: alertSpec.intervalsIsoDuration ?? "",
+    refreshWhenDataRefreshes: !alertSpec.refreshSchedule?.cron,
+    ...getExistingScheduleFormValues(alertSpec.refreshSchedule),
     ...extractAlertNotification(alertSpec),
     ...extractAlertFormValues(queryArgsJson),
   };

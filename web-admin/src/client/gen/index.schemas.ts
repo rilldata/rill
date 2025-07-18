@@ -70,6 +70,8 @@ export type V1AlertOptionsResolverProperties = { [key: string]: unknown };
 
 export interface V1AlertOptions {
   displayName?: string;
+  refreshCron?: string;
+  refreshTimeZone?: string;
   intervalDuration?: string;
   resolver?: string;
   resolverProperties?: V1AlertOptionsResolverProperties;
