@@ -1,7 +1,17 @@
 import {
+  getDimensionNameFromAggregationDimension,
+  getAggregationDimensionFromTimeDimension,
+} from "@rilldata/web-common/features/dashboards/aggregation-request/dimension-utils.ts";
+import { MeasureModifierSuffixRegex } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry.ts";
+import {
   mergeDimensionAndMeasureFilters,
   splitWhereFilter,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils.ts";
+import {
+  COMPARISON_DELTA,
+  COMPARISON_PERCENT,
+  ComparisonModifierSuffixRegex,
+} from "@rilldata/web-common/features/dashboards/pivot/types.ts";
 import { includeExcludeModeFromFilters } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores.ts";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
 import {
@@ -38,7 +48,10 @@ import {
 import {
   type V1ExploreSpec,
   V1ExportFormat,
+  type V1MetricsViewAggregationDimension,
+  type V1MetricsViewAggregationMeasure,
   type V1MetricsViewAggregationRequest,
+  type V1MetricsViewAggregationSort,
   type V1Notifier,
   type V1Query,
   type V1ReportSpec,
@@ -58,7 +71,10 @@ export function getQueryNameFromQuery(query: V1Query) {
   }
 }
 
-export function getNewReportInitialFormValues(userEmail: string | undefined) {
+export function getNewReportInitialFormValues(
+  userEmail: string | undefined,
+  aggregationRequest: V1MetricsViewAggregationRequest,
+) {
   return {
     title: "",
     frequency: ReportFrequency.Weekly,
@@ -70,12 +86,14 @@ export function getNewReportInitialFormValues(userEmail: string | undefined) {
     exportLimit: "",
     exportIncludeHeader: false,
     ...extractNotification(undefined, userEmail, false),
+    ...extractRowsAndColumns(aggregationRequest),
   };
 }
 
 export function getExistingReportInitialFormValues(
   reportSpec: V1ReportSpec,
   userEmail: string | undefined,
+  aggregationRequest: V1MetricsViewAggregationRequest,
 ) {
   return {
     title: reportSpec.displayName ?? "",
@@ -97,6 +115,7 @@ export function getExistingReportInitialFormValues(
     exportLimit: reportSpec.exportLimit === "0" ? "" : reportSpec.exportLimit,
     exportIncludeHeader: reportSpec.exportIncludeHeader ?? false,
     ...extractNotification(reportSpec.notifiers, userEmail, true),
+    ...extractRowsAndColumns(aggregationRequest),
   };
 }
 
@@ -174,8 +193,10 @@ export function getUpdatedAggregationRequest(
   aggregationRequest: V1MetricsViewAggregationRequest,
   filtersArgs: FiltersState,
   timeControlArgs: TimeControlState,
+  rows: string[],
+  columns: string[],
   exploreSpec: V1ExploreSpec,
-) {
+): V1MetricsViewAggregationRequest {
   const timeRange = mapSelectedTimeRangeToV1TimeRange(
     timeControlArgs.selectedTimeRange,
     timeControlArgs.selectedTimezone,
@@ -187,8 +208,61 @@ export function getUpdatedAggregationRequest(
     timeRange,
   );
 
+  const allFields = new Set<string>([...rows, ...columns]);
+  const isFlat = rows.length === 0;
+  const pivotOn: string[] = [];
+
+  const measures = columns
+    .filter((col) => exploreSpec.measures?.includes(col))
+    .flatMap((measureName) => {
+      const group = [{ name: measureName }];
+
+      if (timeControlArgs.showTimeComparison) {
+        group.push(
+          { name: `${measureName}${COMPARISON_DELTA}` },
+          { name: `${measureName}${COMPARISON_PERCENT}` },
+        );
+      }
+
+      return group;
+    });
+  const dimensions: V1MetricsViewAggregationDimension[] = rows.map((d) =>
+    getAggregationDimensionFromTimeDimension(
+      d,
+      timeControlArgs.selectedTimezone,
+    ),
+  );
+  columns
+    .filter((col) => !exploreSpec.measures?.includes(col))
+    .forEach((col) => {
+      if (exploreSpec.dimensions?.includes(col)) {
+        dimensions.push({ name: col });
+        if (!isFlat) pivotOn.push(col);
+        return;
+      }
+
+      const dimension = getAggregationDimensionFromTimeDimension(
+        col,
+        timeControlArgs.selectedTimezone,
+      );
+      dimensions.push(dimension);
+      if (!isFlat) pivotOn.push(dimension.alias ?? dimension.name!);
+    });
+
+  const sort = getUpdatedAggregationSort(
+    aggregationRequest,
+    measures,
+    dimensions,
+    pivotOn,
+    allFields,
+  );
+
   return {
     ...aggregationRequest,
+    measures,
+    dimensions,
+    pivotOn: !pivotOn.length ? undefined : pivotOn,
+    sort,
     where: sanitiseExpression(
       mergeDimensionAndMeasureFilters(
         filtersArgs.whereFilter,
@@ -198,6 +272,41 @@ export function getUpdatedAggregationRequest(
     ),
     timeRange,
     comparisonTimeRange,
+  };
+}
+
+export function extractRowsAndColumns(
+  aggregationRequest: V1MetricsViewAggregationRequest,
+) {
+  const pivotedOn = new Set<string>(aggregationRequest.pivotOn ?? []);
+  const rows: string[] = [];
+  const columns: string[] = [];
+  const isFlat = aggregationRequest.pivotOn === undefined;
+
+  aggregationRequest.dimensions?.forEach((dimension) => {
+    const dimensionName = getDimensionNameFromAggregationDimension(dimension);
+    if (
+      isFlat ||
+      pivotedOn.has(dimension.alias!) ||
+      pivotedOn.has(dimension.name!)
+    ) {
+      columns.push(dimensionName);
+    } else {
+      rows.push(dimensionName);
+    }
+  });
+  aggregationRequest.measures?.forEach((measure) => {
+    if (
+      MeasureModifierSuffixRegex.test(measure.name!) ||
+      ComparisonModifierSuffixRegex.test(measure.name!)
+    )
+      return;
+    columns.push(measure.name!);
+  });
+
+  return {
+    rows,
+    columns,
   };
 }
 
@@ -232,6 +341,42 @@ function extractNotification(
     enableEmailNotification: isEdit ? !!emailNotifier : true,
     emailRecipients,
   };
+}
+
+function getUpdatedAggregationSort(
+  aggregationRequest: V1MetricsViewAggregationRequest,
+  measures: V1MetricsViewAggregationMeasure[],
+  dimensions: V1MetricsViewAggregationDimension[],
+  pivotOn: string[],
+  allFields: Set<string>,
+) {
+  const hasPivot = pivotOn.length > 0;
+  const sort: V1MetricsViewAggregationSort[] =
+    aggregationRequest.sort?.filter((s) => {
+      if (!allFields.has(s.name!)) return false;
+      if (!hasPivot) return true;
+      // When there is a pivot we cannot sort by measure or the pivoted dimension
+      return (
+        !measures.find((m) => m.name === s.name) && !pivotOn.includes(s.name!)
+      );
+    }) ?? [];
+  if (sort.length === 0) {
+    let sortField: string | undefined = measures?.[0]?.name;
+    let sortFieldIsMeasure = !!sortField;
+    if (!sortField || hasPivot) {
+      const sortDimension = dimensions.find((d) => !pivotOn.includes(d.alias!));
+      sortField = sortDimension?.alias || sortDimension?.name;
+      sortFieldIsMeasure = false;
+    }
+    if (sortField) {
+      sort.push({
+        desc: sortFieldIsMeasure,
+        name: sortField,
+      });
+    }
+  }
+
+  return sort;
 }
 
 function mapAndAddEmptyEntry(entries: string[] | undefined) {

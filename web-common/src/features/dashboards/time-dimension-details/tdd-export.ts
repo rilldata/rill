@@ -44,7 +44,7 @@ export function getTDDExportQuery(
   return query;
 }
 
-function getTDDAggregationRequest(
+export function getTDDAggregationRequest(
   metricsViewName: string,
   exploreState: ExploreState,
   timeControlState: TimeControlState,

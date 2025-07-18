@@ -55,6 +55,7 @@
   export let props: CreateReportProps | EditReportProps;
 
   const user = createAdminServiceGetCurrentUser();
+  const FORM_ID = "scheduled-report-form";
 
   $: ({ organization, project, report: reportName } = $page.params);
   $: ({ instanceId } = $runtime);
@@ -75,16 +76,16 @@
     queryClient,
   );
 
-  $: mutation =
+  const mutation =
     props.mode === "create"
       ? createAdminServiceCreateReport()
       : createAdminServiceEditReport();
 
-  $: queryName =
+  const queryName =
     props.mode === "create"
       ? getQueryNameFromQuery(props.query)
       : props.reportSpec.queryName;
-  $: aggregationRequest = (
+  const aggregationRequest = (
     props.mode === "create"
       ? props.query.metricsViewAggregationRequest
       : JSON.parse(props.reportSpec.queryArgsJson || "{}")
@@ -112,20 +113,29 @@
       emailRecipients: array().of(string().email("Invalid email")),
       slackChannels: array().of(string()),
       slackUsers: array().of(string().email("Invalid email")),
+      columns: array().of(string()).min(1),
     }),
   ) as ValidationAdapter<ReportValues>;
 
-  $: initialValues =
+  const initialValues =
     props.mode === "create"
-      ? getNewReportInitialFormValues($user.data?.user?.email)
+      ? getNewReportInitialFormValues(
+          $user.data?.user?.email,
+          aggregationRequest,
+        )
       : getExistingReportInitialFormValues(
           props.reportSpec,
           $user.data?.user?.email,
+          aggregationRequest,
         );
 
-  $: ({ form, errors, enhance, submit, submitting } = superForm(
+  const dialogTitle =
+    props.mode === "create" ? "Create schedule report" : "Edit schedule report";
+
+  const { form, errors, enhance, submit, submitting } = superForm(
     defaults(initialValues, schema),
     {
+      id: FORM_ID,
       SPA: true,
       validators: schema,
       async onUpdate({ form }) {
@@ -136,7 +146,7 @@
       validationMethod: "oninput",
       invalidateAll: false,
     },
-  ));
+  );
 
   async function handleSubmit(values: ReportValues) {
     const refreshCron = convertFormValuesToCronExpression(
@@ -144,6 +154,14 @@
       values.dayOfWeek,
       values.timeOfDay,
       values.dayOfMonth,
+    );
+    const updatedQueryJson = getUpdatedAggregationRequest(
+      aggregationRequest,
+      filters.toState(),
+      timeControls.toState(),
+      values.rows,
+      values.columns,
+      exploreSpec,
     );
 
     try {
@@ -158,14 +176,7 @@
             refreshTimeZone: values.timeZone,
             explore: exploreName,
             queryName: queryName,
-            queryArgsJson: JSON.stringify(
-              getUpdatedAggregationRequest(
-                aggregationRequest,
-                filters.toState(),
-                timeControls.toState(),
-                exploreSpec,
-              ),
-            ),
+            queryArgsJson: JSON.stringify(updatedQueryJson),
             exportLimit: values.exportLimit || undefined,
             exportIncludeHeader: values.exportIncludeHeader || false,
             exportFormat: values.exportFormat,
@@ -226,10 +237,10 @@
 
 <Dialog.Root bind:open>
   <Dialog.Content class="min-w-[802px]">
-    <Dialog.Title>Schedule report</Dialog.Title>
+    <Dialog.Title>{dialogTitle}</Dialog.Title>
 
     <BaseScheduledReportForm
-      formId="scheduled-report-form"
+      formId={FORM_ID}
       data={form}
       {errors}
       {submit}
@@ -247,7 +258,7 @@
       <Button onClick={() => (open = false)} type="secondary">Cancel</Button>
       <Button
         disabled={$submitting || $form["emailRecipients"]?.length === 0}
-        form="scheduled-report-form"
+        form={FORM_ID}
         submitForm
         type="primary"
         label={props.mode === "create" ? "Create report" : "Save report"}
