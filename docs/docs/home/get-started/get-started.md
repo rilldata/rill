@@ -1,6 +1,6 @@
 ---
 title: Getting Started with Rill Developer 
-sidebar_label: Start Guide
+sidebar_label: Quickstart
 sidebar_position: 01
 ---
 import Video from '@site/src/components/Video';

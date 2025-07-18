@@ -6,7 +6,9 @@ import PropTypes from 'prop-types';
  * Displays a header, content, and multiple action links.
  * Main card links to demo, with additional links for GitHub and walkthrough.
  */
-function TileIcon({ header, content, link, linkLabel = 'Learn more', target, rel, githubLink, walkthroughLink }) {
+function TileIcon({ header, content, link, linkLabel = '', target, rel, githubLink, walkthroughLink }) {
+    const showArrow = linkLabel !== '';
+
     return (
         <a className="tile-icon" href={link} target={target} rel={rel}>
             <div className="tile-icon-header">{header}</div>
@@ -14,7 +16,6 @@ function TileIcon({ header, content, link, linkLabel = 'Learn more', target, rel
                 {content}
             </div>
             <div className="tile-icon-footer">
-                <span className="tile-icon-link">{linkLabel}</span>
                 <div className="tile-icon-actions">
                     {githubLink && (
                         <a
@@ -37,6 +38,9 @@ function TileIcon({ header, content, link, linkLabel = 'Learn more', target, rel
                         </a>
                     )}
                 </div>
+                <span className={`tile-icon-link-right ${showArrow ? 'with-arrow' : 'no-arrow'}`}>
+                    {linkLabel}
+                </span>
             </div>
         </a>
     );
