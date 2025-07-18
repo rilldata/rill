@@ -93,7 +93,7 @@ curl https://rill.sh | sh rill start
 
 ## Quickstart
 
-Take a look at our [Start Guide](get-started/get-started.md) for a quick guide to get started with your own data! We use a public GCS dataset but you can follow along with your own data. Take a look at our [connectors docs](/reference/connectors/) for the exact steps to connect to your data.
+Take a look at our [Start Guide](get-started/get-started.md) for a quick guide to get started with your own data! We use a public GCS dataset but you can follow along with your own data. Take a look at our [connectors docs](/connect/connect/connectors/) for the exact steps to connect to your data.
 
 Or, if you're looking for more guides, check out our [Guides](/guides/) section!
 

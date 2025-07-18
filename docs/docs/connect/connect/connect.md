@@ -1,7 +1,7 @@
 ---
 title: "Connect to your Data"
 description: Import local files or remote data sources
-sidebar_label: "Connect Sources"
+sidebar_label: "Connectors"
 sidebar_position: 00
 ---
 <!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->
@@ -13,7 +13,7 @@ Rill supports a multitude of connectors to ingest data from various sources: loc
 
 <div className="connector-tile-grid">
 
-<a href="/connect/connect/sources/snowflake" className="connector-tile">
+<a href="/connect/connect/connectors/snowflake" className="connector-tile">
   <div className="connector-tile-header">
     <svg
   width="100%"
@@ -43,13 +43,13 @@ Rill supports a multitude of connectors to ingest data from various sources: loc
   <div className="connector-tile-content">Connect to Snowflake data warehouse with support for individual credentials and JWT authentication.</div>
   <div className="connector-tile-footer">
     <div className="connector-tile-actions">
-      <a href="/connect/connect/sources/snowflake" className="connector-tile-action-link">Documentation</a>
+      <a href="/connect/connect/connectors/snowflake" className="connector-tile-action-link">Documentation</a>
       <a href="/reference/project-files/connectors#snowflake" className="connector-tile-action-link">YAML Reference</a>
     </div>
   </div>
 </a>
 
-<a href="/connect/connect/sources/bigquery" className="connector-tile">
+<a href="/connect/connect/connectors/bigquery" className="connector-tile">
   <div className="connector-tile-header">
 <svg
   width="100%"
@@ -84,13 +84,13 @@ Rill supports a multitude of connectors to ingest data from various sources: loc
   <div className="connector-tile-content">Connect to Google BigQuery for analytics and data warehousing with service account authentication.</div>
   <div className="connector-tile-footer">
     <div className="connector-tile-actions">
-      <a href="/connect/connect/sources/bigquery" className="connector-tile-action-link">Documentation</a>
+      <a href="/connect/connect/connectors/bigquery" className="connector-tile-action-link">Documentation</a>
       <a href="/reference/project-files/connectors#bigquery" className="connector-tile-action-link">YAML Reference</a>
     </div>
   </div>
 </a>
 
-<a href="/connect/connect/sources/redshift" className="connector-tile">
+<a href="/connect/connect/connectors/redshift" className="connector-tile">
   <div className="connector-tile-header">
 <svg
   width="100%"
@@ -133,13 +133,13 @@ Rill supports a multitude of connectors to ingest data from various sources: loc
   <div className="connector-tile-content">Connect to Amazon Redshift data warehouse with AWS credentials and support for both provisioned and serverless clusters.</div>
   <div className="connector-tile-footer">
     <div className="connector-tile-actions">
-      <a href="/connect/connect/sources/redshift" className="connector-tile-action-link">Documentation</a>
+      <a href="/connect/connect/connectors/redshift" className="connector-tile-action-link">Documentation</a>
       <a href="/reference/project-files/connectors#redshift" className="connector-tile-action-link">YAML Reference</a>
     </div>
   </div>
 </a>
 
-<a href="/connect/connect/sources/postgres" className="connector-tile">
+<a href="/connect/connect/connectors/postgres" className="connector-tile">
   <div className="connector-tile-header">
     <svg
   width="100%"
@@ -232,13 +232,13 @@ Rill supports a multitude of connectors to ingest data from various sources: loc
   <div className="connector-tile-content">Connect to PostgreSQL databases with standard connection strings and SSL support.</div>
   <div className="connector-tile-footer">
     <div className="connector-tile-actions">
-      <a href="/connect/connect/sources/postgres" className="connector-tile-action-link">Documentation</a>
+      <a href="/connect/connect/connectors/postgres" className="connector-tile-action-link">Documentation</a>
       <a href="/reference/project-files/connectors#postgres" className="connector-tile-action-link">YAML Reference</a>
     </div>
   </div>
 </a>
 
-<a href="/connect/connect/sources/athena" className="connector-tile">
+<a href="/connect/connect/connectors/athena" className="connector-tile">
   <div className="connector-tile-header">
 <svg
   width="100%"
@@ -360,13 +360,13 @@ Rill supports a multitude of connectors to ingest data from various sources: loc
   <div className="connector-tile-content">Query data in Amazon S3 using Amazon Athena with AWS credentials and IAM role support.</div>
   <div className="connector-tile-footer">
     <div className="connector-tile-actions">
-      <a href="/connect/connect/sources/athena" className="connector-tile-action-link">Documentation</a>
+      <a href="/connect/connect/connectors/athena" className="connector-tile-action-link">Documentation</a>
       <a href="/reference/project-files/connectors#athena" className="connector-tile-action-link">YAML Reference</a>
     </div>
   </div>
 </a>
 
-<a href="/connect/connect/sources/mysql" className="connector-tile">
+<a href="/connect/connect/connectors/mysql" className="connector-tile">
   <div className="connector-tile-header">
 <svg
   viewBox="0 26 150 98"
@@ -402,13 +402,13 @@ Rill supports a multitude of connectors to ingest data from various sources: loc
   <div className="connector-tile-content">Connect to MySQL databases with standard connection strings and support for various authentication methods.</div>
   <div className="connector-tile-footer">
     <div className="connector-tile-actions">
-      <a href="/connect/connect/sources/mysql" className="connector-tile-action-link">Documentation</a>
+      <a href="/connect/connect/connectors/mysql" className="connector-tile-action-link">Documentation</a>
       <a href="/reference/project-files/connectors#mysql" className="connector-tile-action-link">YAML Reference</a>
     </div>
   </div>
 </a>
 
-<a href="/connect/connect/sources/sqlite" className="connector-tile">
+<a href="/connect/connect/connectors/sqlite" className="connector-tile">
   <div className="connector-tile-header">
 <svg
   width="100%"
@@ -452,13 +452,13 @@ Rill supports a multitude of connectors to ingest data from various sources: loc
   <div className="connector-tile-content">Connect to SQLite databases for lightweight, file-based data storage and analysis.</div>
   <div className="connector-tile-footer">
     <div className="connector-tile-actions">
-      <a href="/connect/connect/sources/sqlite" className="connector-tile-action-link">Documentation</a>
+      <a href="/connect/connect/connectors/sqlite" className="connector-tile-action-link">Documentation</a>
       <a href="/reference/project-files/connectors#sqlite" className="connector-tile-action-link">YAML Reference</a>
     </div>
   </div>
 </a>
 
-<a href="/connect/connect/sources/motherduck" className="connector-tile">
+<a href="/connect/connect/connectors/motherduck" className="connector-tile">
   <div className="connector-tile-header">
 <svg
   width="100%"
@@ -488,7 +488,7 @@ Rill supports a multitude of connectors to ingest data from various sources: loc
   <div className="connector-tile-content">Connect to MotherDuck cloud database with token-based authentication and DuckDB compatibility.</div>
   <div className="connector-tile-footer">
     <div className="connector-tile-actions">
-      <a href="/connect/connect/sources/motherduck" className="connector-tile-action-link">Documentation</a>
+      <a href="/connect/connect/connectors/motherduck" className="connector-tile-action-link">Documentation</a>
       <a href="/reference/project-files/connectors#motherduck" className="connector-tile-action-link">YAML Reference</a>
     </div>
   </div>
@@ -500,7 +500,7 @@ Rill supports a multitude of connectors to ingest data from various sources: loc
 
 <div className="connector-tile-grid">
 
-<a href="/connect/connect/sources/s3" className="connector-tile">
+<a href="/connect/connect/connectors/s3" className="connector-tile">
   <div className="connector-tile-header">
 <svg
   width="100%"
@@ -570,13 +570,13 @@ Rill supports a multitude of connectors to ingest data from various sources: loc
   <div className="connector-tile-content">Connect to Amazon S3 and S3-compatible storage with AWS credentials and support for custom endpoints.</div>
   <div className="connector-tile-footer">
     <div className="connector-tile-actions">
-      <a href="/connect/connect/sources/s3" className="connector-tile-action-link">Documentation</a>
+      <a href="/connect/connect/connectors/s3" className="connector-tile-action-link">Documentation</a>
       <a href="/reference/project-files/connectors#s3" className="connector-tile-action-link">YAML Reference</a>
     </div>
   </div>
 </a>
 
-<a href="/connect/connect/sources/gcs" className="connector-tile">
+<a href="/connect/connect/connectors/gcs" className="connector-tile">
   <div className="connector-tile-header">
 <svg
   width="100%"
@@ -687,13 +687,13 @@ Rill supports a multitude of connectors to ingest data from various sources: loc
   <div className="connector-tile-content">Connect to Google Cloud Storage with service account credentials and S3-compatible API support.</div>
   <div className="connector-tile-footer">
     <div className="connector-tile-actions">
-      <a href="/connect/connect/sources/gcs" className="connector-tile-action-link">Documentation</a>
+      <a href="/connect/connect/connectors/gcs" className="connector-tile-action-link">Documentation</a>
       <a href="/reference/project-files/connectors#gcs" className="connector-tile-action-link">YAML Reference</a>
     </div>
   </div>
 </a>
 
-<a href="/connect/connect/sources/azure" className="connector-tile">
+<a href="/connect/connect/connectors/azure" className="connector-tile">
   <div className="connector-tile-header">
 <svg
   width="100%"
@@ -743,7 +743,7 @@ Rill supports a multitude of connectors to ingest data from various sources: loc
   <div className="connector-tile-content">Connect to Azure Blob Storage with storage account keys, SAS tokens, or connection strings.</div>
   <div className="connector-tile-footer">
     <div className="connector-tile-actions">
-      <a href="/connect/connect/sources/azure" className="connector-tile-action-link">Documentation</a>
+      <a href="/connect/connect/connectors/azure" className="connector-tile-action-link">Documentation</a>
       <a href="/reference/project-files/connectors#azure" className="connector-tile-action-link">YAML Reference</a>
     </div>
   </div>
@@ -755,7 +755,7 @@ Rill supports a multitude of connectors to ingest data from various sources: loc
 
 <div className="connector-tile-grid">
 
-<a href="/connect/connect/sources/salesforce" className="connector-tile">
+<a href="/connect/connect/connectors/salesforce" className="connector-tile">
   <div className="connector-tile-header">
 <svg
   version="1.1"
@@ -785,26 +785,58 @@ Rill supports a multitude of connectors to ingest data from various sources: loc
   <div className="connector-tile-content">Connect to Salesforce data with username/password authentication or OAuth for CRM data integration.</div>
   <div className="connector-tile-footer">
     <div className="connector-tile-actions">
-      <a href="/connect/connect/sources/salesforce" className="connector-tile-action-link">Documentation</a>
+      <a href="/connect/connect/connectors/salesforce" className="connector-tile-action-link">Documentation</a>
       <a href="/reference/project-files/connectors#salesforce" className="connector-tile-action-link">YAML Reference</a>
     </div>
   </div>
 </a>
 
-<a href="/connect/connect/sources/slack" className="connector-tile">
+<a href="/connect/connect/connectors/googlesheets" className="connector-tile">
+  <div className="connector-tile-header">
+<svg
+  version="1.1"
+  height="2rem"
+  width="100%"
+  viewBox="0 0 36 36"
+  xmlns="http://www.w3.org/2000/svg"
+  fill="none"
+>
+  <g clip-path="url(#clip0_3727_82729)">
+    <path d="M27.75 35.2402H8.25C7.00687 35.2402 6 34.2334 6 32.9902V4.49023C6 3.24711 7.00687 2.24023 8.25 2.24023H21.75L30 10.4902V32.9902C30 34.2334 28.9931 35.2402 27.75 35.2402Z" fill="#00AC47"/>
+    <path d="M21.75 2.24023L30 10.4902H21.75V2.24023Z" fill="#00832D"/>
+    <path d="M23.625 14.9902H18.9375H17.0625H12.375H10.5V16.8652V19.4902V21.3652V23.9902V25.8652H12.375H17.0625H18.9375H23.625H25.5V23.9902V21.3652V19.4902V16.8652V14.9902H23.625ZM12.375 16.8652H17.0625V19.4902H12.375V16.8652ZM12.375 23.9902V21.3652H17.0625V23.9902H12.375ZM23.625 23.9902H18.9375V21.3652H23.625V23.9902ZM23.625 19.4902H18.9375V16.8652H23.625V19.4902Z" fill="white"/>
+  </g>
+  <defs>
+    <clipPath id="clip0_3727_82729">
+      <rect width="36" height="36" fill="white" transform="translate(0 0.740234)"/>
+    </clipPath>
+  </defs>
+</svg>
+  </div>
+   <div className="connector-tile-content">Connect to your publicly available Google Sheets.</div>
+  <div className="connector-tile-footer">
+    <div className="connector-tile-actions">
+      <a href="/connect/connect/connectors/googlesheets" className="connector-tile-action-link">Documentation</a>
+      <a href="/reference/project-files/connectors#googlesheets" className="connector-tile-action-link">YAML Reference</a>
+    </div>
+  </div>
+</a>
+
+
+<a href="/connect/connect/connectors/slack" className="connector-tile">
   <div className="connector-tile-header">
     <img src="https://cdn.worldvectorlogo.com/logos/slack-new-logo.svg" alt="Slack" className="connector-tile-img" />
   </div>
    <div className="connector-tile-content">Connect to Slack data using bot tokens for communication and collaboration analytics.</div>
   <div className="connector-tile-footer">
     <div className="connector-tile-actions">
-      <a href="/connect/connect/sources/slack" className="connector-tile-action-link">Documentation</a>
+      <a href="/connect/connect/connectors/slack" className="connector-tile-action-link">Documentation</a>
       <a href="/reference/project-files/connectors#slack" className="connector-tile-action-link">YAML Reference</a>
     </div>
   </div>
 </a>
 
-<a href="/connect/connect/sources/local-file" className="connector-tile">
+<a href="/connect/connect/connectors/local-file" className="connector-tile">
   <div className="connector-tile-header">
     <svg
     className="connector-tile-img"
@@ -832,14 +864,14 @@ Rill supports a multitude of connectors to ingest data from various sources: loc
    <div className="connector-tile-content">Connect a local file to Rill Developer, make sure that this file is less than 100MB or it wont deploy correctly..</div>
   <div className="connector-tile-footer">
     <div className="connector-tile-actions">
-      <a href="/connect/connect/sources/local-file" className="connector-tile-action-link">Documentation</a>
+      <a href="/connect/connect/connectors/local-file" className="connector-tile-action-link">Documentation</a>
       <a href="/reference/project-files/connectors#local-file" className="connector-tile-action-link">YAML Reference</a>
     </div>
   </div>
 </a>
 
 
-<a href="/connect/connect/sources/http-s" className="connector-tile">
+<a href="/connect/connect/connectors/http-s" className="connector-tile">
   <div className="connector-tile-header">
   <svg
   className="connector-tile-img"
@@ -860,7 +892,7 @@ Rill supports a multitude of connectors to ingest data from various sources: loc
    <div className="connector-tile-content">Connect your remote source to Rill Developer.</div>
   <div className="connector-tile-footer">
     <div className="connector-tile-actions">
-      <a href="/connect/connect/sources/https" className="connector-tile-action-link">Documentation</a>
+      <a href="/connect/connect/connectors/https" className="connector-tile-action-link">Documentation</a>
       <a href="/reference/project-files/connectors#https" className="connector-tile-action-link">YAML Reference</a>
     </div>
   </div>

@@ -13,20 +13,20 @@ sidebar_position: 00
 Rill supports a multitude of connectors to ingest data from various sources: local files, S3 or GCS buckets, downloads using HTTP(S), databases, data warehouses, and more. Rill supports ingestion of `.csv`, `.tsv`, `.json`, and `.parquet` files, including compressed versions (`.gz`). This can be done either through the UI directly, when working with Rill Developer, or by pushing the logic into the [source YAML](../../reference/project-files/sources.md) definition directly (see _Using Code_ sections below).
 
 To provide a non-exhaustive list, Rill supports the following connectors:
-- [Google Cloud Storage](/reference/connectors/gcs.md)
-- [S3](/reference/connectors/s3.md)
-- [Azure Blob Storage](/reference/connectors/azure.md)
-- [BigQuery](/reference/connectors/bigquery.md)
-- [Athena](/reference/connectors/athena.md)
-- [Redshift](/reference/connectors/redshift.md)
-- [Kafka](/reference/connectors/kafka.md)
-- [DuckDB and MotherDuck](/reference/connectors/motherduck.md)
-- [PostgreSQL](/reference/connectors/postgres.md)
-- [MySQL](/reference/connectors/mysql.md)
-- [SQLite](/reference/connectors/sqlite.md)
-- [Snowflake](/reference/connectors/snowflake.md)
-- [Salesforce](/reference/connectors/salesforce.md)
-- [Google Sheets](/reference/connectors/googlesheets.md)
+- [Google Cloud Storage](/connect/connect/connectors/gcs.md)
+- [S3](/connect/connect/connectors/s3.md)
+- [Azure Blob Storage](/connect/connect/connectors/azure.md)
+- [BigQuery](/connect/connect/connectors/bigquery.md)
+- [Athena](/connect/connect/connectors/athena.md)
+- [Redshift](/connect/connect/connectors/redshift.md)
+- [Kafka](/connect/connect/connectors/kafka.md)
+- [DuckDB and MotherDuck](/connect/connect/connectors/motherduck.md)
+- [PostgreSQL](/connect/connect/connectors/postgres.md)
+- [MySQL](/connect/connect/connectors/mysql.md)
+- [SQLite](/connect/connect/connectors/sqlite.md)
+- [Snowflake](/connect/connect/connectors/snowflake.md)
+- [Salesforce](/connect/connect/connectors/salesforce.md)
+- [Google Sheets](/connect/connect/connectors/googlesheets.md)
 
 :::info Full List Of Connectors
 
@@ -103,7 +103,7 @@ uri: https://data.example.org/path/to/file.parquet
 
 :::info
 
-For a full list of connector types available, please see our [Connectors](/reference/connectors/connectors.md) and [Source YAML](/reference/project-files/sources.md#properties) reference pages.
+For a full list of connector types available, please see our [Connectors](/connect/connect/connectors/) and [Source YAML](/reference/project-files/sources.md#properties) reference pages.
 
 :::
 

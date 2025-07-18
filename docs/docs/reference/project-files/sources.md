@@ -1,11 +1,21 @@
 ---
 title: Source YAML
 sidebar_label: Source YAML
-sidebar_position: 10
+sidebar_position: 00
 hide_table_of_contents: true
 ---
 
-In your Rill project directory, create a `<source_name>.yaml` file in the `sources` directory containing a `type` and location (`uri` or `path`). Rill will automatically detect and ingest the source next time you run `rill start`.
+:::warning Deprecated Feature
+**Sources have been deprecated** and are now considered "source models." While sources remain backward compatible, we recommend migrating to the new source model format for access to the latest features and improvements.
+
+**Next steps:**
+- Continue using sources if needed (backward compatible)
+- Migrate to source models via the `type:model` parameter for new projects
+- See our [model YAML reference](advanced-models) for current documentation and best practices
+:::
+
+
+
 
 :::tip Did you know?
 
@@ -99,7 +109,7 @@ duckdb:
   columns: "types={'UniqueCarrier': 'VARCHAR'}"
 ```
 
-**`dsn`** - Used to set the Snowflake connection string. For more information, refer to our [Snowflake connector page](/reference/connectors/snowflake.md) and the official [Go Snowflake Driver](https://pkg.go.dev/github.com/snowflakedb/gosnowflake#hdr-Connection_String) documentation _(optional)_.
+**`dsn`** - Used to set the Snowflake connection string. For more information, refer to our [Snowflake connector page](/connect/connect/connectors/snowflake.md) and the official [Go Snowflake Driver](https://pkg.go.dev/github.com/snowflakedb/gosnowflake#hdr-Connection_String) documentation _(optional)_.
   - If not specified in the source YAML, the `connector.snowflake.dsn` connection string will need to be set when [deploying the project to Rill Cloud](/deploy/deploy-credentials#configure-environmental-variables-and-credentials-for-rill-cloud).
 
 > **Note:**
