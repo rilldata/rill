@@ -15,7 +15,7 @@ import (
 
 func init() {
 	drivers.Register("openai", driver{})
-	drivers.RegisterAsConnector("mysql", driver{})
+	drivers.RegisterAsConnector("openai", driver{})
 }
 
 var spec = drivers.Spec{
