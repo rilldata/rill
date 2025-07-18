@@ -3,18 +3,11 @@ package server
 import (
 	"context"
 	"fmt"
-	"os"
-	"time"
 
 	"github.com/google/uuid"
-	"github.com/joho/godotenv"
-	"github.com/pontus-devoteam/agent-sdk-go/pkg/memory"
-	"github.com/pontus-devoteam/agent-sdk-go/pkg/model/providers/openai"
-	"github.com/pontus-devoteam/agent-sdk-go/pkg/runner"
 	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
-	"github.com/rilldata/rill/runtime/ai/agents"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -166,21 +159,6 @@ func (s *Server) Complete(ctx context.Context, req *runtimev1.CompleteRequest) (
 	}, nil
 }
 
-// TODO : This should be removed asap as we refactor the APIs to execute all business logic in a service that can be called from both runtime and server packages.
-// Alternatively we can migrate to an agent-based approach for GenerateMetricsViewFileRequest and move the logic to runtime/ai/agents package.
-type serverToolsImpl struct {
-	s *Server
-}
-
-func (s *serverToolsImpl) GenerateMetricsViewFile(ctx context.Context, req *runtimev1.GenerateMetricsViewFileRequest) (*runtimev1.GenerateMetricsViewFileResponse, error) {
-	// The auth checks are expected to be done earlier in the call chain before any agent is run.
-	ctx = auth.WithOpen(ctx)
-	// Call the server's GenerateMetricsViewFile method
-	return s.s.GenerateMetricsViewFile(ctx, req)
-}
-
-var runnerMemory = memory.NewInMemoryStorage()
-
 func (s *Server) completeUsingAgent(ctx context.Context, req *runtimev1.CompleteRequest) (resp *runtimev1.CompleteResponse, err error) {
 	// Start the project_editor_agent and run the completion
 	// refer to runtime/ai agents package for agent running logic
@@ -200,35 +178,8 @@ func (s *Server) completeUsingAgent(ctx context.Context, req *runtimev1.Complete
 			}
 		}
 	}
-
 	if userInput == "" {
 		return nil, status.Error(codes.InvalidArgument, "no user input found in messages")
-	}
-
-	// Create OpenAI provider - Get API key from environment
-	// Load .env file (fails silently if not found or has errors)
-	_ = godotenv.Load()
-
-	// Get RILL_ADMIN_OPENAI_API_KEY key from .env file
-	apiKey := os.Getenv("OPENAI_API_KEY")
-	if apiKey == "" {
-		return nil, status.Error(codes.FailedPrecondition, "OPENAI_API_KEY environment variable is not set")
-	}
-
-	provider := openai.NewProvider(apiKey)
-	provider.SetDefaultModel("gpt-4o")
-	provider.WithRateLimit(50, 100000)
-	provider.WithRetryConfig(3, 2*time.Second)
-
-	// Create and configure runner
-	r := runner.NewRunner()
-	r.WithDefaultProvider(provider)
-	r.WithMemory(runnerMemory)
-
-	// Create project editor agent
-	agent, err := agents.NewProjectEditorAgent(ctx, req.InstanceId, "gpt-4o", s.runtime, r, &serverToolsImpl{s: s})
-	if err != nil {
-		return nil, fmt.Errorf("failed to create project editor agent: %w", err)
 	}
 
 	var conversationID string
@@ -237,16 +188,19 @@ func (s *Server) completeUsingAgent(ctx context.Context, req *runtimev1.Complete
 	} else {
 		conversationID = uuid.New().String()
 	}
-	// Run the agent
-	// TODO: Use proper context instead of context.Background()
-	result, err := r.Run(context.Background(), agent, &runner.RunOptions{
-		Input:     userInput,
-		MaxTurns:  10,
-		SessionID: conversationID,
+	// TODO: Instead of harcoding the agent name the name should be passed in the request depending upon the context in which the agent is being used
+	// Example - if the request is for fixing the model then the agent should be "ModelEditorAgent"
+	result, err := s.runtime.RunAgent(ctx, &runtime.AgentRunOptions{
+		Agent:       "project_editor_agent",
+		InstanceID:  req.InstanceId,
+		Input:       userInput,
+		SessionID:   conversationID,
+		ServerTools: s,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to run agent: %w", err)
 	}
+
 	// Create response message from agent output
 	responseMessage := &runtimev1.Message{
 		Id:   "", // TODO: Generate proper message ID
@@ -254,7 +208,7 @@ func (s *Server) completeUsingAgent(ctx context.Context, req *runtimev1.Complete
 		Content: []*aiv1.ContentBlock{
 			{
 				BlockType: &aiv1.ContentBlock_Text{
-					Text: fmt.Sprintf("%v", result.FinalOutput), // Convert interface{} to string
+					Text: result,
 				},
 			},
 		},

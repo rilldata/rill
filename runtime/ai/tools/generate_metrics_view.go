@@ -42,7 +42,7 @@ func (i *generateMetricsViewInput) validate() error {
 
 // GenerateMetricsViewYAML creates a tool that generates a metrics view YAML based on the provided model name.
 // To keep things simple it also generates a dashboard YAML for the metrics view.
-func GenerateMetricsViewYAML(instanceID string, rt *runtime.Runtime, s ServerTools) *tool.FunctionTool {
+func GenerateMetricsViewYAML(instanceID string, rt *runtime.Runtime, s runtime.ServerTools) *tool.FunctionTool {
 	tool := tool.NewFunctionTool(
 		"generate_metrics_view_yaml",
 		"Generates a YAML configuration for a metrics ,view based on the provided model name",

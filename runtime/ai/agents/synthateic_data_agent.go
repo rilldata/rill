@@ -9,6 +9,12 @@ import (
 	"github.com/rilldata/rill/runtime/ai/tools"
 )
 
+func init() {
+	runtime.RegisterAgentInitializer("synthetic_data_agent", func(ctx context.Context, opts *runtime.AgentInitializerOptions) (*agent.Agent, error) {
+		return NewSyntheticDataAgent(ctx, opts.InstanceID, "gpt-4o", opts.Runtime)
+	})
+}
+
 // NewSyntheticDataAgent creates a new SyntheticDataAgent
 func NewSyntheticDataAgent(ctx context.Context, instanceID, modelName string, r *runtime.Runtime) (*agent.Agent, error) {
 	a := agent.NewAgent("SyntheticDataAgent")
@@ -33,6 +39,7 @@ CONSTRAINTS:
 - 1000-10000 rows (choose based on context)
 - Time range: 30-180 days from current_timestamp
 - Do not ask for user input, generate SQL directly
+- The generated SQL should have a "-- @materialize: true" annotation at the top to indicate it should be materialized as a table.
 REQUIRED COLUMNS:
 - 1 timestamp column (MANDATORY): Use date arithmetic like: current_date - (random() * N)::int OR now() - interval (random() * N) day
 - 5-8 dimensions: categorical data relevant to domain

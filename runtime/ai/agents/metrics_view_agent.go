@@ -8,8 +8,14 @@ import (
 	"github.com/rilldata/rill/runtime/ai/tools"
 )
 
+func init() {
+	runtime.RegisterAgentInitializer("metrics_view_agent", func(ctx context.Context, opts *runtime.AgentInitializerOptions) (*agent.Agent, error) {
+		return NewMetricsViewAgent(ctx, opts.InstanceID, "gpt-4o", opts.Runtime, opts.ServerTools)
+	})
+}
+
 // NewMetricsViewAgent creates a new MetricsViewAgent
-func NewMetricsViewAgent(ctx context.Context, instanceID, modelName string, r *runtime.Runtime, s tools.ServerTools) (*agent.Agent, error) {
+func NewMetricsViewAgent(ctx context.Context, instanceID, modelName string, r *runtime.Runtime, s runtime.ServerTools) (*agent.Agent, error) {
 	a := agent.NewAgent("MetricsViewAgent")
 	a.WithModel(modelName)
 

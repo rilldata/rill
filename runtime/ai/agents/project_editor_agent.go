@@ -10,32 +10,37 @@ import (
 	"github.com/rilldata/rill/runtime/ai/tools"
 )
 
+func init() {
+	runtime.RegisterAgentInitializer("project_editor_agent", func(ctx context.Context, opts *runtime.AgentInitializerOptions) (*agent.Agent, error) {
+		return NewProjectEditorAgent(ctx, opts.InstanceID, "gpt-4o", opts.Runtime, opts.Runner, opts.ServerTools)
+	})
+}
+
 // NewProjectEditorAgent creates a new ProjectEditorAgent with handoff capabilities
-func NewProjectEditorAgent(ctx context.Context, instanceID, modelName string, r *runtime.Runtime, runner *runner.Runner, s tools.ServerTools) (*agent.Agent, error) {
+func NewProjectEditorAgent(ctx context.Context, instanceID, modelName string, r *runtime.Runtime, runner *runner.Runner, s runtime.ServerTools) (*agent.Agent, error) {
 	a := agent.NewAgent("ProjectEditorAgent")
 	a.WithModel(modelName)
-	a.SetSystemInstructions(`You are a ProjectEditor Agent manages Rill projects
+	a.SetSystemInstructions(`You are a ProjectEditor Agent that manages Rill projects. 
 - A rill project is a collection of resources like models, dashboards, and metrics views.
-- A model is a resource that defines how data is ingested in the system. A model can be built on top of other model as well.
-- A metrics view is a resource that defines how data is aggregated and visualized in the system. It is built on top of models and can be used to create dashboards.
-- You can be asked to either create new resources or edit existing ones based on user input
-- Must not ask for user input. Try to create resources based on the context provided in the user input as much as feasible
-
-Your primary responsibilities:
-- Ingest sample data as models using "create_model" tool
-- Create metrics views using "create_metrics_view" tool. 
-The input should clearly specify the model name to be used for the metrics view. The model name must be the name of an existing model in the project.
-(e.g., "create a metrics view for the "sales_model"").
-- Edits existing models using "edit_model" tool
-- You can get existing resources using "list_resources" tool
-- Try to infer the resource from the context provided in the user input
-DECISION LOGIC:
-- If user mentions "synthetic data", "generate data", or "sample data" -> Use "create_model" tool
-- If user wants to edit existing models -> Use "model_editor" tool with full context
-- If user wants to create metrics views -> Use "generate_metrics_view_yaml" tool.
-_ If a user wants to fix a model use "model_editor" tool
-- A user can also ask to create multiple resources at once
+- You can be asked to either create new resources or edit existing ones based on user input. 
+- Try to infer if the user wants to create resource or edit existing ones. You can get details of existing resources using "list_resources" tool.
+- Only ask for user input in case of ambiguity. Try to infer as much as feasible from the context provided in the user input.
+- A user can also ask to create/edit multiple resources at once.
 - The ask can also be implicit (e.g., "create a rill project for analysing sales data implies create a model that ingests sample sales data and a metrics view for visualizing it")
+- Understand from the tool output if there was a problem and return tool's output
+
+
+You have following tools that can help you create and edit resources:
+1. "create_synthetic_data"
+	- Creates a model that ingest sample data based on user input
+2. "generate_metrics_view_yaml"
+	- Creates a metrics view based on specified model
+3. "edit_model"
+	- Edits existing models based on user input.
+	- Create a model that ingests data from a external system. 
+	- Do not add additional context to the user input that might change the model semantics.
+4. "list_resources"
+	- Lists existing resources in the project
 `)
 
 	// create model agent
@@ -43,7 +48,7 @@ _ If a user wants to fix a model use "model_editor" tool
 	if err != nil {
 		return nil, fmt.Errorf("failed to create SyntheticDataAgent: %w", err)
 	}
-	tool, err := tools.RunAgent(dataAgent, runner, "create_model", "An agent acting as a tool that can reate a `model` resource that ingest data based on user input")
+	tool, err := tools.RunAgent(dataAgent, runner, "create_synthetic_data", "An agent acting as a tool that can create a `model` resource that ingest sample data based on user input")
 	if err != nil {
 		return nil, fmt.Errorf("failed to run SyntheticDataAgent: %w", err)
 	}
