@@ -49,6 +49,7 @@ import {
   type V1ExploreSpec,
   V1ExportFormat,
   type V1MetricsViewAggregationDimension,
+  type V1MetricsViewAggregationMeasure,
   type V1MetricsViewAggregationRequest,
   type V1MetricsViewAggregationSort,
   type V1Notifier,
@@ -248,30 +249,13 @@ export function getUpdatedAggregationRequest(
       if (!isFlat) pivotOn.push(dimension.alias ?? dimension.name!);
     });
 
-  const hasPivot = pivotOn.length > 0;
-  const sort: V1MetricsViewAggregationSort[] =
-    aggregationRequest.sort?.filter((s) => {
-      if (!allFields.has(s.name!)) return false;
-      if (!hasPivot) return true;
-      // When there is a pivot we cannot sort by measure or the pivoted dimension
-      return (
-        !exploreSpec.measures?.includes(s.name!) && !pivotOn.includes(s.name!)
-      );
-    }) ?? [];
-  if (sort.length === 0) {
-    let sortField: string | undefined = measures?.[0]?.name;
-    let sortFieldIsMeasure = !!sortField;
-    if (!sortField || hasPivot) {
-      sortField = hasPivot ? rows[0] : dimensions?.[0]?.name;
-      sortFieldIsMeasure = false;
-    }
-    if (sortField) {
-      sort.push({
-        desc: sortFieldIsMeasure,
-        name: sortField,
-      });
-    }
-  }
+  const sort = getUpdatedAggregationSort(
+    aggregationRequest,
+    measures,
+    dimensions,
+    pivotOn,
+    allFields,
+  );
 
   return {
     ...aggregationRequest,
@@ -357,6 +341,42 @@ function extractNotification(
     enableEmailNotification: isEdit ? !!emailNotifier : true,
     emailRecipients,
   };
+}
+
+function getUpdatedAggregationSort(
+  aggregationRequest: V1MetricsViewAggregationRequest,
+  measures: V1MetricsViewAggregationMeasure[],
+  dimensions: V1MetricsViewAggregationDimension[],
+  pivotOn: string[],
+  allFields: Set<string>,
+) {
+  const hasPivot = pivotOn.length > 0;
+  const sort: V1MetricsViewAggregationSort[] =
+    aggregationRequest.sort?.filter((s) => {
+      if (!allFields.has(s.name!)) return false;
+      if (!hasPivot) return true;
+      // When there is a pivot we cannot sort by measure or the pivoted dimension
+      return (
+        !measures.find((m) => m.name === s.name) && !pivotOn.includes(s.name!)
+      );
+    }) ?? [];
+  if (sort.length === 0) {
+    let sortField: string | undefined = measures?.[0]?.name;
+    let sortFieldIsMeasure = !!sortField;
+    if (!sortField || hasPivot) {
+      const sortDimension = dimensions.find((d) => !pivotOn.includes(d.alias!));
+      sortField = sortDimension?.alias || sortDimension?.name;
+      sortFieldIsMeasure = false;
+    }
+    if (sortField) {
+      sort.push({
+        desc: sortFieldIsMeasure,
+        name: sortField,
+      });
+    }
+  }
+
+  return sort;
 }
 
 function mapAndAddEmptyEntry(entries: string[] | undefined) {

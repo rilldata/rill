@@ -122,6 +122,43 @@ describe("Report rows and columns", () => {
           sort: [{ desc: false, name: "bid_price" }],
         },
       },
+
+      {
+        title: "Adding row time dimension",
+
+        mutations: [
+          AD_BIDS_OPEN_PUB_DIMENSION_TABLE,
+          AD_BIDS_SORT_ASC_BY_BID_PRICE,
+        ],
+        expectedRows: [],
+        expectedColumns: [
+          AD_BIDS_PUBLISHER_DIMENSION,
+          AD_BIDS_IMPRESSIONS_MEASURE,
+          AD_BIDS_BID_PRICE_MEASURE,
+        ],
+
+        updatedRows: ["timestamp_rill_TIME_GRAIN_HOUR"],
+        updatedColumns: [
+          AD_BIDS_PUBLISHER_DIMENSION,
+          AD_BIDS_IMPRESSIONS_MEASURE,
+          AD_BIDS_BID_PRICE_MEASURE,
+        ],
+
+        expectedRequest: {
+          dimensions: [
+            {
+              alias: "Time hour",
+              name: "timestamp",
+              timeGrain: "TIME_GRAIN_HOUR",
+              timeZone: "UTC",
+            },
+            { name: "publisher" },
+          ],
+          measures: [{ name: "impressions" }, { name: "bid_price" }],
+          sort: [{ desc: false, name: "Time hour" }],
+          pivotOn: ["publisher"],
+        },
+      },
     ];
 
     testCases.forEach((testCase) => {

@@ -155,6 +155,14 @@
       values.timeOfDay,
       values.dayOfMonth,
     );
+    const updatedQueryJson = getUpdatedAggregationRequest(
+      aggregationRequest,
+      filters.toState(),
+      timeControls.toState(),
+      values.rows,
+      values.columns,
+      exploreSpec,
+    );
 
     try {
       await $mutation.mutateAsync({
@@ -168,16 +176,7 @@
             refreshTimeZone: values.timeZone,
             explore: exploreName,
             queryName: queryName,
-            queryArgsJson: JSON.stringify(
-              getUpdatedAggregationRequest(
-                aggregationRequest,
-                filters.toState(),
-                timeControls.toState(),
-                values.rows,
-                values.columns,
-                exploreSpec,
-              ),
-            ),
+            queryArgsJson: JSON.stringify(updatedQueryJson),
             exportLimit: values.exportLimit || undefined,
             exportIncludeHeader: values.exportIncludeHeader || false,
             exportFormat: values.exportFormat,

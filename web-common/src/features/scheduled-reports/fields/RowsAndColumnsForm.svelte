@@ -42,7 +42,7 @@
     label="Rows"
     onUpdate={(newRows) => (rows = newRows)}
   >
-    <div slot="empty-fields" class="text-gray-500">no selected rows</div>
+    <div slot="empty-fields" class="text-gray-500">No selected rows</div>
   </FieldList>
 
   <FieldList
@@ -54,7 +54,7 @@
     onUpdate={handleColumnUpdate}
   >
     <div slot="empty-fields" class="text-red-600">
-      at least one column has to be selected
+      At least one column has to be selected
     </div>
   </FieldList>
 {/if}
