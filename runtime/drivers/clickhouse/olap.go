@@ -207,6 +207,54 @@ func (c *Connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 	return res, nil
 }
 
+func (c *Connection) QuerySchema(ctx context.Context, stmt *drivers.Statement) (*runtimev1.StructType, error) {
+	// ClickHouse does not return schema with LIMIT 0, so we need to wrap query inside DESCRIBE to explicitly get the schema.
+	stmt.Query = fmt.Sprintf("DESCRIBE (%s)", stmt.Query)
+
+	res, err := c.Query(ctx, stmt)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Close()
+
+	cols := make([]any, len(res.Schema.Fields))
+	colPtrs := make([]any, len(cols))
+	var nameIdx, typeIndex int
+	for i := range cols {
+		colPtrs[i] = &cols[i]
+		if strings.EqualFold(res.Schema.Fields[i].Name, "name") {
+			nameIdx = i
+		}
+		if strings.EqualFold(res.Schema.Fields[i].Name, "type") {
+			typeIndex = i
+		}
+	}
+
+	schema := &runtimev1.StructType{}
+	for res.Next() {
+		if err = res.Scan(colPtrs...); err != nil {
+			return nil, fmt.Errorf("failed to scan schema: %w", err)
+		}
+		name := cols[nameIdx].(string)
+		dtype := cols[typeIndex].(string)
+		// Convert ClickHouse data type to runtimev1.StructType_Field_Type
+		t, err := databaseTypeToPB(dtype, false)
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert clickHouse type '%s': %w", dtype, err)
+		}
+		schema.Fields = append(schema.Fields, &runtimev1.StructType_Field{
+			Name: name,
+			Type: t,
+		})
+	}
+
+	if err := res.Err(); err != nil {
+		return nil, fmt.Errorf("error scanning schema: %w", err)
+	}
+
+	return schema, nil
+}
+
 func (c *Connection) InformationSchema() drivers.OLAPInformationSchema {
 	return c
 }
