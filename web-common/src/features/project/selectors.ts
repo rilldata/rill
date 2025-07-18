@@ -1,8 +1,6 @@
 import type { Project } from "@rilldata/web-common/proto/gen/rill/admin/v1/api_pb.ts";
-import { createLocalServiceGetMetadata } from "@rilldata/web-common/runtime-client/local-service.ts";
 import { parse } from "yaml";
 import { createRuntimeServiceGetFile } from "../../runtime-client";
-import { derived } from "svelte/store";
 
 export function useProjectTitle(instanceId: string) {
   return createRuntimeServiceGetFile(

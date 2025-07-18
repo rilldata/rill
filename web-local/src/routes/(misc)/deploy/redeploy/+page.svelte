@@ -40,7 +40,7 @@
 
   async function redeploy(project: Project) {
     let projectUrl = project.frontendUrl;
-    if (project.archiveAssetId) {
+    if (!project.gitRemote || !!project.managedGitId) {
       // Legacy archive based project. Use redeploy API.
       const resp = await $redeployMutation.mutateAsync({
         projectId: project.id,

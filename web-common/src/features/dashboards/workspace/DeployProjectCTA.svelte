@@ -55,8 +55,11 @@
   let errorFromGitCommand: Error | null = null;
   $: error = githubPullError ?? errorFromGitCommand;
 
+  $: userIsLoggedIn = !!$userQuery.data?.user;
   // gitStatusQuery is refetched. So we have to check `isFetching` to get the correct loading status.
-  $: loading = $gitStatusQuery.isFetching || $matchingProjectsQuery.isLoading;
+  $: loading =
+    $gitStatusQuery.isFetching ||
+    (userIsLoggedIn ? $matchingProjectsQuery.isLoading : false);
 
   $: allowPrimary.set(isDeployed || !hasValidDashboard);
 

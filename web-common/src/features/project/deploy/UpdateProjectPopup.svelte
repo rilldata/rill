@@ -53,7 +53,7 @@
       <ProjectSelector bind:selectedProject projects={matchingProjects} />
     {/if}
 
-    <div class="flex flex-row-reverse items-center">
+    <div class="flex flex-row-reverse items-center gap-x-2">
       {#if hasDeployAccessToSelectedProject || !selectedProject}
         <Button
           type="primary"
@@ -70,6 +70,14 @@
           disabled={!enableUpdate}
         />
       {/if}
+      <Button
+        type="secondary"
+        href="/deploy/select-org"
+        target="_blank"
+        onClick={() => (open = false)}
+      >
+        Deploy to another project
+      </Button>
     </div>
   </Popover.Content>
 </Popover.Root>
