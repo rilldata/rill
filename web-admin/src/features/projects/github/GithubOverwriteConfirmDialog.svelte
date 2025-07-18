@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { extractGithubConnectError } from "@rilldata/web-admin/features/projects/github/github-errors";
+  import { getRepoNameFromGitRemote } from "@rilldata/web-common/features/project/deploy/github-utils";
   import {
     AlertDialog,
     AlertDialogContent,
@@ -12,7 +13,6 @@
   import { Button } from "@rilldata/web-common/components/button/index.js";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import AlertCircleOutline from "@rilldata/web-common/components/icons/AlertCircleOutline.svelte";
-  import { getRepoNameFromGitRemote } from "@rilldata/web-common/features/project/github-utils";
 
   export let open = false;
   export let loading: boolean;
