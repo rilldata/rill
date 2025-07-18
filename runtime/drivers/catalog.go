@@ -54,7 +54,7 @@ type CatalogStore interface {
 
 	FindConversations(ctx context.Context, ownerID string) ([]*Conversation, error)
 	FindConversation(ctx context.Context, conversationID string) (*Conversation, error)
-	InsertConversation(ctx context.Context, ownerID, title string) (string, error)
+	InsertConversation(ctx context.Context, ownerID, title string, appContextType string, appContextMetadataJSON string) (string, error)
 	FindMessages(ctx context.Context, conversationID string) ([]*Message, error)
 	InsertMessage(ctx context.Context, conversationID, role string, content []MessageContent) (string, error)
 }
@@ -107,11 +107,13 @@ type InstanceHealth struct {
 
 // Conversation represents a conversation entity in the catalog
 type Conversation struct {
-	ID        string    `db:"conversation_id"`
-	OwnerID   string    `db:"owner_id"`
-	Title     string    `db:"title"`
-	CreatedOn time.Time `db:"created_on"`
-	UpdatedOn time.Time `db:"updated_on"`
+	ID                     string    `db:"conversation_id"`
+	OwnerID                string    `db:"owner_id"`
+	Title                  string    `db:"title"`
+	AppContextType         string    `db:"app_context_type"`
+	AppContextMetadataJSON string    `db:"app_context_metadata_json"`
+	CreatedOn              time.Time `db:"created_on"`
+	UpdatedOn              time.Time `db:"updated_on"`
 }
 
 // Message represents a message entity in the catalog

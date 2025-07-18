@@ -6,7 +6,7 @@ sidebar_position: 50
 
 Metrics SQL API allows you to query data from your predefined [metrics view](/build/metrics-view/metrics-view.md) using a SQL dialect.
 
-For example, if `my_metrics` is a metrics view with a dimension `foo` and a measure `count`, you can create a custom API that queries it with metrics SQL:
+For example, if `my_metrics` is a metrics view with a dimension `foo` and a measure `count`, you can create a custom API that queries it with Metrics SQL:
 
 ```yaml
 type: api
@@ -19,7 +19,7 @@ Metrics SQL is a specialized SQL dialect designed exclusively for querying data 
 
 ### Querying Fundamentals
 
-Metrics SQL transforms queries that reference `dimensions` and `measures` within a `metrics view` into their corresponding database columns or expressions. This transformation is based on the mappings defined in a metrics view YAML configuration, enabling reuse of dimension or measure definitions. Additionally any security policies defined in metrics_view is also inherited.
+Metrics SQL transforms queries that reference `dimensions` and `measures` within a `metrics view` into their corresponding database columns or expressions. This transformation is based on the mappings defined in a metrics view YAML configuration, enabling reuse of dimension or measure definitions. Additionally, any security policies defined in the metrics view are also inherited.
 
 ### Example: Crafting a Metrics SQL Query
 
@@ -60,7 +60,7 @@ SELECT toUpper(publisher) AS publisher, domain AS domain, COUNT(*) AS total_reco
 - **ORDER BY** clause for sorting the results.
 - **LIMIT** and **OFFSET** clauses for controlling the result set size and pagination.
 
-**Caution** : The Metrics SQL feature is currently evolving. We are dedicated to enhancing the syntax by introducing additional SQL features, while striving to maintain support for existing syntax. However, please be advised that backward compatibility cannot be guaranteed at all times. Additionally, users should be aware that there may be untested edge cases in the current implementation. We appreciate your understanding as we work to refine and improve this feature.
+**Caution**: The Metrics SQL feature is currently evolving. We are dedicated to enhancing the syntax by introducing additional SQL features, while striving to maintain support for existing syntax. However, please be advised that backward compatibility cannot be guaranteed at all times. Additionally, users should be aware that there may be untested edge cases in the current implementation. We appreciate your understanding as we work to refine and improve this feature.
 
 ### Security and Compliance
 
@@ -68,7 +68,7 @@ Queries executed via Metrics SQL are subject to the security policies and access
 
 ### Templating
 
-Metrics SQL supports templating the same way as [SQL API Templating](./sql-api.md#sql-templating).
+Metrics SQL supports templating in the same way as [SQL API Templating](./sql-api.md#sql-templating).
 
 ### Limitations
 

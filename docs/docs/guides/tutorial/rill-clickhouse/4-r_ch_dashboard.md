@@ -19,7 +19,7 @@ When you're ready, you can create the visualization on top of the metric layer. 
 In our case, as we have generated this with AI, so we can look through the description of the populated measures for more information. Based on this, we can find some specific information on the UK properties dataset at a glance, such as:
 
 1. In 2023, What was the minimum/maximum detached property sold in London? [46.5K, 65.0M]
-2. In 2023, What was the average price of deteached properties sold in London? How many? [2.5M, 981]
+2. In 2023, What was the average price of detached properties sold in London? How many? [2.5M, 981]
 
 
 <img src = '/img/tutorials/ch/2023-london.png' class='rounded-gif' />

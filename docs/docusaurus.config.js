@@ -125,6 +125,12 @@ const config = {
             label: "Contact Us",
           },
 
+          {
+            type: "html",
+            position: "right",
+            value: '<a href="https://docs.rilldata.com/notes" class="navbar-release-notes-mobile navbar-icon-link" aria-label="Release Notes">Release Notes</i></a>',
+          },
+
           // Right side items
           {
             type: "html",

@@ -2,12 +2,12 @@ package runtime
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
 	"time"
 
-	"github.com/mark3labs/mcp-go/mcp"
 	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -37,7 +37,8 @@ type ToolService interface {
 type CompleteWithToolsOptions struct {
 	OwnerID        string
 	InstanceID     string
-	ConversationID string // Empty string means create new conversation
+	ConversationID string                // Empty string means create new conversation
+	AppContext     *runtimev1.AppContext // Used to seed new conversations with context
 	Messages       []*runtimev1.Message
 	ToolService    ToolService
 }
@@ -76,33 +77,54 @@ func (r *Runtime) CompleteWithTools(ctx context.Context, opts *CompleteWithTools
 	}()
 
 	// 1. Determine conversation ID (create if needed)
-	conversationID, err := r.ensureConversation(ctx, opts.InstanceID, opts.OwnerID, opts.ConversationID, opts.Messages)
+	conversationID, err := r.ensureConversation(ctx, opts.InstanceID, opts.OwnerID, opts.ConversationID, opts.AppContext, opts.Messages)
 	if err != nil {
 		return nil, err
 	}
 
-	// 2. Save user messages to database first
+	// 2. If this is a new conversation, process app context and save system messages first
 	var addedMessageIDs []string
-	addedMessageIDs, err = r.saveUserMessages(ctx, opts.InstanceID, conversationID, opts.Messages)
+	if opts.ConversationID == "" {
+		// This was a new conversation, so process app context and save system messages
+		var contextMessages []*runtimev1.Message
+		contextMessages, err = r.processAppContext(ctx, opts.InstanceID, opts.AppContext, opts.ToolService)
+		if err != nil {
+			return nil, err
+		}
+
+		// Save system messages to database first
+		for _, msg := range contextMessages {
+			messageID, err := r.addMessage(ctx, opts.InstanceID, conversationID, msg.Role, msg.Content)
+			if err != nil {
+				return nil, err
+			}
+			addedMessageIDs = append(addedMessageIDs, messageID)
+		}
+	}
+
+	// 3. Save user messages to database
+	var userMessageIDs []string
+	userMessageIDs, err = r.saveUserMessages(ctx, opts.InstanceID, conversationID, opts.Messages)
 	if err != nil {
 		return nil, err
 	}
+	addedMessageIDs = append(addedMessageIDs, userMessageIDs...)
 
-	// 3. Load complete conversation context from database (single DB call)
+	// 4. Load complete conversation context from database (includes any saved system messages)
 	var allMessages []*runtimev1.Message
 	allMessages, err = r.loadConversationContext(ctx, opts.InstanceID, conversationID)
 	if err != nil {
 		return nil, err
 	}
 
-	// 4. Execute AI completion with database-backed context
+	// 5. Execute AI completion with database-backed context
 	var contentBlocks []*aiv1.ContentBlock
 	contentBlocks, err = r.executeAICompletion(ctx, opts.InstanceID, allMessages, opts.ToolService)
 	if err != nil {
 		return nil, err
 	}
 
-	// 5. Save assistant message and build response
+	// 6. Save assistant message and build response
 	result, err = r.buildCompletionResult(ctx, opts.InstanceID, conversationID, contentBlocks, addedMessageIDs)
 	if err != nil {
 		return nil, err
@@ -114,11 +136,11 @@ func (r *Runtime) CompleteWithTools(ctx context.Context, opts *CompleteWithTools
 // ===== BUSINESS LOGIC HELPERS =====
 
 // ensureConversation determines the conversation ID - creates new if empty, validates existing if provided
-func (r *Runtime) ensureConversation(ctx context.Context, instanceID, ownerID, conversationID string, newMessages []*runtimev1.Message) (string, error) {
+func (r *Runtime) ensureConversation(ctx context.Context, instanceID, ownerID, conversationID string, appContext *runtimev1.AppContext, newMessages []*runtimev1.Message) (string, error) {
 	if conversationID == "" {
 		// Create new conversation using the first user message as title
 		title := createConversationTitle(newMessages)
-		conv, err := r.createConversation(ctx, instanceID, ownerID, title)
+		conv, err := r.createConversation(ctx, instanceID, ownerID, title, appContext)
 		if err != nil {
 			return "", err
 		}
@@ -143,6 +165,86 @@ func (r *Runtime) ensureConversation(ctx context.Context, instanceID, ownerID, c
 	}
 
 	return conversationID, nil
+}
+
+// processAppContext processes the app context and generates contextual system messages
+func (r *Runtime) processAppContext(ctx context.Context, instanceID string, appContext *runtimev1.AppContext, toolService ToolService) ([]*runtimev1.Message, error) {
+	if appContext == nil {
+		return nil, nil
+	}
+
+	switch appContext.ContextType {
+	case runtimev1.AppContextType_APP_CONTEXT_TYPE_EXPLORE_DASHBOARD:
+		return r.processExploreDashboardContext(ctx, instanceID, appContext.ContextMetadata, toolService)
+	default:
+		return nil, nil // Unknown context type, no system message will be added
+	}
+}
+
+// processExploreDashboardContext provides specific dashboard context
+func (r *Runtime) processExploreDashboardContext(ctx context.Context, instanceID string, metadata *structpb.Struct, toolService ToolService) ([]*runtimev1.Message, error) {
+	metadataMap := metadata.AsMap()
+	dashboardName, ok := metadataMap["dashboard_name"].(string)
+	if !ok {
+		return nil, fmt.Errorf("missing dashboard_name in explore_dashboard context")
+	}
+
+	// Get the controller to access resources
+	ctrl, err := r.Controller(ctx, instanceID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get the explore resource to find its associated metrics view
+	exploreResource, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: ResourceKindExplore, Name: dashboardName}, false)
+	if err != nil {
+		return nil, fmt.Errorf("could not find explore '%s': %w", dashboardName, err)
+	}
+
+	explore := exploreResource.GetExplore()
+	if explore == nil || explore.State == nil || explore.State.ValidSpec == nil {
+		return nil, fmt.Errorf("explore '%s' does not have a valid spec", dashboardName)
+	}
+
+	metricsViewName := explore.State.ValidSpec.MetricsView
+
+	// Get specific metrics view details
+	metricsViewSpec, err := toolService.ExecuteTool(ctx, "get_metrics_view", map[string]any{
+		"metrics_view": metricsViewName,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// Get time range information for the metrics view
+	timeRangeSummary, err := toolService.ExecuteTool(ctx, "query_metrics_view_time_range", map[string]any{
+		"metrics_view": metricsViewName,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// Find instance-wide AI context
+	var aiInstructions string
+	instance, err := r.Instance(ctx, instanceID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get instance %q: %w", instanceID, err)
+	}
+	if instance.AIInstructions != "" {
+		aiInstructions = instance.AIInstructions
+	}
+
+	// Build the system prompt
+	systemPrompt := buildExploreDashboardSystemPrompt(dashboardName, metricsViewName, metricsViewSpec, timeRangeSummary, aiInstructions)
+
+	return []*runtimev1.Message{{
+		Role: "system",
+		Content: []*aiv1.ContentBlock{{
+			BlockType: &aiv1.ContentBlock_Text{
+				Text: systemPrompt,
+			},
+		}},
+	}}, nil
 }
 
 // saveUserMessages saves all user messages from the request to the conversation database
@@ -296,20 +398,9 @@ func (r *Runtime) executeAICompletion(ctx context.Context, instanceID string, al
 			} else {
 				logger.Debug("tool executed successfully", zap.String("tool_name", toolCall.Name), zap.String("tool_id", toolCall.Id), observability.ZapCtx(ctx))
 				// Convert response to ToolResult
-				var result string
-				if respContent, ok := resp.([]mcp.Content); ok && len(respContent) > 0 {
-					if textContent, ok := respContent[0].(mcp.TextContent); ok {
-						result = textContent.Text
-					} else {
-						result = fmt.Sprintf("%v", respContent[0])
-					}
-				} else {
-					result = fmt.Sprintf("%v", resp)
-				}
-
 				toolResult = &aiv1.ToolResult{
 					Id:      toolCall.Id,
-					Content: result,
+					Content: fmt.Sprintf("%v", resp),
 					IsError: false,
 				}
 			}
@@ -416,18 +507,21 @@ func (r *Runtime) buildCompletionResult(ctx context.Context, instanceID, convers
 		messages[i] = pbMessage
 	}
 
-	// Collect all messages that were added during this Complete call
+	// Collect all messages that were added during this Complete call, excluding system messages
 	var addedMessages []*runtimev1.Message
 	for _, messageID := range addedMessageIDs {
 		for _, msg := range messages {
 			if msg.Id == messageID {
-				addedMessages = append(addedMessages, msg)
+				// Filter out system messages
+				if msg.Role != "system" {
+					addedMessages = append(addedMessages, msg)
+				}
 				break
 			}
 		}
 	}
 
-	// Return final result with all messages added during this Complete call
+	// Return final result with all messages added during this Complete call (excluding system messages)
 	return &CompleteWithToolsResult{
 		ConversationID: conversationID,
 		Messages:       addedMessages,
@@ -472,14 +566,28 @@ func createConversationTitle(messages []*runtimev1.Message) string {
 }
 
 // createConversation creates a new conversation with the given title
-func (r *Runtime) createConversation(ctx context.Context, instanceID, ownerID, title string) (*runtimev1.Conversation, error) {
+func (r *Runtime) createConversation(ctx context.Context, instanceID, ownerID, title string, appContext *runtimev1.AppContext) (*runtimev1.Conversation, error) {
 	catalog, release, err := r.Catalog(ctx, instanceID)
 	if err != nil {
 		return nil, err
 	}
 	defer release()
 
-	conversationID, err := catalog.InsertConversation(ctx, ownerID, title)
+	var contextType string
+	var contextMetadataJSON string
+
+	if appContext != nil {
+		contextType = appContext.ContextType.String()
+		if appContext.ContextMetadata != nil {
+			metadataBytes, err := json.Marshal(appContext.ContextMetadata.AsMap())
+			if err != nil {
+				return nil, fmt.Errorf("failed to marshal context metadata: %w", err)
+			}
+			contextMetadataJSON = string(metadataBytes)
+		}
+	}
+
+	conversationID, err := catalog.InsertConversation(ctx, ownerID, title, contextType, contextMetadataJSON)
 	if err != nil {
 		return nil, err
 	}
@@ -508,6 +616,47 @@ func (r *Runtime) addMessage(ctx context.Context, instanceID, conversationID, ro
 	}
 
 	return catalog.InsertMessage(ctx, conversationID, role, catalogContent)
+}
+
+// buildExploreDashboardSystemPrompt constructs the system prompt for explore dashboard context
+func buildExploreDashboardSystemPrompt(dashboardName, metricsViewName string, metricsViewSpec, timeRangeSummary any, aiInstructions string) string {
+	var prompt strings.Builder
+
+	// 1. WHO: Establish the AI's role and purpose
+	prompt.WriteString("You are a data analyst designed to be helpful, insightful, and accurate. ")
+	prompt.WriteString("Your role is to assist users in understanding their data by answering questions, identifying trends, performing calculations, and providing actionable insights.\n\n")
+
+	// 2. WHERE: Set the current context and location
+	prompt.WriteString("## Current Context\n")
+	prompt.WriteString(fmt.Sprintf("The user is actively viewing the %q explore dashboard. ", dashboardName))
+	prompt.WriteString("When they refer to \"this dashboard,\" \"the current view,\" or similar contextual references, they are referring to this dashboard.\n\n")
+
+	// 3. WHAT: Describe the available data and constraints
+	prompt.WriteString("## Available Data\n")
+	prompt.WriteString(fmt.Sprintf("This dashboard is based on the %q metrics view.\n\n", metricsViewName))
+
+	prompt.WriteString("### Metrics View Details:\n")
+	prompt.WriteString(fmt.Sprintf("%v\n\n", metricsViewSpec))
+	prompt.WriteString("*Note: If the metrics view spec above contains an \"ai_instructions\" field, follow those instructions for all queries related to this data.*\n\n")
+
+	prompt.WriteString("### Time Range Information:\n")
+	prompt.WriteString(fmt.Sprintf("%v\n\n", timeRangeSummary))
+
+	// 4. HOW: Describe the AI's capabilities
+	prompt.WriteString("## Your Capabilities\n")
+	prompt.WriteString("You can use \"query_metrics_view\" to run queries and get aggregated results from this metrics view. ")
+	prompt.WriteString("The metrics view spec above shows all available dimensions and measures, and the time range information shows what time periods are available for analysis. ")
+	prompt.WriteString("Use this information to craft meaningful queries that answer the user's questions and provide valuable insights.\n\n")
+
+	prompt.WriteString(fmt.Sprintf("**IMPORTANT: Every invocation of the \"query_metrics_view\" tool must include \"metrics_view\": %q in the payload.**\n\n", metricsViewName))
+
+	// 5. CUSTOMIZE: Provide user-specific instructions
+	if aiInstructions != "" {
+		prompt.WriteString("## Additional Instructions (provided by the Rill project developer)\n")
+		prompt.WriteString(aiInstructions)
+	}
+
+	return prompt.String()
 }
 
 // maybeTruncateConversation keeps recent messages and a few early ones for context.
