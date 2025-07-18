@@ -41,6 +41,7 @@
   bind:value={selectedOrg}
   id="deploy-target-org"
   label=""
+  ariaLabel="Select organization"
   placeholder="Select organization"
   options={orgOptions}
   width={400}
@@ -80,7 +81,13 @@
       <Button large type="text" onClick={() => (isNewOrgDialogOpen = false)}>
         Cancel
       </Button>
-      <Button large type="primary" submitForm form={CreateNewOrgFormId}>
+      <Button
+        large
+        type="primary"
+        submitForm
+        form={CreateNewOrgFormId}
+        label="Create new org"
+      >
         Continue
       </Button>
     </Dialog.Footer>

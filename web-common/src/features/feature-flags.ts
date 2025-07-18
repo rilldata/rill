@@ -32,13 +32,11 @@ class FeatureFlags {
 
   adminServer = new FeatureFlag("rill", false);
   readOnly = new FeatureFlag("rill", false);
-  /**
-   * We make some calls to cloud for fetching user related stats. But this is not needed in playwring tests.
-   * While there wont be token in CI there could be one when running on a dev's laptop.
-   */
-  rillDevCloudFeatures = new FeatureFlag(
+  // Until we figure out a good way to test managed github we need to use the legacy archive method.
+  // Right now this is true only in an E2E environment.
+  legacyArchiveDeploy = new FeatureFlag(
     "rill",
-    !import.meta.env.VITE_PLAYWRIGHT_TEST,
+    !!import.meta.env.VITE_PLAYWRIGHT_TEST,
   );
 
   ai = new FeatureFlag("user", !import.meta.env.VITE_PLAYWRIGHT_TEST);
@@ -52,6 +50,7 @@ class FeatureFlags {
   alerts = new FeatureFlag("user", true);
   reports = new FeatureFlag("user", true);
   darkMode = new FeatureFlag("user", false);
+  chat = new FeatureFlag("user", false);
 
   constructor() {
     this.ready = new Promise<void>((resolve) => {

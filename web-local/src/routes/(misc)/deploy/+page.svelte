@@ -1,7 +1,6 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
-  import type { ConnectError } from "@connectrpc/connect";
   import CTAMessage from "@rilldata/web-common/components/calls-to-action/CTAMessage.svelte";
   import CancelCircleInverse from "@rilldata/web-common/components/icons/CancelCircleInverse.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
@@ -26,6 +25,7 @@
 
   $: loading =
     $user.isPending || $metadata.isPending || $matchingProjects.isPending;
+  let error: Error | null = null;
   $: error = $user.error ?? $metadata.error ?? $matchingProjects.error;
 
   $: if (!loading && !error) {
@@ -35,9 +35,7 @@
   function handleDeploy() {
     // Should not happen if the servers are up. If not, there should be a query error.
     if (!$user.data || !$metadata.data?.loginUrl) {
-      error = {
-        message: "Failed to fetch login URL.",
-      } as ConnectError;
+      error = new Error("Failed to fetch login URL.");
       return;
     }
 

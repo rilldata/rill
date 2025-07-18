@@ -96,6 +96,7 @@ type Usage struct {
 	EndTime           time.Time `json:"end_time"`
 	EventName         string    `json:"event_name"`
 	MaxValue          float64   `json:"max_value"`
+	BillingService    string    `json:"billing_service"`
 }
 
 func (c *Client) GetUsageMetrics(ctx context.Context, startTime, endTime, afterTime time.Time, afterOrgID, afterProjectID, afterEventName, grain string, limit int) ([]*Usage, error) {
@@ -112,6 +113,7 @@ func (c *Client) GetUsageMetrics(ctx context.Context, startTime, endTime, afterT
 	    org_id,
 	    project_id,
 	    event_name,
+		billing_service,
 	    max(value) as max_value,
 		<sum(value) as sum_value>
 		...
@@ -124,7 +126,7 @@ func (c *Client) GetUsageMetrics(ctx context.Context, startTime, endTime, afterT
 	    OR (start_time = '{{ .args.after_time }}' AND org_id = '{{ .args.after_org_id }}' AND project_id = '{{ .args.after_project_id }}' AND event_name > '{{ .args.after_event_name }}')
 	    {{ end }}
 	  GROUP BY ALL
-	  ORDER BY start_time, org_id, project_id, event_name
+	  ORDER BY start_time, org_id, project_id, event_name, billing_service
 	  LIMIT {{ .args.limit }}
 	// time is insertion time here to prevent handling of late arriving data
 	// if we move to syncing raw events then we will not use aggregation function and UNION ALL and just insertion time as event_time instead of using two fields start_time and end_time

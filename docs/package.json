@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "scripts": {
-    "dev": "docusaurus start --port 4002",
+    "dev": "npm install && docusaurus start --port 4002",
     "build": "docusaurus build --out-dir dist",
     "preview": "docusaurus serve --port 4002 --dir dist",
     "docusaurus": "docusaurus "
@@ -44,8 +44,5 @@
       "last 1 safari version"
     ]
   },
-  "main": "babel.config.js",
-  "dependencies": {
-    "sidebar": "^1.0.2"
-  }
+  "main": "babel.config.js"
 }

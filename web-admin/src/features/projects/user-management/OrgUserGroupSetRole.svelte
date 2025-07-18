@@ -8,6 +8,7 @@
   import type { V1MemberUsergroup } from "@rilldata/web-admin/client";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import { capitalize } from "@rilldata/web-common/components/table/utils";
+  import { OrgUserRoles } from "@rilldata/web-common/features/users/roles.ts";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { useQueryClient } from "@tanstack/svelte-query";
   import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
@@ -26,6 +27,14 @@
     createAdminServiceSetOrganizationMemberUsergroupRole();
   const removeOrganizationMemberUsergroup =
     createAdminServiceRemoveOrganizationMemberUsergroup();
+
+  async function handleRoleSelect(selectedRole: string) {
+    if (group.roleName) {
+      return handleSetRole(selectedRole);
+    } else {
+      return handleAddRole(selectedRole);
+    }
+  }
 
   async function handleAddRole(role: string) {
     try {
@@ -108,10 +117,10 @@
     class="w-18 flex flex-row gap-1 items-center rounded-sm mr-[10px] w-[72px] text-right {isOpen
       ? 'bg-slate-200'
       : 'hover:bg-slate-100'} px-2 py-1"
-    disabled={!manageOrgAdmins && group.roleName === "admin"}
+    disabled={!manageOrgAdmins && group.roleName === OrgUserRoles.Admin}
   >
     {group.roleName ? capitalize(group.roleName) : "-"}
-    {#if !(!manageOrgAdmins && group.roleName === "admin")}
+    {#if !(!manageOrgAdmins && group.roleName === OrgUserRoles.Admin)}
       {#if isOpen}
         <CaretUpIcon size="12px" />
       {:else}
@@ -126,13 +135,7 @@
         'admin'
           ? 'bg-slate-100'
           : ''}"
-        on:click={() => {
-          if (group.roleName) {
-            handleSetRole("admin");
-          } else {
-            handleAddRole("admin");
-          }
-        }}
+        on:click={() => handleRoleSelect(OrgUserRoles.Admin)}
       >
         <span class="font-medium">Admin</span>
         <span class="text-xs text-gray-600"
@@ -146,13 +149,7 @@
       'editor'
         ? 'bg-slate-100'
         : ''}"
-      on:click={() => {
-        if (group.roleName) {
-          handleSetRole("editor");
-        } else {
-          handleAddRole("editor");
-        }
-      }}
+      on:click={() => handleRoleSelect(OrgUserRoles.Editor)}
     >
       <span class="font-medium">Editor</span>
       <span class="text-xs text-gray-600"
@@ -165,13 +162,7 @@
       'viewer'
         ? 'bg-slate-100'
         : ''}"
-      on:click={() => {
-        if (group.roleName) {
-          handleSetRole("viewer");
-        } else {
-          handleAddRole("viewer");
-        }
-      }}
+      on:click={() => handleRoleSelect(OrgUserRoles.Viewer)}
     >
       <span class="font-medium">Viewer</span>
       <span class="text-xs text-gray-600"

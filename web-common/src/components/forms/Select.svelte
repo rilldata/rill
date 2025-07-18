@@ -11,6 +11,7 @@
   export let value: string = "";
   export let id: string;
   export let label: string = "";
+  export let ariaLabel: string = ""; // Fallback aria-label attribute if label is empty
   export let lockTooltip: string = "";
   export let size: "sm" | "md" | "lg" | "xl" = "lg";
   export let options: {
@@ -113,7 +114,7 @@
         'focus:ring-2 focus:ring-primary-100'} {truncate
         ? 'break-all overflow-hidden'
         : ''} {forcedTriggerStyle}"
-      aria-label={label}
+      aria-label={label || ariaLabel}
     >
       <Select.Value
         {placeholder}

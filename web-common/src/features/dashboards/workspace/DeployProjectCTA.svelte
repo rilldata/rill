@@ -11,19 +11,26 @@
   import UpdateProjectPopup from "@rilldata/web-common/features/project/deploy/UpdateProjectPopup.svelte";
   import { copyWithAdditionalArguments } from "@rilldata/web-common/lib/url-utils";
   import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
+  import ProjectContainsRemoteChangesDialog from "@rilldata/web-common/features/project/ProjectContainsRemoteChangesDialog.svelte";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
   import { BehaviourEventAction } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import {
     createLocalServiceGetCurrentUser,
     createLocalServiceGetMetadata,
     createLocalServiceListMatchingProjectsRequest,
+    createLocalServiceGitPull,
+    createLocalServiceGitStatus,
+    getLocalServiceGitStatusQueryKey,
   } from "@rilldata/web-common/runtime-client/local-service";
   import Rocket from "svelte-radix/Rocket.svelte";
-  import { get, writable } from "svelte/store";
+  import { writable, get } from "svelte/store";
   import { Button } from "../../../components/button";
 
   export let hasValidDashboard: boolean;
 
+  let remoteChangeDialog = false;
   let deployConfirmOpen = false;
   let updateProjectDropdownOpen = false;
 
@@ -37,6 +44,19 @@
   }
 
   $: isDeployed = !!$matchingProjectsQuery.data?.projects?.length;
+
+  const gitStatusQuery = createLocalServiceGitStatus();
+  $: hasRemoteChanges =
+    $gitStatusQuery.data && $gitStatusQuery.data.remoteCommits > 0;
+  const gitPullMutation = createLocalServiceGitPull();
+
+  $: ({ isPending: githubPullPending, error: githubPullError } =
+    $gitPullMutation);
+  let errorFromGitCommand: Error | null = null;
+  $: error = githubPullError ?? errorFromGitCommand;
+
+  // gitStatusQuery is refetched. So we have to check `isFetching` to get the correct loading status.
+  $: loading = $gitStatusQuery.isFetching || $matchingProjectsQuery.isLoading;
 
   $: allowPrimary.set(isDeployed || !hasValidDashboard);
 
@@ -53,6 +73,11 @@
       // If it was an auto-deploy, then unset the param from the url.
       // This prevents the user from saving/sharing a url that would open the deploy dropdown.
       void goto(copyWithAdditionalArguments($page.url, {}, { deploy: false }));
+    }
+
+    if (hasRemoteChanges) {
+      remoteChangeDialog = true;
+      return;
     }
 
     // Check user login
@@ -91,6 +116,29 @@
     void behaviourEvent?.fireDeployEvent(BehaviourEventAction.DeployIntent);
     window.open(deployPageUrl, "_blank");
   }
+
+  async function handleForceFetchRemoteCommits() {
+    errorFromGitCommand = null;
+    const resp = await $gitPullMutation.mutateAsync({
+      discardLocal: true,
+    });
+    // TODO: download diff once API is ready
+
+    void queryClient.invalidateQueries({
+      queryKey: getLocalServiceGitStatusQueryKey(),
+    });
+
+    if (!resp.output) {
+      remoteChangeDialog = false;
+      eventBus.emit("notification", {
+        message:
+          "Remote project changes fetched and merged. Your changes have been stashed.",
+      });
+      return;
+    }
+
+    errorFromGitCommand = new Error(resp.output);
+  }
 </script>
 
 {#if isDeployed}
@@ -101,7 +149,7 @@
 {:else}
   <Tooltip distance={8}>
     <Button
-      loading={$matchingProjectsQuery.isLoading}
+      {loading}
       onClick={onDeploy}
       type={hasValidDashboard ? "primary" : "secondary"}
     >
@@ -116,3 +164,10 @@
 {/if}
 
 <TrialDetailsDialog bind:open={deployConfirmOpen} />
+
+<ProjectContainsRemoteChangesDialog
+  bind:open={remoteChangeDialog}
+  loading={githubPullPending}
+  {error}
+  onFetchAndMerge={handleForceFetchRemoteCommits}
+/>

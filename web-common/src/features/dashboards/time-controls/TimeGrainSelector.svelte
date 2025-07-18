@@ -16,6 +16,7 @@
   export let minTimeGrain: V1TimeGrain | undefined;
   export let onTimeGrainSelect: (timeGrain: V1TimeGrain) => void;
   export let complete: boolean = false;
+  export let side: "top" | "right" | "bottom" | "left" = "bottom";
 
   let open = false;
 
@@ -75,7 +76,7 @@
         </div>
       </button>
     </DropdownMenu.Trigger>
-    <DropdownMenu.Content class="min-w-52" align="start">
+    <DropdownMenu.Content class="min-w-52" align="start" {side}>
       {#each timeGrains as option (option.key)}
         <DropdownMenu.CheckboxItem
           checkRight

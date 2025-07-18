@@ -241,6 +241,7 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
           combinedWhere = mergeFilters(combinedWhere, filterForTopColorValues);
         }
 
+        this.combinedWhere = combinedWhere;
         // Update dimensions with timeGrain if temporal
         if (config.x?.type === "temporal" && timeGrain) {
           dimensions = dimensions.map((d) =>

@@ -2,6 +2,7 @@
   import { EyeIcon, EyeOffIcon } from "lucide-svelte";
   import { onMount } from "svelte";
   import { slide } from "svelte/transition";
+  import { IconButton } from "@rilldata/web-common/components/button";
   import FieldSwitcher from "./FieldSwitcher.svelte";
   import InputLabel from "./InputLabel.svelte";
   import Select from "./Select.svelte";
@@ -12,6 +13,7 @@
   export let inputType: "text" | "number" = "text";
   export let id = "";
   export let label = "";
+  export let title = ""; // Fallback title attribute if label is empty
   export let description = "";
   export let errors: string | string[] | null | undefined = null;
   export let placeholder = "";
@@ -169,7 +171,7 @@
           />
         {:else}
           <input
-            title={label}
+            title={label || title}
             {id}
             {type}
             {placeholder}
@@ -186,6 +188,7 @@
                 } else {
                   value = e.currentTarget.valueAsNumber;
                 }
+                return;
               }
               value = e.currentTarget.value;
               onInput(value, e);
@@ -196,20 +199,20 @@
           />
         {/if}
         {#if secret}
-          <button
-            class="toggle"
-            type="button"
-            aria-label={showPassword ? "Hide password" : "Show password"}
+          <IconButton
+            size={20}
+            disableHover
+            ariaLabel={showPassword ? "Hide password" : "Show password"}
             on:click={() => {
               showPassword = !showPassword;
             }}
           >
             {#if showPassword}
-              <EyeOffIcon size="14px" class="stroke-primary-600" />
+              <EyeOffIcon size="14px" class="text-muted-foreground" />
             {:else}
-              <EyeIcon size="14px" class="stroke-primary-600" />
+              <EyeIcon size="14px" class="text-muted-foreground" />
             {/if}
-          </button>
+          </IconButton>
         {/if}
       </div>
     {:else if typeof value !== "number"}
@@ -283,16 +286,16 @@
 
   .input-wrapper {
     @apply overflow-hidden;
-    @apply flex justify-center items-center pr-0.5;
-    @apply bg-surface justify-center;
+    @apply flex justify-center items-center pr-1;
+    @apply bg-white justify-center;
     @apply border border-gray-300 rounded-[2px];
     @apply cursor-pointer;
-    @apply h-fit w-fit bg-background;
+    @apply h-fit w-fit;
   }
 
   input,
   .multiline-input {
-    @apply p-0 bg-background;
+    @apply p-0 bg-white;
     @apply size-full;
     @apply outline-none border-0;
     @apply cursor-text;
@@ -326,6 +329,8 @@
 
   .toggle {
     @apply h-full aspect-square flex items-center justify-center;
+    @apply px-1.5;
+    @apply -mr-0.5;
   }
 
   .toggle:hover {

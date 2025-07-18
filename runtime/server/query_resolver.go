@@ -82,7 +82,12 @@ func (s *Server) QueryResolver(ctx context.Context, req *runtimev1.QueryResolver
 	}
 
 	// Return the response
+	metaPB, err := pbutil.ToStruct(res.Meta(), nil)
+	if err != nil {
+		metaPB = &structpb.Struct{Fields: make(map[string]*structpb.Value)}
+	}
 	return &runtimev1.QueryResolverResponse{
+		Meta:   metaPB,
 		Schema: res.Schema(),
 		Data:   data,
 	}, nil

@@ -388,9 +388,9 @@ func (c *connection) InsertProject(ctx context.Context, opts *database.InsertPro
 
 	res := &projectDTO{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		INSERT INTO projects (org_id, name, description, public, created_by_user_id, provisioner, prod_olap_driver, prod_olap_dsn, prod_slots, subpath, prod_branch, archive_asset_id, git_remote, github_installation_id, github_repo_id, managed_git_repo_id, prod_ttl_seconds, prod_version)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18) RETURNING *`,
-		opts.OrganizationID, opts.Name, opts.Description, opts.Public, opts.CreatedByUserID, opts.Provisioner, opts.ProdOLAPDriver, opts.ProdOLAPDSN, opts.ProdSlots, opts.Subpath, opts.ProdBranch, opts.ArchiveAssetID, opts.GitRemote, opts.GithubInstallationID, opts.GithubRepoID, opts.ManagedGitRepoID, opts.ProdTTLSeconds, opts.ProdVersion,
+		INSERT INTO projects (org_id, name, description, public, created_by_user_id, provisioner, prod_olap_driver, prod_olap_dsn, prod_slots, subpath, prod_branch, archive_asset_id, git_remote, github_installation_id, github_repo_id, managed_git_repo_id, prod_ttl_seconds, prod_version, dev_slots, dev_ttl_seconds)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20) RETURNING *`,
+		opts.OrganizationID, opts.Name, opts.Description, opts.Public, opts.CreatedByUserID, opts.Provisioner, opts.ProdOLAPDriver, opts.ProdOLAPDSN, opts.ProdSlots, opts.Subpath, opts.ProdBranch, opts.ArchiveAssetID, opts.GitRemote, opts.GithubInstallationID, opts.GithubRepoID, opts.ManagedGitRepoID, opts.ProdTTLSeconds, opts.ProdVersion, opts.DevSlots, opts.DevTTLSeconds,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("project", err)
@@ -413,9 +413,9 @@ func (c *connection) UpdateProject(ctx context.Context, id string, opts *databas
 
 	res := &projectDTO{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		UPDATE projects SET name=$1, description=$2, public=$3, prod_branch=$4, git_remote=$5, github_installation_id=$6, github_repo_id=$7, managed_git_repo_id=$8, archive_asset_id=$9, prod_deployment_id=$10, provisioner=$11, prod_slots=$12, subpath=$13, prod_ttl_seconds=$14, annotations=$15, prod_version=$16, updated_on=now()
-		WHERE id=$17 RETURNING *`,
-		opts.Name, opts.Description, opts.Public, opts.ProdBranch, opts.GitRemote, opts.GithubInstallationID, opts.GithubRepoID, opts.ManagedGitRepoID, opts.ArchiveAssetID, opts.ProdDeploymentID, opts.Provisioner, opts.ProdSlots, opts.Subpath, opts.ProdTTLSeconds, opts.Annotations, opts.ProdVersion, id,
+		UPDATE projects SET name=$1, description=$2, public=$3, prod_branch=$4, git_remote=$5, github_installation_id=$6, github_repo_id=$7, managed_git_repo_id=$8, archive_asset_id=$9, prod_deployment_id=$10, provisioner=$11, prod_slots=$12, subpath=$13, prod_ttl_seconds=$14, annotations=$15, prod_version=$16, dev_slots=$17, dev_ttl_seconds=$18, updated_on=now()
+		WHERE id=$19 RETURNING *`,
+		opts.Name, opts.Description, opts.Public, opts.ProdBranch, opts.GitRemote, opts.GithubInstallationID, opts.GithubRepoID, opts.ManagedGitRepoID, opts.ArchiveAssetID, opts.ProdDeploymentID, opts.Provisioner, opts.ProdSlots, opts.Subpath, opts.ProdTTLSeconds, opts.Annotations, opts.ProdVersion, opts.DevSlots, opts.DevTTLSeconds, id,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("project", err)
@@ -502,14 +502,16 @@ func (c *connection) FindDeployments(ctx context.Context, afterID string, limit 
 	return res, nil
 }
 
-// FindExpiredDeployments returns all the deployments which are expired as per prod ttl
+// FindExpiredDeployments returns all the deployments which are expired as per ttl
 func (c *connection) FindExpiredDeployments(ctx context.Context) ([]*database.Deployment, error) {
 	var res []*database.Deployment
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
 		SELECT d.* FROM deployments d
 		JOIN projects p ON d.project_id = p.id
-		WHERE p.prod_ttl_seconds IS NOT NULL AND d.used_on + p.prod_ttl_seconds * interval '1 second' < now()
-	`)
+		WHERE d.status != $1
+		AND ((p.prod_ttl_seconds IS NOT NULL AND d.used_on + p.prod_ttl_seconds * interval '1 second' < now())
+		OR (d.environment = 'dev' AND p.dev_ttl_seconds IS NOT NULL AND d.used_on + p.dev_ttl_seconds * interval '1 second' < now()))
+	`, database.DeploymentStatusStopped)
 	if err != nil {
 		return nil, parseErr("deployments", err)
 	}
@@ -550,9 +552,9 @@ func (c *connection) InsertDeployment(ctx context.Context, opts *database.Insert
 
 	res := &database.Deployment{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		INSERT INTO deployments (project_id, branch, runtime_host, runtime_instance_id, runtime_audience, status, status_message)
-		VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-		opts.ProjectID, opts.Branch, opts.RuntimeHost, opts.RuntimeInstanceID, opts.RuntimeAudience, opts.Status, opts.StatusMessage,
+		INSERT INTO deployments (project_id, owner_user_id, environment, branch, runtime_host, runtime_instance_id, runtime_audience, status, status_message)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
+		opts.ProjectID, opts.OwnerUserID, opts.Environment, opts.Branch, opts.RuntimeHost, opts.RuntimeInstanceID, opts.RuntimeAudience, opts.Status, opts.StatusMessage,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("deployment", err)
@@ -1020,36 +1022,148 @@ func (c *connection) DeleteExpiredUserAuthTokens(ctx context.Context, retention 
 	return parseErr("auth token", err)
 }
 
-// FindServicesByOrgID returns a list of services in an org.
-func (c *connection) FindServicesByOrgID(ctx context.Context, orgID string) ([]*database.Service, error) {
-	var res []*database.Service
+// DeleteInactiveUserAuthTokens deletes user authentication tokens that have not been used within the specified retention period.
+func (c *connection) DeleteInactiveUserAuthTokens(ctx context.Context, retention time.Duration) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, `DELETE FROM user_auth_tokens WHERE used_on + $1 < now() AND created_on + $1 < now()`, retention)
+	return parseErr("auth token", err)
+}
 
-	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT * FROM service WHERE org_id=$1", orgID)
+// FindOrganizationMemberServices returns a list of services in an org.
+func (c *connection) FindOrganizationMemberServices(ctx context.Context, orgID string) ([]*database.OrganizationMemberService, error) {
+	var services []*organizationMemberServiceDTO
+	query := `
+       SELECT s.id, s.name, COALESCE(r.name, '') as role_name, EXISTS (
+	       SELECT 1
+           FROM service_projects_roles spr
+           JOIN projects p ON p.id = spr.project_id
+           WHERE spr.service_id = s.id AND p.org_id = $1
+       	) AS has_project_roles, 
+        s.attributes, s.created_on, s.updated_on
+        FROM service s
+        LEFT JOIN service_orgs_roles org_sr ON org_sr.service_id = s.id
+        LEFT JOIN org_roles r ON r.id = org_sr.org_role_id
+        WHERE s.org_id = $1
+	`
+	err := c.getDB(ctx).SelectContext(ctx, &services, query, orgID)
 	if err != nil {
-		return nil, parseErr("service", err)
+		return nil, parseErr("org member services", err)
 	}
-	return res, nil
+
+	// Convert DTOs to database.OrganizationMemberService
+	orgMemberServices := make([]*database.OrganizationMemberService, len(services))
+	for i, dto := range services {
+		o, err := dto.organizationMemberServiceFromDTO()
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert organization member service DTO: %w", err)
+		}
+		orgMemberServices[i] = o
+	}
+
+	return orgMemberServices, nil
+}
+
+// FindProjectMemberServices returns the services that are members of a project
+func (c *connection) FindProjectMemberServices(ctx context.Context, projectID string) ([]*database.ProjectMemberService, error) {
+	var services []*projectMemberServiceDTO
+	query := `
+		SELECT s.id, s.name, COALESCE(r.name, '') as role_name, COALESCE(org_r.name, '') as org_role_name, s.attributes, s.created_on, s.updated_on
+		FROM service s
+		LEFT JOIN service_projects_roles sr ON sr.service_id = s.id
+		LEFT JOIN project_roles r ON r.id = sr.project_role_id
+		LEFT JOIN service_orgs_roles org_sr ON org_sr.service_id = s.id
+		LEFT JOIN org_roles org_r ON org_r.id = org_sr.org_role_id
+		WHERE sr.project_id = $1
+	`
+	err := c.getDB(ctx).SelectContext(ctx, &services, query, projectID)
+	if err != nil {
+		return nil, parseErr("project member services", err)
+	}
+
+	// Convert DTOs to database.ProjectMemberService
+	projectMemberServices := make([]*database.ProjectMemberService, len(services))
+	for i, dto := range services {
+		p, err := dto.projectMemberServiceFromDTO()
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert project member service DTO: %w", err)
+		}
+		projectMemberServices[i] = p
+	}
+
+	return projectMemberServices, nil
 }
 
 // FindService returns a service.
 func (c *connection) FindService(ctx context.Context, id string) (*database.Service, error) {
-	res := &database.Service{}
+	res := &serviceDTO{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM service WHERE id=$1", id).StructScan(res)
 	if err != nil {
 		return nil, parseErr("service", err)
 	}
-	return res, nil
+	return res.serviceFromDTO()
 }
 
 // FindServiceByName returns a service.
 func (c *connection) FindServiceByName(ctx context.Context, orgID, name string) (*database.Service, error) {
-	res := &database.Service{}
+	res := &serviceDTO{}
 
 	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM service WHERE org_id=$1 AND name=$2", orgID, name).StructScan(res)
 	if err != nil {
 		return nil, parseErr("service", err)
 	}
-	return res, nil
+	return res.serviceFromDTO()
+}
+
+// FindOrganizationMemberServiceForService returns the org level service details for a specific service.
+func (c *connection) FindOrganizationMemberServiceForService(ctx context.Context, id string) (*database.OrganizationMemberService, error) {
+	res := &organizationMemberServiceDTO{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, `
+		SELECT s.id, s.name, COALESCE(r.name, '') as role_name, EXISTS (
+		   SELECT 1
+		   FROM service_projects_roles spr
+		   JOIN projects p ON p.id = spr.project_id
+		   WHERE spr.service_id = s.id AND p.org_id = o.id
+	   	) AS has_project_roles, 
+		s.attributes, s.created_on, s.updated_on
+		FROM service s
+		JOIN orgs o ON o.id = s.org_id
+		LEFT JOIN service_orgs_roles org_sr ON org_sr.service_id = s.id
+		LEFT JOIN org_roles r ON r.id = org_sr.org_role_id
+		WHERE s.id = $1`, id).StructScan(res)
+	if err != nil {
+		return nil, parseErr("organization member service for service", err)
+	}
+	return res.organizationMemberServiceFromDTO()
+}
+
+// FindProjectMemberServicesForService returns all projects level details that service is a member of.
+func (c *connection) FindProjectMemberServicesForService(ctx context.Context, id string) ([]*database.ProjectMemberServiceWithProject, error) {
+	var services []*projectMemberServiceWithProjectDTO
+	query := `
+		SELECT s.id, s.name, COALESCE(r.name, '') as role_name, COALESCE(org_r.name, '') as org_role_name, s.attributes, s.created_on, s.updated_on,
+		p.id AS project_id, p.name AS project_name
+		FROM service s
+		LEFT JOIN service_projects_roles sr ON sr.service_id = s.id
+		LEFT JOIN project_roles r ON r.id = sr.project_role_id
+		LEFT JOIN service_orgs_roles org_sr ON org_sr.service_id = s.id
+		LEFT JOIN org_roles org_r ON org_r.id = org_sr.org_role_id
+		JOIN projects p ON p.id = sr.project_id
+		WHERE s.id = $1
+	`
+	err := c.getDB(ctx).SelectContext(ctx, &services, query, id)
+	if err != nil {
+		return nil, parseErr("project member services for service", err)
+	}
+
+	projectMemberServices := make([]*database.ProjectMemberServiceWithProject, len(services))
+	for i, dto := range services {
+		p, err := dto.projectMemberServiceWithProjectFromDTO()
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert project member service with project DTO: %w", err)
+		}
+		projectMemberServices[i] = p
+	}
+
+	return projectMemberServices, nil
 }
 
 // InsertService inserts a service.
@@ -1058,16 +1172,20 @@ func (c *connection) InsertService(ctx context.Context, opts *database.InsertSer
 		return nil, err
 	}
 
-	res := &database.Service{}
+	if opts.Attributes == nil {
+		opts.Attributes = make(map[string]any)
+	}
+
+	res := &serviceDTO{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		INSERT INTO service (org_id, name)
-		VALUES ($1, $2) RETURNING *`,
-		opts.OrgID, opts.Name,
+		INSERT INTO service (org_id, name, attributes)
+		VALUES ($1, $2, $3) RETURNING *`,
+		opts.OrgID, opts.Name, opts.Attributes,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("service", err)
 	}
-	return res, nil
+	return res.serviceFromDTO()
 }
 
 // UpdateService updates a service.
@@ -1076,17 +1194,21 @@ func (c *connection) UpdateService(ctx context.Context, id string, opts *databas
 		return nil, err
 	}
 
-	res := &database.Service{}
+	if opts.Attributes == nil {
+		opts.Attributes = make(map[string]any)
+	}
+
+	res := &serviceDTO{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
 		UPDATE service
-		SET name=$1
-		WHERE id=$2 RETURNING *`,
-		opts.Name, id,
+		SET name=$1, attributes=$2
+		WHERE id=$3 RETURNING *`,
+		opts.Name, opts.Attributes, id,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("service", err)
 	}
-	return res, nil
+	return res.serviceFromDTO()
 }
 
 // UpdateServiceActiceOn updates a service's active_on timestamp.
@@ -1159,6 +1281,12 @@ func (c *connection) DeleteServiceAuthToken(ctx context.Context, id string) erro
 // DeleteExpiredServiceAuthTokens deletes expired service auth tokens.
 func (c *connection) DeleteExpiredServiceAuthTokens(ctx context.Context, retention time.Duration) error {
 	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM service_auth_tokens WHERE expires_on IS NOT NULL AND expires_on + $1 < now()", retention)
+	return parseErr("service auth token", err)
+}
+
+// DeleteInactiveServiceAuthTokens deletes service authentication tokens that have not been used within the specified retention period.
+func (c *connection) DeleteInactiveServiceAuthTokens(ctx context.Context, retention time.Duration) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM service_auth_tokens WHERE used_on + $1 < now() AND created_on + $1 < now()", retention)
 	return parseErr("service auth token", err)
 }
 
@@ -1505,6 +1633,36 @@ func (c *connection) ResolveProjectRolesForUser(ctx context.Context, userID, pro
 	return res, nil
 }
 
+// ResolveOrganizationRoleForService returns the organization role for the service
+func (c *connection) ResolveOrganizationRoleForService(ctx context.Context, serviceID, orgID string) (*database.OrganizationRole, error) {
+	var role database.OrganizationRole
+	err := c.getDB(ctx).QueryRowxContext(ctx, `
+		SELECT r.*
+		FROM org_roles r
+		JOIN service_orgs_roles sr ON sr.org_role_id = r.id
+		WHERE sr.service_id = $1 AND sr.org_id = $2
+	`, serviceID, orgID).StructScan(&role)
+	if err != nil {
+		return nil, parseErr("service org role", err)
+	}
+	return &role, nil
+}
+
+// ResolveProjectRolesForService returns the project roles for a service
+func (c *connection) ResolveProjectRolesForService(ctx context.Context, serviceID, projectID string) ([]*database.ProjectRole, error) {
+	var roles []*database.ProjectRole
+	err := c.getDB(ctx).SelectContext(ctx, &roles, `
+		SELECT r.*
+		FROM project_roles r
+		JOIN service_projects_roles sr ON sr.project_role_id = r.id
+		WHERE sr.service_id = $1 AND sr.project_id = $2
+	`, serviceID, projectID)
+	if err != nil {
+		return nil, parseErr("service project roles", err)
+	}
+	return roles, nil
+}
+
 func (c *connection) FindOrganizationMemberUsers(ctx context.Context, orgID, filterRoleID string, withCounts bool, afterEmail string, limit int) ([]*database.OrganizationMemberUser, error) {
 	args := []any{orgID, afterEmail, limit}
 	var qry strings.Builder
@@ -1544,6 +1702,23 @@ func (c *connection) FindOrganizationMemberUsers(ctx context.Context, orgID, fil
 		return nil, parseErr("org members", err)
 	}
 	return res, nil
+}
+
+func (c *connection) CountOrganizationMemberUsers(ctx context.Context, orgID, filterRoleID string) (int, error) {
+	var count int
+	query := "SELECT COUNT(*) FROM users_orgs_roles uor WHERE uor.org_id=$1"
+	args := []any{orgID}
+
+	if filterRoleID != "" {
+		query += " AND uor.org_role_id=$2"
+		args = append(args, filterRoleID)
+	}
+
+	err := c.getDB(ctx).QueryRowxContext(ctx, query, args...).Scan(&count)
+	if err != nil {
+		return 0, parseErr("org members count", err)
+	}
+	return count, nil
 }
 
 func (c *connection) FindOrganizationMemberUsersByRole(ctx context.Context, orgID, roleID string) ([]*database.User, error) {
@@ -1644,6 +1819,28 @@ func (c *connection) FindOrganizationMembersWithManageUsersRole(ctx context.Cont
 		return nil, parseErr("org members", err)
 	}
 	return res, nil
+}
+
+// InsertOrganizationMemberService adds a service to an organization with a role
+func (c *connection) InsertOrganizationMemberService(ctx context.Context, serviceID, orgID, roleID string) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, `
+		INSERT INTO service_orgs_roles (service_id, org_id, org_role_id)
+		VALUES ($1, $2, $3)
+	`, serviceID, orgID, roleID)
+	if err != nil {
+		return parseErr("service org member", err)
+	}
+	return nil
+}
+
+// UpdateOrganizationMemberServiceRole updates the role of a service in an organization
+func (c *connection) UpdateOrganizationMemberServiceRole(ctx context.Context, serviceID, orgID, roleID string) error {
+	res, err := c.getDB(ctx).ExecContext(ctx, `
+		UPDATE service_orgs_roles
+		SET org_role_id = $3
+		WHERE service_id = $1 AND org_id = $2
+	`, serviceID, orgID, roleID)
+	return checkUpdateRow("service org member", res, err)
 }
 
 func (c *connection) FindProjectMemberUsers(ctx context.Context, orgID, projectID, filterRoleID, afterEmail string, limit int) ([]*database.ProjectMemberUser, error) {
@@ -1867,6 +2064,33 @@ func (c *connection) UpdateProjectMemberUserRole(ctx context.Context, projectID,
 	return checkUpdateRow("project member", res, err)
 }
 
+// UpsertProjectMemberServiceRole inserts or updates the role of a service in a project
+func (c *connection) UpsertProjectMemberServiceRole(ctx context.Context, serviceID, projectID, roleID string) error {
+	res, err := c.getDB(ctx).ExecContext(ctx, `
+		INSERT INTO service_projects_roles (service_id, project_id, project_role_id)
+		VALUES ($1, $2, $3)
+		ON CONFLICT (service_id, project_id) DO UPDATE SET project_role_id = $3
+	`, serviceID, projectID, roleID)
+	return checkUpdateRow("service project member", res, err)
+}
+
+func (c *connection) DeleteOrganizationMemberService(ctx context.Context, serviceID, orgID string) error {
+	res, err := c.getDB(ctx).ExecContext(ctx, `
+		DELETE FROM service_orgs_roles
+		WHERE service_id = $1 AND org_id = $2
+	`, serviceID, orgID)
+	return checkDeleteRow("service org member", res, err)
+}
+
+// DeleteProjectMemberService removes a service from a project
+func (c *connection) DeleteProjectMemberService(ctx context.Context, serviceID, projectID string) error {
+	res, err := c.getDB(ctx).ExecContext(ctx, `
+		DELETE FROM service_projects_roles
+		WHERE service_id = $1 AND project_id = $2
+	`, serviceID, projectID)
+	return checkDeleteRow("service project member", res, err)
+}
+
 func (c *connection) FindOrganizationInvites(ctx context.Context, orgID, afterEmail string, limit int) ([]*database.OrganizationInviteWithRole, error) {
 	var res []*database.OrganizationInviteWithRole
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
@@ -1881,6 +2105,15 @@ func (c *connection) FindOrganizationInvites(ctx context.Context, orgID, afterEm
 		return nil, parseErr("org invites", err)
 	}
 	return res, nil
+}
+
+func (c *connection) CountOrganizationInvites(ctx context.Context, orgID string) (int, error) {
+	var count int
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT COUNT(*) FROM org_invites WHERE org_id = $1", orgID).Scan(&count)
+	if err != nil {
+		return 0, parseErr("org invites count", err)
+	}
+	return count, nil
 }
 
 func (c *connection) FindOrganizationInvitesByEmail(ctx context.Context, userEmail string) ([]*database.OrganizationInvite, error) {
@@ -2854,6 +3087,58 @@ func (b *billingIssueDTO) getBillingIssueLevel() database.BillingIssueLevel {
 		return database.BillingIssueLevelWarning
 	}
 	return database.BillingIssueLevelError
+}
+
+type serviceDTO struct {
+	*database.Service
+	Attributes pgtype.JSON `db:"attributes"`
+}
+
+func (d *serviceDTO) serviceFromDTO() (*database.Service, error) {
+	err := d.Attributes.AssignTo(&d.Service.Attributes)
+	if err != nil {
+		return nil, err
+	}
+	return d.Service, nil
+}
+
+type organizationMemberServiceDTO struct {
+	*database.OrganizationMemberService
+	Attributes pgtype.JSON `db:"attributes"`
+}
+
+func (d *organizationMemberServiceDTO) organizationMemberServiceFromDTO() (*database.OrganizationMemberService, error) {
+	err := d.Attributes.AssignTo(&d.OrganizationMemberService.Attributes)
+	if err != nil {
+		return nil, err
+	}
+	return d.OrganizationMemberService, nil
+}
+
+type projectMemberServiceDTO struct {
+	*database.ProjectMemberService
+	Attributes pgtype.JSON `db:"attributes"`
+}
+
+func (d *projectMemberServiceDTO) projectMemberServiceFromDTO() (*database.ProjectMemberService, error) {
+	err := d.Attributes.AssignTo(&d.ProjectMemberService.Attributes)
+	if err != nil {
+		return nil, err
+	}
+	return d.ProjectMemberService, nil
+}
+
+type projectMemberServiceWithProjectDTO struct {
+	*database.ProjectMemberServiceWithProject
+	Attributes pgtype.JSON `db:"attributes"`
+}
+
+func (d *projectMemberServiceWithProjectDTO) projectMemberServiceWithProjectFromDTO() (*database.ProjectMemberServiceWithProject, error) {
+	err := d.Attributes.AssignTo(&d.ProjectMemberServiceWithProject.Attributes)
+	if err != nil {
+		return nil, err
+	}
+	return d.ProjectMemberServiceWithProject, nil
 }
 
 func (c *connection) decryptProjectVariables(res []*database.ProjectVariable) error {

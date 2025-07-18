@@ -8,15 +8,17 @@
   import { Button } from "@rilldata/web-common/components/button";
   import Check from "@rilldata/web-common/components/icons/Check.svelte";
   import Lock from "@rilldata/web-common/components/icons/Lock.svelte";
+  import { ProjectUserRoles } from "@rilldata/web-common/features/users/roles.ts";
   import type { AxiosError } from "axios";
 
   $: organization = $page.url.searchParams.get("organization");
   $: project = $page.url.searchParams.get("project");
+  $: role = $page.url.searchParams.get("role") ?? ProjectUserRoles.Viewer;
   $: autoRequest = $page.url.searchParams.get("auto_request") === "true";
   $: if (autoRequest) onRequestAccess();
 
   let requested = false;
-  $: requestAccess = createAdminServiceRequestProjectAccess();
+  const requestAccess = createAdminServiceRequestProjectAccess();
 
   let errorMessage = "";
   $: if ($requestAccess.error) {
@@ -37,7 +39,9 @@
     void $requestAccess.mutateAsync({
       organization,
       project,
-      data: {},
+      data: {
+        role,
+      },
     });
   }
 </script>

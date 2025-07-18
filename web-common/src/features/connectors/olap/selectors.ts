@@ -1,7 +1,7 @@
 import type { CreateQueryResult } from "@tanstack/svelte-query";
 import { derived } from "svelte/store";
 import {
-  type V1TableInfo,
+  type V1OlapTableInfo,
   createConnectorServiceOLAPListTables,
   createRuntimeServiceAnalyzeConnectors,
   createRuntimeServiceGetInstance,
@@ -115,7 +115,7 @@ export function useTables(
   connector: string,
   database: string,
   databaseSchema: string,
-): CreateQueryResult<V1TableInfo[]> {
+): CreateQueryResult<V1OlapTableInfo[]> {
   return createConnectorServiceOLAPListTables(
     {
       instanceId,

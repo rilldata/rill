@@ -40,6 +40,12 @@ const (
 	AdminService_CreateAsset_FullMethodName                           = "/rill.admin.v1.AdminService/CreateAsset"
 	AdminService_RedeployProject_FullMethodName                       = "/rill.admin.v1.AdminService/RedeployProject"
 	AdminService_HibernateProject_FullMethodName                      = "/rill.admin.v1.AdminService/HibernateProject"
+	AdminService_ListDeployments_FullMethodName                       = "/rill.admin.v1.AdminService/ListDeployments"
+	AdminService_CreateDeployment_FullMethodName                      = "/rill.admin.v1.AdminService/CreateDeployment"
+	AdminService_GetDeployment_FullMethodName                         = "/rill.admin.v1.AdminService/GetDeployment"
+	AdminService_StartDeployment_FullMethodName                       = "/rill.admin.v1.AdminService/StartDeployment"
+	AdminService_StopDeployment_FullMethodName                        = "/rill.admin.v1.AdminService/StopDeployment"
+	AdminService_DeleteDeployment_FullMethodName                      = "/rill.admin.v1.AdminService/DeleteDeployment"
 	AdminService_TriggerReconcile_FullMethodName                      = "/rill.admin.v1.AdminService/TriggerReconcile"
 	AdminService_TriggerRefreshSources_FullMethodName                 = "/rill.admin.v1.AdminService/TriggerRefreshSources"
 	AdminService_TriggerRedeploy_FullMethodName                       = "/rill.admin.v1.AdminService/TriggerRedeploy"
@@ -111,8 +117,14 @@ const (
 	AdminService_RemoveProjectWhitelistedDomain_FullMethodName        = "/rill.admin.v1.AdminService/RemoveProjectWhitelistedDomain"
 	AdminService_ListProjectWhitelistedDomains_FullMethodName         = "/rill.admin.v1.AdminService/ListProjectWhitelistedDomains"
 	AdminService_ListServices_FullMethodName                          = "/rill.admin.v1.AdminService/ListServices"
+	AdminService_ListProjectMemberServices_FullMethodName             = "/rill.admin.v1.AdminService/ListProjectMemberServices"
 	AdminService_CreateService_FullMethodName                         = "/rill.admin.v1.AdminService/CreateService"
+	AdminService_GetService_FullMethodName                            = "/rill.admin.v1.AdminService/GetService"
 	AdminService_UpdateService_FullMethodName                         = "/rill.admin.v1.AdminService/UpdateService"
+	AdminService_SetOrganizationMemberServiceRole_FullMethodName      = "/rill.admin.v1.AdminService/SetOrganizationMemberServiceRole"
+	AdminService_RemoveOrganizationMemberService_FullMethodName       = "/rill.admin.v1.AdminService/RemoveOrganizationMemberService"
+	AdminService_SetProjectMemberServiceRole_FullMethodName           = "/rill.admin.v1.AdminService/SetProjectMemberServiceRole"
+	AdminService_RemoveProjectMemberService_FullMethodName            = "/rill.admin.v1.AdminService/RemoveProjectMemberService"
 	AdminService_DeleteService_FullMethodName                         = "/rill.admin.v1.AdminService/DeleteService"
 	AdminService_ListServiceAuthTokens_FullMethodName                 = "/rill.admin.v1.AdminService/ListServiceAuthTokens"
 	AdminService_IssueServiceAuthToken_FullMethodName                 = "/rill.admin.v1.AdminService/IssueServiceAuthToken"
@@ -208,6 +220,18 @@ type AdminServiceClient interface {
 	RedeployProject(ctx context.Context, in *RedeployProjectRequest, opts ...grpc.CallOption) (*RedeployProjectResponse, error)
 	// HibernateProject hibernates a project by tearing down its deployments.
 	HibernateProject(ctx context.Context, in *HibernateProjectRequest, opts ...grpc.CallOption) (*HibernateProjectResponse, error)
+	// ListDeployments lists deployments for a project.
+	ListDeployments(ctx context.Context, in *ListDeploymentsRequest, opts ...grpc.CallOption) (*ListDeploymentsResponse, error)
+	// CreateDeployment creates a new deployment for a project.
+	CreateDeployment(ctx context.Context, in *CreateDeploymentRequest, opts ...grpc.CallOption) (*CreateDeploymentResponse, error)
+	// GetDeployment returns runtime info and access token on behalf of a specific user, or alternatively for a raw set of JWT attributes
+	GetDeployment(ctx context.Context, in *GetDeploymentRequest, opts ...grpc.CallOption) (*GetDeploymentResponse, error)
+	// StartDeployment starts a deployment.
+	StartDeployment(ctx context.Context, in *StartDeploymentRequest, opts ...grpc.CallOption) (*StartDeploymentResponse, error)
+	// StopDeployment stops a deployment.
+	StopDeployment(ctx context.Context, in *StopDeploymentRequest, opts ...grpc.CallOption) (*StopDeploymentResponse, error)
+	// DeleteDeployment deletes a deployment.
+	DeleteDeployment(ctx context.Context, in *DeleteDeploymentRequest, opts ...grpc.CallOption) (*DeleteDeploymentResponse, error)
 	// TriggerReconcile triggers reconcile for the project's prod deployment.
 	// DEPRECATED: Clients should call CreateTrigger directly on the deployed runtime instead.
 	TriggerReconcile(ctx context.Context, in *TriggerReconcileRequest, opts ...grpc.CallOption) (*TriggerReconcileResponse, error)
@@ -328,6 +352,7 @@ type AdminServiceClient interface {
 	// ListSuperusers lists all the superusers
 	ListSuperusers(ctx context.Context, in *ListSuperusersRequest, opts ...grpc.CallOption) (*ListSuperusersResponse, error)
 	// GetDeploymentCredentials returns runtime info and access token on behalf of a specific user, or alternatively for a raw set of JWT attributes
+	// DEPRECATED: Clients should call GetDeployment instead.
 	GetDeploymentCredentials(ctx context.Context, in *GetDeploymentCredentialsRequest, opts ...grpc.CallOption) (*GetDeploymentCredentialsResponse, error)
 	// GetIFrame returns the iframe URL for the given project
 	GetIFrame(ctx context.Context, in *GetIFrameRequest, opts ...grpc.CallOption) (*GetIFrameResponse, error)
@@ -363,10 +388,22 @@ type AdminServiceClient interface {
 	ListProjectWhitelistedDomains(ctx context.Context, in *ListProjectWhitelistedDomainsRequest, opts ...grpc.CallOption) (*ListProjectWhitelistedDomainsResponse, error)
 	// ListService returns all the services per organization
 	ListServices(ctx context.Context, in *ListServicesRequest, opts ...grpc.CallOption) (*ListServicesResponse, error)
+	// ListProjectMemberServices returns all the services for the project for an organization
+	ListProjectMemberServices(ctx context.Context, in *ListProjectMemberServicesRequest, opts ...grpc.CallOption) (*ListProjectMemberServicesResponse, error)
 	// CreateService creates a new service per organization
 	CreateService(ctx context.Context, in *CreateServiceRequest, opts ...grpc.CallOption) (*CreateServiceResponse, error)
+	// GetService returns information about a specific service
+	GetService(ctx context.Context, in *GetServiceRequest, opts ...grpc.CallOption) (*GetServiceResponse, error)
 	// UpdateService updates a service per organization
 	UpdateService(ctx context.Context, in *UpdateServiceRequest, opts ...grpc.CallOption) (*UpdateServiceResponse, error)
+	// SetOrganizationMemberServiceRole sets or updates the role of the service in the organization
+	SetOrganizationMemberServiceRole(ctx context.Context, in *SetOrganizationMemberServiceRoleRequest, opts ...grpc.CallOption) (*SetOrganizationMemberServiceRoleResponse, error)
+	// RemoveOrganizationMemberService removes the organization role for the service
+	RemoveOrganizationMemberService(ctx context.Context, in *RemoveOrganizationMemberServiceRequest, opts ...grpc.CallOption) (*RemoveOrganizationMemberServiceResponse, error)
+	// SetProjectMemberServiceRole updates the project role for the service
+	SetProjectMemberServiceRole(ctx context.Context, in *SetProjectMemberServiceRoleRequest, opts ...grpc.CallOption) (*SetProjectMemberServiceRoleResponse, error)
+	// RemoveProjectMemberService removes the service from the project
+	RemoveProjectMemberService(ctx context.Context, in *RemoveProjectMemberServiceRequest, opts ...grpc.CallOption) (*RemoveProjectMemberServiceResponse, error)
 	// DeleteService deletes a service per organization
 	DeleteService(ctx context.Context, in *DeleteServiceRequest, opts ...grpc.CallOption) (*DeleteServiceResponse, error)
 	// ListServiceAuthTokens lists all the service auth tokens
@@ -661,6 +698,66 @@ func (c *adminServiceClient) HibernateProject(ctx context.Context, in *Hibernate
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(HibernateProjectResponse)
 	err := c.cc.Invoke(ctx, AdminService_HibernateProject_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) ListDeployments(ctx context.Context, in *ListDeploymentsRequest, opts ...grpc.CallOption) (*ListDeploymentsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListDeploymentsResponse)
+	err := c.cc.Invoke(ctx, AdminService_ListDeployments_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) CreateDeployment(ctx context.Context, in *CreateDeploymentRequest, opts ...grpc.CallOption) (*CreateDeploymentResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateDeploymentResponse)
+	err := c.cc.Invoke(ctx, AdminService_CreateDeployment_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) GetDeployment(ctx context.Context, in *GetDeploymentRequest, opts ...grpc.CallOption) (*GetDeploymentResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetDeploymentResponse)
+	err := c.cc.Invoke(ctx, AdminService_GetDeployment_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) StartDeployment(ctx context.Context, in *StartDeploymentRequest, opts ...grpc.CallOption) (*StartDeploymentResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(StartDeploymentResponse)
+	err := c.cc.Invoke(ctx, AdminService_StartDeployment_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) StopDeployment(ctx context.Context, in *StopDeploymentRequest, opts ...grpc.CallOption) (*StopDeploymentResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(StopDeploymentResponse)
+	err := c.cc.Invoke(ctx, AdminService_StopDeployment_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) DeleteDeployment(ctx context.Context, in *DeleteDeploymentRequest, opts ...grpc.CallOption) (*DeleteDeploymentResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteDeploymentResponse)
+	err := c.cc.Invoke(ctx, AdminService_DeleteDeployment_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1377,6 +1474,16 @@ func (c *adminServiceClient) ListServices(ctx context.Context, in *ListServicesR
 	return out, nil
 }
 
+func (c *adminServiceClient) ListProjectMemberServices(ctx context.Context, in *ListProjectMemberServicesRequest, opts ...grpc.CallOption) (*ListProjectMemberServicesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListProjectMemberServicesResponse)
+	err := c.cc.Invoke(ctx, AdminService_ListProjectMemberServices_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *adminServiceClient) CreateService(ctx context.Context, in *CreateServiceRequest, opts ...grpc.CallOption) (*CreateServiceResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(CreateServiceResponse)
@@ -1387,10 +1494,60 @@ func (c *adminServiceClient) CreateService(ctx context.Context, in *CreateServic
 	return out, nil
 }
 
+func (c *adminServiceClient) GetService(ctx context.Context, in *GetServiceRequest, opts ...grpc.CallOption) (*GetServiceResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetServiceResponse)
+	err := c.cc.Invoke(ctx, AdminService_GetService_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *adminServiceClient) UpdateService(ctx context.Context, in *UpdateServiceRequest, opts ...grpc.CallOption) (*UpdateServiceResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(UpdateServiceResponse)
 	err := c.cc.Invoke(ctx, AdminService_UpdateService_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) SetOrganizationMemberServiceRole(ctx context.Context, in *SetOrganizationMemberServiceRoleRequest, opts ...grpc.CallOption) (*SetOrganizationMemberServiceRoleResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SetOrganizationMemberServiceRoleResponse)
+	err := c.cc.Invoke(ctx, AdminService_SetOrganizationMemberServiceRole_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) RemoveOrganizationMemberService(ctx context.Context, in *RemoveOrganizationMemberServiceRequest, opts ...grpc.CallOption) (*RemoveOrganizationMemberServiceResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RemoveOrganizationMemberServiceResponse)
+	err := c.cc.Invoke(ctx, AdminService_RemoveOrganizationMemberService_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) SetProjectMemberServiceRole(ctx context.Context, in *SetProjectMemberServiceRoleRequest, opts ...grpc.CallOption) (*SetProjectMemberServiceRoleResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SetProjectMemberServiceRoleResponse)
+	err := c.cc.Invoke(ctx, AdminService_SetProjectMemberServiceRole_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) RemoveProjectMemberService(ctx context.Context, in *RemoveProjectMemberServiceRequest, opts ...grpc.CallOption) (*RemoveProjectMemberServiceResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RemoveProjectMemberServiceResponse)
+	err := c.cc.Invoke(ctx, AdminService_RemoveProjectMemberService_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1868,6 +2025,18 @@ type AdminServiceServer interface {
 	RedeployProject(context.Context, *RedeployProjectRequest) (*RedeployProjectResponse, error)
 	// HibernateProject hibernates a project by tearing down its deployments.
 	HibernateProject(context.Context, *HibernateProjectRequest) (*HibernateProjectResponse, error)
+	// ListDeployments lists deployments for a project.
+	ListDeployments(context.Context, *ListDeploymentsRequest) (*ListDeploymentsResponse, error)
+	// CreateDeployment creates a new deployment for a project.
+	CreateDeployment(context.Context, *CreateDeploymentRequest) (*CreateDeploymentResponse, error)
+	// GetDeployment returns runtime info and access token on behalf of a specific user, or alternatively for a raw set of JWT attributes
+	GetDeployment(context.Context, *GetDeploymentRequest) (*GetDeploymentResponse, error)
+	// StartDeployment starts a deployment.
+	StartDeployment(context.Context, *StartDeploymentRequest) (*StartDeploymentResponse, error)
+	// StopDeployment stops a deployment.
+	StopDeployment(context.Context, *StopDeploymentRequest) (*StopDeploymentResponse, error)
+	// DeleteDeployment deletes a deployment.
+	DeleteDeployment(context.Context, *DeleteDeploymentRequest) (*DeleteDeploymentResponse, error)
 	// TriggerReconcile triggers reconcile for the project's prod deployment.
 	// DEPRECATED: Clients should call CreateTrigger directly on the deployed runtime instead.
 	TriggerReconcile(context.Context, *TriggerReconcileRequest) (*TriggerReconcileResponse, error)
@@ -1988,6 +2157,7 @@ type AdminServiceServer interface {
 	// ListSuperusers lists all the superusers
 	ListSuperusers(context.Context, *ListSuperusersRequest) (*ListSuperusersResponse, error)
 	// GetDeploymentCredentials returns runtime info and access token on behalf of a specific user, or alternatively for a raw set of JWT attributes
+	// DEPRECATED: Clients should call GetDeployment instead.
 	GetDeploymentCredentials(context.Context, *GetDeploymentCredentialsRequest) (*GetDeploymentCredentialsResponse, error)
 	// GetIFrame returns the iframe URL for the given project
 	GetIFrame(context.Context, *GetIFrameRequest) (*GetIFrameResponse, error)
@@ -2023,10 +2193,22 @@ type AdminServiceServer interface {
 	ListProjectWhitelistedDomains(context.Context, *ListProjectWhitelistedDomainsRequest) (*ListProjectWhitelistedDomainsResponse, error)
 	// ListService returns all the services per organization
 	ListServices(context.Context, *ListServicesRequest) (*ListServicesResponse, error)
+	// ListProjectMemberServices returns all the services for the project for an organization
+	ListProjectMemberServices(context.Context, *ListProjectMemberServicesRequest) (*ListProjectMemberServicesResponse, error)
 	// CreateService creates a new service per organization
 	CreateService(context.Context, *CreateServiceRequest) (*CreateServiceResponse, error)
+	// GetService returns information about a specific service
+	GetService(context.Context, *GetServiceRequest) (*GetServiceResponse, error)
 	// UpdateService updates a service per organization
 	UpdateService(context.Context, *UpdateServiceRequest) (*UpdateServiceResponse, error)
+	// SetOrganizationMemberServiceRole sets or updates the role of the service in the organization
+	SetOrganizationMemberServiceRole(context.Context, *SetOrganizationMemberServiceRoleRequest) (*SetOrganizationMemberServiceRoleResponse, error)
+	// RemoveOrganizationMemberService removes the organization role for the service
+	RemoveOrganizationMemberService(context.Context, *RemoveOrganizationMemberServiceRequest) (*RemoveOrganizationMemberServiceResponse, error)
+	// SetProjectMemberServiceRole updates the project role for the service
+	SetProjectMemberServiceRole(context.Context, *SetProjectMemberServiceRoleRequest) (*SetProjectMemberServiceRoleResponse, error)
+	// RemoveProjectMemberService removes the service from the project
+	RemoveProjectMemberService(context.Context, *RemoveProjectMemberServiceRequest) (*RemoveProjectMemberServiceResponse, error)
 	// DeleteService deletes a service per organization
 	DeleteService(context.Context, *DeleteServiceRequest) (*DeleteServiceResponse, error)
 	// ListServiceAuthTokens lists all the service auth tokens
@@ -2179,6 +2361,24 @@ func (UnimplementedAdminServiceServer) RedeployProject(context.Context, *Redeplo
 }
 func (UnimplementedAdminServiceServer) HibernateProject(context.Context, *HibernateProjectRequest) (*HibernateProjectResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method HibernateProject not implemented")
+}
+func (UnimplementedAdminServiceServer) ListDeployments(context.Context, *ListDeploymentsRequest) (*ListDeploymentsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListDeployments not implemented")
+}
+func (UnimplementedAdminServiceServer) CreateDeployment(context.Context, *CreateDeploymentRequest) (*CreateDeploymentResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateDeployment not implemented")
+}
+func (UnimplementedAdminServiceServer) GetDeployment(context.Context, *GetDeploymentRequest) (*GetDeploymentResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetDeployment not implemented")
+}
+func (UnimplementedAdminServiceServer) StartDeployment(context.Context, *StartDeploymentRequest) (*StartDeploymentResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method StartDeployment not implemented")
+}
+func (UnimplementedAdminServiceServer) StopDeployment(context.Context, *StopDeploymentRequest) (*StopDeploymentResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method StopDeployment not implemented")
+}
+func (UnimplementedAdminServiceServer) DeleteDeployment(context.Context, *DeleteDeploymentRequest) (*DeleteDeploymentResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteDeployment not implemented")
 }
 func (UnimplementedAdminServiceServer) TriggerReconcile(context.Context, *TriggerReconcileRequest) (*TriggerReconcileResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method TriggerReconcile not implemented")
@@ -2393,11 +2593,29 @@ func (UnimplementedAdminServiceServer) ListProjectWhitelistedDomains(context.Con
 func (UnimplementedAdminServiceServer) ListServices(context.Context, *ListServicesRequest) (*ListServicesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListServices not implemented")
 }
+func (UnimplementedAdminServiceServer) ListProjectMemberServices(context.Context, *ListProjectMemberServicesRequest) (*ListProjectMemberServicesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListProjectMemberServices not implemented")
+}
 func (UnimplementedAdminServiceServer) CreateService(context.Context, *CreateServiceRequest) (*CreateServiceResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateService not implemented")
 }
+func (UnimplementedAdminServiceServer) GetService(context.Context, *GetServiceRequest) (*GetServiceResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetService not implemented")
+}
 func (UnimplementedAdminServiceServer) UpdateService(context.Context, *UpdateServiceRequest) (*UpdateServiceResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateService not implemented")
+}
+func (UnimplementedAdminServiceServer) SetOrganizationMemberServiceRole(context.Context, *SetOrganizationMemberServiceRoleRequest) (*SetOrganizationMemberServiceRoleResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SetOrganizationMemberServiceRole not implemented")
+}
+func (UnimplementedAdminServiceServer) RemoveOrganizationMemberService(context.Context, *RemoveOrganizationMemberServiceRequest) (*RemoveOrganizationMemberServiceResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RemoveOrganizationMemberService not implemented")
+}
+func (UnimplementedAdminServiceServer) SetProjectMemberServiceRole(context.Context, *SetProjectMemberServiceRoleRequest) (*SetProjectMemberServiceRoleResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SetProjectMemberServiceRole not implemented")
+}
+func (UnimplementedAdminServiceServer) RemoveProjectMemberService(context.Context, *RemoveProjectMemberServiceRequest) (*RemoveProjectMemberServiceResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RemoveProjectMemberService not implemented")
 }
 func (UnimplementedAdminServiceServer) DeleteService(context.Context, *DeleteServiceRequest) (*DeleteServiceResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteService not implemented")
@@ -2920,6 +3138,114 @@ func _AdminService_HibernateProject_Handler(srv interface{}, ctx context.Context
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AdminServiceServer).HibernateProject(ctx, req.(*HibernateProjectRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_ListDeployments_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListDeploymentsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).ListDeployments(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_ListDeployments_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).ListDeployments(ctx, req.(*ListDeploymentsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_CreateDeployment_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateDeploymentRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).CreateDeployment(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_CreateDeployment_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).CreateDeployment(ctx, req.(*CreateDeploymentRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_GetDeployment_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetDeploymentRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).GetDeployment(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_GetDeployment_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).GetDeployment(ctx, req.(*GetDeploymentRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_StartDeployment_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(StartDeploymentRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).StartDeployment(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_StartDeployment_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).StartDeployment(ctx, req.(*StartDeploymentRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_StopDeployment_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(StopDeploymentRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).StopDeployment(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_StopDeployment_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).StopDeployment(ctx, req.(*StopDeploymentRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_DeleteDeployment_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteDeploymentRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).DeleteDeployment(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_DeleteDeployment_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).DeleteDeployment(ctx, req.(*DeleteDeploymentRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -4202,6 +4528,24 @@ func _AdminService_ListServices_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_ListProjectMemberServices_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListProjectMemberServicesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).ListProjectMemberServices(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_ListProjectMemberServices_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).ListProjectMemberServices(ctx, req.(*ListProjectMemberServicesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AdminService_CreateService_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CreateServiceRequest)
 	if err := dec(in); err != nil {
@@ -4220,6 +4564,24 @@ func _AdminService_CreateService_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_GetService_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetServiceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).GetService(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_GetService_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).GetService(ctx, req.(*GetServiceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AdminService_UpdateService_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(UpdateServiceRequest)
 	if err := dec(in); err != nil {
@@ -4234,6 +4596,78 @@ func _AdminService_UpdateService_Handler(srv interface{}, ctx context.Context, d
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AdminServiceServer).UpdateService(ctx, req.(*UpdateServiceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_SetOrganizationMemberServiceRole_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetOrganizationMemberServiceRoleRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).SetOrganizationMemberServiceRole(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_SetOrganizationMemberServiceRole_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).SetOrganizationMemberServiceRole(ctx, req.(*SetOrganizationMemberServiceRoleRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_RemoveOrganizationMemberService_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RemoveOrganizationMemberServiceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).RemoveOrganizationMemberService(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_RemoveOrganizationMemberService_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).RemoveOrganizationMemberService(ctx, req.(*RemoveOrganizationMemberServiceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_SetProjectMemberServiceRole_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetProjectMemberServiceRoleRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).SetProjectMemberServiceRole(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_SetProjectMemberServiceRole_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).SetProjectMemberServiceRole(ctx, req.(*SetProjectMemberServiceRoleRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_RemoveProjectMemberService_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RemoveProjectMemberServiceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).RemoveProjectMemberService(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_RemoveProjectMemberService_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).RemoveProjectMemberService(ctx, req.(*RemoveProjectMemberServiceRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -5086,6 +5520,30 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AdminService_HibernateProject_Handler,
 		},
 		{
+			MethodName: "ListDeployments",
+			Handler:    _AdminService_ListDeployments_Handler,
+		},
+		{
+			MethodName: "CreateDeployment",
+			Handler:    _AdminService_CreateDeployment_Handler,
+		},
+		{
+			MethodName: "GetDeployment",
+			Handler:    _AdminService_GetDeployment_Handler,
+		},
+		{
+			MethodName: "StartDeployment",
+			Handler:    _AdminService_StartDeployment_Handler,
+		},
+		{
+			MethodName: "StopDeployment",
+			Handler:    _AdminService_StopDeployment_Handler,
+		},
+		{
+			MethodName: "DeleteDeployment",
+			Handler:    _AdminService_DeleteDeployment_Handler,
+		},
+		{
 			MethodName: "TriggerReconcile",
 			Handler:    _AdminService_TriggerReconcile_Handler,
 		},
@@ -5370,12 +5828,36 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AdminService_ListServices_Handler,
 		},
 		{
+			MethodName: "ListProjectMemberServices",
+			Handler:    _AdminService_ListProjectMemberServices_Handler,
+		},
+		{
 			MethodName: "CreateService",
 			Handler:    _AdminService_CreateService_Handler,
 		},
 		{
+			MethodName: "GetService",
+			Handler:    _AdminService_GetService_Handler,
+		},
+		{
 			MethodName: "UpdateService",
 			Handler:    _AdminService_UpdateService_Handler,
+		},
+		{
+			MethodName: "SetOrganizationMemberServiceRole",
+			Handler:    _AdminService_SetOrganizationMemberServiceRole_Handler,
+		},
+		{
+			MethodName: "RemoveOrganizationMemberService",
+			Handler:    _AdminService_RemoveOrganizationMemberService_Handler,
+		},
+		{
+			MethodName: "SetProjectMemberServiceRole",
+			Handler:    _AdminService_SetProjectMemberServiceRole_Handler,
+		},
+		{
+			MethodName: "RemoveProjectMemberService",
+			Handler:    _AdminService_RemoveProjectMemberService_Handler,
 		},
 		{
 			MethodName: "DeleteService",

@@ -3,11 +3,15 @@
   import AlertPreview from "@rilldata/web-common/features/alerts/criteria-tab/AlertPreview.svelte";
   import CriteriaGroup from "@rilldata/web-common/features/alerts/criteria-tab/CriteriaGroup.svelte";
   import type { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
-  import { createForm } from "svelte-forms-lib";
+  import type { Filters } from "@rilldata/web-common/features/dashboards/stores/Filters.ts";
+  import type { TimeControls } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
+  import type { SuperForm } from "sveltekit-superforms/client";
 
-  export let formState: ReturnType<typeof createForm<AlertFormValues>>;
+  export let superFormInstance: SuperForm<AlertFormValues>;
+  export let filters: Filters;
+  export let timeControls: TimeControls;
 
-  const { form } = formState;
+  $: ({ form } = superFormInstance);
 </script>
 
 <div class="flex flex-col gap-y-3">
@@ -15,9 +19,9 @@
     description="Trigger alert when these conditions are met"
     title="Criteria"
   >
-    <CriteriaGroup {formState} />
+    <CriteriaGroup {superFormInstance} {timeControls} />
   </FormSection>
   <FormSection title="Alert Preview">
-    <AlertPreview formValues={$form} />
+    <AlertPreview formValues={$form} {filters} {timeControls} />
   </FormSection>
 </div>

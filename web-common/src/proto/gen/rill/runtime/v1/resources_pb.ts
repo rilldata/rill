@@ -5,7 +5,7 @@
 
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
 import { Message, proto3, protoInt64, Struct, Timestamp, Value } from "@bufbuild/protobuf";
-import { StructType } from "./schema_pb.js";
+import { StructType, Type } from "./schema_pb.js";
 import { TimeGrain } from "./time_grain_pb.js";
 import { Expression } from "./expression_pb.js";
 import { ExportFormat } from "./export_format_pb.js";
@@ -973,6 +973,11 @@ export class ModelSpec extends Message<ModelSpec> {
   changeMode = ModelChangeMode.UNSPECIFIED;
 
   /**
+   * @generated from field: repeated rill.runtime.v1.ModelTest tests = 25;
+   */
+  tests: ModelTest[] = [];
+
+  /**
    * @generated from field: bool trigger = 9;
    */
   trigger = false;
@@ -1013,6 +1018,7 @@ export class ModelSpec extends Message<ModelSpec> {
     { no: 1, name: "output_connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 12, name: "output_properties", kind: "message", T: Struct },
     { no: 24, name: "change_mode", kind: "enum", T: proto3.getEnumType(ModelChangeMode) },
+    { no: 25, name: "tests", kind: "message", T: ModelTest, repeated: true },
     { no: 9, name: "trigger", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 22, name: "trigger_full", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 23, name: "defined_as_source", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
@@ -1082,6 +1088,20 @@ export class ModelState extends Message<ModelState> {
   refsHash = "";
 
   /**
+   * test_hash is a hash of the model's tests current state. It is used to determine if the model's tests have changed.
+   *
+   * @generated from field: string test_hash = 27;
+   */
+  testHash = "";
+
+  /**
+   * test_errors contains the results of the model's tests.
+   *
+   * @generated from field: repeated string test_errors = 28;
+   */
+  testErrors: string[] = [];
+
+  /**
    * refreshed_on is the time the model was last executed.
    *
    * @generated from field: google.protobuf.Timestamp refreshed_on = 4;
@@ -1146,6 +1166,8 @@ export class ModelState extends Message<ModelState> {
     { no: 2, name: "result_table", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "spec_hash", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 9, name: "refs_hash", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 27, name: "test_hash", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 28, name: "test_errors", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 4, name: "refreshed_on", kind: "message", T: Timestamp },
     { no: 7, name: "incremental_state", kind: "message", T: Struct },
     { no: 8, name: "incremental_state_schema", kind: "message", T: StructType },
@@ -1169,6 +1191,55 @@ export class ModelState extends Message<ModelState> {
 
   static equals(a: ModelState | PlainMessage<ModelState> | undefined, b: ModelState | PlainMessage<ModelState> | undefined): boolean {
     return proto3.util.equals(ModelState, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.ModelTest
+ */
+export class ModelTest extends Message<ModelTest> {
+  /**
+   * @generated from field: string name = 1;
+   */
+  name = "";
+
+  /**
+   * @generated from field: string resolver = 2;
+   */
+  resolver = "";
+
+  /**
+   * @generated from field: google.protobuf.Struct resolver_properties = 3;
+   */
+  resolverProperties?: Struct;
+
+  constructor(data?: PartialMessage<ModelTest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ModelTest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "resolver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "resolver_properties", kind: "message", T: Struct },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ModelTest {
+    return new ModelTest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ModelTest {
+    return new ModelTest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ModelTest {
+    return new ModelTest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ModelTest | PlainMessage<ModelTest> | undefined, b: ModelTest | PlainMessage<ModelTest> | undefined): boolean {
+    return proto3.util.equals(ModelTest, a, b);
   }
 }
 
@@ -1492,6 +1563,13 @@ export class MetricsViewSpec_Dimension extends Message<MetricsViewSpec_Dimension
    */
   lookupDefaultExpression = "";
 
+  /**
+   * The data type of the dimension. Only populated in ValidSpec.
+   *
+   * @generated from field: rill.runtime.v1.Type data_type = 12;
+   */
+  dataType?: Type;
+
   constructor(data?: PartialMessage<MetricsViewSpec_Dimension>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1511,6 +1589,7 @@ export class MetricsViewSpec_Dimension extends Message<MetricsViewSpec_Dimension
     { no: 9, name: "lookup_key_column", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "lookup_value_column", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 11, name: "lookup_default_expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 12, name: "data_type", kind: "message", T: Type },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec_Dimension {
@@ -1718,6 +1797,13 @@ export class MetricsViewSpec_Measure extends Message<MetricsViewSpec_Measure> {
    */
   treatNullsAs = "";
 
+  /**
+   * The data type of the measure. Only populated in ValidSpec.
+   *
+   * @generated from field: rill.runtime.v1.Type data_type = 15;
+   */
+  dataType?: Type;
+
   constructor(data?: PartialMessage<MetricsViewSpec_Measure>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1740,6 +1826,7 @@ export class MetricsViewSpec_Measure extends Message<MetricsViewSpec_Measure> {
     { no: 13, name: "format_d3_locale", kind: "message", T: Struct },
     { no: 6, name: "valid_percent_of_total", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 14, name: "treat_nulls_as", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 15, name: "data_type", kind: "message", T: Type },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec_Measure {
@@ -4627,6 +4714,11 @@ export class APISpec extends Message<APISpec> {
   openapiResponseSchemaJson = "";
 
   /**
+   * @generated from field: string openapi_defs_prefix = 11;
+   */
+  openapiDefsPrefix = "";
+
+  /**
    * @generated from field: repeated rill.runtime.v1.SecurityRule security_rules = 6;
    */
   securityRules: SecurityRule[] = [];
@@ -4650,6 +4742,7 @@ export class APISpec extends Message<APISpec> {
     { no: 8, name: "openapi_parameters_json", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 9, name: "openapi_request_schema_json", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "openapi_response_schema_json", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 11, name: "openapi_defs_prefix", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "security_rules", kind: "message", T: SecurityRule, repeated: true },
     { no: 7, name: "skip_nested_security", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);

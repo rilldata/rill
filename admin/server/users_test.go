@@ -36,6 +36,8 @@ func TestUser(t *testing.T) {
 			Email: u2.Email,
 		})
 		require.NoError(t, err)
+		fix.Admin.PurgeAuthTokenCache()
+
 		_, err = c2.GetCurrentUser(ctx, &adminv1.GetCurrentUserRequest{})
 		require.Error(t, err)
 		require.Equal(t, codes.Unauthenticated, grpc.Code(err))
@@ -46,6 +48,8 @@ func TestUser(t *testing.T) {
 			SuperuserForceAccess: true,
 		})
 		require.NoError(t, err)
+		fix.Admin.PurgeAuthTokenCache()
+
 		_, err = c3.GetCurrentUser(ctx, &adminv1.GetCurrentUserRequest{})
 		require.Error(t, err)
 		require.Equal(t, codes.Unauthenticated, grpc.Code(err))

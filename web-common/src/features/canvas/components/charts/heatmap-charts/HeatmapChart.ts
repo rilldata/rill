@@ -23,11 +23,14 @@ import type { ChartDataQuery, ChartFieldsMap, FieldConfig } from "../types";
 
 const DEFAULT_NOMINAL_LIMIT = 40;
 
-export type HeatmapChartSpec = BaseChartConfig & {
+type HeatmapChartEncoding = {
   x?: FieldConfig;
   y?: FieldConfig;
   color?: FieldConfig;
+  show_data_labels?: boolean;
 };
+
+export type HeatmapChartSpec = BaseChartConfig & HeatmapChartEncoding;
 
 export class HeatmapChartComponent extends BaseChart<HeatmapChartSpec> {
   static chartInputParams: Record<string, ComponentInputParam> = {
@@ -64,6 +67,10 @@ export class HeatmapChartComponent extends BaseChart<HeatmapChartSpec> {
           defaultLegendOrientation: "right",
         },
       },
+    },
+    show_data_labels: {
+      type: "boolean",
+      label: "Data labels",
     },
   };
 
@@ -218,6 +225,8 @@ export class HeatmapChartComponent extends BaseChart<HeatmapChartSpec> {
             return d;
           });
         }
+
+        this.combinedWhere = combinedWhere;
 
         return getQueryServiceMetricsViewAggregationQueryOptions(
           runtime.instanceId,

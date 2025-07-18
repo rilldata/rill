@@ -135,7 +135,7 @@ func (q *MetricsViewAggregation) Export(ctx context.Context, rt *runtime.Runtime
 	defer e.Close()
 
 	if mv.ValidSpec.TimeDimension != "" {
-		tsRes, err := ResolveTimestampResult(ctx, rt, instanceID, q.MetricsViewName, q.SecurityClaims, opts.Priority)
+		tsRes, err := ResolveTimestampResult(ctx, rt, instanceID, q.MetricsViewName, q.TimeRange.TimeDimension, q.SecurityClaims, opts.Priority)
 		if err != nil {
 			return err
 		}
@@ -188,7 +188,9 @@ func (q *MetricsViewAggregation) Export(ctx context.Context, rt *runtime.Runtime
 	return nil
 }
 
-func ResolveTimestampResult(ctx context.Context, rt *runtime.Runtime, instanceID, metricsViewName string, security *runtime.SecurityClaims, priority int) (metricsview.TimestampsResult, error) {
+// ResolveTimestampResult resolves the time range for a metrics view and returns the min, max, and watermark timestamps.
+// timeDimension is optional and can be used to specify which time dimension to use for the time range query otherwise it will use the default time dimension of the metrics view.
+func ResolveTimestampResult(ctx context.Context, rt *runtime.Runtime, instanceID, metricsViewName, timeDimension string, security *runtime.SecurityClaims, priority int) (metricsview.TimestampsResult, error) {
 	res, err := rt.Resolve(ctx, &runtime.ResolveOptions{
 		InstanceID: instanceID,
 		Resolver:   "metrics_time_range",
@@ -196,7 +198,8 @@ func ResolveTimestampResult(ctx context.Context, rt *runtime.Runtime, instanceID
 			"metrics_view": metricsViewName,
 		},
 		Args: map[string]any{
-			"priority": priority,
+			"priority":       priority,
+			"time_dimension": timeDimension,
 		},
 		Claims: security,
 	})
@@ -295,6 +298,10 @@ func (q *MetricsViewAggregation) rewriteToMetricsViewQuery(export bool) (*metric
 				res.Compute = &metricsview.MeasureCompute{URI: &metricsview.MeasureComputeURI{
 					Dimension: c.Uri.Dimension,
 				}}
+			case *runtimev1.MetricsViewAggregationMeasure_ComparisonTime:
+				res.Compute = &metricsview.MeasureCompute{ComparisonTime: &metricsview.MeasureComputeComparisonTime{
+					Dimension: c.ComparisonTime.Dimension,
+				}}
 			}
 		}
 
@@ -325,6 +332,7 @@ func (q *MetricsViewAggregation) rewriteToMetricsViewQuery(export bool) (*metric
 		if q.TimeRange.TimeZone != "" {
 			qry.TimeZone = q.TimeRange.TimeZone
 		}
+		res.TimeDimension = q.TimeRange.TimeDimension
 		qry.TimeRange = res
 	}
 
@@ -346,6 +354,7 @@ func (q *MetricsViewAggregation) rewriteToMetricsViewQuery(export bool) (*metric
 			}
 			qry.TimeZone = q.ComparisonTimeRange.TimeZone
 		}
+		res.TimeDimension = q.ComparisonTimeRange.TimeDimension
 		qry.ComparisonTimeRange = res
 	}
 

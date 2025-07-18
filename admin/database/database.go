@@ -156,10 +156,14 @@ type DB interface {
 	UpdateUserAuthTokenUsedOn(ctx context.Context, ids []string) error
 	DeleteUserAuthToken(ctx context.Context, id string) error
 	DeleteExpiredUserAuthTokens(ctx context.Context, retention time.Duration) error
+	DeleteInactiveUserAuthTokens(ctx context.Context, retention time.Duration) error
 
-	FindServicesByOrgID(ctx context.Context, orgID string) ([]*Service, error)
+	FindOrganizationMemberServices(ctx context.Context, orgID string) ([]*OrganizationMemberService, error)
+	FindProjectMemberServices(ctx context.Context, projectID string) ([]*ProjectMemberService, error)
 	FindService(ctx context.Context, id string) (*Service, error)
 	FindServiceByName(ctx context.Context, orgID, name string) (*Service, error)
+	FindOrganizationMemberServiceForService(ctx context.Context, id string) (*OrganizationMemberService, error)
+	FindProjectMemberServicesForService(ctx context.Context, id string) ([]*ProjectMemberServiceWithProject, error)
 	InsertService(ctx context.Context, opts *InsertServiceOptions) (*Service, error)
 	DeleteService(ctx context.Context, id string) error
 	UpdateService(ctx context.Context, id string, opts *UpdateServiceOptions) (*Service, error)
@@ -171,6 +175,7 @@ type DB interface {
 	UpdateServiceAuthTokenUsedOn(ctx context.Context, ids []string) error
 	DeleteServiceAuthToken(ctx context.Context, id string) error
 	DeleteExpiredServiceAuthTokens(ctx context.Context, retention time.Duration) error
+	DeleteInactiveServiceAuthTokens(ctx context.Context, retention time.Duration) error
 
 	FindDeploymentAuthToken(ctx context.Context, id string) (*DeploymentAuthToken, error)
 	InsertDeploymentAuthToken(ctx context.Context, opts *InsertDeploymentAuthTokenOptions) (*DeploymentAuthToken, error)
@@ -209,8 +214,11 @@ type DB interface {
 	FindProjectRole(ctx context.Context, name string) (*ProjectRole, error)
 	ResolveOrganizationRolesForUser(ctx context.Context, userID, orgID string) ([]*OrganizationRole, error)
 	ResolveProjectRolesForUser(ctx context.Context, userID, projectID string) ([]*ProjectRole, error)
+	ResolveOrganizationRoleForService(ctx context.Context, serviceID, orgID string) (*OrganizationRole, error)
+	ResolveProjectRolesForService(ctx context.Context, serviceID, projectID string) ([]*ProjectRole, error)
 
 	FindOrganizationMemberUsers(ctx context.Context, orgID, filterRoleID string, withCounts bool, afterEmail string, limit int) ([]*OrganizationMemberUser, error)
+	CountOrganizationMemberUsers(ctx context.Context, orgID, filterRoleID string) (int, error)
 	FindOrganizationMemberUsersByRole(ctx context.Context, orgID, roleID string) ([]*User, error)
 	FindOrganizationMemberUserAdminStatus(ctx context.Context, orgID, userID string) (isAdmin, isLastAdmin bool, err error)
 	InsertOrganizationMemberUser(ctx context.Context, orgID, userID, roleID string, ifNotExists bool) (bool, error)
@@ -218,6 +226,8 @@ type DB interface {
 	UpdateOrganizationMemberUserRole(ctx context.Context, orgID, userID, roleID string) error
 	CountSingleuserOrganizationsForMemberUser(ctx context.Context, userID string) (int, error)
 	FindOrganizationMembersWithManageUsersRole(ctx context.Context, orgID string) ([]*OrganizationMemberUser, error)
+	InsertOrganizationMemberService(ctx context.Context, serviceID, orgID, roleID string) error
+	UpdateOrganizationMemberServiceRole(ctx context.Context, serviceID, orgID, roleID string) error
 
 	FindProjectMemberUsers(ctx context.Context, orgID, projectID, filterRoleID, afterEmail string, limit int) ([]*ProjectMemberUser, error)
 	FindProjectMemberUserRole(ctx context.Context, projectID, userID string) (*ProjectRole, error)
@@ -225,6 +235,9 @@ type DB interface {
 	DeleteProjectMemberUser(ctx context.Context, projectID, userID string) error
 	DeleteAllProjectMemberUserForOrganization(ctx context.Context, orgID, userID string) error
 	UpdateProjectMemberUserRole(ctx context.Context, projectID, userID, roleID string) error
+	UpsertProjectMemberServiceRole(ctx context.Context, serviceID, projectID, roleID string) error
+	DeleteOrganizationMemberService(ctx context.Context, serviceID, orgID string) error
+	DeleteProjectMemberService(ctx context.Context, serviceID, projectID string) error
 
 	FindOrganizationMemberUsergroups(ctx context.Context, orgID, filterRoleID string, withCounts bool, afterName string, limit int) ([]*MemberUsergroup, error)
 	FindOrganizationMemberUsergroupRole(ctx context.Context, groupID, orgID string) (*OrganizationRole, error)
@@ -239,6 +252,7 @@ type DB interface {
 	DeleteProjectMemberUsergroup(ctx context.Context, groupID, projectID string) error
 
 	FindOrganizationInvites(ctx context.Context, orgID, afterEmail string, limit int) ([]*OrganizationInviteWithRole, error)
+	CountOrganizationInvites(ctx context.Context, orgID string) (int, error)
 	FindOrganizationInvitesByEmail(ctx context.Context, userEmail string) ([]*OrganizationInvite, error)
 	FindOrganizationInvite(ctx context.Context, orgID, userEmail string) (*OrganizationInvite, error)
 	InsertOrganizationInvite(ctx context.Context, opts *InsertOrganizationInviteOptions) error
@@ -430,6 +444,8 @@ type Project struct {
 	ProdSlots                    int               `db:"prod_slots"`
 	ProdTTLSeconds               *int64            `db:"prod_ttl_seconds"`
 	ProdDeploymentID             *string           `db:"prod_deployment_id"`
+	DevSlots                     int               `db:"dev_slots"`
+	DevTTLSeconds                int64             `db:"dev_ttl_seconds"`
 	Annotations                  map[string]string `db:"annotations"`
 	CreatedOn                    time.Time         `db:"created_on"`
 	UpdatedOn                    time.Time         `db:"updated_on"`
@@ -455,6 +471,8 @@ type InsertProjectOptions struct {
 	ProdOLAPDSN          string
 	ProdSlots            int
 	ProdTTLSeconds       *int64
+	DevSlots             int
+	DevTTLSeconds        int64
 }
 
 // UpdateProjectOptions defines options for updating a Project.
@@ -474,6 +492,8 @@ type UpdateProjectOptions struct {
 	ProdDeploymentID     *string
 	ProdSlots            int
 	ProdTTLSeconds       *int64
+	DevSlots             int
+	DevTTLSeconds        int64
 	Annotations          map[string]string
 }
 
@@ -485,6 +505,7 @@ const (
 	DeploymentStatusPending     DeploymentStatus = 1
 	DeploymentStatusOK          DeploymentStatus = 2
 	DeploymentStatusError       DeploymentStatus = 4
+	DeploymentStatusStopped     DeploymentStatus = 5
 )
 
 func (d DeploymentStatus) String() string {
@@ -495,6 +516,8 @@ func (d DeploymentStatus) String() string {
 		return "OK"
 	case DeploymentStatusError:
 		return "Error"
+	case DeploymentStatusStopped:
+		return "Stopped"
 	default:
 		return "Unspecified"
 	}
@@ -505,6 +528,8 @@ func (d DeploymentStatus) String() string {
 type Deployment struct {
 	ID                string           `db:"id"`
 	ProjectID         string           `db:"project_id"`
+	OwnerUserID       *string          `db:"owner_user_id"`
+	Environment       string           `db:"environment"`
 	Branch            string           `db:"branch"`
 	RuntimeHost       string           `db:"runtime_host"`
 	RuntimeInstanceID string           `db:"runtime_instance_id"`
@@ -519,6 +544,8 @@ type Deployment struct {
 // InsertDeploymentOptions defines options for inserting a new Deployment.
 type InsertDeploymentOptions struct {
 	ProjectID         string
+	OwnerUserID       *string
+	Environment       string
 	Branch            string
 	RuntimeHost       string
 	RuntimeInstanceID string
@@ -586,23 +613,26 @@ type UpdateUserOptions struct {
 // Service represents a service account.
 // Service accounts may belong to single organization
 type Service struct {
-	ID        string
-	OrgID     string `db:"org_id"`
-	Name      string
-	CreatedOn time.Time `db:"created_on"`
-	UpdatedOn time.Time `db:"updated_on"`
-	ActiveOn  time.Time `db:"active_on"`
+	ID         string
+	OrgID      string `db:"org_id"`
+	Name       string
+	Attributes map[string]any `db:"attributes"`
+	CreatedOn  time.Time      `db:"created_on"`
+	UpdatedOn  time.Time      `db:"updated_on"`
+	ActiveOn   time.Time      `db:"active_on"`
 }
 
 // InsertServiceOptions defines options for inserting a new service
 type InsertServiceOptions struct {
-	OrgID string
-	Name  string `validate:"min=1,max=40,slug"`
+	OrgID      string
+	Name       string `validate:"min=1,max=40,slug"`
+	Attributes map[string]any
 }
 
 // UpdateServiceOptions defines options for updating an existing service
 type UpdateServiceOptions struct {
-	Name string `validate:"min=1,max=40,slug"`
+	Name       string `validate:"min=1,max=40,slug"`
+	Attributes map[string]any
 }
 
 // Usergroup represents a group of org members
@@ -1305,4 +1335,36 @@ type InsertManagedGitRepoOptions struct {
 	OrgID   string `validate:"required"`
 	Remote  string `validate:"required"`
 	OwnerID string `validate:"required"`
+}
+
+type OrganizationMemberService struct {
+	ID              string
+	Name            string
+	RoleName        string         `db:"role_name"`
+	HasProjectRoles bool           `db:"has_project_roles"`
+	Attributes      map[string]any `db:"attributes"`
+	CreatedOn       time.Time      `db:"created_on"`
+	UpdatedOn       time.Time      `db:"updated_on"`
+}
+
+type ProjectMemberService struct {
+	ID          string
+	Name        string
+	RoleName    string         `db:"role_name"`
+	OrgRoleName string         `db:"org_role_name"`
+	Attributes  map[string]any `db:"attributes"`
+	CreatedOn   time.Time      `db:"created_on"`
+	UpdatedOn   time.Time      `db:"updated_on"`
+}
+
+type ProjectMemberServiceWithProject struct {
+	ID          string
+	Name        string
+	ProjectID   string         `db:"project_id"`
+	ProjectName string         `db:"project_name"`
+	RoleName    string         `db:"role_name"`
+	OrgRoleName string         `db:"org_role_name"`
+	Attributes  map[string]any `db:"attributes"`
+	CreatedOn   time.Time      `db:"created_on"`
+	UpdatedOn   time.Time      `db:"updated_on"`
 }
