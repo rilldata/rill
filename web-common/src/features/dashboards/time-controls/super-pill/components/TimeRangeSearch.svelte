@@ -2,13 +2,18 @@
   import SyntaxElement from "./SyntaxElement.svelte";
   import { localStorageStore } from "@rilldata/web-common/lib/store-utils";
   import { Clock } from "lucide-svelte";
+  import { parseRillTime } from "../../../url-state/time-ranges/parser";
+
+  const message = "Unable to parse time string";
 
   export let context: string;
   export let width: number;
   export let searchValue = "";
+  export let inError: boolean;
   export let onSelectRange: (range: string) => void;
 
   let searchElement: HTMLInputElement;
+  let unableToParse = false;
 
   const latestNSearches = localStorageStore(`${context}-recent-searches`, [
     "-7d/d to -3d/d",
@@ -23,20 +28,42 @@
 </script>
 
 <div
-  class="border-b h-fit pt-2.5 py-0 flex p-3 flex-col overflow-y-auto"
+  class="border-b h-fit pt-2.5 py-0 flex p-3 gap-y-2 flex-col overflow-y-auto"
   style:width="{width}px"
 >
   <form
-    class="mb-2.5"
-    on:submit={() => {
-      latestNSearches.update((searches) => {
-        return Array.from(new Set([searchValue, ...searches].slice(0, 20)));
-      });
-      onSelectRange(searchValue);
-      searchValue = "";
+    class:error={inError || unableToParse}
+    class=""
+    on:submit={(e) => {
+      e.preventDefault();
+
+      searchElement.blur();
+
+      try {
+        parseRillTime(searchValue);
+
+        unableToParse = false;
+
+        latestNSearches.update((searches) => {
+          return Array.from(new Set([searchValue, ...searches].slice(0, 15)));
+        });
+
+        onSelectRange(searchValue);
+
+        searchValue = "";
+      } catch (e) {
+        console.error(e);
+        unableToParse = true;
+      }
     }}
   >
-    <span class="mr-1 flex-none">
+    <span
+      class="mr-1 flex-none"
+      role="presentation"
+      on:click={() => {
+        searchElement.focus();
+      }}
+    >
       <Clock size={15} />
     </span>
     <input
@@ -45,8 +72,15 @@
       class="h-7 border w-full"
       bind:this={searchElement}
       bind:value={searchValue}
+      on:focus={() => {
+        unableToParse = false;
+      }}
     />
   </form>
+
+  {#if unableToParse}
+    <div class="text-red-500 text-xs">{message}</div>
+  {/if}
 
   <div class="flex gap-x-2 size-full overflow-x-auto pb-2.5">
     {#each $latestNSearches as search, i (i)}
@@ -61,12 +95,15 @@
     @apply flex justify-center gap-x-1 items-center pl-2 pr-0.5;
     @apply bg-background justify-center;
     @apply border border-gray-300 rounded-sm;
-    @apply cursor-pointer;
     @apply h-7 w-full truncate;
   }
 
   form:focus-within {
     @apply border-primary-500;
+  }
+
+  form.error:not(:focus-within) {
+    @apply border-red-500;
   }
 
   input {

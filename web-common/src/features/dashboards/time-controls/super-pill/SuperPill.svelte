@@ -68,9 +68,11 @@
         {showDefaultItem}
         {defaultTimeRange}
         timeString={selectedRangeAlias}
-        grain={activeTimeGrain}
         {interval}
         zone={activeTimeZone}
+        {lockTimeZone}
+        {availableTimeZones}
+        {onSelectTimeZone}
         {onSelectRange}
         {onTimeGrainSelect}
       />
@@ -98,7 +100,7 @@
     {/if}
   {/if}
 
-  {#if availableTimeZones.length}
+  {#if availableTimeZones.length && !$newPicker}
     <Elements.Zone
       {context}
       watermark={interval.end ?? DateTime.fromJSDate(new Date())}

@@ -5,20 +5,19 @@ import { parseRillTime } from "@rilldata/web-common/features/dashboards/url-stat
 const defaultLastNValues: Record<V1TimeGrain, number[]> = {
   [V1TimeGrain.TIME_GRAIN_MILLISECOND]: [],
   [V1TimeGrain.TIME_GRAIN_SECOND]: [],
-  [V1TimeGrain.TIME_GRAIN_MINUTE]: [30, 60, 90],
-  [V1TimeGrain.TIME_GRAIN_HOUR]: [3, 6, 12, 24],
-  [V1TimeGrain.TIME_GRAIN_DAY]: [3, 7, 14, 30],
-  [V1TimeGrain.TIME_GRAIN_WEEK]: [],
+  [V1TimeGrain.TIME_GRAIN_MINUTE]: [15, 60],
+  [V1TimeGrain.TIME_GRAIN_HOUR]: [6, 12, 24],
+  [V1TimeGrain.TIME_GRAIN_DAY]: [7, 14, 30],
+  [V1TimeGrain.TIME_GRAIN_WEEK]: [4],
   [V1TimeGrain.TIME_GRAIN_MONTH]: [3, 6, 12],
   [V1TimeGrain.TIME_GRAIN_QUARTER]: [],
-  [V1TimeGrain.TIME_GRAIN_YEAR]: [2, 5],
+  [V1TimeGrain.TIME_GRAIN_YEAR]: [],
   [V1TimeGrain.TIME_GRAIN_UNSPECIFIED]: [],
 };
 
 export interface TimeRangeMenuOption {
   string: string;
   label: string;
-  // alts: TimeRangeAlt[];
 }
 
 export interface TimeRangeAlt {
@@ -39,6 +38,17 @@ export function getTimeRangeOptionsByGrain(
 
   const lastN: TimeRangeMenuOption[] = [];
   const previous: TimeRangeMenuOption[] = [];
+
+  if (
+    grain === V1TimeGrain.TIME_GRAIN_MILLISECOND ||
+    grain === V1TimeGrain.TIME_GRAIN_SECOND
+  ) {
+    return {
+      lastN: [],
+      this: [],
+      previous: [],
+    };
+  }
 
   defaultLastNValues[grain].forEach((v) => {
     const timeRange = `${v}${primaryGrainAlias}`;
