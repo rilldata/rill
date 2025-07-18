@@ -39,7 +39,7 @@ When connecting to a data source, you can either explicitly define the connectio
 <!-- - **[local_file](#local_file)** - Local files (CSV, Parquet, etc.) -->
 - **[Salesforce](#salesforce)** - Salesforce data
 - **[Slack](#slack)** - Slack data
-- **[Google Sheets](#googlesheets) - Public Google Sheets
+- **[Google Sheets](#google-sheets)** - Public Google Sheets
 
 ### OLAP Engine Drivers
 When connecting to your own OLAP engine (e.g., ClickHouse, Druid, or Pinot), Rill will automatically generate the corresponding connector file and add the `olap_connector` parameter to your `rill.yaml` file. This will change the behavior of your Rill Developer slightly as not all features are supported across engines. Please see our documentation about [olap-engines](/reference/olap-engines/) for more information.
@@ -229,6 +229,13 @@ type: connector                                  # Must be `connector` (required
 driver: sqlite                                   # Must be `sqlite` _(required)_
 
 dsn: "./data/database.db"                        # SQLite connection DSN _(required)_
+```
+
+### Google Sheets
+```yaml
+type: model                                      # Slightly different than the others `model`
+connector: "duckdb"                              # connector will use default DuckDB engine
+sql: "select * from read_csv_auto('https://docs.google.com/spreadsheets/d/<SPREADSHEET_ID>/export?format=csv&gid=<SHEET_ID>', normalize_names=True)"                           # Fill in the parameters with your public Google Sheet.
 ```
 
 ## OLAP Engine Parameters
