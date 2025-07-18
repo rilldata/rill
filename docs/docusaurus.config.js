@@ -281,7 +281,102 @@ const config = {
           {
             from: '/share/scheduled-reports',
             to: '/explore/exports'
-          }
+          },
+          // OLAP Engine redirects
+          {
+            from: '/reference/olap-engines/',
+            to: '/connect/olap/'
+          },
+          {
+            from: '/reference/olap-engines/duckdb',
+            to: '/connect/olap/olap-engines/duckdb'
+          },
+          {
+            from: '/reference/olap-engines/clickhouse',
+            to: '/connect/olap/olap-engines/clickhouse'
+          },
+          {
+            from: '/reference/olap-engines/pinot',
+            to: '/connect/olap/olap-engines/pinot'
+          },
+          {
+            from: '/reference/olap-engines/druid',
+            to: '/connect/olap/olap-engines/druid'
+          },
+          {
+            from: '/reference/olap-engines/multiple-olap',
+            to: '/connect/olap/multiple-olap'
+          },
+          // Connector redirects
+          {
+            from: '/reference/connectors/',
+            to: '/connect/connect/'
+          },
+          {
+            from: '/reference/connectors/gcs',
+            to: '/connect/connect/connectors/gcs'
+          },
+          {
+            from: '/reference/connectors/azure',
+            to: '/connect/connect/connectors/azure'
+          },
+          {
+            from: '/reference/connectors/s3',
+            to: '/connect/connect/connectors/s3'
+          },
+          {
+            from: '/reference/connectors/snowflake',
+            to: '/connect/connect/connectors/snowflake'
+          },
+          {
+            from: '/reference/connectors/bigquery',
+            to: '/connect/connect/connectors/bigquery'
+          },
+          {
+            from: '/reference/connectors/redshift',
+            to: '/connect/connect/connectors/redshift'
+          },
+          {
+            from: '/reference/connectors/postgres',
+            to: '/connect/connect/connectors/postgres'
+          },
+          {
+            from: '/reference/connectors/athena',
+            to: '/connect/connect/connectors/athena'
+          },
+          {
+            from: '/reference/connectors/mysql',
+            to: '/connect/connect/connectors/mysql'
+          },
+          {
+            from: '/reference/connectors/sqlite',
+            to: '/connect/connect/connectors/sqlite'
+          },
+          {
+            from: '/reference/connectors/salesforce',
+            to: '/connect/connect/connectors/salesforce'
+          },
+          {
+            from: '/reference/connectors/sheets',
+            to: '/connect/connect/connectors/sheets'
+          },
+          {
+            from: '/reference/connectors/slack',
+            to: '/connect/connect/connectors/slack'
+          },
+          {
+            from: '/reference/connectors/local-file',
+            to: '/connect/connect/connectors/local-file'
+          },
+          {
+            from: '/reference/connectors/https',
+            to: '/connect/connect/connectors/https'
+          },
+          // Example: Add new redirects here
+          // {
+          //   from: '/old-page',
+          //   to: '/new-page',
+          // }
         ],
       },
     ],
