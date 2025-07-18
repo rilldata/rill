@@ -18,7 +18,7 @@ func IsInit(ctx context.Context, repo drivers.RepoStore, instanceID string) bool
 func InitEmpty(ctx context.Context, repo drivers.RepoStore, instanceID, displayName string) error {
 	mockUsersInfo := "# These are example mock users to test your security policies.\n# Learn more: https://docs.rilldata.com/manage/security"
 	mockUsers := "mock_users:\n- email: john@yourcompany.com\n- email: jane@partnercompany.com"
-	rillYAML := fmt.Sprintf("compiler: %s\n\ndisplay_name: %q\n\n%s\n%s", Version, displayName, mockUsersInfo, mockUsers)
+	rillYAML := fmt.Sprintf("compiler: %s\n\ndisplay_name: %q\n\n%s\n%s\n\nolap_connector: duckdb", Version, displayName, mockUsersInfo, mockUsers)
 
 	err := repo.Put(ctx, "rill.yaml", strings.NewReader(rillYAML))
 	if err != nil {
@@ -36,5 +36,10 @@ func InitEmpty(ctx context.Context, repo drivers.RepoStore, instanceID, displayN
 		return err
 	}
 
+	duckdbYAML := "type: connector\ndriver: duckdb"
+	err = repo.Put(ctx, "connectors/duckdb.yaml", strings.NewReader(duckdbYAML))
+	if err != nil {
+		return err
+	}
 	return nil
 }
