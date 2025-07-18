@@ -1,6 +1,6 @@
 .tile-icon-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 1rem;
   margin: 1rem 0;
 }
@@ -179,17 +179,5 @@
   .tile-icon-actions {
     gap: 0.75rem;
   }
-}
-
-// Remove border and hover animation from Docusaurus pagination navigation
-.pagination-nav__link {
-  border: none !important;
-  background: transparent !important;
-  transition: none !important;
-}
-
-.pagination-nav__link:hover {
-  background: transparent !important;
-  transform: none !important;
 }
 
