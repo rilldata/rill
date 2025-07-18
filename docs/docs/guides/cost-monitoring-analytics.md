@@ -76,7 +76,7 @@ uri: "https://storage.googleapis.com/rilldata-public/metrics_margin_monitoring.p
 - **Time series data** – Daily granular data for trend analysis
 
 **What this source does:**
-- Connects to our public GCS bucket (if modified, will need to be verified via [credentials](/build/credentials))
+- Connects to our public GCS bucket (if modified, will need to be verified via [credentials](/connect/credentials))
 - Ingests the data into Rill's OLAP Engine (DuckDB)
 - Provides the foundation for margin analysis and business intelligence
 

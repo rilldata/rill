@@ -31,7 +31,7 @@ env:
   database: "default"
 ```
 2. Manually passing in the variable when starting Rill (i.e. `rill start --env <var_name>=<value>`)
-3. Specifying the key-value pair for your variable in your `<RILL_PROJECT_HOME>/.env` file and/or using `rill env set` to set the variable via the CLI (and then [pushing / pulling as appropriate](../build/credentials/credentials.md#variables))
+3. Specifying the key-value pair for your variable in your `<RILL_PROJECT_HOME>/.env` file and/or using `rill env set` to set the variable via the CLI (and then [pushing / pulling as appropriate](/connect/credentials#variables))
 
 For more information, please check our [reference documentation](/reference/project-files/rill-yaml.md#setting-variables).
 

@@ -10,7 +10,7 @@ Connector YAML files define how Rill connects to external data sources and OLAP 
 For newly created projects, Rill automatically generates a `/connectors/duckdb.yaml` file. This file allows you to configure custom database connections and SQL initialization commands through the `init_sql` parameter. This approach provides transparency and control over how Rill connects to your data sources, making it easier to understand and customize your setup.
 
 :::warning Security Best Practice
-**Never store plain text credentials in your YAML files!** Instead, use environment variables and reference them with `{{.env.<connector_type>.<parameter_name>}}` syntax. See our [credentials documentation](/build/credentials/) for detailed setup instructions.
+**Never store plain text credentials in your YAML files!** Instead, use environment variables and reference them with `{{.env.<connector_type>.<parameter_name>}}` syntax. See our [credentials documentation](/connect/credentials) for detailed setup instructions.
 :::
 
 ## Required Properties
@@ -63,7 +63,7 @@ When connecting to your own OLAP engine (e.g., ClickHouse, Druid, or Pinot), Ril
 Each driver type has specific connection parameters. Click on any driver above to see its detailed configuration options, or refer to the [complete connector reference](/hidden/yaml/connector) for all available parameters.
 
 :::tip Security Recommendation
-For all credential parameters (passwords, tokens, keys), use environment variables with the syntax `{{.env.<connector_type>.<parameter_name>}}`. This keeps sensitive data out of your YAML files and version control. See our [credentials documentation](/build/credentials/) for complete setup instructions.
+For all credential parameters (passwords, tokens, keys), use environment variables with the syntax `{{.env.<connector_type>.<parameter_name>}}`. This keeps sensitive data out of your YAML files and version control. See our [credentials documentation](/connect/credentials) for complete setup instructions.
 :::
 
 ### Data Source Parameters

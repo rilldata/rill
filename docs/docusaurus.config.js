@@ -216,7 +216,11 @@ const config = {
           },
           {
             from: '/deploy/credentials/',
-            to: '/build/credentials'
+            to: '/connect/credentials/'
+          },
+          {
+            from: '/build/credentials',
+            to: '/connect/credentials/'
           },
           {
             from: '/deploy/credentials/s3',
