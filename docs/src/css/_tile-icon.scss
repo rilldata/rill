@@ -173,7 +173,7 @@
   font-size: 1.8rem !important;
   font-style: italic !important;
   font-weight: 500 !important;
-  color: #6b7280 !important;
+  color: #181818 !important;
   margin: 0 !important;
 }
 
@@ -224,6 +224,13 @@
   content: '\2192';
   font-size: 1.1em;
   margin-left: 0.15em;
+}
+
+// Hide arrow at specific screen width to prevent overlap
+@media (max-width: 1450px) and (min-width: 1001px) {
+  .tile-icon-link::after {
+    content: none;
+  }
 }
 
 // Dark mode styles

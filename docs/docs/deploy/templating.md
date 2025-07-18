@@ -106,7 +106,7 @@ sql: "select * from read_parquet('gs://rilldata-public/github-analytics/Clickhou
 ```
 :::info Why is the connector type duckdb and not s3 or gcs?
 
-In this case, we are using the [embedded DuckDB engine](/reference/olap-engines/duckdb.md) to execute a [SELECT](https://duckdb.org/docs/sql/statements/select.html) statement while leveraging DuckDB's native [read_parquet](https://duckdb.org/docs/data/parquet/overview.html) function. Therefore, the `connector` type ends up being `duckdb` instead of `s3`. For more details, see our [Source YAML](/reference/project-files/sources.md) reference documentation.
+In this case, we are using the [embedded DuckDB engine](/connect/olap/olap-engines/duckdb) to execute a [SELECT](https://duckdb.org/docs/sql/statements/select.html) statement while leveraging DuckDB's native [read_parquet](https://duckdb.org/docs/data/parquet/overview.html) function. Therefore, the `connector` type ends up being `duckdb` instead of `s3`. For more details, see our [Source YAML](/reference/project-files/sources.md) reference documentation.
 
 :::
 <img src = '/img/deploy/templating/gcs-env-example.png' class='rounded-gif' />

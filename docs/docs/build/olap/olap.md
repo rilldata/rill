@@ -17,10 +17,10 @@ The OLAP engine set on the dashboard will take precedence over the project-level
 ## Supported OLAP Engines
 
 Rill supports the use of several different OLAP engines to power your dashboards, including:
-- [DuckDB](/reference/olap-engines/duckdb.md)
-- [Druid](/reference/olap-engines/druid.md)
-- [ClickHouse](/reference/olap-engines/clickhouse.md)
-- [Pinot](/reference/olap-engines/pinot.md)
+- [DuckDB](/connect/olap/olap-engines/duckdb)
+- [Druid](/connect/olap/olap-engines/druid)
+- [ClickHouse](/connect/olap/olap-engines/clickhouse)
+- [Pinot](/connect/olap/olap-engines/pinot)
 
 :::note Additional OLAP Engines
 Rill is continually evaluating additional OLAP engines that can be added. For a full list of OLAP engines that we support, refer to our [OLAP Engines](/reference/olap-engines) page. If you don't see an OLAP engine that you'd like to use, please don't hesitate to [reach out](/contact)!
@@ -47,7 +47,7 @@ If you have a firewall in front of your externally hosted service, you will need
 
 ## DuckDB
 
-<!-- DuckDB is unique in that it can act as both a [source](../../reference/connectors/motherduck) and an [OLAP engine](../../reference/olap-engines/duckdb.md) for Rill. If you wish to connect to existing tables in DuckDB, you can simply use the [DuckDB connector](../../reference/connectors/motherduck.md#connecting-to-external-duckdb-as-a-source) to read a specific table or view from an accessible DuckDB database file and ingest the data into Rill. -->
+<!-- DuckDB is unique in that it can act as both a [source](../../reference/connectors/motherduck) and an [OLAP engine](../../connect/olap/olap-engines/duckdb) for Rill. If you wish to connect to existing tables in DuckDB, you can simply use the [DuckDB connector](../../reference/connectors/motherduck.md#connecting-to-external-duckdb-as-a-source) to read a specific table or view from an accessible DuckDB database file and ingest the data into Rill. -->
 
 <img src = '/img/build/connect/duckdb.png' class='rounded-gif' />
 <br />

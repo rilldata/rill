@@ -138,11 +138,11 @@ When creating your sources, you can template the YAML file to ensure that locall
 
 ## External OLAP tables
 
-Rill also has the ability to set up a "live connection" with an [OLAP engine](../olap/olap.md) to discover existing tables and execute OLAP queries directly on the engine without having to transfer data to another OLAP engine. By default, the embedded OLAP engine that comes with Rill is [DuckDB](/reference/olap-engines/duckdb.md).
+Rill also has the ability to set up a "live connection" with an [OLAP engine](../olap/olap.md) to discover existing tables and execute OLAP queries directly on the engine without having to transfer data to another OLAP engine. By default, the embedded OLAP engine that comes with Rill is [DuckDB](/connect/olap/olap-engines/duckdb).
 
 :::note Configuring the OLAP engine
 
-For more details about configuring and/or changing the OLAP engine used by Rill, please see our [OLAP Engines](/reference/olap-engines/olap-engines.md) reference documentation.
+For more details about configuring and/or changing the OLAP engine used by Rill, please see our [OLAP Engines](/connect/olap/) reference documentation.
 
 :::
 

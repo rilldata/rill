@@ -41,7 +41,7 @@ Files that are *nested at any level* under your native `sources` directory will 
   - _`sqlite`_ - data stored in SQLite
   - _`snowflake`_ - data stored in Snowflake
   - _`bigquery`_ - data stored in BigQuery
-  - _`duckdb`_ - use the [embedded DuckDB](../olap-engines/duckdb.md) engine to submit a DuckDB-supported native [SELECT](https://duckdb.org/docs/sql/statements/select.html) query (should be used in conjunction with the `sql` property)
+  - _`duckdb`_ - use the [embedded DuckDB](/connect/olap/olap-engines/duckdb.md) engine to submit a DuckDB-supported native [SELECT](https://duckdb.org/docs/sql/statements/select.html) query (should be used in conjunction with the `sql` property)
 
 **`type`**
  — _Deprecated_ but preserves a legacy alias to `connector`. Can be used instead to specify the source connector, instead of the resource type (see above), **only** if the source YAML file belongs in the `<RILL_PROJECT_DIRECTORY>/sources/` directory (preserved primarily for backwards compatibility).

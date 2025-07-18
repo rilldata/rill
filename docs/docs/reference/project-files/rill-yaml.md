@@ -50,7 +50,7 @@ olap_connector: clickhouse
 
 :::info Curious about OLAP Engines?
 
-Please see our reference documentation on [OLAP Engines](../olap-engines/olap-engines.md).
+Please see our reference documentation on [OLAP Engines](/connect/olap/).
 
 :::
  

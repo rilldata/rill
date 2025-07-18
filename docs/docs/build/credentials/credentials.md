@@ -4,7 +4,7 @@ sidebar_label: Configure Local Credentials
 sidebar_position: 00
 ---
 <!-- 
-Rill requires credentials to connect to  data sources such as private buckets (S3, GCS, Azure), data warehouses (Snowflake, BigQuery), OLAP engines (ClickHouse, Apache Druid) or other DuckDB sources (MotherDuck). Please refer to the appropriate [connector](../../reference/connectors/connectors.md) and [OLAP engine](../../reference/olap-engines/olap-engines.md) page for instructions to configure credentials accordingly. -->
+Rill requires credentials to connect to  data sources such as private buckets (S3, GCS, Azure), data warehouses (Snowflake, BigQuery), OLAP engines (ClickHouse, Apache Druid) or other DuckDB sources (MotherDuck). Please refer to the appropriate [connector](../../reference/connectors/connectors.md) and [OLAP engine](../../connect/olap/) page for instructions to configure credentials accordingly. -->
 
 At a high level, configuring credentials and credentials management in Rill can be broken down into three categories:
 - Setting credentials for Rill Developer
@@ -19,7 +19,7 @@ When reading from a source (or using a different OLAP engine), Rill will attempt
 3. Credentials that have been passed in as a [variable](../../deploy/templating.md) when starting Rill Developer via `rill start --env key=value`
 4. Credentials that have been specified in your *`<RILL_PROJECT_HOME>/.env`* file, see [credential naming schema](#credentials-naming-schema) for more information.
 
-<!-- For more details, please refer to the corresponding [connector](../../reference/connectors/connectors.md) or [OLAP engine](../../reference/olap-engines/olap-engines.md) page. -->
+<!-- For more details, please refer to the corresponding [connector](../../reference/connectors/connectors.md) or [OLAP engine](../../connect/olap/) page. -->
 
 :::note Ensuring security of credentials in use
 
@@ -40,7 +40,7 @@ This variable will then be usable and referenceable for [templating](../../deplo
 
 :::info Fun Fact
 
-Connector credentials are essentially a form of project variable, prefixed using the `connector.<connector_name>.<property>` syntax. For example, `connector.druid.dsn` and `connector.clickhouse.dsn` are both hard coded project variables (that happen to correspond to the [Druid](/reference/olap-engines/druid.md) and [ClickHouse](/reference/olap-engines/clickhouse.md) OLAP engines respectively).
+Connector credentials are essentially a form of project variable, prefixed using the `connector.<connector_name>.<property>` syntax. For example, `connector.druid.dsn` and `connector.clickhouse.dsn` are both hard coded project variables (that happen to correspond to the [Druid](/connect/olap/olap-engines/druid) and [ClickHouse](/connect/olap/olap-engines/clickhouse) OLAP engines respectively).
 
 :::
 
@@ -90,7 +90,7 @@ If a credential and/or variable has already been configured in Rill Cloud, Rill 
 
 ### Credentials Naming Schema 
 
-Connector credentials are essentially a form of project variable, prefixed using the `connector.<connector_name>.<property>` syntax. For example, `connector.druid.dsn` and `connector.clickhouse.dsn` are both hard coded project variables (that happen to correspond to the [Druid](/reference/olap-engines/druid.md) and [ClickHouse](/reference/olap-engines/clickhouse.md) OLAP engines respectively). Please see below for each source and its required properties. If you have any questions or need specifics, [contact us](../../contact)! 
+Connector credentials are essentially a form of project variable, prefixed using the `connector.<connector_name>.<property>` syntax. For example, `connector.druid.dsn` and `connector.clickhouse.dsn` are both hard coded project variables (that happen to correspond to the [Druid](/connect/olap/olap-engines/druid) and [ClickHouse](/connect/olap/olap-engines/clickhouse) OLAP engines respectively). Please see below for each source and its required properties. If you have any questions or need specifics, [contact us](../../contact)! 
 
 
 <div
