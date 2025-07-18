@@ -276,6 +276,8 @@ func (e *Executor) Schema(ctx context.Context) (*runtimev1.StructType, error) {
 }
 
 func (e *Executor) resolveSchemaForClickhouse(ctx context.Context, sql string, args []any) (*runtimev1.StructType, error) {
+	schema := &runtimev1.StructType{}
+
 	// ClickHouse does not return schema with LIMIT 0, so we need to wrap query inside DESCRIBE to explicitly get the schema.
 	sql = fmt.Sprintf("DESCRIBE(%s)", sql)
 	res, err := e.olap.Query(ctx, &drivers.Statement{
@@ -289,15 +291,24 @@ func (e *Executor) resolveSchemaForClickhouse(ctx context.Context, sql string, a
 	}
 	defer res.Close()
 
-	schema := &runtimev1.StructType{
-		Fields: make([]*runtimev1.StructType_Field, 0),
+	cols := make([]any, len(res.Schema.Fields))
+	colPtrs := make([]any, len(cols))
+	var nameIdx, typeIndex int
+	for i := range cols {
+		colPtrs[i] = &cols[i]
+		if strings.EqualFold(res.Schema.Fields[i].Name, "name") {
+			nameIdx = i
+		}
+		if strings.EqualFold(res.Schema.Fields[i].Name, "type") {
+			typeIndex = i
+		}
 	}
-
-	var name, dtype string
 	for res.Next() {
-		if err = res.Scan(&name, &dtype, new(any), new(any), new(any), new(any), new(any)); err != nil {
+		if err = res.Scan(colPtrs...); err != nil {
 			return nil, fmt.Errorf("failed to scan schema: %w", err)
 		}
+		name := cols[nameIdx].(string)
+		dtype := cols[typeIndex].(string)
 		// Convert ClickHouse data type to runtimev1.StructType_Field_Type
 		t, err := clickhouse.DatabaseTypeToPB(dtype, false)
 		if err != nil {
