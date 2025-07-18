@@ -23,7 +23,7 @@ Snowflake has issued a [deprecation notice](https://www.snowflake.com/en/blog/bl
 ## Local credentials
 
 When using Rill Developer on your local machine (i.e., `rill start`), Rill will use the credentials passed via the Snowflake connection string in one of several ways:
-1. As defined in the [source YAML configuration](/reference/project-files/sources.md#properties) directly via the `dsn` property
+1. As defined in the [source YAML configuration](/reference/project-files/sources#properties) directly via the `dsn` property
 2. As defined in the optional _Snowflake Connection String_ field within the UI source creation workflow (this is equivalent to setting the `dsn` property in the underlying source YAML file)
 3. As defined from the CLI when running `rill start --env connector.snowflake.dsn=...`
 
@@ -51,7 +51,7 @@ To determine your [Snowflake account identifier](https://docs.snowflake.com/en/u
 
 :::tip Did you know?
 
-If this project has already been deployed to Rill Cloud and credentials have been set for this source, you can use `rill env pull` to [pull these cloud credentials](/build/credentials/credentials.md#rill-env-pull) locally (into your local `.env` file). Please note that this may override any credentials you have set locally for this source.
+If this project has already been deployed to Rill Cloud and credentials have been set for this source, you can use `rill env pull` to [pull these cloud credentials](/build/credentials/credentials#rill-env-pull) locally (into your local `.env` file). Please note that this may override any credentials you have set locally for this source.
 
 :::
 
@@ -71,7 +71,7 @@ Note that you must first `cd` into the Git repository from which your project wa
 
 :::tip Did you know?
 
-If you've already configured credentials locally (in your `<RILL_PROJECT_DIRECTORY>/.env` file), you can use `rill env push` to [push these credentials](/build/credentials/credentials.md#rill-env-push) to your Rill Cloud project. This will allow other users to retrieve and reuse the same credentials automatically by running `rill env pull`.
+If you've already configured credentials locally (in your `<RILL_PROJECT_DIRECTORY>/.env` file), you can use `rill env push` to [push these credentials](/build/credentials/credentials#rill-env-push) to your Rill Cloud project. This will allow other users to retrieve and reuse the same credentials automatically by running `rill env pull`.
 
 :::
 

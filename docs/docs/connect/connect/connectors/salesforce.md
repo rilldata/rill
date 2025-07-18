@@ -40,13 +40,13 @@ Outside of local development, this approach is not recommended because it places
 
 :::info Source Properties
 
-For more information about available source properties and configurations, please refer to our reference documentation on [Source YAML](/reference/project-files/index.md).
+For more information about available source properties and configurations, please refer to our reference documentation on [Source YAML](/reference/project-files/index).
 
 :::
 
 :::tip Did you know?
 
-If this project has already been deployed to Rill Cloud and credentials have been set for this source, you can use `rill env pull` to [pull these cloud credentials](/build/credentials/credentials.md#rill-env-pull) locally (into your local `.env` file). Please note that this may override any credentials you have set locally for this source.
+If this project has already been deployed to Rill Cloud and credentials have been set for this source, you can use `rill env pull` to [pull these cloud credentials](/build/credentials/credentials#rill-env-pull) locally (into your local `.env` file). Please note that this may override any credentials you have set locally for this source.
 
 :::
 
@@ -76,6 +76,6 @@ Authentication using JWT instead of a password is also supported. Set `client_id
 
 :::tip Did you know?
 
-If you've already configured credentials locally (in your `<RILL_PROJECT_DIRECTORY>/.env` file), you can use `rill env push` to [push these credentials](/build/credentials/credentials.md#rill-env-push) to your Rill Cloud project. This will allow other users to retrieve and reuse the same credentials automatically by running `rill env pull`.
+If you've already configured credentials locally (in your `<RILL_PROJECT_DIRECTORY>/.env` file), you can use `rill env push` to [push these credentials](/build/credentials/credentials#rill-env-push) to your Rill Cloud project. This will allow other users to retrieve and reuse the same credentials automatically by running `rill env pull`.
 
 :::

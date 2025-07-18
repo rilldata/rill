@@ -2,7 +2,7 @@
 title: ClickHouse
 description: Power Rill dashboards using ClickHouse
 sidebar_label: ClickHouse
-sidebar_position: 3
+sidebar_position: 10
 ---
 import LoomVideo from '@site/src/components/LoomVideo'; // Adjust the path as needed
 
@@ -12,7 +12,7 @@ import LoomVideo from '@site/src/components/LoomVideo'; // Adjust the path as ne
 
 [ClickHouse](https://clickhouse.com/docs/en/intro) is an open-source, column-oriented OLAP database management system known for its ability to perform real-time analytical queries on large-scale datasets. Its architecture is optimized for high performance, leveraging columnar storage and advanced compression techniques to speed up data reads and significantly reduce storage costs. ClickHouse's efficiency in query execution, scalability, and ability to handle even petabytes of data make it an excellent choice for real-time analytic use cases.
 
-Rill supports connecting to an existing ClickHouse instance and using it as an OLAP engine to power Rill dashboards built against [external tables](../../concepts/OLAP#external-olap-tables). This is particularly useful when working with extremely large datasets (hundreds of GBs or even TB+ in size).
+Rill supports connecting to an existing ClickHouse instance and using it as an OLAP engine to power Rill dashboards built against [external tables](/concepts/OLAP#external-olap-tables). This is particularly useful when working with extremely large datasets (hundreds of GBs or even TB+ in size).
 
 :::note Supported Versions
 Rill supports connecting to ClickHouse v22.7 or newer versions.
@@ -112,7 +112,7 @@ Note that you must `cd` into the Git repository that your project was deployed f
 :::
 
 ## Setting the default OLAP connection
-Creating a connection to an OLAP engine will automatically add the `olap_connector` property in your project's [rill.yaml](../project-files/rill-yaml.md) and change the default OLAP engine to ClickHouse. Once this is changed, you'll notice that some of the UI features are removed as we currently do not support modeling and direct source ingestion in ClickHouse.
+Creating a connection to an OLAP engine will automatically add the `olap_connector` property in your project's [rill.yaml](/reference/project-files/rill-yaml) and change the default OLAP engine to ClickHouse. Once this is changed, you'll notice that some of the UI features are removed as we currently do not support modeling and direct source ingestion in ClickHouse.
 
 ```yaml
 olap_connector: clickhouse
@@ -120,7 +120,7 @@ olap_connector: clickhouse
 
 :::info Interested in using multiple OLAP engines in the same project?
 
-Please see our [Using Multiple OLAP Engines](multiple-olap.md) page.
+Please see our [Using Multiple OLAP Engines](multiple-olap) page.
 
 :::
 
@@ -131,5 +131,5 @@ Rill supports reading from multiple schemas in ClickHouse from within the same p
 ## Additional Notes
 
 - At the moment, we do not officially support modeling with ClickHouse; however, this is available via a feature flag. If this is something you're interested in, please [contact us](/contact).
-- For dashboards powered by ClickHouse, [measure definitions](/build/metrics-view/metrics-view.md#measures) are required to follow standard [ClickHouse SQL](https://clickhouse.com/docs/en/sql-reference) syntax.
+- For dashboards powered by ClickHouse, [measure definitions](/build/metrics-view/metrics-view#measures) are required to follow standard [ClickHouse SQL](https://clickhouse.com/docs/en/sql-reference) syntax.
 - Because string columns in ClickHouse can theoretically contain [arbitrary binary data](https://github.com/ClickHouse/ClickHouse/issues/2976#issuecomment-416694860), if your column contains invalid UTF-8 characters, you may want to first cast the column by applying the `toValidUTF8` function ([see ClickHouse documentation](https://clickhouse.com/docs/en/sql-reference/functions/string-functions#tovalidutf8)) before reading the table into Rill to avoid any downstream issues.

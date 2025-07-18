@@ -2,14 +2,14 @@
 title: Druid
 description: Power Rill dashboards using Druid
 sidebar_label: Druid
-sidebar_position: 2
+sidebar_position: 15
 ---
 
 ## Overview
 
 [Apache Druid](https://druid.apache.org/docs/latest/design/) is an open-source, high-performance OLAP engine designed for real-time analytics on large datasets. It excels in analytical workloads due to its columnar storage format, which enables fast data aggregation, querying, and filtering. Druid is particularly well-suited for use cases that require interactive exploration of large-scale data, real-time data ingestion, and fast query responses, making it a popular choice for applications in business intelligence, user behavior analytics, and financial analysis.
 
-Rill supports connecting to an existing Druid cluster and using it as an OLAP engine to power Rill dashboards built against [external tables](../../concepts/OLAP#external-olap-tables). This is particularly useful when working with extremely large datasets (hundreds of GBs or even TB+ in size).
+Rill supports connecting to an existing Druid cluster and using it as an OLAP engine to power Rill dashboards built against [external tables](/concepts/OLAP#external-olap-tables). This is particularly useful when working with extremely large datasets (hundreds of GBs or even TB+ in size).
 
 ## Configuring Rill Developer with Druid
 
@@ -74,13 +74,13 @@ olap_connector: druid
 
 :::note
 
-For more information about available properties in `rill.yaml`, see our [project YAML](../project-files/rill-yaml.md) documentation.
+For more information about available properties in `rill.yaml`, see our [project YAML](/reference/project-files/rill-yaml) documentation.
 
 :::
 
 :::info Interested in using multiple OLAP engines in the same project?
 
-Please see our [Using Multiple OLAP Engines](multiple-olap.md) page.
+Please see our [Using Multiple OLAP Engines](multiple-olap) page.
 
 :::
 
@@ -104,4 +104,4 @@ Rill supports connecting to Druid v28.0 or newer versions.
 ## Additional Notes
 
 - At the moment, we do not support modeling with Druid. If this is something you're interested in, please [contact us](/contact).
-- For dashboards powered by Druid, [measure definitions](/build/metrics-view/metrics-view.md#measures) are required to follow standard [Druid SQL](https://druid.apache.org/docs/latest/querying/sql/) syntax.
+- For dashboards powered by Druid, [measure definitions](/build/metrics-view/metrics-view#measures) are required to follow standard [Druid SQL](https://druid.apache.org/docs/latest/querying/sql/) syntax.

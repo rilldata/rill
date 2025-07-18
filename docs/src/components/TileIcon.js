@@ -3,12 +3,17 @@ import PropTypes from 'prop-types';
 
 /**
  * TileIcon component for documentation tiles.
- * Displays a header, content, and multiple action links.
- * Main card links to demo, with additional links for GitHub and walkthrough.
+ * Displays an icon, header, content, and multiple action links.
+ * Main card links to demo, with additional links for GitHub, walkthrough, and reference.
  */
-function TileIcon({ header, content, link, linkLabel = 'Learn more', target, rel, githubLink, walkthroughLink }) {
+function TileIcon({ icon, header, content, link, linkLabel = 'Learn more', target, rel, githubLink, walkthroughLink, referenceLink }) {
     return (
         <a className="tile-icon" href={link} target={target} rel={rel}>
+            {icon && (
+                <div className="tile-icon-icon">
+                    {icon}
+                </div>
+            )}
             <div className="tile-icon-header">{header}</div>
             <div className="tile-icon-content">
                 {content}
@@ -36,6 +41,15 @@ function TileIcon({ header, content, link, linkLabel = 'Learn more', target, rel
                             Walkthrough
                         </a>
                     )}
+                    {referenceLink && (
+                        <a
+                            href={referenceLink}
+                            className="tile-icon-action-link"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            YAML Reference
+                        </a>
+                    )}
                 </div>
             </div>
         </a>
@@ -43,6 +57,7 @@ function TileIcon({ header, content, link, linkLabel = 'Learn more', target, rel
 }
 
 TileIcon.propTypes = {
+    icon: PropTypes.node,
     header: PropTypes.string.isRequired,
     content: PropTypes.string.isRequired,
     link: PropTypes.string.isRequired,
@@ -51,6 +66,7 @@ TileIcon.propTypes = {
     rel: PropTypes.string,
     githubLink: PropTypes.string,
     walkthroughLink: PropTypes.string,
+    referenceLink: PropTypes.string,
 };
 
 export default TileIcon; 

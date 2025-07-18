@@ -2,12 +2,12 @@
 title: Using Multiple OLAP Engines
 description: Using multiple OLAP Engines to power dashboards in the same project
 sidebar_label: Using Multiple OLAP Engines
-sidebar_position: 5
+sidebar_position: 50
 ---
 
 ## Overview
 
-If you have access to another OLAP engine (such as [ClickHouse](clickhouse.md) or [Druid](druid.md)), you have the option to either:
+If you have access to another OLAP engine (such as [ClickHouse](clickhouse) or [Druid](druid)), you have the option to either:
 - Create dedicated projects that are powered by one specific OLAP engine (default)
 - Use different OLAP engines _in the same project_ to power separate dashboards
 
@@ -27,7 +27,7 @@ If there's an OLAP engine you're interested in that isn't available, please don'
 
 ## Enabling Multiple OLAP Engines
 
-To configure multiple OLAP engines, you'll want to leave the <u>default</u> OLAP engine as [DuckDB](duckdb.md) in your project and configure dashboards that are powered by other OLAP engines individually (more on this below).
+To configure multiple OLAP engines, you'll want to leave the <u>default</u> OLAP engine as [DuckDB](duckdb) in your project and configure dashboards that are powered by other OLAP engines individually (more on this below).
 
 ### Setting up your OLAP Engine connection string (DSN)
 
@@ -63,13 +63,13 @@ olap_connector: duckdb
 
 :::note rill.yaml
 
-For more information about available configurations for `rill.yaml`, please see our [Project YAML](../project-files/rill-yaml.md) reference documentation.
+For more information about available configurations for `rill.yaml`, please see our [Project YAML](/reference/project-files/rill-yaml) reference documentation.
 
 :::
 
 ### Setting the OLAP Engine in the metrics view YAML
 
-For each metrics view that is using a separate OLAP engine (other than the default), you'll want to set the `connector` and `table` properties in the underlying [metrics view YAML](../project-files/metrics-views.md) configuration to the OLAP engine and corresponding [external table](../../concepts/OLAP#external-olap-tables) that exists in your OLAP store, respectively.
+For each metrics view that is using a separate OLAP engine (other than the default), you'll want to set the `connector` and `table` properties in the underlying [metrics view YAML](/project-files/metrics-views) configuration to the OLAP engine and corresponding [external table](/concepts/OLAP#external-olap-tables) that exists in your OLAP store, respectively.
 
 ```yaml
 type: metrics_view

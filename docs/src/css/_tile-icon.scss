@@ -1,8 +1,14 @@
 .tile-icon-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 2.5rem;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2rem;
   margin: 2rem 0;
+}
+
+@media (max-width: 1000px) {
+  .tile-icon-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 @media (max-width: 700px) {
@@ -135,11 +141,40 @@
   width: 100%;
 }
 
+.tile-icon-icon {
+  height: 2.5rem;
+  width: 100%;
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  
+  svg {
+    height: 2rem;
+    width: auto;
+    max-width: 100%;
+    min-width: 120px;
+  }
+}
+
 .tile-icon-img {
   height: 2rem;
   width: 100%;
   margin-right: 8px;
   vertical-align: middle;
+}
+
+.sheets-icon {
+  height: 3rem !important;
+
+}
+
+.https-icon {
+  font-size: 1.8rem !important;
+  font-style: italic !important;
+  font-weight: 500 !important;
+  color: #6b7280 !important;
+  margin: 0 !important;
 }
 
 .tile-icon-content {

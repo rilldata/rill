@@ -7,7 +7,7 @@ sidebar_position: 10
 
 <!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->
 
-When creating or updating a source in Rill Cloud, you also have the option to configure how often the underlying source is refreshed (and thus ingested into the underlying OLAP layer powering Rill models and dashboards). By default, sources are refreshed manually, but this can also be automated to a predefined schedule. This is handled through the underlying [source](/reference/project-files/sources.md) and/or [project YAML](/reference/project-files/rill-yaml.md#project-wide-defaults) using standard cron or Go duration syntax.
+When creating or updating a source in Rill Cloud, you also have the option to configure how often the underlying source is refreshed (and thus ingested into the underlying OLAP layer powering Rill models and dashboards). By default, sources are refreshed manually, but this can also be automated to a predefined schedule. This is handled through the underlying [source](/reference/project-files/sources) and/or [project YAML](/reference/project-files/rill-yaml#project-wide-defaults) using standard cron or Go duration syntax.
 
 :::tip Configuring source refreshes for Cloud deployments
 
