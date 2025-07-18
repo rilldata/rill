@@ -12,7 +12,6 @@ import (
 
 	"github.com/google/go-github/v71/github"
 	"github.com/rilldata/rill/admin"
-	"github.com/rilldata/rill/admin/ai"
 	"github.com/rilldata/rill/admin/billing"
 	"github.com/rilldata/rill/admin/billing/payment"
 	"github.com/rilldata/rill/admin/client"
@@ -22,6 +21,7 @@ import (
 	"github.com/rilldata/rill/admin/server"
 	"github.com/rilldata/rill/cli/pkg/version"
 	"github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/pkg/ai"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	runtimeauth "github.com/rilldata/rill/runtime/server/auth"
