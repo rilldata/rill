@@ -89,7 +89,7 @@ describe("Report rows and columns", () => {
         expectedRequest: {
           dimensions: [{ name: "domain" }, { name: "publisher" }],
           measures: [{ name: "impressions" }, { name: "bid_price" }],
-          sort: [{ desc: false, name: "bid_price" }],
+          sort: [{ desc: false, name: "domain" }],
           pivotOn: ["publisher"],
         },
       },
@@ -204,7 +204,7 @@ describe("Report rows and columns", () => {
           ],
           measures: [{ name: "impressions" }],
           pivotOn: ["Time hour"],
-          sort: [{ name: "impressions", desc: true }],
+          sort: [{ name: "publisher", desc: false }],
         },
       },
 
@@ -338,7 +338,7 @@ describe("Report rows and columns", () => {
           ],
           measures: [{ name: "bid_price" }],
           pivotOn: ["publisher", "Time day"],
-          sort: [{ desc: false, name: "publisher" }],
+          sort: [{ desc: false, name: "domain" }],
         },
       },
 

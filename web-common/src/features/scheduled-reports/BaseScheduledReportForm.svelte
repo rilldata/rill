@@ -1,4 +1,5 @@
 <script lang="ts">
+  import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import MultiInput from "@rilldata/web-common/components/forms/MultiInput.svelte";
   import TimePicker from "@rilldata/web-common/components/forms/TimePicker.svelte";
   import FormSection from "@rilldata/web-common/components/forms/FormSection.svelte";
@@ -145,9 +146,10 @@
       </Tooltip>
     </div>
 
-    <FormSection title="Filters" padding="">
+    <div class="flex flex-col gap-y-3">
+      <InputLabel label="Filters" id="filters" capitalize={false} />
       <FiltersForm {filters} {timeControls} maxWidth={750} side="top" />
-    </FormSection>
+    </div>
 
     <RowsAndColumnsForm
       bind:rows={$data["rows"]}

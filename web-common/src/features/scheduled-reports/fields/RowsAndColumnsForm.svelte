@@ -41,7 +41,9 @@
     {displayMap}
     label="Rows"
     onUpdate={(newRows) => (rows = newRows)}
-  />
+  >
+    <div slot="empty-fields" class="text-gray-500">no selected rows</div>
+  </FieldList>
 
   <FieldList
     bind:fields={columns}
@@ -50,5 +52,9 @@
     label="Columns"
     disableDragDrop={disableColumnDragDrop}
     onUpdate={handleColumnUpdate}
-  />
+  >
+    <div slot="empty-fields" class="text-red-600">
+      at least one column has to be selected
+    </div>
+  </FieldList>
 {/if}

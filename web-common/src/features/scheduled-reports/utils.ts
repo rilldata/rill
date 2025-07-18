@@ -236,7 +236,7 @@ export function getUpdatedAggregationRequest(
     .forEach((col) => {
       if (exploreSpec.dimensions?.includes(col)) {
         dimensions.push({ name: col });
-        pivotOn.push(col);
+        if (!isFlat) pivotOn.push(col);
         return;
       }
 
@@ -245,23 +245,39 @@ export function getUpdatedAggregationRequest(
         timeControlArgs.selectedTimezone,
       );
       dimensions.push(dimension);
-      pivotOn.push(dimension.alias ?? dimension.name!);
+      if (!isFlat) pivotOn.push(dimension.alias ?? dimension.name!);
     });
 
+  const hasPivot = pivotOn.length > 0;
   const sort: V1MetricsViewAggregationSort[] =
-    aggregationRequest.sort?.filter((s) => allFields.has(s.name!)) ?? [];
+    aggregationRequest.sort?.filter((s) => {
+      if (!allFields.has(s.name!)) return false;
+      if (!hasPivot) return true;
+      // When there is a pivot we cannot sort by measure or the pivoted dimension
+      return (
+        !exploreSpec.measures?.includes(s.name!) && !pivotOn.includes(s.name!)
+      );
+    }) ?? [];
   if (sort.length === 0) {
-    sort.push({
-      desc: !!measures?.[0],
-      name: measures?.[0]?.name || dimensions?.[0]?.name,
-    });
+    let sortField: string | undefined = measures?.[0]?.name;
+    let sortFieldIsMeasure = !!sortField;
+    if (!sortField || hasPivot) {
+      sortField = hasPivot ? rows[0] : dimensions?.[0]?.name;
+      sortFieldIsMeasure = false;
+    }
+    if (sortField) {
+      sort.push({
+        desc: sortFieldIsMeasure,
+        name: sortField,
+      });
+    }
   }
 
   return {
     ...aggregationRequest,
     measures,
     dimensions,
-    pivotOn: isFlat || !pivotOn.length ? undefined : pivotOn,
+    pivotOn: !pivotOn.length ? undefined : pivotOn,
     sort,
     where: sanitiseExpression(
       mergeDimensionAndMeasureFilters(

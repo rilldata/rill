@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Chip } from "@rilldata/web-common/components/chip";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
+  import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import type { SearchableFilterSelectableGroup } from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterSelectableItem.ts";
   import SearchableMenuContent from "@rilldata/web-common/components/searchable-filter-menu/SearchableMenuContent.svelte";
   import ChipDragList from "@rilldata/web-common/features/canvas/inspector/ChipDragList.svelte";
@@ -92,10 +93,12 @@
 </script>
 
 <div class="flex flex-col gap-y-1">
-  <div>{label}</div>
+  <InputLabel {label} id={label} capitalize={false} />
 
   <div class="flex flex-row items-center" aria-label="{label} field list">
-    {#if disableDragDrop}
+    {#if !fields.length}
+      <slot name="empty-fields" />
+    {:else if disableDragDrop}
       <div class="flex flex-row flex-wrap gap-1">
         {#each fields as field (field)}
           <Chip

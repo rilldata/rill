@@ -113,6 +113,7 @@
       emailRecipients: array().of(string().email("Invalid email")),
       slackChannels: array().of(string()),
       slackUsers: array().of(string().email("Invalid email")),
+      columns: array().of(string()).min(1),
     }),
   ) as ValidationAdapter<ReportValues>;
 
