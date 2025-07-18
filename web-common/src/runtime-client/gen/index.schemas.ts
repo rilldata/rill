@@ -2434,6 +2434,7 @@ export type RuntimeServiceCompleteBody = {
   messages?: V1Message[];
   toolNames?: string[];
   appContext?: V1AppContext;
+  useAgent?: boolean;
 };
 
 export type RuntimeServiceGetConversationParams = {

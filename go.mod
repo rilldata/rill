@@ -78,6 +78,7 @@ require (
 	github.com/orbcorp/orb-go v0.74.0
 	github.com/paulmach/orb v0.11.1
 	github.com/pingcap/tidb/pkg/parser v0.0.0-20231124053542-069631e2ecfe
+	github.com/pontus-devoteam/agent-sdk-go v0.0.9
 	github.com/prometheus/client_golang v1.20.5
 	github.com/redis/go-redis/v9 v9.6.3
 	github.com/riverqueue/river v0.19.0
@@ -208,7 +209,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.18.15 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sso v1.24.8 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.28.7 // indirect
-	github.com/aws/smithy-go v1.22.3 // indirect
+	github.com/aws/smithy-go v1.22.3
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/buger/goterm v1.0.4 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
@@ -462,3 +463,5 @@ replace github.com/dgrijalva/jwt-go => github.com/golang-jwt/jwt v3.2.1+incompat
 
 // https://github.com/googleapis/google-cloud-go/pull/12065
 replace cloud.google.com/go/bigquery v1.66.2 => github.com/rilldata/google-cloud-go/bigquery v0.0.0-20250426042021-091fd79360f3
+
+replace github.com/pontus-devoteam/agent-sdk-go => github.com/k-anshul/agent-sdk-go v0.0.0-20250715161046-444e2d44d272
