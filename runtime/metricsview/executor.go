@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/rilldata/rill/runtime/drivers/clickhouse"
 	"os"
 	"strings"
 	"time"
@@ -13,6 +12,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/drivers/clickhouse"
 	"github.com/rilldata/rill/runtime/drivers/druid"
 	"github.com/rilldata/rill/runtime/pkg/jsonval"
 )
