@@ -30,8 +30,8 @@ When connecting to a data source, you can either explicitly define the connectio
 - **[Redshift](#redshift)** - Amazon Redshift
 - **[PostgreSQL](#postgresql)** - PostgreSQL databases
 - **[Athena](#athena)** - Amazon Athena
-- **[mysql](#mysql)** - MySQL databases
-- **[sqlite](#sqlite)** - SQLite databases
+- **[MySQL](#mysql)** - MySQL databases
+- **[SQLite](#sqlite)** - SQLite databases
 - **[MotherDuck](#motherduck-source)** - MotherDuck cloud data warehouse
 
 **Cloud Storage**
@@ -40,10 +40,10 @@ When connecting to a data source, you can either explicitly define the connectio
 - **[Azure](#azure)** - Azure Blob Storage
 
 **Other**
-<!-- - **[https](#https)** - Public files via HTTP/HTTPS
-- **[local_file](#local_file)** - Local files (CSV, Parquet, etc.) -->
+- **[https](#https)** - Public files via HTTP/HTTPS
+- **[Local File](#local-file)** - Local files (CSV, Parquet, etc.)
 - **[Salesforce](#salesforce)** - Salesforce data
-- **[slack](#slack)** - Slack data
+- **[Slack](#slack)** - Slack data
 
 ### OLAP Engine Drivers
 When connecting to your own OLAP engine (e.g., ClickHouse, Druid, or Pinot), Rill will automatically generate the corresponding connector file and add the `olap_connector` parameter to your `rill.yaml` file. This will change the behavior of your Rill Developer slightly as not all features are supported across engines. Please see our documentation about [olap-engines](/connect/olap/) for more information.
@@ -136,7 +136,7 @@ secret: "mysecret"                               # Optional S3-compatible Secret
 Replace credential values like `google_application_credentials` and `secret` with environment variables: `{{.env.gcs.google_application_credentials}}`
 :::
 
-<!-- #### HTTPS
+#### HTTPS
 ```yaml
 type: connector                                  # Must be `connector` (required)
 driver: https                                    # Must be `https` _(required)_
@@ -150,9 +150,9 @@ headers: "Authorization: Bearer token"           # HTTP headers to include in th
 type: connector                                  # Must be `connector` (required)
 driver: local_file                               # Must be `local_file` _(required)_
 
-dsn: "./data/file.csv"                           # File path or location _(required)_  
+sql: "select * from read_xxx('/data/file.xxx')"  # File path or location _(required)_  
 allow_host_access: true                          # Allow host-level file path access
-``` -->
+```
 
 #### MotherDuck Source
 ```yaml
@@ -288,6 +288,23 @@ dsn: "./data/database.db"                        # SQLite connection DSN _(requi
 
 ### OLAP Engine Parameters
 
+
+#### DuckDB
+```yaml
+type: connector                                  # Must be `connector` (required)
+driver: duckdb                                   # Must be `duckdb` _(required)_
+
+pool_size: 4                                     # Number of concurrent connections and queries  
+allow_host_access: true                          # Allow local environment and file system access  
+cpu: 4                                           # Number of CPU cores available to database  
+memory_limit_gb: 8                               # Memory in GB available to database  
+read_write_ratio: 0.8                            # Resource allocation ratio for read database  
+init_sql: "SET memory_limit='8GB'"               # SQL executed during database initialization  
+conn_init_sql: "SET timezone='UTC'"              # SQL executed when new connection is initialized  
+secrets: "s3,gcs"                                # Comma-separated list of connector names for temporary secrets  
+log_queries: false                               # Log raw SQL queries through OLAP
+```
+
 #### ClickHouse
 ```yaml
 type: connector                                  # Must be `connector` (required)
@@ -318,6 +335,24 @@ read_timeout: "30s"                              # Maximum read timeout
 Replace credential values like `password` with environment variables: `{{.env.clickhouse.password}}`
 :::
 
+
+#### Motherduck
+
+```yaml
+---
+type: connector                                  # Must be `connector` (required)
+driver: duckdb                                   # Must be `duckdb` _(required)_
+
+
+path: "md:my_db"                                # Path to your MD database
+
+init_sql: |                                     # SQL executed during database initialization.
+  INSTALL 'motherduck';                         # Install motherduck extension
+  LOAD 'motherduck';                            # Load the extensions
+  SET motherduck_token= '{{ .env.motherduck_token }}' # Define the motherduck token
+```
+
+
 #### Druid
 ```yaml
 type: connector                                  # Must be `connector` (required)
@@ -338,21 +373,6 @@ skip_version_check: false                        # Skip Druid version compatibil
 Replace credential values like `password` with environment variables: `{{.env.druid.password}}`
 :::
 
-#### DuckDB
-```yaml
-type: connector                                  # Must be `connector` (required)
-driver: duckdb                                   # Must be `duckdb` _(required)_
-
-pool_size: 4                                     # Number of concurrent connections and queries  
-allow_host_access: true                          # Allow local environment and file system access  
-cpu: 4                                           # Number of CPU cores available to database  
-memory_limit_gb: 8                               # Memory in GB available to database  
-read_write_ratio: 0.8                            # Resource allocation ratio for read database  
-init_sql: "SET memory_limit='8GB'"               # SQL executed during database initialization  
-conn_init_sql: "SET timezone='UTC'"              # SQL executed when new connection is initialized  
-secrets: "s3,gcs"                                # Comma-separated list of connector names for temporary secrets  
-log_queries: false                               # Log raw SQL queries through OLAP
-```
 
 #### Pinot
 ```yaml
@@ -374,20 +394,3 @@ max_open_conns: 10                               # Maximum open connections
 :::warning Security Note
 Replace credential values like `password` with environment variables: `{{.env.pinot.password}}`
 :::
-
-#### Motherduck
-
-```yaml
----
-type: connector                                  # Must be `connector` (required)
-driver: duckdb                                   # Must be `duckdb` _(required)_
-
-
-path: "md:my_db"                                # Path to your MD database
-
-init_sql: |                                     # SQL executed during database initialization.
-  INSTALL 'motherduck';                         # Install motherduck extension
-  LOAD 'motherduck';                            # Load the extensions
-  SET motherduck_token= {{ .env.motherduck_token }} # Define the motherduck token
-```
-

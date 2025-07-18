@@ -112,9 +112,8 @@ Rill supports a multitude of connectors to ingest data from various sources: loc
   <ConnectorIcon
     icon={<img src="/img/connect/icons/Logo-Sheets.png" alt="Google Sheets" className="sheets-icon" />}
     content="Connect to Google Sheets to read data from spreadsheets with support for multiple sheets."
-    link="/connect/connector/sources/sheets"
+    link="/connect/connector/sources/googlesheets"
     linkLabel="Learn more"
-    referenceLink="/reference/project-files/connectors#googlesheets"
   />
   
   <ConnectorIcon

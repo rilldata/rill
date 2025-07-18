@@ -1,38 +1,61 @@
 ---
 title: Local File
-description: Connect to your local data
+description: Connect to your local data files
 sidebar_label: Local File
 sidebar_position: 17
 ---
 
+Import data from files stored on your local machine into your Rill project.
 
-## Adding a local file
+## Overview
 
-### Using the UI
+The Local File connector allows you to import data from CSV, JSON, Parquet, and other supported file formats directly from your local filesystem. This is perfect for working with local datasets, exports, or files you've downloaded.
 
-To import a file using the UI, click "+" by Sources in the left-hand navigation pane, select "Local File", and navigate to the specific file. Alternatively, try dragging and dropping the file directly onto the Rill interface.
+## Adding a Local File Source
 
-### Using code
-When you add a source using the UI, a code definition will automatically be created as a `.yaml` file in your Rill project in the `sources` directory. However, you can also create sources more directly by creating the artifact.
+### Option 1: Using the Rill UI
 
-In your Rill project directory, create a `source_name.yaml` file in the `sources` directory with the following content:
+1. In the left navigation pane, click the **"+"** button next to **Sources**
+2. Select **"Local File"** from the connector options
+3. Navigate to and select your file, or drag and drop it directly onto the Rill interface
+
+### Option 2: Using Code
+
+Create a YAML configuration file in your project's `sources` directory:
 
 ```yaml
-type: model
+type: source
 connector: local_file
-path: /path/to/local/data.csv
+path: /path/to/your/data.csv
 ```
 
-Rill will ingest the data next time you run `rill start`.
+**Important:** When using relative paths, they should be relative to your Rill project root (where `rill.yaml` is located), not the `sources` directory.
 
-Note that if you provide a relative path, _the path should be relative to your Rill project root_ (where your `rill.yaml` file is located), **not** relative to the `sources` directory.
+## Importing Multiple Files
 
-:::tip Import from multiple files
-To import data from multiple files, you can use a glob pattern to specify the files you want to include. To learn more about the syntax and details of glob patterns, please refer to the duckdb documentation on [reading multiple files](https://duckdb.org/docs/stable/data/multiple_files/overview.html).
-:::
+Use glob patterns to import data from multiple files at once:
 
-:::note Source Properties
+```yaml
+type: source
+connector: local_file
+path: /path/to/data/*.csv
+```
 
-For more details about available configurations and properties, check our [Source YAML](/reference/project-files/sources) reference page.
+**Examples:**
+- `data/*.csv` - All CSV files in the data directory
+- `exports/2024-*.parquet` - All Parquet files from 2024
+- `logs/**/*.json` - All JSON files in logs and subdirectories
 
+For detailed glob pattern syntax, refer to the [DuckDB multiple files documentation](https://duckdb.org/docs/stable/data/multiple_files/overview.html).
+
+## Supported File Formats
+
+The Local File connector supports various file formats including:
+- CSV
+- JSON
+- Parquet
+
+
+:::warning File Size Limits
+When ingesting the Data into Rill, you'll notice a new `/data` folder path with a copy of the CSV file. This is designed so that when you publish to Rill Cloud, the file will also be included. Note that there is a 100MB limit to each unique file. Files over 100MB will not be deployed with your project.
 :::
