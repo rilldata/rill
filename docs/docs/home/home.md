@@ -26,7 +26,8 @@ Browse our [example repository](https://github.com/rilldata/rill-examples/) to f
 ```bash
 git clone https://github.com/rilldata/rill-examples.git
 cd rill-examples/rill-openrtb-prog-ads
-curl https://rill.sh | sh rill start
+curl https://rill.sh | sh
+rill start
 ```
 
 
