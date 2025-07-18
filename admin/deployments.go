@@ -240,6 +240,20 @@ func (s *Service) startDeploymentInner(ctx context.Context, depl *database.Deplo
 		})
 	}
 
+	// Look up project and organization to construct the full frontend URL
+	proj, err := s.DB.FindProject(ctx, depl.ProjectID)
+	if err != nil {
+		return err
+	}
+
+	org, err := s.DB.FindOrganization(ctx, proj.OrganizationID)
+	if err != nil {
+		return err
+	}
+
+	// Construct the full frontend URL including custom domain (if any) and org/project path
+	frontendURL := s.URLs.WithCustomDomain(org.CustomDomain).Project(org.Name, proj.Name)
+
 	// Create the instance
 	_, err = rt.CreateInstance(ctx, &runtimev1.CreateInstanceRequest{
 		InstanceId:     instanceID,
@@ -251,6 +265,7 @@ func (s *Service) startDeploymentInner(ctx context.Context, depl *database.Deplo
 		Connectors:     connectors,
 		Variables:      opts.Variables,
 		Annotations:    opts.Annotations.ToMap(),
+		FrontendUrl:    frontendURL,
 	})
 	if err != nil {
 		return err
@@ -540,6 +555,7 @@ func (s *Service) NewDeploymentAnnotations(org *database.Organization, proj *dat
 		orgID:              org.ID,
 		orgName:            org.Name,
 		orgBillingPlanName: orgBillingPlanName,
+		orgCustomDomain:    org.CustomDomain,
 		projID:             proj.ID,
 		projName:           proj.Name,
 		projProdSlots:      fmt.Sprint(proj.ProdSlots),
@@ -552,6 +568,7 @@ type DeploymentAnnotations struct {
 	orgID              string
 	orgName            string
 	orgBillingPlanName string
+	orgCustomDomain    string
 	projID             string
 	projName           string
 	projProdSlots      string
@@ -560,13 +577,14 @@ type DeploymentAnnotations struct {
 }
 
 func (da *DeploymentAnnotations) ToMap() map[string]string {
-	res := make(map[string]string, len(da.projAnnotations)+7)
+	res := make(map[string]string, len(da.projAnnotations)+8)
 	for k, v := range da.projAnnotations {
 		res[k] = v
 	}
 	res["organization_id"] = da.orgID
 	res["organization_name"] = da.orgName
 	res["organization_plan"] = da.orgBillingPlanName
+	res["organization_custom_domain"] = da.orgCustomDomain
 	res["project_id"] = da.projID
 	res["project_name"] = da.projName
 	res["project_prod_slots"] = da.projProdSlots
