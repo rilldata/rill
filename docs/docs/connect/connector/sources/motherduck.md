@@ -24,7 +24,7 @@ As noted above, if you wish to connect to a persistent DuckDB database to read e
 
 If creating a new DuckDB source from the UI, you should provide the appropriate path to the DuckDB database file under **DB** and use the appropriate [DuckDB select statement](https://duckdb.org/docs/sql/statements/select.html) to read in the table under **SQL**:
 
-<img src='/img/connect/olap/olap-engines/duckdb/duckdb.png' class='rounded-png' />
+<img src='/img/reference/olap-engines/duckdb/duckdb.png' class='centered' />
 <br />
 
 Alternatively, if you are creating the source YAML file directly, the definition should look something like:
