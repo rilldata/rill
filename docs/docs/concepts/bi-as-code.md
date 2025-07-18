@@ -63,5 +63,5 @@ For a deeper dive into BI-as-code and its benefits, check out our blog post: [Wh
 
 - [Learn about Rill's Architecture](/concepts/architecture)
 - [Get started with Rill](/home/install)
-- [Explore the Reference](/connect/connect/connectors/)
+- [Explore the Reference](/connect/source/)
 - [Step-by-step Tutorial](/guides)

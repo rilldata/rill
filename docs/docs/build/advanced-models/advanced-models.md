@@ -8,7 +8,7 @@ sidebar_position: 00
 <img src = '/img/build/advanced-models/advanced-model.png' class='rounded-gif' />
 <br />
 
-Unlike SQL models, YAML file models allow you to fine-tune a model to perform additional capabilities such as pre-exec, post-exec SQL, partitioning, and incremental modeling. This is an important addition to modeling, as it allows the user to customize the model's build process. In the case of partitions and incremental modeling, this will reduce the amount of data ingested into Rill at each interval and allow insight into specific issues per partition. Another use case is when using [multiple OLAP engines](../connect/multiple-connectors.md), this allows you to define where a SQL query is run. 
+Unlike SQL models, YAML file models allow you to fine-tune a model to perform additional capabilities such as pre-exec, post-exec SQL, partitioning, and incremental modeling. This is an important addition to modeling, as it allows the user to customize the model's build process. In the case of partitions and incremental modeling, this will reduce the amount of data ingested into Rill at each interval and allow insight into specific issues per partition. Another use case is when using [multiple OLAP engines](/connect/olap/multiple-olap), this allows you to define where a SQL query is run. 
 
 ## When to use Advanced Models? 
 

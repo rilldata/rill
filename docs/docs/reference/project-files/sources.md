@@ -109,7 +109,7 @@ duckdb:
   columns: "types={'UniqueCarrier': 'VARCHAR'}"
 ```
 
-**`dsn`** - Used to set the Snowflake connection string. For more information, refer to our [Snowflake connector page](/connect/connect/connectors/snowflake.md) and the official [Go Snowflake Driver](https://pkg.go.dev/github.com/snowflakedb/gosnowflake#hdr-Connection_String) documentation _(optional)_.
+**`dsn`** - Used to set the Snowflake connection string. For more information, refer to our [Snowflake connector page](/connect/source/connectors/snowflake.md) and the official [Go Snowflake Driver](https://pkg.go.dev/github.com/snowflakedb/gosnowflake#hdr-Connection_String) documentation _(optional)_.
   - If not specified in the source YAML, the `connector.snowflake.dsn` connection string will need to be set when [deploying the project to Rill Cloud](/deploy/deploy-credentials#configure-environmental-variables-and-credentials-for-rill-cloud).
 
 > **Note:**

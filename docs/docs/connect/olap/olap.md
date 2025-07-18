@@ -74,12 +74,12 @@ Rill supports the use of several different OLAP engines to power your dashboards
 
 
 :::note Additional OLAP Engines
-Rill is continually evaluating additional OLAP engines that can be added. For a full list of OLAP engines that we support, refer to our [OLAP Engines](/reference/olap-engines) page. If you don't see an OLAP engine that you'd like to use, please don't hesitate to [reach out](/contact)!
+Rill is continually evaluating additional OLAP engines that can be added. For a full list of OLAP engines that we support, refer to our [OLAP Engines](/connect/olap/) page. If you don't see an OLAP engine that you'd like to use, please don't hesitate to [reach out](/contact)!
 :::
 
 ## Multiple OLAP Engines in a Single Project
 
-Rill supports the use of multiple OLAP engines in a single project with some limitations. For more detailed information, see our reference on [multiple OLAP engines](/connect/olap/olap-engines/multiple-olap). The basic use cases for multiple engines in a single project are:
+Rill supports the use of multiple OLAP engines in a single project with some limitations. For more detailed information, see our reference on [multiple OLAP engines](/connect/olap/multiple-olap). The basic use cases for multiple engines in a single project are:
 
 1. Using Rill on top of already created and optimized tables from different OLAP sources.
 2. Separating data based on size, as performance on different engines differs based on the size of the data.
@@ -98,7 +98,7 @@ If you have a firewall in front of your externally hosted service, you will need
 
 <!-- ## DuckDB
 
-DuckDB is unique in that it can act as both a [source](/reference/connectors/motherduck) and an [OLAP engine](/connect/olap/olap-engines/duckdb) for Rill. If you wish to connect to existing tables in DuckDB, you can simply use the [DuckDB connector](/reference/connectors/motherduck#connecting-to-external-duckdb-as-a-source) to read a specific table or view from an accessible DuckDB database file and ingest the data into Rill.
+DuckDB is unique in that it can act as both a [source](/connect/source/connectors/motherduck) and an [OLAP engine](/connect/olap/olap-engines/duckdb) for Rill. If you wish to connect to existing tables in DuckDB, you can simply use the [DuckDB connector](/connect/source/connectors/motherduck#connecting-to-external-duckdb-as-a-source) to read a specific table or view from an accessible DuckDB database file and ingest the data into Rill.
 
 <img src = '/img/build/connect/duckdb.png' class='rounded-gif' />
 <br />

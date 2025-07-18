@@ -63,7 +63,7 @@ For more information about available properties in `rill.yaml`, see our [project
 
 :::info Interested in using multiple OLAP engines in the same project?
 
-Please see our [Using Multiple OLAP Engines](multiple-olap) page.
+Please see our [Using Multiple OLAP Engines](/connect/olap/multiple-olap) page.
 
 :::
 
@@ -90,7 +90,7 @@ Multi-valued dimensions need to be defined in the dashboard YAML as expressions 
   name: RandomAirports
   description: "Random Airports"
 ```
-Refer to the [Dashboard YAML](../project-files/explore-dashboards) reference page for all dimension properties in detail.
+Refer to the [Dashboard YAML](/reference/project-files/explore-dashboards) reference page for all dimension properties in detail.
 
 :::note
 
@@ -101,4 +101,4 @@ Pinot does not support the unnest function, so don't set the `unnest` property t
 ## Additional Notes
 
 - At the moment, we do not support modeling with Pinot. If this is something you're interested in, please [contact us](/contact).
-- For dashboards powered by Pinot, [measure definitions](/build/metrics-view/metrics-view#measures) are required to follow [Pinot SQL](https://docs.pinot.apache.org/users/user-guide-query/querying-pinot) syntax.
+- For dashboards powered by Pinot, [measure definitions](/build/metrics-view/#measures) are required to follow [Pinot SQL](https://docs.pinot.apache.org/users/user-guide-query/querying-pinot) syntax.

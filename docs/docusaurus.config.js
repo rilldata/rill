@@ -200,7 +200,7 @@ const config = {
           },
           {
             from: '/develop/import-data',
-            to: '/build/connect'
+            to: '/connect/source/'
           },
           {
             from: '/develop/sql-models',
@@ -220,43 +220,43 @@ const config = {
           },
           {
             from: '/deploy/credentials/s3',
-            to: '/reference/connectors/s3'
+            to: '/connect/source/connectors/s3'
           },
           {
             from: '/deploy/credentials/gcs',
-            to: '/reference/connectors/gcs'
+            to: '/connect/source/connectors/gcs'
           },
           {
             from: '/deploy/credentials/azure',
-            to: '/reference/connectors/azure'
+            to: '/connect/source/connectors/azure'
           },
           {
             from: '/deploy/credentials/athena',
-            to: '/reference/connectors/athena'
+            to: '/connect/source/connectors/athena'
           },
           {
             from: '/deploy/credentials/bigquery',
-            to: '/reference/connectors/bigquery'
+            to: '/connect/source/connectors/bigquery'
           },
           {
             from: '/deploy/credentials/snowflake',
-            to: '/reference/connectors/snowflake'
+            to: '/connect/source/connectors/snowflake'
           },
           {
             from: '/deploy/credentials/postgres',
-            to: '/reference/connectors/postgres'
+            to: '/connect/source/connectors/postgres'
           },
           {
             from: '/deploy/credentials/salesforce',
-            to: '/reference/connectors/salesforce'
+            to: '/connect/source/connectors/salesforce'
           },
           {
             from: '/deploy/credentials/motherduck',
-            to: '/reference/connectors/motherduck'
+            to: '/connect/source/connectors/motherduck'
           },
           {
             from: '/deploy/source-refresh',
-            to: '/build/connect/source-refresh'
+            to: '/connect/source/source-refresh'
           },
           {
             from: '/reference/templating',
@@ -310,67 +310,67 @@ const config = {
           // Connector redirects
           {
             from: '/reference/connectors/',
-            to: '/connect/connect/'
+            to: '/connect/source/'
           },
           {
             from: '/reference/connectors/gcs',
-            to: '/connect/connect/connectors/gcs'
+            to: '/connect/source/connectors/gcs'
           },
           {
             from: '/reference/connectors/azure',
-            to: '/connect/connect/connectors/azure'
+            to: '/connect/source/connectors/azure'
           },
           {
             from: '/reference/connectors/s3',
-            to: '/connect/connect/connectors/s3'
+            to: '/connect/source/connectors/s3'
           },
           {
             from: '/reference/connectors/snowflake',
-            to: '/connect/connect/connectors/snowflake'
+            to: '/connect/source/connectors/snowflake'
           },
           {
             from: '/reference/connectors/bigquery',
-            to: '/connect/connect/connectors/bigquery'
+            to: '/connect/source/connectors/bigquery'
           },
           {
             from: '/reference/connectors/redshift',
-            to: '/connect/connect/connectors/redshift'
+            to: '/connect/source/connectors/redshift'
           },
           {
             from: '/reference/connectors/postgres',
-            to: '/connect/connect/connectors/postgres'
+            to: '/connect/source/connectors/postgres'
           },
           {
             from: '/reference/connectors/athena',
-            to: '/connect/connect/connectors/athena'
+            to: '/connect/source/connectors/athena'
           },
           {
             from: '/reference/connectors/mysql',
-            to: '/connect/connect/connectors/mysql'
+            to: '/connect/source/connectors/mysql'
           },
           {
             from: '/reference/connectors/sqlite',
-            to: '/connect/connect/connectors/sqlite'
+            to: '/connect/source/connectors/sqlite'
           },
           {
             from: '/reference/connectors/salesforce',
-            to: '/connect/connect/connectors/salesforce'
+            to: '/connect/source/connectors/salesforce'
           },
           {
             from: '/reference/connectors/sheets',
-            to: '/connect/connect/connectors/sheets'
+            to: '/connect/source/connectors/googlesheets'
           },
           {
             from: '/reference/connectors/slack',
-            to: '/connect/connect/connectors/slack'
+            to: '/connect/source/connectors/slack'
           },
           {
             from: '/reference/connectors/local-file',
-            to: '/connect/connect/connectors/local-file'
+            to: '/connect/source/connectors/local-file'
           },
           {
             from: '/reference/connectors/https',
-            to: '/connect/connect/connectors/https'
+            to: '/connect/source/connectors/https'
           },
           // Example: Add new redirects here
           // {

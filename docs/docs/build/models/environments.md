@@ -38,7 +38,7 @@ rill start --environment prod
 
 ## Specifying environment specific YAML overrides
 
-Environment overrides can be applied to source properties in the [YAML configuration](/reference/project-files/sources.md) of a source. For example, let's say that you have a [S3](/connect/connect/connectors/s3.md) source defined but you only wanted to read from a particular month partition during local development. Then, in your `source.yaml` file, you can define it as:
+Environment overrides can be applied to source properties in the [YAML configuration](/reference/project-files/sources.md) of a source. For example, let's say that you have a [S3](/connect/source/connectors/s3.md) source defined but you only wanted to read from a particular month partition during local development. Then, in your `source.yaml` file, you can define it as:
 
 ```yaml
 type: source
@@ -78,7 +78,7 @@ refresh:
 
 :::tip Why are source refreshes only enabled by default for Rill Cloud?
 
-Source refreshes are primarily meant to _help keep the data in your deployed dashboards on Rill Cloud up-to-date_ (without needing to manually trigger refreshes). For more details, see our documentation on [configuring source refreshes](/build/connect/source-refresh.md).
+Source refreshes are primarily meant to _help keep the data in your deployed dashboards on Rill Cloud up-to-date_ (without needing to manually trigger refreshes). For more details, see our documentation on [configuring source refreshes](/connect/source/source-refresh).
 
 :::
 

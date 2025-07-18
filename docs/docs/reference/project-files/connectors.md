@@ -46,7 +46,7 @@ When connecting to a data source, you can either explicitly define the connectio
 - **[slack](#slack)** - Slack data
 
 ### OLAP Engine Drivers
-When connecting to your own OLAP engine (e.g., ClickHouse, Druid, or Pinot), Rill will automatically generate the corresponding connector file and add the `olap_connector` parameter to your `rill.yaml` file. This will change the behavior of your Rill Developer slightly as not all features are supported across engines. Please see our documentation about [olap-engines](/reference/olap-engines/) for more information.
+When connecting to your own OLAP engine (e.g., ClickHouse, Druid, or Pinot), Rill will automatically generate the corresponding connector file and add the `olap_connector` parameter to your `rill.yaml` file. This will change the behavior of your Rill Developer slightly as not all features are supported across engines. Please see our documentation about [olap-engines](/connect/olap/) for more information.
 
 - **[DuckDB](#duckdb)** - Embedded DuckDB engine (default)
 - **[Clickhouse](#clickhouse)** - ClickHouse analytical database

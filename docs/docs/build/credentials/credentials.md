@@ -4,7 +4,7 @@ sidebar_label: Configure Local Credentials
 sidebar_position: 00
 ---
 <!-- 
-Rill requires credentials to connect to  data sources such as private buckets (S3, GCS, Azure), data warehouses (Snowflake, BigQuery), OLAP engines (ClickHouse, Apache Druid) or other DuckDB sources (MotherDuck). Please refer to the appropriate [connector](../../reference/connectors/connectors.md) and [OLAP engine](../../connect/olap/) page for instructions to configure credentials accordingly. -->
+Rill requires credentials to connect to  data sources such as private buckets (S3, GCS, Azure), data warehouses (Snowflake, BigQuery), OLAP engines (ClickHouse, Apache Druid) or other DuckDB sources (MotherDuck). Please refer to the appropriate [connector](/connect/source/connectors/connectors/connectors/connectors/connectors/*connectors/*connectors.md) and [OLAP engine](../../connect/olap/) page for instructions to configure credentials accordingly. -->
 
 At a high level, configuring credentials and credentials management in Rill can be broken down into three categories:
 - Setting credentials for Rill Developer
@@ -14,12 +14,12 @@ remote
 ## Setting credentials for Rill Developer
 
 When reading from a source (or using a different OLAP engine), Rill will attempt to use existing credentials that have been configured on your machine.
-1. Credentials that have been configured in your local environment via the CLI (for [AWS](/reference/connectors/s3#local-credentials) / [Azure](/reference/connectors/azure#local-credentials) / [Google Cloud](../../reference/connectors/gcs#rill-developer-local-credentials))
+1. Credentials that have been configured in your local environment via the CLI (for [AWS](/connect/source/connectors/s3#local-credentials) / [Azure](/connect/source/connectors/azure#local-credentials) / [Google Cloud](/connect/source/connectors/gcs#rill-developer-local-credentials))
 2. Credentials that have been passed in directly through the connection string or DSN (typically for databases - see [Source YAML](../../reference/project-files/sources.md) and [Connector YAML](../../reference/project-files/connectors.md) for more details)
 3. Credentials that have been passed in as a [variable](../../deploy/templating.md) when starting Rill Developer via `rill start --env key=value`
 4. Credentials that have been specified in your *`<RILL_PROJECT_HOME>/.env`* file, see [credential naming schema](#credentials-naming-schema) for more information.
 
-<!-- For more details, please refer to the corresponding [connector](../../reference/connectors/connectors.md) or [OLAP engine](../../connect/olap/) page. -->
+<!-- For more details, please refer to the corresponding [connector](/connect/source/connectors/connectors.md) or [OLAP engine](../../connect/olap/) page. -->
 
 :::note Ensuring security of credentials in use
 

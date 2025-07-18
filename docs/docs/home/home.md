@@ -93,7 +93,7 @@ curl https://rill.sh | sh rill start
 
 ## Quickstart
 
-Take a look at our [Start Guide](get-started/get-started.md) for a quick guide to get started with your own data! We use a public GCS dataset but you can follow along with your own data. Take a look at our [connectors docs](/connect/connect/connectors/) for the exact steps to connect to your data.
+Take a look at our [Start Guide](get-started/get-started.md) for a quick guide to get started with your own data! We use a public GCS dataset but you can follow along with your own data. Take a look at our [connectors docs](/connect/source/) for the exact steps to connect to your data.
 
 Or, if you're looking for more guides, check out our [Guides](/guides/) section!
 
@@ -112,7 +112,7 @@ import TileIcon from '@site/src/components/TileIcon';
 <TileIcon
   header="Connect Sources"
   content="Connect to your data sources and start ingesting data into Rill for analysis."
-  link="/reference/connectors/"
+  link="/connect/source/connectors/"
 />
 <TileIcon
   header="Last Mile ETL"
