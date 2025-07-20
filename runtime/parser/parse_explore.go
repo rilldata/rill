@@ -151,6 +151,8 @@ func (p *Parser) parseExplore(node *Node, definingMetricsView string) error {
 	}
 	if tmp.MetricsView == "" {
 		tmp.MetricsView = definingMetricsView
+	} else if definingMetricsView != "" && tmp.MetricsView != definingMetricsView {
+		return fmt.Errorf("explore metrics_view %q cannot be different from not match the defining metrics_view %q", tmp.MetricsView, definingMetricsView)
 	}
 	node.Refs = append(node.Refs, ResourceName{Kind: ResourceKindMetricsView, Name: tmp.MetricsView})
 
