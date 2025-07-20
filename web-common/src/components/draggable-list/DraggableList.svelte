@@ -152,7 +152,7 @@
 <div
   bind:this={dragContainer}
   bind:contentRect
-  class="flex flex-col relative"
+  class="flex flex-col relative overflow-x-hidden"
   style:min-height={minHeight}
   style:max-height={maxHeight}
   role="presentation"

@@ -45,6 +45,7 @@
         ...fieldConfig,
         field: fieldName,
         type: isTime ? "temporal" : isDimension ? "nominal" : "quantitative",
+        sort: undefined,
       };
     }
 
