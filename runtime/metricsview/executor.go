@@ -256,12 +256,7 @@ func (e *Executor) Schema(ctx context.Context) (*runtimev1.StructType, error) {
 		return nil, err
 	}
 
-	schema, err := e.olap.QuerySchema(ctx, &drivers.Statement{
-		Query:            sql,
-		Args:             args,
-		Priority:         e.priority,
-		ExecutionTimeout: defaultInteractiveTimeout,
-	})
+	schema, err := e.olap.QuerySchema(ctx, sql, args)
 	if err != nil {
 		return nil, err
 	}

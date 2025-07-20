@@ -286,11 +286,8 @@ func (e *Executor) validateTimeDimension(ctx context.Context, t *drivers.OlapTab
 			return
 		}
 
-		schema, err := e.olap.QuerySchema(ctx, &drivers.Statement{
-			Query:            fmt.Sprintf("SELECT %s FROM %s", expr, dialect.EscapeTable(t.Database, t.DatabaseSchema, t.Name)),
-			Priority:         e.priority,
-			ExecutionTimeout: defaultInteractiveTimeout,
-		})
+		query := fmt.Sprintf("SELECT %s FROM %s LIMIT 0", expr, dialect.EscapeTable(t.Database, t.DatabaseSchema, t.Name))
+		schema, err := e.olap.QuerySchema(ctx, query, nil)
 		if err != nil {
 			res.TimeDimensionErr = fmt.Errorf("failed to validate time dimension %q: %w", e.metricsView.TimeDimension, err)
 			return
