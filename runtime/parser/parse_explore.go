@@ -117,7 +117,8 @@ var exploreComparisonModes = map[string]runtimev1.ExploreComparisonMode{
 	"dimension": runtimev1.ExploreComparisonMode_EXPLORE_COMPARISON_MODE_DIMENSION,
 }
 
-func (p *Parser) parseExplore(node *Node, inline bool) error {
+// definingMetricsView is the name of the metrics view in which explore is defined inline.
+func (p *Parser) parseExplore(node *Node, definingMetricsView string) error {
 	// Parse YAML
 	tmp := &ExploreYAML{}
 	err := p.decodeNodeYAML(node, true, tmp)
@@ -144,22 +145,22 @@ func (p *Parser) parseExplore(node *Node, inline bool) error {
 		allowCustomTimeRange = *tmp.AllowCustomTimeRange
 	}
 
-	if inline {
-		if tmp.MetricsView != "" {
-			return errors.New("defining metrics_view is not supported on inline explore")
-		}
+	// Validate metrics_view
+	if tmp.MetricsView == "" || definingMetricsView == "" {
+		return errors.New("metrics_view is required")
+	}
+	if tmp.MetricsView == "" {
+		tmp.MetricsView = definingMetricsView
+	}
+	node.Refs = append(node.Refs, ResourceName{Kind: ResourceKindMetricsView, Name: tmp.MetricsView})
+
+	if definingMetricsView != "" {
 		if tmp.Security != nil {
 			return errors.New("security rules are not supported on inline explores, please define them on the metrics view")
 		}
 		if tmp.Dimensions != nil || tmp.Measures != nil {
 			return errors.New("dimensions and measures are not supported on inline explores, please define them on the metrics view")
 		}
-	} else {
-		// Validate metrics_view
-		if tmp.MetricsView == "" {
-			return errors.New("metrics_view is required")
-		}
-		node.Refs = append(node.Refs, ResourceName{Kind: ResourceKindMetricsView, Name: tmp.MetricsView})
 	}
 
 	// Parse the dimensions and measures selectors
@@ -303,7 +304,7 @@ func (p *Parser) parseExplore(node *Node, inline bool) error {
 	r.ExploreSpec.SecurityRules = rules
 	r.ExploreSpec.LockTimeZone = tmp.LockTimeZone
 	r.ExploreSpec.AllowCustomTimeRange = allowCustomTimeRange
-	r.ExploreSpec.DefinedInMetricsView = inline
+	r.ExploreSpec.DefinedInMetricsView = definingMetricsView != ""
 
 	return nil
 }

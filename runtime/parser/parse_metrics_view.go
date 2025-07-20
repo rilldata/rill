@@ -676,19 +676,17 @@ func (p *Parser) parseMetricsView(node *Node) error {
 			return fmt.Errorf("failed to marshal explore YAML: %w", err)
 		}
 		yml := string(ymlBytes)
-		refs := []ResourceName{{Kind: ResourceKindMetricsView, Name: node.Name}}
 		exploreNode := &Node{
 			Name:     node.Name,
 			Kind:     ResourceKindExplore,
 			Paths:    node.Paths,
-			Refs:     refs,
 			YAML:     &tmp.ExploreYAML,
 			YAMLRaw:  yml,
 			YAMLPath: node.YAMLPath,
 		}
 
 		// parse the explore YAML node
-		err = p.parseExplore(exploreNode, true)
+		err = p.parseExplore(exploreNode, node.Name)
 
 		return err
 	}
