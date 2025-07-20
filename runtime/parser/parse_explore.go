@@ -158,6 +158,9 @@ func (p *Parser) parseExplore(node *Node, definingMetricsView string) error {
 	node.Refs = append(node.Refs, ResourceName{Kind: ResourceKindMetricsView, Name: tmp.MetricsView})
 
 	if definingMetricsView != "" {
+		if tmp.commonYAML.Name != "" && tmp.commonYAML.Name != node.Name {
+			return fmt.Errorf("inline explores can only have same name as defining metrics view")
+		}
 		if tmp.Security != nil {
 			return errors.New("security rules are not supported on inline explores, please define them on the metrics view")
 		}
