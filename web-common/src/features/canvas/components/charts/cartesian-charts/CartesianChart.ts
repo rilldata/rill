@@ -136,6 +136,7 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
           !!timeRange?.end &&
           hasColorDimension &&
           config.x?.type === "nominal" &&
+          !Array.isArray(config.x?.sort) &&
           !!dimensionName;
 
         const topNWhere = getFilterWithNullHandling(where, config.x);
@@ -213,7 +214,9 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
         const enabled =
           !!timeRange?.start &&
           !!timeRange?.end &&
-          (hasColorDimension && config.x?.type === "nominal"
+          (hasColorDimension &&
+          config.x?.type === "nominal" &&
+          !Array.isArray(config.x?.sort)
             ? !!topNXData?.length
             : true) &&
           (hasColorDimension && colorDimensionName && colorLimit
@@ -225,15 +228,20 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
           config.x,
         );
 
+        let includedXValues: string[] = [];
+
         // Apply topN filter for x dimension
-        if (topNXData?.length && dimensionName) {
-          const topXValues = topNXData.map((d) => d[dimensionName] as string);
-          this.customSortXItems = Array.isArray(config.x?.sort)
-            ? config.x?.sort
-            : topXValues;
+        if (Array.isArray(config.x?.sort)) {
+          includedXValues = config.x.sort;
+        } else if (topNXData?.length && dimensionName) {
+          includedXValues = topNXData.map((d) => d[dimensionName] as string);
+        }
+
+        if (dimensionName) {
+          this.customSortXItems = includedXValues;
           const filterForTopXValues = createInExpression(
             dimensionName,
-            topXValues,
+            includedXValues,
           );
           combinedWhere = mergeFilters(combinedWhere, filterForTopXValues);
         }

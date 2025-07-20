@@ -38,6 +38,7 @@
         ...fieldConfig,
         field: $timeDimension,
         type: "temporal",
+        sort: undefined,
       };
     } else {
       updatedConfig = {
@@ -67,13 +68,13 @@
     onChange(updatedConfig);
   }
 
-  $: console.log("selectedComponent", $selectedComponent);
+  $: popoverKey = `${$selectedComponent}-${metricsView}-${fieldConfig.field}`;
 </script>
 
 <div class="gap-y-1">
   <div class="flex justify-between items-center">
     <InputLabel small label={config.label ?? key} id={key} />
-    {#key `${$selectedComponent}-${key}`}
+    {#key popoverKey}
       {#if Object.keys(chartFieldInput ?? {}).length > 1}
         <FieldConfigPopover
           {fieldConfig}

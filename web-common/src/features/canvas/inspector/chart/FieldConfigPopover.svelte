@@ -22,11 +22,11 @@
   $: isDimension = fieldConfig?.type === "nominal";
   $: isMeasure = fieldConfig?.type === "quantitative";
 
-  $: limit =
+  let limit =
     fieldConfig?.limit || chartFieldInput?.limitSelector?.defaultLimit || 5000;
-  $: min = fieldConfig?.min;
-  $: max = fieldConfig?.max;
-  $: labelAngle =
+  let min = fieldConfig?.min;
+  let max = fieldConfig?.max;
+  let labelAngle =
     fieldConfig?.labelAngle ?? (fieldConfig?.type === "temporal" ? 0 : -90);
   let isDropdownOpen = false;
   let isCustomSortDropdownOpen = false;
@@ -62,8 +62,7 @@
       : "custom"
     : "x";
 
-  // Transform string array to DraggableItem format
-  $: customSortItems =
+  $: customSortDraggableItems =
     sortConfig.customSortItems?.map((item) => ({
       id: item,
       value: item,
@@ -80,7 +79,14 @@
     onChange("sort", reorderedItems);
   }
 
-  $: console.log(sortConfig);
+  function handleSortChange(e: CustomEvent<string>) {
+    const newSortValue = e.detail;
+    if (newSortValue === "custom") {
+      onChange("sort", sortConfig.customSortItems);
+    } else {
+      onChange("sort", newSortValue);
+    }
+  }
 </script>
 
 <Popover.Root bind:open={isDropdownOpen}>
@@ -143,7 +149,7 @@
                 width={190}
                 options={sortOptions}
                 value={sortValue}
-                on:change={(e) => onChange("sort", e.detail)}
+                on:change={handleSortChange}
               />
               {#if sortValue === "custom"}
                 <Popover.Root bind:open={isCustomSortDropdownOpen}>
@@ -157,7 +163,7 @@
                       <span class="text-xs font-medium">Sort Order</span>
                     </div>
                     <DraggableList
-                      items={customSortItems}
+                      items={customSortDraggableItems}
                       on:reorder={handleReorder}
                       minHeight="auto"
                       maxHeight="300px"
