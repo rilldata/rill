@@ -146,13 +146,14 @@ func (p *Parser) parseExplore(node *Node, definingMetricsView string) error {
 	}
 
 	// Validate metrics_view
-	if tmp.MetricsView == "" && definingMetricsView == "" {
-		return errors.New("metrics_view is required")
+	if definingMetricsView != "" {
+		if tmp.MetricsView != "" && tmp.MetricsView != definingMetricsView {
+			return fmt.Errorf("explore metrics_view %q cannot be different from the defining metrics_view %q", tmp.MetricsView, definingMetricsView)
+		}
+		tmp.MetricsView = definingMetricsView
 	}
 	if tmp.MetricsView == "" {
-		tmp.MetricsView = definingMetricsView
-	} else if definingMetricsView != "" && tmp.MetricsView != definingMetricsView {
-		return fmt.Errorf("explore metrics_view %q cannot be different from not match the defining metrics_view %q", tmp.MetricsView, definingMetricsView)
+		return errors.New("metrics_view is required")
 	}
 	node.Refs = append(node.Refs, ResourceName{Kind: ResourceKindMetricsView, Name: tmp.MetricsView})
 
