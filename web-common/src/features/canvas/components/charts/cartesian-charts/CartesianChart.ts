@@ -42,7 +42,7 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
         chartFieldInput: {
           type: "dimension",
           axisTitleSelector: true,
-          sortSelector: { enable: true },
+          sortSelector: { enable: true, defaultSort: "-y" },
           limitSelector: { defaultLimit: DEFAULT_NOMINAL_LIMIT },
           nullSelector: true,
           labelAngleSelector: true,

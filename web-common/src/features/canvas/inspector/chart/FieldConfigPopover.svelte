@@ -60,13 +60,12 @@
     ? typeof fieldConfig.sort === "string"
       ? fieldConfig.sort
       : "custom"
-    : "x";
+    : (sortConfig.defaultSort ?? "x");
 
-  $: customSortDraggableItems =
-    sortConfig.customSortItems?.map((item) => ({
-      id: item,
-      value: item,
-    })) || [];
+  $: customSortDraggableItems = sortConfig.customSortItems?.map((item) => ({
+    id: item,
+    value: item,
+  }));
 
   function handleReorder(
     event: CustomEvent<{
@@ -163,7 +162,7 @@
                       <span class="text-xs font-medium">Sort Order</span>
                     </div>
                     <DraggableList
-                      items={customSortDraggableItems}
+                      items={customSortDraggableItems || []}
                       on:reorder={handleReorder}
                       minHeight="auto"
                       maxHeight="300px"
