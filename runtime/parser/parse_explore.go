@@ -13,7 +13,7 @@ import (
 )
 
 type ExploreYAML struct {
-	commonYAML           `yaml:",inline"`       // Not accessed here, only setting it so we can use KnownFields for YAML parsing
+	commonYAML           `yaml:",inline"` // Not accessed here, only setting it so we can use KnownFields for YAML parsing
 	DisplayName          string                 `yaml:"display_name"`
 	Title                string                 `yaml:"title"` // Deprecated: use display_name
 	Description          string                 `yaml:"description"`
@@ -146,7 +146,7 @@ func (p *Parser) parseExplore(node *Node, definingMetricsView string) error {
 	}
 
 	// Validate metrics_view
-	if tmp.MetricsView == "" || definingMetricsView == "" {
+	if tmp.MetricsView == "" && definingMetricsView == "" {
 		return errors.New("metrics_view is required")
 	}
 	if tmp.MetricsView == "" {
