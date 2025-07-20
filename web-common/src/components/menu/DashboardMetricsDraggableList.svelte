@@ -141,7 +141,6 @@
             slot="item"
             let:item
             let:index
-            let:isDragItem
             class="w-full flex gap-x-1 items-center"
           >
             {@const itemData = allItemsMap.get(item.id)}
