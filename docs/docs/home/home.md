@@ -86,26 +86,31 @@ Curious about what's new? Check out our latest and greatest updates in the [rele
   header="Connect Sources"
   content="Connect to your data sources and start ingesting data into Rill for analysis."
   link="/reference/connectors/"
+  icon={<img src="/img/home/connect.png" alt="Connect" style={{ width: 24, height: 24 }} />}
 />
 <TileIcon
   header="Last Mile ETL"
   content="Transform and prepare your data with Rill's powerful ETL capabilities."
   link="/build/models/"
+  icon={<img src="/img/home/model.png" alt="Model" style={{ width: 24, height: 24 }} />}
 />
 <TileIcon
   header="Create Metrics Layer"
   content="Build a metrics layer to define key business metrics and KPIs."
   link="/build/metrics-view/"
+  icon={<img src="/img/home/metrics.png" alt="Metrics" style={{ width: 24, height: 24 }} />}
 />
 <TileIcon
   header="Explore Data"
   content="Use Rill's interactive data exploration tools to discover insights."
   link="/explore/dashboard-101"
+  icon={<img src="/img/home/explore.png" alt="Explore" style={{ width: 24, height: 24 }} />}
 />
 <TileIcon
   header="Embed Dashboard"
   content="Embed Rill dashboards into your applications and workflows."
   link="/integrate/embedding/"
+  icon={<img src="/img/home/embed.png" alt="Embed" style={{ width: 24, height: 24 }} />}
 />
 
 </div>

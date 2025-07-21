@@ -1,6 +1,6 @@
 .tile-icon-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 1rem;
   margin: 1rem 0;
 }
@@ -37,6 +37,21 @@
   font-size: 1em;
   font-weight: 550;
   color: #383838;
+  display: flex;
+  flex-direction: column;
+
+}
+
+.tile-icon-header-icon-top {
+  color: #383838;
+}
+
+.tile-icon-header-icon-top img {
+  filter: brightness(0) saturate(100%) invert(23%) sepia(0%) saturate(0%) hue-rotate(180deg) brightness(90%) contrast(90%);
+}
+
+.tile-icon-header-text {
+  text-align: center;
 }
 
 .tile-icon-content {
@@ -50,6 +65,7 @@
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
+  margin-left: 0;
 }
 
 .tile-icon-footer {

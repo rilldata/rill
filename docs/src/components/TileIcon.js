@@ -6,12 +6,15 @@ import PropTypes from 'prop-types';
  * Displays a header, content, and multiple action links.
  * Main card links to demo, with additional links for GitHub and walkthrough.
  */
-function TileIcon({ header, content, link, linkLabel = '', target, rel, githubLink, walkthroughLink }) {
+function TileIcon({ header, content, link, linkLabel = '', target, rel, githubLink, walkthroughLink, icon }) {
     const showArrow = linkLabel !== '';
 
     return (
         <a className="tile-icon" href={link} target={target} rel={rel}>
-            <div className="tile-icon-header">{header}</div>
+            <div className="tile-icon-header">
+                {icon && <div className="tile-icon-header-icon-top">{icon}</div>}
+                <div className="tile-icon-header-text">{header}</div>
+            </div>
             <div className="tile-icon-content">
                 {content}
             </div>
@@ -55,6 +58,7 @@ TileIcon.propTypes = {
     rel: PropTypes.string,
     githubLink: PropTypes.string,
     walkthroughLink: PropTypes.string,
+    icon: PropTypes.node,
 };
 
 export default TileIcon; 
