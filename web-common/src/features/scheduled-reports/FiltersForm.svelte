@@ -61,7 +61,12 @@
     setTemporaryFilterName,
     clearAllFilters,
 
-    metricsViewMetadata: { allDimensions, allSimpleMeasures, validSpecQuery },
+    metricsViewMetadata: {
+      metricsViewName,
+      allDimensions,
+      allSimpleMeasures,
+      validSpecQuery,
+    },
   } = filters);
   $: ({
     selectedTimezone,
@@ -131,8 +136,9 @@
     selectTimeRange(timeRange, timeGrain, comparisonTimeRange);
   }
 
-  function selectRange(range: TimeRange) {
-    const defaultTimeGrain = getDefaultTimeGrain(range.start, range.end).grain;
+  function selectRange(range: TimeRange, grain?: V1TimeGrain) {
+    const defaultTimeGrain =
+      grain ?? getDefaultTimeGrain(range.start, range.end).grain;
 
     const comparisonOption = DEFAULT_TIME_RANGES[range.name as TimeRangePreset]
       ?.defaultComparison as TimeComparisonOption;
@@ -145,7 +151,7 @@
     } as DashboardTimeControls);
   }
 
-  function onSelectRange(name: string) {
+  async function onSelectRange(name: string) {
     if (!$allTimeRange?.end) {
       return;
     }
@@ -159,17 +165,19 @@
       return;
     }
 
-    const includesTimeZoneOffset = name.includes("@");
+    const includesTimeZoneOffset = name.includes("tz");
 
     if (includesTimeZoneOffset) {
-      const timeZone = name.match(/@ {(.*)}/)?.[1];
+      const timeZone = name.match(/tz (.*)/)?.[1];
 
       if (timeZone) setTimeZone(timeZone);
     }
 
-    const interval = deriveInterval(
+    const { interval, grain } = await deriveInterval(
       name,
       DateTime.fromJSDate($allTimeRange.end),
+      metricsViewName,
+      $selectedTimezone,
     );
 
     if (interval?.isValid) {
@@ -181,7 +189,7 @@
         end: validInterval.end.toJSDate(),
       };
 
-      selectRange(baseTimeRange);
+      selectRange(baseTimeRange, grain);
     }
   }
 

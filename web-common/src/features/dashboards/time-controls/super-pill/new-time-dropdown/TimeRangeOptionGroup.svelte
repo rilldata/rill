@@ -4,7 +4,7 @@
 
   export let filter = "";
   export let options: TimeRangeMenuOption[];
-  export let timeString: string | undefined;
+  export let timeString: string | undefined = undefined;
   export let hideDivider = false;
   export let onClick: (range: string) => void;
 

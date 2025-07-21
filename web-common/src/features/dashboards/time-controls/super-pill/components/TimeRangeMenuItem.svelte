@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Calendar from "@rilldata/web-common/components/icons/Calendar.svelte";
   import SyntaxElement from "./SyntaxElement.svelte";
 
   export let range: string;
@@ -16,12 +17,17 @@
 >
   <button
     class:font-bold={selected}
-    class="truncate w-full text-left flex-shrink pl-2 h-full"
+    class="truncate w-full text-left flex-shrink pl-2 h-full flex items-center gap-x-1"
   >
+    {#if range === "calendar"}
+      <Calendar size="15px" />
+    {/if}
     {label}
   </button>
 
-  <div class="sr-only group-hover:not-sr-only">
-    <SyntaxElement {range} />
-  </div>
+  {#if range}
+    <div class="sr-only group-hover:not-sr-only">
+      <SyntaxElement {range} />
+    </div>
+  {/if}
 </div>

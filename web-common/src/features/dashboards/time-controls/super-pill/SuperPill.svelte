@@ -58,16 +58,12 @@
     url: { searchParams },
   } = $page);
 
-  $: v2TimeString = normalizeRangeString(selectedRangeAlias);
+  $: rawTimeString = searchParams.get(ExploreStateURLParams.TimeRange);
 
-  function normalizeRangeString(alias: string | undefined): string | undefined {
-    if (alias === CUSTOM_TIME_RANGE_ALIAS) {
-      return searchParams
-        .get(ExploreStateURLParams.TimeRange)
-        ?.split(",")
-        .join(" to ");
-    }
-    return alias;
+  $: v2TimeString = normalizeRangeString(rawTimeString);
+
+  function normalizeRangeString(alias: string | null): string | undefined {
+    return alias?.replace(",", " to ");
   }
 </script>
 

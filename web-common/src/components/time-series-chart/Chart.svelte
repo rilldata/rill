@@ -210,10 +210,7 @@
           style:transform="translateX(-{percentage}%)"
           style:left="{percentage}%"
         >
-          <RangeDisplay
-            interval={hoveredPoints[0].interval}
-            grain={timeGrain}
-          />
+          <RangeDisplay interval={hoveredPoints[0].interval} />
         </span>
       {:else if mappedData.length}
         {@const firstPoint = mappedData?.[0]?.[0]}

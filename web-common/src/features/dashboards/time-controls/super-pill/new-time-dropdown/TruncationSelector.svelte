@@ -98,9 +98,13 @@
 </script>
 
 <DropdownMenu.Root bind:open disableFocusFirstItem={true}>
-  <DropdownMenu.Trigger asChild let:builder>
+  <DropdownMenu.Trigger asChild let:builder id="truncation-selector-trigger">
     <Tooltip.Root openDelay={800}>
-      <Tooltip.Trigger asChild let:builder={builder2}>
+      <Tooltip.Trigger
+        asChild
+        let:builder={builder2}
+        id="truncation-selector-trigger"
+      >
         <button
           {...getAttrs([builder, builder2])}
           use:builderActions={{ builders: [builder, builder2] }}
@@ -224,7 +228,7 @@
   </DropdownMenu.Content>
 </DropdownMenu.Root>
 
-<style>
+<style lang="postcss">
   h3 {
     @apply text-[11px] text-gray-500;
   }

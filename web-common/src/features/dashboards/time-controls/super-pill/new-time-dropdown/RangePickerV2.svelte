@@ -34,6 +34,10 @@
   import { getAbbreviationForIANA } from "@rilldata/web-common/lib/time/timezone";
   import { builderActions, Tooltip, getAttrs } from "bits-ui";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import ZoneContent from "../components/ZoneContent.svelte";
+  import SyntaxElement from "../components/SyntaxElement.svelte";
+  import Globe from "@rilldata/web-common/components/icons/Globe.svelte";
+  import Calendar from "@rilldata/web-common/components/icons/Calendar.svelte";
 
   export let timeString: string | undefined;
   export let interval: Interval<true>;
@@ -58,14 +62,15 @@
   let searchComponent: TimeRangeSearch;
   let filter = "";
   let parsedTime: RillTime | undefined = undefined;
-  let showCustomSelector = false;
+  let showCalendarPicker = false;
   let truncationGrain: V1TimeGrain | undefined = undefined;
+  let timeZonePickerOpen = false;
 
   $: if (timeString) {
     try {
       parsedTime = parseRillTime(timeString);
     } catch {
-      // no op
+      parsedTime = undefined;
     }
   }
 
@@ -86,9 +91,8 @@
 
   $: dateTimeAnchor = returnAnchor(ref);
 
-  $: selectedLabel = timeString && getRangeLabel(timeString);
-
-  $: hasCustomSelected = !parsedTime && timeString !== "inf";
+  $: console.log({ timeString });
+  $: selectedLabel = getRangeLabel(timeString);
 
   $: timeGrainOptions = getAllowedGrains(smallestTimeGrain);
 
@@ -315,15 +319,18 @@
     }
   }}
 >
-  <Popover.Trigger asChild let:builder>
+  <Popover.Trigger asChild let:builder id="super-pill-trigger">
     <Tooltip.Root openDelay={800}>
-      <Tooltip.Trigger asChild let:builder={tooltipBuilder}>
+      <Tooltip.Trigger
+        asChild
+        let:builder={tooltipBuilder}
+        id="super-pill-trigger"
+      >
         <button
-          {...getAttrs([builder, tooltipBuilder])}
           use:builderActions={{ builders: [builder, tooltipBuilder] }}
+          {...getAttrs([builder, tooltipBuilder])}
           class="flex gap-x-1.5"
           aria-label="Select time range"
-          data-state={open ? "open" : "closed"}
         >
           {#if timeString}
             <b class=" line-clamp-1 flex-none">
@@ -372,7 +379,7 @@
   >
     <TimeRangeSearch
       inError={!parsedTime && !!timeString && !usingLegacyTime}
-      width={showCustomSelector ? 456 : 224}
+      width={showCalendarPicker ? 456 : 224}
       bind:this={searchComponent}
       {context}
       {timeString}
@@ -384,8 +391,8 @@
 
     <div
       class="flex w-56 max-h-fit"
-      class:!w-[456px]={showCustomSelector}
-      style:height="460px"
+      class:!w-[456px]={showCalendarPicker}
+      style:height="470px"
     >
       <div
         class="flex flex-col w-56 overflow-y-auto overflow-x-hidden flex-none py-1"
@@ -445,19 +452,73 @@
         </div>
 
         {#if allowCustomTimeRange}
-          <TimeRangeOptionGroup
-            {filter}
-            hideDivider
-            timeString={hasCustomSelected ? "custom" : ""}
-            options={[{ label: "Custom", string: "custom" }]}
-            onClick={() => {
-              showCustomSelector = !showCustomSelector;
-            }}
-          />
+          <div class="w-full h-fit px-1">
+            <div class="h-px w-full bg-gray-200 my-1" />
+            <button
+              class:font-bold={false}
+              on:click={() => {
+                showCalendarPicker = !showCalendarPicker;
+              }}
+              class="truncate w-full text-left gap-x-1 hover:bg-accent flex items-center flex-shrink pl-2 h-7"
+            >
+              <Calendar size="14px" />
+              Calendar
+            </button>
+          </div>
+        {/if}
+
+        {#if !lockTimeZone && dateTimeAnchor}
+          <div class="w-full h-fit px-1">
+            <div class="h-px w-full bg-gray-200 my-1" />
+
+            <Popover.Root portal="#rill-portal" bind:open={timeZonePickerOpen}>
+              <Popover.Trigger asChild let:builder>
+                <div
+                  {...builder}
+                  use:builder.action
+                  on:click={() => {
+                    showCalendarPicker = false;
+                  }}
+                  role="presentation"
+                  class="group h-7 pr-2 overflow-hidden hover:bg-gray-100 flex-none rounded-sm w-full select-none flex items-center"
+                >
+                  <button
+                    class:font-bold={false}
+                    class="truncate w-full text-left gap-x-1 flex items-center flex-shrink pl-2 h-full"
+                  >
+                    <Globe size="14px" />
+                    Time zone
+                  </button>
+
+                  <div class="sr-only group-hover:not-sr-only">
+                    <SyntaxElement range={zoneAbbreviation} />
+                  </div>
+                </div>
+              </Popover.Trigger>
+
+              <Popover.Content
+                align="center"
+                side="right"
+                sideOffset={12}
+                class="p-1 z-50"
+              >
+                <ZoneContent
+                  {context}
+                  {availableTimeZones}
+                  activeTimeZone={zone}
+                  watermark={dateTimeAnchor}
+                  onSelectTimeZone={(z) => {
+                    onSelectTimeZone(z);
+                    closeMenu();
+                  }}
+                />
+              </Popover.Content>
+            </Popover.Root>
+          </div>
         {/if}
       </div>
 
-      {#if showCustomSelector}
+      {#if showCalendarPicker}
         <div class="bg-slate-50 border-l p-3 size-full">
           <CalendarPlusDateInput
             {firstVisibleMonth}
@@ -474,7 +535,8 @@
         </div>
       {/if}
     </div>
-    <!-- {#if showCustomSelector} -->
+
+    <!-- {#if showCalendarPicker} -->
     <!-- <div class="bg-slate-50 border-l p-3 size-full">
       <Elements.Zone
         {context}

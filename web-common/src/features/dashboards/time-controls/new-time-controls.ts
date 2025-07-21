@@ -440,7 +440,9 @@ export function getDurationLabel(isoDuration: string): string {
   return `Last ${humaniseISODuration(isoDuration)}`;
 }
 
-export function getRangeLabel(range: string): string {
+export function getRangeLabel(range: string | undefined): string {
+  console.log({ range });
+  if (!range) return "Custom";
   if (isRillPeriodToDate(range) || isRillPreviousPeriod(range)) {
     return RILL_TO_LABEL[range];
   }
@@ -462,13 +464,11 @@ export function getRangeLabel(range: string): string {
   } catch (e) {
     console.log("Error parsing RillTime", e);
     // no-op
+    return "Custom";
   }
-
-  return range;
 }
 
 // BUCKETS FOR DISPLAYING IN DROPDOWN (yaml spec may make this unnecessary)
-
 export type RangeBuckets = {
   latest: { label: string; range: ISODurationString }[];
   previous: { range: RillPreviousPeriod; label: string }[];

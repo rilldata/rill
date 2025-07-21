@@ -405,7 +405,6 @@
           </Tooltip.Trigger>
           <Tooltip.Content side="bottom" sideOffset={10}>
             <Metadata
-              smallestTimeGrain={minTimeGrain}
               timeZone={activeTimeZone}
               timeStart={allTimeRange?.start}
               timeEnd={allTimeRange?.end}

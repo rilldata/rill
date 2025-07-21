@@ -24,7 +24,6 @@
   export let selectedComparison: DashboardTimeControls | undefined;
   export let zone: string;
   export let disabled: boolean;
-  export let grain: string;
   export let showFullRange: boolean;
   export let minDate: DateTime | undefined = undefined;
   export let maxDate: DateTime | undefined = undefined;
@@ -114,7 +113,7 @@
         {:else}
           <b class="line-clamp-1">{label}</b>
           {#if interval?.isValid && showFullRange}
-            <RangeDisplay {interval} {grain} />
+            <RangeDisplay {interval} />
           {/if}
         {/if}
       </div>

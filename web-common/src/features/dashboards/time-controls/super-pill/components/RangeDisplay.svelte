@@ -6,7 +6,7 @@
   export let interval: Interval<true>;
   export let abbreviation: string | undefined = undefined;
 
-  $: shouldShowMilliseconds = false;
+  const shouldShowMilliseconds = false;
 
   $: shouldShowSeconds =
     interval.start.second !== 0 || interval.end.second !== 0;
