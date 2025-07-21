@@ -275,42 +275,6 @@ export function getAllowedGrains(
   return getAllowedGrainsFromOrder(order);
 }
 
-export function getNextLowerOrderDuration(syntax: string) {
-  const match = syntax.match(/(\d+)([a-zA-Z])/);
-  if (!match) {
-    return undefined;
-  }
-  const value = parseInt(match[1], 10);
-  const unit = match[2];
-  const v1Grain = GrainAliasToV1TimeGrain[unit as TimeGrainAlias];
-  const lowerOrderUnit = getLowerOrderGrain(v1Grain);
-  if (lowerOrderUnit === V1TimeGrain.TIME_GRAIN_UNSPECIFIED) {
-    return undefined;
-  }
-  const lowerOrderUnitAlias = V1TimeGrainToAlias[lowerOrderUnit];
-  const lowerOrderUnitValue = lengths[v1Grain];
-  if (!lowerOrderUnitValue) {
-    return undefined;
-  }
-  console.log(
-    `lowerOrderUnitValue: ${lowerOrderUnitValue}, value: ${value}, unit: ${unit}`,
-  );
-  const lowerOrderValue = value * lowerOrderUnitValue;
-
-  return `${lowerOrderValue}${lowerOrderUnitAlias}~`;
-}
-
-const lengths = {
-  [V1TimeGrain.TIME_GRAIN_SECOND]: 1000,
-  [V1TimeGrain.TIME_GRAIN_MINUTE]: 60,
-  [V1TimeGrain.TIME_GRAIN_HOUR]: 60,
-  [V1TimeGrain.TIME_GRAIN_DAY]: 24,
-  [V1TimeGrain.TIME_GRAIN_WEEK]: 7,
-  [V1TimeGrain.TIME_GRAIN_MONTH]: 30,
-  [V1TimeGrain.TIME_GRAIN_QUARTER]: 3,
-  [V1TimeGrain.TIME_GRAIN_YEAR]: 12,
-};
-
 export function getLowerOrderGrain(grain: V1TimeGrain): V1TimeGrain {
   switch (grain) {
     case V1TimeGrain.TIME_GRAIN_MILLISECOND:
