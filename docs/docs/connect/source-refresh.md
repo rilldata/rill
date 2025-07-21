@@ -2,7 +2,7 @@
 title: Configure Data Refresh
 description: Manage refresh schedules for sources deployed to Rill Cloud
 sidebar_label: Configure Data Refresh
-sidebar_position: 05
+sidebar_position: 16
 ---
 
 <!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->
