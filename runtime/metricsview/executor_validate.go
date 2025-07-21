@@ -285,17 +285,19 @@ func (e *Executor) validateTimeDimension(ctx context.Context, t *drivers.OlapTab
 			res.TimeDimensionErr = fmt.Errorf("failed to validate time dimension %q: %w", e.metricsView.TimeDimension, err)
 			return
 		}
-		// Validate time dimension type with a query
-		rows, err := e.olap.Query(ctx, &drivers.Statement{
-			Query: fmt.Sprintf("SELECT %s FROM %s LIMIT 0", expr, dialect.EscapeTable(t.Database, t.DatabaseSchema, t.Name)),
-		})
+
+		query := fmt.Sprintf("SELECT %s FROM %s LIMIT 0", expr, dialect.EscapeTable(t.Database, t.DatabaseSchema, t.Name))
+		schema, err := e.olap.QuerySchema(ctx, query, nil)
 		if err != nil {
 			res.TimeDimensionErr = fmt.Errorf("failed to validate time dimension %q: %w", e.metricsView.TimeDimension, err)
 			return
 		}
-		rows.Close() // Close rows immediately
+		if len(schema.Fields) == 0 {
+			res.TimeDimensionErr = fmt.Errorf("time dimension %q is not a column in table %q or defined in metrics view", e.metricsView.TimeDimension, e.metricsView.Table)
+			return
+		}
+		typeCode := schema.Fields[0].Type.Code
 
-		typeCode := rows.Schema.Fields[0].Type.Code
 		if typeCode != runtimev1.Type_CODE_TIMESTAMP && typeCode != runtimev1.Type_CODE_DATE && !(e.olap.Dialect() == drivers.DialectPinot && typeCode == runtimev1.Type_CODE_INT64) {
 			res.TimeDimensionErr = fmt.Errorf("time dimension %q is not a TIMESTAMP column, got %s", e.metricsView.TimeDimension, typeCode)
 		}
