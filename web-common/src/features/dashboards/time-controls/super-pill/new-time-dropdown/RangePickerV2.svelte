@@ -13,7 +13,10 @@
   import { humaniseISODuration } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
   import TimeRangeSearch from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/TimeRangeSearch.svelte";
   import { parseRillTime } from "../../../url-state/time-ranges/parser";
-  import { type RillTime } from "../../../url-state/time-ranges/RillTime";
+  import {
+    RillIsoInterval,
+    type RillTime,
+  } from "../../../url-state/time-ranges/RillTime";
   import { getTimeRangeOptionsByGrain } from "@rilldata/web-common/lib/time/defaults";
   import {
     getAllowedGrains,
@@ -65,6 +68,8 @@
       // no op
     }
   }
+
+  $: hideTruncationSelector = parsedTime?.interval instanceof RillIsoInterval;
 
   $: usingLegacyTime = isUsingLegacyTime(timeString);
 
@@ -311,7 +316,7 @@
   }}
 >
   <Popover.Trigger asChild let:builder>
-    <Tooltip.Root>
+    <Tooltip.Root openDelay={800}>
       <Tooltip.Trigger asChild let:builder={tooltipBuilder}>
         <button
           {...getAttrs([builder, tooltipBuilder])}
@@ -484,7 +489,7 @@
   </Popover.Content>
 </Popover.Root>
 
-{#if dateTimeAnchor}
+{#if dateTimeAnchor && !hideTruncationSelector}
   <TruncationSelector
     {dateTimeAnchor}
     grain={truncationGrain}

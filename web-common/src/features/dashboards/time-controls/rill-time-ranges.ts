@@ -1,7 +1,4 @@
-import {
-  parseRillTime,
-  validateRillTime,
-} from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser";
+import { validateRillTime } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser";
 import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
 import { get } from "svelte/store";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -34,9 +31,9 @@ export async function resolveTimeRanges(
     )
       return;
 
-    const rillTime = parseRillTime(tr.name);
     rillTimeToTimeRange.set(rillTimes.length, i);
-    rillTimes.push(rillTime.toString());
+
+    rillTimes.push(tr.name);
   });
 
   if (rillTimes.length === 0) return timeRangesToReturn;

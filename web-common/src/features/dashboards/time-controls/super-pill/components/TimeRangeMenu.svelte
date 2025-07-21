@@ -84,11 +84,3 @@
     <span class:font-bold={selected === "CUSTOM"}> Custom </span>
   </DropdownMenu.Item>
 {/if}
-
-<DropdownMenu.Separator />
-
-<DropdownMenu.Item on:click={handleClick} data-range={ALL_TIME_RANGE_ALIAS}>
-  <span class:font-bold={selected === ALL_TIME_RANGE_ALIAS}>
-    {RILL_TO_LABEL[ALL_TIME_RANGE_ALIAS]}
-  </span>
-</DropdownMenu.Item>

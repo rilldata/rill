@@ -82,6 +82,8 @@
 
   $: ({ selectedTimeRange, timeStart, timeEnd } = $timeRangeStateStore || {});
 
+  $: activeTimeZone = $selectedTimezone;
+
   $: selectedComparisonTimeRange =
     $comparisonRangeStateStore?.selectedComparisonTimeRange;
 
@@ -100,8 +102,8 @@
 
   $: interval = selectedTimeRange
     ? Interval.fromDateTimes(
-        DateTime.fromJSDate(selectedTimeRange.start).setZone($selectedTimezone),
-        DateTime.fromJSDate(selectedTimeRange.end).setZone($selectedTimezone),
+        DateTime.fromJSDate(selectedTimeRange.start).setZone(activeTimeZone),
+        DateTime.fromJSDate(selectedTimeRange.end).setZone(activeTimeZone),
       )
     : Interval.fromDateTimes($allTimeRange.start, $allTimeRange.end);
 
@@ -148,7 +150,7 @@
   function onPan(direction: "left" | "right") {
     const getPanRange = getPanRangeForTimeRange(
       selectedTimeRange,
-      $selectedTimezone,
+      activeTimeZone,
     );
     const panRange = getPanRange(direction);
     if (!panRange) return;
@@ -183,8 +185,9 @@
     selectTimeRange(timeRange, timeGrain, comparisonTimeRange);
   }
 
-  function selectRange(range: TimeRange) {
-    const defaultTimeGrain = getDefaultTimeGrain(range.start, range.end).grain;
+  function selectRange(range: TimeRange, grain?: V1TimeGrain) {
+    const defaultTimeGrain =
+      grain ?? getDefaultTimeGrain(range.start, range.end).grain;
 
     const comparisonOption = DEFAULT_TIME_RANGES[range.name as TimeRangePreset]
       ?.defaultComparison as TimeComparisonOption;
@@ -197,10 +200,8 @@
     } as DashboardTimeControls);
   }
 
-  async function onSelectRange(name: string, syntax?: boolean) {
-    if (!$allTimeRange?.end) {
-      return;
-    }
+  async function onSelectRange(name: string) {
+    if (!$allTimeRange?.end) return;
 
     if (name === ALL_TIME_RANGE_ALIAS) {
       makeTimeSeriesTimeRangeAndUpdateAppState(
@@ -211,20 +212,19 @@
       return;
     }
 
-    const includesTimeZoneOffset = name.includes("@");
+    const includesTimeZoneOffset = name.includes("tz");
 
     if (includesTimeZoneOffset) {
-      const timeZone = name.match(/@ {(.*)}/)?.[1];
+      const timeZone = name.match(/tz (.*)/)?.[1];
 
       if (timeZone) setTimeZone(timeZone);
     }
 
-    const interval = await deriveInterval(
-      syntax && !includesTimeZoneOffset
-        ? name + ` @ {${$selectedTimezone}}`
-        : name,
+    const { interval, grain } = await deriveInterval(
+      name,
       DateTime.fromJSDate($allTimeRange.end),
-      $metricViewNames?.[0], // TODO: handle multiple metrics
+      $metricViewNames?.[0],
+      activeTimeZone,
     );
 
     if (interval.isValid) {
@@ -236,7 +236,7 @@
         end: validInterval.end.toJSDate(),
       };
 
-      selectRange(baseTimeRange);
+      selectRange(baseTimeRange, grain);
     }
   }
 
@@ -293,12 +293,12 @@
       {availableTimeZones}
       {timeRanges}
       complete={false}
-      toggleComplete={() => {}}
       {interval}
       {timeStart}
       {timeEnd}
       {activeTimeGrain}
-      activeTimeZone={$selectedTimezone}
+      {activeTimeZone}
+      watermark={undefined}
       allowCustomTimeRange={$canvasSpec?.allowCustomTimeRange}
       canPanLeft
       canPanRight
@@ -316,7 +316,7 @@
       {selectedComparisonTimeRange}
       showTimeComparison={$comparisonRangeStateStore?.showTimeComparison ??
         false}
-      activeTimeZone={$selectedTimezone}
+      {activeTimeZone}
       onDisplayTimeComparison={displayTimeComparison}
       onSetSelectedComparisonRange={setSelectedComparisonRange}
     />

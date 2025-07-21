@@ -516,29 +516,14 @@ const metricsViewReducers = {
 
   setTimeGrain(
     name: string,
-    // timeRange: TimeRange,
+
     timeGrain: V1TimeGrain,
-    // comparisonTimeRange: DashboardTimeControls | undefined,
-    // metricsViewSpec: V1MetricsViewSpec,
   ) {
     updateMetricsExplorerByName(name, (exploreState) => {
-      // if (!timeRange.name) return;
-
-      // Reset scrub when range changes
-      // setSelectedScrubRange(exploreState, undefined);
-
-      // if (timeRange.name === TimeRangePreset.ALL_TIME) {
-      //   exploreState.showTimeComparison = false;
-      // }
-
       exploreState.selectedTimeRange = {
         ...exploreState.selectedTimeRange,
         interval: timeGrain,
       };
-
-      // exploreState.selectedComparisonTimeRange = comparisonTimeRange;
-
-      // AdvancedMeasureCorrector.correct(exploreState, metricsViewSpec);
     });
   },
 

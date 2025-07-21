@@ -7,7 +7,6 @@ import {
   useExploreState,
 } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
-import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { resolveTimeRanges } from "@rilldata/web-common/features/dashboards/time-controls/rill-time-ranges";
 import {
   createTimeControlStoreFromName,

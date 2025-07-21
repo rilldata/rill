@@ -99,7 +99,7 @@
 
 <DropdownMenu.Root bind:open disableFocusFirstItem={true}>
   <DropdownMenu.Trigger asChild let:builder>
-    <Tooltip.Root>
+    <Tooltip.Root openDelay={800}>
       <Tooltip.Trigger asChild let:builder={builder2}>
         <button
           {...getAttrs([builder, builder2])}

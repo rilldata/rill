@@ -246,8 +246,6 @@
       activeTimeZone,
     );
 
-    console.log({ grain });
-
     if (interval.isValid) {
       const validInterval = interval as Interval<true>;
       const baseTimeRange: TimeRange = {
@@ -280,11 +278,9 @@
   }
 
   function selectRange(range: TimeRange, grain?: V1TimeGrain) {
-    console.log({ range, grain });
     const timeGrain =
       grain ?? getDefaultTimeGrain(range.start, range.end).grain;
 
-    console.log({ timeGrain });
     // Get valid option for the new time range
     const validComparison =
       allTimeRange &&

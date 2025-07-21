@@ -34,7 +34,7 @@
 
   $: ({
     canvasEntity: {
-      spec: { canvasSpec },
+      spec: { canvasSpec, metricViewNames },
     },
   } = getCanvasStore(canvasName, instanceId));
 
@@ -70,10 +70,12 @@
   $: defaultTimeRange = $canvasSpec?.defaultPreset?.timeRange;
   $: timeRanges = $canvasSpec?.timeRanges ?? [];
 
+  $: activeTimeZone = $selectedTimezone;
+
   $: interval = selectedTimeRange
     ? Interval.fromDateTimes(
-        DateTime.fromJSDate(selectedTimeRange.start).setZone($selectedTimezone),
-        DateTime.fromJSDate(selectedTimeRange.end).setZone($selectedTimezone),
+        DateTime.fromJSDate(selectedTimeRange.start).setZone(activeTimeZone),
+        DateTime.fromJSDate(selectedTimeRange.end).setZone(activeTimeZone),
       )
     : Interval.fromDateTimes($allTimeRange.start, $allTimeRange.end);
 
@@ -121,17 +123,19 @@
       return;
     }
 
-    const includesTimeZoneOffset = name.includes("@");
+    const includesTimeZoneOffset = name.includes("tz");
 
     if (includesTimeZoneOffset) {
-      const timeZone = name.match(/@ {(.*)}/)?.[1];
+      const timeZone = name.match(/tz (.*)/)?.[1];
 
       if (timeZone) setTimeZone(timeZone);
     }
 
-    const interval = deriveInterval(
+    const { interval } = await deriveInterval(
       name,
       DateTime.fromJSDate($allTimeRange.end),
+      $metricViewNames?.[0],
+      activeTimeZone,
     );
 
     if (interval?.isValid) {
@@ -198,7 +202,7 @@
         {timeStart}
         {timeEnd}
         {activeTimeGrain}
-        activeTimeZone={$selectedTimezone}
+        {activeTimeZone}
         canPanLeft={false}
         canPanRight={false}
         showFullRange={false}
@@ -218,7 +222,7 @@
           {selectedComparisonTimeRange}
           showTimeComparison={$comparisonRangeStateStore?.showTimeComparison ??
             false}
-          activeTimeZone={$selectedTimezone}
+          {activeTimeZone}
           onDisplayTimeComparison={async (show) => {
             displayTimeComparison(show);
 

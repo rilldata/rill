@@ -42,7 +42,7 @@
   export let activeTimeZone: string;
   export let timeStart: string | undefined;
   export let timeEnd: string | undefined;
-  export let watermark: DateTime | undefined;
+  export let watermark: DateTime | undefined = undefined;
   export let side: "top" | "right" | "bottom" | "left" = "bottom";
   export let onSelectRange: (range: NamedRange | ISODurationString) => void;
   export let onPan: (direction: "left" | "right") => void;
@@ -58,10 +58,17 @@
     url: { searchParams },
   } = $page);
 
-  $: v2TimeString =
-    (selectedRangeAlias === CUSTOM_TIME_RANGE_ALIAS
-      ? searchParams.get(ExploreStateURLParams.TimeRange)
-      : selectedRangeAlias) || undefined;
+  $: v2TimeString = normalizeRangeString(selectedRangeAlias);
+
+  function normalizeRangeString(alias: string | undefined): string | undefined {
+    if (alias === CUSTOM_TIME_RANGE_ALIAS) {
+      return searchParams
+        .get(ExploreStateURLParams.TimeRange)
+        ?.split(",")
+        .join(" to ");
+    }
+    return alias;
+  }
 </script>
 
 <div class="wrapper">
