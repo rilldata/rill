@@ -673,6 +673,10 @@ func (p *Parser) parseMetricsView(node *Node) error {
 	spec.NoExplore = tmp.NoExplore
 
 	if !tmp.ExploreYAML.IsZero() {
+		if tmp.DefaultTimeRange != "" || tmp.DefaultTheme != "" || len(tmp.DefaultDimensions) > 0 || len(tmp.DefaultMeasures) > 0 || tmp.DefaultComparison.Mode != "" || tmp.DefaultComparison.Dimension != "" {
+			return fmt.Errorf("set default under explore key, not in metrics view")
+		}
+
 		ymlBytes, err := yaml.Marshal(tmp.ExploreYAML)
 		if err != nil {
 			return fmt.Errorf("failed to marshal explore YAML: %w", err)

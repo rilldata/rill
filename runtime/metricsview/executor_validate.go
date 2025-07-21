@@ -232,10 +232,12 @@ func (e *Executor) ReconcileWithParentMetricsView(ctx context.Context) (*runtime
 	newSpec.Measures = e.metricsView.Measures
 
 	securityRules := make([]*runtimev1.SecurityRule, 0)
-	var access, fieldAccess, rowFilter, parentAccess, parentRowFilter []*runtimev1.SecurityRule
+	var access, fieldAccess, rowFilter, parentAccess, parentFieldAccess, parentRowFilter []*runtimev1.SecurityRule
 	for _, rule := range newSpec.SecurityRules {
 		if rule.GetAccess() != nil {
 			parentAccess = append(parentAccess, rule)
+		} else if rule.GetFieldAccess() != nil {
+			parentFieldAccess = append(parentFieldAccess, rule)
 		} else if rule.GetRowFilter() != nil {
 			parentRowFilter = append(parentRowFilter, rule)
 		}
@@ -260,9 +262,13 @@ func (e *Executor) ReconcileWithParentMetricsView(ctx context.Context) (*runtime
 		securityRules = append(securityRules, parentAccess...)
 	}
 
+	// append field access rules from the metrics view and parent metrics view, adding field access in derived metrics view yaml is not allowed so this can only be rules added by us in the code if any
 	if len(fieldAccess) > 0 {
 		securityRules = append(securityRules, fieldAccess...)
-	} // field access cannot be inherited from parent metrics view, so we ignore parentFieldAccess
+	}
+	if len(parentFieldAccess) > 0 {
+		securityRules = append(securityRules, parentFieldAccess...)
+	}
 
 	if len(rowFilter) > 0 {
 		// If the metrics view has a row filter, we need to AND the row filter with parent row filter

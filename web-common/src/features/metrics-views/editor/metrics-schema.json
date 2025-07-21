@@ -3,6 +3,10 @@
   "title": "The definition for metrics views",
   "type": "object",
   "properties": {
+    "parent": {
+      "type": "string",
+      "description": "The parent metrics view from which this metrics view is derived. If specified, this will inherit properties from the parent."
+    },
     "title": {
       "type": "string",
       "description": "The display name for the dashboard."
@@ -164,6 +168,18 @@
         "required": ["expression"]
       },
       "description": "Numeric aggregates of columns from your data model."
+    },
+    "dimensions_selector": {
+      "type": "string",
+      "description": "Dimensions to include from parent metrics view. It supports \"*\", a list or duckdb regex to include/exclude dimensions, if not specified, this will inherit all dimensions from the parent metrics view."
+    },
+    "measures_selector": {
+      "type": "string",
+      "description": "Measures to include from parent metrics view. It supports  \"*\", a list or duckdb regex to include/exclude measures, if not specified, this will inherit all measures from the parent metrics view."
+    },
+    "no_explore": {
+      "type": "boolean",
+      "description": "If true, disables automatic creation of the explore view for this metrics view. This is useful for dashboards that are not intended to be explored."
     }
   },
   "oneOf": [

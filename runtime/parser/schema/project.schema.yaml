@@ -1058,6 +1058,9 @@ definitions:
             type: string
             const: metrics_view
             description: Refers to the resource type and must be `metrics_view`
+          parent:
+            type: string
+            description: Refers to the parent metrics from which this metrics view is derived. If specified, this will inherit properties from the parent metrics view
           display_name:
             type: string
             description: Refers to the display name for the metrics view
@@ -1203,13 +1206,51 @@ definitions:
                   type: string
                   description: used to configure what value to fill in for missing time buckets. This also works generally as COALESCING over non empty time buckets.
             minItems: 1
+          dimensions_selector:
+            description: Optional field selectors for dimensions to inherit from the parent metrics view.
+            $ref: '#/definitions/fields_selector'
+          measures_selector:
+            description: Optional field selectors for measures to inherit from the parent metrics view.
+            $ref: '#/definitions/fields_selector'
           security:
             $ref: '#/definitions/security_policy_properties'
             description: Defines a security policy for the dashboard
+          no_explore:
+            type: boolean
+            description: When true, disables the automatic creation of explore view for this metrics view
         required:
           - type
       - $ref: '#/definitions/common_properties' 
     definitions:
+      fields_selector:
+        oneOf:
+          - type: string
+            const: '*'
+            description: Wildcard(*) selector that includes all available fields in the selection
+          - type: array
+            items:
+              type: string
+            description: Explicit list of fields to include in the selection
+          - type: object
+            description: 'Advanced matching using regex, DuckDB expression, or exclusion'
+            properties:
+              regex:
+                type: string
+                description: Select dimensions using a regular expression
+              expr:
+                type: string
+                description: DuckDB SQL expression to select fields based on custom logic
+              exclude:
+                type: object
+                description: Select all dimensions except those listed here
+            additionalProperties: false
+            oneOf:
+              - required:
+                  - regex
+              - required:
+                  - expr
+              - required:
+                  - exclude
       field_selectors_properties:
         anyOf:
           - type: string
