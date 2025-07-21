@@ -28,6 +28,9 @@ test.describe.serial("Reports", () => {
     // Set as a daily report
     await reportForm.getByLabel("Frequency").click();
     await adminPage.getByRole("option", { name: "Daily" }).click();
+    // Set to run at 10:00 pm
+    await reportForm.getByLabel("Time", { exact: true }).click();
+    await adminPage.getByRole("option", { name: "10:00 PM" }).click();
 
     // Select "Last 14 Days" as time range
     await interactWithTimeRangeMenu(reportForm, async () => {
@@ -63,6 +66,10 @@ test.describe.serial("Reports", () => {
     // Assert report dashboard
     await expect(adminPage.getByLabel("Report dashboard name")).toHaveText(
       "Dashboard Programmatic Ads Auction",
+    );
+    // Assert report schedule
+    await expect(adminPage.getByLabel("Report schedule")).toHaveText(
+      /Repeats\s+At 10:00 PM, every day/m,
     );
   });
 
@@ -105,6 +112,11 @@ test.describe.serial("Reports", () => {
     // Notification is shown
     await expect(adminPage.getByLabel("Notification")).toHaveText(
       "Report edited",
+    );
+
+    // Assert that report is updated with correct schedule
+    await expect(adminPage.getByLabel("Report schedule")).toHaveText(
+      /Repeats\s+At 10:00 PM, on the 1st of each month/m,
     );
   });
 

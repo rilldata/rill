@@ -256,18 +256,12 @@ func (e *Executor) Schema(ctx context.Context) (*runtimev1.StructType, error) {
 		return nil, err
 	}
 
-	res, err := e.olap.Query(ctx, &drivers.Statement{
-		Query:            sql,
-		Args:             args,
-		Priority:         e.priority,
-		ExecutionTimeout: defaultInteractiveTimeout,
-	})
+	schema, err := e.olap.QuerySchema(ctx, sql, args)
 	if err != nil {
 		return nil, err
 	}
-	defer res.Close()
 
-	return res.Schema, nil
+	return schema, nil
 }
 
 // Query executes the provided query against the metrics view.
