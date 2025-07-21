@@ -4,12 +4,14 @@ Contains the parser for url param for metrics view filter.
 We support simple dimension and measure filters.
 
 Example dimension filter,
+
 ```
 country IN ('US','IN') AND state = 'ABC'
 country NOT IN ('US','IN') AND (state = 'ABC' OR lat >= 12.56)
 ```
 
 Example measure filter,
+
 ```
 country NIN ('US','IN') and state having (lat >= 12.56)
 ```

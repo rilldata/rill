@@ -15,7 +15,7 @@ Files that are *nested at any level* under your native `sources` directory will 
 
 ## Properties
 
-**`type`** - Refers to the resource type and must be `source` _(required)_.
+**`type`** - Refers to the resource type and must be `model` _(required)_.
 
 **`connector`**
  —  Refers to the connector type for the source _(required)_.
@@ -101,3 +101,6 @@ duckdb:
 
 **`dsn`** - Used to set the Snowflake connection string. For more information, refer to our [Snowflake connector page](/reference/connectors/snowflake.md) and the official [Go Snowflake Driver](https://pkg.go.dev/github.com/snowflakedb/gosnowflake#hdr-Connection_String) documentation _(optional)_.
   - If not specified in the source YAML, the `connector.snowflake.dsn` connection string will need to be set when [deploying the project to Rill Cloud](/deploy/deploy-credentials#configure-environmental-variables-and-credentials-for-rill-cloud).
+
+> **Note:**
+> For new projects, use `type: model` in your source YAML files. The legacy `type: source` is still supported for backward compatibility, but may be removed in the future.

@@ -16,7 +16,7 @@ Templating can be a powerful tool to help introduce dynamic conditional statemen
 
 :::info Where can you template in Rill?
 
-For the most part, templating should be used in [SQL models](../build/models/models.md) and when defining [source proprties](/reference/project-files/sources.md). If you have further questions about templating, please don't hesitate to [reach out](/contact) and we'd love to assist you further!
+For the most part, templating should be used in [SQL models](../build/models/models.md) and when defining [source properties](/reference/project-files/sources.md). If you have further questions about templating, please don't hesitate to [reach out](/contact) and we'd love to assist you further!
 
 :::
 
@@ -96,7 +96,7 @@ Let's say that we have a [GCS](/reference/connectors/gcs.md) source created wher
 # Source YAML
 # Reference documentation: https://docs.rilldata.com/reference/project-files/sources
 
-type: source
+type: model
 
 connector: "duckdb"
 dev:
@@ -122,7 +122,7 @@ Fortunately, we can leverage DuckDB's ability to read from S3 files directly and
 
 
 ```yaml
-type: source
+type: model
 connector: "duckdb"
 sql: SELECT * FROM read_parquet('s3://bucket/path/*.parquet') {{ if dev }} where updated_at > CURRENT_DATE - INTERVAL 7 DAY {{ end }}
 ```
@@ -186,7 +186,7 @@ If we simply run Rill Developer using `rill start`, our model will look like the
 rill start --env language="ja" --env local_limit=100
 ```
 
-Even though we have defaults set in `rill.yaml` (and this will be used by any downstream models and dashboards on Rill Cloud), we will instead see these local overrides come into effect with our templated logic to return Spanish movies and the model limit is now 100 rows.
+Even though we have defaults set in `rill.yaml` (and this will be used by any downstream models and dashboards on Rill Cloud), we will instead see these local overrides come into effect with our templated logic to return Japanese movies and the model limit is now 100 rows.
 
 <img src = '/img/deploy/templating/vars-override-example.png' class='rounded-gif' />
 <br />

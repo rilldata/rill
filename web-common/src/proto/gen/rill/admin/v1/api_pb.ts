@@ -16178,6 +16178,16 @@ export class AlertOptions extends Message<AlertOptions> {
   displayName = "";
 
   /**
+   * @generated from field: string refresh_cron = 16;
+   */
+  refreshCron = "";
+
+  /**
+   * @generated from field: string refresh_time_zone = 17;
+   */
+  refreshTimeZone = "";
+
+  /**
    * @generated from field: string interval_duration = 2;
    */
   intervalDuration = "";
@@ -16264,6 +16274,8 @@ export class AlertOptions extends Message<AlertOptions> {
   static readonly typeName = "rill.admin.v1.AlertOptions";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 16, name: "refresh_cron", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 17, name: "refresh_time_zone", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "interval_duration", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 13, name: "resolver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 14, name: "resolver_properties", kind: "message", T: Struct },

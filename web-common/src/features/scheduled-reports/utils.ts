@@ -31,16 +31,9 @@ import {
 } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
 import { ExploreMetricsViewMetadata } from "@rilldata/web-common/features/dashboards/stores/ExploreMetricsViewMetadata.ts";
 import {
-  getDayOfMonthFromCronExpression,
-  getDayOfWeekFromCronExpression,
-  getFrequencyFromCronExpression,
-  getNextQuarterHour,
-  getTimeIn24FormatFromDateTime,
-  getTimeOfDayFromCronExpression,
-  getTodaysDayOfWeek,
-  ReportFrequency,
+  getExistingScheduleFormValues,
+  getInitialScheduleFormValues,
 } from "@rilldata/web-common/features/scheduled-reports/time-utils";
-import { getLocalIANA } from "@rilldata/web-common/lib/time/timezone";
 import {
   type DashboardTimeControls,
   TimeRangePreset,
@@ -77,11 +70,7 @@ export function getNewReportInitialFormValues(
 ) {
   return {
     title: "",
-    frequency: ReportFrequency.Weekly,
-    dayOfWeek: getTodaysDayOfWeek(),
-    dayOfMonth: 1,
-    timeOfDay: getTimeIn24FormatFromDateTime(getNextQuarterHour()),
-    timeZone: getLocalIANA(),
+    ...getInitialScheduleFormValues(),
     exportFormat: V1ExportFormat.EXPORT_FORMAT_CSV as V1ExportFormat,
     exportLimit: "",
     exportIncludeHeader: false,
@@ -97,19 +86,7 @@ export function getExistingReportInitialFormValues(
 ) {
   return {
     title: reportSpec.displayName ?? "",
-    frequency: getFrequencyFromCronExpression(
-      reportSpec.refreshSchedule?.cron as string,
-    ),
-    dayOfWeek: getDayOfWeekFromCronExpression(
-      reportSpec.refreshSchedule?.cron as string,
-    ),
-    dayOfMonth: getDayOfMonthFromCronExpression(
-      reportSpec.refreshSchedule?.cron as string,
-    ),
-    timeOfDay: getTimeOfDayFromCronExpression(
-      reportSpec.refreshSchedule?.cron as string,
-    ),
-    timeZone: reportSpec.refreshSchedule?.timeZone ?? getLocalIANA(),
+    ...getExistingScheduleFormValues(reportSpec.refreshSchedule),
     exportFormat:
       reportSpec?.exportFormat ?? V1ExportFormat.EXPORT_FORMAT_UNSPECIFIED,
     exportLimit: reportSpec.exportLimit === "0" ? "" : reportSpec.exportLimit,
