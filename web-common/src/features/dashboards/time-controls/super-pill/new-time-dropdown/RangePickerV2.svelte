@@ -67,7 +67,17 @@
 
   $: usingLegacyTime = isUsingLegacyTime(timeString);
 
-  $: ({ ref, truncationGrain, padded } = parse(timeString ?? ""));
+  $: padded = usingLegacyTime ? true : !!parsedTime?.asOfLabel?.offset;
+  $: ref = usingLegacyTime ? "latest" : (parsedTime?.asOfLabel?.label ?? "now");
+
+  let truncationGrain: V1TimeGrain | undefined = undefined;
+  $: truncationGrain = usingLegacyTime
+    ? timeString?.startsWith("rill")
+      ? "TIME_GRAIN_DAY"
+      : getSmallestGrainFromISODuration(timeString)
+    : parsedTime?.asOfLabel?.snap
+      ? GrainAliasToV1TimeGrain[parsedTime.asOfLabel?.snap]
+      : undefined;
 
   $: dateTimeAnchor = returnAnchor(ref);
 
@@ -278,52 +288,6 @@
       return DateTime.now().setZone(zone);
     }
   }
-
-  function parse(timeString: string) {
-    if (usingLegacyTime) {
-      return {
-        ref: "latest",
-        truncationGrain: timeString.startsWith("rill")
-          ? "TIME_GRAIN_DAY"
-          : getSmallestGrainFromISODuration(timeString),
-        padded: true,
-      };
-    }
-
-    const patterns = {
-      asOfClause: /as of (.+)$/i,
-      timeWithGrain:
-        /^(latest|watermark|now)\/([HhMmSsQqDdYyWw]+)(?:\+1[HhMmSsQqDdYyWw]+)?$/,
-      justType: /^(latest|watermark|now)$/,
-    };
-
-    let ref: string = "now";
-    let truncationGrain: V1TimeGrain | undefined = undefined;
-    let padded = false;
-
-    const asOfMatch = timeString.match(patterns.asOfClause);
-    const clauseToCheck = asOfMatch ? asOfMatch[1] : timeString;
-
-    const timeWithGrainMatch = clauseToCheck.match(patterns.timeWithGrain);
-
-    if (timeWithGrainMatch) {
-      ref = timeWithGrainMatch[1];
-      truncationGrain = GrainAliasToV1TimeGrain[timeWithGrainMatch[2]];
-    } else {
-      const justTypeMatch = clauseToCheck.match(patterns.justType);
-      if (justTypeMatch) {
-        ref = justTypeMatch[1];
-      } else if (clauseToCheck !== timeString) {
-        ref = clauseToCheck;
-      }
-    }
-
-    if (clauseToCheck.includes("+1")) {
-      padded = true;
-    }
-
-    return { ref, truncationGrain, padded };
-  }
 </script>
 
 <svelte:window
@@ -460,7 +424,7 @@
               <button
                 class="group h-7 px-2 overflow-hidden hover:bg-gray-100 rounded-sm w-full select-none flex items-center"
                 on:click={() => {
-                  handleRangeSelect("earliest to ref as of latest/ms+1ms");
+                  handleRangeSelect("earliest to ref as of latest/s+1s");
                 }}
               >
                 <span class:font-bold={timeString === ALL_TIME_RANGE_ALIAS}>
@@ -516,7 +480,7 @@
   </Popover.Content>
 </Popover.Root>
 
-{#if truncationGrain && dateTimeAnchor}
+{#if dateTimeAnchor}
   <TruncationSelector
     {dateTimeAnchor}
     grain={truncationGrain}

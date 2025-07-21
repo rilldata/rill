@@ -23,7 +23,7 @@
   {#each filtered as { string, label }, i (i)}
     <TimeRangeMenuItem
       range={string}
-      selected={timeString === string}
+      selected={!!timeString?.startsWith(string)}
       {label}
       {onClick}
     />

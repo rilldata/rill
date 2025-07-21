@@ -1,7 +1,7 @@
 <script lang="ts">
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
-  import { DateTime } from "luxon";
+  import { DateTime, type DateTimeUnit } from "luxon";
   import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
   import {
     getOptionsFromSmallestToLargest,
@@ -14,13 +14,12 @@
   import TooltipDescription from "@rilldata/web-common/components/tooltip/TooltipDescription.svelte";
 
   export let dateTimeAnchor: DateTime;
-  export let grain: V1TimeGrain;
+  export let grain: V1TimeGrain | undefined;
   export let rangeGrain: V1TimeGrain;
   export let smallestTimeGrain: V1TimeGrain | undefined;
   export let inclusive: boolean;
   export let watermark: DateTime | undefined;
   export let latest: DateTime | undefined;
-
   export let ref: "latest" | "watermark" | "now" | string;
   export let onSelectAsOfOption: (
     ref: "latest" | "watermark" | "now" | string,
@@ -32,26 +31,18 @@
   ) => void;
 
   let open = false;
-
   let now = DateTime.now();
+
+  $: dateTimeUnit = grain ? V1TimeGrainToDateTimeUnit[grain] : undefined;
 
   $: grainOptions = getOptionsFromSmallestToLargest(
     rangeGrain,
     smallestTimeGrain,
   );
 
-  $: humanizedRef = (() => {
-    switch (ref) {
-      case "watermark":
-        return "complete";
-      case "latest":
-        return "latest";
-      case "now":
-        return "current";
-      default:
-        return ref;
-    }
-  })();
+  $: humanizedRef = humanizeRef(ref, grain);
+
+  $: derivedAnchor = deriveAnchor(dateTimeAnchor, dateTimeUnit, inclusive);
 
   $: options = [
     {
@@ -73,6 +64,37 @@
       description: "System clock in the selected time zone",
     },
   ];
+
+  function deriveAnchor(
+    dateTimeAnchor: DateTime,
+    snap: DateTimeUnit | undefined,
+    inclusive: boolean,
+  ) {
+    if (!snap) {
+      return dateTimeAnchor.toLocaleString(DateTime.DATETIME_MED_WITH_SECONDS);
+    }
+    return dateTimeAnchor
+      .startOf(snap)
+      .plus({
+        [snap]: inclusive ? 1 : 0,
+      })
+      .toLocaleString(DateTime.DATETIME_MED_WITH_SECONDS);
+  }
+
+  function humanizeRef(ref: string, grain: V1TimeGrain | undefined): string {
+    switch (ref) {
+      case "watermark":
+        if (grain) return "complete";
+        return "watermark";
+      case "latest":
+        return "latest";
+      case "now":
+        if (grain) return "current";
+        return "now";
+      default:
+        return ref;
+    }
+  }
 </script>
 
 <DropdownMenu.Root bind:open disableFocusFirstItem={true}>
@@ -90,13 +112,16 @@
             as of
             <b>
               {humanizedRef}
-
-              {V1TimeGrainToDateTimeUnit[grain]}
+              {#if dateTimeUnit}
+                {dateTimeUnit}
+              {/if}
             </b>
-            {#if inclusive || ref === "watermark"}
-              end
-            {:else}
-              start
+            {#if grain}
+              {#if inclusive || ref === "watermark"}
+                end
+              {:else}
+                start
+              {/if}
             {/if}
           </p>
 
@@ -108,12 +133,7 @@
 
       <Tooltip.Content side="bottom" sideOffset={8}>
         <TooltipContent>
-          {dateTimeAnchor
-            .startOf(V1TimeGrainToDateTimeUnit[grain])
-            .plus({
-              [V1TimeGrainToDateTimeUnit[grain]]: inclusive ? 1 : 0,
-            })
-            .toLocaleString(DateTime.DATETIME_MED_WITH_SECONDS)}
+          {derivedAnchor}
         </TooltipContent>
       </Tooltip.Content>
     </Tooltip.Root>
@@ -173,32 +193,34 @@
       {/each}
     </DropdownMenu.Group>
 
-    <div class="bg-gray-100 border-t">
-      <div class="flex justify-between items-center p-2">
-        <span>
-          Include
+    {#if dateTimeUnit}
+      <div class="bg-gray-100 border-t">
+        <div class="flex justify-between items-center p-2">
+          <span>
+            Include
 
-          {#if ref === "latest"}
-            latest
-          {:else if ref === "now"}
-            current
-          {:else if ref === "watermark"}
-            last complete
-          {/if}
+            {#if ref === "latest"}
+              latest
+            {:else if ref === "now"}
+              current
+            {:else if ref === "watermark"}
+              last complete
+            {/if}
 
-          {V1TimeGrainToDateTimeUnit[grain]}
-        </span>
+            {dateTimeUnit}
+          </span>
 
-        <Switch
-          disabled={ref === "watermark"}
-          small
-          checked={inclusive || ref === "watermark"}
-          on:click={() => {
-            onToggleAlignment(!inclusive);
-          }}
-        />
+          <Switch
+            disabled={ref === "watermark"}
+            small
+            checked={inclusive || ref === "watermark"}
+            on:click={() => {
+              onToggleAlignment(!inclusive);
+            }}
+          />
+        </div>
       </div>
-    </div>
+    {/if}
   </DropdownMenu.Content>
 </DropdownMenu.Root>
 
