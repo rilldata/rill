@@ -303,7 +303,10 @@ export function isRillPeriodToDate(value: string): value is RillPeriodToDate {
 }
 
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-import { GrainAliasToV1TimeGrain } from "@rilldata/web-common/lib/time/new-grains";
+import {
+  GrainAliasToV1TimeGrain,
+  V1TimeGrainToAlias,
+} from "@rilldata/web-common/lib/time/new-grains";
 
 export async function deriveInterval(
   name: RillPeriodToDate | RillPreviousPeriod | ISODurationString,
@@ -524,4 +527,83 @@ export function bucketYamlRanges(
       allTime: false,
     },
   );
+}
+
+function convertIsoToRillTime(iso: string): string {
+  const upper = iso.toUpperCase();
+
+  if (!upper.startsWith("P")) {
+    throw new Error("Invalid ISO duration: must start with P");
+  }
+
+  const result: string[] = [];
+
+  const [datePartRaw, timePartRaw] = upper.slice(1).split("T");
+  const datePart = datePartRaw || "";
+  const timePart = timePartRaw || "";
+
+  const dateUnits: Record<string, string> = {
+    Y: "Y",
+    M: "M",
+    W: "W",
+    D: "D",
+  };
+
+  const timeUnits: Record<string, string> = {
+    H: "H",
+    M: "m",
+    S: "S",
+  };
+
+  for (const [unit, rill] of Object.entries(dateUnits)) {
+    const match = datePart.match(new RegExp(`(\\d+(\\.\\d+)?)${unit}`));
+    if (match) result.push(`${match[1]}${rill}`);
+  }
+
+  for (const [unit, rill] of Object.entries(timeUnits)) {
+    const match = timePart.match(new RegExp(`(\\d+(\\.\\d+)?)${unit}`));
+    if (match) result.push(`${match[1]}${rill}`);
+  }
+
+  return result.join("");
+}
+
+export function convertLegacyTime(timeString: string) {
+  if (timeString.startsWith("rill-")) {
+    if (timeString === "rill-TD") return "DTD";
+    return timeString.replace("rill-", "");
+  } else if (timeString.startsWith("P") || timeString.startsWith("p")) {
+    return convertIsoToRillTime(timeString);
+  }
+  return timeString;
+}
+
+export function constructAsOfString(
+  asOf: string,
+  grain: V1TimeGrain | undefined | null,
+  pad: boolean,
+): string {
+  if (!grain) {
+    return asOf;
+  }
+
+  const alias = V1TimeGrainToAlias[grain];
+
+  let base: string;
+
+  if (asOf === "latest" || asOf === undefined) {
+    base = `latest/${alias}`;
+  } else if (asOf === "watermark") {
+    base = `watermark/${alias}`;
+  } else if (asOf === "now") {
+    base = `now/${alias}`;
+  } else {
+    base = `${asOf}/${alias}`;
+  }
+
+  if (pad) {
+    return `${base}+1${alias}`;
+  } else {
+    return base;
+  }
 }

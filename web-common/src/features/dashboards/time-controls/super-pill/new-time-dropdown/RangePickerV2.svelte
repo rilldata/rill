@@ -23,7 +23,6 @@
     getGrainOrder,
     getSmallestGrainFromISODuration,
     GrainAliasToV1TimeGrain,
-    V1TimeGrainToAlias,
   } from "@rilldata/web-common/lib/time/new-grains";
   import * as Popover from "@rilldata/web-common/components/popover";
   import type { TimeGrainOptions } from "@rilldata/web-common/lib/time/defaults";
@@ -38,6 +37,10 @@
   import SyntaxElement from "../components/SyntaxElement.svelte";
   import Globe from "@rilldata/web-common/components/icons/Globe.svelte";
   import Calendar from "@rilldata/web-common/components/icons/Calendar.svelte";
+  import {
+    convertLegacyTime,
+    constructAsOfString,
+  } from "../../new-time-controls";
 
   export let timeString: string | undefined;
   export let interval: Interval<true>;
@@ -174,85 +177,6 @@
     onSelectRange(newString);
   }
 
-  function constructAsOfString(
-    asOf: string,
-    grain: V1TimeGrain | undefined | null,
-    forwardAlign: boolean,
-  ): string {
-    if (!grain) {
-      return asOf;
-    }
-
-    const alias = V1TimeGrainToAlias[grain];
-
-    let base: string;
-
-    if (asOf === "latest" || asOf === undefined) {
-      base = `latest/${alias}`;
-    } else if (asOf === "watermark") {
-      base = `watermark/${alias}`;
-    } else if (asOf === "now") {
-      base = `now/${alias}`;
-    } else {
-      base = `${asOf}/${alias}`;
-    }
-
-    if (forwardAlign) {
-      return `${base}+1${alias}`;
-    } else {
-      return base;
-    }
-  }
-
-  function convertLegacyTime(timeString: string) {
-    if (timeString.startsWith("rill-")) {
-      if (timeString === "rill-TD") return "DTD";
-      return timeString.replace("rill-", "");
-    } else if (timeString.startsWith("P") || timeString.startsWith("p")) {
-      return convertIsoToRillTime(timeString);
-    }
-    return timeString;
-  }
-
-  function convertIsoToRillTime(iso: string): string {
-    const upper = iso.toUpperCase();
-
-    if (!upper.startsWith("P")) {
-      throw new Error("Invalid ISO duration: must start with P");
-    }
-
-    const result: string[] = [];
-
-    const [datePartRaw, timePartRaw] = upper.slice(1).split("T");
-    const datePart = datePartRaw || "";
-    const timePart = timePartRaw || "";
-
-    const dateUnits: Record<string, string> = {
-      Y: "Y",
-      M: "M",
-      W: "W",
-      D: "D",
-    };
-
-    const timeUnits: Record<string, string> = {
-      H: "H",
-      M: "m",
-      S: "S",
-    };
-
-    for (const [unit, rill] of Object.entries(dateUnits)) {
-      const match = datePart.match(new RegExp(`(\\d+(\\.\\d+)?)${unit}`));
-      if (match) result.push(`${match[1]}${rill}`);
-    }
-
-    for (const [unit, rill] of Object.entries(timeUnits)) {
-      const match = timePart.match(new RegExp(`(\\d+(\\.\\d+)?)${unit}`));
-      if (match) result.push(`${match[1]}${rill}`);
-    }
-
-    return result.join("");
-  }
-
   function constructNewString({
     currentString,
     truncationGrain,
@@ -292,7 +216,7 @@
     onSelectRange(newString);
   }
 
-  function returnAnchor(asOf: string) {
+  function returnAnchor(asOf: string): DateTime | undefined {
     if (asOf === "latest") {
       return maxDate.setZone(zone);
     } else if (asOf === "watermark" && watermark) {

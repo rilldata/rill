@@ -10,7 +10,6 @@
   import { DateTime, Interval } from "luxon";
   import {
     bucketYamlRanges,
-    CUSTOM_TIME_RANGE_ALIAS,
     type ISODurationString,
     type NamedRange,
   } from "../new-time-controls";
