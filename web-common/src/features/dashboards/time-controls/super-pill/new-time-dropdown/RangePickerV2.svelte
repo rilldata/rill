@@ -56,6 +56,7 @@
   let filter = "";
   let parsedTime: RillTime | undefined = undefined;
   let showCustomSelector = false;
+  let truncationGrain: V1TimeGrain | undefined = undefined;
 
   $: if (timeString) {
     try {
@@ -70,11 +71,10 @@
   $: padded = usingLegacyTime ? true : !!parsedTime?.asOfLabel?.offset;
   $: ref = usingLegacyTime ? "latest" : (parsedTime?.asOfLabel?.label ?? "now");
 
-  let truncationGrain: V1TimeGrain | undefined = undefined;
   $: truncationGrain = usingLegacyTime
     ? timeString?.startsWith("rill")
-      ? "TIME_GRAIN_DAY"
-      : getSmallestGrainFromISODuration(timeString)
+      ? V1TimeGrain.TIME_GRAIN_DAY
+      : getSmallestGrainFromISODuration(timeString ?? "PT1M")
     : parsedTime?.asOfLabel?.snap
       ? GrainAliasToV1TimeGrain[parsedTime.asOfLabel?.snap]
       : undefined;
@@ -83,13 +83,13 @@
 
   $: selectedLabel = timeString && getRangeLabel(timeString);
 
-  $: hasCustomSelected = !parsedTime;
+  $: hasCustomSelected = !parsedTime && timeString !== "inf";
 
   $: timeGrainOptions = getAllowedGrains(smallestTimeGrain);
 
   $: allOptions = timeGrainOptions.map(getTimeRangeOptionsByGrain);
 
-  $: onTimeGrainSelect(truncationGrain);
+  $: if (truncationGrain) onTimeGrainSelect(truncationGrain);
 
   $: zoneAbbreviation = getAbbreviationForIANA(maxDate, zone);
 
@@ -119,27 +119,31 @@
   }
 
   function handleRangeSelect(range: string, ignoreSnap?: boolean) {
-    const parsed = parseRillTime(range);
+    if (range === ALL_TIME_RANGE_ALIAS) {
+      onSelectRange(ALL_TIME_RANGE_ALIAS);
+    } else {
+      const parsed = parseRillTime(range);
 
-    const rangeGrainOrder = getGrainOrder(parsed.rangeGrain);
-    const asOfGrainOrder = getGrainOrder(truncationGrain);
+      const rangeGrainOrder = getGrainOrder(parsed.rangeGrain);
+      const asOfGrainOrder = getGrainOrder(truncationGrain);
 
-    if (asOfGrainOrder > rangeGrainOrder) {
-      truncationGrain = parsed.rangeGrain;
+      if (asOfGrainOrder > rangeGrainOrder) {
+        truncationGrain = parsed.rangeGrain;
+      }
+
+      const newAsOfString = constructAsOfString(
+        ref,
+        ignoreSnap
+          ? undefined
+          : (truncationGrain ??
+              smallestTimeGrain ??
+              V1TimeGrain.TIME_GRAIN_MINUTE),
+        padded,
+      );
+
+      overrideRillTimeRef(parsed, newAsOfString);
+      onSelectRange(parsed.toString());
     }
-
-    const newAsOfString = constructAsOfString(
-      ref,
-      ignoreSnap
-        ? undefined
-        : (truncationGrain ??
-            smallestTimeGrain ??
-            V1TimeGrain.TIME_GRAIN_MINUTE),
-      padded,
-    );
-
-    overrideRillTimeRef(parsed, newAsOfString);
-    onSelectRange(parsed.toString());
 
     closeMenu();
   }
@@ -424,7 +428,7 @@
               <button
                 class="group h-7 px-2 overflow-hidden hover:bg-gray-100 rounded-sm w-full select-none flex items-center"
                 on:click={() => {
-                  handleRangeSelect("earliest to ref as of latest/s+1s");
+                  handleRangeSelect("inf");
                 }}
               >
                 <span class:font-bold={timeString === ALL_TIME_RANGE_ALIAS}>

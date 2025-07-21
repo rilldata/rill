@@ -303,6 +303,7 @@ export function isRillPeriodToDate(value: string): value is RillPeriodToDate {
 }
 
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+import { GrainAliasToV1TimeGrain } from "@rilldata/web-common/lib/time/new-grains";
 
 export async function deriveInterval(
   name: RillPeriodToDate | RillPreviousPeriod | ISODurationString,
@@ -350,7 +351,9 @@ export async function deriveInterval(
       DateTime.fromISO(timeRange.start),
       DateTime.fromISO(timeRange.end),
     ),
-    grain: parsed.byGrain,
+    grain: parsed.asOfLabel?.snap
+      ? GrainAliasToV1TimeGrain[parsed.asOfLabel?.snap]
+      : parsed.rangeGrain,
   };
 }
 

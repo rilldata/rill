@@ -15,7 +15,7 @@
 
   export let dateTimeAnchor: DateTime;
   export let grain: V1TimeGrain | undefined;
-  export let rangeGrain: V1TimeGrain;
+  export let rangeGrain: V1TimeGrain | undefined;
   export let smallestTimeGrain: V1TimeGrain | undefined;
   export let inclusive: boolean;
   export let watermark: DateTime | undefined;

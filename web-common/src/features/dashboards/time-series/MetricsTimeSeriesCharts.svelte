@@ -335,7 +335,7 @@
       {#if $rillTime}
         <DropdownMenu.Root bind:open>
           <DropdownMenu.Trigger asChild let:builder>
-            <Button builders={[builder]} type="ghost" square small>
+            <Button builders={[builder]} type="ghost" gray square small>
               <ThreeDot />
             </Button>
           </DropdownMenu.Trigger>

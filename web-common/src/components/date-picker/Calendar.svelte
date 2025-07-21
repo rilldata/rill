@@ -6,7 +6,6 @@
   type MaybeDate = DateTime | undefined;
 
   export let selection: MaybeDate | Interval = undefined;
-  export let minDate: MaybeDate = undefined;
   export let maxDate: MaybeDate = DateTime.now().startOf("day");
   export let visibleMonths = 1;
   export let selectingStart = true;
@@ -58,7 +57,6 @@
   {#each { length: visibleMonths } as month, i (month)}
     <Month
       {firstDayOfWeek}
-      {minDate}
       {maxDate}
       {singleDaySelection}
       interval={finalInterval}

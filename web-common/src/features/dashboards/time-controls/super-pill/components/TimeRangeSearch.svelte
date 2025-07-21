@@ -3,12 +3,12 @@
   import { localStorageStore } from "@rilldata/web-common/lib/store-utils";
   import { Clock } from "lucide-svelte";
   import { parseRillTime } from "../../../url-state/time-ranges/parser";
+  import { ALL_TIME_RANGE_ALIAS } from "../../new-time-controls";
 
   const message = "Unable to parse time string";
 
   export let context: string;
   export let width: number;
-
   export let inError: boolean;
   export let timeString: string | undefined = undefined;
   export let searchValue = timeString || "";
@@ -16,7 +16,6 @@
 
   let searchElement: HTMLInputElement;
   let unableToParse = false;
-  // let localRange = timeString || ""
 
   const latestNSearches = localStorageStore(`${context}-recent-searches`, [
     "-7d/d to -3d/d",
@@ -41,6 +40,13 @@
       e.preventDefault();
 
       searchElement.blur();
+
+      if (searchValue === ALL_TIME_RANGE_ALIAS) {
+        onSelectRange(ALL_TIME_RANGE_ALIAS);
+        searchValue = "";
+        unableToParse = false;
+        return;
+      }
 
       try {
         parseRillTime(searchValue);

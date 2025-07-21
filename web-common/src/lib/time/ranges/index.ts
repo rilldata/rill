@@ -62,7 +62,7 @@ export function getChildTimeRanges(
         start,
         end: exclusiveEndDate,
       });
-    } else {
+    } else if (timeRange.start && timeRange.end) {
       const timeRangeDates = relativePointInTimeToAbsolute(
         end,
         timeRange.start,
@@ -376,7 +376,7 @@ export function getAdjustedChartTime(
   end: Date | undefined,
   zone: string,
   interval: V1TimeGrain | undefined,
-  timePreset: TimeRangePreset | TimeComparisonOption | undefined,
+  timePreset: string | undefined,
   defaultTimeRange: string | undefined,
   chartType: TDDChart,
 ) {

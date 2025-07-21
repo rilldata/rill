@@ -10,6 +10,7 @@
   import { DateTime, Interval } from "luxon";
   import {
     bucketYamlRanges,
+    CUSTOM_TIME_RANGE_ALIAS,
     type ISODurationString,
     type NamedRange,
   } from "../new-time-controls";
@@ -17,6 +18,8 @@
   import * as Elements from "./components";
   import RangePickerV2 from "./new-time-dropdown/RangePickerV2.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
+  import { page } from "$app/stores";
+  import { ExploreStateURLParams } from "../../url-state/url-params";
 
   export let allTimeRange: TimeRange;
   export let selectedRangeAlias: string | undefined;
@@ -50,6 +53,15 @@
   const newPicker = featureFlags.rillTime;
 
   $: rangeBuckets = bucketYamlRanges(timeRanges);
+
+  $: ({
+    url: { searchParams },
+  } = $page);
+
+  $: v2TimeString =
+    (selectedRangeAlias === CUSTOM_TIME_RANGE_ALIAS
+      ? searchParams.get(ExploreStateURLParams.TimeRange)
+      : selectedRangeAlias) || undefined;
 </script>
 
 <div class="wrapper">
@@ -68,7 +80,7 @@
         {watermark}
         {showDefaultItem}
         {defaultTimeRange}
-        timeString={selectedRangeAlias}
+        timeString={v2TimeString}
         {interval}
         zone={activeTimeZone}
         {lockTimeZone}

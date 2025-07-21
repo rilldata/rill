@@ -13,7 +13,6 @@
   export let potentialEnd: DateTime | undefined;
   export let potentialStart: DateTime | undefined;
   export let singleDaySelection = false;
-  export let minDate: DateTime<true> | DateTime<false> | undefined;
   export let maxDate: DateTime<true> | DateTime<false> | undefined;
   export let onPan: (direction: 1 | -1) => void;
   export let onSelectDay: (date: DateTime<true>) => void;

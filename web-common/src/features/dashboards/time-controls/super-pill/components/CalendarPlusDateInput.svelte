@@ -62,7 +62,6 @@
 <div class="flex flex-col w-full gap-y-3">
   <Calendar
     {maxDate}
-    {minDate}
     selection={calendarInterval}
     {selectingStart}
     {firstVisibleMonth}

@@ -246,6 +246,8 @@
       activeTimeZone,
     );
 
+    console.log({ grain });
+
     if (interval.isValid) {
       const validInterval = interval as Interval<true>;
       const baseTimeRange: TimeRange = {
@@ -278,9 +280,11 @@
   }
 
   function selectRange(range: TimeRange, grain?: V1TimeGrain) {
+    console.log({ range, grain });
     const timeGrain =
       grain ?? getDefaultTimeGrain(range.start, range.end).grain;
 
+    console.log({ timeGrain });
     // Get valid option for the new time range
     const validComparison =
       allTimeRange &&
@@ -322,12 +326,7 @@
 
   function onTimeGrainSelect(timeGrain: V1TimeGrain) {
     if (usingRillTime && selectedRangeAlias) {
-      // Move this to method on RilltTime class after "by" bug is fixed
-      // const [range] = selectedRangeAlias.split(" by");
-      // const shorthandGrain = TIME_GRAIN_TO_SHORTHAND[timeGrain];
-      // if (!shorthandGrain) return;
       metricsExplorerStore.setTimeGrain($exploreName, timeGrain);
-      // onSelectRange(range + ` by ${shorthandGrain}`);
     } else if (baseTimeRange) {
       makeTimeSeriesTimeRangeAndUpdateAppState(
         baseTimeRange,

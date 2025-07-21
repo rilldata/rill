@@ -4,7 +4,7 @@
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
   import { DateTime, Duration } from "luxon";
 
-  export let date: DateTime<true> = DateTime.now();
+  export let date: DateTime = DateTime.now();
   export let zone: string;
   export let showDate = true;
   export let suppress = false;
