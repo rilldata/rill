@@ -21,6 +21,10 @@ type metricsSQLProps struct {
 	SQL string `mapstructure:"sql"`
 	// AdditionalWhere is a filter to apply to the metrics SQL. (additional WHERE clause)
 	AdditionalWhere *metricsview.Expression `mapstructure:"additional_where"`
+	// AdditionalTimeRange is a time range filter to apply to the metrics SQL.
+	AdditionalTimeRange *metricsview.TimeRange `mapstructure:"additional_time_range"`
+	// AdditionalTimeZone is a timezone to apply to the metrics SQL.
+	AdditionalTimeZone string `mapstructure:"additional_time_zone"`
 }
 
 type metricsSQLArgs struct {
@@ -44,6 +48,8 @@ func newMetricsSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.
 	if span.SpanContext().IsValid() {
 		span.SetAttributes(attribute.String("metrics_sql", props.SQL))
 		span.SetAttributes(attribute.Bool("has_additional_where", props.AdditionalWhere != nil))
+		span.SetAttributes(attribute.Bool("has_additional_time_range", props.AdditionalTimeRange != nil))
+		span.SetAttributes(attribute.Bool("has_additional_time_zone", props.AdditionalTimeZone != ""))
 	}
 
 	instance, err := opts.Runtime.Instance(ctx, opts.InstanceID)
@@ -87,6 +93,14 @@ func newMetricsSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.
 		}
 	}
 
+	// Inject the additional time range if provided
+	query.TimeRange = applyAdditionalTimeRange(query.TimeRange, props.AdditionalTimeRange)
+
+	// Set the additional timezone if provided
+	if props.AdditionalTimeZone != "" {
+		query.TimeZone = props.AdditionalTimeZone
+	}
+
 	// Build the options for the metrics resolver
 	metricProps := map[string]any{}
 	if err := mapstructure.WeakDecode(query, &metricProps); err != nil {
@@ -101,4 +115,48 @@ func newMetricsSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.
 		ForExport:  opts.ForExport,
 	}
 	return newMetrics(ctx, resolverOpts)
+}
+
+// applyAdditionalTimeRange merges the existing time range with the additional time range
+func applyAdditionalTimeRange(current, additional *metricsview.TimeRange) *metricsview.TimeRange {
+	if current == nil {
+		return additional
+	}
+	if additional == nil {
+		return current
+	}
+
+	timeRange := &metricsview.TimeRange{
+		Start:         current.Start,
+		End:           current.End,
+		Expression:    current.Expression,
+		IsoDuration:   current.IsoDuration,
+		IsoOffset:     current.IsoOffset,
+		RoundToGrain:  current.RoundToGrain,
+		TimeDimension: current.TimeDimension,
+	}
+
+	if !additional.Start.IsZero() && (timeRange.Start.IsZero() || additional.Start.After(timeRange.Start)) {
+		timeRange.Start = additional.Start
+	}
+	if !additional.End.IsZero() && (timeRange.End.IsZero() || additional.End.Before(timeRange.End)) {
+		timeRange.End = additional.End
+	}
+	if additional.Expression != "" && timeRange.Expression == "" {
+		timeRange.Expression = additional.Expression
+	}
+	if additional.IsoDuration != "" && timeRange.IsoDuration == "" {
+		timeRange.IsoDuration = additional.IsoDuration
+	}
+	if additional.IsoOffset != "" && timeRange.IsoOffset == "" {
+		timeRange.IsoOffset = additional.IsoOffset
+	}
+	if additional.RoundToGrain != metricsview.TimeGrainUnspecified && timeRange.RoundToGrain == metricsview.TimeGrainUnspecified {
+		timeRange.RoundToGrain = additional.RoundToGrain
+	}
+	if additional.TimeDimension != "" && timeRange.TimeDimension == "" {
+		timeRange.TimeDimension = additional.TimeDimension
+	}
+
+	return timeRange
 }
