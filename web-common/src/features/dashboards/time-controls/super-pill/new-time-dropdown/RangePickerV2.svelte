@@ -28,7 +28,8 @@
   import RangeDisplay from "../components/RangeDisplay.svelte";
   import TruncationSelector from "./TruncationSelector.svelte";
   import { overrideRillTimeRef } from "../../../url-state/time-ranges/parser";
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import { getAbbreviationForIANA } from "@rilldata/web-common/lib/time/timezone";
+  import { builderActions, Tooltip, getAttrs } from "bits-ui";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
 
   export let timeString: string | undefined;
@@ -42,6 +43,9 @@
   export let smallestTimeGrain: V1TimeGrain | undefined;
   export let defaultTimeRange: NamedRange | ISODurationString | undefined;
   export let allowCustomTimeRange = true;
+  export let availableTimeZones: string[];
+  export let lockTimeZone = false;
+  export let onSelectTimeZone: (timeZone: string) => void;
   export let onSelectRange: (range: string) => void;
   export let onTimeGrainSelect: (grain: V1TimeGrain) => void;
 
@@ -52,7 +56,6 @@
   let filter = "";
   let parsedTime: RillTime | undefined = undefined;
   let showCustomSelector = false;
-  let asOfOpen = false;
 
   $: if (timeString) {
     try {
@@ -64,11 +67,19 @@
 
   $: usingLegacyTime = isUsingLegacyTime(timeString);
 
-  $: ({ ref, truncationGrain, forwardAligned } = parse(timeString ?? ""));
+  $: padded = usingLegacyTime ? true : !!parsedTime?.asOfLabel?.offset;
+  $: ref = usingLegacyTime ? "latest" : (parsedTime?.asOfLabel?.label ?? "now");
+
+  let truncationGrain: V1TimeGrain | undefined = undefined;
+  $: truncationGrain = usingLegacyTime
+    ? timeString?.startsWith("rill")
+      ? "TIME_GRAIN_DAY"
+      : getSmallestGrainFromISODuration(timeString)
+    : parsedTime?.asOfLabel?.snap
+      ? GrainAliasToV1TimeGrain[parsedTime.asOfLabel?.snap]
+      : undefined;
 
   $: dateTimeAnchor = returnAnchor(ref);
-
-  $: humanReadableAsOf = humanizeAsOf(ref);
 
   $: selectedLabel = timeString && getRangeLabel(timeString);
 
@@ -79,6 +90,8 @@
   $: allOptions = timeGrainOptions.map(getTimeRangeOptionsByGrain);
 
   $: onTimeGrainSelect(truncationGrain);
+
+  $: zoneAbbreviation = getAbbreviationForIANA(maxDate, zone);
 
   $: groups = allOptions.reduce(
     (acc, options) => {
@@ -122,7 +135,7 @@
         : (truncationGrain ??
             smallestTimeGrain ??
             V1TimeGrain.TIME_GRAIN_MINUTE),
-      forwardAligned,
+      padded,
     );
 
     overrideRillTimeRef(parsed, newAsOfString);
@@ -135,27 +148,13 @@
     open = false;
   }
 
-  function humanizeAsOf(asOf: string): string {
-    switch (asOf) {
-      case "latest":
-        return "latest data";
-      case "watermark":
-        return "watermark";
-      case "now":
-        return "now";
-
-      default:
-        return "custom";
-    }
-  }
-
   function onSelectGrain(grain: V1TimeGrain | undefined) {
     if (!timeString) return;
 
     const newString = constructNewString({
       currentString: timeString,
       truncationGrain: grain,
-      inclusive: forwardAligned,
+      inclusive: padded,
       ref: ref,
     });
 
@@ -192,7 +191,6 @@
     }
   }
 
-  //
   function convertLegacyTime(timeString: string) {
     if (timeString.startsWith("rill-")) {
       if (timeString === "rill-TD") return "DTD";
@@ -216,18 +214,16 @@
     const datePart = datePartRaw || "";
     const timePart = timePartRaw || "";
 
-    // Date units: Y, M (Month), W, D
     const dateUnits: Record<string, string> = {
       Y: "Y",
-      M: "M", // Month
+      M: "M",
       W: "W",
       D: "D",
     };
 
-    // Time units: H, M (Minute), S
     const timeUnits: Record<string, string> = {
       H: "H",
-      M: "m", // Minute (lowercase in Rill)
+      M: "m",
       S: "S",
     };
 
@@ -272,7 +268,6 @@
     ref: "latest" | "watermark" | "now" | string,
     inclusive: boolean,
   ) {
-    console.log({ ref, inclusive });
     if (!timeString) return;
     const newString = constructNewString({
       currentString: timeString,
@@ -293,27 +288,6 @@
       return DateTime.now().setZone(zone);
     }
   }
-
-  function parse(timeString: string) {
-    if (usingLegacyTime) {
-      return {
-        ref: "latest",
-        truncationGrain: timeString.startsWith("rill")
-          ? "TIME_GRAIN_DAY"
-          : getSmallestGrainFromISODuration(timeString),
-        forwardAligned: true,
-      };
-    }
-
-    const rt = parseRillTime(timeString);
-    return {
-      ref: rt.asOfLabel?.label ?? "latest",
-      truncationGrain: rt.asOfLabel?.snap
-        ? GrainAliasToV1TimeGrain[rt.asOfLabel?.snap]
-        : V1TimeGrain.TIME_GRAIN_DAY,
-      forwardAligned: rt.asOfLabel?.offset && rt.asOfLabel.offset !== 1,
-    };
-  }
 </script>
 
 <svelte:window
@@ -333,25 +307,54 @@
   }}
 >
   <Popover.Trigger asChild let:builder>
-    <button
-      {...builder}
-      use:builder.action
-      class="flex gap-x-1"
-      aria-label="Select time range"
-      data-state={open ? "open" : "closed"}
-    >
-      {#if timeString}
-        <b class="mr-1 line-clamp-1 flex-none">{selectedLabel}</b>
-      {/if}
+    <Tooltip.Root>
+      <Tooltip.Trigger asChild let:builder={tooltipBuilder}>
+        <button
+          {...getAttrs([builder, tooltipBuilder])}
+          use:builderActions={{ builders: [builder, tooltipBuilder] }}
+          class="flex gap-x-1.5"
+          aria-label="Select time range"
+          data-state={open ? "open" : "closed"}
+        >
+          {#if timeString}
+            <b class=" line-clamp-1 flex-none">
+              {#if selectedLabel?.startsWith("-") || !isNaN(Number(selectedLabel?.[0]))}
+                Custom
+              {:else}
+                {selectedLabel}
+              {/if}
+            </b>
+          {/if}
 
-      {#if interval.isValid}
-        <RangeDisplay {interval} />
-      {/if}
+          {#if interval.isValid}
+            <RangeDisplay {interval} />
+          {/if}
 
-      <span class="flex-none transition-transform" class:-rotate-180={open}>
-        <CaretDownIcon />
-      </span>
-    </button>
+          <div
+            class="font-bold bg-gray-100 rounded-[2px] p-1 py-0 text-gray-600 text-[11px]"
+          >
+            {zoneAbbreviation}
+          </div>
+
+          <span class="flex-none transition-transform" class:-rotate-180={open}>
+            <CaretDownIcon />
+          </span>
+        </button>
+      </Tooltip.Trigger>
+
+      <Tooltip.Content side="bottom" sideOffset={8}>
+        <TooltipContent class="flex-col flex items-center gap-y-0 p-3">
+          <span class="font-semibold italic mb-1">{timeString}</span>
+          <span
+            >{interval.start.toLocaleString(DateTime.DATETIME_MED_WITH_SECONDS)}
+          </span>
+          <span>to</span>
+          <span
+            >{interval.end.toLocaleString(DateTime.DATETIME_MED_WITH_SECONDS)}
+          </span>
+        </TooltipContent>
+      </Tooltip.Content>
+    </Tooltip.Root>
   </Popover.Trigger>
 
   <Popover.Content
@@ -359,9 +362,11 @@
     class="p-0 w-fit overflow-hidden flex flex-col"
   >
     <TimeRangeSearch
+      inError={!parsedTime && !!timeString && !usingLegacyTime}
       width={showCustomSelector ? 456 : 224}
       bind:this={searchComponent}
       {context}
+      {timeString}
       onSelectRange={(range) => {
         open = false;
         onSelectRange(range);
@@ -371,7 +376,7 @@
     <div
       class="flex w-56 max-h-fit"
       class:!w-[456px]={showCustomSelector}
-      style:height="500px"
+      style:height="460px"
     >
       <div
         class="flex flex-col w-56 overflow-y-auto overflow-x-hidden flex-none py-1"
@@ -388,7 +393,7 @@
               </div>
             </DropdownMenu.Item>
 
-            <div class="h-px w-full bg-gray-300" />
+            <div class="h-px w-full bg-gray-200" />
           {/if}
 
           <TimeRangeOptionGroup
@@ -414,23 +419,12 @@
             }}
           />
 
-          {#if allowCustomTimeRange}
-            <TimeRangeOptionGroup
-              {filter}
-              timeString={hasCustomSelected ? "custom" : ""}
-              options={[{ label: "Custom", string: "custom" }]}
-              onClick={() => {
-                showCustomSelector = !showCustomSelector;
-              }}
-            />
-          {/if}
-
           {#if allTimeAllowed}
             <div class="w-full h-fit px-1">
               <button
                 class="group h-7 px-2 overflow-hidden hover:bg-gray-100 rounded-sm w-full select-none flex items-center"
                 on:click={() => {
-                  handleRangeSelect(ALL_TIME_RANGE_ALIAS);
+                  handleRangeSelect("earliest to ref as of latest/s+1s");
                 }}
               >
                 <span class:font-bold={timeString === ALL_TIME_RANGE_ALIAS}>
@@ -440,6 +434,18 @@
             </div>
           {/if}
         </div>
+
+        {#if allowCustomTimeRange}
+          <TimeRangeOptionGroup
+            {filter}
+            hideDivider
+            timeString={hasCustomSelected ? "custom" : ""}
+            options={[{ label: "Custom", string: "custom" }]}
+            onClick={() => {
+              showCustomSelector = !showCustomSelector;
+            }}
+          />
+        {/if}
       </div>
 
       {#if showCustomSelector}
@@ -459,92 +465,40 @@
         </div>
       {/if}
     </div>
+    <!-- {#if showCustomSelector} -->
+    <!-- <div class="bg-slate-50 border-l p-3 size-full">
+      <Elements.Zone
+        {context}
+        watermark={interval.end ?? DateTime.fromJSDate(new Date())}
+        activeTimeZone={zone}
+        {lockTimeZone}
+        {availableTimeZones}
+        {onSelectTimeZone}
+      ></Elements.Zone>
+    </div> -->
+    <!-- {/if} -->
   </Popover.Content>
 </Popover.Root>
 
-{#if truncationGrain && dateTimeAnchor}
+{#if dateTimeAnchor}
   <TruncationSelector
     {dateTimeAnchor}
     grain={truncationGrain}
+    {watermark}
+    latest={maxDate}
     rangeGrain={parsedTime?.rangeGrain ?? truncationGrain}
     {smallestTimeGrain}
-    inclusive={forwardAligned}
+    inclusive={padded}
     {ref}
     onSelectEnding={onSelectGrain}
     onToggleAlignment={(inclusive) => {
       onSelectAsOfOption(ref, inclusive);
     }}
+    onSelectAsOfOption={(o) => {
+      onSelectAsOfOption(o, padded);
+    }}
   />
 {/if}
-
-<DropdownMenu.Root bind:open={asOfOpen}>
-  <DropdownMenu.Trigger class="flex gap-x-1">
-    as of <b>{humanReadableAsOf}</b>
-
-    <span class="flex-none transition-transform" class:-rotate-180={asOfOpen}>
-      <CaretDownIcon />
-    </span>
-  </DropdownMenu.Trigger>
-
-  <DropdownMenu.Content align="start">
-    <Tooltip alignment="end" location="right" distance={8}>
-      <DropdownMenu.CheckboxItem
-        checked={ref === "latest"}
-        checkRight
-        class="flex justify-between"
-        on:click={() => {
-          onSelectAsOfOption("latest", forwardAligned);
-        }}
-      >
-        latest data
-      </DropdownMenu.CheckboxItem>
-      <TooltipContent slot="tooltip-content" maxWidth="600px">
-        {maxDate
-          .setZone(zone)
-          .toLocaleString(DateTime.DATETIME_MED_WITH_SECONDS)}
-      </TooltipContent>
-    </Tooltip>
-
-    {#if watermark}
-      <Tooltip alignment="end" location="right" distance={8}>
-        <DropdownMenu.CheckboxItem
-          checkRight
-          checked={ref === "watermark"}
-          class="flex justify-between"
-          on:click={() => {
-            onSelectAsOfOption("watermark", forwardAligned);
-          }}
-        >
-          watermark
-        </DropdownMenu.CheckboxItem>
-
-        <TooltipContent slot="tooltip-content" maxWidth="600px">
-          {watermark
-            .setZone(zone)
-            .toLocaleString(DateTime.DATETIME_MED_WITH_SECONDS)}
-        </TooltipContent>
-      </Tooltip>
-    {/if}
-
-    <Tooltip alignment="end" location="right" distance={8}>
-      <DropdownMenu.CheckboxItem
-        checkRight
-        checked={ref === "now"}
-        class="flex justify-between"
-        on:click={() => {
-          onSelectAsOfOption("now", forwardAligned);
-        }}
-      >
-        now
-      </DropdownMenu.CheckboxItem>
-      <TooltipContent slot="tooltip-content" maxWidth="600px">
-        {DateTime.now()
-          .setZone(zone)
-          .toLocaleString(DateTime.DATETIME_MED_WITH_SECONDS)}
-      </TooltipContent>
-    </Tooltip>
-  </DropdownMenu.Content>
-</DropdownMenu.Root>
 
 <style>
   /* The wrapper shrinks to the width of its content */

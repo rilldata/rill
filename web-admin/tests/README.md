@@ -40,6 +40,7 @@ npm run test:dev -- -g 'My test'  # Shorthand for: E2E_NO_SETUP_OR_TEARDOWN=1 pl
 ### `teardown`
 
 Handles cleanup:
+
 1. Deletes the `e2e` organization
 2. Shuts down all the services
 
@@ -55,17 +56,21 @@ When developing and debugging tests, follow this workflow to avoid repeatedly ru
 1. Navigate to the `web-admin` directory.
 
 2. Start the frontend in one terminal:
+
    ```bash
    npm run preview  # or npm run dev
    ```
+
    > **Note:** Use `npm run dev` for UI changes to avoid port conflicts with Playwright, which would otherwise build and run the UI on port 3000.
 
 3. Set up your test environment (once per session):
+
    ```bash
    npm run test:setup
    ```
 
 4. Run your tests as needed:
+
    ```bash
    npm run test:dev -- -g 'My test'
    ```

@@ -91,9 +91,7 @@
         {resetPotentialDates}
         start={interval?.start}
         outOfMonth={date.month !== startDay.month}
-        disabled={Boolean(
-          (minDate && date < minDate) || (maxDate && date > maxDate),
-        )}
+        disabled={false}
       />
     {/each}
   </div>

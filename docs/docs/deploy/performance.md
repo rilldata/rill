@@ -1,17 +1,17 @@
 ---
 title: "Performance Optimization"
 description: Performance Optimization
-sidebar_label: "Perfomance Optimization"
+sidebar_label: "Performance Optimization"
 sidebar_position: 20
 ---
 
 ## Overview
 
-On this page, we've gathered a running list of recommendations and general guidelines to ensure your experience of using Rill remains performant and optimized. These best practices will help to ensure your dashboards remain performant, and that things continue to "just work" (for both Rill Developer and Rill Cloud), even as the size of your underlying data and deployment continues to grow. These best practices and guidelines will also continue to evolve but please don't hesitate to [reach out](contact.md) if you start facing any bottlenecks or have further questions about ways to improve the Rill experience!
+On this page, we've gathered a running list of recommendations and general guidelines to ensure your experience of using Rill remains performant and optimized. These best practices will help to ensure your dashboards remain performant, and that things continue to "just work" (for both Rill Developer and Rill Cloud), even as the size of your underlying data and deployment continues to grow. These best practices and guidelines will also continue to evolve but please don't hesitate to [reach out](/contact) if you start facing any bottlenecks or have further questions about ways to improve the Rill experience!
 
 :::info Working with very large data from the get go?
 
-Generally speaking, Rill's [embedded DuckDB OLAP engine](/reference/olap-engines/duckdb.md) works very well out-of-the-box for datasets _up to around 50GB in size_. If you plan to be working with and ingesting volumes of data larger than 50GB, please [**get in touch**](contact.md) and we can explore using one of our other enterprise-grade [OLAP engine](/reference/olap-engines/olap-engines.md) options. 
+Generally speaking, Rill's [embedded DuckDB OLAP engine](/reference/olap-engines/duckdb.md) works very well out-of-the-box for datasets _up to around 50GB in size_. If you plan to be working with and ingesting volumes of data larger than 50GB, please [**get in touch**](/contact) and we can explore using one of our other enterprise-grade [OLAP engine](/reference/olap-engines/olap-engines.md) options. 
 
 :::
 
@@ -35,7 +35,7 @@ We strongly recommend materializing final models that are being used directly in
 
 ## Local Development / Rill Developer
 
-When used in conjunction, Rill Developer and Rill Cloud are meant to serve two different but complemetnary purposes. For larger and distributed teams, Rill Developer is meant to primarily be used for local development purposes, which allow developers to quickly model their data and validate logic. Then, Rill Cloud enables shared collaboration at scale and where production consumption of dashboards should be happening (against your full data).
+When used in conjunction, Rill Developer and Rill Cloud are meant to serve two different but complementary purposes. For larger and distributed teams, Rill Developer is meant to primarily be used for local development purposes, which allow developers to quickly model their data and validate logic. Then, Rill Cloud enables shared collaboration at scale and where production consumption of dashboards should be happening (against your full data).
 
 ### Work with a subset of your source data for local development and modeling
 
@@ -109,11 +109,11 @@ Query optimization is crucial for maintaining high performance and efficiency, e
 
 Casting can be expensive, especially when the underlying models are views and not [materialized](#consider-which-models-to-materialize) as a table. For example, if a timestamp column is actually incorrectly typed as a string, then for timeseries charts, Rill ends up having to iterate across each row to try to infer the timestamp and a lot of time parsing has to occur. Similarly, for incorrectly typed or casted columns that are used in calculations, the calculations will have to be constantly looped through, which can be both inefficient and expensive over time (and simply make everything slower). 
 
-Similarly, choosing the right data type for each column is also important. Smaller data types, when applicable, consume less memory and can improve query improvance. For example, use `INT` instead of `BIGINT` if your data range permits.
+Similarly, choosing the right data type for each column is also important. Smaller data types, when applicable, consume less memory and can improve query performance. For example, use `INT` instead of `BIGINT` if your data range permits.
 
 ### Select the columns you need and avoid `SELECT *` when possible
 
-Because most [OLAP databases](../build/olap/olap.md) store data in a columnar format, including [DuckDB](/reference/olap-engines/duckdb.md), selecting only the columns that you need during the modeling phase ensures that DuckDB will only ingest and store the data _it actually needs_ (speeding up model build times and reducing footprint). Furthermore, columnar formats are optimized for analytical queries so by selecting only the columns that you need (instead of a blanket `SELECT *`), this will help to minimize data processsing times and improve the query execution speed.
+Because most [OLAP databases](../build/olap/olap.md) store data in a columnar format, including [DuckDB](/reference/olap-engines/duckdb.md), selecting only the columns that you need during the modeling phase ensures that DuckDB will only ingest and store the data _it actually needs_ (speeding up model build times and reducing footprint). Furthermore, columnar formats are optimized for analytical queries so by selecting only the columns that you need (instead of a blanket `SELECT *`), this will help to minimize data processing times and improve the query execution speed.
 
 ### Consider sorting your data by an appropriate timestamp column
 
@@ -121,7 +121,7 @@ Generally speaking, if possible, it is recommended to make sure that your upstre
 
 :::info When to sort vs not to sort?
 
-Sorting, especially in DuckDB, _can also be computationally intensive_ and most input data is generally sorted enough (by time). If the data ingested is completely unsorted or sorted by a different, non-timestamp column, it could be worth the computional overhead to sort by a timestamp column (especially if used in a dashboard). If you're unsure, please feel free to [reach out](contact.md) and we'd be happy to help you assess the best path forward!
+Sorting, especially in DuckDB, _can also be computationally intensive_ and most input data is generally sorted enough (by time). If the data ingested is completely unsorted or sorted by a different, non-timestamp column, it could be worth the computational overhead to sort by a timestamp column (especially if used in a dashboard). If you're unsure, please feel free to [reach out](/contact) and we'd be happy to help you assess the best path forward!
 
 :::
 

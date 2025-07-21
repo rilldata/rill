@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { Button } from "@rilldata/web-common/components/button";
   import FormSection from "@rilldata/web-common/components/forms/FormSection.svelte";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import MultiInput from "@rilldata/web-common/components/forms/MultiInput.svelte";
@@ -6,10 +7,12 @@
   import { getHasSlackConnection } from "@rilldata/web-common/features/alerts/delivery-tab/notifiers-utils";
   import { SnoozeOptions } from "@rilldata/web-common/features/alerts/delivery-tab/snooze";
   import type { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
+  import ScheduleForm from "@rilldata/web-common/features/scheduled-reports/ScheduleForm.svelte";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import type { SuperForm } from "sveltekit-superforms/client";
 
   export let superFormInstance: SuperForm<AlertFormValues>;
+  export let exploreName: string;
 
   $: ({ form, errors } = superFormInstance);
 
@@ -24,14 +27,32 @@
       alwaysShowError
       errors={$errors["name"]}
       id="name"
+      title="Alert name"
       placeholder="My alert"
-      value={$form["name"]}
+      bind:value={$form["name"]}
     />
   </FormSection>
-  <FormSection
-    description="We'll check for this alert whenever the data refreshes"
-    title="Trigger"
-  />
+
+  <FormSection title="Trigger">
+    <div class="grid grid-cols-2">
+      <Button
+        onClick={() => ($form["refreshWhenDataRefreshes"] = true)}
+        active={$form["refreshWhenDataRefreshes"]}
+      >
+        Whenever data refreshes
+      </Button>
+      <Button
+        onClick={() => ($form["refreshWhenDataRefreshes"] = false)}
+        active={!$form["refreshWhenDataRefreshes"]}
+      >
+        Set schedule
+      </Button>
+    </div>
+    {#if !$form["refreshWhenDataRefreshes"]}
+      <ScheduleForm data={form} {exploreName} />
+    {/if}
+  </FormSection>
+
   <FormSection
     description="Set a snooze period to silence repeat notifications for the same alert."
     title="Snooze"

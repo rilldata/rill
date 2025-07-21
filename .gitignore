@@ -56,6 +56,8 @@ staging-databases
 /rilldata
 docs/dist/
 coverage
+# locally deployed test projects can generate this
+.rillcloud
 
 # Maven
 target/
@@ -74,6 +76,7 @@ dist/*
 rill-binary-sa.json
 gha-creds*
 .release-env
+binaries/
 # runtime test resources
 !runtime/testdata/**
 sysroot/
@@ -82,3 +85,7 @@ latest.txt
 
 /postgres/
 /clickhouse/
+
+# Claude resources
+CLAUDE.md
+.claude/

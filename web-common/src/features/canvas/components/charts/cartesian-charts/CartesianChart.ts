@@ -147,7 +147,6 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
           {
             query: {
               enabled,
-              placeholderData: keepPreviousData,
             },
           },
         );
@@ -189,7 +188,6 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
           {
             query: {
               enabled,
-              placeholderData: keepPreviousData,
             },
           },
         );
@@ -203,6 +201,7 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
       ([runtime, $timeAndFilterStore, $topNXQuery, $topNColorQuery]) => {
         const { timeRange, where, timeGrain } = $timeAndFilterStore;
         const topNXData = $topNXQuery?.data?.data;
+
         const topNColorData = $topNColorQuery?.data?.data;
         const enabled =
           !!timeRange?.start &&
@@ -222,6 +221,7 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
         // Apply topN filter for x dimension
         if (topNXData?.length && dimensionName) {
           const topXValues = topNXData.map((d) => d[dimensionName] as string);
+
           const filterForTopXValues = createInExpression(
             dimensionName,
             topXValues,

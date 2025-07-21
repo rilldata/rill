@@ -4,6 +4,7 @@
   import { Axis } from "@rilldata/web-common/components/data-graphic/guides";
   import { bisectData } from "@rilldata/web-common/components/data-graphic/utils";
   import DashboardMetricsDraggableList from "@rilldata/web-common/components/menu/DashboardMetricsDraggableList.svelte";
+  import { ComparisonDeltaPreviousSuffix } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
   import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
   import ReplacePivotDialog from "@rilldata/web-common/features/dashboards/pivot/ReplacePivotDialog.svelte";
   import { splitPivotChips } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
@@ -51,9 +52,11 @@
     updateChartInteractionStore,
   } from "./utils";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
-  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import { getAllowedGrains } from "@rilldata/web-common/lib/time/new-grains";
-  import { min } from "d3-array";
+  import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
+  import { featureFlags } from "../../feature-flags";
+
+  const { rillTime } = featureFlags;
 
   export let exploreName: string;
   export let workspaceWidth: number;
@@ -131,9 +134,6 @@
   }
 
   $: totals = $timeSeriesDataStore.total as { [key: string]: number };
-  $: totalsComparisons = $timeSeriesDataStore.comparisonTotal as {
-    [key: string]: number;
-  };
 
   // When changing the timeseries query and the cache is empty, $timeSeriesQuery.data?.data is
   // temporarily undefined as results are fetched.
@@ -332,41 +332,45 @@
         selectedItems={visibleMeasureNames}
       />
 
-      <DropdownMenu.Root bind:open>
-        <DropdownMenu.Trigger asChild let:builder>
-          <Button builders={[builder]} type="text">
-            <div
-              class="flex items-center gap-x-0.5 px-1 text-gray-700 hover:text-inherit"
-            >
-              by <strong> {TIME_GRAIN[activeTimeGrain].label}</strong>
-              <span class="transition-transform" class:-rotate-180={open}>
-                <CaretDownIcon />
-              </span>
-            </div>
-          </Button>
-        </DropdownMenu.Trigger>
+      {#if $rillTime}
+        <DropdownMenu.Root bind:open>
+          <DropdownMenu.Trigger asChild let:builder>
+            <Button builders={[builder]} type="ghost" square small>
+              <ThreeDot />
+            </Button>
+          </DropdownMenu.Trigger>
 
-        <DropdownMenu.Content>
-          {#each timeGrainOptions as option (option)}
-            <DropdownMenu.CheckboxItem
-              checkRight
-              role="menuitem"
-              checked={option === activeTimeGrain}
-              class="text-xs cursor-pointer capitalize"
-              on:click={() => {
-                // timeControlsStore.setSelectedTimeRange({
-                //   name: TimeRangePreset.CUSTOM,
-                //   interval: option,
-                // });
-                // timeControlsStore
-                metricsExplorerStore.setTimeGrain(exploreName, option);
-              }}
+          <DropdownMenu.Content align="start" class="w-48">
+            <DropdownMenu.Label
+              class="px-2 uppercase py-1 font-semibold text-[11px] text-gray-500"
             >
-              {TIME_GRAIN[option].label}
-            </DropdownMenu.CheckboxItem>
-          {/each}
-        </DropdownMenu.Content>
-      </DropdownMenu.Root>
+              Time Series Settings
+            </DropdownMenu.Label>
+            <DropdownMenu.Sub>
+              <DropdownMenu.SubTrigger>Aggregation</DropdownMenu.SubTrigger>
+              <DropdownMenu.SubContent>
+                {#each timeGrainOptions as option (option)}
+                  <DropdownMenu.CheckboxItem
+                    checkRight
+                    role="menuitem"
+                    checked={option === activeTimeGrain}
+                    class="text-xs cursor-pointer capitalize"
+                    on:click={() => {
+                      metricsExplorerStore.setTimeGrain(exploreName, option);
+                    }}
+                  >
+                    {#if option === "TIME_GRAIN_DAY"}
+                      daily
+                    {:else}
+                      {TIME_GRAIN[option].label}ly
+                    {/if}
+                  </DropdownMenu.CheckboxItem>
+                {/each}
+              </DropdownMenu.SubContent>
+            </DropdownMenu.Sub>
+          </DropdownMenu.Content>
+        </DropdownMenu.Root>
+      {/if}
 
       {#if !hideStartPivotButton}
         <div class="grow" />
@@ -421,7 +425,7 @@
 
         {@const bigNum = measure.name ? totals?.[measure.name] : null}
         {@const comparisonValue = measure.name
-          ? totalsComparisons?.[measure.name]
+          ? totals?.[measure.name + ComparisonDeltaPreviousSuffix]
           : undefined}
         {@const isValidPercTotal = measure.name
           ? $isMeasureValidPercentOfTotal(measure.name)

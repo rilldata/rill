@@ -1,4 +1,5 @@
 import { sanitizeValueForVega } from "@rilldata/web-common/components/vega/util";
+import { ComparisonDeltaPreviousSuffix } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { ScrubBoxColor } from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
 import type { ChartField } from "./build-template";
 import { singleLayerBaseSpec } from "./utils";
@@ -25,7 +26,7 @@ export function buildGroupedComparisonBar(
     { fold: ["ts", "comparison_ts"], as: ["key", "value"] },
     // Add a measure field to hold the right measure value
     {
-      calculate: `(datum['key'] === 'comparison_ts' ? datum['comparison.${measureName}'] : datum['${measureName}'])`,
+      calculate: `(datum['key'] === 'comparison_ts' ? datum['${measureName + ComparisonDeltaPreviousSuffix}'] : datum['${measureName}'])`,
       as: "measure",
     },
     {

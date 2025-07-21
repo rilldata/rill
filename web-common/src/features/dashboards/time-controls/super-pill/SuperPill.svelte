@@ -35,11 +35,12 @@
   export let allowCustomTimeRange = true;
   export let showFullRange = true;
   export let complete: boolean;
-  export let context: string;
+  export let context = "dashboard";
   export let activeTimeZone: string;
   export let timeStart: string | undefined;
   export let timeEnd: string | undefined;
   export let watermark: DateTime | undefined;
+  export let side: "top" | "right" | "bottom" | "left" = "bottom";
   export let onSelectRange: (range: NamedRange | ISODurationString) => void;
   export let onPan: (direction: "left" | "right") => void;
   export let onTimeGrainSelect: (timeGrain: V1TimeGrain) => void;
@@ -68,9 +69,11 @@
         {showDefaultItem}
         {defaultTimeRange}
         timeString={selectedRangeAlias}
-        grain={activeTimeGrain}
         {interval}
         zone={activeTimeZone}
+        {lockTimeZone}
+        {availableTimeZones}
+        {onSelectTimeZone}
         {onSelectRange}
         {onTimeGrainSelect}
       />
@@ -94,11 +97,12 @@
             end: interval.end.toJSDate(),
           });
         }}
+        {side}
       />
     {/if}
   {/if}
 
-  {#if availableTimeZones.length}
+  {#if availableTimeZones.length && !$newPicker}
     <Elements.Zone
       {context}
       watermark={interval.end ?? DateTime.fromJSDate(new Date())}
@@ -106,6 +110,7 @@
       {lockTimeZone}
       {availableTimeZones}
       {onSelectTimeZone}
+      {side}
     />
   {/if}
 
@@ -116,6 +121,7 @@
       {timeStart}
       {timeEnd}
       {complete}
+      {side}
       {onTimeGrainSelect}
     />
   {/if}
@@ -156,7 +162,9 @@
     @apply bg-gray-50 cursor-pointer;
   }
 
+  /* Doest apply to all instances except alert/report. So this seems unintentional
   :global(.wrapper > [data-state="open"]) {
     @apply bg-gray-50 border-gray-400 z-50;
   }
+  */
 </style>

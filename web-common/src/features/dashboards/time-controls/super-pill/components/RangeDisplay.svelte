@@ -6,8 +6,7 @@
   export let interval: Interval<true>;
   export let abbreviation: string | undefined = undefined;
 
-  $: shouldShowMilliseconds =
-    interval.start.millisecond !== 0 || interval.end.millisecond !== 0;
+  $: shouldShowMilliseconds = false;
 
   $: shouldShowSeconds =
     interval.start.second !== 0 || interval.end.second !== 0;
@@ -62,7 +61,7 @@
   $: time = displayedInterval.toFormat(timeFormat, { separator: "-" });
 </script>
 
-<div class="flex gap-x-1 whitespace-nowrap truncate" title={interval.toISO()}>
+<div class="flex gap-x-1 whitespace-nowrap truncate">
   <span class="line-clamp-1 text-left">
     {date}
     {#if showTime}

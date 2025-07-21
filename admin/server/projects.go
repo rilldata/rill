@@ -347,6 +347,7 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 		runtimeauth.ReadObjects,
 		runtimeauth.ReadMetrics,
 		runtimeauth.ReadAPI,
+		runtimeauth.UseAI,
 	}
 	if permissions.ManageProject {
 		instancePermissions = append(instancePermissions, runtimeauth.EditTrigger, runtimeauth.ReadResolvers)
