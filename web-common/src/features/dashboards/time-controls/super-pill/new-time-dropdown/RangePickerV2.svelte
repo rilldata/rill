@@ -333,7 +333,7 @@
           aria-label="Select time range"
         >
           {#if timeString}
-            <b class=" line-clamp-1 flex-none">
+            <b class="line-clamp-1 flex-none">
               {#if selectedLabel?.startsWith("-") || !isNaN(Number(selectedLabel?.[0]))}
                 Custom
               {:else}
