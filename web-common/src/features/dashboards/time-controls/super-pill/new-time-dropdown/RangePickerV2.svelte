@@ -535,19 +535,6 @@
         </div>
       {/if}
     </div>
-
-    <!-- {#if showCalendarPicker} -->
-    <!-- <div class="bg-slate-50 border-l p-3 size-full">
-      <Elements.Zone
-        {context}
-        watermark={interval.end ?? DateTime.fromJSDate(new Date())}
-        activeTimeZone={zone}
-        {lockTimeZone}
-        {availableTimeZones}
-        {onSelectTimeZone}
-      ></Elements.Zone>
-    </div> -->
-    <!-- {/if} -->
   </Popover.Content>
 </Popover.Root>
 
