@@ -6,6 +6,8 @@
   export let columns: string[];
   export let instanceId: string;
   export let exploreName: string;
+  // Used to highlight missing columns in red. We only want to highlight when the user submits explicitly.
+  export let didSubmit: boolean;
 
   $: selectedFields = new Set([...rows, ...columns]);
 
@@ -53,8 +55,11 @@
     disableDragDrop={disableColumnDragDrop}
     onUpdate={handleColumnUpdate}
   >
-    <div slot="empty-fields" class="text-red-600">
-      At least one column has to be selected
+    <div
+      slot="empty-fields"
+      class={didSubmit ? "text-red-600" : "text-gray-500"}
+    >
+      Must select one column
     </div>
   </FieldList>
 {/if}

@@ -32,13 +32,18 @@
   $: ({ instanceId } = $runtime);
 
   $: hasSlackNotifier = getHasSlackConnection(instanceId);
+
+  let didSubmit = false;
 </script>
 
 <form
   autocomplete="off"
   class="flex flex-col gap-y-3 w-full"
   id={formId}
-  on:submit|preventDefault={submit}
+  on:submit|preventDefault={() => {
+    didSubmit = true;
+    submit();
+  }}
   use:enhance
 >
   <span>Email recurring exports to recipients.</span>
@@ -102,6 +107,7 @@
       bind:columns={$data["columns"]}
       {instanceId}
       {exploreName}
+      {didSubmit}
     />
 
     <MultiInput

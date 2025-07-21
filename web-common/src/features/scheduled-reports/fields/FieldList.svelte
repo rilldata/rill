@@ -95,7 +95,10 @@
 <div class="flex flex-col gap-y-1">
   <InputLabel {label} id={label} capitalize={false} />
 
-  <div class="flex flex-row items-center" aria-label="{label} field list">
+  <div
+    class="flex flex-row items-center min-h-7"
+    aria-label="{label} field list"
+  >
     {#if !fields.length}
       <slot name="empty-fields" />
     {:else if disableDragDrop}
