@@ -189,3 +189,39 @@ func TestMetricsSQLWithAdditionalWhere(t *testing.T) {
 	}
 	require.Greater(t, len(domains), 1, "Unfiltered results should include multiple domains")
 }
+
+func TestMetricsSQLWithAdditionalTimeZone(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
+
+	// Use a timezone and check that the query does not error and returns data
+	res, err := rt.Resolve(context.Background(), &runtime.ResolveOptions{
+		InstanceID: instanceID,
+		Resolver:   "metrics_sql",
+		ResolverProperties: map[string]any{
+			"sql":                  "SELECT dom, pub FROM ad_bids_metrics",
+			"additional_time_zone": "America/New_York",
+		},
+		Args:   nil,
+		Claims: &runtime.SecurityClaims{},
+	})
+	require.NoError(t, err)
+	defer res.Close()
+
+	var rows []map[string]interface{}
+	require.NoError(t, json.Unmarshal(must(res.MarshalJSON()), &rows))
+	require.Greater(t, len(rows), 0, "Should return rows for valid timezone filter")
+
+	// Use an invalid timezone and expect an error
+	_, err = rt.Resolve(context.Background(), &runtime.ResolveOptions{
+		InstanceID: instanceID,
+		Resolver:   "metrics_sql",
+		ResolverProperties: map[string]any{
+			"sql":                  "SELECT dom, pub FROM ad_bids_metrics",
+			"additional_time_zone": "Invalid/Timezone",
+		},
+		Args:   nil,
+		Claims: &runtime.SecurityClaims{},
+	})
+
+	require.Error(t, err, "Should error for invalid timezone")
+}
