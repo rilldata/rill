@@ -16,8 +16,9 @@ For newly created projects, Rill automatically generates a `/connectors/duckdb.y
 
 **`driver`** - The type of connector (required)
 
-### Data Source Drivers
-When connecting to a data source, you can either explicitly define the connection in a YAML file or allow Rill to automatically infer this for you based on the file type.
+### Connector Drivers
+
+Unless explicitly defined, Rill will [automatically detect connection details](/build/credentials/#setting-credentials-for-rill-developer) from your .env file, credentials passed with the rill start command, or CLI-based configurations.
 
 #### _Data Warehouse_
 - **[Snowflake](#snowflake)** - Snowflake data warehouse
@@ -27,7 +28,7 @@ When connecting to a data source, you can either explicitly define the connectio
 - **[Athena](#athena)** - Amazon Athena
 - **[mysql](#mysql)** - MySQL databases
 - **[sqlite](#sqlite)** - SQLite databases
-- **[MotherDuck](#motherduck-source)** - MotherDuck cloud data warehouse
+- **[MotherDuck](#motherduck-as-a-source)** - MotherDuck cloud data warehouse
 
 #### _Cloud Storage_
 - **[GCS](#gcs)** - Google Cloud Storage
@@ -42,7 +43,7 @@ When connecting to a data source, you can either explicitly define the connectio
 - **[Google Sheets](#google-sheets)** - Public Google Sheets
 
 ### OLAP Engine Drivers
-When connecting to your own OLAP engine (e.g., ClickHouse, Druid, or Pinot), Rill will automatically generate the corresponding connector file and add the `olap_connector` parameter to your `rill.yaml` file. This will change the behavior of your Rill Developer slightly as not all features are supported across engines. Please see our documentation about [olap-engines](/reference/olap-engines/) for more information.
+When connecting to your own OLAP engine using Rill Developer(e.g., ClickHouse, Druid, or Pinot), Rill will automatically generate the corresponding connector file and add the `olap_connector` parameter to your `rill.yaml` file. This will change the behavior of your Rill Developer slightly as not all features are supported across engines. Please see our documentation about [olap-engines](/reference/olap-engines/) for more information.
 
 - **[DuckDB](#duckdb)** - Embedded DuckDB engine (default)
 - **[Clickhouse](#clickhouse)** - ClickHouse analytical database
@@ -55,7 +56,7 @@ When connecting to your own OLAP engine (e.g., ClickHouse, Druid, or Pinot), Ril
 :::
 
 
-## Data Source Parameters
+## Connector Parameters
 
 :::warning Security Recommendation
 For all credential parameters (passwords, tokens, keys), use environment variables with the syntax `{{.env.<connector_type>.<parameter_name>}}`. This keeps sensitive data out of your YAML files and version control. See our [credentials documentation](/build/credentials/) for complete setup instructions.
@@ -101,6 +102,64 @@ project_id: "my-project-id"                      # Google Cloud project ID
 allow_host_access: true                          # Allow host environment access _(default: true)_
 ```
 
+### ClickHouse
+```yaml
+type: connector                                  # Must be `connector` (required)
+driver: clickhouse                               # Must be `clickhouse` _(required)_
+
+managed: false                                   # Enable automatic provisioning _(default: false)_  
+mode: "read"                                     # Operation mode: `read` or `readwrite` _(default: read)_  
+dsn: "clickhouse://user:password@localhost:9000/database" # ClickHouse connection DSN  
+username: "default"                              # Username for authentication  
+password: "mypassword"                           # Password for authentication  
+host: "localhost"                                # ClickHouse instance hostname  
+port: 9000                                       # ClickHouse instance port  
+database: "default"                              # ClickHouse database name  
+ssl: false                                       # Enable SSL connection  
+cluster: "mycluster"                             # Cluster name for distributed queries  
+log_queries: false                               # Log raw SQL queries  
+settings_override: "max_memory_usage=1000000000" # Override default query settings  
+embed_port: 0                                    # Port for local ClickHouse (0 for random)  
+can_scale_to_zero: false                         # Database can scale to zero  
+max_open_conns: 10                               # Maximum open connections  
+max_idle_conns: 5                                # Maximum idle connections  
+dial_timeout: "30s"                              # Connection dial timeout  
+conn_max_lifetime: "1h"                          # Maximum connection reuse time  
+read_timeout: "30s"                              # Maximum read timeout
+```
+
+### Druid
+```yaml
+type: connector                                  # Must be `connector` (required)
+driver: druid                                    # Must be `druid` _(required)_
+
+dsn: "http://localhost:8082"                     # Druid connection DSN _(required)_  
+username: "admin"                                # Username for authentication  
+password: "mypassword"                           # Password for authentication  
+host: "localhost"                                # Druid coordinator/broker hostname  
+port: 8082                                       # Druid service port  
+ssl: false                                       # Enable SSL connection  
+log_queries: false                               # Log raw SQL queries  
+max_open_conns: 10                               # Maximum open connections (0=default, -1=unlimited)  
+skip_version_check: false                        # Skip Druid version compatibility check
+```
+
+### DuckDB
+```yaml
+type: connector                                  # Must be `connector` (required)
+driver: duckdb                                   # Must be `duckdb` _(required)_
+
+pool_size: 4                                     # Number of concurrent connections and queries  
+allow_host_access: true                          # Allow local environment and file system access  
+cpu: 4                                           # Number of CPU cores available to database  
+memory_limit_gb: 8                               # Memory in GB available to database  
+read_write_ratio: 0.8                            # Resource allocation ratio for read database  
+init_sql: "SET memory_limit='8GB'"               # SQL executed during database initialization  
+conn_init_sql: "SET timezone='UTC'"              # SQL executed when new connection is initialized  
+secrets: "s3,gcs"                                # Comma-separated list of connector names for temporary secrets  
+log_queries: false                               # Log raw SQL queries through OLAP
+```
+
 ### GCS
 ```yaml
 type: connector                                  # Must be `connector` (required)
@@ -111,6 +170,13 @@ bucket: "my-bucket"                              # GCS bucket name _(required)_
 allow_host_access: true                          # Allow host environment access  
 key_id: "myaccesskey"                            # Optional S3-compatible Key ID  
 secret: "mysecret"                               # Optional S3-compatible Secret
+```
+
+### Google Sheets
+```yaml
+type: model                                      # Slightly different than the others `model`
+connector: "duckdb"                              # connector will use default DuckDB engine
+sql: "select * from read_csv_auto('https://docs.google.com/spreadsheets/d/<SPREADSHEET_ID>/export?format=csv&gid=<SHEET_ID>', normalize_names=True)"                           # Fill in the parameters with your public Google Sheet.
 ```
 
 ### HTTPS
@@ -131,7 +197,7 @@ dsn: "./data/file.csv"                           # File path or location _(requi
 allow_host_access: true                          # Allow host-level file path access
 ``` -->
 
-### MotherDuck Source
+### MotherDuck as a source
 ```yaml
 type: connector                                  # Must be `connector` (required)
 driver: motherduck                               # Must be `motherduck` _(required)_
@@ -140,12 +206,45 @@ dsn: "md:?motherduck_token=mymotherducktoken"    # MotherDuck connection endpoin
 token: "mymotherducktoken"                       # Authentication token _(required)_
 ```
 
+### Motherduck
+
+```yaml
+---
+type: connector                                  # Must be `connector` (required)
+driver: duckdb                                   # Must be `duckdb` _(required)_
+
+
+path: "md:my_db"                                # Path to your MD database
+
+init_sql: |                                     # SQL executed during database initialization.
+  INSTALL 'motherduck';                         # Install motherduck extension
+  LOAD 'motherduck';                            # Load the extensions
+  SET motherduck_token= {{ .env.motherduck_token }} # Define the motherduck token
+```
+
 ### MySQL
 ```yaml
 type: connector                                  # Must be `connector` (required)
 driver: mysql                                    # Must be `mysql` _(required)_
 
 dsn: "user:password@tcp(localhost:3306)/database" # MySQL connection DSN _(required)_
+```
+
+### Pinot
+```yaml
+type: connector                                  # Must be `connector` (required)
+driver: pinot                                    # Must be `pinot` _(required)_
+
+dsn: "http://localhost:8099"                     # Pinot connection DSN _(required)_  
+username: "admin"                                # Username for authentication  
+password: "mypassword"                           # Password for authentication  
+broker_host: "localhost"                         # Pinot broker hostname _(required)_  
+broker_port: 8099                                # Pinot broker port  
+controller_host: "localhost"                     # Pinot controller hostname _(required)_  
+controller_port: 9000                            # Pinot controller port  
+ssl: false                                       # Enable SSL connection  
+log_queries: false                               # Log raw SQL queries  
+max_open_conns: 10                               # Maximum open connections
 ```
 
 ### PostgreSQL
@@ -231,109 +330,8 @@ driver: sqlite                                   # Must be `sqlite` _(required)_
 dsn: "./data/database.db"                        # SQLite connection DSN _(required)_
 ```
 
-### Google Sheets
-```yaml
-type: model                                      # Slightly different than the others `model`
-connector: "duckdb"                              # connector will use default DuckDB engine
-sql: "select * from read_csv_auto('https://docs.google.com/spreadsheets/d/<SPREADSHEET_ID>/export?format=csv&gid=<SHEET_ID>', normalize_names=True)"                           # Fill in the parameters with your public Google Sheet.
-```
-
-## OLAP Engine Parameters
-
 :::warning Security Recommendation
 For all credential parameters (passwords, tokens, keys), use environment variables with the syntax `{{.env.<connector_type>.<parameter_name>}}`. This keeps sensitive data out of your YAML files and version control. See our [credentials documentation](/build/credentials/) for complete setup instructions.
 :::
 
-
-
-### ClickHouse
-```yaml
-type: connector                                  # Must be `connector` (required)
-driver: clickhouse                               # Must be `clickhouse` _(required)_
-
-managed: false                                   # Enable automatic provisioning _(default: false)_  
-mode: "read"                                     # Operation mode: `read` or `readwrite` _(default: read)_  
-dsn: "clickhouse://user:password@localhost:9000/database" # ClickHouse connection DSN  
-username: "default"                              # Username for authentication  
-password: "mypassword"                           # Password for authentication  
-host: "localhost"                                # ClickHouse instance hostname  
-port: 9000                                       # ClickHouse instance port  
-database: "default"                              # ClickHouse database name  
-ssl: false                                       # Enable SSL connection  
-cluster: "mycluster"                             # Cluster name for distributed queries  
-log_queries: false                               # Log raw SQL queries  
-settings_override: "max_memory_usage=1000000000" # Override default query settings  
-embed_port: 0                                    # Port for local ClickHouse (0 for random)  
-can_scale_to_zero: false                         # Database can scale to zero  
-max_open_conns: 10                               # Maximum open connections  
-max_idle_conns: 5                                # Maximum idle connections  
-dial_timeout: "30s"                              # Connection dial timeout  
-conn_max_lifetime: "1h"                          # Maximum connection reuse time  
-read_timeout: "30s"                              # Maximum read timeout
-```
-
-### Druid
-```yaml
-type: connector                                  # Must be `connector` (required)
-driver: druid                                    # Must be `druid` _(required)_
-
-dsn: "http://localhost:8082"                     # Druid connection DSN _(required)_  
-username: "admin"                                # Username for authentication  
-password: "mypassword"                           # Password for authentication  
-host: "localhost"                                # Druid coordinator/broker hostname  
-port: 8082                                       # Druid service port  
-ssl: false                                       # Enable SSL connection  
-log_queries: false                               # Log raw SQL queries  
-max_open_conns: 10                               # Maximum open connections (0=default, -1=unlimited)  
-skip_version_check: false                        # Skip Druid version compatibility check
-```
-
-### DuckDB
-```yaml
-type: connector                                  # Must be `connector` (required)
-driver: duckdb                                   # Must be `duckdb` _(required)_
-
-pool_size: 4                                     # Number of concurrent connections and queries  
-allow_host_access: true                          # Allow local environment and file system access  
-cpu: 4                                           # Number of CPU cores available to database  
-memory_limit_gb: 8                               # Memory in GB available to database  
-read_write_ratio: 0.8                            # Resource allocation ratio for read database  
-init_sql: "SET memory_limit='8GB'"               # SQL executed during database initialization  
-conn_init_sql: "SET timezone='UTC'"              # SQL executed when new connection is initialized  
-secrets: "s3,gcs"                                # Comma-separated list of connector names for temporary secrets  
-log_queries: false                               # Log raw SQL queries through OLAP
-```
-
-### Pinot
-```yaml
-type: connector                                  # Must be `connector` (required)
-driver: pinot                                    # Must be `pinot` _(required)_
-
-dsn: "http://localhost:8099"                     # Pinot connection DSN _(required)_  
-username: "admin"                                # Username for authentication  
-password: "mypassword"                           # Password for authentication  
-broker_host: "localhost"                         # Pinot broker hostname _(required)_  
-broker_port: 8099                                # Pinot broker port  
-controller_host: "localhost"                     # Pinot controller hostname _(required)_  
-controller_port: 9000                            # Pinot controller port  
-ssl: false                                       # Enable SSL connection  
-log_queries: false                               # Log raw SQL queries  
-max_open_conns: 10                               # Maximum open connections
-```
-
-### Motherduck
-
-```yaml
----
-type: connector                                  # Must be `connector` (required)
-driver: duckdb                                   # Must be `duckdb` _(required)_
-
-
-path: "md:my_db"                                # Path to your MD database
-
-init_sql: |                                     # SQL executed during database initialization.
-  INSTALL 'motherduck';                         # Install motherduck extension
-  LOAD 'motherduck';                            # Load the extensions
-  SET motherduck_token= {{ .env.motherduck_token }} # Define the motherduck token
-```
 
