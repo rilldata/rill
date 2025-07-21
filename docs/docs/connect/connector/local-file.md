@@ -2,7 +2,7 @@
 title: Local File
 description: Connect to your local data files
 sidebar_label: Local File
-sidebar_position: 17
+sidebar_position: 35
 ---
 
 Import data from files stored on your local machine into your Rill project.

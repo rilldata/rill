@@ -2,7 +2,7 @@
 title: Amazon Redshift
 description: Connect to data in Amazon Redshift
 sidebar_label: Redshift
-sidebar_position: 6
+sidebar_position: 55
 ---
 
 <!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->

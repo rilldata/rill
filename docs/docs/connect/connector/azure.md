@@ -2,7 +2,7 @@
 title: Azure Blob Storage
 description: Connect to data in Azure Blob Storage
 sidebar_label: ABS
-sidebar_position: 3
+sidebar_position: 05
 ---
 
 <!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->

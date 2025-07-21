@@ -2,7 +2,7 @@
 title: HTTPS
 description: Connect to remote data sources via HTTP/HTTPS
 sidebar_label: HTTPS
-sidebar_position: 18
+sidebar_position: 25
 ---
 
 Import data from remote sources accessible via HTTP or HTTPS URLs into your Rill project.

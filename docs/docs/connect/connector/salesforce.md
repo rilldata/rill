@@ -2,7 +2,7 @@
 title: Salesforce
 description: Connect to data in a Salesforce org using the Bulk API
 sidebar_label: Salesforce
-sidebar_position: 12
+sidebar_position: 65
 ---
 
 <!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->

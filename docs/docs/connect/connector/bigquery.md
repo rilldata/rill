@@ -2,7 +2,7 @@
 title: BigQuery 
 description: Connect to data in BigQuery
 sidebar_label: BigQuery
-sidebar_position: 4
+sidebar_position: 10
 ---
 
 <!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->

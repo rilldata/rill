@@ -2,7 +2,7 @@
 title: DuckDB
 description: Power Rill dashboards using DuckDB (default)
 sidebar_label: DuckDB
-sidebar_position: 00
+sidebar_position: 10
 ---
 
 ## Overview

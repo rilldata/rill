@@ -2,7 +2,7 @@
 title: Google Cloud Storage (GCS)
 description: Connect to data in GCS
 sidebar_label: GCS
-sidebar_position: 1
+sidebar_position: 15
 ---
 
 <!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->

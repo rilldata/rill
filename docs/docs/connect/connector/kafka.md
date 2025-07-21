@@ -2,7 +2,7 @@
 title: Kafka
 description: Connect Kafka to OLAP Engines
 sidebar_label: Kafka
-sidebar_position: 7
+sidebar_position: 30
 ---
 
 :::warning For Customers with Druid/ClickHouse Engines Only
