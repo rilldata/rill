@@ -79,19 +79,7 @@ func newMetricsSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.
 	}
 
 	// Inject the additional where clause if provided
-	if props.AdditionalWhere != nil {
-		expr := props.AdditionalWhere
-		if query.Where != nil {
-			query.Where = &metricsview.Expression{
-				Condition: &metricsview.Condition{
-					Operator:    metricsview.OperatorAnd,
-					Expressions: []*metricsview.Expression{query.Where, expr},
-				},
-			}
-		} else {
-			query.Where = expr
-		}
-	}
+	query.Where = applyAdditionalWhere(query.Where, props.AdditionalWhere)
 
 	// Inject the additional time range if provided
 	query.TimeRange = applyAdditionalTimeRange(query.TimeRange, props.AdditionalTimeRange)
@@ -115,6 +103,27 @@ func newMetricsSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.
 		ForExport:  opts.ForExport,
 	}
 	return newMetrics(ctx, resolverOpts)
+}
+
+// applyAdditionalWhere combines the existing where clause with the additional where clause
+func applyAdditionalWhere(current, additional *metricsview.Expression) *metricsview.Expression {
+	if current == nil {
+		return additional
+	}
+	if additional == nil {
+		return current
+	}
+
+	// Combine the existing where clause with the additional where clause
+	return &metricsview.Expression{
+		Condition: &metricsview.Condition{
+			Operator: metricsview.OperatorAnd,
+			Expressions: []*metricsview.Expression{
+				current,
+				additional,
+			},
+		},
+	}
 }
 
 // applyAdditionalTimeRange merges the existing time range with the additional time range
