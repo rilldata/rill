@@ -29,7 +29,8 @@
   import TruncationSelector from "./TruncationSelector.svelte";
   import { overrideRillTimeRef } from "../../../url-state/time-ranges/parser";
   import { getAbbreviationForIANA } from "@rilldata/web-common/lib/time/timezone";
-  import * as Elements from "../components";
+  import { builderActions, Tooltip, getAttrs } from "bits-ui";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
 
   export let timeString: string | undefined;
   export let interval: Interval<true>;
@@ -66,7 +67,7 @@
 
   $: usingLegacyTime = isUsingLegacyTime(timeString);
 
-  $: ({ ref, truncationGrain, forwardAligned } = parse(timeString ?? ""));
+  $: ({ ref, truncationGrain, padded } = parse(timeString ?? ""));
 
   $: dateTimeAnchor = returnAnchor(ref);
 
@@ -124,7 +125,7 @@
         : (truncationGrain ??
             smallestTimeGrain ??
             V1TimeGrain.TIME_GRAIN_MINUTE),
-      forwardAligned,
+      padded,
     );
 
     overrideRillTimeRef(parsed, newAsOfString);
@@ -157,7 +158,7 @@
     const newString = constructNewString({
       currentString: timeString,
       truncationGrain: grain,
-      inclusive: forwardAligned,
+      inclusive: padded,
       ref: ref,
     });
 
@@ -274,7 +275,6 @@
     ref: "latest" | "watermark" | "now" | string,
     inclusive: boolean,
   ) {
-    console.log({ ref, inclusive });
     if (!timeString) return;
     const newString = constructNewString({
       currentString: timeString,
@@ -303,7 +303,7 @@
         truncationGrain: timeString.startsWith("rill")
           ? "TIME_GRAIN_DAY"
           : getSmallestGrainFromISODuration(timeString),
-        forwardAligned: true,
+        padded: true,
       };
     }
 
@@ -316,7 +316,7 @@
 
     let ref: string = "now";
     let truncationGrain: V1TimeGrain | undefined = undefined;
-    let forwardAligned = false;
+    let padded = false;
 
     const asOfMatch = timeString.match(patterns.asOfClause);
     const clauseToCheck = asOfMatch ? asOfMatch[1] : timeString;
@@ -336,10 +336,10 @@
     }
 
     if (clauseToCheck.includes("+1")) {
-      forwardAligned = true;
+      padded = true;
     }
 
-    return { ref, truncationGrain, forwardAligned };
+    return { ref, truncationGrain, padded };
   }
 </script>
 
@@ -360,37 +360,54 @@
   }}
 >
   <Popover.Trigger asChild let:builder>
-    <button
-      {...builder}
-      use:builder.action
-      class="flex gap-x-1.5"
-      aria-label="Select time range"
-      data-state={open ? "open" : "closed"}
-    >
-      {#if timeString}
-        <b class=" line-clamp-1 flex-none">
-          {#if selectedLabel?.startsWith("-") || !isNaN(Number(selectedLabel?.[0]))}
-            Custom
-          {:else}
-            {selectedLabel}
+    <Tooltip.Root>
+      <Tooltip.Trigger asChild let:builder={tooltipBuilder}>
+        <button
+          {...getAttrs([builder, tooltipBuilder])}
+          use:builderActions={{ builders: [builder, tooltipBuilder] }}
+          class="flex gap-x-1.5"
+          aria-label="Select time range"
+          data-state={open ? "open" : "closed"}
+        >
+          {#if timeString}
+            <b class=" line-clamp-1 flex-none">
+              {#if selectedLabel?.startsWith("-") || !isNaN(Number(selectedLabel?.[0]))}
+                Custom
+              {:else}
+                {selectedLabel}
+              {/if}
+            </b>
           {/if}
-        </b>
-      {/if}
 
-      {#if interval.isValid}
-        <RangeDisplay {interval} />
-      {/if}
+          {#if interval.isValid}
+            <RangeDisplay {interval} />
+          {/if}
 
-      <div
-        class="font-bold bg-gray-100 rounded-[2px] p-1 py-0 text-gray-600 text-[11px]"
-      >
-        {zoneAbbreviation}
-      </div>
+          <div
+            class="font-bold bg-gray-100 rounded-[2px] p-1 py-0 text-gray-600 text-[11px]"
+          >
+            {zoneAbbreviation}
+          </div>
 
-      <span class="flex-none transition-transform" class:-rotate-180={open}>
-        <CaretDownIcon />
-      </span>
-    </button>
+          <span class="flex-none transition-transform" class:-rotate-180={open}>
+            <CaretDownIcon />
+          </span>
+        </button>
+      </Tooltip.Trigger>
+
+      <Tooltip.Content side="bottom" sideOffset={8}>
+        <TooltipContent class="flex-col flex items-center gap-y-0 p-3">
+          <span class="font-semibold italic mb-2">{timeString}</span>
+          <span
+            >{interval.start.toLocaleString(DateTime.DATETIME_MED_WITH_SECONDS)}
+          </span>
+          <span>to</span>
+          <span
+            >{interval.end.toLocaleString(DateTime.DATETIME_MED_WITH_SECONDS)}
+          </span>
+        </TooltipContent>
+      </Tooltip.Content>
+    </Tooltip.Root>
   </Popover.Trigger>
 
   <Popover.Content
@@ -402,6 +419,7 @@
       width={showCustomSelector ? 456 : 224}
       bind:this={searchComponent}
       {context}
+      {timeString}
       onSelectRange={(range) => {
         open = false;
         onSelectRange(range);
@@ -459,7 +477,7 @@
               <button
                 class="group h-7 px-2 overflow-hidden hover:bg-gray-100 rounded-sm w-full select-none flex items-center"
                 on:click={() => {
-                  handleRangeSelect("earliest to latest");
+                  handleRangeSelect("earliest to ref as of latest/ms+1ms");
                 }}
               >
                 <span class:font-bold={timeString === ALL_TIME_RANGE_ALIAS}>
@@ -523,14 +541,14 @@
     latest={maxDate}
     rangeGrain={parsedTime?.rangeGrain ?? truncationGrain}
     {smallestTimeGrain}
-    inclusive={forwardAligned}
+    inclusive={padded}
     {ref}
     onSelectEnding={onSelectGrain}
     onToggleAlignment={(inclusive) => {
       onSelectAsOfOption(ref, inclusive);
     }}
     onSelectAsOfOption={(o) => {
-      onSelectAsOfOption(o, forwardAligned);
+      onSelectAsOfOption(o, padded);
     }}
   />
 {/if}

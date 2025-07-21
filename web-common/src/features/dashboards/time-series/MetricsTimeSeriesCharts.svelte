@@ -51,9 +51,11 @@
     updateChartInteractionStore,
   } from "./utils";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
-  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import { getAllowedGrains } from "@rilldata/web-common/lib/time/new-grains";
-  import { min } from "d3-array";
+  import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
+  import { featureFlags } from "../../feature-flags";
+
+  const { rillTime } = featureFlags;
 
   export let exploreName: string;
   export let workspaceWidth: number;
@@ -332,41 +334,45 @@
         selectedItems={visibleMeasureNames}
       />
 
-      <DropdownMenu.Root bind:open>
-        <DropdownMenu.Trigger asChild let:builder>
-          <Button builders={[builder]} type="text">
-            <div
-              class="flex items-center gap-x-0.5 px-1 text-gray-700 hover:text-inherit"
-            >
-              by <strong> {TIME_GRAIN[activeTimeGrain].label}</strong>
-              <span class="transition-transform" class:-rotate-180={open}>
-                <CaretDownIcon />
-              </span>
-            </div>
-          </Button>
-        </DropdownMenu.Trigger>
+      {#if $rillTime}
+        <DropdownMenu.Root bind:open>
+          <DropdownMenu.Trigger asChild let:builder>
+            <Button builders={[builder]} type="ghost" square small>
+              <ThreeDot />
+            </Button>
+          </DropdownMenu.Trigger>
 
-        <DropdownMenu.Content>
-          {#each timeGrainOptions as option (option)}
-            <DropdownMenu.CheckboxItem
-              checkRight
-              role="menuitem"
-              checked={option === activeTimeGrain}
-              class="text-xs cursor-pointer capitalize"
-              on:click={() => {
-                // timeControlsStore.setSelectedTimeRange({
-                //   name: TimeRangePreset.CUSTOM,
-                //   interval: option,
-                // });
-                // timeControlsStore
-                metricsExplorerStore.setTimeGrain(exploreName, option);
-              }}
+          <DropdownMenu.Content align="start" class="w-48">
+            <DropdownMenu.Label
+              class="px-2 uppercase py-1 font-semibold text-[11px] text-gray-500"
             >
-              {TIME_GRAIN[option].label}
-            </DropdownMenu.CheckboxItem>
-          {/each}
-        </DropdownMenu.Content>
-      </DropdownMenu.Root>
+              Time Series Settings
+            </DropdownMenu.Label>
+            <DropdownMenu.Sub>
+              <DropdownMenu.SubTrigger>Aggregation</DropdownMenu.SubTrigger>
+              <DropdownMenu.SubContent>
+                {#each timeGrainOptions as option (option)}
+                  <DropdownMenu.CheckboxItem
+                    checkRight
+                    role="menuitem"
+                    checked={option === activeTimeGrain}
+                    class="text-xs cursor-pointer capitalize"
+                    on:click={() => {
+                      metricsExplorerStore.setTimeGrain(exploreName, option);
+                    }}
+                  >
+                    {#if option === "TIME_GRAIN_DAY"}
+                      daily
+                    {:else}
+                      {TIME_GRAIN[option].label}ly
+                    {/if}
+                  </DropdownMenu.CheckboxItem>
+                {/each}
+              </DropdownMenu.SubContent>
+            </DropdownMenu.Sub>
+          </DropdownMenu.Content>
+        </DropdownMenu.Root>
+      {/if}
 
       {#if !hideStartPivotButton}
         <div class="grow" />

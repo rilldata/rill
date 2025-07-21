@@ -136,11 +136,7 @@
             </Tooltip.Trigger>
 
             {#if timestamp}
-              <Tooltip.Content
-                side="right"
-                sideOffset={40}
-                class="line-clamp-1 w-65 z-50"
-              >
+              <Tooltip.Content side="right" sideOffset={40} class="w-65 z-50">
                 <TooltipContent>
                   <TooltipTitle>
                     <svelte:fragment slot="name">

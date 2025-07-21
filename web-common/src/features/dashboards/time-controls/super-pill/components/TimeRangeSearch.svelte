@@ -8,12 +8,15 @@
 
   export let context: string;
   export let width: number;
-  export let searchValue = "";
+
   export let inError: boolean;
+  export let timeString: string | undefined = undefined;
+  export let searchValue = timeString || "";
   export let onSelectRange: (range: string) => void;
 
   let searchElement: HTMLInputElement;
   let unableToParse = false;
+  // let localRange = timeString || ""
 
   const latestNSearches = localStorageStore(`${context}-recent-searches`, [
     "-7d/d to -3d/d",
