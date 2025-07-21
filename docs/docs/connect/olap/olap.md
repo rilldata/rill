@@ -3,6 +3,8 @@ title: "Connect to a OLAP Engine"
 description: Configure the OLAP engine used by Rill
 sidebar_label: "OLAP Engines"
 sidebar_position: 00
+toc_max_heading_level: 3
+className: connect-connect
 ---
 
 import ConnectorIcon from '@site/src/components/ConnectorIcon';
@@ -26,6 +28,12 @@ Along with supporting ingestion from your various [sources](/connect/connector/)
 ## Supported OLAP Engines
 
 Rill supports the use of several different OLAP engines to power your dashboards, including:
+
+### DuckDB
+### ClickHouse
+### MotherDuck
+### Druid
+### Pinot
 
 <div className="connector-icon-grid">
   <ConnectorIcon

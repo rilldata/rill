@@ -14,7 +14,6 @@ function ConnectorIcon({ icon, header, content, link, linkLabel = 'Learn more', 
                     {icon}
                 </div>
             )}
-            <div className="Connector-icon-header">{header}</div>
             <div className="Connector-icon-content">
                 {content}
             </div>
