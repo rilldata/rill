@@ -11,7 +11,7 @@ On this page, we've gathered a running list of recommendations and general guide
 
 :::info Working with very large data from the get go?
 
-Generally speaking, Rill's [embedded DuckDB OLAP engine](/connect/olap/olap-engines/duckdb) works very well out-of-the-box for datasets _up to around 50GB in size_. If you plan to be working with and ingesting volumes of data larger than 50GB, please [**get in touch**](/contact) and we can explore using one of our other enterprise-grade [OLAP engine](/connect/olap/) options. 
+Generally speaking, Rill's [embedded DuckDB OLAP engine](/connect/olap/duckdb) works very well out-of-the-box for datasets _up to around 50GB in size_. If you plan to be working with and ingesting volumes of data larger than 50GB, please [**get in touch**](/contact) and we can explore using one of our other enterprise-grade [OLAP engine](/connect/olap/) options. 
 
 :::
 
@@ -48,7 +48,7 @@ There are a few ways to achieve this:
 
 #### Limiting the source data to a smaller time range
 
-There are different ways this can be achieved and the method also depends heavily on the data source being used. For example, assuming we had a [S3 source](/connect/connector/sources/s3.md) that was well partitioned by year and month (and written into a partitioned bucket), the recommended pattern would be to leverage the `path` [source property](/reference/project-files/sources.md) and a glob pattern to limit the size of the ingestion in your development environment. Something like (as your `source.yaml`):
+There are different ways this can be achieved and the method also depends heavily on the data source being used. For example, assuming we had a [S3 source](/connect/connector/s3.md) that was well partitioned by year and month (and written into a partitioned bucket), the recommended pattern would be to leverage the `path` [source property](/reference/project-files/sources.md) and a glob pattern to limit the size of the ingestion in your development environment. Something like (as your `source.yaml`):
 ```yaml
 type: source
 connector: s3
@@ -113,7 +113,7 @@ Similarly, choosing the right data type for each column is also important. Small
 
 ### Select the columns you need and avoid `SELECT *` when possible
 
-Because most [OLAP databases](/connect/olap/) store data in a columnar format, including [DuckDB](/connect/olap/olap-engines/duckdb), selecting only the columns that you need during the modeling phase ensures that DuckDB will only ingest and store the data _it actually needs_ (speeding up model build times and reducing footprint). Furthermore, columnar formats are optimized for analytical queries so by selecting only the columns that you need (instead of a blanket `SELECT *`), this will help to minimize data processing times and improve the query execution speed.
+Because most [OLAP databases](/connect/olap/) store data in a columnar format, including [DuckDB](/connect/olap/duckdb), selecting only the columns that you need during the modeling phase ensures that DuckDB will only ingest and store the data _it actually needs_ (speeding up model build times and reducing footprint). Furthermore, columnar formats are optimized for analytical queries so by selecting only the columns that you need (instead of a blanket `SELECT *`), this will help to minimize data processing times and improve the query execution speed.
 
 ### Consider sorting your data by an appropriate timestamp column
 
@@ -140,7 +140,7 @@ Subqueries can very often prove to be inefficient and result in suboptimal query
 
 ### Rather than UNION, consider using UNION ALL when possible
 
-Depending on the [OLAP engine](/connect/olap/), `UNION` can be a very expensive operation and much more computationally intensive than `UNION ALL`. For example, when using [DuckDB](/connect/olap/olap-engines/duckdb), a `UNION` will require performing full duplicate eliminations _across all columns_ while a `UNION ALL` will simply concatenate the tables together. If a concatenation is sufficient (for the query), this will be both much quicker and significantly less resource intensive for the query to complete.
+Depending on the [OLAP engine](/connect/olap/), `UNION` can be a very expensive operation and much more computationally intensive than `UNION ALL`. For example, when using [DuckDB](/connect/olap/duckdb), a `UNION` will require performing full duplicate eliminations _across all columns_ while a `UNION ALL` will simply concatenate the tables together. If a concatenation is sufficient (for the query), this will be both much quicker and significantly less resource intensive for the query to complete.
 
 
 ## OLAP Engines

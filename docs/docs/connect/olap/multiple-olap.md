@@ -7,7 +7,7 @@ sidebar_position: 50
 
 ## Overview
 
-If you have access to another OLAP engine (such as [ClickHouse](/connect/olap/olap-engines/clickhouse) or [Druid](/connect/olap/olap-engines/druid), you have the option to either:
+If you have access to another OLAP engine (such as [ClickHouse](/connect/olap/clickhouse) or [Druid](/connect/olap/druid), you have the option to either:
 - Create dedicated projects that are powered by one specific OLAP engine (default)
 - Use different OLAP engines _in the same project_ to power separate dashboards
 
@@ -27,7 +27,7 @@ If there's an OLAP engine you're interested in that isn't available, please don'
 
 ## Enabling Multiple OLAP Engines
 
-To configure multiple OLAP engines, you'll want to leave the <u>default</u> OLAP engine as [DuckDB](/connect/olap/olap-engines/duckdb) in your project and configure dashboards that are powered by other OLAP engines individually (more on this below).
+To configure multiple OLAP engines, you'll want to leave the <u>default</u> OLAP engine as [DuckDB](/connect/olap/duckdb) in your project and configure dashboards that are powered by other OLAP engines individually (more on this below).
 
 ### Setting up your OLAP Engine connection string (DSN)
 

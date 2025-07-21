@@ -193,7 +193,7 @@ Skip data ingestion and work directly with existing tables in your OLAP engine, 
 
 :::info Full List Of Connectors
 
-Rill is continually adding new sources and connectors in our releases. For a comprehensive list, you can refer to our [Connectors](/connect/connector/) page. Please don't hesitate to [reach out](/contact) either if there's a connector you'd like us to add!
+Rill is continually adding new sources and connectors in our releases. For a comprehensive list, you can refer to our [Connectors](/connect/) page. Please don't hesitate to [reach out](/contact) either if there's a connector you'd like us to add!
 
 :::
 

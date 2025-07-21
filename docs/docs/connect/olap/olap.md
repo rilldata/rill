@@ -9,7 +9,7 @@ className: connect-connect
 
 import ConnectorIcon from '@site/src/components/ConnectorIcon';
 
-Along with supporting ingestion from your various [sources](/connect/connector/), we allow a `live connection` to your own OLAP analytics engine. You can either set the default OLAP engine for your entire project, or set it for specific dashboards. 
+Along with supporting ingestion from your various [sources](/connect/), we allow a `live connection` to your own OLAP analytics engine. You can either set the default OLAP engine for your entire project, or set it for specific dashboards. 
 
 1. Set the [default OLAP engine](/reference/project-files/rill-yaml#configuring-the-default-olap-engine) via the rill.yaml file.
 2. Set the [OLAP engine](/reference/project-files/explore-dashboards) for a specific dashboard.
@@ -39,7 +39,7 @@ Rill supports the use of several different OLAP engines to power your dashboards
   <ConnectorIcon
     icon={<img src="/img/connect/icons/Logo-DuckDB.png" alt="DuckDB" />}
     content="DuckDB is the default engine for Rill Developer."
-    link="/connect/olap/olap-engines/duckdb"
+    link="/connect/olap/duckdb"
     linkLabel="Learn more"
     referenceLink="/reference/project-files/connectors#duckdb"
   />
@@ -47,7 +47,7 @@ Rill supports the use of several different OLAP engines to power your dashboards
   <ConnectorIcon
     icon={<img src="/img/connect/icons/Logo-Clickhouse.png" alt="ClickHouse" />}
     content="High-performance columnar database for real-time analytics and data warehousing."
-    link="/connect/olap/olap-engines/clickhouse"
+    link="/connect/olap/clickhouse"
     linkLabel="Learn more"
     referenceLink="/reference/project-files/connectors#clickhouse"
   />
@@ -55,7 +55,7 @@ Rill supports the use of several different OLAP engines to power your dashboards
   <ConnectorIcon
     icon={<img src="/img/connect/icons/Logo-Motherduck.png" alt="MotherDuck" />}
     content="Cloud-native DuckDB service for scalable analytics and data processing."
-    link="/connect/olap/olap-engines/motherduck"
+    link="/connect/olap/motherduck"
     linkLabel="Learn more"
     referenceLink="/reference/project-files/connectors#motherduck"
   />
@@ -63,7 +63,7 @@ Rill supports the use of several different OLAP engines to power your dashboards
   <ConnectorIcon
     icon={<img src="/img/connect/icons/Logo-Druid.png" alt="Druid" />}
     content="Real-time analytics database designed for high-performance OLAP queries."
-    link="/connect/olap/olap-engines/druid"
+    link="/connect/olap/druid"
     linkLabel="Learn more"
     referenceLink="/reference/project-files/connectors#druid"
   />
@@ -71,7 +71,7 @@ Rill supports the use of several different OLAP engines to power your dashboards
   <ConnectorIcon
     icon={<img src="/img/connect/icons/Logo-Pinot.png" alt="Pinot" />}
     content="Distributed OLAP datastore for real-time analytics and business intelligence."
-    link="/connect/olap/olap-engines/pinot"
+    link="/connect/olap/pinot"
     linkLabel="Learn more"
     referenceLink="/reference/project-files/connectors#pinot"
   />

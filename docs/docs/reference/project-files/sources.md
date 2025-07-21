@@ -41,7 +41,7 @@ Files that are *nested at any level* under your native `sources` directory will 
   - _`sqlite`_ - data stored in SQLite
   - _`snowflake`_ - data stored in Snowflake
   - _`bigquery`_ - data stored in BigQuery
-  - _`duckdb`_ - use the [embedded DuckDB](/connect/olap/olap-engines/duckdb.md) engine to submit a DuckDB-supported native [SELECT](https://duckdb.org/docs/sql/statements/select.html) query (should be used in conjunction with the `sql` property)
+  - _`duckdb`_ - use the [embedded DuckDB](/connect/olap/duckdb.md) engine to submit a DuckDB-supported native [SELECT](https://duckdb.org/docs/sql/statements/select.html) query (should be used in conjunction with the `sql` property)
 
 **`type`**
  — _Deprecated_ but preserves a legacy alias to `connector`. Can be used instead to specify the source connector, instead of the resource type (see above), **only** if the source YAML file belongs in the `<RILL_PROJECT_DIRECTORY>/sources/` directory (preserved primarily for backwards compatibility).
@@ -109,7 +109,7 @@ duckdb:
   columns: "types={'UniqueCarrier': 'VARCHAR'}"
 ```
 
-**`dsn`** - Used to set the Snowflake connection string. For more information, refer to our [Snowflake connector page](/connect/connector/sources/snowflake.md) and the official [Go Snowflake Driver](https://pkg.go.dev/github.com/snowflakedb/gosnowflake#hdr-Connection_String) documentation _(optional)_.
+**`dsn`** - Used to set the Snowflake connection string. For more information, refer to our [Snowflake connector page](/connect/connector/snowflake.md) and the official [Go Snowflake Driver](https://pkg.go.dev/github.com/snowflakedb/gosnowflake#hdr-Connection_String) documentation _(optional)_.
   - If not specified in the source YAML, the `connector.snowflake.dsn` connection string will need to be set when [deploying the project to Rill Cloud](/deploy/deploy-credentials#configure-environmental-variables-and-credentials-for-rill-cloud).
 
 > **Note:**
