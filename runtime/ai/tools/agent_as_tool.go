@@ -8,8 +8,6 @@ import (
 	"github.com/pontus-devoteam/agent-sdk-go/pkg/agent"
 	"github.com/pontus-devoteam/agent-sdk-go/pkg/runner"
 	"github.com/pontus-devoteam/agent-sdk-go/pkg/tool"
-	"github.com/rilldata/rill/runtime/ai/tools/examples"
-	"gopkg.in/yaml.v3"
 )
 
 type runAgentInput struct {
@@ -43,22 +41,6 @@ func RunAgent(a *agent.Agent, r *runner.Runner, name, description string) (*tool
 			userInput, err := newRunAgentInput(params)
 			if err != nil {
 				return nil, err
-			}
-			if name == "edit_model" {
-				examples := examples.Top3Fuzzy(userInput.Input)
-				if len(examples) > 0 {
-					userInput.Input += "\n\nHere are some examples of what you can do:\n"
-				}
-				for _, example := range examples {
-					userInput.Input += fmt.Sprintf("- %s\n", example.Description)
-					yamlData, err := yaml.Marshal(example.YAML)
-					if err != nil {
-						return nil, fmt.Errorf("failed to marshal example: %w", err)
-					}
-					userInput.Input += string(yamlData)
-					userInput.Input += "\n"
-				}
-
 			}
 			result, err := r.Run(ctx, a, &runner.RunOptions{
 				Input:    userInput.Input,

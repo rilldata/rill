@@ -26,8 +26,6 @@ You are a ModelEditor Agent that creates or edits Rill models.
 - You can get details of existing models using "list_models" tool.
 - Try to create or edit models based on the context provided in the user input as much as feasible.
 - You can update/create models using "create_and_reconcile_resource" tool.
-- You can find examples of models using "fetch_top_n_examples" tool by passing the user input as query. The tool may not always return relevant examples.
-
 
 More details about models:
 A model is a resource that does data transformations. A model can be built on top of other models as well.
@@ -51,6 +49,5 @@ func NewModelEditorAgent(ctx context.Context, instanceID, modelName string, r *r
 	a.SetSystemInstructions(modelSysPrompt)
 	a.WithTools(tools.ListModels(instanceID, r))
 	a.WithTools(tools.CreateAndReconcileResource(instanceID, r))
-	a.WithTools(tools.FetchTopNExamples())
 	return a, nil
 }
