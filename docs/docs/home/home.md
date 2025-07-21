@@ -33,12 +33,20 @@ rill start
 
   **Programmatic Ads/OpenRTB**: bidstream data for programmatic advertisers to optimize pricing strategies, look for inventory opportunities, and improve campaign performance
   
-  [GitHub →](https://github.com/rilldata/rill-examples/tree/main/rill-openrtb-prog-ads) | [Walkthrough →](/guides/openrtb-analytics) | [Live Demo →](https://ui.rilldata.com/demo/rill-openrtb-prog-ads)
+  [GitHub →](https://github.com/rilldata/rill-examples/tree/main/rill-openrtb-prog-ads)
+
+  [Walkthrough →](/guides/openrtb-analytics)
+
+  [Live Demo →](https://ui.rilldata.com/demo/rill-openrtb-prog-ads)
 
 
   **Cost Monitoring**: based on Rill's own internal dashboards, cloud infrastructure data (compute, storage, pipeline statistics, etc.) merged with customer data to analyze bottlenecks and look for efficiencies
 
-  [GitHub →](https://github.com/rilldata/rill-examples/tree/main/rill-cost-monitoring) | [Walkthrough →](/guides/cost-monitoring-analytics) | [Live Demo →](https://ui.rilldata.com/demo/rill-cost-monitoring)
+  [GitHub →](https://github.com/rilldata/rill-examples/tree/main/rill-cost-monitoring)
+  
+  [Walkthrough →](/guides/cost-monitoring-analytics)
+  
+  [Live Demo →](https://ui.rilldata.com/demo/rill-cost-monitoring)
 
 
   **GitHub Analytics**: analyze GitHub activity to understand what parts of your codebase are most active, analyze contributor productivity, and evaluate the intersections between commits and files
@@ -99,21 +107,5 @@ Curious about what's new? Check out our latest and greatest updates in the [rele
   content="Embed Rill dashboards into your applications and workflows."
   link="/integrate/embedding/"
 />
-<TileIcon
-  header="Manage Users"
-  content="Set up user management and access controls for your Rill projects."
-  link="/manage/user-management/"
-/>
-<TileIcon
-  header="Deploy to Cloud"
-  content="Deploy your Rill project to production and share with your team."
-  link="/deploy/deploy-dashboard/"
-/>
-<TileIcon
-  header="See Demo Project"
-  content="Explore our demo projects to see Rill in action with real data."
-  link="https://ui.rilldata.com/demo"
-  target="_blank"
-  rel="noopener noreferrer"
-/>
+
 </div>
