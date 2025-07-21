@@ -21,8 +21,6 @@ type TimeGrainAlias =
 
 export const grainAliasRegex = /(ms|s|S|m|h|H|d|D|w|W|M|q|Q|y|Y)/;
 
-// const GRAINS = ["Y", "Q", "M", "W", "d", "h", "m", "s"] as const;
-
 export function getGrainAliasFromString(
   range: string,
 ): TimeGrainAlias | undefined {
