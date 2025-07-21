@@ -5,7 +5,7 @@
   import type { ComponentInputParam } from "@rilldata/web-common/features/canvas/inspector/types";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import FieldConfigPopover from "./FieldConfigPopover.svelte";
+  import FieldConfigPopover from "./field-config/FieldConfigPopover.svelte";
 
   export let key: string;
   export let config: ComponentInputParam;
