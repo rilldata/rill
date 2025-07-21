@@ -129,9 +129,6 @@
           aggregationRequest,
         );
 
-  const dialogTitle =
-    props.mode === "create" ? "Create schedule report" : "Edit schedule report";
-
   const { form, errors, enhance, submit, submitting } = superForm(
     defaults(initialValues, schema),
     {
@@ -237,7 +234,7 @@
 
 <Dialog.Root bind:open>
   <Dialog.Content class="min-w-[802px]">
-    <Dialog.Title>{dialogTitle}</Dialog.Title>
+    <Dialog.Title>Schedule report</Dialog.Title>
 
     <BaseScheduledReportForm
       formId={FORM_ID}
