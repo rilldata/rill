@@ -557,24 +557,3 @@
     }}
   />
 {/if}
-
-<style>
-  /* The wrapper shrinks to the width of its content */
-  .wrapper {
-    display: inline-grid;
-    grid-template-columns: 1fr; /* single column that both items share */
-  }
-
-  /* Vertical scroll container has an explicit width */
-  .vertical-scroll {
-    overflow-y: auto;
-  }
-
-  /* Horizontal container becomes a grid item and stretches to fill the column */
-  .horizontal-scroll {
-    overflow-x: auto;
-    white-space: nowrap;
-
-    /* No explicit width is set here */
-  }
-</style>

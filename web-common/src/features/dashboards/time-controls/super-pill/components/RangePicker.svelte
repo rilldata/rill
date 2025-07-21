@@ -92,8 +92,3 @@
     </div>
   </DropdownMenu.Content>
 </DropdownMenu.Root>
-
-<style lang="postcss">
-  button {
-  }
-</style>
