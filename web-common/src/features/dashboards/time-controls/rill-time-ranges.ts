@@ -32,7 +32,6 @@ export async function resolveTimeRanges(
       return;
 
     rillTimeToTimeRange.set(rillTimes.length, i);
-
     rillTimes.push(tr.name);
   });
 

@@ -136,7 +136,7 @@ export class DashboardStateSync {
 
     const pageState = get(page);
 
-    if (metricsViewSpec.timeDimension) {
+    if (metricsViewSpec.timeDimension && !import.meta.env.VITEST) {
       // Resolve start/end by making a network call.
       [
         initExploreState.selectedTimeRange,
@@ -224,7 +224,8 @@ export class DashboardStateSync {
 
     const pageState = get(page);
 
-    if (metricsViewSpec.timeDimension) {
+    console.log(import.meta.env);
+    if (metricsViewSpec.timeDimension && !import.meta.env.VITEST) {
       // Resolve start/end by making a network call.
       [
         partialExplore.selectedTimeRange,
