@@ -1,9 +1,12 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import { Button } from "@rilldata/web-common/components/button";
+  import { getManageProjectAccess } from "@rilldata/web-common/features/project/selectors.ts";
   import type { Project } from "@rilldata/web-common/proto/gen/rill/admin/v1/api_pb";
   import { createLocalServiceListProjectsForOrgRequest } from "@rilldata/web-common/runtime-client/local-service";
   import ProjectSelector from "@rilldata/web-common/features/project/deploy/ProjectSelector.svelte";
+  import RequestProjectAccessDialog from "@rilldata/web-common/features/project/deploy/RequestProjectAccessDialog.svelte";
+  import OverwriteProjectConfirmationDialog from "@rilldata/web-common/features/project/deploy/OverwriteProjectConfirmationDialog.svelte";
 
   $: orgParam = $page.url.searchParams.get("org") ?? "";
 
@@ -14,6 +17,22 @@
   });
 
   let selectedProject: Project | undefined = undefined;
+  $: hasManageProjectAccess = getManageProjectAccess(
+    selectedProject?.orgName ?? "",
+    selectedProject?.name ?? "",
+  );
+  $: deployUrl = `/deploy/redeploy?org=${selectedProject?.orgName}&project=${selectedProject?.name}&new_managed_repo=true`;
+
+  let showOverwriteProjectConfirmation = false;
+  let showRequestProjectAccess = false;
+
+  function onUpdateProject() {
+    if ($hasManageProjectAccess) {
+      showOverwriteProjectConfirmation = true;
+    } else {
+      showRequestProjectAccess = true;
+    }
+  }
 </script>
 
 <div class="flex flex-col gap-y-2">
@@ -32,9 +51,22 @@
 <Button
   wide
   type="primary"
-  href="/deploy/redeploy?org={selectedProject?.orgName}&project={selectedProject?.name}"
+  onClick={onUpdateProject}
   disabled={!selectedProject}
 >
   Update selected project
 </Button>
 <Button wide type="ghost" on:click={() => history.back()}>Back</Button>
+
+<OverwriteProjectConfirmationDialog
+  bind:open={showOverwriteProjectConfirmation}
+  {deployUrl}
+  rillManagedProject={!!selectedProject?.managedGitId}
+/>
+
+{#if selectedProject}
+  <RequestProjectAccessDialog
+    bind:open={showRequestProjectAccess}
+    project={selectedProject}
+  />
+{/if}

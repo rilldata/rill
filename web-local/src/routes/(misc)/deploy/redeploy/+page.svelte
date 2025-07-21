@@ -20,6 +20,7 @@
 
   $: orgName = $page.url.searchParams.get("org") ?? "";
   $: projectName = $page.url.searchParams.get("project") ?? "";
+  $: newManagedRepo = $page.url.searchParams.get("new_managed_repo") ?? "";
 
   $: projectQuery = createLocalServiceGetProjectRequest(orgName, projectName);
   $: project = $projectQuery.data?.project;
@@ -48,6 +49,7 @@
         // This is mainly set to true in E2E tests.
         reupload: !$legacyArchiveDeploy,
         rearchive: $legacyArchiveDeploy,
+        newManagedRepo: Boolean(newManagedRepo),
       });
       projectUrl = resp.frontendUrl; // https://ui.rilldata.com/<org>/<project>
     } else {

@@ -4,8 +4,8 @@
   import ProjectSelector from "@rilldata/web-common/features/project/deploy/ProjectSelector.svelte";
   import ProjectSelectorItem from "@rilldata/web-common/features/project/deploy/ProjectSelectorItem.svelte";
   import RequestProjectAccessDialog from "@rilldata/web-common/features/project/deploy/RequestProjectAccessDialog.svelte";
+  import { getManageProjectAccess } from "@rilldata/web-common/features/project/selectors.ts";
   import type { Project } from "@rilldata/web-common/proto/gen/rill/admin/v1/api_pb";
-  import { createLocalServiceGetProjectRequest } from "@rilldata/web-common/runtime-client/local-service.ts";
   import Rocket from "svelte-radix/Rocket.svelte";
 
   export let open = false;
@@ -13,17 +13,9 @@
 
   let selectedProject: Project | undefined =
     matchingProjects.length === 1 ? matchingProjects[0] : undefined;
-  $: selectedProjectQuery = createLocalServiceGetProjectRequest(
+  $: hasManageProjectAccess = getManageProjectAccess(
     selectedProject?.orgName ?? "",
     selectedProject?.name ?? "",
-    {
-      query: {
-        enabled: !!selectedProject,
-      },
-    },
-  );
-  $: hasDeployAccessToSelectedProject = Boolean(
-    $selectedProjectQuery.data?.projectPermissions?.manageProject,
   );
 
   $: enableUpdate = !!selectedProject;
@@ -31,6 +23,8 @@
   $: deployUrl = selectedProject
     ? `/deploy/redeploy?org=${selectedProject.orgName}&project=${selectedProject.name}`
     : "";
+
+  let showRequestProjectAccess = false;
 </script>
 
 <Popover.Root bind:open>
@@ -54,7 +48,7 @@
     {/if}
 
     <div class="flex flex-row-reverse items-center gap-x-2">
-      {#if hasDeployAccessToSelectedProject || !selectedProject}
+      {#if $hasManageProjectAccess || !selectedProject}
         <Button
           type="primary"
           disabled={!enableUpdate}
@@ -65,10 +59,16 @@
           Update
         </Button>
       {:else}
-        <RequestProjectAccessDialog
-          project={selectedProject}
+        <Button
+          type="primary"
           disabled={!enableUpdate}
-        />
+          onClick={() => {
+            open = false;
+            showRequestProjectAccess = true;
+          }}
+        >
+          Update
+        </Button>
       {/if}
       <Button
         type="secondary"
@@ -81,3 +81,10 @@
     </div>
   </Popover.Content>
 </Popover.Root>
+
+{#if selectedProject}
+  <RequestProjectAccessDialog
+    bind:open={showRequestProjectAccess}
+    project={selectedProject}
+  />
+{/if}

@@ -4,17 +4,15 @@
   import { getRequestProjectAccessUrl } from "@rilldata/web-common/features/project/selectors.ts";
   import type { Project } from "@rilldata/web-common/proto/gen/rill/admin/v1/api_pb.ts";
 
+  export let open: boolean;
   export let project: Project;
-  export let disabled = false;
-
-  let open = false;
 
   $: requestProjectAccessUrl = getRequestProjectAccessUrl(project);
 </script>
 
 <Alert.Root bind:open>
-  <Alert.Trigger asChild let:builder>
-    <Button type="primary" builders={[builder]} {disabled}>Update</Button>
+  <Alert.Trigger asChild>
+    <div class="hidden"></div>
   </Alert.Trigger>
   <Alert.Content class="min-w-[600px]">
     <Alert.Header>
