@@ -38,8 +38,9 @@
   import Globe from "@rilldata/web-common/components/icons/Globe.svelte";
   import Calendar from "@rilldata/web-common/components/icons/Calendar.svelte";
   import {
-    convertLegacyTime,
     constructAsOfString,
+    isUsingLegacyTime,
+    constructNewString,
   } from "../../new-time-controls";
 
   export let timeString: string | undefined;
@@ -121,47 +122,38 @@
     } as TimeGrainOptions,
   );
 
-  function isUsingLegacyTime(timeString: string | undefined): boolean {
-    return (
-      timeString?.startsWith("rill") ||
-      timeString?.startsWith("P") ||
-      timeString?.startsWith("p") ||
-      false
-    );
-  }
-
   function handleRangeSelect(range: string, ignoreSnap?: boolean) {
     if (range === ALL_TIME_RANGE_ALIAS) {
       onSelectRange(ALL_TIME_RANGE_ALIAS);
+      closeMenu();
     } else {
-      const parsed = parseRillTime(range);
+      try {
+        const parsed = parseRillTime(range);
 
-      const rangeGrainOrder = getGrainOrder(parsed.rangeGrain);
-      const asOfGrainOrder = getGrainOrder(truncationGrain);
+        const rangeGrainOrder = getGrainOrder(parsed.rangeGrain);
+        const asOfGrainOrder = getGrainOrder(truncationGrain);
 
-      if (asOfGrainOrder > rangeGrainOrder) {
-        truncationGrain = parsed.rangeGrain;
+        if (asOfGrainOrder > rangeGrainOrder) {
+          truncationGrain = parsed.rangeGrain;
+        }
+
+        const newAsOfString = constructAsOfString(
+          ref,
+          ignoreSnap
+            ? undefined
+            : (truncationGrain ??
+                smallestTimeGrain ??
+                V1TimeGrain.TIME_GRAIN_MINUTE),
+          padded,
+        );
+
+        overrideRillTimeRef(parsed, newAsOfString);
+        onSelectRange(parsed.toString());
+        closeMenu();
+      } catch {
+        // This function is called in a controlled manner and should not throw
       }
-
-      const newAsOfString = constructAsOfString(
-        ref,
-        ignoreSnap
-          ? undefined
-          : (truncationGrain ??
-              smallestTimeGrain ??
-              V1TimeGrain.TIME_GRAIN_MINUTE),
-        padded,
-      );
-
-      overrideRillTimeRef(parsed, newAsOfString);
-      onSelectRange(parsed.toString());
     }
-
-    closeMenu();
-  }
-
-  function closeMenu() {
-    open = false;
   }
 
   function onSelectGrain(grain: V1TimeGrain | undefined) {
@@ -175,30 +167,6 @@
     });
 
     onSelectRange(newString);
-  }
-
-  function constructNewString({
-    currentString,
-    truncationGrain,
-    inclusive,
-    ref,
-  }: {
-    currentString: string;
-    truncationGrain: V1TimeGrain | undefined | null;
-    inclusive: boolean;
-    ref: "watermark" | "latest" | "now" | string;
-  }): string {
-    const legacy = isUsingLegacyTime(currentString);
-
-    const rillTime = parseRillTime(
-      legacy ? convertLegacyTime(currentString) : currentString,
-    );
-
-    const newAsOfString = constructAsOfString(ref, truncationGrain, inclusive);
-
-    overrideRillTimeRef(rillTime, newAsOfString);
-
-    return rillTime.toString();
   }
 
   function onSelectAsOfOption(
@@ -224,6 +192,10 @@
     } else if (asOf === "now") {
       return DateTime.now().setZone(zone);
     }
+  }
+
+  function closeMenu() {
+    open = false;
   }
 </script>
 

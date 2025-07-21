@@ -19,7 +19,7 @@ type TimeGrainAlias =
   | "y"
   | "Y";
 
-export const grainAliasRegex = /(ms|s|S|m|h|H|d|D|w|W|M|q|Q|y|Y)/;
+export const grainAliasRegex = /(ms|MS|s|S|m|h|H|d|D|w|W|M|q|Q|y|Y)/;
 
 export function getGrainAliasFromString(
   range: string,

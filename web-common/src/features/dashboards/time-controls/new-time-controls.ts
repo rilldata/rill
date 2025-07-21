@@ -1,6 +1,9 @@
 // WIP as of 04/22/2025
 
-import { parseRillTime } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser";
+import {
+  overrideRillTimeRef,
+  parseRillTime,
+} from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser";
 import { humaniseISODuration } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import type { V1ExploreTimeRange } from "@rilldata/web-common/runtime-client";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
@@ -606,4 +609,37 @@ export function constructAsOfString(
   } else {
     return base;
   }
+}
+
+export function isUsingLegacyTime(timeString: string | undefined): boolean {
+  return (
+    timeString?.startsWith("rill") ||
+    timeString?.startsWith("P") ||
+    timeString?.startsWith("p") ||
+    false
+  );
+}
+
+export function constructNewString({
+  currentString,
+  truncationGrain,
+  inclusive,
+  ref,
+}: {
+  currentString: string;
+  truncationGrain: V1TimeGrain | undefined | null;
+  inclusive: boolean;
+  ref: "watermark" | "latest" | "now" | string;
+}): string {
+  const legacy = isUsingLegacyTime(currentString);
+
+  const rillTime = parseRillTime(
+    legacy ? convertLegacyTime(currentString) : currentString,
+  );
+
+  const newAsOfString = constructAsOfString(ref, truncationGrain, inclusive);
+
+  overrideRillTimeRef(rillTime, newAsOfString);
+
+  return rillTime.toString();
 }
