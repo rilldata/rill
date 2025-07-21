@@ -342,10 +342,10 @@ func (e *Expression) Eval(evalOpts EvalOptions) (time.Time, time.Time, timeutil.
 	if e.Grain != nil {
 		tg = grainMap[*e.Grain]
 	} else {
-		tg = getLowerOrderGrain(start, end, tg)
+		tg = getLowerOrderGrain(start, end, tg, e.tz)
 	}
 
-	return start, end, tg
+	return start.In(time.UTC), end.In(time.UTC), tg
 }
 
 /* Intervals */
@@ -522,7 +522,7 @@ func (p *PointInTimeWithSnap) parse() error {
 func (p *PointInTimeWithSnap) eval(evalOpts EvalOptions, tm time.Time, tz *time.Location) (time.Time, timeutil.TimeGrain) {
 	tg := timeutil.TimeGrainUnspecified
 	if p.Grain != nil {
-		tm, tg = p.Grain.eval(tm)
+		tm, tg = p.Grain.eval(tm, tz)
 	} else if p.Labeled != nil {
 		tm = p.Labeled.eval(evalOpts)
 	} else if p.ISO != nil {
@@ -551,21 +551,21 @@ func (p *PointInTimeWithSnap) eval(evalOpts EvalOptions, tm time.Time, tz *time.
 	return tm, tg
 }
 
-func (g *GrainPointInTime) eval(tm time.Time) (time.Time, timeutil.TimeGrain) {
+func (g *GrainPointInTime) eval(tm time.Time, tz *time.Location) (time.Time, timeutil.TimeGrain) {
 	tg := timeutil.TimeGrainUnspecified
 	for _, part := range g.Parts {
-		tm, tg = part.eval(tm)
+		tm, tg = part.eval(tm, tz)
 	}
 	return tm, tg
 }
 
-func (g *GrainPointInTimePart) eval(tm time.Time) (time.Time, timeutil.TimeGrain) {
+func (g *GrainPointInTimePart) eval(tm time.Time, tz *time.Location) (time.Time, timeutil.TimeGrain) {
 	dir := -1
 	if g.Prefix == "+" {
 		dir = 1
 	}
 	// Offset the time based on duration. Direction is specified here rather in Duration.
-	return g.Duration.offset(tm, dir)
+	return g.Duration.offset(tm, dir, tz)
 }
 
 func (l *LabeledPointInTime) eval(evalOpts EvalOptions) time.Time {
@@ -639,7 +639,7 @@ func (a *ISOPointInTime) parse() error {
 func (a *ISOPointInTime) eval(tz *time.Location) (time.Time, time.Time, timeutil.TimeGrain) {
 	// Since we use this to build a time, month and day cannot be zero, hence the max(1, xx)
 	absStart := time.Date(a.year, time.Month(max(1, a.month)), max(1, a.day), a.hour, a.minute, a.second, a.nano, tz)
-	absEnd := timeutil.OffsetTime(absStart, a.tg, 1)
+	absEnd := timeutil.OffsetTime(absStart, a.tg, 1, tz)
 
 	return absStart, absEnd, a.tg
 }
@@ -650,30 +650,30 @@ func (o *Ordinal) eval(evalOpts EvalOptions, start time.Time, tz *time.Location)
 	tg := grainMap[o.Grain]
 	offset := o.Num - 1
 
-	start = timeutil.OffsetTime(start, tg, offset)
+	start = timeutil.OffsetTime(start, tg, offset, tz)
 	start = truncateWithCorrection(start, tg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
 
-	end := timeutil.OffsetTime(start, tg, 1)
+	end := timeutil.OffsetTime(start, tg, 1, tz)
 
 	return start, end, tg
 }
 
-func (g *GrainDuration) offset(tm time.Time, dir int) (time.Time, timeutil.TimeGrain) {
+func (g *GrainDuration) offset(tm time.Time, dir int, tz *time.Location) (time.Time, timeutil.TimeGrain) {
 	tg := timeutil.TimeGrainUnspecified
 	i := len(g.Parts) - 1
 	for i >= 0 {
-		tm, tg = g.Parts[i].offset(tm, dir)
+		tm, tg = g.Parts[i].offset(tm, dir, tz)
 		i--
 	}
 	return tm, tg
 }
 
-func (g *GrainDurationPart) offset(tm time.Time, dir int) (time.Time, timeutil.TimeGrain) {
+func (g *GrainDurationPart) offset(tm time.Time, dir int, tz *time.Location) (time.Time, timeutil.TimeGrain) {
 	tg := grainMap[g.Grain]
 	offset := g.Num
 	offset *= dir
 
-	return timeutil.OffsetTime(tm, tg, offset), tg
+	return timeutil.OffsetTime(tm, tg, offset, tz), tg
 }
 
 func parseISO(from string, parseOpts ParseOptions) (*Expression, error) {
@@ -781,7 +781,7 @@ func truncateWithCorrection(tm time.Time, tg timeutil.TimeGrain, tz *time.Locati
 			weekday = 7
 		}
 		if weekday >= 5 {
-			newTm = timeutil.OffsetTime(newTm, tg, 1)
+			newTm = timeutil.OffsetTime(newTm, tg, 1, tz)
 		}
 	}
 
@@ -789,9 +789,9 @@ func truncateWithCorrection(tm time.Time, tg timeutil.TimeGrain, tz *time.Locati
 }
 
 // getLowerOrderGrain returns the lowest grain where 2 periods can fit between start and end. Uses lowerOrderMap to get the lower grain.
-func getLowerOrderGrain(start, end time.Time, tg timeutil.TimeGrain) timeutil.TimeGrain {
+func getLowerOrderGrain(start, end time.Time, tg timeutil.TimeGrain, tz *time.Location) timeutil.TimeGrain {
 	for tg > timeutil.TimeGrainMillisecond {
-		twoLower := timeutil.OffsetTime(end, tg, -2)
+		twoLower := timeutil.OffsetTime(end, tg, -2, tz)
 		// if start < end - 2*grain, then we can return the grain.
 		if start.Before(twoLower) || start.Equal(twoLower) {
 			return tg

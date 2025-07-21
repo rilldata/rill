@@ -1,10 +1,11 @@
 # web-local
 
-This folder contains the local frontend implemented with TypeScript and [SvelteKit](https://kit.svelte.dev). 
+This folder contains the local frontend implemented with TypeScript and [SvelteKit](https://kit.svelte.dev).
 
 ## Running in development
 
 The following command starts a local development environment with hot reloading for the frontend code (restarts are required for backend changes):
+
 ```bash
 rill devtool start local
 ```
@@ -18,4 +19,4 @@ Running in development creates a (gitignored) empty project in `dev-project`. Pa
 
 ## Production builds
 
-In production, the frontend is built into a static site and embedded in the CLI. See `cli/README.md` for details. 
+In production, the frontend is built into a static site and embedded in the CLI. See `cli/README.md` for details.

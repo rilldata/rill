@@ -182,14 +182,14 @@ export class DashboardStateSync {
       return;
     }
 
-    this.initialized = true;
     // Else navigate to the new url.
     // using `replaceState` directly messes up the navigation entries,
     // `from` and `to` have the old url before being replaced in `afterNavigate` calls leading to incorrect handling.
-    return goto(redirectUrl, {
+    await goto(redirectUrl, {
       replaceState: true,
       state: pageState.state,
     });
+    this.initialized = true;
   }
 
   /**

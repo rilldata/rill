@@ -56,7 +56,9 @@ export const updateMetricsExplorerByName = (
   });
 };
 
-function includeExcludeModeFromFilters(filters: V1Expression | undefined) {
+export function includeExcludeModeFromFilters(
+  filters: V1Expression | undefined,
+) {
   const map = new Map<string, boolean>();
   if (!filters) return map;
   forEachIdentifier(filters, (e, ident) => {

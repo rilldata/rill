@@ -29,6 +29,7 @@
   use:portal
   transition:scale={{ duration: 200, start: 0.98, opacity: 0 }}
   class="{location} {justify}"
+  aria-label="Notification"
 >
   <div class="main-section">
     <div class="message-container" class:font-medium={detail}>

@@ -170,6 +170,10 @@ _[string]_ - Refers to the driver type and must be driver `clickhouse` _(require
 
 _[boolean]_ - `true` means Rill will provision the connector using the default provisioner. `false` disables automatic provisioning. 
 
+### `mode`
+
+_[string]_ - `read` - Controls the operation mode for the ClickHouse connection. Defaults to 'read' for safe operation with external databases. Set to 'readwrite' to enable model creation and table mutations. Note: When 'managed: true', this is automatically set to 'readwrite'.
+
 ### `dsn`
 
 _[string]_ - DSN(Data Source Name) for the ClickHouse connection 

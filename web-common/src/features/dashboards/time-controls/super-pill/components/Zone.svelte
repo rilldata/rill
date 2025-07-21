@@ -11,6 +11,7 @@
   export let activeTimeZone: string;
   export let context: string;
   export let lockTimeZone = false;
+  export let side: "top" | "right" | "bottom" | "left" = "bottom";
   export let onSelectTimeZone: (timeZone: string) => void;
 
   let open = false;
@@ -25,6 +26,7 @@
       aria-label="Timezone selector"
       title={!availableTimeZones.length ? "No timezones configured" : ""}
       disabled={lockTimeZone}
+      type="button"
     >
       {getAbbreviationForIANA(watermark, activeTimeZone)}
       {#if !lockTimeZone}
@@ -35,7 +37,7 @@
     </button>
   </DropdownMenu.Trigger>
 
-  <DropdownMenu.Content align="start" class="w-80">
+  <DropdownMenu.Content align="start" {side} class="w-80">
     <ZoneContent
       {watermark}
       {availableTimeZones}

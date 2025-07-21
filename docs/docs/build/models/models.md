@@ -8,27 +8,26 @@ sidebar_position: 00
 <img src = '/img/build/model/model.png' class='rounded-gif' />
 <br />
 
-In Rill, [data models](/reference/project-files/models.md) are built using SQL `SELECT` statements applied to your source data.
-They allow you to join, transform, and clean data.
+In Rill, [data models](/reference/project-files/models.md) are built using SQL `SELECT` statements applied to your source data. They allow you to join, transform, and clean data.
 
 ## SQL transformations
 
-By default, data transformations in Rill Developer are powered by DuckDB and their dialect of SQL (DuckDB SQL). Please visit [DuckDB SQL documentation](https://duckdb.org/docs/sql/introduction) to learn about how to write your queries.
+By default, data transformations in Rill Developer are powered by DuckDB and its dialect of SQL (DuckDB SQL). Please visit the [DuckDB SQL documentation](https://duckdb.org/docs/sql/introduction) to learn how to write your queries.
 
-It is possible to change the default [OLAP engine](https://docs.rilldata.com/build/olap/) for [the entire project](https://docs.rilldata.com/reference/project-files/rill-yaml#configuring-the-default-olap-engine) or [a specific metrics view](https://docs.rilldata.com/reference/project-files/metrics-views). You will need to define the connector credentials within your Rill project, or via the environmental variables.
+It is possible to change the default [OLAP engine](https://docs.rilldata.com/build/olap/) for [the entire project](https://docs.rilldata.com/reference/project-files/rill-yaml#configuring-the-default-olap-engine) or [a specific metrics view](https://docs.rilldata.com/reference/project-files/metrics-views). You will need to define the connector credentials within your Rill project or via environment variables.
 
-For additional tips on commonly used expressions (either in models or dashboard definitions) visit our [common expressions page](../metrics-view/advanced-expressions/advanced-expressions.md).
+For additional tips on commonly used expressions (either in models or dashboard definitions), visit our [common expressions page](../metrics-view/advanced-expressions/advanced-expressions.md).
 
 
 ## Adding a data model
 
 ### Using the UI
-In the UI, add a new data model by clicking the '+' icon next to 'Models' in the left-hand navigation pane. You can now begin typing a DuckDB SQL `SELECT` query for your model in the code editor – with keystroke-by-keystroke feedback.
+In the UI, add a new data model by clicking the '+' icon next to 'Models' in the left-hand navigation pane. You can now begin typing a DuckDB SQL `SELECT` query for your model in the code editor – with real-time feedback.
 
 ### Using code
-When you add a data model using the UI, a code definition will automatically be created as a `<model_name>.sql` file in the `models` folder in your Rill project.
+When you add a data model using the UI, a code definition will automatically be created as a `<model_name>.sql` file in the `models` folder of your Rill project.
 
-You can also create a model outside of the application and add it to Rill by placing a `<model_name>.sql` file in the `models` directory containing a DuckDB SQL `SELECT` statement. Rill will automatically detect and parse the model next time you run `rill start`.
+You can also create a model outside of the application and add it to Rill by placing a `<model_name>.sql` file in the `models` directory containing a DuckDB SQL `SELECT` statement. Rill will automatically detect and parse the model the next time you run `rill start`.
 
 :::tip
 
@@ -46,7 +45,7 @@ To experience the full potential of Rill, model your data sources into "One Big 
 
 ### Intermediate processing
 
-Models can also be cross-referenced between each other to produce the final output for your dashboard. The advantage here is more complex, intermediate data transformations can be utilized to achieve your final source for the dashboard. Example ideas for modeling:
+Models can also be cross-referenced with each other to produce the final output for your dashboard. The advantage here is that more complex, intermediate data transformations can be utilized to achieve your final source for the dashboard. Example ideas for modeling:
 
 - Lookups for id/name joins
 - Unnesting and merging complex data types
@@ -54,7 +53,7 @@ Models can also be cross-referenced between each other to produce the final outp
 
 ## Working with Pivots
 
-Pivots deserve their own section as using the [Pivot](https://duckdb.org/docs/sql/statements/pivot) statement while modeling deserves its own considerations. Notably, there are a few existing DuckDB limitations to consider:
+Pivots deserve their own section, as using the [Pivot](https://duckdb.org/docs/sql/statements/pivot) statement while modeling requires special consideration. Notably, there are a few existing DuckDB limitations to consider:
 - DuckDB's [SQL to JSON serializer](https://duckdb.org/docs/extensions/json.html#serializing-and-deserializing-sql-to-json-and-vice-versa) doesn't support `PIVOT` without the `IN` [filter](https://duckdb.org/docs/sql/statements/pivot#in-filter-for-on-clause)
 - DuckDB doesn't support creating views based on `PIVOT` without an `IN` filter (and all models are materialized as views by default in Rill)
 
@@ -76,7 +75,7 @@ PIVOT table_name ON column_name IN (value_a, value_b, value_c) USING SUM(measure
 
 ### Materializing the model as a table and then utilizing the `ref` function
 
-If you <u>need</u> to use the `PIVOT` statement specifically but don't want to specify an `IN` filter, then you will need to inform Rill to materialize this model as a table **and** to leverage the `ref` function as well (for proper DAG resolution). Using the same example, this would instead look something like:
+If you <u>need</u> to use the `PIVOT` statement specifically but don't want to specify an `IN` filter, then you will need to inform Rill to materialize this model as a table **and** leverage the `ref` function as well (for proper DAG resolution). Using the same example, this would instead look something like:
 
 ```sql
 -- @materialize: true
@@ -86,6 +85,6 @@ PIVOT {{ ref "table_name" }} ON column_name USING SUM(measure)
 
 :::info A note on model materialization
 
-The `-- @materialize: true` at the top of your model SQL file informs Rill to materialize the model as a table in the underlying OLAP engine (instead of the default view). More details about materializing models can be found in our [model reference page](/reference/project-files/models#model-materialization).
+The `-- @materialize: true` at the top of your model SQL file informs Rill to materialize the model as a table in the underlying OLAP engine (instead of the default view). More details about materializing models can be found on our [model reference page](/reference/project-files/models#model-materialization).
 
 :::

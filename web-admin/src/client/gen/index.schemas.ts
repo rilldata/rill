@@ -70,6 +70,8 @@ export type V1AlertOptionsResolverProperties = { [key: string]: unknown };
 
 export interface V1AlertOptions {
   displayName?: string;
+  refreshCron?: string;
+  refreshTimeZone?: string;
   intervalDuration?: string;
   resolver?: string;
   resolverProperties?: V1AlertOptionsResolverProperties;
@@ -226,6 +228,7 @@ export interface V1CancelBillingSubscriptionResponse {
 
 export interface V1CompleteRequest {
   messages?: V1CompletionMessage[];
+  tools?: V1Tool[];
 }
 
 export interface V1CompleteResponse {
@@ -235,6 +238,7 @@ export interface V1CompleteResponse {
 export interface V1CompletionMessage {
   role?: string;
   data?: string;
+  content?: V1ContentBlock[];
 }
 
 export interface V1Condition {
@@ -244,6 +248,12 @@ export interface V1Condition {
 
 export interface V1ConnectProjectToGithubResponse {
   [key: string]: unknown;
+}
+
+export interface V1ContentBlock {
+  text?: string;
+  toolCall?: V1ToolCall;
+  toolResult?: V1ToolResult;
 }
 
 export interface V1CreateAlertResponse {
@@ -1353,6 +1363,26 @@ export interface V1SudoUpdateUserQuotasRequest {
 
 export interface V1SudoUpdateUserQuotasResponse {
   user?: V1User;
+}
+
+export interface V1Tool {
+  name?: string;
+  description?: string;
+  inputSchema?: string;
+}
+
+export type V1ToolCallInput = { [key: string]: unknown };
+
+export interface V1ToolCall {
+  id?: string;
+  name?: string;
+  input?: V1ToolCallInput;
+}
+
+export interface V1ToolResult {
+  id?: string;
+  content?: string;
+  isError?: boolean;
 }
 
 export interface V1TriggerReconcileResponse {

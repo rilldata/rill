@@ -33,7 +33,6 @@
     ALL_TIME_RANGE_ALIAS,
     CUSTOM_TIME_RANGE_ALIAS,
     deriveInterval,
-    TIME_GRAIN_TO_SHORTHAND,
   } from "../time-controls/new-time-controls";
   import SuperPill from "../time-controls/super-pill/SuperPill.svelte";
   import { useTimeControlStore } from "../time-controls/time-control-store";

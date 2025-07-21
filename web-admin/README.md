@@ -1,10 +1,11 @@
 # web-admin
 
-This folder contains the control plane frontend for the managed, multi-user Rill (available on `ui.rillcloud.com`). It's implemented with TypeScript and [SvelteKit](https://kit.svelte.dev). 
+This folder contains the control plane frontend for the managed, multi-user Rill (available on `ui.rillcloud.com`). It's implemented with TypeScript and [SvelteKit](https://kit.svelte.dev).
 
 ## Running in development
 
 The following command starts a development environment with hot reloading for the frontend code (restarts are required for backend changes):
+
 ```bash
 rill devtool start cloud
 ```

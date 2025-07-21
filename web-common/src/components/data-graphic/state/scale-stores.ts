@@ -17,7 +17,13 @@ export function initializeMaxMinStores({
   domainMax = undefined,
   domainMinTweenProps = { duration: 0 },
   domainMaxTweenProps = { duration: 0 },
-}:{namespace: string, domainMin?: number | Date, domainMax?: number | Date, domainMinTweenProps?: { duration: number }, domainMaxTweenProps?: { duration: number }}) {
+}: {
+  namespace: string;
+  domainMin?: number | Date;
+  domainMax?: number | Date;
+  domainMinTweenProps?: { duration: number };
+  domainMaxTweenProps?: { duration: number };
+}) {
   // initialize
   const minStore = createExtremumResolutionStore(domainMin, {
     direction: "min",
@@ -56,7 +62,7 @@ export function initializeScale(args): ScaleStore {
           ? args.rangeMax($config)
           : args.rangeMax;
       return scale().domain([$min, $max]).range([minRangeValue, maxRangeValue]);
-    }
+    },
   ) as ScaleStore;
   scaleStore.type = args.scaleType;
   setContext(contexts.scale(args.namespace), scaleStore);

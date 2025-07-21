@@ -138,20 +138,6 @@
     open = false;
   }
 
-  function humanizeAsOf(asOf: string): string {
-    switch (asOf) {
-      case "latest":
-        return "latest data";
-      case "watermark":
-        return "watermark";
-      case "now":
-        return "now";
-
-      default:
-        return "custom";
-    }
-  }
-
   function onSelectGrain(grain: V1TimeGrain | undefined) {
     if (!timeString) return;
 
@@ -195,7 +181,6 @@
     }
   }
 
-  //
   function convertLegacyTime(timeString: string) {
     if (timeString.startsWith("rill-")) {
       if (timeString === "rill-TD") return "DTD";
@@ -219,18 +204,16 @@
     const datePart = datePartRaw || "";
     const timePart = timePartRaw || "";
 
-    // Date units: Y, M (Month), W, D
     const dateUnits: Record<string, string> = {
       Y: "Y",
-      M: "M", // Month
+      M: "M",
       W: "W",
       D: "D",
     };
 
-    // Time units: H, M (Minute), S
     const timeUnits: Record<string, string> = {
       H: "H",
-      M: "m", // Minute (lowercase in Rill)
+      M: "m",
       S: "S",
     };
 
@@ -397,7 +380,7 @@
 
       <Tooltip.Content side="bottom" sideOffset={8}>
         <TooltipContent class="flex-col flex items-center gap-y-0 p-3">
-          <span class="font-semibold italic mb-2">{timeString}</span>
+          <span class="font-semibold italic mb-1">{timeString}</span>
           <span
             >{interval.start.toLocaleString(DateTime.DATETIME_MED_WITH_SECONDS)}
           </span>

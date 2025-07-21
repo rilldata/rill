@@ -64,7 +64,7 @@ function getTDDAggregationRequest(
   let timeRange: V1TimeRange | undefined;
   if (isScheduled) {
     timeRange = mapSelectedTimeRangeToV1TimeRange(
-      timeControlState,
+      timeControlState.selectedTimeRange,
       exploreState.selectedTimezone,
       explore,
     );

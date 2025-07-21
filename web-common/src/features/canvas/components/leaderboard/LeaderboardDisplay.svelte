@@ -26,9 +26,10 @@
   let leaderboardMeasureNames: string[] = [];
   let dimensionNames: string[] = [];
   let numRows = 7;
-
   let parentElement: HTMLDivElement;
   let leaderboardWrapperWidth = 0;
+
+  $: ({ instanceId } = $runtime);
 
   $: ({
     specStore,
@@ -39,7 +40,7 @@
   } = component);
   $: leaderboardProperties = $specStore;
 
-  $: store = getCanvasStore(canvasName);
+  $: store = getCanvasStore(canvasName, instanceId);
   $: ({
     canvasEntity: {
       spec: {
@@ -50,8 +51,6 @@
       filters: { isFilterExcludeMode, toggleDimensionValueSelection },
     },
   } = store);
-
-  $: ({ instanceId } = $runtime);
 
   $: {
     metricsViewName = leaderboardProperties.metrics_view;
