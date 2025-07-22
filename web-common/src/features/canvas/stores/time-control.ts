@@ -193,6 +193,7 @@ export class TimeControls {
 
     if (!componentName) {
       this.specStore.subscribe((spec) => {
+        if (!spec?.data) return;
         const defaultPreset = spec.data?.canvas?.defaultPreset;
         const timeRanges = spec?.data?.canvas?.timeRanges;
 
@@ -212,20 +213,10 @@ export class TimeControls {
           selectedTimezone,
         );
 
-        // console.log({ initialRange });
-
-        // const didSet = false;
-
-        console.log(
-          initialRange.name ?? fallbackInitialRanges[minTimeGrain] ?? "PT24H",
-        );
-
         const didSet = this.set.range(
           initialRange.name ?? fallbackInitialRanges[minTimeGrain] ?? "PT24H",
           true,
         );
-
-        console.log({ didSet });
 
         const newComparisonRange = getComparisonTimeRange(
           timeRanges,

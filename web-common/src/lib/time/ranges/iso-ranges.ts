@@ -57,21 +57,16 @@ export function isoDurationToFullTimeRange(
   end: Date,
   zone = "UTC",
 ): TimeRange {
-  console.log({ isoDuration });
   if (!isoDuration) {
     return convertTimeRangePreset(TimeRangePreset.ALL_TIME, start, end, zone);
   }
   if (isoDuration in ISODurationToTimeRangePreset) {
-    const what = convertTimeRangePreset(
+    return convertTimeRangePreset(
       isoDuration as TimeRangePreset,
       start,
       end,
       zone,
     );
-
-    console.log({ what });
-
-    return what;
   }
 
   const { startTime, endTime } = isoDurationToTimeRange(isoDuration, end, zone);
