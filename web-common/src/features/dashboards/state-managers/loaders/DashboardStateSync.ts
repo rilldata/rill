@@ -224,7 +224,6 @@ export class DashboardStateSync {
 
     const pageState = get(page);
 
-    console.log(import.meta.env);
     if (metricsViewSpec.timeDimension && !import.meta.env.VITEST) {
       // Resolve start/end by making a network call.
       [

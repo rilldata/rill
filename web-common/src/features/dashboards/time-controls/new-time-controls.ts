@@ -447,7 +447,6 @@ export function getDurationLabel(isoDuration: string): string {
 }
 
 export function getRangeLabel(range: string | undefined): string {
-  console.log({ range });
   if (!range) return "Custom";
   if (isRillPeriodToDate(range) || isRillPreviousPeriod(range)) {
     return RILL_TO_LABEL[range];
