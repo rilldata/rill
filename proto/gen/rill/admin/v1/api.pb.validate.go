@@ -9284,10 +9284,6 @@ func (m *CreateProjectRequest) validate(all bool) error {
 
 	// no validation rules for Provisioner
 
-	// no validation rules for ProdOlapDriver
-
-	// no validation rules for ProdOlapDsn
-
 	// no validation rules for ProdSlots
 
 	// no validation rules for Subpath
@@ -39980,10 +39976,6 @@ func (m *Project) validate(all bool) error {
 	// no validation rules for ProdBranch
 
 	// no validation rules for ArchiveAssetId
-
-	// no validation rules for ProdOlapDriver
-
-	// no validation rules for ProdOlapDsn
 
 	// no validation rules for ProdSlots
 
