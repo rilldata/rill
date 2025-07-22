@@ -19,12 +19,50 @@
   let currentConversationId: string | null = null;
   let conversations: V1Conversation[] = [];
   let messagesContainer: HTMLDivElement;
+  let isLoadingConversation = false;
 
   const instanceId = "default";
 
+  // API clients - initialize these at module level to avoid component initialization issues
+  let completeMutation: any;
+  let listConversationsQuery: any;
+  let getConversationQuery: any = null;
+
+  // Reactive statements
+  $: if (listConversationsQuery && $listConversationsQuery.data?.conversations) {
+    conversations = $listConversationsQuery.data.conversations;
+  }
+
+  $: if (
+    getConversationQuery &&
+    $getConversationQuery.data?.conversation?.messages &&
+    isLoadingConversation
+  ) {
+    messages = $getConversationQuery.data.conversation.messages;
+    isLoadingConversation = false;
+    scrollToBottom();
+  }
+
+  function scrollToBottom() {
+    setTimeout(() => {
+      if (messagesContainer) {
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+      }
+    }, 100);
+  }
+
   // Enable chat feature flag for this component
   onMount(() => {
-    featureFlags.set(true, "chat");
+    // Initialize API clients
+    completeMutation = createRuntimeServiceComplete();
+    listConversationsQuery = createRuntimeServiceListConversations(instanceId);
+
+    // Set feature flag
+    try {
+      featureFlags.set(true, "chat");
+    } catch (err) {
+      console.warn("Could not set chat feature flag:", err);
+    }
 
     // Restore conversation ID from localStorage if available
     const savedConversationId = localStorage.getItem('rill-chat-conversation-id');
@@ -34,13 +72,21 @@
 
     // Listen for toggle-chat event from header button
     const handleToggleChat = () => {
-      chatActions.toggleChat();
+      try {
+        chatActions.toggleChat();
+      } catch (err) {
+        console.error("Error toggling chat:", err);
+      }
     };
 
     // Listen for ESC key to close chat
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape" && $chatOpen) {
-        chatActions.closeChat();
+        try {
+          chatActions.closeChat();
+        } catch (err) {
+          console.error("Error closing chat:", err);
+        }
       }
     };
 
@@ -53,36 +99,8 @@
     };
   });
 
-  // API clients
-  const completeMutation = createRuntimeServiceComplete();
-  const listConversationsQuery =
-    createRuntimeServiceListConversations(instanceId);
-
-  let getConversationQuery: any = null;
-
-  // Reactive statements
-  $: if ($listConversationsQuery.data?.conversations) {
-    conversations = $listConversationsQuery.data.conversations;
-  }
-
-  $: if (
-    getConversationQuery &&
-    $getConversationQuery.data?.conversation?.messages
-  ) {
-    messages = $getConversationQuery.data.conversation.messages;
-    scrollToBottom();
-  }
-
-  function scrollToBottom() {
-    setTimeout(() => {
-      if (messagesContainer) {
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
-      }
-    }, 100);
-  }
-
   async function sendMessage() {
-    if (!inputValue.trim() || isLoading) return;
+    if (!inputValue.trim() || isLoading || !completeMutation) return;
 
     const userMessage: V1Message = {
       id: Date.now().toString(),
@@ -113,6 +131,8 @@
         data: requestBody,
       });
 
+      console.log("Chat response:", result);
+
       // Set conversation ID from response for new conversations
       if (result.conversationId) {
         currentConversationId = result.conversationId;
@@ -120,14 +140,17 @@
         localStorage.setItem('rill-chat-conversation-id', result.conversationId);
       }
 
-      if (result.messages) {
-        // Replace all messages with the server response to maintain consistency
+      if (result.messages && result.messages.length > 0) {
+        // Only replace messages if we got a meaningful response
         messages = result.messages;
         scrollToBottom();
       }
 
       // Refresh conversations list to show the new/updated conversation
-      await $listConversationsQuery.refetch();
+      // Don't await this to prevent it from potentially interfering with the message state
+      if (listConversationsQuery) {
+        $listConversationsQuery.refetch();
+      }
     } catch (error) {
       console.error("Failed to send message:", error);
       // Remove the optimistic user message on error
@@ -148,6 +171,7 @@
     currentConversationId = null;
     messages = [];
     inputValue = "";
+    isLoadingConversation = false;
     // Clear the saved conversation ID
     localStorage.removeItem('rill-chat-conversation-id');
     // Clear the current conversation query
@@ -163,12 +187,20 @@
     // Store in localStorage for persistence
     localStorage.setItem('rill-chat-conversation-id', conversationId);
     
+    // Set loading flag to trigger message update when data arrives
+    isLoadingConversation = true;
+    
     // Create new query for this conversation
-    getConversationQuery = createRuntimeServiceGetConversation(
-      instanceId,
-      conversationId,
-      {},
-    );
+    try {
+      getConversationQuery = createRuntimeServiceGetConversation(
+        instanceId,
+        conversationId,
+        {},
+      );
+    } catch (err) {
+      console.error("Error creating conversation query:", err);
+      isLoadingConversation = false;
+    }
   }
 
   function formatMessageContent(message: V1Message): string {

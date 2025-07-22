@@ -35,7 +35,7 @@ You have following tools that can help you create and edit resources:
 	- Creates a model that ingest sample data based on user input
 2. "generate_metrics_view_yaml"
 	- Creates a metrics view based on specified model
-3. "edit_model"
+3. "model_editor_agent_tool"
 	- Edits existing models based on user input.
 	- Create a model that ingests data from a external system. 
 	- Do not add additional context to the user input that might change the model semantics.
@@ -54,15 +54,11 @@ You have following tools that can help you create and edit resources:
 	}
 	a.WithTools(tool)
 
-	editModelAgent, err := NewModelEditorAgent(ctx, instanceID, modelName, r)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create ModelEditorAgent: %w", err)
-	}
-	tool, err = tools.RunAgent(editModelAgent, runner, "edit_model", "An agent acting as a tool that can edit an existing model based on user input")
+	modelEditorTool, err := NewModelEditorAgentTool(ctx, instanceID, "gpt-4o", r, runner)
 	if err != nil {
 		return nil, fmt.Errorf("failed to run ModelEditorAgent: %w", err)
 	}
-	a.WithTools(tool)
+	a.WithTools(modelEditorTool)
 
 	// metrics view agent
 	metricsViewAgent, err := NewMetricsViewAgent(ctx, instanceID, modelName, r, s)
