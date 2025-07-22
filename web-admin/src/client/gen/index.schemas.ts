@@ -936,8 +936,6 @@ export interface V1Project {
   subpath?: string;
   prodBranch?: string;
   archiveAssetId?: string;
-  prodOlapDriver?: string;
-  prodOlapDsn?: string;
   prodSlots?: string;
   prodDeploymentId?: string;
   devSlots?: string;
@@ -1878,8 +1876,6 @@ export type AdminServiceCreateProjectBody = {
   description?: string;
   public?: boolean;
   provisioner?: string;
-  prodOlapDriver?: string;
-  prodOlapDsn?: string;
   prodSlots?: string;
   subpath?: string;
   prodBranch?: string;
