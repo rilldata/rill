@@ -254,8 +254,8 @@ func TestMetricsSQLWithAdditionalTimeZone(t *testing.T) {
 		InstanceID: instanceID,
 		Resolver:   "metrics_sql",
 		ResolverProperties: map[string]any{
-			"sql":                  "SELECT dom, pub FROM ad_bids_metrics",
-			"additional_time_zone": "America/New_York",
+			"sql":       "SELECT dom, pub FROM ad_bids_metrics",
+			"time_zone": "America/New_York",
 		},
 		Args:   nil,
 		Claims: &runtime.SecurityClaims{},
@@ -272,8 +272,8 @@ func TestMetricsSQLWithAdditionalTimeZone(t *testing.T) {
 		InstanceID: instanceID,
 		Resolver:   "metrics_sql",
 		ResolverProperties: map[string]any{
-			"sql":                  "SELECT dom, pub FROM ad_bids_metrics",
-			"additional_time_zone": "Invalid/Timezone",
+			"sql":       "SELECT dom, pub FROM ad_bids_metrics",
+			"time_zone": "Invalid/Timezone",
 		},
 		Args:   nil,
 		Claims: &runtime.SecurityClaims{},

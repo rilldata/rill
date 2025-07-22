@@ -19,12 +19,12 @@ func init() {
 type metricsSQLProps struct {
 	// SQL is the metrics SQL to evaluate.
 	SQL string `mapstructure:"sql"`
+	// TimeZone is a timezone to apply to the metrics SQL.
+	TimeZone string `mapstructure:"time_zone"`
 	// AdditionalWhere is a filter to apply to the metrics SQL. (additional WHERE clause)
 	AdditionalWhere *metricsview.Expression `mapstructure:"additional_where"`
 	// AdditionalTimeRange is a time range filter to apply to the metrics SQL.
 	AdditionalTimeRange *metricsview.TimeRange `mapstructure:"additional_time_range"`
-	// AdditionalTimeZone is a timezone to apply to the metrics SQL.
-	AdditionalTimeZone string `mapstructure:"additional_time_zone"`
 }
 
 type metricsSQLArgs struct {
@@ -49,7 +49,7 @@ func newMetricsSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.
 		span.SetAttributes(attribute.String("metrics_sql", props.SQL))
 		span.SetAttributes(attribute.Bool("has_additional_where", props.AdditionalWhere != nil))
 		span.SetAttributes(attribute.Bool("has_additional_time_range", props.AdditionalTimeRange != nil))
-		span.SetAttributes(attribute.Bool("has_additional_time_zone", props.AdditionalTimeZone != ""))
+		span.SetAttributes(attribute.Bool("has_additional_time_zone", props.TimeZone != ""))
 	}
 
 	instance, err := opts.Runtime.Instance(ctx, opts.InstanceID)
@@ -85,8 +85,8 @@ func newMetricsSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.
 	query.TimeRange = applyAdditionalTimeRange(query.TimeRange, props.AdditionalTimeRange)
 
 	// Set the additional timezone if provided
-	if props.AdditionalTimeZone != "" {
-		query.TimeZone = props.AdditionalTimeZone
+	if props.TimeZone != "" {
+		query.TimeZone = props.TimeZone
 	}
 
 	// Build the options for the metrics resolver
