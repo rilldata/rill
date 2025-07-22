@@ -5,10 +5,35 @@ sidebar_label: "Rill MCP Server"
 sidebar_position: 1
 ---
 
-The Rill Model Context Protocol (MCP) server exposes Rill's most essential APIs to LLMs. It's currently designed primarily for data analysts, not data engineers, and focuses on consuming Rill metric views—not creating them.
+<div style={{ 
+  position: "relative", 
+  width: "100%", 
+  paddingTop: "56.25%", 
+  borderRadius: "15px",  /* Softer corners */
+  boxShadow: "0px 4px 15px rgba(0, 0, 0, 0.2)"  /* Shadow effect */
+}}>
+  <iframe credentialless="true"
+    src="https://www.youtube.com/embed/6sMvAliqAAA?si=dDdK7KClP1byJ9kg"
+    frameBorder="0"
+    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+    allowFullScreen
+    style={{
+      position: "absolute",
+      top: 0,
+      left: 0,
+      width: "100%",
+      height: "100%",
+      borderRadius: "10px", 
+    }}
+  ></iframe>
+</div>
+<br/>
+
+
+The Rill Model Context Protocol (MCP) server exposes Rill's most essential APIs to LLMs. It is currently designed primarily for data analysts, not data engineers, and focuses on consuming Rill metrics views—not creating them.
 
 ## Why use MCP with Rill?
-Instead of blindly exposing your entire data warehouse to external platforms in hopes of uncovering trends, Rill's MCP server provides a **structured and governed** alternative. By querying data that already has **pre-defined measures and dimensions**, the responses you get are guaranteed to be as **accurate and consistent** as the metrics displayed in your Rill dashboards.
+Instead of blindly exposing your entire data warehouse to external platforms in hopes of uncovering trends, Rill's MCP server provides a **structured and governed** alternative. By querying data that already has **predefined measures and dimensions**, the responses you get are guaranteed to be as **accurate and consistent** as the metrics displayed in your Rill dashboards.
 
 You can also add `ai_instructions` to your project file and metrics views, which will give your LLM additional context on how to use the Rill MCP Server for best results. Users can then ask questions like:
 
@@ -45,12 +70,9 @@ rill token issue
 ```
 
 ### Configure Claude Desktop
-:::warning
-As of 2025/05/08, it's recommended to use Claude Desktop as your MCP client. Cursor currently struggles to compose complex structured payloads (see [issue](https://forum.cursor.com/t/issue-with-mcp-server-and-pydantic-model-object-as-tool-parameter-in-cursor/77110/5)), and Windsurf often thinks it can find the answer in your current code project. Other MCP clients have not yet been tested.
-:::
 
 Edit your `claude_desktop_config.json` file. 
-By default, the JSON is found in the following directories:
+By default, the JSON file is found in the following directories:
 
 - macOS: `/Users/{USER}/Library/Application Support/Claude/claude_desktop_config.json`
 - Windows: `C:\Users\{USER}\AppData\Roaming\Claude\claude_desktop_config.json`
@@ -116,14 +138,13 @@ __*Locally Running Rill Developer*__
 ```
 
 :::tip Restart Claude!
-Restart Claude Desktop for any changes to your JSON to take effect.
+Restart Claude Desktop for any changes to your JSON file to take effect.
 :::
 
 ### Troubleshooting
 If Claude Desktop cannot connect to the MCP server, check that Rill is running (locally) or that you are able to connect to your [Rill project](https://ui.rilldata.com) from your browser. If your project is private, check that the token is valid via the CLI or create a new one in the UI and edit the `config.json` file.
 
-If you're still experiencing issues, check the logs in Claude Desktop.
-Click on Developer → Open MCP Log File and check the logs for any errors.
+If you're still experiencing issues, check the logs in Claude Desktop. Click on Developer → Open MCP Log File and check the logs for any errors.
 
 ## Adding AI instructions to your model
 
@@ -140,11 +161,11 @@ You can look at one of our [example projects](https://github.com/rilldata/rill-e
 
 ```
 ai_instructions: |
-  You are a data analyst, responding to questions from business users with precision, clarity, and concision.
+  You are a data analyst, responding to questions from business users with precision, clarity, and conciseness.
   
-  You have access to rill mcp tools. list_metrics enables you to check what metrics are available, get_metrics_view gets the list of measures and dimensions for a specific metrics view, query_metrics_view_time_rangechecks what time ranges of data are available for a metrics view, and query_metrics_view will run queries against those metrics views and return the actual data.
+  You have access to rill mcp tools. list_metrics enables you to check what metrics are available, get_metrics_view gets the list of measures and dimensions for a specific metrics view, query_metrics_view_time_range checks what time ranges of data are available for a metrics view, and query_metrics_view will run queries against those metrics views and return the actual data.
 
-  Any time you are asked about metrics or business data, you should use these tools. First use list_metrics, then use get_metrics_view and query_metrics_view_time_range to get the latest information about what dimensions, measures and time ranges are available.
+  Any time you are asked about metrics or business data, you should use these tools. First use list_metrics, then use get_metrics_view and query_metrics_view_time_range to get the latest information about what dimensions, measures, and time ranges are available.
 
   When you run queries for actual data, run up to three queries in a row, and then provide the user with a summary, any insights you can see in the data, and suggest up to three things to investigate as a next step.
 

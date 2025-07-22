@@ -23,7 +23,10 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-const repoSyncTimeout = 10 * time.Minute
+const (
+	repoPullTimeout       = 10 * time.Minute
+	repoCheckpointTimeout = 30 * time.Second
+)
 
 // repo implements the drivers.RepoStore interface.
 // It does a handshake using GetRepoMeta on the admin service to discover code files (Git, tarball archive, and/or virtual files).
@@ -36,9 +39,9 @@ const repoSyncTimeout = 10 * time.Minute
 type repo struct {
 	// Handle for the parent driver, providing access to the admin service and storage client.
 	h *Handle
-	// mu is a read-write mutex for accessing and updating files in the repo. It ensures we don't sync files while they're being read.
+	// mu is a read-write mutex for accessing and updating files in the repo. It ensures we don't pull files while they're being read.
 	mu ctxsync.RWMutex
-	// singleflight is used to deduplicate concurrent sync calls.
+	// singleflight is used to deduplicate concurrent calls to pull.
 	singleflight *singleflight.Group
 
 	// handshakeExpiresOn is the next time we should refresh the admin handshake, namely to ensure the Git credentials remain valid.
@@ -49,13 +52,13 @@ type repo struct {
 	configCtx context.Context
 	// configCtxCancel is a cancel function for the configCtx.
 	configCtxCancel context.CancelFunc
-	// synced is true if files are have been synced successfully.
-	// After the first successful sync, it remains true even if the latest sync fails (so syncErr is not nil).
-	synced bool
-	// syncErr is the last error encountered during sync. It is set to nil when a sync is successful.
-	// Even if syncErr is not nil, synced can still be true if a previous sync was successful.
-	syncErr error
-	// ignorePaths is a list of paths to ignore when listing or accessing files. It's populated by parsing rill.yaml during sync.
+	// ready is true if files are have been pulled successfully.
+	// After the first successful pull, it remains true even if the latest pull fails (so pullErr is not nil).
+	ready bool
+	// pullErr is the last error encountered during pull. It is set to nil when a pull is successful.
+	// Even if pullErr is not nil, ready can still be true if a previous pull was successful.
+	pullErr error
+	// ignorePaths is a list of paths to ignore when listing or accessing files. It's populated by parsing rill.yaml during pull.
 	ignorePaths []string
 	// git wraps files retrieved from a remote Git repository.
 	git *gitRepo
@@ -78,7 +81,7 @@ func newRepo(h *Handle) *repo {
 
 // Root implements drivers.RepoStore.
 func (r *repo) Root(ctx context.Context) (string, error) {
-	err := r.rlockEnsureSynced(ctx)
+	err := r.rlockEnsureReady(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -94,7 +97,7 @@ func (r *repo) Root(ctx context.Context) (string, error) {
 
 // ListGlob implements drivers.RepoStore.
 func (r *repo) ListGlob(ctx context.Context, glob string, skipDirs bool) ([]drivers.DirEntry, error) {
-	err := r.rlockEnsureSynced(ctx)
+	err := r.rlockEnsureReady(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -129,7 +132,7 @@ func (r *repo) ListGlob(ctx context.Context, glob string, skipDirs bool) ([]driv
 
 // Get implements drivers.RepoStore.
 func (r *repo) Get(ctx context.Context, path string) (string, error) {
-	err := r.rlockEnsureSynced(ctx)
+	err := r.rlockEnsureReady(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -159,7 +162,7 @@ func (r *repo) Get(ctx context.Context, path string) (string, error) {
 
 // Hash implements drivers.RepoStore.
 func (r *repo) Hash(ctx context.Context, paths []string) (string, error) {
-	err := r.rlockEnsureSynced(ctx)
+	err := r.rlockEnsureReady(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -200,7 +203,7 @@ func (r *repo) Hash(ctx context.Context, paths []string) (string, error) {
 
 // Stat implements drivers.RepoStore.
 func (r *repo) Stat(ctx context.Context, path string) (*drivers.FileInfo, error) {
-	err := r.rlockEnsureSynced(ctx)
+	err := r.rlockEnsureReady(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -233,7 +236,7 @@ func (r *repo) Stat(ctx context.Context, path string) (*drivers.FileInfo, error)
 
 // Put implements drivers.RepoStore.
 func (r *repo) Put(ctx context.Context, path string, reader io.Reader) error {
-	err := r.rlockEnsureSynced(ctx)
+	err := r.rlockEnsureReady(ctx)
 	if err != nil {
 		return err
 	}
@@ -271,7 +274,7 @@ func (r *repo) Put(ctx context.Context, path string, reader io.Reader) error {
 
 // MkdirAll implements drivers.RepoStore.
 func (r *repo) MkdirAll(ctx context.Context, path string) error {
-	err := r.rlockEnsureSynced(ctx)
+	err := r.rlockEnsureReady(ctx)
 	if err != nil {
 		return err
 	}
@@ -298,7 +301,7 @@ func (r *repo) MkdirAll(ctx context.Context, path string) error {
 
 // Rename implements drivers.RepoStore.
 func (r *repo) Rename(ctx context.Context, fromPath, toPath string) error {
-	err := r.rlockEnsureSynced(ctx)
+	err := r.rlockEnsureReady(ctx)
 	if err != nil {
 		return err
 	}
@@ -337,7 +340,7 @@ func (r *repo) Rename(ctx context.Context, fromPath, toPath string) error {
 
 // Delete implements drivers.RepoStore.
 func (r *repo) Delete(ctx context.Context, path string, force bool) error {
-	err := r.rlockEnsureSynced(ctx)
+	err := r.rlockEnsureReady(ctx)
 	if err != nil {
 		return err
 	}
@@ -371,7 +374,7 @@ func (r *repo) Delete(ctx context.Context, path string, force bool) error {
 
 // Watch implements drivers.RepoStore.
 func (r *repo) Watch(ctx context.Context, cb drivers.WatchCallback) error {
-	err := r.rlockEnsureSynced(ctx)
+	err := r.rlockEnsureReady(ctx)
 	if err != nil {
 		return err
 	}
@@ -419,14 +422,38 @@ func (r *repo) Watch(ctx context.Context, cb drivers.WatchCallback) error {
 	})
 }
 
-// Sync implements drivers.RepoStore.
-func (r *repo) Sync(ctx context.Context) error {
-	return r.sync(ctx)
+// Pull implements drivers.RepoStore.
+func (r *repo) Pull(ctx context.Context, discardChanges, forceHandshake bool) error {
+	return r.pull(ctx, discardChanges, forceHandshake)
+}
+
+// CommitAndPush implements drivers.RepoStore.
+func (r *repo) CommitAndPush(ctx context.Context, message string, force bool) error {
+	// Get a write lock.
+	// NOTE: Not using rlockEnsureReady here because we need to exclude reads while the commit is happening.
+	err := r.mu.Lock(ctx)
+	if err != nil {
+		return err
+	}
+	defer r.mu.Unlock()
+
+	if !r.ready {
+		if r.pullErr != nil {
+			return fmt.Errorf("repo is not ready: %w", r.pullErr)
+		}
+		return fmt.Errorf("repo is not ready: pull files first")
+	}
+
+	if r.git == nil {
+		return fmt.Errorf("commits are not supported for this repo type")
+	}
+
+	return r.git.commitAndPushToDefaultBranch(ctx, message, force)
 }
 
 // CommitHash implements drivers.RepoStore.
 func (r *repo) CommitHash(ctx context.Context) (string, error) {
-	err := r.rlockEnsureSynced(ctx)
+	err := r.rlockEnsureReady(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -440,7 +467,7 @@ func (r *repo) CommitHash(ctx context.Context) (string, error) {
 
 // CommitTimestamp implements drivers.RepoStore.
 func (r *repo) CommitTimestamp(ctx context.Context) (time.Time, error) {
-	err := r.rlockEnsureSynced(ctx)
+	err := r.rlockEnsureReady(ctx)
 	if err != nil {
 		return time.Time{}, err
 	}
@@ -453,16 +480,36 @@ func (r *repo) CommitTimestamp(ctx context.Context) (time.Time, error) {
 }
 
 // close deletes the temporary directories used by the repo.
-func (r *repo) close() {
+func (r *repo) close() error {
 	if r.configCtx != nil {
 		r.configCtxCancel()
 	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), repoCheckpointTimeout)
+	defer cancel()
+
+	err := r.mu.RLock(ctx)
+	if err != nil {
+		return fmt.Errorf("close failed: could not acquire read lock: %w", err)
+	}
+	defer r.mu.RUnlock()
+
 	if r.archive != nil {
 		_ = os.RemoveAll(r.archive.tmpDir)
 	}
+
 	if r.virtual != nil {
 		_ = os.RemoveAll(r.virtual.tmpDir)
 	}
+
+	if r.git != nil && r.git.editable() {
+		err := r.git.commitToEditBranch(ctx)
+		if err != nil {
+			return fmt.Errorf("close failed: could not commit to edit branch: %w", err)
+		}
+	}
+
+	return nil
 }
 
 // roots returns the actual local file system roots for the underlying repos, including the virtual files.
@@ -480,42 +527,43 @@ func (r *repo) roots() []string {
 	return roots
 }
 
-// rlockEnsureSynced acquires a read lock after ensuring that the repo is synced.
-// If the repo is not synced, it triggers and waits for a sync. If the sync fails, it returns the error without acquiring the read lock.
-// If the repo is already synced, it returns immediately and does not trigger a fresh sync (that requires an explicit call to Sync).
-func (r *repo) rlockEnsureSynced(ctx context.Context) error {
+// rlockEnsureReady acquires a read lock after ensuring that the repo is ready (has been pulled successfully).
+// If the repo is not pulled, it triggers and waits for a pull. If the pull fails, it returns the error without acquiring the read lock.
+// If the repo is already pulled, it returns immediately and does not trigger a fresh pull (that requires an explicit call to Pull).
+func (r *repo) rlockEnsureReady(ctx context.Context) error {
 	// Get read lock
 	err := r.mu.RLock(ctx)
 	if err != nil {
 		return err
 	}
 
-	// Return with lock held if already synced.
-	// Not checking r.syncErr because we prefer retrying the sync if it failed previously.
-	if r.synced {
+	// Return with lock held if already pulled.
+	if r.ready {
 		return nil
 	}
 
 	// Release read lock and clone (which uses a singleflight)
 	r.mu.RUnlock()
-	err = r.sync(ctx)
+	err = r.pull(ctx, false, false)
 	if err != nil {
 		return err
 	}
 
-	// We know it's synced now. Take read lock and return.
+	// We know it's ready now. Take read lock and return.
 	return r.mu.RLock(ctx)
 }
 
-// sync clones or pulls/updates the repo with the latest code files.
+// pull clones/pulls the repo with the latest code files.
 // It is safe for concurrent use and deduplicates concurrent calls (using a singleflight).
-func (r *repo) sync(ctx context.Context) error {
-	ctx, span := tracer.Start(ctx, "r.sync")
+func (r *repo) pull(ctx context.Context, discardChanges, forceHandshake bool) error {
+	ctx, span := tracer.Start(ctx, "r.pull")
 	defer span.End()
 
-	ch := r.singleflight.DoChan("sync", func() (any, error) {
+	key := fmt.Sprintf("pull(_, %v, %v)", discardChanges, forceHandshake)
+
+	ch := r.singleflight.DoChan(key, func() (any, error) {
 		// Using context.Background to prevent context cancellation of the first caller to cause other callers to fail.
-		ctx, cancel := context.WithTimeout(context.Background(), repoSyncTimeout)
+		ctx, cancel := context.WithTimeout(context.Background(), repoPullTimeout)
 		defer cancel()
 
 		// Get a write lock. We want to prevent concurrent reads while we're mutating files.
@@ -525,11 +573,11 @@ func (r *repo) sync(ctx context.Context) error {
 		}
 		defer r.mu.Unlock()
 
-		// Do the actual sync.
-		err = r.syncInner(ctx)
-		r.synced = r.synced || (err == nil) // If a sync previously succeeded, we still consider the repo synced even though the latest sync failed.
-		r.syncErr = err
-		return nil, r.syncErr
+		// Do the actual pull.
+		err = r.pullInner(ctx, discardChanges, forceHandshake)
+		r.ready = r.ready || (err == nil) // If a pull previously succeeded, we still consider the repo ready even though the latest pull failed.
+		r.pullErr = err
+		return nil, r.pullErr
 	})
 
 	select {
@@ -540,35 +588,35 @@ func (r *repo) sync(ctx context.Context) error {
 	}
 }
 
-// syncStatus returns the current sync status of the repo.
-// If a sync is currently in progress, it waits for it to complete.
-// If it returns an error, it may either be the most recent sync error or ctx.Err() from the provided context.
+// checkReady returns the current status of the repo.
+// If a pull is currently in progress, it waits for it to complete.
+// If it returns an error, it may either be the most recent pull error or ctx.Err() from the provided context.
 //
 // It is safe for concurrent use.
-func (r *repo) syncStatus(ctx context.Context) (bool, error) {
+func (r *repo) checkReady(ctx context.Context) (bool, error) {
 	err := r.mu.RLock(ctx)
 	if err != nil {
 		return false, err
 	}
 	defer r.mu.RUnlock()
 
-	return r.synced, r.syncErr
+	return r.ready, r.pullErr
 }
 
-// syncInner implements the actual sync logic.
-// Unlike r.sync(), it is NOT safe for concurrent use and expects r.mu to be held with a write lock.
-func (r *repo) syncInner(ctx context.Context) error {
+// pullInner implements the actual clone/pull logic.
+// Unlike r.pull(), it is NOT safe for concurrent use and expects r.mu to be held with a write lock.
+func (r *repo) pullInner(ctx context.Context, discardChanges, forceHandshake bool) error {
 	// Ensure the underlying repos are initialized and have valid credentials.
-	err := r.checkSyncHandshake(ctx)
+	err := r.checkHandshake(ctx, forceHandshake)
 	if err != nil {
 		return fmt.Errorf("repo handshake failed: %w", err)
 	}
 
-	// Push the sync into the underlying repos. These are created/updated by checkSyncHandshake.
+	// Push the pull into the underlying repos. These are created/updated by checkSyncHandshake.
 	if r.git != nil {
-		err = r.git.sync(ctx)
+		err = r.git.pull(ctx, discardChanges)
 		if err != nil {
-			return fmt.Errorf("git sync failed: %w", err)
+			return fmt.Errorf("git pull failed: %w", err)
 		}
 	}
 	if r.archive != nil {
@@ -613,11 +661,11 @@ func (r *repo) syncInner(ctx context.Context) error {
 	return nil
 }
 
-// checkSyncHandshake checks and possibly renews the repo details handshake with the admin server.
+// checkHandshake checks and possibly renews the repo details handshake with the admin server.
 // Unsafe for concurrent use.
-func (r *repo) checkSyncHandshake(ctx context.Context) error {
+func (r *repo) checkHandshake(ctx context.Context, force bool) error {
 	// If the handshake is still valid, return early.
-	if !r.handshakeExpiresOn.Before(time.Now()) {
+	if !r.handshakeExpiresOn.Before(time.Now()) && !force {
 		return nil
 	}
 

@@ -32,9 +32,14 @@ type ModelYAML struct {
 		Connector  string         `yaml:"connector"`
 		Properties map[string]any `yaml:",inline" mapstructure:",remain"`
 	} `yaml:"stage"`
-	Output          ModelOutputYAML `yaml:"output"`
-	Materialize     *bool           `yaml:"materialize"`
-	DefinedAsSource bool            `yaml:"defined_as_source"`
+	Output ModelOutputYAML `yaml:"output"`
+	Tests  []struct {
+		Name     string `yaml:"name"`
+		Assert   string `yaml:"assert"`
+		DataYAML `yaml:",inline"`
+	} `yaml:"tests"`
+	Materialize     *bool `yaml:"materialize"`
+	DefinedAsSource bool  `yaml:"defined_as_source"`
 }
 
 // ModelOutputYAML parses the `output:` property of a model.
@@ -199,6 +204,18 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 		}
 	}
 
+	// Parse the model tests
+	var modelTests []*runtimev1.ModelTest
+	for i := range tmp.Tests {
+		t := tmp.Tests[i]
+		modelTest, refs, err := p.parseModelTest(t.Name, &t.DataYAML, outputConnector, node.Name, t.Assert)
+		if err != nil {
+			return fmt.Errorf(`failed to parse test %q: %w`, t.Name, err)
+		}
+		modelTests = append(modelTests, modelTest)
+		node.Refs = append(node.Refs, refs...)
+	}
+
 	// Insert the model
 	r, err := p.insertResource(ResourceKindModel, node.Name, node.Paths, node.Refs...)
 	if err != nil {
@@ -237,7 +254,42 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 	r.ModelSpec.OutputConnector = outputConnector
 	r.ModelSpec.OutputProperties = outputPropsPB
 
+	r.ModelSpec.Tests = modelTests
+
 	return nil
+}
+
+// parseModelTests parses the model tests from the YAML file
+func (p *Parser) parseModelTest(name string, data *DataYAML, connector, modelName, assert string) (*runtimev1.ModelTest, []ResourceName, error) {
+	// Validate required name field
+	if name == "" {
+		return nil, nil, fmt.Errorf(`test must have a "name" defined`)
+	}
+
+	hasSQL := data.SQL != ""
+	hasAssertion := assert != ""
+
+	// Validate that exactly one of "sql" or "assert" is provided
+	switch {
+	case hasSQL && hasAssertion:
+		return nil, nil, fmt.Errorf(`test %q must not have both "sql" and "assert" defined`, name)
+	case !hasSQL && !hasAssertion:
+		return nil, nil, fmt.Errorf(`test %q must have either "sql" or "assert" defined`, name)
+	case hasAssertion:
+		// Wrap assertion condition in a SQL query following SQLMesh audit pattern
+		// Query for rows that violate the assertion (bad data)
+		data.SQL = fmt.Sprintf("SELECT * FROM %s WHERE NOT (%s)", modelName, assert)
+	}
+
+	resolver, props, refs, err := p.parseDataYAML(data, connector)
+	if err != nil {
+		return nil, nil, err
+	}
+	return &runtimev1.ModelTest{
+		Name:               name,
+		Resolver:           resolver,
+		ResolverProperties: props,
+	}, refs, nil
 }
 
 // inferSQLRefs attempts to infer table references from the node's SQL.

@@ -155,8 +155,12 @@ func (e *Executor) Timestamps(ctx context.Context, timeDim string) (TimestampsRe
 
 	var res TimestampsResult
 	switch e.olap.Dialect() {
-	case drivers.DialectDuckDB, drivers.DialectClickHouse, drivers.DialectPinot:
-		res, err = e.resolveDuckDBClickHouseAndPinot(ctx, timeExpr)
+	case drivers.DialectDuckDB:
+		res, err = e.resolveDuckDB(ctx, timeExpr)
+	case drivers.DialectClickHouse:
+		res, err = e.resolveClickHouse(ctx, timeExpr)
+	case drivers.DialectPinot:
+		res, err = e.resolvePinot(ctx, timeExpr)
 	case drivers.DialectDruid:
 		res, err = e.resolveDruid(ctx, timeExpr)
 	default:
@@ -210,6 +214,10 @@ func (e *Executor) Schema(ctx context.Context) (*runtimev1.StructType, error) {
 
 	for _, d := range e.metricsView.Dimensions {
 		if e.security.CanAccessField(d.Name) {
+			if e.metricsView.TimeDimension == d.Name {
+				// Skip the time dimension if it is already added
+				continue
+			}
 			qry.Dimensions = append(qry.Dimensions, Dimension{Name: d.Name})
 		}
 	}
@@ -248,18 +256,12 @@ func (e *Executor) Schema(ctx context.Context) (*runtimev1.StructType, error) {
 		return nil, err
 	}
 
-	res, err := e.olap.Query(ctx, &drivers.Statement{
-		Query:            sql,
-		Args:             args,
-		Priority:         e.priority,
-		ExecutionTimeout: defaultInteractiveTimeout,
-	})
+	schema, err := e.olap.QuerySchema(ctx, sql, args)
 	if err != nil {
 		return nil, err
 	}
-	defer res.Close()
 
-	return res.Schema, nil
+	return schema, nil
 }
 
 // Query executes the provided query against the metrics view.

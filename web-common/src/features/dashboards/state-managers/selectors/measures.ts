@@ -81,10 +81,7 @@ export const filteredSimpleMeasures = ({
     return (
       validMetricsView.measures
         .filter(
-          (m) =>
-            validExplore.measures!.includes(m.name!) &&
-            !m.window &&
-            m.type !== MetricsViewSpecMeasureType.MEASURE_TYPE_TIME_COMPARISON,
+          (m) => validExplore.measures!.includes(m.name!) && isSimpleMeasure(m),
         )
         // Sort the filtered measures based on their order in validExplore.measures
         .sort(
@@ -95,6 +92,10 @@ export const filteredSimpleMeasures = ({
     );
   };
 };
+
+export const isSimpleMeasure = (measure: MetricsViewSpecMeasure) =>
+  !measure.window &&
+  measure.type !== MetricsViewSpecMeasureType.MEASURE_TYPE_TIME_COMPARISON;
 
 /**
  * Selects measure valid for current dashboard selections. We filter out advanced measures that are,

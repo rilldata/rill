@@ -184,8 +184,6 @@ func DeployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployO
 		Description:      opts.Description,
 		Provisioner:      opts.Provisioner,
 		ProdVersion:      opts.ProdVersion,
-		ProdOlapDriver:   local.DefaultOLAPDriver,
-		ProdOlapDsn:      local.DefaultOLAPDSN,
 		ProdSlots:        int64(opts.Slots),
 		Public:           opts.Public,
 	}
@@ -222,6 +220,13 @@ func DeployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployO
 	})
 	if err != nil {
 		return err
+	}
+	if req.GitRemote != "" {
+		// also commit dotrillcloud to the repo
+		err = ch.GitHelper(ch.Org, opts.Name, localProjectPath).PushToManagedRepo(ctx)
+		if err != nil {
+			return err
+		}
 	}
 
 	// Success!

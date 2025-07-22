@@ -32,8 +32,6 @@ type CreateDeploymentOptions struct {
 	Slots       int
 	Version     string
 	Variables   map[string]string
-	OLAPDriver  string
-	OLAPDSN     string
 }
 
 func (s *Service) CreateDeployment(ctx context.Context, opts *CreateDeploymentOptions) (*database.Deployment, error) {
@@ -60,8 +58,6 @@ func (s *Service) CreateDeployment(ctx context.Context, opts *CreateDeploymentOp
 		Slots:       opts.Slots,
 		Version:     opts.Version,
 		Variables:   opts.Variables,
-		OLAPDriver:  opts.OLAPDriver,
-		OLAPDSN:     opts.OLAPDSN,
 	})
 	if err != nil {
 		return nil, err
@@ -76,8 +72,6 @@ type StartDeploymentOptions struct {
 	Slots       int
 	Version     string
 	Variables   map[string]string
-	OLAPDriver  string
-	OLAPDSN     string
 }
 
 func (s *Service) StartDeployment(ctx context.Context, depl *database.Deployment, opts *StartDeploymentOptions) (*database.Deployment, error) {
@@ -205,7 +199,6 @@ func (s *Service) startDeploymentInner(ctx context.Context, depl *database.Deplo
 				"admin_url":    s.opts.ExternalURL,
 				"access_token": dat.Token().String(),
 				"project_id":   depl.ProjectID,
-				"nonce":        time.Now().Format(time.RFC3339Nano), // Only set for consistency with updateDeployment
 			},
 		},
 		// Always configure a DuckDB connector, even if it's not set as the default OLAP connector
@@ -220,32 +213,11 @@ func (s *Service) startDeploymentInner(ctx context.Context, depl *database.Deplo
 		},
 	}
 
-	// Determine the default OLAP connector.
-	// TODO: Remove this because it is deprecated and can now be configured directly using `rill.yaml` and `rill env`.
-	var olapConnector string
-	switch opts.OLAPDriver {
-	case "duckdb", "duckdb-ext-storage":
-		if opts.Slots == 0 {
-			return fmt.Errorf("slot count can't be 0 for OLAP driver 'duckdb'")
-		}
-		olapConnector = "duckdb"
-		// Already configured DuckDB above
-	default:
-		olapConnector = opts.OLAPDriver
-		connectors = append(connectors, &runtimev1.Connector{
-			Name: opts.OLAPDriver,
-			Type: opts.OLAPDriver,
-			Config: map[string]string{
-				"dsn": opts.OLAPDSN,
-			},
-		})
-	}
-
 	// Create the instance
 	_, err = rt.CreateInstance(ctx, &runtimev1.CreateInstanceRequest{
 		InstanceId:     instanceID,
 		Environment:    depl.Environment,
-		OlapConnector:  olapConnector,
+		OlapConnector:  "duckdb", // Default OLAP connector for backwards compatibility with projects that don't specify olap_connector in rill.yaml
 		RepoConnector:  "admin",
 		AdminConnector: "admin",
 		AiConnector:    "admin",
@@ -394,35 +366,15 @@ func (s *Service) UpdateDeployment(ctx context.Context, d *database.Deployment, 
 		return err
 	}
 
-	// Connect to the runtime, and update the instance's connectors/variables/annotations.
+	// Connect to the runtime, and update the instance's variables/annotations.
+	// Any call to EditInstance will also force it to check for any repo config changes (e.g. branch or archive ID).
 	rt, err := s.OpenRuntimeClient(d)
 	if err != nil {
 		return err
 	}
 	defer rt.Close()
-	res, err := rt.GetInstance(ctx, &runtimev1.GetInstanceRequest{
-		InstanceId: d.RuntimeInstanceID,
-		Sensitive:  true,
-	})
-	if err != nil {
-		return err
-	}
-	connectors := res.Instance.Connectors
-	for _, c := range connectors {
-		if c.Name == "admin" {
-			if c.Config == nil {
-				c.Config = make(map[string]string)
-			}
-
-			// Adding a nonce will cause the runtime to evict any currently open handle and open a new one.
-			if opts.EvictCachedRepo {
-				c.Config["nonce"] = time.Now().Format(time.RFC3339Nano)
-			}
-		}
-	}
 	_, err = rt.EditInstance(ctx, &runtimev1.EditInstanceRequest{
 		InstanceId:  d.RuntimeInstanceID,
-		Connectors:  connectors,
 		Variables:   vars,
 		Annotations: opts.Annotations.ToMap(),
 	})

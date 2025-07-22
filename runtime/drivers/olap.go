@@ -25,6 +25,8 @@ var (
 	// ErrOptimizationFailure is returned when an optimization fails.
 	ErrOptimizationFailure = errors.New("drivers: optimization failure")
 
+	DefaultQuerySchemaTimeout = 30 * time.Second
+
 	dictPwdRegex = regexp.MustCompile(`PASSWORD\s+'[^']*'`)
 )
 
@@ -47,8 +49,10 @@ type OLAPStore interface {
 	// Query executes a query against the OLAP driver and returns an iterator for the resulting rows and schema.
 	// The result MUST be closed after use.
 	Query(ctx context.Context, stmt *Statement) (*Result, error)
+	// QuerySchema returns the schema of the sql without trying not to run the actual query.
+	QuerySchema(ctx context.Context, query string, args []any) (*runtimev1.StructType, error)
 	// InformationSchema enables introspecting the tables and views available in the OLAP driver.
-	InformationSchema() InformationSchema
+	InformationSchema() OLAPInformationSchema
 }
 
 // Statement wraps a query to execute against an OLAP driver.
@@ -151,21 +155,21 @@ func (r *Result) Close() error {
 	return firstErr
 }
 
-// InformationSchema contains information about existing tables in an OLAP driver.
+// OLAPInformationSchema contains information about existing tables in an OLAP driver.
 // Table lookups should be case insensitive.
-type InformationSchema interface {
+type OLAPInformationSchema interface {
 	// All returns metadata about all tables and views.
 	// The like argument can optionally be passed to filter the tables by name.
-	All(ctx context.Context, like string) ([]*Table, error)
+	All(ctx context.Context, like string) ([]*OlapTable, error)
 	// Lookup returns metadata about a specific tables and views.
-	Lookup(ctx context.Context, db, schema, name string) (*Table, error)
+	Lookup(ctx context.Context, db, schema, name string) (*OlapTable, error)
 	// LoadPhysicalSize populates the PhysicalSizeBytes field of table metadata.
 	// It should be called after All or Lookup and not on manually created tables.
-	LoadPhysicalSize(ctx context.Context, tables []*Table) error
+	LoadPhysicalSize(ctx context.Context, tables []*OlapTable) error
 }
 
-// Table represents a table in an information schema.
-type Table struct {
+// OlapTable represents a table in an information schema.
+type OlapTable struct {
 	Database                string
 	DatabaseSchema          string
 	IsDefaultDatabase       bool
@@ -370,6 +374,13 @@ func (d Dialect) MetricsViewDimensionExpression(dimension *runtimev1.MetricsView
 	return d.EscapeIdentifier(dimension.Name), nil
 }
 
+func (d Dialect) GetTimeDimensionParameter() string {
+	if d == DialectPinot {
+		return "CAST(? AS TIMESTAMP)"
+	}
+	return "?"
+}
+
 func (d Dialect) SafeDivideExpression(numExpr, denExpr string) string {
 	switch d {
 	case DialectDruid:
@@ -546,7 +557,7 @@ func (d Dialect) SelectTimeRangeBins(start, end time.Time, grain runtimev1.TimeG
 		// format - SELECT c1 AS "alias" FROM VALUES(toDateTime('2021-01-01 00:00:00'), toDateTime('2021-01-01 00:00:00'),...)
 		var sb strings.Builder
 		sb.WriteString(fmt.Sprintf("SELECT c1 AS %s FROM VALUES(", d.EscapeIdentifier(alias)))
-		for t := start; t.Before(end); t = timeutil.AddTimeProto(t, grain, 1) {
+		for t := start; t.Before(end); t = timeutil.OffsetTime(t, timeutil.TimeGrainFromAPI(grain), 1, time.UTC) {
 			if t != start {
 				sb.WriteString(", ")
 			}
@@ -563,7 +574,7 @@ func (d Dialect) SelectTimeRangeBins(start, end time.Time, grain runtimev1.TimeG
 		// ) t (time)
 		var sb strings.Builder
 		sb.WriteString("SELECT * FROM (VALUES ")
-		for t := start; t.Before(end); t = timeutil.AddTimeProto(t, grain, 1) {
+		for t := start; t.Before(end); t = timeutil.OffsetTime(t, timeutil.TimeGrainFromAPI(grain), 1, time.UTC) {
 			if t != start {
 				sb.WriteString(", ")
 			}

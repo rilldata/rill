@@ -44,6 +44,7 @@
   export let timeControlsReady: boolean | undefined;
   export let smallChip = false;
   export let whereFilter: V1Expression;
+  export let side: "top" | "right" | "bottom" | "left" = "bottom";
   export let onRemove: () => void;
   export let onApplyInList: (values: string[]) => void;
   export let onSelect: (value: string) => void;
@@ -344,6 +345,7 @@
        So we have a custom implementation here to not overload SearchableMenuContent unnecessarily. -->
   <DropdownMenu.Content
     align="start"
+    {side}
     class="flex flex-col max-h-96 w-[400px] overflow-hidden p-0"
   >
     <div class="flex flex-col px-3 pt-3">

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"cloud.google.com/go/bigquery"
 	"github.com/mitchellh/mapstructure"
@@ -128,18 +129,7 @@ var _ drivers.Handle = &Connection{}
 
 // Ping implements drivers.Handle.
 func (c *Connection) Ping(ctx context.Context) error {
-	opts, err := c.clientOption(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to get client options: %w", err)
-	}
-	var projectID string
-	if c.config.ProjectID != "" {
-		projectID = c.config.ProjectID
-	} else {
-		projectID = bigquery.DetectProjectID
-	}
-
-	client, err := createClient(ctx, projectID, opts)
+	client, err := c.createClient(ctx, "")
 	if err != nil {
 		return fmt.Errorf("failed to create client: %w", err)
 	}
@@ -202,6 +192,11 @@ func (c *Connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
 	return nil, false
 }
 
+// AsInformationSchema implements drivers.Connection.
+func (c *Connection) AsInformationSchema() (drivers.InformationSchema, bool) {
+	return c, true
+}
+
 // Migrate implements drivers.Connection.
 func (c *Connection) Migrate(ctx context.Context) (err error) {
 	return nil
@@ -248,6 +243,30 @@ func (c *Connection) AsWarehouse() (drivers.Warehouse, bool) {
 // AsNotifier implements drivers.Connection.
 func (c *Connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
 	return nil, drivers.ErrNotNotifier
+}
+
+// createClient initializes a BigQuery client using the provided context and project ID.
+// If no project ID is given, it attempts to use the one from the config or auto-detect it.
+func (c *Connection) createClient(ctx context.Context, projectID string) (*bigquery.Client, error) {
+	opts, err := c.clientOption(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get Google API client options: %w", err)
+	}
+	if projectID == "" {
+		if c.config.ProjectID != "" {
+			projectID = c.config.ProjectID
+		} else {
+			projectID = bigquery.DetectProjectID
+		}
+	}
+	client, err := bigquery.NewClient(ctx, projectID, opts...)
+	if err != nil {
+		if strings.Contains(err.Error(), "unable to detect projectID") {
+			return nil, fmt.Errorf("projectID not detected in credentials. Please set `project_id` in source yaml")
+		}
+		return nil, fmt.Errorf("failed to create bigquery client: %w", err)
+	}
+	return client, nil
 }
 
 func (c *Connection) clientOption(ctx context.Context) ([]option.ClientOption, error) {

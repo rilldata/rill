@@ -15,11 +15,10 @@ There are two ways to set up user groups in Rill.
 2. Administrator via CLI 
 
 ### How to Manage User Groups in Rill Cloud
-<ComingSoon />
+From the organization page, you can manage user groups under the Users tab. Adding user groups from this page will add the user group to the organization. You can then add users to a user group to inherit the group [permissions](/manage/roles-permissions).
 
-<div class='contents_to_overlay'>
-a
-</div>
+<img src = '/img/manage/user-management/usergroup-management.png' class='rounded-gif' />
+<br />
 
 ### How to Manage User Groups via the CLI
 ```

@@ -45,7 +45,7 @@ Once you have downloaded GitHub and connected your account, you'll be able to cr
 <br />
 
 
-- After you name your respository and click save, you'll see the option to ```Set up in Desktop```. This will open the GitHub desktop app directly to "clone" the repo to your local computer.
+- After you name your repository and click save, you'll see the option to ```Set up in Desktop```. This will open the GitHub desktop app directly to "clone" the repo to your local computer.
 - 
 <img src = '/img/deploy/github-101/repo.png' class='rounded-gif' />
 <br />
@@ -93,6 +93,6 @@ Now that your dashboards should be fully synced to GitHub, version controlled, a
 
 :::info Have further questions? We'd love to hear from you!
 
-We know that utilizing Git may be new to some - please don't hesitate to [reach out](contact.md) to us with any questions and we'd be happy to assist.
+We know that utilizing Git may be new to some - please don't hesitate to [reach out](/contact) to us with any questions and we'd be happy to assist.
 
 :::

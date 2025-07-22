@@ -170,14 +170,9 @@ type connection struct {
 
 // Ping implements drivers.Handle.
 func (c *connection) Ping(ctx context.Context) error {
-	dsn, err := c.configProperties.resolveDSN()
+	db, err := c.getDB()
 	if err != nil {
-		return err
-	}
-
-	db, err := sqlx.Open("snowflake", dsn)
-	if err != nil {
-		return fmt.Errorf("failed to open connection: %w", err)
+		return fmt.Errorf("failed to open snowflake connection: %w", err)
 	}
 	defer db.Close()
 	return db.PingContext(ctx)
@@ -240,6 +235,11 @@ func (c *connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
 	return nil, false
 }
 
+// AsInformationSchema implements drivers.Connection.
+func (c *connection) AsInformationSchema() (drivers.InformationSchema, bool) {
+	return c, true
+}
+
 // AsObjectStore implements drivers.Connection.
 func (c *connection) AsObjectStore() (drivers.ObjectStore, bool) {
 	return nil, false
@@ -276,6 +276,20 @@ func (c *connection) AsWarehouse() (drivers.Warehouse, bool) {
 // AsNotifier implements drivers.Connection.
 func (c *connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
 	return nil, drivers.ErrNotNotifier
+}
+
+// getDB opens a new sqlx.DB connection using the config.
+func (c *connection) getDB() (*sqlx.DB, error) {
+	dsn, err := c.configProperties.resolveDSN()
+	if err != nil {
+		return nil, err
+	}
+
+	db, err := sqlx.Open("snowflake", dsn)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open connection: %w", err)
+	}
+	return db, nil
 }
 
 // parseRSAPrivateKey parses a private key string

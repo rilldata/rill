@@ -337,8 +337,6 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 			Description:      "Auto created by Rill",
 			Provisioner:      "",
 			ProdVersion:      "",
-			ProdOlapDriver:   "duckdb",
-			ProdOlapDsn:      "",
 			ProdSlots:        int64(DefaultProdSlots(s.app.ch)),
 			Public:           false,
 			ArchiveAssetId:   assetID,
@@ -356,8 +354,6 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 			Description:      "Auto created by Rill",
 			Provisioner:      "",
 			ProdVersion:      "",
-			ProdOlapDriver:   "duckdb",
-			ProdOlapDsn:      "",
 			ProdSlots:        int64(DefaultProdSlots(s.app.ch)),
 			Public:           false,
 			GitRemote:        ghRepo.Remote,
@@ -409,8 +405,6 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 			Description:      "Auto created by Rill",
 			Provisioner:      "",
 			ProdVersion:      "",
-			ProdOlapDriver:   "duckdb",
-			ProdOlapDsn:      "",
 			ProdSlots:        int64(DefaultProdSlots(s.app.ch)),
 			Public:           false,
 			GitRemote:        githubRemote,
@@ -441,6 +435,23 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 	})
 	if err != nil {
 		return nil, err
+	}
+
+	// if the project is backed by git repo, we need to push the .rillcloud directory to the remote
+	if r.Msg.Upload {
+		err = s.app.ch.GitHelper(r.Msg.Org, r.Msg.ProjectName, s.app.ProjectPath).PushToManagedRepo(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to push .rillcloud directory to remote: %w", err)
+		}
+	} else if !r.Msg.Archive {
+		author, err := s.app.ch.GitSignature(ctx, s.app.ProjectPath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to generate git commit signature: %w", err)
+		}
+		err = gitutil.CommitAndForcePush(ctx, s.app.ProjectPath, &gitutil.Config{Remote: projResp.Project.GitRemote, DefaultBranch: projResp.Project.ProdBranch}, "Autocommit .rillcloud dir", author)
+		if err != nil {
+			return nil, fmt.Errorf("failed to push .rillcloud directory to remote: %w", err)
+		}
 	}
 
 	// Parse .env and push it as variables

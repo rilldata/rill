@@ -13,6 +13,7 @@
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import Label from "@rilldata/web-common/components/forms/Label.svelte";
   import DelayedCircleOutlineSpinner from "@rilldata/web-common/components/spinner/DelayedCircleOutlineSpinner.svelte";
+  import { OrgUserRoles } from "@rilldata/web-common/features/users/roles.ts";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 
   export let organization: string;
@@ -38,7 +39,7 @@
         organization,
         data: {
           domain: $userDomain.data,
-          role: "viewer",
+          role: OrgUserRoles.Viewer,
         },
       });
     }
