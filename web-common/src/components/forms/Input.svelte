@@ -1,8 +1,8 @@
 <script lang="ts">
+  import { IconButton } from "@rilldata/web-common/components/button";
   import { EyeIcon, EyeOffIcon } from "lucide-svelte";
   import { onMount } from "svelte";
   import { slide } from "svelte/transition";
-  import { IconButton } from "@rilldata/web-common/components/button";
   import FieldSwitcher from "./FieldSwitcher.svelte";
   import InputLabel from "./InputLabel.svelte";
   import Select from "./Select.svelte";
@@ -273,7 +273,7 @@
   .input-wrapper {
     @apply overflow-hidden;
     @apply flex justify-center items-center pr-1;
-    @apply bg-white justify-center;
+    @apply bg-surface justify-center;
     @apply border border-gray-300 rounded-[2px];
     @apply cursor-pointer;
     @apply h-fit w-fit;
@@ -281,7 +281,7 @@
 
   input,
   .multiline-input {
-    @apply p-0 bg-white;
+    @apply bg-surface p-0;
     @apply size-full;
     @apply outline-none border-0;
     @apply cursor-text;
