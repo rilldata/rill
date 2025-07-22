@@ -23,7 +23,7 @@ var spec = drivers.Spec{
 	Description: "Connect to OpenAI's API for language models.",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
-			Key:         "APIKey",
+			Key:         "api_key",
 			Type:        drivers.StringPropertyType,
 			Required:    true,
 			DisplayName: "API Key",
