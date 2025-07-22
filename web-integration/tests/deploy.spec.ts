@@ -109,7 +109,9 @@ test.describe("Deploy journey", () => {
     await expect(deployPage.getByText("AdBids_metrics_explore")).toBeVisible();
 
     // Org title is correct
-    await expect(deployPage.getByLabel("Breadcrumbs depth-0")).toHaveText(
+    await expect(
+      deployPage.getByLabel("Breadcrumb navigation, level 0"),
+    ).toHaveText(
       /E2E Test Org.*/, // Trail pill is not always present because of race condition.
     );
 
@@ -171,7 +173,9 @@ test.describe("Deploy journey", () => {
     );
 
     // Org title is correct
-    await expect(deployPage.getByLabel("Breadcrumbs depth-0")).toHaveText(
+    await expect(
+      deployPage.getByLabel("Breadcrumb navigation, level 0"),
+    ).toHaveText(
       /e2e-org-second.*/, // Trail pill is not always present because of race condition.
     );
 
