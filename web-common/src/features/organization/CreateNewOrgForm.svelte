@@ -28,7 +28,15 @@
   };
   const schema = yup(
     object({
-      name: string().required(),
+      name: string()
+        .required()
+        // from admin/databases/database.go::InsertOrganizationOptions::Name
+        .matches(
+          /^[_a-zA-Z0-9][-_a-zA-Z0-9]*$/,
+          "name must only have alphabets and numbers",
+        )
+        .min(2, "name must be at least 2 characters long")
+        .max(40, "name must be at most 40 characters long"),
       displayName: string(),
     }),
   );
@@ -60,7 +68,7 @@
           result.error.message.includes("an org with that name already exists")
         ) {
           $errors["name"] = [
-            "Org already exists. Please choose a different name.",
+            `Organization name '${$form.name}' is already taken. Please try a different name.`,
           ];
         }
       },

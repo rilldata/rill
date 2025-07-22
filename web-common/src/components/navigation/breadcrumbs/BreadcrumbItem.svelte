@@ -43,7 +43,7 @@
 <li class="flex items-center gap-x-2 px-2">
   <div
     class="flex flex-row gap-x-1 items-center"
-    aria-label="Breadcrumbs depth-{depth}"
+    aria-label="Breadcrumb navigation, level {depth}"
   >
     {#if selected}
       <a
