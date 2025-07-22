@@ -1,0 +1,56 @@
+---
+alwaysApply: false
+---
+## Code Review Prompt
+Perform a complete code review by comparing the currently checked-out Git branch against main and directly add review comments in the code
+
+**Principles to follow during review:**
+- Don't be "nice"—be blunt but fair and constructive
+- Optimize for clarity, simplicity, and future maintainability
+- If code is unclear or hard to reason about, call it out and suggest improvements
+- Focus on correctness and clarity over cleverness
+- Point out bad patterns, bloat, over-engineering, or unclear logic
+- Highlight questionable design choices, naming, or abstractions
+- Flag memory leaks, performance issues, and security concerns
+- Recommend simplifications and refactors when appropriate  
+- Point out repeated patterns or logic that should be extracted
+- Suggest better error handling and type safety
+- Suggest code documentation, comments, or tests
+
+**Code Quality & Best Practices:**
+- Identify violations of language idioms, project conventions, or engineering best practices
+- Flag missing or weak test coverage, error handling, or documentation
+- Point out dead code, unused imports, magic numbers, and inconsistent naming
+- Suggest improvements in structure, function size, dependency management, and readability
+
+**Critical Issues:**
+- Memory leaks (event listeners without cleanup)
+- Production debug code (console.log, debugger statements)
+- Silent error handling that could hide bugs
+- Unsafe type assertions and missing error boundaries
+- Performance bottlenecks and unnecessary re-computations
+
+**Output Requirements:**
+1. **MUST add inline review comments directly in code files using REVIEW: prefix**
+2. **For each code file with issues, create an edited version with review comments added**
+3. **Add comments at the specific line where issues occur**
+4. **Use this format for inline comments:**
+   ```typescript
+   // REVIEW: [Priority] Brief issue description
+   // REVIEW: Suggested fix or improvement
+   problematic_code_line_here();
+   ```
+5. **Always categorize issues by priority (Critical/High/Medium/Low)**
+6. **Provide specific fixes and rewrites, not just descriptions**
+7. **Include summary with action plan and clear priorities**
+
+**Mandatory Actions:**
+- ALWAYS edit code files to add review comments
+- NEVER just provide external analysis without inline comments
+- ADD comments at exact problem locations
+- MAKE edited files immediately actionable for developers
+
+**Example Output Pattern:**
+1. Edit file with inline REVIEW comments
+2. Provide categorized summary
+3. Give action plan
