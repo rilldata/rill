@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"time"
 
 	"github.com/c2h5oh/datasize"
@@ -66,8 +67,6 @@ type AppOptions struct {
 	Debug          bool
 	Reset          bool
 	Environment    string
-	OlapDriver     string
-	OlapDSN        string
 	ProjectPath    string
 	LogFormat      LogFormat
 	Variables      map[string]string
@@ -76,14 +75,6 @@ type AppOptions struct {
 }
 
 func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
-	// Set default OLAP driver and DSN if not specified (for backwards compatibility)
-	if opts.OlapDriver == "" {
-		opts.OlapDriver = DefaultOLAPDriver
-	}
-	if opts.OlapDSN == "" {
-		opts.OlapDSN = DefaultOLAPDSN
-	}
-
 	// Setup logger
 	logPath, err := opts.Ch.DotRill.ResolveFilename("rill.log", true)
 	if err != nil {
@@ -204,23 +195,14 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 		}
 	}
 
-	olapCfg := make(map[string]string)
-	if opts.OlapDriver == "duckdb" {
-		if opts.OlapDSN != DefaultOLAPDSN {
-			return nil, fmt.Errorf("setting DSN for DuckDB is not supported")
-		}
-		// Set default DuckDB pool size to 4
-		olapCfg["pool_size"] = "4"
-	}
-	if opts.Debug {
-		olapCfg["log_queries"] = "true"
-	}
-
-	// Add OLAP connector
+	// Add default OLAP connector
 	olapConnector := &runtimev1.Connector{
-		Type:   opts.OlapDriver,
-		Name:   opts.OlapDriver,
-		Config: olapCfg,
+		Type: "duckdb",
+		Name: "duckdb",
+		Config: map[string]string{
+			"pool_size":   "4", // Default pool size for DuckDB
+			"log_queries": strconv.FormatBool(opts.Debug),
+		},
 	}
 	connectors = append(connectors, olapConnector)
 

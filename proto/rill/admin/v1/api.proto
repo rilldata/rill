@@ -1417,8 +1417,6 @@ message CreateProjectRequest {
   string description = 3;
   bool public = 4;
   string provisioner = 5;
-  // Fields 6 and 7 are reserved for backwards compatibility (prod_olap_driver and prod_olap_dsn)
-  reserved 6, 7;
   int64 prod_slots = 8;
   string subpath = 12;
   string prod_branch = 9;
@@ -1430,6 +1428,8 @@ message CreateProjectRequest {
   string archive_asset_id = 14;
   string prod_version = 13;
   bool skip_deploy = 15;
+  // Reserved for backwards compatibility (prod_olap_driver and prod_olap_dsn)
+  reserved 6, 7;
 }
 
 message CreateProjectResponse {
@@ -2740,8 +2740,6 @@ message Project {
   string subpath = 17;
   string prod_branch = 9;
   string archive_asset_id = 23;
-  // Fields 10 and 11 are reserved for backwards compatibility (prod_olap_driver and prod_olap_dsn)
-  reserved 10, 11;
   int64 prod_slots = 12;
   string prod_deployment_id = 13;
   int64 dev_slots = 25;
@@ -2751,6 +2749,8 @@ message Project {
   string prod_version = 21;
   google.protobuf.Timestamp created_on = 14;
   google.protobuf.Timestamp updated_on = 15;
+  // Reserved for backwards compatibility (prod_olap_driver and prod_olap_dsn)
+  reserved 10, 11;
 }
 
 enum DeploymentStatus {

@@ -2787,10 +2787,6 @@ paths:
                 type: boolean
               provisioner:
                 type: string
-              prodOlapDriver:
-                type: string
-              prodOlapDsn:
-                type: string
               prodSlots:
                 type: string
                 format: int64
@@ -5732,10 +5728,6 @@ definitions:
       prodBranch:
         type: string
       archiveAssetId:
-        type: string
-      prodOlapDriver:
-        type: string
-      prodOlapDsn:
         type: string
       prodSlots:
         type: string
