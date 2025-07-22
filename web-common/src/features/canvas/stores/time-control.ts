@@ -66,7 +66,6 @@ export class TimeControls {
   timeRangeStateStore: Readable<TimeRangeState | undefined>;
   comparisonRangeStateStore: Readable<ComparisonTimeRangeState | undefined>;
 
-  private isInitialStateSet: boolean = false;
   private specStore: CanvasSpecResponseStore;
 
   constructor(
