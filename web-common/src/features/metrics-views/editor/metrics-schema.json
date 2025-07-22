@@ -182,9 +182,22 @@
       "description": "If true, disables automatic creation of the explore view for this metrics view. This is useful for dashboards that are not intended to be explored."
     }
   },
-  "oneOf": [
-    { "required": ["model"] },
-    { "required": ["table"] }
-  ],
-  "required": ["dimensions", "measures"]
+  "if": {
+    "not": {
+      "properties": {
+        "parent": { "type": "string" }
+      }
+    }
+  },
+  "then": {
+    "allOf": [
+      {
+        "oneOf": [
+          { "required": ["model"] },
+          { "required": ["table"] }
+        ]
+      },
+      { "required": ["dimensions", "measures"] }
+    ]
+  }
 }
