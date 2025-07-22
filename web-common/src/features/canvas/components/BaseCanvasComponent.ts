@@ -78,7 +78,7 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
     this.resource.set(resource);
     this.id = resource.meta?.name?.name as string;
 
-    const timeFiltersStore: SearchParamsStore = (() => {
+    const yamlTimeFilterStore: SearchParamsStore = (() => {
       const store = derived(this.specStore, (spec) => {
         return new URLSearchParams(spec?.["time_filters"] ?? "");
       });
@@ -114,7 +114,7 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
       };
     })();
 
-    const localFiltersStore: SearchParamsStore = (() => {
+    const yamlDimensionFilterStore: SearchParamsStore = (() => {
       const store = derived(this.specStore, (spec) => {
         const dimensionFiltersString = spec?.["dimension_filters"] ?? "";
         const searchParams = new URLSearchParams();
@@ -157,14 +157,15 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
       };
     })();
 
-    this.localFilters = new Filters(
-      this.parent.spec,
-      localFiltersStore,
-      this.id,
-    );
     this.localTimeControls = new TimeControls(
       this.parent.specStore,
-      timeFiltersStore,
+      yamlTimeFilterStore,
+      this.id,
+    );
+
+    this.localFilters = new Filters(
+      this.parent.spec,
+      yamlDimensionFilterStore,
       this.id,
     );
   }
