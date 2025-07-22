@@ -43,6 +43,8 @@ import {
 import { normalizeWeekday } from "../../dashboards/time-controls/new-time-controls";
 import type { SearchParamsStore } from "./canvas-entity";
 
+import type { CanvasResponse } from "../selector";
+
 type AllTimeRange = TimeRange & { isFetching: boolean };
 
 let lastAllTimeRange: AllTimeRange | undefined;
@@ -61,7 +63,9 @@ export class TimeControls {
    */
   allTimeRange: Readable<AllTimeRange>;
   isReady: Readable<boolean>;
-  minTimeGrain: Readable<V1TimeGrain>;
+  minTimeGrain: Writable<V1TimeGrain> = writable(
+    V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
+  );
   hasTimeSeries: Readable<boolean>;
   timeRangeStateStore: Readable<TimeRangeState | undefined>;
   comparisonRangeStateStore: Readable<ComparisonTimeRangeState | undefined>;
@@ -82,43 +86,12 @@ export class TimeControls {
 
     this.specStore = specStore;
 
-    this.minTimeGrain = derived(specStore, (spec) => {
-      let metricsViews = spec?.data?.metricsViews || {};
-
-      if (componentName) {
-        const metricsViewName = getComponentMetricsViewFromSpec(
-          componentName,
-          spec,
-        );
-
-        if (metricsViewName && metricsViews[metricsViewName]) {
-          metricsViews = {
-            [metricsViewName]: metricsViews[metricsViewName],
-          };
-        }
-      }
-      const minTimeGrain = Object.values(metricsViews).reduce<V1TimeGrain>(
-        (min: V1TimeGrain, metricsView) => {
-          const timeGrain = metricsView?.state?.validSpec?.smallestTimeGrain;
-
-          if (!timeGrain || timeGrain === V1TimeGrain.TIME_GRAIN_UNSPECIFIED) {
-            return min;
-          }
-
-          return isGrainBigger(min, timeGrain) ? timeGrain : min;
-        },
-        V1TimeGrain.TIME_GRAIN_YEAR, // Use max time grain as starting point
-      );
-
-      return minTimeGrain;
-    });
-
     this.hasTimeSeries = derived(specStore, (spec) => {
       let metricsViews = spec?.data?.metricsViews || {};
 
       const metricsViewName = getComponentMetricsViewFromSpec(
         componentName,
-        spec,
+        spec?.data,
       );
       if (metricsViewName && metricsViews[metricsViewName]) {
         metricsViews = {
@@ -222,11 +195,37 @@ export class TimeControls {
       this.specStore.subscribe((spec) => {
         const defaultPreset = spec.data?.canvas?.defaultPreset;
         const timeRanges = spec?.data?.canvas?.timeRanges;
-        if (!defaultPreset) return;
 
-        const defaultRange = defaultPreset.timeRange as TimeRangePreset;
+        const minTimeGrain = deriveMinTimeGrain(this.componentName, spec?.data);
 
-        const didSet = this.set.range(defaultRange, true);
+        this.minTimeGrain.set(minTimeGrain);
+
+        const defaultRange = defaultPreset?.timeRange;
+
+        const allTimeRange = get(this.allTimeRange);
+        const selectedTimezone = get(this.selectedTimezone);
+
+        const initialRange = isoDurationToFullTimeRange(
+          defaultPreset?.timeRange,
+          allTimeRange.start,
+          allTimeRange.end,
+          selectedTimezone,
+        );
+
+        // console.log({ initialRange });
+
+        // const didSet = false;
+
+        console.log(
+          initialRange.name ?? fallbackInitialRanges[minTimeGrain] ?? "PT24H",
+        );
+
+        const didSet = this.set.range(
+          initialRange.name ?? fallbackInitialRanges[minTimeGrain] ?? "PT24H",
+          true,
+        );
+
+        console.log({ didSet });
 
         const newComparisonRange = getComparisonTimeRange(
           timeRanges,
@@ -238,7 +237,7 @@ export class TimeControls {
         if (
           newComparisonRange?.name &&
           didSet &&
-          defaultPreset.comparisonMode ===
+          defaultPreset?.comparisonMode ===
             V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME
         ) {
           this.set.comparison(newComparisonRange.name, true);
@@ -256,7 +255,7 @@ export class TimeControls {
 
       const metricsViewName = getComponentMetricsViewFromSpec(
         this.componentName,
-        spec,
+        spec?.data,
       );
 
       const metricsReferred = metricsViewName
@@ -510,4 +509,55 @@ export function getTimeRangeFromText(timeFilter: string) {
     showTimeComparison,
     timeZone,
   };
+}
+
+const fallbackInitialRanges = {
+  [V1TimeGrain.TIME_GRAIN_MILLISECOND]: "PT24H",
+  [V1TimeGrain.TIME_GRAIN_SECOND]: "PT24H",
+  [V1TimeGrain.TIME_GRAIN_MINUTE]: "PT24H",
+  [V1TimeGrain.TIME_GRAIN_HOUR]: "PT24H",
+  [V1TimeGrain.TIME_GRAIN_DAY]: "P7D",
+  [V1TimeGrain.TIME_GRAIN_WEEK]: "P4W",
+  [V1TimeGrain.TIME_GRAIN_MONTH]: "P3M",
+  [V1TimeGrain.TIME_GRAIN_QUARTER]: "P3Q",
+  [V1TimeGrain.TIME_GRAIN_YEAR]: "P5Y",
+};
+
+function deriveMinTimeGrain(
+  componentName: string | undefined,
+  spec: CanvasResponse | undefined,
+): V1TimeGrain {
+  let metricsViews = spec?.metricsViews || {};
+
+  if (componentName) {
+    const metricsViewName = getComponentMetricsViewFromSpec(
+      componentName,
+      spec,
+    );
+
+    if (metricsViewName && metricsViews[metricsViewName]) {
+      metricsViews = {
+        [metricsViewName]: metricsViews[metricsViewName],
+      };
+    }
+  }
+
+  const minTimeGrain = Object.values(metricsViews).reduce<V1TimeGrain>(
+    (min: V1TimeGrain, metricsView) => {
+      const timeGrain = metricsView?.state?.validSpec?.smallestTimeGrain;
+
+      if (!timeGrain || timeGrain === V1TimeGrain.TIME_GRAIN_UNSPECIFIED) {
+        return min;
+      }
+
+      if (min === V1TimeGrain.TIME_GRAIN_UNSPECIFIED) {
+        return timeGrain;
+      }
+
+      return isGrainBigger(timeGrain, min) ? timeGrain : min;
+    },
+    V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
+  );
+
+  return minTimeGrain;
 }
