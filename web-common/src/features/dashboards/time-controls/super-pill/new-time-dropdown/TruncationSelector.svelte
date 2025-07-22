@@ -1,7 +1,7 @@
 <script lang="ts">
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
-  import { DateTime, type DateTimeUnit } from "luxon";
+  import { DateTime, Duration, type DateTimeUnit } from "luxon";
   import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
   import {
     getOptionsFromSmallestToLargest,
@@ -61,7 +61,7 @@
       id: "now",
       label: "current time",
       timestamp: now,
-      description: "System clock in the selected time zone",
+      description: "System time in selected timezone",
     },
   ];
 
@@ -71,14 +71,11 @@
     inclusive: boolean,
   ) {
     if (!snap) {
-      return dateTimeAnchor.toLocaleString(DateTime.DATETIME_MED_WITH_SECONDS);
+      return dateTimeAnchor;
     }
-    return dateTimeAnchor
-      .startOf(snap)
-      .plus({
-        [snap]: inclusive ? 1 : 0,
-      })
-      .toLocaleString(DateTime.DATETIME_MED_WITH_SECONDS);
+    return dateTimeAnchor.startOf(snap).plus({
+      [snap]: inclusive ? 1 : 0,
+    });
   }
 
   function humanizeRef(ref: string, grain: V1TimeGrain | undefined): string {
@@ -137,7 +134,25 @@
 
       <Tooltip.Content side="bottom" sideOffset={8}>
         <TooltipContent>
-          {derivedAnchor}
+          <TooltipTitle>
+            <svelte:fragment slot="name">
+              {derivedAnchor.toLocaleString(DateTime.DATETIME_MED_WITH_SECONDS)}
+            </svelte:fragment>
+          </TooltipTitle>
+          <TooltipDescription>
+            {Duration.fromObject(
+              Object.fromEntries(
+                Object.entries(
+                  DateTime.now().diff(derivedAnchor).rescale().toObject(),
+                )
+                  .filter(([, value]) => value !== 0)
+                  .slice(0, 2),
+              ),
+            ).toHuman({
+              listStyle: "narrow",
+              maximumFractionDigits: 0,
+            })} ago
+          </TooltipDescription>
         </TooltipContent>
       </Tooltip.Content>
     </Tooltip.Root>
@@ -169,6 +184,22 @@
                       )}
                     </svelte:fragment>
                   </TooltipTitle>
+                  {#if id !== "now"}
+                    <div>
+                      {Duration.fromObject(
+                        Object.fromEntries(
+                          Object.entries(
+                            DateTime.now().diff(timestamp).rescale().toObject(),
+                          )
+                            .filter(([, value]) => value !== 0)
+                            .slice(0, 2),
+                        ),
+                      ).toHuman({
+                        listStyle: "narrow",
+                        maximumFractionDigits: 0,
+                      })} ago
+                    </div>
+                  {/if}
                   <TooltipDescription>
                     {description}
                   </TooltipDescription>

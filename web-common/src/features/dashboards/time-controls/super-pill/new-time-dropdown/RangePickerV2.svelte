@@ -355,10 +355,12 @@
               on:click={() => {
                 showCalendarPicker = !showCalendarPicker;
               }}
-              class="truncate w-full text-left gap-x-1 hover:bg-accent flex items-center flex-shrink pl-2 h-7"
+              class="truncate w-full text-left gap-x-1 pr-1 hover:bg-accent flex items-center flex-shrink pl-2 h-7 rounded-sm"
             >
               <Calendar size="14px" />
-              Calendar
+              <div class="mr-auto">Calendar</div>
+
+              <CaretDownIcon className="-rotate-90" size="14px" />
             </button>
           </div>
         {/if}
@@ -376,19 +378,19 @@
                     showCalendarPicker = false;
                   }}
                   role="presentation"
-                  class="group h-7 pr-2 overflow-hidden hover:bg-gray-100 flex-none rounded-sm w-full select-none flex items-center"
+                  class="group h-7 overflow-hidden hover:bg-gray-100 flex-none rounded-sm w-full select-none flex items-center"
                 >
                   <button
                     class:font-bold={false}
-                    class="truncate w-full text-left gap-x-1 flex items-center flex-shrink pl-2 h-full"
+                    class="truncate w-full text-left gap-x-1 pr-1 flex items-center flex-shrink pl-2 h-full"
                   >
                     <Globe size="14px" />
-                    Time zone
+                    <div class="mr-auto">Time zone</div>
+                    <div class="sr-only group-hover:not-sr-only">
+                      <SyntaxElement range={zoneAbbreviation} />
+                    </div>
+                    <CaretDownIcon className="-rotate-90" size="14px" />
                   </button>
-
-                  <div class="sr-only group-hover:not-sr-only">
-                    <SyntaxElement range={zoneAbbreviation} />
-                  </div>
                 </div>
               </Popover.Trigger>
 
