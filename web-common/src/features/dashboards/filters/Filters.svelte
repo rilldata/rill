@@ -249,7 +249,6 @@
     if (interval.isValid) {
       const validInterval = interval as Interval<true>;
       const baseTimeRange: TimeRange = {
-        // Temporary fix for custom syntax
         name: alias,
         start: validInterval.start.toJSDate(),
         end: validInterval.end.toJSDate(),
