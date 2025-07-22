@@ -71,6 +71,7 @@ interface NominalFieldConfig {
   showNull?: boolean;
   labelAngle?: number;
   legendOrientation?: ChartLegend;
+  colorMapping?: { value: string; color: string }[];
 }
 
 interface QuantitativeFieldConfig {

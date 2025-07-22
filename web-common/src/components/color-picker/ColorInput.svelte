@@ -9,6 +9,7 @@
   export let onChange: (color: string) => void;
   export let small = false;
   export let allowLightnessControl = false;
+  export let showLabel = true;
 
   let open = false;
 
@@ -251,24 +252,25 @@
       {/if}
     </Popover.Content>
   </Popover.Root>
+  {#if showLabel}
+    <input
+      class:small
+      bind:value={stringColor}
+      {disabled}
+      on:keydown={(e) => {
+        if (e.key === "Enter") {
+          e.currentTarget.blur();
+        }
+      }}
+      on:blur={() => {
+        if (stringColor) {
+          onChange(stringColor);
+        }
+      }}
+    />
 
-  <input
-    class:small
-    bind:value={stringColor}
-    {disabled}
-    on:keydown={(e) => {
-      if (e.key === "Enter") {
-        e.currentTarget.blur();
-      }
-    }}
-    on:blur={() => {
-      if (stringColor) {
-        onChange(stringColor);
-      }
-    }}
-  />
-
-  <p class:small class:text-gray-500={!disabled}>{label}</p>
+    <p class:small class:text-gray-500={!disabled}>{label}</p>
+  {/if}
 </div>
 
 <style lang="postcss">

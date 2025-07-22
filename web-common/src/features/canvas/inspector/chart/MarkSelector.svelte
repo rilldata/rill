@@ -5,6 +5,8 @@
   import type { FieldConfig } from "@rilldata/web-common/features/canvas/components/charts/types";
   import SingleFieldInput from "@rilldata/web-common/features/canvas/inspector/SingleFieldInput.svelte";
   import type { ComponentInputParam } from "@rilldata/web-common/features/canvas/inspector/types";
+  import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import FieldConfigPopover from "./field-config/FieldConfigPopover.svelte";
 
   export let key: string;
@@ -13,6 +15,11 @@
   export let config: ComponentInputParam;
   export let canvasName: string;
   export let onChange: (updatedConfig: FieldConfig | string) => void;
+
+  $: ({ instanceId } = $runtime);
+  $: ({
+    canvasEntity: { selectedComponent },
+  } = getCanvasStore(canvasName, instanceId));
 
   $: selected = !markConfig || typeof markConfig === "string" ? 0 : 1;
 
@@ -38,13 +45,15 @@
       });
     }
   }
+
+  $: popoverKey = `${$selectedComponent}-${metricsView}-${typeof markConfig === "string" ? markConfig : markConfig?.field}`;
 </script>
 
 <div class="space-y-2">
   <div class="flex justify-between items-center">
     <InputLabel small label={config.label ?? key} id={key} />
     {#if Object.keys(chartFieldInput ?? {}).length > 1 && typeof markConfig !== "string"}
-      {#key markConfig}
+      {#key popoverKey}
         <FieldConfigPopover
           fieldConfig={markConfig}
           label={config.label ?? key}

@@ -86,13 +86,27 @@ export function createColorEncoding(
   if (typeof colorField === "object") {
     const metaData = data.fields[colorField.field];
 
-    return {
+    const baseEncoding: ColorDef<Field> = {
       field: sanitizeValueForVega(colorField.field),
       title: metaData?.displayName || colorField.field,
       type: colorField.type,
       ...(metaData &&
         "timeUnit" in metaData && { timeUnit: metaData.timeUnit }),
     };
+
+    // Add custom color mapping if available
+    if (colorField.colorMapping && colorField.colorMapping.length > 0) {
+      const domain = colorField.colorMapping.map((mapping) => mapping.value);
+      const range = colorField.colorMapping.map((mapping) => mapping.color);
+
+      baseEncoding.scale = {
+        domain,
+        range,
+        type: "ordinal",
+      };
+    }
+
+    return baseEncoding;
   }
   if (typeof colorField === "string") {
     return { value: colorField };

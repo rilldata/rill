@@ -9,6 +9,7 @@
     ChartLegend,
     FieldConfig,
   } from "@rilldata/web-common/features/canvas/components/charts/types";
+  import ColorPaletteSelector from "@rilldata/web-common/features/canvas/inspector/chart/field-config/ColorPaletteSelector.svelte";
   import type { ChartFieldInput } from "@rilldata/web-common/features/canvas/inspector/types";
   import SortConfig from "./SortConfig.svelte";
 
@@ -39,6 +40,9 @@
   $: showAxisTitle = chartFieldInput?.axisTitleSelector ?? false;
   $: showOrigin = chartFieldInput?.originSelector ?? false;
   $: sortConfig = chartFieldInput?.sortSelector ?? { enable: false };
+  $: colorMapConfig = chartFieldInput?.colorMappingSelector ?? {
+    enable: false,
+  };
   $: showLimit = chartFieldInput?.limitSelector ?? false;
   $: showNull = chartFieldInput?.nullSelector ?? false;
   $: showLabelAngle = chartFieldInput?.labelAngleSelector ?? false;
@@ -97,6 +101,8 @@
           </div>
         {/if}
         <SortConfig {fieldConfig} {onChange} {sortConfig} />
+        <ColorPaletteSelector {fieldConfig} {onChange} {colorMapConfig} />
+
         {#if showLimit}
           <div class="py-1 flex items-center justify-between">
             <span class="text-xs">Limit</span>

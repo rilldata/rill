@@ -35,6 +35,7 @@ export type ChartFieldInput = {
   originSelector?: boolean;
   sortSelector?: SortSelectorConfig;
   limitSelector?: { defaultLimit: number };
+  colorMappingSelector?: { enable: boolean; values?: string[] };
   nullSelector?: boolean;
   labelAngleSelector?: boolean;
   axisRangeSelector?: boolean;
