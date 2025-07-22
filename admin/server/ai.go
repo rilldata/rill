@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"errors"
+	"strings"
 
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
@@ -18,8 +19,16 @@ func (s *Server) Complete(ctx context.Context, req *adminv1.CompleteRequest) (*a
 
 	// Handle backwards compatibility: migrate deprecated 'data' field to 'content'
 	messages := make([]*aiv1.CompletionMessage, len(req.Messages))
+	needsBackwardsCompatibleResponse := false
 	for i, msg := range req.Messages {
-		messages[i] = migrateCompletionMessage(msg)
+		if msg.Data != "" && len(msg.Content) == 0 {
+			// Convert deprecated 'data' field to 'content'
+			messages[i] = convertDataToContent(msg)
+			needsBackwardsCompatibleResponse = true
+		} else {
+			// Use message as-is (content exists or both fields empty)
+			messages[i] = msg
+		}
 	}
 
 	// Pass messages and tools to the AI service
@@ -32,34 +41,48 @@ func (s *Server) Complete(ctx context.Context, req *adminv1.CompleteRequest) (*a
 		return nil, errors.New("the AI responded with an empty message")
 	}
 
-	// Any tool use response will be passed to the client (the runtime server) for execution.
-	return &adminv1.CompleteResponse{Message: msg}, nil
-}
-
-// migrateCompletionMessage handles backwards compatibility for CompletionMessage
-// If the message has a non-empty 'data' field but empty 'content', it converts
-// the 'data' field to a text content block for backwards compatibility.
-func migrateCompletionMessage(msg *aiv1.CompletionMessage) *aiv1.CompletionMessage {
-	// If content is already populated, use it as-is
-	if len(msg.Content) > 0 {
-		return msg
+	// Handle response backwards compatibility: if request used old format,
+	// populate both data and content fields for old runtime compatibility
+	responseMessage := msg
+	if needsBackwardsCompatibleResponse {
+		responseMessage = convertContentToData(msg)
 	}
 
-	// If data field is populated but content is empty, migrate data to content
-	if msg.Data != "" {
-		return &aiv1.CompletionMessage{
-			Role: msg.Role,
-			Data: msg.Data, // Keep original for compatibility
-			Content: []*aiv1.ContentBlock{
-				{
-					BlockType: &aiv1.ContentBlock_Text{
-						Text: msg.Data,
-					},
+	// Any tool use response will be passed to the client (the runtime server) for execution.
+	return &adminv1.CompleteResponse{Message: responseMessage}, nil
+}
+
+// convertDataToContent converts a message's deprecated 'data' field to 'content' blocks
+// This function assumes the message has a non-empty data field and empty content
+func convertDataToContent(msg *aiv1.CompletionMessage) *aiv1.CompletionMessage {
+	return &aiv1.CompletionMessage{
+		Role: msg.Role,
+		Data: msg.Data, // Keep original for compatibility
+		Content: []*aiv1.ContentBlock{
+			{
+				BlockType: &aiv1.ContentBlock_Text{
+					Text: msg.Data,
 				},
 			},
+		},
+	}
+}
+
+// convertContentToData creates a response message with both content and data fields
+// for compatibility with old runtimes that expect the deprecated data field
+func convertContentToData(msg *aiv1.CompletionMessage) *aiv1.CompletionMessage {
+	// Extract text content from content blocks for the data field
+	var textParts []string
+	for _, block := range msg.Content {
+		if text := block.GetText(); text != "" {
+			textParts = append(textParts, text)
 		}
 	}
 
-	// Return as-is if both are empty
-	return msg
+	// Create new message with both content (new format) and data (old format)
+	return &aiv1.CompletionMessage{
+		Role:    msg.Role,
+		Data:    strings.Join(textParts, ""), // Populate deprecated field for old runtimes
+		Content: msg.Content,                 // Keep new format for modern runtimes
+	}
 }
