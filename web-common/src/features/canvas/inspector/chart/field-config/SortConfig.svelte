@@ -4,7 +4,10 @@
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import DragHandle from "@rilldata/web-common/components/icons/DragHandle.svelte";
   import * as Popover from "@rilldata/web-common/components/popover";
-  import type { FieldConfig } from "@rilldata/web-common/features/canvas/components/charts/types";
+  import type {
+    ChartSortDirectionOptions,
+    FieldConfig,
+  } from "@rilldata/web-common/features/canvas/components/charts/types";
   import type { ChartFieldInput } from "@rilldata/web-common/features/canvas/inspector/types";
   import { List } from "lucide-svelte";
 
@@ -14,13 +17,19 @@
 
   let isCustomSortDropdownOpen = false;
 
-  const sortOptions = [
-    { label: "Ascending", value: "x" },
-    { label: "Descending", value: "-x" },
+  const sortOptions: { label: string; value: ChartSortDirectionOptions }[] = [
+    { label: "X-axis ascending", value: "x" },
+    { label: "X-axis descending", value: "-x" },
     { label: "Y-axis ascending", value: "y" },
     { label: "Y-axis descending", value: "-y" },
+    { label: "Color ascending", value: "color" },
+    { label: "Color descending", value: "-color" },
     { label: "Custom", value: "custom" },
   ];
+
+  $: sortOptionsForChart = sortOptions.filter((option) =>
+    sortConfig?.options?.includes(option.value),
+  );
 
   $: sortValue = fieldConfig.sort
     ? typeof fieldConfig.sort === "string"
@@ -62,7 +71,7 @@
         size="sm"
         id="sort-select"
         width={190}
-        options={sortOptions}
+        options={sortOptionsForChart}
         value={sortValue}
         on:change={handleSortChange}
       />

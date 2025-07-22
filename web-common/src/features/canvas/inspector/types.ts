@@ -1,6 +1,6 @@
 import type {
   ChartLegend,
-  ChartSortDirection,
+  ChartSortDirectionOptions,
 } from "@rilldata/web-common/features/canvas/components/charts/types";
 import type { ComponentAlignment } from "@rilldata/web-common/features/canvas/components/types";
 
@@ -25,7 +25,7 @@ export type SortSelectorConfig = {
   enable: boolean;
   customSortItems?: string[];
   defaultSort?: string;
-  options?: ChartSortDirection[] | "custom";
+  options?: ChartSortDirectionOptions[];
 };
 
 export type ChartFieldInput = {
