@@ -10,6 +10,66 @@ import {
 import type { ChartDataResult } from "../types";
 import type { HeatmapChartSpec } from "./HeatmapChart";
 
+function createHeatmapSortEncoding(
+  axisType: "x" | "y",
+  config: HeatmapChartSpec,
+) {
+  const axisConfig = config[axisType];
+
+  if (!axisConfig || axisConfig.type !== "nominal") {
+    return undefined;
+  }
+
+  const sort = axisConfig.sort;
+
+  if (Array.isArray(sort)) {
+    return sort;
+  }
+  if (!sort) {
+    return undefined;
+  }
+
+  let sortField: string | undefined;
+  let sortOrder: "ascending" | "descending" = "descending";
+
+  switch (sort) {
+    case "x":
+    case "-x":
+      sortField = config.x?.field;
+      sortOrder = sort === "-x" ? "descending" : "ascending";
+      break;
+    case "y":
+    case "-y":
+      sortField = config.y?.field;
+      sortOrder = sort === "-y" ? "descending" : "ascending";
+      break;
+    case "color":
+    case "-color":
+      sortField = config.color?.field;
+      sortOrder = sort === "-color" ? "descending" : "ascending";
+      break;
+    default:
+      return undefined;
+  }
+
+  if (!sortField) {
+    return undefined;
+  }
+
+  if (sort === "color" || sort === "-color") {
+    return {
+      op: "sum" as const,
+      field: sortField,
+      order: sortOrder,
+    };
+  }
+
+  return {
+    field: sortField,
+    order: sortOrder,
+  };
+}
+
 export function generateVLHeatmapSpec(
   config: HeatmapChartSpec,
   data: ChartDataResult,
@@ -38,18 +98,14 @@ export function generateVLHeatmapSpec(
   const xEncoding = createPositionEncoding(config.x, data);
   const yEncoding = createPositionEncoding(config.y, data);
 
-  if (config.x?.type === "nominal" && config.color?.field) {
-    xEncoding.sort = {
-      op: "sum",
-      field: config.color.field,
-      order: "descending",
-    };
-  } else if (config.y?.type === "nominal" && config.color?.field) {
-    yEncoding.sort = {
-      op: "sum",
-      field: config.color.field,
-      order: "descending",
-    };
+  const xSort = createHeatmapSortEncoding("x", config);
+  if (xSort !== undefined) {
+    xEncoding.sort = xSort;
+  }
+
+  const ySort = createHeatmapSortEncoding("y", config);
+  if (ySort !== undefined) {
+    yEncoding.sort = ySort;
   }
 
   // Add transform to calculate threshold for text color - using 75th percentile for better contrast

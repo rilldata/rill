@@ -128,7 +128,8 @@ export class HeatmapChartComponent extends BaseChart<HeatmapChartSpec> {
           !!timeRange?.start &&
           !!timeRange?.end &&
           !!config.x?.field &&
-          config?.x?.type !== "temporal";
+          config?.x?.type !== "temporal" &&
+          !Array.isArray(config.x?.sort);
 
         const xWhere = getFilterWithNullHandling(where, config.x);
 
@@ -168,7 +169,8 @@ export class HeatmapChartComponent extends BaseChart<HeatmapChartSpec> {
           !!timeRange?.start &&
           !!timeRange?.end &&
           !!config.y?.field &&
-          config?.y?.type !== "temporal";
+          config?.y?.type !== "temporal" &&
+          !Array.isArray(config.y?.sort);
 
         const yWhere = getFilterWithNullHandling(where, config.y);
 
@@ -212,8 +214,12 @@ export class HeatmapChartComponent extends BaseChart<HeatmapChartSpec> {
         const enabled =
           !!timeRange?.start &&
           !!timeRange?.end &&
-          (config.x?.type === "nominal" ? !!xTopNData?.length : true) &&
-          (config.y?.type === "nominal" ? !!yTopNData?.length : true);
+          (config.x?.type === "nominal" && !Array.isArray(config.x?.sort)
+            ? !!xTopNData?.length
+            : true) &&
+          (config.y?.type === "nominal" && !Array.isArray(config.y?.sort)
+            ? !!yTopNData?.length
+            : true);
 
         let combinedWhere: V1Expression | undefined = where;
 
