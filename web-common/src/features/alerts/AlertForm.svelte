@@ -51,6 +51,7 @@
   import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state.ts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors.ts";
+  import { convertFormValuesToCronExpression } from "@rilldata/web-common/features/scheduled-reports/time-utils.ts";
   import { getFiltersAndTimeControlsFromAggregationRequest } from "@rilldata/web-common/features/scheduled-reports/utils.ts";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
@@ -170,6 +171,13 @@
   let currentTabIndex = 0;
 
   async function handleSubmit(values: AlertFormValues) {
+    const refreshCron = convertFormValuesToCronExpression(
+      values.frequency,
+      values.dayOfWeek,
+      values.timeOfDay,
+      values.dayOfMonth,
+    );
+
     await $mutation.mutateAsync({
       organization,
       project,
@@ -196,6 +204,8 @@
           emailRecipients: values.enableEmailNotification
             ? values.emailRecipients.filter(Boolean)
             : undefined,
+          refreshCron: !values.refreshWhenDataRefreshes ? refreshCron : "", // for testing: "* * * * *"
+          refreshTimeZone: values.timeZone,
           renotify: !!values.snooze,
           renotifyAfterSeconds: values.snooze ? Number(values.snooze) : 0,
           webOpenPath: `/explore/${encodeURIComponent(exploreName)}`,
@@ -237,6 +247,7 @@
   $: measure = $form.measure;
   function measureUpdated(mes: string) {
     $form.criteria.forEach((c) => (c.measure = mes));
+    $form.criteria = [...$form.criteria];
   }
   $: measureUpdated(measure);
 
@@ -305,7 +316,7 @@
         <AlertDialogCriteriaTab {superFormInstance} {filters} {timeControls} />
       </DialogTabs.Content>
       <DialogTabs.Content {currentTabIndex} tabIndex={2} value={tabs[2]}>
-        <AlertDialogDeliveryTab {superFormInstance} />
+        <AlertDialogDeliveryTab {superFormInstance} {exploreName} />
       </DialogTabs.Content>
     </div>
   </DialogTabs.Root>

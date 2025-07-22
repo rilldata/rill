@@ -42989,6 +42989,10 @@ func (m *AlertOptions) validate(all bool) error {
 
 	// no validation rules for DisplayName
 
+	// no validation rules for RefreshCron
+
+	// no validation rules for RefreshTimeZone
+
 	// no validation rules for IntervalDuration
 
 	// no validation rules for Resolver

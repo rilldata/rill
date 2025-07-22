@@ -12,7 +12,7 @@ import TabItem from '@theme/TabItem';
 
 Rill's strategy for fast dashboards is threefold:
 
-1) *Define metrics & dimensions up front*, and use these definitions to automatically aggregate and prune the raw tables. This modest modeling pain yields a massive gain: the data footprint of aggregated metrics is typically 10–100x smaller than the underlying raw events in data lakes or warehouses.
+1) *Define metrics & dimensions up front*, and use these definitions to automatically aggregate and prune the raw tables. This modest modeling pain yields massive gains: the data footprint of aggregated metrics is typically 10–100x smaller than the underlying raw events in data lakes or warehouses.
 
 2) *Use an integrated OLAP database* to drive dashboards, by orchestrating (and aggregating, per above) data out of cloud data warehouses, lakehouses, or object stores.
 

@@ -16,10 +16,24 @@ func IsInit(ctx context.Context, repo drivers.RepoStore, instanceID string) bool
 
 // InitEmpty initializes an empty project
 func InitEmpty(ctx context.Context, repo drivers.RepoStore, instanceID, displayName string) error {
-	mockUsersInfo := "# These are example mock users to test your security policies.\n# Learn more: https://docs.rilldata.com/manage/security"
-	mockUsers := "mock_users:\n- email: john@yourcompany.com\n- email: jane@partnercompany.com"
-	olapConnector := "olap_connector: duckdb\n\n# Learn more: https://docs.rilldata.com/reference/olap-engines"
-	rillYAML := fmt.Sprintf("compiler: %s\n\ndisplay_name: %q\n\n%s\n%s\n\n%s", Version, displayName, mockUsersInfo, mockUsers, olapConnector)
+	// If display name doesn't start with a letter, quote it
+	if displayName[0] < 'a' || displayName[0] > 'Z' {
+		displayName = fmt.Sprintf("%q", displayName)
+	}
+
+	rillYAML := fmt.Sprintf(`compiler: %s
+
+display_name: %s
+
+# The project's default OLAP connector.
+# Learn more: https://docs.rilldata.com/reference/olap-engines
+olap_connector: duckdb 
+
+# These are example mock users to test your security policies.\n# Learn more: https://docs.rilldata.com/manage/security
+mock_users:
+- email: john@yourcompany.com
+- email: jane@partnercompany.com
+`, Version, displayName)
 
 	err := repo.Put(ctx, "rill.yaml", strings.NewReader(rillYAML))
 	if err != nil {
@@ -37,5 +51,10 @@ func InitEmpty(ctx context.Context, repo drivers.RepoStore, instanceID, displayN
 		return err
 	}
 
+	duckdbYAML := "type: connector\ndriver: duckdb"
+	err = repo.Put(ctx, "connectors/duckdb.yaml", strings.NewReader(duckdbYAML))
+	if err != nil {
+		return err
+	}
 	return nil
 }

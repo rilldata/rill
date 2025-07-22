@@ -29,7 +29,7 @@ After running the command, Rill Developer should automatically open in your defa
 localhost:9009
 ``` 
 
-You should see the folowing webpage appear. 
+You should see the following webpage appear. 
 
 <img src = '/img/tutorials/rill-basics/new-rill-project.png' class='rounded-gif' />
 <br />

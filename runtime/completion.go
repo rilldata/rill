@@ -209,7 +209,7 @@ func (r *Runtime) processExploreDashboardContext(ctx context.Context, instanceID
 	metricsViewName := explore.State.ValidSpec.MetricsView
 
 	// Get specific metrics view details
-	metricsViewResult, err := toolService.ExecuteTool(ctx, "get_metrics_view", map[string]any{
+	metricsViewSpec, err := toolService.ExecuteTool(ctx, "get_metrics_view", map[string]any{
 		"metrics_view": metricsViewName,
 	})
 	if err != nil {
@@ -217,34 +217,31 @@ func (r *Runtime) processExploreDashboardContext(ctx context.Context, instanceID
 	}
 
 	// Get time range information for the metrics view
-	timeRangeResult, err := toolService.ExecuteTool(ctx, "query_metrics_view_time_range", map[string]any{
+	timeRangeSummary, err := toolService.ExecuteTool(ctx, "query_metrics_view_time_range", map[string]any{
 		"metrics_view": metricsViewName,
 	})
 	if err != nil {
 		return nil, err
 	}
 
+	// Find instance-wide AI context
+	var aiInstructions string
+	instance, err := r.Instance(ctx, instanceID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get instance %q: %w", instanceID, err)
+	}
+	if instance.AIInstructions != "" {
+		aiInstructions = instance.AIInstructions
+	}
+
+	// Build the system prompt
+	systemPrompt := buildExploreDashboardSystemPrompt(dashboardName, metricsViewName, metricsViewSpec, timeRangeSummary, aiInstructions)
+
 	return []*runtimev1.Message{{
 		Role: "system",
 		Content: []*aiv1.ContentBlock{{
 			BlockType: &aiv1.ContentBlock_Text{
-				Text: fmt.Sprintf(`You are a data analyst designed to be helpful, insightful, and accurate. Your role is to assist users in understanding their data by answering questions, identifying trends, performing calculations, and providing actionable insights.
-
-## Current Context
-The user is actively viewing the '%s' explore dashboard. When they refer to "this dashboard," "the current view," or similar contextual references, they are referring to this dashboard.
-
-**IMPORTANT: This dashboard is based on the "%s" metrics view. Every invocation of the "query_metrics_view" tool must include "metrics_view": "%s" in the payload.**
-
-## Metrics View Details:
-%s
-
-## Time Range Information:
-%s
-
-## Your Capabilities
-You can use "query_metrics_view" to run queries and get aggregated results from this metrics view. The metrics view spec above shows all available dimensions and measures, and the time range information shows what time periods are available for analysis. Use this information to craft meaningful queries that answer the user's questions and provide valuable insights.
-
-If a response contains an "ai_instructions" field, interpret it as additional instructions for how to behave in subsequent responses related to that tool call.`, dashboardName, metricsViewName, metricsViewName, metricsViewResult, timeRangeResult),
+				Text: systemPrompt,
 			},
 		}},
 	}}, nil
@@ -619,6 +616,47 @@ func (r *Runtime) addMessage(ctx context.Context, instanceID, conversationID, ro
 	}
 
 	return catalog.InsertMessage(ctx, conversationID, role, catalogContent)
+}
+
+// buildExploreDashboardSystemPrompt constructs the system prompt for explore dashboard context
+func buildExploreDashboardSystemPrompt(dashboardName, metricsViewName string, metricsViewSpec, timeRangeSummary any, aiInstructions string) string {
+	var prompt strings.Builder
+
+	// 1. WHO: Establish the AI's role and purpose
+	prompt.WriteString("You are a data analyst designed to be helpful, insightful, and accurate. ")
+	prompt.WriteString("Your role is to assist users in understanding their data by answering questions, identifying trends, performing calculations, and providing actionable insights.\n\n")
+
+	// 2. WHERE: Set the current context and location
+	prompt.WriteString("## Current Context\n")
+	prompt.WriteString(fmt.Sprintf("The user is actively viewing the %q explore dashboard. ", dashboardName))
+	prompt.WriteString("When they refer to \"this dashboard,\" \"the current view,\" or similar contextual references, they are referring to this dashboard.\n\n")
+
+	// 3. WHAT: Describe the available data and constraints
+	prompt.WriteString("## Available Data\n")
+	prompt.WriteString(fmt.Sprintf("This dashboard is based on the %q metrics view.\n\n", metricsViewName))
+
+	prompt.WriteString("### Metrics View Details:\n")
+	prompt.WriteString(fmt.Sprintf("%v\n\n", metricsViewSpec))
+	prompt.WriteString("*Note: If the metrics view spec above contains an \"ai_instructions\" field, follow those instructions for all queries related to this data.*\n\n")
+
+	prompt.WriteString("### Time Range Information:\n")
+	prompt.WriteString(fmt.Sprintf("%v\n\n", timeRangeSummary))
+
+	// 4. HOW: Describe the AI's capabilities
+	prompt.WriteString("## Your Capabilities\n")
+	prompt.WriteString("You can use \"query_metrics_view\" to run queries and get aggregated results from this metrics view. ")
+	prompt.WriteString("The metrics view spec above shows all available dimensions and measures, and the time range information shows what time periods are available for analysis. ")
+	prompt.WriteString("Use this information to craft meaningful queries that answer the user's questions and provide valuable insights.\n\n")
+
+	prompt.WriteString(fmt.Sprintf("**IMPORTANT: Every invocation of the \"query_metrics_view\" tool must include \"metrics_view\": %q in the payload.**\n\n", metricsViewName))
+
+	// 5. CUSTOMIZE: Provide user-specific instructions
+	if aiInstructions != "" {
+		prompt.WriteString("## Additional Instructions (provided by the Rill project developer)\n")
+		prompt.WriteString(aiInstructions)
+	}
+
+	return prompt.String()
 }
 
 // maybeTruncateConversation keeps recent messages and a few early ones for context.
