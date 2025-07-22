@@ -4,8 +4,8 @@ import { useExploreState } from "@rilldata/web-common/features/dashboards/stores
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import { getValidComparisonOption } from "@rilldata/web-common/features/dashboards/time-controls/time-range-store";
 import { getOrderedStartEnd } from "@rilldata/web-common/features/dashboards/time-series/utils";
-import { normaliseRillTime } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser";
 import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
+import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
 import {
   getComparionRangeForScrub,
   getComparisonRange,
@@ -36,12 +36,11 @@ import {
   type V1MetricsViewSpec,
   type V1MetricsViewTimeRangeResponse,
   V1TimeGrain,
-  type V1TimeRange,
   type V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
 import type { QueryObserverResult } from "@tanstack/svelte-query";
 import type { Readable } from "svelte/store";
-import { derived } from "svelte/store";
+import { derived, get } from "svelte/store";
 import { memoizeMetricsStore } from "../state-managers/memoize-metrics-store";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 
@@ -140,6 +139,7 @@ export function getTimeControlState(
   exploreSpec: V1ExploreSpec,
   timeRangeSummary: V1TimeRangeSummary | undefined,
   exploreState: Partial<ExploreState>,
+  skipGrainValidation = false,
 ) {
   const hasTimeSeries = Boolean(metricsViewSpec.timeDimension);
   const timeDimension = metricsViewSpec.timeDimension;
@@ -176,6 +176,7 @@ export function getTimeControlState(
     selectedTimezone,
     defaultTimeRange,
     minTimeGrain,
+    skipGrainValidation,
   );
   if (!timeRangeState) {
     return undefined;
@@ -266,11 +267,16 @@ export function calculateTimeRangePartial(
   );
   if (!selectedTimeRange) return undefined;
 
-  selectedTimeRange.interval = getTimeGrain(
-    currentSelectedTimeRange,
-    selectedTimeRange,
-    minTimeGrain,
-  );
+  // Temporary for the new rill-time UX to work.
+  // We can select grains that are outside allowed grains in controls behind the "rillTime" flag.
+  const skipGrainValidation = get(featureFlags.rillTime);
+  selectedTimeRange.interval =
+    !skipGrainValidation ||
+    !currentSelectedTimeRange.interval ||
+    currentSelectedTimeRange.interval === V1TimeGrain.TIME_GRAIN_UNSPECIFIED
+      ? getTimeGrain(currentSelectedTimeRange, selectedTimeRange, minTimeGrain)
+      : currentSelectedTimeRange.interval;
+
   const { start: adjustedStart, end: adjustedEnd } = getAdjustedFetchTime(
     selectedTimeRange.start,
     selectedTimeRange.end,
@@ -540,18 +546,4 @@ export function selectedTimeRangeSelector([
     allTimeRange,
     defaultTimeRange,
   );
-}
-
-export function findTimeRange(
-  name: string,
-  timeRanges: V1TimeRange[],
-): DashboardTimeControls | undefined {
-  const normalisedName = normaliseRillTime(name);
-  const tr = timeRanges.find((tr) => tr.expression === normalisedName);
-  if (!tr) return undefined;
-  return {
-    name: name as TimeRangePreset,
-    start: new Date(tr.start ?? ""),
-    end: new Date(tr.end ?? ""),
-  };
 }

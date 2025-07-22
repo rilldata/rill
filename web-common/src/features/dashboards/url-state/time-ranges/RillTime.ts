@@ -554,7 +554,7 @@ export class RillAbsoluteTime implements RillPointInTimeVariant {
   }
 
   public static postProcessor(args: string[]) {
-    return new RillAbsoluteTime(args.join(""));
+    return new RillAbsoluteTime(args.flat().join(""));
   }
 
   public getGrain(): V1TimeGrain | undefined {

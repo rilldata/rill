@@ -6,17 +6,9 @@ const compiledGrammar = nearley.Grammar.fromCompiled(grammar);
 export function parseRillTime(rillTimeRange: string): RillTime {
   const parser = new nearley.Parser(compiledGrammar);
   parser.feed(rillTimeRange);
-  return parser.results[0] as RillTime;
-}
-
-export function normaliseRillTime(rillTimeRange: string) {
-  let normalisedRillTime = rillTimeRange;
-  try {
-    normalisedRillTime = parseRillTime(rillTimeRange).toString();
-  } catch {
-    // validation doesnt happen here
-  }
-  return normalisedRillTime;
+  const rt = parser.results[0] as RillTime;
+  if (!rt) throw new Error("Unknown error");
+  return rt;
 }
 
 export function validateRillTime(rillTime: string): Error | undefined {
