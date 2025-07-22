@@ -3505,16 +3505,6 @@ export class CreateProjectRequest extends Message<CreateProjectRequest> {
   provisioner = "";
 
   /**
-   * @generated from field: string prod_olap_driver = 6;
-   */
-  prodOlapDriver = "";
-
-  /**
-   * @generated from field: string prod_olap_dsn = 7;
-   */
-  prodOlapDsn = "";
-
-  /**
    * @generated from field: int64 prod_slots = 8;
    */
   prodSlots = protoInt64.zero;
@@ -3568,8 +3558,6 @@ export class CreateProjectRequest extends Message<CreateProjectRequest> {
     { no: 3, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "public", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 5, name: "provisioner", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 6, name: "prod_olap_driver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 7, name: "prod_olap_dsn", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "prod_slots", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 12, name: "subpath", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 9, name: "prod_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
@@ -14575,16 +14563,6 @@ export class Project extends Message<Project> {
   archiveAssetId = "";
 
   /**
-   * @generated from field: string prod_olap_driver = 10;
-   */
-  prodOlapDriver = "";
-
-  /**
-   * @generated from field: string prod_olap_dsn = 11;
-   */
-  prodOlapDsn = "";
-
-  /**
    * @generated from field: int64 prod_slots = 12;
    */
   prodSlots = protoInt64.zero;
@@ -14652,8 +14630,6 @@ export class Project extends Message<Project> {
     { no: 17, name: "subpath", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 9, name: "prod_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 23, name: "archive_asset_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 10, name: "prod_olap_driver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 11, name: "prod_olap_dsn", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 12, name: "prod_slots", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 13, name: "prod_deployment_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 25, name: "dev_slots", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
@@ -16178,6 +16154,16 @@ export class AlertOptions extends Message<AlertOptions> {
   displayName = "";
 
   /**
+   * @generated from field: string refresh_cron = 16;
+   */
+  refreshCron = "";
+
+  /**
+   * @generated from field: string refresh_time_zone = 17;
+   */
+  refreshTimeZone = "";
+
+  /**
    * @generated from field: string interval_duration = 2;
    */
   intervalDuration = "";
@@ -16264,6 +16250,8 @@ export class AlertOptions extends Message<AlertOptions> {
   static readonly typeName = "rill.admin.v1.AlertOptions";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 16, name: "refresh_cron", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 17, name: "refresh_time_zone", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "interval_duration", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 13, name: "resolver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 14, name: "resolver_properties", kind: "message", T: Struct },

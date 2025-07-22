@@ -7,6 +7,7 @@ import { createAndExpression } from "@rilldata/web-common/features/dashboards/st
 import { Filters } from "@rilldata/web-common/features/dashboards/stores/Filters.ts";
 import { ExploreMetricsViewMetadata } from "@rilldata/web-common/features/dashboards/stores/ExploreMetricsViewMetadata.ts";
 import { TimeControls } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
+import { getInitialScheduleFormValues } from "@rilldata/web-common/features/scheduled-reports/time-utils.ts";
 import { V1Operation } from "@rilldata/web-common/runtime-client";
 
 export function getNewAlertInitialFormValues(
@@ -37,6 +38,8 @@ export function getNewAlertInitialFormValues(
     criteriaOperation: V1Operation.OPERATION_AND,
     snooze: SnoozeOptions[0].value, // Defaults to `Off`
 
+    refreshWhenDataRefreshes: true,
+    ...getInitialScheduleFormValues(),
     enableSlackNotification: false,
     slackChannels: [""],
     slackUsers: [user?.email ?? "", ""],

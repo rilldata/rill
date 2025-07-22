@@ -207,6 +207,53 @@ func (c *Connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 	return res, nil
 }
 
+func (c *Connection) QuerySchema(ctx context.Context, query string, args []any) (*runtimev1.StructType, error) {
+	// ClickHouse does not return schema with LIMIT 0, so we need to wrap query inside DESCRIBE to explicitly get the schema. describe_compact_output returns only name and type.
+	query = fmt.Sprintf("DESCRIBE (%s) SETTINGS describe_compact_output=1", query)
+
+	if c.config.LogQueries {
+		c.logger.Info("clickhouse query", zap.String("sql", c.Dialect().SanitizeQueryForLogging(query)), zap.Any("args", args))
+	}
+
+	conn, release, err := c.acquireOLAPConn(ctx, 0)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = release() }()
+
+	ctx, cancelFunc := context.WithTimeout(ctx, drivers.DefaultQuerySchemaTimeout)
+	defer cancelFunc()
+
+	rows, err := conn.QueryxContext(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	schema := &runtimev1.StructType{}
+	var name, cType string
+	for rows.Next() {
+		if err = rows.Scan(&name, &cType); err != nil {
+			return nil, fmt.Errorf("failed to scan schema: %w", err)
+		}
+		// Convert ClickHouse data type to runtimev1.StructType_Field_Type
+		t, err := databaseTypeToPB(cType, false)
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert clickHouse type '%s': %w", cType, err)
+		}
+		schema.Fields = append(schema.Fields, &runtimev1.StructType_Field{
+			Name: name,
+			Type: t,
+		})
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error scanning schema: %w", err)
+	}
+
+	return schema, nil
+}
+
 func (c *Connection) InformationSchema() drivers.OLAPInformationSchema {
 	return c
 }

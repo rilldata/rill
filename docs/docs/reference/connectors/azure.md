@@ -8,18 +8,18 @@ sidebar_position: 3
 <!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->
 
 ## Overview
-[Azure Blob Storage (ABS)](https://learn.microsoft.com/en-us/azure/storage/blobs/storage-blobs-introduction) is a scalable, fully managed, and highly reliable object storage solution offered by Microsoft Azure, designed to store and access data from anywhere in the world. It provides a secure and cost-effective way to store data, including common storage formats for data such as CSV and parquet. Rill supports connecting to and reading from Azure Blob Storage using the following Resource URI syntax:
+[Azure Blob Storage (ABS)](https://learn.microsoft.com/en-us/azure/storage/blobs/storage-blobs-introduction) is a scalable, fully managed, and highly reliable object storage solution offered by Microsoft Azure, designed to store and access data from anywhere in the world. It provides a secure and cost-effective way to store data, including common storage formats such as CSV and Parquet. Rill supports connecting to and reading from Azure Blob Storage using the following Resource URI syntax:
 
 ```bash
 azure://<BUCKET>/<GLOB_PATTERN>
 ```
 
-<img src = '/img/reference/connectors/azure/abs.png' class='centered' />
+<img src='/img/reference/connectors/azure/abs.png' class='centered' />
 <br />
 
 ## Local credentials
 
-When using Rill Developer on your local machine (i.e. `rill start`), Rill uses by default the credentials configured in your local environment using the Azure CLI (`az`). Assuming you have the Azure CLI installed, follow the steps below to configure it:
+When using Rill Developer on your local machine (i.e., `rill start`), Rill uses by default the credentials configured in your local environment using the Azure CLI (`az`). Assuming you have the Azure CLI installed, follow the steps below to configure it:
 
 1. Open a terminal window and run the following command to log in to your Azure account:
 
@@ -79,17 +79,17 @@ As another alternative, you can configure credentials using a Shared Access Sign
 
 :::tip Did you know?
 
-If this project has already been deployed to Rill Cloud and credentials have been set for this source, you can use `rill env pull` to [pull these cloud credentials](/build/credentials/credentials.md#rill-env-pull) locally (into your local `.env` file). Please note that this may override any credentials that you have set locally for this source.
+If this project has already been deployed to Rill Cloud and credentials have been set for this source, you can use `rill env pull` to [pull these cloud credentials](/build/credentials/credentials.md#rill-env-pull) locally (into your local `.env` file). Please note that this may override any credentials you have set locally for this source.
 
 :::
 
 ## Cloud deployment
 
-When deploying a project to Rill Cloud, Rill requires either an Azure Blob Storage connection string, Azure Storage Key, or Azure Storage SAS token to be explicitly provided for the Azure Blob Storage containers used in your project. 
+When deploying a project to Rill Cloud, Rill requires either an Azure Blob Storage connection string, Azure Storage Key, or Azure Storage SAS token to be explicitly provided for the Azure Blob Storage containers used in your project.
 
 When you first deploy a project using `rill deploy`, you will be prompted to provide credentials for the remote sources in your project that require authentication.
 
-If you subsequently add sources that require new credentials (or if you input the wrong credentials during the initial deploy), you can update the credentials used by Rill Cloud by running:
+If you subsequently add sources that require new credentials (or if you enter the wrong credentials during the initial deploy), you can update the credentials used by Rill Cloud by running:
 
 ```bash
 rill env configure
@@ -97,12 +97,12 @@ rill env configure
 
 :::info
 
-Note that you must `cd` into the Git repository that your project was deployed from before running `rill env configure`.
+Note that you must `cd` into the Git repository from which your project was deployed before running `rill env configure`.
 
 :::
 
 :::tip Did you know?
 
-If you've configured credentials locally already (in your `<RILL_PROJECT_DIRECTORY>/.env` file), you can use `rill env push` to [push these credentials](/build/credentials/credentials.md#rill-env-push) to your Rill Cloud project. This will allow other users to retrieve / reuse the same credentials automatically by running `rill env pull`.
+If you've already configured credentials locally (in your `<RILL_PROJECT_DIRECTORY>/.env` file), you can use `rill env push` to [push these credentials](/build/credentials/credentials.md#rill-env-push) to your Rill Cloud project. This will allow other users to retrieve and reuse the same credentials automatically by running `rill env pull`.
 
 :::

@@ -112,7 +112,6 @@ var spec = drivers.Spec{
 			Type:        drivers.StringPropertyType,
 			DisplayName: "Login Endpoint",
 			Required:    false,
-			Default:     "login.salesforce.com",
 			Placeholder: "login.salesforce.com",
 			Hint:        "The Salesforce login URL (e.g., login.salesforce.com or test.salesforce.com for sandboxes).",
 		},
@@ -123,6 +122,7 @@ var spec = drivers.Spec{
 			Required:    false,
 			Default:     defaultClientID,
 			Hint:        "The client ID (consumer key) from your Salesforce Connected App. Required for JWT authentication.",
+			NoPrompt:    true,
 		},
 		{
 			Key:         "name",

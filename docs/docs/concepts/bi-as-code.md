@@ -44,7 +44,7 @@ This approach allows engineering teams to maintain control over their analytics 
 
 ### Developer Experience
 - Use familiar tools and workflows (Git, CLI, IDEs)
-- Write [SQL for last-mile ETL](/build/models/)
+- Write SQL for last-mile ETL
 - Maintain analytics as part of your codebase
 - Leverage existing development practices
 

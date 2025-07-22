@@ -59,7 +59,7 @@ Rill Developer is an extremely strong tool for deep-diving into your data, as it
 
 ## Rill Developer
 
-Rill Developer is designed around developers. Using a familiar IDE-like interface, developers are able to import data, create SQL models, and create metric-views. Many of the underlying files in Rill Developer are either SQL or YAML files. Once data is imported into Rill (and the underlying OLAP engine), developers are able to perform last-mile ETL changes using one or a series of SQL models (as their own [DAG](https://en.wikipedia.org/wiki/Directed_acyclic_graph#:~:text=A%20directed%20acyclic%20graph%20is,a%20path%20with%20zero%20edges)). You can then create and materialize your ["One Big Table"](../build/models/models.md) for your dashboard needs. Finally, any specifications for your dimensions and measures can be defined and tested in Developer's dashboard preview.
+Rill Developer is designed around developers. Using a familiar IDE-like interface, developers are able to import data, create SQL models, and create metrics views. Many of the underlying files in Rill Developer are either SQL or YAML files. Once data is imported into Rill (and the underlying OLAP engine), developers are able to perform last-mile ETL changes using one or a series of SQL models (as their own [DAG](https://en.wikipedia.org/wiki/Directed_acyclic_graph#:~:text=A%20directed%20acyclic%20graph%20is,a%20path%20with%20zero%20edges)). You can then create and materialize your ["One Big Table"](../build/models/models.md) for your dashboard needs. Finally, any specifications for your dimensions and measures can be defined and tested in Developer's dashboard preview.
 
 <img src = '/img/concepts/rcvsrd/empty-project.png' class='rounded-gif' />
 <br />
@@ -73,7 +73,7 @@ Once the dashboard has been [deployed to Rill Cloud](../deploy/deploy-dashboard/
 <img src = '/img/concepts/rcvsrd/rill-cloud-projects.png' class='rounded-gif' />
 <br />
 
- After selecting a specific project, they will be directed to a list of dashboards. From Rill Cloud, the dashboard consumer does not have the ability to make any modifications to sources or models. However, they are given some additional capabilities that are not accessible in Rill Developer, such as alerting, creating bookmarks or sharable public URLs, checking the project status, and more.
+ After selecting a specific project, they will be directed to a list of dashboards. From Rill Cloud, the dashboard consumer does not have the ability to make any modifications to sources or models. However, they are given some additional capabilities that are not accessible in Rill Developer, such as alerting, creating bookmarks or shareable public URLs, checking the project status, and more.
 
  :::info Dashboard 101
 
