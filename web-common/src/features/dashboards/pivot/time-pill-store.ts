@@ -26,13 +26,10 @@ export interface TimeControlsInfo {
   minTimeGrain?: V1TimeGrain;
 }
 
-// Base store for time grain state
 const timePillStore = writable<TimePillStoreState>({});
 
-// Store for time controls info (start, end, minGrain)
 const timeControlsInfo = writable<TimeControlsInfo | null>(null);
 
-// Derived store that computes available grains and other computed properties
 export const timePills = derived(
   [timePillStore, timeControlsInfo],
   ([pillState, timeControls]) => {
@@ -82,9 +79,7 @@ export const timePills = derived(
   },
 );
 
-// Actions to manage the store
 export const timePillActions = {
-  // Initialize or update time controls
   setTimeControls(
     timeStart: string,
     timeEnd: string,
@@ -95,15 +90,21 @@ export const timePillActions = {
 
   // Initialize a time dimension
   initTimeDimension(timeDimension: string, label: string) {
-    timePillStore.update((state) => ({
-      ...state,
-      [timeDimension]: {
-        label,
-        usedGrains: [],
-        availableGrains: [],
-        allGrainsUsed: false,
-      },
-    }));
+    timePillStore.update((state) => {
+      if (state[timeDimension]) {
+        return state;
+      }
+
+      return {
+        ...state,
+        [timeDimension]: {
+          label,
+          usedGrains: [],
+          availableGrains: [],
+          allGrainsUsed: false,
+        },
+      };
+    });
   },
 
   // Update used grains from pivot chips
@@ -119,7 +120,6 @@ export const timePillActions = {
       (chip) => chip.id as AvailableTimeGrain,
     );
 
-    console.log("usedGrains", usedGrains);
     timePillStore.update((state) => ({
       ...state,
       [timeDimensionKey]: {
@@ -130,15 +130,12 @@ export const timePillActions = {
   },
 };
 
-// Helper functions to get specific values
 export const timePillSelectors = {
-  // Get available grains for a specific time dimension
   getAvailableGrains: (timeDimensionKey: string) =>
     derived(
       timePills,
       ($store) => $store[timeDimensionKey]?.availableGrains || [],
     ),
-  // Check if all grains are used for a specific time dimension
   getAllGrainsUsed: (timeDimensionKey: string) =>
     derived(
       timePills,
