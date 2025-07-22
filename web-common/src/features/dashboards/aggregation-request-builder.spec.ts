@@ -1,8 +1,11 @@
+import {
+  aggregationRequestWithRowsAndColumns,
+  buildAggregationRequest,
+} from "@rilldata/web-common/features/dashboards/aggregation-request-builder.ts";
 import { getDimensionTableAggregationRequestForTime } from "@rilldata/web-common/features/dashboards/dimension-table/dimension-table-export.ts";
 import { splitPivotChips } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils.ts";
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores.ts";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state.ts";
-import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
 import {
   AD_BIDS_BID_PRICE_MEASURE,
   AD_BIDS_DOMAIN_DIMENSION,
@@ -29,15 +32,12 @@ import {
   getTimeControlState,
   type TimeControlState,
 } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store.ts";
-import {
-  extractRowsAndColumns,
-  getUpdatedAggregationRequest,
-} from "@rilldata/web-common/features/scheduled-reports/utils.ts";
+import { extractRowsAndColumns } from "@rilldata/web-common/features/scheduled-reports/utils.ts";
 import type { V1MetricsViewAggregationRequest } from "@rilldata/web-common/runtime-client";
 import { get } from "svelte/store";
 import { describe, it, expect } from "vitest";
-import { getTDDAggregationRequest } from "../dashboards/time-dimension-details/tdd-export";
-import { getPivotAggregationRequest } from "../dashboards/pivot/pivot-export";
+import { getTDDAggregationRequest } from "web-common/src/features/dashboards/time-dimension-details/tdd-export.ts";
+import { getPivotAggregationRequest } from "web-common/src/features/dashboards/pivot/pivot-export.ts";
 
 describe("Report rows and columns", () => {
   describe("From dimension table", () => {
@@ -164,16 +164,16 @@ describe("Report rows and columns", () => {
     testCases.forEach((testCase) => {
       it(testCase.title, () => {
         runTest(testCase, (exploreState, timeControlState) =>
-          getDimensionTableAggregationRequestForTime(
-            AD_BIDS_METRICS_NAME,
+          getDimensionTableAggregationRequestForTime({
+            metricsViewName: AD_BIDS_METRICS_NAME,
             exploreState,
-            {
+            timeRange: {
               start: timeControlState.timeStart,
               end: timeControlState.timeEnd,
             },
-            undefined,
-            "",
-          ),
+            comparisonTimeRange: undefined,
+            dimensionSearchText: "",
+          }),
         );
       });
     });
@@ -317,15 +317,15 @@ describe("Report rows and columns", () => {
         runTest(
           testCase,
           (exploreState, timeControlState) =>
-            getTDDAggregationRequest(
-              AD_BIDS_METRICS_NAME,
+            getTDDAggregationRequest({
+              metricsViewName: AD_BIDS_METRICS_NAME,
               exploreState,
               timeControlState,
-              AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
-              AD_BIDS_EXPLORE,
-              "",
-              true,
-            )!,
+              metricsViewSpec: AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
+              exploreSpec: AD_BIDS_EXPLORE,
+              dimensionSearchText: "",
+              isScheduled: true,
+            })!,
         );
       });
     });
@@ -417,21 +417,22 @@ describe("Report rows and columns", () => {
         runTest(
           testCase,
           (exploreState, timeControlState) =>
-            getPivotAggregationRequest(
-              AD_BIDS_METRICS_NAME,
-              AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME.timeDimension!,
+            getPivotAggregationRequest({
+              metricsViewName: AD_BIDS_METRICS_NAME,
+              timeDimension:
+                AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME.timeDimension!,
               exploreState,
-              {
+              timeRange: {
                 start: timeControlState.timeStart,
                 end: timeControlState.timeEnd,
               },
-              exploreState.pivot.rows,
-              splitPivotChips(exploreState.pivot.columns),
-              false,
-              undefined,
-              exploreState.pivot.tableMode === "flat",
-              exploreState.pivot,
-            )!,
+              rows: exploreState.pivot.rows,
+              columns: splitPivotChips(exploreState.pivot.columns),
+              comparisonTime: undefined,
+              enableComparison: false,
+              isFlat: exploreState.pivot.tableMode === "flat",
+              pivotState: exploreState.pivot,
+            })!,
         );
       });
     });
@@ -492,39 +493,38 @@ function runTest(
   expect(rows).toEqual(expectedRows);
   expect(columns).toEqual(expectedColumns);
 
-  const newRequest = getUpdatedAggregationRequest(
-    request,
-    {
-      whereFilter: createAndExpression([]),
-      dimensionThresholdFilters: [],
-      dimensionsWithInlistFilter: [],
-      dimensionFilterExcludeMode: new Map(),
-    },
-    {
+  const newRequest = buildAggregationRequest(request, [
+    aggregationRequestWithRowsAndColumns({
+      exploreSpec: AD_BIDS_EXPLORE,
+      rows: updatedRows,
+      columns: updatedColumns,
       showTimeComparison: false,
       selectedTimezone: exploreState.selectedTimezone,
-    },
-    updatedRows,
-    updatedColumns,
-    AD_BIDS_EXPLORE,
-  );
-  const cleanedNewRequest = cleanAggregationRequestForAssertion(newRequest);
-  expect(cleanedNewRequest).toEqual(expectedRequest);
+    }),
+  ]);
+  // Remove keys that have "undefined" value. Since they are equivalent, we can skip specifying them in expected requests.
+  const cleanedRequest = cleanAggregationRequestForAssertion(newRequest);
+  expect(cleanedRequest).toEqual({
+    ...expectedRequest,
+    // Repeated fields that need not be repeated in expected requests.
+    metricsView: AD_BIDS_METRICS_NAME,
+    instanceId: "",
+    offset: "0",
+  });
 }
 
 function cleanAggregationRequestForAssertion(
   request: V1MetricsViewAggregationRequest,
 ) {
-  const newRequest = {
+  const cleanedRequest = {
     ...request,
   };
 
-  delete newRequest.instanceId;
-  delete newRequest.metricsView;
-  delete newRequest.offset;
-  Object.keys(newRequest).forEach((key) => {
-    if (newRequest[key] === undefined) delete newRequest[key];
+  delete cleanedRequest.timeRange; // Time range is not targeted in the tests.
+
+  Object.keys(cleanedRequest).forEach((key) => {
+    if (cleanedRequest[key] === undefined) delete cleanedRequest[key];
   });
 
-  return newRequest;
+  return cleanedRequest;
 }

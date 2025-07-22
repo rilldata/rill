@@ -28,7 +28,7 @@ export function getPivotExportQuery(ctx: StateManagers, isScheduled: boolean) {
   const metricsViewName = get(ctx.metricsViewName);
   const validSpecStore = get(ctx.validSpecStore);
   const timeControlState = get(useTimeControlStore(ctx));
-  const dashboardState = get(ctx.dashboardStore);
+  const exploreState = get(ctx.dashboardStore);
   const configStore = get(getPivotConfig(ctx));
   const rows = get(ctx.selectors.pivot.rows);
   const columns = get(ctx.selectors.pivot.columns);
@@ -48,7 +48,7 @@ export function getPivotExportQuery(ctx: StateManagers, isScheduled: boolean) {
   if (isScheduled) {
     timeRange = mapSelectedTimeRangeToV1TimeRange(
       timeControlState.selectedTimeRange,
-      dashboardState.selectedTimezone,
+      exploreState.selectedTimezone,
       exploreSpec,
     );
   } else {
@@ -61,10 +61,10 @@ export function getPivotExportQuery(ctx: StateManagers, isScheduled: boolean) {
   if (!timeRange) return undefined;
 
   const query: V1Query = {
-    metricsViewAggregationRequest: getPivotAggregationRequest(
+    metricsViewAggregationRequest: getPivotAggregationRequest({
       metricsViewName,
-      metricsViewSpec.timeDimension ?? "",
-      dashboardState,
+      timeDimension: metricsViewSpec.timeDimension ?? "",
+      exploreState,
       timeRange,
       rows,
       columns,
@@ -72,24 +72,35 @@ export function getPivotExportQuery(ctx: StateManagers, isScheduled: boolean) {
       comparisonTime,
       isFlat,
       pivotState,
-    ),
+    }),
   };
 
   return query;
 }
 
-export function getPivotAggregationRequest(
-  metricsView: string,
-  timeDimension: string,
-  exploreState: ExploreState,
-  timeRange: V1TimeRange,
-  rows: PivotChipData[],
-  columns: { dimension: PivotChipData[]; measure: PivotChipData[] },
-  enableComparison: boolean,
-  comparisonTime: TimeRangeString | undefined,
-  isFlat: boolean,
-  pivotState: PivotState,
-): undefined | V1MetricsViewAggregationRequest {
+export function getPivotAggregationRequest({
+  metricsViewName,
+  timeDimension,
+  exploreState,
+  timeRange,
+  rows,
+  columns,
+  enableComparison,
+  comparisonTime,
+  isFlat,
+  pivotState,
+}: {
+  metricsViewName: string;
+  timeDimension: string;
+  exploreState: ExploreState;
+  timeRange: V1TimeRange;
+  rows: PivotChipData[];
+  columns: { dimension: PivotChipData[]; measure: PivotChipData[] };
+  enableComparison: boolean;
+  comparisonTime: TimeRangeString | undefined;
+  isFlat: boolean;
+  pivotState: PivotState;
+}): undefined | V1MetricsViewAggregationRequest {
   const measures = columns.measure.flatMap((m) => {
     const measureName = m.id;
     const group = [{ name: measureName }];
@@ -166,7 +177,7 @@ export function getPivotAggregationRequest(
 
   return {
     instanceId: get(runtime).instanceId,
-    metricsView,
+    metricsView: metricsViewName,
     timeRange,
     comparisonTimeRange: comparisonTime,
     measures: enableComparison

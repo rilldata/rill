@@ -19,6 +19,12 @@
     createAdminServiceGetCurrentUser,
   } from "@rilldata/web-admin/client";
   import * as Dialog from "@rilldata/web-common/components/dialog";
+  import {
+    aggregationRequestWithFilters,
+    aggregationRequestWithRowsAndColumns,
+    aggregationRequestWithTimeRange,
+    buildAggregationRequest,
+  } from "@rilldata/web-common/features/dashboards/aggregation-request-builder.ts";
   import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors.ts";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors.ts";
   import {
@@ -27,7 +33,6 @@
     getFiltersAndTimeControlsFromAggregationRequest,
     getNewReportInitialFormValues,
     getQueryNameFromQuery,
-    getUpdatedAggregationRequest,
     type ReportValues,
   } from "@rilldata/web-common/features/scheduled-reports/utils";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
@@ -76,16 +81,16 @@
     queryClient,
   );
 
-  const mutation =
+  $: mutation =
     props.mode === "create"
       ? createAdminServiceCreateReport()
       : createAdminServiceEditReport();
 
-  const queryName =
+  $: queryName =
     props.mode === "create"
       ? getQueryNameFromQuery(props.query)
       : props.reportSpec.queryName;
-  const aggregationRequest = (
+  $: aggregationRequest = (
     props.mode === "create"
       ? props.query.metricsViewAggregationRequest
       : JSON.parse(props.reportSpec.queryArgsJson || "{}")
@@ -117,7 +122,7 @@
     }),
   ) as ValidationAdapter<ReportValues>;
 
-  const initialValues =
+  $: initialValues =
     props.mode === "create"
       ? getNewReportInitialFormValues(
           $user.data?.user?.email,
@@ -129,7 +134,7 @@
           aggregationRequest,
         );
 
-  const { form, errors, enhance, submit, submitting } = superForm(
+  $: ({ form, errors, enhance, submit, submitting } = superForm(
     defaults(initialValues, schema),
     {
       id: FORM_ID,
@@ -140,10 +145,13 @@
         const values = form.data;
         return handleSubmit(values);
       },
-      validationMethod: "oninput",
+      // We need to run the 1st validation only after a submit.
+      // But successive validations should be on input.
+      // Here, "auto" achieves this.
+      validationMethod: "auto",
       invalidateAll: false,
     },
-  );
+  ));
 
   async function handleSubmit(values: ReportValues) {
     const refreshCron = convertFormValuesToCronExpression(
@@ -152,13 +160,21 @@
       values.timeOfDay,
       values.dayOfMonth,
     );
-    const updatedQueryJson = getUpdatedAggregationRequest(
+    const filtersState = filters.toState();
+    const timeControlsState = timeControls.toState();
+    const updatedAggregationRequest = buildAggregationRequest(
       aggregationRequest,
-      filters.toState(),
-      timeControls.toState(),
-      values.rows,
-      values.columns,
-      exploreSpec,
+      [
+        aggregationRequestWithTimeRange(exploreSpec, timeControlsState),
+        aggregationRequestWithFilters(filtersState),
+        aggregationRequestWithRowsAndColumns({
+          exploreSpec,
+          rows: values.rows,
+          columns: values.columns,
+          showTimeComparison: timeControlsState.showTimeComparison,
+          selectedTimezone: timeControlsState.selectedTimezone,
+        }),
+      ],
     );
 
     try {
@@ -173,7 +189,7 @@
             refreshTimeZone: values.timeZone,
             explore: exploreName,
             queryName: queryName,
-            queryArgsJson: JSON.stringify(updatedQueryJson),
+            queryArgsJson: JSON.stringify(updatedAggregationRequest),
             exportLimit: values.exportLimit || undefined,
             exportIncludeHeader: values.exportIncludeHeader || false,
             exportFormat: values.exportFormat,
@@ -232,7 +248,7 @@
   }
 </script>
 
-<Dialog.Root bind:open>
+<Dialog.Root bind:open closeOnEscape={false}>
   <Dialog.Content class="min-w-[802px]">
     <Dialog.Title>Schedule report</Dialog.Title>
 

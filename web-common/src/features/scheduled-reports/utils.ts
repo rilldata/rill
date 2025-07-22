@@ -1,34 +1,15 @@
-import {
-  getDimensionNameFromAggregationDimension,
-  getAggregationDimensionFromTimeDimension,
-} from "@rilldata/web-common/features/dashboards/aggregation-request/dimension-utils.ts";
+import { getDimensionNameFromAggregationDimension } from "@rilldata/web-common/features/dashboards/aggregation-request/dimension-utils.ts";
 import { MeasureModifierSuffixRegex } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry.ts";
-import {
-  mergeDimensionAndMeasureFilters,
-  splitWhereFilter,
-} from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils.ts";
-import {
-  COMPARISON_DELTA,
-  COMPARISON_PERCENT,
-  ComparisonModifierSuffixRegex,
-} from "@rilldata/web-common/features/dashboards/pivot/types.ts";
+import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils.ts";
+import { ComparisonModifierSuffixRegex } from "@rilldata/web-common/features/dashboards/pivot/types.ts";
 import { includeExcludeModeFromFilters } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores.ts";
-import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
 import {
-  mapSelectedComparisonTimeRangeToV1TimeRange,
-  mapSelectedTimeRangeToV1TimeRange,
   mapV1TimeRangeToSelectedComparisonTimeRange,
   mapV1TimeRangeToSelectedTimeRange,
 } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers.ts";
 import { getExploreName } from "@rilldata/web-common/features/explore-mappers/utils";
-import {
-  Filters,
-  type FiltersState,
-} from "@rilldata/web-common/features/dashboards/stores/Filters.ts";
-import {
-  TimeControls,
-  type TimeControlState,
-} from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
+import { Filters } from "@rilldata/web-common/features/dashboards/stores/Filters.ts";
+import { TimeControls } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
 import { ExploreMetricsViewMetadata } from "@rilldata/web-common/features/dashboards/stores/ExploreMetricsViewMetadata.ts";
 import {
   getExistingScheduleFormValues,
@@ -39,12 +20,8 @@ import {
   TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types.ts";
 import {
-  type V1ExploreSpec,
   V1ExportFormat,
-  type V1MetricsViewAggregationDimension,
-  type V1MetricsViewAggregationMeasure,
   type V1MetricsViewAggregationRequest,
-  type V1MetricsViewAggregationSort,
   type V1Notifier,
   type V1Query,
   type V1ReportSpec,
@@ -166,92 +143,6 @@ export function getFiltersAndTimeControlsFromAggregationRequest(
   return { filters, timeControls };
 }
 
-export function getUpdatedAggregationRequest(
-  aggregationRequest: V1MetricsViewAggregationRequest,
-  filtersArgs: FiltersState,
-  timeControlArgs: TimeControlState,
-  rows: string[],
-  columns: string[],
-  exploreSpec: V1ExploreSpec,
-): V1MetricsViewAggregationRequest {
-  const timeRange = mapSelectedTimeRangeToV1TimeRange(
-    timeControlArgs.selectedTimeRange,
-    timeControlArgs.selectedTimezone,
-    exploreSpec,
-  );
-  const comparisonTimeRange = mapSelectedComparisonTimeRangeToV1TimeRange(
-    timeControlArgs.selectedComparisonTimeRange,
-    timeControlArgs.showTimeComparison,
-    timeRange,
-  );
-
-  const allFields = new Set<string>([...rows, ...columns]);
-  const isFlat = rows.length === 0;
-  const pivotOn: string[] = [];
-
-  const measures = columns
-    .filter((col) => exploreSpec.measures?.includes(col))
-    .flatMap((measureName) => {
-      const group = [{ name: measureName }];
-
-      if (timeControlArgs.showTimeComparison) {
-        group.push(
-          { name: `${measureName}${COMPARISON_DELTA}` },
-          { name: `${measureName}${COMPARISON_PERCENT}` },
-        );
-      }
-
-      return group;
-    });
-  const dimensions: V1MetricsViewAggregationDimension[] = rows.map((d) =>
-    getAggregationDimensionFromTimeDimension(
-      d,
-      timeControlArgs.selectedTimezone,
-    ),
-  );
-  columns
-    .filter((col) => !exploreSpec.measures?.includes(col))
-    .forEach((col) => {
-      if (exploreSpec.dimensions?.includes(col)) {
-        dimensions.push({ name: col });
-        if (!isFlat) pivotOn.push(col);
-        return;
-      }
-
-      const dimension = getAggregationDimensionFromTimeDimension(
-        col,
-        timeControlArgs.selectedTimezone,
-      );
-      dimensions.push(dimension);
-      if (!isFlat) pivotOn.push(dimension.alias ?? dimension.name!);
-    });
-
-  const sort = getUpdatedAggregationSort(
-    aggregationRequest,
-    measures,
-    dimensions,
-    pivotOn,
-    allFields,
-  );
-
-  return {
-    ...aggregationRequest,
-    measures,
-    dimensions,
-    pivotOn: !pivotOn.length ? undefined : pivotOn,
-    sort,
-    where: sanitiseExpression(
-      mergeDimensionAndMeasureFilters(
-        filtersArgs.whereFilter,
-        filtersArgs.dimensionThresholdFilters,
-      ),
-      undefined,
-    ),
-    timeRange,
-    comparisonTimeRange,
-  };
-}
-
 export function extractRowsAndColumns(
   aggregationRequest: V1MetricsViewAggregationRequest,
 ) {
@@ -318,42 +209,6 @@ function extractNotification(
     enableEmailNotification: isEdit ? !!emailNotifier : true,
     emailRecipients,
   };
-}
-
-function getUpdatedAggregationSort(
-  aggregationRequest: V1MetricsViewAggregationRequest,
-  measures: V1MetricsViewAggregationMeasure[],
-  dimensions: V1MetricsViewAggregationDimension[],
-  pivotOn: string[],
-  allFields: Set<string>,
-) {
-  const hasPivot = pivotOn.length > 0;
-  const sort: V1MetricsViewAggregationSort[] =
-    aggregationRequest.sort?.filter((s) => {
-      if (!allFields.has(s.name!)) return false;
-      if (!hasPivot) return true;
-      // When there is a pivot we cannot sort by measure or the pivoted dimension
-      return (
-        !measures.find((m) => m.name === s.name) && !pivotOn.includes(s.name!)
-      );
-    }) ?? [];
-  if (sort.length === 0) {
-    let sortField: string | undefined = measures?.[0]?.name;
-    let sortFieldIsMeasure = !!sortField;
-    if (!sortField || hasPivot) {
-      const sortDimension = dimensions.find((d) => !pivotOn.includes(d.alias!));
-      sortField = sortDimension?.alias || sortDimension?.name;
-      sortFieldIsMeasure = false;
-    }
-    if (sortField) {
-      sort.push({
-        desc: sortFieldIsMeasure,
-        name: sortField,
-      });
-    }
-  }
-
-  return sort;
 }
 
 function mapAndAddEmptyEntry(entries: string[] | undefined) {

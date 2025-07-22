@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { Button } from "@rilldata/web-common/components/button";
   import { Chip } from "@rilldata/web-common/components/chip";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
@@ -127,14 +128,16 @@
 
     <DropdownMenu.Root bind:open typeahead={false} closeOnItemClick={false}>
       <DropdownMenu.Trigger asChild let:builder>
-        <button
-          aria-label={`Add ${label} fields`}
-          use:builder.action
-          {...builder}
-          class="text-sm px-2 h-6"
+        <Button
+          label={`Add ${label} fields`}
+          active={open}
+          builders={[builder]}
+          class="w-[34px] ml-2 border border-dashed border-slate-300"
+          compact
+          rounded
         >
-          <PlusIcon size="14px" />
-        </button>
+          <PlusIcon size="14px" strokeWidth={3} />
+        </Button>
       </DropdownMenu.Trigger>
 
       <SearchableMenuContent
@@ -147,3 +150,24 @@
     </DropdownMenu.Root>
   </div>
 </div>
+
+<style lang="postcss">
+  button {
+    @apply w-[34px] h-[26px] rounded-2xl;
+    @apply flex items-center justify-center;
+    @apply bg-surface;
+  }
+
+  button.addBorder {
+    @apply border border-dashed border-slate-300;
+  }
+
+  button:hover {
+    @apply bg-slate-100;
+  }
+
+  button:active,
+  .active {
+    @apply bg-slate-200;
+  }
+</style>

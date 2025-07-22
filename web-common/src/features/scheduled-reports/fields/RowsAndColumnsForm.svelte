@@ -1,13 +1,14 @@
 <script lang="ts">
   import FieldList from "@rilldata/web-common/features/scheduled-reports/fields/FieldList.svelte";
   import { getFieldsForExplore } from "@rilldata/web-common/features/scheduled-reports/fields/selectors.ts";
+  import type { ReportValues } from "@rilldata/web-common/features/scheduled-reports/utils.ts";
+  import type { ValidationErrors } from "sveltekit-superforms";
 
   export let rows: string[];
   export let columns: string[];
+  export let columnErrors: ValidationErrors<ReportValues>["columns"];
   export let instanceId: string;
   export let exploreName: string;
-  // Used to highlight missing columns in red. We only want to highlight when the user submits explicitly.
-  export let didSubmit: boolean;
 
   $: selectedFields = new Set([...rows, ...columns]);
 
@@ -19,6 +20,8 @@
   // So we need to disable drag drop and sort existing columns.
   $: disableColumnDragDrop = hasSomeRow;
   $: if (hasSomeRow) sortColumnsMeasuresLast();
+
+  $: hasColumnErrors = Boolean(columnErrors?._errors?.length);
 
   function sortColumnsMeasuresLast() {
     const newColumns = [...columns];
@@ -44,7 +47,7 @@
     label="Rows"
     onUpdate={(newRows) => (rows = newRows)}
   >
-    <div slot="empty-fields" class="text-gray-500">No selected rows</div>
+    <div slot="empty-fields" class="text-gray-500">No rows selected</div>
   </FieldList>
 
   <FieldList
@@ -57,7 +60,7 @@
   >
     <div
       slot="empty-fields"
-      class={didSubmit ? "text-red-600" : "text-gray-500"}
+      class={hasColumnErrors ? "text-red-600" : "text-gray-500"}
     >
       Must select one column
     </div>
