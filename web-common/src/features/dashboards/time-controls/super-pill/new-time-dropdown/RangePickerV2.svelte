@@ -408,6 +408,7 @@
                   onSelectTimeZone={(z) => {
                     onSelectTimeZone(z);
                     closeMenu();
+                    timeZonePickerOpen = false;
                   }}
                 />
               </Popover.Content>
