@@ -35,8 +35,6 @@ import (
 // Default instance config on local.
 const (
 	DefaultInstanceID   = "default"
-	DefaultOLAPDriver   = "duckdb"
-	DefaultOLAPDSN      = "main.db"
 	DefaultCatalogStore = "meta.db"
 	DefaultDBDir        = "tmp"
 )

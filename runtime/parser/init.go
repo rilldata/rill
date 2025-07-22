@@ -17,7 +17,7 @@ func IsInit(ctx context.Context, repo drivers.RepoStore, instanceID string) bool
 // InitEmpty initializes an empty project
 func InitEmpty(ctx context.Context, repo drivers.RepoStore, instanceID, displayName string) error {
 	// If display name doesn't start with a letter, quote it
-	if displayName[0] < 'a' || displayName[0] > 'Z' {
+	if !isAlphabetic(displayName[0]) {
 		displayName = fmt.Sprintf("%q", displayName)
 	}
 
@@ -57,4 +57,8 @@ mock_users:
 		return err
 	}
 	return nil
+}
+
+func isAlphabetic(c byte) bool {
+	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
 }
