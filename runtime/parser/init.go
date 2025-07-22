@@ -29,7 +29,8 @@ display_name: %s
 # Learn more: https://docs.rilldata.com/reference/olap-engines
 olap_connector: duckdb 
 
-# These are example mock users to test your security policies.\n# Learn more: https://docs.rilldata.com/manage/security
+# These are example mock users to test your security policies.
+# Learn more: https://docs.rilldata.com/manage/security
 mock_users:
 - email: john@yourcompany.com
 - email: jane@partnercompany.com
