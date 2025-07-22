@@ -25,7 +25,17 @@
     },
     "smallest_time_grain": {
       "type": "string",
-      "enum": ["millisecond", "second", "minute", "hour", "day", "week", "month", "quarter", "year"],
+      "enum": [
+        "millisecond",
+        "second",
+        "minute",
+        "hour",
+        "day",
+        "week",
+        "month",
+        "quarter",
+        "year"
+      ],
       "description": "The smallest time granularity allowed for viewing in the dashboard."
     },
     "available_time_zones": {
@@ -116,7 +126,14 @@
           },
           "format_preset": {
             "type": "string",
-            "enum": ["humanize", "none", "currency_usd", "currency_eur", "percentage", "interval_ms"],
+            "enum": [
+              "humanize",
+              "none",
+              "currency_usd",
+              "currency_eur",
+              "percentage",
+              "interval_ms"
+            ],
             "description": "Controls the formatting of this measure in the dashboard."
           },
           "format_d3": {
@@ -127,8 +144,14 @@
             "type": "object",
             "description": "Defines a custom locale for d3-format.",
             "properties": {
-              "decimal": { "type": "string", "description": "The decimal point (e.g., \".\")." },
-              "thousands": { "type": "string", "description": "The group separator (e.g., \",\")." },
+              "decimal": {
+                "type": "string",
+                "description": "The decimal point (e.g., \".\")."
+              },
+              "thousands": {
+                "type": "string",
+                "description": "The group separator (e.g., \",\")."
+              },
               "grouping": {
                 "type": "array",
                 "items": { "type": "integer" },
@@ -146,9 +169,18 @@
                 "items": { "type": "string" },
                 "description": "Optional array of ten strings to replace the numerals 0-9."
               },
-              "percent": { "type": "string", "description": "Optional symbol to replace the percent suffix." },
-              "minus": { "type": "string", "description": "Optional minus sign (defaults to \"−\")." },
-              "nan": { "type": "string", "description": "Optional value for not-a-number (defaults to \"NaN\")." }
+              "percent": {
+                "type": "string",
+                "description": "Optional symbol to replace the percent suffix."
+              },
+              "minus": {
+                "type": "string",
+                "description": "Optional minus sign (defaults to \"−\")."
+              },
+              "nan": {
+                "type": "string",
+                "description": "Optional value for not-a-number (defaults to \"NaN\")."
+              }
             },
             "required": ["currency"]
           },
@@ -166,9 +198,6 @@
       "description": "Numeric aggregates of columns from your data model."
     }
   },
-  "oneOf": [
-    { "required": ["model"] },
-    { "required": ["table"] }
-  ],
+  "oneOf": [{ "required": ["model"] }, { "required": ["table"] }],
   "required": ["dimensions", "measures"]
 }

@@ -28,7 +28,7 @@ interface extremumArgs {
 }
 
 interface Extremum {
-  value: number | Date |undefined;
+  value: number | Date | undefined;
   override?: boolean;
 }
 
@@ -39,8 +39,8 @@ interface ExtremaStoreValue {
 const extremaFunctions = { min, max };
 
 export function createExtremumResolutionStore(
-  initialValue: number | Date|undefined = undefined,
-  passedArgs: extremumArgs = {}
+  initialValue: number | Date | undefined = undefined,
+  passedArgs: extremumArgs = {},
 ) {
   const args = { ...LINEAR_SCALE_STORE_DEFAULTS, ...passedArgs };
   const storedValues: Writable<ExtremaStoreValue> = writable({});
@@ -49,7 +49,11 @@ export function createExtremumResolutionStore(
     easing: args.easing,
   };
   const valueTween = tweened(initialValue, tweenProps);
-  function _update(key: string, value: number | Date |undefined, override = false) {
+  function _update(
+    key: string,
+    value: number | Date | undefined,
+    override = false,
+  ) {
     // FIXME: there's an odd bug where if I don't check for equality first, I tend
     // to get an infinite loop with dates and the downstream scale.
     // This is easily fixed by only updating if the value has in fact changed.
@@ -90,7 +94,7 @@ export function createExtremumResolutionStore(
       }
       return extremum;
     },
-    initialValue
+    initialValue,
   );
 
   // set the final tween with the value.
@@ -102,7 +106,11 @@ export function createExtremumResolutionStore(
 
   const returnedStore = {
     subscribe: valueTween.subscribe,
-    setWithKey(key, value: number | Date | undefined = undefined, override:boolean|undefined = undefined) {
+    setWithKey(
+      key,
+      value: number | Date | undefined = undefined,
+      override: boolean | undefined = undefined,
+    ) {
       _update(key, value, override);
     },
     removeKey(key: string) {

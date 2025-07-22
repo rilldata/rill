@@ -24,9 +24,10 @@
   import type { AddDataFormType, ConnectorType } from "./types";
   import { dsnSchema, getYupSchema } from "./yupSchemas";
   import Checkbox from "@rilldata/web-common/components/forms/Checkbox.svelte";
-  import { isEmpty } from "./utils";
+  import { isEmpty, normalizeErrors } from "./utils";
   import { CONNECTOR_TYPE_OPTIONS, CONNECTION_TAB_OPTIONS } from "./constants";
   import ConnectorTypeSelector from "@rilldata/web-common/components/forms/ConnectorTypeSelector.svelte";
+  import { getInitialFormValuesFromProperties } from "../sourceUtils";
 
   export let connector: V1ConnectorDriver;
   export let formType: AddDataFormType;
@@ -46,6 +47,9 @@
 
   // Always include 'managed' in the schema for ClickHouse
   const clickhouseSchema = yup(getYupSchema["clickhouse"]);
+  const initialFormValues = getInitialFormValuesFromProperties(
+    connector.configProperties ?? [],
+  );
   const paramsFormId = `add-clickhouse-data-${connector.name}-form`;
   const {
     form: paramsForm,
@@ -54,7 +58,7 @@
     tainted: paramsTainted,
     submit: paramsSubmit,
     submitting: paramsSubmitting,
-  } = superForm(defaults(clickhouseSchema), {
+  } = superForm(initialFormValues, {
     SPA: true,
     validators: clickhouseSchema,
     onUpdate: handleOnUpdate,
@@ -85,8 +89,6 @@
   let dsnErrorDetails: string | undefined = undefined;
 
   $: managed = $paramsForm.managed;
-
-  // Managed toggle
   $: submitting = connectionTab === "dsn" ? $dsnSubmitting : $paramsSubmitting;
   $: formId = connectionTab === "dsn" ? dsnFormId : paramsFormId;
 
@@ -104,6 +106,22 @@
 
   // Emit the submitting state to the parent
   $: dispatch("submitting", { submitting });
+
+  let prevManaged = $paramsForm.managed;
+  $: {
+    // Switching to managed: strip all but managed
+    if ($paramsForm.managed && Object.keys($paramsForm).length > 1) {
+      paramsForm.update(() => ({ managed: true }), { taint: false });
+      resetError();
+    }
+    // Switching to self-managed: restore defaults
+    else if (prevManaged && !$paramsForm.managed) {
+      paramsForm.update(() => ({ ...initialFormValues, managed: false }), {
+        taint: false,
+      });
+    }
+    prevManaged = $paramsForm.managed;
+  }
 
   function onStringInputChange(event: Event) {
     const target = event.target as HTMLInputElement;
@@ -184,7 +202,9 @@
     : (connector.configProperties?.filter((p) =>
         connectionTab !== "dsn" ? p.key !== "dsn" : true,
       ) ?? []);
-  $: filteredProperties = properties.filter((property) => !property.noPrompt);
+  $: filteredProperties = properties.filter(
+    (property) => !property.noPrompt && property.key !== "managed",
+  );
 
   // TODO: move to utils.ts
   // Compute disabled state for the submit button
@@ -226,6 +246,14 @@
       return false;
     }
   })();
+
+  function resetError() {
+    paramsError = null;
+    paramsErrorDetails = undefined;
+    dsnError = null;
+    dsnErrorDetails = undefined;
+    setError(null, undefined);
+  }
 </script>
 
 <div class="h-full w-full flex flex-col">
@@ -267,7 +295,7 @@
                   optional={!property.required}
                   secret={property.secret}
                   hint={property.hint}
-                  errors={$paramsErrors[propertyKey]}
+                  errors={normalizeErrors($paramsErrors[propertyKey])}
                   bind:value={$paramsForm[propertyKey]}
                   onInput={(_, e) => onStringInputChange(e)}
                   alwaysShowError
@@ -306,7 +334,7 @@
                 placeholder={property.placeholder}
                 secret={property.secret}
                 hint={property.hint}
-                errors={$dsnErrors[propertyKey]}
+                errors={normalizeErrors($dsnErrors[propertyKey])}
                 bind:value={$dsnForm[propertyKey]}
                 alwaysShowError
               />
@@ -336,7 +364,7 @@
               optional={!property.required}
               secret={property.secret}
               hint={property.hint}
-              errors={$paramsErrors[propertyKey]}
+              errors={normalizeErrors($paramsErrors[propertyKey])}
               bind:value={$paramsForm[propertyKey]}
               onInput={(_, e) => onStringInputChange(e)}
               alwaysShowError

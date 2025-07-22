@@ -17,6 +17,7 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/rilldata/rill/runtime/storage"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
@@ -145,19 +146,14 @@ var _ drivers.Handle = &Connection{}
 
 // Ping implements drivers.Handle.
 func (c *Connection) Ping(ctx context.Context) error {
-	// Get AWS config with configured region
-	awsConfig, err := c.awsConfig(ctx, c.config.AWSRegion)
+	client, err := c.getClient(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to get AWS config: %w", err)
+		return err
 	}
 
-	// Create Athena client
-	client := athena.NewFromConfig(awsConfig, func(o *athena.Options) {
-		o.TracerProvider = smithyoteltracing.Adapt(otel.GetTracerProvider())
-	})
-
 	// Execute a simple query to verify connection
-	return c.executeQuery(ctx, client, "SELECT 1", c.config.Workgroup, c.config.OutputLocation)
+	_, err = c.executeQuery(ctx, client, "SELECT 1", c.config.Workgroup, c.config.OutputLocation)
+	return err
 }
 
 // Driver implements drivers.Connection.
@@ -209,7 +205,7 @@ func (c *Connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
 
 // AsInformationSchema implements drivers.Connection.
 func (c *Connection) AsInformationSchema() (drivers.InformationSchema, bool) {
-	return nil, false
+	return c, true
 }
 
 // Migrate implements drivers.Connection.
@@ -293,7 +289,19 @@ func (c *Connection) awsConfig(ctx context.Context, awsRegion string) (aws.Confi
 	return awsConfig, nil
 }
 
-func (c *Connection) executeQuery(ctx context.Context, client *athena.Client, sql, workgroup, outputLocation string) error {
+func (c *Connection) getClient(ctx context.Context) (*athena.Client, error) {
+	awsConfig, err := c.awsConfig(ctx, c.config.AWSRegion)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get AWS config: %w", err)
+	}
+
+	client := athena.NewFromConfig(awsConfig, func(o *athena.Options) {
+		o.TracerProvider = smithyoteltracing.Adapt(otel.GetTracerProvider())
+	})
+	return client, nil
+}
+
+func (c *Connection) executeQuery(ctx context.Context, client *athena.Client, sql, workgroup, outputLocation string) (*string, error) {
 	executeParams := &athena.StartQueryExecutionInput{
 		QueryString: aws.String(sql),
 	}
@@ -311,31 +319,33 @@ func (c *Connection) executeQuery(ctx context.Context, client *athena.Client, sq
 
 	queryExecutionOutput, err := client.StartQueryExecution(ctx, executeParams)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	for {
 		select {
 		case <-ctx.Done():
-			_, err = client.StopQueryExecution(ctx, &athena.StopQueryExecutionInput{
+			ctx, cancel := graceful.WithMinimumDuration(ctx, 15*time.Second)
+			_, stopErr := client.StopQueryExecution(ctx, &athena.StopQueryExecutionInput{
 				QueryExecutionId: queryExecutionOutput.QueryExecutionId,
 			})
-			return errors.Join(ctx.Err(), err)
+			cancel()
+			return nil, errors.Join(ctx.Err(), stopErr)
 		default:
 			status, err := client.GetQueryExecution(ctx, &athena.GetQueryExecutionInput{
 				QueryExecutionId: queryExecutionOutput.QueryExecutionId,
 			})
 			if err != nil {
-				return err
+				return nil, err
 			}
 
 			switch status.QueryExecution.Status.State {
 			case types2.QueryExecutionStateSucceeded:
-				return nil
+				return queryExecutionOutput.QueryExecutionId, nil
 			case types2.QueryExecutionStateCancelled:
-				return fmt.Errorf("Athena query execution cancelled")
+				return nil, fmt.Errorf("Athena query execution cancelled")
 			case types2.QueryExecutionStateFailed:
-				return fmt.Errorf("Athena query execution failed %s", *status.QueryExecution.Status.AthenaError.ErrorMessage)
+				return nil, fmt.Errorf("Athena query execution failed: %s", aws.ToString(status.QueryExecution.Status.AthenaError.ErrorMessage))
 			}
 		}
 		time.Sleep(time.Second)

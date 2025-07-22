@@ -17,7 +17,7 @@ Within Rill you can set the default OLAP connection on the [project level](https
 For this course, we will set it up on the project level so all of our dashboards will be based on our ClickHouse table.
 
 :::tip
-You have two option for your ClickHouse server:
+You have two options for your ClickHouse server:
 1. Use a [local running ClickHouse server](https://clickhouse.com/docs/en/install)
 2. Use [ClickHouse Cloud](https://clickhouse.com/docs/en/cloud/overview)
 
@@ -96,7 +96,7 @@ Navigate back to the Terminal and stop the Rill process. You can run the followi
 rill start --env host='localhost' --env  port='9000'
 ```
 
-Afterwards, create a file called clickchouse.yaml and add the following contents:
+Afterwards, create a file called clickhouse.yaml and add the following contents:
 
 ```yaml
 type: connector

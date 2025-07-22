@@ -26,13 +26,13 @@ Deploying via the UI was introduced in v0.48. Please upgrade Rill by running `ri
 
 Steps to deploy to Rill Cloud:
 1. Select the `Deploy to share` button.
-2. Select `continue` on the [free trial](https://www.rilldata.com/pricing)
+2. Select `continue` on the [free trial](https://www.rilldata.com/pricing).
     - If you have already deployed, select an existing organization.
-3. Select `continue` on user invites, we will discuss this in a later section. 
+3. Select `continue` on user invites. We will discuss this in a later section.
 4. You will be navigated to the /status page of your deployed project.
 
 
 
 ## Welcome to Rill Cloud!
-Take note of the following features in the UI, we'll go over the them later.
+Take note of the following features in the UI. We'll go over them later.
 <img src = '/img/tutorials/rill-basics/ui-explained.gif' class='rounded-gif' />

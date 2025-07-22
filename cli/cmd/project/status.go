@@ -68,10 +68,6 @@ func StatusCmd(ch *cmdutil.Helper) *cobra.Command {
 			fmt.Printf("  Web: %s\n", proj.Project.FrontendUrl)
 			fmt.Printf("  Runtime: %s\n", depl.RuntimeHost)
 			fmt.Printf("  Instance: %s\n", depl.RuntimeInstanceId)
-			fmt.Printf("  Driver: %s\n", proj.Project.ProdOlapDriver)
-			if proj.Project.ProdOlapDsn != "" {
-				fmt.Printf("  OLAP DSN: %s\n", proj.Project.ProdOlapDsn)
-			}
 			fmt.Printf("  Slots: %d\n", proj.Project.ProdSlots)
 			fmt.Printf("  Branch: %s\n", depl.Branch)
 			if proj.Project.Subpath != "" {
