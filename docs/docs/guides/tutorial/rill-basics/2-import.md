@@ -20,14 +20,13 @@ In Rill, a source model represents your raw data. See our list of [connectors](/
 <img src = '/img/tutorials/rill-basics/add_data.png' class='rounded-gif' style={{maxWidth: '400px', height: 'auto'}} />
 <br />
 
-Depending on the source type, you will need to either explicitly provide credentials (for Snowflake, Athena, etc.) or Rill can dynamically retrieve them via the CLI (for AWS, GCP, Azure). In either case, the credentials needs to be [stored in a `.env` file](/build/credentials) in order to be pushed to your deployed projet. You might need to run `rill env configure` after deploying if your credentials are not pushed properly.
+Depending on the source type, you will either need to explicitly provide credentials (for Snowflake, Athena, etc.), or Rill can dynamically retrieve them via the CLI (for AWS, GCP, Azure). In either case, the credentials need to be [stored in a `.env` file](/build/credentials) in order to be pushed to your deployed project. You might need to run `rill env configure` after deploying if your credentials are not pushed properly.
 
 :::tip Where is the data being imported?
-By default, Rill uses DuckDB as the underlying OLAP engine (see <a href='https://docs.rilldata.com/build/olap/' target="_blank">Connect OLAP engines</a>). 
-Please see our docs for the 
-<a href="https://docs.rilldata.com/build/connect/" target="_blank">supported list</a> of connectors.
+By default, Rill uses DuckDB as the underlying OLAP engine (see <a href='https://docs.rilldata.com/build/olap/' target="_blank">Connect OLAP engines</a>).
+Please see our docs for the <a href="https://docs.rilldata.com/build/connect/" target="_blank">supported list</a> of connectors.
 
-We support various different OLAP engines. If you have a different OLAP engine that you're interested in using, please let us know! Looking for ClickHouse tutorial? Click [Here!] (/tutorials/rill-clickhouse/)
+We support various OLAP engines. If you have a different OLAP engine that you're interested in using, please let us know! Looking for a ClickHouse tutorial? Click [here!](/guides/tutorial/rill-clickhouse/r_ch_launch)
 :::
 
 ### Add a Data Source
@@ -48,7 +47,7 @@ gs://rilldata-public/github-analytics/Clickhouse/2025/03/commits_*.parquet
 
 
 :::tip Data
-These are datasets derived from the commit history and modified files of our friends at ClickHouse's GitHub repository. In our example, we'll ingest a single month of data. However, Rill supports glob patterns, so you could modify the URL to `gs://rilldata-public/github-analytics/Clickhouse/**/modified_files_*.parquet` to ingest all years and months of data. However, that's a lot of data to ingest! We discuss [incremental modeling] (/tutorials/rill_developer_advanced_features/incremental_models/cloud-storage-partitions) in a future lesson.
+These are datasets derived from the commit history and modified files of our friends at ClickHouse's GitHub repository. In our example, we'll ingest a single month of data. However, Rill supports glob patterns, so you could modify the URL to `gs://rilldata-public/github-analytics/Clickhouse/**/modified_files_*.parquet` to ingest all years and months of data. However, that's a lot of data to ingest! 
 :::
 
 Once imported, you'll see the UI change with several things:
@@ -72,9 +71,5 @@ Now we're ready to create a `model`.
 </details>
 
 :::tip Too much data?
-By default, all environments running locally are considered `dev` environments. This means that you can use environmental variables to filter the input data, as Rill Developer is designed for testing purposes. For example, you can filter the repository data on the `author_date` column or simply use `limit ####`.
+By default, all environments running locally are considered `dev` environments. This means that you can use environment variables to filter the input data, as Rill Developer is designed for testing purposes. For example, you can filter the repository data on the `author_date` column or simply use `limit ####`.
 ```
-sql: "select * from read_parquet('gs://rilldata-public/github-analytics/Clickhouse/*/*/commits_*.parquet')
-         {{if dev}} where author_date > '2025-05-01' {{end}}"
-```
-:::

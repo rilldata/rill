@@ -1,1 +1,1 @@
-ALTER TABLE instances ADD COLUMN frontend_url TEXT NOT NULL DEFAULT ''; 
+ALTER TABLE instances ADD COLUMN project_ai_connector TEXT NOT NULL DEFAULT '';

@@ -9284,10 +9284,6 @@ func (m *CreateProjectRequest) validate(all bool) error {
 
 	// no validation rules for Provisioner
 
-	// no validation rules for ProdOlapDriver
-
-	// no validation rules for ProdOlapDsn
-
 	// no validation rules for ProdSlots
 
 	// no validation rules for Subpath
@@ -39981,10 +39977,6 @@ func (m *Project) validate(all bool) error {
 
 	// no validation rules for ArchiveAssetId
 
-	// no validation rules for ProdOlapDriver
-
-	// no validation rules for ProdOlapDsn
-
 	// no validation rules for ProdSlots
 
 	// no validation rules for ProdDeploymentId
@@ -42996,6 +42988,10 @@ func (m *AlertOptions) validate(all bool) error {
 	var errors []error
 
 	// no validation rules for DisplayName
+
+	// no validation rules for RefreshCron
+
+	// no validation rules for RefreshTimeZone
 
 	// no validation rules for IntervalDuration
 

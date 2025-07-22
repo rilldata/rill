@@ -192,9 +192,11 @@ export class WatchResourcesClient {
             if (!connectorName || !tableName) return;
 
             // If it's a new source, show the "Source imported successfully" modal
+            const isSourceModel =
+              res.resource.meta?.filePaths?.[0]?.startsWith("/sources/");
             const isNewSource =
               res.name.kind === ResourceKind.Model &&
-              res.resource.model?.spec?.definedAsSource &&
+              isSourceModel &&
               res.resource.meta.specVersion === "1" && // First file version
               res.resource.meta.stateVersion === "2" && // First ingest is complete
               (await isLeafResource(res.resource, this.instanceId)); // Protects against existing projects reconciling anew

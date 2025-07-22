@@ -45,7 +45,7 @@ Once you have downloaded GitHub and connected your account, you'll be able to cr
 <br />
 
 
-- After you name your respository and click save, you'll see the option to ```Set up in Desktop```. This will open the GitHub desktop app directly to "clone" the repo to your local computer.
+- After you name your repository and click save, you'll see the option to ```Set up in Desktop```. This will open the GitHub desktop app directly to "clone" the repo to your local computer.
 - 
 <img src = '/img/deploy/github-101/repo.png' class='rounded-gif' />
 <br />
