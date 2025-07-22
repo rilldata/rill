@@ -2313,7 +2313,7 @@ export class ExploreSpec extends Message<ExploreSpec> {
 
   /**
    * When true, it indicates that the explore was defined in a metrics view.
-   * This currently happens for legacy metrics views (that don't have `version: 1`), which also emits explores.
+   * This currently happens for metrics views in which explore is defined inline or `no_explore` is not set, which also emits explores.
    *
    * @generated from field: bool defined_in_metrics_view = 21;
    */

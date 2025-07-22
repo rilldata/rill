@@ -4551,7 +4551,7 @@ definitions:
         type: boolean
         description: |-
           When true, it indicates that the explore was defined in a metrics view.
-          This currently happens for legacy metrics views (that don't have `version: 1`), which also emits explores.
+          This currently happens for metrics views in which explore is defined inline or `no_explore` is not set, which also emits explores.
   v1ExploreState:
     type: object
     properties:

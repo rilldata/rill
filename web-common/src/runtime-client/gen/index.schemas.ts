@@ -870,7 +870,7 @@ These are not currently parsed from YAML, but will be derived from the parent me
   lockTimeZone?: boolean;
   allowCustomTimeRange?: boolean;
   /** When true, it indicates that the explore was defined in a metrics view.
-This currently happens for legacy metrics views (that don't have `version: 1`), which also emits explores. */
+This currently happens for metrics views in which explore is defined inline or `no_explore` is not set, which also emits explores. */
   definedInMetricsView?: boolean;
 }
 
