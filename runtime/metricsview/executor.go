@@ -753,26 +753,4 @@ func whereExprForSearch(where *Expression, dimension, search string) *Expression
 	}
 }
 
-func (e *Executor) count(ctx context.Context) (int64, error) {
-	query := fmt.Sprintf("SELECT COUNT(*) FROM %s", e.metricsView.Table)
-
-	res, err := e.olap.Query(ctx, &drivers.Statement{Query: query, Priority: e.priority})
-	if err != nil {
-		return 0, fmt.Errorf("failed to query total row count: %w", err)
-	}
-	defer res.Close()
-
-	var count int64
-	if res.Next() {
-		if err := res.Scan(&count); err != nil {
-			return 0, fmt.Errorf("failed to scan total row count: %w", err)
-		}
-	}
-	if err := res.Err(); err != nil {
-		return 0, fmt.Errorf("error reading total row count: %w", err)
-	}
-
-	return count, nil
-}
-
 var errDruidNativeSearchUnimplemented = fmt.Errorf("native search is not implemented")

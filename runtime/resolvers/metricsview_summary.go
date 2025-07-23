@@ -15,28 +15,28 @@ import (
 )
 
 func init() {
-	runtime.RegisterResolverInitializer("metrics_summary", newMetricsViewSummaryResolver)
+	runtime.RegisterResolverInitializer("metrics_summary", newMetricsSummaryResolver)
 }
 
-type metricsViewSummaryResolver struct {
+type metricsSummaryResolver struct {
 	runtime    *runtime.Runtime
 	instanceID string
 	mvName     string
 	executor   *metricsview.Executor
-	args       *metricsViewSummaryResolverArgs
+	args       *metricsSummaryArgs
 }
 
-type metricsViewSummaryResolverArgs struct {
+type metricsSummaryArgs struct {
 	Priority      int    `mapstructure:"priority"`
 	TimeDimension string `mapstructure:"time_dimension"` // if empty, the default time dimension in mv is used
 }
 
-type metricsViewSummary struct {
+type metricsSummaryProps struct {
 	MetricsView string `mapstructure:"metrics_view"`
 }
 
-func newMetricsViewSummaryResolver(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolver, error) {
-	tr := &metricsViewSummary{}
+func newMetricsSummaryResolver(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolver, error) {
+	tr := &metricsSummaryProps{}
 	if err := mapstructureutil.WeakDecode(opts.Properties, tr); err != nil {
 		return nil, err
 	}
@@ -46,7 +46,7 @@ func newMetricsViewSummaryResolver(ctx context.Context, opts *runtime.ResolverOp
 		span.SetAttributes(attribute.String("metrics_view", tr.MetricsView))
 	}
 
-	args := &metricsViewSummaryResolverArgs{}
+	args := &metricsSummaryArgs{}
 	if err := mapstructureutil.WeakDecode(opts.Args, args); err != nil {
 		return nil, err
 	}
@@ -84,7 +84,7 @@ func newMetricsViewSummaryResolver(ctx context.Context, opts *runtime.ResolverOp
 		return nil, err
 	}
 
-	return &metricsViewSummaryResolver{
+	return &metricsSummaryResolver{
 		runtime:    opts.Runtime,
 		instanceID: opts.InstanceID,
 		mvName:     tr.MetricsView,
@@ -93,46 +93,44 @@ func newMetricsViewSummaryResolver(ctx context.Context, opts *runtime.ResolverOp
 	}, nil
 }
 
-func (r *metricsViewSummaryResolver) Close() error {
+func (r *metricsSummaryResolver) Close() error {
 	r.executor.Close()
 	return nil
 }
 
-func (r *metricsViewSummaryResolver) CacheKey(ctx context.Context) ([]byte, bool, error) {
+func (r *metricsSummaryResolver) CacheKey(ctx context.Context) ([]byte, bool, error) {
 	return cacheKeyForMetricsView(ctx, r.runtime, r.instanceID, r.mvName, r.args.Priority)
 }
 
-func (r *metricsViewSummaryResolver) Refs() []*runtimev1.ResourceName {
+func (r *metricsSummaryResolver) Refs() []*runtimev1.ResourceName {
 	return []*runtimev1.ResourceName{{Kind: runtime.ResourceKindMetricsView, Name: r.mvName}}
 }
 
-func (r *metricsViewSummaryResolver) Validate(ctx context.Context) error {
+func (r *metricsSummaryResolver) Validate(ctx context.Context) error {
 	return nil
 }
 
-func (r *metricsViewSummaryResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverResult, error) {
+func (r *metricsSummaryResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverResult, error) {
 	summary, err := r.executor.Summary(ctx, r.args.TimeDimension)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch summary for metrics view '%s': %w", r.mvName, err)
 	}
 
 	row := map[string]any{
-		"metadata":   summary.Metadata,
 		"dimensions": summary.Dimensions,
 		"time_range": summary.TimeRange,
 	}
 
 	schema := &runtimev1.StructType{
 		Fields: []*runtimev1.StructType_Field{
-			{Name: "metadata", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_STRUCT, Nullable: true}},
-			{Name: "time_range", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_STRUCT, Nullable: true}},
 			{Name: "dimensions", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_ARRAY, Nullable: true}},
+			{Name: "time_range", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_STRUCT, Nullable: true}},
 		},
 	}
 
 	return runtime.NewMapsResolverResult([]map[string]any{row}, schema), nil
 }
 
-func (r *metricsViewSummaryResolver) ResolveExport(ctx context.Context, w io.Writer, opts *runtime.ResolverExportOptions) error {
+func (r *metricsSummaryResolver) ResolveExport(ctx context.Context, w io.Writer, opts *runtime.ResolverExportOptions) error {
 	return errors.New("not implemented")
 }

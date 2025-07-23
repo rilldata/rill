@@ -180,6 +180,8 @@ func (s *Server) mcpGetMetricsView() (mcp.Tool, server.ToolHandlerFunc) {
 func (s *Server) mcpQueryMetricsViewSummary() (mcp.Tool, server.ToolHandlerFunc) {
 	tool := mcp.NewTool("query_metrics_view_summary",
 		mcp.WithDescription(`
+           	Retrieve the total time range available for a given metrics view.
+            Note: All subsequent queries of the metrics view should be constrained to this time range to ensure accurate results.
 			Retrieve summary statistics for a metrics view including:
 			- Total time range available
 			- Sample values and data types for each dimension
@@ -188,12 +190,6 @@ func (s *Server) mcpQueryMetricsViewSummary() (mcp.Tool, server.ToolHandlerFunc)
 			mcp.Required(),
 			mcp.Description("Name of the metrics view"),
 		),
-		mcp.WithString("time_dimension",
-			mcp.Description("Optional time dimension to use for resolving the time range"),
-		),
-		// mcp.WithBoolean("include_measures",
-		// 	mcp.Description("Whether to include basic statistics for measures (default: false)"),
-		// ),
 	)
 	handler := func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		instanceID := mcpInstanceIDFromContext(ctx)
@@ -201,8 +197,6 @@ func (s *Server) mcpQueryMetricsViewSummary() (mcp.Tool, server.ToolHandlerFunc)
 		if err != nil {
 			return nil, err
 		}
-
-		timeDimension := req.GetString("time_dimension", "")
 
 		claims := auth.GetClaims(ctx)
 		if !claims.CanInstance(instanceID, auth.ReadMetrics) {
@@ -214,9 +208,6 @@ func (s *Server) mcpQueryMetricsViewSummary() (mcp.Tool, server.ToolHandlerFunc)
 			Resolver:   "metrics_summary",
 			ResolverProperties: map[string]any{
 				"metrics_view": metricsViewName,
-			},
-			Args: map[string]any{
-				"time_dimension": timeDimension,
 			},
 			Claims: claims.SecurityClaims(),
 		})
