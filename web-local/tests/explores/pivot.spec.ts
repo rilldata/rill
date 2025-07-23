@@ -616,7 +616,7 @@ test.describe("pivot run through", () => {
     await expect(page.locator(".status.running")).toHaveCount(0);
     await validateTableContents(page, "table", expectedOneMeasureColDim);
 
-    const timeMonth = page.getByLabel("month pivot chip", { exact: true });
+    const timeMonth = page.getByLabel("Time pivot chip", { exact: true });
     await timeMonth.dragTo(rowZone);
 
     const addRowField = page
@@ -642,7 +642,7 @@ test.describe("pivot run through", () => {
     });
 
     // add measure and time week to column
-    const timeWeek = page.getByLabel("week pivot chip", { exact: true });
+    const timeWeek = page.getByLabel("Time pivot chip", { exact: true });
     await totalRecords.dragTo(columnZone);
     await timeWeek.dragTo(columnZone);
 

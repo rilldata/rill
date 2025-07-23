@@ -196,3 +196,54 @@ export function isAvailableTimeGrain(
     grain !== V1TimeGrain.TIME_GRAIN_SECOND
   );
 }
+
+const grainOrder: AvailableTimeGrain[] = [
+  V1TimeGrain.TIME_GRAIN_YEAR,
+  V1TimeGrain.TIME_GRAIN_QUARTER,
+  V1TimeGrain.TIME_GRAIN_MONTH,
+  V1TimeGrain.TIME_GRAIN_WEEK,
+  V1TimeGrain.TIME_GRAIN_DAY,
+  V1TimeGrain.TIME_GRAIN_HOUR,
+  V1TimeGrain.TIME_GRAIN_MINUTE,
+];
+
+/**
+ * Get the largest grain from available grains
+ */
+export function getLargestGrain(
+  grains: AvailableTimeGrain[],
+): AvailableTimeGrain | undefined {
+  for (const grain of grainOrder) {
+    if (grains.includes(grain)) {
+      return grain;
+    }
+  }
+  return grains[0];
+}
+
+/**
+ * Get the next smaller grain from the given grain
+ */
+export function getNextSmallerGrain(
+  currentGrain: AvailableTimeGrain,
+  availableGrains: AvailableTimeGrain[],
+): AvailableTimeGrain | undefined {
+  const currentIndex = grainOrder.indexOf(currentGrain);
+  if (currentIndex === -1) return availableGrains[0];
+
+  // Look for the next smaller grain that's available
+  for (let i = currentIndex + 1; i < grainOrder.length; i++) {
+    if (availableGrains.includes(grainOrder[i])) {
+      return grainOrder[i];
+    }
+  }
+
+  // If no smaller grain found, return the smallest available
+  for (let i = grainOrder.length - 1; i >= 0; i--) {
+    if (availableGrains.includes(grainOrder[i])) {
+      return grainOrder[i];
+    }
+  }
+
+  return availableGrains[0];
+}
