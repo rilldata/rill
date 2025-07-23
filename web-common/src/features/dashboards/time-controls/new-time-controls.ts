@@ -1,4 +1,8 @@
-// WIP as of 04/22/2025
+// WIP as of 07/22/2025
+// The intention of this file is to start from scratch building a new time control system
+// The majority of this work is being implemented in the Canvas TimeControls class
+// IntervalStore and MetricsTimeControls are WIP references, but are not currently being used
+// The functions below UTILS are being used
 
 import {
   overrideRillTimeRef,
@@ -132,7 +136,7 @@ class IntervalStore {
   updateInterval(interval: Interval) {
     this._interval.set(interval);
   }
-  Lea;
+
   updateEnd(end: DateTime) {
     this._interval.update((i) => i.set({ end }));
   }
