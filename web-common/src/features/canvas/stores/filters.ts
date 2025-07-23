@@ -12,9 +12,8 @@ import {
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import {
   type DimensionFilterItem,
-  getDimensionFilters,
+  getDimensionFiltersMap,
 } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
-import { filterItemsSortFunction } from "@rilldata/web-common/features/dashboards/state-managers/selectors/filters";
 import type { MeasureFilterItem } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measure-filters";
 import type { DimensionThresholdFilter } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import {
@@ -44,6 +43,9 @@ import {
   writable,
   type Writable,
 } from "svelte/store";
+import { ExploreStateURLParams } from "../../dashboards/url-state/url-params";
+import type { SearchParamsStore } from "./canvas-entity";
+import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
 
 export class Filters {
   private spec: CanvasResolvedSpec;
@@ -54,28 +56,15 @@ export class Filters {
   dimensionsWithInlistFilter: Writable<string[]>;
   dimensionThresholdFilters: Writable<Array<DimensionThresholdFilter>>;
   dimensionFilterExcludeMode: Writable<Map<string, boolean>>;
-  temporaryFilterName: Writable<string | null>;
 
   // -------------------
   // "SELECTORS" (readable/derived)
   // -------------------
   measureHasFilter: Readable<(measureName: string) => boolean>;
-  getAllMeasureFilterItems: Readable<
-    (
-      measureFilterItems: MeasureFilterItem[],
-      measureIdMap: Map<string, MetricsViewSpecMeasure>,
-    ) => MeasureFilterItem[]
-  >;
-  getMeasureFilterItems: Readable<
-    (measureIdMap: Map<string, MetricsViewSpecMeasure>) => MeasureFilterItem[]
-  >;
+  allMeasureFilterItems: Readable<MeasureFilterItem[]>;
+  measureFilterItems: Readable<MeasureFilterItem[]>;
 
-  getAllDimensionFilterItems: Readable<
-    (
-      dimensionFilterItems: DimensionFilterItem[],
-      dimensionIdMap: Map<string, MetricsViewSpecDimension>,
-    ) => DimensionFilterItem[]
-  >;
+  allDimensionFilterItems: Readable<Map<string, DimensionFilterItem>>;
   selectedDimensionValues: Readable<(dimName: string) => string[]>;
   atLeastOneSelection: Readable<(dimName: string) => boolean>;
   isFilterExcludeMode: Readable<(dimName: string) => boolean>;
@@ -84,25 +73,28 @@ export class Filters {
     (name: string) => V1Expression | undefined
   >;
   getWhereFilterExpressionIndex: Readable<(name: string) => number | undefined>;
-  getDimensionFilterItems: Readable<
-    (
-      dimensionIdMap: Map<string, MetricsViewSpecDimension>,
-    ) => DimensionFilterItem[]
-  >;
+  dimensionFilterItems: Readable<Map<string, DimensionFilterItem>>;
   unselectedDimensionValues: Readable<
     (dimensionName: string, values: unknown[]) => unknown[]
   >;
   includedDimensionValues: Readable<(dimensionName: string) => unknown[]>;
   hasAtLeastOneDimensionFilter: Readable<() => boolean>;
   filterText: Readable<string>;
+  allDimensions: Readable<Map<string, MetricsViewSpecDimension>>;
+  allMeasures: Readable<Map<string, MetricsViewSpecMeasure>>;
+  temporaryFilters = writable<Set<string>>(new Set());
 
-  constructor(spec: CanvasResolvedSpec) {
+  constructor(
+    spec: CanvasResolvedSpec,
+    public searchParamsStore: SearchParamsStore,
+    public componentName?: string,
+  ) {
     // -----------------------------
     // Initialize writable stores
     // -----------------------------
     this.spec = spec;
     this.dimensionFilterExcludeMode = writable(new Map<string, boolean>());
-    this.temporaryFilterName = writable(null);
+
     this.whereFilter = writable({
       cond: {
         op: "OPERATION_AND",
@@ -115,6 +107,19 @@ export class Filters {
     // -------------------------------
     // MEASURE SELECTORS
     // -------------------------------
+
+    this.allMeasures = derived(
+      [this.spec.allSimpleMeasures],
+      ([$allSimpleMeasures]) =>
+        getMapFromArray($allSimpleMeasures, (m) => m.name as string),
+    );
+
+    this.measureFilterItems = derived(
+      [this.dimensionThresholdFilters, this.allMeasures],
+      ([$dimensionThresholdFilters, measureIdMap]) => {
+        return this.getMeasureFilters(measureIdMap, $dimensionThresholdFilters);
+      },
+    );
     this.measureHasFilter = derived(
       this.dimensionThresholdFilters,
       ($dimensionThresholdFilters) => {
@@ -126,15 +131,17 @@ export class Filters {
       },
     );
 
-    this.getAllMeasureFilterItems = derived(
-      this.temporaryFilterName,
-      (tempFilter) => {
-        return (
-          measureFilterItems: MeasureFilterItem[],
-          measureIdMap: Map<string, MetricsViewSpecMeasure>,
-        ) => {
-          const itemsCopy = [...measureFilterItems];
-          if (tempFilter && measureIdMap.has(tempFilter)) {
+    this.allMeasureFilterItems = derived(
+      [this.temporaryFilters, this.measureFilterItems, this.allMeasures],
+      ([tempFilters, measureFilterItems, measureIdMap]) => {
+        const itemsCopy = [...measureFilterItems];
+
+        tempFilters.forEach((tempFilter) => {
+          if (
+            tempFilter &&
+            measureIdMap.has(tempFilter) &&
+            !itemsCopy.some((i) => i.name === tempFilter)
+          ) {
             const dimensions = spec.getDimensionsFromMeasure(tempFilter);
             itemsCopy.push({
               dimensionName: "",
@@ -143,48 +150,63 @@ export class Filters {
               dimensions: dimensions,
             });
           }
-          return itemsCopy;
-        };
-      },
-    );
+        });
 
-    this.getMeasureFilterItems = derived(
-      this.dimensionThresholdFilters,
-      ($dimensionThresholdFilters) => {
-        return (measureIdMap: Map<string, MetricsViewSpecMeasure>) => {
-          return this.getMeasureFilters(
-            measureIdMap,
-            $dimensionThresholdFilters,
-          );
-        };
+        return itemsCopy;
       },
     );
 
     // -------------------------------
     // DIMENSION SELECTORS
     // -------------------------------
-    this.getAllDimensionFilterItems = derived(
-      this.temporaryFilterName,
-      (tempFilter) => {
-        return (
-          dimensionFilterItems: DimensionFilterItem[],
-          dimensionIdMap: Map<string, MetricsViewSpecDimension>,
-        ) => {
-          const merged = [...dimensionFilterItems];
-          if (tempFilter && dimensionIdMap.has(tempFilter)) {
+    this.allDimensions = derived(
+      [this.spec.allDimensions],
+      ([$allDimensions]) =>
+        getMapFromArray(
+          $allDimensions,
+          (dimension) => (dimension.name || dimension.column) as string,
+        ),
+    );
+
+    this.dimensionFilterItems = derived(
+      [this.whereFilter, this.dimensionsWithInlistFilter, this.allDimensions],
+      ([$whereFilter, $dimensionsWithInlistFilter, $allDimensions]) => {
+        const dimensionFilters = getDimensionFiltersMap(
+          $allDimensions,
+          $whereFilter,
+          $dimensionsWithInlistFilter,
+        );
+        dimensionFilters.forEach((dimensionFilter) => {
+          dimensionFilter.metricsViewNames =
+            spec.getMetricsViewNamesForDimension(dimensionFilter.name);
+        });
+        return dimensionFilters;
+      },
+    );
+
+    this.allDimensionFilterItems = derived(
+      [this.temporaryFilters, this.dimensionFilterItems, this.allDimensions],
+      ([tempFilters, dimensionFilters, $allDimensions]) => {
+        const merged = structuredClone(dimensionFilters);
+
+        tempFilters.forEach((tempFilter) => {
+          const hasFilter = merged.has(tempFilter);
+
+          if (tempFilter && $allDimensions.has(tempFilter) && !hasFilter) {
             const metricsViewNames =
               spec.getMetricsViewNamesForDimension(tempFilter);
-            merged.push({
+            merged.set(tempFilter, {
               mode: DimensionFilterMode.Select,
               name: tempFilter,
-              label: getDimensionDisplayName(dimensionIdMap.get(tempFilter)),
+              label: getDimensionDisplayName($allDimensions.get(tempFilter)),
               selectedValues: [],
               isInclude: true,
               metricsViewNames,
             });
           }
-          return merged.sort(filterItemsSortFunction);
-        };
+        });
+
+        return merged;
       },
     );
 
@@ -249,24 +271,6 @@ export class Filters {
       },
     );
 
-    this.getDimensionFilterItems = derived(
-      [this.whereFilter, this.dimensionsWithInlistFilter],
-      ([$whereFilter, $dimensionsWithInlistFilter]) => {
-        return (dimensionIdMap: Map<string, MetricsViewSpecDimension>) => {
-          const dimensionFilters = getDimensionFilters(
-            dimensionIdMap,
-            $whereFilter,
-            $dimensionsWithInlistFilter,
-          );
-          dimensionFilters.forEach((dimensionFilter) => {
-            dimensionFilter.metricsViewNames =
-              spec.getMetricsViewNamesForDimension(dimensionFilter.name);
-          });
-          return dimensionFilters;
-        };
-      },
-    );
-
     this.unselectedDimensionValues = derived(
       this.whereFilter,
       ($whereFilter) => {
@@ -306,28 +310,17 @@ export class Filters {
       },
     );
 
-    this.filterText = derived(
-      [
-        this.whereFilter,
-        this.dimensionThresholdFilters,
-        this.dimensionsWithInlistFilter,
-      ],
-      ([$whereFilter, $dtf, $dimensionsWithInlistFilter]) => {
-        const mergedFilters =
-          sanitiseExpression(
-            mergeDimensionAndMeasureFilters(
-              $whereFilter ?? createAndExpression([]),
-              $dtf,
-            ),
-            undefined,
-          ) ?? createAndExpression([]);
-
-        return convertExpressionToFilterParam(
-          mergedFilters,
-          $dimensionsWithInlistFilter,
+    this.searchParamsStore.subscribe((searchParams) => {
+      const filterText = searchParams.get(ExploreStateURLParams.Filters);
+      if (!this.componentName) {
+        const tempFilters = searchParams.get(
+          ExploreStateURLParams.TemporaryFilters,
         );
-      },
-    );
+        this.temporaryFilters.set(new Set(tempFilters?.split(",") ?? []));
+      }
+
+      this.setFiltersFromText(filterText ?? "");
+    });
   }
 
   private getMeasureFilters = (
@@ -379,10 +372,7 @@ export class Filters {
   // --------------------
 
   setMeasureFilter = (dimensionName: string, filter: MeasureFilterEntry) => {
-    const tempFilter = get(this.temporaryFilterName);
-    if (tempFilter !== null) {
-      this.temporaryFilterName.set(null);
-    }
+    this.checkTemporaryFilter(filter.measure);
 
     const dtfs = get(this.dimensionThresholdFilters);
     let dimThresholdFilter = dtfs.find((dtf) => dtf.name === dimensionName);
@@ -398,15 +388,19 @@ export class Filters {
     } else {
       dimThresholdFilter.filters.splice(exprIdx, 1, filter);
     }
-    this.dimensionThresholdFilters.set(dtfs);
+
+    this.searchParamsStore.set(
+      ExploreStateURLParams.Filters,
+      getFilterParam(
+        get(this.whereFilter),
+        dtfs,
+        get(this.dimensionsWithInlistFilter),
+      ),
+    );
   };
 
   removeMeasureFilter = (dimensionName: string, measureName: string) => {
-    const tempFilter = get(this.temporaryFilterName);
-    if (tempFilter === measureName) {
-      this.temporaryFilterName.set(null);
-      return;
-    }
+    this.checkTemporaryFilter(measureName);
     const dtfs = get(this.dimensionThresholdFilters);
     const dimIdx = dtfs.findIndex((dtf) => dtf.name === dimensionName);
     if (dimIdx === -1) return;
@@ -417,7 +411,30 @@ export class Filters {
     if (!filters.length) {
       dtfs.splice(dimIdx, 1);
     }
-    this.dimensionThresholdFilters.set(dtfs);
+    this.searchParamsStore.set(
+      ExploreStateURLParams.Filters,
+      getFilterParam(
+        get(this.whereFilter),
+        dtfs,
+        get(this.dimensionsWithInlistFilter),
+      ),
+    );
+  };
+
+  checkTemporaryFilter = (filterName: string) => {
+    const tempFilters = get(this.temporaryFilters);
+    if (tempFilters.has(filterName)) {
+      tempFilters.delete(filterName);
+
+      if (this.componentName) {
+        this.temporaryFilters.set(tempFilters);
+      } else {
+        this.searchParamsStore.set(
+          ExploreStateURLParams.TemporaryFilters,
+          Array.from(tempFilters).join(","),
+        );
+      }
+    }
   };
 
   toggleDimensionValueSelection = (
@@ -426,67 +443,67 @@ export class Filters {
     keepPillVisible?: boolean,
     isExclusiveFilter?: boolean,
   ) => {
-    const tempFilter = get(this.temporaryFilterName);
-    if (tempFilter !== null) {
-      this.temporaryFilterName.set(null);
-    }
+    this.checkTemporaryFilter(dimensionName);
+
     const excludeMode = get(this.dimensionFilterExcludeMode);
     const isExclude = !!excludeMode.get(dimensionName);
     const wf = get(this.whereFilter);
 
     // Use the derived selector:
-    const exprIndex = get(this.getWhereFilterExpressionIndex)(dimensionName);
+    const exprIndex =
+      get(this.getWhereFilterExpressionIndex)(dimensionName) ?? -1;
+    const expr = wf.cond?.exprs?.[exprIndex];
 
-    if (exprIndex === undefined || exprIndex === -1) {
+    const inIdx = getValueIndexInExpression(expr, dimensionValue);
+
+    if (exprIndex === -1 || !expr?.cond?.exprs) {
       wf.cond?.exprs?.push(
         createInExpression(dimensionName, [dimensionValue], isExclude),
       );
-      this.whereFilter.set(wf);
-      return;
-    }
-
-    const expr = wf.cond?.exprs?.[exprIndex];
-    if (!expr?.cond?.exprs) return;
-    this.dimensionsWithInlistFilter.update((dimensionsWithInlistFilter) =>
-      dimensionsWithInlistFilter.filter((d) => d !== dimensionName),
-    );
-    if (
+    } else if (
       expr.cond?.op === V1Operation.OPERATION_LIKE ||
       expr.cond?.op === V1Operation.OPERATION_NLIKE
     ) {
       wf.cond?.exprs?.push(
         createInExpression(dimensionName, [dimensionValue], isExclude),
       );
-      this.whereFilter.set(wf);
-      return;
-    }
-
-    const inIdx = getValueIndexInExpression(expr, dimensionValue) as number;
-    if (inIdx === -1) {
-      if (isExclusiveFilter) {
-        expr.cond.exprs.splice(1, expr.cond.exprs.length - 1, {
-          val: dimensionValue,
-        });
-      } else {
-        expr.cond.exprs.push({ val: dimensionValue });
-      }
     } else {
-      expr.cond.exprs.splice(inIdx, 1);
-      if (expr.cond.exprs.length === 1) {
-        wf.cond?.exprs?.splice(exprIndex, 1);
-        if (keepPillVisible) {
-          this.temporaryFilterName.set(dimensionName);
+      this.dimensionsWithInlistFilter.update((dimensionsWithInlistFilter) =>
+        dimensionsWithInlistFilter.filter((d) => d !== dimensionName),
+      );
+
+      if (inIdx === -1) {
+        if (isExclusiveFilter) {
+          expr.cond.exprs.splice(1, expr.cond.exprs.length - 1, {
+            val: dimensionValue,
+          });
+        } else {
+          expr.cond.exprs.push({ val: dimensionValue });
+        }
+      } else {
+        expr.cond.exprs.splice(inIdx, 1);
+        if (expr.cond.exprs.length === 1) {
+          wf.cond?.exprs?.splice(exprIndex, 1);
+
+          if (keepPillVisible) {
+            this.setTemporaryFilterName(dimensionName);
+          }
         }
       }
     }
-    this.whereFilter.set(wf);
+
+    this.searchParamsStore.set(
+      ExploreStateURLParams.Filters,
+      getFilterParam(
+        wf,
+        get(this.dimensionThresholdFilters),
+        get(this.dimensionsWithInlistFilter),
+      ),
+    );
   };
 
   applyDimensionInListMode = (dimensionName: string, values: string[]) => {
-    const tempFilter = get(this.temporaryFilterName);
-    if (tempFilter !== null) {
-      this.temporaryFilterName.set(null);
-    }
+    this.checkTemporaryFilter(dimensionName);
     const excludeMode = get(this.dimensionFilterExcludeMode);
     const isExclude = !!excludeMode.get(dimensionName);
     const wf = get(this.whereFilter);
@@ -502,14 +519,18 @@ export class Filters {
     } else {
       wf.cond!.exprs![exprIndex] = expr;
     }
-    this.whereFilter.set(wf);
+    this.searchParamsStore.set(
+      ExploreStateURLParams.Filters,
+      getFilterParam(
+        wf,
+        get(this.dimensionThresholdFilters),
+        get(this.dimensionsWithInlistFilter),
+      ),
+    );
   };
 
   applyDimensionContainsMode = (dimensionName: string, searchText: string) => {
-    const tempFilter = get(this.temporaryFilterName);
-    if (tempFilter !== null) {
-      this.temporaryFilterName.set(null);
-    }
+    this.checkTemporaryFilter(dimensionName);
     const excludeMode = get(this.dimensionFilterExcludeMode);
     const isExclude = !!excludeMode.get(dimensionName);
     const wf = get(this.whereFilter);
@@ -525,7 +546,14 @@ export class Filters {
     } else {
       wf.cond!.exprs![exprIndex] = expr;
     }
-    this.whereFilter.set(wf);
+    this.searchParamsStore.set(
+      ExploreStateURLParams.Filters,
+      getFilterParam(
+        wf,
+        get(this.dimensionThresholdFilters),
+        get(this.dimensionsWithInlistFilter),
+      ),
+    );
   };
 
   toggleDimensionFilterMode = (dimensionName: string) => {
@@ -541,20 +569,32 @@ export class Filters {
     );
     if (exprIdx === -1) return;
     wf.cond.exprs[exprIdx] = negateExpression(wf.cond.exprs[exprIdx]);
-    this.whereFilter.set(wf);
+
+    this.searchParamsStore.set(
+      ExploreStateURLParams.Filters,
+      getFilterParam(
+        wf,
+        get(this.dimensionThresholdFilters),
+        get(this.dimensionsWithInlistFilter),
+      ),
+    );
   };
 
   removeDimensionFilter = (dimensionName: string) => {
-    const tempFilter = get(this.temporaryFilterName);
-    if (tempFilter === dimensionName) {
-      this.temporaryFilterName.set(null);
-      return;
-    }
+    this.checkTemporaryFilter(dimensionName);
     const wf = get(this.whereFilter);
     const exprIdx = get(this.getWhereFilterExpressionIndex)(dimensionName);
     if (exprIdx === undefined || exprIdx === -1) return;
     wf.cond?.exprs?.splice(exprIdx, 1);
-    this.whereFilter.set(wf);
+
+    this.searchParamsStore.set(
+      ExploreStateURLParams.Filters,
+      getFilterParam(
+        wf,
+        get(this.dimensionThresholdFilters),
+        get(this.dimensionsWithInlistFilter),
+      ),
+    );
   };
 
   selectItemsInFilter = (dimensionName: string, values: (string | null)[]) => {
@@ -566,7 +606,14 @@ export class Filters {
       wf.cond?.exprs?.push(
         createInExpression(dimensionName, values, isExclude),
       );
-      this.whereFilter.set(wf);
+      this.searchParamsStore.set(
+        ExploreStateURLParams.Filters,
+        getFilterParam(
+          wf,
+          get(this.dimensionThresholdFilters),
+          get(this.dimensionsWithInlistFilter),
+        ),
+      );
       return;
     }
     const expr = wf.cond?.exprs?.[exprIdx];
@@ -574,7 +621,14 @@ export class Filters {
     const oldValues = getValuesInExpression(expr);
     const newValues = values.filter((v) => !oldValues.includes(v));
     expr.cond.exprs.push(...newValues.map((v) => ({ val: v })));
-    this.whereFilter.set(wf);
+    this.searchParamsStore.set(
+      ExploreStateURLParams.Filters,
+      getFilterParam(
+        wf,
+        get(this.dimensionThresholdFilters),
+        get(this.dimensionsWithInlistFilter),
+      ),
+    );
   };
 
   deselectItemsInFilter = (
@@ -597,36 +651,66 @@ export class Filters {
     } else {
       wf.cond?.exprs?.splice(exprIdx, 1);
     }
-    this.whereFilter.set(wf);
+    this.searchParamsStore.set(
+      ExploreStateURLParams.Filters,
+      getFilterParam(
+        wf,
+        get(this.dimensionThresholdFilters),
+        get(this.dimensionsWithInlistFilter),
+      ),
+    );
   };
 
   setFilters = (filter: V1Expression) => {
     const { dimensionFilters, dimensionThresholdFilters } =
       splitWhereFilter(filter);
+
     this.whereFilter.set(dimensionFilters);
     this.dimensionThresholdFilters.set(dimensionThresholdFilters);
   };
 
   clearAllFilters = () => {
-    const wf = get(this.whereFilter);
-    const dtfs = get(this.dimensionThresholdFilters);
-    const hasFilters = wf.cond?.exprs?.length || dtfs.length;
-    if (!hasFilters) return;
-    this.whereFilter.set(createAndExpression([]));
-    this.dimensionThresholdFilters.set([]);
-    this.temporaryFilterName.set(null);
-    const excludeMode = get(this.dimensionFilterExcludeMode);
-    excludeMode.clear();
-    this.dimensionFilterExcludeMode.set(excludeMode);
+    this.temporaryFilters.set(new Set());
+    this.searchParamsStore.set(ExploreStateURLParams.Filters, undefined);
   };
 
   setTemporaryFilterName = (name: string) => {
-    this.temporaryFilterName.set(name);
+    if (this.componentName) {
+      this.temporaryFilters.update((tempFilters) => {
+        if (tempFilters.has(name)) {
+          tempFilters.delete(name);
+        }
+        return tempFilters.add(name);
+      });
+    } else {
+      this.searchParamsStore.set(ExploreStateURLParams.TemporaryFilters, name);
+    }
   };
 
   setFiltersFromText = (filterText: string) => {
     const { expr, dimensionsWithInlistFilter } = getFiltersFromText(filterText);
+
     this.setFilters(expr);
     this.dimensionsWithInlistFilter.set(dimensionsWithInlistFilter);
   };
+}
+
+function getFilterParam(
+  whereFilter: V1Expression,
+  dtf: DimensionThresholdFilter[],
+  dimensionsWithInlistFilter: string[],
+) {
+  const mergedFilters =
+    sanitiseExpression(
+      mergeDimensionAndMeasureFilters(
+        whereFilter ?? createAndExpression([]),
+        dtf,
+      ),
+      undefined,
+    ) ?? createAndExpression([]);
+
+  return convertExpressionToFilterParam(
+    mergedFilters,
+    dimensionsWithInlistFilter,
+  );
 }
