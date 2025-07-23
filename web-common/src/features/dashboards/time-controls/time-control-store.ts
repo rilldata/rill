@@ -43,6 +43,7 @@ import type { Readable } from "svelte/store";
 import { derived, get } from "svelte/store";
 import { memoizeMetricsStore } from "../state-managers/memoize-metrics-store";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+import { all } from "deepmerge";
 
 export type TimeRangeState = {
   // Selected ranges with start and end filled based on time range type
@@ -50,8 +51,8 @@ export type TimeRangeState = {
   // In all of our queries we do a check on hasTime and pass in undefined for start and end if false.
   // Using these directly will simplify those usages since this store will take care of marking them undefined.
   timeStart?: string;
-  adjustedStart?: string;
   timeEnd?: string;
+  adjustedStart?: string;
   adjustedEnd?: string;
 };
 export type ComparisonTimeRangeState = {
@@ -317,6 +318,12 @@ export function calculateComparisonTimeRangePartial(
   showTimeComparison: boolean,
   timeRangeState: TimeRangeState,
 ): ComparisonTimeRangeState {
+  console.log({
+    timeRanges,
+    allTimeRange,
+    currentComparisonTimeRange,
+    timeRangeState,
+  });
   const selectedComparisonTimeRange = getComparisonTimeRange(
     timeRanges,
     allTimeRange,
@@ -326,7 +333,7 @@ export function calculateComparisonTimeRangePartial(
 
   let comparisonAdjustedStart: string | undefined = undefined;
   let comparisonAdjustedEnd: string | undefined = undefined;
-  if (selectedComparisonTimeRange) {
+  if (selectedComparisonTimeRange?.start && selectedComparisonTimeRange?.end) {
     const adjustedComparisonTime = getAdjustedFetchTime(
       selectedComparisonTimeRange.start,
       selectedComparisonTimeRange.end,
@@ -339,7 +346,11 @@ export function calculateComparisonTimeRangePartial(
 
   let comparisonTimeStart = selectedComparisonTimeRange?.start;
   let comparisonTimeEnd = selectedComparisonTimeRange?.end;
-  if (selectedComparisonTimeRange && lastDefinedScrubRange) {
+  if (
+    selectedComparisonTimeRange?.start &&
+    selectedComparisonTimeRange?.end &&
+    lastDefinedScrubRange
+  ) {
     const { start, end } = getOrderedStartEnd(
       lastDefinedScrubRange.start,
       lastDefinedScrubRange.end,
@@ -363,7 +374,8 @@ export function calculateComparisonTimeRangePartial(
 
   return {
     showTimeComparison: showTimeComparison,
-    selectedComparisonTimeRange,
+    selectedComparisonTimeRange:
+      selectedComparisonTimeRange as DashboardTimeControls,
     comparisonTimeStart: comparisonTimeStart?.toISOString(),
     comparisonAdjustedStart,
     comparisonTimeEnd: comparisonTimeEnd?.toISOString(),
@@ -477,13 +489,11 @@ export function getComparisonTimeRange(
       timeRange.end,
     );
 
-    if (range.start && range.end) {
-      return {
-        start: range.start,
-        end: range.end,
-        name: comparisonOption,
-      };
-    }
+    return {
+      start: range.start,
+      end: range.end,
+      name: comparisonOption,
+    };
   } else if (
     comparisonTimeRange.name === TimeComparisonOption.CUSTOM ||
     // 1st step towards using a single `Custom` variable

@@ -12,6 +12,7 @@
   import { builderActions, getAttrs, Tooltip } from "bits-ui";
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
   import TooltipDescription from "@rilldata/web-common/components/tooltip/TooltipDescription.svelte";
+  import { onMount } from "svelte";
 
   export let dateTimeAnchor: DateTime;
   export let grain: V1TimeGrain | undefined;
@@ -20,6 +21,7 @@
   export let inclusive: boolean;
   export let watermark: DateTime | undefined;
   export let latest: DateTime | undefined;
+  export let zone: string;
   export let ref: "latest" | "watermark" | "now" | string;
   export let onSelectAsOfOption: (
     ref: "latest" | "watermark" | "now" | string,
@@ -31,7 +33,13 @@
   ) => void;
 
   let open = false;
-  let now = DateTime.now();
+  let now = DateTime.now().setZone(zone);
+
+  onMount(() => {
+    setInterval(() => {
+      now = DateTime.now().setZone(zone);
+    }, 1000);
+  });
 
   $: dateTimeUnit = grain ? V1TimeGrainToDateTimeUnit[grain] : undefined;
 
@@ -49,19 +57,20 @@
       id: "watermark",
       label: "complete data",
       timestamp: watermark,
-      description: "Time prior to which data is considered complete",
+      description:
+        "Timestamp prior to which data frames are considered complete",
     },
     {
       id: "latest",
       label: "latest data",
       timestamp: latest,
-      description: "Timestamp of the latest data point",
+      description: "Timestamp of latest data point",
     },
     {
       id: "now",
       label: "current time",
       timestamp: now,
-      description: "System time in selected timezone",
+      description: "Server clock in selected timezone",
     },
   ];
 
@@ -91,6 +100,25 @@
       default:
         return ref;
     }
+  }
+
+  function getColloquialOffset(date: DateTime): string {
+    const inFuture = date > DateTime.now();
+    return (
+      Duration.fromObject(
+        Object.fromEntries(
+          Object.entries(
+            DateTime.now().setZone(date.zone).diff(date).rescale().toObject(),
+          )
+            .filter(([, value]) => value !== 0)
+            .slice(0, 2),
+        ),
+      ).toHuman({
+        listStyle: "narrow",
+        maximumFractionDigits: 0,
+        signDisplay: "never",
+      }) + (inFuture ? " from now" : " ago")
+    );
   }
 </script>
 
@@ -132,7 +160,7 @@
         </button>
       </Tooltip.Trigger>
 
-      <Tooltip.Content side="bottom" sideOffset={8}>
+      <Tooltip.Content side="bottom" sideOffset={8} class="z-50">
         <TooltipContent>
           <TooltipTitle>
             <svelte:fragment slot="name">
@@ -140,18 +168,7 @@
             </svelte:fragment>
           </TooltipTitle>
           <TooltipDescription>
-            {Duration.fromObject(
-              Object.fromEntries(
-                Object.entries(
-                  DateTime.now().diff(derivedAnchor).rescale().toObject(),
-                )
-                  .filter(([, value]) => value !== 0)
-                  .slice(0, 2),
-              ),
-            ).toHuman({
-              listStyle: "narrow",
-              maximumFractionDigits: 0,
-            })} ago
+            {getColloquialOffset(derivedAnchor)}
           </TooltipDescription>
         </TooltipContent>
       </Tooltip.Content>
@@ -162,52 +179,43 @@
     <DropdownMenu.Group class="p-1">
       <h3 class="mt-1 px-2 uppercase text-gray-500 font-semibold">Reference</h3>
       {#each options as { id, label, description, timestamp } (id)}
-        <DropdownMenu.CheckboxItem
-          checkRight
-          checked={ref === id}
-          on:click={() => {
-            onSelectAsOfOption(id);
-          }}
-        >
-          <Tooltip.Root>
-            <Tooltip.Trigger class="size-full flex justify-between ">
-              {label}
-            </Tooltip.Trigger>
+        {#if id !== "watermark" || (id === "watermark" && !!timestamp)}
+          <DropdownMenu.CheckboxItem
+            checkRight
+            checked={ref === id}
+            on:click={() => {
+              onSelectAsOfOption(id);
+            }}
+          >
+            <Tooltip.Root>
+              <Tooltip.Trigger class="size-full flex justify-between ">
+                {label}
+              </Tooltip.Trigger>
 
-            {#if timestamp}
-              <Tooltip.Content side="right" sideOffset={40} class="w-65 z-50">
-                <TooltipContent>
-                  <TooltipTitle>
-                    <svelte:fragment slot="name">
-                      {timestamp.toLocaleString(
-                        DateTime.DATETIME_MED_WITH_SECONDS,
-                      )}
-                    </svelte:fragment>
-                  </TooltipTitle>
-                  {#if id !== "now"}
-                    <div>
-                      {Duration.fromObject(
-                        Object.fromEntries(
-                          Object.entries(
-                            DateTime.now().diff(timestamp).rescale().toObject(),
-                          )
-                            .filter(([, value]) => value !== 0)
-                            .slice(0, 2),
-                        ),
-                      ).toHuman({
-                        listStyle: "narrow",
-                        maximumFractionDigits: 0,
-                      })} ago
-                    </div>
-                  {/if}
-                  <TooltipDescription>
-                    {description}
-                  </TooltipDescription>
-                </TooltipContent>
-              </Tooltip.Content>
-            {/if}
-          </Tooltip.Root>
-        </DropdownMenu.CheckboxItem>
+              {#if timestamp}
+                <Tooltip.Content side="right" sideOffset={40} class="w-65 z-50">
+                  <TooltipContent>
+                    <TooltipTitle>
+                      <svelte:fragment slot="name">
+                        {timestamp.toLocaleString(
+                          DateTime.DATETIME_MED_WITH_SECONDS,
+                        )}
+                      </svelte:fragment>
+                    </TooltipTitle>
+                    {#if id !== "now"}
+                      <div>
+                        {getColloquialOffset(timestamp)}
+                      </div>
+                    {/if}
+                    <TooltipDescription>
+                      {description}
+                    </TooltipDescription>
+                  </TooltipContent>
+                </Tooltip.Content>
+              {/if}
+            </Tooltip.Root>
+          </DropdownMenu.CheckboxItem>
+        {/if}
       {/each}
     </DropdownMenu.Group>
     <DropdownMenu.Separator class="my-0" />

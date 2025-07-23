@@ -1,24 +1,15 @@
-import {
-  mergeDimensionAndMeasureFilters,
-  splitWhereFilter,
-} from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils.ts";
+import { getDimensionNameFromAggregationDimension } from "@rilldata/web-common/features/dashboards/aggregation-request/dimension-utils.ts";
+import { MeasureModifierSuffixRegex } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry.ts";
+import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils.ts";
+import { ComparisonModifierSuffixRegex } from "@rilldata/web-common/features/dashboards/pivot/types.ts";
 import { includeExcludeModeFromFilters } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores.ts";
-import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
 import {
-  mapSelectedComparisonTimeRangeToV1TimeRange,
-  mapSelectedTimeRangeToV1TimeRange,
   mapV1TimeRangeToSelectedComparisonTimeRange,
   mapV1TimeRangeToSelectedTimeRange,
 } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers.ts";
 import { getExploreName } from "@rilldata/web-common/features/explore-mappers/utils";
-import {
-  Filters,
-  type FiltersState,
-} from "@rilldata/web-common/features/dashboards/stores/Filters.ts";
-import {
-  TimeControls,
-  type TimeControlState,
-} from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
+import { Filters } from "@rilldata/web-common/features/dashboards/stores/Filters.ts";
+import { TimeControls } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
 import { ExploreMetricsViewMetadata } from "@rilldata/web-common/features/dashboards/stores/ExploreMetricsViewMetadata.ts";
 import {
   getExistingScheduleFormValues,
@@ -29,7 +20,6 @@ import {
   TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types.ts";
 import {
-  type V1ExploreSpec,
   V1ExportFormat,
   type V1MetricsViewAggregationRequest,
   type V1Notifier,
@@ -51,7 +41,10 @@ export function getQueryNameFromQuery(query: V1Query) {
   }
 }
 
-export function getNewReportInitialFormValues(userEmail: string | undefined) {
+export function getNewReportInitialFormValues(
+  userEmail: string | undefined,
+  aggregationRequest: V1MetricsViewAggregationRequest,
+) {
   return {
     title: "",
     ...getInitialScheduleFormValues(),
@@ -59,12 +52,14 @@ export function getNewReportInitialFormValues(userEmail: string | undefined) {
     exportLimit: "",
     exportIncludeHeader: false,
     ...extractNotification(undefined, userEmail, false),
+    ...extractRowsAndColumns(aggregationRequest),
   };
 }
 
 export function getExistingReportInitialFormValues(
   reportSpec: V1ReportSpec,
   userEmail: string | undefined,
+  aggregationRequest: V1MetricsViewAggregationRequest,
 ) {
   return {
     title: reportSpec.displayName ?? "",
@@ -74,6 +69,7 @@ export function getExistingReportInitialFormValues(
     exportLimit: reportSpec.exportLimit === "0" ? "" : reportSpec.exportLimit,
     exportIncludeHeader: reportSpec.exportIncludeHeader ?? false,
     ...extractNotification(reportSpec.notifiers, userEmail, true),
+    ...extractRowsAndColumns(aggregationRequest),
   };
 }
 
@@ -147,34 +143,48 @@ export function getFiltersAndTimeControlsFromAggregationRequest(
   return { filters, timeControls };
 }
 
-export function getUpdatedAggregationRequest(
+export function extractRowsAndColumns(
   aggregationRequest: V1MetricsViewAggregationRequest,
-  filtersArgs: FiltersState,
-  timeControlArgs: TimeControlState,
-  exploreSpec: V1ExploreSpec,
 ) {
-  const timeRange = mapSelectedTimeRangeToV1TimeRange(
-    timeControlArgs.selectedTimeRange,
-    timeControlArgs.selectedTimezone,
-    exploreSpec,
-  );
-  const comparisonTimeRange = mapSelectedComparisonTimeRangeToV1TimeRange(
-    timeControlArgs.selectedComparisonTimeRange,
-    timeControlArgs.showTimeComparison,
-    timeRange,
-  );
+  const pivotedOn = new Set<string>(aggregationRequest.pivotOn ?? []);
+  const isFlat = aggregationRequest.pivotOn === undefined;
+
+  const rows =
+    aggregationRequest.dimensions
+      ?.filter(
+        (dimension) =>
+          !isFlat &&
+          !pivotedOn.has(dimension.alias!) &&
+          !pivotedOn.has(dimension.name!),
+      )
+      .map((dimension) =>
+        getDimensionNameFromAggregationDimension(dimension),
+      ) ?? [];
+
+  const columnsFromDimensions =
+    aggregationRequest.dimensions
+      ?.filter(
+        (dimension) =>
+          isFlat ||
+          pivotedOn.has(dimension.alias!) ||
+          pivotedOn.has(dimension.name!),
+      )
+      .map((dimension) =>
+        getDimensionNameFromAggregationDimension(dimension),
+      ) ?? [];
+
+  const columnsFromMeasures =
+    aggregationRequest.measures
+      ?.filter(
+        (measure) =>
+          !MeasureModifierSuffixRegex.test(measure.name!) &&
+          !ComparisonModifierSuffixRegex.test(measure.name!),
+      )
+      .map((measure) => measure.name!) ?? [];
 
   return {
-    ...aggregationRequest,
-    where: sanitiseExpression(
-      mergeDimensionAndMeasureFilters(
-        filtersArgs.whereFilter,
-        filtersArgs.dimensionThresholdFilters,
-      ),
-      undefined,
-    ),
-    timeRange,
-    comparisonTimeRange,
+    rows,
+    columns: [...columnsFromDimensions, ...columnsFromMeasures],
   };
 }
 

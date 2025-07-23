@@ -224,6 +224,7 @@
 <div
   class="flex flex-col gap-y-2 size-full pointer-events-none"
   style:max-width="{maxWidth}px"
+  aria-label="Filters form"
 >
   <div
     class="flex flex-row flex-wrap gap-x-2 gap-y-1.5 items-center ml-2 pointer-events-auto w-fit"

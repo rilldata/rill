@@ -323,7 +323,10 @@ export async function deriveInterval(
 
   if (isRillPeriodToDate(name)) {
     const period = RILL_TO_UNIT[name];
-    return { interval: getPeriodToDate(anchor, period) };
+    return {
+      interval: getPeriodToDate(anchor, period),
+      grain: V1TimeGrain.TIME_GRAIN_DAY,
+    };
   }
 
   if (isRillPreviousPeriod(name)) {
@@ -334,7 +337,10 @@ export async function deriveInterval(
   const duration = isValidISODuration(name);
 
   if (duration) {
-    return { interval: getInterval(duration, anchor) };
+    return {
+      interval: getInterval(duration, anchor),
+      grain: V1TimeGrain.TIME_GRAIN_HOUR,
+    };
   }
 
   const parsed = parseRillTime(name);
@@ -354,8 +360,8 @@ export async function deriveInterval(
 
   return {
     interval: Interval.fromDateTimes(
-      DateTime.fromISO(timeRange.start),
-      DateTime.fromISO(timeRange.end),
+      DateTime.fromISO(timeRange.start).setZone(activeTimeZone),
+      DateTime.fromISO(timeRange.end).setZone(activeTimeZone),
     ),
     grain: parsed.asOfLabel?.snap
       ? GrainAliasToV1TimeGrain[parsed.asOfLabel?.snap]

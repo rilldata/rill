@@ -64,6 +64,8 @@
   function normalizeRangeString(alias: string | null): string | undefined {
     return alias?.replace(",", " to ");
   }
+
+  $: console.log(interval.isValid, activeTimeGrain);
 </script>
 
 <div class="wrapper">

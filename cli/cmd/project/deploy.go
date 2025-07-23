@@ -184,8 +184,6 @@ func DeployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployO
 		Description:      opts.Description,
 		Provisioner:      opts.Provisioner,
 		ProdVersion:      opts.ProdVersion,
-		ProdOlapDriver:   local.DefaultOLAPDriver,
-		ProdOlapDsn:      local.DefaultOLAPDSN,
 		ProdSlots:        int64(opts.Slots),
 		Public:           opts.Public,
 	}

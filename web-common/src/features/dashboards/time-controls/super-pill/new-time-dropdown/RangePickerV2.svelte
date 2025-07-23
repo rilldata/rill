@@ -70,6 +70,8 @@
   let truncationGrain: V1TimeGrain | undefined = undefined;
   let timeZonePickerOpen = false;
 
+  $: console.log("hello");
+
   $: if (timeString) {
     try {
       parsedTime = parseRillTime(timeString);
@@ -254,7 +256,7 @@
         </button>
       </Tooltip.Trigger>
 
-      <Tooltip.Content side="bottom" sideOffset={8}>
+      <Tooltip.Content side="bottom" sideOffset={8} class="z-50">
         <TooltipContent class="flex-col flex items-center gap-y-0 p-3">
           <span class="font-semibold italic mb-1">{timeString}</span>
           <span
@@ -447,6 +449,7 @@
     {smallestTimeGrain}
     inclusive={padded}
     {ref}
+    {zone}
     onSelectEnding={onSelectGrain}
     onToggleAlignment={(inclusive) => {
       onSelectAsOfOption(ref, inclusive);
