@@ -2,10 +2,10 @@ import { expect } from "@playwright/test";
 import { gotoNavEntry } from "web-local/tests/utils/waitHelpers";
 import { test } from "../setup/base";
 
-test.describe("canvas global time filters", () => {
+test.describe("canvas global dimension filters", () => {
   test.use({ project: "AdBids" });
 
-  test("global time filters run through", async ({ page }) => {
+  test("global dimension filters run through", async ({ page }) => {
     await page.getByLabel("/dashboards").click();
     await gotoNavEntry(page, "/dashboards/AdBids_metrics_canvas.yaml");
 
