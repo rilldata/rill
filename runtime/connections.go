@@ -107,12 +107,13 @@ func (r *Runtime) AI(ctx context.Context, instanceID string) (drivers.AIService,
 		return nil, nil, err
 	}
 
+	aiConnector := inst.ResolveAIConnector()
 	// The AI connector is optional
-	if inst.AIConnector == "" {
+	if aiConnector == "" {
 		return nil, nil, ErrAINotConfigured
 	}
 
-	conn, release, err := r.AcquireHandle(ctx, instanceID, inst.AIConnector)
+	conn, release, err := r.AcquireHandle(ctx, instanceID, aiConnector)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -120,7 +121,7 @@ func (r *Runtime) AI(ctx context.Context, instanceID string) (drivers.AIService,
 	ai, ok := conn.AsAI(instanceID)
 	if !ok {
 		release()
-		return nil, nil, fmt.Errorf("connector %q is not a valid AI service", inst.AIConnector)
+		return nil, nil, fmt.Errorf("connector %q is not a valid AI service", aiConnector)
 	}
 
 	return ai, release, nil

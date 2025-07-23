@@ -221,7 +221,7 @@ ai_instructions: ...
 
 
 
-### Let's answer some questions basic questions!
+### Let's answer some basic questions!
 
 
 For campaign `Leafly_MarketMight`, which site domains are getting the most bids? 

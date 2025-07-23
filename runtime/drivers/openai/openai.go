@@ -5,10 +5,10 @@ import (
 	"fmt"
 
 	"github.com/mitchellh/mapstructure"
-	"github.com/rilldata/rill/admin/ai"
 	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/pkg/ai"
 	"github.com/rilldata/rill/runtime/storage"
 	"go.uber.org/zap"
 )
@@ -23,12 +23,9 @@ var spec = drivers.Spec{
 	Description: "Connect to OpenAI's API for language models.",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
-			Key:         "APIKey",
-			Type:        drivers.StringPropertyType,
-			Required:    true,
-			DisplayName: "API Key",
-			Description: "API key for connecting to OpenAI.",
-			Secret:      true,
+			Key:      "api_key",
+			Type:     drivers.StringPropertyType,
+			Required: true,
 		},
 	},
 	ImplementsAI: true,
@@ -62,7 +59,6 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 
 	return &openai{
 		aiClient: aiClient,
-		apiKey:   conf.APIKey,
 	}, nil
 }
 
@@ -82,7 +78,6 @@ type configProperties struct {
 
 type openai struct {
 	aiClient ai.Client
-	apiKey   string
 }
 
 var _ drivers.AIService = (*openai)(nil)
@@ -182,17 +177,7 @@ func (o *openai) Ping(ctx context.Context) error {
 	return nil
 }
 
+// Complete implements drivers.AIService.
 func (o *openai) Complete(ctx context.Context, msgs []*aiv1.CompletionMessage, tools []*aiv1.Tool) (*aiv1.CompletionMessage, error) {
-	// Extract content from messages and run project_editor agent
-	// For now, return a simple response
-	return &aiv1.CompletionMessage{
-		Role: "assistant",
-		Content: []*aiv1.ContentBlock{
-			{
-				BlockType: &aiv1.ContentBlock_Text{
-					Text: "Project editor agent integration pending.",
-				},
-			},
-		},
-	}, nil
+	return o.aiClient.Complete(ctx, msgs, tools)
 }
