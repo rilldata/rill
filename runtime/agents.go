@@ -3,17 +3,11 @@ package runtime
 import (
 	"context"
 	"fmt"
-	"os"
-	"time"
 
-	"github.com/joho/godotenv"
 	"github.com/pontus-devoteam/agent-sdk-go/pkg/agent"
 	"github.com/pontus-devoteam/agent-sdk-go/pkg/memory"
-	"github.com/pontus-devoteam/agent-sdk-go/pkg/model/providers/openai"
 	"github.com/pontus-devoteam/agent-sdk-go/pkg/runner"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 // ResolverOptions are the options passed to a resolver initializer.
@@ -54,26 +48,14 @@ func (r *Runtime) RunAgent(ctx context.Context, opts *AgentRunOptions) (string, 
 		return "", fmt.Errorf("no agent registered with name %q", opts.Agent)
 	}
 
-	// Run the agent
-	//
-	// This runner should come from the openai/anthropic/openllm drivers
-	//
-	// Something like r.ResolveAIConnector(ctx, opts.InstanceID) should return a AI driver that returns a runner
-	// Create OpenAI provider - Get API key from environment
-	// Load .env file (fails silently if not found or has errors)
-	_ = godotenv.Load()
-
-	// Get RILL_ADMIN_OPENAI_API_KEY key from .env file
-	apiKey := os.Getenv("OPENAI_API_KEY")
-	if apiKey == "" {
-		return "", status.Error(codes.FailedPrecondition, "OPENAI_API_KEY environment variable is not set")
+	// Acquire AI
+	ai, release, err := r.AI(ctx, opts.InstanceID)
+	if err != nil {
+		return "", err
 	}
+	defer release()
 
-	provider := openai.NewProvider(apiKey)
-	provider.SetDefaultModel("gpt-4o")
-	provider.WithRateLimit(50, 100000)
-	provider.WithRetryConfig(3, 2*time.Second)
-
+	provider := ai.LLMProvider()
 	agentRunner := runner.NewRunner().WithDefaultProvider(provider)
 	agentRunner.WithMemory(agentMemory)
 

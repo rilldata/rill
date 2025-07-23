@@ -3,14 +3,18 @@ package openai
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/mitchellh/mapstructure"
+	"github.com/pontus-devoteam/agent-sdk-go/pkg/model"
 	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/ai"
 	"github.com/rilldata/rill/runtime/storage"
 	"go.uber.org/zap"
+
+	openaiprovider "github.com/pontus-devoteam/agent-sdk-go/pkg/model/providers/openai"
 )
 
 func init() {
@@ -59,6 +63,7 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 
 	return &openai{
 		aiClient: aiClient,
+		apiKey:   conf.APIKey,
 	}, nil
 }
 
@@ -78,6 +83,7 @@ type configProperties struct {
 
 type openai struct {
 	aiClient ai.Client
+	apiKey   string
 }
 
 var _ drivers.AIService = (*openai)(nil)
@@ -154,7 +160,9 @@ func (o *openai) Close() error {
 
 // Config implements drivers.Handle.
 func (o *openai) Config() map[string]any {
-	return map[string]any{}
+	return map[string]any{
+		"api_key": o.apiKey,
+	}
 }
 
 // Driver implements drivers.Handle.
@@ -179,5 +187,15 @@ func (o *openai) Ping(ctx context.Context) error {
 
 // Complete implements drivers.AIService.
 func (o *openai) Complete(ctx context.Context, msgs []*aiv1.CompletionMessage, tools []*aiv1.Tool) (*aiv1.CompletionMessage, error) {
+	// TODO : Implement complete using the LLMProvider
 	return o.aiClient.Complete(ctx, msgs, tools)
+}
+
+func (o *openai) LLMProvider() model.Provider {
+	provider := openaiprovider.NewProvider(o.apiKey)
+	// TODO : Also allow user to configure the model
+	provider.SetDefaultModel("gpt-4o")
+	provider.WithRateLimit(50, 100000)
+	provider.WithRetryConfig(3, 2*time.Second)
+	return provider
 }

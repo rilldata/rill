@@ -3,6 +3,7 @@ package ai
 import (
 	"context"
 
+	"github.com/pontus-devoteam/agent-sdk-go/pkg/model"
 	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
@@ -167,6 +168,10 @@ func (c *connection) Complete(ctx context.Context, msgs []*aiv1.CompletionMessag
 	return c.echoUserMessage(msgs)
 }
 
+func (c *connection) LLMProvider() model.Provider {
+	return mockProvider{}
+}
+
 // handleToolCalling returns a simple mock tool call for testing
 func (c *connection) handleToolCalling() (*aiv1.CompletionMessage, error) {
 	inputStruct, _ := structpb.NewStruct(map[string]interface{}{})
@@ -219,4 +224,12 @@ func (c *connection) findLastUserText(msgs []*aiv1.CompletionMessage) string {
 		}
 	}
 	return ""
+}
+
+type mockProvider struct{}
+
+var _ model.Provider = mockProvider{}
+
+func (p mockProvider) GetModel(modelName string) (model.Model, error) {
+	return nil, drivers.ErrNotImplemented
 }
