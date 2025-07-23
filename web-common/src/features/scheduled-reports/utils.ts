@@ -147,34 +147,44 @@ export function extractRowsAndColumns(
   aggregationRequest: V1MetricsViewAggregationRequest,
 ) {
   const pivotedOn = new Set<string>(aggregationRequest.pivotOn ?? []);
-  const rows: string[] = [];
-  const columns: string[] = [];
   const isFlat = aggregationRequest.pivotOn === undefined;
 
-  aggregationRequest.dimensions?.forEach((dimension) => {
-    const dimensionName = getDimensionNameFromAggregationDimension(dimension);
-    if (
-      isFlat ||
-      pivotedOn.has(dimension.alias!) ||
-      pivotedOn.has(dimension.name!)
-    ) {
-      columns.push(dimensionName);
-    } else {
-      rows.push(dimensionName);
-    }
-  });
-  aggregationRequest.measures?.forEach((measure) => {
-    if (
-      MeasureModifierSuffixRegex.test(measure.name!) ||
-      ComparisonModifierSuffixRegex.test(measure.name!)
-    )
-      return;
-    columns.push(measure.name!);
-  });
+  const rows =
+    aggregationRequest.dimensions
+      ?.filter(
+        (dimension) =>
+          !isFlat &&
+          !pivotedOn.has(dimension.alias!) &&
+          !pivotedOn.has(dimension.name!),
+      )
+      .map((dimension) =>
+        getDimensionNameFromAggregationDimension(dimension),
+      ) ?? [];
+
+  const columnsFromDimensions =
+    aggregationRequest.dimensions
+      ?.filter(
+        (dimension) =>
+          isFlat ||
+          pivotedOn.has(dimension.alias!) ||
+          pivotedOn.has(dimension.name!),
+      )
+      .map((dimension) =>
+        getDimensionNameFromAggregationDimension(dimension),
+      ) ?? [];
+
+  const columnsFromMeasures =
+    aggregationRequest.measures
+      ?.filter(
+        (measure) =>
+          !MeasureModifierSuffixRegex.test(measure.name!) &&
+          !ComparisonModifierSuffixRegex.test(measure.name!),
+      )
+      .map((measure) => measure.name!) ?? [];
 
   return {
     rows,
-    columns,
+    columns: [...columnsFromDimensions, ...columnsFromMeasures],
   };
 }
 

@@ -29,14 +29,14 @@ export function getDimensionNameFromAggregationDimension(
 }
 
 const timeDimensionNameRegex = /^(.*)_rill_(.*)$/;
-export function getAggregationDimensionFromTimeDimension(
-  colName: string,
+export function getAggregationDimensionFromFieldName(
+  fieldName: string,
   timeZone: string,
 ) {
-  const match = timeDimensionNameRegex.exec(colName);
+  const match = timeDimensionNameRegex.exec(fieldName);
   if (!match) {
     return <V1MetricsViewAggregationDimension>{
-      name: colName,
+      name: fieldName,
     };
   }
 

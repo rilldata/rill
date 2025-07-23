@@ -1,4 +1,4 @@
-import { getAggregationDimensionFromTimeDimension } from "@rilldata/web-common/features/dashboards/aggregation-request/dimension-utils.ts";
+import { getAggregationDimensionFromFieldName } from "@rilldata/web-common/features/dashboards/aggregation-request/dimension-utils.ts";
 import { mergeDimensionAndMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils.ts";
 import {
   COMPARISON_DELTA,
@@ -89,8 +89,8 @@ export const aggregationRequestWithRowsAndColumns = ({
   return (aggregationRequest: V1MetricsViewAggregationRequest) => {
     const allFields = new Set<string>([...rows, ...columns]);
     const isFlat = rows.length === 0;
-    const pivotOn: string[] = [];
 
+    // Get measures defined as columns. We do allow adding measures as rows so need to check it.
     const measures = columns
       .filter((col) => exploreSpec.measures?.includes(col))
       .flatMap((measureName) => {
@@ -105,27 +105,29 @@ export const aggregationRequestWithRowsAndColumns = ({
 
         return group;
       });
-    const dimensions: V1MetricsViewAggregationDimension[] = rows.map((d) =>
-      getAggregationDimensionFromTimeDimension(d, selectedTimezone),
+
+    // Get dimensions defined as rows
+    const dimensionsFromRows: V1MetricsViewAggregationDimension[] = rows.map(
+      (row) => getAggregationDimensionFromFieldName(row, selectedTimezone),
     );
-    columns
+
+    // Get dimensions defined as columns
+    const dimensionsFromColumns: V1MetricsViewAggregationDimension[] = columns
       .filter((col) => !exploreSpec.measures?.includes(col))
-      .forEach((col) => {
-        if (exploreSpec.dimensions?.includes(col)) {
-          dimensions.push({ name: col });
-          if (!isFlat) pivotOn.push(col);
-          return;
-        }
+      .map((col) =>
+        getAggregationDimensionFromFieldName(col, selectedTimezone),
+      );
 
-        const dimension = getAggregationDimensionFromTimeDimension(
-          col,
-          selectedTimezone,
-        );
-        dimensions.push(dimension);
-        if (!isFlat) pivotOn.push(dimension.alias ?? dimension.name!);
-      });
+    // only add column dimensions as pivot if it is a non-flat view
+    const pivotOn = !isFlat
+      ? dimensionsFromColumns.map((d) => d.alias ?? d.name!)
+      : [];
 
-    const sort = getUpdatedAggregationSort(
+    // Get the full list of dimensions
+    const dimensions = [...dimensionsFromRows, ...dimensionsFromColumns];
+
+    // Get the updated sort based on the new measures and dimensions
+    const updatedAggregationSort = getUpdatedAggregationSort(
       aggregationRequest,
       measures,
       dimensions,
@@ -138,7 +140,7 @@ export const aggregationRequestWithRowsAndColumns = ({
       measures,
       dimensions,
       pivotOn: !pivotOn.length ? undefined : pivotOn,
-      sort,
+      sort: updatedAggregationSort,
     };
   };
 };
@@ -160,21 +162,32 @@ function getUpdatedAggregationSort(
         !measures.find((m) => m.name === s.name) && !pivotOn.includes(s.name!)
       );
     }) ?? [];
-  if (sort.length === 0) {
-    let sortField: string | undefined = measures?.[0]?.name;
-    let sortFieldIsMeasure = !!sortField;
-    if (!sortField || hasPivot) {
-      const sortDimension = dimensions.find((d) => !pivotOn.includes(d.alias!));
-      sortField = sortDimension?.alias || sortDimension?.name;
-      sortFieldIsMeasure = false;
-    }
-    if (sortField) {
-      sort.push({
-        desc: sortFieldIsMeasure,
-        name: sortField,
-      });
-    }
+
+  // Old sort is still valid. So retain it
+  if (sort.length > 0) {
+    return sort;
   }
 
-  return sort;
+  // Get the sort from the 1st measure
+  let sortField: string | undefined = measures?.[0]?.name;
+  let sortFieldIsMeasure = !!sortField;
+  // If there is no measure or if we are pivoting the get the 1st non-pivoted dimension
+  if (!sortField || hasPivot) {
+    const nonPivotedDimension = dimensions.find(
+      (d) => !pivotOn.includes(d.alias!),
+    );
+    sortField = nonPivotedDimension?.alias || nonPivotedDimension?.name;
+    sortFieldIsMeasure = false;
+  }
+
+  if (!sortField) {
+    return [];
+  }
+
+  return [
+    {
+      desc: sortFieldIsMeasure,
+      name: sortField,
+    },
+  ];
 }
