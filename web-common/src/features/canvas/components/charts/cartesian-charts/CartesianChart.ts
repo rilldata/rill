@@ -220,6 +220,8 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
         const enabled =
           !!timeRange?.start &&
           !!timeRange?.end &&
+          !!measures?.length &&
+          !!dimensions?.length &&
           (hasColorDimension &&
           config.x?.type === "nominal" &&
           !Array.isArray(config.x?.sort)
