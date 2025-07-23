@@ -231,19 +231,7 @@
     {#if dateTimeUnit}
       <div class="bg-gray-100 border-t">
         <div class="flex justify-between items-center p-2">
-          <span>
-            Include
-
-            {#if ref === "latest"}
-              latest
-            {:else if ref === "now"}
-              current
-            {:else if ref === "watermark"}
-              last complete
-            {/if}
-
-            {dateTimeUnit}
-          </span>
+          <span> Anchor to period end </span>
 
           <Switch
             disabled={ref === "watermark"}

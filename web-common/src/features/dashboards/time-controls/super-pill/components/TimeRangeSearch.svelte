@@ -39,8 +39,6 @@
     on:submit={(e) => {
       e.preventDefault();
 
-      searchElement.blur();
-
       if (searchValue === ALL_TIME_RANGE_ALIAS) {
         onSelectRange(ALL_TIME_RANGE_ALIAS);
         searchValue = "";
@@ -79,11 +77,13 @@
       placeholder="Enter a time range"
       type="text"
       class="h-7 border w-full"
+      on:keydown={() => {
+        if (unableToParse) {
+          unableToParse = false;
+        }
+      }}
       bind:this={searchElement}
       bind:value={searchValue}
-      on:focus={() => {
-        unableToParse = false;
-      }}
     />
   </form>
 
@@ -111,7 +111,7 @@
     @apply border-primary-500;
   }
 
-  form.error:not(:focus-within) {
+  form.error {
     @apply border-red-500;
   }
 
