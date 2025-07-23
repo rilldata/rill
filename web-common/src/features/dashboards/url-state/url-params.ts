@@ -31,6 +31,7 @@ export enum ExploreStateURLParams {
   PivotTableMode = "table_mode",
 
   GzippedParams = "gzipped_state",
+  TemporaryFilters = "temp",
 }
 
 export const ExploreStateKeyToURLParamMap: Partial<
