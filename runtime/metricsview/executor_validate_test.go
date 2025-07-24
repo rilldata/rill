@@ -169,6 +169,13 @@ func TestValidateAndNormalizeMetricsViewSmallestTimeGrain(t *testing.T) {
 		"model.sql": `
 SELECT '2025-05-01T00:00:00Z'::TIMESTAMP AS t_timestamp, '2025-05-01'::DATE AS t_date
 		`,
+		`ok_none.yaml`: `
+version: 1
+type: metrics_view
+model: model
+measures:
+- expression: count(*)
+`,
 		`ok_timestamp_default.yaml`: `
 version: 1
 type: metrics_view
@@ -224,9 +231,12 @@ measures:
 	})
 
 	testruntime.ReconcileParserAndWait(t, rt, id)
-	testruntime.RequireReconcileState(t, rt, id, 8, 2, 0)
+	testruntime.RequireReconcileState(t, rt, id, 9, 2, 0)
 
-	mv := testruntime.GetResource(t, rt, id, runtime.ResourceKindMetricsView, "ok_timestamp_default")
+	mv := testruntime.GetResource(t, rt, id, runtime.ResourceKindMetricsView, "ok_none")
+	require.Equal(t, runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED, mv.GetMetricsView().State.ValidSpec.SmallestTimeGrain)
+
+	mv = testruntime.GetResource(t, rt, id, runtime.ResourceKindMetricsView, "ok_timestamp_default")
 	require.Equal(t, runtimev1.TimeGrain_TIME_GRAIN_SECOND, mv.GetMetricsView().State.ValidSpec.SmallestTimeGrain)
 
 	mv = testruntime.GetResource(t, rt, id, runtime.ResourceKindMetricsView, "ok_date_default")

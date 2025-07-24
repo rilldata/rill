@@ -148,16 +148,25 @@ func (e *Executor) ValidateAndNormalizeMetricsView(ctx context.Context) (*Valida
 	// Validate or infer the smallest time grain.
 	// We require the smallest time grain to be at least at second grain.
 	// If any time dimension has DATE type, we require the smallest time grain to be at least at day grain.
-	smallestPossibleGrain := runtimev1.TimeGrain_TIME_GRAIN_SECOND
+	var smallestPossibleGrain runtimev1.TimeGrain // Will stay as unspecified if no time dimension is present.
 	if e.metricsView.TimeDimension != "" {
 		col, ok := cols[strings.ToLower(e.metricsView.TimeDimension)]
 		if ok && col.Type.Code == runtimev1.Type_CODE_DATE {
 			smallestPossibleGrain = runtimev1.TimeGrain_TIME_GRAIN_DAY
+		} else {
+			smallestPossibleGrain = runtimev1.TimeGrain_TIME_GRAIN_SECOND // Default for TIMESTAMP type.
 		}
 	}
 	for _, d := range mv.Dimensions {
-		if d.DataType.Code == runtimev1.Type_CODE_DATE {
+		switch d.DataType.Code {
+		case runtimev1.Type_CODE_TIMESTAMP:
+			if smallestPossibleGrain == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
+				smallestPossibleGrain = runtimev1.TimeGrain_TIME_GRAIN_SECOND // Default for TIMESTAMP type.
+			}
+		case runtimev1.Type_CODE_DATE:
 			smallestPossibleGrain = runtimev1.TimeGrain_TIME_GRAIN_DAY
+		default:
+			// Not a time dimension, skip.
 		}
 	}
 	if mv.SmallestTimeGrain == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
