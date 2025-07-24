@@ -10,6 +10,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/ai"
 	"github.com/rilldata/rill/runtime/storage"
+	openaidriver "github.com/sashabaranov/go-openai"
 	"go.uber.org/zap"
 )
 
@@ -29,6 +30,38 @@ var spec = drivers.Spec{
 			DisplayName: "API Key",
 			Description: "API key for connecting to OpenAI.",
 			Secret:      true,
+		},
+		{
+			Key:         "model",
+			Type:        drivers.StringPropertyType,
+			Required:    false,
+			DisplayName: "Model",
+			Description: "The OpenAI model to use (e.g., 'gpt-4o').",
+			Placeholder: "gpt-4o",
+		},
+		{
+			Key:         "base_url",
+			Type:        drivers.StringPropertyType,
+			Required:    false,
+			DisplayName: "Base URL",
+			Description: "The base URL for the OpenAI API (e.g., 'https://api.openai.com/v1').",
+			Placeholder: "https://api.openai.com/v1",
+		},
+		{
+			Key:         "api_type",
+			Type:        drivers.StringPropertyType,
+			Required:    false,
+			DisplayName: "API Type",
+			Description: "The type of OpenAI API to use (e.g., 'OPEN_AI, AZURE').",
+			Placeholder: "OPEN_AI",
+		},
+		{
+			Key:         "api_version",
+			Type:        drivers.StringPropertyType,
+			Required:    false,
+			DisplayName: "API Version",
+			Description: "The version of the OpenAI API to use (e.g., '2023-05-15'). Required when APIType is APITypeAzure or APITypeAzureAD",
+			Placeholder: "",
 		},
 	},
 	ImplementsAI: true,
@@ -55,13 +88,24 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		return nil, err
 	}
 
-	aiClient, err := ai.NewOpenAI(conf.APIKey)
+	opts := &ai.Options{}
+	if conf.BaseURL != "" {
+		opts.BaseURL = conf.BaseURL
+	}
+	if conf.APIType != "" {
+		opts.APIType = openaidriver.APIType(conf.APIType)
+	}
+	if conf.APIVersion != "" {
+		opts.APIVersion = conf.APIVersion
+	}
+	aiClient, err := ai.NewOpenAI(conf.APIKey, opts)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create OpenAI client: %w", err)
 	}
 
 	return &openai{
 		aiClient: aiClient,
+		config:   conf,
 	}, nil
 }
 
@@ -77,10 +121,17 @@ func (d driver) TertiarySourceConnectors(ctx context.Context, srcProps map[strin
 
 type configProperties struct {
 	APIKey string `mapstructure:"api_key"`
+
+	Model string `mapstructure:"model"`
+
+	BaseURL    string `mapstructure:"base_url"`
+	APIType    string `mapstructure:"api_type"`
+	APIVersion string `mapstructure:"api_version"`
 }
 
 type openai struct {
 	aiClient ai.Client
+	config   *configProperties
 }
 
 var _ drivers.AIService = (*openai)(nil)
@@ -157,7 +208,9 @@ func (o *openai) Close() error {
 
 // Config implements drivers.Handle.
 func (o *openai) Config() map[string]any {
-	return map[string]any{}
+	var configMap map[string]any
+	_ = mapstructure.Decode(o.config, &configMap)
+	return configMap
 }
 
 // Driver implements drivers.Handle.
@@ -182,5 +235,8 @@ func (o *openai) Ping(ctx context.Context) error {
 
 // Complete implements drivers.AIService.
 func (o *openai) Complete(ctx context.Context, msgs []*aiv1.CompletionMessage, tools []*aiv1.Tool) (*aiv1.CompletionMessage, error) {
-	return o.aiClient.Complete(ctx, msgs, tools)
+	opts := ai.CompletionOptions{
+		Model: o.config.Model,
+	}
+	return o.aiClient.Complete(ctx, msgs, tools, opts)
 }

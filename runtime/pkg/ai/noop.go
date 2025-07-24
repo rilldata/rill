@@ -14,6 +14,6 @@ func NewNoop() Client {
 	return noop{}
 }
 
-func (noop) Complete(ctx context.Context, msgs []*aiv1.CompletionMessage, tools []*aiv1.Tool) (*aiv1.CompletionMessage, error) {
+func (noop) Complete(ctx context.Context, msgs []*aiv1.CompletionMessage, tools []*aiv1.Tool, opts CompletionOptions) (*aiv1.CompletionMessage, error) {
 	return &aiv1.CompletionMessage{}, nil
 }

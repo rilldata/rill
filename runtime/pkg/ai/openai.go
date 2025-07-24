@@ -18,8 +18,36 @@ type openAI struct {
 
 var _ Client = (*openAI)(nil)
 
-func NewOpenAI(apiKey string) (Client, error) {
-	c := openai.NewClient(apiKey)
+type Options struct {
+	BaseURL    string
+	APIType    openai.APIType
+	APIVersion string
+}
+
+func NewOpenAI(apiKey string, opts *Options) (Client, error) {
+	if opts == nil {
+		return &openAI{
+			client: openai.NewClient(apiKey),
+			apiKey: apiKey,
+		}, nil
+	}
+
+	var def openai.ClientConfig
+	if opts.APIType == openai.APITypeAzure || opts.APIType == openai.APITypeAzureAD {
+		def = openai.DefaultAzureConfig(apiKey, opts.BaseURL)
+	} else {
+		def = openai.DefaultConfig(apiKey)
+	}
+	if opts.BaseURL != "" {
+		def.BaseURL = opts.BaseURL
+	}
+	if opts.APIVersion != "" {
+		def.APIVersion = opts.APIVersion
+	}
+	if opts.APIType != "" {
+		def.APIType = opts.APIType
+	}
+	c := openai.NewClientWithConfig(def)
 
 	return &openAI{
 		client: c,
@@ -29,7 +57,7 @@ func NewOpenAI(apiKey string) (Client, error) {
 
 // Complete sends a chat completion request to OpenAI and returns the response.
 // It handles conversion between Rill's message format and OpenAI's message format.
-func (c *openAI) Complete(ctx context.Context, msgs []*aiv1.CompletionMessage, tools []*aiv1.Tool) (*aiv1.CompletionMessage, error) {
+func (c *openAI) Complete(ctx context.Context, msgs []*aiv1.CompletionMessage, tools []*aiv1.Tool, opts CompletionOptions) (*aiv1.CompletionMessage, error) {
 	// Convert Rill messages to OpenAI's message format
 	var reqMsgs []openai.ChatCompletionMessage
 	for _, msg := range msgs {
@@ -54,8 +82,14 @@ func (c *openAI) Complete(ctx context.Context, msgs []*aiv1.CompletionMessage, t
 	}
 
 	// Prepare request parameters
+	var model string
+	if opts.Model != "" {
+		model = opts.Model
+	} else {
+		model = openai.GPT4o
+	}
 	params := openai.ChatCompletionRequest{
-		Model:       openai.GPT4o,
+		Model:       model,
 		Messages:    reqMsgs,
 		Temperature: 0.2,
 	}

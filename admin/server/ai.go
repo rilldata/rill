@@ -7,6 +7,7 @@ import (
 
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
+	"github.com/rilldata/rill/runtime/pkg/ai"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.opentelemetry.io/otel/attribute"
 )
@@ -32,7 +33,7 @@ func (s *Server) Complete(ctx context.Context, req *adminv1.CompleteRequest) (*a
 	}
 
 	// Pass messages and tools to the AI service
-	msg, err := s.admin.AI.Complete(ctx, messages, req.Tools)
+	msg, err := s.admin.AI.Complete(ctx, messages, req.Tools, ai.CompletionOptions{})
 	if err != nil {
 		return nil, err
 	}
