@@ -4,32 +4,31 @@ import (
 	"fmt"
 	"strings"
 	"time"
+	// Load IANA time zone data
+	_ "time/tzdata"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/rilltime"
 	"google.golang.org/protobuf/types/known/structpb"
 	"gopkg.in/yaml.v3"
-
-	// Load IANA time zone data
-	_ "time/tzdata"
 )
 
 // MetricsViewYAML is the raw structure of a MetricsView resource defined in YAML
 type MetricsViewYAML struct {
 	commonYAML        `yaml:",inline"` // Not accessed here, only setting it so we can use KnownFields for YAML parsing
-	DisplayName       string           `yaml:"display_name"`
-	Title             string           `yaml:"title"` // Deprecated: use display_name
-	Description       string           `yaml:"description"`
-	AIInstructions    string           `yaml:"ai_instructions"`
-	Model             string           `yaml:"model"`
-	Database          string           `yaml:"database"`
-	DatabaseSchema    string           `yaml:"database_schema"`
-	Table             string           `yaml:"table"`
-	TimeDimension     string           `yaml:"timeseries"`
-	Watermark         string           `yaml:"watermark"`
-	SmallestTimeGrain string           `yaml:"smallest_time_grain"`
-	FirstDayOfWeek    uint32           `yaml:"first_day_of_week"`
-	FirstMonthOfYear  uint32           `yaml:"first_month_of_year"`
+	DisplayName       string `yaml:"display_name"`
+	Title             string `yaml:"title"` // Deprecated: use display_name
+	Description       string `yaml:"description"`
+	AIInstructions    string `yaml:"ai_instructions"`
+	Model             string `yaml:"model"`
+	Database          string `yaml:"database"`
+	DatabaseSchema    string `yaml:"database_schema"`
+	Table             string `yaml:"table"`
+	TimeDimension     string `yaml:"timeseries"`
+	Watermark         string `yaml:"watermark"`
+	SmallestTimeGrain string `yaml:"smallest_time_grain"`
+	FirstDayOfWeek    uint32 `yaml:"first_day_of_week"`
+	FirstMonthOfYear  uint32 `yaml:"first_month_of_year"`
 	Dimensions        []*struct {
 		Name                    string
 		DisplayName             string `yaml:"display_name"`
@@ -63,6 +62,11 @@ type MetricsViewYAML struct {
 		ValidPercentOfTotal bool           `yaml:"valid_percent_of_total"`
 		TreatNullsAs        string         `yaml:"treat_nulls_as"`
 	}
+	Annotations []*struct {
+		Name     string             `yaml:"name"`
+		Model    string             `yaml:"model"`
+		Measures *FieldSelectorYAML `yaml:"measures"`
+	} `yaml:"annotations"`
 	Security *SecurityPolicyYAML
 
 	// DEPRECATED FIELDS
@@ -498,6 +502,19 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		}
 	}
 
+	for _, annotation := range tmp.Annotations {
+		if annotation == nil {
+			continue
+		}
+
+		if annotation.Model == "" {
+			return fmt.Errorf("annotation must have a model")
+		}
+		if annotation.Name == "" {
+			annotation.Name = annotation.Model
+		}
+	}
+
 	for _, measure := range tmp.DefaultMeasures {
 		if v, ok := names[strings.ToLower(measure)]; !ok || v != nameIsMeasure {
 			return fmt.Errorf(`measure %q referenced in "default_dimensions" not found`, measure)
@@ -568,6 +585,15 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		node.Refs = append(node.Refs, ResourceName{Kind: ResourceKindTheme, Name: tmp.DefaultTheme})
 	}
 
+	// Add annotations as refs to the end of the metrics view.
+	// TODO: would this break streaming metrics view check anywhere?
+	for _, annotation := range tmp.Annotations {
+		if annotation == nil {
+			continue
+		}
+		node.Refs = append(node.Refs, ResourceName{Kind: ResourceKindModel, Name: annotation.Model})
+	}
+
 	securityRefs, err := inferRefsFromSecurityRules(securityRules)
 	if err != nil {
 		return err
@@ -623,6 +649,24 @@ func (p *Parser) parseMetricsView(node *Node) error {
 			LookupKeyColumn:         dim.LookupKeyColumn,
 			LookupValueColumn:       dim.LookupValueColumn,
 			LookupDefaultExpression: dim.LookupDefaultExpression,
+		})
+	}
+
+	for _, annotation := range tmp.Annotations {
+		if annotation == nil {
+			continue
+		}
+		var annotationMeasuresSelector *runtimev1.FieldSelector
+		annotationMeasures, ok := annotation.Measures.TryResolve()
+		if !ok {
+			annotationMeasuresSelector = annotation.Measures.Proto()
+		}
+
+		spec.Annotations = append(spec.Annotations, &runtimev1.MetricsViewSpec_Annotation{
+			Name:             annotation.Name,
+			Model:            annotation.Model,
+			Measures:         annotationMeasures,
+			MeasuresSelector: annotationMeasuresSelector,
 		})
 	}
 

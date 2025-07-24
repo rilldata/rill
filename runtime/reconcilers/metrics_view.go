@@ -90,6 +90,7 @@ func (r *MetricsViewReconciler) Reconcile(ctx context.Context, n *runtimev1.Reso
 
 	// Find out if the metrics view has a ref to a source or model in the same project.
 	hasInternalRef := false
+	// TODO: would this break if annotation's model is added a ref?
 	for _, ref := range self.Meta.Refs {
 		if ref.Kind == runtime.ResourceKindSource || ref.Kind == runtime.ResourceKindModel {
 			hasInternalRef = true

@@ -1383,6 +1383,13 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
   measures: MetricsViewSpec_Measure[] = [];
 
   /**
+   * Annotations in the metrics view
+   *
+   * @generated from field: repeated rill.runtime.v1.MetricsViewSpec.Annotation annotations = 29;
+   */
+  annotations: MetricsViewSpec_Annotation[] = [];
+
+  /**
    * Security for the metrics view
    *
    * @generated from field: repeated rill.runtime.v1.SecurityRule security_rules = 23;
@@ -1441,6 +1448,7 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
     { no: 20, name: "watermark_expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "dimensions", kind: "message", T: MetricsViewSpec_Dimension, repeated: true },
     { no: 7, name: "measures", kind: "message", T: MetricsViewSpec_Measure, repeated: true },
+    { no: 29, name: "annotations", kind: "message", T: MetricsViewSpec_Annotation, repeated: true },
     { no: 23, name: "security_rules", kind: "message", T: SecurityRule, repeated: true },
     { no: 12, name: "first_day_of_week", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 13, name: "first_month_of_year", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
@@ -1843,6 +1851,79 @@ export class MetricsViewSpec_Measure extends Message<MetricsViewSpec_Measure> {
 
   static equals(a: MetricsViewSpec_Measure | PlainMessage<MetricsViewSpec_Measure> | undefined, b: MetricsViewSpec_Measure | PlainMessage<MetricsViewSpec_Measure> | undefined): boolean {
     return proto3.util.equals(MetricsViewSpec_Measure, a, b);
+  }
+}
+
+/**
+ * Annotations that can be applied to measures
+ *
+ * @generated from message rill.runtime.v1.MetricsViewSpec.Annotation
+ */
+export class MetricsViewSpec_Annotation extends Message<MetricsViewSpec_Annotation> {
+  /**
+   * @generated from field: string name = 1;
+   */
+  name = "";
+
+  /**
+   * @generated from field: string model = 2;
+   */
+  model = "";
+
+  /**
+   * Measures to apply the annotation to. If `measures_selector` is set, this will only be set in `state.valid_spec`.
+   *
+   * @generated from field: repeated string measures = 3;
+   */
+  measures: string[] = [];
+
+  /**
+   * Dynamic selector for `measures`. Will be processed during validation, so it will always be empty in `state.valid_spec`.
+   *
+   * @generated from field: rill.runtime.v1.FieldSelector measures_selector = 4;
+   */
+  measuresSelector?: FieldSelector;
+
+  /**
+   * @generated from field: bool has_time_end = 5;
+   */
+  hasTimeEnd = false;
+
+  /**
+   * @generated from field: bool has_grain = 6;
+   */
+  hasGrain = false;
+
+  constructor(data?: PartialMessage<MetricsViewSpec_Annotation>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.MetricsViewSpec.Annotation";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "model", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 4, name: "measures_selector", kind: "message", T: FieldSelector },
+    { no: 5, name: "has_time_end", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 6, name: "has_grain", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec_Annotation {
+    return new MetricsViewSpec_Annotation().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewSpec_Annotation {
+    return new MetricsViewSpec_Annotation().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewSpec_Annotation {
+    return new MetricsViewSpec_Annotation().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: MetricsViewSpec_Annotation | PlainMessage<MetricsViewSpec_Annotation> | undefined, b: MetricsViewSpec_Annotation | PlainMessage<MetricsViewSpec_Annotation> | undefined): boolean {
+    return proto3.util.equals(MetricsViewSpec_Annotation, a, b);
   }
 }
 

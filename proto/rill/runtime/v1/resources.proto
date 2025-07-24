@@ -243,6 +243,17 @@ message MetricsViewSpec {
     // The data type of the measure. Only populated in ValidSpec.
     Type data_type = 15;
   }
+  // Annotations that can be applied to measures
+  message Annotation {
+    string name = 1;
+    string model = 2;
+    // Measures to apply the annotation to. If `measures_selector` is set, this will only be set in `state.valid_spec`.
+    repeated string measures = 3;
+    // Dynamic selector for `measures`. Will be processed during validation, so it will always be empty in `state.valid_spec`.
+    FieldSelector measures_selector = 4;
+    bool has_time_end = 5;
+    bool has_grain = 6;
+  }
   // Connector containing the table
   string connector = 1;
   // Name of the database where table is located (optional)
@@ -270,6 +281,8 @@ message MetricsViewSpec {
   repeated Dimension dimensions = 6;
   // Measures in the metrics view
   repeated Measure measures = 7;
+  // Annotations in the metrics view
+  repeated Annotation annotations = 29;
   // Security for the metrics view
   repeated SecurityRule security_rules = 23;
   // ISO 8601 weekday number to use as the base for time aggregations by week. Defaults to 1 (Monday).

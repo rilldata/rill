@@ -5669,6 +5669,12 @@ definitions:
           type: object
           $ref: '#/definitions/MetricsViewSpecMeasure'
         title: Measures in the metrics view
+      annotations:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1MetricsViewSpecAnnotation'
+        title: Annotations in the metrics view
       securityRules:
         type: array
         items:
@@ -5691,6 +5697,26 @@ definitions:
       cacheKeyTtlSeconds:
         type: string
         format: int64
+  v1MetricsViewSpecAnnotation:
+    type: object
+    properties:
+      name:
+        type: string
+      model:
+        type: string
+      measures:
+        type: array
+        items:
+          type: string
+        description: Measures to apply the annotation to. If `measures_selector` is set, this will only be set in `state.valid_spec`.
+      measuresSelector:
+        $ref: '#/definitions/v1FieldSelector'
+        description: Dynamic selector for `measures`. Will be processed during validation, so it will always be empty in `state.valid_spec`.
+      hasTimeEnd:
+        type: boolean
+      hasGrain:
+        type: boolean
+    title: Annotations that can be applied to measures
   v1MetricsViewState:
     type: object
     properties:
