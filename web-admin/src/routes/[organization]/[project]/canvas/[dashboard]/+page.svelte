@@ -8,7 +8,6 @@
     DashboardBannerPriority,
   } from "@rilldata/web-common/components/banner/constants";
   import CanvasDashboardEmbed from "@rilldata/web-common/features/canvas/CanvasDashboardEmbed.svelte";
-  import CanvasThemeProvider from "@rilldata/web-common/features/canvas/CanvasThemeProvider.svelte";
   import {
     ResourceKind,
     useResource,
@@ -102,7 +101,5 @@
 {#if isCanvasReconcilingForFirstTime(canvasResource)}
   <DashboardBuilding />
 {:else}
-  <CanvasThemeProvider {canvasName}>
-    <CanvasDashboardEmbed resource={canvasResource} />
-  </CanvasThemeProvider>
+  <CanvasDashboardEmbed resource={canvasResource} />
 {/if}
