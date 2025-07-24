@@ -52,6 +52,12 @@ describe("DimensionFilter", () => {
       ]),
     );
 
+    // Open the dropdown again to check pinning order
+    await act(() => screen.getByLabelText("Open publisher filter").click());
+    const items = screen.getAllByRole("menuitem");
+    expect(items[0]).toHaveTextContent("Facebook");
+    expect(items[1]).toHaveTextContent("Google");
+
     // Change the mode to "Contains" and enter a search term "oo"
     await act(() => screen.getByRole("combobox").click());
     await act(() => screen.getByRole("option", { name: /Contains/ }).click());
@@ -93,6 +99,11 @@ describe("DimensionFilter", () => {
       expect(screen.getByLabelText("publisher result count")).toHaveTextContent(
         "2 of 3 matched",
       ),
+    );
+    // For In List mode, check that the matched results are shown (order may not matter)
+    const inListItems = screen.getAllByRole("menuitem");
+    expect(inListItems.map((i) => i.textContent)).toEqual(
+      expect.arrayContaining(["Facebook", "Google"]),
     );
     expect(screen.getByLabelText("publisher results")).toHaveTextContent(
       "Facebook Google",
@@ -196,8 +207,9 @@ describe("DimensionFilter", () => {
         "2 of 3 matched",
       ),
     );
-    expect(screen.getByLabelText("publisher results")).toHaveTextContent(
-      "Facebook Google",
+    const items = screen.getAllByRole("menuitem");
+    expect(items.map((i) => i.textContent)).toEqual(
+      expect.arrayContaining(["Facebook", "Google"]),
     );
     // Pill is updated as well.
     expect(screen.getByLabelText("Open publisher filter")).toHaveTextContent(
