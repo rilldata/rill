@@ -60,6 +60,21 @@
   let curSearchText = "";
   let curExcludeMode = excludeMode;
   let inListTooLong = false;
+  let pinnedSelected: string[] = [];
+  let unpinned: string[] = [];
+  $: {
+    if (curMode === DimensionFilterMode.Select && correctedSearchResults) {
+      pinnedSelected = correctedSearchResults.filter((v) =>
+        effectiveSelectedValues.includes(v),
+      );
+      unpinned = correctedSearchResults.filter(
+        (v) => !effectiveSelectedValues.includes(v),
+      );
+    } else {
+      pinnedSelected = [];
+      unpinned = correctedSearchResults ?? [];
+    }
+  }
 
   $: ({ instanceId } = $runtime);
 
@@ -101,7 +116,7 @@
     data: searchResults,
     error: errorFromSearchResults,
     isFetching: isFetchingFromSearchResults,
-  } = $searchResultsQuery);
+  } = $searchResultsQuery || {});
   $: correctedSearchResults = enableSearchQuery ? searchResults : [];
 
   $: enableSearchCountQuery =
@@ -134,7 +149,7 @@
     data: allSearchResultsCount,
     error: errorFromAllSearchResultsCount,
     isFetching: isFetchingFromAllSearchResultsCount,
-  } = $allSearchResultsCountQuery);
+  } = $allSearchResultsCountQuery || {});
   $: searchResultCountText = enableSearchCountQuery
     ? curMode === DimensionFilterMode.Contains
       ? `${allSearchResultsCount} results`
@@ -418,37 +433,80 @@
         </div>
       {:else if correctedSearchResults}
         <DropdownMenu.Group class="px-1" aria-label={`${name} results`}>
-          {#each correctedSearchResults as name (name)}
-            {@const selected = effectiveSelectedValues.includes(name)}
-            {@const label = name ?? "null"}
-
-            <svelte:component
-              this={curMode === DimensionFilterMode.Select
-                ? DropdownMenu.CheckboxItem
-                : DropdownMenu.Item}
-              class="text-xs cursor-pointer {curMode !==
-              DimensionFilterMode.Select
-                ? 'pl-3'
-                : ''}"
-              role="menuitem"
-              checked={curMode === DimensionFilterMode.Select && selected}
-              showXForSelected={curExcludeMode}
-              disabled={curMode !== DimensionFilterMode.Select}
-              on:click={() => onSelect(name)}
-            >
-              <span>
-                {#if label.length > 240}
-                  {label.slice(0, 240)}...
-                {:else}
-                  {label}
-                {/if}
-              </span>
-            </svelte:component>
+          {#if curMode === DimensionFilterMode.Select}
+            {#each pinnedSelected as name (name)}
+              {@const selected = effectiveSelectedValues.includes(name)}
+              {@const label = name ?? "null"}
+              <svelte:component
+                this={DropdownMenu.CheckboxItem}
+                class="text-xs cursor-pointer"
+                role="menuitem"
+                checked={selected}
+                showXForSelected={curExcludeMode}
+                disabled={false}
+                on:click={() => onSelect(name)}
+              >
+                <span>
+                  {#if label.length > 240}
+                    {label.slice(0, 240)}...
+                  {:else}
+                    {label}
+                  {/if}
+                </span>
+              </svelte:component>
+            {/each}
+            {#if pinnedSelected.length && unpinned.length}
+              <DropdownMenu.Separator />
+            {/if}
+            {#each unpinned as name (name)}
+              {@const selected = effectiveSelectedValues.includes(name)}
+              {@const label = name ?? "null"}
+              <svelte:component
+                this={DropdownMenu.CheckboxItem}
+                class="text-xs cursor-pointer"
+                role="menuitem"
+                checked={selected}
+                showXForSelected={curExcludeMode}
+                disabled={false}
+                on:click={() => onSelect(name)}
+              >
+                <span>
+                  {#if label.length > 240}
+                    {label.slice(0, 240)}...
+                  {:else}
+                    {label}
+                  {/if}
+                </span>
+              </svelte:component>
+            {/each}
+            {#if !pinnedSelected.length && !unpinned.length}
+              <div class="ui-copy-disabled text-center p-2 w-full">
+                no results
+              </div>
+            {/if}
           {:else}
-            <div class="ui-copy-disabled text-center p-2 w-full">
-              no results
-            </div>
-          {/each}
+            {#each correctedSearchResults as name (name)}
+              {@const label = name ?? "null"}
+              <svelte:component
+                this={DropdownMenu.Item}
+                class="text-xs cursor-pointer pl-3"
+                role="menuitem"
+                on:click={() => onSelect(name)}
+              >
+                <span>
+                  {#if label.length > 240}
+                    {label.slice(0, 240)}...
+                  {:else}
+                    {label}
+                  {/if}
+                </span>
+              </svelte:component>
+            {:else}
+              <div class="ui-copy-disabled text-center p-2 w-full">
+                no results
+              </div>
+            {/each}
+          {/if}
         </DropdownMenu.Group>
       {/if}
     </div>
