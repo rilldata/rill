@@ -13,12 +13,14 @@
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
   import TooltipDescription from "@rilldata/web-common/components/tooltip/TooltipDescription.svelte";
   import { onMount } from "svelte";
+  import SyntaxElement from "../components/SyntaxElement.svelte";
 
   export let dateTimeAnchor: DateTime;
   export let grain: V1TimeGrain | undefined;
   export let rangeGrain: V1TimeGrain | undefined;
   export let smallestTimeGrain: V1TimeGrain | undefined;
-  export let inclusive: boolean;
+  export let snapToEnd: boolean;
+  export let isPeriodToDate: boolean;
   export let watermark: DateTime | undefined;
   export let latest: DateTime | undefined;
   export let zone: string;
@@ -46,11 +48,12 @@
   $: grainOptions = getOptionsFromSmallestToLargest(
     rangeGrain,
     smallestTimeGrain,
+    isPeriodToDate,
   );
 
   $: humanizedRef = humanizeRef(ref, grain);
 
-  $: derivedAnchor = deriveAnchor(dateTimeAnchor, dateTimeUnit, inclusive);
+  $: derivedAnchor = deriveAnchor(dateTimeAnchor, dateTimeUnit, snapToEnd);
 
   $: options = [
     {
@@ -58,7 +61,7 @@
       label: "complete data",
       timestamp: watermark,
       description:
-        "Timestamp prior to which data frames are considered complete",
+        "Timestamp prior to which data frames are considered complete, also known as the watermark",
     },
     {
       id: "latest",
@@ -91,7 +94,7 @@
     switch (ref) {
       case "watermark":
         if (grain) return "complete";
-        return "watermark";
+        return "complete data";
       case "latest":
         return "latest";
       case "now":
@@ -146,7 +149,7 @@
               {/if}
             </b>
             {#if grain}
-              {#if inclusive || ref === "watermark"}
+              {#if snapToEnd || ref === "watermark"}
                 end
               {:else}
                 start
@@ -194,14 +197,18 @@
 
               {#if timestamp}
                 <Tooltip.Content side="right" sideOffset={40} class="w-65 z-50">
-                  <TooltipContent>
-                    <TooltipTitle>
-                      <svelte:fragment slot="name">
+                  <TooltipContent class="w-60">
+                    <div class="flex items-center justify-between">
+                      <span
+                        class="font-bold truncate text-gray-100 dark:text-gray-200"
+                      >
                         {timestamp.toLocaleString(
                           DateTime.DATETIME_MED_WITH_SECONDS,
                         )}
-                      </svelte:fragment>
-                    </TooltipTitle>
+                      </span>
+                      <SyntaxElement range={id} dark />
+                    </div>
+
                     {#if id !== "now"}
                       <div>
                         {getColloquialOffset(timestamp)}
@@ -221,7 +228,7 @@
     <DropdownMenu.Separator class="my-0" />
 
     <DropdownMenu.Group class="p-1">
-      <h3 class="mt-1 px-2 uppercase text-gray-500 font-semibold">Grain</h3>
+      <h3 class="mt-1 px-2 uppercase text-gray-500 font-semibold">Snap to</h3>
 
       {#each grainOptions as option, i (i)}
         <DropdownMenu.CheckboxItem
@@ -239,14 +246,14 @@
     {#if dateTimeUnit}
       <div class="bg-gray-100 border-t">
         <div class="flex justify-between items-center p-2">
-          <span> Anchor to period end </span>
+          <span>Snap to period end</span>
 
           <Switch
             disabled={ref === "watermark"}
             small
-            checked={inclusive || ref === "watermark"}
+            checked={snapToEnd || ref === "watermark"}
             on:click={() => {
-              onToggleAlignment(!inclusive);
+              onToggleAlignment(!snapToEnd);
             }}
           />
         </div>
@@ -254,27 +261,3 @@
     {/if}
   </DropdownMenu.Content>
 </DropdownMenu.Root>
-
-<style lang="postcss">
-  h3 {
-    @apply text-[11px] text-gray-500;
-  }
-  /* The wrapper shrinks to the width of its content */
-  .wrapper {
-    display: inline-grid;
-    grid-template-columns: 1fr; /* single column that both items share */
-  }
-
-  /* Vertical scroll container has an explicit width */
-  .vertical-scroll {
-    overflow-y: auto;
-  }
-
-  /* Horizontal container becomes a grid item and stretches to fill the column */
-  .horizontal-scroll {
-    overflow-x: auto;
-    white-space: nowrap;
-
-    /* No explicit width is set here */
-  }
-</style>

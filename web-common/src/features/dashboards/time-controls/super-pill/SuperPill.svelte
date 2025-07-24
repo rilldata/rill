@@ -64,8 +64,6 @@
   function normalizeRangeString(alias: string | null): string | undefined {
     return alias?.replace(",", " to ");
   }
-
-  $: console.log(interval.isValid, activeTimeGrain);
 </script>
 
 <div class="wrapper">
@@ -74,48 +72,46 @@
     <Elements.Nudge {canPanLeft} {canPanRight} {onPan} direction="right" />
   {/if}
 
-  {#if interval.isValid && activeTimeGrain}
-    {#if $newPicker}
-      <RangePickerV2
-        {context}
-        smallestTimeGrain={minTimeGrain}
-        minDate={DateTime.fromJSDate(allTimeRange.start)}
-        maxDate={DateTime.fromJSDate(allTimeRange.end)}
-        {watermark}
-        {showDefaultItem}
-        {defaultTimeRange}
-        timeString={v2TimeString}
-        {interval}
-        zone={activeTimeZone}
-        {lockTimeZone}
-        {availableTimeZones}
-        {onSelectTimeZone}
-        {onSelectRange}
-        {onTimeGrainSelect}
-      />
-    {:else}
-      <Elements.RangePicker
-        minDate={DateTime.fromJSDate(allTimeRange.start)}
-        maxDate={DateTime.fromJSDate(allTimeRange.end)}
-        ranges={rangeBuckets}
-        {showDefaultItem}
-        {showFullRange}
-        {defaultTimeRange}
-        {allowCustomTimeRange}
-        selected={selectedRangeAlias ?? ""}
-        {onSelectRange}
-        {interval}
-        zone={activeTimeZone}
-        applyCustomRange={(interval) => {
-          applyRange({
-            name: TimeRangePreset.CUSTOM,
-            start: interval.start.toJSDate(),
-            end: interval.end.toJSDate(),
-          });
-        }}
-        {side}
-      />
-    {/if}
+  {#if $newPicker}
+    <RangePickerV2
+      {context}
+      smallestTimeGrain={minTimeGrain}
+      minDate={DateTime.fromJSDate(allTimeRange.start)}
+      maxDate={DateTime.fromJSDate(allTimeRange.end)}
+      {watermark}
+      {showDefaultItem}
+      {defaultTimeRange}
+      timeString={v2TimeString}
+      {interval}
+      zone={activeTimeZone}
+      {lockTimeZone}
+      {availableTimeZones}
+      {onSelectTimeZone}
+      {onSelectRange}
+      {onTimeGrainSelect}
+    />
+  {:else if interval.isValid && activeTimeGrain}
+    <Elements.RangePicker
+      minDate={DateTime.fromJSDate(allTimeRange.start)}
+      maxDate={DateTime.fromJSDate(allTimeRange.end)}
+      ranges={rangeBuckets}
+      {showDefaultItem}
+      {showFullRange}
+      {defaultTimeRange}
+      {allowCustomTimeRange}
+      selected={selectedRangeAlias ?? ""}
+      {onSelectRange}
+      {interval}
+      zone={activeTimeZone}
+      applyCustomRange={(interval) => {
+        applyRange({
+          name: TimeRangePreset.CUSTOM,
+          start: interval.start.toJSDate(),
+          end: interval.end.toJSDate(),
+        });
+      }}
+      {side}
+    />
   {/if}
 
   {#if availableTimeZones.length && !$newPicker}

@@ -78,7 +78,7 @@
         DateTime.fromJSDate(selectedTimeRange.start).setZone(activeTimeZone),
         DateTime.fromJSDate(selectedTimeRange.end).setZone(activeTimeZone),
       )
-    : Interval.fromDateTimes($allTimeRange.start, $allTimeRange.end);
+    : Interval.invalid("Unable to parse time range");
 
   $: allDimensionFilters = $allDimensionFilterItems;
 

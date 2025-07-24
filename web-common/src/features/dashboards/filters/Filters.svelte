@@ -241,7 +241,10 @@
 
     const { interval, grain } = await deriveInterval(
       alias,
-      DateTime.fromJSDate(allTimeRange.end),
+      Interval.fromDateTimes(
+        DateTime.fromJSDate(allTimeRange.start),
+        DateTime.fromJSDate(allTimeRange.end),
+      ),
       metricsViewName,
       activeTimeZone,
     );

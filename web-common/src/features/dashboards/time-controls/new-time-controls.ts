@@ -9,8 +9,14 @@ import {
   parseRillTime,
 } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser";
 import { humaniseISODuration } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
-import type { V1ExploreTimeRange } from "@rilldata/web-common/runtime-client";
-import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+import type {
+  QueryServiceMetricsViewTimeRangesBody,
+  V1ExploreTimeRange,
+} from "@rilldata/web-common/runtime-client";
+import {
+  getQueryServiceMetricsViewTimeRangesQueryKey,
+  V1TimeGrain,
+} from "@rilldata/web-common/runtime-client";
 import {
   DateTime,
   type DateTimeUnit,
@@ -185,7 +191,7 @@ class MetricsTimeControls {
     if (rightAnchor) {
       const interval = await deriveInterval(
         iso,
-        rightAnchor,
+        get(this._maxRange),
         this._metricsViewName,
         get(this._zone).name,
       );
@@ -201,7 +207,7 @@ class MetricsTimeControls {
     if (rightAnchor) {
       const interval = await deriveInterval(
         name,
-        rightAnchor,
+        get(this._maxRange),
         this._metricsViewName,
         get(this._zone).name,
       );
@@ -314,63 +320,108 @@ import {
   GrainAliasToV1TimeGrain,
   V1TimeGrainToAlias,
 } from "@rilldata/web-common/lib/time/new-grains";
+import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 
 export async function deriveInterval(
   name: RillPeriodToDate | RillPreviousPeriod | ISODurationString,
-  anchor: DateTime,
+  allTimeRange: Interval,
   metricsViewName: string,
   activeTimeZone: string,
-): Promise<{ interval: Interval; grain?: V1TimeGrain | undefined }> {
+): Promise<{
+  interval: Interval;
+  grain?: V1TimeGrain | undefined;
+  error?: string;
+}> {
   if (name === ALL_TIME_RANGE_ALIAS || name === CUSTOM_TIME_RANGE_ALIAS) {
-    throw new Error("Cannot derive interval for all time or custom range");
+    return {
+      interval: allTimeRange,
+      grain: undefined,
+      error: "Cannot derive interval for all time or custom range",
+    };
+  }
+
+  if (!allTimeRange.isValid || !allTimeRange.end) {
+    return {
+      interval: Interval.invalid("Invalid all time range"),
+      grain: undefined,
+      error: "Invalid all time range",
+    };
   }
 
   if (isRillPeriodToDate(name)) {
     const period = RILL_TO_UNIT[name];
     return {
-      interval: getPeriodToDate(anchor, period),
+      interval: getPeriodToDate(allTimeRange.end, period),
       grain: V1TimeGrain.TIME_GRAIN_DAY,
     };
   }
 
   if (isRillPreviousPeriod(name)) {
     const period = RILL_TO_UNIT[name];
-    return { interval: getPreviousPeriodComplete(anchor, period, 1) };
+    return { interval: getPreviousPeriodComplete(allTimeRange.end, period, 1) };
   }
 
   const duration = isValidISODuration(name);
 
   if (duration) {
     return {
-      interval: getInterval(duration, anchor),
+      interval: getInterval(duration, allTimeRange.end),
       grain: V1TimeGrain.TIME_GRAIN_HOUR,
     };
   }
 
   const parsed = parseRillTime(name);
 
-  // We have a RillTime string
-  const response = await queryServiceMetricsViewTimeRanges(
-    get(runtime).instanceId,
-    metricsViewName,
-    { expressions: [name], timeZone: activeTimeZone },
-  );
+  try {
+    // We have a RillTime string
+    const instanceId = get(runtime).instanceId;
+    const cacheBust = name.includes("now");
 
-  const timeRange = response.timeRanges?.[0];
+    const queryKey = getQueryServiceMetricsViewTimeRangesQueryKey(
+      instanceId,
+      metricsViewName,
+      { expressions: [name], timeZone: activeTimeZone, priority: 100 },
+    );
 
-  if (!timeRange?.start || !timeRange?.end) {
-    return { interval: Interval.invalid("Invalid time range") };
+    if (cacheBust) {
+      await queryClient.invalidateQueries({
+        queryKey: queryKey,
+      });
+    }
+
+    const response = await queryClient.fetchQuery({
+      queryKey: queryKey,
+      queryFn: () =>
+        queryServiceMetricsViewTimeRanges(instanceId, metricsViewName, {
+          expressions: [name],
+          timeZone: activeTimeZone,
+        }),
+      staleTime: Infinity,
+    });
+
+    const timeRange = response.timeRanges?.[0];
+
+    if (!timeRange?.start || !timeRange?.end) {
+      return { interval: Interval.invalid("Invalid time range") };
+    }
+
+    return {
+      interval: Interval.fromDateTimes(
+        DateTime.fromISO(timeRange.start).setZone(activeTimeZone),
+        DateTime.fromISO(timeRange.end).setZone(activeTimeZone),
+      ),
+      grain: parsed.asOfLabel?.snap
+        ? GrainAliasToV1TimeGrain[parsed.asOfLabel?.snap]
+        : parsed.rangeGrain,
+    };
+  } catch (error) {
+    console.error("Error deriving interval:", error);
+    return {
+      interval: Interval.invalid("Unable to derive interval"),
+      grain: undefined,
+      error: "Error deriving interval",
+    };
   }
-
-  return {
-    interval: Interval.fromDateTimes(
-      DateTime.fromISO(timeRange.start).setZone(activeTimeZone),
-      DateTime.fromISO(timeRange.end).setZone(activeTimeZone),
-    ),
-    grain: parsed.asOfLabel?.snap
-      ? GrainAliasToV1TimeGrain[parsed.asOfLabel?.snap]
-      : parsed.rangeGrain,
-  };
 }
 
 export function getPeriodToDate(date: DateTime, period: DateTimeUnit) {
@@ -632,12 +683,12 @@ export function isUsingLegacyTime(timeString: string | undefined): boolean {
 export function constructNewString({
   currentString,
   truncationGrain,
-  inclusive,
+  snapToEnd,
   ref,
 }: {
   currentString: string;
   truncationGrain: V1TimeGrain | undefined | null;
-  inclusive: boolean;
+  snapToEnd: boolean;
   ref: "watermark" | "latest" | "now" | string;
 }): string {
   const legacy = isUsingLegacyTime(currentString);
@@ -646,7 +697,7 @@ export function constructNewString({
     legacy ? convertLegacyTime(currentString) : currentString,
   );
 
-  const newAsOfString = constructAsOfString(ref, truncationGrain, inclusive);
+  const newAsOfString = constructAsOfString(ref, truncationGrain, snapToEnd);
 
   overrideRillTimeRef(rillTime, newAsOfString);
 

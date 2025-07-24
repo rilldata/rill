@@ -109,9 +109,20 @@ export class TimeControls {
     const listener = derived(
       [specStore, this.allTimeRange, this.searchParamsStore, this.minTimeGrain],
       async ([spec, allTimeRange, searchParams, minTimeGrain]) => {
-        if (!spec?.data) {
+        if (!spec?.data || !allTimeRange) {
           return undefined;
         }
+
+        const {
+          timeRange,
+          selectedComparisonTimeRange,
+          showTimeComparison,
+          timeZone,
+          grain: urlGrain,
+        } = parseSearchParams(searchParams);
+
+        // Component does not have local time range
+        if (this.componentName && !timeRange) return;
 
         // TODO: figure out a better way of handling this property
         // when it's not consistent across all metrics views - bgh
@@ -130,34 +141,28 @@ export class TimeControls {
 
         const { defaultPreset, timeRanges } = spec.data?.canvas || {};
 
-        const {
-          timeRange,
-          selectedComparisonTimeRange,
-          showTimeComparison,
-          timeZone,
-          grain: urlGrain,
-        } = parseSearchParams(searchParams);
-
         const finalRange: string =
           timeRange ||
           defaultPreset?.timeRange ||
           (timeRanges?.[0] as string | undefined) ||
           "PT24H";
 
-        const { interval, grain } = await deriveInterval(
+        const { interval, grain, error } = await deriveInterval(
           finalRange,
-          DateTime.fromJSDate(allTimeRange.end),
+          Interval.fromDateTimes(
+            DateTime.fromJSDate(allTimeRange.start),
+            DateTime.fromJSDate(allTimeRange.end),
+          ),
           firstMetricsViewName,
           timeZone,
         );
 
-        if (interval?.isValid === false || !interval.start || !interval.end)
-          return;
+        if (error || !interval.start || !interval.end) return;
 
         const selectedTimeRange: DashboardTimeControls = {
           name: finalRange,
-          start: interval.start?.toJSDate(),
-          end: interval.end?.toJSDate(),
+          start: interval.start?.toJSDate() ?? new Date(),
+          end: interval.end?.toJSDate() ?? new Date(),
           interval: urlGrain || grain,
         };
 
@@ -389,7 +394,6 @@ export class TimeControls {
       );
     },
     grain: (timeGrain: V1TimeGrain, checkIfSet = false) => {
-      console.log({ timeGrain, checkIfSet });
       const mappedTimeGrain = ToURLParamTimeGrainMapMap[timeGrain];
       if (mappedTimeGrain) {
         return this.searchParamsStore.set(
@@ -448,18 +452,8 @@ export class TimeControls {
 }
 
 export function parseSearchParams(urlParams: URLSearchParams) {
-  const { preset, errors } = fromTimeRangesParams(urlParams, new Map());
+  const { preset } = fromTimeRangesParams(urlParams, new Map());
 
-  if (errors?.length) {
-    console.warn(errors);
-    return {
-      timeRange: undefined,
-      selectedComparisonTimeRange: undefined,
-      showTimeComparison: false,
-      timeZone: "UTC",
-      grain: V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
-    };
-  }
   let timeRange: string | undefined;
   let selectedComparisonTimeRange: DashboardTimeControls | undefined;
   let showTimeComparison = false;
@@ -467,7 +461,7 @@ export function parseSearchParams(urlParams: URLSearchParams) {
   let grain: V1TimeGrain = V1TimeGrain.TIME_GRAIN_UNSPECIFIED;
 
   if (preset.timeRange) {
-    timeRange = fromTimeRangeUrlParam(preset.timeRange).name as string;
+    timeRange = preset.timeRange;
   }
 
   if (preset.timeGrain && timeRange) {

@@ -207,8 +207,10 @@ export function getLargerGrainsFromOrder(order: Order) {
 export function getOptionsFromSmallestToLargest(
   largestTimeGrain: V1TimeGrain | undefined,
   smallestTimeGrain?: V1TimeGrain,
+  getNextLowest: boolean = false,
 ) {
-  const orderOfReferenceTimeGrain = getGrainOrder(largestTimeGrain);
+  const orderOfReferenceTimeGrain =
+    getGrainOrder(largestTimeGrain) - (getNextLowest ? 1 : 0);
   const orderOfSmallestTimeGrain = getGrainOrder(smallestTimeGrain);
 
   if (

@@ -56,13 +56,21 @@
 {#if !pinnedTimeZones.has(activeTimeZone) && !recentIANAs.includes(activeTimeZone)}
   <div class="group">
     {#if formatted}
-      <div class="item">
+      <button
+        class="item"
+        on:click={() => {
+          onSelectTimeZone(activeTimeZone);
+        }}
+      >
         <ZoneDisplay
           abbreviation={formatted.abbreviation}
           offset={formatted.offset}
           iana={activeTimeZone}
         />
-      </div>
+        <!-- {#if activeTimeZone === iana} -->
+        <Check class="size-4" color="var(--color-gray-800)" />
+        <!-- {/if} -->
+      </button>
     {/if}
   </div>
 
@@ -72,6 +80,7 @@
 <div class="group">
   {#each filteredPinnedTimeZones as [iana, { offset, abbreviation }] (iana)}
     <button
+      class="item"
       on:click={() => {
         onSelectTimeZone(iana);
       }}
@@ -93,24 +102,26 @@
 
 {#if !searchValue && recentIANAs.length}
   <div class="separator" />
-
   <div class="group">
-    <div class="flex justify-between pr-2">
+    <div class="flex justify-between pr-2 items-center">
       <h3>Recent</h3>
       {#if recentIANAs.length}
         <button
+          class="text-[11px] text-gray-500 hover:bg-gray-100 p-1 rounded-sm h-fit"
           on:click={() => {
             recents.set([]);
           }}
-          class="text-[10px] text-gray-500">Clear recents</button
         >
+          Clear recents
+        </button>
       {/if}
     </div>
 
     {#each recentIANAs as iana, i (i)}
       {@const formatted = ianaMap.get(iana)}
-      {#if formatted && !availableTimeZones.includes(iana) && iana !== browserIANA}
+      {#if formatted && !availableTimeZones.includes(iana)}
         <button
+          class="item"
           on:click={() => {
             onSelectTimeZone(iana);
           }}
@@ -133,7 +144,6 @@
 
 {#if searchValue}
   <div class="separator" />
-
   <div class="group max-h-72 overflow-y-auto">
     <h3
       class="sticky top-0 bg-gradient-to-b z-10 from-surface from-75% to-transparent"
@@ -143,6 +153,7 @@
 
     {#each filteredTimeZones as [iana, { abbreviation, offset }], i (i)}
       <button
+        class="item"
         on:click={() => {
           onSelectTimeZone(iana);
           recents.set(Array.from(new Set([iana, ...$recents])).slice(0, 5));
@@ -164,11 +175,11 @@
 {/if}
 
 <style lang="postcss">
-  button {
+  .item {
     @apply w-full relative justify-between flex cursor-pointer select-none items-start rounded-sm py-1.5 px-2 gap-x-2 text-xs outline-none;
   }
 
-  button:hover {
+  .item:hover {
     @apply bg-accent text-accent-foreground;
   }
 

@@ -18,7 +18,7 @@
       </p>
     {/if}
 
-    <p class="truncate font-normal">
+    <p class="truncate font-normal text-left size-full">
       {#if isBrowserTime}
         Browser Time
       {:else}

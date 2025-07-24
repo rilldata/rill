@@ -40,26 +40,34 @@ export async function resolveTimeRanges(
   const instanceId = get(runtime).instanceId;
   const metricsViewName = exploreSpec.metricsView!;
 
-  const timeRangesResp = await queryClient.fetchQuery({
-    queryKey: getQueryServiceMetricsViewTimeRangesQueryKey(
-      instanceId,
-      metricsViewName,
-      { expressions: rillTimes, timeZone },
-    ),
-    queryFn: () =>
-      queryServiceMetricsViewTimeRanges(instanceId, metricsViewName, {
-        expressions: rillTimes,
-        timeZone,
-      }),
-    staleTime: Infinity,
-  });
+  try {
+    const timeRangesResp = await queryClient.fetchQuery({
+      queryKey: getQueryServiceMetricsViewTimeRangesQueryKey(
+        instanceId,
+        metricsViewName,
+        { expressions: rillTimes, timeZone },
+      ),
+      queryFn: () =>
+        queryServiceMetricsViewTimeRanges(instanceId, metricsViewName, {
+          expressions: rillTimes,
+          timeZone,
+        }),
+      staleTime: Infinity,
+    });
 
-  timeRangesResp.timeRanges?.forEach((tr, index) => {
-    const mappedIndex = rillTimeToTimeRange.get(index);
-    if (mappedIndex === undefined || !timeRangesToReturn[mappedIndex]) return;
-    timeRangesToReturn[mappedIndex].start = new Date(tr.start!);
-    timeRangesToReturn[mappedIndex].end = new Date(tr.end!);
-  });
+    timeRangesResp.timeRanges?.forEach((tr, index) => {
+      const mappedIndex = rillTimeToTimeRange.get(index);
+      if (mappedIndex === undefined || !timeRangesToReturn[mappedIndex]) return;
+      timeRangesToReturn[mappedIndex].start = new Date(tr.start!);
+      timeRangesToReturn[mappedIndex].end = new Date(tr.end!);
+    });
 
-  return timeRangesToReturn;
+    return timeRangesToReturn;
+  } catch (error) {
+    console.error(
+      `Failed to resolve time ranges for metrics view ${metricsViewName} in instance ${instanceId}`,
+      error,
+    );
+    return timeRangesToReturn;
+  }
 }

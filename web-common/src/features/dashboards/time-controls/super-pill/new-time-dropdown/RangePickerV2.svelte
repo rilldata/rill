@@ -15,12 +15,14 @@
   import { parseRillTime } from "../../../url-state/time-ranges/parser";
   import {
     RillIsoInterval,
+    RillPeriodToGrainInterval,
     type RillTime,
   } from "../../../url-state/time-ranges/RillTime";
   import { getTimeRangeOptionsByGrain } from "@rilldata/web-common/lib/time/defaults";
   import {
     getAllowedGrains,
     getGrainOrder,
+    getLowerOrderGrain,
     getSmallestGrainFromISODuration,
     GrainAliasToV1TimeGrain,
   } from "@rilldata/web-common/lib/time/new-grains";
@@ -70,8 +72,6 @@
   let truncationGrain: V1TimeGrain | undefined = undefined;
   let timeZonePickerOpen = false;
 
-  $: console.log("hello");
-
   $: if (timeString) {
     try {
       parsedTime = parseRillTime(timeString);
@@ -84,7 +84,7 @@
 
   $: usingLegacyTime = isUsingLegacyTime(timeString);
 
-  $: padded = usingLegacyTime ? true : !!parsedTime?.asOfLabel?.offset;
+  $: snapToEnd = usingLegacyTime ? true : !!parsedTime?.asOfLabel?.offset;
   $: ref = usingLegacyTime ? "latest" : (parsedTime?.asOfLabel?.label ?? "now");
 
   $: truncationGrain = usingLegacyTime
@@ -97,7 +97,6 @@
 
   $: dateTimeAnchor = returnAnchor(ref);
 
-  $: console.log({ timeString });
   $: selectedLabel = getRangeLabel(timeString);
 
   $: timeGrainOptions = getAllowedGrains(smallestTimeGrain);
@@ -132,11 +131,17 @@
       try {
         const parsed = parseRillTime(range);
 
-        const rangeGrainOrder = getGrainOrder(parsed.rangeGrain);
+        const isPeriodToDate =
+          parsed.interval instanceof RillPeriodToGrainInterval;
+
+        const rangeGrainOrder =
+          getGrainOrder(parsed.rangeGrain) - (isPeriodToDate ? 1 : 0);
         const asOfGrainOrder = getGrainOrder(truncationGrain);
 
-        if (asOfGrainOrder > rangeGrainOrder) {
-          truncationGrain = parsed.rangeGrain;
+        if (asOfGrainOrder > rangeGrainOrder && parsed.rangeGrain) {
+          truncationGrain = isPeriodToDate
+            ? getLowerOrderGrain(parsed.rangeGrain)
+            : parsed.rangeGrain;
         }
 
         const newAsOfString = constructAsOfString(
@@ -146,7 +151,7 @@
             : (truncationGrain ??
                 smallestTimeGrain ??
                 V1TimeGrain.TIME_GRAIN_MINUTE),
-          padded,
+          snapToEnd,
         );
 
         overrideRillTimeRef(parsed, newAsOfString);
@@ -163,8 +168,8 @@
 
     const newString = constructNewString({
       currentString: timeString,
-      truncationGrain: grain,
-      inclusive: padded,
+      truncationGrain: grain === truncationGrain ? undefined : grain,
+      snapToEnd: grain === truncationGrain ? false : snapToEnd,
       ref: ref,
     });
 
@@ -179,7 +184,7 @@
     const newString = constructNewString({
       currentString: timeString,
       truncationGrain: truncationGrain,
-      inclusive: ref === "watermark" ? false : inclusive,
+      snapToEnd: ref === "watermark" ? false : inclusive,
       ref,
     });
 
@@ -240,9 +245,7 @@
             </b>
           {/if}
 
-          {#if interval.isValid}
-            <RangeDisplay {interval} />
-          {/if}
+          <RangeDisplay {interval} />
 
           <div
             class="font-bold bg-gray-100 rounded-[2px] p-1 py-0 text-gray-600 text-[11px]"
@@ -259,13 +262,27 @@
       <Tooltip.Content side="bottom" sideOffset={8} class="z-50">
         <TooltipContent class="flex-col flex items-center gap-y-0 p-3">
           <span class="font-semibold italic mb-1">{timeString}</span>
-          <span
-            >{interval.start.toLocaleString(DateTime.DATETIME_MED_WITH_SECONDS)}
-          </span>
-          <span>to</span>
-          <span
-            >{interval.end.toLocaleString(DateTime.DATETIME_MED_WITH_SECONDS)}
-          </span>
+          {#if interval.isValid}
+            <span
+              >{interval.start.toLocaleString({
+                ...DateTime.DATETIME_HUGE_WITH_SECONDS,
+                fractionalSecondDigits:
+                  interval.start.millisecond > 0 ? 3 : undefined,
+                second: interval.start.second > 0 ? "numeric" : undefined,
+              })}
+            </span>
+            <span>to</span>
+            <span
+              >{interval.end.toLocaleString({
+                ...DateTime.DATETIME_HUGE_WITH_SECONDS,
+                fractionalSecondDigits:
+                  interval.end.millisecond > 0 ? 3 : undefined,
+                second: interval.end.second > 0 ? "numeric" : undefined,
+              })}
+            </span>
+          {:else}
+            <span class="text-gray-500">Invalid time range</span>
+          {/if}
         </TooltipContent>
       </Tooltip.Content>
     </Tooltip.Root>
@@ -443,11 +460,12 @@
   <TruncationSelector
     {dateTimeAnchor}
     grain={truncationGrain}
+    rangeGrain={parsedTime?.rangeGrain ?? truncationGrain}
+    isPeriodToDate={parsedTime?.interval instanceof RillPeriodToGrainInterval}
     {watermark}
     latest={maxDate}
-    rangeGrain={parsedTime?.rangeGrain ?? truncationGrain}
     {smallestTimeGrain}
-    inclusive={padded}
+    {snapToEnd}
     {ref}
     {zone}
     onSelectEnding={onSelectGrain}
@@ -455,7 +473,7 @@
       onSelectAsOfOption(ref, inclusive);
     }}
     onSelectAsOfOption={(o) => {
-      onSelectAsOfOption(o, padded);
+      onSelectAsOfOption(o, snapToEnd);
     }}
   />
 {/if}

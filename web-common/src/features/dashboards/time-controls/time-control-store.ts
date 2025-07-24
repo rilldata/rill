@@ -318,12 +318,6 @@ export function calculateComparisonTimeRangePartial(
   showTimeComparison: boolean,
   timeRangeState: TimeRangeState,
 ): ComparisonTimeRangeState {
-  console.log({
-    timeRanges,
-    allTimeRange,
-    currentComparisonTimeRange,
-    timeRangeState,
-  });
   const selectedComparisonTimeRange = getComparisonTimeRange(
     timeRanges,
     allTimeRange,
