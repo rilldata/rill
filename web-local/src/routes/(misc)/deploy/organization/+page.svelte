@@ -5,15 +5,15 @@
   import { SelectSeparator } from "@rilldata/web-common/components/select";
   import CreateNewOrgForm from "@rilldata/web-common/features/organization/CreateNewOrgForm.svelte";
   import { CreateNewOrgFormId } from "@rilldata/web-common/features/organization/CreateNewOrgForm.svelte";
-  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
-  import { createLocalServiceGetCurrentUser } from "@rilldata/web-common/runtime-client/local-service";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
+  import { createLocalServiceGetCurrentUser } from "@rilldata/web-common/runtime-client/local-service.ts";
 
   const user = createLocalServiceGetCurrentUser();
 
   let selectedOrg = "";
   let isNewOrgDialogOpen = false;
 
-  $: deployUrl = `/deploy/fresh-deploy?org=${selectedOrg}`;
+  $: deployUrl = `/deploy/new?org=${selectedOrg}`;
 
   $: orgOptions =
     $user.data?.rillUserOrgs?.map((o) => ({ value: o, label: o })) ?? [];

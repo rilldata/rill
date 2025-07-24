@@ -120,11 +120,12 @@
     >
       https://ui.rilldata.com/
     </div>
-    <div class="text-xs text-left" slot="description">
-      Must comply with <a
-        href="https://docs.rilldata.com/reference/cli/org/create#TODO"
-        target="_blank">our naming rules.</a
-      >
-    </div>
+    <!-- TODO: once we have the path to docs we can add this back -->
+    <!--    <div class="text-xs text-left" slot="description">-->
+    <!--      Must comply with <a-->
+    <!--        href="https://docs.rilldata.com/reference/cli/org/create#TODO"-->
+    <!--        target="_blank">our naming rules.</a-->
+    <!--      >-->
+    <!--    </div>-->
   </Input>
 </form>

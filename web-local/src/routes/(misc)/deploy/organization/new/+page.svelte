@@ -5,7 +5,7 @@
   import { CreateNewOrgFormId } from "@rilldata/web-common/features/organization/CreateNewOrgForm.svelte";
 
   function selectOrg(orgName: string) {
-    setTimeout(() => void goto(`/deploy/fresh-deploy?org=${orgName}`));
+    setTimeout(() => void goto(`/deploy/new?org=${orgName}`));
   }
 </script>
 

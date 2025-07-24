@@ -1,22 +1,22 @@
 <script lang="ts">
-  import { page } from "$app/stores";
-  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
+  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types.ts";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
   import {
-    getOrgIsOnTrial,
+    getIsOrgOnTrial,
     getPlanUpgradeUrl,
-  } from "@rilldata/web-common/features/organization/utils";
-  import { addPosthogSessionIdToUrl } from "@rilldata/web-common/lib/analytics/posthog";
-  import { createLocalServiceRedeploy } from "@rilldata/web-common/runtime-client/local-service";
+  } from "@rilldata/web-common/features/organization/utils.ts";
+  import { addPosthogSessionIdToUrl } from "@rilldata/web-common/lib/analytics/posthog.ts";
+  import { createLocalServiceRedeploy } from "@rilldata/web-common/runtime-client/local-service.ts";
   import DeployError from "@rilldata/web-common/features/project/DeployError.svelte";
   import CTAHeader from "@rilldata/web-common/components/calls-to-action/CTAHeader.svelte";
   import CTANeedHelp from "@rilldata/web-common/components/calls-to-action/CTANeedHelp.svelte";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
+  import type { PageData } from "./$types";
 
-  $: orgParam = $page.url.searchParams.get("org");
-  $: projectId = $page.url.searchParams.get("project_id");
+  export let data: PageData;
 
-  $: if (projectId) void redeploy(projectId);
+  const orgParam = data.org;
+  const projectId = data.projectId;
 
   const redeployMutation = createLocalServiceRedeploy();
 
@@ -24,10 +24,12 @@
 
   $: error = $redeployMutation.error as Error | null;
 
-  $: planUpgradeUrl = getPlanUpgradeUrl(orgParam ?? "");
-  $: orgIsOnTrial = getOrgIsOnTrial(orgParam ?? "");
+  $: planUpgradeUrl = getPlanUpgradeUrl(orgParam);
+  $: isOrgOnTrial = getIsOrgOnTrial(orgParam);
 
-  async function redeploy(projectId: string) {
+  void updateProject(projectId);
+
+  async function updateProject(projectId: string) {
     const resp = await $redeployMutation.mutateAsync({
       projectId,
       // If `legacyArchiveDeploy` is enabled, then use the archive route. Else use upload route.
@@ -41,7 +43,7 @@
   }
 
   function onRetry() {
-    void redeploy(projectId!);
+    void updateProject(projectId);
   }
 
   function onBack() {
@@ -61,7 +63,7 @@
   <DeployError
     {error}
     planUpgradeUrl={$planUpgradeUrl}
-    orgIsOnTrial={$orgIsOnTrial}
+    isOrgOnTrial={$isOrgOnTrial}
     {onRetry}
     {onBack}
   />

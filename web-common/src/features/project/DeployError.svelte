@@ -12,12 +12,12 @@
   } from "@rilldata/web-common/features/project/deploy-errors";
 
   export let error: Error;
-  export let orgIsOnTrial: boolean;
+  export let isOrgOnTrial: boolean;
   export let planUpgradeUrl: string;
   export let onRetry: () => void;
   export let onBack: () => void;
 
-  $: deployError = getPrettyDeployError(error, orgIsOnTrial);
+  $: deployError = getPrettyDeployError(error, isOrgOnTrial);
 
   $: isQuotaError =
     deployError.type === DeployErrorType.ProjectLimitHit ||
