@@ -43,7 +43,6 @@ import type { Readable } from "svelte/store";
 import { derived, get } from "svelte/store";
 import { memoizeMetricsStore } from "../state-managers/memoize-metrics-store";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-import { all } from "deepmerge";
 
 export type TimeRangeState = {
   // Selected ranges with start and end filled based on time range type
@@ -140,7 +139,6 @@ export function getTimeControlState(
   exploreSpec: V1ExploreSpec,
   timeRangeSummary: V1TimeRangeSummary | undefined,
   exploreState: Partial<ExploreState>,
-  skipGrainValidation = false,
 ) {
   const hasTimeSeries = Boolean(metricsViewSpec.timeDimension);
   const timeDimension = metricsViewSpec.timeDimension;
@@ -177,7 +175,6 @@ export function getTimeControlState(
     selectedTimezone,
     defaultTimeRange,
     minTimeGrain,
-    skipGrainValidation,
   );
   if (!timeRangeState) {
     return undefined;

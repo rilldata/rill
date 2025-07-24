@@ -9,10 +9,7 @@ import {
   parseRillTime,
 } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser";
 import { humaniseISODuration } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
-import type {
-  QueryServiceMetricsViewTimeRangesBody,
-  V1ExploreTimeRange,
-} from "@rilldata/web-common/runtime-client";
+import type { V1ExploreTimeRange } from "@rilldata/web-common/runtime-client";
 import {
   getQueryServiceMetricsViewTimeRangesQueryKey,
   V1TimeGrain,

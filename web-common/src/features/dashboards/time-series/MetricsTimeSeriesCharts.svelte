@@ -52,9 +52,13 @@
     updateChartInteractionStore,
   } from "./utils";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
-  import { getAllowedGrains } from "@rilldata/web-common/lib/time/new-grains";
+  import {
+    getAllowedGrains,
+    V1TimeGrainToDateTimeUnit,
+  } from "@rilldata/web-common/lib/time/new-grains";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
   import { featureFlags } from "../../feature-flags";
+  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
 
   const { rillTime } = featureFlags;
 
@@ -332,42 +336,37 @@
         selectedItems={visibleMeasureNames}
       />
 
-      {#if $rillTime}
+      {#if $rillTime && activeTimeGrain}
         <DropdownMenu.Root bind:open>
           <DropdownMenu.Trigger asChild let:builder>
-            <Button builders={[builder]} type="ghost" gray square small>
-              <ThreeDot />
-            </Button>
+            <button
+              {...builder}
+              use:builder.action
+              class="flex gap-x-1 items-center text-gray-700 hover:text-primary-700"
+            >
+              by <b>
+                {V1TimeGrainToDateTimeUnit[activeTimeGrain]}
+              </b>
+              <span class:-rotate-90={open} class="transition-transform">
+                <CaretDownIcon />
+              </span>
+            </button>
           </DropdownMenu.Trigger>
 
           <DropdownMenu.Content align="start" class="w-48">
-            <DropdownMenu.Label
-              class="px-2 uppercase py-1 font-semibold text-[11px] text-gray-500"
-            >
-              Time Series Settings
-            </DropdownMenu.Label>
-            <DropdownMenu.Sub>
-              <DropdownMenu.SubTrigger>Aggregation</DropdownMenu.SubTrigger>
-              <DropdownMenu.SubContent>
-                {#each timeGrainOptions as option (option)}
-                  <DropdownMenu.CheckboxItem
-                    checkRight
-                    role="menuitem"
-                    checked={option === activeTimeGrain}
-                    class="text-xs cursor-pointer capitalize"
-                    on:click={() => {
-                      metricsExplorerStore.setTimeGrain(exploreName, option);
-                    }}
-                  >
-                    {#if option === "TIME_GRAIN_DAY"}
-                      daily
-                    {:else}
-                      {TIME_GRAIN[option].label}ly
-                    {/if}
-                  </DropdownMenu.CheckboxItem>
-                {/each}
-              </DropdownMenu.SubContent>
-            </DropdownMenu.Sub>
+            {#each timeGrainOptions as option (option)}
+              <DropdownMenu.CheckboxItem
+                checkRight
+                role="menuitem"
+                checked={option === activeTimeGrain}
+                class="text-xs cursor-pointer capitalize"
+                on:click={() => {
+                  metricsExplorerStore.setTimeGrain(exploreName, option);
+                }}
+              >
+                {TIME_GRAIN[option].label}
+              </DropdownMenu.CheckboxItem>
+            {/each}
           </DropdownMenu.Content>
         </DropdownMenu.Root>
       {/if}

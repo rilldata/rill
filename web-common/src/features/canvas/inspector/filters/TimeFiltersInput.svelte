@@ -18,7 +18,7 @@
 
   $: ({
     canvasEntity: {
-      spec: { canvasSpec, metricViewNames },
+      spec: { canvasSpec },
     },
   } = getCanvasStore(canvasName, instanceId));
 
