@@ -88,15 +88,10 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		return nil, err
 	}
 
-	opts := &ai.Options{}
-	if conf.BaseURL != "" {
-		opts.BaseURL = conf.BaseURL
-	}
-	if conf.APIType != "" {
-		opts.APIType = openaidriver.APIType(conf.APIType)
-	}
-	if conf.APIVersion != "" {
-		opts.APIVersion = conf.APIVersion
+	opts := &ai.Options{
+		opts.BaseURL: conf.BaseURL,
+		opts.APIType: openaidriver.APIType(conf.APIType),
+		opts.APIVersion: conf.APIVersion,
 	}
 	aiClient, err := ai.NewOpenAI(conf.APIKey, opts)
 	if err != nil {
