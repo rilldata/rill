@@ -54,7 +54,7 @@ func (r *ValidateMetricsViewResult) Error() error {
 
 // ValidateAndNormalizeMetricsView validates the dimensions and measures in the executor's metrics view and returns a ValidateMetricsViewResult
 // It also populates the schema of the metrics view if all dimensions and measures are valid.
-// Note - Beware that it modifies the metrics view spec in place to populate the dimension and measure types.
+// Note: Beware that it modifies the e.metricsView spec in place, e.g. to populate the dimension and measure types.
 func (e *Executor) ValidateAndNormalizeMetricsView(ctx context.Context) (*ValidateMetricsViewResult, error) {
 	// Create the result
 	res := &ValidateMetricsViewResult{}
@@ -143,6 +143,27 @@ func (e *Executor) ValidateAndNormalizeMetricsView(ctx context.Context) (*Valida
 	_, _, err = e.CacheKey(ctx)
 	if err != nil {
 		res.OtherErrs = append(res.OtherErrs, fmt.Errorf("failed to get cache key: %w", err))
+	}
+
+	// Validate or infer the smallest time grain.
+	// We require the smallest time grain to be at least at second grain.
+	// If any time dimension has DATE type, we require the smallest time grain to be at least at day grain.
+	smallestPossibleGrain := runtimev1.TimeGrain_TIME_GRAIN_SECOND
+	if e.metricsView.TimeDimension != "" {
+		col, ok := cols[strings.ToLower(e.metricsView.TimeDimension)]
+		if ok && col.Type.Code == runtimev1.Type_CODE_DATE {
+			smallestPossibleGrain = runtimev1.TimeGrain_TIME_GRAIN_DAY
+		}
+	}
+	for _, d := range mv.Dimensions {
+		if d.DataType.Code == runtimev1.Type_CODE_DATE {
+			smallestPossibleGrain = runtimev1.TimeGrain_TIME_GRAIN_DAY
+		}
+	}
+	if mv.SmallestTimeGrain == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
+		mv.SmallestTimeGrain = smallestPossibleGrain
+	} else if mv.SmallestTimeGrain < smallestPossibleGrain {
+		res.OtherErrs = append(res.OtherErrs, fmt.Errorf("smallest_time_grain %q is smaller than the smallest possible grain %q based on the data types of the time dimension(s)", TimeGrainFromProto(mv.SmallestTimeGrain), TimeGrainFromProto(smallestPossibleGrain)))
 	}
 
 	return res, nil
