@@ -62,7 +62,8 @@
   let inListTooLong = false;
   let pinnedSelected: string[] = [];
   let unpinned: string[] = [];
-  $: {
+
+  function updatePinnedLists() {
     if (curMode === DimensionFilterMode.Select && correctedSearchResults) {
       pinnedSelected = correctedSearchResults.filter((v) =>
         effectiveSelectedValues.includes(v),
@@ -72,7 +73,7 @@
       );
     } else {
       pinnedSelected = [];
-      unpinned = correctedSearchResults ?? [];
+      unpinned = correctedSearchResults ? [...correctedSearchResults] : [];
     }
   }
 
@@ -246,6 +247,7 @@
         mode === DimensionFilterMode.InList
           ? mergeDimensionSearchValues(selectedValues)
           : (sanitisedSearchText ?? "");
+      updatePinnedLists();
     } else {
       if (selectedValues.length === 0 && !inputText) {
         // filter was cleared. so remove the filter
@@ -255,6 +257,11 @@
         resetFilterSettings(mode, sanitisedSearchText);
       }
     }
+  }
+
+  // Also update pinned lists if correctedSearchResults changes while dropdown is open
+  $: if (open && curMode === DimensionFilterMode.Select) {
+    updatePinnedLists();
   }
 
   function handleToggleExcludeMode() {
