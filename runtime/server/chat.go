@@ -2,7 +2,9 @@ package server
 
 import (
 	"context"
+	"fmt"
 
+	"github.com/google/uuid"
 	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -120,6 +122,12 @@ func (s *Server) Complete(ctx context.Context, req *runtimev1.CompleteRequest) (
 		return nil, status.Error(codes.InvalidArgument, "messages cannot be empty")
 	}
 
+	// Check if we should use the agent-based completion
+	if req.UseAgent {
+		return s.completeUsingAgent(ctx, req)
+	}
+
+	// Continue with standard completion logic
 	ownerID := auth.GetClaims(ctx).Subject()
 
 	// Handle conversation ID: nil or empty string means create new conversation
@@ -148,5 +156,67 @@ func (s *Server) Complete(ctx context.Context, req *runtimev1.CompleteRequest) (
 	return &runtimev1.CompleteResponse{
 		ConversationId: result.ConversationID,
 		Messages:       result.Messages,
+	}, nil
+}
+
+func (s *Server) completeUsingAgent(ctx context.Context, req *runtimev1.CompleteRequest) (resp *runtimev1.CompleteResponse, err error) {
+	// Start the project_editor_agent and run the completion
+	// refer to runtime/ai agents package for agent running logic
+
+	// Extract user input from the latest message
+	var userInput string
+	for i := len(req.Messages) - 1; i >= 0; i-- {
+		if req.Messages[i].Role == "user" {
+			for _, content := range req.Messages[i].Content {
+				if blockType, ok := content.BlockType.(*aiv1.ContentBlock_Text); ok {
+					userInput = blockType.Text
+					break
+				}
+			}
+			if userInput != "" {
+				break
+			}
+		}
+	}
+	if userInput == "" {
+		return nil, status.Error(codes.InvalidArgument, "no user input found in messages")
+	}
+
+	var conversationID string
+	if req.ConversationId != nil {
+		conversationID = *req.ConversationId
+	} else {
+		conversationID = uuid.New().String()
+	}
+	// TODO: Instead of harcoding the agent name the name should be passed in the request depending upon the context in which the agent is being used
+	// Example - if the request is for fixing the model then the agent should be "ModelEditorAgent"
+	result, err := s.runtime.RunAgent(ctx, &runtime.AgentRunOptions{
+		Agent:       "project_editor_agent",
+		InstanceID:  req.InstanceId,
+		Input:       userInput,
+		SessionID:   conversationID,
+		ServerTools: s,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to run agent: %w", err)
+	}
+
+	// Create response message from agent output
+	responseMessage := &runtimev1.Message{
+		Id:   "", // TODO: Generate proper message ID
+		Role: "assistant",
+		Content: []*aiv1.ContentBlock{
+			{
+				BlockType: &aiv1.ContentBlock_Text{
+					Text: result,
+				},
+			},
+		},
+	}
+
+	// Transform runner result to gRPC response
+	return &runtimev1.CompleteResponse{
+		Messages:       []*runtimev1.Message{responseMessage},
+		ConversationId: conversationID,
 	}, nil
 }

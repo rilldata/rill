@@ -78,6 +78,7 @@ require (
 	github.com/orbcorp/orb-go v0.74.0
 	github.com/paulmach/orb v0.11.1
 	github.com/pingcap/tidb/pkg/parser v0.0.0-20231124053542-069631e2ecfe
+	github.com/pontus-devoteam/agent-sdk-go v0.0.9
 	github.com/prometheus/client_golang v1.20.5
 	github.com/redis/go-redis/v9 v9.6.3
 	github.com/riverqueue/river v0.19.0
@@ -458,3 +459,5 @@ exclude modernc.org/sqlite v1.18.1
 
 // https://github.com/googleapis/google-cloud-go/pull/12065
 replace cloud.google.com/go/bigquery v1.66.2 => github.com/rilldata/google-cloud-go/bigquery v0.0.0-20250426042021-091fd79360f3
+
+replace github.com/pontus-devoteam/agent-sdk-go => github.com/k-anshul/agent-sdk-go v0.0.0-20250715161046-444e2d44d272

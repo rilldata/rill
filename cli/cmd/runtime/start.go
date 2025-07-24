@@ -28,6 +28,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	// Load connectors and reconcilers for runtime
+	_ "github.com/rilldata/rill/runtime/ai/agents"
 	_ "github.com/rilldata/rill/runtime/drivers/admin"
 	_ "github.com/rilldata/rill/runtime/drivers/athena"
 	_ "github.com/rilldata/rill/runtime/drivers/azure"
