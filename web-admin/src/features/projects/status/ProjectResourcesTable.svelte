@@ -96,7 +96,12 @@
       accessorKey: "actions",
       header: "",
       cell: ({ row }) => {
-        if (!isReconciling) {
+        // Only hide actions for reconciling rows
+        const status = row.original.meta.reconcileStatus;
+        const isRowReconciling =
+          status === V1ReconcileStatus.RECONCILE_STATUS_PENDING ||
+          status === V1ReconcileStatus.RECONCILE_STATUS_RUNNING;
+        if (!isRowReconciling) {
           return flexRender(ActionsCell, {
             resourceKind: row.original.meta.name.kind,
             resourceName: row.original.meta.name.name,
