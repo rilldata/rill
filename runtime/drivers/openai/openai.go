@@ -89,9 +89,11 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 	}
 
 	opts := &ai.Options{
-		opts.BaseURL: conf.BaseURL,
-		opts.APIType: openaidriver.APIType(conf.APIType),
-		opts.APIVersion: conf.APIVersion,
+		BaseURL:     conf.BaseURL,
+		APIType:     openaidriver.APIType(conf.APIType),
+		APIVersion:  conf.APIVersion,
+		Model:       conf.Model,
+		Temperature: conf.Temperature,
 	}
 	aiClient, err := ai.NewOpenAI(conf.APIKey, opts)
 	if err != nil {
@@ -117,7 +119,8 @@ func (d driver) TertiarySourceConnectors(ctx context.Context, srcProps map[strin
 type configProperties struct {
 	APIKey string `mapstructure:"api_key"`
 
-	Model string `mapstructure:"model"`
+	Model       string  `mapstructure:"model"`
+	Temperature float32 `mapstructure:"temperature"`
 
 	BaseURL    string `mapstructure:"base_url"`
 	APIType    string `mapstructure:"api_type"`
@@ -230,8 +233,5 @@ func (o *openai) Ping(ctx context.Context) error {
 
 // Complete implements drivers.AIService.
 func (o *openai) Complete(ctx context.Context, msgs []*aiv1.CompletionMessage, tools []*aiv1.Tool) (*aiv1.CompletionMessage, error) {
-	opts := ai.CompletionOptions{
-		Model: o.config.Model,
-	}
-	return o.aiClient.Complete(ctx, msgs, tools, opts)
+	return o.aiClient.Complete(ctx, msgs, tools)
 }
