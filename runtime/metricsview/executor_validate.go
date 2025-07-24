@@ -158,6 +158,9 @@ func (e *Executor) ValidateAndNormalizeMetricsView(ctx context.Context) (*Valida
 		}
 	}
 	for _, d := range mv.Dimensions {
+		if d.DataType == nil {
+			continue // Skip if data type discovery failed.
+		}
 		switch d.DataType.Code {
 		case runtimev1.Type_CODE_TIMESTAMP:
 			if smallestPossibleGrain == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
