@@ -18,7 +18,6 @@
   import ActionsCell from "./ActionsCell.svelte";
 
   export let data: V1Resource[];
-  export let isReconciling: boolean;
 
   const columns: ColumnDef<V1Resource, any>[] = [
     {
