@@ -56,7 +56,6 @@
     getAllowedGrains,
     V1TimeGrainToDateTimeUnit,
   } from "@rilldata/web-common/lib/time/new-grains";
-  import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
   import { featureFlags } from "../../feature-flags";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
 
