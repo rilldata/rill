@@ -48,6 +48,7 @@ func NewOpenAI(apiKey string, opts *Options) (Client, error) {
 		return &openAI{
 			client: openai.NewClient(apiKey),
 			apiKey: apiKey,
+			opts:   &Options{},
 		}, nil
 	}
 
