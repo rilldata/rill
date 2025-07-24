@@ -37,7 +37,7 @@ var spec = drivers.Spec{
 			Required:    false,
 			DisplayName: "Model",
 			Description: "The OpenAI model to use (e.g., 'gpt-4o').",
-			Placeholder: "gpt-4o",
+			Placeholder: "",
 		},
 		{
 			Key:         "base_url",
@@ -45,7 +45,7 @@ var spec = drivers.Spec{
 			Required:    false,
 			DisplayName: "Base URL",
 			Description: "The base URL for the OpenAI API (e.g., 'https://api.openai.com/v1').",
-			Placeholder: "https://api.openai.com/v1",
+			Placeholder: "",
 		},
 		{
 			Key:         "api_type",
@@ -53,7 +53,7 @@ var spec = drivers.Spec{
 			Required:    false,
 			DisplayName: "API Type",
 			Description: "The type of OpenAI API to use (e.g., 'OPEN_AI, AZURE').",
-			Placeholder: "OPEN_AI",
+			Placeholder: "",
 		},
 		{
 			Key:         "api_version",
