@@ -60,22 +60,25 @@
   let curSearchText = "";
   let curExcludeMode = excludeMode;
   let inListTooLong = false;
-  let pinnedSelected: string[] = [];
-  let unpinned: string[] = [];
+  let selectedProxy: Set<string> = new Set();
+  let allProxy: Set<string> = new Set();
 
-  function updatePinnedLists() {
-    if (curMode === DimensionFilterMode.Select && correctedSearchResults) {
-      pinnedSelected = correctedSearchResults.filter((v) =>
-        effectiveSelectedValues.includes(v),
-      );
-      unpinned = correctedSearchResults.filter(
-        (v) => !effectiveSelectedValues.includes(v),
-      );
-    } else {
-      pinnedSelected = [];
-      unpinned = correctedSearchResults ? [...correctedSearchResults] : [];
-    }
+  $: if (curMode === DimensionFilterMode.Select && correctedSearchResults) {
+    selectedProxy = new Set(effectiveSelectedValues);
+    allProxy = new Set(correctedSearchResults);
+  } else {
+    selectedProxy = new Set();
+    allProxy = new Set(
+      correctedSearchResults ? [...correctedSearchResults] : [],
+    );
   }
+
+  $: filteredItems = Array.from(allProxy).filter((item) => {
+    return (
+      !selectedProxy.has(item) &&
+      item.toLowerCase().includes(curSearchText.toLowerCase())
+    );
+  });
 
   $: ({ instanceId } = $runtime);
 
@@ -247,7 +250,6 @@
         mode === DimensionFilterMode.InList
           ? mergeDimensionSearchValues(selectedValues)
           : (sanitisedSearchText ?? "");
-      updatePinnedLists();
     } else {
       if (selectedValues.length === 0 && !inputText) {
         // filter was cleared. so remove the filter
@@ -257,11 +259,6 @@
         resetFilterSettings(mode, sanitisedSearchText);
       }
     }
-  }
-
-  // Also update pinned lists if correctedSearchResults changes while dropdown is open
-  $: if (open && curMode === DimensionFilterMode.Select) {
-    updatePinnedLists();
   }
 
   function handleToggleExcludeMode() {
@@ -441,7 +438,7 @@
       {:else if correctedSearchResults}
         <DropdownMenu.Group class="px-1" aria-label={`${name} results`}>
           {#if curMode === DimensionFilterMode.Select}
-            {#each pinnedSelected as name (name)}
+            {#each Array.from(selectedProxy) as name (name)}
               {@const selected = effectiveSelectedValues.includes(name)}
               {@const label = name ?? "null"}
               <svelte:component
@@ -462,10 +459,12 @@
                 </span>
               </svelte:component>
             {/each}
-            {#if pinnedSelected.length && unpinned.length}
+
+            {#if selectedProxy.size && filteredItems.length > 0}
               <DropdownMenu.Separator />
             {/if}
-            {#each unpinned as name (name)}
+
+            {#each filteredItems as name (name)}
               {@const selected = effectiveSelectedValues.includes(name)}
               {@const label = name ?? "null"}
               <svelte:component
@@ -486,11 +485,12 @@
                 </span>
               </svelte:component>
             {/each}
-            {#if !pinnedSelected.length && !unpinned.length}
+
+            <!-- {#if !Array.from(selectedProxy).length && !filteredItems.length}
               <div class="ui-copy-disabled text-center p-2 w-full">
                 no results
               </div>
-            {/if}
+            {/if} -->
           {:else}
             {#each correctedSearchResults as name (name)}
               {@const label = name ?? "null"}
