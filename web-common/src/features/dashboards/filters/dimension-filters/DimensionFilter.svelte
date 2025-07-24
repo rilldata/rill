@@ -57,9 +57,9 @@
   let open = openOnMount && !selectedValues.length && !inputText;
   $: sanitisedSearchText = inputText?.replace(/^%/, "").replace(/%$/, "");
   let curMode = mode;
-  let curSearchText = "";
   let curExcludeMode = excludeMode;
   let inListTooLong = false;
+  let searchValue = "";
   let selectedProxy: Set<string> = new Set();
   let allProxy: Set<string> = new Set();
 
@@ -76,7 +76,7 @@
   $: filteredItems = Array.from(allProxy).filter((item) => {
     return (
       !selectedProxy.has(item) &&
-      item.toLowerCase().includes(curSearchText.toLowerCase())
+      item.toLowerCase().includes(searchValue.toLowerCase())
     );
   });
 
@@ -84,7 +84,7 @@
 
   $: resetFilterSettings(mode, sanitisedSearchText);
 
-  $: checkSearchText(curSearchText);
+  $: checkSearchText(searchValue);
 
   let searchedBulkValues: string[] =
     mode === DimensionFilterMode.InList ? selectedValues : [];
@@ -92,7 +92,7 @@
   $: enableSearchQuery =
     Boolean(timeControlsReady && open) &&
     (curMode === DimensionFilterMode.Select ||
-      (curMode === DimensionFilterMode.Contains && curSearchText.length > 0) ||
+      (curMode === DimensionFilterMode.Contains && searchValue.length > 0) ||
       (curMode === DimensionFilterMode.InList &&
         searchedBulkValues.length > 0));
 
@@ -103,7 +103,7 @@
     {
       mode: curMode,
       values: searchedBulkValues,
-      searchText: curSearchText,
+      searchText: searchValue,
       timeStart,
       timeEnd,
       enabled: enableSearchQuery,
@@ -125,7 +125,7 @@
 
   $: enableSearchCountQuery =
     Boolean(timeControlsReady) &&
-    ((curMode === DimensionFilterMode.Contains && curSearchText.length > 0) ||
+    ((curMode === DimensionFilterMode.Contains && searchValue.length > 0) ||
       (curMode === DimensionFilterMode.InList &&
         searchedBulkValues.length > 0));
 
@@ -136,7 +136,7 @@
     {
       mode: curMode,
       values: searchedBulkValues,
-      searchText: curSearchText,
+      searchText: searchValue,
       timeStart,
       timeEnd,
       enabled: enableSearchCountQuery,
@@ -198,17 +198,17 @@
     switch (mode) {
       case DimensionFilterMode.Select:
         curMode = DimensionFilterMode.Select;
-        curSearchText = "";
+        searchValue = "";
         break;
 
       case DimensionFilterMode.InList:
         curMode = DimensionFilterMode.InList;
-        curSearchText = mergeDimensionSearchValues(selectedValues);
+        searchValue = mergeDimensionSearchValues(selectedValues);
         break;
 
       case DimensionFilterMode.Contains:
         curMode = DimensionFilterMode.Contains;
-        curSearchText = sanitisedSearchText ?? "";
+        searchValue = sanitisedSearchText ?? "";
         break;
     }
   }
@@ -240,13 +240,13 @@
         curExcludeMode = excludeMode;
       }
     } else {
-      checkSearchText(curSearchText);
+      checkSearchText(searchValue);
     }
   }
 
   function handleOpenChange(open: boolean) {
     if (open) {
-      curSearchText =
+      searchValue =
         mode === DimensionFilterMode.InList
           ? mergeDimensionSearchValues(selectedValues)
           : (sanitisedSearchText ?? "");
@@ -289,8 +289,8 @@
         open = false;
         break;
       case DimensionFilterMode.Contains:
-        if (curSearchText.length === 0) return;
-        onApplyContainsMode(curSearchText);
+        if (searchValue.length === 0) return;
+        onApplyContainsMode(searchValue);
         if (curExcludeMode !== excludeMode) onToggleFilterMode();
         open = false;
         break;
@@ -346,7 +346,7 @@
           matchedCount={allSearchResultsCount}
           loading={isFetchingFromAllSearchResultsCount}
           search={curMode === DimensionFilterMode.Contains
-            ? curSearchText
+            ? searchValue
             : undefined}
         />
       </Chip>
@@ -382,7 +382,7 @@
           forcedTriggerStyle="rounded-r-none"
         />
         <Search
-          bind:value={curSearchText}
+          bind:value={searchValue}
           label={`${name} search list`}
           showBorderOnFocus={false}
           retainValueOnMount
@@ -485,12 +485,6 @@
                 </span>
               </svelte:component>
             {/each}
-
-            <!-- {#if !Array.from(selectedProxy).length && !filteredItems.length}
-              <div class="ui-copy-disabled text-center p-2 w-full">
-                no results
-              </div>
-            {/if} -->
           {:else}
             {#each correctedSearchResults as name (name)}
               {@const label = name ?? "null"}
