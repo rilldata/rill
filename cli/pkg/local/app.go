@@ -248,15 +248,14 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 	}
 	connectors = append(connectors, olapConnector)
 
-	// The repo connector is the local project directory
-	repoConfig, err := structpb.NewStruct(map[string]any{"dsn": projectPath})
-	if err != nil {
-		return nil, err
-	}
 	repoConnector := &runtimev1.Connector{
-		Type:   "file",
-		Name:   "repo",
-		Config: repoConfig,
+		Type: "file",
+		Name: "repo",
+		Config: map[string]string{
+			"dsn":          projectPath,
+			"admin_url":    opts.Ch.AdminURL(),
+			"access_token": opts.Ch.AdminToken(),
+		},
 	}
 	connectors = append(connectors, repoConnector)
 
