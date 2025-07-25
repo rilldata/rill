@@ -16,7 +16,6 @@ const (
 	DefaultSummaryLimit = 15
 	// DefaultSampleTimeWindow is the time window used for sampling values
 	DefaultSampleTimeWindow = 24 * time.Hour
-
 	// statsPerDimension is the number of statistics returned per dimension
 	statsPerDimension = 4
 	// summaryQueryLimit is the maximum number of rows to return in the summary query
