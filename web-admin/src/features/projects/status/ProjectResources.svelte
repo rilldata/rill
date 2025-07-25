@@ -20,7 +20,6 @@
   const createTrigger = createRuntimeServiceCreateTrigger();
 
   let isConfirmDialogOpen = false;
-  let isReconciling = false;
 
   const INITIAL_REFETCH_INTERVAL = 200; // Start at 200ms for immediate feedback
   const MAX_REFETCH_INTERVAL = 2_000; // Cap at 2s
@@ -96,13 +95,9 @@
     isResourceReconciling,
   );
 
-  $: isReconciling = Boolean(hasReconcilingResources);
-
   $: isRefreshButtonDisabled = hasReconcilingResources;
 
   function refreshAllSourcesAndModels() {
-    isReconciling = false;
-
     void $createTrigger
       .mutateAsync({
         instanceId,
@@ -141,7 +136,7 @@
       Error loading resources: {$resources.error?.message}
     </div>
   {:else if $resources.data}
-    <ProjectResourcesTable data={$resources?.data?.resources} {isReconciling} />
+    <ProjectResourcesTable data={$resources?.data?.resources} />
   {/if}
 </section>
 

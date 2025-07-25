@@ -152,7 +152,6 @@
 
   $: ({ length: allErrorsLength } = $allErrors);
 
-  $: includingTomorrowDate = DateTime.now().plus({ days: 1 }).startOf("day");
   $: maxExpirationDate = DateTime.now().plus({ years: 1 }).startOf("day");
 </script>
 
@@ -197,7 +196,6 @@
                 <Calendar
                   selection={DateTime.fromISO($form.expiresAt)}
                   singleDaySelection
-                  minDate={includingTomorrowDate}
                   maxDate={maxExpirationDate}
                   firstVisibleMonth={DateTime.fromISO($form.expiresAt)}
                   onSelectDay={(date) => {
