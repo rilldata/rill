@@ -2,15 +2,15 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import {
+    allTimeZones,
+    formatIANAs,
     getAbbreviationForIANA,
     getLocalIANA,
-    formatIANAs,
-    allTimeZones,
   } from "@rilldata/web-common/lib/time/timezone";
+  import type { DateTime } from "luxon";
+  import { localStorageStore } from "@rilldata/web-common/lib/store-utils";
   import ZoneDisplay from "./ZoneDisplay.svelte";
   import Search from "@rilldata/web-common/components/search/Search.svelte";
-  import { localStorageStore } from "@rilldata/web-common/lib/store-utils";
-  import type { DateTime } from "luxon";
 
   const browserIANA = getLocalIANA();
 
@@ -20,12 +20,13 @@
   export let activeTimeZone: string;
   export let context: string;
   export let lockTimeZone = false;
+  export let side: "top" | "right" | "bottom" | "left" = "bottom";
   export let onSelectTimeZone: (timeZone: string) => void;
 
   const recents = localStorageStore<string[]>(`${context}-recent-zones`, []);
 
-  let open = false;
   let searchValue = "";
+  let open = false;
 
   $: ianaMap = formatIANAs(allTimeZones, watermark);
 
@@ -60,6 +61,7 @@
       aria-label="Timezone selector"
       title={!availableTimeZones.length ? "No timezones configured" : ""}
       disabled={lockTimeZone}
+      type="button"
     >
       {getAbbreviationForIANA(watermark, activeTimeZone)}
       {#if !lockTimeZone}
@@ -70,7 +72,7 @@
     </button>
   </DropdownMenu.Trigger>
 
-  <DropdownMenu.Content align="start" class="w-80">
+  <DropdownMenu.Content align="start" {side} class="w-80">
     <div class="p-1.5 pb-1 flex items-center gap-x-2">
       <Search bind:value={searchValue} autofocus={false} />
     </div>

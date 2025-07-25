@@ -134,10 +134,7 @@
 
 <style lang="postcss">
   input {
-    width: 100%;
-    padding: 0.5rem;
-    border: 1px solid #bebebe;
-    border-radius: 0.25rem;
+    @apply h-8 px-2 w-full rounded-[2px] border border-gray-300;
   }
 
   input.active {

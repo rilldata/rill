@@ -13,7 +13,7 @@ tags:
 If you noticed in the previous screenshot, we had a table called `uk_price_paid`. This is a dataset that is used in ClickHouse's Learning portal, so we thought it was fitting to go ahead and continue on this dataset.
 
 :::note
-In the case that you have not already added this table to your local or Cloud database, please follow the step on [ClickHouse's site](https://clickhouse.com/docs/en/getting-started/example-datasets/uk-price-paid) for the steps to do so!
+In the case that you have not already added this table to your local or Cloud database, please follow the steps on [ClickHouse's site](https://clickhouse.com/docs/en/getting-started/example-datasets/uk-price-paid) for the steps to do so!
 :::
 
 ### Create metrics view

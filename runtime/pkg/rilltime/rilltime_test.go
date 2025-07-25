@@ -370,6 +370,25 @@ func Test_KatmanduTimezone(t *testing.T) {
 	runTests(t, testCases, now, minTime, maxTime, watermark, tz)
 }
 
+func Test_TimeNewYorkTimezone(t *testing.T) {
+	tz, err := time.LoadLocation("America/New_York")
+	require.NoError(t, err)
+
+	testCases := []testCase{
+		// Cases of time moving forward due to daylight savings
+		{"D3 of M11 as of 2024", "2024-11-03T04:00:00Z", "2024-11-04T05:00:00Z", timeutil.TimeGrainHour, 1, 1},
+		{"3D as of 2024-11-04", "2024-11-01T04:00:00Z", "2024-11-04T05:00:00Z", timeutil.TimeGrainDay, 1, 1},
+		{"2M as of 2024-12", "2024-10-01T04:00:00Z", "2024-12-01T05:00:00Z", timeutil.TimeGrainMonth, 1, 1},
+
+		// Cases of time moving backwards due to daylight savings
+		{"D10 of M3 as of 2024", "2024-03-10T05:00:00Z", "2024-03-11T04:00:00Z", timeutil.TimeGrainHour, 1, 1},
+		{"3D as of 2024-03-11", "2024-03-08T05:00:00Z", "2024-03-11T04:00:00Z", timeutil.TimeGrainDay, 1, 1},
+		{"2M as of 2024-04", "2024-02-01T05:00:00Z", "2024-04-01T04:00:00Z", timeutil.TimeGrainMonth, 1, 1},
+	}
+
+	runTests(t, testCases, now, minTime, maxTime, watermark, tz)
+}
+
 func TestEval_BackwardsCompatibility(t *testing.T) {
 	testCases := []testCase{
 		{"rill-TD", "2025-05-13T00:00:00Z", "2025-05-13T06:32:36Z", timeutil.TimeGrainHour, 1, 1},

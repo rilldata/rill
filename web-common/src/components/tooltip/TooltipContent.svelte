@@ -11,7 +11,7 @@
 
 <div
   aria-label="tooltip-content"
-  class="tooltip-content bg-gray-700 dark:bg-gray-900 shadow-md text-white rounded p-2 pt-1 pb-1 {className}"
+  class="tooltip-content bg-gray-700 dark:bg-gray-900 shadow-md text-surface rounded p-2 pt-1 pb-1 {className}"
   style:max-width={maxWidth}
 >
   <slot />

@@ -719,10 +719,27 @@ definitions:
             const: mysql
           dsn:
             type: string
-            description: DSN(Data Source Name) for the mysql connection
+            description: DSN(Data Source Name) for the mysql connection 
+          host:
+            type: string
+            description: Hostname of the MySQL server
+          port:
+            type: integer
+            description: Port number for the MySQL server
+          database:
+            type: string
+            description: Name of the MySQL database
+          user:
+            type: string
+            description: Username for authentication
+          password:
+            type: string
+            description: Password for authentication
+          ssl_mode:
+            type: string
+            description: SSL mode can be DISABLED, PREFERRED or REQUIRED        
         required:
           - driver
-          - dsn
       pinot:
         type: object
         title: pinot
@@ -779,9 +796,26 @@ definitions:
           dsn:
             type: string
             description: DSN(Data Source Name) for the postgres connection
+          host:
+            type: string
+            description: Hostname of the Postgres server
+          port:
+            type: string
+            description: Port number for the Postgres server
+          dbname:
+            type: string
+            description: Name of the Postgres database
+          user:
+            type: string
+            description: Username for authentication
+          password:
+            type: string
+            description: Password for authentication
+          sslmode:
+            type: string
+            description: SSL mode can be disable, allow, prefer or require
         required:
           - driver
-          - dsn
       redshift:
         type: object
         title: redshift

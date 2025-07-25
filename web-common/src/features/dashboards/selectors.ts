@@ -8,7 +8,9 @@ import {
   useFilteredResources,
   useResource,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
+import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors.ts";
 import {
+  getQueryServiceMetricsViewTimeRangeQueryOptions,
   type RpcStatus,
   type V1Expression,
   type V1GetResourceResponse,
@@ -21,6 +23,7 @@ import {
   createRuntimeServiceListResources,
 } from "@rilldata/web-common/runtime-client";
 import {
+  createQuery,
   type CreateQueryOptions,
   type CreateQueryResult,
   type QueryClient,
@@ -28,6 +31,7 @@ import {
 import { derived } from "svelte/store";
 import type { ErrorType } from "../../runtime-client/http-client";
 import type { DimensionThresholdFilter } from "web-common/src/features/dashboards/stores/explore-state";
+import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 
 export function useMetricsView(
   instanceId: string,
@@ -119,6 +123,40 @@ export function useMetricsViewTimeRange(
         },
         queryClient,
       ).subscribe(set),
+  );
+}
+
+export function hasValidMetricsViewTimeRange(
+  instanceId: string,
+  exploreName: string,
+) {
+  const fullTimeRangeQueryOptionsStore = derived(
+    useExploreValidSpec(instanceId, exploreName),
+    (validSpecResp) => {
+      const metricsViewSpec = validSpecResp.data?.metricsView ?? {};
+      const exploreSpec = validSpecResp.data?.explore ?? {};
+      const metricsViewName = exploreSpec.metricsView ?? "";
+
+      return getQueryServiceMetricsViewTimeRangeQueryOptions(
+        instanceId,
+        metricsViewName,
+        {},
+        {
+          query: {
+            enabled: Boolean(metricsViewSpec.timeDimension),
+          },
+        },
+      );
+    },
+  );
+  const fullTimeRangeQuery = createQuery(
+    fullTimeRangeQueryOptionsStore,
+    queryClient,
+  );
+
+  return derived(
+    fullTimeRangeQuery,
+    (fullTimeRange) => !fullTimeRange.isPending && !fullTimeRange.isError,
   );
 }
 

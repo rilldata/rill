@@ -5,11 +5,11 @@ sidebar_label: "Custom API"
 sidebar_position: 30
 ---
 
-Rill allows you to create custom APIs to pull data out in a flexible manner. You can write custom SQL queries and expose them as an API endpoint.
+Rill allows you to create custom APIs to pull data out in a flexible manner. You can write custom SQL queries and expose them as API endpoints.
 
 ## Create a custom API
 
-To create a custom API, create a new yaml file under `apis` directory in your Rill project. Currently, we support two types of custom APIs:
+To create a custom API, create a new YAML file under the `apis` directory in your Rill project. Currently, we support two types of custom APIs:
 
 ### SQL API
 
@@ -20,11 +20,11 @@ type: api
 sql: SELECT abc FROM my_model
 ```
 
-Read more details about [SQL apis](./sql-api.md).
+Read more details about [SQL APIs](./sql-api.md).
 
 ### Metrics SQL API
 
-You can write a SQL query referring to metrics definition and dimensions defined in a [metrics view](/build/metrics-view/metrics-view.md). 
+You can write a SQL query referring to metrics definitions and dimensions defined in a [metrics view](/build/metrics-view/metrics-view.md). 
 It should have the following structure:
     
 ```yaml

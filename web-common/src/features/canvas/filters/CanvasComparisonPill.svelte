@@ -19,6 +19,8 @@
   export let activeTimeZone: string;
   export let onDisplayTimeComparison: (show: boolean) => void;
   export let onSetSelectedComparisonRange: (range: TimeRange) => void;
+  export let allowCustomTimeRange: boolean = true;
+  export let side: "top" | "right" | "bottom" | "left" = "bottom";
 
   $: interval = selectedTimeRange
     ? Interval.fromDateTimes(
@@ -29,7 +31,10 @@
 
   $: activeTimeGrain = selectedTimeRange?.interval;
 
-  $: comparisonOptions = getComparisonOptionsForCanvas(selectedTimeRange);
+  $: comparisonOptions = getComparisonOptionsForCanvas(
+    selectedTimeRange,
+    allowCustomTimeRange,
+  );
 
   function onSelectComparisonRange(
     name: TimeComparisonOption,
@@ -61,6 +66,8 @@
     on:click={() => {
       onDisplayTimeComparison(!showTimeComparison);
     }}
+    type="button"
+    aria-label="Toggle time comparison"
   >
     <div class="pointer-events-none flex items-center gap-x-1.5">
       <Switch
@@ -83,11 +90,12 @@
       selectedComparison={selectedComparisonTimeRange}
       showComparison={showTimeComparison}
       currentInterval={interval}
-      grain={activeTimeGrain}
       zone={activeTimeZone}
       {onSelectComparisonRange}
       {showFullRange}
       disabled={disabled ?? false}
+      {allowCustomTimeRange}
+      {side}
     />
   {/if}
 </div>
@@ -123,7 +131,9 @@
     @apply bg-gray-50 cursor-pointer;
   }
 
+  /* Doest apply to all instances except alert/report. So this seems unintentional
   :global(.wrapper > [data-state="open"]) {
     @apply bg-gray-50 border-gray-400 z-50;
   }
+  */
 </style>

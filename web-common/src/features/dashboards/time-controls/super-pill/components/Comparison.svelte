@@ -24,7 +24,6 @@
   export let selectedComparison: DashboardTimeControls | undefined;
   export let zone: string;
   export let disabled: boolean;
-  export let grain: string;
   export let showFullRange: boolean;
   export let minDate: DateTime | undefined = undefined;
   export let maxDate: DateTime | undefined = undefined;
@@ -33,6 +32,8 @@
     start: Date,
     end: Date,
   ) => void;
+  export let allowCustomTimeRange: boolean = true;
+  export let side: "top" | "right" | "bottom" | "left" = "bottom";
 
   let open = false;
   let showSelector = false;
@@ -104,6 +105,7 @@
       use:builder.action
       {...builder}
       aria-label="Select time comparison option"
+      type="button"
     >
       <div class="gap-x-2 flex" class:opacity-50={!showComparison}>
         {#if !timeComparisonOptionsState.length && !showComparison}
@@ -111,7 +113,7 @@
         {:else}
           <b class="line-clamp-1">{label}</b>
           {#if interval?.isValid && showFullRange}
-            <RangeDisplay {interval} {grain} />
+            <RangeDisplay {interval} />
           {/if}
         {/if}
       </div>
@@ -125,7 +127,7 @@
     </button>
   </DropdownMenu.Trigger>
 
-  <DropdownMenu.Content align="start" class="p-0 overflow-hidden">
+  <DropdownMenu.Content align="start" {side} class="p-0 overflow-hidden">
     <div class="flex">
       <div class="flex flex-col border-r w-48 p-1">
         {#each timeComparisonOptionsState as option (option.name)}
@@ -146,23 +148,25 @@
             <DropdownMenu.Separator />
           {/if}
         {/each}
-        {#if timeComparisonOptionsState.length}
-          <DropdownMenu.Separator />
-        {/if}
+        {#if allowCustomTimeRange}
+          {#if timeComparisonOptionsState.length}
+            <DropdownMenu.Separator />
+          {/if}
 
-        <DropdownMenu.Item
-          data-range="custom"
-          on:click={() => {
-            showSelector = !showSelector;
-          }}
-        >
-          <span
-            class:font-bold={comparisonOption === TimeComparisonOption.CUSTOM &&
-              showComparison}
+          <DropdownMenu.Item
+            data-range="custom"
+            on:click={() => {
+              showSelector = !showSelector;
+            }}
           >
-            Custom
-          </span>
-        </DropdownMenu.Item>
+            <span
+              class:font-bold={comparisonOption ===
+                TimeComparisonOption.CUSTOM && showComparison}
+            >
+              Custom
+            </span>
+          </DropdownMenu.Item>
+        {/if}
       </div>
       {#if showSelector}
         <div class="bg-slate-50 flex flex-col w-64 px-2 py-1">

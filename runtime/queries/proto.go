@@ -177,7 +177,13 @@ func overrideTimeRange(tr *runtimev1.TimeRange, t time.Time) *runtimev1.TimeRang
 		tr = &runtimev1.TimeRange{}
 	}
 
-	tr.End = timestamppb.New(t)
+	if tr.Expression != "" {
+		// Do not override the `end` when we are using expression.
+		// Instead, add `as of <time>`
+		tr.Expression = fmt.Sprintf("%s as of %s", tr.Expression, t.UTC().Format(time.RFC3339Nano))
+		return tr
+	}
 
+	tr.End = timestamppb.New(t)
 	return tr
 }

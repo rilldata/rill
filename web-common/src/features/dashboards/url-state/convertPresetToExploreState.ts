@@ -25,6 +25,7 @@ import {
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import {
   type DashboardTimeControls,
+  TimeComparisonOption,
   TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types";
 import {
@@ -135,6 +136,13 @@ function fromTimeRangesParams(
     partialExploreState.selectedComparisonTimeRange = fromTimeRangeUrlParam(
       preset.compareTimeRange,
     );
+    if (
+      partialExploreState.selectedComparisonTimeRange.name ===
+      TimeRangePreset.CUSTOM
+    ) {
+      partialExploreState.selectedComparisonTimeRange.name =
+        TimeComparisonOption.CUSTOM;
+    }
     partialExploreState.showTimeComparison = true;
     setCompareTimeRange = true;
     if (
@@ -213,6 +221,7 @@ export function fromTimeRangeUrlParam(tr: string) {
       end: new Date(end),
     } as DashboardTimeControls;
   }
+
   return {
     name: tr,
   } as DashboardTimeControls;

@@ -555,6 +555,96 @@ paths:
               See message Instance for field descriptions.
       tags:
         - RuntimeService
+  /v1/instances/{instanceId}/ai/complete:
+    post:
+      summary: Complete runs a language model completion (LLM chat) using the configured AI connector.
+      operationId: RuntimeService_Complete
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1CompleteResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              conversationId:
+                type: string
+                title: If not provided, creates a new conversation
+              messages:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1Message'
+              toolNames:
+                type: array
+                items:
+                  type: string
+              appContext:
+                $ref: '#/definitions/v1AppContext'
+            title: Request message for RuntimeService.Complete
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/ai/conversations:
+    get:
+      summary: ListConversations lists all AI chat conversations for an instance.
+      operationId: RuntimeService_ListConversations
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListConversationsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/ai/conversations/{conversationId}:
+    get:
+      summary: GetConversation returns a specific AI chat conversation.
+      operationId: RuntimeService_GetConversation
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetConversationResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: conversationId
+          in: path
+          required: true
+          type: string
+        - name: includeSystemMessages
+          description: Whether to include system messages in the response (defaults to false for UI use)
+          in: query
+          required: false
+          type: boolean
+      tags:
+        - RuntimeService
   /v1/instances/{instanceId}/connectors/analyze:
     get:
       summary: AnalyzeConnectors scans all the project files and returns information about all referenced connectors.
@@ -3618,6 +3708,21 @@ definitions:
           type: object
           $ref: '#/definitions/v1ResourceName'
         description: List of resources that appear to use the connector.
+  v1AppContext:
+    type: object
+    properties:
+      contextType:
+        $ref: '#/definitions/v1AppContextType'
+      contextMetadata:
+        type: object
+  v1AppContextType:
+    type: string
+    enum:
+      - APP_CONTEXT_TYPE_UNSPECIFIED
+      - APP_CONTEXT_TYPE_PROJECT_CHAT
+      - APP_CONTEXT_TYPE_EXPLORE_DASHBOARD
+    default: APP_CONTEXT_TYPE_UNSPECIFIED
+    title: Application context for AI conversations
   v1AssertionResult:
     type: object
     properties:
@@ -4114,6 +4219,17 @@ definitions:
     properties:
       categoricalSummary:
         $ref: '#/definitions/v1CategoricalSummary'
+  v1CompleteResponse:
+    type: object
+    properties:
+      conversationId:
+        type: string
+      messages:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1Message'
+    title: Response message for RuntimeService.Complete
   v1Component:
     type: object
     properties:
@@ -4275,6 +4391,37 @@ definitions:
         $ref: '#/definitions/v1ConnectorSpec'
       state:
         $ref: '#/definitions/v1ConnectorState'
+  v1ContentBlock:
+    type: object
+    properties:
+      text:
+        type: string
+      toolCall:
+        $ref: '#/definitions/v1ToolCall'
+      toolResult:
+        $ref: '#/definitions/v1ToolResult'
+    title: Content block within a message
+  v1Conversation:
+    type: object
+    properties:
+      id:
+        type: string
+      ownerId:
+        type: string
+      title:
+        type: string
+      createdOn:
+        type: string
+        format: date-time
+      updatedOn:
+        type: string
+        format: date-time
+      messages:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1Message'
+    title: Conversation metadata and messages
   v1CreateDirectoryResponse:
     type: object
     title: Response message for RuntimeService.CreateDirectory
@@ -4704,6 +4851,12 @@ definitions:
         type: string
       resolverProperties:
         type: object
+  v1GetConversationResponse:
+    type: object
+    properties:
+      conversation:
+        $ref: '#/definitions/v1Conversation'
+    title: Response message for RuntimeService.GetConversation
   v1GetExploreResponse:
     type: object
     properties:
@@ -4892,6 +5045,15 @@ definitions:
           type: object
           $ref: '#/definitions/v1ConnectorDriver'
     title: Response message for RuntimeService.ListConnectorDrivers
+  v1ListConversationsResponse:
+    type: object
+    properties:
+      conversations:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1Conversation'
+    title: Response message for RuntimeService.ListConversations
   v1ListDatabaseSchemasResponse:
     type: object
     properties:
@@ -4985,6 +5147,25 @@ definitions:
       valueType:
         $ref: '#/definitions/runtimev1Type'
     title: MapType is a complex type for mapping keys to values
+  v1Message:
+    type: object
+    properties:
+      id:
+        type: string
+      role:
+        type: string
+      content:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ContentBlock'
+      createdOn:
+        type: string
+        format: date-time
+      updatedOn:
+        type: string
+        format: date-time
+    title: Message exchanged in a conversation
   v1MetricsView:
     type: object
     properties:
@@ -6827,6 +7008,26 @@ definitions:
       records:
         type: object
         title: Not optional, not null
+  v1ToolCall:
+    type: object
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+      input:
+        type: object
+    title: Tool call specification
+  v1ToolResult:
+    type: object
+    properties:
+      id:
+        type: string
+      content:
+        type: string
+      isError:
+        type: boolean
+    title: Tool execution result
   v1TopK:
     type: object
     properties:

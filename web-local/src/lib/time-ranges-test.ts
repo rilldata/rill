@@ -959,6 +959,20 @@ function generateTestCases(metadata: TimeMetadata): Test[] {
         metadata.watermark.startOf("week").minus({ year: 1 }),
       ),
     },
+    {
+      syntax: `6M as of latest/M+1M tz America/New_York`,
+      description: "Last 6 months snapped",
+      interval: Interval.fromDateTimes(
+        metadata.latest
+          .setZone("America/New_York")
+          .startOf("month")
+          .minus({ month: 5 }),
+        metadata.latest
+          .setZone("America/New_York")
+          .startOf("month")
+          .plus({ month: 1 }),
+      ),
+    },
 
     /*
     The following tests are commented out because they may not fully supported.

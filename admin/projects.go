@@ -101,8 +101,6 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 		Slots:       proj.ProdSlots,
 		Version:     proj.ProdVersion,
 		Variables:   nil,
-		OLAPDriver:  proj.ProdOLAPDriver,
-		OLAPDSN:     proj.ProdOLAPDSN,
 	})
 	if err != nil {
 		return nil, err
@@ -331,8 +329,6 @@ func (s *Service) RedeployProject(ctx context.Context, proj *database.Project, p
 		Slots:       proj.ProdSlots,
 		Version:     proj.ProdVersion,
 		Variables:   vars,
-		OLAPDriver:  proj.ProdOLAPDriver,
-		OLAPDSN:     proj.ProdOLAPDSN,
 	})
 	if err != nil {
 		return nil, err
