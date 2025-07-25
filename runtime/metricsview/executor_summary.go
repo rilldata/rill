@@ -216,7 +216,7 @@ func (e *Executor) Summary(ctx context.Context, timeDimension string) (*SummaryR
 	}, nil
 }
 
-func extractDimensionStats(values []interface{}, index int) (min, max, sample interface{}, hasNulls bool, err error) {
+func extractDimensionStats(values []interface{}, index int) (minVal, maxVal, sample interface{}, hasNulls bool, err error) {
 	baseIndex := index * statsPerDimension
 
 	minPtr, ok := values[baseIndex].(*interface{})
