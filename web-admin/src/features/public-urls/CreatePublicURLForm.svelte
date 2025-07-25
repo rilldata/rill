@@ -197,7 +197,6 @@
                 <Calendar
                   selection={DateTime.fromISO($form.expiresAt)}
                   singleDaySelection
-                  minDate={includingTomorrowDate}
                   maxDate={maxExpirationDate}
                   firstVisibleMonth={DateTime.fromISO($form.expiresAt)}
                   onSelectDay={(date) => {
