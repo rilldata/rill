@@ -25,7 +25,6 @@ Snowflake has issued a [deprecation notice](https://www.snowflake.com/en/blog/bl
 When using Rill Developer on your local machine (i.e., `rill start`), Rill will use the credentials passed via the Snowflake connection string in one of several ways:
 1. As defined in the [source YAML configuration](/reference/project-files/sources#properties) directly via the `dsn` property
 2. As defined in the optional _Snowflake Connection String_ field within the UI source creation workflow (this is equivalent to setting the `dsn` property in the underlying source YAML file)
-3. As defined from the CLI when running `rill start --env connector.snowflake.dsn=...`
 
 :::warning Beware of committing credentials to Git
 

@@ -16,10 +16,16 @@ sidebar_position: 65
 
 ## Local credentials
 
-When using Rill Developer on your local machine (i.e., `rill start`), you have the option to specify credentials when running Rill using the `--env` flag. For example, you can run the following command in the terminal when starting Rill:
-```bash
-rill start --env connector.salesforce.username="user@example.com" --env connector.salesforce.password="MyPasswordMyToken"
+When using Rill Developer on your local machine, you will need to provide your credentials via a connector file. We would recommend not using plain text to create your file and instead use the `.env` file. For more details on your connector, see [connector YAML](/reference/project-files/connectors#salesforce) for more details.
+
+:::tip Updating the project environmental variable
+
+If you've already deployed to Rill Cloud, you can either [push/pull the credential](/manage/project-management/variables-and-credentials#pushing-and-pulling-credentials-to--from-rill-cloud-via-the-cli) from the CLI with:
 ```
+rill env push
+rill env pull
+```
+:::
 
 Alternatively, you can include the credentials directly in the underlying source YAML by adding the `username` and `password` parameters. For example, your source YAML may contain the following properties (these can also be configured through the UI during source creation):
 ```yaml

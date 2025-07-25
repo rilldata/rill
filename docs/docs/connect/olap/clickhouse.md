@@ -44,7 +44,6 @@ dsn: "{{ .env.connector.clickhouse.dsn }}"
 
 2. You can create/edit the `.env` file manually in the project directory and add [`connector.clickhouse.dsn`](#connection-string-dsn).
 3. If this project has already been deployed to Rill Cloud, you can try pulling existing credentials locally using `rill env pull`.
-4. You can pass in `connector.clickhouse.dsn` as a variable to `rill start` directly (e.g., `rill start --env connector.clickhouse.dsn=...`).
 
 :::tip Getting DSN errors in dashboards after setting `.env`?
 

@@ -20,7 +20,6 @@ When using Rill for local development, there are a few options to configure Rill
 <br />
 
 2. You can set `connector.pinot.dsn` in your project's `.env` file or try pulling existing credentials locally using `rill env pull` if the project has already been deployed to Rill Cloud.
-3. You can pass in `connector.pinot.dsn` as a variable to `rill start` directly (e.g., `rill start --env connector.pinot.dsn=...`).
 
 :::tip Getting DSN errors in dashboards after setting `.env`?
 

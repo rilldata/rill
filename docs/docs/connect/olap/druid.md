@@ -39,7 +39,6 @@ dsn: "{{ .env.connector.druid.dsn }}"
 ```
 
 2. You can manually set `connector.druid.dsn` in your project's `.env` file or try pulling existing credentials locally using `rill env pull` if the project has already been deployed to Rill Cloud.
-3. You can pass in `connector.druid.dsn` as a variable to `rill start` directly (e.g., `rill start --env connector.druid.dsn=...`).
 
 :::tip Getting DSN errors in dashboards after setting `.env`?
 

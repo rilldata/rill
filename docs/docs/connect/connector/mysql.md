@@ -26,40 +26,25 @@ When connecting to MySQL, an appropriate Data Source Name (DSN) must be specifie
 
 ## Local credentials
 
-When using Rill Developer on your local machine (i.e., `rill start`), you have the option to specify a connection string when running Rill using the `--env` flag.
-An example of passing the connection DSN to Rill via the terminal:
+When using Rill Developer on your local machine, you will need to provide your credentials via a connector file. We would recommend not using plain text to create your file and instead use the `.env` file. For more details on your connector, see [connector YAML](/reference/project-files/connectors#mysql) for more details.
 
-```bash
-rill start --env connector.mysql.dsn="mysql_user:mysql_password@tcp(localhost:3306)/mysql_db"
+:::tip Updating the project environmental variable
+
+If you've already deployed to Rill Cloud, you can either [push/pull the credential](/manage/project-management/variables-and-credentials#pushing-and-pulling-credentials-to--from-rill-cloud-via-the-cli) from the CLI with:
 ```
+rill env push
+rill env pull
+```
+:::
 
-Alternatively, you can include the connection string directly in the source YAML definition by adding the `dsn` parameter.
-An example of a source using this approach:
 
 ```yaml
 type: "model"
 connector: "mysql"
 sql: "select * from my_table"
-dsn: "mysql_user:mysql_password@tcp(localhost:3306)/mysql_db"
+
 ```
 
-:::warning Beware of committing credentials to Git
-
-This second approach is generally not recommended outside of local development because it places the connection details (which may contain sensitive information like passwords) in the source file, <u>which is committed to Git</u>.
-
-:::
-
-:::info Source Properties
-
-For more information about available source properties and configurations, please refer to our reference documentation on [Source YAML](/reference/project-files/rill-yaml).
-
-:::
-
-:::tip Did you know?
-
-If this project has already been deployed to Rill Cloud and credentials have been set for this source, you can use `rill env pull` to [pull these cloud credentials](/connect/credentials/#rill-env-pull) locally (into your local `.env` file). Please note that this may override any credentials you have set locally for this source.
-
-:::
 
 ## Cloud deployment
 
@@ -69,14 +54,3 @@ Once a project with a MySQL source has been deployed, Rill requires you to expli
 rill env configure
 ```
 
-:::info
-
-Note that you must `cd` into the Git repository from which your project was deployed before running `rill env configure`.
-
-:::
-
-:::tip Did you know?
-
-If you've already configured credentials locally (in your `<RILL_PROJECT_DIRECTORY>/.env` file), you can use `rill env push` to [push these credentials](/connect/credentials#rill-env-push) to your Rill Cloud project. This will allow other users to retrieve and reuse the same credentials automatically by running `rill env pull`.
-
-:::

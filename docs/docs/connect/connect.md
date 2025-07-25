@@ -45,7 +45,7 @@ Skip data ingestion and work directly with existing tables in your OLAP engine, 
 
 <div className="connector-icon-grid">
   <ConnectorIcon
-    icon={<img src="/img/connect/icons/Logo-Athena.png" alt="Athena" />}
+    icon={<img src="/img/connect/icons/Logo-Athena.svg" alt="Athena" />}
     header="Athena"
     content="Connect to Amazon Athena for serverless querying of data stored in S3 using standard SQL."
     link="/connect/connector/athena"
@@ -53,7 +53,7 @@ Skip data ingestion and work directly with existing tables in your OLAP engine, 
     referenceLink="/reference/project-files/connectors#athena"
   />
   <ConnectorIcon
-    icon={<img src="/img/connect/icons/Logo-Bigquery.png" alt="BigQuery" />}
+    icon={<img src="/img/connect/icons/Logo-Bigquery.svg" alt="BigQuery" />}
     header="BigQuery"
     content="Connect to Google BigQuery for analytics and data warehousing with service account authentication."
     link="/connect/connector/bigquery"
@@ -61,7 +61,7 @@ Skip data ingestion and work directly with existing tables in your OLAP engine, 
     referenceLink="/reference/project-files/connectors#bigquery"
   />
   <ConnectorIcon
-    icon={<img src="/img/connect/icons/Logo-mysql.png" alt="MySQL" />}
+    icon={<img src="/img/connect/icons/Logo-mysql.svg" alt="MySQL" />}
     header="MySQL"
     content="Connect to MySQL databases with support for various authentication methods and SSL connections."
     link="/connect/connector/mysql"
@@ -69,7 +69,7 @@ Skip data ingestion and work directly with existing tables in your OLAP engine, 
     referenceLink="/reference/project-files/connectors#mysql"
   />
   <ConnectorIcon
-    icon={<img src="/img/connect/icons/Logo-Postgres.png" alt="PostgreSQL" />}
+    icon={<img src="/img/connect/icons/Logo-Postgres.svg" alt="PostgreSQL" />}
     header="PostgreSQL"
     content="Connect to PostgreSQL databases with support for SSL connections and various authentication methods."
     link="/connect/connector/postgres"
@@ -77,7 +77,7 @@ Skip data ingestion and work directly with existing tables in your OLAP engine, 
     referenceLink="/reference/project-files/connectors#postgres"
   />
   <ConnectorIcon
-    icon={<img src="/img/connect/icons/Logo-Redshift.png" alt="Redshift" />}
+    icon={<img src="/img/connect/icons/Logo-Redshift.svg" alt="Redshift" />}
     header="Redshift"
     content="Connect to Amazon Redshift data warehouse with AWS credentials and support for both provisioned and serverless clusters."
     link="/connect/connector/redshift"
@@ -85,7 +85,7 @@ Skip data ingestion and work directly with existing tables in your OLAP engine, 
     referenceLink="/reference/project-files/connectors#redshift"
   />
   <ConnectorIcon
-    icon={<img src="/img/connect/icons/Logo-Snowflake.png" alt="Snowflake" />}
+    icon={<img src="/img/connect/icons/Logo-Snowflake.svg" alt="Snowflake" />}
     header="Snowflake"
     content="Connect to Snowflake data warehouse with support for individual credentials and JWT authentication."
     link="/connect/connector/snowflake"
@@ -93,7 +93,7 @@ Skip data ingestion and work directly with existing tables in your OLAP engine, 
     referenceLink="/reference/project-files/connectors#snowflake"
   />
   <ConnectorIcon
-    icon={<img src="/img/connect/icons/Logo-SQLite.png" alt="SQLite" />}
+    icon={<img src="/img/connect/icons/Logo-SQLite.svg" alt="SQLite" />}
     header="SQLite"
     content="Connect to SQLite databases for lightweight, file-based data storage and querying."
     link="/connect/connector/sqlite"
@@ -110,7 +110,7 @@ Skip data ingestion and work directly with existing tables in your OLAP engine, 
 
 <div className="connector-icon-grid">
   <ConnectorIcon
-    icon={<img src="/img/connect/icons/Logo-Azure.png" alt="Microsoft Azure" />}
+    icon={<img src="/img/connect/icons/Logo-Azure.svg" alt="Microsoft Azure" />}
     header="Azure"
     content="Connect to Microsoft Azure Blob Storage to read data files with support for various formats."
     link="/connect/connector/azure"
@@ -119,7 +119,7 @@ Skip data ingestion and work directly with existing tables in your OLAP engine, 
   />
 
   <ConnectorIcon
-    icon={<img src="/img/connect/icons/Logo-GCS.png" alt="Google Cloud Storage" />}
+    icon={<img src="/img/connect/icons/Logo-GCS.svg" alt="Google Cloud Storage" />}
     header="Google Cloud Storage"
     content="Google Cloud Storage for scalable object storage and data lakes."
     link="/connect/connector/gcs"
@@ -128,7 +128,7 @@ Skip data ingestion and work directly with existing tables in your OLAP engine, 
   />
 
   <ConnectorIcon
-    icon={<img src="/img/connect/icons/Logo-S3.png" alt="Amazon S3" />}
+    icon={<img src="/img/connect/icons/Logo-S3.svg" alt="Amazon S3" />}
     header="Amazon S3"
     content="Connect to Amazon S3 buckets to read data files including CSV, JSON, Parquet, and compressed formats."
     link="/connect/connector/s3"
@@ -156,7 +156,7 @@ Skip data ingestion and work directly with existing tables in your OLAP engine, 
   />
 
   <ConnectorIcon
-    icon={<img src="/img/connect/icons/Logo-Local.png" alt="Local File" />}
+    icon={<img src="/img/connect/icons/Logo-Local.svg" alt="Local File" />}
     header="Local File"
     content="Read data from local files including CSV, JSON, Parquet, and compressed formats."
     link="/connect/connector/local-file"
@@ -165,7 +165,7 @@ Skip data ingestion and work directly with existing tables in your OLAP engine, 
   />
 
   <ConnectorIcon
-    icon={<img src="/img/connect/icons/Logo-Salesforce.png" alt="Salesforce" />}
+    icon={<img src="/img/connect/icons/Logo-Salesforce.svg" alt="Salesforce" />}
     header="Salesforce"
     content="Connect to Salesforce to extract data from objects and queries using the Salesforce API."
     link="/connect/connector/salesforce"
@@ -174,7 +174,7 @@ Skip data ingestion and work directly with existing tables in your OLAP engine, 
   />
 
   <ConnectorIcon
-    icon={<img src="/img/connect/icons/Logo-Sheets.png" alt="Google Sheets" className="sheets-icon" />}
+    icon={<img src="/img/connect/icons/Logo-Sheets.svg" alt="Google Sheets" className="sheets-icon" />}
     header="Google Sheets"
     content="Connect to Google Sheets to read data from spreadsheets with support for multiple sheets."
     link="/connect/connector/googlesheets"
@@ -182,7 +182,7 @@ Skip data ingestion and work directly with existing tables in your OLAP engine, 
   />
 
   <ConnectorIcon
-    icon={<img src="/img/connect/icons/Logo-Slack.png" alt="Slack" className="sheets-icon" />}
+    icon={<img src="/img/connect/icons/Logo-Slack.svg" alt="Slack" className="sheets-icon" />}
     header="Slack"
     content="Connect to Slack to extract data from channels, messages, and other workspace information."
     link="/connect/connector/slack"
@@ -191,11 +191,6 @@ Skip data ingestion and work directly with existing tables in your OLAP engine, 
   />
 </div>
 
-:::info Full List Of Connectors
-
-Rill is continually adding new sources and connectors in our releases. For a comprehensive list, you can refer to our [Connectors](/connect/) page. Please don't hesitate to [reach out](/contact) either if there's a connector you'd like us to add!
-
-:::
 
 :::tip Avoid Pre-aggregated Metrics
 
