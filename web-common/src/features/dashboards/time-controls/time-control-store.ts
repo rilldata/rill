@@ -318,7 +318,7 @@ export function calculateComparisonTimeRangePartial(
 
   let comparisonAdjustedStart: string | undefined = undefined;
   let comparisonAdjustedEnd: string | undefined = undefined;
-  if (selectedComparisonTimeRange) {
+  if (selectedComparisonTimeRange?.start && selectedComparisonTimeRange?.end) {
     const adjustedComparisonTime = getAdjustedFetchTime(
       selectedComparisonTimeRange.start,
       selectedComparisonTimeRange.end,
@@ -331,7 +331,11 @@ export function calculateComparisonTimeRangePartial(
 
   let comparisonTimeStart = selectedComparisonTimeRange?.start;
   let comparisonTimeEnd = selectedComparisonTimeRange?.end;
-  if (selectedComparisonTimeRange && lastDefinedScrubRange) {
+  if (
+    selectedComparisonTimeRange?.start &&
+    selectedComparisonTimeRange?.end &&
+    lastDefinedScrubRange
+  ) {
     const { start, end } = getOrderedStartEnd(
       lastDefinedScrubRange.start,
       lastDefinedScrubRange.end,
@@ -355,7 +359,8 @@ export function calculateComparisonTimeRangePartial(
 
   return {
     showTimeComparison: showTimeComparison,
-    selectedComparisonTimeRange,
+    selectedComparisonTimeRange:
+      selectedComparisonTimeRange as DashboardTimeControls,
     comparisonTimeStart: comparisonTimeStart?.toISOString(),
     comparisonAdjustedStart,
     comparisonTimeEnd: comparisonTimeEnd?.toISOString(),
@@ -462,13 +467,11 @@ export function getComparisonTimeRange(
       timeRange.end,
     );
 
-    if (range.start && range.end) {
-      return {
-        start: range.start,
-        end: range.end,
-        name: comparisonOption,
-      };
-    }
+    return {
+      start: range.start,
+      end: range.end,
+      name: comparisonOption,
+    };
   } else if (
     comparisonTimeRange.name === TimeComparisonOption.CUSTOM ||
     // 1st step towards using a single `Custom` variable

@@ -42,14 +42,12 @@
     value: item,
   }));
 
-  function handleReorder(
-    event: CustomEvent<{
-      items: { id: string; value: string }[];
-      fromIndex: number;
-      toIndex: number;
-    }>,
-  ) {
-    const reorderedItems = event.detail.items.map((item) => item.value);
+  function handleReorder(data: {
+    items: { id: string; value: string }[];
+    fromIndex: number;
+    toIndex: number;
+  }) {
+    const reorderedItems = data.items.map((item) => item.value);
     onChange("sort", reorderedItems);
   }
 
@@ -88,7 +86,7 @@
             </div>
             <DraggableList
               items={customSortDraggableItems || []}
-              on:reorder={handleReorder}
+              onReorder={handleReorder}
               minHeight="auto"
               maxHeight="300px"
             >
@@ -96,7 +94,10 @@
                 No sort item found
               </div>
               <div slot="item" let:item class="flex items-center gap-x-1">
-                <DragHandle size="16px" className="text-gray-400" />
+                <DragHandle
+                  size="16px"
+                  className="text-gray-400 pointer-events-none"
+                />
                 <span class="text-xs truncate">{item.value}</span>
               </div>
             </DraggableList>
