@@ -112,7 +112,6 @@ func (s *Server) ResolveCanvas(ctx context.Context, req *runtimev1.ResolveCanvas
 	metricsViews := make(map[string]bool)
 
 	for _, cmp := range components {
-		var mvNames []string
 		validSpec := cmp.GetComponent().State.ValidSpec
 		if validSpec == nil || validSpec.RendererProperties == nil {
 			continue
@@ -122,23 +121,17 @@ func (s *Server) ResolveCanvas(ctx context.Context, req *runtimev1.ResolveCanvas
 			switch k {
 			case "metrics_view":
 				if name := v.GetStringValue(); name != "" {
-					mvNames = append(mvNames, name)
+					metricsViews[name] = true
 				}
 			case "metrics_sql":
 				if sql := v.GetStringValue(); sql != "" {
 					claims := auth.GetClaims(ctx).SecurityClaims()
 					compiler := metricssqlparser.New(ctrl, req.InstanceId, claims, 0)
 					q, err := compiler.Rewrite(ctx, sql)
-					if err == nil {
-						mvNames = append(mvNames, q.MetricsView)
+					if err == nil && q.MetricsView != "" {
+						metricsViews[q.MetricsView] = true
 					}
 				}
-			}
-		}
-
-		for _, mvName := range mvNames {
-			if mvName != "" {
-				metricsViews[mvName] = true
 			}
 		}
 	}
