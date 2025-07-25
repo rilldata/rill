@@ -44,6 +44,7 @@
     <ProjectSelector
       bind:selectedProject
       projects={$projectsForOrg.data?.projects}
+      enableSearch
     />
   </div>
 </div>
@@ -56,7 +57,15 @@
 >
   Update selected project
 </Button>
-<Button wide type="ghost" on:click={() => history.back()}>Back</Button>
+<Button
+  wide
+  gray
+  type="ghost"
+  onClick={() => window.history.back()}
+  class="-mt-2"
+>
+  Back
+</Button>
 
 <OverwriteProjectConfirmationDialog
   bind:open={showOverwriteProjectConfirmation}

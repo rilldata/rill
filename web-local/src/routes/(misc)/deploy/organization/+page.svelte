@@ -64,7 +64,13 @@
 <Button wide type="primary" href={deployUrl} disabled={!selectedOrg}>
   Deploy as a new project
 </Button>
-<Button wide type="ghost" href={overwriteProjectUrl} disabled={!selectedOrg}>
+<Button
+  wide
+  type="ghost"
+  href={overwriteProjectUrl}
+  disabled={!selectedOrg}
+  class="-mt-2"
+>
   Or overwrite an existing project
 </Button>
 

@@ -6,7 +6,7 @@
     getPlanUpgradeUrl,
   } from "@rilldata/web-common/features/organization/utils";
   import { addPosthogSessionIdToUrl } from "@rilldata/web-common/lib/analytics/posthog";
-  import type { Project } from "@rilldata/web-common/proto/gen/rill/admin/v1/api_pb.ts";
+  import { waitUntil } from "@rilldata/web-common/lib/waitUtils.ts";
   import {
     createLocalServiceGetProjectRequest,
     createLocalServiceGitPush,
@@ -16,6 +16,7 @@
   import CTAHeader from "@rilldata/web-common/components/calls-to-action/CTAHeader.svelte";
   import CTANeedHelp from "@rilldata/web-common/components/calls-to-action/CTANeedHelp.svelte";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
+  import { onMount } from "svelte";
   import type { PageData } from "./$types";
 
   export let data: PageData;
@@ -33,13 +34,18 @@
   $: planUpgradeUrl = getPlanUpgradeUrl(orgName ?? "");
   $: isOrgOnTrial = getIsOrgOnTrial(orgName ?? "");
 
-  $: error = $redeployMutation.error as Error | null;
-  $: loading = $redeployMutation.isPending || $githubPush.isPending;
+  $: error = ($redeployMutation.error || $projectQuery.error) as Error | null;
+  $: loading =
+    $redeployMutation.isPending ||
+    $githubPush.isPending ||
+    $projectQuery.isPending;
 
-  async function updateProject(project: Project) {
+  async function updateProject() {
+    if (!project) return;
     let projectUrl = project.frontendUrl;
-    if (!project.gitRemote || !!project.managedGitId) {
-      // Legacy archive based project. Use redeploy API.
+    const useRedeploy = !!project.archiveAssetId || !!newManagedRepo;
+    if (useRedeploy) {
+      // Use redeploy when the project has legacy archive deployment or we are forcing a new managed repo.
       const resp = await $redeployMutation.mutateAsync({
         projectId: project.id,
         // If `legacyArchiveDeploy` is enabled, then use the archive route. Else use upload route.
@@ -57,12 +63,22 @@
   }
 
   function onRetry() {
-    void updateProject(project!);
+    void updateProject();
   }
 
   function onBack() {
-    history.back();
+    window.history.back();
   }
+
+  async function maybeUpdateProject() {
+    await waitUntil(() => !loading);
+    if (error) return;
+    void updateProject();
+  }
+
+  onMount(() => {
+    void maybeUpdateProject();
+  });
 </script>
 
 {#if loading}

@@ -65,7 +65,7 @@
   }
 
   function onBack() {
-    history.back();
+    window.history.back();
   }
 </script>
 
