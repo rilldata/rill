@@ -524,8 +524,7 @@ export function getRangeLabel(range: string | undefined): string {
 
     return label;
   } catch (e) {
-    console.log("Error parsing RillTime", e);
-    // no-op
+    console.error("Error parsing RillTime", e);
     return "Custom";
   }
 }

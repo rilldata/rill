@@ -34,7 +34,6 @@
   import { overrideRillTimeRef } from "../../../url-state/time-ranges/parser";
   import { getAbbreviationForIANA } from "@rilldata/web-common/lib/time/timezone";
   import { builderActions, Tooltip, getAttrs } from "bits-ui";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import ZoneContent from "../components/ZoneContent.svelte";
   import SyntaxElement from "../components/SyntaxElement.svelte";
   import Globe from "@rilldata/web-common/components/icons/Globe.svelte";
@@ -44,6 +43,7 @@
     isUsingLegacyTime,
     constructNewString,
   } from "../../new-time-controls";
+  import PrimaryRangeTooltip from "./PrimaryRangeTooltip.svelte";
 
   export let timeString: string | undefined;
   export let interval: Interval<true>;
@@ -76,6 +76,7 @@
     try {
       parsedTime = parseRillTime(timeString);
     } catch {
+      // This is not necessarily an error as the parser does not work with Legacy syntax
       parsedTime = undefined;
     }
   }
@@ -260,30 +261,7 @@
       </Tooltip.Trigger>
 
       <Tooltip.Content side="bottom" sideOffset={8} class="z-50">
-        <TooltipContent class="flex-col flex items-center gap-y-0 p-3">
-          <span class="font-semibold italic mb-1">{timeString}</span>
-          {#if interval.isValid}
-            <span
-              >{interval.start.toLocaleString({
-                ...DateTime.DATETIME_HUGE_WITH_SECONDS,
-                fractionalSecondDigits:
-                  interval.start.millisecond > 0 ? 3 : undefined,
-                second: interval.start.second > 0 ? "numeric" : undefined,
-              })}
-            </span>
-            <span>to</span>
-            <span
-              >{interval.end.toLocaleString({
-                ...DateTime.DATETIME_HUGE_WITH_SECONDS,
-                fractionalSecondDigits:
-                  interval.end.millisecond > 0 ? 3 : undefined,
-                second: interval.end.second > 0 ? "numeric" : undefined,
-              })}
-            </span>
-          {:else}
-            <span class="text-gray-500">Invalid time range</span>
-          {/if}
-        </TooltipContent>
+        <PrimaryRangeTooltip {timeString} {interval} />
       </Tooltip.Content>
     </Tooltip.Root>
   </Popover.Trigger>

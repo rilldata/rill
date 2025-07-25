@@ -12,7 +12,7 @@
   import { builderActions, getAttrs, Tooltip } from "bits-ui";
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
   import TooltipDescription from "@rilldata/web-common/components/tooltip/TooltipDescription.svelte";
-  import { onMount } from "svelte";
+  import { onDestroy, onMount } from "svelte";
   import SyntaxElement from "../components/SyntaxElement.svelte";
 
   export let dateTimeAnchor: DateTime;
@@ -36,11 +36,18 @@
 
   let open = false;
   let now = DateTime.now().setZone(zone);
+  let interval: ReturnType<typeof setInterval> | undefined = undefined;
 
   onMount(() => {
-    setInterval(() => {
+    interval = setInterval(() => {
       now = DateTime.now().setZone(zone);
     }, 1000);
+  });
+
+  onDestroy(() => {
+    if (interval) {
+      clearInterval(interval);
+    }
   });
 
   $: dateTimeUnit = grain ? V1TimeGrainToDateTimeUnit[grain] : undefined;
