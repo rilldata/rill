@@ -78,10 +78,14 @@ type ConfigProperties struct {
 	SSLMode  string `mapstructure:"ssl_mode"`
 }
 
-func (c *ConfigProperties) ResolveDSN() string {
+func (c *ConfigProperties) ResolveDSN() (string, error) {
 	if c.DSN != "" {
-		return c.DSN
+		if c.Host != "" || c.Port != 0 || c.Database != "" || c.User != "" || c.Password != "" || c.SSLMode != "" {
+			return "", fmt.Errorf("invalid config: DSN is set but other connection fields are also set")
+		}
+		return c.DSN, nil
 	}
+
 	var userInfo *url.Userinfo
 	if c.User != "" {
 		if c.Password != "" {
@@ -99,18 +103,16 @@ func (c *ConfigProperties) ResolveDSN() string {
 		host = fmt.Sprintf("%s:%d", host, c.Port)
 	}
 
-	path := ""
+	var path string
 	if c.Database != "" {
 		path = "/" + c.Database
 	}
 
-	// Query parameters
 	query := url.Values{}
 	if c.SSLMode != "" {
 		query.Set("ssl-mode", c.SSLMode)
 	}
 
-	// Construct URI
 	u := &url.URL{
 		Scheme:   "mysql",
 		User:     userInfo,
@@ -119,19 +121,19 @@ func (c *ConfigProperties) ResolveDSN() string {
 		RawQuery: query.Encode(),
 	}
 
-	return u.String()
+	return u.String(), nil
 }
 
-func (c *ConfigProperties) ResolveGoFormatDSN() (string, error) {
-	dsn := c.ResolveDSN()
-
+func (c *ConfigProperties) resolveGoFormatDSN() (string, error) {
+	dsn, err := c.ResolveDSN()
+	if err != nil {
+		return "", err
+	}
 	u, err := url.Parse(dsn)
 	if err != nil {
 		return "", fmt.Errorf("invalid DSN: %w", err)
 	}
-
-	user := ""
-	pass := ""
+	var user, pass string
 	if u.User != nil {
 		user = u.User.Username()
 		pass, _ = u.User.Password()
@@ -300,7 +302,7 @@ func (c *connection) getDB() (*sqlx.DB, error) {
 	if err := mapstructure.WeakDecode(c.config, conf); err != nil {
 		return nil, fmt.Errorf("failed to decode config: %w", err)
 	}
-	dsn, err := conf.ResolveGoFormatDSN()
+	dsn, err := conf.resolveGoFormatDSN()
 	if err != nil {
 		return nil, err
 	}
