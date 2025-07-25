@@ -8,41 +8,13 @@ toc_max_heading_level: 4
 
 Connector YAML files define how Rill connects to external data sources and OLAP engines. Each connector specifies a driver type and its required connection parameters. 
 
-For newly created projects, Rill automatically generates a `/connectors/duckdb.yaml` file. This file allows you to configure custom database connections and SQL initialization commands through the `init_sql` parameter. This approach provides transparency and control over how Rill connects to your data sources, making it easier to understand and customize your setup.
-
 ## Required Properties
 
 **`type`** - Must be `connector` (required)
 
 **`driver`** - The type of connector (required)
 
-### Connector Drivers
-
-Unless explicitly defined, Rill will [automatically detect connection details](/build/credentials/#setting-credentials-for-rill-developer) from your .env file, credentials passed with the rill start command, or CLI-based configurations.
-
-#### _Data Warehouse_
-- **[Snowflake](#snowflake)** - Snowflake data warehouse
-- **[BigQuery](#bigquery)** - Google BigQuery
-- **[Redshift](#redshift)** - Amazon Redshift
-- **[PostgreSQL](#postgresql)** - PostgreSQL databases
-- **[Athena](#athena)** - Amazon Athena
-- **[mysql](#mysql)** - MySQL databases
-- **[sqlite](#sqlite)** - SQLite databases
-- **[MotherDuck](#motherduck-as-a-source)** - MotherDuck cloud data warehouse
-
-#### _Cloud Storage_
-- **[GCS](#gcs)** - Google Cloud Storage
-- **[S3](#s3)** - Amazon S3 storage
-- **[Azure](#azure)** - Azure Blob Storage
-
-#### _Other_
-- **[https](#https)** - Public files via HTTP/HTTPS
-<!-- - **[local_file](#local_file)** - Local files (CSV, Parquet, etc.) -->
-- **[Salesforce](#salesforce)** - Salesforce data
-- **[Slack](#slack)** - Slack data
-- **[Google Sheets](#google-sheets)** - Public Google Sheets
-
-### OLAP Engine Drivers
+#### _OLAP Engines_
 When connecting to your own OLAP engine using Rill Developer(e.g., ClickHouse, Druid, or Pinot), Rill will automatically generate the corresponding connector file and add the `olap_connector` parameter to your `rill.yaml` file. This will change the behavior of your Rill Developer slightly as not all features are supported across engines. Please see our documentation about [olap-engines](/reference/olap-engines/) for more information.
 
 - **[DuckDB](#duckdb)** - Embedded DuckDB engine (default)
@@ -51,9 +23,29 @@ When connecting to your own OLAP engine using Rill Developer(e.g., ClickHouse, D
 - **[Druid](#druid)** - Apache Druid
 - **[Pinot](#pinot)** - Apache Pinot
 
-:::tip Looking for a different connector?
-[Contact us](/contact) if you need support for a specific data source or OLAP engine!
-:::
+#### _Data Warehouses_
+- **[Snowflake](#snowflake)** - Snowflake data warehouse
+- **[BigQuery](#bigquery)** - Google BigQuery
+- **[Redshift](#redshift)** - Amazon Redshift
+- **[Athena](#athena)** - Amazon Athena
+- **[MotherDuck](#motherduck-as-a-source)** - MotherDuck cloud data warehouse
+
+#### _Databases_
+- **[PostgreSQL](#postgresql)** - PostgreSQL databases
+- **[MySQL](#mysql)** - MySQL databases
+- **[sqlite](#sqlite)** - SQLite databases
+
+#### _Cloud Storage_
+- **[GCS](#gcs)** - Google Cloud Storage
+- **[S3](#s3)** - Amazon S3 storage
+- **[Azure](#azure)** - Azure Blob Storage
+
+#### _Other_
+- **[https](#https)** - Public files via HTTP/HTTPS
+- **[Salesforce](#salesforce)** - Salesforce data
+- **[Slack](#slack)** - Slack data
+- **[Google Sheets](#google-sheets)** - Public Google Sheets
+
 
 
 ## Connector Parameters
@@ -329,9 +321,3 @@ driver: sqlite                                   # Must be `sqlite` _(required)_
 
 dsn: "./data/database.db"                        # SQLite connection DSN _(required)_
 ```
-
-:::warning Security Recommendation
-For all credential parameters (passwords, tokens, keys), use environment variables with the syntax `{{.env.<connector_type>.<parameter_name>}}`. This keeps sensitive data out of your YAML files and version control. See our [credentials documentation](/build/credentials/) for complete setup instructions.
-:::
-
-
