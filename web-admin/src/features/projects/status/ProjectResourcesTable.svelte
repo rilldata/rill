@@ -96,7 +96,7 @@
       header: "",
       cell: ({ row }) => {
         // Only hide actions for reconciling rows
-        const status = row.original.meta.reconcileStatus;
+        const status = row.original.meta?.reconcileStatus;
         const isRowReconciling =
           status === V1ReconcileStatus.RECONCILE_STATUS_PENDING ||
           status === V1ReconcileStatus.RECONCILE_STATUS_RUNNING;
