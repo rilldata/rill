@@ -1,7 +1,7 @@
 ---
 title: "Clone a Project - Quick Start"
 sidebar_label: "Clone an existing Project"
-sidebar_position: 2
+sidebar_position: 3
 hide_table_of_contents: false
 
 tags:
