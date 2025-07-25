@@ -57,6 +57,9 @@ const (
 	RuntimeService_GetConversation_FullMethodName         = "/rill.runtime.v1.RuntimeService/GetConversation"
 	RuntimeService_IssueDevJWT_FullMethodName             = "/rill.runtime.v1.RuntimeService/IssueDevJWT"
 	RuntimeService_AnalyzeVariables_FullMethodName        = "/rill.runtime.v1.RuntimeService/AnalyzeVariables"
+	RuntimeService_GitStatus_FullMethodName               = "/rill.runtime.v1.RuntimeService/GitStatus"
+	RuntimeService_GitPull_FullMethodName                 = "/rill.runtime.v1.RuntimeService/GitPull"
+	RuntimeService_GitPush_FullMethodName                 = "/rill.runtime.v1.RuntimeService/GitPush"
 )
 
 // RuntimeServiceClient is the client API for RuntimeService service.
@@ -146,6 +149,16 @@ type RuntimeServiceClient interface {
 	IssueDevJWT(ctx context.Context, in *IssueDevJWTRequest, opts ...grpc.CallOption) (*IssueDevJWTResponse, error)
 	// AnalyzeVariables scans `Source`, `Model` and `Connector` resources in the catalog for use of an environment variable
 	AnalyzeVariables(ctx context.Context, in *AnalyzeVariablesRequest, opts ...grpc.CallOption) (*AnalyzeVariablesResponse, error)
+	// GitStatus returns the curren status of the local git repo. This is equivalent to doing a `git fetch` followed by running `git status`.
+	GitStatus(ctx context.Context, in *GitStatusRequest, opts ...grpc.CallOption) (*GitStatusResponse, error)
+	// GitPull fetches the latest changes from the remote git repo equivalent to `git pull` command.
+	// If there are any merge conflicts the pull is aborted.
+	// Force can be set to true to force the pull and overwrite any local changes.
+	GitPull(ctx context.Context, in *GitPullRequest, opts ...grpc.CallOption) (*GitPullResponse, error)
+	// GitPush pushes the local changes to the remote git repo equivalent to `git push` command.
+	// The difference between this and PushTiGithub is that this does not create a new repo.
+	// It only pushes the changes to the existing remote repo.
+	GitPush(ctx context.Context, in *GitPushRequest, opts ...grpc.CallOption) (*GitPushResponse, error)
 }
 
 type runtimeServiceClient struct {
@@ -563,6 +576,36 @@ func (c *runtimeServiceClient) AnalyzeVariables(ctx context.Context, in *Analyze
 	return out, nil
 }
 
+func (c *runtimeServiceClient) GitStatus(ctx context.Context, in *GitStatusRequest, opts ...grpc.CallOption) (*GitStatusResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GitStatusResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_GitStatus_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeServiceClient) GitPull(ctx context.Context, in *GitPullRequest, opts ...grpc.CallOption) (*GitPullResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GitPullResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_GitPull_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeServiceClient) GitPush(ctx context.Context, in *GitPushRequest, opts ...grpc.CallOption) (*GitPushResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GitPushResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_GitPush_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // RuntimeServiceServer is the server API for RuntimeService service.
 // All implementations must embed UnimplementedRuntimeServiceServer
 // for forward compatibility.
@@ -650,6 +693,16 @@ type RuntimeServiceServer interface {
 	IssueDevJWT(context.Context, *IssueDevJWTRequest) (*IssueDevJWTResponse, error)
 	// AnalyzeVariables scans `Source`, `Model` and `Connector` resources in the catalog for use of an environment variable
 	AnalyzeVariables(context.Context, *AnalyzeVariablesRequest) (*AnalyzeVariablesResponse, error)
+	// GitStatus returns the curren status of the local git repo. This is equivalent to doing a `git fetch` followed by running `git status`.
+	GitStatus(context.Context, *GitStatusRequest) (*GitStatusResponse, error)
+	// GitPull fetches the latest changes from the remote git repo equivalent to `git pull` command.
+	// If there are any merge conflicts the pull is aborted.
+	// Force can be set to true to force the pull and overwrite any local changes.
+	GitPull(context.Context, *GitPullRequest) (*GitPullResponse, error)
+	// GitPush pushes the local changes to the remote git repo equivalent to `git push` command.
+	// The difference between this and PushTiGithub is that this does not create a new repo.
+	// It only pushes the changes to the existing remote repo.
+	GitPush(context.Context, *GitPushRequest) (*GitPushResponse, error)
 	mustEmbedUnimplementedRuntimeServiceServer()
 }
 
@@ -773,6 +826,15 @@ func (UnimplementedRuntimeServiceServer) IssueDevJWT(context.Context, *IssueDevJ
 }
 func (UnimplementedRuntimeServiceServer) AnalyzeVariables(context.Context, *AnalyzeVariablesRequest) (*AnalyzeVariablesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AnalyzeVariables not implemented")
+}
+func (UnimplementedRuntimeServiceServer) GitStatus(context.Context, *GitStatusRequest) (*GitStatusResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GitStatus not implemented")
+}
+func (UnimplementedRuntimeServiceServer) GitPull(context.Context, *GitPullRequest) (*GitPullResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GitPull not implemented")
+}
+func (UnimplementedRuntimeServiceServer) GitPush(context.Context, *GitPushRequest) (*GitPushResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GitPush not implemented")
 }
 func (UnimplementedRuntimeServiceServer) mustEmbedUnimplementedRuntimeServiceServer() {}
 func (UnimplementedRuntimeServiceServer) testEmbeddedByValue()                        {}
@@ -1458,6 +1520,60 @@ func _RuntimeService_AnalyzeVariables_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RuntimeService_GitStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GitStatusRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).GitStatus(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_GitStatus_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).GitStatus(ctx, req.(*GitStatusRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_GitPull_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GitPullRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).GitPull(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_GitPull_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).GitPull(ctx, req.(*GitPullRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_GitPush_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GitPushRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).GitPush(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_GitPush_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).GitPush(ctx, req.(*GitPushRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // RuntimeService_ServiceDesc is the grpc.ServiceDesc for RuntimeService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -1604,6 +1720,18 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "AnalyzeVariables",
 			Handler:    _RuntimeService_AnalyzeVariables_Handler,
+		},
+		{
+			MethodName: "GitStatus",
+			Handler:    _RuntimeService_GitStatus_Handler,
+		},
+		{
+			MethodName: "GitPull",
+			Handler:    _RuntimeService_GitPull_Handler,
+		},
+		{
+			MethodName: "GitPush",
+			Handler:    _RuntimeService_GitPush_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

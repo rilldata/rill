@@ -6,8 +6,11 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
 
 	"github.com/mitchellh/mapstructure"
+	"github.com/rilldata/rill/admin/client"
+	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
@@ -54,6 +57,8 @@ type driver struct {
 type configProperties struct {
 	DSN             string `mapstructure:"dsn"`
 	AllowHostAccess bool   `mapstructure:"allow_host_access"`
+	AdminURL        string `mapstructure:"admin_url"`
+	AccessToken     string `mapstructure:"access_token"`
 }
 
 // a smaller subset of relevant parts of rill.yaml
@@ -82,11 +87,17 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		return nil, err
 	}
 
+	admin, err := client.New(conf.AdminURL, conf.AccessToken, "rill-runtime")
+	if err != nil {
+		return nil, fmt.Errorf("failed to open admin client: %w", err)
+	}
+
 	c := &connection{
 		logger:       logger,
 		root:         absPath,
 		driverConfig: conf,
 		driverName:   d.name,
+		admin:        admin,
 	}
 	if err := c.checkRoot(); err != nil {
 		return nil, err
@@ -140,6 +151,10 @@ type connection struct {
 	root         string // root should be absolute path
 	driverConfig *configProperties
 	driverName   string
+
+	admin     *client.Client  // admin client for admin service
+	gitConfig *gitutil.Config // git config for repo
+	gitMu     sync.Mutex      // mutex to protect git operations
 
 	watcher     *filewatcher.LazyWatcher
 	ignorePaths []string

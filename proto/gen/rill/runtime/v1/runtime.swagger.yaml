@@ -4909,6 +4909,37 @@ definitions:
         type: object
         additionalProperties:
           type: string
+  v1GitPullResponse:
+    type: object
+    properties:
+      output:
+        type: string
+        description: The output of the git pull command. Only set for unsuccessful pulls.
+  v1GitPushResponse:
+    type: object
+  v1GitStatusResponse:
+    type: object
+    properties:
+      branch:
+        type: string
+        description: The current branch of the git repo.
+      githubUrl:
+        type: string
+        description: The remote url of the git repo.
+      managedGit:
+        type: boolean
+        description: If the repo is managed by Rill.
+      localChanges:
+        type: boolean
+        description: local_changes returns true if there are any staged, unstaged, or untracked changes in the local git repo.
+      localCommits:
+        type: integer
+        format: int32
+        description: local_commits returns number of local commits that are not pushed to the remote git repo.
+      remoteCommits:
+        type: integer
+        format: int32
+        description: remote_commits returns number of remote commits not pulled yet.
   v1HealthResponse:
     type: object
     properties:

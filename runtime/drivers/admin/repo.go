@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/bmatcuk/doublestar/v4"
+	"github.com/rilldata/rill/cli/pkg/gitutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/ctxsync"
@@ -420,6 +421,25 @@ func (r *repo) Watch(ctx context.Context, cb drivers.WatchCallback) error {
 		}
 		cb(watchEvents)
 	})
+}
+
+// Status implements drivers.RepoStore.
+func (r *repo) Status(ctx context.Context) (*drivers.GitStatus, error) {
+	if r.git == nil {
+		return nil, fmt.Errorf("repo does not support Git status")
+	}
+
+	st, err := gitutil.RunGitStatus(r.git.repoDir, "origin")
+	if err != nil {
+		return nil, fmt.Errorf("failed to get Git status: %w", err)
+	}
+	return &drivers.GitStatus{
+		Branch:        st.Branch,
+		RemoteURL:     st.RemoteURL,
+		LocalChanges:  st.LocalChanges,
+		LocalCommits:  st.LocalCommits,
+		RemoteCommits: st.RemoteCommits,
+	}, nil
 }
 
 // Pull implements drivers.RepoStore.
