@@ -16,9 +16,85 @@
   import RefreshCell from "./RefreshCell.svelte";
   import NameCell from "./NameCell.svelte";
   import ActionsCell from "./ActionsCell.svelte";
+  import RefreshResourceConfirmDialog from "./RefreshResourceConfirmDialog.svelte";
+  import {
+    createRuntimeServiceCreateTrigger,
+    getRuntimeServiceListResourcesQueryKey,
+  } from "@rilldata/web-common/runtime-client";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useQueryClient } from "@tanstack/svelte-query";
 
   export let data: V1Resource[];
 
+  // Dialog state management to prevent dialogs from closing on table re-renders
+  let isConfirmDialogOpen = false;
+  let dialogResourceName = "";
+  let dialogResourceKind = "";
+  let dialogRefreshType: "full" | "incremental" = "full";
+
+  // Dropdown state management to prevent dropdowns from closing on table re-renders
+  let openDropdownResourceKey = "";
+
+  const createTrigger = createRuntimeServiceCreateTrigger();
+  const queryClient = useQueryClient();
+
+  // Make these functions stable by using const declarations
+  const openRefreshDialog = (
+    resourceName: string,
+    resourceKind: string,
+    refreshType: "full" | "incremental",
+  ) => {
+    dialogResourceName = resourceName;
+    dialogResourceKind = resourceKind;
+    dialogRefreshType = refreshType;
+    isConfirmDialogOpen = true;
+  };
+
+  const closeRefreshDialog = () => {
+    isConfirmDialogOpen = false;
+  };
+
+  const setDropdownOpen = (resourceKey: string, isOpen: boolean) => {
+    openDropdownResourceKey = isOpen ? resourceKey : "";
+  };
+
+  const isDropdownOpen = (resourceKey: string) => {
+    return openDropdownResourceKey === resourceKey;
+  };
+
+  const handleRefresh = async () => {
+    if (dialogResourceKind === ResourceKind.Model) {
+      await $createTrigger.mutateAsync({
+        instanceId: $runtime.instanceId,
+        data: {
+          models: [
+            {
+              model: dialogResourceName,
+              full: dialogRefreshType === "full",
+            },
+          ],
+        },
+      });
+    } else {
+      await $createTrigger.mutateAsync({
+        instanceId: $runtime.instanceId,
+        data: {
+          resources: [{ kind: dialogResourceKind, name: dialogResourceName }],
+        },
+      });
+    }
+
+    await queryClient.invalidateQueries({
+      queryKey: getRuntimeServiceListResourcesQueryKey(
+        $runtime.instanceId,
+        undefined,
+      ),
+    });
+
+    closeRefreshDialog();
+  };
+
+  // Create columns definition as a constant to prevent unnecessary re-creation
   const columns: ColumnDef<V1Resource, any>[] = [
     {
       accessorKey: "title",
@@ -101,12 +177,17 @@
           status === V1ReconcileStatus.RECONCILE_STATUS_PENDING ||
           status === V1ReconcileStatus.RECONCILE_STATUS_RUNNING;
         if (!isRowReconciling) {
+          const resourceKey = `${row.original.meta.name.kind}:${row.original.meta.name.name}`;
           return flexRender(ActionsCell, {
             resourceKind: row.original.meta.name.kind,
             resourceName: row.original.meta.name.name,
             canRefresh:
               row.original.meta.name.kind === ResourceKind.Model ||
               row.original.meta.name.kind === ResourceKind.Source,
+            onOpenRefreshDialog: openRefreshDialog,
+            isDropdownOpen: isDropdownOpen(resourceKey),
+            onDropdownOpenChange: (isOpen: boolean) =>
+              setDropdownOpen(resourceKey, isOpen),
           });
         }
       },
@@ -126,4 +207,11 @@
   data={tableData}
   {columns}
   columnLayout="minmax(95px, 108px) minmax(100px, 3fr) 48px minmax(80px, 2fr) minmax(100px, 2fr) 56px"
+/>
+
+<RefreshResourceConfirmDialog
+  bind:open={isConfirmDialogOpen}
+  name={dialogResourceName}
+  refreshType={dialogRefreshType}
+  onRefresh={handleRefresh}
 />
