@@ -69,6 +69,10 @@ test.describe("canvas time filters", () => {
       .click();
     await page.getByLabel("domain results").getByText("msn.com").click();
 
+    // Apply the selections (proxy pattern requires explicit application)
+    await page.getByRole("button", { name: "Apply" }).click();
+
+    // Close the dropdown to complete the interaction
     await page.getByRole("button", { name: "Open domain filter" }).click();
 
     await expect(page.locator(".kpi-wrapper").getByText("797")).toBeVisible();
@@ -85,6 +89,9 @@ test.describe("canvas time filters", () => {
       .click();
     await page.getByRole("menuitem", { name: "Domain" }).click();
     await page.getByLabel("domain results").getByText("msn.com").click();
+
+    // Apply the selection (proxy pattern requires explicit application)
+    await page.getByRole("button", { name: "Apply" }).click();
 
     await expect(page.getByText("375")).toBeVisible();
   });
