@@ -372,3 +372,8 @@ func SetRemote(path string, config *Config) error {
 	})
 	return err
 }
+
+func IsGitRepo(path string) bool {
+	_, err := git.PlainOpen(path)
+	return err == nil
+}
