@@ -60,10 +60,16 @@
   let curSearchText = "";
   let curExcludeMode = excludeMode;
   let inListTooLong = false;
+  let selectedValuesProxy: string[] = [];
 
   $: ({ instanceId } = $runtime);
 
   $: resetFilterSettings(mode, sanitisedSearchText);
+
+  // Sync proxy when selectedValues changes (for Select mode)
+  $: if (curMode === DimensionFilterMode.Select) {
+    selectedValuesProxy = [...selectedValues];
+  }
 
   $: checkSearchText(curSearchText);
 
@@ -155,18 +161,20 @@
   $: showExtraInfo = curMode !== DimensionFilterMode.Select; // || curSearchText.length > 0; (Add once we have docs)
 
   $: allSelected = Boolean(
-    selectedValues.length &&
-      correctedSearchResults?.length === selectedValues.length,
+    effectiveSelectedValues.length &&
+      correctedSearchResults?.length === effectiveSelectedValues.length,
   );
   $: effectiveSelectedValues =
-    curMode !== DimensionFilterMode.InList
-      ? selectedValues
-      : (correctedSearchResults ?? []);
+    curMode === DimensionFilterMode.Select
+      ? selectedValuesProxy
+      : curMode === DimensionFilterMode.InList
+        ? (correctedSearchResults ?? [])
+        : selectedValues;
 
   $: disableApplyButton =
-    curMode === DimensionFilterMode.Select ||
-    !enableSearchCountQuery ||
-    inListTooLong;
+    curMode === DimensionFilterMode.Select
+      ? false // Never disable Apply for Select mode
+      : !enableSearchCountQuery || inListTooLong;
 
   /**
    * Reset filter settings based on params to the component.
@@ -180,6 +188,7 @@
       case DimensionFilterMode.Select:
         curMode = DimensionFilterMode.Select;
         curSearchText = "";
+        selectedValuesProxy = [...selectedValues];
         break;
 
       case DimensionFilterMode.InList:
@@ -216,9 +225,10 @@
   function handleModeChange(newMode: DimensionFilterMode) {
     if (newMode !== DimensionFilterMode.InList) {
       searchedBulkValues = [];
-      // Since in select mode exclude toggle is reflected immediately, reset the mode when user switches to it.
+      // Reset proxy when switching to/from Select mode
       if (newMode === DimensionFilterMode.Select) {
         curExcludeMode = excludeMode;
+        selectedValuesProxy = [...selectedValues];
       }
     } else {
       checkSearchText(curSearchText);
@@ -232,11 +242,18 @@
           ? mergeDimensionSearchValues(selectedValues)
           : (sanitisedSearchText ?? "");
     } else {
+      // Apply proxy changes for Select mode when dropdown closes
+      if (curMode === DimensionFilterMode.Select) {
+        applySelectModeChanges();
+        // Don't reset immediately for Select mode - let props update first
+        return;
+      }
+
       if (selectedValues.length === 0 && !inputText) {
         // filter was cleared. so remove the filter
         onRemove();
       } else {
-        // reset the settings on unmount
+        // reset the settings on unmount (but not for Select mode)
         resetFilterSettings(mode, sanitisedSearchText);
       }
     }
@@ -249,19 +266,36 @@
   }
 
   function onToggleSelectAll() {
-    correctedSearchResults?.forEach((dimensionValue) => {
-      if (!allSelected && selectedValues.includes(dimensionValue)) return;
+    if (curMode === DimensionFilterMode.Select) {
+      // Update proxy for select all/deselect all
+      if (allSelected) {
+        selectedValuesProxy = selectedValuesProxy.filter(
+          (v) => !correctedSearchResults?.includes(v),
+        );
+      } else {
+        const newValues =
+          correctedSearchResults?.filter(
+            (v) => !selectedValuesProxy.includes(v),
+          ) ?? [];
+        selectedValuesProxy = [...selectedValuesProxy, ...newValues];
+      }
+    } else {
+      correctedSearchResults?.forEach((dimensionValue) => {
+        if (!allSelected && effectiveSelectedValues.includes(dimensionValue))
+          return;
 
-      onSelect(dimensionValue);
-    });
+        onSelect(dimensionValue);
+      });
+    }
   }
 
   function onApply() {
     if (disableApplyButton) return;
     switch (curMode) {
       case DimensionFilterMode.Select:
-        onToggleSelectAll();
-        // Do not close the dropdown.
+        // Apply proxy changes for Select mode
+        applySelectModeChanges();
+        open = false;
         break;
       case DimensionFilterMode.InList:
         if (searchedBulkValues.length === 0) return;
@@ -275,6 +309,27 @@
         if (curExcludeMode !== excludeMode) onToggleFilterMode();
         open = false;
         break;
+    }
+  }
+
+  function applySelectModeChanges() {
+    // Find values that were added or removed
+    const currentValues = new Set(selectedValues);
+    const proxyValues = new Set(selectedValuesProxy);
+
+    // Apply all changes
+    [...currentValues, ...proxyValues].forEach((value) => {
+      const wasSelected = currentValues.has(value);
+      const isSelected = proxyValues.has(value);
+
+      if (wasSelected !== isSelected) {
+        onSelect(value);
+      }
+    });
+
+    // Handle exclude mode toggle
+    if (curExcludeMode !== excludeMode) {
+      onToggleFilterMode();
     }
   }
 </script>
@@ -434,7 +489,20 @@
               checked={curMode === DimensionFilterMode.Select && selected}
               showXForSelected={curExcludeMode}
               disabled={curMode !== DimensionFilterMode.Select}
-              on:click={() => onSelect(name)}
+              on:click={() => {
+                if (curMode === DimensionFilterMode.Select) {
+                  // Update proxy instead of calling onSelect immediately
+                  if (selectedValuesProxy.includes(name)) {
+                    selectedValuesProxy = selectedValuesProxy.filter(
+                      (v) => v !== name,
+                    );
+                  } else {
+                    selectedValuesProxy = [...selectedValuesProxy, name];
+                  }
+                } else {
+                  onSelect(name);
+                }
+              }}
             >
               <span>
                 {#if label.length > 240}
@@ -464,15 +532,16 @@
         />
         <Label class="font-normal text-xs" for="include-exclude">Exclude</Label>
       </div>
-      {#if curMode === DimensionFilterMode.Select}
-        <Button onClick={onToggleSelectAll} type="plain" class="justify-end">
-          {#if allSelected}
-            Deselect all
-          {:else}
-            Select all
-          {/if}
-        </Button>
-      {:else}
+      <div class="flex gap-2">
+        {#if curMode === DimensionFilterMode.Select}
+          <Button onClick={onToggleSelectAll} type="plain">
+            {#if allSelected}
+              Deselect all
+            {:else}
+              Select all
+            {/if}
+          </Button>
+        {/if}
         <Button
           onClick={onApply}
           type="primary"
@@ -481,7 +550,7 @@
         >
           Apply
         </Button>
-      {/if}
+      </div>
     </footer>
   </DropdownMenu.Content>
 </DropdownMenu.Root>
