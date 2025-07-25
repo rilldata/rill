@@ -488,13 +488,14 @@
           <!-- Show checked items first (only in Select mode and when not searching) -->
           {#if curMode === DimensionFilterMode.Select && !curSearchText}
             {#each checkedItems as name (name)}
+              {@const selected = effectiveSelectedValues.includes(name)}
               {@const label = name ?? "null"}
 
               <svelte:component
                 this={DropdownMenu.CheckboxItem}
                 class="text-xs cursor-pointer"
                 role="menuitem"
-                checked={effectiveSelectedValues.includes(name)}
+                checked={selected}
                 showXForSelected={curExcludeMode}
                 on:click={() => {
                   selectedValuesProxy = selectedValuesProxy.filter(
