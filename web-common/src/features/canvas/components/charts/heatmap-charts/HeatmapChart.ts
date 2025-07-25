@@ -20,8 +20,10 @@ import type {
 import { BaseChart, type BaseChartConfig } from "../BaseChart";
 import { getFilterWithNullHandling } from "../query-utils";
 import type { ChartDataQuery, ChartFieldsMap, FieldConfig } from "../types";
+import { vegaSortToAggregationSort } from "../util";
 
 const DEFAULT_NOMINAL_LIMIT = 40;
+const DEFAULT_SORT = "-color";
 
 type HeatmapChartEncoding = {
   x?: FieldConfig;
@@ -33,6 +35,9 @@ type HeatmapChartEncoding = {
 export type HeatmapChartSpec = BaseChartConfig & HeatmapChartEncoding;
 
 export class HeatmapChartComponent extends BaseChart<HeatmapChartSpec> {
+  customSortXItems: string[] = [];
+  customSortYItems: string[] = [];
+
   static chartInputParams: Record<string, ComponentInputParam> = {
     x: {
       type: "positional",
@@ -41,6 +46,11 @@ export class HeatmapChartComponent extends BaseChart<HeatmapChartSpec> {
         chartFieldInput: {
           type: "dimension",
           limitSelector: { defaultLimit: DEFAULT_NOMINAL_LIMIT },
+          sortSelector: {
+            enable: true,
+            defaultSort: DEFAULT_SORT,
+            options: ["x", "-x", "color", "-color", "custom"],
+          },
           axisTitleSelector: true,
           nullSelector: true,
           labelAngleSelector: true,
@@ -54,6 +64,12 @@ export class HeatmapChartComponent extends BaseChart<HeatmapChartSpec> {
         chartFieldInput: {
           type: "dimension",
           limitSelector: { defaultLimit: DEFAULT_NOMINAL_LIMIT },
+          sortSelector: {
+            enable: true,
+            defaultSort: DEFAULT_SORT,
+            options: ["y", "-y", "color", "-color", "custom"],
+          },
+          axisTitleSelector: true,
           nullSelector: true,
         },
       },
@@ -79,7 +95,16 @@ export class HeatmapChartComponent extends BaseChart<HeatmapChartSpec> {
   }
 
   getChartSpecificOptions(): Record<string, ComponentInputParam> {
-    return HeatmapChartComponent.chartInputParams;
+    const inputParams = HeatmapChartComponent.chartInputParams;
+    const xSortSelector = inputParams.x.meta?.chartFieldInput?.sortSelector;
+    if (xSortSelector) {
+      xSortSelector.customSortItems = this.customSortXItems;
+    }
+    const ySortSelector = inputParams.y.meta?.chartFieldInput?.sortSelector;
+    if (ySortSelector) {
+      ySortSelector.customSortItems = this.customSortYItems;
+    }
+    return inputParams;
   }
 
   createChartDataQuery(
@@ -103,7 +128,8 @@ export class HeatmapChartComponent extends BaseChart<HeatmapChartSpec> {
           !!timeRange?.start &&
           !!timeRange?.end &&
           !!config.x?.field &&
-          config?.x?.type !== "temporal";
+          config?.x?.type !== "temporal" &&
+          !Array.isArray(config.x?.sort);
 
         const xWhere = getFilterWithNullHandling(where, config.x);
 
@@ -112,15 +138,15 @@ export class HeatmapChartComponent extends BaseChart<HeatmapChartSpec> {
           limit = config.x.limit.toString();
         }
 
+        const xAxisSort = vegaSortToAggregationSort("x", config, DEFAULT_SORT);
+
         return getQueryServiceMetricsViewAggregationQueryOptions(
           runtime.instanceId,
           config.metrics_view,
           {
             measures,
             dimensions: [{ name: config.x?.field }],
-            sort: config.color?.field
-              ? [{ name: config.color.field, desc: true }]
-              : [{ name: config.x?.field, desc: false }],
+            sort: xAxisSort ? [xAxisSort] : undefined,
             where: xWhere,
             timeRange,
             limit,
@@ -143,7 +169,8 @@ export class HeatmapChartComponent extends BaseChart<HeatmapChartSpec> {
           !!timeRange?.start &&
           !!timeRange?.end &&
           !!config.y?.field &&
-          config?.y?.type !== "temporal";
+          config?.y?.type !== "temporal" &&
+          !Array.isArray(config.y?.sort);
 
         const yWhere = getFilterWithNullHandling(where, config.y);
 
@@ -152,15 +179,15 @@ export class HeatmapChartComponent extends BaseChart<HeatmapChartSpec> {
           limit = config.y.limit.toString();
         }
 
+        const yAxisSort = vegaSortToAggregationSort("y", config, DEFAULT_SORT);
+
         return getQueryServiceMetricsViewAggregationQueryOptions(
           runtime.instanceId,
           config.metrics_view,
           {
             measures,
             dimensions: [{ name: config.y?.field }],
-            sort: config.color?.field
-              ? [{ name: config.color.field, desc: true }]
-              : [{ name: config.y?.field, desc: false }],
+            sort: yAxisSort ? [yAxisSort] : undefined,
             where: yWhere,
             timeRange,
             limit,
@@ -187,23 +214,54 @@ export class HeatmapChartComponent extends BaseChart<HeatmapChartSpec> {
         const enabled =
           !!timeRange?.start &&
           !!timeRange?.end &&
-          (config.x?.type === "nominal" ? !!xTopNData?.length : true) &&
-          (config.y?.type === "nominal" ? !!yTopNData?.length : true);
+          (config.x?.type === "nominal" && !Array.isArray(config.x?.sort)
+            ? !!xTopNData?.length
+            : true) &&
+          (config.y?.type === "nominal" && !Array.isArray(config.y?.sort)
+            ? !!yTopNData?.length
+            : true);
 
         let combinedWhere: V1Expression | undefined = where;
 
-        if (xTopNData?.length && config.x?.field) {
-          const xField = config.x.field;
-          const xTopValues = xTopNData.map((d) => d[xField] as string);
-          const xFilterForTopValues = createInExpression(xField, xTopValues);
-          combinedWhere = mergeFilters(combinedWhere, xFilterForTopValues);
+        let includedXValues: string[] = [];
+        let includedYValues: string[] = [];
+
+        // Handle X axis values
+        if (config.x?.field) {
+          if (Array.isArray(config.x.sort)) {
+            includedXValues = config.x.sort;
+          } else if (xTopNData?.length) {
+            const xField = config.x.field;
+            includedXValues = xTopNData.map((d) => d[xField] as string);
+          }
+
+          if (includedXValues.length > 0) {
+            this.customSortXItems = includedXValues;
+            const xFilterForTopValues = createInExpression(
+              config.x.field,
+              includedXValues,
+            );
+            combinedWhere = mergeFilters(combinedWhere, xFilterForTopValues);
+          }
         }
 
-        if (yTopNData?.length && config.y?.field) {
-          const yField = config.y.field;
-          const yTopValues = yTopNData.map((d) => d[yField] as string);
-          const yFilterForTopValues = createInExpression(yField, yTopValues);
-          combinedWhere = mergeFilters(combinedWhere, yFilterForTopValues);
+        // Handle Y axis values
+        if (config.y?.field) {
+          if (Array.isArray(config.y.sort)) {
+            includedYValues = config.y.sort;
+          } else if (yTopNData?.length) {
+            const yField = config.y.field;
+            includedYValues = yTopNData.map((d) => d[yField] as string);
+          }
+
+          if (includedYValues.length > 0) {
+            this.customSortYItems = includedYValues;
+            const yFilterForTopValues = createInExpression(
+              config.y.field,
+              includedYValues,
+            );
+            combinedWhere = mergeFilters(combinedWhere, yFilterForTopValues);
+          }
         }
 
         let dimensions: V1MetricsViewAggregationDimension[] = [
