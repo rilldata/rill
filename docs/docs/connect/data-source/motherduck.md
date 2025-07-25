@@ -42,7 +42,7 @@ When using Rill Developer on your local machine (i.e., `rill start`), Rill will 
 <img src='/img/reference/connectors/motherduck/motherduck.png' class='centered' />
 <br />
 
-Alternatively, you can create a connector using our [connector YAML reference docs](/reference/project-files/connectors#motherduck-source).
+Alternatively, you can create a connector using our [connector YAML reference docs](/reference/project-files/connectors#motherduck-as-a-source).
 
 :::tip Credentials 
 Don't forget to set up your MotherDuck token! 
