@@ -1,6 +1,6 @@
 <script lang="ts">
-  import Markdown from "../../../components/markdown/Markdown.svelte";
-  import type { V1Message } from "../../../runtime-client";
+  import Markdown from "../../../../components/markdown/Markdown.svelte";
+  import type { V1Message } from "../../../../runtime-client";
 
   export let message: V1Message;
   export let content: string;

@@ -16,6 +16,8 @@ export function withinOrganization(page: Page): boolean {
 export function isProjectPage(page: Page): boolean {
   return (
     page.route.id === "/[organization]/[project]" ||
+    page.route.id === "/[organization]/[project]/-/chat" ||
+    page.route.id === "/[organization]/[project]/-/dashboards" ||
     page.route.id === "/[organization]/[project]/-/reports" ||
     page.route.id === "/[organization]/[project]/-/alerts" ||
     page.route.id === "/[organization]/[project]/-/ai" ||

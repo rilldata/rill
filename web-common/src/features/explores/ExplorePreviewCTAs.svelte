@@ -7,7 +7,7 @@
   import { useExplore } from "@rilldata/web-common/features/explores/selectors";
   import { Button } from "../../components/button";
   import { runtime } from "../../runtime-client/runtime-store";
-  import ChatToggle from "../chat/ChatToggle.svelte";
+  import ChatToggle from "../chat/layouts/sidebar/ChatToggle.svelte";
   import ViewAsButton from "../dashboards/granular-access-policies/ViewAsButton.svelte";
   import { useDashboardPolicyCheck } from "../dashboards/granular-access-policies/useDashboardPolicyCheck";
   import StateManagersProvider from "../dashboards/state-managers/StateManagersProvider.svelte";

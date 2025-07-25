@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount, tick } from "svelte";
-  import IconButton from "../../../components/button/IconButton.svelte";
-  import SendIcon from "../../../components/icons/SendIcon.svelte";
+  import IconButton from "../../../../components/button/IconButton.svelte";
+  import SendIcon from "../../../../components/icons/SendIcon.svelte";
 
   export let value = "";
   export let disabled = false;

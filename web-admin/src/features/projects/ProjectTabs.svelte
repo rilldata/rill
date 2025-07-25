@@ -16,7 +16,12 @@
 
   $: tabs = [
     {
-      route: `/${organization}/${project}`,
+      route: `/${organization}/${project}/-/chat`,
+      label: "Chat",
+      hasPermission: true,
+    },
+    {
+      route: `/${organization}/${project}/-/dashboards`,
       label: "Dashboards",
       hasPermission: true,
     },

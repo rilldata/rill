@@ -1,76 +1,85 @@
+/**
+ * Main composable for chat functionality - use this in components.
+ *
+ * Provides a high-level API that coordinates queries, mutations, and state
+ * for chat features. This is the primary interface components should use.
+ */
 import { page } from "$app/stores";
 import type { Page } from "@sveltejs/kit";
+import { createQuery } from "@tanstack/svelte-query";
 import { derived, get } from "svelte/store";
-import { localStorageStore } from "../../lib/store-utils/local-storage";
-import { sessionStorageStore } from "../../lib/store-utils/session-storage";
-import { queryClient } from "../../lib/svelte-query/globalQueryClient";
+import { sessionStorageStore } from "../../../lib/store-utils/session-storage";
+import { queryClient } from "../../../lib/svelte-query/globalQueryClient";
 import type {
   V1AppContext,
   V1Conversation,
   V1GetConversationResponse,
   V1Message,
-} from "../../runtime-client";
+} from "../../../runtime-client";
 import {
   createRuntimeServiceComplete,
   getRuntimeServiceGetConversationQueryKey,
+  getRuntimeServiceGetConversationQueryOptions,
   getRuntimeServiceListConversationsQueryKey,
+  getRuntimeServiceListConversationsQueryOptions,
   V1AppContextType,
-} from "../../runtime-client";
-import { runtime } from "../../runtime-client/runtime-store";
+} from "../../../runtime-client";
+import { runtime } from "../../../runtime-client/runtime-store";
 
 // =============================================================================
-// CONSTANTS
+// INTERNAL CONSTANTS
 // =============================================================================
-
-// UI Defaults
-export const DEFAULTS = {
-  CHAT_OPEN: false,
-  SIDEBAR_WIDTH: 500,
-  MIN_SIDEBAR_WIDTH: 240,
-  MAX_SIDEBAR_WIDTH: 600,
-} as const;
 
 // Conversation & Message ID Prefixes
-export const OPTIMISTIC_CONVERSATION_ID_PREFIX = "optimistic-conversation-";
+const OPTIMISTIC_CONVERSATION_ID_PREFIX = "optimistic-conversation-";
 const OPTIMISTIC_MESSAGE_ID_PREFIX = "optimistic-message-";
 
 // =============================================================================
-// HELPER FUNCTIONS
+// INTERNAL HELPER FUNCTIONS
 // =============================================================================
 
-// Conversation ID utilities
-export function isOptimisticId(id: string): boolean {
+function getOptimisticConversationId(): string {
+  return `${OPTIMISTIC_CONVERSATION_ID_PREFIX}${Date.now()}`;
+}
+
+function getOptimisticMessageId(): string {
+  return `${OPTIMISTIC_MESSAGE_ID_PREFIX}${Date.now()}`;
+}
+
+function isOptimisticConversationId(id: string): boolean {
   return id.startsWith(OPTIMISTIC_CONVERSATION_ID_PREFIX);
 }
 
-export function getConversationCacheKey(
-  instanceId: string,
-  conversationId: string,
-) {
-  if (isOptimisticId(conversationId)) {
+// Cache query keys
+function getConversationCacheKey(instanceId: string, conversationId: string) {
+  if (isOptimisticConversationId(conversationId)) {
     return ["conversation", instanceId, "optimistic", conversationId];
   } else {
     return getRuntimeServiceGetConversationQueryKey(instanceId, conversationId);
   }
 }
 
-// Context detection based on current page route
-function detectAppContext($page: Page): V1AppContext | null {
-  const routeId = $page.route.id;
+// App context detection (determines what resources/context the chat can see)
+function detectAppContext(page: Page): V1AppContext | null {
+  const routeId = page.route.id;
 
   switch (routeId) {
+    case "/[organization]/[project]/-/chat":
+      return {
+        contextType: V1AppContextType.APP_CONTEXT_TYPE_PROJECT_CHAT,
+      };
     case "/[organization]/[project]/explore/[dashboard]":
       return {
         contextType: V1AppContextType.APP_CONTEXT_TYPE_EXPLORE_DASHBOARD,
         contextMetadata: {
-          dashboard_name: $page.params.dashboard,
+          dashboard_name: page.params.dashboard,
         },
       };
     case "/(viz)/explore/[name]":
       return {
         contextType: V1AppContextType.APP_CONTEXT_TYPE_EXPLORE_DASHBOARD,
         contextMetadata: {
-          dashboard_name: $page.params.name,
+          dashboard_name: page.params.name,
         },
       };
 
@@ -80,21 +89,17 @@ function detectAppContext($page: Page): V1AppContext | null {
 }
 
 // =============================================================================
-// STORES
+// SHARED GLOBAL STATE (singletons used across all components)
 // =============================================================================
 
-export const chatOpen = sessionStorageStore("chat-open", false);
-export const currentConversationId = sessionStorageStore<string | null>(
+// Core conversation state
+const currentConversationId = sessionStorageStore<string | null>(
   "current-conversation-id",
   null,
 );
-export const sidebarWidth = localStorageStore<number>(
-  "sidebar-width",
-  DEFAULTS.SIDEBAR_WIDTH,
-);
 
 // Messages derived from TanStack Query cache (our single source of truth)
-export const messages = derived(
+const messages = derived(
   [runtime, currentConversationId],
   ([$runtime, $currentConversationId], set) => {
     if (!$runtime?.instanceId || !$currentConversationId) {
@@ -131,18 +136,18 @@ export const messages = derived(
 );
 
 // =============================================================================
-// API MUTATIONS
+// SHARED GLOBAL MUTATIONS
 // =============================================================================
 
 // Mutation for creating a new conversation with the first message
-export const completeNewConversation = createRuntimeServiceComplete(
+const completeNewConversation = createRuntimeServiceComplete(
   {
     mutation: {
       onMutate: async (variables) => {
         const { instanceId, data } = variables;
 
         // Create optimistic conversation ID and cache key
-        const optimisticConversationId = `${OPTIMISTIC_CONVERSATION_ID_PREFIX}${Date.now()}`;
+        const optimisticConversationId = getOptimisticConversationId();
         const optimisticCacheKey = getConversationCacheKey(
           instanceId,
           optimisticConversationId,
@@ -150,7 +155,7 @@ export const completeNewConversation = createRuntimeServiceComplete(
 
         // Create user message from the mutation data
         const userMessage: V1Message = {
-          id: `${OPTIMISTIC_MESSAGE_ID_PREFIX}${Date.now()}`,
+          id: getOptimisticMessageId(),
           role: data.messages?.[0]?.role || "user",
           content: data.messages?.[0]?.content || [],
           createdOn: new Date().toISOString(),
@@ -236,7 +241,7 @@ export const completeNewConversation = createRuntimeServiceComplete(
 );
 
 // Mutation for adding a message to an existing conversation
-export const completeExistingConversation = createRuntimeServiceComplete(
+const completeExistingConversation = createRuntimeServiceComplete(
   {
     mutation: {
       onMutate: async (variables) => {
@@ -262,7 +267,7 @@ export const completeExistingConversation = createRuntimeServiceComplete(
 
               const userMessage = data.messages![0];
               const optimisticMessage: V1Message = {
-                id: `${OPTIMISTIC_MESSAGE_ID_PREFIX}${Date.now()}`,
+                id: getOptimisticMessageId(),
                 role: userMessage.role,
                 content: userMessage.content,
                 createdOn: new Date().toISOString(),
@@ -367,15 +372,15 @@ export const completeExistingConversation = createRuntimeServiceComplete(
   queryClient,
 );
 
-// Mutation state derived stores
-export const loading = derived(
+// Global derived state (shared across all components)
+const loading = derived(
   [completeNewConversation, completeExistingConversation],
   ([$newConversation, $existingConversation]) =>
     $newConversation.isPending || $existingConversation.isPending,
   false,
 );
 
-export const error = derived(
+const error = derived(
   [completeNewConversation, completeExistingConversation],
   ([$newConversation, $existingConversation]) => {
     // Check both mutations for errors
@@ -408,22 +413,14 @@ export const error = derived(
       return "Could not get a response from the server.";
     }
   },
-  null as string | null,
+  null,
 );
 
 // =============================================================================
-// ACTIONS
+// SHARED GLOBAL ACTIONS
 // =============================================================================
 
-export const chatActions = {
-  toggleChat(): void {
-    chatOpen.update((isOpen) => !isOpen);
-  },
-
-  closeChat(): void {
-    chatOpen.set(false);
-  },
-
+const coreActions = {
   createNewConversation(): void {
     currentConversationId.set(null);
   },
@@ -470,12 +467,104 @@ export const chatActions = {
       console.error("Failed to send message:", e);
     }
   },
-
-  updateSidebarWidth(width: number): void {
-    const constrainedWidth = Math.max(
-      DEFAULTS.MIN_SIDEBAR_WIDTH,
-      Math.min(DEFAULTS.MAX_SIDEBAR_WIDTH, width),
-    );
-    sidebarWidth.set(constrainedWidth);
-  },
 };
+
+// =============================================================================
+// PUBLIC API - ONLY EXPORT THIS
+// =============================================================================
+
+export function useChatCore() {
+  // Per-component query setup (these can vary per component usage)
+  const listConversationsQueryOptionsStore = derived([runtime], ([$runtime]) =>
+    getRuntimeServiceListConversationsQueryOptions($runtime.instanceId, {
+      query: {
+        enabled: true, // Always enabled for core - layouts control their own visibility
+      },
+    }),
+  );
+  const listConversationsQuery = createQuery(
+    listConversationsQueryOptionsStore,
+  );
+
+  const getConversationQueryOptionsStore = derived(
+    [runtime, currentConversationId],
+    ([$runtime, $currentConversationId]) =>
+      getRuntimeServiceGetConversationQueryOptions(
+        $runtime.instanceId,
+        $currentConversationId || "",
+        undefined,
+        {
+          query: {
+            enabled:
+              !!$currentConversationId &&
+              !isOptimisticConversationId($currentConversationId),
+          },
+        },
+      ),
+  );
+  const getConversationQuery = createQuery(getConversationQueryOptionsStore);
+
+  // Per-component derived state (these are just transforms of query data)
+  const listConversationsData = derived(
+    listConversationsQuery,
+    ($query) => $query.data,
+  );
+  const getConversationData = derived(
+    getConversationQuery,
+    ($query) => $query.data,
+  );
+  const currentConversation = derived(
+    getConversationData,
+    ($data) => $data?.conversation || null,
+  );
+
+  // Component-level action wrappers (these add component-specific callbacks)
+  async function handleSendMessage(
+    message: string,
+    onSuccess?: () => void,
+    onError?: (message: string) => void,
+  ) {
+    try {
+      await coreActions.sendMessage(message);
+      onSuccess?.();
+    } catch (error) {
+      console.error("Failed to send message:", error);
+      onError?.(message);
+    }
+  }
+
+  function createNewConversation(onSuccess?: () => void) {
+    coreActions.createNewConversation();
+    onSuccess?.();
+  }
+
+  function selectConversation(conv: V1Conversation, onSuccess?: () => void) {
+    coreActions.selectConversation(conv);
+    onSuccess?.();
+  }
+
+  return {
+    // Queries (per-component)
+    listConversationsQuery,
+    getConversationQuery,
+
+    // Derived state (per-component)
+    listConversationsData,
+    currentConversation,
+    isConversationLoading: derived(
+      getConversationQuery,
+      ($query) => $query.isLoading,
+    ),
+
+    // Global shared state
+    currentConversationId,
+    loading,
+    error,
+    messages,
+
+    // Actions (with per-component callback support)
+    handleSendMessage,
+    createNewConversation,
+    selectConversation,
+  };
+}

@@ -1,8 +1,8 @@
 <script lang="ts">
-  import IconButton from "../../../components/button/IconButton.svelte";
-  import Close from "../../../components/icons/Close.svelte";
-  import PlusIcon from "../../../components/icons/PlusIcon.svelte";
-  import type { V1Conversation } from "../../../runtime-client";
+  import IconButton from "../../../../components/button/IconButton.svelte";
+  import Close from "../../../../components/icons/Close.svelte";
+  import PlusIcon from "../../../../components/icons/PlusIcon.svelte";
+  import type { V1Conversation } from "../../../../runtime-client";
   import ChatConversationDropdown from "./ChatConversationDropdown.svelte";
 
   export let currentTitle: string = "";
@@ -10,7 +10,8 @@
   export let currentConversationId: string | undefined = undefined;
   export let onNewConversation: () => void;
   export let onSelectConversation: (conversation: V1Conversation) => void;
-  export let onClose: () => void;
+  export let onClose: (() => void) | undefined = undefined;
+  export let showCloseButton: boolean = true;
 </script>
 
 <div class="chatbot-header">
@@ -30,9 +31,11 @@
       onSelect={onSelectConversation}
     />
 
-    <IconButton ariaLabel="Close chat" bgGray on:click={onClose}>
-      <Close className="text-gray-500" />
-    </IconButton>
+    {#if showCloseButton && onClose}
+      <IconButton ariaLabel="Close chat" bgGray on:click={onClose}>
+        <Close className="text-gray-500" />
+      </IconButton>
+    {/if}
   </div>
 </div>
 

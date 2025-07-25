@@ -1,8 +1,11 @@
 <script lang="ts">
   import { HistoryIcon } from "lucide-svelte";
-  import * as DropdownMenu from "../../../components/dropdown-menu";
-  import type { V1Conversation } from "../../../runtime-client";
-  import { GROUP_ORDER, groupConversationsByDate } from "../utils/date-utils";
+  import * as DropdownMenu from "../../../../components/dropdown-menu";
+  import type { V1Conversation } from "../../../../runtime-client";
+  import {
+    GROUP_ORDER,
+    groupConversationsByDate,
+  } from "../../core/utils/date-utils";
   import ChatConversationItem from "./ChatConversationItem.svelte";
 
   export let conversations: V1Conversation[] = [];
