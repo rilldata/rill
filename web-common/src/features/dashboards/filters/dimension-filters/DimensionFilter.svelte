@@ -62,6 +62,12 @@
   let searchValue = "";
   let selectedProxy: Set<string> = new Set();
   let allProxy: Set<string> = new Set();
+  let localSelectedValues: Set<string> = new Set(selectedValues);
+
+  $: if (curMode === DimensionFilterMode.Select && open) {
+    // On open, initialize buffer from selectedValues
+    localSelectedValues = new Set(selectedValues);
+  }
 
   $: if (curMode === DimensionFilterMode.Select && correctedSearchResults) {
     selectedProxy = new Set(effectiveSelectedValues);
@@ -244,17 +250,48 @@
     }
   }
 
-  function handleOpenChange(open: boolean) {
-    if (open) {
+  function handleSelectBuffer(name: string) {
+    if (localSelectedValues.has(name)) {
+      localSelectedValues.delete(name);
+    } else {
+      localSelectedValues.add(name);
+    }
+  }
+
+  function handleOpenChange(openDropdown: boolean) {
+    if (openDropdown) {
       searchValue =
         mode === DimensionFilterMode.InList
           ? mergeDimensionSearchValues(selectedValues)
           : (sanitisedSearchText ?? "");
+      if (curMode === DimensionFilterMode.Select) {
+        localSelectedValues = new Set(selectedValues);
+      }
     } else {
       if (selectedValues.length === 0 && !inputText) {
         // filter was cleared. so remove the filter
         onRemove();
       } else {
+        // Only commit changes if buffer differs from selectedValues
+        if (curMode === DimensionFilterMode.Select) {
+          const bufferArr = Array.from(localSelectedValues);
+          // Compare sets
+          const origSet = new Set(selectedValues);
+          const bufferSet = new Set(bufferArr);
+          let changed =
+            bufferSet.size !== origSet.size ||
+            Array.from(bufferSet).some((v) => !origSet.has(v));
+          if (changed) {
+            // Remove all current selections
+            selectedValues.forEach((v) => {
+              if (!bufferSet.has(v)) onSelect(v);
+            });
+            // Add all new selections
+            bufferArr.forEach((v) => {
+              if (!origSet.has(v)) onSelect(v);
+            });
+          }
+        }
         // reset the settings on unmount
         resetFilterSettings(mode, sanitisedSearchText);
       }
@@ -439,7 +476,7 @@
         <DropdownMenu.Group class="px-1" aria-label={`${name} results`}>
           {#if curMode === DimensionFilterMode.Select}
             {#each Array.from(selectedProxy) as name (name)}
-              {@const selected = effectiveSelectedValues.includes(name)}
+              {@const selected = localSelectedValues.has(name)}
               {@const label = name ?? "null"}
               <svelte:component
                 this={DropdownMenu.CheckboxItem}
@@ -448,7 +485,7 @@
                 checked={selected}
                 showXForSelected={curExcludeMode}
                 disabled={false}
-                on:click={() => onSelect(name)}
+                on:click={() => handleSelectBuffer(name)}
               >
                 <span>
                   {#if label.length > 240}
@@ -465,7 +502,7 @@
             {/if}
 
             {#each filteredItems as name (name)}
-              {@const selected = effectiveSelectedValues.includes(name)}
+              {@const selected = localSelectedValues.has(name)}
               {@const label = name ?? "null"}
               <svelte:component
                 this={DropdownMenu.CheckboxItem}
@@ -474,7 +511,7 @@
                 checked={selected}
                 showXForSelected={curExcludeMode}
                 disabled={false}
-                on:click={() => onSelect(name)}
+                on:click={() => handleSelectBuffer(name)}
               >
                 <span>
                   {#if label.length > 240}
