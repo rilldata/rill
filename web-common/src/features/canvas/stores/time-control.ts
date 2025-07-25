@@ -231,8 +231,6 @@ export class TimeControls {
       },
     );
 
-    // this.searchParamsStore.subscribe(this.setTimeStateFromSearchParams);
-
     if (!componentName) {
       this.specStore.subscribe((spec) => {
         if (!spec?.data) return;

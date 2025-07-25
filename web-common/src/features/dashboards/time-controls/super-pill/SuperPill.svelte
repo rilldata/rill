@@ -81,7 +81,7 @@
       {watermark}
       {showDefaultItem}
       {defaultTimeRange}
-      timeString={v2TimeString}
+      timeString={v2TimeString || selectedRangeAlias}
       {interval}
       zone={activeTimeZone}
       {lockTimeZone}

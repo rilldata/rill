@@ -363,7 +363,6 @@ export async function deriveInterval(
   if (duration) {
     return {
       interval: getInterval(duration, allTimeRange.end),
-      grain: V1TimeGrain.TIME_GRAIN_HOUR,
     };
   }
 

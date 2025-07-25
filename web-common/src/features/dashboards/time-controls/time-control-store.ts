@@ -153,6 +153,7 @@ export function getTimeControlState(
   const minTimeGrain =
     (metricsViewSpec.smallestTimeGrain as V1TimeGrain) ||
     V1TimeGrain.TIME_GRAIN_UNSPECIFIED;
+
   const defaultTimeRange = isoDurationToFullTimeRange(
     exploreSpec.defaultPreset?.timeRange,
     allTimeRange.start,
