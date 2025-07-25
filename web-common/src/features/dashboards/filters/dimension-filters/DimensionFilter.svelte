@@ -494,7 +494,7 @@
                 this={DropdownMenu.CheckboxItem}
                 class="text-xs cursor-pointer"
                 role="menuitem"
-                checked={true}
+                checked={effectiveSelectedValues.includes(name)}
                 showXForSelected={curExcludeMode}
                 on:click={() => {
                   selectedValuesProxy = selectedValuesProxy.filter(
