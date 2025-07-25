@@ -19,8 +19,8 @@ type ExploreYAML struct {
 	Description          string                 `yaml:"description"`
 	Banner               string                 `yaml:"banner"`
 	MetricsView          string                 `yaml:"metrics_view"`
-	Dimensions           *FieldSelectorYAML     `yaml:"dimensions"` // deprecated while explore is defined inline, rely on mv dimensions selector
-	Measures             *FieldSelectorYAML     `yaml:"measures"`   // deprecated while explore is defined inline, rely on mv measures selector
+	Dimensions           *FieldSelectorYAML     `yaml:"dimensions"` // not supported when explore is defined inline, use dimensions selector on metrics view
+	Measures             *FieldSelectorYAML     `yaml:"measures"`   // not supported when explore is defined inline, use measures selector on metrics view
 	Theme                yaml.Node              `yaml:"theme"`      // Name (string) or inline theme definition (map)
 	TimeRanges           []ExploreTimeRangeYAML `yaml:"time_ranges"`
 	TimeZones            []string               `yaml:"time_zones"` // Single time zone or list of time zones
@@ -117,8 +117,7 @@ var exploreComparisonModes = map[string]runtimev1.ExploreComparisonMode{
 	"dimension": runtimev1.ExploreComparisonMode_EXPLORE_COMPARISON_MODE_DIMENSION,
 }
 
-// definingMetricsView is the name of the metrics view in which explore is defined inline.
-func (p *Parser) parseExplore(node *Node, definingMetricsView string) error {
+func (p *Parser) parseExplore(node *Node) error {
 	// Parse YAML
 	tmp := &ExploreYAML{}
 	err := p.decodeNodeYAML(node, true, tmp)
@@ -146,28 +145,10 @@ func (p *Parser) parseExplore(node *Node, definingMetricsView string) error {
 	}
 
 	// Validate metrics_view
-	if definingMetricsView != "" {
-		if tmp.MetricsView != "" && tmp.MetricsView != definingMetricsView {
-			return fmt.Errorf("explore metrics_view %q cannot be different from the defining metrics_view %q", tmp.MetricsView, definingMetricsView)
-		}
-		tmp.MetricsView = definingMetricsView
-	}
 	if tmp.MetricsView == "" {
 		return errors.New("metrics_view is required")
 	}
 	node.Refs = append(node.Refs, ResourceName{Kind: ResourceKindMetricsView, Name: tmp.MetricsView})
-
-	if definingMetricsView != "" {
-		if tmp.commonYAML.Name != "" && tmp.commonYAML.Name != node.Name {
-			return fmt.Errorf("inline explores can only have same name as defining metrics view")
-		}
-		if tmp.Security != nil {
-			return errors.New("security rules are not supported on inline explores, please define them on the metrics view")
-		}
-		if tmp.Dimensions != nil || tmp.Measures != nil {
-			return errors.New("dimensions and measures are not supported on inline explores, please define them on the metrics view")
-		}
-	}
 
 	// Parse the dimensions and measures selectors
 	var dimensionsSelector *runtimev1.FieldSelector
@@ -310,7 +291,6 @@ func (p *Parser) parseExplore(node *Node, definingMetricsView string) error {
 	r.ExploreSpec.SecurityRules = rules
 	r.ExploreSpec.LockTimeZone = tmp.LockTimeZone
 	r.ExploreSpec.AllowCustomTimeRange = allowCustomTimeRange
-	r.ExploreSpec.DefinedInMetricsView = definingMetricsView != ""
 
 	return nil
 }

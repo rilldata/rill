@@ -55,9 +55,14 @@ func (r *ValidateMetricsViewResult) Error() error {
 }
 
 // ValidateAndNormalizeMetricsView validates the dimensions and measures in the executor's metrics view and returns a ValidateMetricsViewResult
-// It also populates the schema of the metrics view if all dimensions and measures are valid.
+// It also inherits properties from parent metrics view and populates the schema of the metrics view if all dimensions and measures are valid.
 // Note - Beware that it modifies the metrics view spec in place to populate the dimension and measure types.
 func (e *Executor) ValidateAndNormalizeMetricsView(ctx context.Context) (*ValidateMetricsViewResult, error) {
+	err := e.resolveParentMetricsView(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve parent metrics view: %w", err)
+	}
+
 	// Create the result
 	res := &ValidateMetricsViewResult{}
 
@@ -150,183 +155,114 @@ func (e *Executor) ValidateAndNormalizeMetricsView(ctx context.Context) (*Valida
 	return res, nil
 }
 
-// ReconcileWithParentMetricsView resolves the parent metrics view and inherits all its dimensions and measures unless they are overridden in the current metrics view.
-func (e *Executor) ReconcileWithParentMetricsView(ctx context.Context) (*runtimev1.MetricsViewSpec, error) {
+// resolves the parent metrics view and inherits all its dimensions and measures unless they are overridden in the current metrics view.
+func (e *Executor) resolveParentMetricsView(ctx context.Context) error {
 	if e.metricsView.Parent == "" {
 		// No parent metrics view to normalize
-		return nil, nil
+		return nil
 	}
 	// Resolve the parent metrics view
 	ctrl, err := e.rt.Controller(ctx, e.instanceID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get controller: %w", err)
+		return fmt.Errorf("failed to get controller: %w", err)
 	}
 	// deep copy of parent metrics view that will be modified
-	parent, err := ctrl.Get(ctx, &runtimev1.ResourceName{
+	res, err := ctrl.Get(ctx, &runtimev1.ResourceName{
 		Name: e.metricsView.Parent,
 		Kind: runtime.ResourceKindMetricsView,
-	}, true)
+	}, false)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get parent metrics view %q: %w", e.metricsView.Parent, err)
+		return fmt.Errorf("failed to get parent metrics view %q: %w", e.metricsView.Parent, err)
 	}
-	if parent.GetMetricsView() == nil {
-		return nil, fmt.Errorf("parent resource %q is not a metrics view", e.metricsView.Parent)
+	if res.GetMetricsView() == nil {
+		return fmt.Errorf("parent resource %q is not a metrics view", e.metricsView.Parent)
 	}
-	newSpec := parent.GetMetricsView().State.ValidSpec
-	newSpec.Parent = e.metricsView.Parent
+	parent := res.GetMetricsView().State.ValidSpec
+
+	e.metricsView.Connector = parent.Connector
+	e.metricsView.Database = parent.Database
+	e.metricsView.DatabaseSchema = parent.DatabaseSchema
+	e.metricsView.Table = parent.Table
+	e.metricsView.Model = parent.Model
 
 	// Override the dimensions and measures in the normalized metrics view if defined in the current metrics view.
-	allDims := make(map[string]*runtimev1.MetricsViewSpec_Dimension, len(newSpec.Dimensions))
-	all := make([]string, 0, len(newSpec.Dimensions))
-	for _, d := range newSpec.Dimensions {
-		allDims[d.Name] = d
-		all = append(all, d.Name)
+	names := make([]string, 0, len(parent.Dimensions))
+	for _, d := range parent.Dimensions {
+		names = append(names, d.Name)
 	}
-
-	var dimNames []string
-	dimSelector := e.metricsView.DimensionsSelector
-	if dimSelector != nil && !dimSelector.Invert && dimSelector.GetFields() != nil && len(dimSelector.GetFields().Values) > 0 {
-		dimNames = dimSelector.GetFields().Values
-	} else {
-		dimNames, err = e.resolveFields(dimSelector, all)
-		if err != nil {
-			return nil, fmt.Errorf("failed to resolve dimensions selector: %w", err)
+	names, err = fieldselectorpb.Resolve(e.metricsView.ParentDimensions, names)
+	if err != nil {
+		return fmt.Errorf("failed to resolve parent dimensions selector: %w", err)
+	}
+	filteredDims := make([]*runtimev1.MetricsViewSpec_Dimension, 0, len(parent.Dimensions))
+	for _, d := range parent.Dimensions {
+		if slices.Contains(names, d.Name) {
+			filteredDims = append(filteredDims, d)
 		}
 	}
+	e.metricsView.Dimensions = filteredDims
 
-	// resolve dim names to actual dimension spec
-	for _, dimName := range dimNames {
-		dim, ok := allDims[dimName]
-		if !ok {
-			return nil, fmt.Errorf("dimension %q not found in parent metrics view %q", dimName, e.metricsView.Parent)
-		}
-		e.metricsView.Dimensions = append(e.metricsView.Dimensions, dim)
+	names = make([]string, 0, len(parent.Measures))
+	for _, m := range parent.Measures {
+		names = append(names, m.Name)
 	}
-	newSpec.Dimensions = e.metricsView.Dimensions
-
-	allMeasures := make(map[string]*runtimev1.MetricsViewSpec_Measure, len(newSpec.Measures))
-	all = make([]string, 0, len(newSpec.Measures))
-	for _, m := range newSpec.Measures {
-		allMeasures[m.Name] = m
-		all = append(all, m.Name)
+	names, err = fieldselectorpb.Resolve(e.metricsView.ParentMeasures, names)
+	if err != nil {
+		return fmt.Errorf("failed to resolve parent measures selector: %w", err)
 	}
-	var measureNames []string
-	measureSelector := e.metricsView.MeasuresSelector
-	if measureSelector != nil && !measureSelector.Invert && measureSelector.GetFields() != nil && len(measureSelector.GetFields().Values) > 0 {
-		measureNames = measureSelector.GetFields().Values
-	} else {
-		measureNames, err = e.resolveFields(measureSelector, all)
-		if err != nil {
-			return nil, fmt.Errorf("failed to resolve measures selector: %w", err)
+	filteredMeasures := make([]*runtimev1.MetricsViewSpec_Measure, 0, len(parent.Measures))
+	for _, m := range parent.Measures {
+		if slices.Contains(names, m.Name) {
+			filteredMeasures = append(filteredMeasures, m)
 		}
 	}
+	e.metricsView.Measures = filteredMeasures
 
-	// resolve measure names to actual measure spec
-	for _, measureName := range measureNames {
-		measure, ok := allMeasures[measureName]
-		if !ok {
-			return nil, fmt.Errorf("measure %q not found in parent metrics view %q", measureName, e.metricsView.Parent)
-		}
-		e.metricsView.Measures = append(e.metricsView.Measures, measure)
-	}
-	newSpec.Measures = e.metricsView.Measures
+	// set selectors to nil now that they are resolved
+	e.metricsView.ParentDimensions = nil
+	e.metricsView.ParentMeasures = nil
 
-	securityRules := make([]*runtimev1.SecurityRule, 0)
-	var access, fieldAccess, rowFilter, parentAccess, parentFieldAccess, parentRowFilter []*runtimev1.SecurityRule
-	for _, rule := range newSpec.SecurityRules {
-		if rule.GetAccess() != nil {
-			parentAccess = append(parentAccess, rule)
-		} else if rule.GetFieldAccess() != nil {
-			parentFieldAccess = append(parentFieldAccess, rule)
-		} else if rule.GetRowFilter() != nil {
-			parentRowFilter = append(parentRowFilter, rule)
-		}
-	}
-
+	hasAccessRule := false
 	for _, rule := range e.metricsView.SecurityRules {
 		if rule.GetAccess() != nil {
-			access = append(access, rule)
-		} else if rule.GetFieldAccess() != nil {
-			fieldAccess = append(fieldAccess, rule)
-		} else if rule.GetRowFilter() != nil {
-			if len(parentRowFilter) > 1 || len(rowFilter) > 1 {
-				return nil, fmt.Errorf("unable to merge multiple row filters into one")
-			}
-			rowFilter = append(rowFilter, rule)
+			hasAccessRule = true
+			break
 		}
 	}
-
-	if len(access) > 0 {
-		securityRules = append(securityRules, access...)
-	} else if len(parentAccess) > 0 {
-		securityRules = append(securityRules, parentAccess...)
-	}
-
-	// append field access rules from the metrics view and parent metrics view, adding field access in derived metrics view yaml is not allowed so this can only be rules added by us in the code if any
-	if len(fieldAccess) > 0 {
-		securityRules = append(securityRules, fieldAccess...)
-	}
-	if len(parentFieldAccess) > 0 {
-		securityRules = append(securityRules, parentFieldAccess...)
-	}
-
-	if len(rowFilter) > 0 {
-		// If the metrics view has a row filter, we need to AND the row filter with parent row filter
-		if len(parentRowFilter) > 0 {
-			rowFilter[0].GetRowFilter().Sql = fmt.Sprintf("(%s) AND (%s)", parentRowFilter[0].GetRowFilter().Sql, rowFilter[0].GetRowFilter().Sql)
+	// append all parent security rules to the metrics view, except access if its already defined in the metrics view
+	for _, rule := range parent.SecurityRules {
+		if rule.GetAccess() != nil && hasAccessRule {
+			continue // skip access rules if already defined in the metrics view
 		}
-		securityRules = append(securityRules, rowFilter[0])
-	} else if len(parentRowFilter) > 0 {
-		// If the metrics view does not have a row filter, we need to inherit the parent row filter
-		securityRules = append(securityRules, parentRowFilter...)
+		e.metricsView.SecurityRules = append(e.metricsView.SecurityRules, rule)
 	}
-
-	newSpec.SecurityRules = securityRules
-	newSpec.DisplayName = e.metricsView.DisplayName
-	newSpec.Description = e.metricsView.Description
 
 	// If the metrics view has a time dimension, override the parent metrics view time dimension
-	if e.metricsView.TimeDimension != "" {
-		newSpec.TimeDimension = e.metricsView.TimeDimension
+	if e.metricsView.TimeDimension == "" {
+		e.metricsView.TimeDimension = parent.TimeDimension
 	}
 	// If the metrics view has a first day of week, override the parent metrics view first day of week
-	if e.metricsView.FirstDayOfWeek > 0 {
-		if e.metricsView.FirstDayOfWeek < 1 || e.metricsView.FirstDayOfWeek > 7 {
-			return nil, fmt.Errorf("invalid first day of week %d in metrics view %q, must be between 1 and 7", e.metricsView.FirstDayOfWeek, e.metricsView.Parent)
-		}
-		newSpec.FirstDayOfWeek = e.metricsView.FirstDayOfWeek
+	if e.metricsView.FirstDayOfWeek == 0 {
+		e.metricsView.FirstDayOfWeek = parent.FirstDayOfWeek
 	}
 	// If the metrics view has a first month of year, override the parent metrics view first month of year
-	if e.metricsView.FirstMonthOfYear > 0 {
-		if e.metricsView.FirstMonthOfYear < 1 || e.metricsView.FirstMonthOfYear > 12 {
-			return nil, fmt.Errorf("invalid first month of year %d in metrics view %q, must be between 1 and 12", e.metricsView.FirstMonthOfYear, e.metricsView.Parent)
-		}
-		newSpec.FirstMonthOfYear = e.metricsView.FirstMonthOfYear
+	if e.metricsView.FirstMonthOfYear == 0 {
+		e.metricsView.FirstMonthOfYear = parent.FirstMonthOfYear
 	}
 	// If the metrics view has a smallest time grain, override the parent metrics view smallest time grain
 	if e.metricsView.SmallestTimeGrain != runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
-		if e.metricsView.SmallestTimeGrain < newSpec.SmallestTimeGrain {
-			return nil, fmt.Errorf("invalid smallest time grain %s in metrics view %q, must be greater than or equal to parent metrics view smallest time grain %s", e.metricsView.SmallestTimeGrain, e.metricsView.Parent, newSpec.SmallestTimeGrain)
+		if e.metricsView.SmallestTimeGrain < parent.SmallestTimeGrain {
+			return fmt.Errorf("invalid smallest time grain %s in metrics view %q, must be greater than or equal to parent metrics view smallest time grain %s", e.metricsView.SmallestTimeGrain, e.metricsView.Parent, parent.SmallestTimeGrain)
 		}
-		newSpec.SmallestTimeGrain = e.metricsView.SmallestTimeGrain
+	} else {
+		e.metricsView.SmallestTimeGrain = parent.SmallestTimeGrain
 	}
 	// If the metrics view has ai instructions, override the parent metrics view ai instructions
-	if e.metricsView.AiInstructions != "" {
-		newSpec.AiInstructions = e.metricsView.AiInstructions
+	if e.metricsView.AiInstructions == "" {
+		e.metricsView.AiInstructions = parent.AiInstructions
 	}
 
-	e.metricsView = newSpec
-
-	return newSpec, nil
-}
-
-func (e *Executor) resolveFields(selector *runtimev1.FieldSelector, all []string) ([]string, error) {
-	// Resolve the selector (it includes validation of the resulting fields against `all` if needed).
-	res, err := fieldselectorpb.Resolve(selector, all)
-	if err != nil {
-		return nil, fmt.Errorf("failed to resolve dimension or measure name selector: %w", err)
-	}
-	return res, nil
+	return nil
 }
 
 // validateAllDimensionsAndMeasures validates all dimensions and measures with one query. It returns an error if any of the expressions are invalid.
@@ -533,7 +469,7 @@ func (e *Executor) validateMeasure(ctx context.Context, t *drivers.OlapTable, m 
 	return err
 }
 
-// validateSchema validates that the metrics view's measures are numeric.
+// validateSchema validates that the metrics view's measures are numeric. Also populates the DataType field of each measure and dimension in the metrics view.
 func (e *Executor) validateSchema(ctx context.Context, res *ValidateMetricsViewResult) error {
 	// Resolve the schema of the metrics view's dimensions and measures
 	schema, err := e.Schema(ctx)

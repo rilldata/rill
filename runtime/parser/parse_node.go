@@ -41,7 +41,7 @@ func (p *Parser) parseNode(ctx context.Context, node *Node) error {
 	case ResourceKindMetricsView:
 		return p.parseMetricsView(node)
 	case ResourceKindExplore:
-		return p.parseExplore(node, "")
+		return p.parseExplore(node)
 	case ResourceKindMigration:
 		return p.parseMigration(node)
 	case ResourceKindReport:

@@ -1,12 +1,16 @@
 package parser
 
 import (
+	"bytes"
+	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/rilltime"
+	"golang.org/x/exp/maps"
 	"google.golang.org/protobuf/types/known/structpb"
 	"gopkg.in/yaml.v3"
 
@@ -64,9 +68,15 @@ type MetricsViewYAML struct {
 		ValidPercentOfTotal bool           `yaml:"valid_percent_of_total"`
 		TreatNullsAs        string         `yaml:"treat_nulls_as"`
 	}
-	DimensionsSelector *FieldSelectorYAML `yaml:"dimensions_selector"`
-	MeasuresSelector   *FieldSelectorYAML `yaml:"measures_selector"`
-	Security           *SecurityPolicyYAML
+	ParentDimensions *FieldSelectorYAML `yaml:"parent_dimensions"`
+	ParentMeasures   *FieldSelectorYAML `yaml:"parent_measures"`
+	Security         *SecurityPolicyYAML
+	Cache            struct {
+		Enabled *bool  `yaml:"enabled"`
+		KeySQL  string `yaml:"key_sql"`
+		KeyTTL  string `yaml:"key_ttl"`
+	} `yaml:"cache"`
+	Explore yaml.Node `yaml:"explore"`
 
 	// DEPRECATED FIELDS
 	DefaultTimeRange   string   `yaml:"default_time_range"`
@@ -79,13 +89,6 @@ type MetricsViewYAML struct {
 		Dimension string `yaml:"dimension"`
 	} `yaml:"default_comparison"`
 	AvailableTimeRanges []ExploreTimeRangeYAML `yaml:"available_time_ranges"`
-	Cache               struct {
-		Enabled *bool  `yaml:"enabled"`
-		KeySQL  string `yaml:"key_sql"`
-		KeyTTL  string `yaml:"key_ttl"`
-	} `yaml:"cache"`
-	ExploreYAML yaml.Node `yaml:"explore"`
-	NoExplore   bool      `yaml:"no_explore"`
 }
 
 type MetricsViewFieldSelectorYAML struct {
@@ -267,7 +270,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 
 	if tmp.Parent != "" {
 		if len(tmp.Dimensions) > 0 || len(tmp.Measures) > 0 {
-			return fmt.Errorf("cannot define dimensions or measures in a derviced metrics view, use dimension_selector and measure_selector to select from parent %q", tmp.Parent)
+			return fmt.Errorf("cannot define dimensions or measures in a derived metrics view, use dimension_selector and measure_selector to select from parent %q", tmp.Parent)
 		}
 		if tmp.Database != "" || tmp.DatabaseSchema != "" || tmp.Table != "" || tmp.Model != "" {
 			return fmt.Errorf("cannot set data source in a derived metrics view (parent %q)", tmp.Parent)
@@ -287,8 +290,8 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		}
 
 		node.Refs = append(node.Refs, ResourceName{Kind: ResourceKindMetricsView, Name: tmp.Parent})
-	} else if tmp.DimensionsSelector != nil || tmp.MeasuresSelector != nil {
-		return fmt.Errorf("dimensions_selector and measures_selector can only be set in derived metrics views, use dimensions and measures instead")
+	} else if tmp.ParentDimensions != nil || tmp.ParentMeasures != nil {
+		return fmt.Errorf("parent_dimensions and parent_measures can only be set in derived metrics views, use dimensions and measures instead")
 	}
 
 	names := make(map[string]uint8)
@@ -535,6 +538,16 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		}
 	}
 
+	// 0 is default and type is uint32
+	if tmp.FirstDayOfWeek > 7 {
+		return fmt.Errorf("invalid first day of week %d, must be between 1 and 7", tmp.FirstDayOfWeek)
+	}
+
+	// 0 is default and type is uint32
+	if tmp.FirstMonthOfYear > 12 {
+		return fmt.Errorf("invalid first month of year %d, must be between 1 and 12", tmp.FirstMonthOfYear)
+	}
+
 	tmp.DefaultComparison.Mode = strings.ToLower(tmp.DefaultComparison.Mode)
 	if _, ok := comparisonModesMap[tmp.DefaultComparison.Mode]; !ok {
 		return fmt.Errorf("invalid mode: %q. allowed values: %s", tmp.DefaultComparison.Mode, strings.Join(validComparisonModes, ","))
@@ -613,6 +626,29 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		}
 	}
 
+	var emitExplore bool
+	// parse inline explore if it exists before inserting the resource
+	if !tmp.Explore.IsZero() {
+		// either this will have inline explore yaml or set to true/false to emit or not emit an explore
+		if tmp.Explore.Kind == yaml.ScalarNode {
+			emitExplore, err = strconv.ParseBool(tmp.Explore.Value)
+			if err != nil {
+				return fmt.Errorf("expected inline explore or true/false, got %q: %w", tmp.Explore.Value, err)
+			}
+		} else {
+			if tmp.DefaultTimeRange != "" || tmp.DefaultTheme != "" || len(tmp.DefaultDimensions) > 0 || len(tmp.DefaultMeasures) > 0 || tmp.DefaultComparison.Mode != "" || tmp.DefaultComparison.Dimension != "" {
+				return fmt.Errorf("set defaults under explore key, not in metrics view")
+			}
+
+			err = p.parseInlineExplore(tmp.Explore, node.Name, node.Paths)
+			if err != nil {
+				return fmt.Errorf("failed to parse inline explore: %w", err)
+			}
+			emitExplore = false // We already emitted the Explore resource in parseInlineExplore
+		}
+	}
+
+	// insert metrics view resource immediately after parsing the inline explore as it inserts the explore resource so we should not return an error now
 	r, err := p.insertResource(ResourceKindMetricsView, node.Name, node.Paths, node.Refs...)
 	if err != nil {
 		return err
@@ -662,43 +698,17 @@ func (p *Parser) parseMetricsView(node *Node) error {
 
 	// Parse the dimensions and measures selectors
 	if tmp.Parent != "" {
-		spec.DimensionsSelector = tmp.DimensionsSelector.Proto()
-		spec.MeasuresSelector = tmp.MeasuresSelector.Proto()
+		spec.ParentDimensions = tmp.ParentDimensions.Proto()
+		spec.ParentMeasures = tmp.ParentMeasures.Proto()
 	}
 
 	spec.SecurityRules = securityRules
 	spec.CacheEnabled = tmp.Cache.Enabled
 	spec.CacheKeySql = tmp.Cache.KeySQL
 	spec.CacheKeyTtlSeconds = int64(cacheTTLDuration.Seconds())
-	spec.NoExplore = tmp.NoExplore
 
-	if !tmp.ExploreYAML.IsZero() {
-		if tmp.DefaultTimeRange != "" || tmp.DefaultTheme != "" || len(tmp.DefaultDimensions) > 0 || len(tmp.DefaultMeasures) > 0 || tmp.DefaultComparison.Mode != "" || tmp.DefaultComparison.Dimension != "" {
-			return fmt.Errorf("set default under explore key, not in metrics view")
-		}
-
-		ymlBytes, err := yaml.Marshal(tmp.ExploreYAML)
-		if err != nil {
-			return fmt.Errorf("failed to marshal explore YAML: %w", err)
-		}
-		yml := string(ymlBytes)
-		exploreNode := &Node{
-			Name:     node.Name,
-			Kind:     ResourceKindExplore,
-			Paths:    node.Paths,
-			YAML:     &tmp.ExploreYAML,
-			YAMLRaw:  yml,
-			YAMLPath: node.YAMLPath,
-		}
-
-		// parse the explore YAML node
-		err = p.parseExplore(exploreNode, node.Name)
-
-		return err
-	}
-
-	// Backwards compatibility: When the version is 0, also emit an Explore resource for the metrics view.
-	if node.Version > 0 || spec.NoExplore {
+	// When version is 0 and no explore defined inline and inline explore is not set to false, emit an Explore resource for the metrics view. Application should create metrics views with version 0 or no version.
+	if node.Version > 0 && !emitExplore {
 		return nil
 	}
 
@@ -764,6 +774,180 @@ func (p *Parser) parseMetricsView(node *Node) error {
 	// Backwards compatibility: explore parser will default to true so also emit true on the emitted explore spec
 	e.ExploreSpec.AllowCustomTimeRange = true
 	e.ExploreSpec.DefinedInMetricsView = true
+
+	return nil
+}
+
+func (p *Parser) parseInlineExplore(yml yaml.Node, mvName string, mvPaths []string) error {
+	// Not directly parsing yml into ExploreYAML like yml.Decode(&tmp) because it doesn't support the KnownFields feature as decoding into yaml.Node.Content is already done.
+	ymlBytes, err := yaml.Marshal(yml)
+	if err != nil {
+		return fmt.Errorf("failed to marshal inline explore YAML: %w", err)
+	}
+	dec := yaml.NewDecoder(bytes.NewReader(ymlBytes))
+	dec.KnownFields(true)
+
+	// Parse YAML
+	tmp := &ExploreYAML{}
+	err = dec.Decode(tmp)
+	if err != nil {
+		return err
+	}
+
+	// Display name backwards compatibility
+	if tmp.Title != "" && tmp.DisplayName == "" {
+		tmp.DisplayName = tmp.Title
+	}
+
+	// Set default for AllowCustomTimeRange to true if not provided
+	allowCustomTimeRange := true
+	if tmp.AllowCustomTimeRange != nil {
+		allowCustomTimeRange = *tmp.AllowCustomTimeRange
+	}
+
+	// Validate metrics_view
+	if tmp.MetricsView != "" && tmp.MetricsView != mvName {
+		return fmt.Errorf("explore metrics_view %q cannot be different from the defining metrics_view %q", tmp.MetricsView, mvName)
+	}
+	tmp.MetricsView = mvName
+
+	refs := []ResourceName{{Kind: ResourceKindMetricsView, Name: tmp.MetricsView}}
+
+	if tmp.Security != nil {
+		return errors.New("security rules are not supported on inline explores, please define them on the metrics view")
+	}
+	if tmp.Dimensions != nil || tmp.Measures != nil {
+		return errors.New("dimensions and measures are not supported on inline explores, please define them on the metrics view")
+	}
+
+	// Parse theme if present.
+	// If it returns a themeSpec, it will be inserted as a separate resource later in this function.
+	themeName, themeSpec, err := p.parseThemeRef(&tmp.Theme)
+	if err != nil {
+		return err
+	}
+	if themeName != "" && themeSpec == nil {
+		refs = append(refs, ResourceName{Kind: ResourceKindTheme, Name: themeName})
+	}
+
+	// Build and validate time ranges
+	var timeRanges []*runtimev1.ExploreTimeRange
+	for _, tr := range tmp.TimeRanges {
+		if _, err := rilltime.Parse(tr.Range, rilltime.ParseOptions{}); err != nil {
+			return fmt.Errorf("invalid time range %q: %w", tr.Range, err)
+		}
+		res := &runtimev1.ExploreTimeRange{Range: tr.Range}
+		for _, ctr := range tr.ComparisonTimeRanges {
+			err = rilltime.ParseCompatibility(ctr.Range, ctr.Offset)
+			if err != nil {
+				return err
+			}
+			res.ComparisonTimeRanges = append(res.ComparisonTimeRanges, &runtimev1.ExploreComparisonTimeRange{
+				Offset: ctr.Offset,
+				Range:  ctr.Range,
+			})
+		}
+		timeRanges = append(timeRanges, res)
+	}
+
+	// Validate time zones
+	for _, tz := range tmp.TimeZones {
+		_, err := time.LoadLocation(tz)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Build and validate presets
+	var defaultPreset *runtimev1.ExplorePreset
+	if tmp.Defaults != nil {
+		if tmp.Defaults.TimeRange != "" {
+			if _, err := rilltime.Parse(tmp.Defaults.TimeRange, rilltime.ParseOptions{}); err != nil {
+				return fmt.Errorf("invalid time range %q: %w", tmp.Defaults.TimeRange, err)
+			}
+		}
+
+		mode := runtimev1.ExploreComparisonMode_EXPLORE_COMPARISON_MODE_NONE
+		if tmp.Defaults.ComparisonMode != "" {
+			var ok bool
+			mode, ok = exploreComparisonModes[tmp.Defaults.ComparisonMode]
+			if !ok {
+				return fmt.Errorf("invalid comparison mode %q (options: %s)", tmp.Defaults.ComparisonMode, strings.Join(maps.Keys(exploreComparisonModes), ", "))
+			}
+		}
+
+		if tmp.Defaults.ComparisonDimension != "" && mode != runtimev1.ExploreComparisonMode_EXPLORE_COMPARISON_MODE_DIMENSION {
+			return errors.New("can only set comparison_dimension when comparison_mode is 'dimension'")
+		}
+
+		var presetDimensionsSelector *runtimev1.FieldSelector
+		presetDimensions, ok := tmp.Defaults.Dimensions.TryResolve()
+		if !ok {
+			presetDimensionsSelector = tmp.Defaults.Dimensions.Proto()
+		}
+
+		var presetMeasuresSelector *runtimev1.FieldSelector
+		presetMeasures, ok := tmp.Defaults.Measures.TryResolve()
+		if !ok {
+			presetMeasuresSelector = tmp.Defaults.Measures.Proto()
+		}
+
+		var tr *string
+		if tmp.Defaults.TimeRange != "" {
+			tr = &tmp.Defaults.TimeRange
+		}
+		var compareDim *string
+		if tmp.Defaults.ComparisonDimension != "" {
+			compareDim = &tmp.Defaults.ComparisonDimension
+		}
+		defaultPreset = &runtimev1.ExplorePreset{
+			Dimensions:          presetDimensions,
+			DimensionsSelector:  presetDimensionsSelector,
+			Measures:            presetMeasures,
+			MeasuresSelector:    presetMeasuresSelector,
+			TimeRange:           tr,
+			ComparisonMode:      mode,
+			ComparisonDimension: compareDim,
+		}
+	}
+
+	// Build security rules
+	rules, err := tmp.Security.Proto()
+	if err != nil {
+		return err
+	}
+	for _, rule := range rules {
+		if rule.GetAccess() == nil {
+			return fmt.Errorf("the 'explore' resource type only supports 'access' security rules")
+		}
+	}
+
+	// Track explore
+	r, err := p.insertResource(ResourceKindExplore, mvName, mvPaths, refs...)
+	if err != nil {
+		return err
+	}
+	// NOTE: After calling insertResource, an error must not be returned. Any validation should be done before calling it.
+
+	r.ExploreSpec.DisplayName = tmp.DisplayName
+	if r.ExploreSpec.DisplayName == "" {
+		r.ExploreSpec.DisplayName = ToDisplayName(mvName)
+	}
+	r.ExploreSpec.Description = tmp.Description
+	r.ExploreSpec.MetricsView = tmp.MetricsView
+	r.ExploreSpec.Banner = tmp.Banner
+	r.ExploreSpec.DimensionsSelector = &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}}
+	r.ExploreSpec.MeasuresSelector = &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}}
+	r.ExploreSpec.Theme = themeName
+	r.ExploreSpec.EmbeddedTheme = themeSpec
+	r.ExploreSpec.TimeRanges = timeRanges
+	r.ExploreSpec.TimeZones = tmp.TimeZones
+	r.ExploreSpec.DefaultPreset = defaultPreset
+	r.ExploreSpec.EmbedsHidePivot = tmp.Embeds.HidePivot
+	r.ExploreSpec.SecurityRules = rules
+	r.ExploreSpec.LockTimeZone = tmp.LockTimeZone
+	r.ExploreSpec.AllowCustomTimeRange = allowCustomTimeRange
+	r.ExploreSpec.DefinedInMetricsView = true
 
 	return nil
 }

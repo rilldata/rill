@@ -1294,14 +1294,14 @@ func newMetricsView(name, model, parent string, measures, dimensions []any) (*ru
 	}
 	metrics := &runtimev1.MetricsView{
 		Spec: &runtimev1.MetricsViewSpec{
-			Parent:             parent,
-			Connector:          "duckdb",
-			Model:              mdl,
-			DisplayName:        parser.ToDisplayName(name),
-			Measures:           ms,
-			Dimensions:         dims,
-			DimensionsSelector: dimensionsSelector,
-			MeasuresSelector:   measuresSelector,
+			Parent:           parent,
+			Connector:        "duckdb",
+			Model:            mdl,
+			DisplayName:      parser.ToDisplayName(name),
+			Measures:         ms,
+			Dimensions:       dims,
+			ParentDimensions: dimensionsSelector,
+			ParentMeasures:   measuresSelector,
 		},
 		State: &runtimev1.MetricsViewState{
 			ValidSpec: &runtimev1.MetricsViewSpec{

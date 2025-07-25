@@ -1291,7 +1291,7 @@ export class MetricsView extends Message<MetricsView> {
  */
 export class MetricsViewSpec extends Message<MetricsViewSpec> {
   /**
-   * Parent metrics view, if this is a child metrics view.
+   * name of parent metrics view, if this is a derived metrics view. If this is set then certain fields like table, connector, database*, model, dimensions, and measures will only be set in `state.valid_spec`.
    *
    * @generated from field: string parent = 29;
    */
@@ -1392,16 +1392,16 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
   /**
    * Dynamic selector for dimensions from parent metrics view. Will be processed during validation, so it will always be empty in `state.valid_spec`. Can only be used if parent is set.
    *
-   * @generated from field: rill.runtime.v1.FieldSelector dimensions_selector = 30;
+   * @generated from field: rill.runtime.v1.FieldSelector parent_dimensions = 30;
    */
-  dimensionsSelector?: FieldSelector;
+  parentDimensions?: FieldSelector;
 
   /**
    * Dynamic selector for measures from parent metrics view. Will be processed during validation, so it will always be empty in `state.valid_spec`. Can only be used if parent is set.
    *
-   * @generated from field: rill.runtime.v1.FieldSelector measures_selector = 31;
+   * @generated from field: rill.runtime.v1.FieldSelector parent_measures = 31;
    */
-  measuresSelector?: FieldSelector;
+  parentMeasures?: FieldSelector;
 
   /**
    * Security for the metrics view
@@ -1470,8 +1470,8 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
     { no: 20, name: "watermark_expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "dimensions", kind: "message", T: MetricsViewSpec_Dimension, repeated: true },
     { no: 7, name: "measures", kind: "message", T: MetricsViewSpec_Measure, repeated: true },
-    { no: 30, name: "dimensions_selector", kind: "message", T: FieldSelector },
-    { no: 31, name: "measures_selector", kind: "message", T: FieldSelector },
+    { no: 30, name: "parent_dimensions", kind: "message", T: FieldSelector },
+    { no: 31, name: "parent_measures", kind: "message", T: FieldSelector },
     { no: 23, name: "security_rules", kind: "message", T: SecurityRule, repeated: true },
     { no: 12, name: "first_day_of_week", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 13, name: "first_month_of_year", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },

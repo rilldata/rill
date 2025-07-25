@@ -1414,7 +1414,7 @@ export interface V1MetricsViewSort {
 }
 
 export interface V1MetricsViewSpec {
-  /** Parent metrics view, if this is a child metrics view. */
+  /** name of parent metrics view, if this is a derived metrics view. If this is set then certain fields like table, connector, database*, model, dimensions, and measures will only be set in `state.valid_spec`. */
   parent?: string;
   connector?: string;
   database?: string;
@@ -1432,8 +1432,8 @@ export interface V1MetricsViewSpec {
   watermarkExpression?: string;
   dimensions?: MetricsViewSpecDimension[];
   measures?: MetricsViewSpecMeasure[];
-  dimensionsSelector?: V1FieldSelector;
-  measuresSelector?: V1FieldSelector;
+  parentDimensions?: V1FieldSelector;
+  parentMeasures?: V1FieldSelector;
   securityRules?: V1SecurityRule[];
   /** ISO 8601 weekday number to use as the base for time aggregations by week. Defaults to 1 (Monday). */
   firstDayOfWeek?: number;

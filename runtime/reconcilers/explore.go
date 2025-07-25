@@ -132,22 +132,6 @@ func (r *ExploreReconciler) validateAndRewrite(ctx context.Context, self *runtim
 		return nil, nil, fmt.Errorf("parent metrics view %q is invalid", spec.MetricsView)
 	}
 
-	if mv.Parent != "" && spec.DefinedInMetricsView {
-		// during parsing, derived metrics view will not have the dimensions and measures resolved, so we need to get them from the valid metrics view spec here.
-		if len(spec.Dimensions) == 0 && spec.DimensionsSelector == nil {
-			for _, dim := range mv.Dimensions {
-				spec.Dimensions = append(spec.Dimensions, dim.Name)
-			}
-			spec.DimensionsSelector = nil
-		}
-		if len(spec.Measures) == 0 && spec.MeasuresSelector == nil {
-			for _, m := range mv.Measures {
-				spec.Measures = append(spec.Measures, m.Name)
-			}
-			spec.MeasuresSelector = nil
-		}
-	}
-
 	if len(spec.SecurityRules) == 0 && len(mv.SecurityRules) > 0 {
 		for _, rule := range mv.SecurityRules {
 			if rule.GetAccess() != nil || rule.GetFieldAccess() != nil {

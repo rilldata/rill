@@ -5443,7 +5443,7 @@ definitions:
     properties:
       parent:
         type: string
-        description: Parent metrics view, if this is a child metrics view.
+        description: name of parent metrics view, if this is a derived metrics view. If this is set then certain fields like table, connector, database*, model, dimensions, and measures will only be set in `state.valid_spec`.
       connector:
         type: string
         title: Connector containing the table
@@ -5491,10 +5491,10 @@ definitions:
           type: object
           $ref: '#/definitions/MetricsViewSpecMeasure'
         title: Measures in the metrics view
-      dimensionsSelector:
+      parentDimensions:
         $ref: '#/definitions/v1FieldSelector'
         description: Dynamic selector for dimensions from parent metrics view. Will be processed during validation, so it will always be empty in `state.valid_spec`. Can only be used if parent is set.
-      measuresSelector:
+      parentMeasures:
         $ref: '#/definitions/v1FieldSelector'
         description: Dynamic selector for measures from parent metrics view. Will be processed during validation, so it will always be empty in `state.valid_spec`. Can only be used if parent is set.
       securityRules:
