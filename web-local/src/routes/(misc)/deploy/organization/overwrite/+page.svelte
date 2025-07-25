@@ -2,8 +2,8 @@
   import { page } from "$app/stores";
   import { Button } from "@rilldata/web-common/components/button";
   import { getManageProjectAccess } from "@rilldata/web-common/features/project/selectors.ts";
-  import type { Project } from "@rilldata/web-common/proto/gen/rill/admin/v1/api_pb";
-  import { createLocalServiceListProjectsForOrgRequest } from "@rilldata/web-common/runtime-client/local-service";
+  import type { Project } from "@rilldata/web-common/proto/gen/rill/admin/v1/api_pb.ts";
+  import { createLocalServiceListProjectsForOrgRequest } from "@rilldata/web-common/runtime-client/local-service.ts";
   import ProjectSelector from "@rilldata/web-common/features/project/deploy/ProjectSelector.svelte";
   import RequestProjectAccessDialog from "@rilldata/web-common/features/project/deploy/RequestProjectAccessDialog.svelte";
   import OverwriteProjectConfirmationDialog from "@rilldata/web-common/features/project/deploy/OverwriteProjectConfirmationDialog.svelte";
@@ -21,7 +21,7 @@
     selectedProject?.orgName ?? "",
     selectedProject?.name ?? "",
   );
-  $: deployUrl = `/deploy/redeploy?org=${selectedProject?.orgName}&project=${selectedProject?.name}&new_managed_repo=true`;
+  $: deployUrl = `/deploy/update?org=${selectedProject?.orgName}&project=${selectedProject?.name}&new_managed_repo=true`;
 
   let showOverwriteProjectConfirmation = false;
   let showRequestProjectAccess = false;

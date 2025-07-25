@@ -1,30 +1,29 @@
 <script lang="ts">
-  import { page } from "$app/stores";
-  import { get } from "svelte/store";
   import type { ConnectError } from "@connectrpc/connect";
-  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
+  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types.ts";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
   import {
-    getOrgIsOnTrial,
+    getIsOrgOnTrial,
     getPlanUpgradeUrl,
-  } from "@rilldata/web-common/features/organization/utils";
-  import { addPosthogSessionIdToUrl } from "@rilldata/web-common/lib/analytics/posthog";
+  } from "@rilldata/web-common/features/organization/utils.ts";
+  import { addPosthogSessionIdToUrl } from "@rilldata/web-common/lib/analytics/posthog.ts";
   import { waitUntil } from "@rilldata/web-common/lib/waitUtils.ts";
-  import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
-  import { BehaviourEventAction } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
-  import { GetCurrentProjectResponse } from "@rilldata/web-common/proto/gen/rill/local/v1/api_pb";
+  import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics.ts";
+  import { BehaviourEventAction } from "@rilldata/web-common/metrics/service/BehaviourEventTypes.ts";
+  import { GetCurrentProjectResponse } from "@rilldata/web-common/proto/gen/rill/local/v1/api_pb.ts";
   import {
     createLocalServiceDeploy,
     createLocalServiceGetCurrentProject,
-  } from "@rilldata/web-common/runtime-client/local-service";
+  } from "@rilldata/web-common/runtime-client/local-service.ts";
   import DeployError from "@rilldata/web-common/features/project/deploy/DeployError.svelte";
   import CTAHeader from "@rilldata/web-common/components/calls-to-action/CTAHeader.svelte";
   import CTANeedHelp from "@rilldata/web-common/components/calls-to-action/CTANeedHelp.svelte";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
+  import type { PageData } from "./$types";
 
-  $: orgParam = $page.url.searchParams.get("org");
+  export let data: PageData;
 
-  $: if (orgParam) void freshDeploy(orgParam);
+  const orgParam = data.org;
 
   const project = createLocalServiceGetCurrentProject();
   const deployMutation = createLocalServiceDeploy();
@@ -33,13 +32,14 @@
 
   $: error = $deployMutation.error as ConnectError;
 
-  $: planUpgradeUrl = getPlanUpgradeUrl(orgParam ?? "");
-  $: orgIsOnTrial = getOrgIsOnTrial(orgParam ?? "");
+  $: planUpgradeUrl = getPlanUpgradeUrl(orgParam);
+  $: isOrgOnTrial = getIsOrgOnTrial(orgParam);
 
-  async function freshDeploy(orgName: string) {
-    await waitUntil(() => !get(project).isLoading);
+  void newProject(orgParam);
 
-    const projectResp = get(project).data as GetCurrentProjectResponse;
+  async function newProject(orgName: string) {
+    await waitUntil(() => !!$project.data);
+    const projectResp = $project.data as GetCurrentProjectResponse;
 
     const resp = await $deployMutation.mutateAsync({
       org: orgName,
@@ -61,7 +61,7 @@
   }
 
   function onRetry() {
-    void freshDeploy(orgParam!);
+    void newProject(orgParam);
   }
 
   function onBack() {
@@ -81,7 +81,7 @@
   <DeployError
     {error}
     planUpgradeUrl={$planUpgradeUrl}
-    orgIsOnTrial={$orgIsOnTrial}
+    isOrgOnTrial={$isOrgOnTrial}
     {onRetry}
     {onBack}
   />

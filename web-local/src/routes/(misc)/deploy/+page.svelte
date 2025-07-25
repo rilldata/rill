@@ -4,6 +4,7 @@
   import CTAMessage from "@rilldata/web-common/components/calls-to-action/CTAMessage.svelte";
   import CancelCircleInverse from "@rilldata/web-common/components/icons/CancelCircleInverse.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
+  import { waitUntil } from "@rilldata/web-common/lib/waitUtils.ts";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
   import { BehaviourEventAction } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import {
@@ -14,6 +15,7 @@
   import CTAHeader from "@rilldata/web-common/components/calls-to-action/CTAHeader.svelte";
   import CTANeedHelp from "@rilldata/web-common/components/calls-to-action/CTANeedHelp.svelte";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
+  import { onMount } from "svelte";
   import { get } from "svelte/store";
 
   // It would be great if this could be moved to loader function.
@@ -28,10 +30,6 @@
   let error: Error | null = null;
   $: error = $user.error ?? $metadata.error ?? $matchingProjects.error;
 
-  $: if (!loading && !error) {
-    void handleDeploy();
-  }
-
   function handleDeploy() {
     // Should not happen if the servers are up. If not, there should be a query error.
     if (!$user.data || !$metadata.data?.loginUrl) {
@@ -39,8 +37,9 @@
       return;
     }
 
-    // User is not logged in, redirect to login url provided from metadata query.
-    if (!$user.data?.user) {
+    const isUserLoggedIn = !!$user.data?.user;
+    if (!isUserLoggedIn) {
+      // Redirect to login url provided from metadata query.
       void behaviourEvent?.fireDeployEvent(BehaviourEventAction.LoginStart);
       const u = new URL($metadata.data?.loginUrl);
       // Set the redirect to this page so that deploy resumes after a login
@@ -53,27 +52,39 @@
 
     void behaviourEvent?.fireDeployEvent(BehaviourEventAction.LoginSuccess);
 
-    // No matching cloud project(s) exist.
-    if (!$matchingProjects.data?.projects?.length) {
-      if ($user.data.rillUserOrgs?.length) {
+    // Cloud project doest exist.
+    const projectExists = !!$matchingProjects.data?.projects?.length;
+    if (!projectExists) {
+      const isPartOfAtLeastOneOrg = !!$user.data.rillUserOrgs?.length;
+      if (isPartOfAtLeastOneOrg) {
         // If the user has at least one org we show the selector.
         // Note: The selector has the option to create a new org, so we show it even when there is only one org.
-        return goto(`/deploy/select-org`);
+        void goto(`/deploy/organization`);
       } else {
-        return goto(`/deploy/create-org`);
+        void goto(`/deploy/organization/new`);
       }
     }
 
-    if ($matchingProjects.data.projects.length === 1) {
-      const singleProject = $matchingProjects.data.projects[0];
+    if ($matchingProjects.data!.projects.length === 1) {
+      const singleProject = $matchingProjects.data!.projects[0];
       // Project already exists. Run a redeploy
       return goto(
-        `/deploy/redeploy?org=${singleProject.orgName}&project=${singleProject.name}`,
+        `/deploy/update?org=${singleProject.orgName}&project=${singleProject.name}`,
       );
     } else {
-      return goto(`/deploy/matching-projects`);
+      return goto(`/deploy/select-project`);
     }
   }
+
+  async function maybeDeploy() {
+    await waitUntil(() => !loading);
+    if (error) return;
+    void handleDeploy();
+  }
+
+  onMount(() => {
+    void maybeDeploy();
+  });
 </script>
 
 <!-- This seems to be necessary to trigger tanstack query to update the query object -->

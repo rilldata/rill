@@ -21,7 +21,7 @@
   $: enableUpdate = !!selectedProject;
 
   $: deployUrl = selectedProject
-    ? `/deploy/redeploy?org=${selectedProject.orgName}&project=${selectedProject.name}`
+    ? `/deploy/update?org=${selectedProject.orgName}&project=${selectedProject.name}`
     : "";
 
   let showRequestProjectAccess = false;
@@ -72,7 +72,7 @@
       {/if}
       <Button
         type="secondary"
-        href="/deploy/select-org"
+        href="/deploy/organization"
         target="_blank"
         onClick={() => (open = false)}
       >

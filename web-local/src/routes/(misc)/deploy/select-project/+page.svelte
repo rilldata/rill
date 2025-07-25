@@ -25,11 +25,11 @@
 <Button
   wide
   type="primary"
-  href="/deploy/redeploy?org={selectedProject?.orgName}&project={selectedProject?.name}"
+  href="/deploy/update?org={selectedProject?.orgName}&project={selectedProject?.name}"
   disabled={!selectedProject}
 >
   Update selected project
 </Button>
-<Button wide type="ghost" href="/deploy/select-org">
+<Button wide type="ghost" href="/deploy/organization">
   Or deploy to other project
 </Button>

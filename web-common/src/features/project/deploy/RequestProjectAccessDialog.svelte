@@ -22,17 +22,6 @@
       <Alert.Description>
         You don’t have permissions to update this project in Rill Cloud. To gain
         access, please request to be added as an Admin.
-        <br /> <br />
-        Would like to deploy a new Rill Cloud project instead? If so, remove the
-        .git subdirectory or
-        <a
-          href="https://docs.github.com/en/get-started/getting-started-with-git/managing-remote-repositories"
-          target="_blank"
-          class="text-primary-600"
-        >
-          change the Git remote URL
-        </a>. Rill Cloud only allows one cloud project to be deployed from a
-        given GitHub repo.
       </Alert.Description>
     </Alert.Header>
     <Alert.Footer class="mt-5">

@@ -49,7 +49,7 @@ export function getPlanUpgradeUrl(orgName: string) {
   );
 }
 
-export function getOrgIsOnTrial(orgName: string) {
+export function getIsOrgOnTrial(orgName: string) {
   return derived(
     createLocalServiceListOrganizationsAndBillingMetadataRequest(),
     (orgsMetadata) => {

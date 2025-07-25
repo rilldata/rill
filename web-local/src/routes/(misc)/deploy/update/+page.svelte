@@ -1,9 +1,8 @@
 <script lang="ts">
-  import { page } from "$app/stores";
-  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
+  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types.ts";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
   import {
-    getOrgIsOnTrial,
+    getIsOrgOnTrial,
     getPlanUpgradeUrl,
   } from "@rilldata/web-common/features/organization/utils";
   import { addPosthogSessionIdToUrl } from "@rilldata/web-common/lib/analytics/posthog";
@@ -17,29 +16,27 @@
   import CTAHeader from "@rilldata/web-common/components/calls-to-action/CTAHeader.svelte";
   import CTANeedHelp from "@rilldata/web-common/components/calls-to-action/CTANeedHelp.svelte";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
+  import type { PageData } from "./$types";
 
-  $: orgName = $page.url.searchParams.get("org") ?? "";
-  $: projectName = $page.url.searchParams.get("project") ?? "";
-  $: newManagedRepo = $page.url.searchParams.get("new_managed_repo") ?? "";
+  export let data: PageData;
+
+  const { orgName, projectName, newManagedRepo } = data;
 
   $: projectQuery = createLocalServiceGetProjectRequest(orgName, projectName);
   $: project = $projectQuery.data?.project;
-
-  $: if (project) void redeploy(project);
 
   const redeployMutation = createLocalServiceRedeploy();
   const githubPush = createLocalServiceGitPush();
 
   $: ({ legacyArchiveDeploy } = featureFlags);
 
-  $: error = $redeployMutation.error as Error | null;
-
   $: planUpgradeUrl = getPlanUpgradeUrl(orgName ?? "");
-  $: orgIsOnTrial = getOrgIsOnTrial(orgName ?? "");
+  $: isOrgOnTrial = getIsOrgOnTrial(orgName ?? "");
 
+  $: error = $redeployMutation.error as Error | null;
   $: loading = $redeployMutation.isPending || $githubPush.isPending;
 
-  async function redeploy(project: Project) {
+  async function updateProject(project: Project) {
     let projectUrl = project.frontendUrl;
     if (!project.gitRemote || !!project.managedGitId) {
       // Legacy archive based project. Use redeploy API.
@@ -55,13 +52,12 @@
     } else {
       await $githubPush.mutateAsync({});
     }
-
     const projectUrlWithSessionId = addPosthogSessionIdToUrl(projectUrl);
     window.open(projectUrlWithSessionId, "_self");
   }
 
   function onRetry() {
-    void redeploy(project!);
+    void updateProject(project!);
   }
 
   function onBack() {
@@ -81,7 +77,7 @@
   <DeployError
     {error}
     planUpgradeUrl={$planUpgradeUrl}
-    orgIsOnTrial={$orgIsOnTrial}
+    isOrgOnTrial={$isOrgOnTrial}
     {onRetry}
     {onBack}
   />
