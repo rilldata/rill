@@ -56,6 +56,9 @@ describe("DimensionFilter", () => {
       ]),
     );
 
+    // Reopen the dropdown (Apply closes it)
+    await act(() => screen.getByLabelText("Open publisher filter").click());
+
     // Change the mode to "Contains" and enter a search term "oo"
     await act(() => screen.getByRole("combobox").click());
     await act(() => screen.getByRole("option", { name: /Contains/ }).click());
