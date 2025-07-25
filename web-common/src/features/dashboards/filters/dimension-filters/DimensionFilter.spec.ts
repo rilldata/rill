@@ -45,7 +45,11 @@ describe("DimensionFilter", () => {
       screen.getByText("Facebook").click();
       screen.getByText("Google").click();
     });
-    // Assert that filters are added immediately.
+
+    // Apply the selections (proxy pattern requires explicit application)
+    await act(() => screen.getByRole("button", { name: "Apply" }).click());
+
+    // Assert that filters are now applied to the dashboard store
     expect(get(stateManagers.dashboardStore).whereFilter).toEqual(
       createAndExpression([
         createInExpression(AD_BIDS_PUBLISHER_DIMENSION, ["Facebook", "Google"]),
