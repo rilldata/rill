@@ -65,6 +65,8 @@ type Instance struct {
 	IgnoreInitialInvalidProjectError bool `db:"-"`
 	// AIInstructions is extra context for LLM/AI features. Used to guide natural language question answering and routing.
 	AIInstructions string `db:"ai_instructions"`
+	// FrontendURL is the URL of the web interface.
+	FrontendURL string `db:"frontend_url"`
 }
 
 // InstanceConfig contains dynamic configuration for an instance.
