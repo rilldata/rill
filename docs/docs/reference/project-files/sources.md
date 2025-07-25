@@ -1,11 +1,21 @@
 ---
 title: Source YAML
 sidebar_label: Source YAML
-sidebar_position: 10
+sidebar_position: 00
 hide_table_of_contents: true
 ---
 
-In your Rill project directory, create a `<source_name>.yaml` file in the `sources` directory containing a `type` and location (`uri` or `path`). Rill will automatically detect and ingest the source next time you run `rill start`.
+:::warning Deprecated Feature
+**Sources have been deprecated** and are now considered "source models." While sources remain backward compatible, we recommend migrating to the new source model format for access to the latest features and improvements.
+
+**Next steps:**
+- Continue using sources if needed (backward compatible)
+- Migrate to source models via the `type:model` parameter for existing projects
+- See our [model YAML reference](advanced-models) for current documentation and best practices
+:::
+
+
+
 
 :::tip Did you know?
 

@@ -3,7 +3,6 @@ title: Ready to embark on your Rill adventure? Let's dive in!
 slug: /
 sidebar_label: Welcome to Rill
 sidebar_position: 00
-hide_table_of_contents: true
 ---
 
 ## Install Rill 

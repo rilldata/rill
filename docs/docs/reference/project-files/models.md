@@ -1,7 +1,7 @@
 ---
 title: Model SQL
 sidebar_label: Model SQL
-sidebar_position: 20
+sidebar_position: 15
 hide_table_of_contents: true
 ---
 
