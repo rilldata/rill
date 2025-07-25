@@ -176,6 +176,21 @@
       ? false // Never disable Apply for Select mode
       : !enableSearchCountQuery || inListTooLong;
 
+  // Split results into checked and unchecked for better UX (like SelectionDropdown)
+  $: checkedItems =
+    curMode === DimensionFilterMode.Select && correctedSearchResults
+      ? correctedSearchResults.filter((item) =>
+          effectiveSelectedValues.includes(item),
+        )
+      : [];
+
+  $: uncheckedItems =
+    curMode === DimensionFilterMode.Select && correctedSearchResults
+      ? correctedSearchResults.filter(
+          (item) => !effectiveSelectedValues.includes(item),
+        )
+      : (correctedSearchResults ?? []);
+
   /**
    * Reset filter settings based on params to the component.
    */
@@ -473,7 +488,42 @@
         </div>
       {:else if correctedSearchResults}
         <DropdownMenu.Group class="px-1" aria-label={`${name} results`}>
-          {#each correctedSearchResults as name (name)}
+          <!-- Show checked items first (only in Select mode and when not searching) -->
+          {#if curMode === DimensionFilterMode.Select && !curSearchText}
+            {#each checkedItems as name (name)}
+              {@const selected = true}
+              {@const label = name ?? "null"}
+
+              <svelte:component
+                this={DropdownMenu.CheckboxItem}
+                class="text-xs cursor-pointer"
+                role="menuitem"
+                checked={true}
+                showXForSelected={curExcludeMode}
+                on:click={() => {
+                  selectedValuesProxy = selectedValuesProxy.filter(
+                    (v) => v !== name,
+                  );
+                }}
+              >
+                <span>
+                  {#if label.length > 240}
+                    {label.slice(0, 240)}...
+                  {:else}
+                    {label}
+                  {/if}
+                </span>
+              </svelte:component>
+            {/each}
+          {/if}
+
+          <!-- Separator between checked and unchecked items -->
+          {#if curMode === DimensionFilterMode.Select && !curSearchText && checkedItems.length > 0 && uncheckedItems.length > 0}
+            <DropdownMenu.Separator />
+          {/if}
+
+          <!-- Show unchecked items (or all items for non-Select modes) -->
+          {#each uncheckedItems as name (name)}
             {@const selected = effectiveSelectedValues.includes(name)}
             {@const label = name ?? "null"}
 
@@ -513,9 +563,12 @@
               </span>
             </svelte:component>
           {:else}
-            <div class="ui-copy-disabled text-center p-2 w-full">
-              no results
-            </div>
+            <!-- Show "no results" only if both checked and unchecked are empty -->
+            {#if curMode !== DimensionFilterMode.Select || checkedItems.length === 0}
+              <div class="ui-copy-disabled text-center p-2 w-full">
+                no results
+              </div>
+            {/if}
           {/each}
         </DropdownMenu.Group>
       {/if}
