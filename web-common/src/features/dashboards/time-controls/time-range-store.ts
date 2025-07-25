@@ -17,6 +17,7 @@ import {
   type DashboardTimeControls,
   TimeComparisonOption,
   type TimeRange,
+  type TimeRangeMeta,
   type TimeRangeOption,
   TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types";
@@ -28,6 +29,7 @@ import {
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
 import type { QueryObserverResult } from "@tanstack/svelte-query";
+import { RillTime } from "../url-state/time-ranges/RillTime";
 
 export type TimeRangeControlsState = {
   latestWindowTimeRanges: Array<TimeRangeOption>;
@@ -261,3 +263,9 @@ export function getValidComparisonOption(
 
   return timeRange.comparisonTimeRanges[0].offset as TimeComparisonOption;
 }
+
+export type UITimeRange = V1ExploreTimeRange & {
+  meta?: TimeRangeMeta;
+  enabled?: boolean;
+  parsed?: RillTime;
+};

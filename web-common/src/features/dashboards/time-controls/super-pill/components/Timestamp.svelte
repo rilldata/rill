@@ -40,7 +40,7 @@
     {#if showDate}
       {formattedString}
     {:else}
-      ({humanReadableTimeOffset} ago)
+      {humanReadableTimeOffset} ago
     {/if}
   </button>
 

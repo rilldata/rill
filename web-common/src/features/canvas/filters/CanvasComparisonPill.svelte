@@ -90,7 +90,6 @@
       selectedComparison={selectedComparisonTimeRange}
       showComparison={showTimeComparison}
       currentInterval={interval}
-      grain={activeTimeGrain}
       zone={activeTimeZone}
       {onSelectComparisonRange}
       {showFullRange}
