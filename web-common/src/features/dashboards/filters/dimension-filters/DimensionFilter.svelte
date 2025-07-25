@@ -177,18 +177,15 @@
       : !enableSearchCountQuery || inListTooLong;
 
   // Split results into checked and unchecked for better UX (like SelectionDropdown)
+  // Use actual selectedValues (not proxy) so items only sort after dropdown closes
   $: checkedItems =
     curMode === DimensionFilterMode.Select && correctedSearchResults
-      ? correctedSearchResults.filter((item) =>
-          effectiveSelectedValues.includes(item),
-        )
+      ? correctedSearchResults.filter((item) => selectedValues.includes(item))
       : [];
 
   $: uncheckedItems =
     curMode === DimensionFilterMode.Select && correctedSearchResults
-      ? correctedSearchResults.filter(
-          (item) => !effectiveSelectedValues.includes(item),
-        )
+      ? correctedSearchResults.filter((item) => !selectedValues.includes(item))
       : (correctedSearchResults ?? []);
 
   /**
@@ -491,7 +488,6 @@
           <!-- Show checked items first (only in Select mode and when not searching) -->
           {#if curMode === DimensionFilterMode.Select && !curSearchText}
             {#each checkedItems as name (name)}
-              {@const selected = true}
               {@const label = name ?? "null"}
 
               <svelte:component
