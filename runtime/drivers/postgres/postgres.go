@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"maps"
+	"strings"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/mitchellh/mapstructure"
@@ -69,13 +70,41 @@ type driver struct{}
 type ConfigProperties struct {
 	DatabaseURL string `mapstructure:"database_url"`
 	DSN         string `mapstructure:"dsn"`
+	Host        string `mapstructure:"host"`
+	Port        string `mapstructure:"port"`
+	DBname      string `mapstructure:"dbname"`
+	User        string `mapstructure:"user"`
+	Password    string `mapstructure:"password"`
+	SSLMode     string `mapstructure:"sslmode"`
 }
 
 func (c *ConfigProperties) ResolveDSN() string {
 	if c.DSN != "" {
 		return c.DSN
 	}
-	return c.DatabaseURL
+	if c.DatabaseURL != "" {
+		return c.DatabaseURL
+	}
+	var parts []string
+	if c.Host != "" {
+		parts = append(parts, "host="+quotedValue(c.Host))
+	}
+	if c.Port != "" {
+		parts = append(parts, "port="+quotedValue(c.Port))
+	}
+	if c.User != "" {
+		parts = append(parts, "user="+quotedValue(c.User))
+	}
+	if c.Password != "" {
+		parts = append(parts, "password="+quotedValue(c.Password))
+	}
+	if c.DBname != "" {
+		parts = append(parts, "dbname="+quotedValue(c.DBname))
+	}
+	if c.SSLMode != "" {
+		parts = append(parts, "sslmode="+quotedValue(c.SSLMode))
+	}
+	return strings.Join(parts, " ")
 }
 
 func (d driver) Open(instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
@@ -221,4 +250,14 @@ func (c *connection) getDB() (*sqlx.DB, error) {
 		return nil, fmt.Errorf("failed to open connection: %w", err)
 	}
 	return db, nil
+}
+
+func quotedValue(val string) string {
+	// Quote if it contains special characters
+	if strings.ContainsAny(val, " \t\r\n'\\=") {
+		val = strings.ReplaceAll(val, `\`, `\\`)
+		val = strings.ReplaceAll(val, `'`, `\'`)
+		return fmt.Sprintf("'%s'", val)
+	}
+	return val
 }
