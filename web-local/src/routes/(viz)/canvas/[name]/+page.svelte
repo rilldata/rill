@@ -1,7 +1,6 @@
 <script lang="ts">
   import { onNavigate } from "$app/navigation";
   import CanvasDashboardEmbed from "@rilldata/web-common/features/canvas/CanvasDashboardEmbed.svelte";
-  import CanvasThemeProvider from "@rilldata/web-common/features/canvas/CanvasThemeProvider.svelte";
   import type { PageData } from "./$types";
   import {
     DashboardBannerID,
@@ -11,7 +10,6 @@
 
   export let data: PageData;
 
-  $: canvasName = data.dashboardName;
   $: hasBanner = !!data.dashboard.canvas?.state?.validSpec?.banner;
 
   $: if (hasBanner) {
@@ -33,6 +31,4 @@
   });
 </script>
 
-<CanvasThemeProvider {canvasName}>
-  <CanvasDashboardEmbed resource={data.dashboard} />
-</CanvasThemeProvider>
+<CanvasDashboardEmbed resource={data.dashboard} />

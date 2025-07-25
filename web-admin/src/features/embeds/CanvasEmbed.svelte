@@ -1,6 +1,5 @@
 <script lang="ts">
   import CanvasDashboardEmbed from "@rilldata/web-common/features/canvas/CanvasDashboardEmbed.svelte";
-  import CanvasThemeProvider from "@rilldata/web-common/features/canvas/CanvasThemeProvider.svelte";
   import {
     ResourceKind,
     useResource,
@@ -36,8 +35,6 @@
   {#if isCanvasErrored}
     <br /> Canvas Error <br />
   {:else if data}
-    <CanvasThemeProvider {canvasName}>
-      <CanvasDashboardEmbed {resource} />
-    </CanvasThemeProvider>
+    <CanvasDashboardEmbed {resource} />
   {/if}
 {/if}
