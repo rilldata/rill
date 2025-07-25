@@ -8,6 +8,7 @@
   import { addPosthogSessionIdToUrl } from "@rilldata/web-common/lib/analytics/posthog";
   import { waitUntil } from "@rilldata/web-common/lib/waitUtils.ts";
   import {
+    createLocalServiceGetCurrentProject,
     createLocalServiceGetProjectRequest,
     createLocalServiceGitPush,
     createLocalServiceRedeploy,
@@ -24,7 +25,10 @@
   const { orgName, projectName, newManagedRepo } = data;
 
   $: projectQuery = createLocalServiceGetProjectRequest(orgName, projectName);
+  const currentProjectQuery = createLocalServiceGetCurrentProject();
+
   $: project = $projectQuery.data?.project;
+  $: currentProject = $currentProjectQuery.data?.project;
 
   const redeployMutation = createLocalServiceRedeploy();
   const githubPush = createLocalServiceGitPush();
@@ -34,18 +38,31 @@
   $: planUpgradeUrl = getPlanUpgradeUrl(orgName ?? "");
   $: isOrgOnTrial = getIsOrgOnTrial(orgName ?? "");
 
-  $: error = ($redeployMutation.error || $projectQuery.error) as Error | null;
+  $: error =
+    ($redeployMutation.error as Error | null) ||
+    $projectQuery.error ||
+    $currentProjectQuery.error;
   $: loading =
     $redeployMutation.isPending ||
     $githubPush.isPending ||
-    $projectQuery.isPending;
+    $projectQuery.isPending ||
+    $currentProjectQuery.isPending;
 
   async function updateProject() {
     if (!project) return;
     let projectUrl = project.frontendUrl;
-    const useRedeploy = !!project.archiveAssetId || !!newManagedRepo;
+
+    // GitPush pushes the changes to the currently connected git remote.
+    // So in certain cases if we need to explicitly push to another project's git remote we need to use Redeploy.
+    const useRedeploy =
+      // Case 1: When project is using legacy archive. New managed repo should be created. This happens only in Redeploy.
+      !!project.archiveAssetId ||
+      // Case 2: When we are overwriting another project we need to create a new managed repo.
+      !!newManagedRepo ||
+      // Case 3: When we are pushing to another project of with the same name.
+      project.id !== currentProject?.id;
+
     if (useRedeploy) {
-      // Use redeploy when the project has legacy archive deployment or we are forcing a new managed repo.
       const resp = await $redeployMutation.mutateAsync({
         projectId: project.id,
         // If `legacyArchiveDeploy` is enabled, then use the archive route. Else use upload route.
@@ -58,6 +75,7 @@
     } else {
       await $githubPush.mutateAsync({});
     }
+
     const projectUrlWithSessionId = addPosthogSessionIdToUrl(projectUrl);
     window.open(projectUrlWithSessionId, "_self");
   }

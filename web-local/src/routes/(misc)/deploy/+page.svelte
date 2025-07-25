@@ -54,14 +54,15 @@
 
     // Cloud project doest exist.
     const projectExists = !!$matchingProjects.data?.projects?.length;
+    console.log($matchingProjects.data, projectExists);
     if (!projectExists) {
       const isPartOfAtLeastOneOrg = !!$user.data.rillUserOrgs?.length;
       if (isPartOfAtLeastOneOrg) {
         // If the user has at least one org we show the selector.
         // Note: The selector has the option to create a new org, so we show it even when there is only one org.
-        void goto(`/deploy/organization`);
+        return goto(`/deploy/organization`);
       } else {
-        void goto(`/deploy/organization/new`);
+        return goto(`/deploy/organization/new`);
       }
     }
 

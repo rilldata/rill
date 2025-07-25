@@ -536,7 +536,7 @@ func (s *Server) RedeployProject(ctx context.Context, r *connect.Request[localv1
 				return nil, err
 			}
 		} else if projResp.Project.ArchiveAssetId != "" || r.Msg.NewManagedRepo {
-			// project was previously deployed using zip and ship or overwriting another project already connected to github
+			// project was previously deployed using zip and ship, or we are overwriting another project already connected to github
 			ghRepo, err := s.app.ch.GitHelper(projResp.Project.OrgName, projResp.Project.Name, s.app.ProjectPath).PushToNewManagedRepo(ctx)
 			if err != nil {
 				return nil, err
