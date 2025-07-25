@@ -107,16 +107,6 @@ func (c *ConfigProperties) ResolveDSN() string {
 	return strings.Join(parts, " ")
 }
 
-func quotedValue(val string) string {
-	// Quote if it contains special characters
-	if strings.ContainsAny(val, " \t\r\n'\\=") {
-		val = strings.ReplaceAll(val, `\`, `\\`)
-		val = strings.ReplaceAll(val, `'`, `\'`)
-		return fmt.Sprintf("'%s'", val)
-	}
-	return val
-}
-
 func (d driver) Open(instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {
 		return nil, errors.New("postgres driver can't be shared")
@@ -260,4 +250,14 @@ func (c *connection) getDB() (*sqlx.DB, error) {
 		return nil, fmt.Errorf("failed to open connection: %w", err)
 	}
 	return db, nil
+}
+
+func quotedValue(val string) string {
+	// Quote if it contains special characters
+	if strings.ContainsAny(val, " \t\r\n'\\=") {
+		val = strings.ReplaceAll(val, `\`, `\\`)
+		val = strings.ReplaceAll(val, `'`, `\'`)
+		return fmt.Sprintf("'%s'", val)
+	}
+	return val
 }
