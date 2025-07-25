@@ -2,12 +2,15 @@ package server
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/observability"
+	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"github.com/rilldata/rill/runtime/pkg/rilltime"
 	"github.com/rilldata/rill/runtime/pkg/timeutil"
 	"github.com/rilldata/rill/runtime/queries"
@@ -15,6 +18,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -481,6 +485,59 @@ func (s *Server) MetricsViewTimeRanges(ctx context.Context, req *runtimev1.Metri
 
 	return &runtimev1.MetricsViewTimeRangesResponse{
 		TimeRanges: timeRanges,
+	}, nil
+}
+
+func (s *Server) MetricsViewAnnotations(ctx context.Context, req *runtimev1.MetricsViewAnnotationsRequest) (*runtimev1.MetricsViewAnnotationsResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.metric_view", req.MetricsViewName),
+		attribute.String("args.annotation", req.AnnotationName),
+	)
+
+	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadMetrics) {
+		return nil, ErrForbidden
+	}
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+
+	res, err := s.runtime.Resolve(ctx, &runtime.ResolveOptions{
+		InstanceID: req.InstanceId,
+		Resolver:   "annotations",
+		ResolverProperties: map[string]any{
+			"metrics_view": req.MetricsViewName,
+			"annotation":   req.AnnotationName,
+		},
+		Args: map[string]any{
+			"priority": req.Priority,
+			"time_range": req.TimeRange,
+			"time_grain": req.TimeGrain,
+		},
+		Claims: auth.GetClaims(ctx).SecurityClaims(),
+	})
+	if err != nil {
+		return nil, err
+	}
+	defer res.Close()
+
+	data := make([]*structpb.Struct, 0)
+	for {
+		row, err := res.Next()
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				break
+			}
+			return nil, err
+		}
+		rowStruct, err := pbutil.ToStruct(row, res.Schema())
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+		data = append(data, rowStruct)
+	}
+
+	return &runtimev1.MetricsViewAnnotationsResponse{
+		Schema: res.Schema(),
+		Data: data,
 	}, nil
 }
 

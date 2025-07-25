@@ -8,6 +8,30 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 )
 
+// ResolveFields validates and resolves a list of selected fields or a field selector against all available fields.
+func ResolveFields(selected []string, selector *runtimev1.FieldSelector, all []string) ([]string, error) {
+	// If no selector is provided, validate and return the selected fields.
+	if selector == nil {
+		allMap := make(map[string]struct{}, len(all))
+		for _, f := range all {
+			allMap[f] = struct{}{}
+		}
+		for _, f := range selected {
+			if _, ok := allMap[f]; !ok {
+				return nil, fmt.Errorf("dimension or measure name %q not found in the parent metrics view", f)
+			}
+		}
+		return selected, nil
+	}
+
+	// Resolve the selector (it includes validation of the resulting fields against `all` if needed).
+	res, err := Resolve(selector, all)
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve dimension or measure name selector: %w", err)
+	}
+	return res, nil
+}
+
 // Resolve resolves a field selector against a list of all available fields.
 func Resolve(fs *runtimev1.FieldSelector, all []string) ([]string, error) {
 	if fs == nil {

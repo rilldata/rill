@@ -1332,6 +1332,15 @@ export interface V1MetricsViewAggregationSort {
   desc?: boolean;
 }
 
+export type V1MetricsViewAnnotationsResponseDataItem = {
+  [key: string]: unknown;
+};
+
+export interface V1MetricsViewAnnotationsResponse {
+  schema?: V1StructType;
+  data?: V1MetricsViewAnnotationsResponseDataItem[];
+}
+
 export interface V1MetricsViewColumn {
   name?: string;
   type?: string;
@@ -1483,6 +1492,7 @@ export interface V1MetricsViewSpec {
   watermarkExpression?: string;
   dimensions?: MetricsViewSpecDimension[];
   measures?: MetricsViewSpecMeasure[];
+  annotations?: V1MetricsViewSpecAnnotation[];
   securityRules?: V1SecurityRule[];
   /** ISO 8601 weekday number to use as the base for time aggregations by week. Defaults to 1 (Monday). */
   firstDayOfWeek?: number;
@@ -1492,6 +1502,17 @@ export interface V1MetricsViewSpec {
   cacheEnabled?: boolean;
   cacheKeySql?: string;
   cacheKeyTtlSeconds?: string;
+}
+
+export interface V1MetricsViewSpecAnnotation {
+  name?: string;
+  model?: string;
+  /** Measures to apply the annotation to. If `measures_selector` is set, this will only be set in `state.valid_spec`. */
+  measures?: string[];
+  measuresSelector?: V1FieldSelector;
+  global?: boolean;
+  hasTimeEnd?: boolean;
+  hasGrain?: boolean;
 }
 
 export interface V1MetricsViewState {
@@ -2664,6 +2685,15 @@ export type QueryServiceMetricsViewAggregationBody = {
   exact?: boolean;
   fillMissing?: boolean;
   rows?: boolean;
+};
+
+export type QueryServiceMetricsViewAnnotationsBody = {
+  priority?: number;
+  timeRange?: V1TimeRange;
+  timeGrain?: V1TimeGrain;
+  where?: V1Expression;
+  limit?: number;
+  offset?: string;
 };
 
 export type QueryServiceMetricsViewComparisonBody = {

@@ -161,6 +161,13 @@ service QueryService {
     };
   }
 
+  rpc MetricsViewAnnotations(MetricsViewAnnotationsRequest) returns (MetricsViewAnnotationsResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/queries/metrics-views/{metrics_view_name}/annotations/{annotation_name}",
+      body: "*"
+    };
+  }
+
   // Canvas APIs
 
   // ResolveCanvas is a convenience API that returns a canvas and all its referenced components and metrics views.
@@ -835,6 +842,29 @@ message MetricsViewTimeRangesRequest {
 
 message MetricsViewTimeRangesResponse {
   repeated TimeRange time_ranges = 1;
+}
+
+message MetricsViewAnnotationsRequest {
+  string instance_id = 1;
+  string metrics_view_name = 2 [(validate.rules).string.min_len = 1];
+  string annotation_name = 3 [(validate.rules).string.min_len = 1];
+  int32 priority = 4;
+  TimeRange time_range = 5;
+  // Optional
+  TimeGrain time_grain = 6;
+  // Optional
+  Expression where = 7;
+  // Optional
+  int32 limit = 8 [(validate.rules).int32.gte = 0];
+  // Optional
+  int64 offset = 9 [(validate.rules).int64.gte = 0];
+}
+
+message MetricsViewAnnotationsResponse {
+  // Not optional, not null
+  StructType schema = 1;
+  // Not optional, not null
+  repeated google.protobuf.Struct data = 2;
 }
 
 // **********

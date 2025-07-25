@@ -3622,6 +3622,146 @@ export class MetricsViewTimeRangesResponse extends Message<MetricsViewTimeRanges
 }
 
 /**
+ * @generated from message rill.runtime.v1.MetricsViewAnnotationsRequest
+ */
+export class MetricsViewAnnotationsRequest extends Message<MetricsViewAnnotationsRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * @generated from field: string metrics_view_name = 2;
+   */
+  metricsViewName = "";
+
+  /**
+   * @generated from field: string annotation_name = 3;
+   */
+  annotationName = "";
+
+  /**
+   * @generated from field: int32 priority = 4;
+   */
+  priority = 0;
+
+  /**
+   * @generated from field: rill.runtime.v1.TimeRange time_range = 5;
+   */
+  timeRange?: TimeRange;
+
+  /**
+   * Optional
+   *
+   * @generated from field: rill.runtime.v1.TimeGrain time_grain = 6;
+   */
+  timeGrain = TimeGrain.UNSPECIFIED;
+
+  /**
+   * Optional
+   *
+   * @generated from field: rill.runtime.v1.Expression where = 7;
+   */
+  where?: Expression;
+
+  /**
+   * Optional
+   *
+   * @generated from field: int32 limit = 8;
+   */
+  limit = 0;
+
+  /**
+   * Optional
+   *
+   * @generated from field: int64 offset = 9;
+   */
+  offset = protoInt64.zero;
+
+  constructor(data?: PartialMessage<MetricsViewAnnotationsRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.MetricsViewAnnotationsRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "metrics_view_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "annotation_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 5, name: "time_range", kind: "message", T: TimeRange },
+    { no: 6, name: "time_grain", kind: "enum", T: proto3.getEnumType(TimeGrain) },
+    { no: 7, name: "where", kind: "message", T: Expression },
+    { no: 8, name: "limit", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 9, name: "offset", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewAnnotationsRequest {
+    return new MetricsViewAnnotationsRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewAnnotationsRequest {
+    return new MetricsViewAnnotationsRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewAnnotationsRequest {
+    return new MetricsViewAnnotationsRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: MetricsViewAnnotationsRequest | PlainMessage<MetricsViewAnnotationsRequest> | undefined, b: MetricsViewAnnotationsRequest | PlainMessage<MetricsViewAnnotationsRequest> | undefined): boolean {
+    return proto3.util.equals(MetricsViewAnnotationsRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.MetricsViewAnnotationsResponse
+ */
+export class MetricsViewAnnotationsResponse extends Message<MetricsViewAnnotationsResponse> {
+  /**
+   * Not optional, not null
+   *
+   * @generated from field: rill.runtime.v1.StructType schema = 1;
+   */
+  schema?: StructType;
+
+  /**
+   * Not optional, not null
+   *
+   * @generated from field: repeated google.protobuf.Struct data = 2;
+   */
+  data: Struct[] = [];
+
+  constructor(data?: PartialMessage<MetricsViewAnnotationsResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.MetricsViewAnnotationsResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "schema", kind: "message", T: StructType },
+    { no: 2, name: "data", kind: "message", T: Struct, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewAnnotationsResponse {
+    return new MetricsViewAnnotationsResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewAnnotationsResponse {
+    return new MetricsViewAnnotationsResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewAnnotationsResponse {
+    return new MetricsViewAnnotationsResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: MetricsViewAnnotationsResponse | PlainMessage<MetricsViewAnnotationsResponse> | undefined, b: MetricsViewAnnotationsResponse | PlainMessage<MetricsViewAnnotationsResponse> | undefined): boolean {
+    return proto3.util.equals(MetricsViewAnnotationsResponse, a, b);
+  }
+}
+
+/**
  * @generated from message rill.runtime.v1.ResolveCanvasRequest
  */
 export class ResolveCanvasRequest extends Message<ResolveCanvasRequest> {
