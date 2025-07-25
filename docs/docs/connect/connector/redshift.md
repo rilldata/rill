@@ -16,7 +16,7 @@ sidebar_position: 55
 
 ## Local credentials
 
-When using Rill Developer on your local machine (i.e., `rill start`), Rill uses the credentials configured in your local environment using the AWS CLI.
+When using Rill Developer on your local machine (i.e., `rill start`), Rill will either use  the credentials configured in your local environment using the AWS CLI or an [explicitly defined connector YAML](/reference/project-files/connectors#redshift) file.
 
 To check if you already have the AWS CLI installed and authenticated, open a terminal window and run:
 ```bash
@@ -56,12 +56,6 @@ When you first deploy a project using `rill deploy`, you will be prompted to pro
 rill env configure
 ```
 
-:::info
-
-Note that you must `cd` into the Git repository from which your project was deployed before running `rill env configure`.
-
-:::
-
 :::tip Did you know?
 
 If you've already configured credentials locally (in your `<RILL_PROJECT_DIRECTORY>/.env` file), you can use `rill env push` to [push these credentials](/connect/credentials#rill-env-push) to your Rill Cloud project. This will allow other users to retrieve and reuse the same credentials automatically by running `rill env pull`.
@@ -69,6 +63,12 @@ If you've already configured credentials locally (in your `<RILL_PROJECT_DIRECTO
 :::
 
 ## Appendix
+
+:::warning Check your service account permissions
+
+Your account or service account will need to have the **appropriate permissions** necessary to perform these requests.
+
+:::
 
 ### Redshift Serverless permissions
 When using **Redshift Serverless**, make sure to associate an [IAM role (that has S3 access)](https://docs.aws.amazon.com/redshift/latest/mgmt/serverless-iam.html) with the Serverless namespace or the Redshift cluster.
@@ -81,12 +81,6 @@ Our Redshift connector will place temporary files in Parquet format in S3 to hel
 2. Redshift Data API: [`DescribeStatement`, `ExecuteStatement`](https://docs.aws.amazon.com/redshift-data/latest/APIReference/API_ExecuteStatement.html) to unload data to S3.
 3. S3: [`ListObjects`](https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjects.html) to identify files unloaded by Redshift.
 4. S3: [`GetObject`](https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetObject.html) to ingest files unloaded by Redshift.
-
-:::
-
-:::warning Check your service account permissions
-
-Your account or service account will need to have the <u>appropriate permissions</u> necessary to perform these requests.
 
 :::
 

@@ -16,7 +16,9 @@ sidebar_position: 10
 
 ## Local credentials
 
-When using Rill Developer on your local machine (i.e., `rill start`), Rill uses the credentials configured in your local environment using the Google Cloud CLI (`gcloud`). Follow these steps to configure it:
+When using Rill Developer on your local machine (i.e., `rill start`), Rill will use either the credentials configured in your local environment using the Google Cloud CLI (`gcloud`) or an [explicitly defined connector YAML](/reference/project-files/connectors#bigquery). 
+
+Follow these steps to configure you local environemnt credentials:
 
 1. Open a terminal window and run `gcloud auth list` to check if you already have the Google Cloud CLI installed and authenticated.
 
@@ -40,12 +42,6 @@ If you subsequently add sources that require new credentials (or if you enter th
 ```
 rill env configure
 ```
-
-:::info
-
-Note that you must `cd` into the Git repository from which your project was deployed before running `rill env configure`.
-
-:::
 
 :::tip Did you know?
 

@@ -1,7 +1,7 @@
 ---
 title: Azure Blob Storage
 description: Connect to data in Azure Blob Storage
-sidebar_label: ABS
+sidebar_label: ABS 
 sidebar_position: 05
 ---
 
@@ -19,7 +19,9 @@ azure://<BUCKET>/<GLOB_PATTERN>
 
 ## Local credentials
 
-When using Rill Developer on your local machine (i.e., `rill start`), Rill uses by default the credentials configured in your local environment using the Azure CLI (`az`). Assuming you have the Azure CLI installed, follow the steps below to configure it:
+When using Rill Developer on your local machine (i.e., `rill start`), Rill will either use the credentials configured in your local environment using the Azure CLI (`az`) or the explicitly defined [credentials in a connector YAML](/reference/project-files/connectors#azure).
+
+Assuming you have the Azure CLI installed, follow the steps below to configure it:
 
 1. Open a terminal window and run the following command to log in to your Azure account:
 
@@ -94,12 +96,6 @@ If you subsequently add sources that require new credentials (or if you enter th
 ```bash
 rill env configure
 ```
-
-:::info
-
-Note that you must `cd` into the Git repository from which your project was deployed before running `rill env configure`.
-
-:::
 
 :::tip Did you know?
 

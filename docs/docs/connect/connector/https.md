@@ -56,4 +56,4 @@ When deploying to Rill Cloud, you must explicitly provide service account creden
 
 ## Reference
 
-For advanced configuration options and properties, see the [Source YAML Reference](/reference/project-files/sources).
+For advanced configuration options and properties, see the [Connector YAML Reference](/reference/project-files/connectors#https).

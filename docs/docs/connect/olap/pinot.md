@@ -16,10 +16,13 @@ Rill supports connecting to an existing Pinot cluster and using it as an OLAP en
 When using Rill for local development, there are a few options to configure Rill to enable Pinot as an OLAP engine:
 1. Connect to an OLAP engine via Add Data. This will automatically create the `pinot.yaml` file in your `connectors` folder and populate the `.env` file with `connector.pinot.password` or `connector.pinot.dsn` depending on which you select in the UI.
 
+For more information on supported parameters, see our [Pinot connector YAML reference docs](/reference/project-files/connectors#pinot).
+
+
 <img src='/img/reference/olap-engines/pinot/pinot-parameters.png' class='rounded-gif' />
 <br />
 
-2. You can set `connector.pinot.dsn` in your project's `.env` file or try pulling existing credentials locally using `rill env pull` if the project has already been deployed to Rill Cloud.
+1. You can set `connector.pinot.dsn` in your project's `.env` file or try pulling existing credentials locally using `rill env pull` if the project has already been deployed to Rill Cloud.
 
 :::tip Getting DSN errors in dashboards after setting `.env`?
 
@@ -54,11 +57,6 @@ You'll also need to update the `olap_connector` property in your project's `rill
 olap_connector: pinot
 ```
 
-:::note
-
-For more information about available properties in `rill.yaml`, see our [project YAML](/reference/project-files/rill-yaml) documentation.
-
-:::
 
 :::info Interested in using multiple OLAP engines in the same project?
 
@@ -73,11 +71,6 @@ When deploying a Pinot-backed project to Rill Cloud, you have the following opti
 2. Use the `rill env configure` command to set `connector.pinot.dsn` after deploying the project.
 3. If `connector.pinot.dsn` has already been set in your project `.env`, you can push and update these variables directly in your cloud deployment by using the `rill env push` command.
 
-:::info
-
-Note that you must `cd` into the Git repository that your project was deployed from before running `rill env configure`.
-
-:::
 
 ## Support for Multi-Valued dimensions
 

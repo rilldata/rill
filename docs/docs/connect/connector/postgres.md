@@ -38,15 +38,6 @@ rill env pull
 
 Or, if its your first deployment, Rill will automatically deploy the .env into your Rill project.
 
-:::
-
-
-```yaml
-type: "model"
-connector: "postgres"
-sql: "select * from my_table"
-```
-
 
 ## Cloud deployment
 

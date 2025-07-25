@@ -24,6 +24,8 @@ When using ClickHouse for local development, you can connect via connection para
 
 1. Connect to an OLAP engine via Add Data. This will automatically create the `clickhouse.yaml` file in your `connectors` folder and populate the `.env` file with `connector.clickhouse.password` or `connector.clickhouse.dsn` depending on which you select in the UI.
 
+For more information on supported parameters, see our [ClickHouse connector YAML reference docs](/reference/project-files/connectors#clickhouse).
+
 ```yaml
 # Connector YAML
 # Reference documentation: https://docs.rilldata.com/reference/project-files/connectors
@@ -106,12 +108,8 @@ When deploying a ClickHouse-backed project to Rill Cloud, you have the following
 If you are developing on a locally running ClickHouse server, this will not be deployed with your project. You will either need to use ClickHouse Cloud or Managed ClickHouse.
 :::
 
-:::info
-Note that you must `cd` into the Git repository that your project was deployed from before running `rill env configure`.
-:::
-
 ## Setting the default OLAP connection
-Creating a connection to an OLAP engine will automatically add the `olap_connector` property in your project's [rill.yaml](/reference/project-files/rill-yaml) and change the default OLAP engine to ClickHouse. Once this is changed, you'll notice that some of the UI features are removed as we currently do not support modeling and direct source ingestion in ClickHouse.
+Creating a connection to an OLAP engine will automatically add the `olap_connector` property in your project's [rill.yaml](/reference/project-files/rill-yaml) and change the default OLAP engine to ClickHouse. Once this is changed, you'll notice that some of the UI features are removed as we currently do not support modeling and direct source ingestion in ClickHouse. However, this is behind a feature flag, [contact us](/contact) for more information!
 
 ```yaml
 olap_connector: clickhouse

@@ -37,15 +37,6 @@ rill env pull
 ```
 :::
 
-
-```yaml
-type: "model"
-connector: "mysql"
-sql: "select * from my_table"
-
-```
-
-
 ## Cloud deployment
 
 Once a project with a MySQL source has been deployed, Rill requires you to explicitly provide the connection string using the following command:

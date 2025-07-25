@@ -16,7 +16,7 @@ sidebar_position: 00
 
 ## Local credentials
 
-When using Rill Developer on your local machine (i.e., `rill start`), Rill uses the credentials configured in your local environment using the AWS CLI.
+When using Rill Developer on your local machine (i.e., `rill start`), Rill can either use the credentials configured in your local environment using the AWS CLI or use the explicitly set credentials in a [connector](/reference/project-files/connectors#athena) file.
 
 To check if you already have the AWS CLI installed and authenticated, open a terminal window and run:
 ```bash
@@ -49,18 +49,12 @@ If this project has already been deployed to Rill Cloud and credentials have bee
 
 ## Cloud deployment
 
-When deploying a project to Rill Cloud, Rill requires you to explicitly provide an access key and secret for an AWS service account with access to Athena used in your project.
+When deploying a project to Rill Cloud, Rill requires you to explicitly provide an access key and secret for an AWS service account with access to Athena used in your project. Please refer to our [connector YAML reference docs](/reference/project-files/connectors#athena) for more information.
 
 If you subsequently add sources that require new credentials (or if you simply entered the wrong credentials during the initial deploy), you can update the credentials used by Rill Cloud by running:
 ```
 rill env configure
 ```
-
-:::info
-
-Note that you must `cd` into the Git repository from which your project was deployed before running `rill env configure`.
-
-:::
 
 :::tip Did you know?
 

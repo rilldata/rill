@@ -20,13 +20,8 @@ In many cases, since SQLite is used as an in-process database, credentials are n
 
 ![SQLite UI creation](/img/reference/connectors/sqlite/sqlite_example.png)
 
-Alternatively, if you are creating the source YAML file directly, the definition should look something like:
+Alternatively, you can create the connector directly using the [connector YAML reference documentation](/reference/project-files/connectors#sqlite). 
 
-```yaml
-type: "model"
-connector: "duckdb"
-sql: "SELECT * FROM sqlite_scan('<path_to_sqlite_db>', '<table_name>');"
-```
 
 :::tip
 

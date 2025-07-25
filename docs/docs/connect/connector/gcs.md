@@ -14,7 +14,9 @@ sidebar_position: 15
 <br />
 
 ## Rill Developer (Local credentials)
-When using Rill Developer on your local machine (i.e., `rill start`), Rill uses the credentials configured in your local environment using the Google Cloud CLI (`gcloud`). Follow these steps to configure it:
+When using Rill Developer on your local machine (i.e., `rill start`), Rill will use either the credentials configured in your local environment using the Google Cloud CLI (`gcloud`) or an [explicitly defined connector YAML](/reference/project-files/connectors#gcs). 
+
+ollow these steps to configure your local environmental credentials:
 
 :::note Prerequisites
 To use the Google Cloud CLI, you will need to [install the Google Cloud CLI](https://cloud.google.com/sdk/docs/install-sdk). If you are unsure if this has been done, you can run the following command from the command line to see if it returns your authenticated user.
@@ -37,12 +39,6 @@ gcloud auth activate-service-account --key-file=path_to_json_key_file
 
 You have now configured Google Cloud access from your local environment. Rill will detect and use your credentials the next time you try to ingest a source.
 
-:::info
-As an alternative, to ensure that you are running Rill with a specific service account, you can provide the key in the `rill start` command. This is useful when you have multiple profiles or may receive limited access to a bucket.
-
-`GOOGLE_APPLICATION_CREDENTIALS=<path_to_json_key_file> rill start`
-:::
-
 :::tip Did you know?
 If this project has already been deployed to Rill Cloud and credentials have been set for this source, you can use `rill env pull` to [pull these cloud credentials](/connect/credentials/#rill-env-pull) locally (into your local `.env` file). Please note that this may override any credentials you have set locally for this source.
 :::
@@ -58,9 +54,6 @@ If you subsequently add sources that require new credentials (or if you enter th
 rill env configure
 ```
 
-:::info
-Note that you must `cd` into the Git repository from which your project was deployed before running `rill env configure` or set the `--project` flag in the command: `rill env configure --project 'project_name'`.
-:::
 
 :::tip Did you know?
 If you've already configured credentials locally (in your `<RILL_PROJECT_DIRECTORY>/.env` file), you can use `rill env push` to [push these credentials](/connect/credentials#rill-env-push) to your Rill Cloud project. This will allow other users to retrieve and reuse the same credentials automatically by running `rill env pull`.
@@ -112,3 +105,9 @@ Here is a step-by-step guide on how to create a Google Cloud service account wit
         --iam-account rill-service-account@[PROJECT_ID].iam.gserviceaccount.com
     ```
 6. You have now created a JSON key file named `rill-service-account.json` in your current working directory.
+
+:::info
+As an alternative, to ensure that you are running Rill with a specific service account, you can provide the key in the `rill start` command. This is useful when you have multiple profiles or may receive limited access to a bucket.
+
+`GOOGLE_APPLICATION_CREDENTIALS=<path_to_json_key_file> rill start`
+:::

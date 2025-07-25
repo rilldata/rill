@@ -38,18 +38,6 @@ soql: "SELECT Id, Name, CreatedDate FROM Opportunity"
 sobject: "Opportunity"
 ```
 
-:::warning Beware of committing credentials to Git
-
-Outside of local development, this approach is not recommended because it places the connection string (which may contain sensitive information like passwords) in the source YAML file, which will then be committed to Git.
-
-:::
-
-:::info Source Properties
-
-For more information about available source properties and configurations, please refer to our reference documentation on [Source YAML](/reference/project-files/rill-yaml).
-
-:::
-
 :::tip Did you know?
 
 If this project has already been deployed to Rill Cloud and credentials have been set for this source, you can use `rill env pull` to [pull these cloud credentials](/connect/credentials/#rill-env-pull) locally (into your local `.env` file). Please note that this may override any credentials you have set locally for this source.
@@ -64,11 +52,6 @@ Once a project with a Salesforce source has been deployed, Rill requires you to 
 rill env configure
 ```
 
-:::info
-
-Note that you must `cd` into the Git repository from which your project was deployed before running `rill env configure`.
-
-:::
 
 :::note
 
@@ -79,9 +62,3 @@ Leave the `key` and `client_id` fields blank unless you are using JWT (described
 ### JWT
 
 Authentication using JWT instead of a password is also supported. Set `client_id` to the **Client Id** (also known as the _Consumer Key_) of the Connected App to use, and set `key` to contain the PEM-formatted private key to use for signing.
-
-:::tip Did you know?
-
-If you've already configured credentials locally (in your `<RILL_PROJECT_DIRECTORY>/.env` file), you can use `rill env push` to [push these credentials](/connect/credentials#rill-env-push) to your Rill Cloud project. This will allow other users to retrieve and reuse the same credentials automatically by running `rill env pull`.
-
-:::
