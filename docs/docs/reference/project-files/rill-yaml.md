@@ -50,7 +50,7 @@ olap_connector: clickhouse
 
 :::info Curious about OLAP Engines?
 
-Please see our reference documentation on [OLAP Engines](../olap-engines/olap-engines.md).
+Please see our reference documentation on [OLAP Engines](/connect/olap/).
 
 :::
  
@@ -65,7 +65,7 @@ In your `rill.yaml`, the top level property for the resource type needs to be **
 :::
 
 For example, the following YAML configuration below will set a project-wide default for:
-- **Sources** - Configure a [source refresh](/build/connect/source-refresh.md).
+- **Sources** - Configure a [source refresh](/connect/source-refresh).
 - **Models** - Automatically materialize the models as tables instead of views (the default behavior if unspecified).
 - **Metrics View** - Set the [first day of the week](metrics-views.md) for timeseries aggregations to be Sunday along with setting the smallest_time_grain.
 - **Explore Dashboards** - Set the [default](explore-dashboards.md) values when a user opens a dashboard, and available time zones and/or time ranges.
@@ -153,7 +153,7 @@ Variables can also be set through your project's `<RILL_PROJECT_HOME>/.env` file
 variable=xyz
 ```
 
-Similar to how [connector credentials can be pushed / pulled](/build/credentials/credentials.md#pulling-credentials-and-variables-from-a-deployed-project-on-rill-cloud) from local to cloud or vice versa, project variables set locally in Rill Developer can be pushed to Rill Cloud and/or pulled back to your local instance from your deployed project by using the `rill env push` and `rill env pull` commands respectively.
+Similar to how [connector credentials can be pushed / pulled](/connect/credentials#pulling-credentials-and-variables-from-a-deployed-project-on-rill-cloud) from local to cloud or vice versa, project variables set locally in Rill Developer can be pushed to Rill Cloud and/or pulled back to your local instance from your deployed project by using the `rill env push` and `rill env pull` commands respectively.
 
 :::
 

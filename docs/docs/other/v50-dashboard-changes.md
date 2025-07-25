@@ -2,7 +2,7 @@
 title: "Dashboard split into two components"
 description: For documenting required migrations
 sidebar_label: "Changes to Dashboards"
-sidebar_position: 60
+sidebar_position: 20
 ---
 As we continue to develop more features within Rill, it became clear that we needed to separate the dashboard into two components. 
 1. Metrics view

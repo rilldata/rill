@@ -58,7 +58,7 @@ Enterprise plan includes all the features of a Team Plan but also provides furth
 
 **Storage:**
 
-Storage is the total compressed data in the cluster. It's available in [two performance tiers](/home/FAQ#what-are-the-compute-requirements-for-each-performance-tier), Hot and Cold, which set minimum [compute requirements](/home/FAQ#what-are-the-compute-requirements-for-data-processing).
+Storage is the total compressed data in the cluster. It's available in [two performance tiers](/other/FAQ#what-are-the-compute-requirements-for-each-performance-tier), Hot and Cold, which set minimum [compute requirements](/other/FAQ#what-are-the-compute-requirements-for-data-processing).
 
 Data can be also offloaded to an archival tier where it does not consume any compute
 
@@ -67,7 +67,7 @@ Data can be also offloaded to an archival tier where it does not consume any com
 
 **Compute:**
 
-[Rill Compute Units (RCU)](/home/FAQ#what-is-a-rill-compute-unit-rcu) are a combination of CPU, memory, and disk used for ingesting and querying data.
+[Rill Compute Units (RCU)](/other/FAQ#what-is-a-rill-compute-unit-rcu) are a combination of CPU, memory, and disk used for ingesting and querying data.
 
 RCU scale up elastically for data ingestion & processing with enterprise discounts on RCUs provisioned for querying.
 
