@@ -585,13 +585,14 @@ func newMetricsView(name, model, timeDim string, measures, dimensions []any) (*r
 		},
 		State: &runtimev1.MetricsViewState{
 			ValidSpec: &runtimev1.MetricsViewSpec{
-				Connector:     "duckdb",
-				Table:         model,
-				Model:         model,
-				DisplayName:   parser.ToDisplayName(name),
-				TimeDimension: timeDim,
-				Measures:      make([]*runtimev1.MetricsViewSpec_Measure, len(measures)/2),
-				Dimensions:    make([]*runtimev1.MetricsViewSpec_Dimension, len(dimensions)/2),
+				Connector:         "duckdb",
+				Table:             model,
+				Model:             model,
+				DisplayName:       parser.ToDisplayName(name),
+				TimeDimension:     timeDim,
+				SmallestTimeGrain: runtimev1.TimeGrain_TIME_GRAIN_SECOND,
+				Measures:          make([]*runtimev1.MetricsViewSpec_Measure, len(measures)/2),
+				Dimensions:        make([]*runtimev1.MetricsViewSpec_Dimension, len(dimensions)/2),
 			},
 		},
 	}
