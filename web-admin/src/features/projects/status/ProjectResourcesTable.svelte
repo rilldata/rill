@@ -26,19 +26,16 @@
 
   export let data: V1Resource[];
 
-  // Dialog state management to prevent dialogs from closing on table re-renders
   let isConfirmDialogOpen = false;
   let dialogResourceName = "";
   let dialogResourceKind = "";
   let dialogRefreshType: "full" | "incremental" = "full";
 
-  // Dropdown state management to prevent dropdowns from closing on table re-renders
   let openDropdownResourceKey = "";
 
   const createTrigger = createRuntimeServiceCreateTrigger();
   const queryClient = useQueryClient();
 
-  // Make these functions stable by using const declarations
   const openRefreshDialog = (
     resourceName: string,
     resourceKind: string,
