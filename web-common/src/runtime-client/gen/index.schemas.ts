@@ -1332,6 +1332,15 @@ export interface V1MetricsViewAggregationSort {
   desc?: boolean;
 }
 
+export type V1MetricsViewAnnotationsResponseDataItem = {
+  [key: string]: unknown;
+};
+
+export interface V1MetricsViewAnnotationsResponse {
+  schema?: V1StructType;
+  data?: V1MetricsViewAnnotationsResponseDataItem[];
+}
+
 export interface V1MetricsViewColumn {
   name?: string;
   type?: string;
@@ -1501,6 +1510,7 @@ export interface V1MetricsViewSpecAnnotation {
   /** Measures to apply the annotation to. If `measures_selector` is set, this will only be set in `state.valid_spec`. */
   measures?: string[];
   measuresSelector?: V1FieldSelector;
+  global?: boolean;
   hasTimeEnd?: boolean;
   hasGrain?: boolean;
 }
@@ -2675,6 +2685,15 @@ export type QueryServiceMetricsViewAggregationBody = {
   exact?: boolean;
   fillMissing?: boolean;
   rows?: boolean;
+};
+
+export type QueryServiceMetricsViewAnnotationsBody = {
+  priority?: number;
+  timeRange?: V1TimeRange;
+  timeGrain?: V1TimeGrain;
+  where?: V1Expression;
+  limit?: number;
+  offset?: string;
 };
 
 export type QueryServiceMetricsViewComparisonBody = {

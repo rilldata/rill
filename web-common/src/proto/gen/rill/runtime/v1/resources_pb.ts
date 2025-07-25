@@ -1885,12 +1885,17 @@ export class MetricsViewSpec_Annotation extends Message<MetricsViewSpec_Annotati
   measuresSelector?: FieldSelector;
 
   /**
-   * @generated from field: bool has_time_end = 5;
+   * @generated from field: bool global = 5;
+   */
+  global = false;
+
+  /**
+   * @generated from field: bool has_time_end = 6;
    */
   hasTimeEnd = false;
 
   /**
-   * @generated from field: bool has_grain = 6;
+   * @generated from field: bool has_grain = 7;
    */
   hasGrain = false;
 
@@ -1906,8 +1911,9 @@ export class MetricsViewSpec_Annotation extends Message<MetricsViewSpec_Annotati
     { no: 2, name: "model", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 4, name: "measures_selector", kind: "message", T: FieldSelector },
-    { no: 5, name: "has_time_end", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 6, name: "has_grain", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 5, name: "global", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 6, name: "has_time_end", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 7, name: "has_grain", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec_Annotation {

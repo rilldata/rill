@@ -1579,6 +1579,58 @@ paths:
                 title: Optional. Defaults to false. Used to fetch rows from underlying model
       tags:
         - QueryService
+  /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/annotations/{annotationName}:
+    post:
+      operationId: QueryService_MetricsViewAnnotations
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1MetricsViewAnnotationsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: metricsViewName
+          in: path
+          required: true
+          type: string
+        - name: annotationName
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              priority:
+                type: integer
+                format: int32
+              timeRange:
+                $ref: '#/definitions/v1TimeRange'
+              timeGrain:
+                $ref: '#/definitions/v1TimeGrain'
+                title: Optional
+              where:
+                $ref: '#/definitions/v1Expression'
+                title: Optional
+              limit:
+                type: integer
+                format: int32
+                title: Optional
+              offset:
+                type: string
+                format: int64
+                title: Optional
+      tags:
+        - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/compare-toplist:
     post:
       summary: |-
@@ -5361,6 +5413,17 @@ definitions:
       desc:
         type: boolean
         title: Optional
+  v1MetricsViewAnnotationsResponse:
+    type: object
+    properties:
+      schema:
+        $ref: '#/definitions/v1StructType'
+        title: Not optional, not null
+      data:
+        type: array
+        items:
+          type: object
+        title: Not optional, not null
   v1MetricsViewColumn:
     type: object
     properties:
@@ -5712,6 +5775,8 @@ definitions:
       measuresSelector:
         $ref: '#/definitions/v1FieldSelector'
         description: Dynamic selector for `measures`. Will be processed during validation, so it will always be empty in `state.valid_spec`.
+      global:
+        type: boolean
       hasTimeEnd:
         type: boolean
       hasGrain:

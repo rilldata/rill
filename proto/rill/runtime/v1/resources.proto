@@ -251,8 +251,9 @@ message MetricsViewSpec {
     repeated string measures = 3;
     // Dynamic selector for `measures`. Will be processed during validation, so it will always be empty in `state.valid_spec`.
     FieldSelector measures_selector = 4;
-    bool has_time_end = 5;
-    bool has_grain = 6;
+    bool global = 5;
+    bool has_time_end = 6;
+    bool has_grain = 7;
   }
   // Connector containing the table
   string connector = 1;

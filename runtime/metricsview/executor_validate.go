@@ -332,11 +332,11 @@ func (e *Executor) validateAnnotations(ctx context.Context, mv *runtimev1.Metric
 			case "time_end":
 				annotation.HasTimeEnd = true
 
+			case "grain":
+				annotation.HasGrain = true
+
 			case "description":
 				hasDesc = true
-
-			case "":
-				annotation.HasGrain = true
 			}
 		}
 
