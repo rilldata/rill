@@ -14,6 +14,7 @@
   let isNewOrgDialogOpen = false;
 
   $: deployUrl = `/deploy/new?org=${selectedOrg}`;
+  $: overwriteProjectUrl = `/deploy/organization/overwrite?org=${selectedOrg}`;
 
   $: orgOptions =
     $user.data?.rillUserOrgs?.map((o) => ({ value: o, label: o })) ?? [];
@@ -61,7 +62,16 @@
 </Select>
 
 <Button wide type="primary" href={deployUrl} disabled={!selectedOrg}>
-  Continue
+  Deploy as a new project
+</Button>
+<Button
+  wide
+  type="ghost"
+  href={overwriteProjectUrl}
+  disabled={!selectedOrg}
+  class="-mt-2"
+>
+  Or overwrite an existing project
 </Button>
 
 <Dialog.Root bind:open={isNewOrgDialogOpen}>

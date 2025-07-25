@@ -14,19 +14,11 @@
   $: organization = $page.url.searchParams.get("organization");
   $: project = $page.url.searchParams.get("project");
   $: role = $page.url.searchParams.get("role") ?? ProjectUserRoles.Viewer;
+  $: autoRequest = $page.url.searchParams.get("auto_request") === "true";
+  $: if (autoRequest) onRequestAccess();
 
   let requested = false;
-  $: requestAccess = createAdminServiceRequestProjectAccess();
-  function onRequestAccess() {
-    requested = true;
-    void $requestAccess.mutateAsync({
-      organization,
-      project,
-      data: {
-        role,
-      },
-    });
-  }
+  const requestAccess = createAdminServiceRequestProjectAccess();
 
   let errorMessage = "";
   $: if ($requestAccess.error) {
@@ -41,6 +33,17 @@
   }
 
   $: isPending = $requestAccess.isPending;
+
+  function onRequestAccess() {
+    requested = true;
+    void $requestAccess.mutateAsync({
+      organization,
+      project,
+      data: {
+        role,
+      },
+    });
+  }
 </script>
 
 <AccessRequestContainer>
