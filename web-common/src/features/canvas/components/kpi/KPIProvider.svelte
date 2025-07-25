@@ -70,6 +70,7 @@
         timeZone,
       },
       where,
+      priority: 50,
     },
     {
       query: {
@@ -85,6 +86,7 @@
       measures: queryMeasures,
       timeRange: comparisonTimeRange,
       where,
+      priority: 50,
     },
     {
       query: {
@@ -104,6 +106,7 @@
       timeGranularity: timeGrain || V1TimeGrain.TIME_GRAIN_HOUR,
       timeZone,
       where,
+      priority: 10,
     },
     {
       query: {
@@ -122,6 +125,7 @@
       timeGranularity: timeGrain || V1TimeGrain.TIME_GRAIN_HOUR,
       timeZone,
       where,
+      priority: 10,
     },
     {
       query: {

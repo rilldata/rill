@@ -45,10 +45,12 @@
   $: defaultTimeRange = $canvasSpec?.defaultPreset?.timeRange;
   $: timeRanges = $canvasSpec?.timeRanges ?? [];
 
+  $: activeTimeZone = $selectedTimezone;
+
   $: interval = selectedTimeRange
     ? Interval.fromDateTimes(
-        DateTime.fromJSDate(selectedTimeRange.start).setZone($selectedTimezone),
-        DateTime.fromJSDate(selectedTimeRange.end).setZone($selectedTimezone),
+        DateTime.fromJSDate(selectedTimeRange.start).setZone(activeTimeZone),
+        DateTime.fromJSDate(selectedTimeRange.end).setZone(activeTimeZone),
       )
     : Interval.fromDateTimes($allTimeRange.start, $allTimeRange.end);
 </script>
@@ -99,7 +101,7 @@
         {timeStart}
         {timeEnd}
         {activeTimeGrain}
-        activeTimeZone={$selectedTimezone}
+        {activeTimeZone}
         canPanLeft={false}
         canPanRight={false}
         showFullRange={false}

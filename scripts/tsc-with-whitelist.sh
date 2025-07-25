@@ -61,6 +61,7 @@ web-common/src/runtime-client/http-request-queue/HttpRequestQueue.ts: error TS25
 web-common/src/runtime-client/http-request-queue/HttpRequestQueueTypes.ts: error TS18048
 web-common/src/runtime-client/http-request-queue/HttpRequestQueueTypes.ts: error TS2322
 web-common/src/lib/time/config.ts: error TS2322
+web-common/src/features/dashboards/url-state/time-ranges/rill-time.cjs: error TS1286
 "
 
 # Run TypeScript compiler and find all distinct error per file

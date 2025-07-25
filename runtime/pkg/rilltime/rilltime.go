@@ -28,11 +28,11 @@ var (
 		// this needs to be after Now and Latest to match to them
 		{"PeriodToGrain", `[sSmhHdDwWqQMyY]TD`},
 		{"Grain", `[sSmhHdDwWqQMyY]`},
-		// this has to be at the end
 		{"ISOTime", isoTimePattern},
 		{"Prefix", `[+\-]`},
 		{"Number", `\d+`},
 		{"Snap", `[/]`},
+		// this has to be at the end
 		{"TimeZone", `[0-9a-zA-Z/+\-_]{3,}`},
 		{"To", `(?i)to`},
 		{"By", `(?i)by`},
@@ -108,7 +108,7 @@ type Expression struct {
 	Interval        *Interval      `parser:"@@"`
 	AnchorOverrides []*PointInTime `parser:"(As Of @@)*"`
 	Grain           *string        `parser:"(By @Grain)?"`
-	TimeZone        *string        `parser:"(Tz @TimeZone)?"`
+	TimeZone        *string        `parser:"(Tz @Whitespace @TimeZone)?"`
 
 	isNewFormat bool
 	tz          *time.Location
@@ -269,7 +269,7 @@ func Parse(from string, parseOpts ParseOptions) (*Expression, error) {
 		rt.tz = parseOpts.TimeZoneOverride
 	} else if rt.TimeZone != nil {
 		var err error
-		rt.tz, err = time.LoadLocation(strings.Trim(*rt.TimeZone, "{}"))
+		rt.tz, err = time.LoadLocation(strings.TrimSpace(*rt.TimeZone))
 		if err != nil {
 			return nil, err
 		}

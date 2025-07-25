@@ -29,7 +29,6 @@ import {
 } from "../transforms";
 import {
   RangePresetType,
-  TimeComparisonOption,
   TimeOffsetType,
   type TimeRange,
   type TimeRangeMeta,
@@ -62,7 +61,7 @@ export function getChildTimeRanges(
         start,
         end: exclusiveEndDate,
       });
-    } else {
+    } else if (timeRange.start && timeRange.end) {
       const timeRangeDates = relativePointInTimeToAbsolute(
         end,
         timeRange.start,
@@ -137,7 +136,7 @@ export function ISODurationToTimePreset(
 
 /* Converts a Time Range preset to a TimeRange object */
 export function convertTimeRangePreset(
-  timeRangePreset: TimeRangePreset | TimeComparisonOption,
+  timeRangePreset: string,
   start: Date,
   end: Date,
   zone: string | undefined,
@@ -172,7 +171,7 @@ export function convertTimeRangePreset(
 export const prettyFormatTimeRange = (
   start: Date | undefined,
   end: Date | undefined,
-  timePreset: TimeRangePreset | TimeComparisonOption | undefined,
+  timePreset: string | undefined,
   timeZone: string,
 ): string => {
   const isAllTime = timePreset === TimeRangePreset.ALL_TIME;
@@ -376,7 +375,7 @@ export function getAdjustedChartTime(
   end: Date | undefined,
   zone: string,
   interval: V1TimeGrain | undefined,
-  timePreset: TimeRangePreset | TimeComparisonOption | undefined,
+  timePreset: string | undefined,
   defaultTimeRange: string | undefined,
   chartType: TDDChart,
 ) {
