@@ -37,7 +37,7 @@
   export let comparisonLabel: string | undefined;
 
   let hoveredPoints: {
-    interval: Interval<true>;
+    date: Date;
     value: number | null | undefined;
   }[] = [];
 
