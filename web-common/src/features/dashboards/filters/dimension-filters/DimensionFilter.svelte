@@ -61,11 +61,29 @@
   let curExcludeMode = excludeMode;
   let inListTooLong = false;
 
+  // Proxy variables for O(1) lookups instead of O(n) array operations
+  let selectedValuesProxy = new Set(selectedValues);
+  let effectiveSelectedValuesProxy = new Set<string>();
+
   $: ({ instanceId } = $runtime);
 
   $: resetFilterSettings(mode, sanitisedSearchText);
 
   $: checkSearchText(curSearchText);
+
+  // Update proxies when data changes (but only when dropdown is closed)
+  $: if (!open) {
+    selectedValuesProxy = new Set(selectedValues);
+  }
+
+  // Separate computation for effectiveSelectedValuesProxy that doesn't create cycles
+  $: effectiveSelectedValuesProxy = new Set(
+    curMode !== DimensionFilterMode.InList
+      ? open && curMode === DimensionFilterMode.Select
+        ? Array.from(selectedValuesProxy)
+        : selectedValues
+      : (correctedSearchResults ?? []),
+  );
 
   let searchedBulkValues: string[] =
     mode === DimensionFilterMode.InList ? selectedValues : [];
@@ -101,7 +119,7 @@
     data: searchResults,
     error: errorFromSearchResults,
     isFetching: isFetchingFromSearchResults,
-  } = $searchResultsQuery);
+  } = $searchResultsQuery || {});
   $: correctedSearchResults = enableSearchQuery ? searchResults : [];
 
   $: enableSearchCountQuery =
@@ -155,18 +173,33 @@
   $: showExtraInfo = curMode !== DimensionFilterMode.Select; // || curSearchText.length > 0; (Add once we have docs)
 
   $: allSelected = Boolean(
-    selectedValues.length &&
-      correctedSearchResults?.length === selectedValues.length,
+    (open && curMode === DimensionFilterMode.Select
+      ? selectedValuesProxy.size
+      : selectedValues.length) &&
+      correctedSearchResults?.length ===
+        (open && curMode === DimensionFilterMode.Select
+          ? selectedValuesProxy.size
+          : selectedValues.length),
   );
   $: effectiveSelectedValues =
     curMode !== DimensionFilterMode.InList
-      ? selectedValues
+      ? open && curMode === DimensionFilterMode.Select
+        ? Array.from(selectedValuesProxy)
+        : selectedValues
       : (correctedSearchResults ?? []);
 
   $: disableApplyButton =
     curMode === DimensionFilterMode.Select ||
     !enableSearchCountQuery ||
     inListTooLong;
+
+  // Separate selected and unselected items for better display
+  $: selectedItems = (correctedSearchResults ?? []).filter((item) =>
+    effectiveSelectedValuesProxy.has(item),
+  );
+  $: unselectedItems = (correctedSearchResults ?? []).filter(
+    (item) => !effectiveSelectedValuesProxy.has(item),
+  );
 
   /**
    * Reset filter settings based on params to the component.
@@ -227,11 +260,32 @@
 
   function handleOpenChange(open: boolean) {
     if (open) {
+      // Reset proxies to current state when opening for fresh state
+      selectedValuesProxy = new Set(selectedValues);
+      effectiveSelectedValuesProxy = new Set(effectiveSelectedValues);
+
       curSearchText =
         mode === DimensionFilterMode.InList
           ? mergeDimensionSearchValues(selectedValues)
           : (sanitisedSearchText ?? "");
     } else {
+      // Commit proxy changes when closing (for Select mode)
+      if (curMode === DimensionFilterMode.Select) {
+        // Apply all changes from proxy to parent state
+        const currentValues = Array.from(selectedValuesProxy);
+        const originalValues = selectedValues;
+
+        // Find items to add and remove
+        const toAdd = currentValues.filter((v) => !originalValues.includes(v));
+        const toRemove = originalValues.filter(
+          (v) => !currentValues.includes(v),
+        );
+
+        // Apply changes via parent callbacks
+        toAdd.forEach((value) => onSelect(value));
+        toRemove.forEach((value) => onSelect(value));
+      }
+
       if (selectedValues.length === 0 && !inputText) {
         // filter was cleared. so remove the filter
         onRemove();
@@ -248,11 +302,27 @@
     if (shouldToggleImmediately) onToggleFilterMode();
   }
 
+  // Local selection handler that modifies proxy state instead of parent state
+  function handleLocalSelect(value: string) {
+    if (curMode === DimensionFilterMode.Select) {
+      if (selectedValuesProxy.has(value)) {
+        selectedValuesProxy.delete(value);
+      } else {
+        selectedValuesProxy.add(value);
+      }
+      // Force reactivity update
+      selectedValuesProxy = new Set(selectedValuesProxy);
+    } else {
+      // For other modes, fall back to immediate parent callback
+      onSelect(value);
+    }
+  }
+
   function onToggleSelectAll() {
     correctedSearchResults?.forEach((dimensionValue) => {
-      if (!allSelected && selectedValues.includes(dimensionValue)) return;
+      if (!allSelected && selectedValuesProxy.has(dimensionValue)) return;
 
-      onSelect(dimensionValue);
+      handleLocalSelect(dimensionValue);
     });
   }
 
@@ -385,15 +455,6 @@
           {:else}
             <div class="grow" />
           {/if}
-
-          <!-- Add it back once we have the docs -->
-          <!--  <a-->
-          <!--    href="https://docs.rilldata.com/"-->
-          <!--    target="_blank"-->
-          <!--    class="text-primary-600 font-medium justify-end"-->
-          <!--  >-->
-          <!--    Learn more-->
-          <!--  </a>-->
         </div>
       {/if}
     </div>
@@ -418,8 +479,8 @@
         </div>
       {:else if correctedSearchResults}
         <DropdownMenu.Group class="px-1" aria-label={`${name} results`}>
-          {#each correctedSearchResults as name (name)}
-            {@const selected = effectiveSelectedValues.includes(name)}
+          <!-- Selected items first -->
+          {#each selectedItems as name (name)}
             {@const label = name ?? "null"}
 
             <svelte:component
@@ -431,10 +492,10 @@
                 ? 'pl-3'
                 : ''}"
               role="menuitem"
-              checked={curMode === DimensionFilterMode.Select && selected}
+              checked={curMode === DimensionFilterMode.Select && true}
               showXForSelected={curExcludeMode}
               disabled={curMode !== DimensionFilterMode.Select}
-              on:click={() => onSelect(name)}
+              on:click={() => handleLocalSelect(name)}
             >
               <span>
                 {#if label.length > 240}
@@ -444,11 +505,47 @@
                 {/if}
               </span>
             </svelte:component>
-          {:else}
+          {/each}
+
+          <!-- Separator between selected and unselected -->
+          {#if selectedItems.length > 0 && unselectedItems.length > 0}
+            <DropdownMenu.Separator class="bg-slate-200" />
+          {/if}
+
+          <!-- Unselected items -->
+          {#each unselectedItems as name (name)}
+            {@const label = name ?? "null"}
+
+            <svelte:component
+              this={curMode === DimensionFilterMode.Select
+                ? DropdownMenu.CheckboxItem
+                : DropdownMenu.Item}
+              class="text-xs cursor-pointer {curMode !==
+              DimensionFilterMode.Select
+                ? 'pl-3'
+                : ''}"
+              role="menuitem"
+              checked={curMode === DimensionFilterMode.Select && false}
+              showXForSelected={curExcludeMode}
+              disabled={curMode !== DimensionFilterMode.Select}
+              on:click={() => handleLocalSelect(name)}
+            >
+              <span>
+                {#if label.length > 240}
+                  {label.slice(0, 240)}...
+                {:else}
+                  {label}
+                {/if}
+              </span>
+            </svelte:component>
+          {/each}
+
+          <!-- No results message -->
+          {#if selectedItems.length === 0 && unselectedItems.length === 0}
             <div class="ui-copy-disabled text-center p-2 w-full">
               no results
             </div>
-          {/each}
+          {/if}
         </DropdownMenu.Group>
       {/if}
     </div>
