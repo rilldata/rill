@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Chip } from "@rilldata/web-common/components/chip";
+  import { getRillTimeLabel } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser.ts";
   import { getComparisonLabel } from "@rilldata/web-common/lib/time/comparisons";
   import { DEFAULT_TIME_RANGES } from "@rilldata/web-common/lib/time/config";
   import { prettyFormatTimeRange } from "@rilldata/web-common/lib/time/ranges";
@@ -33,6 +34,10 @@
             TimeRangePreset.CUSTOM,
             "UTC", // TODO
           )}
+        </div>
+      {:else if timeRange.expression}
+        <div class:font-bold={hasBoldTimeRange}>
+          {getRillTimeLabel(timeRange.expression)}
         </div>
       {/if}
     </div>

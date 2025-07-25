@@ -1,3 +1,4 @@
+import { validateRillTime } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser.ts";
 import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config.ts";
 import { isoDurationToFullTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import {
@@ -55,6 +56,11 @@ export function mapSelectedTimeRangeToV1TimeRange(
   explore: V1ExploreSpec,
 ): V1TimeRange | undefined {
   if (!selectedTimeRange?.name) return undefined;
+  if (!validateRillTime(selectedTimeRange.name)) {
+    return {
+      expression: selectedTimeRange.name,
+    };
+  }
 
   const timeRange: V1TimeRange = {};
   switch (selectedTimeRange.name) {
