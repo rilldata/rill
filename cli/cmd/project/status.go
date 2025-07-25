@@ -8,12 +8,12 @@ import (
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
-	runtimeclient "github.com/rilldata/rill/runtime/client"
 	"github.com/spf13/cobra"
 )
 
 func StatusCmd(ch *cmdutil.Helper) *cobra.Command {
 	var name, path string
+	var local bool
 
 	statusCmd := &cobra.Command{
 		Use:   "status [<project-name>]",
@@ -29,7 +29,7 @@ func StatusCmd(ch *cmdutil.Helper) *cobra.Command {
 				name = args[0]
 			}
 
-			if !cmd.Flags().Changed("project") && len(args) == 0 && ch.Interactive {
+			if !local && !cmd.Flags().Changed("project") && len(args) == 0 && ch.Interactive {
 				name, err = ch.InferProjectName(cmd.Context(), ch.Org, path)
 				if err != nil {
 					return fmt.Errorf("unable to infer project name (use `--project` to explicitly specify the name): %w", err)
@@ -82,14 +82,13 @@ func StatusCmd(ch *cmdutil.Helper) *cobra.Command {
 				// Deployment not available
 				return nil
 			}
-
 			// 3. Print parser and resources info
-			rt, err := runtimeclient.New(depl.RuntimeHost, proj.Jwt)
+			rt, instanceID, err := ch.OpenRuntimeClient(cmd.Context(), ch.Org, name, local)
 			if err != nil {
-				return fmt.Errorf("failed to connect to runtime: %w", err)
+				return err
 			}
 
-			res, err := rt.ListResources(cmd.Context(), &runtimev1.ListResourcesRequest{InstanceId: depl.RuntimeInstanceId})
+			res, err := rt.ListResources(cmd.Context(), &runtimev1.ListResourcesRequest{InstanceId: instanceID})
 			if err != nil {
 				return fmt.Errorf("failed to list resources: %w", err)
 			}
@@ -142,6 +141,7 @@ func StatusCmd(ch *cmdutil.Helper) *cobra.Command {
 
 	statusCmd.Flags().StringVar(&name, "project", "", "Project Name")
 	statusCmd.Flags().StringVar(&path, "path", ".", "Project directory")
+	statusCmd.Flags().BoolVar(&local, "local", false, "Target locally running Rill")
 
 	return statusCmd
 }
