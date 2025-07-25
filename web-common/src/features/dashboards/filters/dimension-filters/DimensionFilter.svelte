@@ -256,6 +256,9 @@
     } else {
       localSelectedValues.add(name);
     }
+
+    // Trigger Svelte reactivity
+    localSelectedValues = new Set(localSelectedValues);
   }
 
   function handleOpenChange(openDropdown: boolean) {
