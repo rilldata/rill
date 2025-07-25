@@ -27,8 +27,7 @@ type metricsSummaryResolver struct {
 }
 
 type metricsSummaryArgs struct {
-	Priority      int    `mapstructure:"priority"`
-	TimeDimension string `mapstructure:"time_dimension"` // if empty, the default time dimension in mv is used
+	Priority int `mapstructure:"priority"`
 }
 
 type metricsSummaryProps struct {
@@ -66,8 +65,20 @@ func newMetricsSummaryResolver(ctx context.Context, opts *runtime.ResolverOption
 		return nil, fmt.Errorf("metrics view %q is invalid", res.Meta.Name.Name)
 	}
 
-	if mv.TimeDimension == "" && args.TimeDimension == "" {
-		return nil, fmt.Errorf("no time dimension specified for metrics view %q", tr.MetricsView)
+	if mv.TimeDimension == "" {
+		// Check if there are any dimensions with time data types
+		hasTimeDimensions := false
+		for _, dim := range mv.Dimensions {
+			if dim.DataType != nil {
+				switch dim.DataType.Code {
+				case runtimev1.Type_CODE_TIMESTAMP, runtimev1.Type_CODE_DATE, runtimev1.Type_CODE_TIME:
+					hasTimeDimensions = true
+				}
+			}
+		}
+		if !hasTimeDimensions {
+			return nil, fmt.Errorf("no time dimensions found for metrics view %q", tr.MetricsView)
+		}
 	}
 
 	security, err := opts.Runtime.ResolveSecurity(opts.InstanceID, opts.Claims, res)
@@ -111,7 +122,7 @@ func (r *metricsSummaryResolver) Validate(ctx context.Context) error {
 }
 
 func (r *metricsSummaryResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverResult, error) {
-	summary, err := r.executor.Summary(ctx, r.args.TimeDimension)
+	summary, err := r.executor.Summary(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch summary for metrics view '%s': %w", r.mvName, err)
 	}
