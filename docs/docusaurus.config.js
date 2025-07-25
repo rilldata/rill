@@ -224,39 +224,39 @@ const config = {
           },
           {
             from: '/deploy/credentials/s3',
-            to: '/connect/connector/s3'
+            to: '/connect/data-source/s3'
           },
           {
             from: '/deploy/credentials/gcs',
-            to: '/connect/connector/gcs'
+            to: '/connect/data-source/gcs'
           },
           {
             from: '/deploy/credentials/azure',
-            to: '/connect/connector/azure'
+            to: '/connect/data-source/azure'
           },
           {
             from: '/deploy/credentials/athena',
-            to: '/connect/connector/athena'
+            to: '/connect/data-source/athena'
           },
           {
             from: '/deploy/credentials/bigquery',
-            to: '/connect/connector/bigquery'
+            to: '/connect/data-source/bigquery'
           },
           {
             from: '/deploy/credentials/snowflake',
-            to: '/connect/connector/snowflake'
+            to: '/connect/data-source/snowflake'
           },
           {
             from: '/deploy/credentials/postgres',
-            to: '/connect/connector/postgres'
+            to: '/connect/data-source/postgres'
           },
           {
             from: '/deploy/credentials/salesforce',
-            to: '/connect/connector/salesforce'
+            to: '/connect/data-source/salesforce'
           },
           {
             from: '/deploy/credentials/motherduck',
-            to: '/connect/connector/motherduck'
+            to: '/connect/data-source/motherduck'
           },
           {
             from: '/deploy/source-refresh',
@@ -318,63 +318,63 @@ const config = {
           },
           {
             from: '/reference/connectors/gcs',
-            to: '/connect/connector/gcs'
+            to: '/connect/data-source/gcs'
           },
           {
             from: '/reference/connectors/azure',
-            to: '/connect/connector/azure'
+            to: '/connect/data-source/azure'
           },
           {
             from: '/reference/connectors/s3',
-            to: '/connect/connector/s3'
+            to: '/connect/data-source/s3'
           },
           {
             from: '/reference/connectors/snowflake',
-            to: '/connect/connector/snowflake'
+            to: '/connect/data-source/snowflake'
           },
           {
             from: '/reference/connectors/bigquery',
-            to: '/connect/connector/bigquery'
+            to: '/connect/data-source/bigquery'
           },
           {
             from: '/reference/connectors/redshift',
-            to: '/connect/connector/redshift'
+            to: '/connect/data-source/redshift'
           },
           {
             from: '/reference/connectors/postgres',
-            to: '/connect/connector/postgres'
+            to: '/connect/data-source/postgres'
           },
           {
             from: '/reference/connectors/athena',
-            to: '/connect/connector/athena'
+            to: '/connect/data-source/athena'
           },
           {
             from: '/reference/connectors/mysql',
-            to: '/connect/connector/mysql'
+            to: '/connect/data-source/mysql'
           },
           {
             from: '/reference/connectors/sqlite',
-            to: '/connect/connector/sqlite'
+            to: '/connect/data-source/sqlite'
           },
           {
             from: '/reference/connectors/salesforce',
-            to: '/connect/connector/salesforce'
+            to: '/connect/data-source/salesforce'
           },
           {
             from: '/reference/connectors/sheets',
-            to: '/connect/connector/googlesheets'
+            to: '/connect/data-source/googlesheets'
           },
           {
             from: '/reference/connectors/slack',
-            to: '/connect/connector/slack'
+            to: '/connect/data-source/slack'
           },
           {
             from: '/reference/connectors/local-file',
-            to: '/connect/connector/local-file'
+            to: '/connect/data-source/local-file'
           },
           {
             from: '/reference/connectors/https',
-            to: '/connect/connector/https'
+            to: '/connect/data-source/https'
           },
           // Example: Add new redirects here
           // {

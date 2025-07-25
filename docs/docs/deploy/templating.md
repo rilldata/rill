@@ -60,7 +60,7 @@ Let's walk through a few example scenarios to illustrate the power of templating
 
 ### Changing the database user based on dev / prod
 
-Let's say that we have a [Snowflake](/connect/connector/snowflake.md) source created that is being used in some downstream models and dashboards. In this case, we want the following logic applied:
+Let's say that we have a [Snowflake](/connect/data-source/snowflake.md) source created that is being used in some downstream models and dashboards. In this case, we want the following logic applied:
 - In local **development**, we want _Rill Developer_ to use our dev user (e.g. `SUPPORT_TEST`) to connect to Snowflake
 - In local **development**, we want to limit the size of our source data in _Rill Developer_ (in this case just a simple `LIMIT 1` to illustrate the point)
 - In **production**, we want _Rill Cloud_ to use our provisioned service account (e.g. `PROD_USER`) to connect to Snowflake
@@ -90,7 +90,7 @@ dsn: '{{.env.connector.snowflake.dsn}}'
 
 ### Changing the bucket location based on dev / prod
 
-Let's say that we have a [GCS](/connect/connector/gcs.md) source created where Rill is reading in some Parquet data loaded onto both a "test" and "prod" GCS bucket). In this case, let's imagine that we want to connect to this "test" bucket for local development purposes but we want to make sure that our production data hosted on our "prod" bucket is what's being used to power this same source once the project has been deployed to Rill Cloud. In such a scenario, our `source.yaml` might look like:
+Let's say that we have a [GCS](/connect/data-source/gcs.md) source created where Rill is reading in some Parquet data loaded onto both a "test" and "prod" GCS bucket). In this case, let's imagine that we want to connect to this "test" bucket for local development purposes but we want to make sure that our production data hosted on our "prod" bucket is what's being used to power this same source once the project has been deployed to Rill Cloud. In such a scenario, our `source.yaml` might look like:
 
 ```yaml
 # Source YAML
@@ -115,7 +115,7 @@ In this case, we are using the [embedded DuckDB engine](/connect/olap/duckdb) to
 
 ### Applying a one week sample to the source bucket for local development
 
-In another example, let's say we had a [S3](/connect/connector/s3.md) source defined that happens to be reading a very large amount of parquet data. Following [best practices](performance.md#work-with-a-subset-of-your-source-data-for-local-development-and-modeling), we'll want to read in a subset of this source data for local modeling in Rill Developer rather than using the full dataset for development purposes. Furthermore, we'll make the assumption that the upstream data is not partitioned and thus the S3 bucket is not partitioned (where we could then simply filter the `path` by using a glob pattern potentially in conjunction with [environment specific logic](../build/models/environments.md)). So what can we do?
+In another example, let's say we had a [S3](/connect/data-source/s3.md) source defined that happens to be reading a very large amount of parquet data. Following [best practices](performance.md#work-with-a-subset-of-your-source-data-for-local-development-and-modeling), we'll want to read in a subset of this source data for local modeling in Rill Developer rather than using the full dataset for development purposes. Furthermore, we'll make the assumption that the upstream data is not partitioned and thus the S3 bucket is not partitioned (where we could then simply filter the `path` by using a glob pattern potentially in conjunction with [environment specific logic](../build/models/environments.md)). So what can we do?
 
 Fortunately, we can leverage DuckDB's ability to read from S3 files directly and _apply a filter post-download_ using templating logic in the SQL. In this case, because there is an existing `updated_at` timestamp column, we can use it to filter and retrieve only one week's worth of data. For example, our `source.yaml` file may end up looking something like:
 

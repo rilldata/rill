@@ -41,7 +41,7 @@ Rill supports the use of several different OLAP engines to power your dashboards
     content="DuckDB is the default engine for Rill Developer."
     link="/connect/olap/duckdb"
     linkLabel="Learn more"
-    referenceLink="/reference/project-files/connectors#duckdb"
+    referenceLink="duckdb"
   />
 
   <ConnectorIcon
@@ -49,7 +49,7 @@ Rill supports the use of several different OLAP engines to power your dashboards
     content="High-performance columnar database for real-time analytics and data warehousing."
     link="/connect/olap/clickhouse"
     linkLabel="Learn more"
-    referenceLink="/reference/project-files/connectors#clickhouse"
+    referenceLink="clickhouse"
   />
 
   <ConnectorIcon
@@ -57,7 +57,7 @@ Rill supports the use of several different OLAP engines to power your dashboards
     content="Cloud-native DuckDB service for scalable analytics and data processing."
     link="/connect/olap/motherduck"
     linkLabel="Learn more"
-    referenceLink="/reference/project-files/connectors#motherduck"
+    referenceLink="motherduck"
   />
 
   <ConnectorIcon
@@ -65,7 +65,7 @@ Rill supports the use of several different OLAP engines to power your dashboards
     content="Real-time analytics database designed for high-performance OLAP queries."
     link="/connect/olap/druid"
     linkLabel="Learn more"
-    referenceLink="/reference/project-files/connectors#druid"
+    referenceLink="druid"
   />
 
   <ConnectorIcon
@@ -73,7 +73,7 @@ Rill supports the use of several different OLAP engines to power your dashboards
     content="Distributed OLAP datastore for real-time analytics and business intelligence."
     link="/connect/olap/pinot"
     linkLabel="Learn more"
-    referenceLink="/reference/project-files/connectors#pinot"
+    referenceLink="pinot"
   />
 </div>
 

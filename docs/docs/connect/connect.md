@@ -37,70 +37,78 @@ Skip data ingestion and work directly with existing tables in your OLAP engine, 
 
 ### Athena
 ### BigQuery
-### MySQL
-### PostgreSQL
 ### Redshift
 ### Snowflake
-### SQLite
 
 <div className="connector-icon-grid">
   <ConnectorIcon
     icon={<img src="/img/connect/icons/Logo-Athena.svg" alt="Athena" />}
     header="Athena"
     content="Connect to Amazon Athena for serverless querying of data stored in S3 using standard SQL."
-    link="/connect/connector/athena"
+    link="/connect/data-source/#athena"
     linkLabel="Learn more"
-    referenceLink="/reference/project-files/connectors#athena"
+    referenceLink="athena"
   />
   <ConnectorIcon
     icon={<img src="/img/connect/icons/Logo-Bigquery.svg" alt="BigQuery" />}
     header="BigQuery"
     content="Connect to Google BigQuery for analytics and data warehousing with service account authentication."
-    link="/connect/connector/bigquery"
+    link="/connect/data-source/bigquery"
     linkLabel="Learn more"
-    referenceLink="/reference/project-files/connectors#bigquery"
+    referenceLink="bigquery"
   />
-  <ConnectorIcon
-    icon={<img src="/img/connect/icons/Logo-mysql.svg" alt="MySQL" />}
-    header="MySQL"
-    content="Connect to MySQL databases with support for various authentication methods and SSL connections."
-    link="/connect/connector/mysql"
-    linkLabel="Learn more"
-    referenceLink="/reference/project-files/connectors#mysql"
-  />
-  <ConnectorIcon
-    icon={<img src="/img/connect/icons/Logo-Postgres.svg" alt="PostgreSQL" />}
-    header="PostgreSQL"
-    content="Connect to PostgreSQL databases with support for SSL connections and various authentication methods."
-    link="/connect/connector/postgres"
-    linkLabel="Learn more"
-    referenceLink="/reference/project-files/connectors#postgres"
-  />
+
   <ConnectorIcon
     icon={<img src="/img/connect/icons/Logo-Redshift.svg" alt="Redshift" />}
     header="Redshift"
     content="Connect to Amazon Redshift data warehouse with AWS credentials and support for both provisioned and serverless clusters."
-    link="/connect/connector/redshift"
+    link="/connect/data-source/redshift"
     linkLabel="Learn more"
-    referenceLink="/reference/project-files/connectors#redshift"
+    referenceLink="redshift"
   />
   <ConnectorIcon
     icon={<img src="/img/connect/icons/Logo-Snowflake.svg" alt="Snowflake" />}
     header="Snowflake"
     content="Connect to Snowflake data warehouse with support for individual credentials and JWT authentication."
-    link="/connect/connector/snowflake"
+    link="/connect/data-source/snowflake"
     linkLabel="Learn more"
-    referenceLink="/reference/project-files/connectors#snowflake"
+    referenceLink="snowflake"
+  />
+
+</div>
+
+## Databases
+### MySQL
+### PostgreSQL
+### SQLite
+
+<div className="connector-icon-grid">
+  <ConnectorIcon
+    icon={<img src="/img/connect/icons/Logo-mysql.svg" alt="MySQL" />}
+    header="MySQL"
+    content="Connect to MySQL databases with support for various authentication methods and SSL connections."
+    link="/connect/data-source/mysql"
+    linkLabel="Learn more"
+    referenceLink="mysql"
+  />
+  <ConnectorIcon
+    icon={<img src="/img/connect/icons/Logo-Postgres.svg" alt="PostgreSQL" />}
+    header="PostgreSQL"
+    content="Connect to PostgreSQL databases with support for SSL connections and various authentication methods."
+    link="/connect/data-source/postgres"
+    linkLabel="Learn more"
+    referenceLink="postgresql"
   />
   <ConnectorIcon
     icon={<img src="/img/connect/icons/Logo-SQLite.svg" alt="SQLite" />}
     header="SQLite"
     content="Connect to SQLite databases for lightweight, file-based data storage and querying."
-    link="/connect/connector/sqlite"
+    link="/connect/data-source/sqlite"
     linkLabel="Learn more"
-    referenceLink="/reference/project-files/connectors#sqlite"
+    referenceLink="sqlite"
   />
 </div>
+
 
 ## Cloud Storage Connectors
 
@@ -109,32 +117,33 @@ Skip data ingestion and work directly with existing tables in your OLAP engine, 
 ### Amazon S3
 
 <div className="connector-icon-grid">
-  <ConnectorIcon
-    icon={<img src="/img/connect/icons/Logo-Azure.svg" alt="Microsoft Azure" />}
-    header="Azure"
-    content="Connect to Microsoft Azure Blob Storage to read data files with support for various formats."
-    link="/connect/connector/azure"
-    linkLabel="Learn more"
-    referenceLink="/reference/project-files/connectors#azure"
-  />
-
-  <ConnectorIcon
-    icon={<img src="/img/connect/icons/Logo-GCS.svg" alt="Google Cloud Storage" />}
-    header="Google Cloud Storage"
-    content="Google Cloud Storage for scalable object storage and data lakes."
-    link="/connect/connector/gcs"
-    linkLabel="Learn more"
-    referenceLink="/reference/project-files/connectors#gcs"
-  />
 
   <ConnectorIcon
     icon={<img src="/img/connect/icons/Logo-S3.svg" alt="Amazon S3" />}
     header="Amazon S3"
     content="Connect to Amazon S3 buckets to read data files including CSV, JSON, Parquet, and compressed formats."
-    link="/connect/connector/s3"
+    link="/connect/data-source/s3"
     linkLabel="Learn more"
-    referenceLink="/reference/project-files/connectors#s3"
+    referenceLink="s3"
   />
+  <ConnectorIcon
+    icon={<img src="/img/connect/icons/Logo-Azure.svg" alt="Microsoft Azure" />}
+    header="Azure"
+    content="Connect to Microsoft Azure Blob Storage to read data files with support for various formats."
+    link="/connect/data-source/azure"
+    linkLabel="Learn more"
+    referenceLink="azure"
+  />
+  <ConnectorIcon
+    icon={<img src="/img/connect/icons/Logo-GCS.svg" alt="Google Cloud Storage" />}
+    header="Google Cloud Storage"
+    content="Google Cloud Storage for scalable object storage and data lakes."
+    link="/connect/data-source/gcs"
+    linkLabel="Learn more"
+    referenceLink="gcs"
+  />
+
+
 </div>
 
 ## Other Connectors
@@ -150,34 +159,34 @@ Skip data ingestion and work directly with existing tables in your OLAP engine, 
     icon={<p className="https-icon">https:// </p>}
     header="HTTPS"
     content="Download data from HTTP/HTTPS URLs with support for various authentication methods."
-    link="/connect/connector/https"
+    link="/connect/data-source/https"
     linkLabel="Learn more"
-    referenceLink="/reference/project-files/connectors#https"
+    referenceLink="https"
   />
 
   <ConnectorIcon
     icon={<img src="/img/connect/icons/Logo-Local.svg" alt="Local File" />}
     header="Local File"
     content="Read data from local files including CSV, JSON, Parquet, and compressed formats."
-    link="/connect/connector/local-file"
+    link="/connect/data-source/local-file"
     linkLabel="Learn more"
-    referenceLink="/reference/project-files/connectors#local-file"
+    referenceLink="local-file"
   />
 
   <ConnectorIcon
     icon={<img src="/img/connect/icons/Logo-Salesforce.svg" alt="Salesforce" />}
     header="Salesforce"
     content="Connect to Salesforce to extract data from objects and queries using the Salesforce API."
-    link="/connect/connector/salesforce"
+    link="/connect/data-source/salesforce"
     linkLabel="Learn more"
-    referenceLink="/reference/project-files/connectors#salesforce"
+    referenceLink="salesforce"
   />
 
   <ConnectorIcon
     icon={<img src="/img/connect/icons/Logo-Sheets.svg" alt="Google Sheets" className="sheets-icon" />}
     header="Google Sheets"
     content="Connect to Google Sheets to read data from spreadsheets with support for multiple sheets."
-    link="/connect/connector/googlesheets"
+    link="googlesheets"
     linkLabel="Learn more"
   />
 
@@ -185,7 +194,7 @@ Skip data ingestion and work directly with existing tables in your OLAP engine, 
     icon={<img src="/img/connect/icons/Logo-Slack.svg" alt="Slack" className="sheets-icon" />}
     header="Slack"
     content="Connect to Slack to extract data from channels, messages, and other workspace information."
-    link="/connect/connector/slack"
+    link="/connect/data-source/slack"
     linkLabel="Learn more"
     referenceLink="/reference/project-files/connectors#slack"
   />
