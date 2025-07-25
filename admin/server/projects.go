@@ -237,7 +237,10 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 			return nil, err
 		}
 	} else if claims.OwnerType() == auth.OwnerTypeService {
-		attr = map[string]any{"admin": true}
+		attr, err = s.jwtAttributesForService(ctx, claims.OwnerID(), permissions)
+		if err != nil {
+			return nil, err
+		}
 	} else if claims.OwnerType() == auth.OwnerTypeMagicAuthToken {
 		mdl, ok := claims.AuthTokenModel().(*database.MagicAuthToken)
 		if !ok {
@@ -344,6 +347,7 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 		runtimeauth.ReadObjects,
 		runtimeauth.ReadMetrics,
 		runtimeauth.ReadAPI,
+		runtimeauth.UseAI,
 	}
 	if permissions.ManageProject {
 		instancePermissions = append(instancePermissions, runtimeauth.EditTrigger, runtimeauth.ReadResolvers)
@@ -464,7 +468,6 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		attribute.Bool("args.public", req.Public),
 		attribute.String("args.provisioner", req.Provisioner),
 		attribute.String("args.prod_version", req.ProdVersion),
-		attribute.String("args.prod_olap_driver", req.ProdOlapDriver),
 		attribute.Int64("args.prod_slots", req.ProdSlots),
 		attribute.String("args.sub_path", req.Subpath),
 		attribute.String("args.prod_branch", req.ProdBranch),
@@ -553,8 +556,6 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		ProdBranch:           "",          // Populated below
 		Subpath:              req.Subpath, // Populated below
 		ProdVersion:          req.ProdVersion,
-		ProdOLAPDriver:       req.ProdOlapDriver,
-		ProdOLAPDSN:          req.ProdOlapDsn,
 		ProdSlots:            int(req.ProdSlots),
 		ProdTTLSeconds:       prodTTL,
 		DevSlots:             devSlots,
@@ -1884,8 +1885,6 @@ func (s *Server) projToDTO(p *database.Project, orgName string) *adminv1.Project
 		CreatedByUserId:  safeStr(p.CreatedByUserID),
 		Provisioner:      p.Provisioner,
 		ProdVersion:      p.ProdVersion,
-		ProdOlapDriver:   p.ProdOLAPDriver,
-		ProdOlapDsn:      p.ProdOLAPDSN,
 		ProdSlots:        int64(p.ProdSlots),
 		ProdBranch:       p.ProdBranch,
 		Subpath:          p.Subpath,

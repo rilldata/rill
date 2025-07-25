@@ -19,7 +19,8 @@
       spec: { getDimensionsForMetricView, getMeasuresForMetricView },
     },
     timeAndFilterStore,
-    state: { localFilters, localTimeControls },
+    localFilters,
+    localTimeControls,
   } = component);
 
   $: metricsViewName =

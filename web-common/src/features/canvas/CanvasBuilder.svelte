@@ -48,7 +48,7 @@
       unsubscribe,
       _rows,
     },
-  } = getCanvasStore(canvasName));
+  } = getCanvasStore(canvasName, instanceId));
 
   $: layoutRows = $_rows;
 

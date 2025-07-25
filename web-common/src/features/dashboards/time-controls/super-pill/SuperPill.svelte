@@ -37,6 +37,7 @@
   export let timeStart: string | undefined;
   export let timeEnd: string | undefined;
   export let context = "dashboard";
+  export let side: "top" | "right" | "bottom" | "left" = "bottom";
   export let onSelectRange: (range: NamedRange | ISODurationString) => void;
   export let onPan: (direction: "left" | "right") => void;
   export let onTimeGrainSelect: (timeGrain: V1TimeGrain) => void;
@@ -63,9 +64,9 @@
       {allowCustomTimeRange}
       selected={selectedRangeAlias ?? ""}
       grain={activeTimeGrain}
-      {onSelectRange}
       {interval}
       zone={activeTimeZone}
+      {onSelectRange}
       applyCustomRange={(interval) => {
         applyRange({
           name: TimeRangePreset.CUSTOM,
@@ -73,6 +74,7 @@
           end: interval.end.toJSDate(),
         });
       }}
+      {side}
     />
   {/if}
 
@@ -83,6 +85,7 @@
     {onSelectTimeZone}
     {lockTimeZone}
     {context}
+    {side}
   />
 
   {#if !showPivot && minTimeGrain}
@@ -92,6 +95,7 @@
       {timeStart}
       {timeEnd}
       {complete}
+      {side}
       {onTimeGrainSelect}
     />
   {/if}
@@ -132,7 +136,9 @@
     @apply bg-gray-50 cursor-pointer;
   }
 
+  /* Doest apply to all instances except alert/report. So this seems unintentional
   :global(.wrapper > [data-state="open"]) {
     @apply bg-gray-50 border-gray-400 z-50;
   }
+  */
 </style>

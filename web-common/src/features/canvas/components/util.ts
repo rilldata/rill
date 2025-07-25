@@ -1,4 +1,7 @@
-import { getChartComponent } from "@rilldata/web-common/features/canvas/components/charts";
+import {
+  getChartComponent,
+  type ChartSpec,
+} from "@rilldata/web-common/features/canvas/components/charts";
 import { CartesianChartComponent } from "@rilldata/web-common/features/canvas/components/charts/cartesian-charts/CartesianChart";
 import { KPIGridComponent } from "@rilldata/web-common/features/canvas/components/kpi-grid";
 import type {
@@ -8,11 +11,9 @@ import type {
 } from "@rilldata/web-common/features/canvas/inspector/types";
 import type { CanvasResponse } from "@rilldata/web-common/features/canvas/selector";
 import type {
-  RpcStatus,
   V1MetricsViewSpec,
   V1Resource,
 } from "@rilldata/web-common/runtime-client";
-import type { QueryObserverResult } from "@tanstack/svelte-query";
 import type { CanvasEntity, ComponentPath } from "../stores/canvas-entity";
 import type { BaseCanvasComponent } from "./BaseCanvasComponent";
 import { ImageComponent } from "./image";
@@ -113,7 +114,7 @@ const baseComponentMap = {
 
 const chartComponentMap = Object.fromEntries(
   CHART_TYPES.map((type) => [type, getChartComponent(type)]),
-) as Record<ChartType, BaseCanvasComponentConstructor>;
+) as Record<ChartType, BaseCanvasComponentConstructor<ChartSpec>>;
 
 export const COMPONENT_CLASS_MAP = {
   ...baseComponentMap,
@@ -143,7 +144,7 @@ export function createComponent(
   resource: V1Resource,
   parent: CanvasEntity,
   path: ComponentPath,
-) {
+): BaseCanvasComponent<any> {
   const type = resource.component?.spec?.renderer as CanvasComponentType;
   const ComponentClass =
     COMPONENT_CLASS_MAP[type as keyof typeof COMPONENT_CLASS_MAP];
@@ -183,10 +184,10 @@ export function getHeaderForComponent(
 
 export function getComponentMetricsViewFromSpec(
   componentName: string | undefined,
-  spec: QueryObserverResult<CanvasResponse, RpcStatus>,
+  spec: CanvasResponse | undefined,
 ): string | undefined {
   if (!componentName) return undefined;
-  const resource = spec.data?.components?.[componentName]?.component;
+  const resource = spec?.components?.[componentName]?.component;
 
   if (resource) {
     return resource?.state?.validSpec?.rendererProperties?.metrics_view as

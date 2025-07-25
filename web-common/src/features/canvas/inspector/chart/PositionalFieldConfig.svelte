@@ -4,7 +4,8 @@
   import SingleFieldInput from "@rilldata/web-common/features/canvas/inspector/SingleFieldInput.svelte";
   import type { ComponentInputParam } from "@rilldata/web-common/features/canvas/inspector/types";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
-  import FieldConfigPopover from "./FieldConfigPopover.svelte";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import FieldConfigPopover from "./field-config/FieldConfigPopover.svelte";
 
   export let key: string;
   export let config: ComponentInputParam;
@@ -14,11 +15,13 @@
 
   export let onChange: (updatedConfig: FieldConfig) => void;
 
+  $: ({ instanceId } = $runtime);
   $: ({
     canvasEntity: {
+      selectedComponent,
       spec: { getTimeDimensionForMetricView },
     },
-  } = getCanvasStore(canvasName));
+  } = getCanvasStore(canvasName, instanceId));
 
   $: chartFieldInput = config.meta?.chartFieldInput;
 
@@ -35,12 +38,14 @@
         ...fieldConfig,
         field: $timeDimension,
         type: "temporal",
+        sort: undefined,
       };
     } else {
       updatedConfig = {
         ...fieldConfig,
         field: fieldName,
         type: isTime ? "temporal" : isDimension ? "nominal" : "quantitative",
+        sort: undefined,
       };
     }
 
@@ -57,23 +62,29 @@
       [property]: value,
     };
 
+    if (property === "limit" && Array.isArray(updatedConfig.sort)) {
+      updatedConfig.sort = "-x";
+    }
+
     onChange(updatedConfig);
   }
+
+  $: popoverKey = `${$selectedComponent}-${metricsView}-${fieldConfig.field}`;
 </script>
 
 <div class="gap-y-1">
   <div class="flex justify-between items-center">
     <InputLabel small label={config.label ?? key} id={key} />
-    {#if Object.keys(chartFieldInput ?? {}).length > 1}
-      {#key fieldConfig}
+    {#key popoverKey}
+      {#if Object.keys(chartFieldInput ?? {}).length > 1}
         <FieldConfigPopover
           {fieldConfig}
           label={config.label ?? key}
           onChange={updateFieldProperty}
           {chartFieldInput}
         />
-      {/key}
-    {/if}
+      {/if}
+    {/key}
   </div>
 
   <SingleFieldInput

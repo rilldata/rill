@@ -5,23 +5,20 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/athena"
+	"github.com/aws/aws-sdk-go-v2/service/athena/types"
 	"github.com/aws/smithy-go"
-	"github.com/aws/smithy-go/tracing/smithyoteltracing"
 	"github.com/rilldata/rill/runtime/drivers"
-	"go.opentelemetry.io/otel"
+	"golang.org/x/sync/errgroup"
 )
 
 func (c *Connection) ListDatabaseSchemas(ctx context.Context) ([]*drivers.DatabaseSchemaInfo, error) {
-	awsConfig, err := c.awsConfig(ctx, c.config.AWSRegion)
+	client, err := c.getClient(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get AWS config: %w", err)
+		return nil, err
 	}
-	client := athena.NewFromConfig(awsConfig, func(o *athena.Options) {
-		o.TracerProvider = smithyoteltracing.Adapt(otel.GetTracerProvider())
-	})
 
 	catalogs, err := c.listCatalogs(ctx, client)
 	if err != nil {
@@ -31,36 +28,44 @@ func (c *Connection) ListDatabaseSchemas(ctx context.Context) ([]*drivers.Databa
 	if len(catalogs) == 0 {
 		return c.listSchemasForCatalog(ctx, client, "")
 	}
-
-	var res []*drivers.DatabaseSchemaInfo
+	var (
+		mu  sync.Mutex
+		res []*drivers.DatabaseSchemaInfo
+	)
+	g, ctx := errgroup.WithContext(ctx)
+	g.SetLimit(5)
 	for _, catalog := range catalogs {
-		schemas, err := c.listSchemasForCatalog(ctx, client, catalog)
-		if err != nil {
-			return nil, fmt.Errorf("failed to list schemas for catalog %s: %w", catalog, err)
-		}
-		res = append(res, schemas...)
+		catalogName := catalog
+		g.Go(func() error {
+			schemas, err := c.listSchemasForCatalog(ctx, client, catalogName)
+			if err != nil {
+				return fmt.Errorf("failed to list schemas for catalog %q: %w", catalog, err)
+			}
+			mu.Lock()
+			res = append(res, schemas...)
+			mu.Unlock()
+			return nil
+		})
 	}
-
+	if err := g.Wait(); err != nil {
+		return nil, err
+	}
 	return res, nil
 }
 
 func (c *Connection) ListTables(ctx context.Context, database, databaseSchema string) ([]*drivers.TableInfo, error) {
-	awsConfig, err := c.awsConfig(ctx, c.config.AWSRegion)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get AWS config: %w", err)
-	}
-
-	client := athena.NewFromConfig(awsConfig, func(o *athena.Options) {
-		o.TracerProvider = smithyoteltracing.Adapt(otel.GetTracerProvider())
-	})
-
 	q := fmt.Sprintf(`
 	SELECT
 		table_name,
 		table_type
-	FROM %s.information_schema.tables 
+	FROM %s.information_schema.tables
 	WHERE table_schema = %s
 	`, sqlSafeName(database), escapeStringValue(databaseSchema))
+
+	client, err := c.getClient(ctx)
+	if err != nil {
+		return nil, err
+	}
 
 	queryID, err := c.executeQuery(ctx, client, q, c.config.Workgroup, c.config.OutputLocation)
 	if err != nil {
@@ -68,7 +73,7 @@ func (c *Connection) ListTables(ctx context.Context, database, databaseSchema st
 	}
 
 	results, err := client.GetQueryResults(ctx, &athena.GetQueryResultsInput{
-		QueryExecutionId: aws.String(queryID),
+		QueryExecutionId: queryID,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get query results: %w", err)
@@ -89,31 +94,27 @@ func (c *Connection) ListTables(ctx context.Context, database, databaseSchema st
 }
 
 func (c *Connection) GetTable(ctx context.Context, database, databaseSchema, table string) (*drivers.TableMetadata, error) {
-	awsConfig, err := c.awsConfig(ctx, c.config.AWSRegion)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get AWS config: %w", err)
-	}
-
-	client := athena.NewFromConfig(awsConfig, func(o *athena.Options) {
-		o.TracerProvider = smithyoteltracing.Adapt(otel.GetTracerProvider())
-	})
-
-	query := fmt.Sprintf(`
+	q := fmt.Sprintf(`
 	SELECT
 		column_name,
 		data_type
-	FROM %s.information_schema.columns 
+	FROM %s.information_schema.columns
 	WHERE table_schema = %s AND table_name = %s
 	ORDER BY ordinal_position
 	`, sqlSafeName(database), escapeStringValue(databaseSchema), escapeStringValue(table))
 
-	queryID, err := c.executeQuery(ctx, client, query, c.config.Workgroup, c.config.OutputLocation)
+	client, err := c.getClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	queryID, err := c.executeQuery(ctx, client, q, c.config.Workgroup, c.config.OutputLocation)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute columns query: %w", err)
 	}
 
 	results, err := client.GetQueryResults(ctx, &athena.GetQueryResultsInput{
-		QueryExecutionId: aws.String(queryID),
+		QueryExecutionId: queryID,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get query results: %w", err)
@@ -150,7 +151,9 @@ func (c *Connection) listCatalogs(ctx context.Context, client *athena.Client) ([
 			return nil, err
 		}
 		for _, summary := range page.DataCatalogsSummary {
-			catalogs = append(catalogs, *summary.CatalogName)
+			if summary.Status == types.DataCatalogStatusCreateComplete && summary.Type == types.DataCatalogTypeGlue {
+				catalogs = append(catalogs, *summary.CatalogName)
+			}
 		}
 	}
 
@@ -164,8 +167,9 @@ func (c *Connection) listSchemasForCatalog(ctx context.Context, client *athena.C
 		q = fmt.Sprintf(`
 		SELECT
 			catalog_name,
-			schema_name 
+			schema_name
 		FROM %s.information_schema.schemata
+		WHERE schema_name NOT IN ('information_schema', 'performance_schema', 'sys') OR schema_name = current_schema
 		`, sqlSafeName(catalog))
 	} else {
 		q = `
@@ -173,6 +177,7 @@ func (c *Connection) listSchemasForCatalog(ctx context.Context, client *athena.C
 			catalog_name, 
 			schema_name 
 		FROM information_schema.schemata
+		WHERE schema_name NOT IN ('information_schema', 'performance_schema', 'sys') OR schema_name = current_schema
 		`
 	}
 
@@ -184,12 +189,13 @@ func (c *Connection) listSchemasForCatalog(ctx context.Context, client *athena.C
 
 	// Fetch results
 	results, err := client.GetQueryResults(ctx, &athena.GetQueryResultsInput{
-		QueryExecutionId: aws.String(queryID),
+		QueryExecutionId: queryID,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get query results: %w", err)
 	}
 
+	// first row is header of skipping it
 	res := make([]*drivers.DatabaseSchemaInfo, 0, len(results.ResultSet.Rows)-1)
 	for _, row := range results.ResultSet.Rows[1:] {
 		if len(row.Data) < 2 || row.Data[0].VarCharValue == nil || row.Data[1].VarCharValue == nil {

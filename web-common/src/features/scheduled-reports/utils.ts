@@ -1,20 +1,32 @@
-import { getExploreName } from "@rilldata/web-common/features/explore-mappers/utils";
+import { getDimensionNameFromAggregationDimension } from "@rilldata/web-common/features/dashboards/aggregation-request/dimension-utils.ts";
+import { MeasureModifierSuffixRegex } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry.ts";
+import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils.ts";
+import { ComparisonModifierSuffixRegex } from "@rilldata/web-common/features/dashboards/pivot/types.ts";
+import { includeExcludeModeFromFilters } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores.ts";
 import {
-  getDayOfMonthFromCronExpression,
-  getDayOfWeekFromCronExpression,
-  getFrequencyFromCronExpression,
-  getNextQuarterHour,
-  getTimeIn24FormatFromDateTime,
-  getTimeOfDayFromCronExpression,
-  getTodaysDayOfWeek,
-  ReportFrequency,
+  mapV1TimeRangeToSelectedComparisonTimeRange,
+  mapV1TimeRangeToSelectedTimeRange,
+} from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers.ts";
+import { getExploreName } from "@rilldata/web-common/features/explore-mappers/utils";
+import { Filters } from "@rilldata/web-common/features/dashboards/stores/Filters.ts";
+import { TimeControls } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
+import { ExploreMetricsViewMetadata } from "@rilldata/web-common/features/dashboards/stores/ExploreMetricsViewMetadata.ts";
+import {
+  getExistingScheduleFormValues,
+  getInitialScheduleFormValues,
 } from "@rilldata/web-common/features/scheduled-reports/time-utils";
-import { getLocalIANA } from "@rilldata/web-common/lib/time/timezone";
+import {
+  type DashboardTimeControls,
+  TimeRangePreset,
+} from "@rilldata/web-common/lib/time/types.ts";
 import {
   V1ExportFormat,
+  type V1MetricsViewAggregationRequest,
   type V1Notifier,
   type V1Query,
   type V1ReportSpec,
+  type V1TimeRange,
+  type V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
 
 export type ReportValues = ReturnType<typeof getNewReportInitialFormValues>;
@@ -29,55 +41,35 @@ export function getQueryNameFromQuery(query: V1Query) {
   }
 }
 
-export function getQueryArgsJsonFromQuery(query: V1Query): string {
-  if (query.metricsViewAggregationRequest) {
-    return JSON.stringify(query.metricsViewAggregationRequest);
-  } else {
-    throw new Error(
-      "Currently, only `MetricsViewAggregation` queries can be scheduled through the UI",
-    );
-  }
-}
-
-export function getNewReportInitialFormValues(userEmail: string | undefined) {
+export function getNewReportInitialFormValues(
+  userEmail: string | undefined,
+  aggregationRequest: V1MetricsViewAggregationRequest,
+) {
   return {
     title: "",
-    frequency: ReportFrequency.Weekly,
-    dayOfWeek: getTodaysDayOfWeek(),
-    dayOfMonth: 1,
-    timeOfDay: getTimeIn24FormatFromDateTime(getNextQuarterHour()),
-    timeZone: getLocalIANA(),
+    ...getInitialScheduleFormValues(),
     exportFormat: V1ExportFormat.EXPORT_FORMAT_CSV as V1ExportFormat,
     exportLimit: "",
     exportIncludeHeader: false,
     ...extractNotification(undefined, userEmail, false),
+    ...extractRowsAndColumns(aggregationRequest),
   };
 }
 
 export function getExistingReportInitialFormValues(
   reportSpec: V1ReportSpec,
   userEmail: string | undefined,
+  aggregationRequest: V1MetricsViewAggregationRequest,
 ) {
   return {
     title: reportSpec.displayName ?? "",
-    frequency: getFrequencyFromCronExpression(
-      reportSpec.refreshSchedule?.cron as string,
-    ),
-    dayOfWeek: getDayOfWeekFromCronExpression(
-      reportSpec.refreshSchedule?.cron as string,
-    ),
-    dayOfMonth: getDayOfMonthFromCronExpression(
-      reportSpec.refreshSchedule?.cron as string,
-    ),
-    timeOfDay: getTimeOfDayFromCronExpression(
-      reportSpec.refreshSchedule?.cron as string,
-    ),
-    timeZone: reportSpec.refreshSchedule?.timeZone ?? getLocalIANA(),
+    ...getExistingScheduleFormValues(reportSpec.refreshSchedule),
     exportFormat:
       reportSpec?.exportFormat ?? V1ExportFormat.EXPORT_FORMAT_UNSPECIFIED,
     exportLimit: reportSpec.exportLimit === "0" ? "" : reportSpec.exportLimit,
     exportIncludeHeader: reportSpec.exportIncludeHeader ?? false,
     ...extractNotification(reportSpec.notifiers, userEmail, true),
+    ...extractRowsAndColumns(aggregationRequest),
   };
 }
 
@@ -96,6 +88,104 @@ export function getDashboardNameFromReport(reportSpec: V1ReportSpec): string {
     queryArgsJson?.metricsView ??
     ""
   );
+}
+
+export function getFiltersAndTimeControlsFromAggregationRequest(
+  instanceId: string,
+  metricsViewName: string,
+  exploreName: string,
+  aggregationRequest: V1MetricsViewAggregationRequest,
+  timeRangeSummary: V1TimeRangeSummary | undefined,
+) {
+  const timeRange = (aggregationRequest.timeRange as V1TimeRange) ?? {
+    isoDuration: TimeRangePreset.ALL_TIME,
+  };
+
+  let selectedTimeRange: DashboardTimeControls | undefined = undefined;
+  let selectedComparisonTimeRange: DashboardTimeControls | undefined =
+    undefined;
+  if (timeRangeSummary?.max) {
+    selectedTimeRange = mapV1TimeRangeToSelectedTimeRange(
+      timeRange,
+      timeRangeSummary,
+      timeRangeSummary.max,
+    );
+    if (aggregationRequest.comparisonTimeRange) {
+      selectedComparisonTimeRange = mapV1TimeRangeToSelectedComparisonTimeRange(
+        aggregationRequest.comparisonTimeRange,
+        timeRangeSummary,
+        timeRangeSummary.max,
+      );
+    }
+  }
+
+  const { dimensionFilters, dimensionThresholdFilters } = splitWhereFilter(
+    aggregationRequest.where,
+  );
+
+  const metricsViewMetadata = new ExploreMetricsViewMetadata(
+    instanceId,
+    metricsViewName,
+    exploreName,
+  );
+  const filters = new Filters(metricsViewMetadata, {
+    whereFilter: dimensionFilters,
+    dimensionsWithInlistFilter: [],
+    dimensionThresholdFilters: dimensionThresholdFilters,
+    dimensionFilterExcludeMode: includeExcludeModeFromFilters(dimensionFilters),
+  });
+  const timeControls = new TimeControls(metricsViewMetadata, {
+    selectedTimeRange,
+    selectedComparisonTimeRange,
+    showTimeComparison: !!selectedComparisonTimeRange,
+    selectedTimezone: timeRange?.timeZone ?? "UTC",
+  });
+  return { filters, timeControls };
+}
+
+export function extractRowsAndColumns(
+  aggregationRequest: V1MetricsViewAggregationRequest,
+) {
+  const pivotedOn = new Set<string>(aggregationRequest.pivotOn ?? []);
+  const isFlat = aggregationRequest.pivotOn === undefined;
+
+  const rows =
+    aggregationRequest.dimensions
+      ?.filter(
+        (dimension) =>
+          !isFlat &&
+          !pivotedOn.has(dimension.alias!) &&
+          !pivotedOn.has(dimension.name!),
+      )
+      .map((dimension) =>
+        getDimensionNameFromAggregationDimension(dimension),
+      ) ?? [];
+
+  const columnsFromDimensions =
+    aggregationRequest.dimensions
+      ?.filter(
+        (dimension) =>
+          isFlat ||
+          pivotedOn.has(dimension.alias!) ||
+          pivotedOn.has(dimension.name!),
+      )
+      .map((dimension) =>
+        getDimensionNameFromAggregationDimension(dimension),
+      ) ?? [];
+
+  const columnsFromMeasures =
+    aggregationRequest.measures
+      ?.filter(
+        (measure) =>
+          !MeasureModifierSuffixRegex.test(measure.name!) &&
+          !ComparisonModifierSuffixRegex.test(measure.name!),
+      )
+      .map((measure) => measure.name!) ?? [];
+
+  return {
+    rows,
+    columns: [...columnsFromDimensions, ...columnsFromMeasures],
+  };
 }
 
 function extractNotification(

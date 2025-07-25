@@ -149,6 +149,12 @@ func (c *Connection) Config() map[string]any {
 	return m
 }
 
+// ParsedConfig returns a copy of the parsed config properties.
+func (c *Connection) ParsedConfig() *ConfigProperties {
+	cpy := *c.config
+	return &cpy
+}
+
 // InformationSchema implements drivers.Handle.
 func (c *Connection) AsInformationSchema() (drivers.InformationSchema, bool) {
 	return nil, false

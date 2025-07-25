@@ -23,6 +23,11 @@ import (
 	"golang.org/x/sync/semaphore"
 )
 
+var (
+	modeReadOnly  = "read"
+	modeReadWrite = "readwrite"
+)
+
 func init() {
 	drivers.Register("clickhouse", driver{})
 	drivers.RegisterAsConnector("clickhouse", driver{})
@@ -42,12 +47,21 @@ var spec = drivers.Spec{
 			Description: "Use a managed ClickHouse instance. This will start an embedded ClickHouse server in development.",
 			Placeholder: "false",
 			Default:     "false",
+		},
+		{
+			Key:         "mode",
+			Type:        drivers.StringPropertyType,
+			Required:    false,
+			DisplayName: "Mode",
+			Description: "Set the mode for the ClickHouse connection. By default, it is set to 'read' which allows only read operations. Set to 'readwrite' to enable model creation and table mutations.",
+			Placeholder: modeReadOnly,
+			Default:     modeReadOnly,
 			NoPrompt:    true,
 		},
 		{
 			Key:         "dsn",
 			Type:        drivers.StringPropertyType,
-			Required:    false,
+			Required:    true,
 			DisplayName: "Connection string",
 			Placeholder: "clickhouse://localhost:9000?username=default&password=password",
 			Secret:      true,
@@ -59,7 +73,8 @@ var spec = drivers.Spec{
 			Required:    true,
 			DisplayName: "Host",
 			Description: "Hostname or IP address of the ClickHouse server",
-			Placeholder: "localhost",
+			Placeholder: "your-instance.clickhouse.cloud or your.clickhouse.server.com",
+			Hint:        "Your ClickHouse hostname (e.g., your-instance.clickhouse.cloud or your-server.com)",
 		},
 		{
 			Key:         "port",
@@ -68,23 +83,28 @@ var spec = drivers.Spec{
 			DisplayName: "Port",
 			Description: "Port number of the ClickHouse server",
 			Placeholder: "9000",
+			Hint:        "Default port is 9000 for native protocol. Also commonly used: 8443 for ClickHouse Cloud (HTTPS), 8123 for HTTP",
+			Default:     "9000",
 		},
 		{
 			Key:         "username",
 			Type:        drivers.StringPropertyType,
-			Required:    false,
+			Required:    true,
 			DisplayName: "Username",
 			Description: "Username to connect to the ClickHouse server",
 			Placeholder: "default",
+			Hint:        "Username for authentication",
+			Default:     "default",
 		},
 		{
 			Key:         "password",
 			Type:        drivers.StringPropertyType,
-			Required:    false,
+			Required:    true,
 			DisplayName: "Password",
 			Description: "Password to connect to the ClickHouse server",
-			Placeholder: "password",
+			Placeholder: "Database password",
 			Secret:      true,
+			Hint:        "Password to your database",
 		},
 		{
 			Key:         "database",
@@ -93,13 +113,26 @@ var spec = drivers.Spec{
 			DisplayName: "Database",
 			Description: "Name of the ClickHouse database to connect to",
 			Placeholder: "default",
+			Hint:        "Database name (default is 'default')",
+			Default:     "default",
+		},
+		{
+			Key:         "cluster",
+			Type:        drivers.StringPropertyType,
+			Required:    false,
+			DisplayName: "Cluster",
+			Description: "Cluster name. If set, Rill will create all models in the cluster as distributed tables.",
+			Placeholder: "Cluster name",
+			Hint:        "Cluster name (required for some self-hosted ClickHouse setups)",
 		},
 		{
 			Key:         "ssl",
 			Type:        drivers.BooleanPropertyType,
-			Required:    true,
+			Required:    false,
 			DisplayName: "SSL",
 			Description: "Use SSL to connect to the ClickHouse server",
+			Hint:        "Enable SSL for secure connections",
+			Default:     "true",
 		},
 	},
 	ImplementsOLAP: true,
@@ -110,6 +143,8 @@ type driver struct{}
 type configProperties struct {
 	// Managed is set internally if the connector has `managed: true`.
 	Managed bool `mapstructure:"managed"`
+	// Mode is set automatically to readwrite if Managed is true.
+	Mode string `mapstructure:"mode"`
 	// Provision is set when Managed is true and provisioning should be handled by this driver.
 	// (In practice, this gets set on local and means we should start an embedded Clickhouse server).
 	Provision bool `mapstructure:"provision"`
@@ -169,6 +204,16 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 	err := mapstructure.WeakDecode(config, conf)
 	if err != nil {
 		return nil, err
+	}
+
+	// If the managed flag is set we are free to allow overwriting tables.
+	if conf.Managed {
+		conf.Mode = modeReadWrite
+	}
+
+	// Default to read-only mode if not set
+	if conf.Mode == "" {
+		conf.Mode = modeReadOnly
 	}
 
 	// build clickhouse options
@@ -467,6 +512,10 @@ func (c *Connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecu
 	if opts.OutputHandle != c {
 		return nil, false
 	}
+	if c.config.Mode != modeReadWrite {
+		c.logger.Warn("Model execution is disabled. To enable modeling on this ClickHouse database, set 'mode: readwrite' in your connector configuration. WARNING: This will allow Rill to create and overwrite tables in your database.")
+		return nil, false
+	}
 	if opts.InputHandle == c {
 		return &selfToSelfExecutor{c}, true
 	}
@@ -481,6 +530,10 @@ func (c *Connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecu
 
 // AsModelManager implements drivers.Handle.
 func (c *Connection) AsModelManager(instanceID string) (drivers.ModelManager, bool) {
+	if c.config.Mode != modeReadWrite {
+		c.logger.Warn("Model execution is disabled. To enable modeling on this ClickHouse database, set 'mode: readwrite' in your connector configuration. WARNING: This will allow Rill to create and overwrite tables in your database.")
+		return nil, false
+	}
 	return c, true
 }
 

@@ -3,6 +3,7 @@
   import WithGraphicContexts from "@rilldata/web-common/components/data-graphic/functional-components/WithGraphicContexts.svelte";
   import MultiMetricMouseoverLabel from "@rilldata/web-common/components/data-graphic/marks/MultiMetricMouseoverLabel.svelte";
   import type { Point } from "@rilldata/web-common/components/data-graphic/marks/types";
+  import { ComparisonDeltaPreviousSuffix } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 
   import { NumberKind } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
   import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
@@ -14,7 +15,8 @@
   export let showComparison = false;
   export let mouseoverFormat;
   export let numberKind: NumberKind;
-  $: comparisonYAccessor = `comparison.${yAccessor}`;
+
+  $: comparisonYAccessor = yAccessor + ComparisonDeltaPreviousSuffix;
 
   $: x = point?.[xAccessor];
   $: y = point?.[yAccessor];

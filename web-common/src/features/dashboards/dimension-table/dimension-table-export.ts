@@ -28,7 +28,7 @@ export function getDimensionTableExportQuery(
   isScheduled: boolean,
 ): V1Query | undefined {
   const metricsViewName = get(ctx.metricsViewName);
-  const dashboardState = get(ctx.dashboardStore);
+  const exploreState = get(ctx.dashboardStore);
   const timeControlState = get(useTimeControlStore(ctx));
   const validSpecStore = get(ctx.validSpecStore);
   const dimensionSearchText = get(dimensionSearchTextStore);
@@ -39,8 +39,8 @@ export function getDimensionTableExportQuery(
   let timeRange: V1TimeRange | undefined;
   if (isScheduled) {
     timeRange = mapSelectedTimeRangeToV1TimeRange(
-      timeControlState,
-      dashboardState.selectedTimezone,
+      timeControlState.selectedTimeRange,
+      exploreState.selectedTimezone,
       validSpecStore.data.explore,
     );
   } else {
@@ -55,7 +55,8 @@ export function getDimensionTableExportQuery(
   if (timeControlState.showTimeComparison) {
     if (isScheduled) {
       comparisonTimeRange = mapSelectedComparisonTimeRangeToV1TimeRange(
-        timeControlState,
+        timeControlState.selectedComparisonTimeRange,
+        timeControlState.showTimeComparison,
         timeRange,
       );
     } else {
@@ -67,25 +68,31 @@ export function getDimensionTableExportQuery(
   }
 
   const query: V1Query = {
-    metricsViewAggregationRequest: getDimensionTableAggregationRequestForTime(
+    metricsViewAggregationRequest: getDimensionTableAggregationRequestForTime({
       metricsViewName,
-      dashboardState,
+      exploreState,
       timeRange,
       comparisonTimeRange,
       dimensionSearchText,
-    ),
+    }),
   };
 
   return query;
 }
 
-export function getDimensionTableAggregationRequestForTime(
-  metricsView: string,
-  exploreState: ExploreState,
-  timeRange: V1TimeRange,
-  comparisonTimeRange: V1TimeRange | undefined,
-  dimensionSearchText: string,
-): V1MetricsViewAggregationRequest {
+export function getDimensionTableAggregationRequestForTime({
+  metricsViewName,
+  exploreState,
+  timeRange,
+  comparisonTimeRange,
+  dimensionSearchText,
+}: {
+  metricsViewName: string;
+  exploreState: ExploreState;
+  timeRange: V1TimeRange;
+  comparisonTimeRange: V1TimeRange | undefined;
+  dimensionSearchText: string;
+}): V1MetricsViewAggregationRequest {
   const measures: V1MetricsViewAggregationMeasure[] =
     exploreState.visibleMeasures.map((name) => ({
       name: name,
@@ -122,7 +129,7 @@ export function getDimensionTableAggregationRequestForTime(
 
   return {
     instanceId: get(runtime).instanceId,
-    metricsView,
+    metricsView: metricsViewName,
     dimensions: [
       {
         name: exploreState.selectedDimensionName,

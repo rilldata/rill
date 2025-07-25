@@ -1,0 +1,90 @@
+version: 2
+project_name: rill
+
+release:
+  prerelease: auto
+  draft: false
+
+builds:
+  - builder: prebuilt
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    prebuilt:
+      path: binaries/{{ .Os }}_{{ .Arch }}/rill
+    binary: rill
+
+brews:
+  - homepage: https://github.com/rilldata/rill
+    description: The Rill CLI
+    name: rill
+    license: Apache 2.0
+    url_template: https://cdn.rilldata.com/rill/{{ .Tag }}/{{ .ArtifactName }}
+    repository:
+      owner: rilldata
+      name: homebrew-tap
+      branch: main
+      token: "{{ .Env.GITHUB_TOKEN }}"
+    test: |
+      system "#{bin}/rill --version"
+    install: |
+      bin.install "rill"
+    commit_author:
+      name: rilldata
+      email: support@rilldata.com
+
+archives:
+  - files:
+      - README.md
+      - LICENSE*
+    name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
+    formats: ["zip"]
+
+blobs:
+  - disable: "{{ .IsRelease }}"
+    provider: gs
+    bucket: prod-cdn.rilldata.com
+    directory: "rill/nightly"
+    extra_files:
+      - glob: ./dist/**/*
+      - glob: scripts/install.sh
+  - disable: "{{ .IsNightly }}"
+    provider: gs
+    bucket: prod-cdn.rilldata.com
+    directory: "rill/v{{ .Version }}"
+    extra_files:
+      - glob: ./dist/**/*
+  - disable: "{{ .IsNightly }}"
+    provider: gs
+    bucket: prod-cdn.rilldata.com
+    directory: "rill"
+    extra_files_only: true
+    extra_files:
+      - glob: latest.txt
+      - glob: scripts/install.sh
+
+changelog:
+  sort: asc
+  disable: "{{ .IsNightly }}"
+
+checksum:
+  name_template: checksums.txt
+
+dockers:
+  - image_templates:
+      - rilldata/rill:latest
+      - rilldata/rill:{{ .Tag }}
+    skip_build: "{{ .IsNightly }}"
+    skip_push: "{{ .IsNightly }}"
+  - image_templates:
+      - rilldata/rill:nightly
+    skip_build: "{{ .IsRelease }}"
+    skip_push: "{{ .IsRelease }}"
+
+nightly:
+  version_template: "{{ incminor .Version }}-nightly"
+  publish_release: false
+  keep_single_release: true

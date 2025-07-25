@@ -1296,13 +1296,13 @@ func (a *AST) sqlForTimeRange(timeDimExpr string, start, end time.Time) (string,
 	var where string
 	var args []any
 	if !start.IsZero() && !end.IsZero() {
-		where = fmt.Sprintf("%s >= ? AND %s < ?", timeDimExpr, timeDimExpr)
+		where = fmt.Sprintf("%s >= %s AND %s < %s", timeDimExpr, a.dialect.GetTimeDimensionParameter(), timeDimExpr, a.dialect.GetTimeDimensionParameter())
 		args = []any{start, end}
 	} else if !start.IsZero() {
-		where = fmt.Sprintf("%s >= ?", timeDimExpr)
+		where = fmt.Sprintf("%s >= %s", timeDimExpr, a.dialect.GetTimeDimensionParameter())
 		args = []any{start}
 	} else if !end.IsZero() {
-		where = fmt.Sprintf("%s < ?", timeDimExpr)
+		where = fmt.Sprintf("%s < %s", timeDimExpr, a.dialect.GetTimeDimensionParameter())
 		args = []any{end}
 	} else {
 		return "", nil
