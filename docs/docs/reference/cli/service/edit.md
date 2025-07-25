@@ -1,19 +1,20 @@
 ---
 note: GENERATED. DO NOT EDIT.
-title: rill service rename
+title: rill service edit
 ---
-## rill service rename
+## rill service edit
 
-Rename service
+edit service properties
 
 ```
-rill service rename <service-name> [flags]
+rill service edit <service-name> [flags]
 ```
 
 ### Flags
 
 ```
-      --new-name string   New Service Name
+      --new-name string     New service name
+      --attributes string   JSON object of key-value pairs for service attributes
 ```
 
 ### Global flags

@@ -10,6 +10,15 @@ Create service
 rill service create <service-name> [flags]
 ```
 
+### Flags
+
+```
+      --attributes string     JSON object of key-value pairs for service attributes
+      --org-role string       Organization role to assign to the service (admin, editor, viewer, guest)
+      --project string        Project to assign the role to (required if project-role is set)
+      --project-role string   Project role to assign to the service (admin, editor, viewer)
+```
+
 ### Global flags
 
 ```

@@ -1,19 +1,19 @@
 ---
 note: GENERATED. DO NOT EDIT.
-title: rill service list
+title: rill service remove
 ---
-## rill service list
+## rill service remove
 
-List service
+remove service from org or project
 
 ```
-rill service list [flags]
+rill service remove <service-name> [flags]
 ```
 
 ### Flags
 
 ```
-      --project string   Project name to filter services
+      --project string   Project to remove service from
 ```
 
 ### Global flags

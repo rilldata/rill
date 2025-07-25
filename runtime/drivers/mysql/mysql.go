@@ -30,7 +30,7 @@ var spec = drivers.Spec{
 		{
 			Key:         "dsn",
 			Type:        drivers.StringPropertyType,
-			Placeholder: "username:password@tcp(example.com:3306)/my-db",
+			Placeholder: "mysql://user:password@host:3306/my-db",
 			Secret:      true,
 		},
 	},

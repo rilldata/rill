@@ -1,19 +1,13 @@
 ---
 note: GENERATED. DO NOT EDIT.
-title: rill service list
+title: rill service show
 ---
-## rill service list
+## rill service show
 
-List service
-
-```
-rill service list [flags]
-```
-
-### Flags
+Show service
 
 ```
-      --project string   Project name to filter services
+rill service show <service-name> [flags]
 ```
 
 ### Global flags

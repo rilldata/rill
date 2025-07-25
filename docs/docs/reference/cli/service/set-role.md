@@ -1,19 +1,20 @@
 ---
 note: GENERATED. DO NOT EDIT.
-title: rill service list
+title: rill service set-role
 ---
-## rill service list
+## rill service set-role
 
-List service
+Set role for service
 
 ```
-rill service list [flags]
+rill service set-role <service-name> [flags]
 ```
 
 ### Flags
 
 ```
-      --project string   Project name to filter services
+      --project string   Project
+      --role string      Role of the service (options: admin, editor, viewer, guest)
 ```
 
 ### Global flags
