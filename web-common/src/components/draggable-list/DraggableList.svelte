@@ -1,6 +1,5 @@
 <script lang="ts">
   import { clamp } from "@rilldata/web-common/lib/clamp";
-  import { createEventDispatcher } from "svelte";
 
   const ITEM_HEIGHT = 28;
   const UPPER_BOUND = 12;
@@ -16,11 +15,16 @@
   export let showSearch: boolean = false;
   export let minHeight: string = "100px";
   export let maxHeight: string = "400px";
-
-  const dispatch = createEventDispatcher<{
-    reorder: { items: DraggableItem[]; fromIndex: number; toIndex: number };
-    "item-click": { item: DraggableItem; index: number };
-  }>();
+  export let onReorder:
+    | ((data: {
+        items: DraggableItem[];
+        fromIndex: number;
+        toIndex: number;
+      }) => void)
+    | undefined = undefined;
+  export let onItemClick:
+    | ((data: { item: DraggableItem; index: number }) => void)
+    | undefined = undefined;
 
   let initialMousePosition = 0;
   let contentRect = new DOMRectReadOnly();
@@ -73,7 +77,7 @@
 
     clone.style.transform = `translateY(${dragItemInitialTop}px)`;
     clone.style.width = dragElement.clientWidth + "px";
-    clone.style.left = "0px";
+    clone.style.left = "6px";
     clone.style.position = "absolute";
     clone.style.zIndex = "50";
 
@@ -118,7 +122,7 @@
   function handleMouseUp() {
     if (dropIndex !== null && dragIndex !== dropIndex) {
       const reorderedItems = reorderItems(items, dragIndex, dropIndex);
-      dispatch("reorder", {
+      onReorder?.({
         items: reorderedItems,
         fromIndex: dragIndex,
         toIndex: dropIndex,
@@ -145,7 +149,7 @@
   }
 
   function handleItemClick(item: DraggableItem, index: number) {
-    dispatch("item-click", { item, index });
+    onItemClick?.({ item, index });
   }
 </script>
 

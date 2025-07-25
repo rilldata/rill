@@ -40,21 +40,20 @@
     .filter(([id]) => id && !selectedItems.includes(id))
     .map(([id]) => ({ id: id! }));
 
-  function handleSelectedReorder(event: {
-    detail: {
-      items: Array<{ id: string }>;
-      fromIndex: number;
-      toIndex: number;
-    };
+  function handleSelectedReorder(data: {
+    items: Array<{ id: string }>;
+    fromIndex: number;
+    toIndex: number;
   }) {
-    const newSelectedItems = event.detail.items.map((item) => item.id);
+    const newSelectedItems = data.items.map((item) => item.id);
     onSelectedChange(newSelectedItems);
   }
 
-  function handleHiddenItemClick(event: {
-    detail: { item: { id: string }; index: number };
+  function handleHiddenItemClick(data: {
+    item: { id: string };
+    index: number;
   }) {
-    const newSelectedItems = [...selectedItems, event.detail.item.id];
+    const newSelectedItems = [...selectedItems, data.item.id];
     onSelectedChange(newSelectedItems);
   }
 
@@ -112,7 +111,7 @@
           bind:searchValue={searchText}
           minHeight="auto"
           maxHeight="300px"
-          on:reorder={handleSelectedReorder}
+          onReorder={handleSelectedReorder}
         >
           <div
             slot="header"
@@ -147,7 +146,10 @@
             {#if itemData?.description || selectedItems.length === 1}
               <Tooltip.Root openDelay={200} portal="body">
                 <Tooltip.Trigger class="w-full flex gap-x-1 items-center">
-                  <DragHandle size="16px" className="text-gray-400" />
+                  <DragHandle
+                    size="16px"
+                    className="text-gray-400 pointer-events-none"
+                  />
                   <span class="truncate flex-1 text-left pointer-events-none">
                     {itemData?.displayName ??
                       `Unknown ${type === "measure" ? "measure" : "dimension"}`}
@@ -182,7 +184,10 @@
                 </Tooltip.Content>
               </Tooltip.Root>
             {:else}
-              <DragHandle size="16px" className="text-gray-400" />
+              <DragHandle
+                size="16px"
+                className="text-gray-400 pointer-events-none"
+              />
               <span class="truncate flex-1 text-left pointer-events-none">
                 {itemData?.displayName ??
                   `Unknown ${type === "measure" ? "measure" : "dimension"}`}
@@ -213,7 +218,7 @@
             bind:searchValue={searchText}
             minHeight="auto"
             maxHeight="200px"
-            on:item-click={handleHiddenItemClick}
+            onItemClick={handleHiddenItemClick}
           >
             <div
               slot="header"
@@ -256,7 +261,7 @@
                     <button
                       class="hover:bg-slate-200 p-1 rounded-sm active:bg-slate-300"
                       on:click|stopPropagation={() =>
-                        handleHiddenItemClick({ detail: { item, index } })}
+                        handleHiddenItemClick({ item, index })}
                       aria-label="Toggle visibility"
                       data-testid="toggle-visibility-button"
                     >
@@ -282,7 +287,7 @@
                 <button
                   class="hover:bg-slate-200 p-1 rounded-sm active:bg-slate-300"
                   on:click|stopPropagation={() =>
-                    handleHiddenItemClick({ detail: { item, index } })}
+                    handleHiddenItemClick({ item, index })}
                   aria-label="Toggle visibility"
                   data-testid="toggle-visibility-button"
                 >
