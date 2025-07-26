@@ -88,9 +88,23 @@ func (r *MetricsViewReconciler) Reconcile(ctx context.Context, n *runtimev1.Reso
 		}
 	}
 
+	var parentDataRefreshedOn *timestamppb.Timestamp
+	refs := self.Meta.Refs
+	if mv.Spec.Parent != "" {
+		parent, err := r.C.Get(ctx, &runtimev1.ResourceName{
+			Name: mv.Spec.Parent,
+			Kind: runtime.ResourceKindMetricsView,
+		}, false)
+		if err != nil {
+			return runtime.ReconcileResult{Err: fmt.Errorf("failed to get parent metrics view %q: %w", mv.Spec.Parent, err)}
+		}
+		refs = parent.Meta.Refs
+		parentDataRefreshedOn = parent.GetMetricsView().State.DataRefreshedOn
+	}
+
 	// Find out if the metrics view has a ref to a source or model in the same project.
 	hasInternalRef := false
-	for _, ref := range self.Meta.Refs {
+	for _, ref := range refs {
 		if ref.Kind == runtime.ResourceKindSource || ref.Kind == runtime.ResourceKindModel {
 			hasInternalRef = true
 		}
@@ -108,6 +122,7 @@ func (r *MetricsViewReconciler) Reconcile(ctx context.Context, n *runtimev1.Reso
 		return runtime.ReconcileResult{Err: fmt.Errorf("failed to create metrics view executor: %w", err)}
 	}
 	defer e.Close()
+
 	validateResult, validateErr := e.ValidateAndNormalizeMetricsView(ctx)
 	if validateErr == nil {
 		validateErr = validateResult.Error()
@@ -137,6 +152,9 @@ func (r *MetricsViewReconciler) Reconcile(ctx context.Context, n *runtimev1.Reso
 	// If there's no internal ref, we assume the metrics view is based on an externally managed table and set the streaming state to true.
 	mv.State.Streaming = !hasInternalRef
 	// We copy the underlying model's refreshed_on timestamp to the metrics view state since dashboard users may not have access to the underlying model resource.
+	if parentDataRefreshedOn != nil {
+		dataRefreshedOn = parentDataRefreshedOn
+	}
 	mv.State.DataRefreshedOn = dataRefreshedOn
 	// Update the state. Even if the validation result is unchanged, we always update the state to ensure the state version is incremented.
 	err = r.C.UpdateState(ctx, self.Meta.Name, self)

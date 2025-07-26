@@ -1291,6 +1291,13 @@ export class MetricsView extends Message<MetricsView> {
  */
 export class MetricsViewSpec extends Message<MetricsViewSpec> {
   /**
+   * name of parent metrics view, if this is a derived metrics view. If this is set then certain fields like table, connector, database*, model, dimensions, and measures will only be set in `state.valid_spec`.
+   *
+   * @generated from field: string parent = 29;
+   */
+  parent = "";
+
+  /**
    * Connector containing the table
    *
    * @generated from field: string connector = 1;
@@ -1383,6 +1390,20 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
   measures: MetricsViewSpec_Measure[] = [];
 
   /**
+   * Dynamic selector for dimensions from parent metrics view. Will be processed during validation, so it will always be empty in `state.valid_spec`. Can only be used if parent is set.
+   *
+   * @generated from field: rill.runtime.v1.FieldSelector parent_dimensions = 30;
+   */
+  parentDimensions?: FieldSelector;
+
+  /**
+   * Dynamic selector for measures from parent metrics view. Will be processed during validation, so it will always be empty in `state.valid_spec`. Can only be used if parent is set.
+   *
+   * @generated from field: rill.runtime.v1.FieldSelector parent_measures = 31;
+   */
+  parentMeasures?: FieldSelector;
+
+  /**
    * Security for the metrics view
    *
    * @generated from field: repeated rill.runtime.v1.SecurityRule security_rules = 23;
@@ -1420,6 +1441,13 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
    */
   cacheKeyTtlSeconds = protoInt64.zero;
 
+  /**
+   * If true, no explore will be generated for this metrics view automatically.
+   *
+   * @generated from field: bool no_explore = 32;
+   */
+  noExplore = false;
+
   constructor(data?: PartialMessage<MetricsViewSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1428,6 +1456,7 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.MetricsViewSpec";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 29, name: "parent", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 1, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 21, name: "database", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 22, name: "database_schema", kind: "scalar", T: 9 /* ScalarType.STRING */ },
@@ -1441,12 +1470,15 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
     { no: 20, name: "watermark_expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "dimensions", kind: "message", T: MetricsViewSpec_Dimension, repeated: true },
     { no: 7, name: "measures", kind: "message", T: MetricsViewSpec_Measure, repeated: true },
+    { no: 30, name: "parent_dimensions", kind: "message", T: FieldSelector },
+    { no: 31, name: "parent_measures", kind: "message", T: FieldSelector },
     { no: 23, name: "security_rules", kind: "message", T: SecurityRule, repeated: true },
     { no: 12, name: "first_day_of_week", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 13, name: "first_month_of_year", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 25, name: "cache_enabled", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 26, name: "cache_key_sql", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 27, name: "cache_key_ttl_seconds", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 32, name: "no_explore", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec {
@@ -2281,7 +2313,7 @@ export class ExploreSpec extends Message<ExploreSpec> {
 
   /**
    * When true, it indicates that the explore was defined in a metrics view.
-   * This currently happens for legacy metrics views (that don't have `version: 1`), which also emits explores.
+   * This currently happens for metrics views in which explore is defined inline or `no_explore` is not set, which also emits explores.
    *
    * @generated from field: bool defined_in_metrics_view = 21;
    */

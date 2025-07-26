@@ -907,7 +907,7 @@ These are not currently parsed from YAML, but will be derived from the parent me
   lockTimeZone?: boolean;
   allowCustomTimeRange?: boolean;
   /** When true, it indicates that the explore was defined in a metrics view.
-This currently happens for legacy metrics views (that don't have `version: 1`), which also emits explores. */
+This currently happens for metrics views in which explore is defined inline or `no_explore` is not set, which also emits explores. */
   definedInMetricsView?: boolean;
 }
 
@@ -1467,6 +1467,8 @@ export interface V1MetricsViewSort {
 }
 
 export interface V1MetricsViewSpec {
+  /** name of parent metrics view, if this is a derived metrics view. If this is set then certain fields like table, connector, database*, model, dimensions, and measures will only be set in `state.valid_spec`. */
+  parent?: string;
   connector?: string;
   database?: string;
   databaseSchema?: string;
@@ -1483,6 +1485,8 @@ export interface V1MetricsViewSpec {
   watermarkExpression?: string;
   dimensions?: MetricsViewSpecDimension[];
   measures?: MetricsViewSpecMeasure[];
+  parentDimensions?: V1FieldSelector;
+  parentMeasures?: V1FieldSelector;
   securityRules?: V1SecurityRule[];
   /** ISO 8601 weekday number to use as the base for time aggregations by week. Defaults to 1 (Monday). */
   firstDayOfWeek?: number;
@@ -1492,6 +1496,8 @@ export interface V1MetricsViewSpec {
   cacheEnabled?: boolean;
   cacheKeySql?: string;
   cacheKeyTtlSeconds?: string;
+  /** If true, no explore will be generated for this metrics view automatically. */
+  noExplore?: boolean;
 }
 
 export interface V1MetricsViewState {
