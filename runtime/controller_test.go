@@ -1376,8 +1376,10 @@ func newMetricsView(name, model, parent string, measures, dimensions []any) (*ru
 func newExplore(metricsVew string, measures, dims []string) (*runtimev1.Explore, *runtimev1.Resource) {
 	explore := &runtimev1.Explore{
 		Spec: &runtimev1.ExploreSpec{
-			DisplayName: parser.ToDisplayName(metricsVew),
-			MetricsView: metricsVew,
+			DisplayName:        parser.ToDisplayName(metricsVew),
+			MetricsView:        metricsVew,
+			DimensionsSelector: &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}},
+			MeasuresSelector:   &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}},
 			DefaultPreset: &runtimev1.ExplorePreset{
 				DimensionsSelector: &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}},
 				MeasuresSelector:   &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}},

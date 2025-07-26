@@ -729,11 +729,13 @@ func (p *Parser) parseMetricsView(node *Node) error {
 	for _, dim := range spec.Dimensions {
 		e.ExploreSpec.Dimensions = append(e.ExploreSpec.Dimensions, dim.Name)
 	}
-	e.ExploreSpec.DimensionsSelector = nil
 	for _, m := range spec.Measures {
 		e.ExploreSpec.Measures = append(e.ExploreSpec.Measures, m.Name)
 	}
-	e.ExploreSpec.MeasuresSelector = nil
+	if tmp.Parent != "" {
+		e.ExploreSpec.DimensionsSelector = &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}}
+		e.ExploreSpec.MeasuresSelector = &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}}
+	}
 	e.ExploreSpec.Theme = tmp.DefaultTheme
 	for _, tr := range tmp.AvailableTimeRanges {
 		res := &runtimev1.ExploreTimeRange{Range: tr.Range}
