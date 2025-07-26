@@ -29,20 +29,22 @@
   // Normalize data from both APIs
   $: columns = useNewAPI
     ? // New API returns schema as { [columnName]: "type" }
-      newTableQuery?.data?.schema
-      ? Object.entries(newTableQuery.data.schema).map(([name, type]) => ({
+      $newTableQuery?.data?.schema
+      ? Object.entries($newTableQuery.data.schema).map(([name, type]) => ({
           name,
           type: type as string,
         }))
       : []
     : // Legacy API returns profileColumns array
-      (legacyColumnsQuery?.data?.profileColumns ?? []);
+      ($legacyColumnsQuery?.data?.profileColumns ?? []);
 
-  $: error = useNewAPI ? newTableQuery?.error : legacyColumnsQuery?.error;
-  $: isError = useNewAPI ? !!newTableQuery?.error : !!legacyColumnsQuery?.error;
+  $: error = useNewAPI ? $newTableQuery?.error : $legacyColumnsQuery?.error;
+  $: isError = useNewAPI
+    ? !!$newTableQuery?.error
+    : !!$legacyColumnsQuery?.error;
   $: isLoading = useNewAPI
-    ? newTableQuery?.isLoading
-    : legacyColumnsQuery?.isLoading;
+    ? $newTableQuery?.isLoading
+    : $legacyColumnsQuery?.isLoading;
 
   function prettyPrintType(type: string) {
     // If the type starts with "CODE_", remove it
@@ -52,11 +54,13 @@
 
 <ul class="table-schema-list">
   {#if isError}
-    <div>
+    <div class="{database ? 'pl-[78px]' : 'pl-[60px]'} py-1.5 text-gray-500">
       Error loading schema: {error?.response?.data?.message || error?.message}
     </div>
   {:else if isLoading}
-    <div>Loading schema...</div>
+    <div class="{database ? 'pl-[78px]' : 'pl-[60px]'} py-1.5 text-gray-500">
+      Loading schema...
+    </div>
   {:else if columns && columns.length > 0}
     {#each columns as column (column.name)}
       <li class="table-schema-entry {database ? 'pl-[78px]' : 'pl-[60px]'}">
@@ -72,7 +76,9 @@
       </li>
     {/each}
   {:else}
-    <div>No columns found</div>
+    <div class="{database ? 'pl-[78px]' : 'pl-[60px]'} py-1.5 text-gray-500">
+      No columns found
+    </div>
   {/if}
 </ul>
 
