@@ -15,8 +15,15 @@ export function makeFullyQualifiedTableName(
       return `${database}.${databaseSchema}.${table}`;
     case "pinot":
       return table;
+    // Non-OLAP connectors: use standard database.schema.table format
     default:
-      throw new Error(`Unsupported OLAP connector: ${driver}`);
+      if (database && databaseSchema) {
+        return `${database}.${databaseSchema}.${table}`;
+      } else if (databaseSchema) {
+        return `${databaseSchema}.${table}`;
+      } else {
+        return table;
+      }
   }
 }
 
@@ -46,8 +53,20 @@ export function makeSufficientlyQualifiedTableName(
     case "pinot":
       // TODO
       return table;
+    // Non-OLAP connectors: use standard qualification logic
     default:
-      throw new Error(`Unsupported OLAP connector: ${driver}`);
+      if (
+        database &&
+        databaseSchema &&
+        database !== "default" &&
+        databaseSchema !== "default"
+      ) {
+        return `${database}.${databaseSchema}.${table}`;
+      } else if (databaseSchema && databaseSchema !== "default") {
+        return `${databaseSchema}.${table}`;
+      } else {
+        return table;
+      }
   }
 }
 

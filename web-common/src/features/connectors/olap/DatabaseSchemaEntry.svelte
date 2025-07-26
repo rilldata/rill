@@ -3,7 +3,8 @@
   import CaretDownIcon from "../../../components/icons/CaretDownIcon.svelte";
   import type { V1AnalyzedConnector } from "../../../runtime-client";
   import TableEntry from "./TableEntry.svelte";
-  import { useTables } from "./selectors";
+  import { useTables as useTablesLegacy } from "./selectors";
+  import { useTablesForSchema } from "../selectors";
   import type { ConnectorExplorerStore } from "../connector-explorer-store";
 
   export let instanceId: string;
@@ -11,27 +12,41 @@
   export let database: string;
   export let databaseSchema: string;
   export let store: ConnectorExplorerStore;
+  export let useNewAPI: boolean = false;
 
   $: connectorName = connector?.name as string;
 
   $: expandedStore = store.getItem(connectorName, database, databaseSchema);
   $: expanded = $expandedStore;
-  $: tablesQuery = useTables(
-    instanceId,
-    connectorName,
-    database,
-    databaseSchema,
-  );
-  $: ({ data } = $tablesQuery);
 
-  $: typedData = data as
-    | {
-        name: string;
-        database: string;
-        databaseSchema: string;
-        hasUnsupportedDataTypes: boolean;
-      }[]
-    | undefined;
+  // Use appropriate selector based on API version
+  $: tablesQuery = useNewAPI
+    ? useTablesForSchema(instanceId, connectorName, database, databaseSchema)
+    : useTablesLegacy(instanceId, connectorName, database, databaseSchema);
+
+  $: ({ data, error, isLoading } = $tablesQuery);
+
+  // Handle data structure differences between APIs
+  $: typedData = useNewAPI
+    ? // New API returns V1TableInfo[]
+      (data as Array<{ name: string; view?: boolean }> | undefined)?.map(
+        (table) => ({
+          name: table.name,
+          database,
+          databaseSchema,
+          hasUnsupportedDataTypes: false, // Not available in new API
+          view: table.view ?? false,
+        }),
+      )
+    : // Legacy API returns V1OlapTableInfo[]
+      (data as
+        | Array<{
+            name: string;
+            database: string;
+            databaseSchema: string;
+            hasUnsupportedDataTypes: boolean;
+          }>
+        | undefined);
 </script>
 
 <li aria-label={`${database}.${databaseSchema}`} class="database-schema-entry">
@@ -60,7 +75,13 @@
   </button>
 
   {#if expanded}
-    {#if connector?.errorMessage}
+    {#if error}
+      <div class="message">
+        Error: {error.message || error.response?.data?.message}
+      </div>
+    {:else if isLoading}
+      <div class="message">Loading tables...</div>
+    {:else if connector?.errorMessage}
       <div class="message">{connector.errorMessage}</div>
     {:else if !connector.driver || !connector.driver.name}
       <div class="message">Connector not found</div>
@@ -76,8 +97,9 @@
             {database}
             {databaseSchema}
             table={tableInfo.name}
-            hasUnsupportedDataTypes={tableInfo.hasUnsupportedDataTypes}
+            hasUnsupportedDataTypes={tableInfo.hasUnsupportedDataTypes ?? false}
             {store}
+            {useNewAPI}
           />
         {/each}
       </ol>
