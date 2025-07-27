@@ -2515,8 +2515,7 @@ type ExploreSpec struct {
 	LockTimeZone bool `protobuf:"varint,19,opt,name=lock_time_zone,json=lockTimeZone,proto3" json:"lock_time_zone,omitempty"`
 	// Allow custom time range
 	AllowCustomTimeRange bool `protobuf:"varint,20,opt,name=allow_custom_time_range,json=allowCustomTimeRange,proto3" json:"allow_custom_time_range,omitempty"`
-	// When true, it indicates that the explore was defined in a metrics view.
-	// This currently happens for metrics views in which explore is defined inline or `no_explore` is not set, which also emits explores.
+	// When true, it indicates that the explore was defined in a metrics view either explicitly or emitted because version was not set.
 	DefinedInMetricsView bool `protobuf:"varint,21,opt,name=defined_in_metrics_view,json=definedInMetricsView,proto3" json:"defined_in_metrics_view,omitempty"`
 }
 

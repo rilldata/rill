@@ -2312,8 +2312,7 @@ export class ExploreSpec extends Message<ExploreSpec> {
   allowCustomTimeRange = false;
 
   /**
-   * When true, it indicates that the explore was defined in a metrics view.
-   * This currently happens for metrics views in which explore is defined inline or `no_explore` is not set, which also emits explores.
+   * When true, it indicates that the explore was defined in a metrics view either explicitly or emitted because version was not set.
    *
    * @generated from field: bool defined_in_metrics_view = 21;
    */

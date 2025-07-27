@@ -906,8 +906,7 @@ These are not currently parsed from YAML, but will be derived from the parent me
   banner?: string;
   lockTimeZone?: boolean;
   allowCustomTimeRange?: boolean;
-  /** When true, it indicates that the explore was defined in a metrics view.
-This currently happens for metrics views in which explore is defined inline or `no_explore` is not set, which also emits explores. */
+  /** When true, it indicates that the explore was defined in a metrics view either explicitly or emitted because version was not set. */
   definedInMetricsView?: boolean;
 }
 

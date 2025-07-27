@@ -4696,9 +4696,7 @@ definitions:
         title: Allow custom time range
       definedInMetricsView:
         type: boolean
-        description: |-
-          When true, it indicates that the explore was defined in a metrics view.
-          This currently happens for metrics views in which explore is defined inline or `no_explore` is not set, which also emits explores.
+        description: When true, it indicates that the explore was defined in a metrics view either explicitly or emitted because version was not set.
   v1ExploreState:
     type: object
     properties:
