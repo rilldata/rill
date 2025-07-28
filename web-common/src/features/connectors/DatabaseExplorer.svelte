@@ -3,10 +3,7 @@
   import { LIST_SLIDE_DURATION as duration } from "../../layout/config";
   import type { V1AnalyzedConnector } from "../../runtime-client";
   import DatabaseEntry from "./DatabaseEntry.svelte";
-  import {
-    useDatabasesFromSchemas,
-    useConnectorCapabilities,
-  } from "./selectors";
+  import { useDatabasesFromSchemas } from "./selectors";
   import { useDatabases as useDatabasesLegacy } from "./olap/selectors";
   import type { ConnectorExplorerStore } from "./connector-explorer-store";
 
@@ -16,12 +13,11 @@
 
   $: connectorName = connector?.name as string;
 
-  // Determine which API to use based on connector capabilities
-  $: capabilities = useConnectorCapabilities(instanceId, connectorName);
+  // Determine which API to use based on connector capabilities (optimized - direct access)
   $: shouldUseNewAPI =
-    $capabilities?.implementsSqlStore ||
-    $capabilities?.implementsWarehouse ||
-    !$capabilities?.implementsOlap;
+    connector.driver?.implementsSqlStore ||
+    connector.driver?.implementsWarehouse ||
+    !connector.driver?.implementsOlap;
 
   // Use appropriate selector based on connector type
   $: databasesQuery = shouldUseNewAPI

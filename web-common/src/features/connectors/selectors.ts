@@ -193,27 +193,3 @@ export function useTables(
 ) {
   return useTablesForSchema(instanceId, connector, database, databaseSchema);
 }
-
-/**
- * Determines whether to use new or legacy APIs based on connector capabilities
- */
-export function useConnectorCapabilities(
-  instanceId: string,
-  connector: string,
-) {
-  return derived(
-    [createRuntimeServiceAnalyzeConnectors(instanceId)],
-    ([$connectorsQuery]) => {
-      const { connectors = [] } = $connectorsQuery.data || {};
-      const connectorInfo = connectors.find((c) => c.name === connector);
-
-      return {
-        implementsOlap: connectorInfo?.driver?.implementsOlap ?? false,
-        implementsSqlStore: connectorInfo?.driver?.implementsSqlStore ?? false,
-        implementsWarehouse:
-          connectorInfo?.driver?.implementsWarehouse ?? false,
-        driverName: connectorInfo?.driver?.name ?? "",
-      };
-    },
-  );
-}
