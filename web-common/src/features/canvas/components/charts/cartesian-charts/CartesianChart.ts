@@ -21,6 +21,7 @@ import type {
 } from "../../../stores/canvas-entity";
 import { BaseChart, type BaseChartConfig } from "../BaseChart";
 import type { ChartDataQuery, ChartFieldsMap, FieldConfig } from "../types";
+import { vegaSortToAggregationSort } from "../util";
 
 export type CartesianChartSpec = BaseChartConfig & {
   x?: FieldConfig;
@@ -30,8 +31,11 @@ export type CartesianChartSpec = BaseChartConfig & {
 
 const DEFAULT_NOMINAL_LIMIT = 20;
 const DEFAULT_SPLIT_LIMIT = 10;
+const DEFAULT_SORT = "-y";
 
 export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
+  customSortXItems: string[] = [];
+
   static chartInputParams: Record<string, ComponentInputParam> = {
     x: {
       type: "positional",
@@ -40,7 +44,11 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
         chartFieldInput: {
           type: "dimension",
           axisTitleSelector: true,
-          sortSelector: true,
+          sortSelector: {
+            enable: true,
+            defaultSort: DEFAULT_SORT,
+            options: ["x", "-x", "y", "-y", "custom"],
+          },
           limitSelector: { defaultLimit: DEFAULT_NOMINAL_LIMIT },
           nullSelector: true,
           labelAngleSelector: true,
@@ -80,7 +88,12 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
   }
 
   getChartSpecificOptions(): Record<string, ComponentInputParam> {
-    return CartesianChartComponent.chartInputParams;
+    const inputParams = CartesianChartComponent.chartInputParams;
+    const sortSelector = inputParams.x.meta?.chartFieldInput?.sortSelector;
+    if (sortSelector) {
+      sortSelector.customSortItems = this.customSortXItems;
+    }
+    return inputParams;
   }
 
   createChartDataQuery(
@@ -106,7 +119,7 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
 
     if (config.x?.type === "nominal" && dimensionName) {
       limit = config.x.limit ?? 100;
-      xAxisSort = this.vegaSortToAggregationSort("x", config);
+      xAxisSort = vegaSortToAggregationSort("x", config, DEFAULT_SORT);
       dimensions = [{ name: dimensionName }];
     } else if (config.x?.type === "temporal" && dimensionName) {
       dimensions = [{ name: dimensionName }];
@@ -129,6 +142,7 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
           !!timeRange?.end &&
           hasColorDimension &&
           config.x?.type === "nominal" &&
+          !Array.isArray(config.x?.sort) &&
           !!dimensionName;
 
         const topNWhere = getFilterWithNullHandling(where, config.x);
@@ -206,7 +220,11 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
         const enabled =
           !!timeRange?.start &&
           !!timeRange?.end &&
-          (hasColorDimension && config.x?.type === "nominal"
+          !!measures?.length &&
+          !!dimensions?.length &&
+          (hasColorDimension &&
+          config.x?.type === "nominal" &&
+          !Array.isArray(config.x?.sort)
             ? !!topNXData?.length
             : true) &&
           (hasColorDimension && colorDimensionName && colorLimit
@@ -218,13 +236,20 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
           config.x,
         );
 
-        // Apply topN filter for x dimension
-        if (topNXData?.length && dimensionName) {
-          const topXValues = topNXData.map((d) => d[dimensionName] as string);
+        let includedXValues: string[] = [];
 
+        // Apply topN filter for x dimension
+        if (Array.isArray(config.x?.sort)) {
+          includedXValues = config.x.sort;
+        } else if (topNXData?.length && dimensionName) {
+          includedXValues = topNXData.map((d) => d[dimensionName] as string);
+        }
+
+        if (dimensionName) {
+          this.customSortXItems = includedXValues;
           const filterForTopXValues = createInExpression(
             dimensionName,
-            topXValues,
+            includedXValues,
           );
           combinedWhere = mergeFilters(combinedWhere, filterForTopXValues);
         }
@@ -299,7 +324,7 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
       x: {
         type: timeDimension ? "temporal" : "nominal",
         field: timeDimension || randomDimension,
-        sort: "-y",
+        sort: DEFAULT_SORT,
         limit: DEFAULT_NOMINAL_LIMIT,
       },
       y: {
@@ -307,34 +332,6 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
         field: randomMeasure,
         zeroBasedOrigin: true,
       },
-    };
-  }
-
-  private vegaSortToAggregationSort(
-    encoder: "x" | "color",
-    config: CartesianChartSpec,
-  ): V1MetricsViewAggregationSort | undefined {
-    const encoderConfig = config[encoder];
-
-    if (typeof encoderConfig === "string") {
-      return undefined;
-    }
-
-    const sort = encoderConfig?.sort;
-    if (!sort) return undefined;
-
-    const encoderField = encoderConfig?.field;
-
-    const field =
-      sort === "color" || sort === "-color" || sort === "x" || sort === "-x"
-        ? encoderField
-        : config?.y?.field;
-
-    if (!field) return undefined;
-
-    return {
-      name: field,
-      desc: sort === "-x" || sort === "-y" || sort === "-color",
     };
   }
 

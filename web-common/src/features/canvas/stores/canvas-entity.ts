@@ -16,6 +16,7 @@ import {
   writable,
   type Readable,
   type Unsubscriber,
+  type Writable,
 } from "svelte/store";
 import { parseDocument } from "yaml";
 import type { FileArtifact } from "../../entity-management/file-artifact";
@@ -70,6 +71,7 @@ export class CanvasEntity {
   // Tracks whether the canvas been loaded (and rows processed) for the first time
   firstLoad = true;
   unsubscriber: Unsubscriber;
+  lastVisitedState: Writable<string | null> = writable(null);
 
   theme: Record<(typeof TailwindColorSpacing)[number], string>;
 
@@ -116,7 +118,12 @@ export class CanvasEntity {
     })();
 
     this.spec = new CanvasResolvedSpec(this.specStore);
-    this.timeControls = new TimeControls(this.specStore, searchParamsStore);
+    this.timeControls = new TimeControls(
+      this.specStore,
+      searchParamsStore,
+      undefined,
+      this.name,
+    );
     this.filters = new Filters(this.spec, searchParamsStore);
 
     this.unsubscriber = this.specStore.subscribe((spec) => {
@@ -159,6 +166,20 @@ export class CanvasEntity {
 
   setTheme = (theme: V1ThemeSpec | undefined) => {
     updateThemeVariables(theme);
+  };
+
+  saveSnapshot = (filterState: string) => {
+    this.lastVisitedState.set(filterState);
+  };
+
+  restoreSnapshot = async () => {
+    const lastVisitedState = get(this.lastVisitedState);
+
+    if (lastVisitedState) {
+      await goto(`?${lastVisitedState}`, {
+        replaceState: true,
+      });
+    }
   };
 
   duplicateItem = (id: string) => {

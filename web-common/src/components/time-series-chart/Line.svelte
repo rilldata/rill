@@ -6,10 +6,9 @@
   } from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
   import type { ScaleLinear, ScaleTime } from "d3-scale";
   import { area, curveLinear, line } from "d3-shape";
-  import type { Interval } from "luxon";
 
   type DataPoint = {
-    interval: Interval<true>;
+    date: Date;
     value: number | null | undefined;
   };
 
@@ -44,7 +43,7 @@
   }
 
   function dateAccessor(d: DataPoint) {
-    return xScale(d.interval.start.toJSDate());
+    return xScale(d.date);
   }
 
   function valueAccessor(d: DataPoint): number {

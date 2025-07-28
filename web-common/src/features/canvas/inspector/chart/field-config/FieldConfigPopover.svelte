@@ -7,10 +7,10 @@
   import * as Popover from "@rilldata/web-common/components/popover";
   import type {
     ChartLegend,
-    ChartSortDirection,
     FieldConfig,
   } from "@rilldata/web-common/features/canvas/components/charts/types";
   import type { ChartFieldInput } from "@rilldata/web-common/features/canvas/inspector/types";
+  import SortConfig from "./SortConfig.svelte";
 
   export let fieldConfig: FieldConfig;
   export let onChange: (property: keyof FieldConfig, value: any) => void;
@@ -28,13 +28,6 @@
     fieldConfig?.labelAngle ?? (fieldConfig?.type === "temporal" ? 0 : -90);
   let isDropdownOpen = false;
 
-  const sortOptions: { label: string; value: ChartSortDirection }[] = [
-    { label: "Ascending", value: "x" },
-    { label: "Descending", value: "-x" },
-    { label: "Y-axis ascending", value: "y" },
-    { label: "Y-axis descending", value: "-y" },
-  ];
-
   const legendOptions: { label: string; value: ChartLegend }[] = [
     { label: "Top", value: "top" },
     { label: "Right", value: "right" },
@@ -45,7 +38,7 @@
 
   $: showAxisTitle = chartFieldInput?.axisTitleSelector ?? false;
   $: showOrigin = chartFieldInput?.originSelector ?? false;
-  $: showSort = chartFieldInput?.sortSelector ?? false;
+  $: sortConfig = chartFieldInput?.sortSelector ?? { enable: false };
   $: showLimit = chartFieldInput?.limitSelector ?? false;
   $: showNull = chartFieldInput?.nullSelector ?? false;
   $: showLabelAngle = chartFieldInput?.labelAngleSelector ?? false;
@@ -103,19 +96,7 @@
             />
           </div>
         {/if}
-        {#if showSort}
-          <div class="py-1 flex items-center justify-between">
-            <span class="text-xs">Sort</span>
-            <Select
-              size="sm"
-              id="sort-select"
-              width={180}
-              options={sortOptions}
-              value={fieldConfig?.sort || "x"}
-              on:change={(e) => onChange("sort", e.detail)}
-            />
-          </div>
-        {/if}
+        <SortConfig {fieldConfig} {onChange} {sortConfig} />
         {#if showLimit}
           <div class="py-1 flex items-center justify-between">
             <span class="text-xs">Limit</span>
