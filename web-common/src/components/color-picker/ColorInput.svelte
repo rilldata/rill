@@ -242,9 +242,11 @@
   }
 
   .label-first {
-    @apply flex-shrink-0;
     max-width: 60%;
+    @apply flex-shrink-0;
     @apply truncate;
+    @apply m-0 leading-tight;
+    @apply self-center;
   }
 
   .input-button-container {

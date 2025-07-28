@@ -5,6 +5,7 @@
   import type { ChartFieldInput } from "@rilldata/web-common/features/canvas/inspector/types";
   import { COMPARIONS_COLORS } from "@rilldata/web-common/features/dashboards/config";
   import { ChevronDown, ChevronRight } from "lucide-svelte";
+  import { slide } from "svelte/transition";
 
   export let fieldConfig: FieldConfig;
   export let onChange: (property: keyof FieldConfig, value: any) => void;
@@ -45,7 +46,6 @@
         COMPARIONS_COLORS[index % COMPARIONS_COLORS.length],
     }));
 
-    // Only update if the mapping actually changed
     const hasChanged =
       updatedMapping.length !== currentColorMapping.length ||
       updatedMapping.some(
@@ -71,7 +71,7 @@
       value,
       color: COMPARIONS_COLORS[index % COMPARIONS_COLORS.length],
     }));
-    onChange("colorMapping", defaultMapping);
+    onChange("colorMapping", undefined);
   }
 
   function toggleExpanded() {
@@ -104,7 +104,10 @@
     </button>
 
     {#if isExpanded}
-      <div class="px-1 py-2 overflow-y-auto space-y-1">
+      <div
+        class="px-1 py-2 overflow-y-auto space-y-1"
+        transition:slide={{ duration: 200 }}
+      >
         {#each displayedColorMappings as { value, color } (value)}
           <ColorInput
             small
