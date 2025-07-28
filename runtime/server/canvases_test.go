@@ -322,6 +322,55 @@ rows:
 	require.Len(t, res.ResolvedComponents, 3)
 }
 
+func TestResolveCanvasWithCustomChart(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: map[string]string{
+			"rill.yaml": "",
+			"m1.sql":    `SELECT 'Advertiser A' AS advertiser_name, 1.25 AS avg_bid_price UNION ALL SELECT 'Advertiser B', 2.50`,
+			"bids.yaml": `
+type: metrics_view
+version: 1
+model: m1
+dimensions:
+- column: advertiser_name
+measures:
+- expression: AVG(avg_bid_price)
+  name: avg_bid_price
+`,
+			"c_custom_chart.yaml": `
+type: canvas
+rows:
+- items:
+  - custom_chart:
+      color: hsl(246, 66%, 50%)
+      metrics_sql:
+        - select advertiser_name, avg_bid_price from bids order by advertiser_name limit 10
+        - select avg_bid_price from bids
+`,
+		},
+	})
+	testruntime.RequireReconcileState(t, rt, instanceID, 5, 0, 0)
+
+	server, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
+	require.NoError(t, err)
+
+	res, err := server.ResolveCanvas(testCtx(), &runtimev1.ResolveCanvasRequest{
+		InstanceId: instanceID,
+		Canvas:     "c_custom_chart",
+	})
+	require.NoError(t, err)
+
+	// Should reference the bids metrics view from both SQL queries
+	require.Len(t, res.ReferencedMetricsViews, 1)
+	require.Contains(t, res.ReferencedMetricsViews, "bids")
+	require.Len(t, res.ResolvedComponents, 1)
+
+	// Check that the custom_chart component has the correct properties
+	comp0Props := res.ResolvedComponents["c_custom_chart--component-0-0"].GetComponent().State.ValidSpec.RendererProperties.AsMap()
+	require.Equal(t, "hsl(246, 66%, 50%)", comp0Props["color"])
+	require.Contains(t, comp0Props, "metrics_sql")
+}
+
 func must[T any](v T, err error) T {
 	if err != nil {
 		panic(err)
