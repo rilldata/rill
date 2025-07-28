@@ -161,6 +161,7 @@ func (c *ConfigProperties) resolveGoFormatDSN() (string, error) {
 	cfg := mysql.Config{
 		User:      user,
 		Passwd:    pass,
+		Net:       "tcp",
 		Addr:      addr,
 		DBName:    dbName,
 		TLSConfig: tlsConfig,
