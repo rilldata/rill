@@ -202,9 +202,8 @@ func (c *connection) Watch(ctx context.Context, cb drivers.WatchCallback) error 
 }
 
 func (c *connection) Status(ctx context.Context) (*drivers.RepoStatus, error) {
-	// If its a Git repository, return the status of the current branch.
 	if !c.isGitRepo() {
-		return nil, fmt.Errorf("not a git repository: %s", c.root)
+		return &drivers.RepoStatus{}, nil
 	}
 
 	// if there is a origin set, try with native git configurations
@@ -218,6 +217,7 @@ func (c *connection) Status(ctx context.Context) (*drivers.RepoStatus, error) {
 				return nil, err
 			}
 			return &drivers.RepoStatus{
+				IsGitRepo:     true,
 				Branch:        gs.Branch,
 				RemoteURL:     gs.RemoteURL,
 				LocalChanges:  gs.LocalChanges,
@@ -238,6 +238,7 @@ func (c *connection) Status(ctx context.Context) (*drivers.RepoStatus, error) {
 			return nil, err
 		}
 		return &drivers.RepoStatus{
+			IsGitRepo: true,
 			Branch:    gs.Branch,
 			RemoteURL: gs.RemoteURL,
 		}, nil
@@ -254,6 +255,7 @@ func (c *connection) Status(ctx context.Context) (*drivers.RepoStatus, error) {
 			return nil, err
 		}
 		return &drivers.RepoStatus{
+			IsGitRepo: true,
 			Branch:    gs.Branch,
 			RemoteURL: gs.RemoteURL,
 		}, nil
@@ -268,6 +270,7 @@ func (c *connection) Status(ctx context.Context) (*drivers.RepoStatus, error) {
 		return nil, err
 	}
 	return &drivers.RepoStatus{
+		IsGitRepo:     true,
 		Branch:        gs.Branch,
 		RemoteURL:     gs.RemoteURL,
 		ManagedRepo:   config.ManagedRepo,
@@ -283,6 +286,9 @@ func (c *connection) Pull(ctx context.Context, opts *drivers.PullOptions) error 
 	if !c.isGitRepo() {
 		return nil
 	}
+	c.gitMu.Lock()
+	defer c.gitMu.Unlock()
+
 	origin, err := gitutil.ExtractGitRemote(c.root, "origin", false)
 	if err == nil && origin.URL != "" {
 		out, err := gitutil.RunGitPull(ctx, c.root, opts.DiscardChanges, "", "origin")

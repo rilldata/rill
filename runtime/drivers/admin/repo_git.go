@@ -133,16 +133,9 @@ func (r *gitRepo) pullInner(ctx context.Context, force bool) error {
 		}
 
 		// Hard reset to remote branch
-		trackingRef, err := repo.Reference(plumbing.ReferenceName(fmt.Sprintf("refs/remotes/origin/%s", r.defaultBranch)), true)
+		err = resetToRemoteTrackingBranch(repo, worktree, r.defaultBranch)
 		if err != nil {
-			return fmt.Errorf("failed to get tracking branch reference: %w", err)
-		}
-		err = worktree.Reset(&git.ResetOptions{
-			Commit: trackingRef.Hash(),
-			Mode:   git.HardReset,
-		})
-		if err != nil {
-			return fmt.Errorf("failed to reset to tracking branch: %w", err)
+			return fmt.Errorf("failed to reset to remote tracking branch %q: %w", r.defaultBranch, err)
 		}
 	}
 
@@ -171,25 +164,10 @@ func (r *gitRepo) pullInner(ctx context.Context, force bool) error {
 			return fmt.Errorf("failed to create edit branch %q: %w", r.editBranch, err)
 		}
 	} else {
-		// fetch the edit branch
-		err = remote.Fetch(&git.FetchOptions{
-			RefSpecs: []config.RefSpec{config.RefSpec(fmt.Sprintf("refs/heads/%s:refs/remotes/origin/%s", r.editBranch, r.editBranch))},
-			Force:    true,
-		})
-		if err != nil && !errors.Is(err, git.NoErrAlreadyUpToDate) {
-			return fmt.Errorf("failed to fetch edit branch %q: %w", r.editBranch, err)
-		}
 		// Hard reset to remote branch (this discards all local changes)
-		trackingRef, err := repo.Reference(plumbing.ReferenceName(fmt.Sprintf("refs/remotes/origin/%s", r.editBranch)), true)
+		err = resetToRemoteTrackingBranch(repo, worktree, r.editBranch)
 		if err != nil {
-			return fmt.Errorf("failed to get tracking branch reference: %w", err)
-		}
-		err = worktree.Reset(&git.ResetOptions{
-			Commit: trackingRef.Hash(),
-			Mode:   git.HardReset,
-		})
-		if err != nil {
-			return fmt.Errorf("failed to reset to tracking branch: %w", err)
+			return fmt.Errorf("failed to reset to remote tracking branch %q: %w", r.editBranch, err)
 		}
 	}
 
@@ -297,11 +275,9 @@ func (r *gitRepo) commitAndPushToDefaultBranch(ctx context.Context, message stri
 		}
 	}()
 
-	err = worktree.Checkout(&git.CheckoutOptions{
-		Branch: plumbing.ReferenceName("refs/heads/" + r.defaultBranch),
-	})
+	err = resetToRemoteTrackingBranch(repo, worktree, r.defaultBranch)
 	if err != nil {
-		return fmt.Errorf("failed to checkout default branch %q: %w", r.defaultBranch, err)
+		return fmt.Errorf("failed to reset to remote tracking branch %q: %w", r.defaultBranch, err)
 	}
 
 	// Merge the edit branch into the default branch
@@ -390,7 +366,7 @@ func (r *gitRepo) commitAll(repo *git.Repository, message string) error {
 		All: true, // Commit all changes
 		Author: &object.Signature{
 			Name:  "Rill Runtime",
-			Email: "checkpoint@rill.com", // Use a generic author for the commit
+			Email: "runtime@rilldata.com", // Use a generic author for the commit
 		},
 	})
 	if err != nil {
@@ -412,6 +388,24 @@ func (r *gitRepo) fetchCurrentBranch(ctx context.Context) error {
 		RefSpecs: []config.RefSpec{config.RefSpec(fmt.Sprintf("refs/heads/%s:refs/remotes/origin/%s", head.Name().Short(), head.Name().Short()))},
 	})
 	if err != nil && !errors.Is(err, git.NoErrAlreadyUpToDate) {
+		return err
+	}
+	return nil
+}
+
+// resetToRemoteTrackingBranch resets to the commit pointed by the remote tracking branch.
+// This is used to reset the local branch to the state of the remote branch so it is expected that the latest changes have been fetched.
+func resetToRemoteTrackingBranch(repo *git.Repository, wt *git.Worktree, branch string) error {
+	trackingRef, err := repo.Reference(plumbing.ReferenceName(fmt.Sprintf("refs/remotes/origin/%s", branch)), true)
+	if err != nil {
+		return err
+	}
+
+	err = wt.Reset(&git.ResetOptions{
+		Commit: trackingRef.Hash(),
+		Mode:   git.HardReset,
+	})
+	if err != nil {
 		return err
 	}
 	return nil
