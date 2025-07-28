@@ -178,10 +178,6 @@ export function useTables(
 }
 
 /**
- * FEATURE FLAGS & CONNECTOR TYPE DETECTION
- */
-
-/**
  * Determines whether to use new or legacy APIs based on connector capabilities
  */
 export function useConnectorCapabilities(

@@ -77,7 +77,7 @@
   {#if expanded}
     {#if error}
       <div class="message">
-        Error: {error.message || error.response?.data?.message}
+        Error: {error.message}
       </div>
     {:else if isLoading}
       <div class="message">Loading tables...</div>
