@@ -76,7 +76,7 @@ export function makeTablePreviewHref(
   database: string,
   databaseSchema: string,
   table: string,
-): string {
+): string | null {
   switch (driver) {
     case "clickhouse":
       return `/connector/clickhouse/${connectorName}/${databaseSchema}/${table}`;
@@ -86,7 +86,9 @@ export function makeTablePreviewHref(
       return `/connector/duckdb/${connectorName}/${database}/${databaseSchema}/${table}`;
     case "pinot":
       return `/connector/pinot/${connectorName}/${table}`;
+    // Non-OLAP connectors: table preview not implemented yet
     default:
-      throw new Error(`Unsupported connector: ${driver}`);
+      // throw new Error(`Unsupported connector: ${driver}`);
+      return null;
   }
 }
