@@ -94,16 +94,16 @@ export function createColorEncoding(
         "timeUnit" in metaData && { timeUnit: metaData.timeUnit }),
     };
 
+    let condition;
+
     // Add custom color mapping if available
     if (colorField.colorMapping && colorField.colorMapping.length > 0) {
-      const domain = colorField.colorMapping.map((mapping) => mapping.value);
-      const range = colorField.colorMapping.map((mapping) => mapping.color);
+      condition = colorField.colorMapping.map((mapping) => ({
+        test: `datum['${sanitizeValueForVega(colorField.field)}'] === '${mapping.value}'`,
+        value: mapping.color,
+      }));
 
-      baseEncoding.scale = {
-        domain,
-        range,
-        type: "ordinal",
-      };
+      baseEncoding.condition = condition;
     }
 
     return baseEncoding;

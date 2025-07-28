@@ -67,10 +67,6 @@
   }
 
   function resetToDefault() {
-    const defaultMapping = colorValues.map((value, index) => ({
-      value,
-      color: COMPARIONS_COLORS[index % COMPARIONS_COLORS.length],
-    }));
     onChange("colorMapping", undefined);
   }
 
