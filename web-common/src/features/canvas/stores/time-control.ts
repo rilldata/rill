@@ -32,7 +32,7 @@ import {
   runtime,
   type Runtime,
 } from "@rilldata/web-common/runtime-client/runtime-store";
-import { Settings } from "luxon";
+import { DateTime, Interval, Settings } from "luxon";
 import {
   derived,
   get,
@@ -40,10 +40,12 @@ import {
   type Readable,
   type Writable,
 } from "svelte/store";
-import { normalizeWeekday } from "../../dashboards/time-controls/new-time-controls";
+import {
+  deriveInterval,
+  normalizeWeekday,
+} from "../../dashboards/time-controls/new-time-controls";
 import type { SearchParamsStore } from "./canvas-entity";
-
-import type { CanvasResponse } from "../selector";
+import { type CanvasResponse } from "../selector";
 
 type AllTimeRange = TimeRange & { isFetching: boolean };
 
@@ -66,25 +68,25 @@ export class TimeControls {
   minTimeGrain: Writable<V1TimeGrain> = writable(
     V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
   );
+  interval: Writable<Interval> = writable(
+    Interval.fromDateTimes(DateTime.fromJSDate(new Date(0)), DateTime.now()),
+  );
   hasTimeSeries: Readable<boolean>;
-  timeRangeStateStore: Readable<TimeRangeState | undefined>;
+  timeRangeStateStore: Writable<TimeRangeState | undefined> =
+    writable(undefined);
   comparisonRangeStateStore: Readable<ComparisonTimeRangeState | undefined>;
 
-  private specStore: CanvasSpecResponseStore;
-
   constructor(
-    specStore: CanvasSpecResponseStore,
+    private specStore: CanvasSpecResponseStore,
     public searchParamsStore: SearchParamsStore,
     public componentName?: string,
+    public canvasName?: string,
   ) {
     this.allTimeRange = this.combinedTimeRangeSummaryStore(runtime, specStore);
-    this.selectedTimeRange = writable(undefined);
     this.selectedComparisonTimeRange = writable(undefined);
     this.showTimeComparison = writable(false);
     this.selectedTimezone = writable("UTC");
     this.componentName = componentName;
-
-    this.specStore = specStore;
 
     this.hasTimeSeries = derived(specStore, (spec) => {
       let metricsViews = spec?.data?.metricsViews || {};
@@ -104,30 +106,32 @@ export class TimeControls {
       });
     });
 
-    this.timeRangeStateStore = derived(
-      [
-        specStore,
-        this.allTimeRange,
-        this.selectedTimeRange,
-        this.selectedTimezone,
-        this.minTimeGrain,
-      ],
-      ([
-        spec,
-        allTimeRange,
-        selectedTimeRange,
-        selectedTimezone,
-        minTimeGrain,
-      ]) => {
-        if (!spec?.data || !selectedTimeRange) {
+    const listener = derived(
+      [specStore, this.allTimeRange, this.searchParamsStore, this.minTimeGrain],
+      async ([spec, allTimeRange, searchParams, minTimeGrain]) => {
+        if (!spec?.data || !allTimeRange) {
           return undefined;
         }
 
+        const {
+          timeRange,
+          selectedComparisonTimeRange,
+          showTimeComparison,
+          timeZone,
+          grain: urlGrain,
+        } = parseSearchParams(searchParams);
+
+        // Component does not have local time range
+        if (this.componentName && !timeRange) return;
+
         // TODO: figure out a better way of handling this property
         // when it's not consistent across all metrics views - bgh
-        const firstMetricsView = Object.values(spec.data.metricsViews)?.[0];
+        const firstMetricsViewName = Object.keys(spec.data.metricsViews)?.[0];
         const firstDayOfWeekOfFirstMetricsView =
-          firstMetricsView?.state?.validSpec?.firstDayOfWeek;
+          spec.data.metricsViews[firstMetricsViewName]?.state?.validSpec
+            ?.firstDayOfWeek;
+
+        if (!firstMetricsViewName) return;
 
         Settings.defaultWeekSettings = {
           firstDay: normalizeWeekday(firstDayOfWeekOfFirstMetricsView),
@@ -135,26 +139,66 @@ export class TimeControls {
           minimalDays: 4,
         };
 
-        const { defaultPreset } = spec.data?.canvas || {};
+        const { defaultPreset, timeRanges } = spec.data?.canvas || {};
+
+        const finalRange: string =
+          timeRange ||
+          defaultPreset?.timeRange ||
+          (timeRanges?.[0] as string | undefined) ||
+          "PT24H";
+
+        const { interval, grain, error } = await deriveInterval(
+          finalRange,
+          Interval.fromDateTimes(
+            DateTime.fromJSDate(allTimeRange.start),
+            DateTime.fromJSDate(allTimeRange.end),
+          ),
+          firstMetricsViewName,
+          timeZone,
+        );
+
+        if (error || !interval.start || !interval.end) return;
+
+        const selectedTimeRange: DashboardTimeControls = {
+          name: finalRange,
+          start: interval.start?.toJSDate() ?? new Date(),
+          end: interval.end?.toJSDate() ?? new Date(),
+          interval: urlGrain || grain,
+        };
+
+        this.interval.set(interval);
+
+        this.selectedTimezone.set(timeZone);
+
+        if (selectedComparisonTimeRange) {
+          this.selectedComparisonTimeRange.set(selectedComparisonTimeRange);
+        }
+
+        this.showTimeComparison.set(showTimeComparison);
+
         const defaultTimeRange = isoDurationToFullTimeRange(
           defaultPreset?.timeRange,
           allTimeRange.start,
           allTimeRange.end,
-          selectedTimezone,
+          timeZone,
         );
 
         const timeRangeState = calculateTimeRangePartial(
           allTimeRange,
           selectedTimeRange,
           undefined, // scrub not present in canvas yet
-          selectedTimezone,
+          timeZone,
           defaultTimeRange,
           minTimeGrain,
         );
+
         if (!timeRangeState) return undefined;
-        return { ...timeRangeState };
+
+        this.timeRangeStateStore.set(timeRangeState);
       },
     );
+
+    listener.subscribe(() => {});
 
     this.comparisonRangeStateStore = derived(
       [
@@ -186,10 +230,6 @@ export class TimeControls {
         );
       },
     );
-
-    this.searchParamsStore.subscribe((searchParams) => {
-      this.setTimeFiltersFromText(searchParams.toString());
-    });
 
     if (!componentName) {
       this.specStore.subscribe((spec) => {
@@ -407,67 +447,23 @@ export class TimeControls {
   setSelectedComparisonRange = (comparisonTimeRange: DashboardTimeControls) => {
     this.selectedComparisonTimeRange.set(comparisonTimeRange);
   };
-
-  setTimeFiltersFromText = (timeFilter: string) => {
-    const {
-      selectedTimeRange,
-      selectedComparisonTimeRange,
-      showTimeComparison,
-      timeZone,
-    } = getTimeRangeFromText(timeFilter);
-
-    if (!selectedTimeRange) {
-      const specStore = get(this.specStore);
-
-      const { defaultPreset } = specStore.data?.canvas || {};
-      const timeRanges = specStore?.data?.canvas?.timeRanges;
-
-      const finalRange =
-        (defaultPreset?.timeRange as TimeRangePreset) || timeRanges?.[0];
-
-      if (finalRange) {
-        this.selectedTimeRange.set({
-          name: finalRange,
-        } as DashboardTimeControls);
-      }
-    } else {
-      this.selectedTimeRange.set(selectedTimeRange);
-    }
-
-    this.selectedTimezone.set(timeZone ?? "UTC");
-
-    if (selectedComparisonTimeRange) {
-      this.selectedComparisonTimeRange.set(selectedComparisonTimeRange);
-    }
-
-    this.showTimeComparison.set(showTimeComparison);
-  };
 }
 
-export function getTimeRangeFromText(timeFilter: string) {
-  const urlParams = new URLSearchParams(timeFilter);
-  const { preset, errors } = fromTimeRangesParams(urlParams, new Map());
+export function parseSearchParams(urlParams: URLSearchParams) {
+  const { preset } = fromTimeRangesParams(urlParams, new Map());
 
-  if (errors?.length) {
-    console.warn(errors);
-    return {
-      selectedTimeRange: undefined,
-      selectedComparisonTimeRange: undefined,
-      showTimeComparison: false,
-      timeZone: "UTC",
-    };
-  }
-  let selectedTimeRange: DashboardTimeControls | undefined;
+  let timeRange: string | undefined;
   let selectedComparisonTimeRange: DashboardTimeControls | undefined;
   let showTimeComparison = false;
   let timeZone: string = "UTC";
+  let grain: V1TimeGrain = V1TimeGrain.TIME_GRAIN_UNSPECIFIED;
 
   if (preset.timeRange) {
-    selectedTimeRange = fromTimeRangeUrlParam(preset.timeRange);
+    timeRange = preset.timeRange;
   }
 
-  if (preset.timeGrain && selectedTimeRange) {
-    selectedTimeRange.interval = FromURLParamTimeGrainMap[preset.timeGrain];
+  if (preset.timeGrain && timeRange) {
+    grain = FromURLParamTimeGrainMap[preset.timeGrain];
   }
 
   if (preset.compareTimeRange) {
@@ -495,10 +491,11 @@ export function getTimeRangeFromText(timeFilter: string) {
   }
 
   return {
-    selectedTimeRange,
+    timeRange,
     selectedComparisonTimeRange,
     showTimeComparison,
     timeZone,
+    grain,
   };
 }
 

@@ -5,16 +5,16 @@ import (
 	"errors"
 	"fmt"
 	"maps"
+	"net/url"
+	"strings"
 
+	"github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/storage"
 	"go.uber.org/zap"
-
-	// Load mysql driver
-	_ "github.com/go-sql-driver/mysql"
 )
 
 func init() {
@@ -49,8 +49,8 @@ var spec = drivers.Spec{
 			Type:        drivers.StringPropertyType,
 			DisplayName: "MySQL Connection String",
 			Required:    false,
-			DocsURL:     "https://github.com/go-sql-driver/mysql?tab=readme-ov-file#dsn-data-source-name",
-			Placeholder: "username:password@tcp(example.com:3306)/my-db",
+			DocsURL:     "https://dev.mysql.com/doc/refman/8.4/en/connecting-using-uri-or-key-value-pairs.html#connecting-using-uri",
+			Placeholder: "mysql://user:password@host:3306/my-db",
 			Hint:        "Can be configured here or by setting the 'connector.mysql.dsn' environment variable (using '.env' or '--env')",
 			Secret:      true,
 		},
@@ -69,7 +69,104 @@ var spec = drivers.Spec{
 type driver struct{}
 
 type ConfigProperties struct {
-	DSN string `mapstructure:"dsn"`
+	DSN      string `mapstructure:"dsn"`
+	Host     string `mapstructure:"host"`
+	Port     int    `mapstructure:"port"`
+	Database string `mapstructure:"database"`
+	User     string `mapstructure:"user"`
+	Password string `mapstructure:"password"`
+	SSLMode  string `mapstructure:"ssl_mode"`
+}
+
+func (c *ConfigProperties) ResolveDSN() (string, error) {
+	if c.DSN != "" {
+		if c.Host != "" || c.Port != 0 || c.Database != "" || c.User != "" || c.Password != "" || c.SSLMode != "" {
+			return "", fmt.Errorf("invalid config: DSN is set but other connection fields are also set")
+		}
+		return c.DSN, nil
+	}
+
+	var userInfo *url.Userinfo
+	if c.User != "" {
+		if c.Password != "" {
+			userInfo = url.UserPassword(c.User, c.Password)
+		} else {
+			userInfo = url.User(c.User)
+		}
+	}
+
+	host := c.Host
+	if host == "" {
+		host = "localhost"
+	}
+	if c.Port != 0 {
+		host = fmt.Sprintf("%s:%d", host, c.Port)
+	}
+
+	var path string
+	if c.Database != "" {
+		path = "/" + c.Database
+	}
+
+	query := url.Values{}
+	if c.SSLMode != "" {
+		query.Set("ssl-mode", c.SSLMode)
+	}
+
+	u := &url.URL{
+		Scheme:   "mysql",
+		User:     userInfo,
+		Host:     host,
+		Path:     path,
+		RawQuery: query.Encode(),
+	}
+
+	return u.String(), nil
+}
+
+func (c *ConfigProperties) resolveGoFormatDSN() (string, error) {
+	dsn, err := c.ResolveDSN()
+	if err != nil {
+		return "", err
+	}
+	u, err := url.Parse(dsn)
+	if err != nil {
+		return "", fmt.Errorf("invalid DSN: %w", err)
+	}
+	var user, pass string
+	if u.User != nil {
+		user = u.User.Username()
+		pass, _ = u.User.Password()
+	}
+	addr := u.Host
+	dbName := strings.TrimPrefix(u.Path, "/")
+
+	q := u.Query()
+	sslMode := strings.ToUpper(q.Get("ssl-mode"))
+
+	var tlsConfig string
+	switch sslMode {
+	case "":
+		// If no ssl-mode provided, use default (no TLSConfig set)
+	case "DISABLED":
+		tlsConfig = "false"
+	case "PREFERRED":
+		tlsConfig = "preferred"
+	case "REQUIRED":
+		tlsConfig = "skip-verify"
+	default:
+		return "", fmt.Errorf("unsupported ssl-mode: %s", sslMode)
+	}
+
+	cfg := mysql.Config{
+		User:      user,
+		Passwd:    pass,
+		Addr:      addr,
+		DBName:    dbName,
+		TLSConfig: tlsConfig,
+	}
+
+	return cfg.FormatDSN(), nil
 }
 
 func (d driver) Open(instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
@@ -205,10 +302,11 @@ func (c *connection) getDB() (*sqlx.DB, error) {
 	if err := mapstructure.WeakDecode(c.config, conf); err != nil {
 		return nil, fmt.Errorf("failed to decode config: %w", err)
 	}
-	if conf.DSN == "" {
-		return nil, fmt.Errorf("dsn not provided")
+	dsn, err := conf.resolveGoFormatDSN()
+	if err != nil {
+		return nil, err
 	}
-	db, err := sqlx.Open("mysql", conf.DSN)
+	db, err := sqlx.Open("mysql", dsn)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open connection: %w", err)
 	}

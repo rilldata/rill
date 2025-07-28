@@ -97,6 +97,12 @@ export default defineConfig({
               useMutation: false,
             },
           },
+          QueryService_MetricsViewTimeRanges: {
+            query: {
+              useQuery: true,
+              useMutation: false,
+            },
+          },
           QueryService_ResolveComponent: {
             query: {
               useQuery: true,
