@@ -3,8 +3,12 @@
   import FieldSwitcher from "@rilldata/web-common/components/forms/FieldSwitcher.svelte";
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import type { FieldConfig } from "@rilldata/web-common/features/canvas/components/charts/types";
+  import { isFieldConfig } from "@rilldata/web-common/features/canvas/components/charts/util";
   import SingleFieldInput from "@rilldata/web-common/features/canvas/inspector/SingleFieldInput.svelte";
   import type { ComponentInputParam } from "@rilldata/web-common/features/canvas/inspector/types";
+  import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import ColorPaletteSelector from "./field-config/ColorPaletteSelector.svelte";
   import FieldConfigPopover from "./field-config/FieldConfigPopover.svelte";
 
   export let key: string;
@@ -25,6 +29,7 @@
   $: color = typeof markConfig === "string" ? markConfig : "rgb(117, 126, 255)";
 
   $: chartFieldInput = config.meta?.chartFieldInput;
+  $: colorMapConfig = chartFieldInput?.colorMappingSelector;
 
   function updateFieldConfig(property: keyof FieldConfig, value: any) {
     if (typeof markConfig !== "string") {
@@ -101,4 +106,14 @@
       updateFieldConfig("field", field);
     }}
   />
+
+  {#if isFieldConfig(markConfig) && colorMapConfig?.enable}
+    <div class="pt-2">
+      <ColorPaletteSelector
+        fieldConfig={markConfig}
+        onChange={updateFieldConfig}
+        {colorMapConfig}
+      />
+    </div>
+  {/if}
 {/if}

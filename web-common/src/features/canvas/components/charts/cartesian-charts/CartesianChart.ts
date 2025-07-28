@@ -35,6 +35,7 @@ const DEFAULT_SORT = "-y";
 
 export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
   customSortXItems: string[] = [];
+  customColorValues: string[] = [];
 
   static chartInputParams: Record<string, ComponentInputParam> = {
     x: {
@@ -93,6 +94,11 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
     const sortSelector = inputParams.x.meta?.chartFieldInput?.sortSelector;
     if (sortSelector) {
       sortSelector.customSortItems = this.customSortXItems;
+    }
+    const colorMappingSelector =
+      inputParams.color.meta?.chartFieldInput?.colorMappingSelector;
+    if (colorMappingSelector) {
+      colorMappingSelector.values = this.customColorValues;
     }
     return inputParams;
   }

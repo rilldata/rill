@@ -1,17 +1,15 @@
 <script lang="ts">
-  import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
   import ColorInput from "@rilldata/web-common/components/color-picker/ColorInput.svelte";
-  import * as Popover from "@rilldata/web-common/components/popover";
   import type { FieldConfig } from "@rilldata/web-common/features/canvas/components/charts/types";
   import type { ChartFieldInput } from "@rilldata/web-common/features/canvas/inspector/types";
   import { COMPARIONS_COLORS } from "@rilldata/web-common/features/dashboards/config";
-  import { Palette } from "lucide-svelte";
+  import { ChevronDown, ChevronRight } from "lucide-svelte";
 
   export let fieldConfig: FieldConfig;
   export let onChange: (property: keyof FieldConfig, value: any) => void;
   export let colorMapConfig: ChartFieldInput["colorMappingSelector"];
 
-  let isColorMappingDropdownOpen = false;
+  let isExpanded = true;
 
   $: colorValues = colorMapConfig?.values || [];
 
@@ -66,57 +64,54 @@
     }));
     onChange("colorMapping", defaultMapping);
   }
+
+  function toggleExpanded() {
+    isExpanded = !isExpanded;
+  }
 </script>
 
 {#if colorMapConfig?.enable && colorValues.length > 0}
-  <div class="py-1 flex items-center justify-between">
-    <span class="text-xs">Color mapping</span>
-    <div class="flex items-center gap-x-1">
-      <Popover.Root bind:open={isColorMappingDropdownOpen}>
-        <Popover.Trigger>
-          <IconButton rounded active={isColorMappingDropdownOpen}>
-            <Palette size="14px" />
-          </IconButton>
-        </Popover.Trigger>
-        <Popover.Content align="end" class="w-[280px] p-0">
-          <div
-            class="px-3 py-2 border-b border-gray-200 flex items-center justify-between"
+  <div>
+    <button
+      class="w-full p-1 flex items-center justify-between hover:bg-gray-50"
+      on:click={toggleExpanded}
+    >
+      <span class="text-xs font-medium">Color mapping</span>
+      <div class="flex items-center gap-x-2">
+        {#if isExpanded}
+          <button
+            class="text-xs text-blue-600 hover:text-blue-800"
+            on:click|stopPropagation={resetToDefault}
           >
-            <span class="text-xs font-medium">Color Mapping</span>
-            <button
-              class="text-xs text-blue-600 hover:text-blue-800"
-              on:click={resetToDefault}
-            >
-              Reset to default
-            </button>
+            Reset to default
+          </button>
+        {/if}
+        {#if isExpanded}
+          <ChevronDown size="14px" class="text-gray-400" />
+        {:else}
+          <ChevronRight size="14px" class="text-gray-400" />
+        {/if}
+      </div>
+    </button>
+
+    {#if isExpanded}
+      <div class="px-1 py-2 max-h-[300px] overflow-y-auto space-y-1">
+        {#each currentColorMapping as { value, color } (value)}
+          <ColorInput
+            small
+            stringColor={color}
+            labelFirst
+            allowLightnessControl
+            label={value}
+            onChange={(newColor) => handleColorChange(value, newColor)}
+          />
+        {/each}
+        {#if currentColorMapping.length === 0}
+          <div class="px-2 py-2 text-xs text-gray-500">
+            No color values found
           </div>
-          <div class="px-3 py-2 max-h-[300px] overflow-y-auto space-y-2">
-            {#each currentColorMapping as { value, color } (value)}
-              <div class="flex items-center gap-x-3">
-                <div class="flex-1 min-w-0">
-                  <span class="text-xs truncate block" title={value}
-                    >{value}</span
-                  >
-                </div>
-                <div class="flex-none">
-                  <ColorInput
-                    small
-                    stringColor={color}
-                    showLabel={false}
-                    label=""
-                    onChange={(newColor) => handleColorChange(value, newColor)}
-                  />
-                </div>
-              </div>
-            {/each}
-            {#if currentColorMapping.length === 0}
-              <div class="px-2 py-2 text-xs text-gray-500">
-                No color values found
-              </div>
-            {/if}
-          </div>
-        </Popover.Content>
-      </Popover.Root>
-    </div>
+        {/if}
+      </div>
+    {/if}
   </div>
 {/if}

@@ -9,7 +9,6 @@
     ChartLegend,
     FieldConfig,
   } from "@rilldata/web-common/features/canvas/components/charts/types";
-  import ColorPaletteSelector from "@rilldata/web-common/features/canvas/inspector/chart/field-config/ColorPaletteSelector.svelte";
   import type { ChartFieldInput } from "@rilldata/web-common/features/canvas/inspector/types";
   import SortConfig from "./SortConfig.svelte";
 
