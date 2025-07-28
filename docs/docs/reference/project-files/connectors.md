@@ -8,11 +8,7 @@ toc_max_heading_level: 4
 
 Connector YAML files define how Rill connects to external data sources and OLAP engines. Each connector specifies a driver type and its required connection parameters. 
 
-## Required Properties
-
-**`type`** - Must be `connector` (required)
-
-**`driver`** - The type of connector (required)
+## Connector Types
 
 #### _OLAP Engines_
 When connecting to your own OLAP engine using Rill Developer(e.g., ClickHouse, Druid, or Pinot), Rill will automatically generate the corresponding connector file and add the `olap_connector` parameter to your `rill.yaml` file. This will change the behavior of your Rill Developer slightly as not all features are supported across engines. Please see our documentation about [olap-engines](/reference/olap-engines/) for more information.
@@ -48,7 +44,12 @@ When connecting to your own OLAP engine using Rill Developer(e.g., ClickHouse, D
 
 
 
-## Connector Parameters
+## Required Properties
+
+**`type`** - Must be `connector` (required)
+
+**`driver`** - The type of connector, see [connector types](#connector-types) (required)
+
 
 :::warning Security Recommendation
 For all credential parameters (passwords, tokens, keys), use environment variables with the syntax `{{.env.<connector_type>.<parameter_name>}}`. This keeps sensitive data out of your YAML files and version control. See our [credentials documentation](/build/credentials/) for complete setup instructions.
