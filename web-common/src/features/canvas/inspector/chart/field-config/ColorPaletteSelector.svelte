@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Button from "@rilldata/web-common/components/button/Button.svelte";
   import ColorInput from "@rilldata/web-common/components/color-picker/ColorInput.svelte";
   import type { FieldConfig } from "@rilldata/web-common/features/canvas/components/charts/types";
   import type { ChartFieldInput } from "@rilldata/web-common/features/canvas/inspector/types";
@@ -9,13 +10,21 @@
   export let onChange: (property: keyof FieldConfig, value: any) => void;
   export let colorMapConfig: ChartFieldInput["colorMappingSelector"];
 
+  const THRESHOLD = 11;
+
   let isExpanded = true;
+  let showAllValues = false;
 
   $: colorValues = colorMapConfig?.values || [];
 
   $: currentColorMapping = fieldConfig?.colorMapping || [];
 
-  // Initialize color mapping with default colors if not already set
+  $: displayedColorMappings = showAllValues
+    ? currentColorMapping
+    : currentColorMapping.slice(0, THRESHOLD);
+
+  $: hasMoreThanThreshold = currentColorMapping.length > THRESHOLD;
+
   $: if (colorValues.length > 0 && currentColorMapping.length === 0) {
     currentColorMapping = colorValues.map((value, index) => ({
       value,
@@ -95,8 +104,8 @@
     </button>
 
     {#if isExpanded}
-      <div class="px-1 py-2 max-h-[300px] overflow-y-auto space-y-1">
-        {#each currentColorMapping as { value, color } (value)}
+      <div class="px-1 py-2 overflow-y-auto space-y-1">
+        {#each displayedColorMappings as { value, color } (value)}
           <ColorInput
             small
             stringColor={color}
@@ -109,6 +118,19 @@
         {#if currentColorMapping.length === 0}
           <div class="px-2 py-2 text-xs text-gray-500">
             No color values found
+          </div>
+        {/if}
+        {#if hasMoreThanThreshold && !showAllValues}
+          <div class="p-1">
+            <Button type="text" onClick={() => (showAllValues = true)}>
+              See more ({currentColorMapping.length - THRESHOLD} more values)
+            </Button>
+          </div>
+        {:else if hasMoreThanThreshold && showAllValues}
+          <div class="p-1">
+            <Button type="text" onClick={() => (showAllValues = false)}>
+              See less
+            </Button>
           </div>
         {/if}
       </div>
