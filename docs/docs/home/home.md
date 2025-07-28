@@ -9,12 +9,21 @@ hide_table_of_contents: true
 import TileIcon from '@site/src/components/TileIcon';
 
 ## Install 
-Install Rill using the command below, then launch your first project to explore core features hands-on.
+Install Rill using the command below, then launch your first project to explore core features hands-on. For more installation methods, see our [complete installation instructions docs](/home/install). 
 
 ```bash
 curl https://rill.sh | sh
 rill start my-rill-project
 ```
+
+
+## Quickstart
+
+Take a look at our [Quick start](get-started/get-started.md) for a quick guide to get started with your own data! We use a public GCS dataset but you can follow along with your own data. Take a look at our [connectors docs](/reference/connectors/) for the exact steps to connect to your data.
+
+Or, if you're looking for more guides, check out our [Guides](/guides/) section!
+
+
 
 <!-- <img src = 'https://storage.googleapis.com/prod-cdn.rilldata.com/docs/rill_hero.gif' class='rounded-gif' />
 <br /> -->
@@ -30,92 +39,86 @@ curl https://rill.sh | sh
 rill start
 ```
 
-**Programmatic Ads/OpenRTB**: bidstream data for programmatic advertisers to optimize pricing strategies, look for inventory opportunities, and improve campaign performance
+### **Programmatic Ads/OpenRTB**: 
 
-<a href="https://github.com/rilldata/rill-examples/tree/main/rill-openrtb-prog-ads">GitHub →</a><br />
-<a href="/guides/openrtb-analytics">Walkthrough →</a><br />
-<a href="https://ui.rilldata.com/demo/rill-openrtb-prog-ads">Live Demo →</a> 
-<br/><br/ >
+Bidstream data for programmatic advertisers to optimize pricing strategies, look for inventory opportunities, and improve campaign performance
 
-
-
-
-**Cost Monitoring**: based on Rill's own internal dashboards, cloud infrastructure data (compute, storage, pipeline statistics, etc.) merged with customer data to analyze bottlenecks and look for efficiencies
-
-<a href="https://github.com/rilldata/rill-examples/tree/main/rill-cost-monitoring">GitHub →</a><br />
-<a href="/guides/cost-monitoring-analytics">Walkthrough →</a><br />
-<a href="https://ui.rilldata.com/demo/rill-cost-monitoring">Live Demo →</a>
-<br/><br/ >
+- <a href="https://github.com/rilldata/rill-examples/tree/main/rill-openrtb-prog-ads">GitHub →</a><br />
+- <a href="/guides/openrtb-analytics">Walkthrough →</a><br />
+- <a href="https://ui.rilldata.com/demo/rill-openrtb-prog-ads">Live Demo →</a> 
 
 
-**GitHub Analytics**: analyze GitHub activity to understand what parts of your codebase are most active, analyze contributor productivity, and evaluate the intersections between commits and files
+### **Cost Monitoring**:  
 
-<a href="https://github.com/rilldata/rill-examples/tree/main/rill-github-analytics">GitHub →</a><br />
-<a href="/guides/github-analytics">Walkthrough →</a><br />
-<a href="https://ui.rilldata.com/demo/rill-github-analytics">Live Demo →</a>
-<br/><br/ >
+Based on Rill's own internal dashboards, cloud infrastructure data (compute, storage, pipeline statistics, etc.) merged with customer data to analyze bottlenecks and look for efficiencies
 
-
-**Final Tutorial Project**: A finalized version of the tutorial project with many working examples. It's a good place to reference any newer features and is updated regularly
-
-<a href="https://github.com/rilldata/rill-examples/tree/main/my-rill-tutorial">GitHub →</a><br />
-<a href="/guides/rill-basics/launch">Walkthrough →</a><br />
-<a href="https://ui.rilldata.com/demo/my-rill-tutorial">Live Demo →</a>
-<br/><br/ >
+- <a href="https://github.com/rilldata/rill-examples/tree/main/rill-cost-monitoring">GitHub →</a><br />
+- <a href="/guides/cost-monitoring-analytics">Walkthrough →</a><br />
+- <a href="https://ui.rilldata.com/demo/rill-cost-monitoring">Live Demo →</a>
 
 
-**App Engagement**: a conversion dataset used by marketers, mobile developers, or product teams to analyze funnel steps
+### **GitHub Analytics**: 
 
-<a href="https://github.com/rilldata/rill-examples/tree/main/rill-app-engagement">GitHub →</a><br />
-<a href="https://ui.rilldata.com/demo/rill-app-engagement">Live Demo →</a>
-<br/>
+Analyze GitHub activity to understand what parts of your codebase are most active, analyze contributor productivity, and evaluate the intersections between commits and files
 
-## Quickstart
+- <a href="https://github.com/rilldata/rill-examples/tree/main/rill-github-analytics">GitHub →</a><br />
+- <a href="/guides/github-analytics">Walkthrough →</a><br />
+- <a href="https://ui.rilldata.com/demo/rill-github-analytics">Live Demo →</a>
 
-Take a look at our [Quick start](get-started/get-started.md) for a quick guide to get started with your own data! We use a public GCS dataset but you can follow along with your own data. Take a look at our [connectors docs](/reference/connectors/) for the exact steps to connect to your data.
+### **App Engagement**
 
-Or, if you're looking for more guides, check out our [Guides](/guides/) section!
+A conversion dataset used by marketers, mobile developers, or product teams to analyze funnel steps
+
+- <a href="https://github.com/rilldata/rill-examples/tree/main/rill-app-engagement">GitHub →</a><br />
+- <a href="https://ui.rilldata.com/demo/rill-app-engagement">Live Demo →</a>
+
+### **Kitchen-sink example**: 
+
+A compilation of projects that deep dives in Rill's features using  ClickHouse's GitHub commit information.
+
+- <a href="https://github.com/rilldata/rill-examples/tree/main/my-rill-tutorial">GitHub →</a><br />
+- <a href="/guides/rill-basics/launch">Walkthrough →</a><br />
+- <a href="https://ui.rilldata.com/demo/my-rill-tutorial">Live Demo →</a>
 
 
-
-## Release Notes
-
-Curious about what's new? Check out our latest and greatest updates in the [release notes!](https://docs.rilldata.com/notes)
-
-
-
-## Next Steps
+## Explore Rill's Capabilities
 
 <div className="tile-icon-grid">
 <TileIcon
-  header="Connect Sources"
+  header="Connect Data Sources"
   content="Connect to your data sources and start ingesting data into Rill for analysis."
   link="/reference/connectors/"
   icon={<img src="/img/home/connect.svg" alt="Connect" style={{ width: 24, height: 24 }} />}
 />
 <TileIcon
-  header="Last Mile ETL"
+  header="Prepare Your Data"
   content="Transform and prepare your data with Rill's powerful ETL capabilities."
   link="/build/models/"
   icon={<img src="/img/home/model.svg" alt="Model" style={{ width: 24, height: 24 }} />}
 />
 <TileIcon
-  header="Create Metrics Layer"
+  header="Create a Metrics Layer"
   content="Build a metrics layer to define key business metrics and KPIs."
   link="/build/metrics-view/"
   icon={<img src="/img/home/metrics.svg" alt="Metrics" style={{ width: 24, height: 24 }} />}
 />
 <TileIcon
-  header="Explore Data"
+  header="Explore Your Data"
   content="Use Rill's interactive data exploration tools to discover insights."
   link="/explore/dashboard-101"
   icon={<img src="/img/home/explore.svg" alt="Explore" style={{ width: 24, height: 24 }} />}
 />
 <TileIcon
-  header="Embed Dashboard"
+  header="Embed a Dashboard"
   content="Embed Rill dashboards into your applications and workflows."
   link="/integrate/embedding/"
   icon={<img src="/img/home/embed.svg" alt="Embed" style={{ width: 24, height: 24 }} />}
+/>
+<TileIcon
+  header="Release Notes"
+  content="Curious about what's new?"
+  link="/notes/"
+  icon={<img src="/img/home/notification.svg" alt="Embed" style={{ width: 24, height: 24 }} />}
 />
 
 </div>
