@@ -24,9 +24,11 @@
   $: isOlapConnector = olapConnector === connector.name;
   $: implementsOlap = connector.driver?.implementsOlap;
   $: implementsSqlStore = connector.driver?.implementsSqlStore;
+  $: implementsWarehouse = connector.driver?.implementsWarehouse;
 
-  // Show connectors that can provide table browsing (OLAP or SQL stores)
-  $: canBrowseTables = implementsOlap || implementsSqlStore;
+  // Show connectors that can provide table browsing (OLAP, SQL stores, or warehouses)
+  $: canBrowseTables =
+    implementsOlap || implementsSqlStore || implementsWarehouse;
 </script>
 
 <!-- Show all connectors that support table browsing -->
@@ -59,6 +61,8 @@
 
         {#if isOlapConnector}
           <Tag height={16} class="ml-auto">OLAP</Tag>
+        {:else if implementsWarehouse}
+          <Tag height={16} class="ml-auto">WAREHOUSE</Tag>
         {:else if implementsSqlStore}
           <Tag height={16} class="ml-auto">SQL</Tag>
         {/if}

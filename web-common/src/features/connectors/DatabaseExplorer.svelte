@@ -19,7 +19,9 @@
   // Determine which API to use based on connector capabilities
   $: capabilities = useConnectorCapabilities(instanceId, connectorName);
   $: shouldUseNewAPI =
-    $capabilities?.implementsSqlStore || !$capabilities?.implementsOlap;
+    $capabilities?.implementsSqlStore ||
+    $capabilities?.implementsWarehouse ||
+    !$capabilities?.implementsOlap;
 
   // Use appropriate selector based on connector type
   $: databasesQuery = shouldUseNewAPI

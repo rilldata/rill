@@ -193,6 +193,8 @@ export function useConnectorCapabilities(
       return {
         implementsOlap: connectorInfo?.driver?.implementsOlap ?? false,
         implementsSqlStore: connectorInfo?.driver?.implementsSqlStore ?? false,
+        implementsWarehouse:
+          connectorInfo?.driver?.implementsWarehouse ?? false,
         driverName: connectorInfo?.driver?.name ?? "",
       };
     },
