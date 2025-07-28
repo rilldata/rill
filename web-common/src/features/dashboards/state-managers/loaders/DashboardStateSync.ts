@@ -112,6 +112,7 @@ export class DashboardStateSync {
       rillDefaultExploreURLParams,
       pageState.url,
     );
+
     redirectUrl.search = exploreStateParams.toString();
 
     return redirectUrl;

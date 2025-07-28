@@ -9,10 +9,7 @@ import {
   parseRillTime,
 } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser";
 import { humaniseISODuration } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
-import type {
-  QueryServiceMetricsViewTimeRangesBody,
-  V1ExploreTimeRange,
-} from "@rilldata/web-common/runtime-client";
+import type { V1ExploreTimeRange } from "@rilldata/web-common/runtime-client";
 import {
   getQueryServiceMetricsViewTimeRangesQueryKey,
   V1TimeGrain,
@@ -366,7 +363,6 @@ export async function deriveInterval(
   if (duration) {
     return {
       interval: getInterval(duration, allTimeRange.end),
-      grain: V1TimeGrain.TIME_GRAIN_HOUR,
     };
   }
 
@@ -528,8 +524,7 @@ export function getRangeLabel(range: string | undefined): string {
 
     return label;
   } catch (e) {
-    console.log("Error parsing RillTime", e);
-    // no-op
+    console.error("Error parsing RillTime", e);
     return "Custom";
   }
 }

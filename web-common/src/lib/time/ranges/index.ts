@@ -29,7 +29,6 @@ import {
 } from "../transforms";
 import {
   RangePresetType,
-  TimeComparisonOption,
   TimeOffsetType,
   type TimeRange,
   type TimeRangeMeta,
@@ -137,7 +136,7 @@ export function ISODurationToTimePreset(
 
 /* Converts a Time Range preset to a TimeRange object */
 export function convertTimeRangePreset(
-  timeRangePreset: TimeRangePreset | TimeComparisonOption,
+  timeRangePreset: string,
   start: Date,
   end: Date,
   zone: string | undefined,
@@ -172,7 +171,7 @@ export function convertTimeRangePreset(
 export const prettyFormatTimeRange = (
   start: Date | undefined,
   end: Date | undefined,
-  timePreset: TimeRangePreset | TimeComparisonOption | undefined,
+  timePreset: string | undefined,
   timeZone: string,
 ): string => {
   const isAllTime = timePreset === TimeRangePreset.ALL_TIME;

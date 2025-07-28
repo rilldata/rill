@@ -34,7 +34,8 @@
   style:width="{width}px"
 >
   <form
-    class:error={inError || unableToParse}
+    class:error={(inError || unableToParse) &&
+      timeString !== ALL_TIME_RANGE_ALIAS}
     class=""
     on:submit={(e) => {
       e.preventDefault();

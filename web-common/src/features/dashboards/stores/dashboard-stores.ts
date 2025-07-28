@@ -514,14 +514,10 @@ const metricsViewReducers = {
     });
   },
 
-  setTimeGrain(
-    name: string,
-
-    timeGrain: V1TimeGrain,
-  ) {
+  setTimeGrain(name: string, timeGrain: V1TimeGrain) {
     updateMetricsExplorerByName(name, (exploreState) => {
       exploreState.selectedTimeRange = {
-        ...exploreState.selectedTimeRange,
+        ...(exploreState.selectedTimeRange as DashboardTimeControls),
         interval: timeGrain,
       };
     });

@@ -12,7 +12,7 @@
   import { builderActions, getAttrs, Tooltip } from "bits-ui";
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
   import TooltipDescription from "@rilldata/web-common/components/tooltip/TooltipDescription.svelte";
-  import { onMount } from "svelte";
+  import { onDestroy, onMount } from "svelte";
   import SyntaxElement from "../components/SyntaxElement.svelte";
 
   export let dateTimeAnchor: DateTime;
@@ -36,11 +36,18 @@
 
   let open = false;
   let now = DateTime.now().setZone(zone);
+  let interval: ReturnType<typeof setInterval> | undefined = undefined;
 
   onMount(() => {
-    setInterval(() => {
+    interval = setInterval(() => {
       now = DateTime.now().setZone(zone);
     }, 1000);
+  });
+
+  onDestroy(() => {
+    if (interval) {
+      clearInterval(interval);
+    }
   });
 
   $: dateTimeUnit = grain ? V1TimeGrainToDateTimeUnit[grain] : undefined;
@@ -228,7 +235,7 @@
     <DropdownMenu.Separator class="my-0" />
 
     <DropdownMenu.Group class="p-1">
-      <h3 class="mt-1 px-2 uppercase text-gray-500 font-semibold">Snap to</h3>
+      <h3 class="mt-1 px-2 uppercase text-gray-500 font-semibold">Grain</h3>
 
       {#each grainOptions as option, i (i)}
         <DropdownMenu.CheckboxItem
@@ -246,7 +253,7 @@
     {#if dateTimeUnit}
       <div class="bg-gray-100 border-t">
         <div class="flex justify-between items-center p-2">
-          <span>Snap to period end</span>
+          <span>Anchor to period end</span>
 
           <Switch
             disabled={ref === "watermark"}
