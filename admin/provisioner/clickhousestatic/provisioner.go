@@ -31,6 +31,9 @@ type Spec struct {
 	// ENV variable that contains the clickhouse DSN.
 	// This is an alternative to specifying the DSN directly, which can be useful for injecting secrets
 	DSNEnv string `json:"dsn_env"`
+	// Cluster name for ClickHouse cluster operations.
+	// If specified, all DDL operations will include an ON CLUSTER clause.
+	Cluster string `json:"cluster,omitempty"`
 }
 
 // Provisioner provisions Clickhouse resources using a static, multi-tenant Clickhouse service.
@@ -127,13 +130,13 @@ func (p *Provisioner) Provision(ctx context.Context, r *provisioner.Resource, op
 	}
 
 	// Idempotently create the schema
-	_, err = p.ch.ExecContext(ctx, fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s COMMENT ?", dbName), string(annotationsJSON))
+	_, err = p.ch.ExecContext(ctx, fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s %s COMMENT ?", dbName, p.onCluster()), string(annotationsJSON))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create clickhouse database: %w", err)
 	}
 
 	// Idempotently create the user.
-	_, err = p.ch.ExecContext(ctx, fmt.Sprintf("CREATE USER IF NOT EXISTS %s IDENTIFIED WITH sha256_password BY ? DEFAULT DATABASE %s GRANTEES NONE", user, dbName), password)
+	_, err = p.ch.ExecContext(ctx, fmt.Sprintf("CREATE USER IF NOT EXISTS %s %s IDENTIFIED WITH sha256_password BY ? DEFAULT DATABASE %s GRANTEES NONE", user, p.onCluster(), dbName), password)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create clickhouse user: %w", err)
 	}
@@ -141,14 +144,14 @@ func (p *Provisioner) Provision(ctx context.Context, r *provisioner.Resource, op
 	// When creating the user, the password assignment is not idempotent (if there are two concurrent invocations, we don't know which password was used).
 	// By adding the password separately, we ensure all passwords will work.
 	// NOTE: Requires ClickHouse 24.9 or later.
-	_, err = p.ch.ExecContext(ctx, fmt.Sprintf("ALTER USER %s ADD IDENTIFIED WITH sha256_password BY ?", user), password)
+	_, err = p.ch.ExecContext(ctx, fmt.Sprintf("ALTER USER %s %s ADD IDENTIFIED WITH sha256_password BY ?", user, p.onCluster()), password)
 	if err != nil {
 		return nil, fmt.Errorf("failed to add password for clickhouse user: %w", err)
 	}
 
 	// Grant privileges on the database to the user
 	_, err = p.ch.ExecContext(ctx, fmt.Sprintf(`
-		GRANT
+		GRANT %s
 			SELECT,
 			INSERT,
 			ALTER,
@@ -163,7 +166,7 @@ func (p *Provisioner) Provision(ctx context.Context, r *provisioner.Resource, op
 			SHOW DICTIONARIES,
 			dictGet
 		ON %s.* TO %s
-	`, dbName, user))
+	`, p.onCluster(), dbName, user))
 	if err != nil {
 		return nil, fmt.Errorf("failed to grant privileges to clickhouse user: %w", err)
 	}
@@ -171,14 +174,14 @@ func (p *Provisioner) Provision(ctx context.Context, r *provisioner.Resource, op
 	// Grant access to system.parts for reporting disk usage.
 	// NOTE 1: ClickHouse automatically adds row filters to restrict result to tables the user has access to.
 	// NOTE 2: We do not need to explicitly grant access to system.tables and system.columns because ClickHouse adds those implicitly.
-	_, err = p.ch.ExecContext(ctx, fmt.Sprintf("GRANT SELECT ON system.parts TO %s", user))
+	_, err = p.ch.ExecContext(ctx, fmt.Sprintf("GRANT %s SELECT ON system.parts TO %s", p.onCluster(), user))
 	if err != nil {
 		return nil, fmt.Errorf("failed to grant system privileges to clickhouse user: %w", err)
 	}
 
 	// Grant some additional global privileges to the user
 	_, err = p.ch.ExecContext(ctx, fmt.Sprintf(`
-		GRANT
+		GRANT %s
 			URL,
 			REMOTE,
 			MONGO,
@@ -187,7 +190,7 @@ func (p *Provisioner) Provision(ctx context.Context, r *provisioner.Resource, op
 			S3,
 			AZURE
 		ON *.* TO %s
-	`, user))
+	`, p.onCluster(), user))
 	if err != nil {
 		return nil, fmt.Errorf("failed to grant global privileges to clickhouse user: %w", err)
 	}
@@ -234,13 +237,13 @@ func (p *Provisioner) Deprovision(ctx context.Context, r *provisioner.Resource) 
 	}
 
 	// Drop the database
-	_, err = p.ch.ExecContext(ctx, fmt.Sprintf("DROP DATABASE IF EXISTS %s", opts.Auth.Database))
+	_, err = p.ch.ExecContext(ctx, fmt.Sprintf("DROP DATABASE IF EXISTS %s %s", opts.Auth.Database, p.onCluster()))
 	if err != nil {
 		return fmt.Errorf("failed to drop clickhouse database: %w", err)
 	}
 
 	// Drop the user
-	_, err = p.ch.ExecContext(ctx, fmt.Sprintf("DROP USER IF EXISTS %s", opts.Auth.Username))
+	_, err = p.ch.ExecContext(ctx, fmt.Sprintf("DROP USER IF EXISTS %s %s", opts.Auth.Username, p.onCluster()))
 	if err != nil {
 		return fmt.Errorf("failed to drop clickhouse user: %w", err)
 	}
@@ -274,6 +277,14 @@ func (p *Provisioner) pingWithResourceDSN(ctx context.Context, dsn string) error
 	}
 
 	return nil
+}
+
+// onCluster returns the ON CLUSTER clause if a cluster is configured, otherwise returns an empty string.
+func (p *Provisioner) onCluster() string {
+	if p.spec.Cluster != "" {
+		return fmt.Sprintf("ON CLUSTER %s", p.spec.Cluster)
+	}
+	return ""
 }
 
 func newPassword() string {
