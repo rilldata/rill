@@ -225,10 +225,10 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
           (hasColorDimension &&
           config.x?.type === "nominal" &&
           !Array.isArray(config.x?.sort)
-            ? !!topNXData?.length
+            ? topNXData !== undefined
             : true) &&
           (hasColorDimension && colorDimensionName && colorLimit
-            ? !!topNColorData?.length
+            ? topNColorData !== undefined
             : true);
 
         let combinedWhere: V1Expression | undefined = getFilterWithNullHandling(
