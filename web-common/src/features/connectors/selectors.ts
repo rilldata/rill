@@ -5,7 +5,6 @@ import {
   createConnectorServiceListDatabaseSchemas,
   createConnectorServiceListTables,
   createConnectorServiceGetTable,
-  createRuntimeServiceAnalyzeConnectors,
 } from "../../runtime-client";
 export * from "./olap/selectors";
 
