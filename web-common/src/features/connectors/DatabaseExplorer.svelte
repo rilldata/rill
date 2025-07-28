@@ -33,14 +33,14 @@
 
 <div class="wrapper">
   {#if isLoading}
-    <span class="message">Loading tables...</span>
+    <span class="message pl-6">Loading tables...</span>
   {:else if error}
-    <span class="message"
+    <span class="message pl-6"
       >Error: {error.message || error.response?.data?.message}</span
     >
   {:else if data}
     {#if data.length === 0}
-      <span class="message">No tables found</span>
+      <span class="message pl-6">No tables found</span>
     {:else}
       <ol transition:slide={{ duration }}>
         {#each data as database (database)}
@@ -63,7 +63,7 @@
   }
 
   .message {
-    @apply pl-6 pr-3.5 py-2;
+    @apply pr-3.5 py-2; /* left-padding is set inline above */
     @apply text-gray-500;
   }
 </style>

@@ -76,17 +76,25 @@
 
   {#if expanded}
     {#if error}
-      <div class="message">
+      <div class="message {database ? 'pl-[78px]' : 'pl-[60px]'}">
         Error: {error.message}
       </div>
     {:else if isLoading}
-      <div class="message">Loading tables...</div>
+      <div class="message {database ? 'pl-[78px]' : 'pl-[60px]'}">
+        Loading tables...
+      </div>
     {:else if connector?.errorMessage}
-      <div class="message">{connector.errorMessage}</div>
+      <div class="message {database ? 'pl-[78px]' : 'pl-[60px]'}">
+        {connector.errorMessage}
+      </div>
     {:else if !connector.driver || !connector.driver.name}
-      <div class="message">Connector not found</div>
+      <div class="message {database ? 'pl-[78px]' : 'pl-[60px]'}">
+        Connector not found
+      </div>
     {:else if !typedData || typedData.length === 0}
-      <div class="message">No tables found</div>
+      <div class="message {database ? 'pl-[78px]' : 'pl-[60px]'}">
+        No tables found
+      </div>
     {:else if typedData.length > 0}
       <ol>
         {#each typedData as tableInfo (tableInfo)}
@@ -123,7 +131,7 @@
   }
 
   .message {
-    @apply pl-2 pr-3.5 py-2;
+    @apply pr-3.5 py-2; /* left-padding is set dynamically above */
     @apply text-gray-500;
   }
 </style>
