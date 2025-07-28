@@ -46,9 +46,20 @@ export function useDatabasesFromSchemas(instanceId: string, connector: string) {
     if ($query.error)
       return { isLoading: false, data: undefined, error: $query.error };
 
-    const databases = Array.from(
-      new Set($query.data?.map((schema) => schema.database ?? "") ?? []),
-    ).filter(Boolean);
+    // Check if all databases are empty (flat schema structure like MySQL)
+    const hasEmptyDatabases = $query.data?.every((schema) => !schema.database);
+
+    const databases = hasEmptyDatabases
+      ? // For flat structures, use databaseSchema as the primary level
+        Array.from(
+          new Set(
+            $query.data?.map((schema) => schema.databaseSchema ?? "") ?? [],
+          ),
+        )
+      : // For hierarchical structures, use database as the primary level
+        Array.from(
+          new Set($query.data?.map((schema) => schema.database ?? "") ?? []),
+        ).filter(Boolean);
 
     return { isLoading: false, data: databases, error: undefined };
   });
@@ -70,10 +81,16 @@ export function useSchemasForDatabase(
     if ($query.error)
       return { isLoading: false, data: undefined, error: $query.error };
 
-    const schemas =
-      $query.data
-        ?.filter((schema) => schema.database === database)
-        ?.map((schema) => schema.databaseSchema ?? "") ?? [];
+    // Check if this is a flat schema structure (like MySQL)
+    const hasEmptyDatabases = $query.data?.every((schema) => !schema.database);
+
+    const schemas = hasEmptyDatabases
+      ? // For flat structures, the "database" parameter is actually a schema name
+        [database]
+      : // For hierarchical structures, filter by actual database
+        ($query.data
+          ?.filter((schema) => schema.database === database)
+          ?.map((schema) => schema.databaseSchema ?? "") ?? []);
 
     return { isLoading: false, data: schemas, error: undefined };
   });
