@@ -88,7 +88,6 @@ export function makeTablePreviewHref(
       return `/connector/pinot/${connectorName}/${table}`;
     // Non-OLAP connectors: table preview not implemented yet
     default:
-      // throw new Error(`Unsupported connector: ${driver}`);
       return null;
   }
 }
