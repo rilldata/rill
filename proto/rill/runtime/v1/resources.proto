@@ -286,8 +286,6 @@ message MetricsViewSpec {
   optional bool cache_enabled = 25;
   string cache_key_sql = 26;
   int64 cache_key_ttl_seconds = 27;
-  // If true, no explore will be generated for this metrics view automatically.
-  bool no_explore = 32;
 }
 
 message SecurityRule {

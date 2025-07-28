@@ -36,7 +36,7 @@ type ExploreYAML struct {
 	Embeds struct {
 		HidePivot bool `yaml:"hide_pivot"`
 	} `yaml:"embeds"`
-	Security *SecurityPolicyYAML `yaml:"security"` // deprecated while explore is defined inline, rely on mv security rules
+	Security *SecurityPolicyYAML `yaml:"security"` // not supported when explore is defined inline, rely on mv security rules
 }
 
 // ExploreTimeRangeYAML represents a time range in an ExploreYAML.

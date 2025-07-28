@@ -1495,8 +1495,6 @@ export interface V1MetricsViewSpec {
   cacheEnabled?: boolean;
   cacheKeySql?: string;
   cacheKeyTtlSeconds?: string;
-  /** If true, no explore will be generated for this metrics view automatically. */
-  noExplore?: boolean;
 }
 
 export interface V1MetricsViewState {

@@ -5698,9 +5698,6 @@ definitions:
       cacheKeyTtlSeconds:
         type: string
         format: int64
-      noExplore:
-        type: boolean
-        description: If true, no explore will be generated for this metrics view automatically.
   v1MetricsViewState:
     type: object
     properties:
