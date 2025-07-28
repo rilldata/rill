@@ -1866,36 +1866,66 @@ export class MetricsViewSpec_Annotation extends Message<MetricsViewSpec_Annotati
   name = "";
 
   /**
-   * @generated from field: string model = 2;
+   * Connector containing the table
+   *
+   * @generated from field: string connector = 2;
+   */
+  connector = "";
+
+  /**
+   * Name of the database where table is located (optional)
+   *
+   * @generated from field: string database = 3;
+   */
+  database = "";
+
+  /**
+   * Name of the database schema where table is located (optional)
+   *
+   * @generated from field: string database_schema = 4;
+   */
+  databaseSchema = "";
+
+  /**
+   * Name of the model that source of annotation
+   *
+   * @generated from field: string table = 5;
+   */
+  table = "";
+
+  /**
+   * Name of the model that source of annotation. Either table or model should be set.
+   *
+   * @generated from field: string model = 6;
    */
   model = "";
 
   /**
    * Measures to apply the annotation to. If `measures_selector` is set, this will only be set in `state.valid_spec`.
    *
-   * @generated from field: repeated string measures = 3;
+   * @generated from field: repeated string measures = 7;
    */
   measures: string[] = [];
 
   /**
    * Dynamic selector for `measures`. Will be processed during validation, so it will always be empty in `state.valid_spec`.
    *
-   * @generated from field: rill.runtime.v1.FieldSelector measures_selector = 4;
+   * @generated from field: rill.runtime.v1.FieldSelector measures_selector = 8;
    */
   measuresSelector?: FieldSelector;
 
   /**
-   * @generated from field: bool global = 5;
+   * @generated from field: bool global = 9;
    */
   global = false;
 
   /**
-   * @generated from field: bool has_time_end = 6;
+   * @generated from field: bool has_time_end = 10;
    */
   hasTimeEnd = false;
 
   /**
-   * @generated from field: bool has_grain = 7;
+   * @generated from field: bool has_grain = 11;
    */
   hasGrain = false;
 
@@ -1908,12 +1938,16 @@ export class MetricsViewSpec_Annotation extends Message<MetricsViewSpec_Annotati
   static readonly typeName = "rill.runtime.v1.MetricsViewSpec.Annotation";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "model", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 4, name: "measures_selector", kind: "message", T: FieldSelector },
-    { no: 5, name: "global", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 6, name: "has_time_end", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 7, name: "has_grain", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 2, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "database", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "database_schema", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "table", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "model", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 7, name: "measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 8, name: "measures_selector", kind: "message", T: FieldSelector },
+    { no: 9, name: "global", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 10, name: "has_time_end", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 11, name: "has_grain", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec_Annotation {

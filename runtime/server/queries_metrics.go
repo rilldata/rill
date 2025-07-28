@@ -509,7 +509,9 @@ func (s *Server) MetricsViewAnnotations(ctx context.Context, req *runtimev1.Metr
 		},
 		Args: map[string]any{
 			"priority": req.Priority,
-			"time_range": req.TimeRange,
+			// TODO: we should look into resolving this using rilltime. But what is the max/min/watermark? Same as metrics view?
+			"time_start": req.TimeRange.Start.AsTime().UTC(),
+			"time_end":   req.TimeRange.End.AsTime().UTC(),
 			"time_grain": req.TimeGrain,
 		},
 		Claims: auth.GetClaims(ctx).SecurityClaims(),
@@ -537,7 +539,7 @@ func (s *Server) MetricsViewAnnotations(ctx context.Context, req *runtimev1.Metr
 
 	return &runtimev1.MetricsViewAnnotationsResponse{
 		Schema: res.Schema(),
-		Data: data,
+		Data:   data,
 	}, nil
 }
 

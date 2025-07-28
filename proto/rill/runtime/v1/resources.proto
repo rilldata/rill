@@ -246,14 +246,23 @@ message MetricsViewSpec {
   // Annotations that can be applied to measures
   message Annotation {
     string name = 1;
-    string model = 2;
+    // Connector containing the table
+    string connector = 2;
+    // Name of the database where table is located (optional)
+    string database = 3;
+    // Name of the database schema where table is located (optional)
+    string database_schema = 4;
+    // Name of the model that source of annotation
+    string table = 5;
+    // Name of the model that source of annotation. Either table or model should be set.
+    string model = 6;
     // Measures to apply the annotation to. If `measures_selector` is set, this will only be set in `state.valid_spec`.
-    repeated string measures = 3;
+    repeated string measures = 7;
     // Dynamic selector for `measures`. Will be processed during validation, so it will always be empty in `state.valid_spec`.
-    FieldSelector measures_selector = 4;
-    bool global = 5;
-    bool has_time_end = 6;
-    bool has_grain = 7;
+    FieldSelector measures_selector = 8;
+    bool global = 9;
+    bool has_time_end = 10;
+    bool has_grain = 11;
   }
   // Connector containing the table
   string connector = 1;

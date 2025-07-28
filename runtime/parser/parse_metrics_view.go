@@ -4,31 +4,32 @@ import (
 	"fmt"
 	"strings"
 	"time"
-	// Load IANA time zone data
-	_ "time/tzdata"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/rilltime"
 	"google.golang.org/protobuf/types/known/structpb"
 	"gopkg.in/yaml.v3"
+
+	// Load IANA time zone data
+	_ "time/tzdata"
 )
 
 // MetricsViewYAML is the raw structure of a MetricsView resource defined in YAML
 type MetricsViewYAML struct {
 	commonYAML        `yaml:",inline"` // Not accessed here, only setting it so we can use KnownFields for YAML parsing
-	DisplayName       string `yaml:"display_name"`
-	Title             string `yaml:"title"` // Deprecated: use display_name
-	Description       string `yaml:"description"`
-	AIInstructions    string `yaml:"ai_instructions"`
-	Model             string `yaml:"model"`
-	Database          string `yaml:"database"`
-	DatabaseSchema    string `yaml:"database_schema"`
-	Table             string `yaml:"table"`
-	TimeDimension     string `yaml:"timeseries"`
-	Watermark         string `yaml:"watermark"`
-	SmallestTimeGrain string `yaml:"smallest_time_grain"`
-	FirstDayOfWeek    uint32 `yaml:"first_day_of_week"`
-	FirstMonthOfYear  uint32 `yaml:"first_month_of_year"`
+	DisplayName       string           `yaml:"display_name"`
+	Title             string           `yaml:"title"` // Deprecated: use display_name
+	Description       string           `yaml:"description"`
+	AIInstructions    string           `yaml:"ai_instructions"`
+	Model             string           `yaml:"model"`
+	Database          string           `yaml:"database"`
+	DatabaseSchema    string           `yaml:"database_schema"`
+	Table             string           `yaml:"table"`
+	TimeDimension     string           `yaml:"timeseries"`
+	Watermark         string           `yaml:"watermark"`
+	SmallestTimeGrain string           `yaml:"smallest_time_grain"`
+	FirstDayOfWeek    uint32           `yaml:"first_day_of_week"`
+	FirstMonthOfYear  uint32           `yaml:"first_month_of_year"`
 	Dimensions        []*struct {
 		Name                    string
 		DisplayName             string `yaml:"display_name"`
@@ -63,9 +64,13 @@ type MetricsViewYAML struct {
 		TreatNullsAs        string         `yaml:"treat_nulls_as"`
 	}
 	Annotations []*struct {
-		Name     string             `yaml:"name"`
-		Model    string             `yaml:"model"`
-		Measures *FieldSelectorYAML `yaml:"measures"`
+		Name           string             `yaml:"name"`
+		Model          string             `yaml:"model"`
+		Database       string             `yaml:"database"`
+		DatabaseSchema string             `yaml:"database_schema"`
+		Table          string             `yaml:"table"`
+		Connector      string             `yaml:"connector"`
+		Measures       *FieldSelectorYAML `yaml:"measures"`
 	} `yaml:"annotations"`
 	Security *SecurityPolicyYAML
 
@@ -507,11 +512,18 @@ func (p *Parser) parseMetricsView(node *Node) error {
 			continue
 		}
 
-		if annotation.Model == "" {
-			return fmt.Errorf("annotation must have a model")
+		if tmp.Table != "" && tmp.Model != "" {
+			return fmt.Errorf(`cannot set both the "model" field and the "table" field for annotation`)
+		}
+		if tmp.Table == "" && tmp.Model == "" {
+			return fmt.Errorf(`must set a value for either the "model" field or the "table" field for annotation`)
 		}
 		if annotation.Name == "" {
-			annotation.Name = annotation.Model
+			if annotation.Model != "" {
+				annotation.Name = annotation.Model
+			} else {
+				annotation.Name = annotation.Table
+			}
 		}
 	}
 
@@ -591,7 +603,15 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		if annotation == nil {
 			continue
 		}
-		node.Refs = append(node.Refs, ResourceName{Kind: ResourceKindModel, Name: annotation.Model})
+		if annotation.Model != "" {
+			// Not setting Kind because for backwards compatibility, it may actually be a source or an external table.
+			node.Refs = append(node.Refs, ResourceName{Name: annotation.Model})
+		} else if annotation.Table != "" {
+			// By convention, if the table name matches a source or model name we add a DAG link.
+			// We may want to remove this at some point, but the cases where it would not be desired are very rare.
+			// Not setting Kind so that inference kicks in.
+			node.Refs = append(node.Refs, ResourceName{Name: annotation.Table})
+		}
 	}
 
 	securityRefs, err := inferRefsFromSecurityRules(securityRules)
@@ -665,6 +685,10 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		spec.Annotations = append(spec.Annotations, &runtimev1.MetricsViewSpec_Annotation{
 			Name:             annotation.Name,
 			Model:            annotation.Model,
+			Database:         annotation.Database,
+			DatabaseSchema:   annotation.DatabaseSchema,
+			Table:            annotation.Table,
+			Connector:        annotation.Connector,
 			Measures:         annotationMeasures,
 			MeasuresSelector: annotationMeasuresSelector,
 		})

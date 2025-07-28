@@ -294,37 +294,38 @@ func (e *Executor) validateAnnotations(ctx context.Context, mv *runtimev1.Metric
 		}
 		annotation.MeasuresSelector = nil
 
-		// Get the model resource
-		rs, err := ct.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindModel, Name: annotation.Name}, false)
-		if err != nil {
-			res.OtherErrs = append(res.OtherErrs, fmt.Errorf("invalid model %q for annotation %q: %w", annotation.Model, annotation.Name, err))
-			continue
+		if annotation.Model != "" {
+			res, err := ct.Get(ctx, &runtimev1.ResourceName{Name: annotation.Model, Kind: runtime.ResourceKindModel}, false)
+			if err == nil && res.GetModel().State.ResultTable != "" {
+				annotation.Table = res.GetModel().State.ResultTable
+				annotation.Connector = res.GetModel().State.ResultConnector
+			} else {
+				annotation.Table = annotation.Model
+			}
 		}
-		model := rs.GetModel().GetSpec()
 
 		// Get the connector for the model either from the map or acquire a new one
-		olap, ok := olaps[model.OutputConnector]
+		olap, ok := olaps[annotation.Connector]
 		if !ok {
 			var release func()
-			olap, release, err = e.rt.OLAP(ctx, e.instanceID, model.OutputConnector)
+			olap, release, err = e.rt.OLAP(ctx, e.instanceID, annotation.Connector)
 			if err != nil {
-				res.OtherErrs = append(res.OtherErrs, fmt.Errorf("failed to aquire connection to model %q for annotation %q: %w", annotation.Model, annotation.Name, err))
+				res.OtherErrs = append(res.OtherErrs, fmt.Errorf("failed to acquire connection to table %q for annotation %q: %w", annotation.Table, annotation.Name, err))
 				break // other connections might fail as well
 			}
 			olapReleases = append(olapReleases, release)
 		}
 
-		// Get the model table
-		// TODO: can db and schema be different for the model?
-		modelTable, err := olap.InformationSchema().Lookup(ctx, "", "", annotation.Model)
+		// Get the table schema
+		tableSchema, err := olap.InformationSchema().Lookup(ctx, annotation.Database, annotation.DatabaseSchema, annotation.Table)
 		if err != nil {
-			res.OtherErrs = append(res.OtherErrs, fmt.Errorf("failed to get model details %q for annotation %q: %w", annotation.Model, annotation.Name, err))
+			res.OtherErrs = append(res.OtherErrs, fmt.Errorf("failed to get table details %q for annotation %q: %w", annotation.Table, annotation.Name, err))
 			continue
 		}
 
-		// Validate the model table for required columns and save metadata about optional columns. This metadata will be used during querying the model.
+		// Validate the table for required columns and save metadata about optional columns. This metadata will be used during querying the table.
 		var hasTime, hasDesc bool
-		for _, field := range modelTable.Schema.Fields {
+		for _, field := range tableSchema.Schema.Fields {
 			switch field.Name {
 			case "time":
 				hasTime = true
@@ -341,10 +342,10 @@ func (e *Executor) validateAnnotations(ctx context.Context, mv *runtimev1.Metric
 		}
 
 		if !hasTime {
-			res.OtherErrs = append(res.OtherErrs, fmt.Errorf(`model %q for annotation %q does not have the required "time" column`, annotation.Model, annotation.Name))
+			res.OtherErrs = append(res.OtherErrs, fmt.Errorf(`table %q for annotation %q does not have the required "time" column`, annotation.Table, annotation.Name))
 		}
 		if !hasDesc {
-			res.OtherErrs = append(res.OtherErrs, fmt.Errorf(`model %q for annotation %q does not have the required "description" column`, annotation.Model, annotation.Name))
+			res.OtherErrs = append(res.OtherErrs, fmt.Errorf(`table %q for annotation %q does not have the required "description" column`, annotation.Table, annotation.Name))
 		}
 	}
 

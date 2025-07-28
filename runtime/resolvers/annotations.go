@@ -31,9 +31,10 @@ type annotationsResolverProps struct {
 }
 
 type annotationsResolverArgs struct {
-	Priority  int                  `mapstructure:"priority"`
-	TimeRange *runtimev1.TimeRange `mapstructure:"time_range"`
-	TimeGrain runtimev1.TimeGrain  `mapstructure:"time_grain"`
+	Priority  int                 `mapstructure:"priority"`
+	TimeStart time.Time           `mapstructure:"time_start"`
+	TimeEnd   time.Time           `mapstructure:"time_end"`
+	TimeGrain runtimev1.TimeGrain `mapstructure:"time_grain"`
 }
 
 func newAnnotationsResolver(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolver, error) {
@@ -45,6 +46,9 @@ func newAnnotationsResolver(ctx context.Context, opts *runtime.ResolverOptions) 
 	args := &annotationsResolverArgs{}
 	if err := mapstructureutil.WeakDecode(opts.Args, args); err != nil {
 		return nil, err
+	}
+	if args.TimeStart.IsZero() || args.TimeEnd.IsZero() {
+		return nil, errors.New("time_start and time_end arguments must be specified")
 	}
 
 	ctrl, err := opts.Runtime.Controller(ctx, opts.InstanceID)
@@ -89,18 +93,14 @@ func newAnnotationsResolver(ctx context.Context, opts *runtime.ResolverOptions) 
 		}
 	}
 	// None of the measures are accessible, so annotation is not accessible either
-	// TODO: metrics view level annotation
 	if accessibleMeasures == 0 && !annotation.Global {
 		return nil, runtime.ErrForbidden
 	}
 
-	modelRes, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindModel, Name: annotation.Model}, false)
+	olap, olapCloser, err := opts.Runtime.OLAP(ctx, opts.InstanceID, annotation.Connector)
 	if err != nil {
 		return nil, err
 	}
-	model := modelRes.GetModel().Spec
-
-	olap, olapCloser, err := opts.Runtime.OLAP(ctx, opts.InstanceID, model.OutputConnector)
 
 	return &annotationsResolver{
 		metricsView: props.MetricsView,
@@ -134,6 +134,7 @@ func (r *annotationsResolver) Validate(ctx context.Context) error {
 func (r *annotationsResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverResult, error) {
 	columns := "*"
 	if r.annotation.HasGrain {
+		// Convert the string grain to an integer so that it is easy to calculate "greater than or equal to".
 		columns += `,(CASE
   WHEN grain = 'millisecond' THEN 1
   WHEN grain = 'second' THEN 2
@@ -150,12 +151,8 @@ END) as time_grain`
 
 	var args []any
 
-	if r.args.TimeRange == nil || r.args.TimeRange.Start == nil || r.args.TimeRange.End == nil {
-		return nil, errors.New("time range is required")
-	}
-
-	start := r.args.TimeRange.Start.AsTime().UTC().Format(time.RFC3339)
-	end := r.args.TimeRange.End.AsTime().UTC().Format(time.RFC3339)
+	start := r.args.TimeStart.Format(time.RFC3339)
+	end := r.args.TimeEnd.Format(time.RFC3339)
 
 	filter := " TRUE "
 	if r.annotation.HasTimeEnd {
@@ -166,11 +163,13 @@ END) as time_grain`
 		args = append(args, start, end)
 	}
 	if r.annotation.HasGrain && r.args.TimeGrain != runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
-		filter += fmt.Sprintf(" AND (time_grain == 0 OR time_grain >= ?)")
+		filter += " AND (time_grain == 0 OR time_grain >= ?)"
 		args = append(args, int(r.args.TimeGrain))
 	}
 
-	sql := fmt.Sprintf("SELECT %s FROM %s WHERE %s", columns, r.annotation.Model, filter)
+	escapedTableName := r.olap.Dialect().EscapeTable(r.annotation.Database, r.annotation.DatabaseSchema, r.annotation.Table)
+
+	sql := fmt.Sprintf("SELECT %s FROM %s WHERE %s ORDER BY time", columns, escapedTableName, filter)
 
 	res, err := r.olap.Query(ctx, &drivers.Statement{
 		Query:    sql,

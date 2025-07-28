@@ -5765,8 +5765,21 @@ definitions:
     properties:
       name:
         type: string
+      connector:
+        type: string
+        title: Connector containing the table
+      database:
+        type: string
+        title: Name of the database where table is located (optional)
+      databaseSchema:
+        type: string
+        title: Name of the database schema where table is located (optional)
+      table:
+        type: string
+        title: Name of the model that source of annotation
       model:
         type: string
+        description: Name of the model that source of annotation. Either table or model should be set.
       measures:
         type: array
         items:

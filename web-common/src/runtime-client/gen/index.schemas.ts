@@ -1506,6 +1506,11 @@ export interface V1MetricsViewSpec {
 
 export interface V1MetricsViewSpecAnnotation {
   name?: string;
+  connector?: string;
+  database?: string;
+  databaseSchema?: string;
+  table?: string;
+  /** Name of the model that source of annotation. Either table or model should be set. */
   model?: string;
   /** Measures to apply the annotation to. If `measures_selector` is set, this will only be set in `state.valid_spec`. */
   measures?: string[];
