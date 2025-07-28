@@ -21,6 +21,9 @@ func (s *Server) GitStatus(ctx context.Context, req *runtimev1.GitStatusRequest)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get git status: %v", err)
 	}
+	if !gs.IsGitRepo {
+		return nil, status.Error(codes.FailedPrecondition, "not a git repository")
+	}
 	return &runtimev1.GitStatusResponse{
 		Branch:        gs.Branch,
 		GithubUrl:     gs.RemoteURL,

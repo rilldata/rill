@@ -40,7 +40,7 @@ type RepoStore interface {
 	Watch(ctx context.Context, cb WatchCallback) error
 
 	// Status returns the current status of the repository.
-	Status(ctx context.Context) (*GitStatus, error)
+	Status(ctx context.Context) (*RepoStatus, error)
 	// Pull synchronizes local and remote state.
 	// If discardChanges is true, it will discard any local changes made using Put/Rename/etc. and force synchronize to the remote state.
 	// If forceHandshake is true, it will re-verify any cached config. Specifically, this should be used when external config changes, such as the Git branch or file archive ID.
@@ -104,8 +104,9 @@ func IsIgnored(path string, additionalIgnoredPaths []string) bool {
 	return false
 }
 
-// GitStatus contains information about the current state of the Git repository.
-type GitStatus struct {
+type RepoStatus struct {
+	// IsGitRepo indicates if the repo is backed by a Git repository.
+	IsGitRepo     bool
 	Branch        string
 	RemoteURL     string
 	ManagedRepo   bool

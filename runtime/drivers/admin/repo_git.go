@@ -412,7 +412,7 @@ func (r *gitRepo) fetchCurrentBranch(ctx context.Context) error {
 		RefSpecs: []config.RefSpec{config.RefSpec(fmt.Sprintf("refs/heads/%s:refs/remotes/origin/%s", head.Name().Short(), head.Name().Short()))},
 	})
 	if err != nil && !errors.Is(err, git.NoErrAlreadyUpToDate) {
-		return fmt.Errorf("failed to fetch: %w", err)
+		return err
 	}
 	return nil
 }

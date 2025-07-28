@@ -6,9 +6,9 @@ import (
 	"os/exec"
 )
 
-// MergeWithTheirsStrategy attempts to merge a branch into the current branch using the "theirs" strategy.
-func MergeWithTheirsStrategy(path, branchName string) error {
-	cmd := exec.Command("git", "-C", path, "merge", "-X", "theirs", branchName)
+// MergeWithTheirsStrategy merge a branch into the current branch using the "theirs" strategy.
+func MergeWithTheirsStrategy(path, branch string) error {
+	cmd := exec.Command("git", "-C", path, "merge", "-X", "theirs", branch)
 	_, err := cmd.Output()
 	if err != nil {
 		var execErr *exec.ExitError
@@ -23,9 +23,9 @@ func MergeWithTheirsStrategy(path, branchName string) error {
 // MergeWithBailOnConflict attempts to merge a branch into the current branch and aborts if there are conflicts.
 // Returns true if merge was successful, false if there were conflicts (but abort succeeded).
 // Returns an error only if both merge and abort fail.
-func MergeWithBailOnConflict(path, branchName string) (bool, error) {
+func MergeWithBailOnConflict(path, branch string) (bool, error) {
 	// First try the merge
-	cmd := exec.Command("git", "-C", path, "merge", "--no-ff", branchName)
+	cmd := exec.Command("git", "-C", path, "merge", "--no-ff", branch)
 	_, err := cmd.Output()
 	if err == nil {
 		// Merge succeeded

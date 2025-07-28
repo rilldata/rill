@@ -201,7 +201,7 @@ func (c *connection) Watch(ctx context.Context, cb drivers.WatchCallback) error 
 	})
 }
 
-func (c *connection) Status(ctx context.Context) (*drivers.GitStatus, error) {
+func (c *connection) Status(ctx context.Context) (*drivers.RepoStatus, error) {
 	// If its a Git repository, return the status of the current branch.
 	if !c.isGitRepo() {
 		return nil, fmt.Errorf("not a git repository: %s", c.root)
@@ -217,7 +217,7 @@ func (c *connection) Status(ctx context.Context) (*drivers.GitStatus, error) {
 			if err != nil {
 				return nil, err
 			}
-			return &drivers.GitStatus{
+			return &drivers.RepoStatus{
 				Branch:        gs.Branch,
 				RemoteURL:     gs.RemoteURL,
 				LocalChanges:  gs.LocalChanges,
@@ -237,7 +237,7 @@ func (c *connection) Status(ctx context.Context) (*drivers.GitStatus, error) {
 		if err != nil {
 			return nil, err
 		}
-		return &drivers.GitStatus{
+		return &drivers.RepoStatus{
 			Branch:    gs.Branch,
 			RemoteURL: gs.RemoteURL,
 		}, nil
@@ -253,7 +253,7 @@ func (c *connection) Status(ctx context.Context) (*drivers.GitStatus, error) {
 		if err != nil {
 			return nil, err
 		}
-		return &drivers.GitStatus{
+		return &drivers.RepoStatus{
 			Branch:    gs.Branch,
 			RemoteURL: gs.RemoteURL,
 		}, nil
@@ -267,7 +267,7 @@ func (c *connection) Status(ctx context.Context) (*drivers.GitStatus, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &drivers.GitStatus{
+	return &drivers.RepoStatus{
 		Branch:        gs.Branch,
 		RemoteURL:     gs.RemoteURL,
 		ManagedRepo:   config.ManagedRepo,

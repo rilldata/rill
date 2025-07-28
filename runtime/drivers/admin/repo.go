@@ -424,9 +424,9 @@ func (r *repo) Watch(ctx context.Context, cb drivers.WatchCallback) error {
 }
 
 // Status implements drivers.RepoStore.
-func (r *repo) Status(ctx context.Context) (*drivers.GitStatus, error) {
+func (r *repo) Status(ctx context.Context) (*drivers.RepoStatus, error) {
 	if r.git == nil {
-		return nil, fmt.Errorf("repo does not support Git status")
+		return &drivers.RepoStatus{}, nil
 	}
 
 	err := r.rlockEnsureReady(ctx)
@@ -435,7 +435,7 @@ func (r *repo) Status(ctx context.Context) (*drivers.GitStatus, error) {
 	}
 	defer r.mu.RUnlock()
 
-	// run git fetch
+	// run git fetch - only updates the remote tracking branche and not the working tree.
 	err = r.git.fetchCurrentBranch(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch current branch: %w", err)
@@ -446,7 +446,8 @@ func (r *repo) Status(ctx context.Context) (*drivers.GitStatus, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to get Git status: %w", err)
 	}
-	return &drivers.GitStatus{
+	return &drivers.RepoStatus{
+		IsGitRepo:     true,
 		Branch:        st.Branch,
 		RemoteURL:     st.RemoteURL,
 		ManagedRepo:   r.git.managedRepo,
@@ -578,7 +579,8 @@ func (r *repo) rlockEnsureReady(ctx context.Context) error {
 
 	// Release read lock and clone (which uses a singleflight)
 	r.mu.RUnlock()
-	err = r.pull(ctx, &drivers.PullOptions{})
+	// UserTriggered set to true to make sure the first pull gets the latest code files.
+	err = r.pull(ctx, &drivers.PullOptions{UserTriggered: true})
 	if err != nil {
 		return err
 	}
@@ -593,7 +595,7 @@ func (r *repo) pull(ctx context.Context, opts *drivers.PullOptions) error {
 	ctx, span := tracer.Start(ctx, "r.pull")
 	defer span.End()
 
-	key := fmt.Sprintf("pull(_, %v, %v)", opts.DiscardChanges, opts.ForceHandshake)
+	key := fmt.Sprintf("pull(_, %v, %v, %v)", opts.DiscardChanges, opts.ForceHandshake, opts.UserTriggered)
 
 	ch := r.singleflight.DoChan(key, func() (any, error) {
 		// Using context.Background to prevent context cancellation of the first caller to cause other callers to fail.
