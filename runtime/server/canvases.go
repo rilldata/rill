@@ -124,12 +124,26 @@ func (s *Server) ResolveCanvas(ctx context.Context, req *runtimev1.ResolveCanvas
 					metricsViews[name] = true
 				}
 			case "metrics_sql":
+				// Handle single string
 				if sql := v.GetStringValue(); sql != "" {
 					claims := auth.GetClaims(ctx).SecurityClaims()
 					compiler := metricssqlparser.New(ctrl, req.InstanceId, claims, 0)
 					q, err := compiler.Rewrite(ctx, sql)
 					if err == nil && q.MetricsView != "" {
 						metricsViews[q.MetricsView] = true
+					}
+				}
+				// Handle array of strings
+				if listValue := v.GetListValue(); listValue != nil {
+					for _, item := range listValue.Values {
+						if sql := item.GetStringValue(); sql != "" {
+							claims := auth.GetClaims(ctx).SecurityClaims()
+							compiler := metricssqlparser.New(ctrl, req.InstanceId, claims, 0)
+							q, err := compiler.Rewrite(ctx, sql)
+							if err == nil && q.MetricsView != "" {
+								metricsViews[q.MetricsView] = true
+							}
+						}
 					}
 				}
 			}
