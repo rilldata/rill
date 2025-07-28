@@ -140,7 +140,6 @@ export function getTimeControlState(
   exploreSpec: V1ExploreSpec,
   timeRangeSummary: V1TimeRangeSummary | undefined,
   exploreState: Partial<ExploreState>,
-  skipGrainValidation = false,
 ) {
   const hasTimeSeries = Boolean(metricsViewSpec.timeDimension);
   const timeDimension = metricsViewSpec.timeDimension;
@@ -178,7 +177,6 @@ export function getTimeControlState(
     selectedTimezone,
     defaultTimeRange,
     minTimeGrain,
-    skipGrainValidation,
   );
   if (!timeRangeState) {
     return undefined;
