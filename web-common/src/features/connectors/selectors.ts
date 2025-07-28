@@ -1,17 +1,12 @@
 import type { CreateQueryResult } from "@tanstack/svelte-query";
 import { derived } from "svelte/store";
 import {
-  type V1DatabaseSchemaInfo,
   type V1TableInfo,
   createConnectorServiceListDatabaseSchemas,
   createConnectorServiceListTables,
   createConnectorServiceGetTable,
   createRuntimeServiceAnalyzeConnectors,
-  createRuntimeServiceGetInstance,
 } from "../../runtime-client";
-import { featureFlags } from "../feature-flags";
-
-// Re-export existing OLAP-specific functionality for backward compatibility
 export * from "./olap/selectors";
 
 /**
