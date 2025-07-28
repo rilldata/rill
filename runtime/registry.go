@@ -520,7 +520,7 @@ func (r *registryCache) ensureRepoReady(ctx context.Context, instanceID string) 
 	}
 	defer release()
 
-	return repo.Pull(ctx, false, false)
+	return repo.Pull(ctx, &drivers.PullOptions{})
 }
 
 func (r *registryCache) ensureProjectParser(ctx context.Context, instanceID string, ctrl *Controller) {

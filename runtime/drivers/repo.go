@@ -44,7 +44,7 @@ type RepoStore interface {
 	// Pull synchronizes local and remote state.
 	// If discardChanges is true, it will discard any local changes made using Put/Rename/etc. and force synchronize to the remote state.
 	// If forceHandshake is true, it will re-verify any cached config. Specifically, this should be used when external config changes, such as the Git branch or file archive ID.
-	Pull(ctx context.Context, discardChanges, forceHandshake bool) error
+	Pull(ctx context.Context, opts *PullOptions) error
 	// CommitAndPush commits local changes to the remote repository and pushes them.
 	CommitAndPush(ctx context.Context, message string, force bool) error
 	// CommitHash returns a unique ID for the state of the remote files currently served (does not change on uncommitted local changes).
@@ -108,9 +108,18 @@ func IsIgnored(path string, additionalIgnoredPaths []string) bool {
 type GitStatus struct {
 	Branch        string
 	RemoteURL     string
+	ManagedRepo   bool
 	LocalChanges  bool // true if there are local changes (staged, unstaged, or untracked)
 	LocalCommits  int32
 	RemoteCommits int32
+}
+
+type PullOptions struct {
+	ForceHandshake bool
+
+	// If userTriggered is true, the latest changes will be pulled from the remote repository honouring DiscardChanges.
+	UserTriggered  bool
+	DiscardChanges bool
 }
 
 // ignoredPaths is a list of paths that are always ignored by the parser.

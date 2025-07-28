@@ -270,6 +270,7 @@ func (c *connection) Status(ctx context.Context) (*drivers.GitStatus, error) {
 	return &drivers.GitStatus{
 		Branch:        gs.Branch,
 		RemoteURL:     gs.RemoteURL,
+		ManagedRepo:   config.ManagedRepo,
 		LocalChanges:  gs.LocalChanges,
 		LocalCommits:  gs.LocalCommits,
 		RemoteCommits: gs.RemoteCommits,
@@ -277,14 +278,14 @@ func (c *connection) Status(ctx context.Context) (*drivers.GitStatus, error) {
 }
 
 // Pull implements drivers.RepoStore.
-func (c *connection) Pull(ctx context.Context, discardChanges, forceHandshake bool) error {
+func (c *connection) Pull(ctx context.Context, opts *drivers.PullOptions) error {
 	// If its a Git repository, pull the current branch. Otherwise, this is a no-op.
 	if !c.isGitRepo() {
 		return nil
 	}
 	origin, err := gitutil.ExtractGitRemote(c.root, "origin", false)
 	if err == nil && origin.URL != "" {
-		out, err := gitutil.RunGitPull(ctx, c.root, discardChanges, "", "origin")
+		out, err := gitutil.RunGitPull(ctx, c.root, opts.DiscardChanges, "", "origin")
 		if err == nil && strings.Contains(out, "Already up to date") {
 			return nil
 		}
@@ -306,7 +307,7 @@ func (c *connection) Pull(ctx context.Context, discardChanges, forceHandshake bo
 		return err
 	}
 
-	_, err = gitutil.RunGitPull(ctx, c.root, discardChanges, remote, gitConfig.RemoteName())
+	_, err = gitutil.RunGitPull(ctx, c.root, opts.DiscardChanges, remote, gitConfig.RemoteName())
 	if err != nil {
 		return err
 	}

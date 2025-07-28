@@ -4,6 +4,7 @@ import (
 	"context"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/drivers"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -37,7 +38,10 @@ func (s *Server) GitPull(ctx context.Context, req *runtimev1.GitPullRequest) (*r
 	}
 	defer release()
 
-	err = repo.Pull(ctx, req.DiscardLocal, false)
+	err = repo.Pull(ctx, &drivers.PullOptions{
+		UserTriggered:  true,
+		DiscardChanges: req.DiscardLocal,
+	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to pull: %v", err)
 	}

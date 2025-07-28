@@ -114,7 +114,7 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 		return runtime.ReconcileResult{Err: fmt.Errorf("failed to access repo: %w", err)}
 	}
 	defer release()
-	err = repo.Pull(ctx, false, false)
+	err = repo.Pull(ctx, &drivers.PullOptions{UserTriggered: true})
 	if err != nil {
 		return runtime.ReconcileResult{Err: fmt.Errorf("failed to pull repo: %w", err)}
 	}

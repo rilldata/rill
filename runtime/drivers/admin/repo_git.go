@@ -32,6 +32,7 @@ type gitRepo struct {
 	defaultBranch string // Note that repo.checkSyncHandshake may update it at any time
 	editBranch    string // Does not change. Only set for dev deployments.
 	subpath       string // Note that repo.checkSyncHandshake may update it at any time
+	managedRepo   bool   // Whether the repo is managed by Rill
 }
 
 // pull clones or pulls from the remote Git repository.
@@ -394,6 +395,24 @@ func (r *gitRepo) commitAll(repo *git.Repository, message string) error {
 	})
 	if err != nil {
 		return err
+	}
+	return nil
+}
+
+func (r *gitRepo) fetchCurrentBranch(ctx context.Context) error {
+	repo, err := git.PlainOpen(r.repoDir)
+	if err != nil {
+		return err
+	}
+	head, err := repo.Head()
+	if err != nil {
+		return err
+	}
+	err = repo.FetchContext(ctx, &git.FetchOptions{
+		RefSpecs: []config.RefSpec{config.RefSpec(fmt.Sprintf("refs/heads/%s:refs/remotes/origin/%s", head.Name().Short(), head.Name().Short()))},
+	})
+	if err != nil && !errors.Is(err, git.NoErrAlreadyUpToDate) {
+		return fmt.Errorf("failed to fetch: %w", err)
 	}
 	return nil
 }

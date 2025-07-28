@@ -429,6 +429,19 @@ func (r *repo) Status(ctx context.Context) (*drivers.GitStatus, error) {
 		return nil, fmt.Errorf("repo does not support Git status")
 	}
 
+	err := r.rlockEnsureReady(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer r.mu.RUnlock()
+
+	// run git fetch
+	err = r.git.fetchCurrentBranch(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch current branch: %w", err)
+	}
+
+	// run git status
 	st, err := gitutil.RunGitStatus(r.git.repoDir, "origin")
 	if err != nil {
 		return nil, fmt.Errorf("failed to get Git status: %w", err)
@@ -436,6 +449,7 @@ func (r *repo) Status(ctx context.Context) (*drivers.GitStatus, error) {
 	return &drivers.GitStatus{
 		Branch:        st.Branch,
 		RemoteURL:     st.RemoteURL,
+		ManagedRepo:   r.git.managedRepo,
 		LocalChanges:  st.LocalChanges,
 		LocalCommits:  st.LocalCommits,
 		RemoteCommits: st.RemoteCommits,
@@ -443,8 +457,8 @@ func (r *repo) Status(ctx context.Context) (*drivers.GitStatus, error) {
 }
 
 // Pull implements drivers.RepoStore.
-func (r *repo) Pull(ctx context.Context, discardChanges, forceHandshake bool) error {
-	return r.pull(ctx, discardChanges, forceHandshake)
+func (r *repo) Pull(ctx context.Context, opts *drivers.PullOptions) error {
+	return r.pull(ctx, opts)
 }
 
 // CommitAndPush implements drivers.RepoStore.
@@ -564,7 +578,7 @@ func (r *repo) rlockEnsureReady(ctx context.Context) error {
 
 	// Release read lock and clone (which uses a singleflight)
 	r.mu.RUnlock()
-	err = r.pull(ctx, false, false)
+	err = r.pull(ctx, &drivers.PullOptions{})
 	if err != nil {
 		return err
 	}
@@ -575,11 +589,11 @@ func (r *repo) rlockEnsureReady(ctx context.Context) error {
 
 // pull clones/pulls the repo with the latest code files.
 // It is safe for concurrent use and deduplicates concurrent calls (using a singleflight).
-func (r *repo) pull(ctx context.Context, discardChanges, forceHandshake bool) error {
+func (r *repo) pull(ctx context.Context, opts *drivers.PullOptions) error {
 	ctx, span := tracer.Start(ctx, "r.pull")
 	defer span.End()
 
-	key := fmt.Sprintf("pull(_, %v, %v)", discardChanges, forceHandshake)
+	key := fmt.Sprintf("pull(_, %v, %v)", opts.DiscardChanges, opts.ForceHandshake)
 
 	ch := r.singleflight.DoChan(key, func() (any, error) {
 		// Using context.Background to prevent context cancellation of the first caller to cause other callers to fail.
@@ -594,7 +608,7 @@ func (r *repo) pull(ctx context.Context, discardChanges, forceHandshake bool) er
 		defer r.mu.Unlock()
 
 		// Do the actual pull.
-		err = r.pullInner(ctx, discardChanges, forceHandshake)
+		err = r.pullInner(ctx, opts)
 		r.ready = r.ready || (err == nil) // If a pull previously succeeded, we still consider the repo ready even though the latest pull failed.
 		r.pullErr = err
 		return nil, r.pullErr
@@ -625,16 +639,16 @@ func (r *repo) checkReady(ctx context.Context) (bool, error) {
 
 // pullInner implements the actual clone/pull logic.
 // Unlike r.pull(), it is NOT safe for concurrent use and expects r.mu to be held with a write lock.
-func (r *repo) pullInner(ctx context.Context, discardChanges, forceHandshake bool) error {
+func (r *repo) pullInner(ctx context.Context, opts *drivers.PullOptions) error {
 	// Ensure the underlying repos are initialized and have valid credentials.
-	err := r.checkHandshake(ctx, forceHandshake)
+	err := r.checkHandshake(ctx, opts.ForceHandshake)
 	if err != nil {
 		return fmt.Errorf("repo handshake failed: %w", err)
 	}
 
 	// Push the pull into the underlying repos. These are created/updated by checkSyncHandshake.
-	if r.git != nil {
-		err = r.git.pull(ctx, discardChanges)
+	if r.git != nil && opts.UserTriggered {
+		err = r.git.pull(ctx, opts.DiscardChanges)
 		if err != nil {
 			return fmt.Errorf("git pull failed: %w", err)
 		}
@@ -714,6 +728,7 @@ func (r *repo) checkHandshake(ctx context.Context, force bool) error {
 		r.git.defaultBranch = meta.GitBranch
 		r.git.editBranch = meta.GitEditBranch
 		r.git.subpath = meta.GitSubpath
+		r.git.managedRepo = meta.ManagedGitRepo
 	} else {
 		r.git = nil
 	}

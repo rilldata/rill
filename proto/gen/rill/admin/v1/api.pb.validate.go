@@ -33474,6 +33474,8 @@ func (m *GetRepoMetaResponse) validate(all bool) error {
 
 	// no validation rules for GitEditBranch
 
+	// no validation rules for ManagedGitRepo
+
 	// no validation rules for ArchiveDownloadUrl
 
 	// no validation rules for ArchiveId
