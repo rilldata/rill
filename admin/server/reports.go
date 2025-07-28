@@ -37,6 +37,8 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 		attribute.Bool("args.anon_recipients", req.AnonRecipients),
 		attribute.String("args.owner_id", req.OwnerId),
 		attribute.String("args.web_open_mode", req.WebOpenMode),
+		attribute.String("args.where_filter_json", req.WhereFilterJson),
+		attribute.StringSlice("args.accessible_fields", req.AccessibleFields),
 	)
 
 	proj, err := s.admin.DB.FindProject(ctx, req.ProjectId)
@@ -71,7 +73,14 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 		recipients = append(recipients, "")
 	}
 
-	tokens, ownerEmail, err := s.createMagicTokens(ctx, proj.OrganizationID, proj.ID, req.Report, req.OwnerId, recipients, req.Resources)
+	filterJSON := req.WhereFilterJson
+	accessibleFields := req.AccessibleFields
+	if webOpenMode != WebOpenModeFiltered {
+		// If web open mode is not filtered, we don't need to apply where filter or accessible fields
+		filterJSON = ""
+		accessibleFields = nil
+	}
+	tokens, ownerEmail, err := s.createMagicTokens(ctx, proj.OrganizationID, proj.ID, req.Report, req.OwnerId, filterJSON, accessibleFields, recipients, req.Resources)
 	if err != nil {
 		return nil, fmt.Errorf("failed to issue magic auth tokens: %w", err)
 	}
@@ -115,7 +124,7 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 			ExportUrl:      s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportExport(org.Name, proj.Name, req.Report, tokens[recipient]),
 			UnsubscribeUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportUnsubscribe(org.Name, proj.Name, req.Report, tokens[recipient], recipient),
 		}
-		if webOpenMode == WebOpenModeCreator {
+		if webOpenMode == WebOpenModeCreator || webOpenMode == WebOpenModeFiltered {
 			urls[recipient].OpenUrl = s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, tokens[recipient], req.ExecutionTime.AsTime())
 		} else if webOpenMode == WebOpenModeRecipient && canOpenReport[recipient] {
 			urls[recipient].OpenUrl = s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, "", req.ExecutionTime.AsTime())
@@ -605,7 +614,7 @@ func (s *Server) generateReportName(ctx context.Context, depl *database.Deployme
 	return uuid.New().String(), nil
 }
 
-func (s *Server) createMagicTokens(ctx context.Context, orgID, projectID, reportName, ownerID string, emails []string, resources []*adminv1.ResourceName) (map[string]string, string, error) {
+func (s *Server) createMagicTokens(ctx context.Context, orgID, projectID, reportName, ownerID, whereFilterJSON string, accessibleFields, emails []string, resources []*adminv1.ResourceName) (map[string]string, string, error) {
 	var createdByUserID *string
 	if ownerID != "" {
 		createdByUserID = &ownerID
@@ -614,6 +623,8 @@ func (s *Server) createMagicTokens(ctx context.Context, orgID, projectID, report
 	mgcOpts := &admin.IssueMagicAuthTokenOptions{
 		ProjectID:       projectID,
 		CreatedByUserID: createdByUserID,
+		FilterJSON:      whereFilterJSON,
+		Fields:          accessibleFields,
 		Internal:        true,
 		TTL:             &ttl,
 	}

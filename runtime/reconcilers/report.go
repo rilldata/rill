@@ -450,8 +450,13 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 			anonRecipients = true
 		}
 	}
+	// extract dimensions, measures and where filter from query args
+	whereFilterJSON, fields, err := queries.SecurityFromQuery(rep.Spec.QueryName, rep.Spec.QueryArgsJson)
+	if err != nil {
+		return false, fmt.Errorf("failed to extract security from query args: %w", err)
+	}
 
-	meta, err := admin.GetReportMetadata(ctx, self.Meta.Name.Name, ownerID, explore, canvas, webOpenMode, emailRecipients, anonRecipients, t)
+	meta, err := admin.GetReportMetadata(ctx, self.Meta.Name.Name, ownerID, explore, canvas, webOpenMode, whereFilterJSON, fields, emailRecipients, anonRecipients, t)
 	if err != nil {
 		return false, fmt.Errorf("failed to get report metadata: %w", err)
 	}
