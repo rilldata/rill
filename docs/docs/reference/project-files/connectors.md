@@ -8,12 +8,11 @@ toc_max_heading_level: 4
 
 Connector YAML files define how Rill connects to external data sources and OLAP engines. Each connector specifies a driver type and its required connection parameters. 
 
-## Connector Types
+## Available Connectors
 
 #### _OLAP Engines_
-When connecting to your own OLAP engine using Rill Developer(e.g., ClickHouse, Druid, or Pinot), Rill will automatically generate the corresponding connector file and add the `olap_connector` parameter to your `rill.yaml` file. This will change the behavior of your Rill Developer slightly as not all features are supported across engines. Please see our documentation about [olap-engines](/reference/olap-engines/) for more information.
 
-- **[DuckDB](#duckdb)** - Embedded DuckDB engine (default)
+- **[DuckDB](#duckdb)** - Embedded DuckDB engine (_default_)
 - **[Clickhouse](#clickhouse)** - ClickHouse analytical database
 - **[MotherDuck](#motherduck)** - MotherDuck cloud database
 - **[Druid](#druid)** - Apache Druid
@@ -47,7 +46,7 @@ When connecting to your own OLAP engine using Rill Developer(e.g., ClickHouse, D
 
 **`type`** - Must be `connector` (required)
 
-**`driver`** - The type of connector, see [connector types](#connector-types) (required)
+**`driver`** - The type of connector, see [available connectors](#available-connectors) (required)
 
 
 :::warning Security Recommendation
