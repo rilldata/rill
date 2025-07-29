@@ -43,6 +43,8 @@
   const timeControlsStore = useTimeControlStore(StateManagers);
 
   let exploreContainerWidth: number;
+  let metricsWidth = DEFAULT_TIMESERIES_WIDTH;
+  let resizing = false;
 
   $: ({ instanceId } = $runtime);
 
@@ -102,9 +104,6 @@
   $: timeRanges = exploreSpec?.timeRanges ?? [];
 
   $: visibleMeasureNames = $visibleMeasures.map(({ name }) => name ?? "");
-
-  let metricsWidth = DEFAULT_TIMESERIES_WIDTH;
-  let resizing = false;
 
   let initEmbedPublicAPI;
 

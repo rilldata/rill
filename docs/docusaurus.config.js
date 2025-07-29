@@ -100,7 +100,7 @@ const config = {
           alt: "Rill Logo",
           src: "img/rill-logo-light.svg",
           srcDark: "img/rill-logo-dark.svg",
-          href: "https://www.rilldata.com",
+          href: "/",
           target: "_self",
         },
         items: [

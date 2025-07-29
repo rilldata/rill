@@ -1,7 +1,7 @@
 ---
 title: Getting Started with Rill Developer 
 sidebar_label: Quickstart
-sidebar_position: 01
+sidebar_position: 10
 ---
 import Video from '@site/src/components/Video';
 
@@ -47,7 +47,7 @@ Rill Developer is your local development environment where you build and test yo
 
 ### Step 2: Connect Your Data
 
-Rill supports a wide range of data sources through our [connector library](/connect/). For this tutorial, we'll use a sample dataset hosted on Google Cloud Storage.
+Rill supports a wide range of data sources through our [connector library](/reference/connectors). For this tutorial, we'll use a sample dataset hosted on Google Cloud Storage.
 
 **What happens when you connect data:**
 - Rill automatically detects your data schema
@@ -114,18 +114,9 @@ Once your dashboard is created, you can:
 - **Customize visualizations** - Adjust charts, filters, and layouts
 - **Export insights** - Share findings with your team
 
-## What You've Accomplished
 
-In just a few minutes, you've:
 
-1.  **Connected to a data source** and analyzed its structure  
-2.  **Created an interactive dashboard** with AI assistance  
-3.  **Explored your data** through multiple visualization types  
-4.  **Gained actionable insights** from your analytics  
-
-All that's left is to publish your dashboard to Rill Cloud and start sharing with your colleagues! 
-
-## Next Steps
+## What else can Rill do?
 
 This quick start covered the basics, but Rill offers much more:
 

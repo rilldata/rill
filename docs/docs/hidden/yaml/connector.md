@@ -172,7 +172,7 @@ _[boolean]_ - `true` means Rill will provision the connector using the default p
 
 ### `mode`
 
-_[string]_ - `read` - Controls the operation mode for the ClickHouse connection. Defaults to 'read' for safe operation with external databases. Set to 'readwrite' to enable model creation and table mutations. Note: When 'managed: true', this is automatically set to 'readwrite'.
+_[string]_ - `read` - Controls the operation mode for the ClickHouse connection. Defaults to 'read' for safe operation with external databases. Set to 'readwrite' to enable model creation and table mutations. Note: When 'managed: true', this is automatically set to 'readwrite'. 
 
 ### `dsn`
 
@@ -416,7 +416,31 @@ _[string]_ - Refers to the driver type and must be driver `mysql` _(required)_
 
 ### `dsn`
 
-_[string]_ - DSN(Data Source Name) for the mysql connection _(required)_
+_[string]_ - DSN(Data Source Name) for the mysql connection 
+
+### `host`
+
+_[string]_ - Hostname of the MySQL server 
+
+### `port`
+
+_[integer]_ - Port number for the MySQL server 
+
+### `database`
+
+_[string]_ - Name of the MySQL database 
+
+### `user`
+
+_[string]_ - Username for authentication 
+
+### `password`
+
+_[string]_ - Password for authentication 
+
+### `ssl_mode`
+
+_[string]_ - SSL mode can be DISABLED, PREFERRED or REQUIRED 
 
 ## pinot
 
@@ -476,7 +500,31 @@ _[string]_ - Refers to the driver type and must be driver `postgres` _(required)
 
 ### `dsn`
 
-_[string]_ - DSN(Data Source Name) for the postgres connection _(required)_
+_[string]_ - DSN(Data Source Name) for the postgres connection 
+
+### `host`
+
+_[string]_ - Hostname of the Postgres server 
+
+### `port`
+
+_[string]_ - Port number for the Postgres server 
+
+### `dbname`
+
+_[string]_ - Name of the Postgres database 
+
+### `user`
+
+_[string]_ - Username for authentication 
+
+### `password`
+
+_[string]_ - Password for authentication 
+
+### `sslmode`
+
+_[string]_ - SSL mode can be disable, allow, prefer or require 
 
 ## redshift
 

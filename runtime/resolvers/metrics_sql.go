@@ -19,8 +19,12 @@ func init() {
 type metricsSQLProps struct {
 	// SQL is the metrics SQL to evaluate.
 	SQL string `mapstructure:"sql"`
+	// TimeZone is a timezone to apply to the metrics SQL.
+	TimeZone string `mapstructure:"time_zone"`
 	// AdditionalWhere is a filter to apply to the metrics SQL. (additional WHERE clause)
 	AdditionalWhere *metricsview.Expression `mapstructure:"additional_where"`
+	// AdditionalTimeRange is a time range filter to apply to the metrics SQL.
+	AdditionalTimeRange *metricsview.TimeRange `mapstructure:"additional_time_range"`
 }
 
 type metricsSQLArgs struct {
@@ -44,6 +48,8 @@ func newMetricsSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.
 	if span.SpanContext().IsValid() {
 		span.SetAttributes(attribute.String("metrics_sql", props.SQL))
 		span.SetAttributes(attribute.Bool("has_additional_where", props.AdditionalWhere != nil))
+		span.SetAttributes(attribute.Bool("has_additional_time_range", props.AdditionalTimeRange != nil))
+		span.SetAttributes(attribute.Bool("has_additional_time_zone", props.TimeZone != ""))
 	}
 
 	instance, err := opts.Runtime.Instance(ctx, opts.InstanceID)
@@ -73,18 +79,14 @@ func newMetricsSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.
 	}
 
 	// Inject the additional where clause if provided
-	if props.AdditionalWhere != nil {
-		expr := props.AdditionalWhere
-		if query.Where != nil {
-			query.Where = &metricsview.Expression{
-				Condition: &metricsview.Condition{
-					Operator:    metricsview.OperatorAnd,
-					Expressions: []*metricsview.Expression{query.Where, expr},
-				},
-			}
-		} else {
-			query.Where = expr
-		}
+	query.Where = applyAdditionalWhere(query.Where, props.AdditionalWhere)
+
+	// Inject the additional time range if provided
+	query.TimeRange = applyAdditionalTimeRange(query.TimeRange, props.AdditionalTimeRange)
+
+	// Set the additional timezone if provided
+	if props.TimeZone != "" {
+		query.TimeZone = props.TimeZone
 	}
 
 	// Build the options for the metrics resolver
@@ -101,4 +103,69 @@ func newMetricsSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.
 		ForExport:  opts.ForExport,
 	}
 	return newMetrics(ctx, resolverOpts)
+}
+
+// applyAdditionalWhere combines the existing where clause with the additional where clause
+func applyAdditionalWhere(current, additional *metricsview.Expression) *metricsview.Expression {
+	if current == nil {
+		return additional
+	}
+	if additional == nil {
+		return current
+	}
+
+	// Combine the existing where clause with the additional where clause
+	return &metricsview.Expression{
+		Condition: &metricsview.Condition{
+			Operator: metricsview.OperatorAnd,
+			Expressions: []*metricsview.Expression{
+				current,
+				additional,
+			},
+		},
+	}
+}
+
+// applyAdditionalTimeRange merges the existing time range with the additional time range
+func applyAdditionalTimeRange(current, additional *metricsview.TimeRange) *metricsview.TimeRange {
+	if current == nil {
+		return additional
+	}
+	if additional == nil {
+		return current
+	}
+
+	timeRange := &metricsview.TimeRange{
+		Start:         current.Start,
+		End:           current.End,
+		Expression:    current.Expression,
+		IsoDuration:   current.IsoDuration,
+		IsoOffset:     current.IsoOffset,
+		RoundToGrain:  current.RoundToGrain,
+		TimeDimension: current.TimeDimension,
+	}
+
+	if !additional.Start.IsZero() && (timeRange.Start.IsZero() || additional.Start.After(timeRange.Start)) {
+		timeRange.Start = additional.Start
+	}
+	if !additional.End.IsZero() && (timeRange.End.IsZero() || additional.End.Before(timeRange.End)) {
+		timeRange.End = additional.End
+	}
+	if additional.Expression != "" && timeRange.Expression == "" {
+		timeRange.Expression = additional.Expression
+	}
+	if additional.IsoDuration != "" && timeRange.IsoDuration == "" {
+		timeRange.IsoDuration = additional.IsoDuration
+	}
+	if additional.IsoOffset != "" && timeRange.IsoOffset == "" {
+		timeRange.IsoOffset = additional.IsoOffset
+	}
+	if additional.RoundToGrain != metricsview.TimeGrainUnspecified && timeRange.RoundToGrain == metricsview.TimeGrainUnspecified {
+		timeRange.RoundToGrain = additional.RoundToGrain
+	}
+	if additional.TimeDimension != "" && timeRange.TimeDimension == "" {
+		timeRange.TimeDimension = additional.TimeDimension
+	}
+
+	return timeRange
 }

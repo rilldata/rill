@@ -173,7 +173,7 @@
       </div>
 
       <!-- Frequency -->
-      <div class="flex flex-col gap-y-3">
+      <div class="flex flex-col gap-y-3" aria-label="Report schedule">
         <MetadataLabel>Repeats</MetadataLabel>
         <MetadataValue>
           {humanReadableFrequency}
@@ -206,7 +206,7 @@
   </div>
 {/if}
 
-{#if reportSpec}
+{#if reportSpec && $exploreIsValid && !$validSpecResp.isPending}
   <ScheduledReportDialog
     bind:open={showEditReportDialog}
     props={{

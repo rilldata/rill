@@ -16,6 +16,7 @@ import {
   writable,
   type Readable,
   type Unsubscriber,
+  type Writable,
 } from "svelte/store";
 import { parseDocument } from "yaml";
 import type { FileArtifact } from "../../entity-management/file-artifact";
@@ -35,6 +36,17 @@ import { TailwindColorSpacing } from "../../themes/color-config";
 import { updateThemeVariables } from "../../themes/actions";
 import { CanvasResolvedSpec } from "./spec";
 import { TimeControls } from "./time-control";
+import { page } from "$app/stores";
+import { goto } from "$app/navigation";
+
+// Store for managing URL search parameters
+// Which may be in the URL or in the Canvas YAML
+// Set returns a boolean indicating whether the value was set
+export type SearchParamsStore = {
+  subscribe: (run: (value: URLSearchParams) => void) => Unsubscriber;
+  set: (key: string, value?: string, checkIfSet?: boolean) => boolean;
+  clearAll: () => void;
+};
 
 export class CanvasEntity {
   name: string;
@@ -42,15 +54,10 @@ export class CanvasEntity {
 
   _rows: Grid = new Grid(this);
 
-  /**
-   * Time controls for the canvas entity containing various
-   * time related writables
-   */
+  // Time state controls
   timeControls: TimeControls;
 
-  /**
-   * Dimension and measure filters for the canvas entity
-   */
+  // Dimension and measure filter state
   filters: Filters;
 
   /**
@@ -64,6 +71,7 @@ export class CanvasEntity {
   // Tracks whether the canvas been loaded (and rows processed) for the first time
   firstLoad = true;
   unsubscriber: Unsubscriber;
+  lastVisitedState: Writable<string | null> = writable(null);
 
   theme: Record<(typeof TailwindColorSpacing)[number], string>;
 
@@ -81,9 +89,42 @@ export class CanvasEntity {
 
     this.name = name;
 
+    const searchParamsStore: SearchParamsStore = (() => {
+      return {
+        subscribe: derived(page, ({ url: { searchParams } }) => searchParams)
+          .subscribe,
+        set: (key: string, value: string | undefined, checkIfSet = false) => {
+          const url = get(page).url;
+
+          if (checkIfSet && url.searchParams.has(key)) return false;
+
+          if (value === undefined || value === null || value === "") {
+            url.searchParams.delete(key);
+          } else {
+            url.searchParams.set(key, value);
+          }
+          goto(url.toString(), { replaceState: true }).catch(console.error);
+          return true;
+        },
+        clearAll: () => {
+          const url = get(page).url;
+          url.searchParams.forEach((_, key) => {
+            url.searchParams.delete(key);
+          });
+
+          goto(url.toString(), { replaceState: true }).catch(console.error);
+        },
+      };
+    })();
+
     this.spec = new CanvasResolvedSpec(this.specStore);
-    this.timeControls = new TimeControls(this.specStore);
-    this.filters = new Filters(this.spec);
+    this.timeControls = new TimeControls(
+      this.specStore,
+      searchParamsStore,
+      undefined,
+      this.name,
+    );
+    this.filters = new Filters(this.spec, searchParamsStore);
 
     this.unsubscriber = this.specStore.subscribe((spec) => {
       const filePath = spec.data?.filePath;
@@ -125,6 +166,20 @@ export class CanvasEntity {
 
   setTheme = (theme: V1ThemeSpec | undefined) => {
     updateThemeVariables(theme);
+  };
+
+  saveSnapshot = (filterState: string) => {
+    this.lastVisitedState.set(filterState);
+  };
+
+  restoreSnapshot = async () => {
+    const lastVisitedState = get(this.lastVisitedState);
+
+    if (lastVisitedState) {
+      await goto(`?${lastVisitedState}`, {
+        replaceState: true,
+      });
+    }
   };
 
   duplicateItem = (id: string) => {

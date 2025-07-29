@@ -13,8 +13,10 @@
   import Line from "./Line.svelte";
   import Point from "./Point.svelte";
   import { portal } from "@rilldata/web-common/lib/actions/portal";
+  import { onDestroy } from "svelte";
 
   const SNAP_RANGE = 0.05;
+  const THROTTLE_MS = 16;
 
   export let primaryData: V1TimeSeriesValue[];
   export let secondaryData: V1TimeSeriesValue[] = [];
@@ -25,7 +27,7 @@
   export let hoveredPoints: MappedPoint[] = [];
 
   type MappedPoint = {
-    interval: Interval<true>;
+    date: Date;
     value: number | null | undefined;
   };
 
@@ -34,17 +36,23 @@
   let contentRect = new DOMRectReadOnly(0, 0, 0, 0);
   let yScale = scaleLinear();
 
+  let lastMouseUpdateTime = 0;
+  let mouseUpdateScheduled = false;
+
+  let hoveredIntervalCache = new Map<string, Interval>();
+
   $: ({ width, height } = contentRect);
 
-  $: data = [primaryData, secondaryData];
+  $: mappedPrimaryData = primaryData.map(mapData);
+  $: mappedSecondaryData = secondaryData.map(mapData);
 
-  $: mappedData = data
-    .map((line) => line.map(mapData))
-    .filter((line) => line.length > 0);
+  $: mappedData = mappedSecondaryData.length
+    ? [mappedPrimaryData, mappedSecondaryData]
+    : [mappedPrimaryData];
 
   $: xExtents = mappedData.map((line) => [
-    line?.[0]?.interval.start.toJSDate(),
-    line[line.length - 1].interval.start.toJSDate(),
+    line?.[0]?.date,
+    line[line.length - 1]?.date,
   ]);
 
   $: xScales = xExtents.map((extents) =>
@@ -119,19 +127,66 @@
   function mapData(point: V1TimeSeriesValue): MappedPoint {
     if (!point.ts)
       return {
-        interval: Interval.fromDateTimes(DateTime.now(), DateTime.now()),
+        date: new Date(),
         value: null,
       } as MappedPoint;
     return {
-      interval: Interval.fromDateTimes(
-        DateTime.fromISO(point.ts).setZone(selectedTimeZone),
-        DateTime.fromISO(point.ts)
-          .setZone(selectedTimeZone)
-          .plus({ [TIME_GRAIN[timeGrain].label]: 1 }),
-      ),
+      date: new Date(point.ts),
       value: point.records?.[yAccessor] as number | null | undefined,
     } as MappedPoint;
   }
+
+  function getHoveredInterval(date: Date): Interval {
+    const cacheKey = `${date.getTime()}-${selectedTimeZone}-${timeGrain}`;
+
+    if (hoveredIntervalCache.has(cacheKey)) {
+      return hoveredIntervalCache.get(cacheKey)!;
+    }
+
+    const interval = Interval.fromDateTimes(
+      DateTime.fromJSDate(date).setZone(selectedTimeZone),
+      DateTime.fromJSDate(date)
+        .setZone(selectedTimeZone)
+        .plus({ [TIME_GRAIN[timeGrain].label]: 1 }),
+    );
+
+    hoveredIntervalCache.set(cacheKey, interval);
+    return interval;
+  }
+
+  function handleThrottledMouseMove(e: MouseEvent) {
+    const now = performance.now();
+
+    clientPosition = { x: e.clientX, y: e.clientY };
+
+    if (now - lastMouseUpdateTime < THROTTLE_MS) {
+      if (!mouseUpdateScheduled) {
+        mouseUpdateScheduled = true;
+        requestAnimationFrame(() => {
+          offsetPosition = { x: e.offsetX, y: e.offsetY };
+          mouseUpdateScheduled = false;
+          lastMouseUpdateTime = performance.now();
+        });
+      }
+      return;
+    }
+
+    offsetPosition = { x: e.offsetX, y: e.offsetY };
+    lastMouseUpdateTime = now;
+  }
+
+  function handleMouseLeave() {
+    offsetPosition = null;
+  }
+
+  // Clear cache when timezone or time grain changes
+  $: if (selectedTimeZone || timeGrain) {
+    hoveredIntervalCache.clear();
+  }
+
+  onDestroy(() => {
+    hoveredIntervalCache.clear();
+  });
 </script>
 
 {#if mappedData.length}
@@ -163,13 +218,8 @@
       class="cursor-default size-full overflow-visible"
       preserveAspectRatio="none"
       viewBox="0 0 10000 100"
-      on:mousemove={(e) => {
-        offsetPosition = { x: e.offsetX, y: e.offsetY };
-        clientPosition = { x: e.clientX, y: e.clientY };
-      }}
-      on:mouseleave={() => {
-        offsetPosition = null;
-      }}
+      on:mousemove={handleThrottledMouseMove}
+      on:mouseleave={handleMouseLeave}
     >
       {#each mappedData as mappedDataLine, i (i)}
         <Line
@@ -185,14 +235,10 @@
       <g>
         {#each [...mappedData].reverse() as mappedDataLine, reversedIndex (reversedIndex)}
           {@const i = mappedData.length - reversedIndex - 1}
-          {#each mappedDataLine as { interval, value }, pointIndex (pointIndex)}
+          {#each mappedDataLine as { date, value }, pointIndex (pointIndex)}
             {@const xScale = xScales[i]}
             {#if value !== null && value !== undefined && (hoverIndex === pointIndex || (mappedDataLine[pointIndex - 1]?.value === null && mappedDataLine[pointIndex + 1]?.value === null))}
-              <Point
-                x={xScale(interval.start.toJSDate())}
-                y={yScale(value)}
-                color={getColor(i)}
-              />
+              <Point x={xScale(date)} y={yScale(value)} color={getColor(i)} />
             {/if}
           {/each}
         {/each}
@@ -203,33 +249,37 @@
       class="w-full h-fit flex justify-between text-gray-500 mt-0.5 relative"
     >
       {#if hoveredPoints.length > 0}
-        {@const jsDate = hoveredPoints[0].interval.start.toJSDate()}
+        {@const jsDate = hoveredPoints[0].date}
         {@const percentage = xScales[0](jsDate) / 100}
-        <span
-          class="relative"
-          style:transform="translateX(-{percentage}%)"
-          style:left="{percentage}%"
-        >
-          <RangeDisplay
-            interval={hoveredPoints[0].interval}
-            grain={timeGrain}
-          />
-        </span>
+        {@const interval = getHoveredInterval(hoveredPoints[0].date)}
+        {#if interval.isValid}
+          <span
+            class="relative"
+            style:transform="translateX(-{percentage}%)"
+            style:left="{percentage}%"
+          >
+            <RangeDisplay {interval} />
+          </span>
+        {/if}
       {:else if mappedData.length}
         {@const firstPoint = mappedData?.[0]?.[0]}
         {@const lastPoint = mappedData?.[0]?.[mappedData?.[0]?.length - 1]}
         {#if firstPoint && lastPoint}
           <span>
-            {firstPoint.interval.start.toLocaleString({
-              month: "short",
-              day: "numeric",
-            })}
+            {DateTime.fromJSDate(firstPoint.date)
+              .setZone(selectedTimeZone)
+              .toLocaleString({
+                month: "short",
+                day: "numeric",
+              })}
           </span>
           <span>
-            {lastPoint.interval.end.minus({ millisecond: 1 }).toLocaleString({
-              month: "short",
-              day: "numeric",
-            })}
+            {DateTime.fromJSDate(lastPoint.date)
+              .setZone(selectedTimeZone)
+              .toLocaleString({
+                month: "short",
+                day: "numeric",
+              })}
           </span>
         {/if}
       {/if}

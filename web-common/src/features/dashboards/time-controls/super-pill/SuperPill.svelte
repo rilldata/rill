@@ -15,6 +15,10 @@
   } from "../new-time-controls";
   import TimeGrainSelector from "../TimeGrainSelector.svelte";
   import * as Elements from "./components";
+  import RangePickerV2 from "./new-time-dropdown/RangePickerV2.svelte";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
+  import { page } from "$app/stores";
+  import { ExploreStateURLParams } from "../../url-state/url-params";
 
   export let allTimeRange: TimeRange;
   export let selectedRangeAlias: string | undefined;
@@ -33,10 +37,11 @@
   export let allowCustomTimeRange = true;
   export let showFullRange = true;
   export let complete: boolean;
+  export let context = "dashboard";
   export let activeTimeZone: string;
   export let timeStart: string | undefined;
   export let timeEnd: string | undefined;
-  export let context = "dashboard";
+  export let watermark: DateTime | undefined = undefined;
   export let side: "top" | "right" | "bottom" | "left" = "bottom";
   export let onSelectRange: (range: NamedRange | ISODurationString) => void;
   export let onPan: (direction: "left" | "right") => void;
@@ -44,7 +49,21 @@
   export let onSelectTimeZone: (timeZone: string) => void;
   export let applyRange: (range: TimeRange) => void;
 
+  const newPicker = featureFlags.rillTime;
+
   $: rangeBuckets = bucketYamlRanges(timeRanges);
+
+  $: ({
+    url: { searchParams },
+  } = $page);
+
+  $: rawTimeString = searchParams.get(ExploreStateURLParams.TimeRange);
+
+  $: v2TimeString = normalizeRangeString(rawTimeString);
+
+  function normalizeRangeString(alias: string | null): string | undefined {
+    return alias?.replace(",", " to ");
+  }
 </script>
 
 <div class="wrapper">
@@ -53,7 +72,25 @@
     <Elements.Nudge {canPanLeft} {canPanRight} {onPan} direction="right" />
   {/if}
 
-  {#if interval.isValid && activeTimeGrain}
+  {#if $newPicker}
+    <RangePickerV2
+      {context}
+      smallestTimeGrain={minTimeGrain}
+      minDate={DateTime.fromJSDate(allTimeRange.start)}
+      maxDate={DateTime.fromJSDate(allTimeRange.end)}
+      {watermark}
+      {showDefaultItem}
+      {defaultTimeRange}
+      timeString={v2TimeString || selectedRangeAlias}
+      {interval}
+      zone={activeTimeZone}
+      {lockTimeZone}
+      {availableTimeZones}
+      {onSelectTimeZone}
+      {onSelectRange}
+      {onTimeGrainSelect}
+    />
+  {:else if interval.isValid && activeTimeGrain}
     <Elements.RangePicker
       minDate={DateTime.fromJSDate(allTimeRange.start)}
       maxDate={DateTime.fromJSDate(allTimeRange.end)}
@@ -63,7 +100,6 @@
       {defaultTimeRange}
       {allowCustomTimeRange}
       selected={selectedRangeAlias ?? ""}
-      grain={activeTimeGrain}
       {onSelectRange}
       {interval}
       zone={activeTimeZone}
@@ -78,17 +114,19 @@
     />
   {/if}
 
-  <Elements.Zone
-    watermark={DateTime.fromISO(timeStart ?? "")}
-    {activeTimeZone}
-    {availableTimeZones}
-    {onSelectTimeZone}
-    {lockTimeZone}
-    {context}
-    {side}
-  />
+  {#if availableTimeZones.length && !$newPicker}
+    <Elements.Zone
+      {context}
+      watermark={interval.end ?? DateTime.fromJSDate(new Date())}
+      {activeTimeZone}
+      {lockTimeZone}
+      {availableTimeZones}
+      {onSelectTimeZone}
+      {side}
+    />
+  {/if}
 
-  {#if !showPivot && minTimeGrain}
+  {#if !$newPicker && !showPivot && minTimeGrain}
     <TimeGrainSelector
       {activeTimeGrain}
       {minTimeGrain}

@@ -4,8 +4,20 @@ import {
 } from "@rilldata/web-admin/client/http-client";
 import { redirect } from "@sveltejs/kit";
 
+/**
+ * Redirects to the login page by throwing a SvelteKit redirect.
+ * Use this in SvelteKit load functions (+page.ts, +layout.ts, etc.)
+ */
 export function redirectToLogin() {
   throw redirect(307, buildLoginUrl());
+}
+
+/**
+ * Redirects to the login page using window.location.href.
+ * Use this in Svelte component event handlers (onClick, etc.)
+ */
+export function redirectToLoginFromComponent() {
+  window.location.href = buildLoginUrl();
 }
 
 export function redirectToLogout() {

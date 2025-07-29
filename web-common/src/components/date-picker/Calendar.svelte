@@ -6,7 +6,6 @@
   type MaybeDate = DateTime | undefined;
 
   export let selection: MaybeDate | Interval = undefined;
-  export let minDate: MaybeDate = undefined;
   export let maxDate: MaybeDate = DateTime.now().startOf("day");
   export let visibleMonths = 1;
   export let selectingStart = true;
@@ -54,11 +53,10 @@
   }
 </script>
 
-<div class="flex gap-x-3 p-2 w-full min-w-56">
+<div class="flex gap-x-3 w-full">
   {#each { length: visibleMonths } as month, i (month)}
     <Month
       {firstDayOfWeek}
-      {minDate}
       {maxDate}
       {singleDaySelection}
       interval={finalInterval}

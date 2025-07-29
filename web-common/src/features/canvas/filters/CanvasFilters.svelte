@@ -10,24 +10,9 @@
   import type { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
   import { getPanRangeForTimeRange } from "@rilldata/web-common/features/dashboards/state-managers/selectors/charts";
   import { isExpressionUnsupported } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-  import {
-    ALL_TIME_RANGE_ALIAS,
-    CUSTOM_TIME_RANGE_ALIAS,
-    deriveInterval,
-  } from "@rilldata/web-common/features/dashboards/time-controls/new-time-controls";
   import SuperPill from "@rilldata/web-common/features/dashboards/time-controls/super-pill/SuperPill.svelte";
-  import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
-  import { DEFAULT_TIME_RANGES } from "@rilldata/web-common/lib/time/config";
-  import { getDefaultTimeGrain } from "@rilldata/web-common/lib/time/grains";
-  import {
-    TimeComparisonOption,
-    TimeRangePreset,
-    type DashboardTimeControls,
-    type TimeRange,
-  } from "@rilldata/web-common/lib/time/types";
-  import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+  import { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
   import { DateTime, Interval } from "luxon";
-  import { onMount } from "svelte";
   import { flip } from "svelte/animate";
   import { fly } from "svelte/transition";
   import CanvasComparisonPill from "./CanvasComparisonPill.svelte";
@@ -39,6 +24,9 @@
 
   /** the height of a row of chips */
   const ROW_HEIGHT = "26px";
+
+  let showDefaultItem = false;
+  let justAdded = false;
 
   $: ({ instanceId } = $runtime);
   $: ({
@@ -55,11 +43,9 @@
         setTemporaryFilterName,
         clearAllFilters,
         dimensionHasFilter,
-        getDimensionFilterItems,
-        getAllDimensionFilterItems,
-        isFilterExcludeMode,
-        getMeasureFilterItems,
-        getAllMeasureFilterItems,
+        temporaryFilters,
+        allDimensionFilterItems,
+        allMeasureFilterItems,
         measureHasFilter,
       },
       spec: { canvasSpec, allDimensions, allSimpleMeasures },
@@ -69,28 +55,17 @@
         comparisonRangeStateStore,
         selectedTimezone,
         minTimeGrain,
-        selectTimeRange,
-        setTimeZone,
-        displayTimeComparison,
-        setSelectedComparisonRange,
-        setInitialState,
+        set,
       },
     },
   } = getCanvasStore(canvasName, instanceId));
 
-  let showDefaultItem = false;
-
   $: ({ selectedTimeRange, timeStart, timeEnd } = $timeRangeStateStore || {});
+
+  $: activeTimeZone = $selectedTimezone;
 
   $: selectedComparisonTimeRange =
     $comparisonRangeStateStore?.selectedComparisonTimeRange;
-
-  $: baseTimeRange = selectedTimeRange?.start &&
-    selectedTimeRange?.end && {
-      name: selectedTimeRange?.name,
-      start: selectedTimeRange.start,
-      end: selectedTimeRange.end,
-    };
 
   $: selectedRangeAlias = selectedTimeRange?.name;
   $: activeTimeGrain = selectedTimeRange?.interval;
@@ -100,36 +75,19 @@
 
   $: interval = selectedTimeRange
     ? Interval.fromDateTimes(
-        DateTime.fromJSDate(selectedTimeRange.start).setZone($selectedTimezone),
-        DateTime.fromJSDate(selectedTimeRange.end).setZone($selectedTimezone),
+        DateTime.fromJSDate(selectedTimeRange.start).setZone(activeTimeZone),
+        DateTime.fromJSDate(selectedTimeRange.end).setZone(activeTimeZone),
       )
-    : Interval.fromDateTimes($allTimeRange.start, $allTimeRange.end);
+    : Interval.invalid("Unable to parse time range");
 
-  $: dimensionIdMap = getMapFromArray(
-    $allDimensions,
-    (dimension) => (dimension.name || dimension.column) as string,
-  );
+  $: allDimensionFilters = $allDimensionFilterItems;
 
-  $: measureIdMap = getMapFromArray(
-    $allSimpleMeasures,
-    (m) => m.name as string,
-  );
-
-  $: currentDimensionFilters = $getDimensionFilterItems(dimensionIdMap);
-  $: allDimensionFilters = $getAllDimensionFilterItems(
-    currentDimensionFilters,
-    dimensionIdMap,
-  );
-
-  $: currentMeasureFilters = $getMeasureFilterItems(measureIdMap);
-  $: allMeasureFilters = $getAllMeasureFilterItems(
-    currentMeasureFilters,
-    measureIdMap,
-  );
+  $: allMeasureFilters = $allMeasureFilterItems;
 
   // hasFilter only checks for complete filters and excludes temporary ones
   $: hasFilters =
-    currentDimensionFilters.length > 0 || currentMeasureFilters.length > 0;
+    allDimensionFilters.size + allMeasureFilters.length >
+    $temporaryFilters.size;
 
   $: isComplexFilter = isExpressionUnsupported($whereFilter);
 
@@ -148,128 +106,17 @@
   function onPan(direction: "left" | "right") {
     const getPanRange = getPanRangeForTimeRange(
       selectedTimeRange,
-      $selectedTimezone,
+      activeTimeZone,
     );
     const panRange = getPanRange(direction);
     if (!panRange) return;
     const { start, end } = panRange;
 
-    const timeRange = {
-      name: CUSTOM_TIME_RANGE_ALIAS,
-      start: start,
-      end: end,
-    };
-
-    const comparisonTimeRange = {
-      name: TimeComparisonOption.CONTIGUOUS,
-    } as DashboardTimeControls; // FIXME wrong typecasting across application
-
     if (!activeTimeGrain) return;
-    selectTimeRange(
-      timeRange as TimeRange,
-      activeTimeGrain,
-      comparisonTimeRange,
-    );
+
+    set.range(`${start.toISOString()},${end.toISOString()}`);
+    set.comparison(TimeComparisonOption.CONTIGUOUS);
   }
-  function makeTimeSeriesTimeRangeAndUpdateAppState(
-    timeRange: TimeRange,
-    timeGrain: V1TimeGrain,
-    /** we should only reset the comparison range when the user has explicitly chosen a new
-     * time range. Otherwise, the current comparison state should continue to be the
-     * source of truth.
-     */
-    comparisonTimeRange: DashboardTimeControls | undefined,
-  ) {
-    selectTimeRange(timeRange, timeGrain, comparisonTimeRange);
-  }
-
-  function selectRange(range: TimeRange) {
-    const defaultTimeGrain = getDefaultTimeGrain(range.start, range.end).grain;
-
-    const comparisonOption = DEFAULT_TIME_RANGES[range.name as TimeRangePreset]
-      ?.defaultComparison as TimeComparisonOption;
-
-    // Get valid option for the new time range
-    const validComparison = $allTimeRange && comparisonOption;
-
-    makeTimeSeriesTimeRangeAndUpdateAppState(range, defaultTimeGrain, {
-      name: validComparison,
-    } as DashboardTimeControls);
-  }
-
-  function onSelectRange(name: string) {
-    if (!$allTimeRange?.end) {
-      return;
-    }
-
-    if (name === ALL_TIME_RANGE_ALIAS) {
-      makeTimeSeriesTimeRangeAndUpdateAppState(
-        $allTimeRange,
-        "TIME_GRAIN_DAY",
-        undefined,
-      );
-      return;
-    }
-
-    const includesTimeZoneOffset = name.includes("@");
-
-    if (includesTimeZoneOffset) {
-      const timeZone = name.match(/@ {(.*)}/)?.[1];
-
-      if (timeZone) setTimeZone(timeZone);
-    }
-
-    const interval = deriveInterval(
-      name,
-      DateTime.fromJSDate($allTimeRange.end),
-    );
-
-    if (interval?.isValid) {
-      const validInterval = interval as Interval<true>;
-      const baseTimeRange: TimeRange = {
-        // Temporary fix for custom syntax
-        name: name as TimeRangePreset,
-        start: validInterval.start.toJSDate(),
-        end: validInterval.end.toJSDate(),
-      };
-
-      selectRange(baseTimeRange);
-    }
-  }
-
-  function onTimeGrainSelect(timeGrain: V1TimeGrain) {
-    if (baseTimeRange) {
-      makeTimeSeriesTimeRangeAndUpdateAppState(
-        baseTimeRange,
-        timeGrain,
-        selectedComparisonTimeRange,
-      );
-    }
-  }
-
-  function onSelectTimeZone(timeZone: string) {
-    if (!interval.isValid) return;
-
-    if (selectedRangeAlias === TimeRangePreset.CUSTOM) {
-      selectRange({
-        name: TimeRangePreset.CUSTOM,
-        start: interval.start
-          ?.setZone(timeZone, { keepLocalTime: true })
-          .toJSDate(),
-        end: interval.end
-          ?.setZone(timeZone, { keepLocalTime: true })
-          .toJSDate(),
-      });
-    }
-
-    setTimeZone(timeZone);
-  }
-
-  onMount(() => {
-    if (!$timeRangeStateStore) {
-      setInitialState();
-    }
-  });
 </script>
 
 <div
@@ -281,6 +128,7 @@
   >
     <Calendar size="16px" />
     <SuperPill
+      context={canvasName}
       allTimeRange={$allTimeRange}
       {selectedRangeAlias}
       showPivot={false}
@@ -293,16 +141,20 @@
       {timeStart}
       {timeEnd}
       {activeTimeGrain}
-      activeTimeZone={$selectedTimezone}
+      {activeTimeZone}
+      watermark={undefined}
       allowCustomTimeRange={$canvasSpec?.allowCustomTimeRange}
       canPanLeft
       canPanRight
       showPan
       {showDefaultItem}
-      applyRange={selectRange}
-      {onSelectRange}
-      {onTimeGrainSelect}
-      {onSelectTimeZone}
+      applyRange={(timeRange) => {
+        const string = `${timeRange.start.toISOString()},${timeRange.end.toISOString()}`;
+        set.range(string);
+      }}
+      onSelectRange={set.range}
+      onTimeGrainSelect={set.grain}
+      onSelectTimeZone={set.zone}
       {onPan}
     />
     <CanvasComparisonPill
@@ -311,9 +163,16 @@
       {selectedComparisonTimeRange}
       showTimeComparison={$comparisonRangeStateStore?.showTimeComparison ??
         false}
-      activeTimeZone={$selectedTimezone}
-      onDisplayTimeComparison={displayTimeComparison}
-      onSetSelectedComparisonRange={setSelectedComparisonRange}
+      onDisplayTimeComparison={set.comparison}
+      onSetSelectedComparisonRange={(range) => {
+        if (range.name === "CUSTOM_COMPARISON_RANGE") {
+          const stringRange = `${range.start.toISOString()},${range.end.toISOString()}`;
+          set.comparison(stringRange);
+        } else if (range.name) {
+          set.comparison(range.name);
+        }
+      }}
+      {activeTimeZone}
     />
   </div>
   <div class="relative flex flex-row gap-x-2 gap-y-2 items-start ml-2">
@@ -325,7 +184,7 @@
     >
       {#if isComplexFilter}
         <AdvancedFilter advancedFilter={$whereFilter} />
-      {:else if !allDimensionFilters.length && !allMeasureFilters.length}
+      {:else if !allDimensionFilters.size && !allMeasureFilters.length}
         <div
           in:fly={{ duration: 200, x: 8 }}
           class="ui-copy-disabled grid ml-1 items-center"
@@ -334,7 +193,7 @@
           No filters selected
         </div>
       {:else}
-        {#each allDimensionFilters as { name, label, mode, selectedValues, inputText, metricsViewNames } (name)}
+        {#each allDimensionFilters as [name, { isInclude, label, mode, selectedValues, inputText, metricsViewNames }] (name)}
           {@const dimension = $allDimensions.find(
             (d) => d.name === name || d.column === name,
           )}
@@ -351,8 +210,9 @@
                 {inputText}
                 {timeStart}
                 {timeEnd}
+                openOnMount={justAdded}
                 timeControlsReady={!!$timeRangeStateStore}
-                excludeMode={$isFilterExcludeMode(name)}
+                excludeMode={!isInclude}
                 whereFilter={$whereFilter}
                 onRemove={() => removeDimensionFilter(name)}
                 onToggleFilterMode={() => toggleDimensionFilterMode(name)}
@@ -388,7 +248,10 @@
           filteredSimpleMeasures={$allSimpleMeasures}
           dimensionHasFilter={$dimensionHasFilter}
           measureHasFilter={$measureHasFilter}
-          {setTemporaryFilterName}
+          setTemporaryFilterName={(n) => {
+            justAdded = true;
+            setTemporaryFilterName(n);
+          }}
         />
         <!-- if filters are present, place a chip at the end of the flex container 
       that enables clearing all filters -->

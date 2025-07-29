@@ -3,6 +3,7 @@
   import Model from "@rilldata/web-common/components/icons/Model.svelte";
   import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
   import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import {
@@ -16,8 +17,7 @@
   import { featureFlags } from "../../feature-flags";
   import { useCreateMetricsViewFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
   import { createModelFromTable } from "./createModel";
-  import { useIsModelingSupportedForOlapDriver } from "./selectors";
-  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+  import { useIsModelingSupportedForConnector } from "./selectors";
 
   const { ai } = featureFlags;
 
@@ -28,10 +28,11 @@
 
   $: ({ instanceId } = $runtime);
 
-  $: isModelingSupportedForOlapDriver = useIsModelingSupportedForOlapDriver(
+  $: isModelingSupportedForConnector = useIsModelingSupportedForConnector(
     instanceId,
     connector,
   );
+  $: isModelingSupported = $isModelingSupportedForConnector.data;
   $: createMetricsViewFromTable = useCreateMetricsViewFromTableUIAction(
     instanceId,
     connector,
@@ -77,7 +78,7 @@
   }
 </script>
 
-{#if $isModelingSupportedForOlapDriver}
+{#if isModelingSupported}
   <NavigationMenuItem on:click={handleCreateModel}>
     <Model slot="icon" />
     Create new model
