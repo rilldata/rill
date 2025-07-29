@@ -28,7 +28,7 @@
   import { tick } from "svelte";
   import { slide } from "svelte/transition";
   import { parseDocument, Scalar, YAMLMap, YAMLSeq } from "yaml";
-  import { useIsModelingSupportedForConnector } from "../connectors/selectors";
+  import { useIsModelingSupportedForConnectorOLAP as useIsModelingSupportedForConnector } from "../connectors/selectors";
   import ConnectorExplorer from "../connectors/explorer/ConnectorExplorer.svelte";
   import { connectorExplorerStore } from "../connectors/explorer/connector-explorer-store";
   import { FileArtifact } from "../entity-management/file-artifact";

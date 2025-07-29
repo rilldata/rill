@@ -70,9 +70,14 @@ function createModelingSupportQueryOptions(
 }
 
 /**
+ * LEGACY OLAP SELECTORS
+ * These use the legacy OLAP-specific APIs and should be migrated to the new generic APIs above
+ */
+
+/**
  * Check if modeling is supported for a specific connector based on its properties
  */
-export function useIsModelingSupportedForConnector(
+export function useIsModelingSupportedForConnectorOLAP(
   instanceId: string,
   connectorName: string,
 ): CreateQueryResult<boolean, ErrorType<RpcStatus>> {
@@ -80,11 +85,6 @@ export function useIsModelingSupportedForConnector(
     createModelingSupportQueryOptions(instanceId, connectorName),
   );
 }
-
-/**
- * LEGACY OLAP SELECTORS
- * These use the legacy OLAP-specific APIs and should be migrated to the new generic APIs above
- */
 
 export function useIsModelingSupportedForDefaultOlapDriverOLAP(
   instanceId: string,
@@ -182,11 +182,6 @@ export function useTablesOLAP(
     },
   );
 }
-
-/**
- * NEW SELECTORS - Using the new granular APIs
- * These work with all connector types, not just OLAP
- */
 
 /**
  * Fetches database schemas for any connector type
