@@ -24,7 +24,6 @@ When connecting to your own OLAP engine using Rill Developer(e.g., ClickHouse, D
 - **[BigQuery](#bigquery)** - Google BigQuery
 - **[Redshift](#redshift)** - Amazon Redshift
 - **[Athena](#athena)** - Amazon Athena
-- **[MotherDuck](#motherduck-as-a-source)** - MotherDuck cloud data warehouse
 
 #### _Databases_
 - **[PostgreSQL](#postgresql)** - PostgreSQL databases
@@ -190,16 +189,7 @@ dsn: "./data/file.csv"                           # File path or location _(requi
 allow_host_access: true                          # Allow host-level file path access
 ``` -->
 
-### MotherDuck as a source
-```yaml
-type: connector                                  # Must be `connector` (required)
-driver: motherduck                               # Must be `motherduck` _(required)_
-
-dsn: "md:?motherduck_token=mymotherducktoken"    # MotherDuck connection endpoint _(required)_  
-token: "mymotherducktoken"                       # Authentication token _(required)_
-```
-
-### Motherduck
+### MotherDuck
 
 ```yaml
 ---
@@ -212,7 +202,7 @@ path: "md:my_db"                                # Path to your MD database
 init_sql: |                                     # SQL executed during database initialization.
   INSTALL 'motherduck';                         # Install motherduck extension
   LOAD 'motherduck';                            # Load the extensions
-  SET motherduck_token= {{ .env.motherduck_token }} # Define the motherduck token
+  SET motherduck_token= '{{ .env.motherduck_token }}' # Define the motherduck token
 ```
 
 ### MySQL
