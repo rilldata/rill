@@ -1249,9 +1249,9 @@ definitions:
           security:
             $ref: '#/definitions/security_policy_properties'
             description: Defines a security policy for the dashboard
-          no_explore:
-            type: boolean
-            description: When true, disables the automatic creation of explore view for this metrics view
+          explore:
+            $ref: '#/definitions/explore_properties'
+            description: Defines an inline explore view for the metrics view
         required:
           - type
       - $ref: '#/definitions/common_properties' 
@@ -1327,6 +1327,73 @@ definitions:
                     - name
                   additionalProperties: false
             minItems: 1
+      explore_properties:
+        type: object
+        properties:
+          skip:
+            type: boolean
+            description: If true, disables the explore view for this metrics view.
+          display_name:
+            type: string
+            description: Display name for the explore view.
+          description:
+            type: string
+            description: Description for the explore view.
+          banner:
+            type: string
+            description: Custom banner displayed at the header of the explore view.
+          theme:
+            oneOf:
+              - type: string
+                description: Name of an existing theme to apply to the explore view.
+              - $ref: '#/definitions/theme/definitions/theme_properties'
+                description: Inline theme configuration.
+            description: Name of the theme to use. Only one of theme and embedded_theme can be set.
+          time_ranges:
+            type: array
+            description: Overrides the list of default time range selections available in the dropdown. It can be string or an object with a 'range' and optional 'comparison_offsets'.
+            items:
+              $ref: '#/definitions/explore_time_range_properties'
+          time_zones:
+            type: array
+            description: List of time zones to pin to the top of the time zone selector. Should be a list of IANA time zone identifiers.
+            items:
+              type: string
+          lock_time_zone:
+            type: boolean
+            description: When true, the explore view will be locked to the first time zone provided in the time_zones list. If no time_zones are provided, it will be locked to UTC.
+          allow_custom_time_range:
+            type: boolean
+            description: Defaults to true. When set to false, hides the ability to set a custom time range for the user.
+          defaults:
+            type: object
+            description: Preset UI state to show by default.
+            properties:
+              dimensions:
+                $ref: '#/definitions/explore/definitions/field_selector_properties'
+                description: Default dimensions to load on viewing the explore view.
+              measures:
+                $ref: '#/definitions/explore/definitions/field_selector_properties'
+                description: Default measures to load on viewing the explore view.
+              time_range:
+                type: string
+                description: Default time range to display when the explore view loads.
+              comparison_mode:
+                type: string
+                description: Default comparison mode for metrics (none, time, or dimension).
+              comparison_dimension:
+                type: string
+                description: Default dimension to use for comparison when comparison_mode is 'dimension'.
+          additionalProperties: false
+          embeds:
+            type: object
+            description: Configuration options for embedded explore views.
+            properties:
+              hide_pivot:
+                type: boolean
+                description: When true, hides the pivot table view in embedded mode.
+            additionalProperties: false
+      additionalProperties: false
   model:
     type: object
     title: Model YAML
