@@ -46,8 +46,8 @@ describe("DimensionFilter", () => {
       screen.getByText("Google").click();
     });
 
-    // Apply the selections (proxy pattern requires explicit application)
-    await act(() => screen.getByRole("button", { name: "Apply" }).click());
+    // Close the dropdown to apply the selections (Select mode applies on close)
+    await act(() => screen.getByLabelText("Open publisher filter").click());
 
     // Assert that filters are now applied to the dashboard store
     expect(get(stateManagers.dashboardStore).whereFilter).toEqual(
@@ -56,7 +56,7 @@ describe("DimensionFilter", () => {
       ]),
     );
 
-    // Reopen the dropdown (Apply closes it)
+    // Reopen the dropdown
     await act(() => screen.getByLabelText("Open publisher filter").click());
 
     // Change the mode to "Contains" and enter a search term "oo"
@@ -157,6 +157,7 @@ describe("DimensionFilter", () => {
     expect(screen.getByLabelText("Open publisher filter")).toHaveTextContent(
       "publisher Contains oo (3)",
     );
+
     // Apply to get the filter to take effect.
     await act(() => screen.getByRole("button", { name: "Apply" }).click());
 
