@@ -160,39 +160,3 @@ export function useTableMetadata(
     },
   );
 }
-
-/**
- * COMPATIBILITY LAYER
- * These adapt the new APIs to match the old API shapes for easier migration
- */
-
-/**
- * Compatibility wrapper that mimics the old useDatabases behavior
- */
-export function useDatabases(instanceId: string, connector: string) {
-  return useDatabasesFromSchemas(instanceId, connector);
-}
-
-/**
- * Compatibility wrapper that mimics the old useDatabaseSchemas behavior
- */
-export function useDatabaseSchemasForDatabase(
-  instanceId: string,
-  connector: string,
-  database: string,
-) {
-  return useSchemasForDatabase(instanceId, connector, database);
-}
-
-/**
- * Compatibility wrapper that mimics the old useTables behavior
- * Note: This now returns V1TableInfo instead of V1OlapTableInfo
- */
-export function useTables(
-  instanceId: string,
-  connector: string,
-  database: string,
-  databaseSchema: string,
-) {
-  return useTablesForSchema(instanceId, connector, database, databaseSchema);
-}
