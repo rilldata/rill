@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"errors"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -27,6 +28,7 @@ func (s *Server) GitStatus(ctx context.Context, req *runtimev1.GitStatusRequest)
 	return &runtimev1.GitStatusResponse{
 		Branch:        gs.Branch,
 		GithubUrl:     gs.RemoteURL,
+		ManagedGit:    gs.ManagedRepo,
 		LocalChanges:  gs.LocalChanges,
 		LocalCommits:  gs.LocalCommits,
 		RemoteCommits: gs.RemoteCommits,
@@ -61,6 +63,10 @@ func (s *Server) GitPush(ctx context.Context, req *runtimev1.GitPushRequest) (*r
 
 	err = repo.CommitAndPush(ctx, req.CommitMessage, req.Force)
 	if err != nil {
+		if errors.Is(err, drivers.ErrRemoteAhead) {
+			return nil, status.Error(codes.FailedPrecondition, "remote repository has changes that are not in local state, please pull first")
+
+		}
 		return nil, status.Errorf(codes.Internal, "failed to push: %v", err)
 	}
 	return &runtimev1.GitPushResponse{}, nil

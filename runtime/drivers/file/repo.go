@@ -283,7 +283,7 @@ func (c *connection) Status(ctx context.Context) (*drivers.RepoStatus, error) {
 // Pull implements drivers.RepoStore.
 func (c *connection) Pull(ctx context.Context, opts *drivers.PullOptions) error {
 	// If its a Git repository, pull the current branch. Otherwise, this is a no-op.
-	if !c.isGitRepo() {
+	if !c.isGitRepo() || !opts.UserTriggered {
 		return nil
 	}
 	c.gitMu.Lock()
@@ -368,7 +368,7 @@ func (c *connection) CommitAndPush(ctx context.Context, message string, force bo
 		return err
 	}
 	if gs.RemoteCommits > 0 && !force {
-		return nil
+		return drivers.ErrRemoteAhead
 	}
 
 	author, err := c.gitSignature(ctx, c.root)

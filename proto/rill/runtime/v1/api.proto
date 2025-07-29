@@ -291,17 +291,29 @@ service RuntimeService {
   // Git APIs
   
   // GitStatus returns the curren status of the local git repo. This is equivalent to doing a `git fetch` followed by running `git status`.
-  rpc GitStatus(GitStatusRequest) returns (GitStatusResponse) {}
+  rpc GitStatus(GitStatusRequest) returns (GitStatusResponse) {
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/git/status"};
+  }
 
   // GitPull fetches the latest changes from the remote git repo equivalent to `git pull` command.
   // If there are any merge conflicts the pull is aborted.
   // Force can be set to true to force the pull and overwrite any local changes.
-  rpc GitPull(GitPullRequest) returns (GitPullResponse) {}
+  rpc GitPull(GitPullRequest) returns (GitPullResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/git/pull",
+      body: "*"
+    };
+  }
   
   // GitPush pushes the local changes to the remote git repo equivalent to `git push` command.
   // The difference between this and PushTiGithub is that this does not create a new repo.
   // It only pushes the changes to the existing remote repo.
-  rpc GitPush(GitPushRequest) returns (GitPushResponse) {}
+  rpc GitPush(GitPushRequest) returns (GitPushResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/git/push",
+      body: "*"
+    };
+  }
 }
 
 // Request message for RuntimeService.Ping

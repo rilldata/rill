@@ -10,6 +10,8 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 )
 
+var ErrRemoteAhead = fmt.Errorf("remote ahead of local state, please pull first")
+
 // RepoStore is implemented by drivers capable of storing project code files.
 // All paths start with '/' and are relative to the repo root.
 type RepoStore interface {
