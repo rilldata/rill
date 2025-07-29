@@ -12,6 +12,11 @@ import (
 )
 
 func (s *Server) GitStatus(ctx context.Context, r *connect.Request[localv1.GitStatusRequest]) (*connect.Response[localv1.GitStatusResponse], error) {
+	// if it is not a git repo then throw a 400 error
+	if !gitutil.IsGitRepo(s.app.ProjectPath) {
+		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("not a git repository"))
+	}
+
 	// if there is a origin set, try with native git configurations
 	remote, err := gitutil.ExtractGitRemote(s.app.ProjectPath, "origin", false)
 	if err == nil && remote.URL != "" {
@@ -94,6 +99,11 @@ func (s *Server) GitStatus(ctx context.Context, r *connect.Request[localv1.GitSt
 }
 
 func (s *Server) GitPull(ctx context.Context, r *connect.Request[localv1.GitPullRequest]) (*connect.Response[localv1.GitPullResponse], error) {
+	// if it is not a git repo then throw a 400 error
+	if !gitutil.IsGitRepo(s.app.ProjectPath) {
+		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("not a git repository"))
+	}
+
 	origin, err := gitutil.ExtractGitRemote(s.app.ProjectPath, "origin", false)
 	if err == nil && origin.URL != "" {
 		out, err := gitutil.RunGitPull(ctx, s.app.ProjectPath, r.Msg.DiscardLocal, "", "origin")
@@ -142,6 +152,11 @@ func (s *Server) GitPull(ctx context.Context, r *connect.Request[localv1.GitPull
 }
 
 func (s *Server) GitPush(ctx context.Context, r *connect.Request[localv1.GitPushRequest]) (*connect.Response[localv1.GitPushResponse], error) {
+	// if it is not a git repo then throw a 400 error
+	if !gitutil.IsGitRepo(s.app.ProjectPath) {
+		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("not a git repository"))
+	}
+
 	remote, err := gitutil.ExtractGitRemote(s.app.ProjectPath, "origin", false)
 	if err == nil && remote.URL != "" {
 		st, err := gitutil.RunGitStatus(s.app.ProjectPath, "origin")

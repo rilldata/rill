@@ -70,6 +70,8 @@ export type V1AlertOptionsResolverProperties = { [key: string]: unknown };
 
 export interface V1AlertOptions {
   displayName?: string;
+  refreshCron?: string;
+  refreshTimeZone?: string;
   intervalDuration?: string;
   resolver?: string;
   resolverProperties?: V1AlertOptionsResolverProperties;
@@ -934,8 +936,6 @@ export interface V1Project {
   subpath?: string;
   prodBranch?: string;
   archiveAssetId?: string;
-  prodOlapDriver?: string;
-  prodOlapDsn?: string;
   prodSlots?: string;
   prodDeploymentId?: string;
   devSlots?: string;
@@ -1876,8 +1876,6 @@ export type AdminServiceCreateProjectBody = {
   description?: string;
   public?: boolean;
   provisioner?: string;
-  prodOlapDriver?: string;
-  prodOlapDsn?: string;
   prodSlots?: string;
   subpath?: string;
   prodBranch?: string;

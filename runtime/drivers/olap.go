@@ -25,6 +25,8 @@ var (
 	// ErrOptimizationFailure is returned when an optimization fails.
 	ErrOptimizationFailure = errors.New("drivers: optimization failure")
 
+	DefaultQuerySchemaTimeout = 30 * time.Second
+
 	dictPwdRegex = regexp.MustCompile(`PASSWORD\s+'[^']*'`)
 )
 
@@ -47,6 +49,8 @@ type OLAPStore interface {
 	// Query executes a query against the OLAP driver and returns an iterator for the resulting rows and schema.
 	// The result MUST be closed after use.
 	Query(ctx context.Context, stmt *Statement) (*Result, error)
+	// QuerySchema returns the schema of the sql without trying not to run the actual query.
+	QuerySchema(ctx context.Context, query string, args []any) (*runtimev1.StructType, error)
 	// InformationSchema enables introspecting the tables and views available in the OLAP driver.
 	InformationSchema() OLAPInformationSchema
 }

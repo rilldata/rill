@@ -54,7 +54,6 @@
 
     // Cloud project doest exist.
     const projectExists = !!$matchingProjects.data?.projects?.length;
-    console.log($matchingProjects.data, projectExists);
     if (!projectExists) {
       const isPartOfAtLeastOneOrg = !!$user.data.rillUserOrgs?.length;
       if (isPartOfAtLeastOneOrg) {

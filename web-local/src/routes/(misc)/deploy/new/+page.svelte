@@ -15,7 +15,11 @@
     createLocalServiceDeploy,
     createLocalServiceGetCurrentProject,
   } from "@rilldata/web-common/runtime-client/local-service.ts";
+<<<<<<< HEAD
   import DeployError from "@rilldata/web-common/features/project/deploy/DeployError.svelte";
+=======
+  import DeployError from "@rilldata/web-common/features/project/DeployError.svelte";
+>>>>>>> main
   import CTAHeader from "@rilldata/web-common/components/calls-to-action/CTAHeader.svelte";
   import CTANeedHelp from "@rilldata/web-common/components/calls-to-action/CTANeedHelp.svelte";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
@@ -65,7 +69,11 @@
   }
 
   function onBack() {
+<<<<<<< HEAD
     window.history.back();
+=======
+    history.back();
+>>>>>>> main
   }
 </script>
 

@@ -32,6 +32,9 @@
   import { isEmpty, normalizeErrors } from "./utils";
   import { CONNECTION_TAB_OPTIONS } from "./constants";
   import { getInitialFormValuesFromProperties } from "../sourceUtils";
+  import { compileConnectorYAML } from "../../connectors/code-utils";
+  import CopyIcon from "@rilldata/web-common/components/icons/CopyIcon.svelte";
+  import Check from "@rilldata/web-common/components/icons/Check.svelte";
 
   const dispatch = createEventDispatcher();
 
@@ -43,6 +46,7 @@
   const isSourceForm = formType === "source";
   const isConnectorForm = formType === "connector";
 
+  let copied = false;
   let connectionTab: ConnectorType = "parameters";
 
   // Form 1: Individual parameters
@@ -53,9 +57,9 @@
       : connector.configProperties?.filter(
           (property) => property.key !== "dsn",
         )) ?? [];
-  const filteredProperties = properties.filter(
-    (property) => !property.noPrompt,
-  );
+
+  // FIXME: APP-209
+  const filteredParamsProperties = properties;
   const schema = yup(getYupSchema[connector.name as keyof typeof getYupSchema]);
   const initialFormValues = getInitialFormValuesFromProperties(properties);
   const {
@@ -83,9 +87,9 @@
   const dsnProperties =
     connector.configProperties?.filter((property) => property.key === "dsn") ??
     [];
-  const filteredDsnProperties = dsnProperties.filter(
-    (property) => !property.noPrompt,
-  );
+
+  // FIXME: APP-209
+  const filteredDsnProperties = dsnProperties;
   const dsnYupSchema = yup(dsnSchema);
   const {
     form: dsnForm,
@@ -110,6 +114,8 @@
   let clickhouseSubmitting: boolean;
   let clickhouseIsSubmitDisabled: boolean;
   let clickhouseManaged: boolean;
+  let clickhouseParamsForm;
+  let clickhouseDsnForm;
 
   // TODO: move to utils.ts
   // Compute disabled state for the submit button
@@ -149,6 +155,50 @@
 
   // Emit the submitting state to the parent
   $: dispatch("submitting", { submitting });
+
+  // ClickHouse requires special handling because it supports both managed and self-managed modes:
+  // - When managed=true: uses sourceProperties and minimal configuration
+  // - When managed=false: uses configProperties and full connection details
+  // - The form state is managed by the child AddClickHouseForm component
+  // - Other connectors use a simpler single-form approach
+  $: yamlPreview = (() => {
+    if (connector.name === "clickhouse") {
+      // Use the value of the child form state for clickhouse
+      const values =
+        connectionTab === "dsn" ? $clickhouseDsnForm : $clickhouseParamsForm;
+      return compileConnectorYAML(
+        connector,
+        {
+          ...values,
+          managed: clickhouseManaged,
+        },
+        {
+          fieldFilter: (property) => !property.noPrompt,
+          orderedProperties:
+            connectionTab === "dsn"
+              ? filteredDsnProperties
+              : filteredParamsProperties,
+        },
+      );
+    } else {
+      const values = connectionTab === "dsn" ? $dsnForm : $paramsForm;
+      return compileConnectorYAML(connector, values, {
+        fieldFilter: (property) => !property.noPrompt,
+        orderedProperties:
+          connectionTab === "dsn"
+            ? filteredDsnProperties
+            : filteredParamsProperties,
+      });
+    }
+  })();
+
+  function copyYamlPreview() {
+    navigator.clipboard.writeText(yamlPreview);
+    copied = true;
+    setTimeout(() => {
+      copied = false;
+    }, 2_000);
+  }
 
   function onStringInputChange(event: Event) {
     const target = event.target as HTMLInputElement;
@@ -247,13 +297,15 @@
           bind:submitting={clickhouseSubmitting}
           bind:isSubmitDisabled={clickhouseIsSubmitDisabled}
           bind:managed={clickhouseManaged}
+          bind:connectionTab
+          bind:paramsForm={clickhouseParamsForm}
+          bind:dsnForm={clickhouseDsnForm}
           on:submitting
         />
       {:else if hasDsnFormOption}
         <Tabs
-          value={connectionTab}
+          bind:value={connectionTab}
           options={CONNECTION_TAB_OPTIONS}
-          on:change={(event) => (connectionTab = event.detail)}
           disableMarginTop
         >
           <TabsContent value="parameters">
@@ -263,7 +315,7 @@
               use:paramsEnhance
               on:submit|preventDefault={paramsSubmit}
             >
-              {#each filteredProperties as property (property.key)}
+              {#each filteredParamsProperties as property (property.key)}
                 {@const propertyKey = property.key ?? ""}
                 {@const label =
                   property.displayName +
@@ -288,6 +340,7 @@
                       bind:checked={$paramsForm[propertyKey]}
                       {label}
                       hint={property.hint}
+                      optional={!property.required}
                     />
                   {:else if property.type === ConnectorDriverPropertyType.TYPE_INFORMATIONAL}
                     <InformationalField
@@ -332,10 +385,8 @@
           use:paramsEnhance
           on:submit|preventDefault={paramsSubmit}
         >
-          {#each filteredProperties as property (property.key)}
+          {#each filteredParamsProperties as property (property.key)}
             {@const propertyKey = property.key ?? ""}
-            {@const label =
-              property.displayName + (property.required ? "" : " (optional)")}
             <div class="py-1.5 first:pt-0 last:pb-0">
               {#if property.type === ConnectorDriverPropertyType.TYPE_STRING || property.type === ConnectorDriverPropertyType.TYPE_NUMBER}
                 <Input
@@ -354,8 +405,9 @@
                 <Checkbox
                   id={propertyKey}
                   bind:checked={$paramsForm[propertyKey]}
-                  {label}
+                  label={property.displayName}
                   hint={property.hint}
+                  optional={!property.required}
                 />
               {:else if property.type === ConnectorDriverPropertyType.TYPE_INFORMATIONAL}
                 <InformationalField
@@ -423,6 +475,26 @@
           ""}
       />
     {/if}
+
+    <div>
+      <div class="text-sm leading-none font-medium mb-4">Connector preview</div>
+      <div class="relative">
+        <button
+          class="absolute top-2 right-2 p-1 rounded"
+          type="button"
+          aria-label="Copy YAML"
+          on:click={copyYamlPreview}
+        >
+          {#if copied}
+            <Check size="16px" />
+          {:else}
+            <CopyIcon size="16px" />
+          {/if}
+        </button>
+        <pre
+          class="bg-muted p-3 rounded text-xs border border-gray-200 overflow-x-auto">{yamlPreview}</pre>
+      </div>
+    </div>
 
     <NeedHelpText {connector} />
   </div>
