@@ -96,7 +96,7 @@
       ? GrainAliasToV1TimeGrain[parsedTime.asOfLabel?.snap]
       : undefined;
 
-  $: dateTimeAnchor = returnAnchor(ref);
+  $: dateTimeAnchor = returnAnchor(ref, zone);
 
   $: selectedLabel = getRangeLabel(timeString);
 
@@ -192,7 +192,8 @@
     onSelectRange(newString);
   }
 
-  function returnAnchor(asOf: string): DateTime | undefined {
+  // Zone is taken as a param to make it reactive
+  function returnAnchor(asOf: string, zone: string): DateTime | undefined {
     if (asOf === "latest") {
       return maxDate.setZone(zone);
     } else if (asOf === "watermark" && watermark) {
