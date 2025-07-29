@@ -146,9 +146,6 @@ func (a *Authenticator) authStart(w http.ResponseWriter, r *http.Request, signup
 		// Set custom parameters for signup using AuthCodeOption
 		customOption := oauth2.SetAuthURLParam("screen_hint", "signup")
 		redirectURL = a.oauth2.AuthCodeURL(state, customOption)
-		a.logger.Info("Generated Auth0 signup URL", zap.String("redirectURL", redirectURL))
-	} else {
-		a.logger.Info("Generated Auth0 login URL", zap.String("redirectURL", redirectURL))
 	}
 
 	http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
