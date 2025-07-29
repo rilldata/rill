@@ -35,6 +35,7 @@ import Chart from "./Chart.svelte";
 import type {
   ChartDataQuery,
   ChartFieldsMap,
+  ChartMetadata,
   ChartType,
   CommonChartProperties,
   FieldConfig,
@@ -96,6 +97,12 @@ export abstract class BaseChart<
   ): ChartDataQuery;
 
   abstract chartTitle(fields: ChartFieldsMap): string;
+
+  getChartMetadata(): ChartMetadata {
+    // Default implementation returns empty metadata
+    // Subclasses can override to provide specific metadata
+    return {};
+  }
 
   protected getDefaultFieldConfig(): Partial<FieldConfig> {
     return {

@@ -360,4 +360,17 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
       ? `${yLabel} ${preposition} ${xLabel} split by ${colorLabel}`
       : `${yLabel} ${preposition} ${xLabel}`;
   }
+
+  getChartMetadata() {
+    return {
+      xValues:
+        this.customSortXItems.length > 0
+          ? [...this.customSortXItems]
+          : undefined,
+      colorValues:
+        this.customColorValues.length > 0
+          ? [...this.customColorValues]
+          : undefined,
+    };
+  }
 }

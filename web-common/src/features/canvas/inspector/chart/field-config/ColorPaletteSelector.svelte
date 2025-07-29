@@ -2,6 +2,7 @@
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import ColorInput from "@rilldata/web-common/components/color-picker/ColorInput.svelte";
   import type { FieldConfig } from "@rilldata/web-common/features/canvas/components/charts/types";
+  import { getColorForValues } from "@rilldata/web-common/features/canvas/components/charts/util";
   import type { ChartFieldInput } from "@rilldata/web-common/features/canvas/inspector/types";
   import { COMPARIONS_COLORS } from "@rilldata/web-common/features/dashboards/config";
   import { ChevronDown, ChevronRight } from "lucide-svelte";
@@ -20,50 +21,45 @@
 
   $: currentColorMapping = fieldConfig?.colorMapping || [];
 
+  $: allColorMappings =
+    getColorForValues(colorValues, currentColorMapping) || [];
+
   $: displayedColorMappings = showAllValues
-    ? currentColorMapping
-    : currentColorMapping.slice(0, THRESHOLD);
+    ? allColorMappings
+    : allColorMappings.slice(0, THRESHOLD);
 
-  $: hasMoreThanThreshold = currentColorMapping.length > THRESHOLD;
-
-  $: if (colorValues.length > 0 && currentColorMapping.length === 0) {
-    currentColorMapping = colorValues.map((value, index) => ({
-      value,
-      color: COMPARIONS_COLORS[index % COMPARIONS_COLORS.length],
-    }));
-  }
-
-  // Update color mapping when values change but preserve existing custom colors
-  $: if (colorValues.length > 0 && currentColorMapping.length > 0) {
-    const existingMapping = new Map(
-      currentColorMapping.map((item) => [item.value, item.color]),
-    );
-
-    const updatedMapping = colorValues.map((value, index) => ({
-      value,
-      color:
-        existingMapping.get(value) ||
-        COMPARIONS_COLORS[index % COMPARIONS_COLORS.length],
-    }));
-
-    const hasChanged =
-      updatedMapping.length !== currentColorMapping.length ||
-      updatedMapping.some(
-        (item, index) =>
-          item.value !== currentColorMapping[index]?.value ||
-          item.color !== currentColorMapping[index]?.color,
-      );
-
-    if (hasChanged) {
-      onChange("colorMapping", updatedMapping);
-    }
-  }
+  $: hasMoreThanThreshold = allColorMappings.length > THRESHOLD;
 
   function handleColorChange(value: string, newColor: string) {
-    const updatedMapping = currentColorMapping.map((item) =>
-      item.value === value ? { ...item, color: newColor } : item,
+    const valueIndex = colorValues.findIndex((v) => v === value);
+    const defaultColor =
+      COMPARIONS_COLORS[valueIndex % COMPARIONS_COLORS.length];
+
+    let updatedMapping: { value: string; color: string }[];
+
+    if (newColor === defaultColor) {
+      // Remove from custom mappings if it's set back to default
+      updatedMapping = currentColorMapping.filter(
+        (item) => item.value !== value,
+      );
+    } else {
+      // Add or update custom mapping
+      const existingIndex = currentColorMapping.findIndex(
+        (item) => item.value === value,
+      );
+      if (existingIndex >= 0) {
+        updatedMapping = currentColorMapping.map((item, index) =>
+          index === existingIndex ? { ...item, color: newColor } : item,
+        );
+      } else {
+        updatedMapping = [...currentColorMapping, { value, color: newColor }];
+      }
+    }
+
+    onChange(
+      "colorMapping",
+      updatedMapping.length > 0 ? updatedMapping : undefined,
     );
-    onChange("colorMapping", updatedMapping);
   }
 
   function resetToDefault() {
@@ -114,7 +110,7 @@
             onChange={(newColor) => handleColorChange(value, newColor)}
           />
         {/each}
-        {#if currentColorMapping.length === 0}
+        {#if allColorMappings.length === 0}
           <div class="px-2 py-2 text-xs text-gray-500">
             No color values found
           </div>
@@ -122,7 +118,7 @@
         {#if hasMoreThanThreshold && !showAllValues}
           <div class="p-1">
             <Button type="text" onClick={() => (showAllValues = true)}>
-              See more ({currentColorMapping.length - THRESHOLD} more values)
+              See more ({allColorMappings.length - THRESHOLD} more values)
             </Button>
           </div>
         {:else if hasMoreThanThreshold && showAllValues}

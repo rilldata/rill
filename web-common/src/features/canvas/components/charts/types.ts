@@ -41,7 +41,14 @@ export type ChartDataResult = {
   isFetching: boolean;
   fields: ChartFieldsMap;
   error?: HTTPError | null;
+  metadata?: ChartMetadata;
 };
+
+export interface ChartMetadata {
+  xValues?: string[];
+  colorValues?: string[];
+  yValues?: string[];
+}
 
 export interface TimeDimensionDefinition {
   field: string;

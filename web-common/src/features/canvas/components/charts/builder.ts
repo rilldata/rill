@@ -9,7 +9,10 @@ import type {
   FieldConfig,
   TooltipValue,
 } from "@rilldata/web-common/features/canvas/components/charts/types";
-import { mergedVlConfig } from "@rilldata/web-common/features/canvas/components/charts/util";
+import {
+  getColorForValues,
+  mergedVlConfig,
+} from "@rilldata/web-common/features/canvas/components/charts/util";
 import merge from "deepmerge";
 import type { VisualizationSpec } from "svelte-vega";
 import type { Config } from "vega-lite";
@@ -94,16 +97,25 @@ export function createColorEncoding(
         "timeUnit" in metaData && { timeUnit: metaData.timeUnit }),
     };
 
-    let condition;
+    // Ideally we would want to use conditional statements to set the color
+    // but it's not supported by Vega-Lite yet
+    // https://github.com/vega/vega-lite/issues/9497
 
-    // Add custom color mapping if available
-    if (colorField.colorMapping && colorField.colorMapping.length > 0) {
-      condition = colorField.colorMapping.map((mapping) => ({
-        test: `datum['${sanitizeValueForVega(colorField.field)}'] === '${mapping.value}'`,
-        value: mapping.color,
-      }));
+    const colorValues = data.metadata?.colorValues;
+    const colorMapping = getColorForValues(
+      colorValues,
+      colorField.colorMapping,
+    );
 
-      baseEncoding.condition = condition;
+    if (colorMapping?.length) {
+      const domain = colorMapping.map((mapping) => mapping.value);
+      const range = colorMapping.map((mapping) => mapping.color);
+
+      baseEncoding.scale = {
+        domain,
+        range,
+        type: "ordinal",
+      };
     }
 
     return baseEncoding;

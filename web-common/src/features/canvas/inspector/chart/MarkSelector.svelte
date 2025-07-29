@@ -40,12 +40,12 @@
         ...markConfig,
         [property]: value,
       };
+
+      if (property === "field") {
+        updatedConfig.colorMapping = undefined;
+      }
+
       onChange(updatedConfig);
-    } else if (property === "field") {
-      onChange({
-        field: value,
-        type: "nominal",
-      });
     }
   }
 
