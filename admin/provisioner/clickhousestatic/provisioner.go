@@ -31,6 +31,21 @@ type Spec struct {
 	// ENV variable that contains the clickhouse DSN.
 	// This is an alternative to specifying the DSN directly, which can be useful for injecting secrets
 	DSNEnv string `json:"dsn_env"`
+
+	// ReadDSN with admin permissions for read operations (optional separate read replica)
+	ReadDSN string `json:"read_dsn,omitempty"`
+	// ReadDSNPath with admin permissions for read operations (optional separate read replica)
+	ReadDSNPath string `json:"read_dsn_path,omitempty"`
+	// ReadDSNEnv with admin permissions for read operations (optional separate read replica)
+	ReadDSNEnv string `json:"read_dsn_env,omitempty"`
+
+	// WriteDSN with admin permissions for write operations (optional separate write primary)
+	WriteDSN string `json:"write_dsn,omitempty"`
+	// WriteDSNPath with admin permissions for write operations (optional separate write primary)
+	WriteDSNPath string `json:"write_dsn_path,omitempty"`
+	// WriteDSNEnv with admin permissions for write operations (optional separate write primary)
+	WriteDSNEnv string `json:"write_dsn_env,omitempty"`
+
 	// Cluster name for ClickHouse cluster operations.
 	// If specified, all DDL operations will include an ON CLUSTER clause.
 	Cluster string `json:"cluster,omitempty"`
@@ -69,7 +84,48 @@ func New(specJSON []byte, _ database.DB, logger *zap.Logger) (provisioner.Provis
 		spec.DSN = dsn
 	}
 
-	opts, err := clickhouse.ParseDSN(spec.DSN)
+	if spec.ReadDSNPath != "" {
+		dsn, err := os.ReadFile(spec.ReadDSNPath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read read DSN file: %w", err)
+		}
+		spec.ReadDSN = strings.TrimSpace(string(dsn))
+	}
+
+	if spec.ReadDSNEnv != "" && spec.ReadDSN == "" && spec.ReadDSNPath == "" {
+		dsn := os.Getenv(spec.ReadDSNEnv)
+		if dsn == "" {
+			return nil, fmt.Errorf("environment variable %s is not set or empty", spec.ReadDSNEnv)
+		}
+		spec.ReadDSN = dsn
+	}
+
+	if spec.WriteDSNPath != "" {
+		dsn, err := os.ReadFile(spec.WriteDSNPath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read write DSN file: %w", err)
+		}
+		spec.WriteDSN = strings.TrimSpace(string(dsn))
+	}
+
+	if spec.WriteDSNEnv != "" && spec.WriteDSN == "" && spec.WriteDSNPath == "" {
+		dsn := os.Getenv(spec.WriteDSNEnv)
+		if dsn == "" {
+			return nil, fmt.Errorf("environment variable %s is not set or empty", spec.WriteDSNEnv)
+		}
+		spec.WriteDSN = dsn
+	}
+
+	provDSN := spec.DSN
+	if provDSN == "" && spec.WriteDSN != "" {
+		provDSN = spec.WriteDSN
+	}
+
+	if provDSN == "" {
+		return nil, fmt.Errorf("no DSN available - must specify either 'dsn' or 'write_dsn'")
+	}
+
+	opts, err := clickhouse.ParseDSN(provDSN)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse DSN: %w", err)
 	}
@@ -101,9 +157,16 @@ func (p *Provisioner) Provision(ctx context.Context, r *provisioner.Resource, op
 		return nil, err
 	}
 
-	// If the config has already been populated, do a health check and exit early (currently there's nothing to update).
-	if cfg.DSN != "" {
-		err := p.pingWithResourceDSN(ctx, cfg.DSN)
+	// If the config has already been populated, do a health check and exit early
+	if cfg.DSN != "" || (cfg.ReadDSN != "" && cfg.WriteDSN != "") {
+		var dsnToCheck string
+		if cfg.DSN != "" {
+			dsnToCheck = cfg.DSN
+		} else {
+			dsnToCheck = cfg.ReadDSN // Check read DSN for health
+		}
+
+		err := p.pingWithResourceDSN(ctx, dsnToCheck)
 		if err != nil {
 			return nil, fmt.Errorf("failed to ping clickhouse resource: %w", err)
 		}
@@ -195,16 +258,39 @@ func (p *Provisioner) Provision(ctx context.Context, r *provisioner.Resource, op
 		return nil, fmt.Errorf("failed to grant global privileges to clickhouse user: %w", err)
 	}
 
-	// Build DSN for the resource and return it
-	dsn, err := url.Parse(p.spec.DSN)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse base DSN: %w", err)
+	if p.spec.ReadDSN != "" && p.spec.WriteDSN != "" {
+		// Use separate read/write DSNs
+		readDSN, err := url.Parse(p.spec.ReadDSN)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse read DSN: %w", err)
+		}
+		writeDSN, err := url.Parse(p.spec.WriteDSN)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse write DSN: %w", err)
+		}
+
+		readDSN.User = url.UserPassword(user, password)
+		readDSN.Path = dbName
+		writeDSN.User = url.UserPassword(user, password)
+		writeDSN.Path = dbName
+
+		cfg = &provisioner.ClickhouseConfig{
+			ReadDSN:  readDSN.String(),
+			WriteDSN: writeDSN.String(),
+		}
+	} else {
+		// Use single DSN for both read and write (existing behavior)
+		dsn, err := url.Parse(p.spec.DSN)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse base DSN: %w", err)
+		}
+		dsn.User = url.UserPassword(user, password)
+		dsn.Path = dbName
+		cfg = &provisioner.ClickhouseConfig{
+			DSN: dsn.String(),
+		}
 	}
-	dsn.User = url.UserPassword(user, password)
-	dsn.Path = dbName
-	cfg = &provisioner.ClickhouseConfig{
-		DSN: dsn.String(),
-	}
+
 	return &provisioner.Resource{
 		ID:     r.ID,
 		Type:   r.Type,
@@ -219,6 +305,9 @@ func (p *Provisioner) Deprovision(ctx context.Context, r *provisioner.Resource) 
 		return fmt.Errorf("unexpected resource type %q", r.Type)
 	}
 
+	var opts *clickhouse.Options
+	var err error
+
 	// Parse the resource's config
 	cfg, err := provisioner.NewClickhouseConfig(r.Config)
 	if err != nil {
@@ -226,14 +315,24 @@ func (p *Provisioner) Deprovision(ctx context.Context, r *provisioner.Resource) 
 	}
 
 	// Exit early if the config is empty (nothing to deprovision)
-	if cfg.DSN == "" {
+	if cfg.DSN == "" && cfg.ReadDSN == "" && cfg.WriteDSN == "" {
 		return nil
 	}
 
-	// Parse the DSN
-	opts, err := clickhouse.ParseDSN(cfg.DSN)
-	if err != nil {
-		return fmt.Errorf("failed to parse DSN during deprovisioning: %w", err)
+	if cfg.DSN != "" {
+		// Parse the single DSN
+		opts, err = clickhouse.ParseDSN(cfg.DSN)
+		if err != nil {
+			return fmt.Errorf("failed to parse DSN during deprovisioning: %w", err)
+		}
+	} else if cfg.WriteDSN != "" {
+		// Parse the write DSN (use write DSN for database/user info)
+		opts, err = clickhouse.ParseDSN(cfg.WriteDSN)
+		if err != nil {
+			return fmt.Errorf("failed to parse write DSN during deprovisioning: %w", err)
+		}
+	} else {
+		return fmt.Errorf("no valid DSN found for deprovisioning")
 	}
 
 	// Drop the database
