@@ -7,15 +7,12 @@ import {
   createConnectorServiceListTables,
   createConnectorServiceGetTable,
   createConnectorServiceOLAPListTables,
-  createRuntimeServiceAnalyzeConnectors,
   createRuntimeServiceGetInstance,
   type V1GetResourceResponse,
   getRuntimeServiceGetResourceQueryKey,
   runtimeServiceGetResource,
   type RpcStatus,
 } from "../../runtime-client";
-import { featureFlags } from "../feature-flags";
-import { OLAP_DRIVERS_WITHOUT_MODELING } from "./olap/olap-config";
 import { ResourceKind } from "../entity-management/resource-selectors";
 import type { ErrorType } from "@rilldata/web-common/runtime-client/http-client";
 
@@ -107,36 +104,6 @@ export function useIsModelingSupportedForDefaultOlapDriverOLAP(
 
   return createQuery(queryOptions);
 }
-
-// export function useIsModelingSupportedForDefaultOlapDriverOLAP(
-//   instanceId: string,
-// ) {
-//   const { clickhouseModeling } = featureFlags;
-//   return derived(
-//     [
-//       createRuntimeServiceGetInstance(instanceId, { sensitive: true }),
-//       createRuntimeServiceAnalyzeConnectors(instanceId),
-//       clickhouseModeling,
-//     ],
-//     ([$instanceQuery, $connectorsQuery, $clickhouseModeling]) => {
-//       const { instance: { olapConnector: olapConnectorName = "" } = {} } =
-//         $instanceQuery.data || {};
-//       const { connectors = [] } = $connectorsQuery.data || {};
-
-//       const olapConnector = connectors.find(
-//         (connector) => connector.name === olapConnectorName,
-//       );
-
-//       const olapDriverName = olapConnector?.driver?.name ?? "";
-
-//       if (olapDriverName === "clickhouse") {
-//         return $clickhouseModeling;
-//       }
-
-//       return !OLAP_DRIVERS_WITHOUT_MODELING.includes(olapDriverName);
-//     },
-//   );
-// }
 
 export function useDatabasesOLAP(instanceId: string, connector: string) {
   return createConnectorServiceOLAPListTables(
