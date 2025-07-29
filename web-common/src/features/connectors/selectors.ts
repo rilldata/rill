@@ -1,5 +1,4 @@
 import type { CreateQueryResult } from "@tanstack/svelte-query";
-import { derived } from "svelte/store";
 import {
   type V1TableInfo,
   createConnectorServiceListDatabaseSchemas,
@@ -46,19 +45,23 @@ export function useDatabasesFromSchemas(instanceId: string, connector: string) {
       query: {
         enabled: !!instanceId && !!connector,
         select: (data) => {
-          const schemas = data.databaseSchemas ?? [];
+          const allSchemas = data.databaseSchemas ?? [];
 
           // Check if all databases are empty (flat schema structure like MySQL)
-          const hasEmptyDatabases = schemas.every((schema) => !schema.database);
+          const hasEmptyDatabases = allSchemas.every(
+            (schema) => !schema.database,
+          );
 
           const databases = hasEmptyDatabases
             ? // For flat structures, use databaseSchema as the primary level
               Array.from(
-                new Set(schemas.map((schema) => schema.databaseSchema ?? "")),
+                new Set(
+                  allSchemas.map((schema) => schema.databaseSchema ?? ""),
+                ),
               )
             : // For hierarchical structures, use database as the primary level
               Array.from(
-                new Set(schemas.map((schema) => schema.database ?? "")),
+                new Set(allSchemas.map((schema) => schema.database ?? "")),
               ).filter(Boolean);
 
           return databases;
@@ -76,27 +79,35 @@ export function useSchemasForDatabase(
   connector: string,
   database: string,
 ) {
-  const databaseSchemasQuery = useDatabaseSchemas(instanceId, connector);
+  return createConnectorServiceListDatabaseSchemas(
+    {
+      instanceId,
+      connector,
+    },
+    {
+      query: {
+        enabled: !!instanceId && !!connector,
+        select: (data) => {
+          const allSchemas = data.databaseSchemas ?? [];
 
-  return derived([databaseSchemasQuery], ([$query]) => {
-    if ($query.isLoading)
-      return { isLoading: true, data: undefined, error: undefined };
-    if ($query.error)
-      return { isLoading: false, data: undefined, error: $query.error };
+          // Check if this is a flat schema structure (like MySQL)
+          const hasEmptyDatabases = allSchemas.every(
+            (schema) => !schema.database,
+          );
 
-    // Check if this is a flat schema structure (like MySQL)
-    const hasEmptyDatabases = $query.data?.every((schema) => !schema.database);
+          const schemas = hasEmptyDatabases
+            ? // For flat structures, the "database" parameter is actually a schema name
+              [database]
+            : // For hierarchical structures, filter by actual database
+              allSchemas
+                .filter((schema) => schema.database === database)
+                .map((schema) => schema.databaseSchema ?? "");
 
-    const schemas = hasEmptyDatabases
-      ? // For flat structures, the "database" parameter is actually a schema name
-        [database]
-      : // For hierarchical structures, filter by actual database
-        ($query.data
-          ?.filter((schema) => schema.database === database)
-          ?.map((schema) => schema.databaseSchema ?? "") ?? []);
-
-    return { isLoading: false, data: schemas, error: undefined };
-  });
+          return schemas;
+        },
+      },
+    },
+  );
 }
 
 /**
