@@ -72,8 +72,9 @@ tests:
       metrics_view: duckdb_metrics
       annotation: simple_duckdb_annotation
     args:
-      time_start: 2024-01-07T00:00:00Z
-      time_end: 2024-03-29T00:00:00Z
+      time_range:
+        start: 2024-01-07T00:00:00Z
+        end: 2024-03-29T00:00:00Z
     result:
       - time: "2024-02-16T00:00:00Z"
         description: "2nd event"
@@ -85,8 +86,9 @@ tests:
       metrics_view: duckdb_metrics
       annotation: time_end_clickhouse_annotation
     args:
-      time_start: 2024-01-07T00:00:00Z
-      time_end: 2024-03-29T00:00:00Z
+      time_range:
+        start: 2024-01-01T00:00:00Z
+        end: 2024-03-29T00:00:00Z
     result:
       - time: "2024-01-05T00:00:00Z"
         time_end: "2024-01-09T00:00:00Z"
@@ -94,24 +96,22 @@ tests:
       - time: "2024-02-16T00:00:00Z"
         time_end: "2024-02-20T00:00:00Z"
         description: "2nd event"
-      - time: "2024-03-27T00:00:00Z"
-        time_end: "2024-04-11T00:00:00Z"
-        description: "3rd event"
   - name: query_grain_duckdb_annotation
     resolver: annotations
     properties:
       metrics_view: duckdb_metrics
       annotation: grain_duckdb_annotation
     args:
-      time_start: 2024-01-01T00:00:00Z
-      time_end: 2024-03-31T00:00:00Z
-      time_grain: 5
+      time_range:
+        start: 2024-01-01T00:00:00Z
+        end: 2024-03-31T00:00:00Z
+      time_grain: 6
     result:
       - time: "2024-01-05T00:00:00Z"
         grain: "day"
         description: "1st event"
         time_grain: 5
-      - time: "2024-02-16T00:00:00Z"
-        grain: "month"
-        description: "2nd event"
-        time_grain: 7
+      - time: "2024-03-27T00:00:00Z"
+        grain: "hour"
+        description: "3rd event"
+        time_grain: 4

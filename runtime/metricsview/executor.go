@@ -567,6 +567,73 @@ func (e *Executor) Search(ctx context.Context, qry *SearchQuery, executionTime *
 	return searchResult, nil
 }
 
+func (e *Executor) Annotations(ctx context.Context, annotation *runtimev1.MetricsViewSpec_Annotation, tr *TimeRange, grain runtimev1.TimeGrain) (*drivers.Result, error) {
+	accessibleMeasures := 0
+	for _, measure := range annotation.Measures {
+		if e.security.CanAccessField(measure) {
+			accessibleMeasures++
+		}
+	}
+	// None of the measures are accessible, so annotation is not accessible either
+	if accessibleMeasures == 0 && !annotation.Global {
+		return nil, runtime.ErrForbidden
+	}
+
+	olap, olapCloser, err := e.rt.OLAP(ctx, e.instanceID, annotation.Connector)
+	if err != nil {
+		return nil, err
+	}
+	defer olapCloser()
+
+	err = e.resolveTimeRange(ctx, tr, time.UTC, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	columns := "*"
+	if annotation.HasGrain {
+		// Convert the string grain to an integer so that it is easy to calculate "greater than or equal to".
+		columns += `,(CASE
+  WHEN grain = 'millisecond' THEN 1
+  WHEN grain = 'second' THEN 2
+  WHEN grain = 'minute' THEN 3
+  WHEN grain = 'hour' THEN 4
+  WHEN grain = 'day' THEN 5
+  WHEN grain = 'week' THEN 6
+  WHEN grain = 'month' THEN 7
+  WHEN grain = 'quarter' THEN 8
+  WHEN grain = 'year' THEN 9
+  ELSE 0
+END) as time_grain`
+	}
+
+	start := tr.Start.Format(time.RFC3339)
+	end := tr.End.Format(time.RFC3339)
+
+	filter := "time >= ? AND time < ?"
+	args := []any{start, end}
+
+	if annotation.HasTimeEnd {
+		filter += " AND time_end >= ? AND time_end < ?"
+		args = append(args, start, end)
+	}
+
+	if annotation.HasGrain && grain != runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
+		filter += " AND (time_grain == 0 OR time_grain < ?)"
+		args = append(args, int(grain))
+	}
+
+	escapedTableName := olap.Dialect().EscapeTable(annotation.Database, annotation.DatabaseSchema, annotation.Table)
+
+	sql := fmt.Sprintf("SELECT %s FROM %s WHERE %s ORDER BY time", columns, escapedTableName, filter)
+
+	return olap.Query(ctx, &drivers.Statement{
+		Query:    sql,
+		Args:     args,
+		Priority: 0,
+	})
+}
+
 func (e *Executor) executeSearchInDruid(ctx context.Context, qry *SearchQuery, executionTime *time.Time) ([]SearchResult, error) {
 	if qry.TimeRange == nil {
 		return nil, errDruidNativeSearchUnimplemented

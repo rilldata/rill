@@ -598,7 +598,6 @@ func (p *Parser) parseMetricsView(node *Node) error {
 	}
 
 	// Add annotations as refs to the end of the metrics view.
-	// TODO: would this break streaming metrics view check anywhere?
 	for _, annotation := range tmp.Annotations {
 		if annotation == nil {
 			continue
