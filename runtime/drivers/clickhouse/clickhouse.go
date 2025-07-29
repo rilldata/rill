@@ -229,12 +229,16 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		return nil, err
 	}
 
+	// If the managed flag is set we are free to allow overwriting tables.
 	if conf.Managed {
 		conf.Mode = modeReadWrite
 	}
+
+	// Default to read-only mode if not set
 	if conf.Mode == "" {
 		conf.Mode = modeReadOnly
 	}
+
 	if conf.MaxOpenConns == 0 {
 		conf.MaxOpenConns = 20
 	}
@@ -295,9 +299,15 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 	}
 
 	// Apply common configuration to both connection options
-	applyCommonConfig(readOpts, conf)
+	err = applyCommonConfig(readOpts, conf)
+	if err != nil {
+		return nil, err
+	}
 	if readOpts != writeOpts {
-		applyCommonConfig(writeOpts, conf)
+		err = applyCommonConfig(writeOpts, conf)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// Create database connections
@@ -340,7 +350,7 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		}
 	}
 
-	// Version check using read connection
+	// group by positional args are supported post 22.7 and we use them heavily in our queries
 	row := readDB.QueryRow(`
 		WITH
 			splitByChar('.', version()) AS parts,
@@ -368,7 +378,7 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		cancel:     cancel,
 		metaSem:    semaphore.NewWeighted(1),
 		olapSem:    priorityqueue.NewSemaphore(conf.MaxOpenConns - 1),
-		opts:       readOpts, // Keep read opts for backward compatibility
+		opts:       readOpts,
 		embed:      embed,
 	}
 
@@ -391,8 +401,8 @@ func (d driver) TertiarySourceConnectors(ctx context.Context, src map[string]any
 }
 
 type Connection struct {
-	readDB     *sqlx.DB // Database connection for read operations
-	writeDB    *sqlx.DB // Database connection for write operations
+	readDB     *sqlx.DB
+	writeDB    *sqlx.DB
 	config     *configProperties
 	logger     *zap.Logger
 	activity   *activity.Client
@@ -771,7 +781,7 @@ func buildOptsFromOptions(conf *configProperties) *clickhouse.Options {
 }
 
 // applyCommonConfig applies common configuration to ClickHouse options
-func applyCommonConfig(opts *clickhouse.Options, conf *configProperties) {
+func applyCommonConfig(opts *clickhouse.Options, conf *configProperties) error {
 	// max_idle_conns
 	if conf.MaxIdleConns != 0 {
 		opts.MaxIdleConns = conf.MaxIdleConns
@@ -779,28 +789,30 @@ func applyCommonConfig(opts *clickhouse.Options, conf *configProperties) {
 
 	// conn_max_lifetime
 	if conf.ConnMaxLifetime != "" {
-		if d, err := time.ParseDuration(conf.ConnMaxLifetime); err == nil {
-			opts.ConnMaxLifetime = d
+		d, err := time.ParseDuration(conf.ConnMaxLifetime)
+		if err != nil {
+			return fmt.Errorf("failed to parse conn_max_lifetime: %w", err)
 		}
+		opts.ConnMaxLifetime = d
 	}
 
 	// dial_timeout
 	if conf.DialTimeout != "" {
-		if d, err := time.ParseDuration(conf.DialTimeout); err == nil {
-			opts.DialTimeout = d
+		d, err := time.ParseDuration(conf.DialTimeout)
+		if err != nil {
+			return fmt.Errorf("failed to parse dial_timeout: %w", err)
 		}
-	}
-	if opts.DialTimeout == 0 {
-		opts.DialTimeout = time.Second * 60
+		opts.DialTimeout = d
 	}
 
 	// read_timeout
 	if conf.ReadTimeout != "" {
-		if d, err := time.ParseDuration(conf.ReadTimeout); err == nil {
-			opts.ReadTimeout = d
+		d, err := time.ParseDuration(conf.ReadTimeout)
+		if err != nil {
+			return fmt.Errorf("failed to parse read_timeout: %w", err)
 		}
+		opts.ReadTimeout = d
 	}
-	if opts.ReadTimeout == 0 {
-		opts.ReadTimeout = time.Second * 300
-	}
+
+	return nil
 }

@@ -323,7 +323,7 @@ func (c *Connection) acquireOLAPConn(ctx context.Context, priority int) (*sqlx.C
 	return conn, release, nil
 }
 
-// acquireConn returns a DuckDB connection. It should only be used internally in acquireMetaConn and acquireOLAPConn.
+// acquireConn returns a ClickHouse connection. It should only be used internally in acquireMetaConn and acquireOLAPConn.
 func (c *Connection) acquireConn(ctx context.Context) (*sqlx.Conn, func() error, error) {
 	conn, err := c.readDB.Connx(ctx)
 	if err != nil {
