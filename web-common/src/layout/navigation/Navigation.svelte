@@ -11,10 +11,10 @@
 
 <script lang="ts">
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
-  import { connectorExplorerStore } from "@rilldata/web-common/features/connectors/connector-explorer-store";
+  import { connectorExplorerStore } from "@rilldata/web-common/features/connectors/explorer/connector-explorer-store";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { writable } from "svelte/store";
-  import ConnectorExplorer from "../../features/connectors/ConnectorExplorer.svelte";
+  import ConnectorExplorer from "../../features/connectors/explorer/ConnectorExplorer.svelte";
   import AddAssetButton from "../../features/entity-management/AddAssetButton.svelte";
   import FileExplorer from "../../features/file-explorer/FileExplorer.svelte";
   import Resizer from "../Resizer.svelte";

@@ -4,8 +4,8 @@
   import type { V1AnalyzedConnector } from "../../runtime-client";
   import DatabaseEntry from "./DatabaseEntry.svelte";
   import { useDatabasesFromSchemas } from "./selectors";
-  import { useDatabases as useDatabasesLegacy } from "./olap/selectors";
-  import type { ConnectorExplorerStore } from "./connector-explorer-store";
+  import { useDatabasesOLAP as useDatabasesLegacy } from "./selectors";
+  import type { ConnectorExplorerStore } from "./explorer/connector-explorer-store";
 
   export let instanceId: string;
   export let connector: V1AnalyzedConnector;

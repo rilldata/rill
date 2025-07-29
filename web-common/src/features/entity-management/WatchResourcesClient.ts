@@ -21,7 +21,7 @@ import {
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { WatchRequestClient } from "@rilldata/web-common/runtime-client/watch-request-client";
 import { get } from "svelte/store";
-import { connectorExplorerStore } from "../connectors/connector-explorer-store";
+import { connectorExplorerStore } from "../connectors/explorer/connector-explorer-store";
 import { sourceImportedPath } from "../sources/sources-store";
 import { isLeafResource } from "./dag-utils";
 

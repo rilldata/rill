@@ -33,7 +33,7 @@
   import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { connectorIconMapping } from "../../connectors/connector-icon-mapping";
-  import { useIsModelingSupportedForDefaultOlapDriver } from "../../connectors/olap/selectors";
+  import { useIsModelingSupportedForDefaultOlapDriverOLAP as useIsModelingSupportedForDefaultOlapDriver } from "../../connectors/selectors";
   import { duplicateSourceName } from "../sources-store";
   import AddDataForm from "./AddDataForm.svelte";
   import DuplicateSource from "./DuplicateSource.svelte";

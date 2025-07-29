@@ -3,9 +3,11 @@
   import CaretDownIcon from "../../../components/icons/CaretDownIcon.svelte";
   import type { V1AnalyzedConnector } from "../../../runtime-client";
   import TableEntry from "./TableEntry.svelte";
-  import { useTables as useTablesLegacy } from "./selectors";
-  import { useTablesForSchema } from "../selectors";
-  import type { ConnectorExplorerStore } from "../connector-explorer-store";
+  import {
+    useTablesOLAP as useTablesLegacy,
+    useTablesForSchema,
+  } from "../selectors";
+  import type { ConnectorExplorerStore } from "./connector-explorer-store";
 
   export let instanceId: string;
   export let connector: V1AnalyzedConnector;

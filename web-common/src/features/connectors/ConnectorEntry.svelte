@@ -6,7 +6,7 @@
     createRuntimeServiceGetInstance,
   } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
-  import type { ConnectorExplorerStore } from "./connector-explorer-store";
+  import type { ConnectorExplorerStore } from "./explorer/connector-explorer-store";
   import { connectorIconMapping } from "./connector-icon-mapping";
   import DatabaseExplorer from "./DatabaseExplorer.svelte";
 

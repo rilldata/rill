@@ -19,7 +19,7 @@
     createRuntimeServicePutFile,
   } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
-  import { useIsModelingSupportedForDefaultOlapDriver } from "../connectors/olap/selectors";
+  import { useIsModelingSupportedForDefaultOlapDriverOLAP as useIsModelingSupportedForDefaultOlapDriver } from "../connectors/selectors";
   import { directoryState } from "../file-explorer/directory-store";
   import { createResourceFile } from "../file-explorer/new-files";
   import { addSourceModal } from "../sources/modal/add-source-visibility";

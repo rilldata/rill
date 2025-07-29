@@ -4,10 +4,10 @@
   import CaretDownIcon from "../../components/icons/CaretDownIcon.svelte";
   import { LIST_SLIDE_DURATION as duration } from "../../layout/config";
   import type { V1AnalyzedConnector } from "../../runtime-client";
-  import DatabaseSchemaEntry from "./olap/DatabaseSchemaEntry.svelte";
+  import DatabaseSchemaEntry from "./explorer/DatabaseSchemaEntry.svelte";
   import { useSchemasForDatabase } from "./selectors";
-  import { useDatabaseSchemas as useDatabaseSchemasLegacy } from "./olap/selectors";
-  import type { ConnectorExplorerStore } from "./connector-explorer-store";
+  import { useDatabaseSchemasOLAP as useDatabaseSchemasLegacy } from "./selectors";
+  import type { ConnectorExplorerStore } from "./explorer/connector-explorer-store";
 
   export let instanceId: string;
   export let connector: V1AnalyzedConnector;
