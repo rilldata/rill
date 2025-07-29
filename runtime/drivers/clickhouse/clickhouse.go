@@ -731,12 +731,12 @@ func (c *Connection) ensureDatabaseExists(ctx context.Context) error {
 	var query string
 	if c.config.Cluster != "" {
 		// Use ON CLUSTER for clustered setup
-		query = fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s ON CLUSTER %s", 
-			safeSQLName(c.config.Database), 
+		query = fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s ON CLUSTER %s",
+			safeSQLName(c.config.Database),
 			safeSQLName(c.config.Cluster))
 	} else {
 		// Regular database creation
-		query = fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s", 
+		query = fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s",
 			safeSQLName(c.config.Database))
 	}
 
