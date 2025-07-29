@@ -70,8 +70,11 @@
   $: deployPageUrl = `${$page.url.protocol}//${$page.url.host}/deploy`;
 
   $: if (userNotLoggedIn && $metadata.data) {
-    // FIXME: implement signupUrl
-    deployCTAUrl = `${$metadata.data.signupUrl}?redirect=${deployPageUrl}`;
+    // Add screen_hint=signup to loginUrl to default to signup page
+    const signupUrl = new URL($metadata.data.loginUrl);
+    signupUrl.searchParams.set("screen_hint", "signup");
+    signupUrl.searchParams.set("redirect", deployPageUrl);
+    deployCTAUrl = signupUrl.toString();
   } else {
     deployCTAUrl = deployPageUrl;
   }

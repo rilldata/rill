@@ -146,6 +146,9 @@ func (a *Authenticator) authStart(w http.ResponseWriter, r *http.Request, signup
 		// Set custom parameters for signup using AuthCodeOption
 		customOption := oauth2.SetAuthURLParam("screen_hint", "signup")
 		redirectURL = a.oauth2.AuthCodeURL(state, customOption)
+		a.logger.Info("Generated Auth0 signup URL", zap.String("redirectURL", redirectURL))
+	} else {
+		a.logger.Info("Generated Auth0 login URL", zap.String("redirectURL", redirectURL))
 	}
 
 	http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
@@ -419,10 +422,17 @@ func (a *Authenticator) handleAuthorizeRequest(w http.ResponseWriter, r *http.Re
 		return
 	}
 	if claims.OwnerType() == OwnerTypeAnon {
-		// not logged in, redirect to login
+		// not logged in, redirect to login or signup based on screen_hint parameter
 		// after login redirect back to same path so encode the current URL as a redirect parameter
 		encodedURL := url.QueryEscape(r.URL.String())
-		http.Redirect(w, r, "/auth/login?redirect="+encodedURL, http.StatusTemporaryRedirect)
+
+		// Check if screen_hint=signup is requested
+		if r.URL.Query().Get("screen_hint") == "signup" {
+			http.Redirect(w, r, "/auth/signup?redirect="+encodedURL, http.StatusTemporaryRedirect)
+		} else {
+			http.Redirect(w, r, "/auth/login?redirect="+encodedURL, http.StatusTemporaryRedirect)
+		}
+		return
 	}
 	if claims.OwnerType() != OwnerTypeUser {
 		http.Error(w, "only users can be authorized", http.StatusBadRequest)
