@@ -15,7 +15,7 @@ Let's start at the beginning of all data pipelines: **the source**.
 
 ### What is a Source?
 
-In Rill, a source model represents your raw data. See our list of [connectors](/reference/connectors/) or select Add -> Add Data from Rill Developer to see the supported sources.
+In Rill, a source model represents your raw data. See our list of [connectors](/reference/connectors) or select Add -> Add Data from Rill Developer to see the supported sources.
 
 <img src = '/img/tutorials/rill-basics/add_data.png' class='rounded-gif' style={{maxWidth: '400px', height: 'auto'}} />
 <br />
