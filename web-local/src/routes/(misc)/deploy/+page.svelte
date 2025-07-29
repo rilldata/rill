@@ -75,15 +75,14 @@
 Please push changes directly to GitHub and the project in Rill Cloud will automatically be updated.`);
       return;
     }
+    const orgName = $project.data!.project!.orgName;
+    const projectId = $project.data!.project!.id;
     // Cloud project already exists. Run a redeploy
-    void goto(
-      `/deploy/update?org=${$project.data!.project!.orgName}&project_id=${$project.data!.project!.id}`,
-    );
+    void goto(`/deploy/update?org=${orgName}&project_id=${projectId}`);
   }
 
   async function maybeDeploy() {
     await waitUntil(() => !loading);
-    console.log(loading, error);
     if (error) return;
     handleDeploy();
   }
