@@ -2,9 +2,7 @@
   import { Button } from "@rilldata/web-common/components/button";
   import { Chip } from "@rilldata/web-common/components/chip";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
-  import Label from "@rilldata/web-common/components/forms/Label.svelte";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
-  import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import LoadingSpinner from "@rilldata/web-common/components/icons/LoadingSpinner.svelte";
   import { Search } from "@rilldata/web-common/components/search";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
@@ -19,6 +17,7 @@
     splitDimensionSearchText,
   } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/dimension-search-text-utils";
   import DimensionFilterChipBody from "@rilldata/web-common/features/dashboards/filters/dimension-filters/DimensionFilterChipBody.svelte";
+  import DimensionFilterFooter from "@rilldata/web-common/features/dashboards/filters/dimension-filters/DimensionFilterFooter.svelte";
   import { mergeDimensionAndMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
   import { getFiltersForOtherDimensions } from "@rilldata/web-common/features/dashboards/selectors";
   import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
@@ -452,15 +451,6 @@
           {:else}
             <div class="grow" />
           {/if}
-
-          <!-- Add it back once we have the docs -->
-          <!--  <a-->
-          <!--    href="https://docs.rilldata.com/"-->
-          <!--    target="_blank"-->
-          <!--    class="text-primary-600 font-medium justify-end"-->
-          <!--  >-->
-          <!--    Learn more-->
-          <!--  </a>-->
         </div>
       {/if}
     </div>
@@ -571,52 +561,14 @@
       {/if}
     </div>
 
-    <footer>
-      <div class="flex items-center gap-x-1.5">
-        <Switch
-          checked={curExcludeMode}
-          id="include-exclude"
-          small
-          on:click={handleToggleExcludeMode}
-          label="Include exclude toggle"
-        />
-        <Label class="font-normal text-xs" for="include-exclude">Exclude</Label>
-      </div>
-      <div class="flex gap-2">
-        {#if curMode === DimensionFilterMode.Select}
-          <Button onClick={onToggleSelectAll} type="plain">
-            {#if allSelected}
-              Deselect all
-            {:else}
-              Select all
-            {/if}
-          </Button>
-        {:else}
-          <Button
-            onClick={onApply}
-            type="primary"
-            class="justify-end"
-            disabled={disableApplyButton}
-          >
-            Apply
-          </Button>
-        {/if}
-      </div>
-    </footer>
+    <DimensionFilterFooter
+      mode={curMode}
+      excludeMode={curExcludeMode}
+      {allSelected}
+      {disableApplyButton}
+      onToggleExcludeMode={handleToggleExcludeMode}
+      {onToggleSelectAll}
+      {onApply}
+    />
   </DropdownMenu.Content>
 </DropdownMenu.Root>
-
-<style lang="postcss">
-  footer {
-    height: 42px;
-    @apply border-t border-slate-300;
-    @apply bg-slate-100;
-    @apply flex flex-row flex-none items-center justify-between;
-    @apply gap-x-2 p-2 px-3.5;
-  }
-
-  footer:is(.dark) {
-    @apply bg-gray-800;
-    @apply border-gray-700;
-  }
-</style>
