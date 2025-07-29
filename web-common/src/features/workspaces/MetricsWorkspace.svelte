@@ -50,12 +50,12 @@
 
   $: isModelingSupportedForDefaultOlapDriver =
     useIsModelingSupportedForDefaultOlapDriver(instanceId);
-  $: isModelingSupportedForOlapDriver = useIsModelingSupportedForConnector(
+  $: isModelingSupportedForConnector = useIsModelingSupportedForConnector(
     instanceId,
     connector,
   );
   $: isModelingSupported = connector
-    ? $isModelingSupportedForOlapDriver.data
+    ? $isModelingSupportedForConnector.data
     : $isModelingSupportedForDefaultOlapDriver.data;
 
   async function onChangeCallback(newTitle: string) {

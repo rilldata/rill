@@ -28,11 +28,11 @@
 
   $: ({ instanceId } = $runtime);
 
-  $: isModelingSupportedForOlapDriver = useIsModelingSupportedForConnector(
+  $: isModelingSupportedForConnector = useIsModelingSupportedForConnector(
     instanceId,
     connector,
   );
-  $: isModelingSupported = $isModelingSupportedForOlapDriver.data;
+  $: isModelingSupported = $isModelingSupportedForConnector.data;
   $: createMetricsViewFromTable = useCreateMetricsViewFromTableUIAction(
     instanceId,
     connector,

@@ -103,10 +103,10 @@
     dimensions: parsedDocument.get("dimensions"),
   };
 
-  $: isModelingSupportedForOlapConnector = olapConnector
+  $: isModelingSupportedForConnector = olapConnector
     ? useIsModelingSupportedForConnector(instanceId, olapConnector)
     : null;
-  $: isModelingSupported = $isModelingSupportedForOlapConnector?.data;
+  $: isModelingSupported = $isModelingSupportedForConnector?.data;
 
   $: rawSmallestTimeGrain = parsedDocument.get("smallest_time_grain");
   $: rawTimeDimension = parsedDocument.get("timeseries");
