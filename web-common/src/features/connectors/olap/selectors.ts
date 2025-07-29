@@ -33,7 +33,7 @@ function createModelingSupportQueryOptions(
     enabled: !!instanceId && !!connectorName,
     select: (data: V1GetResourceResponse) => {
       const spec = data?.resource?.connector?.spec;
-      if (!spec) return false;
+      if (!spec) return connectorName === "duckdb";
 
       // Modeling is supported if:
       // - DuckDB (embedded database with full SQL support)
