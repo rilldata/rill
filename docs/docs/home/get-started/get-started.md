@@ -114,18 +114,9 @@ Once your dashboard is created, you can:
 - **Customize visualizations** - Adjust charts, filters, and layouts
 - **Export insights** - Share findings with your team
 
-## What You've Accomplished
 
-In just a few minutes, you've:
 
-1.  **Connected to a data source** and analyzed its structure  
-2.  **Created an interactive dashboard** with AI assistance  
-3.  **Explored your data** through multiple visualization types  
-4.  **Gained actionable insights** from your analytics  
-
-All that's left is to publish your dashboard to Rill Cloud and start sharing with your colleagues! 
-
-## Next Steps
+## What else can Rill do?
 
 This quick start covered the basics, but Rill offers much more:
 
