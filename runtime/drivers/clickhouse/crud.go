@@ -31,7 +31,7 @@ func (c *Connection) createTableAsSelect(ctx context.Context, name, sql string, 
 	t := time.Now()
 	if outputProps.Typ == "VIEW" {
 		err := c.Exec(ctx, &drivers.Statement{
-			Query:    fmt.Sprintf("CREATE OR REPLACE VIEW %s %s AS %s", safeSQLName(name), onClusterClause, sql),
+			Query:    fmt.Sprintf("CREATE OR REPLACE VIEW %s %s AS %s", c.qualifiedTableName(name), onClusterClause, sql),
 			Priority: 100,
 		})
 		if err != nil {
@@ -52,7 +52,7 @@ func (c *Connection) createTableAsSelect(ctx context.Context, name, sql string, 
 	}
 	// insert into table
 	err := c.Exec(ctx, &drivers.Statement{
-		Query:    fmt.Sprintf("INSERT INTO %s %s", safeSQLName(name), sql),
+		Query:    fmt.Sprintf("INSERT INTO %s %s", c.qualifiedTableName(name), sql),
 		Priority: 100,
 	})
 	if err != nil {
@@ -71,7 +71,7 @@ func (c *Connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 
 	if opts.Strategy == drivers.IncrementalStrategyAppend {
 		err := c.Exec(ctx, &drivers.Statement{
-			Query:    fmt.Sprintf("INSERT INTO %s %s", safeSQLName(name), sql),
+			Query:    fmt.Sprintf("INSERT INTO %s %s", c.qualifiedTableName(name), sql),
 			Priority: 1,
 		})
 		if err != nil {
@@ -113,8 +113,10 @@ func (c *Connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 		// create temp table
 		if engine == "Distributed" {
 			// create a local table first
+			localTempName := c.qualifiedTableName(localTableName(tempName))
+			localMainName := c.qualifiedTableName(localTableName(name))
 			err = c.Exec(ctx, &drivers.Statement{
-				Query:    fmt.Sprintf("CREATE OR REPLACE TABLE %s %s AS %s", safeSQLName(localTableName(tempName)), onClusterClause, safeSQLName(localTableName(name))),
+				Query:    fmt.Sprintf("CREATE OR REPLACE TABLE %s %s AS %s", localTempName, onClusterClause, localMainName),
 				Priority: 1,
 			})
 			if err != nil {
@@ -127,7 +129,7 @@ func (c *Connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 			}
 		} else {
 			err = c.Exec(ctx, &drivers.Statement{
-				Query:    fmt.Sprintf("CREATE OR REPLACE TABLE %s %s AS %s", safeSQLName(tempName), onClusterClause, safeSQLName(name)),
+				Query:    fmt.Sprintf("CREATE OR REPLACE TABLE %s %s AS %s", c.qualifiedTableName(tempName), onClusterClause, c.qualifiedTableName(name)),
 				Priority: 1,
 			})
 			if err != nil {
@@ -137,7 +139,7 @@ func (c *Connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 
 		// insert into temp table
 		err = c.Exec(ctx, &drivers.Statement{
-			Query:    fmt.Sprintf("INSERT INTO %s %s", safeSQLName(tempName), sql),
+			Query:    fmt.Sprintf("INSERT INTO %s %s", c.qualifiedTableName(tempName), sql),
 			Priority: 1,
 		})
 		if err != nil {
@@ -179,7 +181,7 @@ func (c *Connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 
 		// insert into table using the merge strategy
 		err = c.Exec(ctx, &drivers.Statement{
-			Query:    fmt.Sprintf("INSERT INTO %s %s %s", safeSQLName(name), onClusterClause, sql),
+			Query:    fmt.Sprintf("INSERT INTO %s %s %s", c.qualifiedTableName(name), onClusterClause, sql),
 			Priority: 1,
 		})
 		if err != nil {
@@ -204,25 +206,25 @@ func (c *Connection) dropTable(ctx context.Context, name string) error {
 	switch typ {
 	case "VIEW":
 		return c.Exec(ctx, &drivers.Statement{
-			Query:    fmt.Sprintf("DROP VIEW %s %s", safeSQLName(name), onClusterClause),
+			Query:    fmt.Sprintf("DROP VIEW %s %s", c.qualifiedTableName(name), onClusterClause),
 			Priority: 100,
 		})
 	case "DICTIONARY":
 		// first drop the dictionary
 		err := c.Exec(ctx, &drivers.Statement{
-			Query:    fmt.Sprintf("DROP DICTIONARY %s %s", safeSQLName(name), onClusterClause),
+			Query:    fmt.Sprintf("DROP DICTIONARY %s %s", c.qualifiedTableName(name), onClusterClause),
 			Priority: 100,
 		})
 		// then drop the temp table
 		_ = c.Exec(ctx, &drivers.Statement{
-			Query:    fmt.Sprintf("DROP TABLE %s %s", safeSQLName(tempTableForDictionary(name)), onClusterClause),
+			Query:    fmt.Sprintf("DROP TABLE %s %s", c.qualifiedTableName(tempTableForDictionary(name)), onClusterClause),
 			Priority: 100,
 		})
 		return err
 	case "TABLE":
 		// drop the main table
 		err := c.Exec(ctx, &drivers.Statement{
-			Query:    fmt.Sprintf("DROP TABLE %s %s", safeSQLName(name), onClusterClause),
+			Query:    fmt.Sprintf("DROP TABLE %s %s", c.qualifiedTableName(name), onClusterClause),
 			Priority: 100,
 		})
 		if err != nil {
@@ -231,7 +233,7 @@ func (c *Connection) dropTable(ctx context.Context, name string) error {
 		// then drop the local table in case of cluster
 		if onCluster && !strings.HasSuffix(name, "_local") {
 			return c.Exec(ctx, &drivers.Statement{
-				Query:    fmt.Sprintf("DROP TABLE %s %s", safeSQLName(localTableName(name)), onClusterClause),
+				Query:    fmt.Sprintf("DROP TABLE %s %s", c.qualifiedTableName(localTableName(name)), onClusterClause),
 				Priority: 100,
 			})
 		}
@@ -303,7 +305,7 @@ func (c *Connection) renameEntity(ctx context.Context, oldName, newName string) 
 
 		// recreate the distributed table
 		err = c.Exec(ctx, &drivers.Statement{
-			Query:    fmt.Sprintf("CREATE OR REPLACE TABLE %s %s %s Engine = %s", safeSQLName(newName), onClusterClause, columnClause, engineFull),
+			Query:    fmt.Sprintf("CREATE OR REPLACE TABLE %s %s %s Engine = %s", c.qualifiedTableName(newName), onClusterClause, columnClause, engineFull),
 			Priority: 100,
 		})
 		if err != nil {
@@ -312,7 +314,7 @@ func (c *Connection) renameEntity(ctx context.Context, oldName, newName string) 
 
 		// drop the old table
 		return c.Exec(ctx, &drivers.Statement{
-			Query:    fmt.Sprintf("DROP TABLE %s %s", safeSQLName(oldName), onClusterClause),
+			Query:    fmt.Sprintf("DROP TABLE %s %s", c.qualifiedTableName(oldName), onClusterClause),
 			Priority: 100,
 		})
 	default:
@@ -350,7 +352,7 @@ func (c *Connection) renameView(ctx context.Context, oldName, newName, onCluster
 
 	// create new view
 	err = c.Exec(ctx, &drivers.Statement{
-		Query:    fmt.Sprintf("CREATE OR REPLACE VIEW %s %s AS %s", safeSQLName(newName), onCluster, sql),
+		Query:    fmt.Sprintf("CREATE OR REPLACE VIEW %s %s AS %s", c.qualifiedTableName(newName), onCluster, sql),
 		Priority: 100,
 	})
 	if err != nil {
@@ -359,7 +361,7 @@ func (c *Connection) renameView(ctx context.Context, oldName, newName, onCluster
 
 	// drop old view
 	err = c.Exec(ctx, &drivers.Statement{
-		Query:    fmt.Sprintf("DROP VIEW %s %s", safeSQLName(oldName), onCluster),
+		Query:    fmt.Sprintf("DROP VIEW %s %s", c.qualifiedTableName(oldName), onCluster),
 		Priority: 100,
 	})
 	if err != nil {
@@ -370,18 +372,18 @@ func (c *Connection) renameView(ctx context.Context, oldName, newName, onCluster
 
 func (c *Connection) renameTable(ctx context.Context, oldName, newName, onCluster string) error {
 	var exists bool
-	err := c.db.QueryRowContext(ctx, fmt.Sprintf("EXISTS %s", safeSQLName(newName))).Scan(&exists)
+	err := c.db.QueryRowContext(ctx, fmt.Sprintf("EXISTS %s", c.qualifiedTableName(newName))).Scan(&exists)
 	if err != nil {
 		return err
 	}
 	if !exists {
 		return c.Exec(ctx, &drivers.Statement{
-			Query:    fmt.Sprintf("RENAME TABLE %s TO %s %s", safeSQLName(oldName), safeSQLName(newName), onCluster),
+			Query:    fmt.Sprintf("RENAME TABLE %s TO %s %s", c.qualifiedTableName(oldName), c.qualifiedTableName(newName), onCluster),
 			Priority: 100,
 		})
 	}
 	err = c.Exec(ctx, &drivers.Statement{
-		Query:    fmt.Sprintf("EXCHANGE TABLES %s AND %s %s", safeSQLName(oldName), safeSQLName(newName), onCluster),
+		Query:    fmt.Sprintf("EXCHANGE TABLES %s AND %s %s", c.qualifiedTableName(oldName), c.qualifiedTableName(newName), onCluster),
 		Priority: 100,
 	})
 	if err != nil {
@@ -400,9 +402,9 @@ func (c *Connection) createTable(ctx context.Context, name, sql string, outputPr
 	create.WriteString("CREATE OR REPLACE TABLE ")
 	if c.config.Cluster != "" {
 		// need to create a local table on the cluster first
-		fmt.Fprintf(&create, "%s %s", safeSQLName(localTableName(name)), onClusterClause)
+		fmt.Fprintf(&create, "%s %s", c.qualifiedTableName(localTableName(name)), onClusterClause)
 	} else {
-		create.WriteString(safeSQLName(name))
+		create.WriteString(c.qualifiedTableName(name))
 	}
 
 	if outputProps.Columns == "" {
@@ -410,7 +412,8 @@ func (c *Connection) createTable(ctx context.Context, name, sql string, outputPr
 			return fmt.Errorf("clickhouse: no columns specified for table %q", name)
 		}
 		// infer columns
-		v := safeSQLName(fmt.Sprintf("__rill_temp_%s_%x", name, md5.Sum([]byte(sql))))
+		tempViewName := fmt.Sprintf("__rill_temp_%s_%x", name, md5.Sum([]byte(sql)))
+		v := c.qualifiedTableName(tempViewName)
 		defer func() {
 			// cleanup using a different ctx to prevent cleanups being impacted by the main ctx cancellation
 			// this is a best effort cleanup and query can still timeout and we don't want to wait forever due to blocked calls
@@ -464,7 +467,7 @@ func (c *Connection) createDistributedTable(ctx context.Context, name string, ou
 	if c.config.Database != "" {
 		database = safeSQLString(c.config.Database)
 	}
-	fmt.Fprintf(&distributed, "CREATE OR REPLACE TABLE %s %s AS %s", safeSQLName(name), onClusterClause, safeSQLName(localTableName(name)))
+	fmt.Fprintf(&distributed, "CREATE OR REPLACE TABLE %s %s AS %s", c.qualifiedTableName(name), onClusterClause, c.qualifiedTableName(localTableName(name)))
 	fmt.Fprintf(&distributed, " ENGINE = Distributed(%s, %s, %s", safeSQLString(c.config.Cluster), database, safeSQLString(localTableName(name)))
 	if outputProps.DistributedShardingKey != "" {
 		fmt.Fprintf(&distributed, ", %s", outputProps.DistributedShardingKey)
@@ -488,7 +491,7 @@ func (c *Connection) createDictionary(ctx context.Context, name, sql string, out
 			return fmt.Errorf("clickhouse: no columns specified for dictionary %q", name)
 		}
 		return c.Exec(ctx, &drivers.Statement{
-			Query:    fmt.Sprintf("CREATE OR REPLACE DICTIONARY %s %s %s %s", safeSQLName(name), onClusterClause, outputProps.Columns, outputProps.EngineFull),
+			Query:    fmt.Sprintf("CREATE OR REPLACE DICTIONARY %s %s %s %s", c.qualifiedTableName(name), onClusterClause, outputProps.Columns, outputProps.EngineFull),
 			Priority: 100,
 		})
 	}
@@ -501,7 +504,7 @@ func (c *Connection) createDictionary(ctx context.Context, name, sql string, out
 		return err
 	}
 	err = c.Exec(ctx, &drivers.Statement{
-		Query:    fmt.Sprintf("INSERT INTO %s %s", safeSQLName(tempTable), sql),
+		Query:    fmt.Sprintf("INSERT INTO %s %s", c.qualifiedTableName(tempTable), sql),
 		Priority: 100,
 	})
 	if err != nil {
@@ -530,7 +533,7 @@ func (c *Connection) createDictionary(ctx context.Context, name, sql string, out
 
 	// create dictionary
 	return c.Exec(ctx, &drivers.Statement{
-		Query:    fmt.Sprintf(`CREATE OR REPLACE DICTIONARY %s %s %s PRIMARY KEY %s SOURCE(%s) LAYOUT(HASHED()) LIFETIME(0)`, safeSQLName(name), onClusterClause, outputProps.Columns, outputProps.PrimaryKey, srcTbl),
+		Query:    fmt.Sprintf(`CREATE OR REPLACE DICTIONARY %s %s %s PRIMARY KEY %s SOURCE(%s) LAYOUT(HASHED()) LIFETIME(0)`, c.qualifiedTableName(name), onClusterClause, outputProps.Columns, outputProps.PrimaryKey, srcTbl),
 		Priority: 100,
 	})
 }
@@ -640,7 +643,7 @@ func (c *Connection) replacePartition(ctx context.Context, src, dest, part strin
 		src = localTableName(src)
 	}
 	return c.Exec(ctx, &drivers.Statement{
-		Query:    fmt.Sprintf("ALTER TABLE %s %s REPLACE PARTITION ? FROM %s", safeSQLName(dest), onClusterClause, safeSQLName(src)),
+		Query:    fmt.Sprintf("ALTER TABLE %s %s REPLACE PARTITION ? FROM %s", c.qualifiedTableName(dest), onClusterClause, c.qualifiedTableName(src)),
 		Args:     []any{part},
 		Priority: 1,
 	})
@@ -656,4 +659,12 @@ func tempTableForDictionary(name string) string {
 
 func safeSQLString(name string) string {
 	return drivers.DialectClickHouse.EscapeStringValue(name)
+}
+
+// qualifiedTableName returns a properly qualified table name using the database if configured
+func (c *Connection) qualifiedTableName(name string) string {
+	if c.config.Database != "" {
+		return fmt.Sprintf("%s.%s", safeSQLName(c.config.Database), safeSQLName(name))
+	}
+	return safeSQLName(name)
 }
