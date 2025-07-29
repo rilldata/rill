@@ -125,7 +125,7 @@ func (e *localFileToSelfExecutor) Execute(ctx context.Context, opts *drivers.Mod
 		}
 
 		query := fmt.Sprintf("INSERT INTO %s FORMAT %s\n", safeSQLName(stagingTableName), inputProps.Format) + string(contents)
-		_, err = e.c.db.DB.ExecContext(ctx, query)
+		_, err = e.c.writeDB.DB.ExecContext(ctx, query)
 		if err != nil {
 			return nil, fmt.Errorf("failed to insert data: %w", err)
 		}
