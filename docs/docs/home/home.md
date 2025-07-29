@@ -3,7 +3,6 @@ title: Ready for Fast Dashboards with Rill?
 slug: /
 sidebar_label: Home
 sidebar_position: 00
-hide_table_of_contents: true
 ---
 
 import TileIcon from '@site/src/components/TileIcon';

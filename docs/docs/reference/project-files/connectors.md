@@ -8,16 +8,11 @@ toc_max_heading_level: 4
 
 Connector YAML files define how Rill connects to external data sources and OLAP engines. Each connector specifies a driver type and its required connection parameters. 
 
-## Required Properties
-
-**`type`** - Must be `connector` (required)
-
-**`driver`** - The type of connector (required)
+## Available Connectors
 
 #### _OLAP Engines_
-When connecting to your own OLAP engine using Rill Developer(e.g., ClickHouse, Druid, or Pinot), Rill will automatically generate the corresponding connector file and add the `olap_connector` parameter to your `rill.yaml` file. This will change the behavior of your Rill Developer slightly as not all features are supported across engines. Please see our documentation about [olap-engines](/connect/olap/) for more information.
 
-- **[DuckDB](#duckdb)** - Embedded DuckDB engine (default)
+- **[DuckDB](#duckdb)** - Embedded DuckDB engine (_default_)
 - **[Clickhouse](#clickhouse)** - ClickHouse analytical database
 - **[MotherDuck](#motherduck)** - MotherDuck cloud database
 - **[Druid](#druid)** - Apache Druid
@@ -28,7 +23,6 @@ When connecting to your own OLAP engine using Rill Developer(e.g., ClickHouse, D
 - **[BigQuery](#bigquery)** - Google BigQuery
 - **[Redshift](#redshift)** - Amazon Redshift
 - **[Athena](#athena)** - Amazon Athena
-- **[MotherDuck](#motherduck-as-a-source)** - MotherDuck cloud data warehouse
 
 #### _Databases_
 - **[PostgreSQL](#postgresql)** - PostgreSQL databases
@@ -48,10 +42,15 @@ When connecting to your own OLAP engine using Rill Developer(e.g., ClickHouse, D
 
 
 
-## Connector Parameters
+## Required Properties
+
+**`type`** - Must be `connector` (required)
+
+**`driver`** - The type of connector, see [available connectors](#available-connectors) (required)
+
 
 :::warning Security Recommendation
-For all credential parameters (passwords, tokens, keys), use environment variables with the syntax `{{.env.<connector_type>.<parameter_name>}}`. This keeps sensitive data out of your YAML files and version control. See our [credentials documentation](/connect/credentials/) for complete setup instructions.
+For all credential parameters (passwords, tokens, keys), use environment variables with the syntax `{{.env.<connector_type>.<parameter_name>}}`. This keeps sensitive data out of your YAML files and version control. See our [credentials documentation](/build/credentials/) for complete setup instructions.
 :::
 
 ### Athena
@@ -189,16 +188,7 @@ dsn: "./data/file.csv"                           # File path or location _(requi
 allow_host_access: true                          # Allow host-level file path access
 ``` -->
 
-### MotherDuck as a source
-```yaml
-type: connector                                  # Must be `connector` (required)
-driver: motherduck                               # Must be `motherduck` _(required)_
-
-dsn: "md:?motherduck_token=mymotherducktoken"    # MotherDuck connection endpoint _(required)_  
-token: "mymotherducktoken"                       # Authentication token _(required)_
-```
-
-### Motherduck
+### MotherDuck
 
 ```yaml
 ---
@@ -211,7 +201,7 @@ path: "md:my_db"                                # Path to your MD database
 init_sql: |                                     # SQL executed during database initialization.
   INSTALL 'motherduck';                         # Install motherduck extension
   LOAD 'motherduck';                            # Load the extensions
-  SET motherduck_token= {{ .env.motherduck_token }} # Define the motherduck token
+  SET motherduck_token= '{{ .env.motherduck_token }}' # Define the motherduck token
 ```
 
 ### MySQL

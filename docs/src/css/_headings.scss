@@ -20,10 +20,12 @@
 }
 
 .markdown h4 {
-  font-size: 1rem;
   font-weight: 600;
-  margin-top: var(--space-2);
-  margin-bottom: var(--space-1);
+  margin: 0;
+  padding: 0;
+  display: inline;
+  font-size: var(--ifm-h4-font-size);
+  line-height: inherit;
 }
 
 .markdown h1:first-child {
