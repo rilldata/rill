@@ -40,3 +40,30 @@ export function updateSmartRefetchMeta(
   const next = Math.min(current * BACKOFF_FACTOR, MAX_REFETCH_INTERVAL);
   return { ...prevMeta, refetchInterval: next };
 }
+
+/**
+ * Creates a smart refetch interval function that uses query.meta to store state.
+ * This approach keeps refetch state per query and encapsulates all logic in the refetchInterval parameter.
+ *
+ * @param query The TanStack query object
+ * @returns The refetch interval (number in ms or false to disable)
+ */
+export function createSmartRefetchInterval(query: any): number | false {
+  if (!query.state.data?.resources) {
+    return false;
+  }
+
+  // Get or initialize meta with refetch state
+  const currentMeta = query.meta || {};
+  const updatedMeta = updateSmartRefetchMeta(
+    query.state.data.resources,
+    currentMeta,
+  );
+
+  // Update query meta with new refetch state
+  if (query.meta !== updatedMeta) {
+    query.meta = updatedMeta;
+  }
+
+  return updatedMeta.refetchInterval;
+}

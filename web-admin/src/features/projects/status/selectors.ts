@@ -7,11 +7,7 @@ import {
   type V1ListResourcesResponse,
 } from "@rilldata/web-common/runtime-client";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
-import {
-  updateSmartRefetchMeta,
-  INITIAL_REFETCH_INTERVAL,
-} from "../../shared/refetch-interval-store";
-import { get, writable } from "svelte/store";
+import { createSmartRefetchInterval } from "../../shared/refetch-interval-store";
 
 export function useProjectDeployment(orgName: string, projName: string) {
   return createAdminServiceGetProject<V1Deployment | undefined>(
@@ -30,10 +26,6 @@ export function useProjectDeployment(orgName: string, projName: string) {
 }
 
 export function useResources(instanceId: string) {
-  // Local store for per-query refetch interval
-  const refetchIntervalStore = writable<number | false>(
-    INITIAL_REFETCH_INTERVAL,
-  );
   return createRuntimeServiceListResources(
     instanceId,
     {},
@@ -45,17 +37,12 @@ export function useResources(instanceId: string) {
               resource?.meta?.name?.kind !== ResourceKind.ProjectParser &&
               resource?.meta?.name?.kind !== ResourceKind.RefreshTrigger,
           );
-          // Update the local refetch interval store
-          const meta = updateSmartRefetchMeta(filtered, {
-            refetchInterval: get(refetchIntervalStore),
-          });
-          refetchIntervalStore.set(meta.refetchInterval);
           return {
             ...data,
             resources: filtered,
           };
         },
-        refetchInterval: () => get(refetchIntervalStore),
+        refetchInterval: createSmartRefetchInterval,
       },
     },
   );

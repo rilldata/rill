@@ -4,11 +4,8 @@ import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
 import type { V1Resource } from "@rilldata/web-common/runtime-client";
 import { createRuntimeServiceListResources } from "@rilldata/web-common/runtime-client";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
-import { derived, get, writable } from "svelte/store";
-import {
-  updateSmartRefetchMeta,
-  INITIAL_REFETCH_INTERVAL,
-} from "../../shared/refetch-interval-store";
+import { derived } from "svelte/store";
+import { createSmartRefetchInterval } from "../../shared/refetch-interval-store";
 import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 
 export function useDashboardsLastUpdated(
@@ -55,18 +52,9 @@ export interface DashboardResource {
 export function useDashboardsV2(
   instanceId: string,
 ): CreateQueryResult<DashboardResource[], HTTPError> {
-  // Local store for per-query refetch interval
-  const refetchIntervalStore = writable<number | false>(
-    INITIAL_REFETCH_INTERVAL,
-  );
   return createRuntimeServiceListResources(instanceId, undefined, {
     query: {
       select: (data) => {
-        // Update the local refetch interval store
-        const meta = updateSmartRefetchMeta(data?.resources, {
-          refetchInterval: get(refetchIntervalStore),
-        });
-        refetchIntervalStore.set(meta.refetchInterval);
         // create a map since we are potentially looking up twice per explore
         const allResources = getMapFromArray(
           data.resources,
@@ -93,7 +81,7 @@ export function useDashboardsV2(
         );
         return allDashboards;
       },
-      refetchInterval: () => get(refetchIntervalStore),
+      refetchInterval: createSmartRefetchInterval,
     },
   });
 }
