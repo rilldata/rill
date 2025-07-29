@@ -373,6 +373,14 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		embed:      embed,
 	}
 
+	// Create database if it doesn't exist (only in readwrite mode)
+	if conf.Mode == modeReadWrite && conf.Database != "" && conf.Database != "default" {
+		if err := c.ensureDatabaseExists(context.Background()); err != nil {
+			// Log warning but don't fail the connection - user might not have CREATE permissions
+			logger.Warn("failed to create database, proceeding anyway", zap.String("database", conf.Database), zap.Error(err))
+		}
+	}
+
 	c.used()
 	go c.periodicallyEmitStats()
 
@@ -708,4 +716,35 @@ func (c *Connection) checkBillingTableExists(ctx context.Context, cluster string
 	}
 	c.billingTableExists = &existsEverywhere
 	return existsEverywhere, nil
+}
+
+// ensureDatabaseExists creates the database if it doesn't exist
+func (c *Connection) ensureDatabaseExists(ctx context.Context) error {
+	if c.config.Database == "" || c.config.Database == "default" {
+		return nil // No need to create default database
+	}
+
+	// Add timeout to prevent hanging
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+
+	var query string
+	if c.config.Cluster != "" {
+		// Use ON CLUSTER for clustered setup
+		query = fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s ON CLUSTER %s", 
+			safeSQLName(c.config.Database), 
+			safeSQLName(c.config.Cluster))
+	} else {
+		// Regular database creation
+		query = fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s", 
+			safeSQLName(c.config.Database))
+	}
+
+	_, err := c.db.ExecContext(ctx, query)
+	if err != nil {
+		return fmt.Errorf("failed to create database %q: %w", c.config.Database, err)
+	}
+
+	c.logger.Debug("ensured database exists", zap.String("database", c.config.Database))
+	return nil
 }
