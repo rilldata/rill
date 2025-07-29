@@ -17,7 +17,7 @@
   import { featureFlags } from "../../feature-flags";
   import { useCreateMetricsViewFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
   import { createModelFromTable } from "./createModel";
-  import { useIsModelingSupportedForConnector } from "./selectors";
+  import { useIsModelingSupportedForConnector } from "../selectors";
 
   const { ai } = featureFlags;
 
