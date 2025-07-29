@@ -80,7 +80,6 @@ func ExpressionToProto(expr *Expression) *runtimev1.Expression {
 	}
 
 	res := &runtimev1.Expression{}
-
 	if expr.Name != "" {
 		res.Expression = &runtimev1.Expression_Ident{Ident: expr.Name}
 	} else if expr.Value != nil {
@@ -89,6 +88,7 @@ func ExpressionToProto(expr *Expression) *runtimev1.Expression {
 			// If we can't convert the value, return nil
 			return nil
 		}
+
 		res.Expression = &runtimev1.Expression_Val{Val: val}
 	} else if expr.Condition != nil {
 		var op runtimev1.Operation
@@ -120,7 +120,6 @@ func ExpressionToProto(expr *Expression) *runtimev1.Expression {
 		case OperatorNilike:
 			op = runtimev1.Operation_OPERATION_NLIKE
 		}
-
 		exprs := make([]*runtimev1.Expression, 0, len(expr.Condition.Expressions))
 		for _, e := range expr.Condition.Expressions {
 			protoExpr := ExpressionToProto(e)

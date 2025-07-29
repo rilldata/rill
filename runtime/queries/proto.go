@@ -302,23 +302,23 @@ func rowFilterJSON(where *runtimev1.Expression, whereSQL string, filter *runtime
 		}
 		where = convertFilterToExpression(filter)
 	}
-	var whereExp *runtimev1.Expression
+	var whereSQLExp *runtimev1.Expression
 	if whereSQL != "" {
 		mvExp, err := metricssqlparser.ParseSQLFilter(whereSQL)
 		if err != nil {
 			return "", fmt.Errorf("invalid where SQL: %w", err)
 		}
-		whereExp = metricsview.ExpressionToProto(mvExp)
+		whereSQLExp = metricsview.ExpressionToProto(mvExp)
 	}
 
-	if whereExp != nil && where != nil {
+	if whereSQLExp != nil && where != nil {
 		where = &runtimev1.Expression{
 			Expression: &runtimev1.Expression_Cond{
 				Cond: &runtimev1.Condition{
 					Op: runtimev1.Operation_OPERATION_AND,
 					Exprs: []*runtimev1.Expression{
 						{
-							Expression: whereExp.Expression,
+							Expression: whereSQLExp.Expression,
 						},
 						{
 							Expression: where.Expression,
@@ -327,8 +327,8 @@ func rowFilterJSON(where *runtimev1.Expression, whereSQL string, filter *runtime
 				},
 			},
 		}
-	} else if whereExp != nil {
-		where = whereExp
+	} else if whereSQLExp != nil {
+		where = whereSQLExp
 	}
 
 	b, err := protojson.Marshal(where)
