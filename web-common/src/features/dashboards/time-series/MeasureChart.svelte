@@ -9,6 +9,9 @@
     Axis,
     Grid,
   } from "@rilldata/web-common/components/data-graphic/guides";
+  import Annotations, {
+    type Annotation,
+  } from "@rilldata/web-common/components/data-graphic/marks/Annotations.svelte";
   import { ScaleType } from "@rilldata/web-common/components/data-graphic/state";
   import type { ScaleStore } from "@rilldata/web-common/components/data-graphic/state/types";
   import { ComparisonDeltaPreviousSuffix } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
@@ -29,6 +32,7 @@
   import { extent } from "d3-array";
   import { getContext } from "svelte";
   import { cubicOut } from "svelte/easing";
+  import type { Readable } from "svelte/store";
   import { fly } from "svelte/transition";
   import {
     type DashboardTimeControls,
@@ -61,6 +65,7 @@
   export let showTimeDimensionDetail: boolean;
   export let data: TimeSeriesDatum[];
   export let dimensionData: DimensionDataItem[] = [];
+  export let annotations: Readable<Annotation[]> | undefined = undefined;
   export let xAccessor = "ts";
   export let labelAccessor = "label";
   export let yAccessor = "value";
@@ -389,4 +394,7 @@
       timeGrainLabel={TIME_GRAIN[timeGrain].label}
     />
   </SimpleDataGraphic>
+  {#if annotations}
+    <Annotations annotations={$annotations} />
+  {/if}
 </div>
