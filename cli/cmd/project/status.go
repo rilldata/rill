@@ -34,54 +34,55 @@ func StatusCmd(ch *cmdutil.Helper) *cobra.Command {
 				if err != nil {
 					return fmt.Errorf("unable to infer project name (use `--project` to explicitly specify the name): %w", err)
 				}
+				// Project info and deployment info not available --local mode
+				proj, err := client.GetProject(cmd.Context(), &adminv1.GetProjectRequest{
+					OrganizationName: ch.Org,
+					Name:             name,
+				})
+				if err != nil {
+					return err
+				}
+
+				var gitRemote string
+				if proj.Project.ManagedGitId == "" {
+					gitRemote = proj.Project.GitRemote
+				}
+
+				// 1. Print project info
+				ch.PrintfSuccess("Project info\n\n")
+				fmt.Printf("  Name: %s\n", proj.Project.Name)
+				fmt.Printf("  Organization: %v\n", proj.Project.OrgName)
+				fmt.Printf("  Public: %v\n", proj.Project.Public)
+				fmt.Printf("  Git: %v\n", gitRemote)
+				fmt.Printf("  Created: %s\n", proj.Project.CreatedOn.AsTime().Local().Format(time.RFC3339))
+				fmt.Printf("  Updated: %s\n", proj.Project.UpdatedOn.AsTime().Local().Format(time.RFC3339))
+
+				depl := proj.ProdDeployment
+				if depl == nil {
+					return nil
+				}
+
+				// 2. Print deployment info
+				ch.PrintfSuccess("\nDeployment info\n\n")
+				fmt.Printf("  Web: %s\n", proj.Project.FrontendUrl)
+				fmt.Printf("  Runtime: %s\n", depl.RuntimeHost)
+				fmt.Printf("  Instance: %s\n", depl.RuntimeInstanceId)
+				fmt.Printf("  Slots: %d\n", proj.Project.ProdSlots)
+				fmt.Printf("  Branch: %s\n", depl.Branch)
+				if proj.Project.Subpath != "" {
+					fmt.Printf("  Subpath: %s\n", proj.Project.Subpath)
+				}
+				fmt.Printf("  Created: %s\n", depl.CreatedOn.AsTime().Local().Format(time.RFC3339))
+				fmt.Printf("  Updated: %s\n", depl.UpdatedOn.AsTime().Local().Format(time.RFC3339))
+				if depl.Status != adminv1.DeploymentStatus_DEPLOYMENT_STATUS_OK {
+					fmt.Printf("  Status: %s\n", depl.Status.String())
+					fmt.Printf("  Status Message: %s\n", depl.StatusMessage)
+
+					// Deployment not available
+					return nil
+				}
 			}
 
-			proj, err := client.GetProject(cmd.Context(), &adminv1.GetProjectRequest{
-				OrganizationName: ch.Org,
-				Name:             name,
-			})
-			if err != nil {
-				return err
-			}
-
-			var gitRemote string
-			if proj.Project.ManagedGitId == "" {
-				gitRemote = proj.Project.GitRemote
-			}
-
-			// 1. Print project info
-			ch.PrintfSuccess("Project info\n\n")
-			fmt.Printf("  Name: %s\n", proj.Project.Name)
-			fmt.Printf("  Organization: %v\n", proj.Project.OrgName)
-			fmt.Printf("  Public: %v\n", proj.Project.Public)
-			fmt.Printf("  Git: %v\n", gitRemote)
-			fmt.Printf("  Created: %s\n", proj.Project.CreatedOn.AsTime().Local().Format(time.RFC3339))
-			fmt.Printf("  Updated: %s\n", proj.Project.UpdatedOn.AsTime().Local().Format(time.RFC3339))
-
-			depl := proj.ProdDeployment
-			if depl == nil {
-				return nil
-			}
-
-			// 2. Print deployment info
-			ch.PrintfSuccess("\nDeployment info\n\n")
-			fmt.Printf("  Web: %s\n", proj.Project.FrontendUrl)
-			fmt.Printf("  Runtime: %s\n", depl.RuntimeHost)
-			fmt.Printf("  Instance: %s\n", depl.RuntimeInstanceId)
-			fmt.Printf("  Slots: %d\n", proj.Project.ProdSlots)
-			fmt.Printf("  Branch: %s\n", depl.Branch)
-			if proj.Project.Subpath != "" {
-				fmt.Printf("  Subpath: %s\n", proj.Project.Subpath)
-			}
-			fmt.Printf("  Created: %s\n", depl.CreatedOn.AsTime().Local().Format(time.RFC3339))
-			fmt.Printf("  Updated: %s\n", depl.UpdatedOn.AsTime().Local().Format(time.RFC3339))
-			if depl.Status != adminv1.DeploymentStatus_DEPLOYMENT_STATUS_OK {
-				fmt.Printf("  Status: %s\n", depl.Status.String())
-				fmt.Printf("  Status Message: %s\n", depl.StatusMessage)
-
-				// Deployment not available
-				return nil
-			}
 			// 3. Print parser and resources info
 			rt, instanceID, err := ch.OpenRuntimeClient(cmd.Context(), ch.Org, name, local)
 			if err != nil {
