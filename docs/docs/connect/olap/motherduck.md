@@ -119,20 +119,12 @@ Please see our [Using Multiple OLAP Engines](/connect/olap/multiple-olap) page.
 
 Rill supports reading from multiple databases in MotherDuck from within the same project in Rill Developer. All accessible tables (given the permission set of your access token) should automatically be listed in the lower left-hand tab, which can then be used to [create dashboards](/build/dashboards/).
 
-## Data Sharing and Collaboration
 
-One of the key benefits of MotherDuck is its collaborative features:
-
-- **Shared databases**: Create and share databases with team members
-- **Cross-database queries**: Query across multiple databases in a single connection
-- **Real-time collaboration**: Multiple users can work with the same data simultaneously
-- **Access control**: Manage permissions at the database and table level
 
 ## Additional Notes
 
 - MotherDuck uses the same SQL syntax as DuckDB, so all standard DuckDB functions and features are available
 - For dashboards powered by MotherDuck, [measure definitions](/build/metrics-view/#measures) should follow standard [DuckDB SQL](https://duckdb.org/docs/sql/introduction) syntax
-- MotherDuck automatically handles data persistence and backup, so you don't need to worry about data loss
 - The service provides built-in monitoring and usage analytics through the MotherDuck console
 
 :::info Need help connecting to MotherDuck?
