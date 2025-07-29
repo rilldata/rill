@@ -22,7 +22,8 @@ export type ChartType =
   | "stacked_bar_normalized"
   | "donut_chart"
   | "pie_chart"
-  | "heatmap";
+  | "heatmap"
+  | "funnel_chart";
 
 export type ChartDataQuery = CreateQueryResult<
   V1MetricsViewAggregationResponse,
