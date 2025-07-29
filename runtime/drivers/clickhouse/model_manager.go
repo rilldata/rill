@@ -146,7 +146,8 @@ func (c *Connection) validateAndApplyDefaults(opts *drivers.ModelExecuteOptions,
 		if op.EngineFull != "" {
 			return fmt.Errorf("you must provide an explicit `incremental_strategy` when using `engine_full` with a partitioned model")
 		}
-		ip.SQL = fmt.Sprintf("SELECT %s AS __rill_partition, * FROM (%s\n)", safeSQLString(opts.PartitionKey), ip.SQL)
+		// `use_structure_from_insertion_table_in_table_functions = 0` is a workaround for https://github.com/ClickHouse/ClickHouse/issues/83257
+		ip.SQL = fmt.Sprintf("SELECT %s AS __rill_partition, * FROM (%s\n) SETTINGS use_structure_from_insertion_table_in_table_functions = 0", safeSQLString(opts.PartitionKey), ip.SQL)
 		op.IncrementalStrategy = drivers.IncrementalStrategyPartitionOverwrite
 		op.PartitionBy = "__rill_partition"
 	}
