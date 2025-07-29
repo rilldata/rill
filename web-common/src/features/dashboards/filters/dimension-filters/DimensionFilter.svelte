@@ -591,15 +591,16 @@
               Select all
             {/if}
           </Button>
+        {:else}
+          <Button
+            onClick={onApply}
+            type="primary"
+            class="justify-end"
+            disabled={disableApplyButton}
+          >
+            Apply
+          </Button>
         {/if}
-        <Button
-          onClick={onApply}
-          type="primary"
-          class="justify-end"
-          disabled={disableApplyButton}
-        >
-          Apply
-        </Button>
       </div>
     </footer>
   </DropdownMenu.Content>
