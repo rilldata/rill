@@ -275,24 +275,31 @@ func (r *gitRepo) commitAndPushToDefaultBranch(ctx context.Context, message stri
 		}
 	}()
 
+	err = worktree.Checkout(&git.CheckoutOptions{
+		Branch: plumbing.ReferenceName("refs/heads/" + r.defaultBranch),
+		Force:  true,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to checkout default branch %q: %w", r.defaultBranch, err)
+	}
 	err = resetToRemoteTrackingBranch(repo, worktree, r.defaultBranch)
 	if err != nil {
 		return fmt.Errorf("failed to reset to remote tracking branch %q: %w", r.defaultBranch, err)
 	}
 
 	// Merge the edit branch into the default branch
-	var aborted bool
+	merged := true
 	if force {
 		// TODO : Maybe instead of merge with the "theirs" strategy should we just reset to the edit branch?
 		err = gitutil.MergeWithTheirsStrategy(r.repoDir, r.editBranch)
 	} else {
-		aborted, err = gitutil.MergeWithBailOnConflict(r.repoDir, r.editBranch)
+		merged, err = gitutil.MergeWithBailOnConflict(r.repoDir, r.editBranch)
 	}
 	if err != nil {
 		return fmt.Errorf("failed to merge edit branch %q into default branch %q: %w", r.editBranch, r.defaultBranch, err)
 	}
 
-	if aborted {
+	if !merged {
 		// If the merge was aborted no need to push the changes
 		r.h.logger.Warn("Merge aborted due to conflicts, not pushing changes", zap.String("editBranch", r.editBranch), zap.String("defaultBranch", r.defaultBranch))
 		return nil
