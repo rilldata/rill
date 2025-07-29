@@ -263,6 +263,32 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 			return nil, fmt.Errorf("failed to parse DSN: %w", err)
 		}
 		readOpts, writeOpts = opts, opts
+	case conf.Provision:
+		// Run clickhouse locally
+		dataDir, err := st.DataDir(instanceID)
+		if err != nil {
+			return nil, err
+		}
+		tempDir, err := st.TempDir(instanceID)
+		if err != nil {
+			return nil, err
+		}
+
+		embed, err = newEmbedClickHouse(conf.EmbedPort, dataDir, tempDir, logger)
+		if err != nil {
+			return nil, err
+		}
+
+		opts, err := embed.start()
+		if err != nil {
+			return nil, err
+		}
+
+		readOpts, writeOpts = opts, opts
+	case conf.Host != "":
+		// Build from individual host configuration
+		opts := buildOptsFromOptions(conf)
+		readOpts, writeOpts = opts, opts
 	case conf.ReadDSN != "" || conf.WriteDSN != "":
 		return nil, errors.New("when not providing a 'dsn', both 'read_dsn' and 'write_dsn' must be specified for separate read/write connections")
 	default:
