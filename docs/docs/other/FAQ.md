@@ -1,7 +1,8 @@
 ---
 title: FAQ
 sidebar_label: FAQ
-sidebar_position: 20
+sidebar_position: 40
+
 ---
 
 ## Technical requirements
@@ -35,7 +36,7 @@ Rill Developer is a local application used to preview your project and make any 
 
 ### How do I do XXX in Rill Developer? 
 
-Please refer to [our guided tutorial](/guides/tutorial/rill-basics/launch) to get started using Rill. In the tutorials, we walk you through first project creation, modeling, creating a metrics view and explore dashboard, and finally deploying to Rill Cloud. From there, we go through making local changes in Rill Developer and pushing your changes. In more advanced topics, we discuss custom APIs, Embed Dashboards, and more! 
+Please refer to [our guided tutorial](/guides/rill-basics/launch) to get started using Rill. In the tutorials, we walk you through first project creation, modeling, creating a metrics view and explore dashboard, and finally deploying to Rill Cloud. From there, we go through making local changes in Rill Developer and pushing your changes. In more advanced topics, we discuss custom APIs, Embed Dashboards, and more! 
 If you still have any questions, please [contact us!](/contact)
 
 
@@ -141,7 +142,7 @@ Enterprise plan includes all the features of a Team Plan but also provides furth
 
 **Storage:**
 
-Storage is the total compressed data in the cluster. It's available in [two performance tiers](/home/FAQ#what-are-the-compute-requirements-for-each-performance-tier), Hot and Cold, which set minimum [compute requirements](/home/FAQ#what-are-the-compute-requirements-for-data-processing).
+Storage is the total compressed data in the cluster. It's available in [two performance tiers](/other/FAQ#what-are-the-compute-requirements-for-each-performance-tier), Hot and Cold, which set minimum [compute requirements](/other/FAQ#what-are-the-compute-requirements-for-data-processing).
 
 Data can also be offloaded to an archival tier where it does not consume any compute
 
@@ -150,7 +151,7 @@ Data can also be offloaded to an archival tier where it does not consume any com
 
 **Compute:**
 
-[Rill Compute Units (RCU)](/home/FAQ#what-is-a-rill-compute-unit-rcu) are a combination of CPU, memory, and disk used for ingesting and querying data.
+[Rill Compute Units (RCU)](/other/FAQ#what-is-a-rill-compute-unit-rcu) are a combination of CPU, memory, and disk used for ingesting and querying data.
 
 RCUs scale up elastically for data ingestion & processing with enterprise discounts on RCUs provisioned for querying.
 

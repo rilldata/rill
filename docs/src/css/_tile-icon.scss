@@ -1,0 +1,199 @@
+.tile-icon-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+@media (max-width: 700px) {
+  .tile-icon-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.tile-icon {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 1rem 1.5rem 0rem 1.5rem;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-height: 50px;
+  transition: box-shadow 0.2s;
+  text-decoration: none;
+  color: inherit;
+  
+  &:hover {
+    text-decoration: none;
+    color: inherit;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+  }
+}
+
+.tile-icon-header {
+  font-size: 1em;
+  font-weight: 550;
+  color: #383838;
+  display: flex;
+  flex-direction: column;
+
+}
+
+.tile-icon-header-icon-top {
+  color: #383838;
+}
+
+.tile-icon-header-icon-top img {
+  filter: brightness(0) saturate(100%) invert(23%) sepia(0%) saturate(0%) hue-rotate(180deg) brightness(90%) contrast(90%);
+}
+
+.tile-icon-header-text {
+  text-align: center;
+}
+
+.tile-icon-content {
+  font-size: 0.875rem;
+  color: var(--palette_slate_600);
+  margin-bottom: 1.25rem;
+  line-height: 1.4;
+  max-height: 3.5rem; /* Limit to roughly 3 lines */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  margin-left: 0;
+}
+
+.tile-icon-footer {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.tile-icon-actions {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.tile-icon-action-link {
+  padding-top: 0.5rem;
+  font-size: 0.875rem;
+  color: #0057ff;
+  text-decoration: none;
+  font-weight: 500;
+  
+  &:hover {
+    text-decoration: underline;
+    color: #0057ff;
+  }
+}
+
+.tile-icon-link {
+  color: #222;
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25em;
+}
+
+.tile-icon-link-right {
+  color: #222;
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25em;
+}
+
+.tile-icon-link-right::after {
+  content: '\2192';
+  font-size: 1.1em;
+  margin-left: 0.15em;
+}
+
+.tile-icon-link-right.no-arrow::after {
+  content: none;
+}
+
+.tile-icon-link-right.with-arrow::after {
+  content: '\2192';
+  font-size: 1.1em;
+  margin-left: 0.15em;
+}
+
+// Hide arrow for Next Steps section (tiles with default "Learn more")
+.tile-icon-link:contains("Learn more")::after {
+  content: none;
+}
+
+.tile-icon-link::after {
+  // content: '\2192';
+  font-size: 1.1em;
+  margin-left: 0.15em;
+}
+
+// Dark mode styles
+[data-theme='dark'] {
+  .tile-icon {
+    border-color: #404040;
+    background: #262626;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    
+    &:hover {
+      box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+    }
+  }
+  
+  .tile-icon-header {
+    color: #e5e5e5;
+  }
+  
+  .tile-icon-content {
+    color: #a3a3a3;
+  }
+  
+  .tile-icon-action-link {
+    color: #459BFF;
+    
+    &:hover {
+      color: #459BFF;
+    }
+  }
+  
+  .tile-icon-link {
+    color: #e5e5e5;
+  }
+} 
+
+// Responsive fixes for footer overlap
+@media (max-width: 1450px) and (min-width: 1001px) {
+  .tile-icon-link::after {
+    content: none;
+  }
+}
+
+// Hide linkLabel and adjust layout for medium screens
+@media (max-width: 1400px) and (min-width: 700px) {
+  .tile-icon-link-right {
+    display: none;
+  }
+  
+  .tile-icon-footer {
+    justify-content: flex-start;
+  }
+  
+  .tile-icon-actions {
+    gap: 0.75rem;
+  }
+}
+
