@@ -61,10 +61,6 @@
 
         {#if isOlapConnector}
           <Tag height={16} class="ml-auto">OLAP</Tag>
-        {:else if implementsWarehouse}
-          <Tag height={16} class="ml-auto">WAREHOUSE</Tag>
-        {:else if implementsSqlStore}
-          <Tag height={16} class="ml-auto">SQL</Tag>
         {/if}
       </button>
 
