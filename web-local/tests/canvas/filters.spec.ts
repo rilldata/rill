@@ -70,7 +70,10 @@ test.describe("canvas time filters", () => {
     await page.getByLabel("domain results").getByText("msn.com").click();
 
     // Close the dropdown to apply the selections (Select mode applies on close)
-    await page.getByRole("button", { name: "Open domain filter" }).click();
+    await page
+      .getByRole("button", { name: "Open domain filter" })
+      .first()
+      .click();
 
     await expect(page.locator(".kpi-wrapper").getByText("797")).toBeVisible();
 
@@ -88,7 +91,10 @@ test.describe("canvas time filters", () => {
     await page.getByLabel("domain results").getByText("msn.com").click();
 
     // Close the dropdown to apply the selection (Select mode applies on close)
-    await page.getByRole("button", { name: "Open domain filter" }).click();
+    await page
+      .getByRole("complementary", { name: "Inspector Panel" })
+      .getByRole("button", { name: "Open domain filter" })
+      .click();
 
     await expect(page.getByText("375")).toBeVisible();
   });
