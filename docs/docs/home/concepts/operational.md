@@ -14,7 +14,7 @@ The distinction between operational and business intelligence is analogous to th
 
 Ultimately, the output of both operational and business intelligence is decisions. Operational intelligence fuels fast, frequent decisions on real-time and near-time data by hands-on operators. Business intelligence drives complex decisions that occur daily or weekly, on fairly complete data sets. 
 
-![operationalcomparison](../../static/img/concepts/operational/comparison.png)
+![operationalcomparison](/img/concepts/operational/comparison.png)
 
 ## Why Operational BI requires new tools
 
@@ -27,4 +27,4 @@ Analytics technology stacks can be thought of as data flowing into a three-layer
 
 In the diagram below we illustrate two common examples for technologies used in operational and business intelligence stacks.
 
-![operationalbi](../../static/img/concepts/operational/operational.png)
+![operationalbi](/img/concepts/operational/operational.png)
