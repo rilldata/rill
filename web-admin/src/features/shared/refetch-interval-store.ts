@@ -18,27 +18,42 @@ export function isResourceReconciling(resource: V1Resource) {
 /**
  * Updates the meta object with a smart refetch interval based on resource states.
  * @param resources Array of resources to check
- * @param prevMeta Previous meta object (should contain refetchInterval)
- * @returns Updated meta object with new refetchInterval
+ * @param prevMeta Previous meta object (should contain refetchInterval and wasReconciling)
+ * @returns Updated meta object with new refetchInterval and wasReconciling state
  */
 export function updateSmartRefetchMeta(
   resources: any[] | undefined,
-  prevMeta: { refetchInterval?: number | false } = {},
-): { refetchInterval: number | false } {
+  prevMeta: { refetchInterval?: number | false; wasReconciling?: boolean } = {},
+): { refetchInterval: number | false; wasReconciling: boolean } {
   if (!resources) {
-    return { ...prevMeta, refetchInterval: false };
+    return { refetchInterval: false, wasReconciling: false };
   }
+
   const hasReconciling = resources.some(isResourceReconciling);
+  const wasReconciling = prevMeta.wasReconciling || false;
+
   if (!hasReconciling) {
-    return { ...prevMeta, refetchInterval: false };
+    // No reconciling resources - stop polling
+    return { refetchInterval: false, wasReconciling: false };
   }
-  // Backoff logic: update the interval, but reset if a new cycle starts
+
+  // Resources are reconciling
+  if (!wasReconciling) {
+    // NEW reconciliation cycle - reset to initial interval
+    return {
+      refetchInterval: INITIAL_REFETCH_INTERVAL,
+      wasReconciling: hasReconciling,
+    };
+  }
+
+  // CONTINUING reconciliation cycle - apply backoff
   const current =
     typeof prevMeta.refetchInterval === "number"
       ? prevMeta.refetchInterval
       : INITIAL_REFETCH_INTERVAL;
   const next = Math.min(current * BACKOFF_FACTOR, MAX_REFETCH_INTERVAL);
-  return { ...prevMeta, refetchInterval: next };
+
+  return { refetchInterval: next, wasReconciling: hasReconciling };
 }
 
 /**
@@ -60,10 +75,8 @@ export function createSmartRefetchInterval(query: any): number | false {
     currentMeta,
   );
 
-  // Update query meta with new refetch state
-  if (query.meta !== updatedMeta) {
-    query.meta = updatedMeta;
-  }
+  // Update query meta with new refetch state (including wasReconciling)
+  query.meta = updatedMeta;
 
   return updatedMeta.refetchInterval;
 }
