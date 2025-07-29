@@ -11,7 +11,7 @@ On this page, we've gathered a running list of recommendations and general guide
 
 :::info Working with very large data from the get go?
 
-Generally speaking, Rill's [embedded DuckDB OLAP engine](/connect/olap/duckdb) works very well out-of-the-box for datasets _up to around 50GB in size_. If you plan to be working with and ingesting volumes of data larger than 50GB, please [**get in touch**](/contact) and we can explore using one of our other enterprise-grade [OLAP engine](/connect/olap/) options. 
+Generally speaking, Rill's [embedded DuckDB OLAP engine](/connect/olap/duckdb) works very well out-of-the-box for datasets _up to around 50GB in size_. If you plan to be working with and ingesting volumes of data larger than 50GB, please [**get in touch**](/contact) and we can explore using one of our other enterprise-grade [OLAP engine](/connect/olap) options. 
 
 :::
 
@@ -103,7 +103,7 @@ Some organizations might have both a development and production version of sourc
 
 ## Query Optimization
 
-Query optimization is crucial for maintaining high performance and efficiency, especially when working with data-intensive applications. As Rill dashboards are powered by [OLAP engines](/connect/olap/), designed for analytical queries, ensuring that our queries are well-optimized can help maximize the responsiveness and speed of our dashboards. There are also additional potential second-order benefits to optimizing queries in Rill, such as improving ingestion times, how long it takes to build models, how resource intensive it is to build models, how fast profiling queries run, and more. 
+Query optimization is crucial for maintaining high performance and efficiency, especially when working with data-intensive applications. As Rill dashboards are powered by [OLAP engines](/connect/olap), designed for analytical queries, ensuring that our queries are well-optimized can help maximize the responsiveness and speed of our dashboards. There are also additional potential second-order benefits to optimizing queries in Rill, such as improving ingestion times, how long it takes to build models, how resource intensive it is to build models, how fast profiling queries run, and more. 
 
 ### Use appropriate data types and avoid casting when possible
 
@@ -113,7 +113,7 @@ Similarly, choosing the right data type for each column is also important. Small
 
 ### Select the columns you need and avoid `SELECT *` when possible
 
-Because most [OLAP databases](/connect/olap/) store data in a columnar format, including [DuckDB](/connect/olap/duckdb), selecting only the columns that you need during the modeling phase ensures that DuckDB will only ingest and store the data _it actually needs_ (speeding up model build times and reducing footprint). Furthermore, columnar formats are optimized for analytical queries so by selecting only the columns that you need (instead of a blanket `SELECT *`), this will help to minimize data processing times and improve the query execution speed.
+Because most [OLAP databases](/connect/olap) store data in a columnar format, including [DuckDB](/connect/olap/duckdb), selecting only the columns that you need during the modeling phase ensures that DuckDB will only ingest and store the data _it actually needs_ (speeding up model build times and reducing footprint). Furthermore, columnar formats are optimized for analytical queries so by selecting only the columns that you need (instead of a blanket `SELECT *`), this will help to minimize data processing times and improve the query execution speed.
 
 ### Consider sorting your data by an appropriate timestamp column
 
@@ -127,11 +127,11 @@ Sorting, especially in DuckDB, _can also be computationally intensive_ and most 
 
 ### Use joins efficiently
 
-Plan your joins carefully, especially when working with large datasets. Most [OLAP engines](/connect/olap/), DuckDB included, will optimize join operations, but ensuring the join keys are well chosen and considering the size of the datasets being joined can reduce processing time. For example, if you're looking to perform a cross or cartesian join across a very wide table, be sure it's necessary as it can otherwise explode the size of your result set. 
+Plan your joins carefully, especially when working with large datasets. Most [OLAP engines](/connect/olap), DuckDB included, will optimize join operations, but ensuring the join keys are well chosen and considering the size of the datasets being joined can reduce processing time. For example, if you're looking to perform a cross or cartesian join across a very wide table, be sure it's necessary as it can otherwise explode the size of your result set. 
 
 ### Apply filters early and use WHERE clauses wisely
 
-When possible, it can be good practice to apply filtering early in your queries with `WHERE` clauses to reduce the amount of data being processed in subsequent steps (or downstream models / queries). This can both help to reduce the amount of data being scanned and, given the columnar nature of most [OLAP engines](/connect/olap/), significantly speed up queries.
+When possible, it can be good practice to apply filtering early in your queries with `WHERE` clauses to reduce the amount of data being processed in subsequent steps (or downstream models / queries). This can both help to reduce the amount of data being scanned and, given the columnar nature of most [OLAP engines](/connect/olap), significantly speed up queries.
 
 ### Optimize your subqueries to leverage joins or CTEs when possible
 
@@ -140,12 +140,12 @@ Subqueries can very often prove to be inefficient and result in suboptimal query
 
 ### Rather than UNION, consider using UNION ALL when possible
 
-Depending on the [OLAP engine](/connect/olap/), `UNION` can be a very expensive operation and much more computationally intensive than `UNION ALL`. For example, when using [DuckDB](/connect/olap/duckdb), a `UNION` will require performing full duplicate eliminations _across all columns_ while a `UNION ALL` will simply concatenate the tables together. If a concatenation is sufficient (for the query), this will be both much quicker and significantly less resource intensive for the query to complete.
+Depending on the [OLAP engine](/connect/olap), `UNION` can be a very expensive operation and much more computationally intensive than `UNION ALL`. For example, when using [DuckDB](/connect/olap/duckdb), a `UNION` will require performing full duplicate eliminations _across all columns_ while a `UNION ALL` will simply concatenate the tables together. If a concatenation is sufficient (for the query), this will be both much quicker and significantly less resource intensive for the query to complete.
 
 
 ## OLAP Engines
 
-Often, data in external [OLAP engines](/connect/olap/) is quite large in size and requires different considerations to improve performance. At Rill, we manage clusters in the 100's of TB so included some tips below based on our experience.
+Often, data in external [OLAP engines](/connect/olap) is quite large in size and requires different considerations to improve performance. At Rill, we manage clusters in the 100's of TB so included some tips below based on our experience.
 
 ### Data Lifecycle Management 
 
@@ -169,11 +169,11 @@ Dimension stripping is another tool to reduce data size by removing high cardina
 
 There are times where you may look at sampling data feeds to trade data accuracy for lower costs and faster query speeds. Sampling involves sending only a percentage of your data, then extrapolating the values to get an estimate. Rill does not recommend sampling your primary KPIs, any records that require a join or are tied to revenue. This filtered data should be decided in random fashion to not skew or bias the results. Please note, tracking uniques is not recommended if you choose to sample. 
 
-If looking to track uniques, but with smaller datasets and significantly improved performance, you can load unique values (ip addresses, user ids, URLs, etc) with [datasketches](https://datasketches.apache.org/). There are multiple types of datasketches supported depending on your engine. At a high level, datasketches use algorithms to approximate unique values. Common use cases for datasketches include count distincts (campaign reach, unique visitors) and quantiles (time spent, frequency). Check out the [Apache Datasketches](https://datasketches.apache.org/docs/Architecture/MajorSketchFamilies.html) site for more details on methodology and use cases.
+If looking to track uniques, but with smaller datasets and significantly improved performance, you can load unique values (ip addresses, user ids, URLs, etc) with [datasketches](https://datasketches.apache.org). There are multiple types of datasketches supported depending on your engine. At a high level, datasketches use algorithms to approximate unique values. Common use cases for datasketches include count distincts (campaign reach, unique visitors) and quantiles (time spent, frequency). Check out the [Apache Datasketches](https://datasketches.apache.org/docs/Architecture/MajorSketchFamilies.html) site for more details on methodology and use cases.
 
 ### Lookups
 
-While joins can kill the performance of [OLAP engines](/connect/olap/), lookups (key-value pairs) are common to reduce data size and improve query speeds. Lookups can be done during ingestion time (a static lookup to enrich the source data) or at query time (dynamic lookups).
+While joins can kill the performance of [OLAP engines](/connect/olap), lookups (key-value pairs) are common to reduce data size and improve query speeds. Lookups can be done during ingestion time (a static lookup to enrich the source data) or at query time (dynamic lookups).
 
 **Static Lookups** 
 

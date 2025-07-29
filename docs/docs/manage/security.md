@@ -183,7 +183,7 @@ security:
 
 For some use cases, the built-in user attributes do not provide sufficient context to correctly restrict access. For example, a dashboard for a multi-tenant SaaS application might have a `tenant_id` column and external users should only be able to see data for the tenant they belong to.
 
-To support this, ingest a separate data [source](/connect/) containing mappings of user email addresses to tenant IDs and reference it in the row-level filter. This can be a locally created csv file or any hosted data source.
+To support this, ingest a separate data [source](/connect) containing mappings of user email addresses to tenant IDs and reference it in the row-level filter. This can be a locally created csv file or any hosted data source.
 
 For example, a locally created `mappings.csv` file in the `data` directory of our Rill project with the following contents:
 ```csv

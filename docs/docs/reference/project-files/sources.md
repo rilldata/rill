@@ -83,7 +83,7 @@ Files that are *nested at any level* under your native `sources` directory will 
 
 **`db`**
  — Sets the database for motherduck connections and/or the path to the DuckDB/SQLite `db` file _(optional)_.
-  - For DuckDB / SQLite, [if deploying to Rill Cloud](/deploy/deploy-dashboard/), this `db` file will need to be accessible from the <u>root</u> directory of your project on GitHub.
+  - For DuckDB / SQLite, [if deploying to Rill Cloud](/deploy/deploy-dashboard), this `db` file will need to be accessible from the <u>root</u> directory of your project on GitHub.
 
 **`database_url`**
  — Postgres connection string that should be used. Refer to Postgres [documentation](https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING) for more details _(optional)_.

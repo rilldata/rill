@@ -117,7 +117,7 @@ Please see our [Using Multiple OLAP Engines](/connect/olap/multiple-olap) page.
 
 ## Reading from Multiple Databases
 
-Rill supports reading from multiple databases in MotherDuck from within the same project in Rill Developer. All accessible tables (given the permission set of your access token) should automatically be listed in the lower left-hand tab, which can then be used to [create dashboards](/build/dashboards/).
+Rill supports reading from multiple databases in MotherDuck from within the same project in Rill Developer. All accessible tables (given the permission set of your access token) should automatically be listed in the lower left-hand tab, which can then be used to [create dashboards](/build/dashboards).
 
 
 

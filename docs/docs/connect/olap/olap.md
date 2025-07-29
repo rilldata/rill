@@ -9,7 +9,7 @@ className: connect-connect
 
 import ConnectorIcon from '@site/src/components/ConnectorIcon';
 
-Along with supporting ingestion from your various [sources](/connect/), we allow a `live connection` to your own OLAP analytics engine. You can either set the default OLAP engine for your entire project, or set it for specific dashboards. 
+Along with supporting ingestion from your various [sources](/connect), we allow a `live connection` to your own OLAP analytics engine. You can either set the default OLAP engine for your entire project, or set it for specific dashboards. 
 
 1. Set the [default OLAP engine](/reference/project-files/rill-yaml#configuring-the-default-olap-engine) via the rill.yaml file.
 2. Set the [OLAP engine](/reference/project-files/explore-dashboards) for a specific dashboard.
@@ -79,7 +79,7 @@ Rill supports the use of several different OLAP engines to power your dashboards
 
 
 :::note Additional OLAP Engines
-Rill is continually evaluating additional OLAP engines that can be added. For a full list of OLAP engines that we support, refer to our [OLAP Engines](/connect/olap/) page. If you don't see an OLAP engine that you'd like to use, please don't hesitate to [reach out](/contact)!
+Rill is continually evaluating additional OLAP engines that can be added. For a full list of OLAP engines that we support, refer to our [OLAP Engines](/connect/olap) page. If you don't see an OLAP engine that you'd like to use, please don't hesitate to [reach out](/contact)!
 :::
 
 ## Multiple OLAP Engines in a Single Project

@@ -21,7 +21,7 @@ Rill offers flexible connection strategies to fit different data architectures a
 Use Rill's embedded **DuckDB** as the OLAP engine and ingest data from external sources. Full Rill functionality with excellent performance for smaller datasets.
 
 
-- _[**Bring Your Own OLAP (BYO OLAP)**](/connect/olap/)_: Large-scale datasets (100GB+) or existing OLAP infrastructure
+- _[**Bring Your Own OLAP (BYO OLAP)**](/connect/olap)_: Large-scale datasets (100GB+) or existing OLAP infrastructure
 
 Connect to existing **ClickHouse**, **Druid**, **Pinot**, or **MotherDuck** instances. Use Rill's connectors to ingest data directly into your OLAP engine.
 
@@ -29,7 +29,7 @@ Connect to existing **ClickHouse**, **Druid**, **Pinot**, or **MotherDuck** inst
  Some modeling features may be limited depending on the engine.
 :::
 
--  _[**BYO OLAP with Native Connectors**](/connect/olap/)_: Working with existing optimized tables
+-  _[**BYO OLAP with Native Connectors**](/connect/olap)_: Working with existing optimized tables
 
 Skip data ingestion and work directly with existing tables in your OLAP engine, **ClickHouse**, **Druid**, **Pinot**, or **MotherDuck**. Leverage engine-specific features and avoid data duplication.
 

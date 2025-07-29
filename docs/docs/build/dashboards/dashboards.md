@@ -47,14 +47,14 @@ For more details about available configurations and properties, check our [Dashb
 :::
 
 ### Preview a Dashboard in Rill Developer
-Once a dashboard is ready to preview, before [deploying to Rill Cloud](/deploy/deploy-dashboard/), you can preview the dashboard in Rill Developer. Especially if you are setting up [dashboard policies](/manage/security), it is recommended to preview and test the dashboard before deploying.
+Once a dashboard is ready to preview, before [deploying to Rill Cloud](/deploy/deploy-dashboard), you can preview the dashboard in Rill Developer. Especially if you are setting up [dashboard policies](/manage/security), it is recommended to preview and test the dashboard before deploying.
 
 <img src = '/img/build/dashboard/preview-dashboard.png' class='rounded-gif' />
 <br />
 
 
 ### Clickable Dimension Links 
-Adding an additional parameter to your dimension in the [metrics view](/build/metrics-view/) can allow for clickable links directly from the dashboard.
+Adding an additional parameter to your dimension in the [metrics view](/build/metrics-view) can allow for clickable links directly from the dashboard.
 
 ```yaml
 dimensions:
