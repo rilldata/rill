@@ -123,6 +123,11 @@ setup.describe("global setup", () => {
     // Log in with the admin account
     await page.goto("/");
 
+    // Since our changes now default to signup page, click "Login" to switch to login mode
+    const loginLink = page.locator("a", { hasText: "Log in" });
+    await loginLink.waitFor({ state: "visible", timeout: 10000 });
+    await loginLink.click();
+
     // Fill in the email
     const emailInput = page.locator('input[name="username"]');
     await emailInput.waitFor({ state: "visible" });
