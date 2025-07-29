@@ -202,6 +202,12 @@ async function login(deployPage: Page) {
 
   // Login 1st to start deploy.
 
+  // If not logged in, we append screen_hint=signup to the login URL.
+  // Default to signup page, click "Login" to switch to login mode
+  const loginLink = deployPage.locator("a", { hasText: "Log in" });
+  await loginLink.waitFor({ state: "visible", timeout: 10000 });
+  await loginLink.click();
+
   // Fill in the email
   const emailInput = deployPage.locator('input[name="username"]');
   await emailInput.waitFor({ state: "visible" });
