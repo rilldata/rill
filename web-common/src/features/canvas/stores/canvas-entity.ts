@@ -179,10 +179,6 @@ export class CanvasEntity {
     // this.unsubscriber();
   };
 
-  setTheme = (theme: V1ThemeSpec | undefined) => {
-    updateThemeVariables(theme);
-  };
-
   saveSnapshot = (filterState: string) => {
     this.lastVisitedState.set(filterState);
   };
