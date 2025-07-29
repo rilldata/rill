@@ -181,7 +181,7 @@
             canRefresh:
               row.original.meta.name.kind === ResourceKind.Model ||
               row.original.meta.name.kind === ResourceKind.Source,
-            onOpenRefreshDialog: openRefreshDialog,
+            onClickRefreshDialog: openRefreshDialog,
             isDropdownOpen: isDropdownOpen(resourceKey),
             onDropdownOpenChange: (isOpen: boolean) =>
               setDropdownOpen(resourceKey, isOpen),

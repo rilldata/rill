@@ -8,7 +8,7 @@
   export let resourceKind: string;
   export let resourceName: string;
   export let canRefresh: boolean;
-  export let onOpenRefreshDialog: (
+  export let onClickRefreshDialog: (
     resourceName: string,
     resourceKind: string,
     refreshType: "full" | "incremental",
@@ -29,7 +29,7 @@
         <DropdownMenu.Item
           class="font-normal flex items-center"
           on:click={() => {
-            onOpenRefreshDialog(resourceName, resourceKind, "full");
+            onClickRefreshDialog(resourceName, resourceKind, "full");
           }}
         >
           <div class="flex items-center">
@@ -40,7 +40,7 @@
         <DropdownMenu.Item
           class="font-normal flex items-center"
           on:click={() => {
-            onOpenRefreshDialog(resourceName, resourceKind, "incremental");
+            onClickRefreshDialog(resourceName, resourceKind, "incremental");
           }}
         >
           <div class="flex items-center">
@@ -52,7 +52,7 @@
         <DropdownMenu.Item
           class="font-normal flex items-center"
           on:click={() => {
-            onOpenRefreshDialog(resourceName, resourceKind, "full");
+            onClickRefreshDialog(resourceName, resourceKind, "full");
           }}
         >
           <div class="flex items-center">
