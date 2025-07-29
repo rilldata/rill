@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
@@ -230,32 +229,48 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		return nil, err
 	}
 
-	// If the managed flag is set we are free to allow overwriting tables.
 	if conf.Managed {
 		conf.Mode = modeReadWrite
 	}
-
-	// Default to read-only mode if not set
 	if conf.Mode == "" {
 		conf.Mode = modeReadOnly
 	}
-
-	// Validate DSN configuration
-	if conf.DSN == "" && conf.ReadDSN == "" && conf.WriteDSN == "" && conf.Host == "" && !conf.Provision {
-		return nil, errors.New("no clickhouse connection configured: 'dsn', 'read_dsn'/'write_dsn', 'host' or 'managed: true' must be set")
+	if conf.MaxOpenConns == 0 {
+		conf.MaxOpenConns = 20
 	}
 
-	// If using separate read/write DSNs, both must be provided when no base DSN is set
-	if conf.DSN == "" && (conf.ReadDSN == "" || conf.WriteDSN == "") && !conf.Provision && conf.Host == "" {
-		return nil, errors.New("when using separate read/write connections without base DSN, both 'read_dsn' and 'write_dsn' must be provided")
-	}
-
-	// Create read and write options
 	var readOpts, writeOpts *clickhouse.Options
 	var embed *embedClickHouse
 
-	if conf.Provision {
-		// Handle embedded ClickHouse
+	// Determine connection options based on configuration priority
+	switch {
+	case conf.DSN != "":
+		// Default DSN to use for both connections
+		opts, err := clickhouse.ParseDSN(conf.DSN)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse DSN: %w", err)
+		}
+		readOpts, writeOpts = opts, opts
+
+	case conf.ReadDSN != "" && conf.WriteDSN != "":
+		// Separate read and write DSNs
+		if readOpts, err = clickhouse.ParseDSN(conf.ReadDSN); err != nil {
+			return nil, fmt.Errorf("failed to parse read DSN: %w", err)
+		}
+		if writeOpts, err = clickhouse.ParseDSN(conf.WriteDSN); err != nil {
+			return nil, fmt.Errorf("failed to parse write DSN: %w", err)
+		}
+
+	case conf.ReadDSN != "" || conf.WriteDSN != "":
+		return nil, errors.New("when not providing a 'dsn', both 'read_dsn' and 'write_dsn' must be specified for separate read/write connections")
+
+	case conf.Host != "":
+		// Host-based configuration
+		opts := buildOptsFromOptions(conf)
+		readOpts, writeOpts = opts, opts
+
+	case conf.Provision:
+		// Embedded ClickHouse
 		dataDir, err := st.DataDir(instanceID)
 		if err != nil {
 			return nil, err
@@ -271,119 +286,58 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		}
 		opts, err := embed.start()
 		if err != nil {
-			return nil, fmt.Errorf("failed to start embedded ClickHouse: %w", err)
+			return nil, err
 		}
-		readOpts = opts
-		writeOpts = opts
+		readOpts, writeOpts = opts, opts
+
+	default:
+		return nil, errors.New("no clickhouse connection configured: 'dsn', 'read_dsn'/'write_dsn', 'host' or 'managed: true' must be set")
 	}
 
-	// Determine read connection options
-	if conf.ReadDSN != "" {
-		readOpts, err = clickhouse.ParseDSN(conf.ReadDSN)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse read DSN: %w", err)
-		}
-	} else if conf.DSN != "" {
-		readOpts, err = clickhouse.ParseDSN(conf.DSN)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse DSN for read connection: %w", err)
-		}
-	} else if conf.Host != "" {
-		readOpts = buildOptsFromHost(conf)
-	}
-
-	// Determine write connection options
-	if conf.WriteDSN != "" {
-		writeOpts, err = clickhouse.ParseDSN(conf.WriteDSN)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse write DSN: %w", err)
-		}
-	} else if conf.DSN != "" {
-		writeOpts, err = clickhouse.ParseDSN(conf.DSN)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse DSN for write connection: %w", err)
-		}
-	} else if conf.Host != "" {
-		writeOpts = buildOptsFromHost(conf)
-	}
-
-	// Apply common configuration to both connections
+	// Apply common configuration to both connection options
 	applyCommonConfig(readOpts, conf)
-	applyCommonConfig(writeOpts, conf)
+	if readOpts != writeOpts {
+		applyCommonConfig(writeOpts, conf)
+	}
 
-	// Create read connection
-	readDB := sqlx.NewDb(otelsql.OpenDB(clickhouse.Connector(readOpts)), "clickhouse")
-	err = readDB.Ping()
-	if err != nil {
-		if !strings.Contains(err.Error(), "unexpected packet") && !strings.Contains(err.Error(), "i/o timeout") {
-			return nil, fmt.Errorf("failed to connect to read database: %w", err)
-		}
-		if conf.ReadDSN != "" || conf.DSN != "" {
-			return nil, fmt.Errorf("failed to connect to read database: %w", err)
-		}
-		// may be the port is http, also try with http protocol if DSN is not provided
-		readOpts.Protocol = clickhouse.HTTP
+	// Create database connections
+	var readDB, writeDB *sqlx.DB
+
+	if readOpts == writeOpts {
+		// Single connection for both read and write
 		readDB = sqlx.NewDb(otelsql.OpenDB(clickhouse.Connector(readOpts)), "clickhouse")
-		err := readDB.Ping()
-		if err != nil {
-			return nil, fmt.Errorf("failed to connect to read database: %w", err)
-		}
-		// connection with http protocol is successful
-		logger.Warn("ClickHouse read connection was established with the HTTP protocol, consider using the native port for better performance")
-	}
+		writeDB = readDB
+		readDB.SetMaxOpenConns(conf.MaxOpenConns)
 
-	// Create write connection
-	writeDB := sqlx.NewDb(otelsql.OpenDB(clickhouse.Connector(writeOpts)), "clickhouse")
-	err = writeDB.Ping()
-	if err != nil {
-		if !strings.Contains(err.Error(), "unexpected packet") && !strings.Contains(err.Error(), "i/o timeout") {
-			readDB.Close()
-			return nil, fmt.Errorf("failed to connect to write database: %w", err)
+		if err = readDB.Ping(); err != nil {
+			return nil, fmt.Errorf("failed to ping connection: %w", err)
 		}
-		if conf.WriteDSN != "" || conf.DSN != "" {
-			readDB.Close()
-			return nil, fmt.Errorf("failed to connect to write database: %w", err)
+
+		if err = otelsql.RegisterDBStatsMetrics(readDB.DB, otelsql.WithAttributes(semconv.DBSystemClickhouse, attribute.String("instance_id", instanceID))); err != nil {
+			return nil, fmt.Errorf("registering db stats metrics: %w", err)
 		}
-		// may be the port is http, also try with http protocol if DSN is not provided
-		writeOpts.Protocol = clickhouse.HTTP
+	} else {
+		// Separate read and write connections
+		readDB = sqlx.NewDb(otelsql.OpenDB(clickhouse.Connector(readOpts)), "clickhouse")
 		writeDB = sqlx.NewDb(otelsql.OpenDB(clickhouse.Connector(writeOpts)), "clickhouse")
-		err := writeDB.Ping()
-		if err != nil {
-			readDB.Close()
-			return nil, fmt.Errorf("failed to connect to write database: %w", err)
+
+		readDB.SetMaxOpenConns(conf.MaxOpenConns)
+		writeDB.SetMaxOpenConns(conf.MaxOpenConns)
+
+		if err = readDB.Ping(); err != nil {
+			return nil, fmt.Errorf("failed to ping read connection: %w", err)
 		}
-		// connection with http protocol is successful
-		logger.Warn("ClickHouse write connection was established with the HTTP protocol, consider using the native port for better performance")
-	}
+		if err = writeDB.Ping(); err != nil {
+			return nil, fmt.Errorf("failed to ping write connection: %w", err)
+		}
 
-	// Configure connection pools
-	if conf.MaxOpenConns == 0 {
-		conf.MaxOpenConns = 20
-	}
-	readDB.SetMaxOpenConns(conf.MaxOpenConns)
-	writeDB.SetMaxOpenConns(conf.MaxOpenConns)
-
-	// Register metrics for both connections
-	err = otelsql.RegisterDBStatsMetrics(readDB.DB, otelsql.WithAttributes(
-		semconv.DBSystemClickhouse,
-		attribute.String("instance_id", instanceID),
-		attribute.String("connection_type", "read"),
-	))
-	if err != nil {
-		readDB.Close()
-		writeDB.Close()
-		return nil, fmt.Errorf("registering read db stats metrics: %w", err)
-	}
-
-	err = otelsql.RegisterDBStatsMetrics(writeDB.DB, otelsql.WithAttributes(
-		semconv.DBSystemClickhouse,
-		attribute.String("instance_id", instanceID),
-		attribute.String("connection_type", "write"),
-	))
-	if err != nil {
-		readDB.Close()
-		writeDB.Close()
-		return nil, fmt.Errorf("registering write db stats metrics: %w", err)
+		// Register metrics for both connections
+		if err = otelsql.RegisterDBStatsMetrics(readDB.DB, otelsql.WithAttributes(semconv.DBSystemClickhouse, attribute.String("instance_id", instanceID))); err != nil {
+			return nil, fmt.Errorf("registering db stats metrics: %w", err)
+		}
+		if err = otelsql.RegisterDBStatsMetrics(writeDB.DB, otelsql.WithAttributes(semconv.DBSystemClickhouse, attribute.String("instance_id", instanceID))); err != nil {
+			return nil, fmt.Errorf("registering db stats metrics: %w", err)
+		}
 	}
 
 	// Version check using read connection
@@ -786,69 +740,8 @@ func (c *Connection) checkBillingTableExists(ctx context.Context, cluster string
 	return existsEverywhere, nil
 }
 
-// createOptsFromFields creates ClickHouse options for read and write connections
-func createOptsFromFields(conf *configProperties, st *storage.Client, instanceID string, logger *zap.Logger) (*clickhouse.Options, *clickhouse.Options, *embedClickHouse, error) {
-	var readOpts, writeOpts *clickhouse.Options
-	var embed *embedClickHouse
-	var err error
-
-	if conf.Provision {
-		// Handle embedded ClickHouse
-		dataDir, err := st.DataDir(instanceID)
-		if err != nil {
-			return nil, nil, nil, err
-		}
-		tempDir, err := st.TempDir(instanceID)
-		if err != nil {
-			return nil, nil, nil, err
-		}
-
-		embed, err = newEmbedClickHouse(conf.EmbedPort, dataDir, tempDir, logger)
-		if err != nil {
-			return nil, nil, nil, err
-		}
-		opts, err := embed.start()
-		if err != nil {
-			return nil, nil, nil, err
-		}
-		return opts, opts, embed, nil
-	}
-
-	// Determine read connection options
-	if conf.ReadDSN != "" {
-		readOpts, err = clickhouse.ParseDSN(conf.ReadDSN)
-		if err != nil {
-			return nil, nil, nil, fmt.Errorf("failed to parse read DSN: %w", err)
-		}
-	} else if conf.DSN != "" {
-		readOpts, err = clickhouse.ParseDSN(conf.DSN)
-		if err != nil {
-			return nil, nil, nil, fmt.Errorf("failed to parse DSN for read connection: %w", err)
-		}
-	} else if conf.Host != "" {
-		readOpts = buildOptsFromHost(conf)
-	}
-
-	// Determine write connection options
-	if conf.WriteDSN != "" {
-		writeOpts, err = clickhouse.ParseDSN(conf.WriteDSN)
-		if err != nil {
-			return nil, nil, nil, fmt.Errorf("failed to parse write DSN: %w", err)
-		}
-	} else if conf.DSN != "" {
-		writeOpts, err = clickhouse.ParseDSN(conf.DSN)
-		if err != nil {
-			return nil, nil, nil, fmt.Errorf("failed to parse DSN for write connection: %w", err)
-		}
-	} else if conf.Host != "" {
-		writeOpts = buildOptsFromHost(conf)
-	}
-
-	return readOpts, writeOpts, embed, nil
-}
-
-// buildOptsFromHost creates ClickHouse options from individual host configuration
-func buildOptsFromHost(conf *configProperties) *clickhouse.Options {
+// buildOptsFromOptions creates ClickHouse options from individual host configuration
+func buildOptsFromOptions(conf *configProperties) *clickhouse.Options {
 	opts := &clickhouse.Options{}
 
 	// address
