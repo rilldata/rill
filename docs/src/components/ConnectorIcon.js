@@ -7,7 +7,7 @@ import { useHistory } from '@docusaurus/router';
  * Displays an icon, header, content, and multiple action links.
  * Main card links to demo, with additional links for reference.
  */
-function ConnectorIcon({ icon, header, content, link, linkLabel = 'Learn more', target, rel, referenceLink }) {
+function ConnectorIcon({ icon, header, content, link, linkLabel, target, rel, referenceLink }) {
     const history = useHistory();
 
     const handleReferenceClick = (e) => {

@@ -10,6 +10,13 @@ sidebar_position: 00
 
 In Rill, [data models](/reference/project-files/models.md) are built using SQL `SELECT` statements applied to your source data. They allow you to join, transform, and clean data.
 
+
+:::tip Avoid Pre-aggregated Metrics
+
+Rill works best for slicing and dicing data meaning keeping data closer to raw to retain that granularity for flexible analysis. When loading data, be careful with adding pre-aggregated metrics like averages as that could lead to unintended results like a sum of an average. Instead, load the two raw metrics and calculate the derived metric in your model or dashboard.
+
+:::
+
 ## SQL transformations
 
 By default, data transformations in Rill Developer are powered by DuckDB and its dialect of SQL (DuckDB SQL). Please visit the [DuckDB SQL documentation](https://duckdb.org/docs/sql/introduction) to learn how to write your queries.

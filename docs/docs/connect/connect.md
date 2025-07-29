@@ -11,7 +11,6 @@ className: connect-connect
 
 import ConnectorIcon from '@site/src/components/ConnectorIcon';
 
-
 ## Connection Strategies
 
 Rill offers flexible connection strategies to fit different data architectures and requirements.
@@ -33,6 +32,9 @@ Connect to existing **ClickHouse**, **Druid**, **Pinot**, or **MotherDuck** inst
 
 Skip data ingestion and work directly with existing tables in your OLAP engine, **ClickHouse**, **Druid**, **Pinot**, or **MotherDuck**. Leverage engine-specific features and avoid data duplication.
 
+
+
+
 ## Data Warehouse Connectors
 
 ### Athena
@@ -45,7 +47,7 @@ Skip data ingestion and work directly with existing tables in your OLAP engine, 
     icon={<img src="/img/connect/icons/Logo-Athena.svg" alt="Athena" />}
     header="Athena"
     content="Connect to Amazon Athena for serverless querying of data stored in S3 using standard SQL."
-    link="/connect/data-source/#athena"
+    link="/connect/data-source/athena"
     linkLabel="Learn more"
     referenceLink="athena"
   />
@@ -170,7 +172,6 @@ Skip data ingestion and work directly with existing tables in your OLAP engine, 
     content="Read data from local files including CSV, JSON, Parquet, and compressed formats."
     link="/connect/data-source/local-file"
     linkLabel="Learn more"
-    referenceLink="local-file"
   />
 
   <ConnectorIcon
@@ -186,7 +187,7 @@ Skip data ingestion and work directly with existing tables in your OLAP engine, 
     icon={<img src="/img/connect/icons/Logo-Sheets.svg" alt="Google Sheets" className="sheets-icon" />}
     header="Google Sheets"
     content="Connect to Google Sheets to read data from spreadsheets with support for multiple sheets."
-    link="googlesheets"
+    link="/connect/data-source/googlesheets"
     linkLabel="Learn more"
   />
 
@@ -196,19 +197,23 @@ Skip data ingestion and work directly with existing tables in your OLAP engine, 
     content="Connect to Slack to extract data from channels, messages, and other workspace information."
     link="/connect/data-source/slack"
     linkLabel="Learn more"
-    referenceLink="/reference/project-files/connectors#slack"
+    referenceLink="slack"
+  />
+
+  <ConnectorIcon
+    icon={<img src="/img/connect/icons/Logo-AI.svg" alt="AI" className="sheets-icon" />}
+    header="AI"
+    content="Define your own OpenAI Connector and define your own API key."
+    link="/build/metrics-view/#creating-metrics-with-ai"
+    linkLabel="Learn more"
+    referenceLink="ai"
   />
 </div>
 
 
-:::tip Avoid Pre-aggregated Metrics
 
-Rill works best for slicing and dicing data meaning keeping data closer to raw to retain that granularity for flexible analysis. When loading data, be careful with adding pre-aggregated metrics like averages as that could lead to unintended results like a sum of an average. Instead, load the two raw metrics and calculate the derived metric in your model or dashboard.
-
-:::
-
-:::note Have a firewall setup?
-You need to whitelist the following IP addresses to connect to/from Rill Cloud and your service behind the firewall.
+## Externally Hosted Services
+If you have a firewall in front of your externally hosted service, you will need to whitelist the IP addresses below. This will allow you to connect to/from your service once your project is deployed to Rill Cloud. 
 ```
 35.196.245.100
 34.74.117.37
@@ -217,4 +222,3 @@ You need to whitelist the following IP addresses to connect to/from Rill Cloud a
 34.148.167.51
 35.237.60.193
 ```
-:::

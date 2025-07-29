@@ -1,7 +1,7 @@
 ---
-title: Templating your Connectors
-description: Ensure that your Connectors have dev/prod locations
-sidebar_label: Template Connectors
+title: Dev/Prod Environments
+description: Dev/Prod Setup
+sidebar_label: Dev/Prod Setup
 sidebar_position: 19
 ---
 

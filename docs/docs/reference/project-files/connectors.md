@@ -50,7 +50,7 @@ Connector YAML files define how Rill connects to external data sources and OLAP 
 
 
 :::warning Security Recommendation
-For all credential parameters (passwords, tokens, keys), use environment variables with the syntax `{{.env.<connector_type>.<parameter_name>}}`. This keeps sensitive data out of your YAML files and version control. See our [credentials documentation](/build/credentials) for complete setup instructions.
+For all credential parameters (passwords, tokens, keys), use environment variables with the syntax `{{.env.<connector_type>.<parameter_name>}}`. This keeps sensitive data out of your YAML files and version control. See our [credentials documentation](/connect/credentials) for complete setup instructions.
 :::
 
 ### Athena
@@ -179,15 +179,6 @@ path: "https://example.com/data.csv"             # Full HTTPS URI to fetch data 
 headers: "Authorization: Bearer token"           # HTTP headers to include in the request
 ```
 
-<!-- ### Local File
-```yaml
-type: connector                                  # Must be `connector` (required)
-driver: local_file                               # Must be `local_file` _(required)_
-
-dsn: "./data/file.csv"                           # File path or location _(required)_  
-allow_host_access: true                          # Allow host-level file path access
-``` -->
-
 ### MotherDuck
 
 ```yaml
@@ -310,4 +301,13 @@ type: connector                                  # Must be `connector` (required
 driver: sqlite                                   # Must be `sqlite` _(required)_
 
 dsn: "./data/database.db"                        # SQLite connection DSN _(required)_
+```
+
+
+### AI
+```yaml
+type: connector                                  # Must be `connector` (required)
+driver: openai                                   # Must be `openai` _(required)_
+
+api_key: '{{ .env.openai_api_key }}'             # Openai api key _(required)_
 ```

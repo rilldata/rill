@@ -18,7 +18,7 @@ rill start my-rill-project
 
 ## Quickstart
 
-Take a look at our [Quick start](get-started/get-started.md) for a quick guide to get started with your own data! We use a public GCS dataset but you can follow along with your own data. Take a look at our [connectors docs](/reference/connectors) for the exact steps to connect to your data.
+Take a look at our [Quick start](get-started/get-started.md) for a quick guide to get started with your own data! We use a public GCS dataset but you can follow along with your own data. Take a look at our [connectors docs](/connect) for the exact steps to connect to your data.
 
 Or, if you're looking for more guides, check out our [Guides](/guides) section!
 
@@ -86,7 +86,7 @@ A compilation of projects that deep dives in Rill's features using  ClickHouse's
 <TileIcon
   header="Connect Data Sources"
   content="Connect to your data sources and start ingesting data into Rill for analysis."
-  link="/reference/connectors"
+  link="/connect"
   icon={<img src="/img/home/connect.svg" alt="Connect" style={{ width: 24, height: 24 }} />}
 />
 <TileIcon
