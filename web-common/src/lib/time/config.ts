@@ -35,8 +35,10 @@ export type TimeRangeMetaSet = Partial<Record<TimeRangePreset, TimeRangeMeta>>;
 export const LATEST_WINDOW_TIME_RANGES: TimeRangeMetaSet = {
   [TimeRangePreset.LAST_SIX_HOURS]: {
     label: "Last 6 Hours",
+
     rangePreset: RangePresetType.OFFSET_ANCHORED,
     defaultComparison: TimeComparisonOption.CONTIGUOUS,
+    minimumTimeGrain: V1TimeGrain.TIME_GRAIN_HOUR,
     start: {
       reference: ReferencePoint.LATEST_DATA,
       transformation: [
@@ -62,8 +64,10 @@ export const LATEST_WINDOW_TIME_RANGES: TimeRangeMetaSet = {
 
   [TimeRangePreset.LAST_24_HOURS]: {
     label: "Last 24 Hours",
+
     rangePreset: RangePresetType.OFFSET_ANCHORED,
     defaultComparison: TimeComparisonOption.DAY,
+    minimumTimeGrain: V1TimeGrain.TIME_GRAIN_HOUR,
     start: {
       reference: ReferencePoint.LATEST_DATA,
       transformation: [
@@ -88,8 +92,10 @@ export const LATEST_WINDOW_TIME_RANGES: TimeRangeMetaSet = {
 
   [TimeRangePreset.LAST_7_DAYS]: {
     label: "Last 7 Days",
+
     rangePreset: RangePresetType.OFFSET_ANCHORED,
     defaultComparison: TimeComparisonOption.WEEK,
+    minimumTimeGrain: V1TimeGrain.TIME_GRAIN_DAY,
     start: {
       reference: ReferencePoint.LATEST_DATA,
       transformation: [
@@ -113,8 +119,10 @@ export const LATEST_WINDOW_TIME_RANGES: TimeRangeMetaSet = {
   },
   [TimeRangePreset.LAST_14_DAYS]: {
     label: "Last 14 Days",
+
     rangePreset: RangePresetType.OFFSET_ANCHORED,
     defaultComparison: TimeComparisonOption.CONTIGUOUS,
+    minimumTimeGrain: V1TimeGrain.TIME_GRAIN_DAY,
     start: {
       reference: ReferencePoint.LATEST_DATA,
       transformation: [
@@ -138,8 +146,10 @@ export const LATEST_WINDOW_TIME_RANGES: TimeRangeMetaSet = {
   },
   [TimeRangePreset.LAST_4_WEEKS]: {
     label: "Last 4 Weeks",
+
     rangePreset: RangePresetType.OFFSET_ANCHORED,
     defaultComparison: TimeComparisonOption.CONTIGUOUS,
+    minimumTimeGrain: V1TimeGrain.TIME_GRAIN_WEEK,
     start: {
       reference: ReferencePoint.LATEST_DATA,
       transformation: [
@@ -163,8 +173,10 @@ export const LATEST_WINDOW_TIME_RANGES: TimeRangeMetaSet = {
   },
   [TimeRangePreset.LAST_3_MONTHS]: {
     label: "Last 3 Months",
+
     rangePreset: RangePresetType.OFFSET_ANCHORED,
     defaultComparison: TimeComparisonOption.CONTIGUOUS,
+    minimumTimeGrain: V1TimeGrain.TIME_GRAIN_MONTH,
     start: {
       reference: ReferencePoint.LATEST_DATA,
       transformation: [
@@ -188,8 +200,10 @@ export const LATEST_WINDOW_TIME_RANGES: TimeRangeMetaSet = {
   },
   [TimeRangePreset.LAST_12_MONTHS]: {
     label: "Last 12 Months",
+
     rangePreset: RangePresetType.OFFSET_ANCHORED,
     defaultComparison: TimeComparisonOption.YEAR,
+    minimumTimeGrain: V1TimeGrain.TIME_GRAIN_MONTH,
     start: {
       reference: ReferencePoint.LATEST_DATA,
       transformation: [
@@ -226,8 +240,10 @@ export const LATEST_WINDOW_TIME_RANGES: TimeRangeMetaSet = {
 export const PERIOD_TO_DATE_RANGES: TimeRangeMetaSet = {
   [TimeRangePreset.TODAY]: {
     label: "Today",
+
     rangePreset: RangePresetType.PERIOD_ANCHORED,
     defaultComparison: TimeComparisonOption.DAY,
+    minimumTimeGrain: V1TimeGrain.TIME_GRAIN_HOUR,
     start: {
       reference: ReferencePoint.MIN_OF_LATEST_DATA_AND_NOW,
       transformation: [
@@ -250,8 +266,10 @@ export const PERIOD_TO_DATE_RANGES: TimeRangeMetaSet = {
   },
   [TimeRangePreset.WEEK_TO_DATE]: {
     label: "Week to Date",
+
     rangePreset: RangePresetType.PERIOD_ANCHORED,
     defaultComparison: TimeComparisonOption.WEEK,
+    minimumTimeGrain: V1TimeGrain.TIME_GRAIN_DAY,
     start: {
       reference: ReferencePoint.MIN_OF_LATEST_DATA_AND_NOW,
       transformation: [
@@ -274,8 +292,11 @@ export const PERIOD_TO_DATE_RANGES: TimeRangeMetaSet = {
   },
   [TimeRangePreset.MONTH_TO_DATE]: {
     label: "Month to Date",
+
+    defaultGrain: V1TimeGrain.TIME_GRAIN_DAY,
     rangePreset: RangePresetType.PERIOD_ANCHORED,
     defaultComparison: TimeComparisonOption.MONTH,
+    minimumTimeGrain: V1TimeGrain.TIME_GRAIN_DAY,
     start: {
       reference: ReferencePoint.MIN_OF_LATEST_DATA_AND_NOW,
       transformation: [
@@ -298,8 +319,11 @@ export const PERIOD_TO_DATE_RANGES: TimeRangeMetaSet = {
   },
   [TimeRangePreset.QUARTER_TO_DATE]: {
     label: "Quarter to Date",
+
+    defaultGrain: V1TimeGrain.TIME_GRAIN_DAY,
     rangePreset: RangePresetType.PERIOD_ANCHORED,
     defaultComparison: TimeComparisonOption.CONTIGUOUS,
+    minimumTimeGrain: V1TimeGrain.TIME_GRAIN_DAY,
     start: {
       reference: ReferencePoint.MIN_OF_LATEST_DATA_AND_NOW,
       transformation: [
@@ -322,8 +346,11 @@ export const PERIOD_TO_DATE_RANGES: TimeRangeMetaSet = {
   },
   [TimeRangePreset.YEAR_TO_DATE]: {
     label: "Year to Date",
+
+    defaultGrain: V1TimeGrain.TIME_GRAIN_DAY,
     rangePreset: RangePresetType.PERIOD_ANCHORED,
     defaultComparison: TimeComparisonOption.YEAR,
+    minimumTimeGrain: V1TimeGrain.TIME_GRAIN_DAY,
     start: {
       reference: ReferencePoint.MIN_OF_LATEST_DATA_AND_NOW,
       transformation: [
@@ -349,8 +376,11 @@ export const PERIOD_TO_DATE_RANGES: TimeRangeMetaSet = {
 export const PREVIOUS_COMPLETE_DATE_RANGES: TimeRangeMetaSet = {
   [TimeRangePreset.YESTERDAY_COMPLETE]: {
     label: "Yesterday",
+
+    defaultGrain: V1TimeGrain.TIME_GRAIN_HOUR,
     rangePreset: RangePresetType.PERIOD_ANCHORED,
     defaultComparison: TimeComparisonOption.CONTIGUOUS,
+    minimumTimeGrain: V1TimeGrain.TIME_GRAIN_DAY,
     start: {
       reference: ReferencePoint.LATEST_DATA,
       transformation: [
@@ -375,9 +405,12 @@ export const PREVIOUS_COMPLETE_DATE_RANGES: TimeRangeMetaSet = {
     },
   },
   [TimeRangePreset.PREVIOUS_WEEK_COMPLETE]: {
-    label: "Previous week complete",
+    label: "Previous week",
+
+    defaultGrain: V1TimeGrain.TIME_GRAIN_DAY,
     rangePreset: RangePresetType.PERIOD_ANCHORED,
     defaultComparison: TimeComparisonOption.CONTIGUOUS,
+    minimumTimeGrain: V1TimeGrain.TIME_GRAIN_DAY,
     start: {
       reference: ReferencePoint.LATEST_DATA,
       transformation: [
@@ -402,9 +435,12 @@ export const PREVIOUS_COMPLETE_DATE_RANGES: TimeRangeMetaSet = {
     },
   },
   [TimeRangePreset.PREVIOUS_MONTH_COMPLETE]: {
-    label: "Previous month complete",
+    label: "Previous month",
+
+    defaultGrain: V1TimeGrain.TIME_GRAIN_DAY,
     rangePreset: RangePresetType.PERIOD_ANCHORED,
     defaultComparison: TimeComparisonOption.CONTIGUOUS,
+    minimumTimeGrain: V1TimeGrain.TIME_GRAIN_MONTH,
     start: {
       reference: ReferencePoint.LATEST_DATA,
       transformation: [
@@ -429,9 +465,12 @@ export const PREVIOUS_COMPLETE_DATE_RANGES: TimeRangeMetaSet = {
     },
   },
   [TimeRangePreset.PREVIOUS_QUARTER_COMPLETE]: {
-    label: "Previous quarter complete",
+    label: "Previous quarter",
+
+    defaultGrain: V1TimeGrain.TIME_GRAIN_DAY,
     rangePreset: RangePresetType.PERIOD_ANCHORED,
     defaultComparison: TimeComparisonOption.CONTIGUOUS,
+    minimumTimeGrain: V1TimeGrain.TIME_GRAIN_QUARTER,
     start: {
       reference: ReferencePoint.MIN_OF_LATEST_DATA_AND_NOW,
       transformation: [
@@ -456,9 +495,11 @@ export const PREVIOUS_COMPLETE_DATE_RANGES: TimeRangeMetaSet = {
     },
   },
   [TimeRangePreset.PREVIOUS_YEAR_COMPLETE]: {
-    label: "Previous year complete",
+    label: "Previous year",
+    defaultGrain: V1TimeGrain.TIME_GRAIN_DAY,
     rangePreset: RangePresetType.PERIOD_ANCHORED,
     defaultComparison: TimeComparisonOption.CONTIGUOUS,
+    minimumTimeGrain: V1TimeGrain.TIME_GRAIN_YEAR,
     start: {
       reference: ReferencePoint.MIN_OF_LATEST_DATA_AND_NOW,
       transformation: [
@@ -503,7 +544,6 @@ export const DEFAULT = {
   defaultComparison: TimeComparisonOption.CONTIGUOUS,
 };
 
-// TODO: get rid of Partial here
 export const DEFAULT_TIME_RANGES: TimeRangeMetaSet = {
   ...LATEST_WINDOW_TIME_RANGES,
   ...PERIOD_TO_DATE_RANGES,

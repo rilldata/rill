@@ -234,7 +234,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			// Init AI client
 			var aiClient ai.Client
 			if conf.OpenAIAPIKey != "" {
-				aiClient, err = ai.NewOpenAI(conf.OpenAIAPIKey)
+				aiClient, err = ai.NewOpenAI(conf.OpenAIAPIKey, nil)
 				if err != nil {
 					logger.Fatal("error creating OpenAI client", zap.Error(err))
 				}

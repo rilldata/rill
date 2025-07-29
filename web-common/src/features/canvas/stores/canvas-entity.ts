@@ -1,3 +1,5 @@
+import { goto } from "$app/navigation";
+import { page } from "$app/stores";
 import {
   useCanvas,
   type CanvasResponse,
@@ -12,6 +14,7 @@ import {
   type V1Resource,
   type V1ThemeSpec,
 } from "@rilldata/web-common/runtime-client";
+import chroma, { type Color } from "chroma-js";
 import {
   derived,
   get,
@@ -24,6 +27,7 @@ import { parseDocument } from "yaml";
 import type { FileArtifact } from "../../entity-management/file-artifact";
 import { fileArtifacts } from "../../entity-management/file-artifacts";
 import { ResourceKind } from "../../entity-management/resource-selectors";
+import { updateThemeVariables } from "../../themes/actions";
 import type { BaseCanvasComponent } from "../components/BaseCanvasComponent";
 import type { CanvasComponentType, ComponentSpec } from "../components/types";
 import {
@@ -34,12 +38,8 @@ import {
 } from "../components/util";
 import { Filters } from "./filters";
 import { Grid } from "./grid";
-import { updateThemeVariables } from "../../themes/actions";
 import { CanvasResolvedSpec } from "./spec";
 import { TimeControls } from "./time-control";
-import { page } from "$app/stores";
-import { goto } from "$app/navigation";
-import chroma, { type Color } from "chroma-js";
 
 // Store for managing URL search parameters
 // Which may be in the URL or in the Canvas YAML
@@ -74,6 +74,7 @@ export class CanvasEntity {
   firstLoad = true;
   theme: Writable<{ primary?: Color; secondary?: Color }> = writable({});
   unsubscriber: Unsubscriber;
+  lastVisitedState: Writable<string | null> = writable(null);
 
   constructor(
     name: string,
@@ -121,7 +122,12 @@ export class CanvasEntity {
     })();
 
     this.spec = new CanvasResolvedSpec(this.specStore);
-    this.timeControls = new TimeControls(this.specStore, searchParamsStore);
+    this.timeControls = new TimeControls(
+      this.specStore,
+      searchParamsStore,
+      undefined,
+      this.name,
+    );
     this.filters = new Filters(this.spec, searchParamsStore);
 
     searchParamsStore.subscribe((searchParams) => {
@@ -171,6 +177,24 @@ export class CanvasEntity {
   // Not currently being used
   unsubscribe = () => {
     // this.unsubscriber();
+  };
+
+  setTheme = (theme: V1ThemeSpec | undefined) => {
+    updateThemeVariables(theme);
+  };
+
+  saveSnapshot = (filterState: string) => {
+    this.lastVisitedState.set(filterState);
+  };
+
+  restoreSnapshot = async () => {
+    const lastVisitedState = get(this.lastVisitedState);
+
+    if (lastVisitedState) {
+      await goto(`?${lastVisitedState}`, {
+        replaceState: true,
+      });
+    }
   };
 
   duplicateItem = (id: string) => {

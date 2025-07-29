@@ -89,15 +89,16 @@ func TestMySQLToDuckDBTransfer(t *testing.T) {
 	port, err := container.MappedPort(ctx, "3306/tcp")
 	require.NoError(t, err)
 
-	dsn := fmt.Sprintf("myuser:mypassword@tcp(%s:%d)/mydb?multiStatements=true", host, port.Int())
+	goDSN := fmt.Sprintf("myuser:mypassword@tcp(%s:%d)/mydb?multiStatements=true", host, port.Int())
 
-	db, err := sql.Open("mysql", dsn)
+	db, err := sql.Open("mysql", goDSN)
 	require.NoError(t, err)
 	defer db.Close()
 
 	_, err = db.ExecContext(ctx, mysqlInitStmt)
 	require.NoError(t, err)
 
+	dsn := fmt.Sprintf("mysql://myuser:mypassword@%s:%d/mydb", host, port.Int())
 	t.Run("model_executor_mysql_to_duckDB", func(t *testing.T) {
 		mysqlToDuckDB(t, dsn)
 	})

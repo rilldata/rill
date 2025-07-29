@@ -150,24 +150,3 @@
     </DropdownMenu.Root>
   </div>
 </div>
-
-<style lang="postcss">
-  button {
-    @apply w-[34px] h-[26px] rounded-2xl;
-    @apply flex items-center justify-center;
-    @apply bg-surface;
-  }
-
-  button.addBorder {
-    @apply border border-dashed border-slate-300;
-  }
-
-  button:hover {
-    @apply bg-slate-100;
-  }
-
-  button:active,
-  .active {
-    @apply bg-slate-200;
-  }
-</style>
