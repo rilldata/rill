@@ -248,14 +248,6 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 
 	// Determine connection options based on configuration priority
 	switch {
-	case conf.DSN != "":
-		// Default DSN to use for both connections
-		opts, err := clickhouse.ParseDSN(conf.DSN)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse DSN: %w", err)
-		}
-		readOpts, writeOpts = opts, opts
-
 	case conf.ReadDSN != "" && conf.WriteDSN != "":
 		// Separate read and write DSNs
 		if readOpts, err = clickhouse.ParseDSN(conf.ReadDSN); err != nil {
@@ -264,38 +256,17 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		if writeOpts, err = clickhouse.ParseDSN(conf.WriteDSN); err != nil {
 			return nil, fmt.Errorf("failed to parse write DSN: %w", err)
 		}
-
+	case conf.DSN != "":
+		// Single DSN for both read and write
+		var opts *clickhouse.Options
+		if opts, err = clickhouse.ParseDSN(conf.DSN); err != nil {
+			return nil, fmt.Errorf("failed to parse DSN: %w", err)
+		}
+		readOpts, writeOpts = opts, opts
 	case conf.ReadDSN != "" || conf.WriteDSN != "":
 		return nil, errors.New("when not providing a 'dsn', both 'read_dsn' and 'write_dsn' must be specified for separate read/write connections")
-
-	case conf.Host != "":
-		// Host-based configuration
-		opts := buildOptsFromOptions(conf)
-		readOpts, writeOpts = opts, opts
-
-	case conf.Provision:
-		// Embedded ClickHouse
-		dataDir, err := st.DataDir(instanceID)
-		if err != nil {
-			return nil, err
-		}
-		tempDir, err := st.TempDir(instanceID)
-		if err != nil {
-			return nil, err
-		}
-
-		embed, err = newEmbedClickHouse(conf.EmbedPort, dataDir, tempDir, logger)
-		if err != nil {
-			return nil, err
-		}
-		opts, err := embed.start()
-		if err != nil {
-			return nil, err
-		}
-		readOpts, writeOpts = opts, opts
-
 	default:
-		return nil, errors.New("no clickhouse connection configured: 'dsn', 'read_dsn'/'write_dsn', 'host' or 'managed: true' must be set")
+		return nil, errors.New("must specify either 'dsn' or both 'read_dsn' and 'write_dsn'")
 	}
 
 	// Apply common configuration to both connection options
