@@ -2990,7 +2990,6 @@ export const createRuntimeServiceGitPull = <
 };
 /**
  * @summary GitPush pushes the local changes to the remote git repo equivalent to `git push` command.
-The difference between this and PushTiGithub is that this does not create a new repo.
 It only pushes the changes to the existing remote repo.
  */
 export const runtimeServiceGitPush = (
@@ -3052,7 +3051,6 @@ export type RuntimeServiceGitPushMutationError = ErrorType<RpcStatus>;
 
 /**
  * @summary GitPush pushes the local changes to the remote git repo equivalent to `git push` command.
-The difference between this and PushTiGithub is that this does not create a new repo.
 It only pushes the changes to the existing remote repo.
  */
 export const createRuntimeServiceGitPush = <

@@ -306,8 +306,8 @@ func setupTestGitRepository(t *testing.T) string {
 
 	// Push to bare repository
 	cmd = exec.Command("git", "-C", workingDir, "push", "origin", "main")
-	err = cmd.Run()
-	require.NoError(t, err, "failed to push initial commit")
+	output, err := cmd.CombinedOutput()
+	require.NoError(t, err, "failed to push initial commit "+string(output))
 
 	return remoteDir
 }
@@ -337,8 +337,8 @@ func createRemoteCommit(t *testing.T, remoteDir, fileName, content, commitMessag
 	require.NoError(t, err, "failed to commit file")
 
 	cmd = exec.Command("git", "-C", workingDir, "push", "origin", "main")
-	err = cmd.Run()
-	require.NoError(t, err, "failed to push commit")
+	output, err := cmd.CombinedOutput()
+	require.NoError(t, err, "failed to push commit "+string(output))
 }
 
 // createRemoteBranch creates a new branch with content in the remote repository
@@ -371,7 +371,10 @@ func createRemoteBranch(t *testing.T, remoteDir, branchName, fileName, content, 
 	require.NoError(t, err, "failed to commit file")
 
 	cmd = exec.Command("git", "-C", workingDir, "push", "origin", branchName)
-	err = cmd.Run()
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Logf("Git push output: %s", string(output))
+	}
 	require.NoError(t, err, "failed to push branch")
 }
 

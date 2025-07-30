@@ -306,7 +306,6 @@ service RuntimeService {
   }
   
   // GitPush pushes the local changes to the remote git repo equivalent to `git push` command.
-  // The difference between this and PushTiGithub is that this does not create a new repo.
   // It only pushes the changes to the existing remote repo.
   rpc GitPush(GitPushRequest) returns (GitPushResponse) {
     option (google.api.http) = {

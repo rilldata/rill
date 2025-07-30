@@ -166,7 +166,6 @@ type RuntimeServiceClient interface {
 	// Force can be set to true to force the pull and overwrite any local changes.
 	GitPull(ctx context.Context, in *GitPullRequest, opts ...grpc.CallOption) (*GitPullResponse, error)
 	// GitPush pushes the local changes to the remote git repo equivalent to `git push` command.
-	// The difference between this and PushTiGithub is that this does not create a new repo.
 	// It only pushes the changes to the existing remote repo.
 	GitPush(ctx context.Context, in *GitPushRequest, opts ...grpc.CallOption) (*GitPushResponse, error)
 }
@@ -756,7 +755,6 @@ type RuntimeServiceServer interface {
 	// Force can be set to true to force the pull and overwrite any local changes.
 	GitPull(context.Context, *GitPullRequest) (*GitPullResponse, error)
 	// GitPush pushes the local changes to the remote git repo equivalent to `git push` command.
-	// The difference between this and PushTiGithub is that this does not create a new repo.
 	// It only pushes the changes to the existing remote repo.
 	GitPush(context.Context, *GitPushRequest) (*GitPushResponse, error)
 	mustEmbedUnimplementedRuntimeServiceServer()

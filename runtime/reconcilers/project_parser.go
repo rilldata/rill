@@ -114,6 +114,7 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 		return runtime.ReconcileResult{Err: fmt.Errorf("failed to access repo: %w", err)}
 	}
 	defer release()
+	// TODO: The project parser spec should accept a `Trigger` field to allow manual triggering of the parser which should pull the repo.
 	err = repo.Pull(ctx, &drivers.PullOptions{UserTriggered: r.C.InstanceID != "default"})
 	if err != nil {
 		return runtime.ReconcileResult{Err: fmt.Errorf("failed to pull repo: %w", err)}

@@ -435,7 +435,7 @@ func (r *repo) Status(ctx context.Context) (*drivers.RepoStatus, error) {
 	}
 	defer r.mu.RUnlock()
 
-	// run git fetch - only updates the remote tracking branche and not the working tree.
+	// run git fetch - only updates the remote tracking branch and not the working tree.
 	err = r.git.fetchCurrentBranch(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch current branch: %w", err)

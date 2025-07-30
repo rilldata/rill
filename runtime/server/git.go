@@ -65,7 +65,6 @@ func (s *Server) GitPush(ctx context.Context, req *runtimev1.GitPushRequest) (*r
 	if err != nil {
 		if errors.Is(err, drivers.ErrRemoteAhead) {
 			return nil, status.Error(codes.FailedPrecondition, "remote repository has changes that are not in local state, please pull first")
-
 		}
 		return nil, status.Errorf(codes.Internal, "failed to push: %v", err)
 	}
