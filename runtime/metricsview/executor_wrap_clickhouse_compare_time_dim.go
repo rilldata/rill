@@ -28,27 +28,36 @@ func (e *Executor) wrapClickhouseCompareTimeDimWalk(a *AST, n *SelectNode) {
 		if a.query.TimeRange != nil && a.query.TimeRange.TimeDimension != "" {
 			timeDim = a.query.TimeRange.TimeDimension
 		}
-		// warp the select node in an outer select if it has a comparison time dimension, but change the name of inner time dimension
 		for _, qd := range a.query.Dimensions {
 			if a.query.ComparisonTimeRange != nil && qd.Compute != nil && qd.Compute.TimeFloor != nil {
 				if strings.EqualFold(qd.Compute.TimeFloor.Dimension, timeDim) {
+					dim, err := a.lookupDimension(timeDim, false)
+					if err != nil { // this should never happen
+						panic(fmt.Errorf("failed to lookup time dimension %q: %w", timeDim, err))
+					}
+					if dim.Name != dim.Column {
+						// if the underlying column name is already different from dim name that will be used in the query, we don't need to wrap
+						break
+					}
 					// append hash of time dim to the compare name to have diff alias as the column name otherwise clickhouse bypasses the date calculations
 					// calculate non crypto hash of the name which should be fast
-					hash := crc32.ChecksumIEEE([]byte(qd.Name))
-					uniqName := fmt.Sprintf("%s_comp_%x", qd.Name, hash)
+					hash := crc32.ChecksumIEEE([]byte(dim.Name))
+					uniqName := fmt.Sprintf("%s_comp_%x", dim.Name, hash)
+					// warp the select node in an outer select, but change the name of inner time dimension
 					a.wrapSelect(n, a.generateIdentifier())
 					for i, f := range n.FromSelect.DimFields {
-						if f.Name == qd.Name {
+						if f.Name == dim.Name {
 							// change the name of the inner query dimension
 							n.FromSelect.DimFields[i].Name = uniqName
 						}
 					}
 					for i, f := range n.DimFields {
-						if f.Name == qd.Name {
+						if f.Name == dim.Name {
 							// select inner dim in the outer query using uniqName but keep alias as actual query dimension name so change the expression and keep f.Name as is
 							n.DimFields[i].Expr = a.sqlForMember(n.FromSelect.Alias, uniqName)
 						}
 					}
+					break
 				}
 			}
 		}
