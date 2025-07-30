@@ -83,6 +83,13 @@ type configProperties struct {
 	Extras             map[string]any `mapstructure:",remain"`
 }
 
+func (c *configProperties) validate() error {
+	if c.DSN != "" && (c.Account != "" || c.User != "" || c.Database != "" || c.Password != "" || c.Schema != "" || c.Warehouse != "" || c.Role != "" || c.Authenticator != "" || c.PrivateKey != "") {
+		return errors.New("snowflake: set either `dsn` or individual properties, not both")
+	}
+	return nil
+}
+
 func (cp configProperties) resolveDSN() (string, error) {
 	if cp.DSN != "" {
 		return cp.DSN, nil
@@ -140,6 +147,9 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 	conf := &configProperties{}
 	err := mapstructure.WeakDecode(config, conf)
 	if err != nil {
+		return nil, err
+	}
+	if err := conf.validate(); err != nil {
 		return nil, err
 	}
 

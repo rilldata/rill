@@ -191,6 +191,20 @@ type configProperties struct {
 	ReadTimeout string `mapstructure:"read_timeout"`
 }
 
+func (c *configProperties) validate() error {
+	if c.DSN != "" {
+		if c.Host != "" || c.Port != 0 || c.Username != "" || c.Password != "" || c.Database != "" {
+			return errors.New("either 'dsn' or 'host', 'port', 'username', 'password', and 'database' must be set, but not both")
+		}
+	}
+	if c.Managed {
+		if c.DSN != "" || c.Host != "" || c.Port != 0 || c.Username != "" || c.Password != "" || c.Database != "" {
+			return errors.New("managed ClickHouse does not support 'dsn', 'host', 'port', 'username', 'password', or 'database' properties")
+		}
+	}
+	return nil
+}
+
 // Open connects to Clickhouse using std API.
 // Connection string format : https://github.com/ClickHouse/clickhouse-go?tab=readme-ov-file#dsn
 func (d driver) Open(instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
@@ -206,6 +220,8 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		return nil, err
 	}
 
+	// Set defaults
+
 	// If the managed flag is set we are free to allow overwriting tables.
 	if conf.Managed {
 		conf.Mode = modeReadWrite
@@ -214,6 +230,11 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 	// Default to read-only mode if not set
 	if conf.Mode == "" {
 		conf.Mode = modeReadOnly
+	}
+
+	// Validate configs
+	if err := conf.validate(); err != nil {
+		return nil, err
 	}
 
 	// build clickhouse options
