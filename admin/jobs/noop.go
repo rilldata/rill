@@ -95,3 +95,7 @@ func (n *noop) DeleteExpiredDeviceAuthCodes(ctx context.Context) (*InsertResult,
 func (n *noop) DeleteExpiredTokens(ctx context.Context) (*InsertResult, error) {
 	return nil, nil
 }
+
+func (n *noop) DeleteExpiredVirtualFiles(ctx context.Context) (*InsertResult, error) {
+	return nil, nil
+}

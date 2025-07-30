@@ -99,6 +99,15 @@ func New(ctx context.Context, dsn string, adm *admin.Service) (jobs.Client, erro
 
 	river.AddWorker(workers, &CheckProvisionersWorker{admin: adm, logger: adm.Logger})
 	river.AddWorker(workers, &BillingReporterWorker{admin: adm, logger: billingLogger})
+	river.AddWorker(workers, &BillingReporterWorker{admin: adm, logger: billingLogger})
+	river.AddWorker(workers, &DeleteExpiredAuthCodesWorker{admin: adm, logger: adm.Logger})
+	river.AddWorker(workers, &DeleteExpiredDeviceAuthCodesWorker{admin: adm, logger: adm.Logger})
+	river.AddWorker(workers, &DeleteExpiredTokensWorker{admin: adm})
+	river.AddWorker(workers, &DeleteExpiredVirtualFilesWorker{admin: adm})
+	river.AddWorker(workers, &DeleteUnusedAssetsWorker{admin: adm})
+	river.AddWorker(workers, &DeploymentsHealthCheckWorker{admin: adm, logger: adm.Logger})
+	river.AddWorker(workers, &HibernateExpiredDeploymentsWorker{admin: adm, logger: adm.Logger})
+	river.AddWorker(workers, &RunAutoscalerWorker{admin: adm, logger: adm.Logger})
 
 	periodicJobs := []*river.PeriodicJob{
 		// NOTE: Add new periodic jobs here
@@ -117,6 +126,7 @@ func New(ctx context.Context, dsn string, adm *admin.Service) (jobs.Client, erro
 		newPeriodicJob(&DeleteExpiredAuthCodesArgs{}, "0 */6 * * *", true),                // every 6 hours
 		newPeriodicJob(&DeleteExpiredDeviceAuthCodesArgs{}, "0 */6 * * *", true),          // every 6 hours
 		newPeriodicJob(&DeleteExpiredTokensArgs{}, "0 */6 * * *", true),                   // every 6 hours
+		newPeriodicJob(&DeleteExpiredVirtualFilesArgs{}, "0 */6 * * *", true),             // every 6 hours
 	}
 
 	// Wire our zap logger to a slog logger for the river client
@@ -503,6 +513,26 @@ func (c *Client) DeleteExpiredTokens(ctx context.Context) (*jobs.InsertResult, e
 
 	if res.UniqueSkippedAsDuplicate {
 		c.logger.Debug("DeleteExpiredTokens job skipped as duplicate")
+	}
+
+	return &jobs.InsertResult{
+		ID:        res.Job.ID,
+		Duplicate: res.UniqueSkippedAsDuplicate,
+	}, nil
+}
+
+func (c *Client) DeleteExpiredVirtualFiles(ctx context.Context) (*jobs.InsertResult, error) {
+	res, err := c.riverClient.Insert(ctx, DeleteExpiredVirtualFilesArgs{}, &river.InsertOpts{
+		UniqueOpts: river.UniqueOpts{
+			ByArgs: true,
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if res.UniqueSkippedAsDuplicate {
+		c.logger.Debug("DeleteExpiredVirtualFiles job skipped as duplicate")
 	}
 
 	return &jobs.InsertResult{
