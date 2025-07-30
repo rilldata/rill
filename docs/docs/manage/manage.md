@@ -5,9 +5,6 @@ title: Manage your Rill Cloud Project
 import TileIcon from '@site/src/components/TileIcon';
 
 
-
-## Explore Rill's Capabilities
-
 <div className="tile-icon-grid">
     <TileIcon
     header="Organization Mangement"
@@ -39,3 +36,11 @@ import TileIcon from '@site/src/components/TileIcon';
     link="/notes"
     />
 </div>
+
+
+## Administration
+
+
+### Rill Cloud
+
+### CLI

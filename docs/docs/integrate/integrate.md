@@ -17,6 +17,13 @@ import TileIcon from '@site/src/components/TileIcon';
     content="Transform and prepare your data with Rill's powerful ETL capabilities."
     link="/build/models"
     />
-
-
 </div>
+
+
+## Embed Rill into your Application
+
+
+
+## Create custom API to retrieve aggregated data
+
+
