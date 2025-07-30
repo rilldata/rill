@@ -115,6 +115,7 @@ func New(ctx context.Context, dsn string, adm *admin.Service) (jobs.Client, erro
 		newPeriodicJob(&CheckProvisionersArgs{}, "0 */15 * * *", true),                    // every 15 minutes
 		newPeriodicJob(&BillingReporterArgs{}, adm.Biller.GetReportingWorkerCron(), true), // configured by the billing service
 		newPeriodicJob(&DeleteExpiredAuthCodesArgs{}, "0 */6 * * *", true),                // every 6 hours
+		newPeriodicJob(&DeleteExpiredDeviceAuthCodesArgs{}, "0 */6 * * *", true),          // every 6 hours
 	}
 
 	// Wire our zap logger to a slog logger for the river client
@@ -461,6 +462,26 @@ func (c *Client) DeleteExpiredAuthCodes(ctx context.Context) (*jobs.InsertResult
 
 	if res.UniqueSkippedAsDuplicate {
 		c.logger.Debug("DeleteExpiredAuthCodes job skipped as duplicate")
+	}
+
+	return &jobs.InsertResult{
+		ID:        res.Job.ID,
+		Duplicate: res.UniqueSkippedAsDuplicate,
+	}, nil
+}
+
+func (c *Client) DeleteExpiredDeviceAuthCodes(ctx context.Context) (*jobs.InsertResult, error) {
+	res, err := c.riverClient.Insert(ctx, DeleteExpiredDeviceAuthCodesArgs{}, &river.InsertOpts{
+		UniqueOpts: river.UniqueOpts{
+			ByArgs: true,
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if res.UniqueSkippedAsDuplicate {
+		c.logger.Debug("DeleteExpiredDeviceAuthCodes job skipped as duplicate")
 	}
 
 	return &jobs.InsertResult{

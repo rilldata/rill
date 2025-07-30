@@ -55,9 +55,6 @@ func (w *Worker) Run(ctx context.Context) error {
 		return w.schedule(ctx, "delete_expired_tokens", w.deleteExpiredAuthTokens, 6*time.Hour)
 	})
 	group.Go(func() error {
-		return w.schedule(ctx, "delete_expired_device_auth_codes", w.deleteExpiredDeviceAuthCodes, 6*time.Hour)
-	})
-	group.Go(func() error {
 		return w.schedule(ctx, "delete_expired_virtual_files", w.deleteExpiredVirtualFiles, 6*time.Hour)
 	})
 	group.Go(func() error {
