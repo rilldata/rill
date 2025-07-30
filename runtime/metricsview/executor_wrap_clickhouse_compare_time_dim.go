@@ -23,7 +23,8 @@ func (e *Executor) wrapClickhouseCompareTimeDimWalk(a *AST, n *SelectNode) {
 	// find node with alias "comparison"
 	if n == nil {
 		return
-	} else if n.Alias == "comparison" {
+	}
+	if n.Alias == "comparison" {
 		timeDim := e.metricsView.TimeDimension
 		if a.query.TimeRange != nil && a.query.TimeRange.TimeDimension != "" {
 			timeDim = a.query.TimeRange.TimeDimension
@@ -35,7 +36,7 @@ func (e *Executor) wrapClickhouseCompareTimeDimWalk(a *AST, n *SelectNode) {
 					if err != nil { // this should never happen
 						panic(fmt.Errorf("failed to lookup time dimension %q: %w", timeDim, err))
 					}
-					if dim.Name != dim.Column {
+					if !strings.EqualFold(dim.Name, dim.Column) {
 						// if the underlying column name is already different from dim name that will be used in the query, we don't need to wrap
 						break
 					}
