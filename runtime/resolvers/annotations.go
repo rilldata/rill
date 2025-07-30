@@ -5,11 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
-	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/metricsview"
 	"github.com/rilldata/rill/runtime/pkg/mapstructureutil"
 )
 
@@ -20,9 +19,8 @@ func init() {
 type annotationsResolver struct {
 	metricsView string
 	annotation  *runtimev1.MetricsViewSpec_Annotation
-	olap        drivers.OLAPStore
-	olapCloser  func()
 	args        *annotationsResolverArgs
+	executor    *metricsview.Executor
 }
 
 type annotationsResolverProps struct {
@@ -31,10 +29,9 @@ type annotationsResolverProps struct {
 }
 
 type annotationsResolverArgs struct {
-	Priority  int                 `mapstructure:"priority"`
-	TimeStart time.Time           `mapstructure:"time_start"`
-	TimeEnd   time.Time           `mapstructure:"time_end"`
-	TimeGrain runtimev1.TimeGrain `mapstructure:"time_grain"`
+	Priority  int                    `mapstructure:"priority"`
+	TimeRange *metricsview.TimeRange `mapstructure:"time_range"`
+	TimeGrain runtimev1.TimeGrain    `mapstructure:"time_grain"`
 }
 
 func newAnnotationsResolver(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolver, error) {
@@ -46,9 +43,6 @@ func newAnnotationsResolver(ctx context.Context, opts *runtime.ResolverOptions) 
 	args := &annotationsResolverArgs{}
 	if err := mapstructureutil.WeakDecode(opts.Args, args); err != nil {
 		return nil, err
-	}
-	if args.TimeStart.IsZero() || args.TimeEnd.IsZero() {
-		return nil, errors.New("time_start and time_end arguments must be specified")
 	}
 
 	ctrl, err := opts.Runtime.Controller(ctx, opts.InstanceID)
@@ -66,6 +60,16 @@ func newAnnotationsResolver(ctx context.Context, opts *runtime.ResolverOptions) 
 		return nil, fmt.Errorf("metrics view %q is invalid", res.Meta.Name.Name)
 	}
 
+	security, err := opts.Runtime.ResolveSecurity(opts.InstanceID, opts.Claims, res)
+	if err != nil {
+		return nil, err
+	}
+
+	ex, err := metricsview.NewExecutor(ctx, opts.Runtime, opts.InstanceID, mv, false, security, args.Priority)
+	if err != nil {
+		return nil, err
+	}
+
 	var annotation *runtimev1.MetricsViewSpec_Annotation
 	for _, specAnnotation := range mv.Annotations {
 		if specAnnotation.Name == props.Annotation {
@@ -77,42 +81,16 @@ func newAnnotationsResolver(ctx context.Context, opts *runtime.ResolverOptions) 
 		return nil, fmt.Errorf("annotation %q not found in metrics view %q", props.Annotation, props.MetricsView)
 	}
 
-	security, err := opts.Runtime.ResolveSecurity(opts.InstanceID, opts.Claims, res)
-	if err != nil {
-		return nil, err
-	}
-
-	if !security.CanAccess() {
-		return nil, runtime.ErrForbidden
-	}
-
-	accessibleMeasures := 0
-	for _, measure := range annotation.Measures {
-		if security.CanAccessField(measure) {
-			accessibleMeasures++
-		}
-	}
-	// None of the measures are accessible, so annotation is not accessible either
-	if accessibleMeasures == 0 && !annotation.Global {
-		return nil, runtime.ErrForbidden
-	}
-
-	olap, olapCloser, err := opts.Runtime.OLAP(ctx, opts.InstanceID, annotation.Connector)
-	if err != nil {
-		return nil, err
-	}
-
 	return &annotationsResolver{
 		metricsView: props.MetricsView,
 		annotation:  annotation,
-		olap:        olap,
-		olapCloser:  olapCloser,
 		args:        args,
+		executor:    ex,
 	}, nil
 }
 
 func (r *annotationsResolver) Close() error {
-	r.olapCloser()
+	r.executor.Close()
 	return nil
 }
 
@@ -132,50 +110,7 @@ func (r *annotationsResolver) Validate(ctx context.Context) error {
 }
 
 func (r *annotationsResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverResult, error) {
-	columns := "*"
-	if r.annotation.HasGrain {
-		// Convert the string grain to an integer so that it is easy to calculate "greater than or equal to".
-		columns += `,(CASE
-  WHEN grain = 'millisecond' THEN 1
-  WHEN grain = 'second' THEN 2
-  WHEN grain = 'minute' THEN 3
-  WHEN grain = 'hour' THEN 4
-  WHEN grain = 'day' THEN 5
-  WHEN grain = 'week' THEN 6
-  WHEN grain = 'month' THEN 7
-  WHEN grain = 'quarter' THEN 8
-  WHEN grain = 'year' THEN 9
-  ELSE 0
-END) as time_grain`
-	}
-
-	var args []any
-
-	start := r.args.TimeStart.Format(time.RFC3339)
-	end := r.args.TimeEnd.Format(time.RFC3339)
-
-	filter := " TRUE "
-	if r.annotation.HasTimeEnd {
-		filter += " AND ((time >= ? AND time < ?) OR (time_end >= ? AND time_end < ?))"
-		args = append(args, start, end, start, end)
-	} else {
-		filter += " AND time >= ? AND time < ?"
-		args = append(args, start, end)
-	}
-	if r.annotation.HasGrain && r.args.TimeGrain != runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
-		filter += " AND (time_grain == 0 OR time_grain >= ?)"
-		args = append(args, int(r.args.TimeGrain))
-	}
-
-	escapedTableName := r.olap.Dialect().EscapeTable(r.annotation.Database, r.annotation.DatabaseSchema, r.annotation.Table)
-
-	sql := fmt.Sprintf("SELECT %s FROM %s WHERE %s ORDER BY time", columns, escapedTableName, filter)
-
-	res, err := r.olap.Query(ctx, &drivers.Statement{
-		Query:    sql,
-		Args:     args,
-		Priority: 0,
-	})
+	res, err := r.executor.Annotations(ctx, r.annotation, r.args.TimeRange, r.args.TimeGrain)
 	if err != nil {
 		return nil, err
 	}

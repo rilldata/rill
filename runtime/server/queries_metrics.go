@@ -9,6 +9,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/metricsview"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"github.com/rilldata/rill/runtime/pkg/rilltime"
@@ -509,9 +510,15 @@ func (s *Server) MetricsViewAnnotations(ctx context.Context, req *runtimev1.Metr
 		},
 		Args: map[string]any{
 			"priority": req.Priority,
-			// TODO: we should look into resolving this using rilltime. But what is the max/min/watermark? Same as metrics view?
-			"time_start": req.TimeRange.Start.AsTime().UTC(),
-			"time_end":   req.TimeRange.End.AsTime().UTC(),
+			"time_range": metricsview.TimeRange{
+				Start:         req.TimeRange.Start.AsTime(),
+				End:           req.TimeRange.End.AsTime(),
+				Expression:    req.TimeRange.Expression,
+				IsoDuration:   req.TimeRange.IsoDuration,
+				IsoOffset:     req.TimeRange.IsoOffset,
+				RoundToGrain:  metricsview.TimeGrainFromProto(req.TimeRange.RoundToGrain),
+				TimeDimension: req.TimeRange.TimeDimension,
+			},
 			"time_grain": req.TimeGrain,
 		},
 		Claims: auth.GetClaims(ctx).SecurityClaims(),
