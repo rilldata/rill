@@ -1,54 +1,129 @@
 <script lang="ts">
-  import type { V1Conversation } from "../../../../runtime-client";
+  import { goto } from "$app/navigation";
+  import { onMount } from "svelte";
   import { useChatCore } from "../../core/chat";
   import ChatFooter from "../../core/input/ChatFooter.svelte";
   import ChatInput from "../../core/input/ChatInput.svelte";
   import ChatMessages from "../../core/messages/ChatMessages.svelte";
   import ConversationSidebar from "./ConversationSidebar.svelte";
 
+  // Props for routing and navigation
+  export let routeType: "new" | "conversation" | undefined = undefined;
+  export let conversationId: string | undefined = undefined;
+  export let organization: string;
+  export let project: string;
+
   // Use core chat logic
   const {
+    currentConversationId,
+    createNewConversation,
+    selectConversation,
     listConversationsData,
     currentConversation,
     isConversationLoading,
     loading,
     handleSendMessage,
-    createNewConversation,
-    selectConversation,
   } = useChatCore();
 
   // Local UI state
   let input = "";
   let chatInputComponent: ChatInput;
+  let hasInitiallyFocused = false;
 
-  // Focus input management
+  // Focus on mount for page refreshes (when we're already on the right conversation)
+  onMount(() => {
+    // For page refreshes where we're already on the right conversation
+    if (
+      routeType === "conversation" &&
+      conversationId === $currentConversationId
+    ) {
+      setTimeout(() => {
+        focusInput();
+        hasInitiallyFocused = true;
+      }, 50); // Slightly longer delay for page refresh
+    }
+  });
+
+  // Handle transition to new conversation route
+  $: if (routeType === "new") {
+    createNewConversation();
+    // Focus after creating new conversation (same as conversation selection)
+    setTimeout(() => focusInput(), 0);
+  }
+
+  // Handle conversation selection when routeType, conversationId, or conversation data changes
+  $: if (
+    routeType === "conversation" &&
+    conversationId &&
+    $listConversationsData?.conversations &&
+    $currentConversationId !== conversationId
+  ) {
+    const conversations = $listConversationsData.conversations || [];
+    const foundConversation = conversations.find(
+      (conv) => conv.id === conversationId,
+    );
+    if (foundConversation) {
+      selectConversation(foundConversation);
+      // Focus immediately after prop change, not after navigation delay
+      setTimeout(() => focusInput(), 0);
+    }
+  }
+
+  // Focus input management with robust retry logic
   function focusInput() {
     if (
       chatInputComponent &&
       typeof chatInputComponent.focusInput === "function"
     ) {
-      chatInputComponent.focusInput();
+      // Use requestAnimationFrame to ensure DOM is ready
+      requestAnimationFrame(() => {
+        chatInputComponent.focusInput();
+
+        // Verify focus stuck after a brief delay
+        setTimeout(() => {
+          if (document.activeElement?.tagName !== "TEXTAREA") {
+            chatInputComponent.focusInput();
+          }
+        }, 50);
+      });
     }
   }
 
-  // Message handling with input focus
+  // Handle conversation clicks - focus after navigation
+  function handleConversationClick() {
+    // Focus immediately after navigation starts, not after delay
+    setTimeout(() => focusInput(), 0);
+  }
+
+  // Handle new conversation click - focus after navigation
+  function handleNewConversationClick() {
+    // Focus immediately after navigation starts, not after delay
+    setTimeout(() => focusInput(), 0);
+  }
+
+  // Message handling with input focus + navigation
   async function onSendMessage(message: string) {
     await handleSendMessage(
       message,
-      () => focusInput(), // onSuccess
+      (conversationId) => {
+        // If this was a new conversation, navigate to the conversation route
+        if (routeType === "new" && conversationId) {
+          goto(`/${organization}/${project}/-/chat/${conversationId}`, {
+            replaceState: true,
+          });
+          // Focus immediately after navigation starts, not after arbitrary delay
+          setTimeout(() => {
+            focusInput();
+          }, 0);
+        } else {
+          // For existing conversations, focus immediately since no navigation
+          focusInput();
+        }
+      },
       (failedMessage) => {
         input = failedMessage;
       }, // onError
     );
-  }
-
-  // Conversation actions with input focus
-  function onNewConversation() {
-    createNewConversation(() => focusInput());
-  }
-
-  function onSelectConversation(conv: V1Conversation) {
-    selectConversation(conv);
   }
 </script>
 
@@ -57,8 +132,8 @@
   <ConversationSidebar
     conversations={$listConversationsData?.conversations || []}
     currentConversation={$currentConversation}
-    {onNewConversation}
-    {onSelectConversation}
+    onConversationClick={handleConversationClick}
+    onNewConversationClick={handleNewConversationClick}
   />
 
   <!-- Main Chat Area -->

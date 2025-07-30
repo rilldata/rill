@@ -1,10 +1,30 @@
 <!-- 
   This layout wraps the chat page to provide proper height constraints
-  and prevent double scrolling issues
+  and passes routing data to the ChatFullPage component
 -->
+<script lang="ts">
+  import { page } from "$app/stores";
+  import Chat from "@rilldata/web-common/features/chat/Chat.svelte";
+  import type { LayoutData } from "./$types";
+
+  export let data: LayoutData;
+
+  // Extract URL parameters
+  $: ({ organization, project } = $page.params);
+  $: ({ routeType, conversationId } = data);
+
+  // Type-safe routeType for Chat component
+  $: typedRouteType = routeType as "new" | "conversation" | undefined;
+</script>
 
 <div class="chat-page-wrapper">
-  <slot />
+  <Chat
+    layout="fullpage"
+    routeType={typedRouteType}
+    {conversationId}
+    {organization}
+    {project}
+  />
 </div>
 
 <style lang="postcss">

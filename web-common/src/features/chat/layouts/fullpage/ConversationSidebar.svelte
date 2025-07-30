@@ -1,19 +1,34 @@
 <script lang="ts">
+  import { page } from "$app/stores";
   import Button from "../../../../components/button/Button.svelte";
   import type { V1Conversation } from "../../../../runtime-client";
 
   export let conversations: V1Conversation[] = [];
   export let currentConversation: V1Conversation | null = null;
-  export let onNewConversation: () => void;
-  export let onSelectConversation: (conversation: V1Conversation) => void;
+  export let onConversationClick: () => void = () => {};
+  export let onNewConversationClick: () => void = () => {};
+
+  // Get URL parameters for href construction
+  $: ({ organization, project } = $page.params);
+
+  // Handle conversation item clicks (for focus, navigation handled by href)
+  function handleConversationItemClick() {
+    onConversationClick();
+  }
+
+  // Handle new conversation button click (for focus, navigation handled by href)
+  function handleNewConversationButtonClick() {
+    onNewConversationClick();
+  }
 </script>
 
 <div class="conversation-sidebar">
   <div class="conversation-sidebar-header">
     <Button
       type="secondary"
-      onClick={onNewConversation}
+      href={`/${organization}/${project}/-/chat/new`}
       class="new-conversation-btn"
+      onClick={handleNewConversationButtonClick}
     >
       + New conversation
     </Button>
@@ -22,15 +37,16 @@
   <div class="conversation-list">
     {#if conversations?.length}
       {#each conversations as conversation}
-        <button
+        <a
+          href={`/${organization}/${project}/-/chat/${conversation.id}`}
           class="conversation-item"
           class:active={conversation.id === currentConversation?.id}
-          on:click={() => onSelectConversation(conversation)}
+          on:click={handleConversationItemClick}
         >
           <div class="conversation-title">
             {conversation.title || "New conversation"}
           </div>
-        </button>
+        </a>
       {/each}
     {:else}
       <div class="no-conversations">No conversations yet</div>
@@ -66,6 +82,7 @@
   }
 
   .conversation-item {
+    display: block;
     width: 100%;
     padding: 0.5rem 0.75rem;
     margin-bottom: 0.125rem;
@@ -75,6 +92,10 @@
     text-align: left;
     cursor: pointer;
     transition: background-color 0.2s;
+    text-decoration: none;
+    color: inherit;
+    font-family: inherit;
+    font-size: inherit;
   }
 
   .conversation-item:hover {

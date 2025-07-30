@@ -36,7 +36,9 @@
 
   // Public method to focus input (can be called from parent)
   export function focusInput() {
-    textarea?.focus();
+    if (textarea) {
+      textarea.focus();
+    }
   }
 
   onMount(() => {

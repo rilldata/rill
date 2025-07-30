@@ -40,7 +40,7 @@
   async function onSendMessage(message: string) {
     await handleSendMessage(
       message,
-      () => focusInput(), // onSuccess
+      (conversationId) => focusInput(), // onSuccess - just focus input for sidebar
       (failedMessage) => {
         input = failedMessage;
       }, // onError

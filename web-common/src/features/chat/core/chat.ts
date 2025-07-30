@@ -429,8 +429,8 @@ const coreActions = {
     currentConversationId.set(conv.id || null);
   },
 
-  async sendMessage(messageText: string): Promise<void> {
-    if (!messageText.trim()) return;
+  async sendMessage(messageText: string): Promise<string | null> {
+    if (!messageText.trim()) return null;
 
     const $runtime = get(runtime);
     const currentId = get(currentConversationId);
@@ -442,7 +442,7 @@ const coreActions = {
       if (!currentId) {
         // No current conversation - create a new one
         const $completeNewConversationMutation = get(completeNewConversation);
-        await $completeNewConversationMutation.mutateAsync({
+        const response = await $completeNewConversationMutation.mutateAsync({
           instanceId: $runtime.instanceId,
           data: {
             // No conversationId for new conversations
@@ -450,6 +450,7 @@ const coreActions = {
             messages: [{ role: "user", content: [{ text: messageText }] }],
           },
         });
+        return response.conversationId || null;
       } else {
         // Existing conversation - add message to it
         const $completeExistingConversationMutation = get(
@@ -462,9 +463,11 @@ const coreActions = {
             messages: [{ role: "user", content: [{ text: messageText }] }],
           },
         });
+        return currentId;
       }
     } catch (e) {
       console.error("Failed to send message:", e);
+      throw e;
     }
   },
 };
@@ -521,12 +524,12 @@ export function useChatCore() {
   // Component-level action wrappers (these add component-specific callbacks)
   async function handleSendMessage(
     message: string,
-    onSuccess?: () => void,
+    onSuccess?: (conversationId: string | null) => void,
     onError?: (message: string) => void,
   ) {
     try {
-      await coreActions.sendMessage(message);
-      onSuccess?.();
+      const conversationId = await coreActions.sendMessage(message);
+      onSuccess?.(conversationId);
     } catch (error) {
       console.error("Failed to send message:", error);
       onError?.(message);
