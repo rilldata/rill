@@ -707,6 +707,11 @@ func (h *ErrorHandler) HandlePanic(ctx context.Context, job *rivertype.JobRow, p
 }
 
 func newPeriodicJob(jobArgs river.JobArgs, cronExpr string, runOnStart bool) *river.PeriodicJob { // nolint:unparam // runOnStart may be used in the future
+	// Skip creating periodic job if cron expression is empty
+	if cronExpr == "" {
+		return nil
+	}
+
 	schedule, err := cron.ParseStandard(cronExpr)
 	if err != nil {
 		panic(err)
