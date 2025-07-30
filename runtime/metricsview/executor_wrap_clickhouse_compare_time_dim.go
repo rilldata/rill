@@ -2,10 +2,10 @@ package metricsview
 
 import (
 	"fmt"
+	"hash/crc32"
 	"strings"
 
 	"github.com/rilldata/rill/runtime/drivers"
-	"hash/crc32"
 )
 
 // wrapClickhouseCompareTimeDim wraps the comparison AST if it has computed time dimension to have different alias than the time column name.
@@ -39,13 +39,13 @@ func (e *Executor) wrapClickhouseCompareTimeDimWalk(a *AST, n *SelectNode) {
 					a.wrapSelect(n, a.generateIdentifier())
 					for i, f := range n.FromSelect.DimFields {
 						if f.Name == qd.Name {
-							// change the name of the inner time dimension to avoid conflicts
+							// change the name of the inner query dimension
 							n.FromSelect.DimFields[i].Name = uniqName
 						}
 					}
 					for i, f := range n.DimFields {
 						if f.Name == qd.Name {
-							// select inner dim as actual time dimension name so just change the expression and keep f.Name as is
+							// select inner dim in the outer query using uniqName but keep alias as actual query dimension name so change the expression and keep f.Name as is
 							n.DimFields[i].Expr = a.sqlForMember(n.FromSelect.Alias, uniqName)
 						}
 					}
