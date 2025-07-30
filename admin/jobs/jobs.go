@@ -32,6 +32,7 @@ type Client interface {
 	PlanChanged(ctx context.Context, billingCustomerID string) (*InsertResult, error)
 
 	CheckProvisioners(ctx context.Context) (*InsertResult, error)
+	BillingReporter(ctx context.Context) (*InsertResult, error)
 }
 
 type InsertResult struct {

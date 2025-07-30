@@ -98,20 +98,22 @@ func New(ctx context.Context, dsn string, adm *admin.Service) (jobs.Client, erro
 	river.AddWorker(workers, &DeleteUnusedServiceTokenWorker{admin: adm, logger: adm.Logger})
 
 	river.AddWorker(workers, &CheckProvisionersWorker{admin: adm, logger: adm.Logger})
+	river.AddWorker(workers, &BillingReporterWorker{admin: adm, logger: billingLogger})
 
 	periodicJobs := []*river.PeriodicJob{
 		// NOTE: Add new periodic jobs here
-		newPeriodicJob(&ValidateDeploymentsArgs{}, "*/30 * * * *", true),         // half-hourly
-		newPeriodicJob(&PaymentFailedGracePeriodCheckArgs{}, "0 1 * * *", true),  // daily at 1am UTC
-		newPeriodicJob(&TrialEndingSoonArgs{}, "5 1 * * *", true),                // daily at 1:05am UTC
-		newPeriodicJob(&TrialEndCheckArgs{}, "10 1 * * *", true),                 // daily at 1:10am UTC
-		newPeriodicJob(&TrialGracePeriodCheckArgs{}, "15 1 * * *", true),         // daily at 1:15am UTC
-		newPeriodicJob(&SubscriptionCancellationCheckArgs{}, "20 1 * * *", true), // daily at 1:20am UTC
-		newPeriodicJob(&DeleteUnusedUserTokenArgs{}, "0 */12 * * *", true),       // every 12 hours
-		newPeriodicJob(&DeleteUnusedServiceTokenArgs{}, "0 */12 * * *", true),    // every 12 hours
-		newPeriodicJob(&deleteUnusedGithubReposArgs{}, "0 */6 * * *", true),      // every 6 hours
-		newPeriodicJob(&HibernateInactiveOrgsArgs{}, "0 7 * * 1", true),          // Monday at 7:00am UTC
-		newPeriodicJob(&CheckProvisionersArgs{}, "0 */15 * * *", true),           // every 15 minutes
+		newPeriodicJob(&ValidateDeploymentsArgs{}, "*/30 * * * *", true),                  // half-hourly
+		newPeriodicJob(&PaymentFailedGracePeriodCheckArgs{}, "0 1 * * *", true),           // daily at 1am UTC
+		newPeriodicJob(&TrialEndingSoonArgs{}, "5 1 * * *", true),                         // daily at 1:05am UTC
+		newPeriodicJob(&TrialEndCheckArgs{}, "10 1 * * *", true),                          // daily at 1:10am UTC
+		newPeriodicJob(&TrialGracePeriodCheckArgs{}, "15 1 * * *", true),                  // daily at 1:15am UTC
+		newPeriodicJob(&SubscriptionCancellationCheckArgs{}, "20 1 * * *", true),          // daily at 1:20am UTC
+		newPeriodicJob(&DeleteUnusedUserTokenArgs{}, "0 */12 * * *", true),                // every 12 hours
+		newPeriodicJob(&DeleteUnusedServiceTokenArgs{}, "0 */12 * * *", true),             // every 12 hours
+		newPeriodicJob(&deleteUnusedGithubReposArgs{}, "0 */6 * * *", true),               // every 6 hours
+		newPeriodicJob(&HibernateInactiveOrgsArgs{}, "0 7 * * 1", true),                   // Monday at 7:00am UTC
+		newPeriodicJob(&CheckProvisionersArgs{}, "0 */15 * * *", true),                    // every 15 minutes
+		newPeriodicJob(&BillingReporterArgs{}, adm.Biller.GetReportingWorkerCron(), true), // configured by the billing service
 	}
 
 	// Wire our zap logger to a slog logger for the river client
@@ -418,6 +420,26 @@ func (c *Client) CheckProvisioners(ctx context.Context) (*jobs.InsertResult, err
 
 	if res.UniqueSkippedAsDuplicate {
 		c.logger.Debug("CheckProvisioners job skipped as duplicate")
+	}
+
+	return &jobs.InsertResult{
+		ID:        res.Job.ID,
+		Duplicate: res.UniqueSkippedAsDuplicate,
+	}, nil
+}
+
+func (c *Client) BillingReporter(ctx context.Context) (*jobs.InsertResult, error) {
+	res, err := c.riverClient.Insert(ctx, BillingReporterArgs{}, &river.InsertOpts{
+		UniqueOpts: river.UniqueOpts{
+			ByArgs: true,
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if res.UniqueSkippedAsDuplicate {
+		c.logger.Debug("BillingReporter job skipped as duplicate")
 	}
 
 	return &jobs.InsertResult{

@@ -76,12 +76,6 @@ func (w *Worker) Run(ctx context.Context) error {
 		return w.schedule(ctx, "deployments_health_check", w.deploymentsHealthCheck, 10*time.Minute)
 	})
 
-	if w.admin.Biller.GetReportingWorkerCron() != "" {
-		group.Go(func() error {
-			return w.scheduleCron(ctx, "run_billing_reporter", w.reportUsage, w.admin.Biller.GetReportingWorkerCron())
-		})
-	}
-
 	// NOTE: Add new scheduled jobs here
 
 	w.logger.Info("worker started")
