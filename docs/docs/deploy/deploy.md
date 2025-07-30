@@ -6,45 +6,80 @@ sidebar_position: 00
 
 import TileIcon from '@site/src/components/TileIcon';
 
-
-
-## Explore Rill's Capabilities
-
 <div className="tile-icon-grid">
     <TileIcon
-    header="Connect Data Sources"
-    content="Connect to your data sources and start ingesting data into Rill for analysis."
-    link="/reference/connectors"
-    icon={<img src="/img/home/connect.svg" alt="Connect" style={{ width: 24, height: 24 }} />}
-    />
-    <TileIcon
-    header="Prepare Your Data"
+    header="Publish your Dashboard"
     content="Transform and prepare your data with Rill's powerful ETL capabilities."
-    link="/build/models"
-    icon={<img src="/img/home/model.svg" alt="Model" style={{ width: 24, height: 24 }} />}
+    link="/build/models/"
     />
     <TileIcon
-    header="Create a Metrics Layer"
-    content="Build a metrics layer to define key business metrics and KPIs."
-    link="/build/metrics-view"
-    icon={<img src="/img/home/metrics.svg" alt="Metrics" style={{ width: 24, height: 24 }} />}
+    header="Configure Deployment Credentials"
+    content="Need incremental refreshes or using ClickHouse Modeling? Click here!"
+    link="/build/advanced-models"
     />
-    <TileIcon
-    header="Explore Your Data"
-    content="Use Rill's interactive data exploration tools to discover insights."
-    link="/explore/dashboard-101"
-    icon={<img src="/img/home/explore.svg" alt="Explore" style={{ width: 24, height: 24 }} />}
-    />
-    <TileIcon
-    header="Embed a Dashboard"
-    content="Embed Rill dashboards into your applications and workflows."
-    link="/integrate/embedding"
-    icon={<img src="/img/home/embed.svg" alt="Embed" style={{ width: 24, height: 24 }} />}
-    />
-    <TileIcon
-    header="Release Notes"
-    content="Curious about what's new?"
-    link="/notes"
-    icon={<img src="/img/home/notification.svg" alt="Embed" style={{ width: 24, height: 24 }} />}
-    />
+
 </div>
+
+Rill Developer is a great tool for building, testing, and viewing your data locally but once your ready to share your findings you'll need to publish the dashboard to Rill Cloud! To understand the differences, see [Rill Developer vs Rill Cloud](/home/concepts/developerVsCloud).
+
+:::tip  first time Publishing?
+Publishing your dashboard to Rill for the first time will prompt you to register or login and will automatically start you 30 day free trial! We'll handle all the small setup things that are needed but you can change these at any time.
+
+:::
+
+
+## Deployment Types
+
+Rill supports two deployment methods for updating your projects:
+
+### GitHub Integration (Recommended)
+- **Access Control** - Manage permissions and user access
+- **Version History** - Track changes and rollback capabilities  
+- **Merge Management** - Review and approve changes through pull requests
+- **CI/CD Integration** - Automate deployments through your existing workflow
+
+### UI Button `Update`
+- **Direct Updates** - Make changes directly in the Rill interface
+- **Immediate Deployment** - Changes are applied instantly
+
+:::tip Recommended Deployment Configuration
+We recommend GitHub integration for production environments as it provides better governance and version control. 
+:::
+
+## Credentials Management
+
+### Environment Variables
+When deploying to Rill Cloud, credentials defined in your local `.env` file are automatically pushed to the cloud environment.
+
+### Connector-Specific Considerations
+Some connectors may not dynamically push credentials to your cloud environment:
+- **S3** - CLI-based authentication
+- **GCS** - Service account configurations  
+- **Azure** - CLI-based authentication
+
+### Troubleshooting
+If you encounter permission or credential errors:
+```bash
+rill env configure
+```
+
+This command will help resolve authentication issues and ensure proper credential setup.
+
+## Performance Considerations
+
+### DuckDB Performance
+When deploying from local development to Rill Cloud, you may notice performance differences with DuckDB-based projects. This is due to:
+
+- **Resource Allocation** - Cloud trial environments have default resource limits
+- **Compute Resources** - Different hardware specifications between local and cloud
+- **Network Latency** - Additional overhead for cloud-based data processing
+
+### Performance Optimization
+If you experience performance degradation:
+1. **Contact Support** - Our team can help optimize resource allocation
+2. **Resource Scaling** - We can adjust compute resources based on your needs
+3. **Query Optimization** - Review and optimize data processing workflows
+
+:::info **Support**
+For performance issues or resource allocation concerns, please contact our support team for assistance.
+:::
