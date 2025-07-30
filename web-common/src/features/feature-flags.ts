@@ -8,20 +8,27 @@ import { runtime } from "../runtime-client/runtime-store";
 
 class FeatureFlag {
   private _internal = false;
+  private _default: boolean;
   private state = writable(false);
   subscribe = this.state.subscribe;
 
-  constructor(scope: "user" | "rill", initial: boolean) {
+  constructor(scope: "user" | "rill", defaultValue: boolean) {
     this._internal = scope === "rill";
-    this.set(initial);
+    this._default = defaultValue;
+    this.set(defaultValue);
   }
 
   get internalOnly() {
     return this._internal;
   }
 
+  get defaultValue() {
+    return this._default;
+  }
+
   toggle = () => this.state.update((n) => !n);
   set = (n: boolean) => this.state.set(n);
+  resetToDefault = () => this.set(this._default);
 }
 
 type FeatureFlagKey = keyof Omit<FeatureFlags, "set">;
@@ -59,6 +66,19 @@ class FeatureFlags {
 
     const updateFlags = (userFlags: V1InstanceFeatureFlags) => {
       this._resolveReady();
+
+      // First, reset all user flags to their defaults
+      const userFlagKeys = Object.keys(this).filter((key) => {
+        const flag = this[key];
+        return flag instanceof FeatureFlag && !flag.internalOnly;
+      });
+
+      for (const key of userFlagKeys) {
+        const flag = this[key] as FeatureFlag;
+        flag.resetToDefault();
+      }
+
+      // Then apply project-specific overrides
       for (const key in userFlags) {
         const flag = this[key] as FeatureFlag | undefined;
         if (!flag || flag.internalOnly) continue;
