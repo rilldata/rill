@@ -90,43 +90,43 @@ func (c *configProperties) validate() error {
 	return nil
 }
 
-func (cp configProperties) resolveDSN() (string, error) {
-	if cp.DSN != "" {
-		return cp.DSN, nil
+func (c *configProperties) resolveDSN() (string, error) {
+	if c.DSN != "" {
+		return c.DSN, nil
 	}
 
-	if cp.Account == "" || cp.User == "" || cp.Database == "" {
+	if c.Account == "" || c.User == "" || c.Database == "" {
 		return "", errors.New("missing required fields: account, user, or database")
 	}
 
-	if cp.Password == "" && cp.PrivateKey == "" {
+	if c.Password == "" && c.PrivateKey == "" {
 		return "", errors.New("either password or privateKey must be provided")
 	}
 
 	cfg := &gosnowflake.Config{
-		Account:   cp.Account,
-		User:      cp.User,
-		Password:  cp.Password,
-		Database:  cp.Database,
-		Schema:    cp.Schema,
-		Warehouse: cp.Warehouse,
-		Role:      cp.Role,
+		Account:   c.Account,
+		User:      c.User,
+		Password:  c.Password,
+		Database:  c.Database,
+		Schema:    c.Schema,
+		Warehouse: c.Warehouse,
+		Role:      c.Role,
 		Params:    map[string]*string{},
 	}
 
-	if cp.PrivateKey != "" {
-		privateKey, err := parseRSAPrivateKey(cp.PrivateKey)
+	if c.PrivateKey != "" {
+		privateKey, err := parseRSAPrivateKey(c.PrivateKey)
 		if err != nil {
 			return "", err
 		}
 		cfg.PrivateKey = privateKey
 		cfg.Authenticator = gosnowflake.AuthTypeJwt
-	} else if cp.Authenticator != "" {
-		cfg.Params["authenticator"] = &cp.Authenticator
+	} else if c.Authenticator != "" {
+		cfg.Params["authenticator"] = &c.Authenticator
 	}
 
 	// Apply extra params
-	for k, v := range cp.Extras {
+	for k, v := range c.Extras {
 		switch val := v.(type) {
 		case string:
 			cfg.Params[k] = &val
