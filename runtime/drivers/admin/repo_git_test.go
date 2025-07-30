@@ -278,6 +278,11 @@ func setupTestGitRepository(t *testing.T) string {
 	err := cmd.Run()
 	require.NoError(t, err, "failed to initialize bare git repository")
 
+	// Set the default branch to main in the bare repository
+	cmd = exec.Command("git", "-C", remoteDir, "symbolic-ref", "HEAD", "refs/heads/main")
+	err = cmd.Run()
+	require.NoError(t, err, "failed to set default branch to main")
+
 	// Create a temporary working directory to add initial content
 	workingDir := t.TempDir()
 	cmd = exec.Command("git", "clone", remoteDir, workingDir)
@@ -303,6 +308,11 @@ func setupTestGitRepository(t *testing.T) string {
 	cmd = exec.Command("git", "-C", workingDir, "commit", "-m", "Initial commit")
 	err = cmd.Run()
 	require.NoError(t, err, "failed to commit files")
+
+	// Set the default branch to main before pushing
+	cmd = exec.Command("git", "-C", workingDir, "branch", "-M", "main")
+	err = cmd.Run()
+	require.NoError(t, err, "failed to rename branch to main")
 
 	// Push to bare repository
 	cmd = exec.Command("git", "-C", workingDir, "push", "origin", "main")
