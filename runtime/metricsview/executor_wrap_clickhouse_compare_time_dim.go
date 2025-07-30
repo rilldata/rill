@@ -28,11 +28,11 @@ func (e *Executor) wrapClickhouseCompareTimeDimWalk(a *AST, n *SelectNode) {
 		if a.query.TimeRange != nil && a.query.TimeRange.TimeDimension != "" {
 			timeDim = a.query.TimeRange.TimeDimension
 		}
-		// warp the select node in an outer select if it has a comparison time dimension, but change the name of inner time dimensions to avoid conflicts
+		// warp the select node in an outer select if it has a comparison time dimension, but change the name of inner time dimension
 		for _, qd := range a.query.Dimensions {
 			if a.query.ComparisonTimeRange != nil && qd.Compute != nil && qd.Compute.TimeFloor != nil {
 				if strings.EqualFold(qd.Compute.TimeFloor.Dimension, timeDim) {
-					// append sha of cf.Name to the compare name to have diff alias as the column name otherwise clickhouse bypasses the date calculations
+					// append hash of time dim to the compare name to have diff alias as the column name otherwise clickhouse bypasses the date calculations
 					// calculate non crypto hash of the name which should be fast
 					hash := crc32.ChecksumIEEE([]byte(qd.Name))
 					uniqName := fmt.Sprintf("%s_comp_%x", qd.Name, hash)
