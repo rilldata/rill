@@ -83,3 +83,7 @@ func (n *noop) CheckProvisioners(ctx context.Context) (*InsertResult, error) {
 func (n *noop) BillingReporter(ctx context.Context) (*InsertResult, error) {
 	return nil, nil
 }
+
+func (n *noop) DeleteExpiredAuthCodes(ctx context.Context) (*InsertResult, error) {
+	return nil, nil
+}

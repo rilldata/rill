@@ -33,6 +33,7 @@ type Client interface {
 
 	CheckProvisioners(ctx context.Context) (*InsertResult, error)
 	BillingReporter(ctx context.Context) (*InsertResult, error)
+	DeleteExpiredAuthCodes(ctx context.Context) (*InsertResult, error)
 }
 
 type InsertResult struct {
