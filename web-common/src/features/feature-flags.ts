@@ -68,12 +68,12 @@ class FeatureFlags {
       this._resolveReady();
 
       // First, reset all user flags to their defaults
-      const allFlagKeys = Object.keys(this).filter((key) => {
+      const userFlagKeys = Object.keys(this).filter((key) => {
         const flag = this[key];
         return flag instanceof FeatureFlag && !flag.internalOnly;
       });
 
-      for (const key of allFlagKeys) {
+      for (const key of userFlagKeys) {
         const flag = this[key] as FeatureFlag;
         flag.resetToDefault();
       }
