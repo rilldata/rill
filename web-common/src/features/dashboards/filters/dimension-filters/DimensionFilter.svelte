@@ -340,6 +340,19 @@
       onToggleFilterMode();
     }
   }
+
+  function handleItemClick(name: string) {
+    if (curMode === DimensionFilterMode.Select) {
+      // Update proxy instead of calling onSelect immediately
+      if (selectedValuesProxy.includes(name)) {
+        selectedValuesProxy = selectedValuesProxy.filter((v) => v !== name);
+      } else {
+        selectedValuesProxy = [...selectedValuesProxy, name];
+      }
+    } else {
+      onSelect(name);
+    }
+  }
 </script>
 
 <svelte:window
@@ -479,11 +492,7 @@
                 role="menuitem"
                 checked={selected}
                 showXForSelected={curExcludeMode}
-                on:click={() => {
-                  selectedValuesProxy = selectedValuesProxy.filter(
-                    (v) => v !== name,
-                  );
-                }}
+                on:click={() => handleItemClick(name)}
               >
                 <span>
                   {#if label.length > 240}
@@ -518,20 +527,7 @@
               checked={curMode === DimensionFilterMode.Select && selected}
               showXForSelected={curExcludeMode}
               disabled={curMode !== DimensionFilterMode.Select}
-              on:click={() => {
-                if (curMode === DimensionFilterMode.Select) {
-                  // Update proxy instead of calling onSelect immediately
-                  if (selectedValuesProxy.includes(name)) {
-                    selectedValuesProxy = selectedValuesProxy.filter(
-                      (v) => v !== name,
-                    );
-                  } else {
-                    selectedValuesProxy = [...selectedValuesProxy, name];
-                  }
-                } else {
-                  onSelect(name);
-                }
-              }}
+              on:click={() => handleItemClick(name)}
             >
               <span>
                 {#if label.length > 240}
