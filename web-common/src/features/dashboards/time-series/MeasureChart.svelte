@@ -9,9 +9,13 @@
     Axis,
     Grid,
   } from "@rilldata/web-common/components/data-graphic/guides";
-  import Annotations, {
-    type Annotation,
-  } from "@rilldata/web-common/components/data-graphic/marks/Annotations.svelte";
+  import AnnotationRangeHighlight from "@rilldata/web-common/components/data-graphic/marks/AnnotationRangeHighlight.svelte";
+  import Annotations from "@rilldata/web-common/components/data-graphic/marks/Annotations.svelte";
+  import AnnotationGroupPopover from "@rilldata/web-common/components/data-graphic/marks/AnnotationGroupPopover.svelte";
+  import type {
+    Annotation,
+    AnnotationGroup,
+  } from "@rilldata/web-common/components/data-graphic/marks/annotations.ts";
   import { ScaleType } from "@rilldata/web-common/components/data-graphic/state";
   import type { ScaleStore } from "@rilldata/web-common/components/data-graphic/state/types";
   import { ComparisonDeltaPreviousSuffix } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
@@ -97,6 +101,7 @@
   let scrub;
   let cursorClass;
   let preventScrubReset;
+  let hoveredAnnotationGroup: AnnotationGroup | undefined;
 
   $: hoveredTime =
     (mouseoverValue?.x instanceof Date && mouseoverValue?.x) ||
@@ -257,6 +262,7 @@
 <div class={`${cursorClass} select-none`}>
   <SimpleDataGraphic
     bind:hovered
+    let:mouseOverThisChart
     bind:mouseoverValue
     {height}
     left={0}
@@ -393,8 +399,22 @@
       stop={scrubEnd}
       timeGrainLabel={TIME_GRAIN[timeGrain].label}
     />
+
+    {#if annotations && $annotations}
+      <Annotations
+        annotations={$annotations}
+        bind:hoveredAnnotationGroup
+        {mouseoverValue}
+        hovered={mouseOverThisChart}
+      />
+    {/if}
+
+    {#if hoveredAnnotationGroup?.hasRange}
+      <AnnotationRangeHighlight annotationGroup={hoveredAnnotationGroup} />
+    {/if}
   </SimpleDataGraphic>
-  {#if annotations}
-    <Annotations annotations={$annotations} />
+
+  {#if hoveredAnnotationGroup}
+    <AnnotationGroupPopover annotationGroup={hoveredAnnotationGroup} />
   {/if}
 </div>

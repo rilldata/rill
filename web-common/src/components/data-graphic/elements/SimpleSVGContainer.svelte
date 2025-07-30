@@ -11,10 +11,10 @@ to the props.
   import type { DomainCoordinates } from "../constants/types";
   import type { ScaleStore, SimpleConfigurationStore } from "../state/types";
 
-  const config = getContext(contexts.config) as SimpleConfigurationStore;
-  const xScale = getContext(contexts.scale("x")) as ScaleStore;
-  const yScale = getContext(contexts.scale("y")) as ScaleStore;
-  const { coordinates, mousePositionToDomain } =
+  const config = getContext(contexts.config);
+  const xScale = getContext(contexts.scale("x"));
+  const yScale = getContext(contexts.scale("y"));
+  const { coordinates, mousePositionToDomain, mouseover } =
     mousePositionToDomainActionFactory();
 
   const scrubActionObject = createScrubAction({
@@ -41,11 +41,13 @@ to the props.
 
   export let mouseoverValue: DomainCoordinates | undefined = undefined;
   export let hovered: boolean = false;
+  export let mouseOverThisChart: boolean = false;
   export let overflowHidden = true;
 
   $: mouseoverValue = $coordinates;
 
   $: hovered = $coordinates.x !== undefined;
+  $: mouseOverThisChart = $mouseover;
 </script>
 
 <!-- svelte-ignore a11y-click-events-have-key-events -->
