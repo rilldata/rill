@@ -203,7 +203,7 @@ async function login(deployPage: Page) {
   // Login 1st to start deploy.
 
   // Fill in the email
-  const emailInput = deployPage.locator('input[name="email"]');
+  const emailInput = deployPage.locator('input[name="username"]');
   await emailInput.waitFor({ state: "visible" });
   await emailInput.click();
   await emailInput.fill(process.env.RILL_DEVTOOL_E2E_ADMIN_ACCOUNT_EMAIL);
