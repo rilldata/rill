@@ -3,7 +3,7 @@
   import {
     DimensionFilterMode,
     DimensionFilterModeOptions,
-  } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/dimension-filter-mode";
+  } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/constants";
 
   export let mode: DimensionFilterMode;
   export let disabled: boolean = false;

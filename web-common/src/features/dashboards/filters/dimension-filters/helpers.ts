@@ -1,4 +1,4 @@
-import { DimensionFilterMode } from "./dimension-filter-mode";
+import { DimensionFilterMode } from "./constants";
 
 export function getSearchPlaceholder(mode: DimensionFilterMode): string {
   switch (mode) {

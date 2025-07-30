@@ -2,7 +2,7 @@
   import { Button } from "@rilldata/web-common/components/button";
   import Label from "@rilldata/web-common/components/forms/Label.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
-  import { DimensionFilterMode } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/dimension-filter-mode";
+  import { DimensionFilterMode } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/constants";
 
   export let mode: DimensionFilterMode;
   export let excludeMode: boolean;

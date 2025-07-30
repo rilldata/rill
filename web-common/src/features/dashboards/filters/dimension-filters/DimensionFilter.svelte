@@ -7,13 +7,13 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
-  import { DimensionFilterMode } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/dimension-filter-mode";
+  import { DimensionFilterMode } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/constants";
   import {
     getEffectiveSelectedValues,
     getItemLists,
     getSearchPlaceholder,
     shouldDisableApplyButton,
-  } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/dimension-filter-helpers";
+  } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/helpers";
   import {
     mergeDimensionSearchValues,
     splitDimensionSearchText,
