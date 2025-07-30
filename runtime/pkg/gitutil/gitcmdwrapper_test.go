@@ -147,6 +147,12 @@ func setupTestRepository(t *testing.T) string {
 	cmd := exec.Command("git", "init", tempDir)
 	output, err := cmd.CombinedOutput()
 	require.NoError(t, err, "failed to initialize git repository ", string(output))
+
+	// Set the default branch to main
+	cmd = exec.Command("git", "-C", tempDir, "checkout", "-b", "main")
+	output, err = cmd.CombinedOutput()
+	require.NoError(t, err, "failed to create main branch ", string(output))
+
 	setupGitConfig(t, tempDir)
 
 	// Create and commit multiple files

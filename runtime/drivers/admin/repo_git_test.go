@@ -2,6 +2,7 @@ package admin
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -63,6 +64,7 @@ func TestGitRepo_pullInner(t *testing.T) {
 					SingleBranch:  true,
 				})
 				require.NoError(t, err)
+				setupGitConfig(t, localDir) // Ensure git config is set up
 				return &gitRepo{
 					h:             &Handle{logger: zap.NewNop()},
 					repoDir:       localDir,
@@ -105,6 +107,8 @@ func TestGitRepo_pullInner(t *testing.T) {
 					SingleBranch:  false, // Allow multiple branches for editable mode
 				})
 				require.NoError(t, err)
+
+				setupGitConfig(t, localDir) // Ensure git config is set up
 				return &gitRepo{
 					h:             &Handle{logger: zap.NewNop()},
 					repoDir:       localDir,
@@ -140,6 +144,7 @@ func TestGitRepo_pullInner(t *testing.T) {
 					SingleBranch:  false,
 				})
 				require.NoError(t, err)
+				setupGitConfig(t, localDir) // Ensure git config is set up
 
 				// Create and switch to edit branch
 				worktree, err := repo.Worktree()
@@ -206,6 +211,7 @@ func TestGitRepo_pullInner(t *testing.T) {
 					SingleBranch:  true,
 				})
 				require.NoError(t, err)
+				setupGitConfig(t, localDir) // Ensure git config is set up
 
 				return &gitRepo{
 					h:             &Handle{logger: zap.NewNop()},
@@ -243,7 +249,6 @@ func TestGitRepo_pullInner(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			localDir := t.TempDir()
-			setupGitConfig(t, localDir) // Ensure git config is set up
 			remoteDir := setupTestGitRepository(t)
 
 			// Setup the gitRepo instance
@@ -293,6 +298,7 @@ func TestGitRepo_commitAndPushToDefaultBranch(t *testing.T) {
 					SingleBranch:  false,
 				})
 				require.NoError(t, err)
+				setupGitConfig(t, localDir) // Ensure git config is set up
 
 				// Create and switch to edit branch
 				worktree, err := repo.Worktree()
@@ -355,6 +361,7 @@ func TestGitRepo_commitAndPushToDefaultBranch(t *testing.T) {
 					SingleBranch:  false,
 				})
 				require.NoError(t, err)
+				setupGitConfig(t, localDir) // Ensure git config is set up
 
 				// Create and switch to edit branch
 				worktree, err := repo.Worktree()
@@ -420,6 +427,7 @@ func TestGitRepo_commitAndPushToDefaultBranch(t *testing.T) {
 					SingleBranch:  false,
 				})
 				require.NoError(t, err)
+				setupGitConfig(t, localDir) // Ensure git config is set up
 
 				// Create and switch to edit branch
 				worktree, err := repo.Worktree()
@@ -485,6 +493,7 @@ func TestGitRepo_commitAndPushToDefaultBranch(t *testing.T) {
 					SingleBranch:  false,
 				})
 				require.NoError(t, err)
+				setupGitConfig(t, localDir) // Ensure git config is set up
 
 				// Create and switch to edit branch
 				worktree, err := repo.Worktree()
@@ -546,6 +555,7 @@ func TestGitRepo_commitAndPushToDefaultBranch(t *testing.T) {
 					SingleBranch:  true,
 				})
 				require.NoError(t, err)
+				setupGitConfig(t, localDir) // Ensure git config is set up
 
 				return &gitRepo{
 					h:             &Handle{logger: zap.NewNop()},
@@ -583,7 +593,6 @@ func TestGitRepo_commitAndPushToDefaultBranch(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			localDir := t.TempDir()
-			setupGitConfig(t, localDir) // Ensure git config is set up
 			remoteDir := setupTestGitRepository(t)
 
 			// Setup the gitRepo instance
@@ -735,10 +744,18 @@ func createRemoteBranch(t *testing.T, remoteDir, branchName, fileName, content, 
 // setupGitConfig sets up git configuration for testing
 func setupGitConfig(t *testing.T, repoPath string) {
 	cmd := exec.Command("git", "-C", repoPath, "config", "user.name", "Test User")
-	err := cmd.Run()
+	err := execGitCommand(cmd)
 	require.NoError(t, err, "failed to set user name")
 
 	cmd = exec.Command("git", "-C", repoPath, "config", "user.email", "test@example.com")
-	err = cmd.Run()
+	err = execGitCommand(cmd)
 	require.NoError(t, err, "failed to set user email")
+}
+
+func execGitCommand(cmd *exec.Cmd) error {
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("command failed: %s, output: %s", err, string(out))
+	}
+	return nil
 }
