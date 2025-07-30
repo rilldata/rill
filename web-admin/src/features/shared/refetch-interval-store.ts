@@ -56,9 +56,15 @@ export function updateSmartRefetchMeta(
   return { refetchInterval: next, wasReconciling: hasReconciling };
 }
 
+// WeakMap to store refetch state associated with each query
+const queryRefetchStateMap = new WeakMap<
+  any,
+  { refetchInterval?: number | false; wasReconciling?: boolean }
+>();
+
 /**
- * Creates a smart refetch interval function that uses query.meta to store state.
- * This approach keeps refetch state per query and encapsulates all logic in the refetchInterval parameter.
+ * Creates a smart refetch interval function that uses a WeakMap to store state.
+ * This approach keeps refetch state per query without mutating the query object.
  *
  * @param query The TanStack query object
  * @returns The refetch interval (number in ms or false to disable)
@@ -68,15 +74,15 @@ export function createSmartRefetchInterval(query: any): number | false {
     return false;
   }
 
-  // Get or initialize meta with refetch state
-  const currentMeta = query.meta || {};
-  const updatedMeta = updateSmartRefetchMeta(
+  // Get or initialize state from WeakMap
+  const currentState = queryRefetchStateMap.get(query) || {};
+  const updatedState = updateSmartRefetchMeta(
     query.state.data.resources,
-    currentMeta,
+    currentState,
   );
 
-  // Update query meta with new refetch state (including wasReconciling)
-  query.meta = updatedMeta;
+  // Store updated state in WeakMap
+  queryRefetchStateMap.set(query, updatedState);
 
-  return updatedMeta.refetchInterval;
+  return updatedState.refetchInterval;
 }
