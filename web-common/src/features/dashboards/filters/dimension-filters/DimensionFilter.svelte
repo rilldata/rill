@@ -1,22 +1,20 @@
 <script lang="ts">
   import { Chip } from "@rilldata/web-common/components/chip";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
-  import Select from "@rilldata/web-common/components/forms/Select.svelte";
+
   import LoadingSpinner from "@rilldata/web-common/components/icons/LoadingSpinner.svelte";
   import { Search } from "@rilldata/web-common/components/search";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
-  import {
-    DimensionFilterMode,
-    DimensionFilterModeOptions,
-  } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/dimension-filter-mode";
+  import { DimensionFilterMode } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/dimension-filter-mode";
   import {
     mergeDimensionSearchValues,
     splitDimensionSearchText,
   } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/dimension-search-text-utils";
   import DimensionFilterChipBody from "@rilldata/web-common/features/dashboards/filters/dimension-filters/DimensionFilterChipBody.svelte";
   import DimensionFilterFooter from "@rilldata/web-common/features/dashboards/filters/dimension-filters/DimensionFilterFooter.svelte";
+  import DimensionFilterModeSelector from "@rilldata/web-common/features/dashboards/filters/dimension-filters/DimensionFilterModeSelector.svelte";
   import { mergeDimensionAndMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
   import { getFiltersForOtherDimensions } from "@rilldata/web-common/features/dashboards/selectors";
   import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
@@ -417,15 +415,10 @@
   >
     <div class="flex flex-col px-3 pt-3">
       <div class="flex flex-row">
-        <!-- min-w-[82px] We need the min width since the select component is adding ellipsis unnecessarily when label has a space. -->
-        <Select
-          id="search-mode"
-          bind:value={curMode}
-          options={DimensionFilterModeOptions}
-          onChange={handleModeChange}
+        <DimensionFilterModeSelector
+          bind:mode={curMode}
+          onModeChange={handleModeChange}
           size="md"
-          minWidth={82}
-          forcedTriggerStyle="rounded-r-none"
         />
         <Search
           bind:value={curSearchText}
