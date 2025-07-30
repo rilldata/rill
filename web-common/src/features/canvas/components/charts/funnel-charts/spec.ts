@@ -1,4 +1,7 @@
-import { sanitizeFieldName } from "@rilldata/web-common/components/vega/util";
+import {
+  sanitizeFieldName,
+  sanitizeValueForVega,
+} from "@rilldata/web-common/components/vega/util";
 import type { VisualizationSpec } from "svelte-vega";
 import type { Field } from "vega-lite/build/src/channeldef";
 import type { UnitSpec } from "vega-lite/build/src/spec";
@@ -42,7 +45,7 @@ export function generateVLFunnelChartSpec(
 
   // Main bar layer
   const barLayer: UnitSpec<Field> = {
-    mark: { type: "bar" },
+    mark: "bar",
     encoding: {
       x: {
         ...xEncoding,
@@ -66,6 +69,10 @@ export function generateVLFunnelChartSpec(
     mark: {
       type: "text",
       align: "right",
+      fontWeight: 600,
+      color: {
+        expr: `luminance ( scale ( 'color', datum['${sanitizeValueForVega(config.stage?.field ?? "")}'] ) ) > 0.45 ? '#222' : '#efefef'`,
+      },
     },
     encoding: {
       text: {
