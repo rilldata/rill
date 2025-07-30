@@ -296,9 +296,6 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		if tmp.Watermark != "" {
 			return fmt.Errorf("cannot set watermark in a derived metrics view (parent %q)", tmp.Parent)
 		}
-		if tmp.Security != nil && (len(tmp.Security.Include) > 0 || len(tmp.Security.Exclude) > 0) {
-			return fmt.Errorf("cannot set includes/excludes in derived metrics view security, use dimension selectors to inherit subset from (parent %q)", tmp.Parent)
-		}
 		if tmp.Cache.Enabled != nil || tmp.Cache.KeySQL != "" || tmp.Cache.KeyTTL != "" {
 			return fmt.Errorf("cannot set cache in a derived metrics view (parent %q)", tmp.Parent)
 		}

@@ -198,6 +198,8 @@ func (e *Executor) resolveParentMetricsView(ctx context.Context) error {
 	for _, d := range parent.Dimensions {
 		if slices.Contains(names, d.Name) {
 			filteredDims = append(filteredDims, d)
+		} else {
+			return fmt.Errorf("cannot find dimension %q in parent metrics view %q", d.Name, e.metricsView.Parent)
 		}
 	}
 	e.metricsView.Dimensions = filteredDims
@@ -214,6 +216,8 @@ func (e *Executor) resolveParentMetricsView(ctx context.Context) error {
 	for _, m := range parent.Measures {
 		if slices.Contains(names, m.Name) {
 			filteredMeasures = append(filteredMeasures, m)
+		} else {
+			return fmt.Errorf("cannot find measure %q in parent metrics view %q", m.Name, e.metricsView.Parent)
 		}
 	}
 	e.metricsView.Measures = filteredMeasures
