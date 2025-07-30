@@ -37,6 +37,7 @@ type Client interface {
 	DeleteExpiredDeviceAuthCodes(ctx context.Context) (*InsertResult, error)
 	DeleteExpiredTokens(ctx context.Context) (*InsertResult, error)
 	DeleteExpiredVirtualFiles(ctx context.Context) (*InsertResult, error)
+	DeleteUnusedAssets(ctx context.Context) (*InsertResult, error)
 }
 
 type InsertResult struct {

@@ -99,3 +99,7 @@ func (n *noop) DeleteExpiredTokens(ctx context.Context) (*InsertResult, error) {
 func (n *noop) DeleteExpiredVirtualFiles(ctx context.Context) (*InsertResult, error) {
 	return nil, nil
 }
+
+func (n *noop) DeleteUnusedAssets(ctx context.Context) (*InsertResult, error) {
+	return nil, nil
+}
