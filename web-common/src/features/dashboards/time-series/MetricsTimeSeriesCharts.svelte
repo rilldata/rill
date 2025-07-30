@@ -22,7 +22,7 @@
   import TDDAlternateChart from "@rilldata/web-common/features/dashboards/time-dimension-details/charts/TDDAlternateChart.svelte";
   import { chartInteractionColumn } from "@rilldata/web-common/features/dashboards/time-dimension-details/time-dimension-data-store";
   import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
-  import { getAnnotationsForMeasure } from "@rilldata/web-common/features/dashboards/time-series/selectors.ts";
+  import { getAnnotationsForMeasure } from "@rilldata/web-common/features/dashboards/time-series/annotations-selectors.ts";
   import BackToExplore from "@rilldata/web-common/features/dashboards/time-series/BackToExplore.svelte";
   import {
     useTimeSeriesDataStore,
@@ -82,6 +82,7 @@
       measures: { setMeasureVisibility },
     },
     validSpecStore,
+    dashboardStore,
   } = getStateManagers();
 
   const timeControlsStore = useTimeControlStore(getStateManagers());
@@ -272,6 +273,7 @@
       exploreName,
       measureName: measure.name!,
       selectedTimeRange,
+      selectedTimezone: $dashboardStore.selectedTimezone,
     }),
   );
 

@@ -6,8 +6,8 @@
 
   const strokeWidth = 1;
 
-  $: xStart = annotationGroup.left;
-  $: xEnd = annotationGroup.right;
+  $: xStart = annotationGroup.rangeLeft;
+  $: xEnd = annotationGroup.rangeRight;
   $: yStart = 0;
   $: yEnd = annotationGroup.bottom;
 </script>

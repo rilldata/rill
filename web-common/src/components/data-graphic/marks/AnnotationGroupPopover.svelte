@@ -23,7 +23,7 @@
         {#each annotationGroup.items as annotation, i (i)}
           <div class="flex flex-col gap-y-1">
             <div>{annotation.description}</div>
-            <div>{annotation.time.toISOString()}</div>
+            <div>{annotation.startTime.toISOString()}</div>
           </div>
         {/each}
       </div>

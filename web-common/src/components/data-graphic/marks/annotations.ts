@@ -4,8 +4,10 @@ import type {
 } from "@rilldata/web-common/components/data-graphic/state/types";
 
 export type Annotation = {
-  time: Date;
-  time_end?: Date;
+  startTime: Date;
+  truncatedStartTime: Date;
+  endTime?: Date;
+  truncatedEndTime?: Date;
   grain?: string;
   description: string;
 };
@@ -16,7 +18,10 @@ export type AnnotationGroup = {
   left: number;
   bottom: number;
   right: number;
+
   hasRange: boolean;
+  rangeLeft: number;
+  rangeRight: number;
 };
 
 // h-[24px] w-[12px]
@@ -31,48 +36,28 @@ export function createAnnotationGroups(
 ): AnnotationGroup[] {
   if (annotations.length === 0 || !scaler || !config) return [];
 
-  const annotationTop = config.plotBottom - AnnotationHeight;
-  const annotationBottom = config.plotBottom;
-
-  const firstAnnotation = annotations[0];
-  const firstAnnotationLeft = config.bodyLeft + scaler(firstAnnotation.time);
-  const firstAnnotationRight =
-    config.bodyLeft +
-    (firstAnnotation.time_end
-      ? scaler(firstAnnotation.time_end)
-      : firstAnnotationLeft + AnnotationWidth);
-  let currentGroup: AnnotationGroup = {
-    items: [firstAnnotation],
-    top: annotationTop,
-    left: firstAnnotationLeft,
-    bottom: annotationBottom,
-    right: firstAnnotationRight,
-    hasRange: !!firstAnnotation.time_end,
-  };
+  let currentGroup: AnnotationGroup = getSingletonAnnotationGroup(
+    annotations[0],
+    scaler,
+    config,
+  );
   const groups: AnnotationGroup[] = [currentGroup];
 
   for (let i = 1; i < annotations.length; i++) {
     const annotation = annotations[i];
-    const left = config.bodyLeft + scaler(annotation.time);
-    const right =
-      config.bodyLeft +
-      (annotation.time_end
-        ? scaler(annotation.time_end)
-        : left + AnnotationWidth);
+    const group = getSingletonAnnotationGroup(annotation, scaler, config);
 
-    const leftDiff = left - currentGroup.left;
+    const leftDiff = group.left - currentGroup.left;
 
     if (leftDiff < AnnotationOverlapWidth) {
+      currentGroup.right = Math.max(currentGroup.right, group.right);
+      currentGroup.rangeRight = Math.max(
+        currentGroup.rangeRight,
+        group.rangeRight,
+      );
       currentGroup.items.push(annotation);
     } else {
-      currentGroup = {
-        items: [annotation],
-        top: annotationTop,
-        left,
-        right: Math.max(currentGroup.right, right),
-        bottom: annotationBottom,
-        hasRange: Boolean(currentGroup.hasRange || annotation.time_end),
-      };
+      currentGroup = group;
       groups.push(currentGroup);
     }
   }
@@ -96,4 +81,29 @@ export function buildLookupTable(annotationGroups: AnnotationGroup[]) {
   });
 
   return lookupTable;
+}
+
+function getSingletonAnnotationGroup(
+  annotation: Annotation,
+  scaler: GraphicScale,
+  config: SimpleDataGraphicConfiguration,
+): AnnotationGroup {
+  const left = config.bodyLeft + scaler(annotation.startTime);
+  const rangeLeft = config.bodyLeft + scaler(annotation.truncatedStartTime);
+  const right =
+    config.bodyLeft +
+    (annotation.endTime ? scaler(annotation.endTime) : left + AnnotationWidth);
+  const rangeRight =
+    config.bodyLeft +
+    (annotation.truncatedEndTime ? scaler(annotation.truncatedEndTime) : right);
+  return <AnnotationGroup>{
+    items: [annotation],
+    top: config.plotBottom - AnnotationHeight + 3,
+    left,
+    rangeLeft,
+    bottom: config.plotBottom,
+    right,
+    rangeRight,
+    hasRange: !!annotation.endTime,
+  };
 }
