@@ -1,6 +1,7 @@
 package metricsview
 
 import (
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"strings"
@@ -218,6 +219,10 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedSecurity, qry *Q
 				if err != nil {
 					return nil, err
 				}
+				// append sha of cf.Name to the compare name to have diff alias as the column name otherwise clickhouse bypasses the date calculations
+				// calculate the SHA-256 hash of the name and take first 4 bytes just to keep it short
+				hash := sha256.Sum256([]byte(cf.Name))
+				cf.Name = fmt.Sprintf("%s_comp_%x", cf.Name, hash[:4])
 			}
 		}
 
@@ -518,7 +523,16 @@ func (a *AST) resolveMeasure(qm Measure, visible bool) (*runtimev1.MetricsViewSp
 			return nil, fmt.Errorf("failed to compute date difference for comparison time measure %q: %w", qm.Name, err)
 		}
 
-		baseExpr := fmt.Sprintf("COALESCE(base.%s, comparison.%s)", a.dialect.EscapeIdentifier(qd.Name), a.dialect.EscapeIdentifier(qd.Name))
+		// find the compare name for the dimension
+		var compareName string
+		for i, f := range a.dimFields {
+			if f.Name == qd.Compute.TimeFloor.Dimension {
+				compareName = a.comparisonDimFields[i].Name
+				break
+			}
+		}
+
+		baseExpr := fmt.Sprintf("COALESCE(base.%s, comparison.%s)", a.dialect.EscapeIdentifier(qd.Name), a.dialect.EscapeIdentifier(compareName))
 
 		expr, err := a.dialect.IntervalSubtract(baseExpr, dateDiff, qd.Compute.TimeFloor.Grain.ToProto())
 		if err != nil {
@@ -1082,7 +1096,7 @@ func (a *AST) addTimeComparisonMeasure(n *SelectNode, m *runtimev1.MetricsViewSp
 		n.JoinComparisonType = JoinTypeFull
 
 		for i, f := range n.DimFields {
-			f.Expr = fmt.Sprintf("COALESCE(%s, %s)", f.Expr, a.sqlForMember("comparison", f.Name))
+			f.Expr = fmt.Sprintf("COALESCE(%s, %s)", f.Expr, a.sqlForMember("comparison", n.JoinComparisonSelect.DimFields[i].Name))
 			n.DimFields[i] = f // Because it's not a value, not a pointer
 		}
 	}

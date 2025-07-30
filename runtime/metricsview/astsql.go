@@ -276,7 +276,12 @@ func (b *sqlBuilder) writeJoin(joinType JoinType, baseSelect, joinSelect *Select
 			b.out.WriteString(" AND ")
 		}
 		lhs := b.ast.sqlForMember(baseSelect.Alias, f.Name)
-		rhs := b.ast.sqlForMember(joinSelect.Alias, f.Name)
+		rhsName := f.Name
+		// join select dims can be empty in case time spine select is used
+		if joinSelect.RawSelect == nil {
+			rhsName = joinSelect.DimFields[i].Name
+		}
+		rhs := b.ast.sqlForMember(joinSelect.Alias, rhsName)
 		b.out.WriteByte('(')
 		b.out.WriteString(b.ast.dialect.JoinOnExpression(lhs, rhs))
 		b.out.WriteByte(')')
