@@ -17,7 +17,10 @@ func TestMergeWithTheirsStrategy(t *testing.T) {
 
 		// Create a feature branch
 		cmd := exec.Command("git", "-C", tempDir, "checkout", "-b", "feature")
-		err := cmd.Run()
+		output, err := cmd.CombinedOutput()
+		if err != nil {
+			t.Logf("Git checkout -b output: %s", string(output))
+		}
 		require.NoError(t, err, "failed to create feature branch")
 
 		// Add a file in the feature branch
@@ -25,8 +28,8 @@ func TestMergeWithTheirsStrategy(t *testing.T) {
 
 		// Switch back to main and add a different file
 		cmd = exec.Command("git", "-C", tempDir, "checkout", "main")
-		err = cmd.Run()
-		require.NoError(t, err, "failed to switch to main branch")
+		output, err = cmd.CombinedOutput()
+		require.NoError(t, err, "failed to switch to main branch ", string(output))
 
 		createCommit(t, tempDir, "main.txt", "main content", "add main file")
 
@@ -46,8 +49,8 @@ func TestMergeWithTheirsStrategy(t *testing.T) {
 
 		// Create a feature branch
 		cmd := exec.Command("git", "-C", tempDir, "checkout", "-b", "feature")
-		err := cmd.Run()
-		require.NoError(t, err, "failed to create feature branch")
+		output, err := cmd.CombinedOutput()
+		require.NoError(t, err, "failed to create feature branch ", string(output))
 
 		// Modify the same file in feature branch
 		createCommit(t, tempDir, "test1.txt", "feature version", "modify test1 in feature")
@@ -76,16 +79,16 @@ func TestMergeWithBailOnConflict(t *testing.T) {
 
 		// Create a feature branch
 		cmd := exec.Command("git", "-C", tempDir, "checkout", "-b", "feature")
-		err := cmd.Run()
-		require.NoError(t, err, "failed to create feature branch")
+		output, err := cmd.CombinedOutput()
+		require.NoError(t, err, "failed to create feature branch ", string(output))
 
 		// Add a file in the feature branch
 		createCommit(t, tempDir, "feature.txt", "feature content", "add feature file")
 
 		// Switch back to main and add a different file
 		cmd = exec.Command("git", "-C", tempDir, "checkout", "main")
-		err = cmd.Run()
-		require.NoError(t, err, "failed to switch to main branch")
+		output, err = cmd.CombinedOutput()
+		require.NoError(t, err, "failed to switch to main branch ", string(output))
 
 		createCommit(t, tempDir, "main.txt", "main content", "add main file")
 
@@ -106,16 +109,16 @@ func TestMergeWithBailOnConflict(t *testing.T) {
 
 		// Create a feature branch
 		cmd := exec.Command("git", "-C", tempDir, "checkout", "-b", "feature")
-		err := cmd.Run()
-		require.NoError(t, err, "failed to create feature branch")
+		output, err := cmd.CombinedOutput()
+		require.NoError(t, err, "failed to create feature branch ", string(output))
 
 		// Modify the same file in feature branch
 		createCommit(t, tempDir, "test1.txt", "feature version", "modify test1 in feature")
 
 		// Switch back to main and modify the same file differently
 		cmd = exec.Command("git", "-C", tempDir, "checkout", "main")
-		err = cmd.Run()
-		require.NoError(t, err, "failed to switch to main branch")
+		output, err = cmd.CombinedOutput()
+		require.NoError(t, err, "failed to switch to main branch ", string(output))
 
 		createCommit(t, tempDir, "test1.txt", "main version", "modify test1 in main")
 
@@ -131,8 +134,8 @@ func TestMergeWithBailOnConflict(t *testing.T) {
 
 		// Verify we're still on main branch and not in merge state
 		cmd = exec.Command("git", "-C", tempDir, "status", "--porcelain")
-		output, err := cmd.Output()
-		require.NoError(t, err, "failed to get git status")
+		output, err = cmd.Output()
+		require.NoError(t, err, "failed to get git status ", string(output))
 		require.Empty(t, string(output), "working directory should be clean after aborted merge")
 	})
 }
@@ -142,8 +145,8 @@ func setupTestRepository(t *testing.T) string {
 
 	// Initialize a new git repository in the temp directory
 	cmd := exec.Command("git", "init", tempDir)
-	err := cmd.Run()
-	require.NoError(t, err, "failed to initialize git repository")
+	output, err := cmd.CombinedOutput()
+	require.NoError(t, err, "failed to initialize git repository ", string(output))
 	setupGitConfig(t, tempDir)
 
 	// Create and commit multiple files

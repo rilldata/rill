@@ -243,6 +243,7 @@ func TestGitRepo_pullInner(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			localDir := t.TempDir()
+			setupGitConfig(t, localDir) // Ensure git config is set up
 			remoteDir := setupTestGitRepository(t)
 
 			// Setup the gitRepo instance
@@ -268,135 +269,6 @@ func TestGitRepo_pullInner(t *testing.T) {
 			}
 		})
 	}
-}
-
-// setupTestGitRepository creates a bare Git repository with initial content for testing
-func setupTestGitRepository(t *testing.T) string {
-	// Create bare repository
-	remoteDir := t.TempDir()
-	cmd := exec.Command("git", "init", "--bare", remoteDir)
-	err := cmd.Run()
-	require.NoError(t, err, "failed to initialize bare git repository")
-
-	// Set the default branch to main in the bare repository
-	cmd = exec.Command("git", "-C", remoteDir, "symbolic-ref", "HEAD", "refs/heads/main")
-	err = cmd.Run()
-	require.NoError(t, err, "failed to set default branch to main")
-
-	// Create a temporary working directory to add initial content
-	workingDir := t.TempDir()
-	cmd = exec.Command("git", "clone", remoteDir, workingDir)
-	err = cmd.Run()
-	require.NoError(t, err, "failed to clone bare repository")
-
-	// Setup git config
-	setupGitConfig(t, workingDir)
-
-	// Create initial files
-	for i := 1; i <= 3; i++ {
-		filePath := filepath.Join(workingDir, "test"+string(rune('0'+i))+".txt")
-		content := "content of file " + string(rune('0'+i))
-		err = os.WriteFile(filePath, []byte(content), 0644)
-		require.NoError(t, err, "failed to create test file")
-	}
-
-	// Add and commit files
-	cmd = exec.Command("git", "-C", workingDir, "add", ".")
-	err = cmd.Run()
-	require.NoError(t, err, "failed to stage files")
-
-	cmd = exec.Command("git", "-C", workingDir, "commit", "-m", "Initial commit")
-	err = cmd.Run()
-	require.NoError(t, err, "failed to commit files")
-
-	// Set the default branch to main before pushing
-	cmd = exec.Command("git", "-C", workingDir, "branch", "-M", "main")
-	err = cmd.Run()
-	require.NoError(t, err, "failed to rename branch to main")
-
-	// Push to bare repository
-	cmd = exec.Command("git", "-C", workingDir, "push", "origin", "main")
-	output, err := cmd.CombinedOutput()
-	require.NoError(t, err, "failed to push initial commit "+string(output))
-
-	return remoteDir
-}
-
-// createRemoteCommit creates a new commit in the remote repository
-func createRemoteCommit(t *testing.T, remoteDir, fileName, content, commitMessage string) {
-	// Clone to temporary directory
-	workingDir := t.TempDir()
-	cmd := exec.Command("git", "clone", remoteDir, workingDir)
-	err := cmd.Run()
-	require.NoError(t, err, "failed to clone repository")
-
-	setupGitConfig(t, workingDir)
-
-	// Create/modify file
-	filePath := filepath.Join(workingDir, fileName)
-	err = os.WriteFile(filePath, []byte(content), 0644)
-	require.NoError(t, err, "failed to create file")
-
-	// Add, commit, and push
-	cmd = exec.Command("git", "-C", workingDir, "add", fileName)
-	err = cmd.Run()
-	require.NoError(t, err, "failed to add file")
-
-	cmd = exec.Command("git", "-C", workingDir, "commit", "-m", commitMessage)
-	err = cmd.Run()
-	require.NoError(t, err, "failed to commit file")
-
-	cmd = exec.Command("git", "-C", workingDir, "push", "origin", "main")
-	output, err := cmd.CombinedOutput()
-	require.NoError(t, err, "failed to push commit "+string(output))
-}
-
-// createRemoteBranch creates a new branch with content in the remote repository
-func createRemoteBranch(t *testing.T, remoteDir, branchName, fileName, content, commitMessage string) {
-	// Clone to temporary directory
-	workingDir := t.TempDir()
-	cmd := exec.Command("git", "clone", remoteDir, workingDir)
-	err := cmd.Run()
-	require.NoError(t, err, "failed to clone repository")
-
-	setupGitConfig(t, workingDir)
-
-	// Create and switch to new branch
-	cmd = exec.Command("git", "-C", workingDir, "checkout", "-b", branchName)
-	err = cmd.Run()
-	require.NoError(t, err, "failed to create branch")
-
-	// Create/modify file
-	filePath := filepath.Join(workingDir, fileName)
-	err = os.WriteFile(filePath, []byte(content), 0644)
-	require.NoError(t, err, "failed to create file")
-
-	// Add, commit, and push
-	cmd = exec.Command("git", "-C", workingDir, "add", fileName)
-	err = cmd.Run()
-	require.NoError(t, err, "failed to add file")
-
-	cmd = exec.Command("git", "-C", workingDir, "commit", "-m", commitMessage)
-	err = cmd.Run()
-	require.NoError(t, err, "failed to commit file")
-
-	cmd = exec.Command("git", "-C", workingDir, "push", "origin", branchName)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		t.Logf("Git push output: %s", string(output))
-	}
-	require.NoError(t, err, "failed to push branch")
-}
-
-// setupGitConfig sets up git configuration for testing
-func setupGitConfig(t *testing.T, repoPath string) {
-	cmd := exec.Command("git", "-C", repoPath, "config", "user.name", "Test User")
-	err := cmd.Run()
-	require.NoError(t, err, "failed to set user name")
-
-	cmd = exec.Command("git", "-C", repoPath, "config", "user.email", "test@example.com")
-	err = cmd.Run()
-	require.NoError(t, err, "failed to set user email")
 }
 
 func TestGitRepo_commitAndPushToDefaultBranch(t *testing.T) {
@@ -711,6 +583,7 @@ func TestGitRepo_commitAndPushToDefaultBranch(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			localDir := t.TempDir()
+			setupGitConfig(t, localDir) // Ensure git config is set up
 			remoteDir := setupTestGitRepository(t)
 
 			// Setup the gitRepo instance
@@ -739,4 +612,133 @@ func TestGitRepo_commitAndPushToDefaultBranch(t *testing.T) {
 			}
 		})
 	}
+}
+
+// setupTestGitRepository creates a bare Git repository with initial content for testing
+func setupTestGitRepository(t *testing.T) string {
+	// Create bare repository
+	remoteDir := t.TempDir()
+	cmd := exec.Command("git", "init", "--bare", remoteDir)
+	err := cmd.Run()
+	require.NoError(t, err, "failed to initialize bare git repository")
+
+	// Set the default branch to main in the bare repository
+	cmd = exec.Command("git", "-C", remoteDir, "symbolic-ref", "HEAD", "refs/heads/main")
+	err = cmd.Run()
+	require.NoError(t, err, "failed to set default branch to main")
+
+	// Create a temporary working directory to add initial content
+	workingDir := t.TempDir()
+	cmd = exec.Command("git", "clone", remoteDir, workingDir)
+	err = cmd.Run()
+	require.NoError(t, err, "failed to clone bare repository")
+
+	// Setup git config
+	setupGitConfig(t, workingDir)
+
+	// Create initial files
+	for i := 1; i <= 3; i++ {
+		filePath := filepath.Join(workingDir, "test"+string(rune('0'+i))+".txt")
+		content := "content of file " + string(rune('0'+i))
+		err = os.WriteFile(filePath, []byte(content), 0644)
+		require.NoError(t, err, "failed to create test file")
+	}
+
+	// Add and commit files
+	cmd = exec.Command("git", "-C", workingDir, "add", ".")
+	err = cmd.Run()
+	require.NoError(t, err, "failed to stage files")
+
+	cmd = exec.Command("git", "-C", workingDir, "commit", "-m", "Initial commit")
+	err = cmd.Run()
+	require.NoError(t, err, "failed to commit files")
+
+	// Set the default branch to main before pushing
+	cmd = exec.Command("git", "-C", workingDir, "branch", "-M", "main")
+	err = cmd.Run()
+	require.NoError(t, err, "failed to rename branch to main")
+
+	// Push to bare repository
+	cmd = exec.Command("git", "-C", workingDir, "push", "origin", "main")
+	output, err := cmd.CombinedOutput()
+	require.NoError(t, err, "failed to push initial commit "+string(output))
+
+	return remoteDir
+}
+
+// createRemoteCommit creates a new commit in the remote repository
+func createRemoteCommit(t *testing.T, remoteDir, fileName, content, commitMessage string) {
+	// Clone to temporary directory
+	workingDir := t.TempDir()
+	cmd := exec.Command("git", "clone", remoteDir, workingDir)
+	err := cmd.Run()
+	require.NoError(t, err, "failed to clone repository")
+
+	setupGitConfig(t, workingDir)
+
+	// Create/modify file
+	filePath := filepath.Join(workingDir, fileName)
+	err = os.WriteFile(filePath, []byte(content), 0644)
+	require.NoError(t, err, "failed to create file")
+
+	// Add, commit, and push
+	cmd = exec.Command("git", "-C", workingDir, "add", fileName)
+	err = cmd.Run()
+	require.NoError(t, err, "failed to add file")
+
+	cmd = exec.Command("git", "-C", workingDir, "commit", "-m", commitMessage)
+	err = cmd.Run()
+	require.NoError(t, err, "failed to commit file")
+
+	cmd = exec.Command("git", "-C", workingDir, "push", "origin", "main")
+	output, err := cmd.CombinedOutput()
+	require.NoError(t, err, "failed to push commit "+string(output))
+}
+
+// createRemoteBranch creates a new branch with content in the remote repository
+func createRemoteBranch(t *testing.T, remoteDir, branchName, fileName, content, commitMessage string) {
+	// Clone to temporary directory
+	workingDir := t.TempDir()
+	cmd := exec.Command("git", "clone", remoteDir, workingDir)
+	err := cmd.Run()
+	require.NoError(t, err, "failed to clone repository")
+
+	setupGitConfig(t, workingDir)
+
+	// Create and switch to new branch
+	cmd = exec.Command("git", "-C", workingDir, "checkout", "-b", branchName)
+	err = cmd.Run()
+	require.NoError(t, err, "failed to create branch")
+
+	// Create/modify file
+	filePath := filepath.Join(workingDir, fileName)
+	err = os.WriteFile(filePath, []byte(content), 0644)
+	require.NoError(t, err, "failed to create file")
+
+	// Add, commit, and push
+	cmd = exec.Command("git", "-C", workingDir, "add", fileName)
+	err = cmd.Run()
+	require.NoError(t, err, "failed to add file")
+
+	cmd = exec.Command("git", "-C", workingDir, "commit", "-m", commitMessage)
+	err = cmd.Run()
+	require.NoError(t, err, "failed to commit file")
+
+	cmd = exec.Command("git", "-C", workingDir, "push", "origin", branchName)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Logf("Git push output: %s", string(output))
+	}
+	require.NoError(t, err, "failed to push branch")
+}
+
+// setupGitConfig sets up git configuration for testing
+func setupGitConfig(t *testing.T, repoPath string) {
+	cmd := exec.Command("git", "-C", repoPath, "config", "user.name", "Test User")
+	err := cmd.Run()
+	require.NoError(t, err, "failed to set user name")
+
+	cmd = exec.Command("git", "-C", repoPath, "config", "user.email", "test@example.com")
+	err = cmd.Run()
+	require.NoError(t, err, "failed to set user email")
 }
