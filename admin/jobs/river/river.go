@@ -99,7 +99,6 @@ func New(ctx context.Context, dsn string, adm *admin.Service) (jobs.Client, erro
 
 	river.AddWorker(workers, &CheckProvisionersWorker{admin: adm, logger: adm.Logger})
 	river.AddWorker(workers, &BillingReporterWorker{admin: adm, logger: billingLogger})
-	river.AddWorker(workers, &BillingReporterWorker{admin: adm, logger: billingLogger})
 	river.AddWorker(workers, &DeleteExpiredAuthCodesWorker{admin: adm, logger: adm.Logger})
 	river.AddWorker(workers, &DeleteExpiredDeviceAuthCodesWorker{admin: adm, logger: adm.Logger})
 	river.AddWorker(workers, &DeleteExpiredTokensWorker{admin: adm})
@@ -180,6 +179,67 @@ func (c *Client) CancelJob(ctx context.Context, jobID int64) error {
 		return err
 	}
 	return nil
+}
+
+func (c *Client) EnqueueByKind(ctx context.Context, kind string) (*jobs.InsertResult, error) {
+	// Jobs that have their own methods with custom logic
+	switch kind {
+	case "reset_all_deployments":
+		return c.ResetAllDeployments(ctx)
+	case "check_provisioners":
+		return c.CheckProvisioners(ctx)
+	case "deployments_health_check":
+		return c.DeploymentsHealthCheck(ctx)
+	case "hibernate_expired_deployments":
+		return c.HibernateExpiredDeployments(ctx)
+	case "run_autoscaler":
+		return c.RunAutoscaler(ctx)
+	case "hibernate_inactive_orgs":
+		return c.HibernateInactiveOrgs(ctx)
+	case "billing_reporter":
+		return c.BillingReporter(ctx)
+	case "delete_expired_auth_codes":
+		return c.DeleteExpiredAuthCodes(ctx)
+	case "delete_expired_device_auth_codes":
+		return c.DeleteExpiredDeviceAuthCodes(ctx)
+	case "delete_expired_tokens":
+		return c.DeleteExpiredTokens(ctx)
+	case "delete_expired_virtual_files":
+		return c.DeleteExpiredVirtualFiles(ctx)
+	case "delete_unused_assets":
+		return c.DeleteUnusedAssets(ctx)
+	}
+
+	// Jobs that just need simple insertion with empty args
+	var jobArgs river.JobArgs
+	switch kind {
+	case "validate_deployments":
+		jobArgs = ValidateDeploymentsArgs{}
+	case "payment_failed_grace_period_check":
+		jobArgs = PaymentFailedGracePeriodCheckArgs{}
+	case "trial_ending_soon":
+		jobArgs = TrialEndingSoonArgs{}
+	case "trial_end_check":
+		jobArgs = TrialEndCheckArgs{}
+	case "trial_grace_period_check":
+		jobArgs = TrialGracePeriodCheckArgs{}
+	case "subscription_cancellation_check":
+		jobArgs = SubscriptionCancellationCheckArgs{}
+	case "delete_unused_user_tokens":
+		jobArgs = DeleteUnusedUserTokenArgs{}
+	case "delete_unused_service_tokens":
+		jobArgs = DeleteUnusedServiceTokenArgs{}
+	case "delete_unused_github_repos":
+		jobArgs = deleteUnusedGithubReposArgs{}
+	default:
+		return nil, fmt.Errorf("unknown job kind: %s", kind)
+	}
+
+	res, err := c.riverClient.Insert(ctx, jobArgs, nil)
+	if err != nil {
+		return nil, err
+	}
+	return &jobs.InsertResult{ID: res.Job.ID, Duplicate: res.UniqueSkippedAsDuplicate}, nil
 }
 
 // NOTE: Add new job trigger functions here

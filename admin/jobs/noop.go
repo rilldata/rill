@@ -24,6 +24,10 @@ func (n *noop) CancelJob(ctx context.Context, jobID int64) error {
 	return nil
 }
 
+func (n *noop) EnqueueByKind(ctx context.Context, kind string) (*InsertResult, error) {
+	return nil, nil
+}
+
 func (n *noop) ResetAllDeployments(ctx context.Context) (*InsertResult, error) {
 	return nil, nil
 }

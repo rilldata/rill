@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
+	"net/http"
 	"net/url"
 	"os"
 	"strings"
@@ -19,7 +20,6 @@ import (
 	"github.com/rilldata/rill/admin/billing/payment"
 	"github.com/rilldata/rill/admin/jobs/river"
 	"github.com/rilldata/rill/admin/server"
-	"github.com/rilldata/rill/admin/worker"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/debugserver"
@@ -106,7 +106,7 @@ type Config struct {
 // StartCmd starts an admin server. It only allows configuration using environment variables.
 func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 	startCmd := &cobra.Command{
-		Use:   "start [jobs|server|worker]",
+		Use:   "start [jobs|server]",
 		Short: "Start admin service",
 		Args:  cobra.MaximumNArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
@@ -325,9 +325,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			group, cctx := errgroup.WithContext(ctx)
 
 			// Determine services to run. If no service name was provided, run them all.
-			// We just have three currently, so keeping this basic.
 			runServer := len(args) == 0 || args[0] == "server"
-			runWorker := len(args) == 0 || args[0] == "worker"
 			runJobs := len(args) == 0 || args[0] == "jobs"
 
 			// Init and run server
@@ -368,21 +366,37 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 			}
 
-			// Init and run worker
-			if runWorker || runJobs {
-				wkr := worker.New(logger, adm, jobs)
-				if runWorker {
-					group.Go(func() error { return wkr.Run(cctx) })
-					if !runServer {
-						// If we're not running the server, lets start a http server with /ping endpoint for health checks
-						group.Go(func() error { return worker.StartPingServer(cctx, conf.HTTPPort) })
-					}
+			// Init and run jobs/worker system
+			if runJobs {
+				// Start the river job worker
+				group.Go(func() error { return jobs.Work(cctx) })
+
+				// If we're not running the server, start a http server with /ping endpoint for health checks
+				if !runServer {
+					mux := http.NewServeMux()
+					mux.HandleFunc("/ping", func(w http.ResponseWriter, r *http.Request) {
+						w.WriteHeader(http.StatusOK)
+						_, err := w.Write([]byte("pong"))
+						if err != nil {
+							panic(err)
+						}
+					})
+					group.Go(func() error {
+						return graceful.ServeHTTP(cctx, mux, graceful.ServeOptions{Port: conf.HTTPPort})
+					})
 				}
-				if runJobs {
-					for _, job := range conf.Jobs {
-						job := job
-						group.Go(func() error { return wkr.RunJob(cctx, job) })
-					}
+
+				// Handle specific job execution if configured
+				for _, job := range conf.Jobs {
+					job := job
+					group.Go(func() error {
+						_, err := jobs.EnqueueByKind(cctx, job)
+						if err != nil {
+							logger.Error("failed to enqueue job", zap.String("job", job), zap.Error(err))
+							return err
+						}
+						return nil
+					})
 				}
 			}
 
