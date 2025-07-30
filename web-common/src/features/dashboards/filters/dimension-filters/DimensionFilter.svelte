@@ -9,6 +9,12 @@
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
   import { DimensionFilterMode } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/dimension-filter-mode";
   import {
+    getEffectiveSelectedValues,
+    getItemLists,
+    getSearchPlaceholder,
+    shouldDisableApplyButton,
+  } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/dimension-filter-helpers";
+  import {
     mergeDimensionSearchValues,
     splitDimensionSearchText,
   } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/dimension-search-text-utils";
@@ -143,12 +149,7 @@
       : `${allSearchResultsCount} of ${searchedBulkValues.length} matched`
     : "0 results";
 
-  $: searchPlaceholder =
-    curMode === DimensionFilterMode.Select
-      ? "Enter search term or paste list of values"
-      : curMode === DimensionFilterMode.InList
-        ? "Paste a list separated by commas or \\n"
-        : "Enter a search term";
+  $: searchPlaceholder = getSearchPlaceholder(curMode);
 
   $: error = errorFromSearchResults ?? errorFromAllSearchResultsCount;
   $: isFetching =
@@ -160,29 +161,27 @@
     effectiveSelectedValues.length &&
       correctedSearchResults?.length === effectiveSelectedValues.length,
   );
-  $: effectiveSelectedValues =
-    curMode === DimensionFilterMode.Select
-      ? selectedValuesProxy
-      : curMode === DimensionFilterMode.InList
-        ? (correctedSearchResults ?? [])
-        : selectedValues;
+  $: effectiveSelectedValues = getEffectiveSelectedValues(
+    curMode,
+    selectedValuesProxy,
+    correctedSearchResults ?? [],
+    selectedValues,
+  );
 
-  $: disableApplyButton =
-    curMode === DimensionFilterMode.Select
-      ? false // Never disable Apply for Select mode
-      : !enableSearchCountQuery || inListTooLong;
+  $: disableApplyButton = shouldDisableApplyButton(
+    curMode,
+    enableSearchCountQuery,
+    inListTooLong,
+  );
 
   // Split results into checked and unchecked for better UX (like SelectionDropdown)
   // Use actual selectedValues (not proxy) so items only sort after dropdown closes
-  $: checkedItems =
-    curMode === DimensionFilterMode.Select && correctedSearchResults
-      ? correctedSearchResults.filter((item) => selectedValues.includes(item))
-      : [];
-
-  $: uncheckedItems =
-    curMode === DimensionFilterMode.Select && correctedSearchResults
-      ? correctedSearchResults.filter((item) => !selectedValues.includes(item))
-      : (correctedSearchResults ?? []);
+  $: ({ checkedItems, uncheckedItems } = getItemLists(
+    curMode,
+    correctedSearchResults ?? [],
+    selectedValues,
+    curSearchText,
+  ));
 
   /**
    * Reset filter settings based on params to the component.
