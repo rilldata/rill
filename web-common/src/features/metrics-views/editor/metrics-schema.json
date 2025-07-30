@@ -231,15 +231,24 @@
         },
         "theme": {
           "oneOf": [
-            { "type": "string", "description": "Name of an existing theme to apply to the explore view." },
+            {
+              "type": "string",
+              "description": "Name of an existing theme to apply to the explore view."
+            },
             {
               "type": "object",
               "properties": {
                 "colors": {
                   "type": "object",
                   "properties": {
-                    "primary": { "type": "string", "description": "Overrides the primary blue color in the dashboard." },
-                    "secondary": { "type": "string", "description": "Overrides the secondary color in the dashboard." }
+                    "primary": {
+                      "type": "string",
+                      "description": "Overrides the primary blue color in the dashboard."
+                    },
+                    "secondary": {
+                      "type": "string",
+                      "description": "Overrides the secondary color in the dashboard."
+                    }
                   },
                   "anyOf": [
                     { "required": ["primary"] },
@@ -258,22 +267,37 @@
           "description": "Overrides the list of default time range selections available in the dropdown. It can be string or an object with a 'range' and optional 'comparison_offsets'.",
           "items": {
             "oneOf": [
-              { "type": "string", "description": "A valid ISO 8601 duration or Rill extension for the selection." },
+              {
+                "type": "string",
+                "description": "A valid ISO 8601 duration or Rill extension for the selection."
+              },
               {
                 "type": "object",
                 "properties": {
-                  "range": { "type": "string", "description": "A valid ISO 8601 duration or Rill extension for the selection." },
+                  "range": {
+                    "type": "string",
+                    "description": "A valid ISO 8601 duration or Rill extension for the selection."
+                  },
                   "comparison_offsets": {
                     "type": "array",
                     "description": "List of time comparison options for this time range selection.",
                     "items": {
                       "oneOf": [
-                        { "type": "string", "description": "Offset string only (range is inferred)" },
+                        {
+                          "type": "string",
+                          "description": "Offset string only (range is inferred)"
+                        },
                         {
                           "type": "object",
                           "properties": {
-                            "offset": { "type": "string", "description": "Time offset for comparison (e.g., 'P1D' for one day ago)" },
-                            "range": { "type": "string", "description": "Custom time range for comparison period" }
+                            "offset": {
+                              "type": "string",
+                              "description": "Time offset for comparison (e.g., 'P1D' for one day ago)"
+                            },
+                            "range": {
+                              "type": "string",
+                              "description": "Custom time range for comparison period"
+                            }
                           },
                           "required": ["offset"],
                           "additionalProperties": false
@@ -307,14 +331,30 @@
           "properties": {
             "dimensions": {
               "oneOf": [
-                { "type": "string", "description": "Wildcard '*' selector that includes all available fields in the selection." },
-                { "type": "array", "items": { "type": "string" }, "description": "Explicit list of fields to include in the selection." },
+                {
+                  "type": "string",
+                  "description": "Wildcard '*' selector that includes all available fields in the selection."
+                },
+                {
+                  "type": "array",
+                  "items": { "type": "string" },
+                  "description": "Explicit list of fields to include in the selection."
+                },
                 {
                   "type": "object",
                   "properties": {
-                    "regex": { "type": "string", "description": "Select dimensions using a regular expression." },
-                    "expr": { "type": "string", "description": "DuckDB SQL expression to select fields based on custom logic." },
-                    "exclude": { "type": "object", "description": "Select all dimensions except those listed here." }
+                    "regex": {
+                      "type": "string",
+                      "description": "Select dimensions using a regular expression."
+                    },
+                    "expr": {
+                      "type": "string",
+                      "description": "DuckDB SQL expression to select fields based on custom logic."
+                    },
+                    "exclude": {
+                      "type": "object",
+                      "description": "Select all dimensions except those listed here."
+                    }
                   },
                   "oneOf": [
                     { "required": ["regex"] },
@@ -327,14 +367,30 @@
             },
             "measures": {
               "oneOf": [
-                { "type": "string", "description": "Wildcard '*' selector that includes all available fields in the selection." },
-                { "type": "array", "items": { "type": "string" }, "description": "Explicit list of fields to include in the selection." },
+                {
+                  "type": "string",
+                  "description": "Wildcard '*' selector that includes all available fields in the selection."
+                },
+                {
+                  "type": "array",
+                  "items": { "type": "string" },
+                  "description": "Explicit list of fields to include in the selection."
+                },
                 {
                   "type": "object",
                   "properties": {
-                    "regex": { "type": "string", "description": "Select measures using a regular expression." },
-                    "expr": { "type": "string", "description": "DuckDB SQL expression to select fields based on custom logic." },
-                    "exclude": { "type": "object", "description": "Select all measures except those listed here." }
+                    "regex": {
+                      "type": "string",
+                      "description": "Select measures using a regular expression."
+                    },
+                    "expr": {
+                      "type": "string",
+                      "description": "DuckDB SQL expression to select fields based on custom logic."
+                    },
+                    "exclude": {
+                      "type": "object",
+                      "description": "Select all measures except those listed here."
+                    }
                   },
                   "oneOf": [
                     { "required": ["regex"] },
