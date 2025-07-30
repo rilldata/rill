@@ -75,3 +75,7 @@ func (n *noop) PlanChanged(ctx context.Context, billingCustomerID string) (*Inse
 func (n *noop) HibernateInactiveOrgs(ctx context.Context) (*InsertResult, error) {
 	return nil, nil
 }
+
+func (n *noop) CheckProvisioners(ctx context.Context) (*InsertResult, error) {
+	return nil, nil
+}

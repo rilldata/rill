@@ -97,6 +97,8 @@ func New(ctx context.Context, dsn string, adm *admin.Service) (jobs.Client, erro
 	river.AddWorker(workers, &DeleteUnusedUserTokenWorker{admin: adm, logger: adm.Logger})
 	river.AddWorker(workers, &DeleteUnusedServiceTokenWorker{admin: adm, logger: adm.Logger})
 
+	river.AddWorker(workers, &CheckProvisionersWorker{admin: adm, logger: adm.Logger})
+
 	periodicJobs := []*river.PeriodicJob{
 		// NOTE: Add new periodic jobs here
 		newPeriodicJob(&ValidateDeploymentsArgs{}, "*/30 * * * *", true),         // half-hourly
@@ -109,6 +111,7 @@ func New(ctx context.Context, dsn string, adm *admin.Service) (jobs.Client, erro
 		newPeriodicJob(&DeleteUnusedServiceTokenArgs{}, "0 */12 * * *", true),    // every 12 hours
 		newPeriodicJob(&deleteUnusedGithubReposArgs{}, "0 */6 * * *", true),      // every 6 hours
 		newPeriodicJob(&HibernateInactiveOrgsArgs{}, "0 7 * * 1", true),          // Monday at 7:00am UTC
+		newPeriodicJob(&CheckProvisionersArgs{}, "0 */15 * * *", true),           // every 15 minutes
 	}
 
 	// Wire our zap logger to a slog logger for the river client
@@ -397,6 +400,26 @@ func (c *Client) HibernateInactiveOrgs(ctx context.Context) (*jobs.InsertResult,
 	if err != nil {
 		return nil, err
 	}
+	return &jobs.InsertResult{
+		ID:        res.Job.ID,
+		Duplicate: res.UniqueSkippedAsDuplicate,
+	}, nil
+}
+
+func (c *Client) CheckProvisioners(ctx context.Context) (*jobs.InsertResult, error) {
+	res, err := c.riverClient.Insert(ctx, CheckProvisionersArgs{}, &river.InsertOpts{
+		UniqueOpts: river.UniqueOpts{
+			ByArgs: true,
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if res.UniqueSkippedAsDuplicate {
+		c.logger.Debug("CheckProvisioners job skipped as duplicate")
+	}
+
 	return &jobs.InsertResult{
 		ID:        res.Job.ID,
 		Duplicate: res.UniqueSkippedAsDuplicate,

@@ -30,6 +30,8 @@ type Client interface {
 	HibernateInactiveOrgs(ctx context.Context) (*InsertResult, error)
 
 	PlanChanged(ctx context.Context, billingCustomerID string) (*InsertResult, error)
+
+	CheckProvisioners(ctx context.Context) (*InsertResult, error)
 }
 
 type InsertResult struct {
