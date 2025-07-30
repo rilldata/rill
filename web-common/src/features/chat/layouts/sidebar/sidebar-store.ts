@@ -26,6 +26,17 @@ export const sidebarWidth = localStorageStore<number>(
   SIDEBAR_DEFAULTS.SIDEBAR_WIDTH,
 );
 
+// Create project-specific conversation state for sidebar
+export function createSidebarConversationIdStore(
+  organization: string,
+  project: string,
+) {
+  return sessionStorageStore<string | null>(
+    `sidebar-conversation-id-${organization}-${project}`,
+    null,
+  );
+}
+
 // =============================================================================
 // SIDEBAR ACTIONS
 // =============================================================================

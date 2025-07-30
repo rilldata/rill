@@ -1,124 +1,93 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
+  import { page } from "$app/stores";
   import { onMount } from "svelte";
-  import { useChatCore } from "../../core/chat";
+  import { isOptimisticConversationId, useChatCore } from "../../core/chat";
   import ChatFooter from "../../core/input/ChatFooter.svelte";
   import ChatInput from "../../core/input/ChatInput.svelte";
   import ChatMessages from "../../core/messages/ChatMessages.svelte";
   import ConversationSidebar from "./ConversationSidebar.svelte";
+  import { createFullpageConversationIdStore } from "./fullpage-store";
 
-  // Props for routing and navigation
-  export let routeType: "new" | "conversation" | undefined = undefined;
-  export let conversationId: string | undefined = undefined;
-  export let organization: string;
-  export let project: string;
+  // Extract route parameters
+  $: organization = $page.params.organization;
+  $: project = $page.params.project;
+  $: conversationId = $page.params.conversationId || null;
 
-  // Use core chat logic
+  // Create project-specific conversation store (reactive)
+  $: fullpageConversationId = createFullpageConversationIdStore(
+    organization,
+    project,
+  );
+
+  // Use core chat logic with stable instance
   const {
     currentConversationId,
-    createNewConversation,
-    selectConversation,
     listConversationsData,
     currentConversation,
     isConversationLoading,
     loading,
+    error,
+    messages,
     handleSendMessage,
-  } = useChatCore();
+  } = useChatCore({
+    onConversationChange: (id) => {
+      fullpageConversationId?.set(id);
+    },
+  });
 
   // Local UI state
   let input = "";
   let chatInputComponent: ChatInput;
-  let hasInitiallyFocused = false;
 
-  // Focus on mount for page refreshes (when we're already on the right conversation)
+  // Focus on mount with a small delay for component initialization
   onMount(() => {
-    // For page refreshes where we're already on the right conversation
-    if (
-      routeType === "conversation" &&
-      conversationId === $currentConversationId
-    ) {
-      setTimeout(() => {
-        focusInput();
-        hasInitiallyFocused = true;
-      }, 50); // Slightly longer delay for page refresh
-    }
+    // Give the component tree time to fully initialize
+    setTimeout(() => {
+      chatInputComponent?.focusInput();
+    }, 100);
   });
 
-  // Handle transition to new conversation route
-  $: if (routeType === "new") {
-    createNewConversation();
-    // Focus after creating new conversation (same as conversation selection)
-    setTimeout(() => focusInput(), 0);
-  }
-
-  // Handle conversation selection when routeType, conversationId, or conversation data changes
-  $: if (
-    routeType === "conversation" &&
-    conversationId &&
-    $listConversationsData?.conversations &&
-    $currentConversationId !== conversationId
-  ) {
-    const conversations = $listConversationsData.conversations || [];
-    const foundConversation = conversations.find(
-      (conv) => conv.id === conversationId,
-    );
-    if (foundConversation) {
-      selectConversation(foundConversation);
-      // Focus immediately after prop change, not after navigation delay
-      setTimeout(() => focusInput(), 0);
-    }
-  }
-
-  // Focus input management with robust retry logic
-  function focusInput() {
+  // Synchronize conversation state with URL (URL is source of truth)
+  // But don't interfere with optimistic conversations
+  $: {
     if (
-      chatInputComponent &&
-      typeof chatInputComponent.focusInput === "function"
+      !conversationId &&
+      $currentConversationId !== null &&
+      !isOptimisticConversationId($currentConversationId)
     ) {
-      // Use requestAnimationFrame to ensure DOM is ready
-      requestAnimationFrame(() => {
-        chatInputComponent.focusInput();
-
-        // Verify focus stuck after a brief delay
-        setTimeout(() => {
-          if (document.activeElement?.tagName !== "TEXTAREA") {
-            chatInputComponent.focusInput();
-          }
-        }, 50);
-      });
+      currentConversationId.set(null);
+      chatInputComponent?.focusInput();
+    } else if (conversationId && $currentConversationId !== conversationId) {
+      currentConversationId.set(conversationId);
+      chatInputComponent?.focusInput();
     }
   }
 
-  // Handle conversation clicks - focus after navigation
+  // Handle conversation clicks - just focus, URL change handles the rest
   function handleConversationClick() {
-    // Focus immediately after navigation starts, not after delay
-    setTimeout(() => focusInput(), 0);
+    // URL navigation will trigger state sync via reactive statement
+    chatInputComponent?.focusInput();
   }
 
-  // Handle new conversation click - focus after navigation
+  // Handle new conversation click - just focus, URL change handles the rest
   function handleNewConversationClick() {
-    // Focus immediately after navigation starts, not after delay
-    setTimeout(() => focusInput(), 0);
+    // URL navigation will trigger state sync via reactive statement
+    chatInputComponent?.focusInput();
   }
 
   // Message handling with input focus + navigation
   async function onSendMessage(message: string) {
     await handleSendMessage(
       message,
-      (conversationId) => {
+      (newConversationId) => {
         // If this was a new conversation, navigate to the conversation route
-        if (routeType === "new" && conversationId) {
-          goto(`/${organization}/${project}/-/chat/${conversationId}`, {
+        if (!conversationId && newConversationId) {
+          goto(`/${organization}/${project}/-/chat/${newConversationId}`, {
             replaceState: true,
           });
-          // Focus immediately after navigation starts, not after arbitrary delay
-          setTimeout(() => {
-            focusInput();
-          }, 0);
-        } else {
-          // For existing conversations, focus immediately since no navigation
-          focusInput();
         }
+        chatInputComponent?.focusInput();
       },
       (failedMessage) => {
         input = failedMessage;
@@ -143,6 +112,9 @@
         <ChatMessages
           layout="fullpage"
           isConversationLoading={$isConversationLoading}
+          error={$error}
+          loading={$loading}
+          messages={$messages}
         />
       </div>
     </div>

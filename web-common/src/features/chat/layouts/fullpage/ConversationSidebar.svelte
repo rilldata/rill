@@ -26,7 +26,7 @@
   <div class="conversation-sidebar-header">
     <Button
       type="secondary"
-      href={`/${organization}/${project}/-/chat/new`}
+      href={`/${organization}/${project}/-/chat?new=true`}
       class="new-conversation-btn"
       onClick={handleNewConversationButtonClick}
     >

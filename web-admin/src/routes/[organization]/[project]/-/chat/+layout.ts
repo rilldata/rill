@@ -1,3 +1,4 @@
+import { getLastConversationId } from "@rilldata/web-common/features/chat/layouts/fullpage/fullpage-store";
 import { featureFlags } from "@rilldata/web-common/features/feature-flags.js";
 import { redirect } from "@sveltejs/kit";
 import { get } from "svelte/store";
@@ -5,56 +6,48 @@ import { get } from "svelte/store";
 export const load = async ({
   params: { organization, project, conversationId },
   route,
-  parent,
   url,
 }) => {
-  const {
-    runtime: { instanceId },
-  } = await parent();
-
-  // NOTE: in the future, we'll use user-level `ai` permissions to determine access to the chat page.
+  // Redirect to `/-/dashboards` if chat feature is disabled
+  // NOTE: In the future, we'll use user-level `ai` permissions for more granular access control
   if (!get(featureFlags.chat)) {
     throw redirect(307, `/${organization}/${project}/-/dashboards`);
   }
 
-  // Handle different chat routes
   const routeId = route.id;
 
   switch (routeId) {
-    // Base chat route: redirect to last conversation or new conversation
     case "/[organization]/[project]/-/chat": {
-      const lastConversationId = sessionStorage.getItem(
-        "current-conversation-id",
-      );
-      if (lastConversationId && lastConversationId !== "null") {
+      const isExplicitNewConversation = url.searchParams.get("new") === "true";
+
+      // If user explicitly wants a new conversation, skip redirect logic
+      if (isExplicitNewConversation) {
+        return { conversationId: null };
+      }
+
+      // Try to redirect to the last conversation
+      const lastConversationId = getLastConversationId(organization, project);
+
+      if (lastConversationId) {
         throw redirect(
           307,
           `/${organization}/${project}/-/chat/${lastConversationId}`,
         );
       }
 
-      // No existing conversation, redirect to new conversation
-      throw redirect(307, `/${organization}/${project}/-/chat/new`);
+      // No existing conversation found, show new conversation interface
+      return { conversationId: null };
     }
 
-    // New conversation route
-    case "/[organization]/[project]/-/chat/new": {
-      return {
-        routeType: "new",
-      };
-    }
-
-    // Conversation ID route
     case "/[organization]/[project]/-/chat/[conversationId]": {
-      if (!conversationId || conversationId.trim() === "") {
-        throw redirect(307, `/${organization}/${project}/-/chat/new`);
+      // Redirect to base chat if conversation ID is missing or empty
+      if (!conversationId?.trim()) {
+        throw redirect(307, `/${organization}/${project}/-/chat`);
       }
 
-      return {
-        routeType: "conversation",
-        conversationId: conversationId,
-      };
+      return { conversationId };
     }
+
     default: {
       throw new Error(`Unknown chat route: ${routeId}`);
     }

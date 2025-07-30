@@ -2,15 +2,17 @@
   import { afterUpdate } from "svelte";
   import AlertCircle from "../../../../components/icons/AlertCircle.svelte";
   import LoadingSpinner from "../../../../components/icons/LoadingSpinner.svelte";
+  import type { V1Message } from "../../../../runtime-client";
   import DelayedSpinner from "../../../entity-management/DelayedSpinner.svelte";
-  import { useChatCore } from "../chat";
   import ChatMessage from "./ChatMessage.svelte";
 
   export let isConversationLoading = false;
   export let layout: "sidebar" | "fullpage" = "sidebar";
 
-  // Use the composable instead of direct store imports
-  const { error, loading, messages } = useChatCore();
+  // Accept these as props instead of calling useChatCore again
+  export let error: any = null;
+  export let loading = false;
+  export let messages: V1Message[] = [];
 
   let messagesContainer: HTMLDivElement;
 
@@ -39,23 +41,23 @@
     <div class="chat-loading">
       <DelayedSpinner isLoading={isConversationLoading} size="24px" />
     </div>
-  {:else if $messages.length === 0}
+  {:else if messages.length === 0}
     <div class="chat-empty">
       <!-- <div class="chat-empty-icon">💬</div> -->
       <div class="chat-empty-title">How can I help you today?</div>
       <div class="chat-empty-subtitle">Happy to help explore your data</div>
     </div>
   {:else}
-    {#each $messages as msg (msg.id)}
+    {#each messages as msg (msg.id)}
       <ChatMessage message={msg} />
     {/each}
   {/if}
-  {#if $loading}
+  {#if loading}
     <div class="response-loading">
       <LoadingSpinner size="1.2em" /> Thinking...
     </div>
   {/if}
-  {#if $error}
+  {#if error}
     <div class="chat-error">
       <AlertCircle size="1.2em" />
       {$error}

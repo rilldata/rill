@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { page } from "$app/stores";
   import Resizer from "../../../../layout/Resizer.svelte";
   import { useChatCore } from "../../core/chat";
   import ChatFooter from "../../core/input/ChatFooter.svelte";
@@ -6,41 +7,49 @@
   import ChatMessages from "../../core/messages/ChatMessages.svelte";
   import ChatHeader from "./ChatHeader.svelte";
   import {
+    createSidebarConversationIdStore,
     SIDEBAR_DEFAULTS,
     sidebarActions,
     sidebarWidth,
   } from "./sidebar-store";
 
-  // Use core chat logic
+  // Extract route parameters
+  $: organization = $page.params.organization || "";
+  $: project = $page.params.project || "";
+
+  // Create project-specific conversation store
+  const sidebarConversationId = createSidebarConversationIdStore(
+    organization,
+    project,
+  );
+
+  // Use core chat logic with sidebar-specific state management
   const {
     listConversationsData,
     currentConversation,
     isConversationLoading,
     loading,
+    error,
+    messages,
     handleSendMessage,
     createNewConversation,
     selectConversation,
-  } = useChatCore();
+  } = useChatCore({
+    initialConversationId: $sidebarConversationId,
+    onConversationChange: (id) => {
+      sidebarConversationId.set(id);
+    },
+  });
 
   // Local UI state
   let input = "";
   let chatInputComponent: ChatInput;
 
-  // Focus input management
-  function focusInput() {
-    if (
-      chatInputComponent &&
-      typeof chatInputComponent.focusInput === "function"
-    ) {
-      chatInputComponent.focusInput();
-    }
-  }
-
   // Message handling with input focus
   async function onSendMessage(message: string) {
     await handleSendMessage(
       message,
-      (conversationId) => focusInput(), // onSuccess - just focus input for sidebar
+      () => chatInputComponent?.focusInput(), // onSuccess - just focus input for sidebar
       (failedMessage) => {
         input = failedMessage;
       }, // onError
@@ -49,7 +58,7 @@
 
   // Conversation actions with input focus
   function onNewConversation() {
-    createNewConversation(() => focusInput());
+    createNewConversation(() => chatInputComponent?.focusInput());
   }
 
   function onSelectConversation(conv) {
@@ -81,6 +90,9 @@
     <ChatMessages
       layout="sidebar"
       isConversationLoading={$isConversationLoading}
+      error={$error}
+      loading={$loading}
+      messages={$messages}
     />
     <ChatInput
       bind:this={chatInputComponent}

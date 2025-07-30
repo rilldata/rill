@@ -28,11 +28,45 @@ export const conversationSidebarWidth = localStorageStore<number>(
   FULLPAGE_DEFAULTS.CONVERSATION_SIDEBAR_WIDTH,
 );
 
-// Search/filter state for conversations (future feature)
-export const conversationSearchQuery = sessionStorageStore<string>(
-  "conversation-search-query",
-  "",
-);
+function getConversationIdStorageKey(organization: string, project: string) {
+  return `project-chat-conversation-id-${organization}-${project}`;
+}
+
+// Create project-specific conversation state
+export function createFullpageConversationIdStore(
+  organization: string,
+  project: string,
+) {
+  return sessionStorageStore<string | null>(
+    getConversationIdStorageKey(organization, project),
+    null,
+  );
+}
+
+/**
+ * Retrieves the last conversation ID for the given project from sessionStorage.
+ * Handles both JSON-stringified and raw string formats for backwards compatibility.
+ */
+export function getLastConversationId(
+  organization: string,
+  project: string,
+): string | null {
+  const storageKey = getConversationIdStorageKey(organization, project);
+  const storedValue = sessionStorage.getItem(storageKey);
+
+  if (!storedValue) {
+    return null;
+  }
+
+  try {
+    // Try to parse as JSON first (new format)
+    const parsed = JSON.parse(storedValue);
+    return parsed === "null" ? null : parsed;
+  } catch {
+    // Fall back to raw string value (legacy format)
+    return storedValue === "null" ? null : storedValue;
+  }
+}
 
 // =============================================================================
 // FULLPAGE ACTIONS
@@ -57,13 +91,5 @@ export const fullpageActions = {
       Math.min(FULLPAGE_DEFAULTS.MAX_CONVERSATION_SIDEBAR_WIDTH, width),
     );
     conversationSidebarWidth.set(constrainedWidth);
-  },
-
-  setConversationSearchQuery(query: string): void {
-    conversationSearchQuery.set(query);
-  },
-
-  clearConversationSearch(): void {
-    conversationSearchQuery.set("");
   },
 };
