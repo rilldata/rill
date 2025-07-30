@@ -51,15 +51,6 @@ func (w *Worker) Run(ctx context.Context) error {
 	w.logger.Info("jobs client worker started")
 
 	group, ctx := errgroup.WithContext(ctx)
-	group.Go(func() error {
-		return w.schedule(ctx, "hibernate_expired_deployments", w.hibernateExpiredDeployments, 15*time.Minute)
-	})
-	group.Go(func() error {
-		return w.scheduleCron(ctx, "run_autoscaler", w.runAutoscaler, w.admin.AutoscalerCron)
-	})
-	group.Go(func() error {
-		return w.schedule(ctx, "deployments_health_check", w.deploymentsHealthCheck, 10*time.Minute)
-	})
 
 	// NOTE: Add new scheduled jobs here
 

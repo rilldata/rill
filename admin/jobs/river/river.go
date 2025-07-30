@@ -122,12 +122,15 @@ func New(ctx context.Context, dsn string, adm *admin.Service) (jobs.Client, erro
 		newPeriodicJob(&deleteUnusedGithubReposArgs{}, "0 */6 * * *", true),               // every 6 hours
 		newPeriodicJob(&HibernateInactiveOrgsArgs{}, "0 7 * * 1", true),                   // Monday at 7:00am UTC
 		newPeriodicJob(&CheckProvisionersArgs{}, "0 */15 * * *", true),                    // every 15 minutes
-		newPeriodicJob(&BillingReporterArgs{}, adm.Biller.GetReportingWorkerCron(), true), // configured by the billing service
+		newPeriodicJob(&BillingReporterArgs{}, adm.Biller.GetReportingWorkerCron(), true), // configured by the admin billing service
 		newPeriodicJob(&DeleteExpiredAuthCodesArgs{}, "0 */6 * * *", true),                // every 6 hours
 		newPeriodicJob(&DeleteExpiredDeviceAuthCodesArgs{}, "0 */6 * * *", true),          // every 6 hours
 		newPeriodicJob(&DeleteExpiredTokensArgs{}, "0 */6 * * *", true),                   // every 6 hours
 		newPeriodicJob(&DeleteExpiredVirtualFilesArgs{}, "0 */6 * * *", true),             // every 6 hours
 		newPeriodicJob(&DeleteUnusedAssetsArgs{}, "0 */6 * * *", true),                    // every 6 hours
+		newPeriodicJob(&DeploymentsHealthCheckArgs{}, "0 */10 * * *", true),               // every 10 minutes
+		newPeriodicJob(&HibernateExpiredDeploymentsArgs{}, "0 */15 * * *", true),          // every 15 minutes
+		newPeriodicJob(&RunAutoscalerArgs{}, adm.AutoscalerCron, true),                    // configured by the admin autoscaler service
 	}
 
 	// Wire our zap logger to a slog logger for the river client
@@ -554,6 +557,66 @@ func (c *Client) DeleteUnusedAssets(ctx context.Context) (*jobs.InsertResult, er
 
 	if res.UniqueSkippedAsDuplicate {
 		c.logger.Debug("DeleteUnusedAssets job skipped as duplicate")
+	}
+
+	return &jobs.InsertResult{
+		ID:        res.Job.ID,
+		Duplicate: res.UniqueSkippedAsDuplicate,
+	}, nil
+}
+
+func (c *Client) DeploymentsHealthCheck(ctx context.Context) (*jobs.InsertResult, error) {
+	res, err := c.riverClient.Insert(ctx, DeploymentsHealthCheckArgs{}, &river.InsertOpts{
+		UniqueOpts: river.UniqueOpts{
+			ByArgs: true,
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if res.UniqueSkippedAsDuplicate {
+		c.logger.Debug("DeploymentsHealthCheck job skipped as duplicate")
+	}
+
+	return &jobs.InsertResult{
+		ID:        res.Job.ID,
+		Duplicate: res.UniqueSkippedAsDuplicate,
+	}, nil
+}
+
+func (c *Client) HibernateExpiredDeployments(ctx context.Context) (*jobs.InsertResult, error) {
+	res, err := c.riverClient.Insert(ctx, HibernateExpiredDeploymentsArgs{}, &river.InsertOpts{
+		UniqueOpts: river.UniqueOpts{
+			ByArgs: true,
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if res.UniqueSkippedAsDuplicate {
+		c.logger.Debug("HibernateExpiredDeployments job skipped as duplicate")
+	}
+
+	return &jobs.InsertResult{
+		ID:        res.Job.ID,
+		Duplicate: res.UniqueSkippedAsDuplicate,
+	}, nil
+}
+
+func (c *Client) RunAutoscaler(ctx context.Context) (*jobs.InsertResult, error) {
+	res, err := c.riverClient.Insert(ctx, RunAutoscalerArgs{}, &river.InsertOpts{
+		UniqueOpts: river.UniqueOpts{
+			ByArgs: true,
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if res.UniqueSkippedAsDuplicate {
+		c.logger.Debug("RunAutoscaler job skipped as duplicate")
 	}
 
 	return &jobs.InsertResult{

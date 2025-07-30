@@ -103,3 +103,15 @@ func (n *noop) DeleteExpiredVirtualFiles(ctx context.Context) (*InsertResult, er
 func (n *noop) DeleteUnusedAssets(ctx context.Context) (*InsertResult, error) {
 	return nil, nil
 }
+
+func (n *noop) DeploymentsHealthCheck(ctx context.Context) (*InsertResult, error) {
+	return nil, nil
+}
+
+func (n *noop) HibernateExpiredDeployments(ctx context.Context) (*InsertResult, error) {
+	return nil, nil
+}
+
+func (n *noop) RunAutoscaler(ctx context.Context) (*InsertResult, error) {
+	return nil, nil
+}

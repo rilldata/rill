@@ -38,6 +38,9 @@ type Client interface {
 	DeleteExpiredTokens(ctx context.Context) (*InsertResult, error)
 	DeleteExpiredVirtualFiles(ctx context.Context) (*InsertResult, error)
 	DeleteUnusedAssets(ctx context.Context) (*InsertResult, error)
+	DeploymentsHealthCheck(ctx context.Context) (*InsertResult, error)
+	HibernateExpiredDeployments(ctx context.Context) (*InsertResult, error)
+	RunAutoscaler(ctx context.Context) (*InsertResult, error)
 }
 
 type InsertResult struct {
