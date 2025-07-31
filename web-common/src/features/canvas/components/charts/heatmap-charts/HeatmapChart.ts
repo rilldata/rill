@@ -363,7 +363,7 @@ export class HeatmapChartComponent extends BaseChart<HeatmapChartSpec> {
     return `${colorLabel} by ${xLabel} and ${yLabel}`;
   }
 
-  getChartMetadata() {
+  getChartDomainValues() {
     return {
       xValues:
         this.customSortXItems.length > 0

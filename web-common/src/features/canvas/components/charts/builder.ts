@@ -101,7 +101,7 @@ export function createColorEncoding(
     // but it's not supported by Vega-Lite yet
     // https://github.com/vega/vega-lite/issues/9497
 
-    const colorValues = data.metadata?.colorValues;
+    const colorValues = data.domainValues?.colorValues;
     const colorMapping = getColorForValues(
       colorValues,
       colorField.colorMapping,

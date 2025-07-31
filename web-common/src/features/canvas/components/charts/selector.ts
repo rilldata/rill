@@ -72,14 +72,14 @@ export function getChartData(
         );
       }
 
-      const metadata = component.getChartMetadata();
+      const domainValues = component.getChartDomainValues();
 
       return {
         data: data || [],
         isFetching: chartData?.isFetching ?? false,
         error: chartData?.error,
         fields: fieldSpecMap,
-        metadata,
+        domainValues,
       };
     },
   );

@@ -361,7 +361,7 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
       : `${yLabel} ${preposition} ${xLabel}`;
   }
 
-  getChartMetadata() {
+  getChartDomainValues() {
     return {
       xValues:
         this.customSortXItems.length > 0

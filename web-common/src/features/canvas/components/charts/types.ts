@@ -41,10 +41,10 @@ export type ChartDataResult = {
   isFetching: boolean;
   fields: ChartFieldsMap;
   error?: HTTPError | null;
-  metadata?: ChartMetadata;
+  domainValues?: ChartDomainValues;
 };
 
-export interface ChartMetadata {
+export interface ChartDomainValues {
   xValues?: string[];
   colorValues?: string[];
   yValues?: string[];
