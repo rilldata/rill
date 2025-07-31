@@ -127,7 +127,7 @@ tests:
         time__day: "2024-01-03T00:00:00Z"
       - sum: 4
         time__day: "2024-01-04T00:00:00Z"
-  - name: null_filling_coalesce_compare_time_same_name_as_alias_clickhouse
+  - name: null_filling_coalesce_computed_time_same_name_as_alias_clickhouse
     resolver: metrics
     properties:
       metrics_view: clickhouse_metrics

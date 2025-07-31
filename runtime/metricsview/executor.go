@@ -320,7 +320,10 @@ func (e *Executor) Query(ctx context.Context, qry *Query, executionTime *time.Ti
 		return nil, err
 	}
 
-	e.wrapClickhouseCompareTimeDim(ast)
+	err = e.wrapClickhouseComputedTimeDim(ast)
+	if err != nil {
+		return nil, err
+	}
 
 	var res *drivers.Result
 	if !pivoting {
@@ -438,7 +441,10 @@ func (e *Executor) Export(ctx context.Context, qry *Query, executionTime *time.T
 		return "", err
 	}
 
-	e.wrapClickhouseCompareTimeDim(ast)
+	err = e.wrapClickhouseComputedTimeDim(ast)
+	if err != nil {
+		return "", err
+	}
 
 	if pivoting {
 		return e.executePivotExport(ctx, ast, pivotAST, format, headers)
