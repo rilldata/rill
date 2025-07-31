@@ -28,6 +28,14 @@ func StatusCmd(ch *cmdutil.Helper) *cobra.Command {
 			if len(args) > 0 {
 				name = args[0]
 			}
+			if local {
+				if cmd.Flags().Changed("project") || cmd.Flags().Changed("path") {
+					return fmt.Errorf("the --local flag cannot be used with --project or --path")
+				}
+				if len(args) > 0 {
+					return fmt.Errorf("the --local flag cannot be used with <project-name> positional argument")
+				}
+			}
 
 			if !local && !cmd.Flags().Changed("project") && len(args) == 0 && ch.Interactive {
 				name, err = ch.InferProjectName(cmd.Context(), ch.Org, path)
