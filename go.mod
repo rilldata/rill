@@ -459,4 +459,6 @@ exclude modernc.org/sqlite v1.18.1
 // https://github.com/googleapis/google-cloud-go/pull/12065
 replace cloud.google.com/go/bigquery v1.66.2 => github.com/rilldata/google-cloud-go/bigquery v0.0.0-20250426042021-091fd79360f3
 
+// 3.2.2 had security bug.
+// v4.0.0 is expected to be compatible with v3.2.2+incompatible as per the release docs
 replace github.com/golang-jwt/jwt v3.2.2+incompatible => github.com/golang-jwt/jwt/v4 v4.0.0
