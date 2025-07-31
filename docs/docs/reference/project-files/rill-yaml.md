@@ -127,7 +127,7 @@ As a general rule of thumb, properties that have been specified at a more _granu
 
 ## Setting variables
 
-Primarily useful for [templating](/deploy/templating.md), variables can be set in the `rill.yaml` file directly. This allows variables to be set for your projects deployed to Rill Cloud while still being able to use different variable values locally if you prefer. 
+Primarily useful for [templating](/connect/templating), variables can be set in the `rill.yaml` file directly. This allows variables to be set for your projects deployed to Rill Cloud while still being able to use different variable values locally if you prefer. 
 
 To define a variable in `rill.yaml`, pass in the appropriate key-value pair for the variable under the `env` key:
 ```yaml

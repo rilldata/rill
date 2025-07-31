@@ -16,7 +16,7 @@ At a high level, configuring credentials and credentials management in Rill can 
 When reading from a source (or using a different OLAP engine), Rill will attempt to use existing credentials that have been configured on your machine.
 1. Credentials that have been configured in your local environment via the CLI (for [AWS](/connect/data-source/s3#local-credentials) / [Azure](/connect/data-source/azure#local-credentials) / [Google Cloud](/connect/data-source/gcs#rill-developer-local-credentials))
 2. Credentials that have been passed in directly through the connection string or DSN (typically for databases - see [Source YAML](/reference/project-files/sources) and [Connector YAML](/reference/project-files/connectors) for more details)
-3. Credentials that have been passed in as a [variable](/deploy/templating) when starting Rill Developer via `rill start --env key=value`
+3. Credentials that have been passed in as a [variable](/connect/templating) when starting Rill Developer via `rill start --env key=value`
 4. Credentials that have been specified in your *`<RILL_PROJECT_HOME>/.env`* file, see [credential naming schema](#credentials-naming-schema) for more information.
 
 For more details, please refer to the corresponding [connector](/connect) or [OLAP engine](/connect/olap) page.
@@ -30,13 +30,20 @@ If you plan to deploy a project (to Rill Cloud), it is not recommended to pass i
 
 ## Variables
 
-Project variables work exactly the same way as credentials and can be defined when starting rill via `--env key=value` or set in the .env file in the project directory.
+Project variables work exactly the same way as credentials and can be defined when starting rill via `--env key=value`, set in the .env file in the project directory, or defined in the rill.yaml.
 
 ```bash
-variable=xyz
+#.env
+variable: xyz
 ```
 
-This variable will then be usable and referenceable for [templating](/deploy/templating) purposes in the local instance of your project. 
+```yaml
+#rill.yaml
+env:
+  variable: xyz
+```
+
+This variable will then be usable and referenceable for [templating](/connect/templating) purposes in the local instance of your project. 
 
 :::info Fun Fact
 

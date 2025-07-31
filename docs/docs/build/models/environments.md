@@ -84,7 +84,7 @@ Source refreshes are primarily meant to _help keep the data in your deployed das
 
 ## Using environments to generate custom templated SQL
 
-Environments are also useful when you wish to apply environment-specific SQL logic to your sources and models. One common use case would be to apply a filter or limit for models automatically when developing locally (in Rill Developer), but not have these same conditions applied to production models deployed on Rill Cloud. These same principles could also be extended to apply more advanced logic and conditional statements based on your requirements. This is all possible by combining environments with Rill's ability to leverage [templating](/deploy/templating.md).
+Environments are also useful when you wish to apply environment-specific SQL logic to your sources and models. One common use case would be to apply a filter or limit for models automatically when developing locally (in Rill Developer), but not have these same conditions applied to production models deployed on Rill Cloud. These same principles could also be extended to apply more advanced logic and conditional statements based on your requirements. This is all possible by combining environments with Rill's ability to leverage [templating](/connect/templating).
 
 Similar to the example in the previous section, let's say we had a S3 source defined but this time we did not have a partitioned bucket. However, it contains an `updated_at` timestamp column that allows us to leverage DuckDB's ability to read from the S3 file directly and then apply a filter post-download (but we only want to do this locally). In production, we still want to make sure that our models and dashboards are using the full data present in the S3 source.
 
@@ -105,6 +105,6 @@ SELECT * FROM {{ ref "<source_name>" }}
 
 :::warning When applying templated logic to model SQL, make sure to leverage the `ref` function
 
-If you use templating in SQL models, you must replace references to tables/models created by other sources or models with `ref` tags. See this section on ["Referencing other tables or models in SQL when using templating"](../../deploy/templating.md#referencing-other-tables-or-models-in-sql-when-using-templating). This ensures that the native Go templating engine used by Rill is able to resolve and correctly compile the SQL syntax during runtime (to avoid any potential downstream errors).
+If you use templating in SQL models, you must replace references to tables/models created by other sources or models with `ref` tags. See this section on ["Referencing other tables or models in SQL when using templating"](/connect/templating#environment-specific-data-source-location). This ensures that the native Go templating engine used by Rill is able to resolve and correctly compile the SQL syntax during runtime (to avoid any potential downstream errors).
 
 :::

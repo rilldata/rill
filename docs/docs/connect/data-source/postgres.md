@@ -38,6 +38,7 @@ rill env pull
 
 Or, if its your first deployment, Rill will automatically deploy the .env into your Rill project.
 
+:::
 
 ## Cloud deployment
 

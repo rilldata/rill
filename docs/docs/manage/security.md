@@ -52,7 +52,7 @@ If you require additional user attributes to enforce access policies, see the [e
 
 When a user loads a dashboard, the policies are resolved in two phases:
 
-1. The templating engine first replaces expressions like `{{ .user.domain }}` with actual values ([Templating reference](../deploy/templating.md))
+1. The templating engine first replaces expressions like `{{ .user.domain }}` with actual values ([Templating reference](/connect/templating))
 2. The resulting expression is then evaluated contextually:
   - The `access` and `if` values are evaluated as SQL expressions and resolved to a `true` or `false` value
   - The `row_filter` value is injected into the `WHERE` clause of the SQL queries used to render the dashboard

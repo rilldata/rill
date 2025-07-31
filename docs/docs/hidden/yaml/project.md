@@ -112,7 +112,7 @@ explores:
 
 ## Setting variables
 
-Primarily useful for [templating](/deploy/templating.md), variables can be set in the `rill.yaml` file directly. This allows variables to be set for your projects deployed to Rill Cloud while still being able to use different variable values locally if you prefer. 
+Primarily useful for [templating](/connect/templating), variables can be set in the `rill.yaml` file directly. This allows variables to be set for your projects deployed to Rill Cloud while still being able to use different variable values locally if you prefer. 
 :::info Overriding variables locally
 Variables also follow an order of precedence and can be overridden locally. By default, any variables defined will be inherited from `rill.yaml`. However, if you manually pass in a variable when starting Rill Developer locally via the CLI, this value will be used instead for the current instance of your running project:
 ```bash

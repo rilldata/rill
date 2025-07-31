@@ -199,6 +199,10 @@ const config = {
             to: '/home/get-started',
           },
           {
+            from: '/home/example-repository',
+            to: '/',
+          },
+          {
             from: '/develop/import-data',
             to: '/connect/'
           },
@@ -264,7 +268,7 @@ const config = {
           },
           {
             from: '/reference/templating',
-            to: '/deploy/templating'
+            to: '/connect/templating'
           },
           {
             from: '/example-projects',
@@ -375,6 +379,10 @@ const config = {
           {
             from: '/reference/connectors/https',
             to: '/connect/data-source/https'
+          },
+          {
+            from: '/connect/templating',
+            to: '/connect/templating'
           },
           // Example: Add new redirects here
           // {

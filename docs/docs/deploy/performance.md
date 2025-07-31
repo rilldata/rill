@@ -57,7 +57,7 @@ dev:
   path: s3://bucket/path/year=2023/month=12/**/*.parquet
 ```
 
-By leveraging the [environment YAML syntax](/build/models/environments.md), this ensures that only data from December 2023 will be read in from this S3 source when using Rill Developer locally while the full range of data will still be used in production (on Rill Cloud). However, if this data was **not** partitioned, then we could simply leverage DuckDB's ability to read from S3 files directly and _apply a filter post-download_ on the source. Taking this same example and using some [templating](templating.md), the `source.yaml` could be rewritten to something like the following:
+By leveraging the [environment YAML syntax](/build/models/environments.md), this ensures that only data from December 2023 will be read in from this S3 source when using Rill Developer locally while the full range of data will still be used in production (on Rill Cloud). However, if this data was **not** partitioned, then we could simply leverage DuckDB's ability to read from S3 files directly and _apply a filter post-download_ on the source. Taking this same example and using some [templating](/connect/templating), the `source.yaml` could be rewritten to something like the following:
 ```yaml
 type: source
 connector: "duckdb"
@@ -66,7 +66,7 @@ sql: SELECT * FROM read_parquet('s3://bucket/path/*.parquet') {{ if dev }} where
 
 #### Creating intermediate staging models
 
-Another option would be to create intermediate staging models from your sources, either through [statistical sampling](https://duckdb.org/docs/sql/samples.html) or by applying a [raw limit](https://duckdb.org/docs/sql/query_syntax/limit.html), to reduce the size of your models in development. For example, with [templating](templating.md) and [environments](/build/models/environments.md), this `model.sql` applies a five percent sample to a source:
+Another option would be to create intermediate staging models from your sources, either through [statistical sampling](https://duckdb.org/docs/sql/samples.html) or by applying a [raw limit](https://duckdb.org/docs/sql/query_syntax/limit.html), to reduce the size of your models in development. For example, with [templating](/connect/templating) and [environments](/build/models/environments.md), this `model.sql` applies a five percent sample to a source:
 
 ```sql
 -- @materialize
@@ -93,13 +93,13 @@ As mentioned in an [above section](#consider-which-models-to-materialize), model
 
 :::warning When applying templated logic to model SQL, make sure to leverage the `ref` function
 
-If you use templating in SQL models, you must replace references to tables / models created by other sources or models with `ref` tags. See this section on ["Referencing other tables or models in SQL when using templating"](templating.md#referencing-other-tables-or-models-in-sql-when-using-templating). This ensures that the native Go templating engine used by Rill is able to resolve and correctly compile the SQL syntax during runtime (to avoid any potential downstream errors).
+If you use templating in SQL models, you must replace references to tables / models created by other sources or models with `ref` tags. See this section on ["Referencing other tables or models in SQL when using templating"](/connect/templating#environment-specific-data-source-location). This ensures that the native Go templating engine used by Rill is able to resolve and correctly compile the SQL syntax during runtime (to avoid any potential downstream errors).
 
 :::
 
 #### Use data from a dev / staging environment
 
-Some organizations might have both a development and production version of source data. In these cases, your sources should be configured to use the "dev" bucket or database for local development (in Rill Developer) and pointed to the "prod" bucket or database when in production (when deployed to Rill Cloud). Please refer to [this example](templating.md#changing-the-database-user-based-on-dev--prod) and [this example](templating.md#changing-the-bucket-location-based-on-dev--prod) for a complete walkthrough of how this can be configured.
+Some organizations might have both a development and production version of source data. In these cases, your sources should be configured to use the "dev" bucket or database for local development (in Rill Developer) and pointed to the "prod" bucket or database when in production (when deployed to Rill Cloud). Please refer to [this example](/connect/templating#example-clickhouse-connector-with-environment-separation) and [this example](/connect/templating#environment-specific-data-source-location) for a complete walkthrough of how this can be configured.
 
 ## Query Optimization
 
