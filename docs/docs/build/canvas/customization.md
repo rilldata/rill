@@ -72,7 +72,7 @@ defaults:
 ## Row Access Policies
 ### Security
 
-Defining security policies for your data is crucial. For more information, please refer to our [Dashboard Access Policies](/manage/security.md).
+Defining security policies for your data is crucial. For more information, please refer to our [Dashboard Access Policies](/build/metrics-view/security).
 
 ## Changing Themes & Colors
 

@@ -281,6 +281,10 @@ const config = {
           {
             from: '/share/scheduled-reports',
             to: '/explore/exports'
+          },
+          {
+            from: '/manage/security',
+            to: '/build/metrics-view/security'
           }
         ],
       },
