@@ -11,11 +11,9 @@ import type {
 } from "@rilldata/web-common/features/canvas/inspector/types";
 import type { CanvasResponse } from "@rilldata/web-common/features/canvas/selector";
 import type {
-  RpcStatus,
   V1MetricsViewSpec,
   V1Resource,
 } from "@rilldata/web-common/runtime-client";
-import type { QueryObserverResult } from "@tanstack/svelte-query";
 import type { CanvasEntity, ComponentPath } from "../stores/canvas-entity";
 import type { BaseCanvasComponent } from "./BaseCanvasComponent";
 import { ImageComponent } from "./image";
@@ -186,10 +184,10 @@ export function getHeaderForComponent(
 
 export function getComponentMetricsViewFromSpec(
   componentName: string | undefined,
-  spec: QueryObserverResult<CanvasResponse, RpcStatus>,
+  spec: CanvasResponse | undefined,
 ): string | undefined {
   if (!componentName) return undefined;
-  const resource = spec.data?.components?.[componentName]?.component;
+  const resource = spec?.components?.[componentName]?.component;
 
   if (resource) {
     return resource?.state?.validSpec?.rendererProperties?.metrics_view as

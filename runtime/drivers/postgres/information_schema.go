@@ -12,7 +12,7 @@ func (c *connection) ListDatabaseSchemas(ctx context.Context) ([]*drivers.Databa
 		current_database() AS database_name,
 		nspname 
 	FROM pg_namespace 
-	WHERE has_schema_privilege(nspname, 'USAGE') AND (nspname NOT IN ('pg_catalog', 'information_schema', 'pg_toast', 'pg_temp_1', 'pg_toast_temp_1') OR nspname = current_schema())
+	WHERE has_schema_privilege(nspname, 'USAGE') AND ((nspname NOT IN ('pg_catalog', 'information_schema', 'pg_toast') AND nspname NOT LIKE 'pg_temp_%' AND nspname NOT LIKE 'pg_toast_temp_%') OR nspname = current_schema())
 	ORDER BY nspname
 	`
 	db, err := c.getDB()

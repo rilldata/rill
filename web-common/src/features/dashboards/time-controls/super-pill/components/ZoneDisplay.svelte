@@ -13,12 +13,12 @@
 >
   <div class="flex gap-x-1 w-full overflow-hidden items-baseline">
     {#if abbreviation}
-      <p class="w-12 truncate overflow-hidden">
+      <p class="w-12 truncate overflow-hidden text-left">
         {abbreviation}
       </p>
     {/if}
 
-    <p class="truncate font-normal">
+    <p class="truncate font-normal text-left size-full">
       {#if isBrowserTime}
         Browser Time
       {:else}

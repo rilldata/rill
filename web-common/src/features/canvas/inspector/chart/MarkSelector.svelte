@@ -5,7 +5,7 @@
   import type { FieldConfig } from "@rilldata/web-common/features/canvas/components/charts/types";
   import SingleFieldInput from "@rilldata/web-common/features/canvas/inspector/SingleFieldInput.svelte";
   import type { ComponentInputParam } from "@rilldata/web-common/features/canvas/inspector/types";
-  import FieldConfigPopover from "./FieldConfigPopover.svelte";
+  import FieldConfigPopover from "./field-config/FieldConfigPopover.svelte";
 
   export let key: string;
   export let metricsView: string;

@@ -12,8 +12,8 @@
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import {
+    useIsModelingSupportedForConnector,
     useIsModelingSupportedForDefaultOlapDriver,
-    useIsModelingSupportedForOlapDriver,
   } from "../connectors/olap/selectors";
   import PreviewButton from "../explores/PreviewButton.svelte";
   import GoToDashboardButton from "../metrics-views/GoToDashboardButton.svelte";
@@ -50,13 +50,13 @@
 
   $: isModelingSupportedForDefaultOlapDriver =
     useIsModelingSupportedForDefaultOlapDriver(instanceId);
-  $: isModelingSupportedForOlapDriver = useIsModelingSupportedForOlapDriver(
+  $: isModelingSupportedForConnector = useIsModelingSupportedForConnector(
     instanceId,
     connector,
   );
   $: isModelingSupported = connector
-    ? $isModelingSupportedForOlapDriver
-    : $isModelingSupportedForDefaultOlapDriver;
+    ? $isModelingSupportedForConnector.data
+    : $isModelingSupportedForDefaultOlapDriver.data;
 
   async function onChangeCallback(newTitle: string) {
     const newRoute = await handleEntityRename(
@@ -73,7 +73,7 @@
   $: errors = mapParseErrorsToLines(allErrors, $remoteContent ?? "");
 </script>
 
-<WorkspaceContainer inspector={isModelingSupported && $selectedView === "code"}>
+<WorkspaceContainer inspector={$selectedView === "code" && isModelingSupported}>
   <WorkspaceHeader
     {filePath}
     {resource}

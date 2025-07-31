@@ -6,7 +6,7 @@ test.describe.serial("Reports", () => {
   test("Should create report", async ({ adminPage }) => {
     await adminPage.goto("/e2e/openrtb/explore/auction_explore");
 
-    // Enter dimension table "App Site Name"
+    // Enter dimension table "App Site Domain"
     await adminPage.getByText("App Site Domain").click();
 
     // Now and then clicking "App Site Domain" results in a tooltip being shown for a column in the dimension table.
@@ -38,6 +38,36 @@ test.describe.serial("Reports", () => {
     });
     // Enable time comparison
     await reportForm.getByLabel("Toggle time comparison").click();
+
+    // Change rows/columns
+    // Remove "App Site Domain"
+    await reportForm
+      .getByLabel("app_site_domain chip")
+      .getByLabel("Remove")
+      .click();
+    // Add "App Site Name" column
+    await reportForm.getByLabel("Add Columns fields").click();
+    await adminPage
+      .getByLabel("Columns field list")
+      .getByRole("menuitem", { name: "App Site Name" })
+      .click();
+    // Assert columns
+    await expect(reportForm.getByLabel("Columns field list")).toHaveText(
+      /Requests\s*Avg Bid Floor\s*1D QPS\s*App Site Name/,
+    );
+    // Add "Pub Name" row
+    await reportForm.getByLabel("Add Rows fields").click();
+    await adminPage
+      .getByLabel("Rows field list")
+      .getByRole("menuitem", { name: "Pub Name" })
+      .click();
+    // Assert rows and columns
+    await expect(reportForm.getByLabel("Rows field list")).toHaveText(
+      /Pub Name/,
+    );
+    await expect(reportForm.getByLabel("Columns field list")).toHaveText(
+      /App Site Name\s*Requests\s*Avg Bid Floor\s*1D QPS/,
+    );
 
     // Create the report
     await adminPage.getByLabel("Create report").click();
@@ -97,14 +127,50 @@ test.describe.serial("Reports", () => {
       await reportForm.getByRole("menuitem", { name: "Last 4 Weeks" }).click();
     });
 
+    // Change rows/columns
+    // Assert rows and columns
+    await expect(reportForm.getByLabel("Rows field list")).toHaveText(
+      /Pub Name/,
+    );
+    await expect(reportForm.getByLabel("Columns field list")).toHaveText(
+      /App Site Name\s*Requests\s*Avg Bid Floor\s*1D QPS/,
+    );
+    // Remove "Pub Name"
+    await reportForm.getByLabel("pub_name chip").getByLabel("Remove").click();
+    // Remove "App Site Name"
+    await reportForm
+      .getByLabel("app_site_name chip")
+      .getByLabel("Remove")
+      .click();
+    // Add "App Site Domain" row
+    await reportForm.getByLabel("Add Rows fields").click();
+    await adminPage
+      .getByLabel("Rows field list")
+      .getByRole("menuitem", { name: "App Site Domain" })
+      .click();
+    // Add "Time month" column
+    await reportForm.getByLabel("Add Columns fields").click();
+    await adminPage
+      .getByLabel("Columns field list")
+      .getByRole("menuitem", { name: "Time month" })
+      .click();
+    // Assert rows and columns
+    await expect(reportForm.getByLabel("Rows field list")).toHaveText(
+      /App Site Domain/,
+    );
+    await expect(reportForm.getByLabel("Columns field list")).toHaveText(
+      /Time month\s*Requests\s*Avg Bid Floor\s*1D QPS/,
+    );
+
+    const filtersForm = reportForm.getByLabel("Filters form");
     // Add "Ad Size" filter
-    await reportForm.getByLabel("Add filter button").click();
-    await reportForm.getByRole("menuitem", { name: "Ad Size" }).click();
+    await filtersForm.getByLabel("Add filter button").click();
+    await filtersForm.getByRole("menuitem", { name: "Ad Size" }).click();
     // Add filters for 1024x768, 120x600, 160x600
-    await reportForm.getByRole("menuitem", { name: "1024x768" }).click();
-    await reportForm.getByRole("menuitem", { name: "120x600" }).click();
-    await reportForm.getByRole("menuitem", { name: "160x600" }).click();
-    await reportForm.getByLabel("Open ad_size filter").click();
+    await filtersForm.getByRole("menuitem", { name: "1024x768" }).click();
+    await filtersForm.getByRole("menuitem", { name: "120x600" }).click();
+    await filtersForm.getByRole("menuitem", { name: "160x600" }).click();
+    await filtersForm.getByLabel("Open ad_size filter").click();
 
     // Save the report
     await adminPage.getByLabel("Save report").click();

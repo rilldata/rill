@@ -4,6 +4,7 @@
   import AmazonRedshift from "@rilldata/web-common/components/icons/connectors/AmazonRedshift.svelte";
   import MySQL from "@rilldata/web-common/components/icons/connectors/MySQL.svelte";
   import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
+  import { cn } from "@rilldata/web-common/lib/shadcn";
   import {
     createRuntimeServiceListConnectorDrivers,
     type V1ConnectorDriver,
@@ -31,14 +32,13 @@
   } from "../../../metrics/service/BehaviourEventTypes";
   import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
   import { runtime } from "../../../runtime-client/runtime-store";
+  import { connectorIconMapping } from "../../connectors/connector-icon-mapping";
   import { useIsModelingSupportedForDefaultOlapDriver } from "../../connectors/olap/selectors";
   import { duplicateSourceName } from "../sources-store";
   import AddDataForm from "./AddDataForm.svelte";
   import DuplicateSource from "./DuplicateSource.svelte";
   import LocalSourceUpload from "./LocalSourceUpload.svelte";
   import RequestConnectorForm from "./RequestConnectorForm.svelte";
-  import { connectorIconMapping } from "../../connectors/connector-icon-mapping";
-  import { cn } from "@rilldata/web-common/lib/shadcn";
 
   let step = 0;
   let selectedConnector: null | V1ConnectorDriver = null;
@@ -172,6 +172,7 @@
 
   $: isModelingSupportedForDefaultOlapDriver =
     useIsModelingSupportedForDefaultOlapDriver($runtime.instanceId);
+  $: isModelingSupported = $isModelingSupportedForDefaultOlapDriver.data;
 </script>
 
 {#if step >= 1 || $duplicateSourceName}
@@ -193,7 +194,7 @@
       noClose={step === 1}
     >
       {#if step === 1}
-        {#if $isModelingSupportedForDefaultOlapDriver}
+        {#if isModelingSupported}
           <Dialog.Title>Add a source</Dialog.Title>
           <section class="mb-1">
             <div class="connector-grid">
@@ -267,7 +268,9 @@
         </Dialog.Title>
 
         {#if $duplicateSourceName !== null}
-          <DuplicateSource onCancel={resetModal} onComplete={resetModal} />
+          <div class="p-6">
+            <DuplicateSource onCancel={resetModal} onComplete={resetModal} />
+          </div>
         {:else if selectedConnector.name === "local_file"}
           <LocalSourceUpload on:close={resetModal} on:back={back} />
         {:else if selectedConnector.name}
@@ -284,8 +287,10 @@
       {/if}
 
       {#if step === 2 && requestConnector}
-        <Dialog.Title>Request a connector</Dialog.Title>
-        <RequestConnectorForm on:close={resetModal} on:back={back} />
+        <div class="p-6">
+          <Dialog.Title>Request a connector</Dialog.Title>
+          <RequestConnectorForm on:close={resetModal} on:back={back} />
+        </div>
       {/if}
     </Dialog.Content>
   </Dialog.Root>

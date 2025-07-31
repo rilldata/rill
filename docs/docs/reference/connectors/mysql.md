@@ -9,17 +9,19 @@ sidebar_position: 9
 
 ## Overview
 
-[MySQL](https://dev.mysql.com/doc/refman/8.0/en/introduction.html) is an open-source relational database management system (RDBMS) known for its reliability, performance, and ease of use. It is widely used for a variety of applications, from small to large enterprise projects, supporting structured data storage, retrieval, and management with SQL queries. MySQL offers a comprehensive ecosystem with support for advanced features such as replication, transactions, and full-text indexing, making it a versatile choice for integrating with BI tools. Rill supports natively connecting to and reading from MySQL as a source by using the [Go MySQL Driver](https://github.com/go-sql-driver/mysql).
+[MySQL](https://dev.mysql.com/doc/refman/8.0/en/introduction.html) is an open-source relational database management system (RDBMS) known for its reliability, performance, and ease of use. It is widely used for a variety of applications, from small to large enterprise projects, supporting structured data storage, retrieval, and management with SQL queries. MySQL offers a comprehensive ecosystem with support for advanced features such as replication, transactions, and full-text indexing, making it a versatile choice for integrating with BI tools. Rill supports natively connecting to and reading from MySQL.
 
 When connecting to MySQL, an appropriate Data Source Name (DSN) must be specified in the connector's configuration using the following syntax:
 
 ```bash
-<username>:<password>@<protocol>(<hostname>:<port>)/<database_name>
+<scheme>://<user>:<password>@<host>:<port>/<database>
 ```
-- **username** and **password** should correspond to the user that Rill will use to connect to MySQL
-- **protocol** will typically be _tcp_ (unless otherwise specified)
-- **hostname** and **port** should correspond to the respective IP address/hostname and port (default 3306) of your MySQL database
-- **database_name** should correspond to the database in MySQL that you are using
+- **scheme** The transport protocol to use. Use `mysql` for classic MySQL protocol connections and  `mysqlx` for X Protocol connections.
+- **user** and **password** should correspond to the user that Rill will use to connect to MySQL
+- **host** and **port** should correspond to the respective IP address/hostname and port (default 3306) of your MySQL database
+- **database** should correspond to the database in MySQL that you are using
+
+For more details, see the [MySQL documentation on DSN formats](https://dev.mysql.com/doc/refman/8.4/en/connecting-using-uri-or-key-value-pairs.html#connecting-using-uri).
 
 <img src='/img/reference/connectors/mysql/mysql.png' class='centered' />
 <br />
@@ -30,7 +32,7 @@ When using Rill Developer on your local machine (i.e., `rill start`), you have t
 An example of passing the connection DSN to Rill via the terminal:
 
 ```bash
-rill start --env connector.mysql.dsn="mysql_user:mysql_password@tcp(localhost:3306)/mysql_db"
+rill start --env connector.mysql.dsn="mysql://mysql_user:mysql_password@localhost:3306/mysql_db"
 ```
 
 Alternatively, you can include the connection string directly in the source YAML definition by adding the `dsn` parameter.
@@ -40,7 +42,7 @@ An example of a source using this approach:
 type: "model"
 connector: "mysql"
 sql: "select * from my_table"
-dsn: "mysql_user:mysql_password@tcp(localhost:3306)/mysql_db"
+dsn: "mysql://mysql_user:mysql_password@localhost:3306/mysql_db"
 ```
 
 :::warning Beware of committing credentials to Git

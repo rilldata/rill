@@ -1,14 +1,22 @@
+import type { CartesianChartSpec } from "@rilldata/web-common/features/canvas/components/charts/cartesian-charts/CartesianChart";
+import type { HeatmapChartSpec } from "@rilldata/web-common/features/canvas/components/charts/heatmap-charts/HeatmapChart";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
 import { adjustOffsetForZone } from "@rilldata/web-common/lib/convertTimestampPreview";
 import { timeGrainToDuration } from "@rilldata/web-common/lib/time/grains";
 import {
   V1TimeGrain,
   type V1MetricsViewAggregationResponseDataItem,
+  type V1MetricsViewAggregationSort,
 } from "@rilldata/web-common/runtime-client";
 import merge from "deepmerge";
 import type { Config } from "vega-lite";
 import { CHART_CONFIG, type ChartSpec } from "./";
-import type { ChartDataResult, ChartType, FieldConfig } from "./types";
+import type {
+  ChartDataResult,
+  ChartSortDirection,
+  ChartType,
+  FieldConfig,
+} from "./types";
 
 export function isFieldConfig(field: unknown): field is FieldConfig {
   return (
@@ -126,6 +134,57 @@ export function adjustDataForTimeZone(
     });
     return datum;
   });
+}
+
+/**
+ * Converts a Vega-style sort configuration to Rill's aggregation sort format.
+ */
+export function vegaSortToAggregationSort(
+  encoder: "x" | "y",
+  config: CartesianChartSpec | HeatmapChartSpec,
+  defaultSort: ChartSortDirection,
+): V1MetricsViewAggregationSort | undefined {
+  const encoderConfig = config[encoder];
+
+  if (!encoderConfig) {
+    return undefined;
+  }
+
+  let sort = encoderConfig.sort;
+
+  if (!sort || Array.isArray(sort)) {
+    sort = defaultSort;
+  }
+
+  let field: string | undefined;
+  let desc: boolean = false;
+
+  switch (sort) {
+    case "x":
+    case "-x":
+      field = config.x?.field;
+      desc = sort === "-x";
+      break;
+    case "y":
+    case "-y":
+      field = config.y?.field;
+      desc = sort === "-y";
+      break;
+    case "color":
+    case "-color":
+      field = isFieldConfig(config.color) ? config.color.field : undefined;
+      desc = sort === "-color";
+      break;
+    default:
+      return undefined;
+  }
+
+  if (!field) return undefined;
+
+  return {
+    name: field,
+    desc,
+  };
 }
 
 const allowedTimeDimensionDetailTypes = [

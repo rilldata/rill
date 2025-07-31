@@ -40,10 +40,10 @@
     error: string | null,
     details?: string,
   ) => void = () => {};
+  export let connectionTab: ConnectorType = "parameters";
+  export { paramsForm, dsnForm };
 
   const dispatch = createEventDispatcher();
-
-  let connectionTab: ConnectorType = "parameters";
 
   // Always include 'managed' in the schema for ClickHouse
   const clickhouseSchema = yup(getYupSchema["clickhouse"]);
@@ -270,11 +270,7 @@
   </div>
 
   {#if !$paramsForm.managed}
-    <Tabs
-      value={connectionTab}
-      options={CONNECTION_TAB_OPTIONS}
-      on:change={(event) => (connectionTab = event.detail)}
-    >
+    <Tabs bind:value={connectionTab} options={CONNECTION_TAB_OPTIONS}>
       <TabsContent value="parameters">
         <form
           id={paramsFormId}
@@ -284,8 +280,6 @@
         >
           {#each filteredProperties as property (property.key)}
             {@const propertyKey = property.key ?? ""}
-            {@const label =
-              property.displayName + (property.required ? "" : " (optional)")}
             <div class="py-1.5 first:pt-0 last:pb-0">
               {#if property.type === ConnectorDriverPropertyType.TYPE_STRING || property.type === ConnectorDriverPropertyType.TYPE_NUMBER}
                 <Input
@@ -304,8 +298,9 @@
                 <Checkbox
                   id={propertyKey}
                   bind:checked={$paramsForm[propertyKey]}
-                  {label}
+                  label={property.displayName}
                   hint={property.hint}
+                  optional={!property.required}
                 />
               {:else if property.type === ConnectorDriverPropertyType.TYPE_INFORMATIONAL}
                 <InformationalField
@@ -353,8 +348,6 @@
     >
       {#each filteredProperties as property (property.key)}
         {@const propertyKey = property.key ?? ""}
-        {@const label =
-          property.displayName + (property.required ? "" : " (optional)")}
         <div class="py-1.5 first:pt-0 last:pb-0">
           {#if property.type === ConnectorDriverPropertyType.TYPE_STRING || property.type === ConnectorDriverPropertyType.TYPE_NUMBER}
             <Input
@@ -373,8 +366,9 @@
             <Checkbox
               id={propertyKey}
               bind:checked={$paramsForm[propertyKey]}
-              {label}
+              label={property.displayName}
               hint={property.hint}
+              optional={!property.required}
             />
           {:else if property.type === ConnectorDriverPropertyType.TYPE_INFORMATIONAL}
             <InformationalField

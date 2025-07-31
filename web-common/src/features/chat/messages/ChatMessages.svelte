@@ -69,12 +69,6 @@
     padding: 2rem;
   }
 
-  .chat-empty-icon {
-    font-size: 3rem;
-    margin-bottom: 0.5rem;
-    opacity: 0.6;
-  }
-
   .chat-empty-title {
     font-size: 1rem;
     font-weight: 600;

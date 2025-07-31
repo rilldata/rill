@@ -21,6 +21,7 @@ type RillYAML struct {
 	Description    string
 	AIInstructions string
 	OLAPConnector  string
+	AIConnector    string
 	Connectors     []*ConnectorDef
 	Variables      []*VariableDef
 	Defaults       map[ResourceKind]yaml.Node
@@ -57,6 +58,8 @@ type rillYAML struct {
 	Description string `yaml:"description"`
 	// User-provided context for LLM/AI features
 	AIInstructions string `yaml:"ai_instructions"`
+	// Connector to use for the AI service
+	AIConnector string `yaml:"ai_connector"`
 	// The project's default OLAP connector to use (can be overridden in the individual resources)
 	OLAPConnector string `yaml:"olap_connector"`
 	// Connectors required by the project
@@ -284,6 +287,7 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 		DisplayName:    tmp.DisplayName,
 		Description:    tmp.Description,
 		AIInstructions: tmp.AIInstructions,
+		AIConnector:    tmp.AIConnector,
 		OLAPConnector:  tmp.OLAPConnector,
 		Connectors:     make([]*ConnectorDef, len(tmp.Connectors)),
 		Variables:      make([]*VariableDef, len(vars)),

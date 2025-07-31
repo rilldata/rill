@@ -1553,95 +1553,108 @@ export const queryServiceMetricsViewTimeRanges = (
   });
 };
 
-export const getQueryServiceMetricsViewTimeRangesMutationOptions = <
-  TError = ErrorType<RpcStatus>,
-  TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof queryServiceMetricsViewTimeRanges>>,
-    TError,
-    {
-      instanceId: string;
-      metricsViewName: string;
-      data: QueryServiceMetricsViewTimeRangesBody;
-    },
-    TContext
-  >;
-}): CreateMutationOptions<
-  Awaited<ReturnType<typeof queryServiceMetricsViewTimeRanges>>,
-  TError,
-  {
-    instanceId: string;
-    metricsViewName: string;
-    data: QueryServiceMetricsViewTimeRangesBody;
-  },
-  TContext
-> => {
-  const mutationKey = ["queryServiceMetricsViewTimeRanges"];
-  const { mutation: mutationOptions } = options
-    ? options.mutation &&
-      "mutationKey" in options.mutation &&
-      options.mutation.mutationKey
-      ? options
-      : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey } };
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof queryServiceMetricsViewTimeRanges>>,
-    {
-      instanceId: string;
-      metricsViewName: string;
-      data: QueryServiceMetricsViewTimeRangesBody;
-    }
-  > = (props) => {
-    const { instanceId, metricsViewName, data } = props ?? {};
-
-    return queryServiceMetricsViewTimeRanges(instanceId, metricsViewName, data);
-  };
-
-  return { mutationFn, ...mutationOptions };
+export const getQueryServiceMetricsViewTimeRangesQueryKey = (
+  instanceId: string,
+  metricsViewName: string,
+  queryServiceMetricsViewTimeRangesBody: QueryServiceMetricsViewTimeRangesBody,
+) => {
+  return [
+    `/v1/instances/${instanceId}/queries/metrics-views/${metricsViewName}/time-ranges`,
+    queryServiceMetricsViewTimeRangesBody,
+  ] as const;
 };
 
-export type QueryServiceMetricsViewTimeRangesMutationResult = NonNullable<
+export const getQueryServiceMetricsViewTimeRangesQueryOptions = <
+  TData = Awaited<ReturnType<typeof queryServiceMetricsViewTimeRanges>>,
+  TError = ErrorType<RpcStatus>,
+>(
+  instanceId: string,
+  metricsViewName: string,
+  queryServiceMetricsViewTimeRangesBody: QueryServiceMetricsViewTimeRangesBody,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof queryServiceMetricsViewTimeRanges>>,
+        TError,
+        TData
+      >
+    >;
+  },
+) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getQueryServiceMetricsViewTimeRangesQueryKey(
+      instanceId,
+      metricsViewName,
+      queryServiceMetricsViewTimeRangesBody,
+    );
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof queryServiceMetricsViewTimeRanges>>
+  > = ({ signal }) =>
+    queryServiceMetricsViewTimeRanges(
+      instanceId,
+      metricsViewName,
+      queryServiceMetricsViewTimeRangesBody,
+      signal,
+    );
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!(instanceId && metricsViewName),
+    ...queryOptions,
+  } as CreateQueryOptions<
+    Awaited<ReturnType<typeof queryServiceMetricsViewTimeRanges>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type QueryServiceMetricsViewTimeRangesQueryResult = NonNullable<
   Awaited<ReturnType<typeof queryServiceMetricsViewTimeRanges>>
 >;
-export type QueryServiceMetricsViewTimeRangesMutationBody =
-  QueryServiceMetricsViewTimeRangesBody;
-export type QueryServiceMetricsViewTimeRangesMutationError =
-  ErrorType<RpcStatus>;
+export type QueryServiceMetricsViewTimeRangesQueryError = ErrorType<RpcStatus>;
 
-export const createQueryServiceMetricsViewTimeRanges = <
+export function createQueryServiceMetricsViewTimeRanges<
+  TData = Awaited<ReturnType<typeof queryServiceMetricsViewTimeRanges>>,
   TError = ErrorType<RpcStatus>,
-  TContext = unknown,
 >(
+  instanceId: string,
+  metricsViewName: string,
+  queryServiceMetricsViewTimeRangesBody: QueryServiceMetricsViewTimeRangesBody,
   options?: {
-    mutation?: CreateMutationOptions<
-      Awaited<ReturnType<typeof queryServiceMetricsViewTimeRanges>>,
-      TError,
-      {
-        instanceId: string;
-        metricsViewName: string;
-        data: QueryServiceMetricsViewTimeRangesBody;
-      },
-      TContext
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof queryServiceMetricsViewTimeRanges>>,
+        TError,
+        TData
+      >
     >;
   },
   queryClient?: QueryClient,
-): CreateMutationResult<
-  Awaited<ReturnType<typeof queryServiceMetricsViewTimeRanges>>,
-  TError,
-  {
-    instanceId: string;
-    metricsViewName: string;
-    data: QueryServiceMetricsViewTimeRangesBody;
-  },
-  TContext
-> => {
-  const mutationOptions =
-    getQueryServiceMetricsViewTimeRangesMutationOptions(options);
+): CreateQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getQueryServiceMetricsViewTimeRangesQueryOptions(
+    instanceId,
+    metricsViewName,
+    queryServiceMetricsViewTimeRangesBody,
+    options,
+  );
 
-  return createMutation(mutationOptions, queryClient);
-};
+  const query = createQuery(queryOptions, queryClient) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
 /**
  * @summary MetricsViewTimeSeries returns time series for the measures in the metrics view.
 It's a convenience API for querying a metrics view.

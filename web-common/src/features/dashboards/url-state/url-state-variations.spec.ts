@@ -50,7 +50,7 @@ import {
   AD_BIDS_TOGGLE_BID_PUBLISHER_DIMENSION_VISIBILITY,
   AD_BIDS_TOGGLE_IMPRESSIONS_MEASURE_VISIBILITY,
   AD_BIDS_TOGGLE_PIVOT,
-  AD_BIDS_TOGGLE_PIVOT_TABLE_MODE,
+  AD_BIDS_FLAT_PIVOT_TABLE,
   applyMutationsToDashboard,
   type TestDashboardMutation,
   AD_BIDS_SET_PUBLISHER_COMPARE_DIMENSION,
@@ -415,10 +415,7 @@ const TestCases: {
   },
   {
     title: "Pivot with no preset, toggle pivot to flat mode",
-    mutations: [
-      AD_BIDS_OPEN_DOMAIN_BID_PRICE_PIVOT,
-      AD_BIDS_TOGGLE_PIVOT_TABLE_MODE,
-    ],
+    mutations: [AD_BIDS_OPEN_DOMAIN_BID_PRICE_PIVOT, AD_BIDS_FLAT_PIVOT_TABLE],
     expectedSearch:
       "view=pivot&cols=domain%2Ctime.day%2Cimpressions&sort_by=&table_mode=flat",
     legacyNotSupported: true,

@@ -53,7 +53,7 @@
 {/if}
 
 <div>
-  {#each entries as [key, config] (key)}
+  {#each entries as [key, config] (`${component.id}-${key}`)}
     {#if config.showInUI !== false}
       <div class="component-param">
         <!-- TEXT, NUMBER, RILL_TIME -->

@@ -3,6 +3,7 @@ import { get } from "svelte/store";
 import {
   ConnectorDriverPropertyType,
   type V1ConnectorDriver,
+  type ConnectorDriverProperty,
   getRuntimeServiceGetFileQueryKey,
   runtimeServiceGetFile,
 } from "../../runtime-client";
@@ -11,6 +12,10 @@ import { runtime } from "../../runtime-client/runtime-store";
 export function compileConnectorYAML(
   connector: V1ConnectorDriver,
   formValues: Record<string, unknown>,
+  options?: {
+    fieldFilter?: (property: ConnectorDriverProperty) => boolean;
+    orderedProperties?: ConnectorDriverProperty[];
+  },
 ) {
   // Add instructions to the top of the file
   const topOfFile = `# Connector YAML
@@ -19,6 +24,18 @@ export function compileConnectorYAML(
 type: connector
 
 driver: ${connector.name}`;
+
+  // Use the provided orderedProperties if available, otherwise fall back to configProperties/sourceProperties
+  let properties =
+    options?.orderedProperties ??
+    connector.configProperties ??
+    connector.sourceProperties ??
+    [];
+
+  // Optionally filter properties
+  if (options?.fieldFilter) {
+    properties = properties.filter(options.fieldFilter);
+  }
 
   // Get the secret property keys
   const secretPropertyKeys =
@@ -34,10 +51,26 @@ driver: ${connector.name}`;
       )
       .map((property) => property.key) || [];
 
-  // Compile key value pairs
-  const compiledKeyValues = Object.keys(formValues)
-    .filter((key) => formValues[key] !== undefined)
-    .map((key) => {
+  // Compile key value pairs in the order of properties
+  const compiledKeyValues = properties
+    .filter((property) => {
+      if (!property.key) return false;
+      const value = formValues[property.key];
+      if (value === undefined) return false;
+      // Filter out empty strings for optional fields
+      if (typeof value === "string" && value.trim() === "") return false;
+      // For ClickHouse, exclude managed: false as it's the default behavior
+      // When managed=false, it's the default self-managed mode and doesn't need to be explicit
+      if (
+        connector.name === "clickhouse" &&
+        property.key === "managed" &&
+        value === false
+      )
+        return false;
+      return true;
+    })
+    .map((property) => {
+      const key = property.key as string;
       const value = formValues[key] as string;
 
       const isSecretProperty = secretPropertyKeys.includes(key);

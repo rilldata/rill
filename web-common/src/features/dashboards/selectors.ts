@@ -154,7 +154,10 @@ export function hasValidMetricsViewTimeRange(
     queryClient,
   );
 
-  return derived(fullTimeRangeQuery, (fullTimeRange) => !fullTimeRange.isError);
+  return derived(
+    fullTimeRangeQuery,
+    (fullTimeRange) => !fullTimeRange.isPending && !fullTimeRange.isError,
+  );
 }
 
 export function getFiltersForOtherDimensions(

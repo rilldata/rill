@@ -35,8 +35,14 @@ export function compileSourceYAML(
 
   // Compile key value pairs
   const compiledKeyValues = Object.keys(formValues)
-    .filter((key) => formValues[key] !== undefined)
-    .filter((key) => key !== "name")
+    .filter((key) => {
+      if (key === "name") return false;
+      const value = formValues[key];
+      if (value === undefined) return false;
+      // Filter out empty strings for optional fields
+      if (typeof value === "string" && value.trim() === "") return false;
+      return true;
+    })
     .map((key) => {
       const value = formValues[key] as string;
 
