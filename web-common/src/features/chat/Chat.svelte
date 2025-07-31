@@ -8,6 +8,7 @@
     type V1Conversation,
   } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
+  import { featureFlags } from "../feature-flags";
   import {
     chatActions,
     chatOpen,
@@ -21,6 +22,8 @@
   import ChatFooter from "./input/ChatFooter.svelte";
   import ChatInput from "./input/ChatInput.svelte";
   import ChatMessages from "./messages/ChatMessages.svelte";
+
+  const { chat: chatFlag } = featureFlags;
 
   // Local UI state
   let input = "";
@@ -109,7 +112,7 @@
   }
 </script>
 
-{#if $chatOpen}
+{#if $chatOpen && $chatFlag}
   <div class="chat-sidebar" style="--sidebar-width: {$sidebarWidth}px;">
     <Resizer
       min={DEFAULTS.MIN_SIDEBAR_WIDTH}
