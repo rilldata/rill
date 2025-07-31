@@ -1,77 +1,94 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import { getNeverSubscribedIssue } from "@rilldata/web-common/features/billing/issues";
-  import TrialDetailsDialog from "@rilldata/web-common/features/billing/TrialDetailsDialog.svelte";
+  import { page } from "$app/stores";
+  import CTAMessage from "@rilldata/web-common/components/calls-to-action/CTAMessage.svelte";
+  import CancelCircleInverse from "@rilldata/web-common/components/icons/CancelCircleInverse.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
-  import OrgSelector from "@rilldata/web-common/features/project/OrgSelector.svelte";
-  import { ProjectDeployer } from "@rilldata/web-common/features/project/ProjectDeployer";
-  import DeployError from "@rilldata/web-common/features/project/DeployError.svelte";
-  import { onMount } from "svelte";
-  import CTAContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
-  import CTALayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
+  import { waitUntil } from "@rilldata/web-common/lib/waitUtils.ts";
+  import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
+  import { BehaviourEventAction } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
+  import {
+    createLocalServiceGetCurrentProject,
+    createLocalServiceGetCurrentUser,
+    createLocalServiceGetMetadata,
+  } from "@rilldata/web-common/runtime-client/local-service";
   import CTAHeader from "@rilldata/web-common/components/calls-to-action/CTAHeader.svelte";
   import CTANeedHelp from "@rilldata/web-common/components/calls-to-action/CTANeedHelp.svelte";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
-  import type { PageData } from "./$types";
+  import { onMount } from "svelte";
+  import { get } from "svelte/store";
 
-  export let data: PageData;
+  // It would be great if this could be moved to loader function.
+  // But these can take a significant time (~2sec)
+  // So until sveltekit supports loading state from loader function these will have to be queried here.
+  const user = createLocalServiceGetCurrentUser();
+  const metadata = createLocalServiceGetMetadata();
+  const project = createLocalServiceGetCurrentProject();
 
-  const deployer = new ProjectDeployer(data.orgParam);
-  const metadata = deployer.metadata;
-  const user = deployer.user;
-  const project = deployer.project;
-  const orgsMetadata = deployer.orgsMetadata;
-  const deployerStatus = deployer.getStatus();
-  const promptOrgSelection = deployer.promptOrgSelection;
-  // This org is set by the deployer.
-  // 1. When there is no org is present it is auto created based on user's email.
-  // 2. Otherwise, it will be the based on the selection. Will be equal to 'selectedOrg' in this case.
-  const org = deployer.org;
-  let isEmptyOrg = false;
-  $: {
-    const om = $orgsMetadata?.data?.orgs.find((o) => o.name === $org);
-    isEmptyOrg = !!om?.issues && !!getNeverSubscribedIssue(om.issues);
-  }
+  $: loading = $user.isPending || $metadata.isPending || $project.isPending;
+  let error: Error | null = null;
+  $: error = $user.error ?? $metadata.error ?? $project.error;
 
-  // This is specifically the org selected using the OrgSelector.
-  // Used to retrigger the deploy after the user confirms deploy on an empty org.
-  let selectedOrg = "";
-  let deployConfirmOpen = false;
-
-  function onOrgSelect(org: string) {
-    // Disabling for now. We should get user's quota and not show if it is hit
-    // const om = orgMetadata.orgs.find((o) => o.name === org);
-    // if (om?.issues && getNeverSubscribedIssue(om.issues)) {
-    //   // if the selected org is empty, show the trial starting dialog
-    //   // We need this since we wouldn't have shown it in DeployCTA
-    //   deployConfirmOpen = true;
-    //   selectedOrg = org;
-    //   return;
-    // }
-
-    promptOrgSelection.set(false);
-    return deployer.deploy(org);
-  }
-
-  function onStartTrialConfirm() {
-    promptOrgSelection.set(false);
-    return deployer.deploy(selectedOrg);
-  }
-
-  function onBack() {
-    if ($orgsMetadata.data?.orgs?.length) {
-      promptOrgSelection.set(true);
-    } else {
-      void goto("/");
+  function handleDeploy() {
+    // Should not happen if the servers are up. If not, there should be a query error.
+    if (!$user.data || !$metadata.data?.loginUrl) {
+      error = new Error("Failed to fetch login URL.");
+      return;
     }
+
+    const isUserLoggedIn = !!$user.data?.user;
+    if (!isUserLoggedIn) {
+      // Redirect to login url provided from metadata query.
+      void behaviourEvent?.fireDeployEvent(BehaviourEventAction.LoginStart);
+      const u = new URL($metadata.data?.loginUrl);
+      // Set the redirect to this page so that deploy resumes after a login
+      u.searchParams.set("redirect", get(page).url.toString());
+      window.location.href = u.toString();
+      return;
+    }
+
+    // User is logged in already.
+
+    void behaviourEvent?.fireDeployEvent(BehaviourEventAction.LoginSuccess);
+
+    // Cloud project doest exist.
+    const projectExists = !!$project.data?.project;
+    if (!projectExists) {
+      const isPartOfAtLeastOneOrg = !!$user.data.rillUserOrgs?.length;
+      if (isPartOfAtLeastOneOrg) {
+        // If the user has at least one org we show the selector.
+        // Note: The selector has the option to create a new org, so we show it even when there is only one org.
+        void goto(`/deploy/organization`);
+      } else {
+        void goto(`/deploy/organization/new`);
+      }
+      return;
+    }
+
+    const isUserManagedGitProject =
+      $project.data!.project!.gitRemote &&
+      !$project.data!.project!.managedGitId;
+    if (isUserManagedGitProject) {
+      // we do not support pushing to a project already connected to user managed github
+      error =
+        new Error(`This project has already been connected to a GitHub repo.
+Please push changes directly to GitHub and the project in Rill Cloud will automatically be updated.`);
+      return;
+    }
+    const orgName = $project.data!.project!.orgName;
+    const projectId = $project.data!.project!.id;
+    // Cloud project already exists. Run a redeploy
+    void goto(`/deploy/update?org=${orgName}&project_id=${projectId}`);
   }
 
-  function onRetry() {
-    return deployer.deploy($org);
+  async function maybeDeploy() {
+    await waitUntil(() => !loading);
+    if (error) return;
+    handleDeploy();
   }
 
   onMount(() => {
-    void deployer.loginOrDeploy();
+    void maybeDeploy();
   });
 </script>
 
@@ -81,35 +98,16 @@
   {$user.isLoading}-{$metadata.isLoading}-{$project.isLoading}
 </div>
 
-<CTALayoutContainer>
-  <CTAContentContainer>
-    {#if $promptOrgSelection}
-      <OrgSelector
-        orgs={$user.data?.rillUserOrgs ?? []}
-        onSelect={onOrgSelect}
-      />
-    {:else if $deployerStatus.isLoading}
-      <div class="h-36">
-        <Spinner status={EntityStatus.Running} size="7rem" duration={725} />
-      </div>
-      <CTAHeader variant="bold">
-        Hang tight! We're deploying your project...
-      </CTAHeader>
-      <CTANeedHelp />
-    {:else if $deployerStatus.error}
-      <DeployError
-        error={$deployerStatus.error}
-        org={$org}
-        adminUrl={$metadata.data?.adminUrl ?? ""}
-        {isEmptyOrg}
-        {onRetry}
-        {onBack}
-      />
-    {/if}
-  </CTAContentContainer>
-</CTALayoutContainer>
-
-<TrialDetailsDialog
-  bind:open={deployConfirmOpen}
-  onContinue={onStartTrialConfirm}
-/>
+{#if loading}
+  <div class="h-36">
+    <Spinner status={EntityStatus.Running} size="7rem" duration={725} />
+  </div>
+  <CTAHeader variant="bold">
+    Hang tight! We're deploying your project...
+  </CTAHeader>
+  <CTANeedHelp />
+{:else if error}
+  <CancelCircleInverse size="7rem" className="text-gray-200" />
+  <CTAHeader variant="bold">Oops! An error occurred</CTAHeader>
+  <CTAMessage>{error.message}</CTAMessage>
+{/if}

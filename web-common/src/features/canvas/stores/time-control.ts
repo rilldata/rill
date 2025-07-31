@@ -44,8 +44,8 @@ import {
   deriveInterval,
   normalizeWeekday,
 } from "../../dashboards/time-controls/new-time-controls";
-import type { SearchParamsStore } from "./canvas-entity";
 import { type CanvasResponse } from "../selector";
+import type { SearchParamsStore } from "./canvas-entity";
 
 type AllTimeRange = TimeRange & { isFetching: boolean };
 
@@ -147,17 +147,31 @@ export class TimeControls {
           (timeRanges?.[0] as string | undefined) ||
           "PT24H";
 
-        const { interval, grain, error } = await deriveInterval(
-          finalRange,
-          Interval.fromDateTimes(
-            DateTime.fromJSDate(allTimeRange.start),
-            DateTime.fromJSDate(allTimeRange.end),
-          ),
-          firstMetricsViewName,
-          timeZone,
+        const allTimeInterval = Interval.fromDateTimes(
+          DateTime.fromJSDate(allTimeRange.start),
+          DateTime.fromJSDate(allTimeRange.end),
         );
 
-        if (error || !interval.start || !interval.end) return;
+        let interval: Interval;
+        let grain: V1TimeGrain | undefined;
+
+        // Handle "inf" (All Time) case specially
+        if (finalRange === "inf") {
+          interval = allTimeInterval;
+          grain = undefined;
+        } else {
+          const result = await deriveInterval(
+            finalRange,
+            allTimeInterval,
+            firstMetricsViewName,
+            timeZone,
+          );
+
+          if (result.error || !result.interval.start || !result.interval.end)
+            return;
+          interval = result.interval;
+          grain = result.grain;
+        }
 
         const selectedTimeRange: DashboardTimeControls = {
           name: finalRange,
