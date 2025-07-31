@@ -46,6 +46,12 @@
       }
 
       onChange(updatedConfig);
+    } else if (property === "field") {
+      // switch to field from single color
+      onChange({
+        field: value,
+        type: "nominal",
+      });
     }
   }
 

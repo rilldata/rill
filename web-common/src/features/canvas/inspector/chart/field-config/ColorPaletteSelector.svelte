@@ -80,14 +80,6 @@
       <span class="text-xs font-medium">Color mapping</span>
       <div class="flex items-center gap-x-2">
         {#if isExpanded}
-          <button
-            class="text-xs text-blue-600 hover:text-blue-800"
-            on:click|stopPropagation={resetToDefault}
-          >
-            Reset to default
-          </button>
-        {/if}
-        {#if isExpanded}
           <ChevronDown size="14px" class="text-gray-400" />
         {:else}
           <ChevronRight size="14px" class="text-gray-400" />
@@ -115,19 +107,24 @@
             No color values found
           </div>
         {/if}
-        {#if hasMoreThanThreshold && !showAllValues}
-          <div class="p-1">
-            <Button type="text" onClick={() => (showAllValues = true)}>
-              See more ({allColorMappings.length - THRESHOLD} more values)
-            </Button>
+        <div class="p-1 flex items-center justify-between">
+          <div>
+            {#if hasMoreThanThreshold && !showAllValues}
+              <Button type="text" onClick={() => (showAllValues = true)}>
+                See {allColorMappings.length - THRESHOLD} more value{allColorMappings.length -
+                  THRESHOLD !==
+                1
+                  ? "s"
+                  : ""}
+              </Button>
+            {:else if hasMoreThanThreshold && showAllValues}
+              <Button type="text" onClick={() => (showAllValues = false)}>
+                See less
+              </Button>
+            {/if}
           </div>
-        {:else if hasMoreThanThreshold && showAllValues}
-          <div class="p-1">
-            <Button type="text" onClick={() => (showAllValues = false)}>
-              See less
-            </Button>
-          </div>
-        {/if}
+          <Button type="text" onClick={resetToDefault}>Reset to default</Button>
+        </div>
       </div>
     {/if}
   </div>
