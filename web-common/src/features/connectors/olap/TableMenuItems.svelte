@@ -17,22 +17,16 @@
   import { featureFlags } from "../../feature-flags";
   import { useCreateMetricsViewFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
   import { createModelFromTable } from "./createModel";
-  import { useIsModelingSupportedForConnectorOLAP as useIsModelingSupportedForConnector } from "../selectors";
-
   const { ai } = featureFlags;
 
   export let connector: string;
   export let database: string = "";
   export let databaseSchema: string = "";
   export let table: string;
+  export let showGenerateMetricsAndDashboard: boolean = false;
+  export let isModelingSupported: boolean | undefined = false;
 
   $: ({ instanceId } = $runtime);
-
-  $: isModelingSupportedForConnector = useIsModelingSupportedForConnector(
-    instanceId,
-    connector,
-  );
-  $: isModelingSupported = $isModelingSupportedForConnector.data;
   $: createMetricsViewFromTable = useCreateMetricsViewFromTableUIAction(
     instanceId,
     connector,
@@ -85,24 +79,26 @@
   </NavigationMenuItem>
 {/if}
 
-<NavigationMenuItem on:click={createMetricsViewFromTable}>
-  <MetricsViewIcon slot="icon" />
-  <div class="flex gap-x-2 items-center">
-    Generate metrics
-    {#if $ai}
-      with AI
-      <WandIcon class="w-3 h-3" />
-    {/if}
-  </div>
-</NavigationMenuItem>
+{#if showGenerateMetricsAndDashboard}
+  <NavigationMenuItem on:click={createMetricsViewFromTable}>
+    <MetricsViewIcon slot="icon" />
+    <div class="flex gap-x-2 items-center">
+      Generate metrics
+      {#if $ai}
+        with AI
+        <WandIcon class="w-3 h-3" />
+      {/if}
+    </div>
+  </NavigationMenuItem>
 
-<NavigationMenuItem on:click={createExploreFromTable}>
-  <ExploreIcon slot="icon" />
-  <div class="flex gap-x-2 items-center">
-    Generate dashboard
-    {#if $ai}
-      with AI
-      <WandIcon class="w-3 h-3" />
-    {/if}
-  </div>
-</NavigationMenuItem>
+  <NavigationMenuItem on:click={createExploreFromTable}>
+    <ExploreIcon slot="icon" />
+    <div class="flex gap-x-2 items-center">
+      Generate dashboard
+      {#if $ai}
+        with AI
+        <WandIcon class="w-3 h-3" />
+      {/if}
+    </div>
+  </NavigationMenuItem>
+{/if}

@@ -12,6 +12,8 @@
     makeFullyQualifiedTableName,
     makeTablePreviewHref,
   } from "../olap/olap-config";
+  import { useIsModelingSupportedForConnectorOLAP as useIsModelingSupportedForConnector } from "../selectors";
+  import { runtime } from "../../../runtime-client/runtime-store";
   import type { ConnectorExplorerStore } from "./connector-explorer-store";
 
   export let instanceId: string;
@@ -23,6 +25,7 @@
   export let hasUnsupportedDataTypes: boolean = false;
   export let store: ConnectorExplorerStore;
   export let useNewAPI: boolean = false;
+  export let showGenerateMetricsAndDashboard: boolean = false;
 
   let contextMenuOpen = false;
 
@@ -30,6 +33,13 @@
   $: showSchema = $expandedStore;
 
   const { allowContextMenu, allowNavigateToTable, allowShowSchema } = store;
+
+  $: ({ instanceId: runtimeInstanceId } = $runtime);
+  $: isModelingSupportedForConnector = useIsModelingSupportedForConnector(
+    runtimeInstanceId,
+    connector,
+  );
+  $: isModelingSupported = $isModelingSupportedForConnector.data;
 
   $: fullyQualifiedTableName = makeFullyQualifiedTableName(
     driver,
@@ -95,7 +105,7 @@
       />
     {/if}
 
-    {#if allowContextMenu}
+    {#if allowContextMenu && (showGenerateMetricsAndDashboard || isModelingSupported)}
       <DropdownMenu.Root bind:open={contextMenuOpen}>
         <DropdownMenu.Trigger asChild let:builder>
           <ContextButton
@@ -114,7 +124,14 @@
           side="right"
           sideOffset={16}
         >
-          <TableMenuItems {connector} {database} {databaseSchema} {table} />
+          <TableMenuItems
+            {connector}
+            {database}
+            {databaseSchema}
+            {table}
+            {showGenerateMetricsAndDashboard}
+            {isModelingSupported}
+          />
         </DropdownMenu.Content>
       </DropdownMenu.Root>
     {/if}

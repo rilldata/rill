@@ -104,6 +104,8 @@
             {instanceId}
             driver={connector.driver.name}
             connector={connectorName}
+            showGenerateMetricsAndDashboard={connector.driver.implementsOlap ??
+              false}
             {database}
             {databaseSchema}
             table={tableInfo.name}
