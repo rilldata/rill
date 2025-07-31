@@ -15,7 +15,7 @@ const colors = {
   light: {
     grid: "#e5e7eb", // gray-200
     axisLabel: "#6b7280", // gray-600
-    surface: "#f9fafb", // gray-100
+    surface: "white",
   },
   dark: {
     grid: "#374151", // gray-700

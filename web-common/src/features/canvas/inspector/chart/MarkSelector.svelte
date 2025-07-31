@@ -5,6 +5,11 @@
   import type { FieldConfig } from "@rilldata/web-common/features/canvas/components/charts/types";
   import SingleFieldInput from "@rilldata/web-common/features/canvas/inspector/SingleFieldInput.svelte";
   import type { ComponentInputParam } from "@rilldata/web-common/features/canvas/inspector/types";
+  import {
+    defaultPrimaryColors,
+    defaultSecondaryColors,
+  } from "@rilldata/web-common/features/themes/color-config";
+  import chroma from "chroma-js";
   import FieldConfigPopover from "./field-config/FieldConfigPopover.svelte";
 
   export let key: string;
@@ -16,8 +21,41 @@
 
   $: selected = !markConfig || typeof markConfig === "string" ? 0 : 1;
 
-  // TODO: Replace with theme primary color
-  $: color = typeof markConfig === "string" ? markConfig : "rgb(117, 126, 255)";
+  const theme = {
+    primary: chroma(`hsl(${defaultPrimaryColors[500]})`),
+    secondary: chroma(`hsl(${defaultSecondaryColors[500]})`),
+  };
+
+  // Get the actual color value based on whether it's a theme color or regular color
+  $: color = typeof markConfig === "string" ? markConfig : theme.primary.hex();
+
+  // Get the display color - actual color for rendering
+  $: displayColor = (() => {
+    if (typeof markConfig !== "string") return theme.primary.hex();
+
+    switch (markConfig) {
+      case "primary":
+        return theme.primary.hex();
+      case "secondary":
+        return theme.secondary.hex();
+      default:
+        return markConfig;
+    }
+  })();
+
+  // Get the display label for the color input
+  $: colorLabel = (() => {
+    if (typeof markConfig !== "string") return "";
+
+    switch (markConfig) {
+      case "primary":
+        return "Primary";
+      case "secondary":
+        return "Secondary";
+      default:
+        return markConfig;
+    }
+  })();
 
   $: chartFieldInput = config.meta?.chartFieldInput;
 
@@ -74,10 +112,10 @@
   <div class="pt-2">
     <ColorInput
       small
-      stringColor={color}
-      label=""
-      onChange={(color) => {
-        onChange(color);
+      stringColor={displayColor}
+      label={colorLabel}
+      onChange={(newColor) => {
+        onChange(newColor);
       }}
     />
   </div>

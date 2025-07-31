@@ -113,7 +113,7 @@
           {spec}
           renderer={isChartLineLike(chartType) ? "svg" : "canvas"}
           {expressionFunctions}
-          config={getRillTheme(true, $darkMode)}
+          config={getRillTheme(true)}
         />
       {/if}
     {/if}
