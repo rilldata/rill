@@ -126,14 +126,16 @@ export function adjustDataForTimeZone(
   if (!data) return data;
 
   return data.map((datum) => {
+    // Create a shallow copy of the datum to avoid mutating the original
+    const adjustedDatum = { ...datum };
     timeFields.forEach((timeField) => {
-      datum[timeField] = adjustOffsetForZone(
+      adjustedDatum[timeField] = adjustOffsetForZone(
         datum[timeField] as string,
         selectedTimezone,
         timeGrainToDuration(timeGrain),
       );
     });
-    return datum;
+    return adjustedDatum;
   });
 }
 
