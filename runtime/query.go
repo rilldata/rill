@@ -68,7 +68,7 @@ type Query interface {
 }
 
 func (r *Runtime) Query(ctx context.Context, instanceID string, query Query, priority int) error {
-	qk := query.Key()
+	qk := "" //query.Key()
 	// If key is empty, skip caching
 	if qk == "" {
 		return query.Resolve(ctx, r, instanceID, priority)
