@@ -21,6 +21,8 @@ export function generateVLFunnelChartSpec(
   const spec = createMultiLayerBaseSpec();
   const vegaConfig = createConfigWithLegend(config, config.stage);
 
+  spec.height = 500;
+
   const tooltip = createDefaultTooltipEncoding(
     [config.measure, config.stage],
     data,
@@ -68,13 +70,18 @@ export function generateVLFunnelChartSpec(
   const valueTextLayer: UnitSpec<Field> = {
     mark: {
       type: "text",
-      align: "right",
       fontWeight: 600,
+      dx: { expr: `-(scale('x', datum['${config.measure?.field}']) / 2)` },
       color: {
         expr: `luminance ( scale ( 'color', datum['${sanitizeValueForVega(config.stage?.field ?? "")}'] ) ) > 0.45 ? '#222' : '#efefef'`,
       },
     },
     encoding: {
+      x: {
+        field: config.measure?.field,
+        type: "quantitative",
+        stack: "center",
+      },
       text: {
         field: config.measure?.field,
         type: config.measure?.type || "quantitative",
@@ -110,7 +117,6 @@ export function generateVLFunnelChartSpec(
 
   return {
     ...spec,
-    height: 500,
     ...(vegaConfig && { config: vegaConfig }),
   };
 }
