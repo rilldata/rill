@@ -31980,6 +31980,8 @@ func (m *GetReportMetaRequest) validate(all bool) error {
 
 	// no validation rules for WebOpenMode
 
+	// no validation rules for WhereFilterJson
+
 	if len(errors) > 0 {
 		return GetReportMetaRequestMultiError(errors)
 	}
