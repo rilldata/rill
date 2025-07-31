@@ -9,8 +9,10 @@ import (
 )
 
 // wrapClickhouseCompareTimeDim wraps any select node in the AST having a computed time dimension in an outer select so that inner select has different alias than the time column name and outer select, selects this column using the original time alias.
-// Example, in comparison queries we have expression like this: (date_trunc('day', "TIME_DIM") - INTERVAL (DATEDIFF('day', base_time_start, compare_time_start)) day) AS "TIME_DIM"
+// Example, in comparison queries we have expression like this: (date_trunc('day', "TIME_DIM") - INTERVAL (DATEDIFF('day', base_time_start, compare_time_start)) day) AS "TIME_DIM".
 // This does not work correctly in ClickHouse and it just does not subtract the interval from the time dimension and return "TIME_DIM" as it is.
+// Another example, if there is an expression like date_trunc('day', "TIME_DIM") AS "TIME_DIM", and if "TIME_DIM" is used in where clause then it will use the underlying "TIME_DIM" column not the truncated one.
+// Relevant issue - https://github.com/ClickHouse/ClickHouse/issues/9715
 func (e *Executor) wrapClickhouseCompareTimeDim(ast *AST) {
 	if e.olap.Dialect() != drivers.DialectClickHouse || ast.query.ComparisonTimeRange == nil {
 		return
@@ -29,6 +31,7 @@ func (e *Executor) wrapClickhouseCompareTimeDim(ast *AST) {
 		if err != nil { // this should never happen
 			panic(fmt.Errorf("failed to lookup time dimension %q: %w", timeDim, err))
 		}
+		// if the dimension name is already different from the column name, we don't need to wrap it
 		if !strings.EqualFold(dim.Name, dim.Column) {
 			continue
 		}
