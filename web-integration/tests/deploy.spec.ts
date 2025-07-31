@@ -200,32 +200,19 @@ async function login(deployPage: Page) {
     );
   }
 
-  // If we land on a signup page, look for "Already have an account?" link to switch to login mode
+  // Wait for the auth page to load
+  await deployPage.waitForTimeout(2000);
+
+  // Fill in the email - try both "username" (login page) and "email" (signup page)
+  let emailInput = deployPage.locator('input[name="username"]');
   try {
-    // Wait a bit for the page to load
-    await deployPage.waitForTimeout(2000);
-
-    // Look for "Already have an account?" link/button that will be present on signup page
-    const signInLink = deployPage
-      .locator("a, button")
-      .filter({
-        hasText: /Already have an account\?/i,
-      })
-      .first();
-
-    // If we find a sign in link, click it to switch to login mode
-    if (await signInLink.isVisible({ timeout: 3000 })) {
-      await signInLink.click();
-      await deployPage.waitForTimeout(1000); // Wait for the UI to update
-    }
-  } catch (error) {
-    // If we can't find a sign in link, continue with the existing flow
-    // This might mean we're already on the login page
+    await emailInput.waitFor({ state: "visible", timeout: 5000 });
+  } catch {
+    // If username field not found, try email field (signup page)
+    emailInput = deployPage.locator('input[name="email"]');
+    await emailInput.waitFor({ state: "visible", timeout: 5000 });
   }
 
-  // Fill in the email
-  const emailInput = deployPage.locator('input[name="username"]');
-  await emailInput.waitFor({ state: "visible" });
   await emailInput.click();
   await emailInput.fill(process.env.RILL_DEVTOOL_E2E_ADMIN_ACCOUNT_EMAIL);
 
