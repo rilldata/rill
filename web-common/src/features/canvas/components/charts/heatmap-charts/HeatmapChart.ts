@@ -215,10 +215,10 @@ export class HeatmapChartComponent extends BaseChart<HeatmapChartSpec> {
           !!timeRange?.start &&
           !!timeRange?.end &&
           (config.x?.type === "nominal" && !Array.isArray(config.x?.sort)
-            ? !!xTopNData?.length
+            ? xTopNData !== undefined
             : true) &&
           (config.y?.type === "nominal" && !Array.isArray(config.y?.sort)
-            ? !!yTopNData?.length
+            ? yTopNData !== undefined
             : true);
 
         let combinedWhere: V1Expression | undefined = where;

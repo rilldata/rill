@@ -64,6 +64,7 @@ func TestResolveGoFormatDSN_Basic(t *testing.T) {
 	cfg := gomysql.Config{
 		User:      "root",
 		Passwd:    "pass",
+		Net:       "tcp",
 		Addr:      "127.0.0.1:3306",
 		DBName:    "mydb",
 		TLSConfig: "preferred",
