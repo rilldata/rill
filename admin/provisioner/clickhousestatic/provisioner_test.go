@@ -46,7 +46,7 @@ func TestClickHouseStatic(t *testing.T) {
 
 	// Create the provisioner
 	specJSON, err := json.Marshal(&Spec{
-		DSN: dsn,
+		DSNEnv: dsn,
 	})
 	require.NoError(t, err)
 	p, err := New(specJSON, nil, zap.NewNop())
@@ -262,7 +262,7 @@ func TestClickHouseStaticHumanReadableNaming(t *testing.T) {
 
 	// Create the provisioner
 	specJSON, err := json.Marshal(&Spec{
-		DSN: dsn,
+		DSNEnv: dsn,
 	})
 	require.NoError(t, err)
 	p, err := New(specJSON, nil, zap.NewNop())
@@ -348,7 +348,7 @@ func TestClickHouseStaticFallbackNaming(t *testing.T) {
 
 	// Create the provisioner
 	specJSON, err := json.Marshal(&Spec{
-		DSN: dsn,
+		DSNEnv: dsn,
 	})
 	require.NoError(t, err)
 	p, err := New(specJSON, nil, zap.NewNop())

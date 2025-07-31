@@ -446,32 +446,26 @@ func (c *Connection) Config() map[string]any {
 func (c *Connection) Close() error {
 	c.cancel()
 
-	var errors []error
-
+	var errReadDB error
 	if c.readDB != nil {
 		if err := c.readDB.Close(); err != nil {
-			errors = append(errors, fmt.Errorf("closing read connection: %w", err))
+			errReadDB = fmt.Errorf("closing read connection: %w", err)
 		}
 	}
 
+	var errWriteDB error
 	if c.writeDB != nil && c.writeDB != c.readDB {
 		if err := c.writeDB.Close(); err != nil {
-			errors = append(errors, fmt.Errorf("closing write connection: %w", err))
+			errWriteDB = fmt.Errorf("closing write connection: %w", err)
 		}
 	}
 
 	var errEmbed error
 	if c.embed != nil {
 		errEmbed = c.embed.stop()
-		if errEmbed != nil {
-			errors = append(errors, fmt.Errorf("stopping embedded ClickHouse: %w", errEmbed))
-		}
 	}
 
-	if len(errors) > 0 {
-		return fmt.Errorf("multiple errors during close: %v", errors)
-	}
-	return nil
+	return errors.Join(errReadDB, errWriteDB, errEmbed)
 }
 
 // Registry implements drivers.Connection.

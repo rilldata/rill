@@ -22,28 +22,9 @@ func init() {
 }
 
 type Spec struct {
-	// DSN with admin permissions for a Clickhouse service.
-	// This will be used to create a new (virtual) database and access-restricted user for each provisioned resource.
-	DSN string `json:"dsn"`
-	// Path to a file that we should load the DSN from.
-	// This is an alternative to specifying the DSN directly, which can be useful for secrets management.
-	DSNPath string `json:"dsn_path"`
-	// ENV variable that contains the clickhouse DSN.
-	// This is an alternative to specifying the DSN directly, which can be useful for injecting secrets
+	// DSNEnv variable that contains the clickhouse DSN (required)
 	DSNEnv string `json:"dsn_env"`
-
-	// ReadDSN with admin permissions for read operations (optional separate read replica)
-	ReadDSN string `json:"read_dsn,omitempty"`
-	// ReadDSNPath with admin permissions for read operations (optional separate read replica)
-	ReadDSNPath string `json:"read_dsn_path,omitempty"`
-	// ReadDSNEnv with admin permissions for read operations (optional separate read replica)
-	ReadDSNEnv string `json:"read_dsn_env,omitempty"`
-
-	// WriteDSN with admin permissions for write operations (optional separate write primary)
-	WriteDSN string `json:"write_dsn,omitempty"`
-	// WriteDSNPath with admin permissions for write operations (optional separate write primary)
-	WriteDSNPath string `json:"write_dsn_path,omitempty"`
-	// WriteDSNEnv with admin permissions for write operations (optional separate write primary)
+	// WriteDSNEnv with permissions for write operations (optional)
 	WriteDSNEnv string `json:"write_dsn_env,omitempty"`
 
 	// Cluster name for ClickHouse cluster operations.
@@ -54,9 +35,12 @@ type Spec struct {
 // Provisioner provisions Clickhouse resources using a static, multi-tenant Clickhouse service.
 // It creates a new (virtual) database and user with access restricted to that database for each resource.
 type Provisioner struct {
-	spec   *Spec
-	logger *zap.Logger
-	ch     *sql.DB
+	spec     *Spec
+	logger   *zap.Logger
+	readDB   *sql.DB // For health checks and read operations
+	writeDB  *sql.DB // For provisioning operations (may be same as readDB)
+	dsn      string
+	writeDSN string
 }
 
 var _ provisioner.Provisioner = (*Provisioner)(nil)
@@ -68,73 +52,40 @@ func New(specJSON []byte, _ database.DB, logger *zap.Logger) (provisioner.Provis
 		return nil, fmt.Errorf("failed to parse provisioner spec: %w", err)
 	}
 
-	if spec.DSNPath != "" {
-		dsn, err := os.ReadFile(spec.DSNPath)
-		if err != nil {
-			return nil, fmt.Errorf("failed to read DSN file: %w", err)
-		}
-		spec.DSN = strings.TrimSpace(string(dsn))
+	// Get primary DSN from the specified environment variable (required)
+	dsn := os.Getenv(spec.DSNEnv)
+	if dsn == "" {
+		return nil, fmt.Errorf("environment variable %s is not set or empty", spec.DSNEnv)
 	}
 
-	if spec.DSNEnv != "" && spec.DSN == "" && spec.DSNPath == "" {
-		dsn := os.Getenv(spec.DSNEnv)
-		if dsn == "" {
-			return nil, fmt.Errorf("environment variable %s is not set or empty", spec.DSNEnv)
-		}
-		spec.DSN = dsn
-	}
-
-	if spec.ReadDSNPath != "" {
-		dsn, err := os.ReadFile(spec.ReadDSNPath)
-		if err != nil {
-			return nil, fmt.Errorf("failed to read read DSN file: %w", err)
-		}
-		spec.ReadDSN = strings.TrimSpace(string(dsn))
-	}
-
-	if spec.ReadDSNEnv != "" && spec.ReadDSN == "" && spec.ReadDSNPath == "" {
-		dsn := os.Getenv(spec.ReadDSNEnv)
-		if dsn == "" {
-			return nil, fmt.Errorf("environment variable %s is not set or empty", spec.ReadDSNEnv)
-		}
-		spec.ReadDSN = dsn
-	}
-
-	if spec.WriteDSNPath != "" {
-		dsn, err := os.ReadFile(spec.WriteDSNPath)
-		if err != nil {
-			return nil, fmt.Errorf("failed to read write DSN file: %w", err)
-		}
-		spec.WriteDSN = strings.TrimSpace(string(dsn))
-	}
-
-	if spec.WriteDSNEnv != "" && spec.WriteDSN == "" && spec.WriteDSNPath == "" {
-		dsn := os.Getenv(spec.WriteDSNEnv)
-		if dsn == "" {
+	// Get optional write DSN
+	var writeDSN string
+	if spec.WriteDSNEnv != "" {
+		writeDSN = os.Getenv(spec.WriteDSNEnv)
+		if writeDSN == "" {
 			return nil, fmt.Errorf("environment variable %s is not set or empty", spec.WriteDSNEnv)
 		}
-		spec.WriteDSN = dsn
 	}
 
-	provDSN := spec.DSN
-	if provDSN == "" && spec.WriteDSN != "" {
-		provDSN = spec.WriteDSN
+	// Use writeDSN for provisioning operations if available, otherwise use the primary DSN
+	provisioningDSN := dsn
+	if writeDSN != "" {
+		provisioningDSN = writeDSN
 	}
 
-	if provDSN == "" {
-		return nil, fmt.Errorf("no DSN available - must specify either 'dsn' or 'write_dsn'")
-	}
-
-	opts, err := clickhouse.ParseDSN(provDSN)
+	opts, err := clickhouse.ParseDSN(provisioningDSN)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse DSN: %w", err)
 	}
 	ch := clickhouse.OpenDB(opts)
 
 	return &Provisioner{
-		spec:   spec,
-		logger: logger,
-		ch:     ch,
+		spec:     spec,
+		logger:   logger,
+		readDB:   ch,
+		writeDB:  ch,
+		dsn:      dsn,
+		writeDSN: writeDSN,
 	}, nil
 }
 
@@ -147,7 +98,22 @@ func (p *Provisioner) Supports(rt provisioner.ResourceType) bool {
 }
 
 func (p *Provisioner) Close() error {
-	return p.ch.Close()
+	var err error
+
+	if closeErr := p.readDB.Close(); closeErr != nil {
+		err = closeErr
+	}
+
+	// Only close writeDB if it's different from readDB
+	if p.writeDB != p.readDB {
+		if closeErr := p.writeDB.Close(); closeErr != nil {
+			if err == nil {
+				err = closeErr
+			}
+		}
+	}
+
+	return err
 }
 
 func (p *Provisioner) Provision(ctx context.Context, r *provisioner.Resource, opts *provisioner.ResourceOptions) (*provisioner.Resource, error) {
@@ -158,19 +124,11 @@ func (p *Provisioner) Provision(ctx context.Context, r *provisioner.Resource, op
 	}
 
 	// If the config has already been populated, do a health check and exit early
-	if cfg.DSN != "" || (cfg.ReadDSN != "" && cfg.WriteDSN != "") {
-		var dsnToCheck string
-		if cfg.DSN != "" {
-			dsnToCheck = cfg.DSN
-		} else {
-			dsnToCheck = cfg.ReadDSN // Check read DSN for health
-		}
-
-		err := p.pingWithResourceDSN(ctx, dsnToCheck)
+	if cfg.DSN != "" {
+		err := p.pingWithResourceDSN(ctx, cfg.DSN)
 		if err != nil {
 			return nil, fmt.Errorf("failed to ping clickhouse resource: %w", err)
 		}
-
 		return r, nil
 	}
 
@@ -193,13 +151,13 @@ func (p *Provisioner) Provision(ctx context.Context, r *provisioner.Resource, op
 	}
 
 	// Idempotently create the schema
-	_, err = p.ch.ExecContext(ctx, fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s %s COMMENT ?", dbName, p.onCluster()), string(annotationsJSON))
+	_, err = p.writeDB.ExecContext(ctx, fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s %s COMMENT ?", dbName, p.onCluster()), string(annotationsJSON))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create clickhouse database: %w", err)
 	}
 
 	// Idempotently create the user.
-	_, err = p.ch.ExecContext(ctx, fmt.Sprintf("CREATE USER IF NOT EXISTS %s %s IDENTIFIED WITH sha256_password BY ? DEFAULT DATABASE %s GRANTEES NONE", user, p.onCluster(), dbName), password)
+	_, err = p.writeDB.ExecContext(ctx, fmt.Sprintf("CREATE USER IF NOT EXISTS %s %s IDENTIFIED WITH sha256_password BY ? DEFAULT DATABASE %s GRANTEES NONE", user, p.onCluster(), dbName), password)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create clickhouse user: %w", err)
 	}
@@ -207,13 +165,13 @@ func (p *Provisioner) Provision(ctx context.Context, r *provisioner.Resource, op
 	// When creating the user, the password assignment is not idempotent (if there are two concurrent invocations, we don't know which password was used).
 	// By adding the password separately, we ensure all passwords will work.
 	// NOTE: Requires ClickHouse 24.9 or later.
-	_, err = p.ch.ExecContext(ctx, fmt.Sprintf("ALTER USER %s %s ADD IDENTIFIED WITH sha256_password BY ?", user, p.onCluster()), password)
+	_, err = p.writeDB.ExecContext(ctx, fmt.Sprintf("ALTER USER %s %s ADD IDENTIFIED WITH sha256_password BY ?", user, p.onCluster()), password)
 	if err != nil {
 		return nil, fmt.Errorf("failed to add password for clickhouse user: %w", err)
 	}
 
 	// Grant privileges on the database to the user
-	_, err = p.ch.ExecContext(ctx, fmt.Sprintf(`
+	_, err = p.writeDB.ExecContext(ctx, fmt.Sprintf(`
 		GRANT %s
 			SELECT,
 			INSERT,
@@ -237,13 +195,13 @@ func (p *Provisioner) Provision(ctx context.Context, r *provisioner.Resource, op
 	// Grant access to system.parts for reporting disk usage.
 	// NOTE 1: ClickHouse automatically adds row filters to restrict result to tables the user has access to.
 	// NOTE 2: We do not need to explicitly grant access to system.tables and system.columns because ClickHouse adds those implicitly.
-	_, err = p.ch.ExecContext(ctx, fmt.Sprintf("GRANT %s SELECT ON system.parts TO %s", p.onCluster(), user))
+	_, err = p.writeDB.ExecContext(ctx, fmt.Sprintf("GRANT %s SELECT ON system.parts TO %s", p.onCluster(), user))
 	if err != nil {
 		return nil, fmt.Errorf("failed to grant system privileges to clickhouse user: %w", err)
 	}
 
 	// Grant some additional global privileges to the user
-	_, err = p.ch.ExecContext(ctx, fmt.Sprintf(`
+	_, err = p.writeDB.ExecContext(ctx, fmt.Sprintf(`
 		GRANT %s
 			URL,
 			REMOTE,
@@ -258,37 +216,29 @@ func (p *Provisioner) Provision(ctx context.Context, r *provisioner.Resource, op
 		return nil, fmt.Errorf("failed to grant global privileges to clickhouse user: %w", err)
 	}
 
-	if p.spec.ReadDSN != "" && p.spec.WriteDSN != "" {
-		// Use separate read/write DSNs
-		readDSN, err := url.Parse(p.spec.ReadDSN)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse read DSN: %w", err)
-		}
-		writeDSN, err := url.Parse(p.spec.WriteDSN)
+	// Create the resource DSN - always use the primary DSN as the base
+	// The client will use this for reads, and can optionally use writeDSN for writes
+	resourceDSN, err := url.Parse(p.dsn)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse base DSN: %w", err)
+	}
+	resourceDSN.User = url.UserPassword(user, password)
+	resourceDSN.Path = dbName
+
+	cfg = &provisioner.ClickhouseConfig{
+		DSN: resourceDSN.String(),
+	}
+
+	// If we have a separate write DSN, include it in the config
+	if p.writeDSN != "" {
+		writeResourceDSN, err := url.Parse(p.writeDSN)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse write DSN: %w", err)
 		}
+		writeResourceDSN.User = url.UserPassword(user, password)
+		writeResourceDSN.Path = dbName
 
-		readDSN.User = url.UserPassword(user, password)
-		readDSN.Path = dbName
-		writeDSN.User = url.UserPassword(user, password)
-		writeDSN.Path = dbName
-
-		cfg = &provisioner.ClickhouseConfig{
-			ReadDSN:  readDSN.String(),
-			WriteDSN: writeDSN.String(),
-		}
-	} else {
-		// Use single DSN for both read and write (existing behavior)
-		dsn, err := url.Parse(p.spec.DSN)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse base DSN: %w", err)
-		}
-		dsn.User = url.UserPassword(user, password)
-		dsn.Path = dbName
-		cfg = &provisioner.ClickhouseConfig{
-			DSN: dsn.String(),
-		}
+		cfg.WriteDSN = writeResourceDSN.String()
 	}
 
 	return &provisioner.Resource{
@@ -305,9 +255,6 @@ func (p *Provisioner) Deprovision(ctx context.Context, r *provisioner.Resource) 
 		return fmt.Errorf("unexpected resource type %q", r.Type)
 	}
 
-	var opts *clickhouse.Options
-	var err error
-
 	// Parse the resource's config
 	cfg, err := provisioner.NewClickhouseConfig(r.Config)
 	if err != nil {
@@ -315,34 +262,24 @@ func (p *Provisioner) Deprovision(ctx context.Context, r *provisioner.Resource) 
 	}
 
 	// Exit early if the config is empty (nothing to deprovision)
-	if cfg.DSN == "" && cfg.ReadDSN == "" && cfg.WriteDSN == "" {
+	if cfg.DSN == "" {
 		return nil
 	}
 
-	if cfg.DSN != "" {
-		// Parse the single DSN
-		opts, err = clickhouse.ParseDSN(cfg.DSN)
-		if err != nil {
-			return fmt.Errorf("failed to parse DSN during deprovisioning: %w", err)
-		}
-	} else if cfg.WriteDSN != "" {
-		// Parse the write DSN (use write DSN for database/user info)
-		opts, err = clickhouse.ParseDSN(cfg.WriteDSN)
-		if err != nil {
-			return fmt.Errorf("failed to parse write DSN during deprovisioning: %w", err)
-		}
-	} else {
-		return fmt.Errorf("no valid DSN found for deprovisioning")
+	// Parse the DSN to get database and user info
+	opts, err := clickhouse.ParseDSN(cfg.DSN)
+	if err != nil {
+		return fmt.Errorf("failed to parse DSN during deprovisioning: %w", err)
 	}
 
 	// Drop the database
-	_, err = p.ch.ExecContext(ctx, fmt.Sprintf("DROP DATABASE IF EXISTS %s %s", opts.Auth.Database, p.onCluster()))
+	_, err = p.writeDB.ExecContext(ctx, fmt.Sprintf("DROP DATABASE IF EXISTS %s %s", opts.Auth.Database, p.onCluster()))
 	if err != nil {
 		return fmt.Errorf("failed to drop clickhouse database: %w", err)
 	}
 
 	// Drop the user
-	_, err = p.ch.ExecContext(ctx, fmt.Sprintf("DROP USER IF EXISTS %s %s", opts.Auth.Username, p.onCluster()))
+	_, err = p.writeDB.ExecContext(ctx, fmt.Sprintf("DROP USER IF EXISTS %s %s", opts.Auth.Username, p.onCluster()))
 	if err != nil {
 		return fmt.Errorf("failed to drop clickhouse user: %w", err)
 	}

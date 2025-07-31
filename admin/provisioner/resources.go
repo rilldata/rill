@@ -80,7 +80,6 @@ func (r *RuntimeConfig) AsMap() map[string]any {
 // ClickhouseConfig describes the expected config for a provisioned Clickhouse resource.
 type ClickhouseConfig struct {
 	DSN      string `mapstructure:"dsn"`
-	ReadDSN  string `mapstructure:"read_dsn"`
 	WriteDSN string `mapstructure:"write_dsn"`
 }
 
@@ -97,9 +96,6 @@ func (c *ClickhouseConfig) AsMap() map[string]any {
 	res := make(map[string]any)
 	if c.DSN != "" {
 		res["dsn"] = c.DSN
-	}
-	if c.ReadDSN != "" {
-		res["read_dsn"] = c.ReadDSN
 	}
 	if c.WriteDSN != "" {
 		res["write_dsn"] = c.WriteDSN
