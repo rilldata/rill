@@ -53,7 +53,7 @@ import TileIcon from '@site/src/components/TileIcon';
     />
     <TileIcon
     header="Alerts"
-    content="Curious about what's new?"
+    content="It's a trap."
     link="/notes"
     />
 </div>

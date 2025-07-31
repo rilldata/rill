@@ -36,7 +36,7 @@ import TileIcon from '@site/src/components/TileIcon';
     <TileIcon
     header="See it in action!"
     content="Transform and prepare your data with Rill's powerful ETL capabilities."
-    link="/build/models"
+    link="https://rill-embedding-example.netlify.app/"
     />
 </div>
 

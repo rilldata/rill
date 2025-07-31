@@ -66,5 +66,3 @@ Let's go ahead and select `Start with an empty project`. If you want to skip the
     If this is not where you'd like to make the directory, use the `cd` command to change directories.
 
 </details>
-
-

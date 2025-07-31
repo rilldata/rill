@@ -1,5 +1,5 @@
 ---
-title: Publish your Project to Rill Cloud
+title: Publish your Dashboards to Rill Cloud
 sidebar_label: Publish
 sidebar_position: 00
 ---
