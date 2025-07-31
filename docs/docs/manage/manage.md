@@ -4,7 +4,7 @@ title: Manage your Rill Cloud Project
 
 import TileIcon from '@site/src/components/TileIcon';
 
-
+## Management
 <div className="tile-icon-grid">
     <TileIcon
     header="Organization Mangement"
@@ -25,6 +25,9 @@ import TileIcon from '@site/src/components/TileIcon';
     content="Use Rill's interactive data exploration tools to discover insights."
     link="/explore/dashboard-101"
     />
+</div>
+## Access 
+<div className="tile-icon-grid">
     <TileIcon
     header="Dashboard Access Policies"
     content="Embed Rill dashboards into your applications and workflows."
@@ -38,9 +41,3 @@ import TileIcon from '@site/src/components/TileIcon';
 </div>
 
 
-## Administration
-
-
-### Rill Cloud
-
-### CLI

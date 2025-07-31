@@ -6,9 +6,8 @@ sidebar_position: 00
 
 import TileIcon from '@site/src/components/TileIcon';
 
-
+## AI
 <div className="tile-icon-grid">
-    <h2>AI</h2><br/>
     <TileIcon
     header="Prompt with Natural Langauge (MCP) via Claude"
     content="Transform and prepare your data with Rill's powerful ETL capabilities."
@@ -20,8 +19,9 @@ import TileIcon from '@site/src/components/TileIcon';
     link="/build/models"
     />
 </div>
+
+## Dashboard
 <div className="tile-icon-grid">
-    <h2>Dashboard </h2><br/>
     <TileIcon
     header="Slice-and-Dice Explore Dashboards"
     content="Connect to your data sources and start ingesting data into Rill for analysis."
@@ -33,8 +33,9 @@ import TileIcon from '@site/src/components/TileIcon';
     link="/build/metrics-view"
     />
     </div>
-    <div className="tile-icon-grid">
-        <h2>Cloud Features</h2><br/>
+
+## Cloud Features
+<div className="tile-icon-grid">
     <TileIcon
     header="Share with External Users"
     content="Use Rill's interactive data exploration tools to discover insights."

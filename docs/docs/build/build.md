@@ -6,8 +6,8 @@ sidebar_position: 00
 
 import TileIcon from '@site/src/components/TileIcon';
 
+## Modeling
 <div className="tile-icon-grid">
-    <h2>Modeling</h2><br/>
     <TileIcon
     header="Prepare Your Data"
     content="Transform and prepare your data with Rill's powerful ETL capabilities."
@@ -19,8 +19,8 @@ import TileIcon from '@site/src/components/TileIcon';
     link="/build/advanced-models"
     />
     </div>
+## Define Measures and Dimensions
     <div className="tile-icon-grid">
-    <h2>Define Measures and Dimensions</h2><br/>
     <TileIcon
     header="Create a Metrics Layer"
     content="Build a metrics layer to define key business metrics and KPIs."
@@ -32,8 +32,8 @@ import TileIcon from '@site/src/components/TileIcon';
     link="/build/metrics-view"
     />
    </div>
+## Build Visualizations
     <div className="tile-icon-grid">
-    <h2>Build Visualizations</h2><br/>
     <TileIcon
     header="Explore Your Data"
     content="Use Rill's interactive data exploration tools to discover insights."
@@ -45,8 +45,8 @@ import TileIcon from '@site/src/components/TileIcon';
     link="/build/canvas"
     />
         </div>
+## Project Settings
     <div className="tile-icon-grid">
-    <h2>Project Settings</h2><br/>
     <TileIcon
     header="Rill Project Defaults"
     content="Need to set project defaults on access, env variables, and time settings?"
