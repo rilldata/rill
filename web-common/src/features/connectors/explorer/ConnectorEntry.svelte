@@ -1,13 +1,13 @@
 <script lang="ts">
-  import CaretDownIcon from "../../components/icons/CaretDownIcon.svelte";
-  import { Tag } from "../../components/tag";
+  import CaretDownIcon from "../../../components/icons/CaretDownIcon.svelte";
+  import { Tag } from "../../../components/tag";
   import {
     type V1AnalyzedConnector,
     createRuntimeServiceGetInstance,
-  } from "../../runtime-client";
-  import { runtime } from "../../runtime-client/runtime-store";
-  import type { ConnectorExplorerStore } from "./explorer/connector-explorer-store";
-  import { connectorIconMapping } from "./connector-icon-mapping";
+  } from "../../../runtime-client";
+  import { runtime } from "../../../runtime-client/runtime-store";
+  import type { ConnectorExplorerStore } from "./connector-explorer-store";
+  import { connectorIconMapping } from "../connector-icon-mapping";
   import DatabaseExplorer from "./DatabaseExplorer.svelte";
 
   export let connector: V1AnalyzedConnector;

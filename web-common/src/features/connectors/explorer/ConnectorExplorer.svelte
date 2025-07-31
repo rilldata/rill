@@ -3,7 +3,7 @@
   import { LIST_SLIDE_DURATION as duration } from "../../../layout/config";
   import { createRuntimeServiceAnalyzeConnectors } from "../../../runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import ConnectorEntry from "../ConnectorEntry.svelte";
+  import ConnectorEntry from "./ConnectorEntry.svelte";
   import type { ConnectorExplorerStore } from "./connector-explorer-store";
 
   export let store: ConnectorExplorerStore;

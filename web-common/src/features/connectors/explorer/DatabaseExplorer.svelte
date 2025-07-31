@@ -1,11 +1,11 @@
 <script lang="ts">
   import { slide } from "svelte/transition";
-  import { LIST_SLIDE_DURATION as duration } from "../../layout/config";
-  import type { V1AnalyzedConnector } from "../../runtime-client";
+  import { LIST_SLIDE_DURATION as duration } from "../../../layout/config";
+  import type { V1AnalyzedConnector } from "../../../runtime-client";
   import DatabaseEntry from "./DatabaseEntry.svelte";
-  import { useDatabasesFromSchemas } from "./selectors";
-  import { useDatabasesOLAP as useDatabasesLegacy } from "./selectors";
-  import type { ConnectorExplorerStore } from "./explorer/connector-explorer-store";
+  import { useDatabasesFromSchemas } from "../selectors";
+  import { useDatabasesOLAP as useDatabasesLegacy } from "../selectors";
+  import type { ConnectorExplorerStore } from "./connector-explorer-store";
 
   export let instanceId: string;
   export let connector: V1AnalyzedConnector;

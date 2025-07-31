@@ -1,13 +1,13 @@
 <script lang="ts">
   import { Database } from "lucide-svelte";
   import { slide } from "svelte/transition";
-  import CaretDownIcon from "../../components/icons/CaretDownIcon.svelte";
-  import { LIST_SLIDE_DURATION as duration } from "../../layout/config";
-  import type { V1AnalyzedConnector } from "../../runtime-client";
-  import DatabaseSchemaEntry from "./explorer/DatabaseSchemaEntry.svelte";
-  import { useSchemasForDatabase } from "./selectors";
-  import { useDatabaseSchemasOLAP as useDatabaseSchemasLegacy } from "./selectors";
-  import type { ConnectorExplorerStore } from "./explorer/connector-explorer-store";
+  import CaretDownIcon from "../../../components/icons/CaretDownIcon.svelte";
+  import { LIST_SLIDE_DURATION as duration } from "../../../layout/config";
+  import type { V1AnalyzedConnector } from "../../../runtime-client";
+  import DatabaseSchemaEntry from "./DatabaseSchemaEntry.svelte";
+  import { useSchemasForDatabase } from "../selectors";
+  import { useDatabaseSchemasOLAP as useDatabaseSchemasLegacy } from "../selectors";
+  import type { ConnectorExplorerStore } from "./connector-explorer-store";
 
   export let instanceId: string;
   export let connector: V1AnalyzedConnector;
