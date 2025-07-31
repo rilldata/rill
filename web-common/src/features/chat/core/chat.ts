@@ -190,13 +190,8 @@ export function useChatCore(options?: ChatCoreOptions) {
           return { optimisticConversationId };
         },
 
-        onSuccess: (response, variables, context) => {
+        onSuccess: async (response, variables, context) => {
           const { instanceId } = variables;
-
-          // Invalidate conversation list to show new conversation
-          void queryClient.invalidateQueries({
-            queryKey: getRuntimeServiceListConversationsQueryKey(instanceId),
-          });
 
           if (response.conversationId && context?.optimisticConversationId) {
             // Create cache for the new committed conversation
@@ -223,7 +218,13 @@ export function useChatCore(options?: ChatCoreOptions) {
             );
             void queryClient.removeQueries({ queryKey: optimisticCacheKey });
 
-            // Update current conversation ID to committed ID
+            // Invalidate conversation list and wait for it to complete
+            // This ensures the sidebar conversation list is updated before we set the current conversation ID
+            await queryClient.invalidateQueries({
+              queryKey: getRuntimeServiceListConversationsQueryKey(instanceId),
+            });
+
+            // Update current conversation ID to committed ID only after list refetch
             currentConversationId.set(response.conversationId);
           }
         },
@@ -422,7 +423,7 @@ export function useChatCore(options?: ChatCoreOptions) {
           return `Failed to send message: ${error.message}`;
         }
       } else {
-        return "Could not get a response from the server.";
+        return "Something went wrong on the server. Please try again.";
       }
     },
     null,

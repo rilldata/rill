@@ -14,10 +14,13 @@ export function withinOrganization(page: Page): boolean {
 }
 
 export function isProjectPage(page: Page): boolean {
+  const routeId = page.route?.id;
+  if (!routeId) return false;
   return (
-    page.route.id === "/[organization]/[project]" ||
-    (page.route.id.startsWith("/[organization]/[project]/-/") &&
-      !page.route.id.startsWith("/[organization]/[project]/-/share"))
+    routeId === "/[organization]/[project]" ||
+    (routeId.startsWith("/[organization]/[project]/-/") &&
+      !routeId.startsWith("/[organization]/[project]/-/invite") &&
+      !routeId.startsWith("/[organization]/[project]/-/share"))
   );
 }
 

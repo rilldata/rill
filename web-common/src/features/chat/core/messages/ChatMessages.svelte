@@ -1,6 +1,5 @@
 <script lang="ts">
   import { afterUpdate } from "svelte";
-  import AlertCircle from "../../../../components/icons/AlertCircle.svelte";
   import LoadingSpinner from "../../../../components/icons/LoadingSpinner.svelte";
   import type { V1Message } from "../../../../runtime-client";
   import DelayedSpinner from "../../../entity-management/DelayedSpinner.svelte";
@@ -10,7 +9,6 @@
   export let layout: "sidebar" | "fullpage" = "sidebar";
 
   // Accept these as props instead of calling useChatCore again
-  export let error: any = null;
   export let loading = false;
   export let messages: V1Message[] = [];
 
@@ -55,12 +53,6 @@
   {#if loading}
     <div class="response-loading">
       <LoadingSpinner size="1.2em" /> Thinking...
-    </div>
-  {/if}
-  {#if error}
-    <div class="chat-error">
-      <AlertCircle size="1.2em" />
-      {$error}
     </div>
   {/if}
 </div>
@@ -119,19 +111,5 @@
     gap: 0.5rem;
     padding: 1rem;
     font-size: 0.875rem;
-  }
-
-  .chat-error {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #dc2626;
-    gap: 0.5rem;
-    padding: 1rem;
-    font-size: 0.875rem;
-    background: #fef2f2;
-    border: 1px solid #fecaca;
-    border-radius: 0.5rem;
-    margin: 0.5rem;
   }
 </style>

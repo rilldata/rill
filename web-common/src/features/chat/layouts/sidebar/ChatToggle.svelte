@@ -7,5 +7,7 @@
   compact
   type="secondary"
   onClick={sidebarActions.toggleChat}
-  active={$chatOpen}>AI</Button
+  active={$chatOpen}
 >
+  AI
+</Button>

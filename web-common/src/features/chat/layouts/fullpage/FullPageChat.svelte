@@ -2,6 +2,7 @@
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import { onMount } from "svelte";
+  import AlertCircle from "../../../../components/icons/AlertCircle.svelte";
   import { isOptimisticConversationId, useChatCore } from "../../core/chat";
   import ChatFooter from "../../core/input/ChatFooter.svelte";
   import ChatInput from "../../core/input/ChatInput.svelte";
@@ -112,7 +113,6 @@
         <ChatMessages
           layout="fullpage"
           isConversationLoading={$isConversationLoading}
-          error={$error}
           loading={$loading}
           messages={$messages}
         />
@@ -121,6 +121,12 @@
 
     <div class="chat-input-section">
       <div class="chat-input-wrapper">
+        {#if $error}
+          <div class="chat-input-error">
+            <AlertCircle size="1.2em" />
+            {$error}
+          </div>
+        {/if}
         <ChatInput
           bind:this={chatInputComponent}
           bind:value={input}
@@ -204,6 +210,20 @@
   .chat-fullpage :global(.chat-empty-subtitle) {
     font-size: 1rem;
     color: #6b7280;
+  }
+
+  .chat-input-error {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+    color: #991b1b;
+    background: #fef7f7;
+    border-left: 3px solid #f87171;
+    border-radius: 0.375rem;
+    margin: 0 1rem 0.5rem 1rem;
+    box-sizing: border-box;
   }
 
   /* Responsive behavior for full-page layout */

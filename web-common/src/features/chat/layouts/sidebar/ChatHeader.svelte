@@ -10,8 +10,7 @@
   export let currentConversationId: string | undefined = undefined;
   export let onNewConversation: () => void;
   export let onSelectConversation: (conversation: V1Conversation) => void;
-  export let onClose: (() => void) | undefined = undefined;
-  export let showCloseButton: boolean = true;
+  export let onClose: () => void;
 </script>
 
 <div class="chatbot-header">
@@ -31,11 +30,9 @@
       onSelect={onSelectConversation}
     />
 
-    {#if showCloseButton && onClose}
-      <IconButton ariaLabel="Close chat" bgGray on:click={onClose}>
-        <Close className="text-gray-500" />
-      </IconButton>
-    {/if}
+    <IconButton ariaLabel="Close chat" bgGray on:click={onClose}>
+      <Close className="text-gray-500" />
+    </IconButton>
   </div>
 </div>
 

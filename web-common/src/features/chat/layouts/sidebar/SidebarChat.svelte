@@ -1,5 +1,6 @@
 <script lang="ts">
   import { page } from "$app/stores";
+  import AlertCircle from "../../../../components/icons/AlertCircle.svelte";
   import Resizer from "../../../../layout/Resizer.svelte";
   import { useChatCore } from "../../core/chat";
   import ChatFooter from "../../core/input/ChatFooter.svelte";
@@ -90,10 +91,15 @@
     <ChatMessages
       layout="sidebar"
       isConversationLoading={$isConversationLoading}
-      error={$error}
       loading={$loading}
       messages={$messages}
     />
+    {#if $error}
+      <div class="chat-input-error">
+        <AlertCircle size="1.2em" />
+        {$error}
+      </div>
+    {/if}
     <ChatInput
       bind:this={chatInputComponent}
       bind:value={input}
@@ -127,5 +133,19 @@
   .chatbot-header-container {
     position: relative;
     flex-shrink: 0;
+  }
+
+  .chat-input-error {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+    color: #991b1b;
+    background: #fef7f7;
+    border-left: 3px solid #f87171;
+    border-radius: 0.375rem;
+    margin: 0.5rem 1rem 0 1rem;
+    box-sizing: border-box;
   }
 </style>
