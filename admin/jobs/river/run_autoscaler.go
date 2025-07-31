@@ -1,12 +1,14 @@
-package worker
+package river
 
 import (
 	"context"
 	"math"
 	"time"
 
+	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/metrics"
+	"github.com/riverqueue/river"
 	"go.uber.org/zap"
 )
 
@@ -23,13 +25,23 @@ const (
 	belowThreshold = "scaling change is below the threshold"
 )
 
-func (w *Worker) runAutoscaler(ctx context.Context) error {
+type RunAutoscalerArgs struct{}
+
+func (RunAutoscalerArgs) Kind() string { return "run_autoscaler" }
+
+type RunAutoscalerWorker struct {
+	river.WorkerDefaults[RunAutoscalerArgs]
+	admin  *admin.Service
+	logger *zap.Logger
+}
+
+func (w *RunAutoscalerWorker) Work(ctx context.Context, job *river.Job[RunAutoscalerArgs]) error {
 	if disableAutoscaler {
 		w.logger.Info("skipping autoscaler: disabled by configuration")
 		return nil
 	}
 
-	recs, ok, err := w.allRecommendations(ctx)
+	recs, ok, err := allRecommendations(ctx, w)
 	if err != nil {
 		w.logger.Error("failed to autoscale: unable to fetch recommended slots", zap.Error(err))
 		return err
@@ -151,7 +163,7 @@ func (w *Worker) runAutoscaler(ctx context.Context) error {
 	return nil
 }
 
-func (w *Worker) allRecommendations(ctx context.Context) ([]metrics.AutoscalerSlotsRecommendation, bool, error) {
+func allRecommendations(ctx context.Context, w *RunAutoscalerWorker) ([]metrics.AutoscalerSlotsRecommendation, bool, error) {
 	client, ok, err := w.admin.OpenMetricsProject(ctx)
 	if err != nil {
 		return nil, false, err
