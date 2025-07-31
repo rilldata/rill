@@ -412,10 +412,6 @@ func (q *MetricsViewAggregation) rewriteToMetricsViewQuery(export bool) (*metric
 
 	if q.Limit != nil {
 		if *q.Limit == 0 {
-			if q.shouldAddLimit() {
-				tmp := int64(100)
-				q.Limit = &tmp
-			}
 			q.Limit = nil
 		}
 		qry.Limit = q.Limit
@@ -526,14 +522,6 @@ func (q *MetricsViewAggregation) getDisplayName(ctx context.Context, rt *runtime
 		}
 	}
 	return resourceName.Name, nil
-}
-
-// timeseries request will not have any limit set, so we should not set any default limit if time range is specified otherwise timeseries graph will be partial
-func (q *MetricsViewAggregation) shouldAddLimit() bool {
-	if q.TimeRange == nil || (q.TimeRange.Start == nil && q.TimeRange.End == nil && q.TimeRange.IsoDuration == "") {
-		return true
-	}
-	return false
 }
 
 func metricViewExpression(expr *runtimev1.Expression, sql string) (*metricsview.Expression, error) {
