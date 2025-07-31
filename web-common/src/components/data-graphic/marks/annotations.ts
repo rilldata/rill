@@ -23,8 +23,7 @@ export type AnnotationGroup = {
   hasRange: boolean;
 };
 
-// h-[24px] w-[12px]
-export const AnnotationWidth = 12;
+export const AnnotationWidth = 10;
 const AnnotationOverlapWidth = AnnotationWidth * (1 - 0.66); // Width where 66% overlap
 export const AnnotationHeight = 10;
 
@@ -56,6 +55,8 @@ export class AnnotationsStore {
     mouseOverThisChart: boolean,
     annotationPopoverHovered: boolean,
   ) {
+    // Check the hover at a slight delay.
+    // When the popover is hovered, there will be a small window where both mouseOverThisChart and annotationPopoverHovered will be false.
     this.hoverCheckThrottler.throttle(() =>
       this.checkHover(
         mouseoverValue,
@@ -72,8 +73,8 @@ export class AnnotationsStore {
   ) {
     const annotationGroups = get(this.annotationGroups);
     const lookupTable = get(this.lookupTable);
-    const hovered = mouseOverThisChart || annotationPopoverHovered;
     const top = annotationGroups[0]?.top;
+    let hoveredAnnotationGroup = get(this.hoveredAnnotationGroup);
 
     const mouseX = mouseoverValue?.xActual;
     const mouseY = mouseoverValue?.yActual;
@@ -81,19 +82,24 @@ export class AnnotationsStore {
     const yNearAnnotations = mouseY !== undefined && mouseY > top;
     const checkXCoord = yNearAnnotations && mouseX !== undefined;
 
-    let hoveredAnnotationGroup = get(this.hoveredAnnotationGroup);
-
-    if (!hovered) {
+    if (!mouseOverThisChart && !annotationPopoverHovered) {
+      // If the mouse is no longer hovering, the current chart or an annotation popover unset the group.
       hoveredAnnotationGroup = undefined;
     } else {
-      const tempHoveredAnnotationGroup = checkXCoord
-        ? lookupTable[mouseX]
-        : undefined;
-      if (
-        tempHoveredAnnotationGroup &&
-        tempHoveredAnnotationGroup !== hoveredAnnotationGroup
-      ) {
-        hoveredAnnotationGroup = tempHoveredAnnotationGroup;
+      const tempHoverGroup = checkXCoord ? lookupTable[mouseX] : undefined;
+      const hoverGroupChanged =
+        tempHoverGroup && tempHoverGroup !== hoveredAnnotationGroup;
+      const cursorToLeftOfCurrentGroup =
+        hoveredAnnotationGroup &&
+        mouseX !== undefined &&
+        mouseX < hoveredAnnotationGroup.left;
+
+      if (hoverGroupChanged) {
+        // To keep the popover opened for interaction, only update the hovered group when it changes but not when it goes undefined.
+        hoveredAnnotationGroup = tempHoverGroup;
+      } else if (cursorToLeftOfCurrentGroup) {
+        // Else to have better UX, if cursor is to the left of the currently hovered group then unset it.
+        hoveredAnnotationGroup = undefined;
       }
     }
 

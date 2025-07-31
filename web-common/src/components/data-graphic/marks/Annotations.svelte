@@ -3,8 +3,10 @@
   import {
     AnnotationHeight,
     AnnotationsStore,
+    AnnotationWidth,
   } from "@rilldata/web-common/components/data-graphic/marks/annotations.ts";
   import {
+    AnnotationDiamondColor,
     AnnotationHighlightBottomColor,
     AnnotationHighlightColor,
     ScrubBoxColor,
@@ -32,7 +34,14 @@
 </script>
 
 {#each $annotationGroups as annotationGroup, i (i)}
-  <Diamond size={10} x={annotationGroup.left} y={annotationGroup.top} />
+  {@const hovered = $hoveredAnnotationGroup === annotationGroup}
+  <Diamond
+    size={AnnotationWidth}
+    x={annotationGroup.left}
+    y={annotationGroup.top}
+    fill={AnnotationDiamondColor}
+    opacity={hovered ? 1 : 0.4}
+  />
 {/each}
 
 {#if hasRange}
