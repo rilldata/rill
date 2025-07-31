@@ -1,7 +1,7 @@
 ---
-title:  Pre-Deployment Credential Considerations
+title:  Deployment Credential Considerations
 description: Configuring credentials for your deployed project on Rill Cloud
-sidebar_label: Deploy Prep
+sidebar_label: Configure Deployment Credentials
 sidebar_position: 10
 ---
 
