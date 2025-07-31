@@ -27,6 +27,3 @@ Publishing your dashboard to Rill for the first time will prompt you to register
 
 :::
 
-## What does deploying to Rill Cloud mean?
-
-In simple terms, deploying your project means to publish or share the contents of your project. 
