@@ -192,14 +192,37 @@ type configProperties struct {
 }
 
 func (c *configProperties) validate() error {
+	var set []string
+	if c.Host != "" {
+		set = append(set, "host")
+	}
+	if c.Port != 0 {
+		set = append(set, "port")
+	}
+	if c.Username != "" {
+		set = append(set, "username")
+	}
+	if c.Password != "" {
+		set = append(set, "password")
+	}
+	if c.Database != "" {
+		set = append(set, "database")
+	}
+	if c.SSL {
+		set = append(set, "ssl")
+	}
+
 	if c.DSN != "" {
-		if c.Host != "" || c.Port != 0 || c.Username != "" || c.Password != "" || c.Database != "" {
-			return errors.New("either 'dsn' or 'host', 'port', 'username', 'password', and 'database' must be set, but not both")
+		if len(set) > 0 {
+			return fmt.Errorf("only one of 'dsn' or [%s] can be set", strings.Join(set, ", "))
 		}
 	}
 	if c.Managed {
-		if c.DSN != "" || c.Host != "" || c.Port != 0 || c.Username != "" || c.Password != "" || c.Database != "" {
-			return errors.New("managed ClickHouse does not support 'dsn', 'host', 'port', 'username', 'password', or 'database' properties")
+		if c.DSN != "" {
+			set = append(set, "dsn")
+		}
+		if len(set) > 0 {
+			return fmt.Errorf("managed ClickHouse does not support setting [%s] properties", strings.Join(set, ", "))
 		}
 	}
 	return nil

@@ -86,7 +86,26 @@ func (c *ConfigProperties) Validate() error {
 	}
 
 	if dsn != "" && (c.Host != "" || c.Port != "" || c.User != "" || c.Password != "" || c.DBname != "" || c.SSLMode != "") {
-		return fmt.Errorf("postgres: set either `dsn` or individual properties, not both")
+		var set []string
+		if c.Host != "" {
+			set = append(set, "host")
+		}
+		if c.Port != "" {
+			set = append(set, "port")
+		}
+		if c.User != "" {
+			set = append(set, "user")
+		}
+		if c.Password != "" {
+			set = append(set, "password")
+		}
+		if c.DBname != "" {
+			set = append(set, "dbname")
+		}
+		if c.SSLMode != "" {
+			set = append(set, "sslmode")
+		}
+		return fmt.Errorf("postgres: Only one of 'dsn' or [%s] can be set", strings.Join(set, ", "))
 	}
 	return nil
 }
