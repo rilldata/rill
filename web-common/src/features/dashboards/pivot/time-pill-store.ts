@@ -57,7 +57,7 @@ export const timePills = derived(
         ) {
           return true;
         }
-        return isGrainBigger(grain, timeControls.minTimeGrain);
+        return !isGrainBigger(timeControls.minTimeGrain, grain);
       });
 
       const availableGrains = validGrains.filter(
