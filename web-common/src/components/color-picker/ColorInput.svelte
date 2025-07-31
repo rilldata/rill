@@ -1,7 +1,11 @@
 <script lang="ts">
-  import { stringColorToHsl } from "@rilldata/web-common/components/color-picker/util";
+  import {
+    isValidColor,
+    stringColorToHsl,
+  } from "@rilldata/web-common/components/color-picker/util";
   import * as Popover from "@rilldata/web-common/components/popover";
   import InputLabel from "../forms/InputLabel.svelte";
+  import WarningIcon from "../icons/WarningIcon.svelte";
   import ColorSlider from "./ColorSlider.svelte";
 
   export let stringColor: string | undefined;
@@ -17,6 +21,8 @@
   $: ({ h: hue, s: saturation, l: lightness } = stringColorToHsl(stringColor));
 
   $: hsl = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+
+  $: isColorValid = isValidColor(stringColor);
 </script>
 
 <svelte:window
@@ -42,6 +48,7 @@
       <input
         class:small
         class:text-right={labelFirst}
+        class:text-red-500={!isColorValid}
         bind:value={stringColor}
         {disabled}
         on:keydown={(e) => {
@@ -55,15 +62,20 @@
           }
         }}
       />
+
       <Popover.Root bind:open>
         <Popover.Trigger asChild let:builder>
           <button
             class="trigger"
+            class:error-trigger={!isColorValid}
             use:builder.action
             class:open
             {...builder}
             style:--hsl={hsl}
           >
+            {#if !isColorValid}
+              <WarningIcon size="0.875rem" color="#f59e0b" />
+            {/if}
           </button>
         </Popover.Trigger>
 
@@ -121,11 +133,15 @@
       <Popover.Trigger asChild let:builder>
         <button
           class="trigger"
+          class:error-trigger={!isColorValid}
           use:builder.action
           class:open
           {...builder}
           style:--hsl={hsl}
         >
+          {#if !isColorValid}
+            <WarningIcon size="0.875rem" color="#f59e0b" />
+          {/if}
         </button>
       </Popover.Trigger>
 
@@ -177,8 +193,10 @@
         {/if}
       </Popover.Content>
     </Popover.Root>
+
     <input
       class:small
+      class:text-red-500={!isColorValid}
       bind:value={stringColor}
       {disabled}
       on:keydown={(e) => {
@@ -208,6 +226,18 @@
   .trigger.open {
     border: 1.5px solid;
     border-color: color-mix(in oklch, var(--hsl), black 40%);
+  }
+
+  .error-trigger {
+    @apply bg-red-50;
+    @apply flex items-center justify-center;
+    background-color: #fef2f2 !important;
+  }
+
+  .error-trigger:hover,
+  .error-trigger.open {
+    @apply bg-red-100;
+    border: 1.5px solid #fca5a5;
   }
 
   .color-wrapper {

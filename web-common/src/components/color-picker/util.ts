@@ -104,6 +104,28 @@ function getComputedColor(color: string) {
   return canvas.fillStyle;
 }
 
+export function isValidColor(color: string | undefined): boolean {
+  if (!color) return false;
+
+  const canvas = document.createElement("canvas").getContext("2d");
+  if (!canvas) return false;
+
+  canvas.fillStyle = "#000000";
+  canvas.fillStyle = color;
+  const result = canvas.fillStyle;
+
+  // If the color didn't change from our test color and input isn't black-like, it's invalid
+  return (
+    result !== "#000000" ||
+    color.toLowerCase().includes("black") ||
+    color.toLowerCase() === "#000" ||
+    color.toLowerCase() === "#000000" ||
+    /^hsl\(0,\s*0%?,\s*0%?\)$/i.test(color) ||
+    color.toLowerCase() === "rgb(0,0,0)" ||
+    color.toLowerCase() === "rgba(0,0,0,1)"
+  );
+}
+
 function hexToHSL(hex: string) {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
 
