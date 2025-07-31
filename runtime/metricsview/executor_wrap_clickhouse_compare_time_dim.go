@@ -8,7 +8,7 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
-// wrapClickhouseCompareTimeDim wraps the comparison AST if it has computed time dimension to have different alias than the time column name.
+// wrapClickhouseCompareTimeDim wraps any select node in the AST having a computed time dimension in an outer select so that inner select has different alias than the time column name and outer select, selects this column using the original time alias.
 // Example, in comparison queries we have expression like this: (date_trunc('day', "TIME_DIM") - INTERVAL (DATEDIFF('day', base_time_start, compare_time_start)) day) AS "TIME_DIM"
 // This does not work correctly in ClickHouse and it just does not subtract the interval from the time dimension and return "TIME_DIM" as it is.
 func (e *Executor) wrapClickhouseCompareTimeDim(ast *AST) {
@@ -66,7 +66,6 @@ func (e *Executor) wrapClickhouseCompareTimeDimWalk(a *AST, n *SelectNode, compu
 			if uniqName, ok := computedDims[f.Name]; ok {
 				// select inner dim in the outer query using uniqName but keep alias as actual query dimension name so change the expression and keep f.Name as is
 				n.DimFields[i].Expr = a.sqlForMember(n.FromSelect.Alias, uniqName)
-
 			}
 		}
 	}

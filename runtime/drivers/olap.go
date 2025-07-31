@@ -537,7 +537,6 @@ func (d Dialect) DateDiff(grain runtimev1.TimeGrain, t1, t2 time.Time) (string, 
 	}
 }
 
-// IntervalSubtract When using for Clickhouse make sure to test you are not hitting the issue solved in executor_wrap_clickhouse_compare_time_dim.go
 func (d Dialect) IntervalSubtract(tsExpr, unitExpr string, grain runtimev1.TimeGrain) (string, error) {
 	switch d {
 	case DialectClickHouse, DialectDruid, DialectDuckDB:
