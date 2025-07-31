@@ -1,43 +1,74 @@
 <script lang="ts">
-  import { contexts } from "@rilldata/web-common/components/data-graphic/constants";
   import type { DomainCoordinates } from "@rilldata/web-common/components/data-graphic/constants/types";
-  import { WithBisector } from "@rilldata/web-common/components/data-graphic/functional-components";
   import {
-    type Annotation,
-    type AnnotationGroup,
-    buildLookupTable,
-    createAnnotationGroups,
+    AnnotationHeight,
+    AnnotationsStore,
   } from "@rilldata/web-common/components/data-graphic/marks/annotations.ts";
-  import type {
-    ScaleStore,
-    SimpleConfigurationStore,
-  } from "@rilldata/web-common/components/data-graphic/state/types";
+  import {
+    AnnotationHighlightBottomColor,
+    AnnotationHighlightColor,
+    ScrubBoxColor,
+  } from "@rilldata/web-common/features/dashboards/time-series/chart-colors.ts";
   import { Diamond } from "lucide-svelte";
-  import { getContext } from "svelte";
 
-  export let annotations: Annotation[];
+  export let annotationsStore: AnnotationsStore;
   export let mouseoverValue: DomainCoordinates | undefined = undefined;
-  export let hovered: boolean;
-  export let hoveredAnnotationGroup: AnnotationGroup | undefined;
+  export let mouseOverThisChart: boolean;
 
-  const plotConfig: SimpleConfigurationStore = getContext(contexts.config);
-  const xScale: ScaleStore = getContext(contexts.scale("x"));
+  const { annotationGroups, hoveredAnnotationGroup, annotationPopoverHovered } =
+    annotationsStore;
 
-  $: config = $plotConfig;
-  $: xScaleFunc = $xScale;
+  $: annotationsStore.triggerHoverCheck(
+    mouseoverValue,
+    mouseOverThisChart,
+    $annotationPopoverHovered,
+  );
 
-  $: mouseX = mouseoverValue?.xActual;
-  $: mouseY = mouseoverValue?.yActual;
-
-  $: annotationGroups = createAnnotationGroups(annotations, xScaleFunc, config);
-  $: top = annotationGroups[0]?.top;
-  $: lookupTable = buildLookupTable(annotationGroups);
-
-  $: yNearAnnotations = mouseY !== undefined && mouseY > top;
-  $: checkHover = hovered && yNearAnnotations && mouseX !== undefined;
-  $: hoveredAnnotationGroup = checkHover ? lookupTable[mouseX!] : undefined;
+  $: hasRange = $hoveredAnnotationGroup?.hasRange;
+  $: rangeXStart = $hoveredAnnotationGroup?.left ?? 0;
+  $: rangeXEnd = $hoveredAnnotationGroup?.right ?? 0;
+  $: rangeYStart = 0;
+  $: rangeYEnd = ($hoveredAnnotationGroup?.bottom ?? 0) - AnnotationHeight / 2;
 </script>
 
-{#each annotationGroups as annotationGroup, i (i)}
+{#each $annotationGroups as annotationGroup, i (i)}
   <Diamond size={10} x={annotationGroup.left} y={annotationGroup.top} />
 {/each}
+
+{#if hasRange}
+  <g>
+    <line
+      x1={rangeXStart}
+      x2={rangeXStart}
+      y1={rangeYStart}
+      y2={rangeYEnd}
+      stroke={ScrubBoxColor}
+      stroke-width={1}
+    />
+    <line
+      x1={rangeXEnd}
+      x2={rangeXEnd}
+      y1={rangeYStart}
+      y2={rangeYEnd}
+      stroke={ScrubBoxColor}
+      stroke-width={1}
+    />
+    <line
+      x1={rangeXStart}
+      x2={rangeXEnd}
+      y1={rangeYEnd}
+      y2={rangeYEnd}
+      stroke={AnnotationHighlightBottomColor}
+      stroke-width={2}
+    />
+  </g>
+  <g role="presentation" opacity="0.1">
+    <rect
+      x={Math.min(rangeXStart, rangeXEnd)}
+      y={rangeYStart}
+      width={Math.abs(rangeXStart - rangeXEnd)}
+      height={rangeYEnd - rangeYStart}
+      fill={AnnotationHighlightColor}
+    />
+  </g>
+{/if}

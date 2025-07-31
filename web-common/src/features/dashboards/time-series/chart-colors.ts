@@ -39,3 +39,6 @@ export const ScrubArea2Color = "var(--color-theme-50)";
 export const ScrubMutedColor = "var(--color-gray-300)";
 
 export const BarColor = "var(--color-theme-400)";
+
+export const AnnotationHighlightColor = "var(--color-theme-500)";
+export const AnnotationHighlightBottomColor = "var(--color-theme-800)";

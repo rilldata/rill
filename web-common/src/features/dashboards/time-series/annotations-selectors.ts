@@ -1,20 +1,25 @@
 import type { Annotation } from "@rilldata/web-common/components/data-graphic/marks/annotations.ts";
+import {
+  formatRange,
+  formatTime,
+} from "@rilldata/web-common/features/dashboards/time-controls/range-formatting.ts";
 import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors.ts";
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config.ts";
 import {
-  getEndOfPeriod,
+  getOffset,
   getStartOfPeriod,
 } from "@rilldata/web-common/lib/time/transforms";
 import {
   type DashboardTimeControls,
   Period,
+  TimeOffsetType,
 } from "@rilldata/web-common/lib/time/types.ts";
 import {
   getQueryServiceMetricsViewAnnotationsQueryOptions,
   type V1MetricsViewAnnotationsResponseDataItem,
-  V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
 import { createQueries } from "@tanstack/svelte-query";
+import { DateTime, Interval } from "luxon";
 import { derived, type Readable } from "svelte/store";
 
 export function getAnnotationsForMeasure({
@@ -31,6 +36,8 @@ export function getAnnotationsForMeasure({
   selectedTimezone: string;
 }): Readable<Annotation[]> {
   const exploreValidSpec = useExploreValidSpec(instanceId, exploreName);
+  const selectedPeriod = TIME_GRAIN[selectedTimeRange?.interval ?? ""]
+    ?.duration as Period | undefined;
 
   const annotationsQueries = derived(exploreValidSpec, (exploreValidSpec) => {
     const metricsViewSpec = exploreValidSpec.data?.metricsView;
@@ -70,10 +77,9 @@ export function getAnnotationsForMeasure({
         .map(
           (r) =>
             r.data?.data?.map((a) =>
-              convertDateItemToAnnotation(
+              convertV1AnnotationsResponseItemToAnnotation(
                 a,
-                selectedTimeRange?.interval ??
-                  V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
+                selectedPeriod,
                 selectedTimezone,
               ),
             ) ?? [],
@@ -85,29 +91,36 @@ export function getAnnotationsForMeasure({
   });
 }
 
-function convertDateItemToAnnotation(
+function convertV1AnnotationsResponseItemToAnnotation(
   item: V1MetricsViewAnnotationsResponseDataItem,
-  timeGrain: V1TimeGrain,
+  period: Period | undefined,
   selectedTimezone: string,
 ) {
-  const startTime = new Date(item.time as string);
-  let truncatedStartTime = startTime;
-  const endTime = item.time_end ? new Date(item.time_end as string) : undefined;
-  let truncatedEndTime = endTime;
+  let startTime = new Date(item.time as string);
+  let endTime = item.time_end ? new Date(item.time_end as string) : undefined;
 
-  const period: Period | undefined = TIME_GRAIN[timeGrain]?.duration;
-  if (period) {
-    truncatedStartTime = getStartOfPeriod(startTime, period, selectedTimezone);
+  // Only truncate start and ceil end when there is a grain column in the annotation.
+  if (period && item.grain) {
+    startTime = getStartOfPeriod(startTime, period, selectedTimezone);
     if (endTime) {
-      truncatedEndTime = getEndOfPeriod(endTime, period, selectedTimezone);
+      endTime = getOffset(
+        endTime,
+        period,
+        TimeOffsetType.ADD,
+        selectedTimezone,
+      );
+      endTime = getStartOfPeriod(endTime, period, selectedTimezone);
     }
   }
+
+  const formattedTimeOrRange = endTime
+    ? formatRange(Interval.fromDateTimes(startTime, endTime))
+    : formatTime(DateTime.fromJSDate(startTime));
 
   return <Annotation>{
     ...item,
     startTime,
-    truncatedStartTime,
     endTime,
-    truncatedEndTime,
+    formattedTimeOrRange,
   };
 }

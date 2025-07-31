@@ -9,15 +9,18 @@
     Axis,
     Grid,
   } from "@rilldata/web-common/components/data-graphic/guides";
-  import AnnotationRangeHighlight from "@rilldata/web-common/components/data-graphic/marks/AnnotationRangeHighlight.svelte";
   import Annotations from "@rilldata/web-common/components/data-graphic/marks/Annotations.svelte";
   import AnnotationGroupPopover from "@rilldata/web-common/components/data-graphic/marks/AnnotationGroupPopover.svelte";
-  import type {
-    Annotation,
-    AnnotationGroup,
+  import {
+    type Annotation,
+    type AnnotationGroup,
+    AnnotationsStore,
   } from "@rilldata/web-common/components/data-graphic/marks/annotations.ts";
   import { ScaleType } from "@rilldata/web-common/components/data-graphic/state";
-  import type { ScaleStore } from "@rilldata/web-common/components/data-graphic/state/types";
+  import type {
+    ScaleStore,
+    SimpleConfigurationStore,
+  } from "@rilldata/web-common/components/data-graphic/state/types";
   import { ComparisonDeltaPreviousSuffix } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
@@ -96,12 +99,15 @@
 
   const tweenProps = { duration: 400, easing: cubicOut };
   const xScale = getContext<ScaleStore>(contexts.scale("x"));
+  const plotConfig = getContext<SimpleConfigurationStore>(contexts.config);
 
   let hovered: boolean = false;
   let scrub;
   let cursorClass;
   let preventScrubReset;
-  let hoveredAnnotationGroup: AnnotationGroup | undefined;
+
+  const annotationsStore = new AnnotationsStore();
+  $: annotationsStore.updateData($annotations ?? [], $xScale, $plotConfig);
 
   $: hoveredTime =
     (mouseoverValue?.x instanceof Date && mouseoverValue?.x) ||
@@ -401,20 +407,10 @@
     />
 
     {#if annotations && $annotations}
-      <Annotations
-        annotations={$annotations}
-        bind:hoveredAnnotationGroup
-        {mouseoverValue}
-        hovered={mouseOverThisChart}
-      />
-    {/if}
-
-    {#if hoveredAnnotationGroup?.hasRange}
-      <AnnotationRangeHighlight annotationGroup={hoveredAnnotationGroup} />
+      <Annotations {annotationsStore} {mouseoverValue} {mouseOverThisChart} />
     {/if}
   </SimpleDataGraphic>
 
-  {#if hoveredAnnotationGroup}
-    <AnnotationGroupPopover annotationGroup={hoveredAnnotationGroup} />
-  {/if}
+  <!-- Contains non-svg elements. So keep it outside SimpleDataGraphic -->
+  <AnnotationGroupPopover {annotationsStore} />
 </div>
