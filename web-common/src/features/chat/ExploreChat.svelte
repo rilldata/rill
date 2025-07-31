@@ -3,9 +3,9 @@
   import ChatSidebar from "./layouts/sidebar/ChatSidebar.svelte";
   import { chatOpen } from "./layouts/sidebar/sidebar-store";
 
-  const { chat: chatFlag } = featureFlags;
+  const { dashboardChat } = featureFlags;
 </script>
 
-{#if $chatOpen && $chatFlag}
+{#if $dashboardChat && $chatOpen}
   <ChatSidebar />
 {/if}
