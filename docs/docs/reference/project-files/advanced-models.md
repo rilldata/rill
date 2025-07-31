@@ -1,11 +1,24 @@
 ---
-title: Advanced Model YAML
-sidebar_label: Advanced Model YAML
-sidebar_position: 35
+title: Model YAML
+sidebar_label: Model YAML
+sidebar_position: 20
 hide_table_of_contents: true
 ---
 
-In some cases, advanced models will be required when implementing advanced features such as incremental partitioned models or staging models. 
+:::tip
+
+Both regular models and source models can use the Model YAML specification described on this page. While [SQL models](./models) are perfect for simple transformations, Model YAML files provide advanced capabilities for complex data processing scenarios.
+
+**When to use Model YAML:**
+- **Partitions** - Optimize performance with data partitioning strategies
+- **Incremental models** - Process only new or changed data efficiently
+- **Pre/post execution hooks** - Run custom logic before or after model execution
+- **Staging** - Create intermediate tables for complex transformations
+- **Output configuration** - Define specific output formats and destinations
+
+Model YAML files give you fine-grained control over how your data is processed and transformed, making them ideal for production workloads and complex analytics pipelines.
+
+:::
 
 
 ## Properties

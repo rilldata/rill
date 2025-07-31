@@ -30,7 +30,7 @@ var spec = drivers.Spec{
 		{
 			Key:         "dsn",
 			Type:        drivers.StringPropertyType,
-			Placeholder: "username:password@tcp(example.com:3306)/my-db",
+			Placeholder: "mysql://user:password@host:3306/my-db",
 			Secret:      true,
 		},
 	},
@@ -161,6 +161,7 @@ func (c *ConfigProperties) resolveGoFormatDSN() (string, error) {
 	cfg := mysql.Config{
 		User:      user,
 		Passwd:    pass,
+		Net:       "tcp",
 		Addr:      addr,
 		DBName:    dbName,
 		TLSConfig: tlsConfig,

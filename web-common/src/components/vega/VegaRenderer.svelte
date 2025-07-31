@@ -24,6 +24,7 @@
   export let isScrubbing: boolean;
 
   let contentRect = new DOMRect(0, 0, 0, 0);
+  let tooltipHandler: VegaLiteTooltipHandler | null = null;
 
   $: width = contentRect.width;
   $: height = contentRect.height * 0.95 - 80;
@@ -54,8 +55,12 @@
   }
 
   $: if (view && tooltipFormatter) {
-    const handler = new VegaLiteTooltipHandler(tooltipFormatter);
-    view.tooltip(createHoverIntentTooltipHandler(handler.handleTooltip));
+    if (tooltipHandler) {
+      tooltipHandler.destroy();
+    }
+
+    tooltipHandler = new VegaLiteTooltipHandler(tooltipFormatter);
+    view.tooltip(createHoverIntentTooltipHandler(tooltipHandler.handleTooltip));
     void view.runAsync();
   }
 
@@ -72,19 +77,35 @@
     error = e.detail.error.message;
   };
 
+  const handleMouseLeave = () => {
+    if (tooltipTimer !== null) {
+      clearTimeout(tooltipTimer);
+      tooltipTimer = null;
+    }
+    if (tooltipHandler) {
+      tooltipHandler.removeTooltip();
+    }
+  };
+
   onDestroy(() => {
     if (tooltipTimer !== null) {
       clearTimeout(tooltipTimer);
+    }
+    if (tooltipHandler) {
+      tooltipHandler.destroy();
+      tooltipHandler = null;
     }
   });
 </script>
 
 <div
   bind:contentRect
+  role="presentation"
   class:bg-surface={canvasDashboard}
   class:px-4={canvasDashboard}
   class:pb-2={canvasDashboard}
-  class="overflow-hidden size-full flex flex-col items-center justify-center"
+  class="rill-vega-container overflow-hidden size-full flex flex-col items-center justify-center"
+  on:mouseleave={handleMouseLeave}
 >
   {#if error}
     <div
