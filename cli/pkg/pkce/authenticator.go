@@ -28,9 +28,14 @@ type Authenticator struct {
 	codeVerifier string
 	clientID     string
 	OriginURL    string
+	screenHint   string
 }
 
 func NewAuthenticator(baseAuthURL, redirectURL, clientID, origin string) (*Authenticator, error) {
+	return NewAuthenticatorWithScreenHint(baseAuthURL, redirectURL, clientID, origin, "")
+}
+
+func NewAuthenticatorWithScreenHint(baseAuthURL, redirectURL, clientID, origin, screenHint string) (*Authenticator, error) {
 	// Generate a new code verifier
 	codeVerifier, err := generateCodeVerifier()
 	if err != nil {
@@ -44,6 +49,7 @@ func NewAuthenticator(baseAuthURL, redirectURL, clientID, origin string) (*Authe
 		codeVerifier: codeVerifier,
 		clientID:     clientID,
 		OriginURL:    origin,
+		screenHint:   screenHint,
 	}, nil
 }
 
@@ -69,6 +75,11 @@ func (a *Authenticator) GetAuthURL(state string) string {
 	q.Set("code_challenge_method", codeChallengeMethod)
 	// Set the state, will be used later to retrieve this authenticator
 	q.Set("state", state)
+
+	// Add screen_hint parameter if provided
+	if a.screenHint != "" {
+		q.Set("screen_hint", a.screenHint)
+	}
 
 	// Encode the query string
 	u.RawQuery = q.Encode()

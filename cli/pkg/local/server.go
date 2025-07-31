@@ -799,7 +799,10 @@ func (s *Server) authHandler(httpPort int, secure bool) http.Handler {
 			origin = "/"
 		}
 
-		authenticator, err := pkce.NewAuthenticator(s.app.ch.AdminURL(), redirectURL, database.AuthClientIDRillWebLocal, origin)
+		// check for screen_hint parameter (e.g., "signup")
+		screenHint := r.URL.Query().Get("screen_hint")
+
+		authenticator, err := pkce.NewAuthenticatorWithScreenHint(s.app.ch.AdminURL(), redirectURL, database.AuthClientIDRillWebLocal, origin, screenHint)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("failed to generate pkce authenticator: %s", err), http.StatusInternalServerError)
 			return
