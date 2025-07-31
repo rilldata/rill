@@ -308,6 +308,11 @@ let ParserRules = [
   },
   {
     name: "iso_interval",
+    symbols: ["abs_time", "_", { literal: "," }, "_", "abs_time"],
+    postprocess: ([start, , , , end]) => new RillIsoInterval(start, end),
+  },
+  {
+    name: "iso_interval",
     symbols: ["abs_time"],
     postprocess: ([start]) => new RillIsoInterval(start, undefined),
   },
