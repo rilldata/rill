@@ -4,14 +4,13 @@ import type {
   SimpleDataGraphicConfiguration,
 } from "@rilldata/web-common/components/data-graphic/state/types";
 import { Throttler } from "@rilldata/web-common/lib/throttler.ts";
+import type { V1MetricsViewAnnotationsResponseAnnotation } from "@rilldata/web-common/runtime-client";
 import { get, writable } from "svelte/store";
 
-export type Annotation = {
+export type Annotation = V1MetricsViewAnnotationsResponseAnnotation & {
   startTime: Date;
   endTime?: Date;
   formattedTimeOrRange: string;
-  grain?: string;
-  description: string;
 };
 
 export type AnnotationGroup = {
@@ -24,7 +23,7 @@ export type AnnotationGroup = {
 };
 
 export const AnnotationWidth = 10;
-const AnnotationOverlapWidth = AnnotationWidth * (1 - 0.66); // Width where 66% overlap
+const AnnotationOverlapWidth = AnnotationWidth * (1 - 0.4); // Width where 40% overlap
 export const AnnotationHeight = 10;
 
 export class AnnotationsStore {
@@ -139,7 +138,7 @@ export class AnnotationsStore {
       }
     }
 
-    return groups;
+    return groups.filter((g) => g.left > 0);
   }
 
   private buildLookupTable(annotationGroups: AnnotationGroup[]) {

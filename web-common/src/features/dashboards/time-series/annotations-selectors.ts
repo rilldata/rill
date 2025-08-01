@@ -16,7 +16,7 @@ import {
 } from "@rilldata/web-common/lib/time/types.ts";
 import {
   getQueryServiceMetricsViewAnnotationsQueryOptions,
-  type V1MetricsViewAnnotationsResponseDataItem,
+  type V1MetricsViewAnnotationsResponseAnnotation,
 } from "@rilldata/web-common/runtime-client";
 import { createQueries } from "@tanstack/svelte-query";
 import { DateTime, Interval } from "luxon";
@@ -92,15 +92,15 @@ export function getAnnotationsForMeasure({
 }
 
 function convertV1AnnotationsResponseItemToAnnotation(
-  item: V1MetricsViewAnnotationsResponseDataItem,
+  annotation: V1MetricsViewAnnotationsResponseAnnotation,
   period: Period | undefined,
   selectedTimezone: string,
 ) {
-  let startTime = new Date(item.time as string);
-  let endTime = item.time_end ? new Date(item.time_end as string) : undefined;
+  let startTime = new Date(annotation.time as string);
+  let endTime = annotation.timeEnd ? new Date(annotation.timeEnd) : undefined;
 
   // Only truncate start and ceil end when there is a grain column in the annotation.
-  if (period && item.grain) {
+  if (period && annotation.grain) {
     startTime = getStartOfPeriod(startTime, period, selectedTimezone);
     if (endTime) {
       endTime = getOffset(
@@ -118,7 +118,7 @@ function convertV1AnnotationsResponseItemToAnnotation(
     : formatTime(DateTime.fromJSDate(startTime));
 
   return <Annotation>{
-    ...item,
+    ...annotation,
     startTime,
     endTime,
     formattedTimeOrRange,

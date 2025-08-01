@@ -1,8 +1,14 @@
 <script lang="ts">
-  import { AnnotationsStore } from "@rilldata/web-common/components/data-graphic/marks/annotations.ts";
+  import { contexts } from "@rilldata/web-common/components/data-graphic/constants";
+  import {
+    type AnnotationGroup,
+    AnnotationsStore,
+  } from "@rilldata/web-common/components/data-graphic/marks/annotations.ts";
+  import type { SimpleConfigurationStore } from "@rilldata/web-common/components/data-graphic/state/types";
   import EllipsisVertical from "@rilldata/web-common/components/icons/EllipsisVertical.svelte";
   import * as Popover from "@rilldata/web-common/components/popover";
   import { builderActions, getAttrs } from "bits-ui";
+  import { getContext } from "svelte";
 
   export let annotationsStore: AnnotationsStore;
 
@@ -11,13 +17,18 @@
     annotationPopoverOpened,
     annotationPopoverHovered,
   } = annotationsStore;
+  const plotConfig = getContext<SimpleConfigurationStore>(contexts.config);
 
-  const MaxAnnotationCount = 2;
-  const PopoverOpenTimeout = 200;
+  const MaxAnnotationCount = 7;
+  const PopoverOpenTimeout = 50;
 
   $: popoverLeft = $hoveredAnnotationGroup?.left ?? 0;
   $: popoverOffset = $hoveredAnnotationGroup
-    ? 8 + $hoveredAnnotationGroup.right - $hoveredAnnotationGroup.left
+    ? 8 +
+      Math.min(
+        $hoveredAnnotationGroup.right - $hoveredAnnotationGroup.left,
+        $plotConfig.plotRight - popoverLeft,
+      )
     : 0;
 
   let showingMore = false;
@@ -29,8 +40,17 @@
       ? $hoveredAnnotationGroup?.items
       : $hoveredAnnotationGroup?.items.slice(0, MaxAnnotationCount)) ?? [];
 
-  $: if ($hoveredAnnotationGroup) {
+  let lastHoveredGroup: AnnotationGroup | undefined = undefined;
+  $: handleAnnotationGroupChange($hoveredAnnotationGroup);
+
+  function handleAnnotationGroupChange(
+    hoveredAnnotationGroup: AnnotationGroup | undefined,
+  ) {
+    if (lastHoveredGroup === hoveredAnnotationGroup) return;
+    lastHoveredGroup = hoveredAnnotationGroup;
+
     showingMore = false;
+    annotationPopoverOpened.set(false);
     setTimeout(() => {
       annotationPopoverOpened.set(true);
     }, PopoverOpenTimeout);

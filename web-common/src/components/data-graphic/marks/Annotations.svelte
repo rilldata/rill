@@ -1,10 +1,12 @@
 <script lang="ts">
+  import { contexts } from "@rilldata/web-common/components/data-graphic/constants";
   import type { DomainCoordinates } from "@rilldata/web-common/components/data-graphic/constants/types";
   import {
     AnnotationHeight,
     AnnotationsStore,
     AnnotationWidth,
   } from "@rilldata/web-common/components/data-graphic/marks/annotations.ts";
+  import type { SimpleConfigurationStore } from "@rilldata/web-common/components/data-graphic/state/types";
   import {
     AnnotationDiamondColor,
     AnnotationHighlightBottomColor,
@@ -12,6 +14,7 @@
     ScrubBoxColor,
   } from "@rilldata/web-common/features/dashboards/time-series/chart-colors.ts";
   import { Diamond } from "lucide-svelte";
+  import { getContext } from "svelte";
 
   export let annotationsStore: AnnotationsStore;
   export let mouseoverValue: DomainCoordinates | undefined = undefined;
@@ -19,6 +22,7 @@
 
   const { annotationGroups, hoveredAnnotationGroup, annotationPopoverHovered } =
     annotationsStore;
+  const plotConfig = getContext<SimpleConfigurationStore>(contexts.config);
 
   $: annotationsStore.triggerHoverCheck(
     mouseoverValue,
@@ -28,7 +32,10 @@
 
   $: hasRange = $hoveredAnnotationGroup?.hasRange;
   $: rangeXStart = $hoveredAnnotationGroup?.left ?? 0;
-  $: rangeXEnd = $hoveredAnnotationGroup?.right ?? 0;
+  $: rangeXEnd = Math.min(
+    $hoveredAnnotationGroup?.right ?? 0,
+    $plotConfig.plotRight,
+  );
   $: rangeYStart = 0;
   $: rangeYEnd = ($hoveredAnnotationGroup?.bottom ?? 0) - AnnotationHeight / 2;
 </script>
@@ -37,7 +44,7 @@
   {@const hovered = $hoveredAnnotationGroup === annotationGroup}
   <Diamond
     size={AnnotationWidth}
-    x={annotationGroup.left}
+    x={annotationGroup.left - AnnotationWidth / 2}
     y={annotationGroup.top}
     fill={AnnotationDiamondColor}
     opacity={hovered ? 1 : 0.4}
