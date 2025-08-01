@@ -75,11 +75,15 @@ export function getChartData(
           $timeAndFilterStore.timeRange.timeZone || "UTC",
         );
       }
+
+      const domainValues = component.getChartDomainValues();
+
       return {
         data: data || [],
         isFetching: chartData?.isFetching ?? false,
         error: chartData?.error,
         fields: fieldSpecMap,
+        domainValues,
         theme: {
           primary: theme.primary || chroma(`hsl(${defaultPrimaryColors[500]})`),
           secondary:

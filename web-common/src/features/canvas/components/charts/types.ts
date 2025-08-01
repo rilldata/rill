@@ -43,7 +43,14 @@ export type ChartDataResult = {
   fields: ChartFieldsMap;
   error?: HTTPError | null;
   theme: { primary: Color; secondary: Color };
+  domainValues?: ChartDomainValues;
 };
+
+export interface ChartDomainValues {
+  xValues?: string[];
+  colorValues?: string[];
+  yValues?: string[];
+}
 
 export interface TimeDimensionDefinition {
   field: string;
@@ -73,6 +80,7 @@ interface NominalFieldConfig {
   showNull?: boolean;
   labelAngle?: number;
   legendOrientation?: ChartLegend;
+  colorMapping?: { value: string; color: string }[];
 }
 
 interface QuantitativeFieldConfig {

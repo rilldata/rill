@@ -3,13 +3,17 @@
   import FieldSwitcher from "@rilldata/web-common/components/forms/FieldSwitcher.svelte";
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import type { FieldConfig } from "@rilldata/web-common/features/canvas/components/charts/types";
+  import { isFieldConfig } from "@rilldata/web-common/features/canvas/components/charts/util";
   import SingleFieldInput from "@rilldata/web-common/features/canvas/inspector/SingleFieldInput.svelte";
   import type { ComponentInputParam } from "@rilldata/web-common/features/canvas/inspector/types";
+  import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import {
     defaultPrimaryColors,
     defaultSecondaryColors,
   } from "@rilldata/web-common/features/themes/color-config";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import chroma from "chroma-js";
+  import ColorPaletteSelector from "./field-config/ColorPaletteSelector.svelte";
   import FieldConfigPopover from "./field-config/FieldConfigPopover.svelte";
 
   export let key: string;
@@ -18,6 +22,11 @@
   export let config: ComponentInputParam;
   export let canvasName: string;
   export let onChange: (updatedConfig: FieldConfig | string) => void;
+
+  $: ({ instanceId } = $runtime);
+  $: ({
+    canvasEntity: { selectedComponent },
+  } = getCanvasStore(canvasName, instanceId));
 
   $: selected = !markConfig || typeof markConfig === "string" ? 0 : 1;
 
@@ -58,6 +67,7 @@
   })();
 
   $: chartFieldInput = config.meta?.chartFieldInput;
+  $: colorMapConfig = chartFieldInput?.colorMappingSelector;
 
   function updateFieldConfig(property: keyof FieldConfig, value: any) {
     if (typeof markConfig !== "string") {
@@ -68,21 +78,29 @@
         ...markConfig,
         [property]: value,
       };
+
+      if (property === "field") {
+        updatedConfig.colorMapping = undefined;
+      }
+
       onChange(updatedConfig);
     } else if (property === "field") {
+      // switch to field from single color
       onChange({
         field: value,
         type: "nominal",
       });
     }
   }
+
+  $: popoverKey = `${$selectedComponent}-${metricsView}-${typeof markConfig === "string" ? markConfig : markConfig?.field}`;
 </script>
 
 <div class="space-y-2">
   <div class="flex justify-between items-center">
     <InputLabel small label={config.label ?? key} id={key} />
     {#if Object.keys(chartFieldInput ?? {}).length > 1 && typeof markConfig !== "string"}
-      {#key markConfig}
+      {#key popoverKey}
         <FieldConfigPopover
           fieldConfig={markConfig}
           label={config.label ?? key}
@@ -132,4 +150,14 @@
       updateFieldConfig("field", field);
     }}
   />
+
+  {#if isFieldConfig(markConfig) && colorMapConfig?.enable}
+    <div class="pt-2">
+      <ColorPaletteSelector
+        fieldConfig={markConfig}
+        onChange={updateFieldConfig}
+        {colorMapConfig}
+      />
+    </div>
+  {/if}
 {/if}
