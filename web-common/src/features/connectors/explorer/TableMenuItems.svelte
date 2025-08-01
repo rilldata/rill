@@ -17,7 +17,7 @@
   import { featureFlags } from "../../feature-flags";
   import { useCreateMetricsViewFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
   import { createModelFromTable } from "../olap/createModel";
-  import { createYamlModelFromTable } from "../yaml/createYamlModel";
+  import { createYamlModelFromTable } from "../code-utils";
 
   export let connector: string;
   export let database: string = "";
