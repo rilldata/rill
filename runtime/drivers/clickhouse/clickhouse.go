@@ -36,7 +36,7 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "ClickHouse",
 	Description: "Connect to ClickHouse.",
-	DocsURL:     "https://docs.rilldata.com/reference/olap-engines/clickhouse",
+	DocsURL:     "https://docs.rilldata.com/connect/olap/clickhouse",
 	// Important: Any edits to the below properties must be accompanied by changes to the client-side form validation schemas.
 	ConfigProperties: []*drivers.PropertySpec{
 		{

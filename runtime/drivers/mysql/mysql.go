@@ -25,7 +25,7 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "MySQL",
 	Description: "Connect to MySQL.",
-	DocsURL:     "https://docs.rilldata.com/reference/connectors/mysql",
+	DocsURL:     "https://docs.rilldata.com/connect/data-source/mysql",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:         "dsn",
