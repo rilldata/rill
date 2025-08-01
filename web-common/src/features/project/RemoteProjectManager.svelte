@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { ConnectError } from "@connectrpc/connect";
-  import { isMergeConflictError } from "@rilldata/web-common/features/project/github-utils.ts";
+  import { isMergeConflictError } from "@rilldata/web-common/features/project/deploy/github-utils.ts";
   import MergeConflictResolutionDialog from "@rilldata/web-common/features/project/MergeConflictResolutionDialog.svelte";
   import ProjectContainsRemoteChangesDialog from "@rilldata/web-common/features/project/ProjectContainsRemoteChangesDialog.svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";

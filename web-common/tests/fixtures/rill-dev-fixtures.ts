@@ -13,6 +13,7 @@ import { spawnAndMatch } from "@rilldata/web-common/tests/utils/spawn.ts";
 type MyFixtures = {
   cliHomeDir: string;
   project: string | undefined;
+  projectDir: string | undefined;
   rillDevPage: Page;
 };
 
@@ -21,11 +22,15 @@ export const rillDev = base.extend<MyFixtures>({
   // This will make sure that login status won't conflicts with dev's login status when run locally.
   cliHomeDir: [makeTempDir("home"), { option: true }],
   project: [undefined, { option: true }],
+  // We default to using a randomly created temporary directory for project.
+  // This can be used to get a consistent
+  projectDir: [undefined, { option: true }],
 
-  rillDevPage: async ({ browser, project, cliHomeDir }, use) => {
+  rillDevPage: async ({ browser, project, projectDir, cliHomeDir }, use) => {
     const TEST_PORT = await getOpenPort();
     const TEST_GRPC_PORT = await getOpenPort();
-    const TEST_PROJECT_DIRECTORY = makeTempDir(`projects-${TEST_PORT}`);
+    const TEST_PROJECT_DIRECTORY =
+      projectDir ?? makeTempDir(`projects-${TEST_PORT}`);
 
     // Switch env to "dev" so that this points to the locally started rill cloud.
     // For tests that involve a local cloud this will point to it.
@@ -49,8 +54,12 @@ export const rillDev = base.extend<MyFixtures>({
     }
 
     if (project) {
-      const projectDir = join(import.meta.dirname, "../projects", project);
-      cpSync(projectDir, TEST_PROJECT_DIRECTORY, {
+      const sourceProjectDir = join(
+        import.meta.dirname,
+        "../projects",
+        project,
+      );
+      cpSync(sourceProjectDir, TEST_PROJECT_DIRECTORY, {
         recursive: true,
         force: true,
       });

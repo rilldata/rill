@@ -29,7 +29,7 @@
   import Github from "@rilldata/web-common/components/icons/Github.svelte";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
-  import { getGitUrlFromRemote } from "@rilldata/web-common/features/project/github-utils";
+  import { getGitUrlFromRemote } from "@rilldata/web-common/features/project/deploy/github-utils";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import type { AxiosError } from "axios";
 

@@ -17,3 +17,18 @@ export function copyParamsToTarget(
     toSearchParams.set(key, value);
   });
 }
+
+export function copyWithAdditionalArguments(
+  url: URL,
+  args: Record<string, string>,
+  deleteArgs: Record<string, boolean> = {},
+) {
+  const newUrl = new URL(url);
+  for (const [key, value] of Object.entries(args)) {
+    newUrl.searchParams.set(key, value);
+  }
+  for (const key of Object.keys(deleteArgs)) {
+    newUrl.searchParams.delete(key);
+  }
+  return newUrl;
+}

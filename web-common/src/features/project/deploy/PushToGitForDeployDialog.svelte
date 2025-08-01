@@ -1,5 +1,9 @@
 <script lang="ts">
   import {
+    getGitUrlFromRemote,
+    getRepoNameFromGitRemote,
+  } from "@rilldata/web-common/features/project/deploy/github-utils";
+  import {
     AlertDialog,
     AlertDialogContent,
     AlertDialogDescription,
@@ -10,10 +14,6 @@
   } from "@rilldata/web-common/components/alert-dialog";
   import { Button } from "@rilldata/web-common/components/button";
   import Github from "@rilldata/web-common/components/icons/Github.svelte";
-  import {
-    getGitUrlFromRemote,
-    getRepoNameFromGitRemote,
-  } from "@rilldata/web-common/features/project/github-utils";
 
   export let open = false;
   export let gitRemote: string;

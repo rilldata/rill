@@ -8,9 +8,9 @@
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
   import { BehaviourEventAction } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import {
-    createLocalServiceGetCurrentProject,
     createLocalServiceGetCurrentUser,
     createLocalServiceGetMetadata,
+    createLocalServiceListMatchingProjectsRequest,
   } from "@rilldata/web-common/runtime-client/local-service";
   import CTAHeader from "@rilldata/web-common/components/calls-to-action/CTAHeader.svelte";
   import CTANeedHelp from "@rilldata/web-common/components/calls-to-action/CTANeedHelp.svelte";
@@ -23,11 +23,12 @@
   // So until sveltekit supports loading state from loader function these will have to be queried here.
   const user = createLocalServiceGetCurrentUser();
   const metadata = createLocalServiceGetMetadata();
-  const project = createLocalServiceGetCurrentProject();
+  const matchingProjects = createLocalServiceListMatchingProjectsRequest();
 
-  $: loading = $user.isPending || $metadata.isPending || $project.isPending;
+  $: loading =
+    $user.isPending || $metadata.isPending || $matchingProjects.isPending;
   let error: Error | null = null;
-  $: error = $user.error ?? $metadata.error ?? $project.error;
+  $: error = $user.error ?? $metadata.error ?? $matchingProjects.error;
 
   function handleDeploy() {
     // Should not happen if the servers are up. If not, there should be a query error.
@@ -52,39 +53,33 @@
     void behaviourEvent?.fireDeployEvent(BehaviourEventAction.LoginSuccess);
 
     // Cloud project doest exist.
-    const projectExists = !!$project.data?.project;
+    const projectExists = !!$matchingProjects.data?.projects?.length;
     if (!projectExists) {
       const isPartOfAtLeastOneOrg = !!$user.data.rillUserOrgs?.length;
       if (isPartOfAtLeastOneOrg) {
         // If the user has at least one org we show the selector.
         // Note: The selector has the option to create a new org, so we show it even when there is only one org.
-        void goto(`/deploy/organization`);
+        return goto(`/deploy/organization`);
       } else {
-        void goto(`/deploy/organization/new`);
+        return goto(`/deploy/organization/new`);
       }
-      return;
     }
 
-    const isUserManagedGitProject =
-      $project.data!.project!.gitRemote &&
-      !$project.data!.project!.managedGitId;
-    if (isUserManagedGitProject) {
-      // we do not support pushing to a project already connected to user managed github
-      error =
-        new Error(`This project has already been connected to a GitHub repo.
-Please push changes directly to GitHub and the project in Rill Cloud will automatically be updated.`);
-      return;
+    if ($matchingProjects.data!.projects.length === 1) {
+      const singleProject = $matchingProjects.data!.projects[0];
+      // Project already exists. Run a redeploy
+      return goto(
+        `/deploy/update?org=${singleProject.orgName}&project=${singleProject.name}`,
+      );
+    } else {
+      return goto(`/deploy/select-project`);
     }
-    const orgName = $project.data!.project!.orgName;
-    const projectId = $project.data!.project!.id;
-    // Cloud project already exists. Run a redeploy
-    void goto(`/deploy/update?org=${orgName}&project_id=${projectId}`);
   }
 
   async function maybeDeploy() {
     await waitUntil(() => !loading);
     if (error) return;
-    handleDeploy();
+    void handleDeploy();
   }
 
   onMount(() => {
@@ -95,7 +90,7 @@ Please push changes directly to GitHub and the project in Rill Cloud will automa
 <!-- This seems to be necessary to trigger tanstack query to update the query object -->
 <!-- TODO: find a config to avoid this -->
 <div class="hidden">
-  {$user.isLoading}-{$metadata.isLoading}-{$project.isLoading}
+  {$user.isLoading}-{$metadata.isLoading}-{$matchingProjects.isLoading}
 </div>
 
 {#if loading}
