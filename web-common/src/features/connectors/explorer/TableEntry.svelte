@@ -32,10 +32,6 @@
 
   $: expandedStore = store.getItem(connector, database, databaseSchema, table);
   $: showSchema = $expandedStore;
-  $: showContextMenu =
-    showGenerateMetricsAndDashboard ||
-    isModelingSupported ||
-    isYamlModelingSupported;
 
   const { allowContextMenu, allowNavigateToTable, allowShowSchema } = store;
 
@@ -114,7 +110,7 @@
       />
     {/if}
 
-    {#if allowContextMenu && showContextMenu}
+    {#if allowContextMenu && (showGenerateMetricsAndDashboard || isModelingSupported || isYamlModelingSupported)}
       <DropdownMenu.Root bind:open={contextMenuOpen}>
         <DropdownMenu.Trigger asChild let:builder>
           <ContextButton
