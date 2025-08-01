@@ -70,6 +70,60 @@ function createModelingSupportQueryOptions(
 }
 
 /**
+ * Creates query options for checking YAML modeling support of a connector
+ */
+function createYamlModelingSupportQueryOptions(
+  instanceId: string,
+  connectorName: string,
+) {
+  return {
+    queryKey: getRuntimeServiceGetResourceQueryKey(instanceId, {
+      "name.kind": ResourceKind.Connector,
+      "name.name": connectorName,
+    }),
+    queryFn: async () => {
+      try {
+        return await runtimeServiceGetResource(instanceId, {
+          "name.kind": ResourceKind.Connector,
+          "name.name": connectorName,
+        });
+      } catch (error) {
+        // Handle legacy DuckDB projects where no explicit connector resource exists
+        if (connectorName === "duckdb" && error?.response?.status === 404) {
+          // Return a synthetic DuckDB connector
+          return {
+            resource: {
+              connector: {
+                spec: {
+                  driver: "duckdb",
+                },
+              },
+            },
+          };
+        }
+        throw error;
+      }
+    },
+    enabled: !!instanceId && !!connectorName,
+    select: (data: V1GetResourceResponse) => {
+      const spec = data?.resource?.connector?.spec;
+      if (!spec) return false;
+
+      // YAML modeling is supported for non-OLAP connectors:
+      // - Postgres, MySQL, SQL Server, etc. (read-only mode)
+      // - NOT DuckDB (uses SQL models)
+      // - NOT provisioned connectors (uses SQL models)
+      // - NOT read-write mode connectors (uses SQL models)
+      return (
+        spec.driver !== "duckdb" &&
+        spec.provision !== true &&
+        spec.properties?.mode !== "readwrite"
+      );
+    },
+  };
+}
+
+/**
  * LEGACY OLAP SELECTORS
  * These use the legacy OLAP-specific APIs and should be migrated to the new generic APIs above
  */
@@ -83,6 +137,18 @@ export function useIsModelingSupportedForConnectorOLAP(
 ): CreateQueryResult<boolean, ErrorType<RpcStatus>> {
   return createQuery(
     createModelingSupportQueryOptions(instanceId, connectorName),
+  );
+}
+
+/**
+ * Check if YAML modeling is supported for a specific connector based on its properties
+ */
+export function useIsYamlModelingSupportedForConnector(
+  instanceId: string,
+  connectorName: string,
+): CreateQueryResult<boolean, ErrorType<RpcStatus>> {
+  return createQuery(
+    createYamlModelingSupportQueryOptions(instanceId, connectorName),
   );
 }
 

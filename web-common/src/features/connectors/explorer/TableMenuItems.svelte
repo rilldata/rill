@@ -17,6 +17,7 @@
   import { featureFlags } from "../../feature-flags";
   import { useCreateMetricsViewFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
   import { createModelFromTable } from "../olap/createModel";
+  import { createYamlModelFromTable } from "../yaml/createYamlModel";
   const { ai } = featureFlags;
 
   export let connector: string;
@@ -25,6 +26,7 @@
   export let table: string;
   export let showGenerateMetricsAndDashboard: boolean = false;
   export let isModelingSupported: boolean | undefined = false;
+  export let isYamlModelingSupported: boolean | undefined = false;
 
   $: ({ instanceId } = $runtime);
   $: createMetricsViewFromTable = useCreateMetricsViewFromTableUIAction(
@@ -70,6 +72,29 @@
       console.error(err);
     }
   }
+
+  async function handleCreateYamlModel() {
+    try {
+      const previousActiveEntity = getScreenNameFromPage();
+      const [newModelPath, newModelName] = await createYamlModelFromTable(
+        queryClient,
+        connector,
+        database,
+        databaseSchema,
+        table,
+      );
+      await goto(`/files${newModelPath}`);
+      await behaviourEvent?.fireNavigationEvent(
+        newModelName,
+        BehaviourEventMedium.Menu,
+        MetricsEventSpace.LeftPanel,
+        previousActiveEntity,
+        MetricsEventScreenName.Model,
+      );
+    } catch (err) {
+      console.error(err);
+    }
+  }
 </script>
 
 {#if isModelingSupported}
@@ -79,7 +104,14 @@
   </NavigationMenuItem>
 {/if}
 
-{#if showGenerateMetricsAndDashboard}
+{#if isYamlModelingSupported}
+  <NavigationMenuItem on:click={handleCreateYamlModel}>
+    <Model slot="icon" />
+    Create model
+  </NavigationMenuItem>
+{/if}
+
+{#if showGenerateMetricsAndDashboard && isModelingSupported}
   <NavigationMenuItem on:click={createMetricsViewFromTable}>
     <MetricsViewIcon slot="icon" />
     <div class="flex gap-x-2 items-center">
