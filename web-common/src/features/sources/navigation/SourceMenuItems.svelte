@@ -25,12 +25,12 @@
   import { WandIcon } from "lucide-svelte";
   import MetricsViewIcon from "../../../components/icons/MetricsViewIcon.svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import { createModelFromTable } from "../../connectors/olap/createModel";
   import { useCreateMetricsViewFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
   import {
     refreshSource,
     replaceSourceWithUploadedFile,
   } from "../refreshSource";
+  import { createModelFromTable } from "../../connectors/code-utils";
 
   export let filePath: string;
 

@@ -16,9 +16,9 @@
   import { behaviourEvent } from "../../../metrics/initMetrics";
   import { V1ReconcileStatus, type V1Resource } from "../../../runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import { createModelFromTable } from "../../connectors/olap/createModel";
   import { getScreenNameFromPage } from "../../file-explorer/telemetry";
   import { useCreateMetricsViewFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
+  import { createModelFromTable } from "../../connectors/code-utils";
 
   const { ai } = featureFlags;
   const queryClient = useQueryClient();
