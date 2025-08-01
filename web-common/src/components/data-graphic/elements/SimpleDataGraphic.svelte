@@ -37,6 +37,8 @@ A simple composable container for SVG-based data graphics.
   export let mouseoverValue: DomainCoordinates | undefined = undefined;
   export let hovered = false;
 
+  let mouseOverThisChart = false;
+
   /** this makes a wide variety of normal events, such as on:click, available
    * to the consumer
    */
@@ -70,6 +72,7 @@ A simple composable container for SVG-based data graphics.
     {overflowHidden}
     bind:mouseoverValue
     bind:hovered
+    bind:mouseOverThisChart
     let:xScale
     let:yScale
     let:config
@@ -79,6 +82,13 @@ A simple composable container for SVG-based data graphics.
     on:click
     on:contextmenu
   >
-    <slot {xScale} {yScale} {mouseoverValue} {config} {hovered} />
+    <slot
+      {xScale}
+      {yScale}
+      {mouseoverValue}
+      {config}
+      {hovered}
+      {mouseOverThisChart}
+    />
   </SimpleSVGContainer>
 </GraphicContext>
