@@ -17,6 +17,16 @@ import {
 import { ResourceKind } from "../entity-management/resource-selectors";
 import type { ErrorType } from "@rilldata/web-common/runtime-client/http-client";
 
+// Helper function to determine if SQL modeling is supported
+// Previously `clickhouseModeling` was used to determine if SQL modeling was supported
+function isSqlModelingSupported(spec: V1ConnectorSpec) {
+  return (
+    spec.driver === "duckdb" ||
+    spec.provision === true ||
+    spec.properties?.mode === "readwrite"
+  );
+}
+
 /**
  * Creates query options for checking modeling support of a connector
  */
@@ -25,13 +35,6 @@ function createModelingSupportQueryOptions(
   connectorName: string,
   modelingType: "sql" | "yaml",
 ) {
-  // Helper function to determine if SQL modeling is supported
-  // Previously `clickhouseModeling` was used to determine if SQL modeling was supported
-  const isSqlModelingSupported = (spec: V1ConnectorSpec) =>
-    spec.driver === "duckdb" ||
-    spec.provision === true ||
-    spec.properties?.mode === "readwrite";
-
   return {
     queryKey: getRuntimeServiceGetResourceQueryKey(instanceId, {
       "name.kind": ResourceKind.Connector,
