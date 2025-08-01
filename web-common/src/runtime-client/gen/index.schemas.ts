@@ -1332,6 +1332,31 @@ export interface V1MetricsViewAggregationSort {
   desc?: boolean;
 }
 
+export interface V1MetricsViewAnnotationsResponse {
+  schema?: V1StructType;
+  data?: V1MetricsViewAnnotationsResponseAnnotation[];
+}
+
+/**
+ * Any other fields are captured here. Will be used in predicates in the future.
+ */
+export type V1MetricsViewAnnotationsResponseAnnotationAdditionalFields = {
+  [key: string]: unknown;
+};
+
+export interface V1MetricsViewAnnotationsResponseAnnotation {
+  /** Time when the annotation applies. Maps to `time` column from the table. */
+  time?: string;
+  /** Optional. Time when the annotation ends. Only present if the underlying table has the `time_end` column. */
+  timeEnd?: string;
+  /** User defined description of the annotation applies. Maps to `description` column from the table. */
+  description?: string;
+  /** Minimum grain this annotation is displayed for. Maps to `grain` column from the table. */
+  grain?: string;
+  /** Any other fields are captured here. Will be used in predicates in the future. */
+  additionalFields?: V1MetricsViewAnnotationsResponseAnnotationAdditionalFields;
+}
+
 export interface V1MetricsViewColumn {
   name?: string;
   type?: string;
@@ -1483,6 +1508,7 @@ export interface V1MetricsViewSpec {
   watermarkExpression?: string;
   dimensions?: MetricsViewSpecDimension[];
   measures?: MetricsViewSpecMeasure[];
+  annotations?: V1MetricsViewSpecAnnotation[];
   securityRules?: V1SecurityRule[];
   /** ISO 8601 weekday number to use as the base for time aggregations by week. Defaults to 1 (Monday). */
   firstDayOfWeek?: number;
@@ -1492,6 +1518,23 @@ export interface V1MetricsViewSpec {
   cacheEnabled?: boolean;
   cacheKeySql?: string;
   cacheKeyTtlSeconds?: string;
+}
+
+export interface V1MetricsViewSpecAnnotation {
+  name?: string;
+  connector?: string;
+  database?: string;
+  databaseSchema?: string;
+  table?: string;
+  /** Name of the model that source of annotation. Either table or model should be set. */
+  model?: string;
+  /** Measures to apply the annotation to. If `measures_selector` is set, this will only be set in `state.valid_spec`. */
+  measures?: string[];
+  measuresSelector?: V1FieldSelector;
+  /** Signifies that the underlying table has `time_end` column. Will be used while querying to add additional filter. */
+  hasTimeEnd?: boolean;
+  /** Signifies that the underlying table has `grain` column. Will be used while querying to add additional filter. */
+  hasGrain?: boolean;
 }
 
 export interface V1MetricsViewState {
@@ -2664,6 +2707,15 @@ export type QueryServiceMetricsViewAggregationBody = {
   exact?: boolean;
   fillMissing?: boolean;
   rows?: boolean;
+};
+
+export type QueryServiceMetricsViewAnnotationsBody = {
+  priority?: number;
+  timeRange?: V1TimeRange;
+  timeGrain?: V1TimeGrain;
+  timeZone?: string;
+  limit?: string;
+  offset?: string;
 };
 
 export type QueryServiceMetricsViewComparisonBody = {

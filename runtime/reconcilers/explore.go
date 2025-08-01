@@ -164,7 +164,7 @@ func (r *ExploreReconciler) validateAndRewrite(ctx context.Context, self *runtim
 	for _, d := range mv.Dimensions {
 		allDims = append(allDims, d.Name)
 	}
-	spec.Dimensions, err = r.resolveFields(spec.Dimensions, spec.DimensionsSelector, allDims)
+	spec.Dimensions, err = fieldselectorpb.ResolveFields(spec.Dimensions, spec.DimensionsSelector, allDims)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -175,7 +175,7 @@ func (r *ExploreReconciler) validateAndRewrite(ctx context.Context, self *runtim
 	for _, m := range mv.Measures {
 		allMeasures = append(allMeasures, m.Name)
 	}
-	spec.Measures, err = r.resolveFields(spec.Measures, spec.MeasuresSelector, allMeasures)
+	spec.Measures, err = fieldselectorpb.ResolveFields(spec.Measures, spec.MeasuresSelector, allMeasures)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -185,14 +185,14 @@ func (r *ExploreReconciler) validateAndRewrite(ctx context.Context, self *runtim
 	if spec.DefaultPreset != nil {
 		p := spec.DefaultPreset
 
-		dims, err := r.resolveFields(p.Dimensions, p.DimensionsSelector, spec.Dimensions)
+		dims, err := fieldselectorpb.ResolveFields(p.Dimensions, p.DimensionsSelector, spec.Dimensions)
 		if err != nil {
 			return nil, nil, err
 		}
 		p.Dimensions = dims
 		p.DimensionsSelector = nil
 
-		measures, err := r.resolveFields(p.Measures, p.MeasuresSelector, spec.Measures)
+		measures, err := fieldselectorpb.ResolveFields(p.Measures, p.MeasuresSelector, spec.Measures)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -202,29 +202,6 @@ func (r *ExploreReconciler) validateAndRewrite(ctx context.Context, self *runtim
 
 	// Done with rewriting
 	return spec, mvr.GetMetricsView().State.DataRefreshedOn, nil
-}
-
-func (r *ExploreReconciler) resolveFields(selected []string, selector *runtimev1.FieldSelector, all []string) ([]string, error) {
-	// If no selector is provided, validate and return the selected fields.
-	if selector == nil {
-		allMap := make(map[string]struct{}, len(all))
-		for _, f := range all {
-			allMap[f] = struct{}{}
-		}
-		for _, f := range selected {
-			if _, ok := allMap[f]; !ok {
-				return nil, fmt.Errorf("dimension or measure name %q not found in the parent metrics view", f)
-			}
-		}
-		return selected, nil
-	}
-
-	// Resolve the selector (it includes validation of the resulting fields against `all` if needed).
-	res, err := fieldselectorpb.Resolve(selector, all)
-	if err != nil {
-		return nil, fmt.Errorf("failed to resolve dimension or measure name selector: %w", err)
-	}
-	return res, nil
 }
 
 // mergeAccessRules combines Access rule conditions into a single rule
