@@ -76,9 +76,12 @@ type MetricsViewYAML struct {
 	} `yaml:"cache"`
 	Explore *struct {
 		Skip                 bool                   `yaml:"skip"`
+		Name                 string                 `yaml:"name"` // Name of the explore, defaults to the metrics view name
 		DisplayName          string                 `yaml:"display_name"`
 		Description          string                 `yaml:"description"`
 		Banner               string                 `yaml:"banner"`
+		Dimensions           *FieldSelectorYAML     `yaml:"dimensions"`
+		Measures             *FieldSelectorYAML     `yaml:"measures"`
 		Theme                yaml.Node              `yaml:"theme"` // Name (string) or inline theme definition (map)
 		TimeRanges           []ExploreTimeRangeYAML `yaml:"time_ranges"`
 		TimeZones            []string               `yaml:"time_zones"` // Single time zone or list of time zones
@@ -292,9 +295,6 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		}
 		if tmp.Database != "" || tmp.DatabaseSchema != "" || tmp.Table != "" || tmp.Model != "" {
 			return fmt.Errorf("cannot set data source in a derived metrics view (parent %q)", tmp.Parent)
-		}
-		if tmp.Watermark != "" {
-			return fmt.Errorf("cannot set watermark in a derived metrics view (parent %q)", tmp.Parent)
 		}
 		if tmp.Cache.Enabled != nil || tmp.Cache.KeySQL != "" || tmp.Cache.KeyTTL != "" {
 			return fmt.Errorf("cannot set cache in a derived metrics view (parent %q)", tmp.Parent)
@@ -799,6 +799,18 @@ func (p *Parser) parseInlineExplore(tmp *MetricsViewYAML, mvName string, mvPaths
 		return false, nil, fmt.Errorf("setting defaults or available time zones or ranges under metrics view is deprecated, set them under explore key")
 	}
 
+	// Parse the dimensions and measures selectors
+	var dimensionsSelector *runtimev1.FieldSelector
+	dimensions, ok := tmp.Explore.Dimensions.TryResolve()
+	if !ok {
+		dimensionsSelector = tmp.Explore.Dimensions.Proto()
+	}
+	var measuresSelector *runtimev1.FieldSelector
+	measures, ok := tmp.Explore.Measures.TryResolve()
+	if !ok {
+		measuresSelector = tmp.Explore.Measures.Proto()
+	}
+
 	var timeRanges []*runtimev1.ExploreTimeRange
 	for _, tr := range tmp.Explore.TimeRanges {
 		if _, err := rilltime.Parse(tr.Range, rilltime.ParseOptions{}); err != nil {
@@ -896,21 +908,33 @@ func (p *Parser) parseInlineExplore(tmp *MetricsViewYAML, mvName string, mvPaths
 		refs = append(refs, ResourceName{Kind: ResourceKindTheme, Name: themeName})
 	}
 
+	// before inserting inline explore, dry run inserting the parent metrics view resource to ensure that the explore can be inserted
+	err = p.insertDryRun(ResourceKindMetricsView, mvName)
+	if err != nil {
+		return false, nil, fmt.Errorf("failed to dry run inserting metrics view %q: %w", mvName, err)
+	}
+
+	name := mvName
+	if tmp.Explore.Name != "" {
+		name = tmp.Explore.Name
+	}
 	// Track explore
-	r, err := p.insertResource(ResourceKindExplore, mvName, mvPaths, refs...)
+	r, err := p.insertResource(ResourceKindExplore, name, mvPaths, refs...)
 	if err != nil {
 		return false, nil, err
 	}
 	// NOTE: After calling insertResource, an error must not be returned. Any validation should be done before calling it.
 	r.ExploreSpec.DisplayName = tmp.Explore.DisplayName
 	if r.ExploreSpec.DisplayName == "" {
-		r.ExploreSpec.DisplayName = ToDisplayName(mvName)
+		r.ExploreSpec.DisplayName = ToDisplayName(name)
 	}
 	r.ExploreSpec.Description = tmp.Explore.Description
 	r.ExploreSpec.MetricsView = mvName
 	r.ExploreSpec.Banner = tmp.Explore.Banner
-	r.ExploreSpec.DimensionsSelector = &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}}
-	r.ExploreSpec.MeasuresSelector = &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}}
+	r.ExploreSpec.Dimensions = dimensions
+	r.ExploreSpec.DimensionsSelector = dimensionsSelector
+	r.ExploreSpec.Measures = measures
+	r.ExploreSpec.MeasuresSelector = measuresSelector
 	r.ExploreSpec.Theme = themeName
 	r.ExploreSpec.EmbeddedTheme = themeSpec
 	r.ExploreSpec.TimeRanges = timeRanges

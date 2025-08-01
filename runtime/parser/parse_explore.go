@@ -19,9 +19,9 @@ type ExploreYAML struct {
 	Description          string                 `yaml:"description"`
 	Banner               string                 `yaml:"banner"`
 	MetricsView          string                 `yaml:"metrics_view"`
-	Dimensions           *FieldSelectorYAML     `yaml:"dimensions"` // not supported when explore is defined inline, use dimensions selector on metrics view
-	Measures             *FieldSelectorYAML     `yaml:"measures"`   // not supported when explore is defined inline, use measures selector on metrics view
-	Theme                yaml.Node              `yaml:"theme"`      // Name (string) or inline theme definition (map)
+	Dimensions           *FieldSelectorYAML     `yaml:"dimensions"`
+	Measures             *FieldSelectorYAML     `yaml:"measures"`
+	Theme                yaml.Node              `yaml:"theme"` // Name (string) or inline theme definition (map)
 	TimeRanges           []ExploreTimeRangeYAML `yaml:"time_ranges"`
 	TimeZones            []string               `yaml:"time_zones"` // Single time zone or list of time zones
 	LockTimeZone         bool                   `yaml:"lock_time_zone"`
@@ -36,7 +36,7 @@ type ExploreYAML struct {
 	Embeds struct {
 		HidePivot bool `yaml:"hide_pivot"`
 	} `yaml:"embeds"`
-	Security *SecurityPolicyYAML `yaml:"security"` // not supported when explore is defined inline, rely on mv security rules
+	Security *SecurityPolicyYAML `yaml:"security"`
 }
 
 // ExploreTimeRangeYAML represents a time range in an ExploreYAML.

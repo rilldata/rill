@@ -184,6 +184,9 @@ func (e *Executor) resolveParentMetricsView(ctx context.Context) error {
 	e.metricsView.DatabaseSchema = parent.DatabaseSchema
 	e.metricsView.Table = parent.Table
 	e.metricsView.Model = parent.Model
+	e.metricsView.CacheEnabled = parent.CacheEnabled
+	e.metricsView.CacheKeySql = parent.CacheKeySql
+	e.metricsView.CacheKeyTtlSeconds = parent.CacheKeyTtlSeconds
 
 	// Override the dimensions and measures in the normalized metrics view if defined in the current metrics view.
 	names := make([]string, 0, len(parent.Dimensions))
@@ -198,8 +201,6 @@ func (e *Executor) resolveParentMetricsView(ctx context.Context) error {
 	for _, d := range parent.Dimensions {
 		if slices.Contains(names, d.Name) {
 			filteredDims = append(filteredDims, d)
-		} else {
-			return fmt.Errorf("cannot find dimension %q in parent metrics view %q", d.Name, e.metricsView.Parent)
 		}
 	}
 	e.metricsView.Dimensions = filteredDims
@@ -216,8 +217,6 @@ func (e *Executor) resolveParentMetricsView(ctx context.Context) error {
 	for _, m := range parent.Measures {
 		if slices.Contains(names, m.Name) {
 			filteredMeasures = append(filteredMeasures, m)
-		} else {
-			return fmt.Errorf("cannot find measure %q in parent metrics view %q", m.Name, e.metricsView.Parent)
 		}
 	}
 	e.metricsView.Measures = filteredMeasures
@@ -241,19 +240,23 @@ func (e *Executor) resolveParentMetricsView(ctx context.Context) error {
 		e.metricsView.SecurityRules = append(e.metricsView.SecurityRules, rule)
 	}
 
-	// If the metrics view has a time dimension, override the parent metrics view time dimension
+	// If the metrics view doesn't have a time dimension, use the parent's time dimension
 	if e.metricsView.TimeDimension == "" {
 		e.metricsView.TimeDimension = parent.TimeDimension
 	}
-	// If the metrics view has a first day of week, override the parent metrics view first day of week
+	// If the metrics view doesn't have a watermark expression, use the parent's watermark expression
+	if e.metricsView.WatermarkExpression == "" {
+		e.metricsView.WatermarkExpression = parent.WatermarkExpression
+	}
+	// If the metrics view doesn't have a first day of week, use the parent's first day of week
 	if e.metricsView.FirstDayOfWeek == 0 {
 		e.metricsView.FirstDayOfWeek = parent.FirstDayOfWeek
 	}
-	// If the metrics view has a first month of year, override the parent metrics view first month of year
+	// If the metrics view doesn't have a first month of year, use the parent's first month of year
 	if e.metricsView.FirstMonthOfYear == 0 {
 		e.metricsView.FirstMonthOfYear = parent.FirstMonthOfYear
 	}
-	// If the metrics view has a smallest time grain, override the parent metrics view smallest time grain
+	// If the metrics view has a smallest time grain, make sure it is greater than or equal to the parent's smallest time grain.
 	if e.metricsView.SmallestTimeGrain != runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
 		if e.metricsView.SmallestTimeGrain < parent.SmallestTimeGrain {
 			return fmt.Errorf("invalid smallest time grain %s in metrics view %q, must be greater than or equal to parent metrics view smallest time grain %s", e.metricsView.SmallestTimeGrain, e.metricsView.Parent, parent.SmallestTimeGrain)
@@ -261,7 +264,7 @@ func (e *Executor) resolveParentMetricsView(ctx context.Context) error {
 	} else {
 		e.metricsView.SmallestTimeGrain = parent.SmallestTimeGrain
 	}
-	// If the metrics view has ai instructions, override the parent metrics view ai instructions
+	// If the metrics view doesn't have ai instructions, use the parent's ai instructions
 	if e.metricsView.AiInstructions == "" {
 		e.metricsView.AiInstructions = parent.AiInstructions
 	}
