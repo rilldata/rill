@@ -12,6 +12,7 @@ import {
   getRuntimeServiceGetResourceQueryKey,
   runtimeServiceGetResource,
   type RpcStatus,
+  type V1ConnectorSpec,
 } from "../../runtime-client";
 import { ResourceKind } from "../entity-management/resource-selectors";
 import type { ErrorType } from "@rilldata/web-common/runtime-client/http-client";
@@ -22,7 +23,15 @@ import type { ErrorType } from "@rilldata/web-common/runtime-client/http-client"
 function createModelingSupportQueryOptions(
   instanceId: string,
   connectorName: string,
+  modelingType: "sql" | "yaml",
 ) {
+  // Helper function to determine if SQL modeling is supported
+  // Previously `clickhouseModeling` was used to determine if SQL modeling was supported
+  const isSqlModelingSupported = (spec: V1ConnectorSpec) =>
+    spec.driver === "duckdb" ||
+    spec.provision === true ||
+    spec.properties?.mode === "readwrite";
+
   return {
     queryKey: getRuntimeServiceGetResourceQueryKey(instanceId, {
       "name.kind": ResourceKind.Connector,
@@ -56,69 +65,21 @@ function createModelingSupportQueryOptions(
       const spec = data?.resource?.connector?.spec;
       if (!spec) return false;
 
-      // Modeling is supported if:
-      // - DuckDB (embedded database with full SQL support)
-      // - Provisioned (managed) connectors
-      // - Read-write mode connectors
-      return (
-        spec.driver === "duckdb" ||
-        spec.provision === true ||
-        spec.properties?.mode === "readwrite"
-      );
-    },
-  };
-}
-
-/**
- * Creates query options for checking YAML modeling support of a connector
- */
-function createYamlModelingSupportQueryOptions(
-  instanceId: string,
-  connectorName: string,
-) {
-  return {
-    queryKey: getRuntimeServiceGetResourceQueryKey(instanceId, {
-      "name.kind": ResourceKind.Connector,
-      "name.name": connectorName,
-    }),
-    queryFn: async () => {
-      try {
-        return await runtimeServiceGetResource(instanceId, {
-          "name.kind": ResourceKind.Connector,
-          "name.name": connectorName,
-        });
-      } catch (error) {
-        // Handle legacy DuckDB projects where no explicit connector resource exists
-        if (connectorName === "duckdb" && error?.response?.status === 404) {
-          // Return a synthetic DuckDB connector
-          return {
-            resource: {
-              connector: {
-                spec: {
-                  driver: "duckdb",
-                },
-              },
-            },
-          };
-        }
-        throw error;
+      if (modelingType === "sql") {
+        // SQL modeling is supported if:
+        // - DuckDB (embedded database with full SQL support)
+        // - Provisioned (managed) connectors
+        // - Read-write mode connectors
+        return isSqlModelingSupported(spec);
+      } else {
+        // YAML modeling is supported for connectors that support connector type specification:
+        // These connectors use YAML files with "connector: postgres" syntax
+        // - Postgres, MySQL, SQL Server, etc. (external databases)
+        // - NOT DuckDB (uses SQL models)
+        // - NOT provisioned connectors (uses SQL models)
+        // - NOT read-write mode connectors (uses SQL models)
+        return !isSqlModelingSupported(spec);
       }
-    },
-    enabled: !!instanceId && !!connectorName,
-    select: (data: V1GetResourceResponse) => {
-      const spec = data?.resource?.connector?.spec;
-      if (!spec) return false;
-
-      // YAML modeling is supported for non-OLAP connectors:
-      // - Postgres, MySQL, SQL Server, etc. (read-only mode)
-      // - NOT DuckDB (uses SQL models)
-      // - NOT provisioned connectors (uses SQL models)
-      // - NOT read-write mode connectors (uses SQL models)
-      return (
-        spec.driver !== "duckdb" &&
-        spec.provision !== true &&
-        spec.properties?.mode !== "readwrite"
-      );
     },
   };
 }
@@ -136,7 +97,7 @@ export function useIsModelingSupportedForConnectorOLAP(
   connectorName: string,
 ): CreateQueryResult<boolean, ErrorType<RpcStatus>> {
   return createQuery(
-    createModelingSupportQueryOptions(instanceId, connectorName),
+    createModelingSupportQueryOptions(instanceId, connectorName, "sql"),
   );
 }
 
@@ -148,7 +109,7 @@ export function useIsYamlModelingSupportedForConnector(
   connectorName: string,
 ): CreateQueryResult<boolean, ErrorType<RpcStatus>> {
   return createQuery(
-    createYamlModelingSupportQueryOptions(instanceId, connectorName),
+    createModelingSupportQueryOptions(instanceId, connectorName, "yaml"),
   );
 }
 
@@ -165,6 +126,7 @@ export function useIsModelingSupportedForDefaultOlapDriverOLAP(
     return createModelingSupportQueryOptions(
       instanceId,
       olapConnectorName || "",
+      "sql",
     );
   });
 
