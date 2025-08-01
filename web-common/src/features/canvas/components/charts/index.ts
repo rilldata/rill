@@ -1,5 +1,6 @@
 import BarChart from "@rilldata/web-common/components/icons/BarChart.svelte";
 import Donut from "@rilldata/web-common/components/icons/Donut.svelte";
+import Funnel from "@rilldata/web-common/components/icons/Funnel.svelte";
 import Heatmap from "@rilldata/web-common/components/icons/Heatmap.svelte";
 import LineChart from "@rilldata/web-common/components/icons/LineChart.svelte";
 import StackedArea from "@rilldata/web-common/components/icons/StackedArea.svelte";
@@ -21,6 +22,11 @@ import {
 } from "./circular-charts/CircularChart";
 import { generateVLPieChartSpec } from "./circular-charts/pie";
 import {
+  FunnelChartComponent,
+  type FunnelChartSpec,
+} from "./funnel-charts/FunnelChart";
+import { generateVLFunnelChartSpec } from "./funnel-charts/spec";
+import {
   HeatmapChartComponent,
   type HeatmapChartSpec,
 } from "./heatmap-charts/HeatmapChart";
@@ -32,11 +38,13 @@ export { default as Chart } from "./Chart.svelte";
 export type ChartComponent =
   | typeof CartesianChartComponent
   | typeof CircularChartComponent
+  | typeof FunnelChartComponent
   | typeof HeatmapChartComponent;
 
 export type ChartSpec =
   | CartesianChartSpec
   | CircularChartSpec
+  | FunnelChartSpec
   | HeatmapChartSpec;
 
 export function getChartComponent(
@@ -52,6 +60,8 @@ export function getChartComponent(
     case "donut_chart":
     case "pie_chart":
       return CircularChartComponent;
+    case "funnel_chart":
+      return FunnelChartComponent;
     case "heatmap":
       return HeatmapChartComponent;
     default:
@@ -110,6 +120,12 @@ export const CHART_CONFIG: Record<ChartType, ChartMetadataConfig> = {
     component: CircularChartComponent,
     generateSpec: generateVLPieChartSpec,
     hideFromSelector: true,
+  },
+  funnel_chart: {
+    title: "Funnel",
+    icon: Funnel,
+    component: FunnelChartComponent,
+    generateSpec: generateVLFunnelChartSpec,
   },
   heatmap: {
     title: "Heatmap",
