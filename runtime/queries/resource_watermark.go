@@ -85,14 +85,18 @@ func (q *ResourceWatermark) resolveMetricsView(ctx context.Context, rt *runtime.
 		sql = fmt.Sprintf("SELECT %s FROM %s", spec.WatermarkExpression, safeName(spec.Table))
 	} else if spec.TimeDimension != "" {
 		// get the actual time column if its defined in the dimension list
-		column := spec.TimeDimension
+		expr := safeName(spec.TimeDimension)
 		for _, dim := range spec.Dimensions {
 			if dim.Name == spec.TimeDimension {
-				column = dim.Column
+				if dim.Expression != "" {
+					expr = dim.Expression
+				} else if dim.Column != "" {
+					expr = safeName(dim.Column)
+				}
 				break
 			}
 		}
-		sql = fmt.Sprintf("SELECT MAX(%s) FROM %s", safeName(column), safeName(spec.Table))
+		sql = fmt.Sprintf("SELECT MAX(%s) FROM %s", expr, safeName(spec.Table))
 	} else {
 		// No watermark available
 		return nil
