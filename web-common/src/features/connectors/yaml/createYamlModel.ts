@@ -13,13 +13,10 @@ import {
   runtimeServicePutFile,
 } from "../../../runtime-client";
 import { runtime } from "../../../runtime-client/runtime-store";
-import { makeSufficientlyQualifiedTableName } from "../olap/olap-config";
 
 export async function createYamlModelFromTable(
   queryClient: QueryClient,
   connector: string,
-  database: string,
-  databaseSchema: string,
   table: string,
 ): Promise<[string, string]> {
   const instanceId = get(runtime).instanceId;
@@ -49,20 +46,11 @@ export async function createYamlModelFromTable(
   const newModelName = getName(`${table}_model`, allNames);
   const newModelPath = `models/${newModelName}.yaml`;
 
-  // Get sufficiently qualified table name
-  const sufficientlyQualifiedTableName = makeSufficientlyQualifiedTableName(
-    driverName,
-    database,
-    databaseSchema,
-    table,
-  );
-
-  // Create YAML model content
-  const selectStatement = isNonStandardIdentifier(
-    sufficientlyQualifiedTableName,
-  )
-    ? `select * from "${sufficientlyQualifiedTableName}"`
-    : `select * from ${sufficientlyQualifiedTableName}`;
+  // For YAML models, use just the table name since connector context is specified
+  // The connector will handle the proper qualification based on its configuration
+  const selectStatement = isNonStandardIdentifier(table)
+    ? `select * from "${table}"`
+    : `select * from ${table}`;
 
   const yamlContent = `connector: ${connector}
 sql: ${selectStatement}`;
@@ -79,10 +67,9 @@ sql: ${selectStatement}`;
   });
 
   // Fire event for file creation
-  eventBus.fire("file-created", {
-    path: newModelPath,
-    kind: ResourceKind.Model,
+  eventBus.emit("notification", {
+    message: `Created YAML model from ${table}`,
   });
 
-  return [newModelPath, newModelName];
+  return ["/" + newModelPath, newModelName];
 }

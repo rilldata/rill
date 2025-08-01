@@ -18,7 +18,6 @@
   import { useCreateMetricsViewFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
   import { createModelFromTable } from "../olap/createModel";
   import { createYamlModelFromTable } from "../yaml/createYamlModel";
-  const { ai } = featureFlags;
 
   export let connector: string;
   export let database: string = "";
@@ -27,6 +26,8 @@
   export let showGenerateMetricsAndDashboard: boolean = false;
   export let isModelingSupported: boolean | undefined = false;
   export let isYamlModelingSupported: boolean | undefined = false;
+
+  const { ai } = featureFlags;
 
   $: ({ instanceId } = $runtime);
   $: createMetricsViewFromTable = useCreateMetricsViewFromTableUIAction(
@@ -79,8 +80,6 @@
       const [newModelPath, newModelName] = await createYamlModelFromTable(
         queryClient,
         connector,
-        database,
-        databaseSchema,
         table,
       );
       await goto(`/files${newModelPath}`);
