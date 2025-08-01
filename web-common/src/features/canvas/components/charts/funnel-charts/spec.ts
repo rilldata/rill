@@ -5,6 +5,7 @@ import {
 import type { VisualizationSpec } from "svelte-vega";
 import type { Field } from "vega-lite/build/src/channeldef";
 import type { UnitSpec } from "vega-lite/build/src/spec";
+import type { Transform } from "vega-lite/build/src/transform";
 import {
   createConfig,
   createDefaultTooltipEncoding,
@@ -37,25 +38,36 @@ export function generateVLFunnelChartSpec(
   );
 
   if (config.measure?.field) {
-    if (config.mode === "order") {
-      spec.transform = [
-        {
-          window: [{ op: "row_number", as: "funnel_rank" }],
-          sort: [{ field: config.measure.field, order: "descending" }],
-        },
-        {
-          calculate: `pow(0.85, datum.funnel_rank - 1)`,
-          as: "funnel_width",
-        },
-      ];
-    } else {
-      spec.transform = [
-        {
-          calculate: `datum['${sanitizeValueForVega(config.measure.field)}']`,
-          as: "funnel_width",
-        },
-      ];
-    }
+    const modeTransforms: Transform[] =
+      config.mode === "order"
+        ? [
+            {
+              window: [{ op: "row_number", as: "funnel_rank" }],
+              sort: [{ field: config.measure.field, order: "descending" }],
+            },
+            {
+              calculate: `pow(0.85, datum.funnel_rank - 1)`,
+              as: "funnel_width",
+            },
+          ]
+        : [
+            {
+              calculate: `datum['${sanitizeValueForVega(config.measure.field)}']`,
+              as: "funnel_width",
+            },
+          ];
+
+    const percentageTransforms: Transform[] = [
+      {
+        window: [{ op: "max", field: config.measure.field, as: "max_value" }],
+      },
+      {
+        calculate: `round((datum['${sanitizeValueForVega(config.measure.field)}'] / datum.max_value) * 100) + '%'`,
+        as: "percentage",
+      },
+    ];
+
+    spec.transform = [...modeTransforms, ...percentageTransforms];
   }
 
   spec.encoding = {
@@ -91,6 +103,28 @@ export function generateVLFunnelChartSpec(
         field: colorField,
         type: colorType,
         legend: null,
+      },
+    },
+  };
+
+  const percentageTextLayer: UnitSpec<Field> = {
+    mark: {
+      type: "text",
+      dx: {
+        expr: `-(scale('x', datum['funnel_width'])) - 10`,
+      },
+      align: "right",
+      fontWeight: 600,
+    },
+    encoding: {
+      x: {
+        field: "funnel_width",
+        type: "quantitative",
+        stack: "center",
+      },
+      text: {
+        field: "percentage",
+        type: "nominal",
       },
     },
   };
@@ -143,7 +177,7 @@ export function generateVLFunnelChartSpec(
     },
   };
 
-  spec.layer = [barLayer, valueTextLayer, labelTextLayer];
+  spec.layer = [barLayer, percentageTextLayer, valueTextLayer, labelTextLayer];
 
   return {
     ...spec,
