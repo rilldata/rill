@@ -16,7 +16,7 @@
   import { runtime } from "../../../runtime-client/runtime-store";
   import { featureFlags } from "../../feature-flags";
   import { useCreateMetricsViewFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
-  import { createModelFromTable } from "./createModel";
+  import { createModelFromTable } from "../olap/createModel";
   const { ai } = featureFlags;
 
   export let connector: string;

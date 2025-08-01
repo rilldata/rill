@@ -5,9 +5,9 @@
   import MoreHorizontal from "@rilldata/web-common/components/icons/MoreHorizontal.svelte";
   import CaretDownIcon from "../../../components/icons/CaretDownIcon.svelte";
   import TableIcon from "../../../components/icons/TableIcon.svelte";
-  import TableMenuItems from "../olap/TableMenuItems.svelte";
-  import TableSchema from "../olap/TableSchema.svelte";
-  import UnsupportedTypesIndicator from "../olap/UnsupportedTypesIndicator.svelte";
+  import TableMenuItems from "./TableMenuItems.svelte";
+  import TableSchema from "./TableSchema.svelte";
+  import UnsupportedTypesIndicator from "./UnsupportedTypesIndicator.svelte";
   import {
     makeFullyQualifiedTableName,
     makeTablePreviewHref,
