@@ -293,11 +293,6 @@ export async function createYamlModelFromTable(
     queryKey: ["runtimeServiceListFiles", instanceId],
   });
 
-  // Fire event for file creation
-  eventBus.emit("notification", {
-    message: `Created YAML model from ${table}`,
-  });
-
   return ["/" + newModelPath, newModelName];
 }
 
