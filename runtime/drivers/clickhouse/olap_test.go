@@ -569,8 +569,8 @@ func TestClickhouseReadWriteMode(t *testing.T) {
 	t.Run("ManagedMode_EnablesModelExecution", func(t *testing.T) {
 		// Test that managed mode automatically enables readwrite
 		conn, err := driver{}.Open("default", map[string]any{
-			"dsn":     dsn,
-			"managed": true,
+			"managed":   true,
+			"provision": true,
 		}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 		require.NoError(t, err)
 		defer conn.Close()
@@ -595,9 +595,9 @@ func TestClickhouseReadWriteMode(t *testing.T) {
 	t.Run("ManagedOverridesMode", func(t *testing.T) {
 		// Test that managed=true overrides mode setting
 		conn, err := driver{}.Open("default", map[string]any{
-			"dsn":     dsn,
-			"managed": true,
-			"mode":    "read", // This should be overridden
+			"managed":   true,
+			"provision": true,
+			"mode":      "read", // This should be overridden
 		}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 		require.NoError(t, err)
 		defer conn.Close()
