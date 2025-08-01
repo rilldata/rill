@@ -13,6 +13,7 @@
     makeTablePreviewHref,
   } from "../olap/olap-config";
   import { useIsModelingSupportedForConnectorOLAP as useIsModelingSupportedForConnector } from "../selectors";
+  import { useIsYamlModelingSupportedForConnector } from "../selectors";
   import { runtime } from "../../../runtime-client/runtime-store";
   import type { ConnectorExplorerStore } from "./connector-explorer-store";
 
@@ -40,6 +41,10 @@
     connector,
   );
   $: isModelingSupported = $isModelingSupportedForConnector.data;
+
+  $: isYamlModelingSupportedForConnector =
+    useIsYamlModelingSupportedForConnector(runtimeInstanceId, connector);
+  $: isYamlModelingSupported = $isYamlModelingSupportedForConnector.data;
 
   $: fullyQualifiedTableName = makeFullyQualifiedTableName(
     driver,
@@ -105,7 +110,7 @@
       />
     {/if}
 
-    {#if allowContextMenu && (showGenerateMetricsAndDashboard || isModelingSupported)}
+    {#if allowContextMenu}
       <DropdownMenu.Root bind:open={contextMenuOpen}>
         <DropdownMenu.Trigger asChild let:builder>
           <ContextButton
@@ -131,6 +136,7 @@
             {table}
             {showGenerateMetricsAndDashboard}
             {isModelingSupported}
+            {isYamlModelingSupported}
           />
         </DropdownMenu.Content>
       </DropdownMenu.Root>
