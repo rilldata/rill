@@ -100,7 +100,11 @@ func (e *Executor) ValidateAndNormalizeMetricsView(ctx context.Context) (*Valida
 	// ClickHouse specifically does not support using a column name as a dimension or measure name if the dimension or measure has an expression.
 	// This is due to ClickHouse's aggressive substitution of aliases: https://github.com/ClickHouse/ClickHouse/issues/9715.
 	if e.olap.Dialect() == drivers.DialectClickHouse {
+		timeDimDefinedInMetricsView := false
 		for _, d := range mv.Dimensions {
+			if strings.EqualFold(d.Name, e.metricsView.TimeDimension) {
+				timeDimDefinedInMetricsView = true
+			}
 			if d.Expression == "" && !d.Unnest {
 				continue
 			}
@@ -111,6 +115,14 @@ func (e *Executor) ValidateAndNormalizeMetricsView(ctx context.Context) (*Valida
 			if _, ok := cols[strings.ToLower(d.Name)]; ok {
 				res.OtherErrs = append(res.OtherErrs, fmt.Errorf("invalid dimension %q: dimensions that use `expression` or `unnest` cannot have the same name as a column in the underlying table when backed by clickhouse", d.Name))
 			}
+		}
+		// If the time dimension refers to an underlying column, add a dimension with different name as time column and use that as metrics view time dimension
+		if !timeDimDefinedInMetricsView && mv.TimeDimension != "" {
+			mv.Dimensions = append(mv.Dimensions, &runtimev1.MetricsViewSpec_Dimension{
+				Name:   "__time_dim",
+				Column: mv.TimeDimension,
+			})
+			mv.TimeDimension = "__time_dim"
 		}
 		for _, m := range mv.Measures {
 			if _, ok := cols[strings.ToLower(m.Name)]; ok {
@@ -139,6 +151,15 @@ func (e *Executor) ValidateAndNormalizeMetricsView(ctx context.Context) (*Valida
 		}
 	}
 
+	// now we have datatypes for dims populated, check time/date types for clickhouse
+	if e.olap.Dialect() == drivers.DialectClickHouse {
+		for _, d := range mv.Dimensions {
+			if d.DataType != nil && (d.DataType.Code == runtimev1.Type_CODE_TIMESTAMP || d.DataType.Code == runtimev1.Type_CODE_DATE) && strings.EqualFold(d.Name, d.Column) {
+				res.OtherErrs = append(res.OtherErrs, fmt.Errorf("invalid dimension %q: timestamp or date type dimensions cannot have the same name as a column in the underlying table when backed by clickhouse", d.Name))
+				continue
+			}
+		}
+	}
 	// Validate the cache key can be resolved
 	_, _, err = e.CacheKey(ctx)
 	if err != nil {
