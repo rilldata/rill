@@ -24,6 +24,10 @@ import {
 } from "../../runtime-client";
 import { makeSufficientlyQualifiedTableName } from "./olap/olap-config";
 
+const YAML_MODEL_TEMPLATE = `connector: {{ connector }}
+sql: {{ sql }}
+`;
+
 export function compileConnectorYAML(
   connector: V1ConnectorDriver,
   formValues: Record<string, unknown>,
@@ -251,11 +255,6 @@ export function replaceOlapConnectorInYAML(
   }
 }
 
-const YAML_MODEL_TEMPLATE = `
-connector: {{ connector }}
-sql: {{ sql }}
-`;
-
 export async function createYamlModelFromTable(
   queryClient: QueryClient,
   connector: string,
@@ -273,9 +272,7 @@ export async function createYamlModelFromTable(
 
   // For YAML models, use just the table name since connector context is specified
   // The connector will handle the proper qualification based on its configuration
-  const selectStatement = isNonStandardIdentifier(table)
-    ? `select * from "${table}"`
-    : `select * from ${table}`;
+  const selectStatement = `select * from ${table}`;
 
   const yamlContent = YAML_MODEL_TEMPLATE.replace(
     "{{ connector }}",
@@ -286,6 +283,7 @@ export async function createYamlModelFromTable(
   await runtimeServicePutFile(instanceId, {
     path: newModelPath,
     blob: yamlContent,
+    createOnly: true,
   });
 
   // Invalidate relevant queries
@@ -301,7 +299,7 @@ export async function createYamlModelFromTable(
   return ["/" + newModelPath, newModelName];
 }
 
-export async function createModelFromTable(
+export async function createSqlModelFromTable(
   queryClient: QueryClient,
   connector: string,
   database: string,

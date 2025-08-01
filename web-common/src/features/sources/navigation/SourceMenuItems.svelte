@@ -30,7 +30,7 @@
     refreshSource,
     replaceSourceWithUploadedFile,
   } from "../refreshSource";
-  import { createModelFromTable } from "../../connectors/code-utils";
+  import { createSqlModelFromTable } from "../../connectors/code-utils";
 
   export let filePath: string;
 
@@ -84,7 +84,7 @@
     try {
       const previousActiveEntity = getScreenNameFromPage();
       const addDevLimit = false; // Typically, the `dev` limit would be applied on the Source itself
-      const [newModelPath, newModelName] = await createModelFromTable(
+      const [newModelPath, newModelName] = await createSqlModelFromTable(
         queryClient,
         connector,
         database,

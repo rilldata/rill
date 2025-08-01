@@ -17,7 +17,7 @@
   import { featureFlags } from "../../feature-flags";
   import { useCreateMetricsViewFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
   import {
-    createModelFromTable,
+    createSqlModelFromTable,
     createYamlModelFromTable,
   } from "../code-utils";
 
@@ -56,7 +56,7 @@
   async function handleCreateModel() {
     try {
       const previousActiveEntity = getScreenNameFromPage();
-      const [newModelPath, newModelName] = await createModelFromTable(
+      const [newModelPath, newModelName] = await createSqlModelFromTable(
         queryClient,
         connector,
         database,
