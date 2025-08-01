@@ -82,6 +82,8 @@
       const [newModelPath, newModelName] = await createYamlModelFromTable(
         queryClient,
         connector,
+        database,
+        databaseSchema,
         table,
       );
       await goto(`/files${newModelPath}`);

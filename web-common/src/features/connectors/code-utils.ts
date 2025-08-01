@@ -260,9 +260,28 @@ export function replaceOlapConnectorInYAML(
 export async function createYamlModelFromTable(
   queryClient: QueryClient,
   connector: string,
+  database: string,
+  databaseSchema: string,
   table: string,
 ): Promise<[string, string]> {
   const instanceId = get(runtime).instanceId;
+
+  // Get driver name for makeSufficientlyQualifiedTableName
+  const analyzeConnectorsQueryKey =
+    getRuntimeServiceAnalyzeConnectorsQueryKey(instanceId);
+  const analyzeConnectorsQueryFn = async () =>
+    runtimeServiceAnalyzeConnectors(instanceId);
+  const connectors = await queryClient.fetchQuery({
+    queryKey: analyzeConnectorsQueryKey,
+    queryFn: analyzeConnectorsQueryFn,
+  });
+  const analyzedConnector = connectors?.connectors?.find(
+    (c) => c.name === connector,
+  );
+  if (!analyzedConnector) {
+    throw new Error(`Could not find connector ${connector}`);
+  }
+  const driverName = analyzedConnector.driver?.name as string;
 
   // Get new model name
   const allNames = [
@@ -272,9 +291,16 @@ export async function createYamlModelFromTable(
   const newModelName = getName(`${table}_model`, allNames);
   const newModelPath = `models/${newModelName}.yaml`;
 
-  // For YAML models, use just the table name since connector context is specified
-  // The connector will handle the proper qualification based on its configuration
-  const selectStatement = `select * from "${table}"`;
+  // Get sufficiently qualified table name
+  const sufficientlyQualifiedTableName = makeSufficientlyQualifiedTableName(
+    driverName,
+    database,
+    databaseSchema,
+    table,
+  );
+
+  // Use the sufficiently qualified table name directly
+  const selectStatement = `select * from ${sufficientlyQualifiedTableName}`;
 
   const yamlContent = YAML_MODEL_TEMPLATE.replace(
     "{{ connector }}",
