@@ -94,7 +94,7 @@ func (r *annotationsResolver) Close() error {
 
 func (r *annotationsResolver) CacheKey(ctx context.Context) ([]byte, bool, error) {
 	key := annotationResolverKey{
-		annotationsResolverArgs:  *r.args,
+		annotationsResolverArgs: *r.args,
 		annotationsResolverProps: annotationsResolverProps{
 			MetricsView: r.metricsView,
 			Annotation:  r.annotation,
