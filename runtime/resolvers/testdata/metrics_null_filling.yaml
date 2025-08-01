@@ -127,6 +127,48 @@ tests:
         time__day: "2024-01-03T00:00:00Z"
       - sum: 4
         time__day: "2024-01-04T00:00:00Z"
+  - name: null_filling_coalesce_computed_time_same_name_as_alias_clickhouse
+    resolver: metrics
+    properties:
+      metrics_view: clickhouse_metrics
+      dimensions:
+        - name: time
+          compute:
+            time_floor:
+              dimension: time
+              grain: day
+      measures:
+        - name: sum
+        - name: sum_prev
+          compute:
+            comparison_value:
+              measure: sum
+        - name: time__prev
+          compute:
+            comparison_time:
+              dimension: time
+      time_range:
+        end: 2024-01-09T00:00:00Z
+        start: 2024-01-07T00:00:00Z
+      comparison_time_range:
+        end: 2024-01-03T00:00:00Z
+        start: 2024-01-01T00:00:00Z
+      sort:
+        - name: time
+      spine:
+        time:
+          start:
+          end:
+          grain:
+    result:
+      - sum: 123
+        sum_prev: 1
+        time: "2024-01-07T00:00:00Z"
+        time__prev: "2024-01-01T00:00:00Z"
+      - sum: 123
+        sum_prev: 2
+        time: "2024-01-08T00:00:00Z"
+        time__prev: "2024-01-02T00:00:00Z"
   - name: null_filling_coalesce_cross_clickhouse
     resolver: metrics
     properties:
