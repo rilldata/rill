@@ -127,7 +127,12 @@ func (e *Executor) ValidateAndNormalizeMetricsView(ctx context.Context) (*Valida
 		// One or more dimension/measure expressions failed to validate. We need to check each one individually to provide useful errors.
 		e.validateIndividualDimensionsAndMeasures(ctx, t, mv, cols, res)
 	}
-	e.validateAnnotations(ctx, mv, res)
+
+	// Check and rewrite annotations
+	err = e.validateAndNormalizeAnnotations(ctx, mv, res)
+	if err != nil {
+		return res, err
+	}
 
 	// Pinot does have any native support for time shift using time grain specifiers
 	if e.olap.Dialect() == drivers.DialectPinot && (mv.FirstDayOfWeek > 1 || mv.FirstMonthOfYear > 1) {
@@ -270,7 +275,10 @@ func (e *Executor) validateIndividualDimensionsAndMeasures(ctx context.Context, 
 	slices.SortFunc(res.MeasureErrs, func(a, b IndexErr) int { return a.Idx - b.Idx })
 }
 
-func (e *Executor) validateAnnotations(ctx context.Context, mv *runtimev1.MetricsViewSpec, res *ValidateMetricsViewResult) {
+// validateAndNormalizeAnnotations validates the annotations by checking the model/table defined with expected columns.
+// Rewrites the annotations to use the resolved table name from the defined model.
+// Resolves the measure selector and stores the resolved measures in the annotation.
+func (e *Executor) validateAndNormalizeAnnotations(ctx context.Context, mv *runtimev1.MetricsViewSpec, res *ValidateMetricsViewResult) error {
 	allMeasures := make([]string, 0, len(mv.Measures))
 	for _, m := range mv.Measures {
 		allMeasures = append(allMeasures, m.Name)
@@ -279,8 +287,7 @@ func (e *Executor) validateAnnotations(ctx context.Context, mv *runtimev1.Metric
 	// Get the controller used for getting the annotation's model
 	ct, err := e.rt.Controller(ctx, e.instanceID)
 	if err != nil {
-		res.OtherErrs = append(res.OtherErrs, fmt.Errorf("failed to get controller: %w", err))
-		return
+		return fmt.Errorf("failed to get controller: %w", err)
 	}
 
 	// Different models could be in the same or different connector. Maintain a map to reuse connections.
@@ -352,6 +359,8 @@ func (e *Executor) validateAnnotations(ctx context.Context, mv *runtimev1.Metric
 	for _, release := range olapReleases {
 		release()
 	}
+
+	return nil
 }
 
 // validateTimeDimension validates the time dimension in the metrics view.

@@ -1618,12 +1618,12 @@ paths:
               timeGrain:
                 $ref: '#/definitions/v1TimeGrain'
                 title: Optional
-              where:
-                $ref: '#/definitions/v1Expression'
+              timeZone:
+                type: string
                 title: Optional
               limit:
-                type: integer
-                format: int32
+                type: string
+                format: int64
                 title: Optional
               offset:
                 type: string
@@ -5423,7 +5423,28 @@ definitions:
         type: array
         items:
           type: object
+          $ref: '#/definitions/v1MetricsViewAnnotationsResponseAnnotation'
         title: Not optional, not null
+  v1MetricsViewAnnotationsResponseAnnotation:
+    type: object
+    properties:
+      time:
+        type: string
+        format: date-time
+        description: Time when the annotation applies. Maps to `time` column from the table.
+      timeEnd:
+        type: string
+        format: date-time
+        description: Optional. Time when the annotation ends. Only present if the underlying table has the `time_end` column.
+      description:
+        type: string
+        description: User defined description of the annotation applies. Maps to `description` column from the table.
+      grain:
+        type: string
+        description: Minimum grain this annotation is displayed for. Maps to `grain` column from the table.
+      additionalFields:
+        type: object
+        description: Any other fields are captured here. Will be used in predicates in the future.
   v1MetricsViewColumn:
     type: object
     properties:
@@ -5788,12 +5809,12 @@ definitions:
       measuresSelector:
         $ref: '#/definitions/v1FieldSelector'
         description: Dynamic selector for `measures`. Will be processed during validation, so it will always be empty in `state.valid_spec`.
-      global:
-        type: boolean
       hasTimeEnd:
         type: boolean
+        description: Signifies that the underlying table has `time_end` column. Will be used while querying to add additional filter.
       hasGrain:
         type: boolean
+        description: Signifies that the underlying table has `grain` column. Will be used while querying to add additional filter.
     title: Annotations that can be applied to measures
   v1MetricsViewState:
     type: object

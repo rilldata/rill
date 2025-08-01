@@ -853,18 +853,31 @@ message MetricsViewAnnotationsRequest {
   // Optional
   TimeGrain time_grain = 6;
   // Optional
-  Expression where = 7;
+  string time_zone = 7;
   // Optional
-  int32 limit = 8 [(validate.rules).int32.gte = 0];
+  int64 limit = 8 [(validate.rules).int64.gte = 0];
   // Optional
   int64 offset = 9 [(validate.rules).int64.gte = 0];
 }
 
 message MetricsViewAnnotationsResponse {
+  message Annotation {
+    // Time when the annotation applies. Maps to `time` column from the table.
+    google.protobuf.Timestamp time = 1;
+    // Optional. Time when the annotation ends. Only present if the underlying table has the `time_end` column.
+    optional google.protobuf.Timestamp time_end = 2;
+    // User defined description of the annotation applies. Maps to `description` column from the table.
+    string description = 3;
+    // Minimum grain this annotation is displayed for. Maps to `grain` column from the table.
+    optional string grain = 4;
+    // Any other fields are captured here. Will be used in predicates in the future.
+    google.protobuf.Struct additional_fields = 5;
+  }
+
   // Not optional, not null
   StructType schema = 1;
   // Not optional, not null
-  repeated google.protobuf.Struct data = 2;
+  repeated Annotation data = 2;
 }
 
 // **********

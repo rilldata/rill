@@ -10,6 +10,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/metricsview"
+	"github.com/rilldata/rill/runtime/pkg/mapstructureutil"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"github.com/rilldata/rill/runtime/pkg/rilltime"
@@ -19,7 +20,6 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -501,6 +501,26 @@ func (s *Server) MetricsViewAnnotations(ctx context.Context, req *runtimev1.Metr
 	}
 	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 
+	mv, _, err := resolveMVAndSecurity(ctx, s.runtime, req.InstanceId, req.MetricsViewName)
+	if err != nil {
+		return nil, err
+	}
+
+	ts, err := queries.ResolveTimestampResult(ctx, s.runtime, req.InstanceId, req.MetricsViewName, mv.ValidSpec.TimeDimension, auth.GetClaims(ctx).SecurityClaims(), int(req.Priority))
+	if err != nil {
+		return nil, err
+	}
+
+	var limit *int64
+	if req.Limit != 0 {
+		limit = &req.Limit
+	}
+
+	var offset *int64
+	if req.Offset != 0 {
+		limit = &req.Offset
+	}
+
 	res, err := s.runtime.Resolve(ctx, &runtime.ResolveOptions{
 		InstanceID: req.InstanceId,
 		Resolver:   "annotations",
@@ -520,6 +540,9 @@ func (s *Server) MetricsViewAnnotations(ctx context.Context, req *runtimev1.Metr
 				TimeDimension: req.TimeRange.TimeDimension,
 			},
 			"time_grain": req.TimeGrain,
+			"limit":      limit,
+			"offset":     offset,
+			"timestamps": &ts,
 		},
 		Claims: auth.GetClaims(ctx).SecurityClaims(),
 	})
@@ -528,7 +551,7 @@ func (s *Server) MetricsViewAnnotations(ctx context.Context, req *runtimev1.Metr
 	}
 	defer res.Close()
 
-	data := make([]*structpb.Struct, 0)
+	data := make([]*runtimev1.MetricsViewAnnotationsResponse_Annotation, 0)
 	for {
 		row, err := res.Next()
 		if err != nil {
@@ -537,17 +560,48 @@ func (s *Server) MetricsViewAnnotations(ctx context.Context, req *runtimev1.Metr
 			}
 			return nil, err
 		}
-		rowStruct, err := pbutil.ToStruct(row, res.Schema())
+		var ann annotation
+		err = mapstructureutil.WeakDecode(row, &ann)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
-		data = append(data, rowStruct)
+
+		additionalFieldsPb, err := pbutil.ToStruct(ann.AdditionalFields, res.Schema())
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+
+		var timeEnd *timestamppb.Timestamp
+		if !ann.TimeEnd.IsZero() {
+			timeEnd = timestamppb.New(ann.TimeEnd)
+		}
+
+		var grain *string
+		if ann.Grain != "" {
+			grain = &ann.Grain
+		}
+
+		data = append(data, &runtimev1.MetricsViewAnnotationsResponse_Annotation{
+			Time:             timestamppb.New(ann.Time),
+			TimeEnd:          timeEnd,
+			Description:      ann.Description,
+			Grain:            grain,
+			AdditionalFields: additionalFieldsPb,
+		})
 	}
 
 	return &runtimev1.MetricsViewAnnotationsResponse{
 		Schema: res.Schema(),
 		Data:   data,
 	}, nil
+}
+
+type annotation struct {
+	Time             time.Time      `mapstructure:"time"`
+	TimeEnd          time.Time      `mapstructure:"time_end"`
+	Description      string         `mapstructure:"description"`
+	Grain            string         `mapstructure:"grain"`
+	AdditionalFields map[string]any `mapstructure:",remain"`
 }
 
 func resolveMVAndSecurity(ctx context.Context, rt *runtime.Runtime, instanceID, metricsViewName string) (*runtimev1.MetricsViewState, *runtime.ResolvedSecurity, error) {

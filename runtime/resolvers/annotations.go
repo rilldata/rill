@@ -2,6 +2,7 @@ package resolvers
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -17,10 +18,12 @@ func init() {
 }
 
 type annotationsResolver struct {
+	instanceID  string
 	metricsView string
-	annotation  *runtimev1.MetricsViewSpec_Annotation
+	annotation  string
 	args        *annotationsResolverArgs
 	executor    *metricsview.Executor
+	runtime     *runtime.Runtime
 }
 
 type annotationsResolverProps struct {
@@ -29,9 +32,13 @@ type annotationsResolverProps struct {
 }
 
 type annotationsResolverArgs struct {
-	Priority  int                    `mapstructure:"priority"`
-	TimeRange *metricsview.TimeRange `mapstructure:"time_range"`
-	TimeGrain runtimev1.TimeGrain    `mapstructure:"time_grain"`
+	Priority   int                           `mapstructure:"priority"`
+	TimeRange  *metricsview.TimeRange        `mapstructure:"time_range"`
+	TimeGrain  runtimev1.TimeGrain           `mapstructure:"time_grain"`
+	TimeZone   string                        `mapstructure:"time_zone"`
+	Limit      *int64                        `mapstructure:"limit"`
+	Offset     *int64                        `mapstructure:"offset"`
+	Timestamps *metricsview.TimestampsResult `mapstructure:"timestamps"`
 }
 
 func newAnnotationsResolver(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolver, error) {
@@ -70,22 +77,13 @@ func newAnnotationsResolver(ctx context.Context, opts *runtime.ResolverOptions) 
 		return nil, err
 	}
 
-	var annotation *runtimev1.MetricsViewSpec_Annotation
-	for _, specAnnotation := range mv.Annotations {
-		if specAnnotation.Name == props.Annotation {
-			annotation = specAnnotation
-			break
-		}
-	}
-	if annotation == nil {
-		return nil, fmt.Errorf("annotation %q not found in metrics view %q", props.Annotation, props.MetricsView)
-	}
-
 	return &annotationsResolver{
+		instanceID:  opts.InstanceID,
 		metricsView: props.MetricsView,
-		annotation:  annotation,
+		annotation:  props.Annotation,
 		args:        args,
 		executor:    ex,
+		runtime:     opts.Runtime,
 	}, nil
 }
 
@@ -95,13 +93,24 @@ func (r *annotationsResolver) Close() error {
 }
 
 func (r *annotationsResolver) CacheKey(ctx context.Context) ([]byte, bool, error) {
-	return nil, false, nil
+	key := annotationResolverKey{
+		annotationsResolverArgs:  *r.args,
+		annotationsResolverProps: annotationsResolverProps{
+			MetricsView: r.metricsView,
+			Annotation:  r.annotation,
+		},
+	}
+	kb, err := json.Marshal(&key)
+	if err != nil {
+		panic(err)
+	}
+	ks := fmt.Sprintf("MetricsViewAnnotations:%s", string(kb))
+	return []byte(ks), true, nil
 }
 
 func (r *annotationsResolver) Refs() []*runtimev1.ResourceName {
 	return []*runtimev1.ResourceName{
 		{Kind: runtime.ResourceKindMetricsView, Name: r.metricsView},
-		{Kind: runtime.ResourceKindModel, Name: r.annotation.Model},
 	}
 }
 
@@ -110,7 +119,22 @@ func (r *annotationsResolver) Validate(ctx context.Context) error {
 }
 
 func (r *annotationsResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverResult, error) {
-	res, err := r.executor.Annotations(ctx, r.annotation, r.args.TimeRange, r.args.TimeGrain)
+	qry := &metricsview.AnnotationsQuery{
+		Annotation: r.annotation,
+		TimeRange:  r.args.TimeRange,
+		Limit:      r.args.Limit,
+		Offset:     r.args.Offset,
+		TimeZone:   r.args.TimeZone,
+		TimeGrain:  r.args.TimeGrain,
+	}
+	if r.args.Timestamps != nil {
+		err := r.executor.BindAnnotationsQuery(ctx, qry, *r.args.Timestamps)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	res, err := r.executor.Annotations(ctx, qry)
 	if err != nil {
 		return nil, err
 	}
@@ -120,4 +144,9 @@ func (r *annotationsResolver) ResolveInteractive(ctx context.Context) (runtime.R
 
 func (r *annotationsResolver) ResolveExport(ctx context.Context, w io.Writer, opts *runtime.ResolverExportOptions) error {
 	return errors.New("not implemented")
+}
+
+type annotationResolverKey struct {
+	annotationsResolverArgs
+	annotationsResolverProps
 }

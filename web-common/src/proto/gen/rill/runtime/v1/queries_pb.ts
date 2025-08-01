@@ -3660,16 +3660,16 @@ export class MetricsViewAnnotationsRequest extends Message<MetricsViewAnnotation
   /**
    * Optional
    *
-   * @generated from field: rill.runtime.v1.Expression where = 7;
+   * @generated from field: string time_zone = 7;
    */
-  where?: Expression;
+  timeZone = "";
 
   /**
    * Optional
    *
-   * @generated from field: int32 limit = 8;
+   * @generated from field: int64 limit = 8;
    */
-  limit = 0;
+  limit = protoInt64.zero;
 
   /**
    * Optional
@@ -3692,8 +3692,8 @@ export class MetricsViewAnnotationsRequest extends Message<MetricsViewAnnotation
     { no: 4, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 5, name: "time_range", kind: "message", T: TimeRange },
     { no: 6, name: "time_grain", kind: "enum", T: proto3.getEnumType(TimeGrain) },
-    { no: 7, name: "where", kind: "message", T: Expression },
-    { no: 8, name: "limit", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 7, name: "time_zone", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 8, name: "limit", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 9, name: "offset", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
   ]);
 
@@ -3728,9 +3728,9 @@ export class MetricsViewAnnotationsResponse extends Message<MetricsViewAnnotatio
   /**
    * Not optional, not null
    *
-   * @generated from field: repeated google.protobuf.Struct data = 2;
+   * @generated from field: repeated rill.runtime.v1.MetricsViewAnnotationsResponse.Annotation data = 2;
    */
-  data: Struct[] = [];
+  data: MetricsViewAnnotationsResponse_Annotation[] = [];
 
   constructor(data?: PartialMessage<MetricsViewAnnotationsResponse>) {
     super();
@@ -3741,7 +3741,7 @@ export class MetricsViewAnnotationsResponse extends Message<MetricsViewAnnotatio
   static readonly typeName = "rill.runtime.v1.MetricsViewAnnotationsResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "schema", kind: "message", T: StructType },
-    { no: 2, name: "data", kind: "message", T: Struct, repeated: true },
+    { no: 2, name: "data", kind: "message", T: MetricsViewAnnotationsResponse_Annotation, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewAnnotationsResponse {
@@ -3758,6 +3758,77 @@ export class MetricsViewAnnotationsResponse extends Message<MetricsViewAnnotatio
 
   static equals(a: MetricsViewAnnotationsResponse | PlainMessage<MetricsViewAnnotationsResponse> | undefined, b: MetricsViewAnnotationsResponse | PlainMessage<MetricsViewAnnotationsResponse> | undefined): boolean {
     return proto3.util.equals(MetricsViewAnnotationsResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.MetricsViewAnnotationsResponse.Annotation
+ */
+export class MetricsViewAnnotationsResponse_Annotation extends Message<MetricsViewAnnotationsResponse_Annotation> {
+  /**
+   * Time when the annotation applies. Maps to `time` column from the table.
+   *
+   * @generated from field: google.protobuf.Timestamp time = 1;
+   */
+  time?: Timestamp;
+
+  /**
+   * Optional. Time when the annotation ends. Only present if the underlying table has the `time_end` column.
+   *
+   * @generated from field: optional google.protobuf.Timestamp time_end = 2;
+   */
+  timeEnd?: Timestamp;
+
+  /**
+   * User defined description of the annotation applies. Maps to `description` column from the table.
+   *
+   * @generated from field: string description = 3;
+   */
+  description = "";
+
+  /**
+   * Minimum grain this annotation is displayed for. Maps to `grain` column from the table.
+   *
+   * @generated from field: optional string grain = 4;
+   */
+  grain?: string;
+
+  /**
+   * Any other fields are captured here. Will be used in predicates in the future.
+   *
+   * @generated from field: google.protobuf.Struct additional_fields = 5;
+   */
+  additionalFields?: Struct;
+
+  constructor(data?: PartialMessage<MetricsViewAnnotationsResponse_Annotation>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.MetricsViewAnnotationsResponse.Annotation";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "time", kind: "message", T: Timestamp },
+    { no: 2, name: "time_end", kind: "message", T: Timestamp, opt: true },
+    { no: 3, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "grain", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 5, name: "additional_fields", kind: "message", T: Struct },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewAnnotationsResponse_Annotation {
+    return new MetricsViewAnnotationsResponse_Annotation().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewAnnotationsResponse_Annotation {
+    return new MetricsViewAnnotationsResponse_Annotation().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewAnnotationsResponse_Annotation {
+    return new MetricsViewAnnotationsResponse_Annotation().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: MetricsViewAnnotationsResponse_Annotation | PlainMessage<MetricsViewAnnotationsResponse_Annotation> | undefined, b: MetricsViewAnnotationsResponse_Annotation | PlainMessage<MetricsViewAnnotationsResponse_Annotation> | undefined): boolean {
+    return proto3.util.equals(MetricsViewAnnotationsResponse_Annotation, a, b);
   }
 }
 
