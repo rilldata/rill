@@ -16,8 +16,10 @@
   import { runtime } from "../../../runtime-client/runtime-store";
   import { featureFlags } from "../../feature-flags";
   import { useCreateMetricsViewFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
-  import { createModelFromTable } from "../olap/createModel";
-  const { ai } = featureFlags;
+  import {
+    createSqlModelFromTable,
+    createYamlModelFromTable,
+  } from "../code-utils";
 
   export let connector: string;
   export let database: string = "";
@@ -25,6 +27,9 @@
   export let table: string;
   export let showGenerateMetricsAndDashboard: boolean = false;
   export let isModelingSupported: boolean | undefined = false;
+  export let isYamlModelingSupported: boolean | undefined = false;
+
+  const { ai } = featureFlags;
 
   $: ({ instanceId } = $runtime);
   $: createMetricsViewFromTable = useCreateMetricsViewFromTableUIAction(
@@ -51,7 +56,30 @@
   async function handleCreateModel() {
     try {
       const previousActiveEntity = getScreenNameFromPage();
-      const [newModelPath, newModelName] = await createModelFromTable(
+      const [newModelPath, newModelName] = await createSqlModelFromTable(
+        queryClient,
+        connector,
+        database,
+        databaseSchema,
+        table,
+      );
+      await goto(`/files${newModelPath}`);
+      await behaviourEvent?.fireNavigationEvent(
+        newModelName,
+        BehaviourEventMedium.Menu,
+        MetricsEventSpace.LeftPanel,
+        previousActiveEntity,
+        MetricsEventScreenName.Model,
+      );
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  async function handleCreateYamlModel() {
+    try {
+      const previousActiveEntity = getScreenNameFromPage();
+      const [newModelPath, newModelName] = await createYamlModelFromTable(
         queryClient,
         connector,
         database,
@@ -79,7 +107,14 @@
   </NavigationMenuItem>
 {/if}
 
-{#if showGenerateMetricsAndDashboard}
+{#if isYamlModelingSupported}
+  <NavigationMenuItem on:click={handleCreateYamlModel}>
+    <Model slot="icon" />
+    Create model
+  </NavigationMenuItem>
+{/if}
+
+{#if showGenerateMetricsAndDashboard && isModelingSupported}
   <NavigationMenuItem on:click={createMetricsViewFromTable}>
     <MetricsViewIcon slot="icon" />
     <div class="flex gap-x-2 items-center">
