@@ -4,44 +4,18 @@ sidebar_label: Integrate
 sidebar_position: 00
 ---
 
-import TileIcon from '@site/src/components/TileIcon';
-
-
-## Create custom API to retrieve aggregated data
-<div className="tile-icon-grid">
-    <TileIcon
-    header="Create Custom APIs"
-    content="Connect to your data sources and start ingesting data into Rill for analysis."
-    link="/reference/connectors"
-    />
-    <TileIcon
-    header="Advanced Custom APIs"
-    content="Connect to your data sources and start ingesting data into Rill for analysis."
-    link="/reference/connectors"
-    />
-</div>
+Extend Rill's capabilities by integrating dashboards and data into your existing applications and workflows.
 
 ## Embed Rill into your Application
-<div className="tile-icon-grid">
-    <TileIcon
-    header="Embed your Dashboard into your Application"
-    content="Transform and prepare your data with Rill's powerful ETL capabilities."
-    link="/build/models"
-    />
-    <TileIcon
-    header="Control your iframe from the Application"
-    content="Transform and prepare your data with Rill's powerful ETL capabilities."
-    link="/build/models"
-    />
-    <TileIcon
-    header="See it in action!"
-    content="Transform and prepare your data with Rill's powerful ETL capabilities."
-    link="https://rill-embedding-example.netlify.app/"
-    />
-</div>
+
+- **[Embed Dashboards](/integrate/embedding)** - Embed Rill dashboards directly into your applications using iframes
+- **[Control your Embedded Dashboards](/integrate/embed-iframe-api)** - Programmatically control embedded dashboards from your application
+- **[See it in Action](https://rill-embedding-example.netlify.app/)** - View a live example of embedded Rill dashboards
 
 
 
+## Custom APIs
 
+- **[Create Custom APIs](/integrate/custom-api)** - Build custom APIs to retrieve aggregated data from your metrics views
 
 

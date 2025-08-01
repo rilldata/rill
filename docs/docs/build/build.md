@@ -11,20 +11,27 @@ import TileIcon from '@site/src/components/TileIcon';
 
 Rill provides a comprehensive platform for building end-to-end data analytics solutions. Once you've connected to your source data, or connected to your own OLAP database, you can start building with Rill.
 
-<!-- ## Table of Contents
+### Modeling and Last Mile ETL
+- [SQL Models](/build/models) - Transform and prepare your data
+- [Advanced Modeling](/build/advanced-models) - Incremental ingestion, data partitions and more
 
-- [Modeling](#modeling) - Transform and prepare your data
-- [Advanced Modeling](#modeling) - Incremental Ingestions, Partition and more
-- [Define Measures and Dimensions](#define-measures-and-dimensions) - Create your metrics layer
-- [Advanced Measures](#asd) - Aggregate further in your metrics view
-- [Slice-and-Dice Dashboard](#build-visualizations) - Explore and visualize your data
-- [Build Traditional Visualizations](#build-visualizations) - Explore and visualize your data
-- [Project Settings](#project-settings) - Configure your Rill project 
-- [Structure your Project](#aa) - Structure folder architecture in Rill
-- [Debugging Rill Developer](#aa) - Trace your reconciled resources
-- 
-- -->
+### Define Measures and Dimensions
+- [Define Measures and Dimensions](/build/metrics-view) - Define measures and dimensions 
+- [Advanced Measures](/build/metrics-view/advanced-expressions) - Aggregate further in your metrics view
+<!-- - [Define Data Access](#asd) - Define access and row access policies -->
 
+### Build Visualizations
+
+- [Slice-and-Dice Dashboard](/build/dashboards) - Explore and find insights in your data
+- [Traditional Visualizations](/build/canvas) - Visualize your data with various chart types
+  
+### Project Settings
+- [rill.yaml](/build/rill-project-file) - Configure your Rill project defaults
+- [Structure your Project](/build/structure) - Structure folder architecture in Rill
+- [Debugging Rill Developer](/build/debugging/trace-viewer) - Trace your reconciled resources to troubleshoot issues
+  
+
+<!-- 
 ## Modeling
 <div className="tile-icon-grid">
     <TileIcon
@@ -77,4 +84,4 @@ Rill provides a comprehensive platform for building end-to-end data analytics so
     link="/build/rill-project-file"
     />
 </div>
-
+ -->

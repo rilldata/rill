@@ -47,7 +47,7 @@ Rill Developer is your local development environment where you build and test yo
 
 ### Step 2: Connect Your Data
 
-Rill supports a wide range of data sources through our [connector library](/connect). For this tutorial, we'll use a sample dataset hosted on Google Cloud Storage.
+Rill supports a wide range of data sources through our [connector library](/build/connect). For this tutorial, we'll use a sample dataset hosted on Google Cloud Storage.
 
 **What happens when you connect data:**
 - Rill automatically detects your data schema

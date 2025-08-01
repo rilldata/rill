@@ -44,7 +44,7 @@ Our team is continually evaluating new OLAP engines to support. If you don't see
 
 ## Next Steps
 
-- [Learn about Rill's Architecture](/concepts/architecture)
+- [Learn about Rill's Architecture](/home/concepts/architecture)
 - [Get started with Rill](/home/install)
 - [Explore the Reference](/reference/connectors)
 - [Step-by-step Tutorial](/guides)

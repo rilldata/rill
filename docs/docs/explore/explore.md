@@ -4,57 +4,26 @@ sidebar_label: Explore
 sidebar_position: 00
 ---
 
-import TileIcon from '@site/src/components/TileIcon';
+# Explore Your Data in Rill
 
-## AI
-<div className="tile-icon-grid">
-    <TileIcon
-    header="Prompt with Natural Langauge (MCP) via Claude"
-    content="Transform and prepare your data with Rill's powerful ETL capabilities."
-    link="/build/models"
-    />
-    <TileIcon
-    header="AI Chat Dialogue in Rill Cloud"
-    content="Transform and prepare your data with Rill's powerful ETL capabilities."
-    link="/build/models"
-    />
-</div>
+Once you've built your data pipeline, Rill provides powerful tools to explore, analyze, and share your insights.
 
-## Dashboard
-<div className="tile-icon-grid">
-    <TileIcon
-    header="Slice-and-Dice Explore Dashboards"
-    content="Connect to your data sources and start ingesting data into Rill for analysis."
-    link="/reference/connectors"
-    />
-    <TileIcon
-    header="Traditional Canvas Dashboards"
-    content="Build a metrics layer to define key business metrics and KPIs."
-    link="/build/metrics-view"
-    />
-    </div>
+## AI-Powered Analysis
+
+- **[Natural Language Queries (MCP)](/explore/mcp)** - Ask questions about your data using plain English with Claude integration
+<!-- - **[AI Chat in Rill Cloud](/explore/ai-chat)** - Have conversations with your data using AI-powered chat interface -->
+
+## Interactive Dashboards
+
+- **[Slice-and-Dice Explore Dashboards](/explore/dashboard-101)** - Interactive dashboards for dynamic data exploration and filtering
+- **[Pivot Tables](/explore/dashboard-101/pivot)** - Create cross-tabulations and data summaries
+- **[Time Dimension Details](/explore/dashboard-101/tdd)** - Drill down into time-based analysis
+- **[Filtering](/explore/filters)** - Apply filters to focus on specific data subsets
+<!-- - **[Traditional Canvas Dashboards](/explore/canvas-dashboards)** - Custom dashboard layouts with Vega-Lite visualizations -->
 
 ## Cloud Features
-<div className="tile-icon-grid">
-    <TileIcon
-    header="Share with External Users"
-    content="Use Rill's interactive data exploration tools to discover insights."
-    link="/explore/dashboard-101"
-    />
-    <TileIcon
-    header="Exports and Scheduled Reports"
-    content="Embed Rill dashboards into your applications and workflows."
-    link="/integrate/embedding"
-    />
-    <TileIcon
-    header="Bookmarks"
-    content="Embed Rill dashboards into your applications and workflows."
-    link="/integrate/embedding"
-    />
-    <TileIcon
-    header="Alerts"
-    content="It's a trap."
-    link="/notes"
-    />
-</div>
+- **[Bookmarks](/explore/bookmarks)** - Save and share specific dashboard views and filters
+- **[Share with External Users](/explore/public-url)** - Invite external users and control their access to your dashboards
+- **[Exports and Scheduled Reports](/explore/exports)** - Export data and set up automated report delivery
+- **[Alerts](/explore/alerts)** - Set up notifications when data meets certain conditions
 
