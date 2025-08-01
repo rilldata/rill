@@ -10,6 +10,11 @@ import { get } from "svelte/store";
 import { runtimeServicePutFile } from "../../../runtime-client";
 import { runtime } from "../../../runtime-client/runtime-store";
 
+const YAML_MODEL_TEMPLATE = `
+connector: {{ connector }}
+sql: {{ sql }}
+`;
+
 export async function createYamlModelFromTable(
   queryClient: QueryClient,
   connector: string,
@@ -31,8 +36,10 @@ export async function createYamlModelFromTable(
     ? `select * from "${table}"`
     : `select * from ${table}`;
 
-  const yamlContent = `connector: ${connector}
-sql: ${selectStatement}`;
+  const yamlContent = YAML_MODEL_TEMPLATE.replace(
+    "{{ connector }}",
+    connector,
+  ).replace("{{ sql }}", selectStatement);
 
   // Write the YAML file
   await runtimeServicePutFile(instanceId, {
