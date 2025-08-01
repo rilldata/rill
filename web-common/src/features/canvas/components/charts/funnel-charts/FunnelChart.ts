@@ -24,9 +24,14 @@ import type {
 import { BaseChart, type BaseChartConfig } from "../BaseChart";
 import type { ChartDataQuery } from "../types";
 
+export type FunnelMode = "width" | "order";
+export type FunnelColorMode = "stage" | "measure";
+
 type FunnelChartEncoding = {
   measure?: FieldConfig;
   stage?: FieldConfig;
+  mode?: FunnelMode;
+  color?: FunnelColorMode;
 };
 
 const DEFAULT_STAGE_LIMIT = 20;
@@ -54,6 +59,28 @@ export class FunnelChartComponent extends BaseChart<FunnelChartSpec> {
         chartFieldInput: {
           type: "measure",
         },
+      },
+    },
+    mode: {
+      type: "select",
+      label: "Mode",
+      meta: {
+        default: "width",
+        options: [
+          { label: "Width", value: "width" },
+          { label: "Order", value: "order" },
+        ],
+      },
+    },
+    color: {
+      type: "select",
+      label: "Color",
+      meta: {
+        default: "stage",
+        options: [
+          { label: "Stage", value: "stage" },
+          { label: "Measure", value: "measure" },
+        ],
       },
     },
   };
@@ -166,6 +193,8 @@ export class FunnelChartComponent extends BaseChart<FunnelChartSpec> {
         type: "quantitative",
         field: randomMeasure,
       },
+      mode: "width",
+      color: "stage",
     };
   }
 }

@@ -6,7 +6,7 @@ import type { VisualizationSpec } from "svelte-vega";
 import type { Field } from "vega-lite/build/src/channeldef";
 import type { UnitSpec } from "vega-lite/build/src/spec";
 import {
-  createConfigWithLegend,
+  createConfig,
   createDefaultTooltipEncoding,
   createMultiLayerBaseSpec,
   createPositionEncoding,
@@ -19,17 +19,44 @@ export function generateVLFunnelChartSpec(
   data: ChartDataResult,
 ): VisualizationSpec {
   const spec = createMultiLayerBaseSpec();
-  const vegaConfig = createConfigWithLegend(config, config.stage);
-
   spec.height = 500;
 
+  const colorField =
+    config.color === "measure" ? config.measure?.field : config.stage?.field;
+  const colorType =
+    config.color === "measure"
+      ? config.measure?.type || "quantitative"
+      : "nominal";
+
+  const vegaConfig = createConfig(config);
+
+  const yEncoding = createPositionEncoding(config.stage, data);
   const tooltip = createDefaultTooltipEncoding(
     [config.measure, config.stage],
     data,
   );
 
-  const yEncoding = createPositionEncoding(config.stage, data);
-  const xEncoding = createPositionEncoding(config.measure, data);
+  if (config.measure?.field) {
+    if (config.mode === "order") {
+      spec.transform = [
+        {
+          window: [{ op: "row_number", as: "funnel_rank" }],
+          sort: [{ field: config.measure.field, order: "descending" }],
+        },
+        {
+          calculate: `pow(0.85, datum.funnel_rank - 1)`,
+          as: "funnel_width",
+        },
+      ];
+    } else {
+      spec.transform = [
+        {
+          calculate: `datum['${sanitizeValueForVega(config.measure.field)}']`,
+          as: "funnel_width",
+        },
+      ];
+    }
+  }
 
   spec.encoding = {
     y: {
@@ -50,7 +77,8 @@ export function generateVLFunnelChartSpec(
     mark: "bar",
     encoding: {
       x: {
-        ...xEncoding,
+        field: "funnel_width",
+        type: "quantitative",
         stack: "center",
         axis: {
           labels: false,
@@ -60,8 +88,8 @@ export function generateVLFunnelChartSpec(
         },
       },
       color: {
-        field: config.stage?.field,
-        type: "nominal",
+        field: colorField,
+        type: colorType,
         legend: null,
       },
     },
@@ -71,14 +99,16 @@ export function generateVLFunnelChartSpec(
     mark: {
       type: "text",
       fontWeight: 600,
-      dx: { expr: `-(scale('x', datum['${config.measure?.field}']) / 2)` },
+      dx: {
+        expr: `-(scale('x', datum['funnel_width']) / 2)`,
+      },
       color: {
-        expr: `luminance ( scale ( 'color', datum['${sanitizeValueForVega(config.stage?.field ?? "")}'] ) ) > 0.45 ? '#222' : '#efefef'`,
+        expr: `luminance ( scale ( 'color', datum['${sanitizeValueForVega(colorField ?? "")}'] ) ) > 0.45 ? '#222' : '#efefef'`,
       },
     },
     encoding: {
       x: {
-        field: config.measure?.field,
+        field: "funnel_width",
         type: "quantitative",
         stack: "center",
       },
@@ -102,7 +132,7 @@ export function generateVLFunnelChartSpec(
     },
     encoding: {
       x: {
-        field: config.measure?.field,
+        field: "funnel_width",
         type: "quantitative",
         stack: "center",
       },
