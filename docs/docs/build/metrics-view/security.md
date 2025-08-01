@@ -1,65 +1,80 @@
 ---
-title: "Dashboard Access Policies"
-description: Granular, row-level security for dashboards
-sidebar_label: "Dashboard Access Policies"
-sidebar_position: 40
+title: Who Can Access Your Data
+description: Control who has access to view your metrics and data
+sidebar_label: Data Access Control
+sidebar_position: 10
 ---
 
 Rill supports granular access policies for dashboards. They allow the dashboard developer to configure dashboard-level, row-level and column-level restrictions based on user attributes such as email address and domain. Our goal with access to policies is to avoid dashboard sprawl by creating a single configuration of the dashboard that can then be sliced or restricted into multiple views via different policies. Using those access controls, a single dashboard can now serve dozens of teams and use cases to ensure consistent metric definitions and better dashboard findability.
 
-Some of the typical use cases include:
+Typical use cases include:
 
-- Restricting access to certain dashboards to admin users
-- Limiting dashboards to relevant fields or metrics by team for ease of use (creating a lookup and filter by role) 
-- Limiting access to sensitive dimensions or measures to users from a specific department
-- Partner-filtered dashboards where external users can only see the subset of data that relates to them
+- **Granting or Restricting Access** to data and as a result, dashboards
+- **Hiding specific dimensions and measures** from specific groups of users, creating a tailored dashboard experience
+- **Restricting Access to Internal users** of your organization, allowing specific dashboards to be viewed by internal users only
+- **Partner-filtered Dashboards** where external users can only access the subset of their data
+- **Embedded** use cases, passing custom attributes to Rill
+- **Combination of all the above**
 
-:::note User Access vs. Access Policies
-Access policies only apply to users who have been invited to access the project. They provide granular access control for your data, but are not the first layer of security for your project.
+
+:::tip Assuming Access to Project is already given
+
+Access Policies assume that the user already has access to the project in Rill Cloud. For more information on user management, see our [User Management](/manage/user-management) and [Project Management](/manage/project-management) for more information!
+
 :::
 
-## Configuration
+## Configurations
 
-You define access policies for dashboards under the `security` key in a dashboard's YAML file. The key properties are:
+There are three levels of considerations for access policies. 
 
-- **Dashboard-level access:** `access` – a boolean expression that determines if a user can or can't access the dashboard
-- **Row-level access:** `row_filter` – a SQL expression that will be injected into the `WHERE` clause of all dashboard queries to restrict access to a subset of rows
-- **Column-level access:** `include` or `exclude` – lists of boolean expressions that determine which dimension and measure names will be available to the user
+- **Data Access** - `access`– a boolean expression that determines if a user can or can't access the dashboard
+- **Row-level access:** `row_filter` – a SQL expression that will be injected into the WHERE clause of all dashboard queries to restrict access to a subset of rows
+- **Column-level access**: `include` or `exclude` – lists of boolean expressions that determine which dimension and measure names will be available to the user
 
-![access](../../static/img/manage/security/access.png)
+<img src='/img/manage/security/access.png' />
 
-See the [Dashboard YAML](/reference/project-files/explore-dashboards) reference docs for all the available fields.
+```yaml
+security:
+   access: true
+   row_filter: ...
+   #include:
+   #exclude:
+```
 
-See the [Examples](#examples) below for how to set up each type of configuration.
+For more information, see our [metric view YAML reference page](/reference/project-files/metrics-views)  for more information.
 
-## User attributes
 
-When developing access policies, you can leverage a fixed set of user attributes to resolve access at runtime. The attributes are:
+# Setting up Data Access
 
-- `.user.email` – the current user's email address, for example `john.doe@example.com` (string)
-- `.user.domain` – the domain of the current user's email address, for example `example.com` (string)
-- `.user.name` - the current user's name, for example `John Doe` (string)
-- `.user.admin` – a boolean value indicating whether the current user is an org or project admin, for example `true` (bool)
-- `.user.groups` - a list of user groups the user belongs to in the project's org (list of strings), e.g. `["marketing","sales","finance"]`
+There are two locations that control data access in Rill.
+
+### Project Level Defaults
+
+By default, when a user is granted access to your project, they have access to all metrics views. This is not always the desired behavior as some organizations will invite partner users to the Rill Cloud UI. In these instances, project level defaults that only give access to internal domain are required.
+
+### Metrics View Specific
+
+## User Attributes
+- `.user.email` – the current user's email address, for example john.doe@example.com (string)
+- `.user.domain` – the domain of the current user's email address, for example example.com (string)
+- `.user.name` - the current user's name, for example John Doe (string)
+- `.user.admin`– a boolean value indicating whether the current user is an org or project admin, for example true (bool) 
+- `.user.groups` - a list of user groups the user belongs to in the project's org (list of strings), e.g. ["marketing","sales","finance"]
+- `.user.attribute` - where `attribute` is s custom variables that you can pass via an embedded dashboard from the application. 
 
 Note: Rill requires users to confirm their email address before letting them interact with the platform so a user cannot fake an email address or email domain.
-
-
-If you require additional user attributes to enforce access policies, see the [example for custom attributes below](#advanced-example-custom-attributes-embed-dashboards) for more details.
 
 
 ## Templating and expression evaluation
 
 When a user loads a dashboard, the policies are resolved in two phases:
 
-1. The templating engine first replaces expressions like `{{ .user.domain }}` with actual values ([Templating reference](../deploy/templating.md))
+1. The templating engine first replaces expressions like `{{ .user.domain }}` with actual values ([Templating reference](/connect/Thank you))
 2. The resulting expression is then evaluated contextually:
   - The `access` and `if` values are evaluated as SQL expressions and resolved to a `true` or `false` value
   - The `row_filter` value is injected into the `WHERE` clause of the SQL queries used to render the dashboard
 
-## Testing your policies
-
-### In Rill Developer
+## Testing Policies in Rill Developer
 
 In development (on `localhost`), you can test your policies by adding "mock users" to your project and viewing the dashboard as one of them.
 
@@ -78,12 +93,18 @@ mock_users:
 
 On the dashboard page (provided you've added a policy) you'll see a "View as" button in the top right corner. Click this button and select one of your mock users. You'll see the dashboard as that user would see it.
 
-### In Rill Cloud (Admin only)
 
+### Rill Cloud
 In case you want to test what your users are seeing in Rill Cloud after deploying, you can find this in the dropdown of your account. You will see the actual users in the dropdown of this list, not the mock users defined in the rill.yaml file. 
+****
 
 <img src = '/img/manage/access-policies/rill-cloud-view-as.png' class='rounded-gif' />
 <br />
+
+### Embedded Dashboards
+
+When [requestimg an embedded dashboard from Rill](/integrate/embedding) from your frontend, you can pass the `attributes` parameter with custom names to ensurer that the resulting dashboard is displaying the correct information.
+~For more information, see [our embedding docs](/integrate/embedding#backend-build-an-iframe-url).
 
 
 ## Examples
