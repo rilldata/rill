@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"maps"
 	"net/url"
+	"strings"
 
 	"github.com/XSAM/otelsql"
 	"github.com/jmoiron/sqlx"
@@ -119,15 +120,15 @@ type configProperties struct {
 }
 
 func (c *configProperties) validate() error {
-	if c.DSN != "" && (c.BrokerHost != "" || c.ControllerHost != "") {
-		var set []string
-		if c.BrokerHost != "" {
-			set = append(set, "broker_host")
-		}
-		if c.ControllerHost != "" {
-			set = append(set, "controller_host")
-		}
-		return fmt.Errorf("pinot: Only one of 'dsn' or [%s] can be set", set)
+	var set []string
+	if c.BrokerHost != "" {
+		set = append(set, "broker_host")
+	}
+	if c.ControllerHost != "" {
+		set = append(set, "controller_host")
+	}
+	if c.DSN != "" && len(set) > 0 {
+		return fmt.Errorf("pinot: Only one of 'dsn' or [%s] can be set", strings.Join(set, ", "))
 	}
 	return nil
 }

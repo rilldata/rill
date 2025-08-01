@@ -85,26 +85,26 @@ func (c *ConfigProperties) Validate() error {
 		dsn = c.DatabaseURL
 	}
 
-	if dsn != "" && (c.Host != "" || c.Port != "" || c.User != "" || c.Password != "" || c.DBname != "" || c.SSLMode != "") {
-		var set []string
-		if c.Host != "" {
-			set = append(set, "host")
-		}
-		if c.Port != "" {
-			set = append(set, "port")
-		}
-		if c.User != "" {
-			set = append(set, "user")
-		}
-		if c.Password != "" {
-			set = append(set, "password")
-		}
-		if c.DBname != "" {
-			set = append(set, "dbname")
-		}
-		if c.SSLMode != "" {
-			set = append(set, "sslmode")
-		}
+	var set []string
+	if c.Host != "" {
+		set = append(set, "host")
+	}
+	if c.Port != "" {
+		set = append(set, "port")
+	}
+	if c.User != "" {
+		set = append(set, "user")
+	}
+	if c.Password != "" {
+		set = append(set, "password")
+	}
+	if c.DBname != "" {
+		set = append(set, "dbname")
+	}
+	if c.SSLMode != "" {
+		set = append(set, "sslmode")
+	}
+	if dsn != "" && len(set) > 0 {
 		return fmt.Errorf("postgres: Only one of 'dsn' or [%s] can be set", strings.Join(set, ", "))
 	}
 	return nil

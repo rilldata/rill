@@ -8,6 +8,7 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/mitchellh/mapstructure"
@@ -84,36 +85,36 @@ type configProperties struct {
 }
 
 func (c *configProperties) validate() error {
-	if c.DSN != "" && (c.Account != "" || c.User != "" || c.Database != "" || c.Password != "" || c.Schema != "" || c.Warehouse != "" || c.Role != "" || c.Authenticator != "" || c.PrivateKey != "") {
-		var set []string
-		if c.Account != "" {
-			set = append(set, "account")
-		}
-		if c.User != "" {
-			set = append(set, "user")
-		}
-		if c.Database != "" {
-			set = append(set, "database")
-		}
-		if c.Password != "" {
-			set = append(set, "password")
-		}
-		if c.Schema != "" {
-			set = append(set, "schema")
-		}
-		if c.Warehouse != "" {
-			set = append(set, "warehouse")
-		}
-		if c.Role != "" {
-			set = append(set, "role")
-		}
-		if c.Authenticator != "" {
-			set = append(set, "authenticator")
-		}
-		if c.PrivateKey != "" {
-			set = append(set, "privateKey")
-		}
-		return fmt.Errorf("snowflake: Only one of 'dsn' or [%s] can be set", set)
+	var set []string
+	if c.Account != "" {
+		set = append(set, "account")
+	}
+	if c.User != "" {
+		set = append(set, "user")
+	}
+	if c.Database != "" {
+		set = append(set, "database")
+	}
+	if c.Password != "" {
+		set = append(set, "password")
+	}
+	if c.Schema != "" {
+		set = append(set, "schema")
+	}
+	if c.Warehouse != "" {
+		set = append(set, "warehouse")
+	}
+	if c.Role != "" {
+		set = append(set, "role")
+	}
+	if c.Authenticator != "" {
+		set = append(set, "authenticator")
+	}
+	if c.PrivateKey != "" {
+		set = append(set, "privateKey")
+	}
+	if c.DSN != "" && len(set) > 0 {
+		return fmt.Errorf("snowflake: Only one of 'dsn' or [%s] can be set", strings.Join(set, ", "))
 	}
 	return nil
 }
