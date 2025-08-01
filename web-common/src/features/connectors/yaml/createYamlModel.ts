@@ -7,11 +7,7 @@ import { ResourceKind } from "@rilldata/web-common/features/entity-management/re
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 import { QueryClient } from "@tanstack/svelte-query";
 import { get } from "svelte/store";
-import {
-  getRuntimeServiceAnalyzeConnectorsQueryKey,
-  runtimeServiceAnalyzeConnectors,
-  runtimeServicePutFile,
-} from "../../../runtime-client";
+import { runtimeServicePutFile } from "../../../runtime-client";
 import { runtime } from "../../../runtime-client/runtime-store";
 
 export async function createYamlModelFromTable(
@@ -20,23 +16,6 @@ export async function createYamlModelFromTable(
   table: string,
 ): Promise<[string, string]> {
   const instanceId = get(runtime).instanceId;
-
-  // Get driver name
-  const analyzeConnectorsQueryKey =
-    getRuntimeServiceAnalyzeConnectorsQueryKey(instanceId);
-  const analyzeConnectorsQueryFn = async () =>
-    runtimeServiceAnalyzeConnectors(instanceId);
-  const connectors = await queryClient.fetchQuery({
-    queryKey: analyzeConnectorsQueryKey,
-    queryFn: analyzeConnectorsQueryFn,
-  });
-  const analyzedConnector = connectors?.connectors?.find(
-    (c) => c.name === connector,
-  );
-  if (!analyzedConnector) {
-    throw new Error(`Could not find connector ${connector}`);
-  }
-  const driverName = analyzedConnector.driver?.name as string;
 
   // Get new model name
   const allNames = [
