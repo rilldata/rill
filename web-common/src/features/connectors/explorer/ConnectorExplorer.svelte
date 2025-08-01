@@ -1,8 +1,8 @@
 <script lang="ts">
   import { slide } from "svelte/transition";
-  import { LIST_SLIDE_DURATION as duration } from "../../layout/config";
-  import { createRuntimeServiceAnalyzeConnectors } from "../../runtime-client";
-  import { runtime } from "../../runtime-client/runtime-store";
+  import { LIST_SLIDE_DURATION as duration } from "../../../layout/config";
+  import { createRuntimeServiceAnalyzeConnectors } from "../../../runtime-client";
+  import { runtime } from "../../../runtime-client/runtime-store";
   import ConnectorEntry from "./ConnectorEntry.svelte";
   import type { ConnectorExplorerStore } from "./connector-explorer-store";
 
