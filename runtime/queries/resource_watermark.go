@@ -90,7 +90,7 @@ func (q *ResourceWatermark) resolveMetricsView(ctx context.Context, rt *runtime.
 			if dim.Name == spec.TimeDimension {
 				if dim.Expression != "" {
 					expr = dim.Expression
-				} else if dim.Column != "" {
+				} else {
 					expr = safeName(dim.Column)
 				}
 				break
