@@ -53,6 +53,12 @@ export function makeSufficientlyQualifiedTableName(
     case "pinot":
       // TODO
       return table;
+    case "mysql":
+      // MySQL uses database.table format (no schema concept like PostgreSQL)
+      if (database && database !== "default") {
+        return `${database}.${table}`;
+      }
+      return table;
     // Non-OLAP connectors: use standard qualification logic
     default:
       if (
