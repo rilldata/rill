@@ -26,6 +26,8 @@ import { makeSufficientlyQualifiedTableName } from "./olap/olap-config";
 
 const YAML_MODEL_TEMPLATE = `connector: {{ connector }}
 sql: {{ sql }}
+dev:
+  sql: {{ sql }} limit 10000
 `;
 
 export function compileConnectorYAML(
@@ -272,12 +274,12 @@ export async function createYamlModelFromTable(
 
   // For YAML models, use just the table name since connector context is specified
   // The connector will handle the proper qualification based on its configuration
-  const selectStatement = `select * from ${table}`;
+  const selectStatement = `select * from "${table}"`;
 
   const yamlContent = YAML_MODEL_TEMPLATE.replace(
     "{{ connector }}",
     connector,
-  ).replace("{{ sql }}", selectStatement);
+  ).replace(/{{ sql }}/g, selectStatement);
 
   // Write the YAML file
   await runtimeServicePutFile(instanceId, {
