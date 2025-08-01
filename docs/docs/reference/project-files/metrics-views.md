@@ -32,7 +32,7 @@ In your Rill project directory, create a metrics view, `<metrics_view>.yaml`, fi
 
 **`model`** — Refers to the **model** powering the dashboard with no path specified; should only be used for [Rill models](/build/models/models.md) _(either **model** or **table** is required)_.
 
-**`table`** — Refers to the **table** powering the dashboard with no path specified; should be used instead of `model` for dashboards create from [external OLAP tables](../../concepts/OLAP.md#external-olap-tables) _(either **table** or **model** is required)_. 
+**`table`** — Refers to the **table** powering the dashboard with no path specified; should be used instead of `model` for dashboards create from [external OLAP tables](/home/concepts/OLAP.md#external-olap-tables) _(either **table** or **model** is required)_. 
 
 
 **`dimensions`** — Relates to exploring segments or [dimensions](/build/metrics-view/metrics-view.md#dimensions) of your data and filtering the dashboard _(required)_.

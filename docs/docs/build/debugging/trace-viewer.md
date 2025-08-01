@@ -1,3 +1,10 @@
+---
+title: Trace Viewer in Rill Developer
+description: Define access and row filters onto your metrics views
+sidebar_label:  Trace Viewer in Rill Developer
+sidebar_position: 00
+---
+
 # Trace Viewer in Rill Developer
 
 Rill Developer provides a built-in trace viewer, enabling users to visually inspect operations performed when reconciling resources or fetching data for dashboards. This helps in diagnosing performance and operational issues.

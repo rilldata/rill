@@ -281,6 +281,30 @@ const config = {
           {
             from: '/share/scheduled-reports',
             to: '/explore/exports'
+          },
+          {
+            from: '/concepts/developerVsCloud',
+            to: '/home/concepts/developerVsCloud'
+          },
+          {
+            from: '/concepts/OLAP',
+            to: '/home/concepts/OLAP'
+          },
+          {
+            from: '/concepts/architecture',
+            to: '/home/concepts/architecture'
+          },
+          {
+            from: '/concepts/operational',
+            to: '/home/concepts/operational'
+          },
+          {
+            from: '/concepts/metrics-layer',
+            to: '/home/concepts/metrics-layer'
+          },
+          {
+            from: '/concepts/bi-as-code',
+            to: '/home/concepts/bi-as-code'
           }
         ],
       },
