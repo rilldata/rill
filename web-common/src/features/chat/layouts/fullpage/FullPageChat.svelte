@@ -15,7 +15,7 @@
   $: project = $page.params.project;
   $: conversationId = $page.params.conversationId || null;
 
-  // Create project-specific conversation store (reactive)
+  // Create project-specific last-active conversation store (reactive)
   $: fullpageConversationId = createFullpageConversationIdStore(
     organization,
     project,

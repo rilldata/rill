@@ -44,7 +44,7 @@
   export let planDisplayName: string | undefined;
 
   const user = createAdminServiceGetCurrentUser();
-  const { alerts: alertsFlag, dimensionSearch, chat } = featureFlags;
+  const { alerts: alertsFlag, dimensionSearch, dashboardChat } = featureFlags;
 
   $: ({ instanceId } = $runtime);
 
@@ -235,7 +235,7 @@
             {#if $dimensionSearch}
               <GlobalDimensionSearch />
             {/if}
-            {#if $chat}
+            {#if $dashboardChat}
               <ChatToggle />
             {/if}
             {#if $user.isSuccess && $user.data.user && !onPublicURLPage}

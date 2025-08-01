@@ -31,7 +31,7 @@
     metricsViewFilePath,
   );
 
-  const { readOnly, chat } = featureFlags;
+  const { readOnly, dashboardChat } = featureFlags;
 </script>
 
 <div class="flex gap-2 flex-shrink-0 ml-auto">
@@ -39,7 +39,7 @@
     <ViewAsButton />
   {/if}
   <StateManagersProvider {metricsViewName} {exploreName}>
-    {#if $chat}
+    {#if $dashboardChat}
       <ChatToggle />
     {/if}
     <GlobalDimensionSearch />

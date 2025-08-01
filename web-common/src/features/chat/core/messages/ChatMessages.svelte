@@ -7,8 +7,6 @@
 
   export let isConversationLoading = false;
   export let layout: "sidebar" | "fullpage" = "sidebar";
-
-  // Accept these as props instead of calling useChatCore again
   export let loading = false;
   export let messages: V1Message[] = [];
 

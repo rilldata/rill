@@ -194,37 +194,58 @@ export function useChatCore(options?: ChatCoreOptions) {
           const { instanceId } = variables;
 
           if (response.conversationId && context?.optimisticConversationId) {
-            // Create cache for the new committed conversation
-            queryClient.setQueryData(
-              getRuntimeServiceGetConversationQueryKey(
-                instanceId,
-                response.conversationId,
-              ),
-              (): V1GetConversationResponse => ({
-                conversation: {
-                  id: response.conversationId!,
-                  title: "Loading...", // Will be updated by list invalidation
-                  createdOn: new Date().toISOString(),
-                  updatedOn: new Date().toISOString(),
-                  messages: response.messages || [],
-                },
-              }),
-            );
-
-            // Remove optimistic cache entry
+            // Remove optimistic cache entry first
             const optimisticCacheKey = getConversationCacheKey(
               instanceId,
               context.optimisticConversationId,
             );
             void queryClient.removeQueries({ queryKey: optimisticCacheKey });
 
-            // Invalidate conversation list and wait for it to complete
-            // This ensures the sidebar conversation list is updated before we set the current conversation ID
-            await queryClient.invalidateQueries({
-              queryKey: getRuntimeServiceListConversationsQueryKey(instanceId),
+            // Fetch the specific conversation to get complete data including title
+            const conversationResponse = await queryClient.fetchQuery(
+              getRuntimeServiceGetConversationQueryOptions(
+                instanceId,
+                response.conversationId,
+              ),
+            );
+
+            // Add the new conversation to the `listConversations` TanStack Query Cache
+            const listQueryKey =
+              getRuntimeServiceListConversationsQueryKey(instanceId);
+            queryClient.setQueryData(listQueryKey, (oldList: any) => {
+              if (!oldList?.conversations) {
+                return {
+                  conversations: [conversationResponse.conversation],
+                };
+              }
+
+              // Add new conversation to the beginning of the list (most recent first)
+              const existingIndex = oldList.conversations.findIndex(
+                (conv: any) => conv.id === response.conversationId,
+              );
+
+              if (existingIndex >= 0) {
+                // Update existing conversation
+                const updatedConversations = [...oldList.conversations];
+                updatedConversations[existingIndex] =
+                  conversationResponse.conversation;
+                return {
+                  ...oldList,
+                  conversations: updatedConversations,
+                };
+              } else {
+                // Add new conversation to the beginning
+                return {
+                  ...oldList,
+                  conversations: [
+                    conversationResponse.conversation,
+                    ...oldList.conversations,
+                  ],
+                };
+              }
             });
 
-            // Update current conversation ID to committed ID only after list refetch
+            // Update current conversation ID to committed ID
             currentConversationId.set(response.conversationId);
           }
         },
@@ -352,7 +373,7 @@ export function useChatCore(options?: ChatCoreOptions) {
                 conversation: {
                   ...(old?.conversation || {}),
                   id: response.conversationId!,
-                  title: old?.conversation?.title || "Loading...",
+                  title: old?.conversation?.title || "",
                   createdOn:
                     old?.conversation?.createdOn || new Date().toISOString(),
                   updatedOn: new Date().toISOString(),
@@ -484,11 +505,7 @@ export function useChatCore(options?: ChatCoreOptions) {
 
   // Queries
   const listConversationsQueryOptionsStore = derived([runtime], ([$runtime]) =>
-    getRuntimeServiceListConversationsQueryOptions($runtime.instanceId, {
-      query: {
-        enabled: true,
-      },
-    }),
+    getRuntimeServiceListConversationsQueryOptions($runtime.instanceId),
   );
   const listConversationsQuery = createQuery(
     listConversationsQueryOptionsStore,

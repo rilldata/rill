@@ -80,9 +80,8 @@
   <div class="chat-sidebar-content">
     <div class="chatbot-header-container">
       <ChatHeader
-        currentTitle={$currentConversation?.title || ""}
+        {currentConversation}
         conversations={$listConversationsData?.conversations || []}
-        currentConversationId={$currentConversation?.id}
         {onNewConversation}
         {onSelectConversation}
         onClose={sidebarActions.closeChat}

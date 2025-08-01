@@ -59,7 +59,6 @@
 </div>
 
 <style lang="postcss">
-  /* Conversation Sidebar */
   .conversation-sidebar {
     width: 280px;
     background: #f8f9fa;
