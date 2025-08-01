@@ -24,6 +24,15 @@ func InstallExtensionsOnce() error {
 	return err
 }
 
+func ExtensionsDir() (string, error) {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return "", err
+	}
+	duckdbExtensionsPath := filepath.Join(homeDir, ".duckdb", "extensions")
+	return duckdbExtensionsPath, nil
+}
+
 // installExtensions installs the embedded DuckDB extensions
 func installExtensions() error {
 	// Connect to DuckDB and get the version
@@ -58,11 +67,11 @@ func installExtensions() error {
 	}
 
 	// Define destination path
-	homeDir, err := os.UserHomeDir()
+	extDir, err := ExtensionsDir()
 	if err != nil {
 		return err
 	}
-	duckdbExtensionsPath := filepath.Join(homeDir, ".duckdb", "extensions", duckdbVersion, platformName)
+	duckdbExtensionsPath := filepath.Join(extDir, duckdbVersion, platformName)
 
 	// Create the destination directory if it doesn't exist
 	err = os.MkdirAll(duckdbExtensionsPath, os.ModePerm)

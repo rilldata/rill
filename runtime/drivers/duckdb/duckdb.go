@@ -498,7 +498,7 @@ func (c *connection) reopenDB(ctx context.Context) error {
 	// We want to set preserve_insertion_order=false in hosted environments only (where source data is never viewed directly). Setting it reduces batch data ingestion time by ~40%.
 	// Hack: Using AllowHostAccess as a proxy indicator for a hosted environment.
 	if !c.config.AllowHostAccess {
-		extensionDir, err := c.storage.DataDir("duckdb-extensions")
+		extensionDir, err := extensions.ExtensionsDir()
 		if err != nil {
 			return err
 		}
