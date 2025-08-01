@@ -507,26 +507,6 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		}
 	}
 
-	for _, annotation := range tmp.Annotations {
-		if annotation == nil {
-			continue
-		}
-
-		if tmp.Table != "" && tmp.Model != "" {
-			return fmt.Errorf(`cannot set both the "model" field and the "table" field for annotation`)
-		}
-		if tmp.Table == "" && tmp.Model == "" {
-			return fmt.Errorf(`must set a value for either the "model" field or the "table" field for annotation`)
-		}
-		if annotation.Name == "" {
-			if annotation.Model != "" {
-				annotation.Name = annotation.Model
-			} else {
-				annotation.Name = annotation.Table
-			}
-		}
-	}
-
 	for _, measure := range tmp.DefaultMeasures {
 		if v, ok := names[strings.ToLower(measure)]; !ok || v != nameIsMeasure {
 			return fmt.Errorf(`measure %q referenced in "default_dimensions" not found`, measure)
@@ -602,6 +582,21 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		if annotation == nil {
 			continue
 		}
+
+		if tmp.Table != "" && tmp.Model != "" {
+			return fmt.Errorf(`cannot set both the "model" field and the "table" field for annotation`)
+		}
+		if tmp.Table == "" && tmp.Model == "" {
+			return fmt.Errorf(`must set a value for either the "model" field or the "table" field for annotation`)
+		}
+		if annotation.Name == "" {
+			if annotation.Model != "" {
+				annotation.Name = annotation.Model
+			} else {
+				annotation.Name = annotation.Table
+			}
+		}
+
 		if annotation.Model != "" {
 			// Not setting Kind because for backwards compatibility, it may actually be a source or an external table.
 			node.Refs = append(node.Refs, ResourceName{Name: annotation.Model})

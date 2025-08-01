@@ -260,8 +260,9 @@ message MetricsViewSpec {
     repeated string measures = 7;
     // Dynamic selector for `measures`. Will be processed during validation, so it will always be empty in `state.valid_spec`.
     FieldSelector measures_selector = 8;
-    bool global = 9;
+    // Signifies that the underlying table has `time_end` column. Will be used while querying to add additional filter.
     bool has_time_end = 10;
+    // Signifies that the underlying table has `grain` column. Will be used while querying to add additional filter.
     bool has_grain = 11;
   }
   // Connector containing the table

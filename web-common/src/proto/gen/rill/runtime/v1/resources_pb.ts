@@ -1915,16 +1915,15 @@ export class MetricsViewSpec_Annotation extends Message<MetricsViewSpec_Annotati
   measuresSelector?: FieldSelector;
 
   /**
-   * @generated from field: bool global = 9;
-   */
-  global = false;
-
-  /**
+   * Signifies that the underlying table has `time_end` column. Will be used while querying to add additional filter.
+   *
    * @generated from field: bool has_time_end = 10;
    */
   hasTimeEnd = false;
 
   /**
+   * Signifies that the underlying table has `grain` column. Will be used while querying to add additional filter.
+   *
    * @generated from field: bool has_grain = 11;
    */
   hasGrain = false;
@@ -1945,7 +1944,6 @@ export class MetricsViewSpec_Annotation extends Message<MetricsViewSpec_Annotati
     { no: 6, name: "model", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 7, name: "measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 8, name: "measures_selector", kind: "message", T: FieldSelector },
-    { no: 9, name: "global", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 10, name: "has_time_end", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 11, name: "has_grain", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);

@@ -567,7 +567,48 @@ func (e *Executor) Search(ctx context.Context, qry *SearchQuery, executionTime *
 	return searchResult, nil
 }
 
-func (e *Executor) Annotations(ctx context.Context, annotation *runtimev1.MetricsViewSpec_Annotation, tr *TimeRange, grain runtimev1.TimeGrain) (*drivers.Result, error) {
+type AnnotationsQuery struct {
+	Annotation string              `mapstructure:"annotation"`
+	TimeRange  *TimeRange          `mapstructure:"time_range"`
+	Limit      *int64              `mapstructure:"limit"`
+	Offset     *int64              `mapstructure:"offset"`
+	TimeZone   string              `mapstructure:"time_zone"`
+	TimeGrain  runtimev1.TimeGrain `mapstructure:"time_grain"`
+}
+
+// BindAnnotationsQuery allows to set min, max and watermark from a cache for a AnnotationsQuery
+func (e *Executor) BindAnnotationsQuery(ctx context.Context, qry *AnnotationsQuery, timestamps TimestampsResult) error {
+	if qry.TimeRange != nil && qry.TimeRange.TimeDimension != "" {
+		e.timestamps[qry.TimeRange.TimeDimension] = timestamps
+	} else if e.metricsView.TimeDimension != "" {
+		e.timestamps[e.metricsView.TimeDimension] = timestamps
+	}
+
+	tz, err := time.LoadLocation(qry.TimeZone)
+	if err != nil {
+		return err
+	}
+
+	err = e.resolveTimeRange(ctx, qry.TimeRange, tz, nil)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (e *Executor) Annotations(ctx context.Context, qry *AnnotationsQuery) (*drivers.Result, error) {
+	var annotation *runtimev1.MetricsViewSpec_Annotation
+	for _, specAnnotation := range e.metricsView.Annotations {
+		if specAnnotation.Name == qry.Annotation {
+			annotation = specAnnotation
+			break
+		}
+	}
+	if annotation == nil {
+		return nil, fmt.Errorf("annotation %q not found", qry.Annotation)
+	}
+
 	accessibleMeasures := 0
 	for _, measure := range annotation.Measures {
 		if e.security.CanAccessField(measure) {
@@ -575,25 +616,41 @@ func (e *Executor) Annotations(ctx context.Context, annotation *runtimev1.Metric
 		}
 	}
 	// None of the measures are accessible, so annotation is not accessible either
-	if accessibleMeasures == 0 && !annotation.Global {
+	if accessibleMeasures == 0 {
 		return nil, runtime.ErrForbidden
 	}
 
-	olap, olapCloser, err := e.rt.OLAP(ctx, e.instanceID, annotation.Connector)
+	// Acquire olap connection for the annotation's table's connector
+	olap, release, err := e.rt.OLAP(ctx, e.instanceID, annotation.Connector)
 	if err != nil {
 		return nil, err
 	}
-	defer olapCloser()
+	defer release()
+	dialect := olap.Dialect()
 
-	err = e.resolveTimeRange(ctx, tr, time.UTC, nil)
-	if err != nil {
-		return nil, err
+	// Only call resolveTimeRange is either start/end was not provided.
+	// This avoids executing Timestamps without caching if it was not bound already.
+	if qry.TimeRange.Start.IsZero() || qry.TimeRange.End.IsZero() {
+		tz, err := time.LoadLocation(qry.TimeZone)
+		if err != nil {
+			return nil, err
+		}
+
+		err = e.resolveTimeRange(ctx, qry.TimeRange, tz, nil)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	columns := "*"
+	start := qry.TimeRange.Start.Format(time.RFC3339)
+	end := qry.TimeRange.End.Format(time.RFC3339)
+
+	b := &strings.Builder{}
+
+	b.WriteString("SELECT *")
 	if annotation.HasGrain {
 		// Convert the string grain to an integer so that it is easy to calculate "greater than or equal to".
-		columns += `,(CASE
+		b.WriteString(`,(CASE
   WHEN grain = 'millisecond' THEN 1
   WHEN grain = 'second' THEN 2
   WHEN grain = 'minute' THEN 3
@@ -604,31 +661,41 @@ func (e *Executor) Annotations(ctx context.Context, annotation *runtimev1.Metric
   WHEN grain = 'quarter' THEN 8
   WHEN grain = 'year' THEN 9
   ELSE 0
-END) as time_grain`
+END) as time_grain`)
 	}
 
-	start := tr.Start.Format(time.RFC3339)
-	end := tr.End.Format(time.RFC3339)
+	b.WriteString(" FROM ")
+	b.WriteString(dialect.EscapeTable(annotation.Database, annotation.DatabaseSchema, annotation.Table))
 
-	filter := "time >= ? AND time < ?"
+	b.WriteString(" WHERE ")
+
+	b.WriteString("time >= ? AND time < ?")
 	args := []any{start, end}
 
 	if annotation.HasTimeEnd {
-		filter += " AND time_end >= ? AND time_end < ?"
+		b.WriteString(" AND time_end >= ? AND time_end < ?")
 		args = append(args, start, end)
 	}
 
-	if annotation.HasGrain && grain != runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
-		filter += " AND (time_grain == 0 OR time_grain < ?)"
-		args = append(args, int(grain))
+	if annotation.HasGrain && qry.TimeGrain != runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
+		b.WriteString(" AND (time_grain == 0 OR time_grain <= ?)")
+		args = append(args, int(qry.TimeGrain))
 	}
 
-	escapedTableName := olap.Dialect().EscapeTable(annotation.Database, annotation.DatabaseSchema, annotation.Table)
+	b.WriteString(" ORDER BY time")
 
-	sql := fmt.Sprintf("SELECT %s FROM %s WHERE %s ORDER BY time", columns, escapedTableName, filter)
+	if qry.Limit != nil {
+		b.WriteString(" LIMIT ?")
+		args = append(args, *qry.Limit)
+	}
+
+	if qry.Offset != nil {
+		b.WriteString(" OFFSET ?")
+		args = append(args, *qry.Offset)
+	}
 
 	return olap.Query(ctx, &drivers.Statement{
-		Query:    sql,
+		Query:    b.String(),
 		Args:     args,
 		Priority: 0,
 	})

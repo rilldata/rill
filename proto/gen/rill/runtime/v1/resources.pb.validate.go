@@ -12611,8 +12611,6 @@ func (m *MetricsViewSpec_Annotation) validate(all bool) error {
 		}
 	}
 
-	// no validation rules for Global
-
 	// no validation rules for HasTimeEnd
 
 	// no validation rules for HasGrain
