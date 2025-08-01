@@ -34,22 +34,26 @@
     </Button>
   </div>
 
-  <div class="conversation-list">
+  <div class="conversation-list" data-testid="conversation-list">
     {#if conversations?.length}
       {#each conversations as conversation}
         <a
           href={`/${organization}/${project}/-/chat/${conversation.id}`}
           class="conversation-item"
           class:active={conversation.id === currentConversation?.id}
+          data-testid="conversation-item"
+          data-conversation-id={conversation.id}
           on:click={handleConversationItemClick}
         >
-          <div class="conversation-title">
+          <div class="conversation-title" data-testid="conversation-title">
             {conversation.title || "New conversation"}
           </div>
         </a>
       {/each}
     {:else}
-      <div class="no-conversations">No conversations yet</div>
+      <div class="no-conversations" data-testid="no-conversations">
+        No conversations yet
+      </div>
     {/if}
   </div>
 </div>
