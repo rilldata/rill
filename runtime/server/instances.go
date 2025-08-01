@@ -179,7 +179,7 @@ func (s *Server) EditInstance(ctx context.Context, req *runtimev1.EditInstanceRe
 	repo, release, err := s.runtime.Repo(ctx, req.InstanceId)
 	if err == nil {
 		defer release()
-		err = repo.Pull(ctx, false, true)
+		err = repo.Pull(ctx, &drivers.PullOptions{ForceHandshake: true})
 		if err != nil {
 			s.logger.Error("failed to pull repo after editing instance", zap.String("instance_id", req.InstanceId), zap.Error(err), observability.ZapCtx(ctx))
 		}

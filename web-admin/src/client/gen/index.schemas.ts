@@ -589,6 +589,8 @@ The URL uses HTTPS with embedded username/password. */
   /** A unique branch name generated for temporary/ephemeral use in edit mode where files may be mutated.
 This enables checkpointing progress across hibernations and also more easily pinning to a specific commit of the base branch to delay conflict resolution. */
   gitEditBranch?: string;
+  /** Whether the git repo is managed by Rill. */
+  managedGitRepo?: boolean;
   /** Signed URL for downloading a tarball of project files. If this is set, the git_* fields will be empty (and vice versa). */
   archiveDownloadUrl?: string;
   /** A stable ID for the archive returned from archive_download_url. */
