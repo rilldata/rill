@@ -110,7 +110,7 @@
       />
     {/if}
 
-    {#if allowContextMenu}
+    {#if allowContextMenu && (showGenerateMetricsAndDashboard || isModelingSupported || isYamlModelingSupported)}
       <DropdownMenu.Root bind:open={contextMenuOpen}>
         <DropdownMenu.Trigger asChild let:builder>
           <ContextButton
