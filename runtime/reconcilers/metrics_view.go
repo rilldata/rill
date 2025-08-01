@@ -88,9 +88,24 @@ func (r *MetricsViewReconciler) Reconcile(ctx context.Context, n *runtimev1.Reso
 		}
 	}
 
+	refs := self.Meta.Refs
+	if mv.Spec.Parent != "" {
+		parent, err := r.C.Get(ctx, &runtimev1.ResourceName{
+			Name: mv.Spec.Parent,
+			Kind: runtime.ResourceKindMetricsView,
+		}, false)
+		if err != nil {
+			return runtime.ReconcileResult{Err: fmt.Errorf("failed to get parent metrics view %q: %w", mv.Spec.Parent, err)}
+		}
+		refs = parent.Meta.Refs
+		if dataRefreshedOn == nil {
+			dataRefreshedOn = parent.GetMetricsView().State.DataRefreshedOn
+		}
+	}
+
 	// Find out if the metrics view has a ref to a source or model in the same project.
 	hasInternalRef := false
-	for _, ref := range self.Meta.Refs {
+	for _, ref := range refs {
 		if ref.Kind == runtime.ResourceKindSource || ref.Kind == runtime.ResourceKindModel {
 			hasInternalRef = true
 		}
@@ -108,6 +123,7 @@ func (r *MetricsViewReconciler) Reconcile(ctx context.Context, n *runtimev1.Reso
 		return runtime.ReconcileResult{Err: fmt.Errorf("failed to create metrics view executor: %w", err)}
 	}
 	defer e.Close()
+
 	validateResult, validateErr := e.ValidateAndNormalizeMetricsView(ctx)
 	if validateErr == nil {
 		validateErr = validateResult.Error()
