@@ -16,8 +16,10 @@
   import { runtime } from "../../../runtime-client/runtime-store";
   import { featureFlags } from "../../feature-flags";
   import { useCreateMetricsViewFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
-  import { createModelFromTable } from "../olap/createModel";
-  import { createYamlModelFromTable } from "../code-utils";
+  import {
+    createModelFromTable,
+    createYamlModelFromTable,
+  } from "../code-utils";
 
   export let connector: string;
   export let database: string = "";
