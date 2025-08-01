@@ -5,7 +5,7 @@
     DashboardBannerPriority,
   } from "@rilldata/web-common/components/banner/constants";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
-  import Chat from "@rilldata/web-common/features/chat/Chat.svelte";
+  import ExploreChat from "@rilldata/web-common/features/chat/ExploreChat.svelte";
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
   import DashboardThemeProvider from "@rilldata/web-common/features/dashboards/DashboardThemeProvider.svelte";
   import { resetSelectedMockUserAfterNavigate } from "@rilldata/web-common/features/dashboards/granular-access-policies/resetSelectedMockUserAfterNavigate";
@@ -103,7 +103,7 @@
           </DashboardStateManager>
         </StateManagersProvider>
       </div>
-      <Chat />
+      <ExploreChat />
     </div>
   {/key}
 {/if}

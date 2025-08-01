@@ -11,3 +11,8 @@ mock_users:
   groups:
     - partners
 - email: test@domain.com
+
+ai_connector: mock_ai
+
+features:
+- chat

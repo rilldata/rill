@@ -1,4 +1,4 @@
-import type { V1Conversation } from "../../../runtime-client";
+import type { V1Conversation } from "../../../../runtime-client";
 
 /**
  * Format date for display in conversation list

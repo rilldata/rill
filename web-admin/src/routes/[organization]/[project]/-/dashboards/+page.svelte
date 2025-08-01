@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import ContentContainer from "@rilldata/web-admin/components/layout/ContentContainer.svelte";
-  import DashboardsTable from "../../../features/dashboards/listing/DashboardsTable.svelte";
+  import DashboardsTable from "@rilldata/web-admin/features/dashboards/listing/DashboardsTable.svelte";
   import { useDashboardsV2 } from "@rilldata/web-admin/features/dashboards/listing/selectors";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
