@@ -1,7 +1,7 @@
 <script lang="ts">
   import DimensionFilterChipBody from "@rilldata/web-common/features/dashboards/filters/dimension-filters/DimensionFilterChipBody.svelte";
   import { Chip } from "@rilldata/web-common/components/chip";
-  import { DimensionFilterMode } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/dimension-filter-mode";
+  import { DimensionFilterMode } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/constants";
   import {
     useAllSearchResultsCount,
     useDimensionSearch,

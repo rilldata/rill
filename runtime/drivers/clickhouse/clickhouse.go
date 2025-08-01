@@ -99,7 +99,7 @@ var spec = drivers.Spec{
 		{
 			Key:         "password",
 			Type:        drivers.StringPropertyType,
-			Required:    true,
+			Required:    false,
 			DisplayName: "Password",
 			Description: "Password to connect to the ClickHouse server",
 			Placeholder: "Database password",

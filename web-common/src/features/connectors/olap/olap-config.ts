@@ -15,8 +15,15 @@ export function makeFullyQualifiedTableName(
       return `${database}.${databaseSchema}.${table}`;
     case "pinot":
       return table;
+    // Non-OLAP connectors: use standard database.schema.table format
     default:
-      throw new Error(`Unsupported OLAP connector: ${driver}`);
+      if (database && databaseSchema) {
+        return `${database}.${databaseSchema}.${table}`;
+      } else if (databaseSchema) {
+        return `${databaseSchema}.${table}`;
+      } else {
+        return table;
+      }
   }
 }
 
@@ -46,8 +53,20 @@ export function makeSufficientlyQualifiedTableName(
     case "pinot":
       // TODO
       return table;
+    // Non-OLAP connectors: use standard qualification logic
     default:
-      throw new Error(`Unsupported OLAP connector: ${driver}`);
+      if (
+        database &&
+        databaseSchema &&
+        database !== "default" &&
+        databaseSchema !== "default"
+      ) {
+        return `${database}.${databaseSchema}.${table}`;
+      } else if (databaseSchema && databaseSchema !== "default") {
+        return `${databaseSchema}.${table}`;
+      } else {
+        return table;
+      }
   }
 }
 
@@ -57,7 +76,7 @@ export function makeTablePreviewHref(
   database: string,
   databaseSchema: string,
   table: string,
-): string {
+): string | null {
   switch (driver) {
     case "clickhouse":
       return `/connector/clickhouse/${connectorName}/${databaseSchema}/${table}`;
@@ -67,7 +86,8 @@ export function makeTablePreviewHref(
       return `/connector/duckdb/${connectorName}/${database}/${databaseSchema}/${table}`;
     case "pinot":
       return `/connector/pinot/${connectorName}/${table}`;
+    // Non-OLAP connectors: table preview not implemented yet
     default:
-      throw new Error(`Unsupported connector: ${driver}`);
+      return null;
   }
 }

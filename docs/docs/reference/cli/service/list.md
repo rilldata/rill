@@ -10,6 +10,12 @@ List service
 rill service list [flags]
 ```
 
+### Flags
+
+```
+      --project string   Project name to filter services
+```
+
 ### Global flags
 
 ```

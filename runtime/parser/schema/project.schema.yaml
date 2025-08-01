@@ -494,6 +494,9 @@ definitions:
           managed:
             type: boolean
             description: '`true` means Rill will provision the connector using the default provisioner. `false` disables automatic provisioning.'
+          mode:
+            type: string
+            description: "`read` - Controls the operation mode for the ClickHouse connection. Defaults to 'read' for safe operation with external databases. Set to 'readwrite' to enable model creation and table mutations. Note: When 'managed: true', this is automatically set to 'readwrite'."
           dsn:
             type: string
             description: DSN(Data Source Name) for the ClickHouse connection
