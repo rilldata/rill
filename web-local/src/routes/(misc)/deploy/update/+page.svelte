@@ -8,7 +8,6 @@
   import { addPosthogSessionIdToUrl } from "@rilldata/web-common/lib/analytics/posthog";
   import { waitUntil } from "@rilldata/web-common/lib/waitUtils.ts";
   import {
-    createLocalServiceGetCurrentProject,
     createLocalServiceGetProjectRequest,
     createLocalServiceRedeploy,
   } from "@rilldata/web-common/runtime-client/local-service";
@@ -17,6 +16,7 @@
   import CTANeedHelp from "@rilldata/web-common/components/calls-to-action/CTANeedHelp.svelte";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { onMount } from "svelte";
+  import { get } from "svelte/store";
   import type { PageData } from "./$types";
 
   export let data: PageData;
@@ -24,9 +24,6 @@
   const { orgName, projectName, newManagedRepo } = data;
 
   $: projectQuery = createLocalServiceGetProjectRequest(orgName, projectName);
-  const currentProjectQuery = createLocalServiceGetCurrentProject();
-
-  $: project = $projectQuery.data?.project;
 
   const redeployMutation = createLocalServiceRedeploy();
 
@@ -35,16 +32,12 @@
   $: planUpgradeUrl = getPlanUpgradeUrl(orgName ?? "");
   $: isOrgOnTrial = getIsOrgOnTrial(orgName ?? "");
 
-  $: error =
-    ($redeployMutation.error as Error | null) ||
-    $projectQuery.error ||
-    $currentProjectQuery.error;
-  $: loading =
-    $redeployMutation.isPending ||
-    $projectQuery.isPending ||
-    $currentProjectQuery.isPending;
+  $: error = ($redeployMutation.error as Error | null) || $projectQuery.error;
+  $: loading = $redeployMutation.isPending || $projectQuery.isPending;
 
   async function updateProject() {
+    const project = get(projectQuery).data?.project;
+    console.log("Updating project...", !!project);
     if (!project) return;
     // We always use Redeploy instead of GitPush.
     // GitPush is a simple wrapper around the `git push` command.
@@ -73,8 +66,7 @@
   }
 
   async function maybeUpdateProject() {
-    await waitUntil(() => !loading);
-    if (error) return;
+    await waitUntil(() => !get(projectQuery).isPending);
     void updateProject();
   }
 
