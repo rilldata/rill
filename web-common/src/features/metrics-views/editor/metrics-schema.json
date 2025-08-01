@@ -201,11 +201,11 @@
       },
       "description": "Numeric aggregates of columns from your data model."
     },
-    "dimensions_selector": {
+    "parent_dimensions": {
       "type": "string",
       "description": "Dimensions to include from parent metrics view. It supports \"*\", a list or duckdb regex to include/exclude dimensions, if not specified, this will inherit all dimensions from the parent metrics view."
     },
-    "measures_selector": {
+    "parent_measures": {
       "type": "string",
       "description": "Measures to include from parent metrics view. It supports  \"*\", a list or duckdb regex to include/exclude measures, if not specified, this will inherit all measures from the parent metrics view."
     },
@@ -216,6 +216,10 @@
         "skip": {
           "type": "boolean",
           "description": "If true, disables the explore view for this metrics view."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name for the explore."
         },
         "display_name": {
           "type": "string",
@@ -228,6 +232,14 @@
         "banner": {
           "type": "string",
           "description": "Custom banner displayed at the header of the explore view."
+        },
+        "dimensions": {
+          "type": "string",
+          "description": "Dimensions to include from the metrics view. It supports \"*\", a list or duckdb regex to include/exclude dimensions, if not specified, this will include all dimensions from the metrics view."
+        },
+        "measures": {
+          "type": "string",
+          "description": "Measures to include from the metrics view. It supports  \"*\", a list or duckdb regex to include/exclude measures, if not specified, this will include all measures from the parent metrics view."
         },
         "theme": {
           "oneOf": [

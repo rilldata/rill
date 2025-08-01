@@ -1240,10 +1240,10 @@ definitions:
                   type: string
                   description: used to configure what value to fill in for missing time buckets. This also works generally as COALESCING over non empty time buckets.
             minItems: 1
-          dimensions_selector:
+          parent_dimensions:
             description: Optional field selectors for dimensions to inherit from the parent metrics view.
             $ref: '#/definitions/fields_selector'
-          measures_selector:
+          parent_measures:
             description: Optional field selectors for measures to inherit from the parent metrics view.
             $ref: '#/definitions/fields_selector'
           security:
@@ -1333,6 +1333,9 @@ definitions:
           skip:
             type: boolean
             description: If true, disables the explore view for this metrics view.
+          name:
+            type: string
+            description: Name of the explore view.
           display_name:
             type: string
             description: Display name for the explore view.
@@ -1342,6 +1345,12 @@ definitions:
           banner:
             type: string
             description: Custom banner displayed at the header of the explore view.
+          dimensions:
+            description: List of dimension names. Use '*' to select all dimensions (default).
+            $ref: '#/definitions/explore/definitions/field_selector_properties'
+          measures:
+            description: List of measure names. Use '*' to select all measures (default).
+            $ref: '#/definitions/explore/definitions/field_selector_properties'
           theme:
             oneOf:
               - type: string
