@@ -1,5 +1,4 @@
 <script lang="ts">
-  import ColorInput from "@rilldata/web-common/components/color-picker/ColorInput.svelte";
   import FieldSwitcher from "@rilldata/web-common/components/forms/FieldSwitcher.svelte";
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import type { FieldConfig } from "@rilldata/web-common/features/canvas/components/charts/types";
@@ -7,14 +6,10 @@
   import SingleFieldInput from "@rilldata/web-common/features/canvas/inspector/SingleFieldInput.svelte";
   import type { ComponentInputParam } from "@rilldata/web-common/features/canvas/inspector/types";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
-  import {
-    defaultPrimaryColors,
-    defaultSecondaryColors,
-  } from "@rilldata/web-common/features/themes/color-config";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import chroma from "chroma-js";
   import ColorPaletteSelector from "./field-config/ColorPaletteSelector.svelte";
   import FieldConfigPopover from "./field-config/FieldConfigPopover.svelte";
+  import SingleColorSelector from "./field-config/SingleColorSelector.svelte";
 
   export let key: string;
   export let metricsView: string;
@@ -25,46 +20,10 @@
 
   $: ({ instanceId } = $runtime);
   $: ({
-    canvasEntity: { selectedComponent },
+    canvasEntity: { selectedComponent, theme },
   } = getCanvasStore(canvasName, instanceId));
 
   $: selected = !markConfig || typeof markConfig === "string" ? 0 : 1;
-
-  const theme = {
-    primary: chroma(`hsl(${defaultPrimaryColors[500]})`),
-    secondary: chroma(`hsl(${defaultSecondaryColors[500]})`),
-  };
-
-  // Get the actual color value based on whether it's a theme color or regular color
-  $: color = typeof markConfig === "string" ? markConfig : theme.primary.hex();
-
-  // Get the display color - actual color for rendering
-  $: displayColor = (() => {
-    if (typeof markConfig !== "string") return theme.primary.hex();
-
-    switch (markConfig) {
-      case "primary":
-        return theme.primary.hex();
-      case "secondary":
-        return theme.secondary.hex();
-      default:
-        return markConfig;
-    }
-  })();
-
-  // Get the display label for the color input
-  $: colorLabel = (() => {
-    if (typeof markConfig !== "string") return "";
-
-    switch (markConfig) {
-      case "primary":
-        return "Primary";
-      case "secondary":
-        return "Secondary";
-      default:
-        return markConfig;
-    }
-  })();
 
   $: chartFieldInput = config.meta?.chartFieldInput;
   $: colorMapConfig = chartFieldInput?.colorMappingSelector;
@@ -118,7 +77,7 @@
     onClick={(_, field) => {
       if (field === "One color") {
         selected = 0;
-        onChange(color);
+        onChange(typeof markConfig === "string" ? markConfig : "primary");
       } else if (field === "Split by") {
         selected = 1;
       }
@@ -128,10 +87,10 @@
 
 {#if selected === 0}
   <div class="pt-2">
-    <ColorInput
+    <SingleColorSelector
       small
-      stringColor={displayColor}
-      label={colorLabel}
+      theme={$theme}
+      markConfig={typeof markConfig === "string" ? markConfig : "primary"}
       onChange={(newColor) => {
         onChange(newColor);
       }}
