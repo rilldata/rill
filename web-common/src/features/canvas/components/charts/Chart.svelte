@@ -7,7 +7,7 @@
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
-  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
+  import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
   import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import type { View } from "vega-typings";
@@ -19,7 +19,7 @@
 
   export let component: BaseChart<ChartSpec>;
 
-  const { darkMode } = featureFlags;
+  $: themePreference = $themeControl;
 
   $: ({ instanceId } = $runtime);
 
@@ -113,7 +113,7 @@
           {spec}
           renderer={isChartLineLike(chartType) ? "svg" : "canvas"}
           {expressionFunctions}
-          config={getRillTheme(true)}
+          config={getRillTheme(true, themePreference === "dark")}
         />
       {/if}
     {/if}
