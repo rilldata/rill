@@ -1,6 +1,6 @@
 export function extractHSL(color: string) {
   const [, hue, saturation, lightness] = color.match(
-    /hsl\((\d+),\s*(\d+)%,\s*(\d+)%\)/,
+    /hsl\((\d+(?:\.\d+)?)(?:deg)?[,\s]+(\d+(?:\.\d+)?)%[,\s]+(\d+(?:\.\d+)?)%\)/,
   ) || [null, 0, 100, 50];
 
   return {
