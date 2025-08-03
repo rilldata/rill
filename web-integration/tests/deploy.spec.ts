@@ -200,11 +200,19 @@ async function login(deployPage: Page) {
     );
   }
 
-  // Login 1st to start deploy.
+  // Wait for the auth page to load
+  await deployPage.waitForTimeout(2000);
 
-  // Fill in the email
-  const emailInput = deployPage.locator('input[name="username"]');
-  await emailInput.waitFor({ state: "visible" });
+  // Fill in the email - try both "username" (login page) and "email" (signup page)
+  let emailInput = deployPage.locator('input[name="username"]');
+  try {
+    await emailInput.waitFor({ state: "visible", timeout: 5000 });
+  } catch {
+    // If username field not found, try email field (signup page)
+    emailInput = deployPage.locator('input[name="email"]');
+    await emailInput.waitFor({ state: "visible", timeout: 5000 });
+  }
+
   await emailInput.click();
   await emailInput.fill(process.env.RILL_DEVTOOL_E2E_ADMIN_ACCOUNT_EMAIL);
 
