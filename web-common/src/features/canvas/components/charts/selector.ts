@@ -3,7 +3,10 @@ import type { ChartSpec } from "@rilldata/web-common/features/canvas/components/
 import type { BaseChart } from "@rilldata/web-common/features/canvas/components/charts/BaseChart";
 import type { CanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
 import type { TimeAndFilterStore } from "@rilldata/web-common/features/canvas/stores/types";
-import { defaultPrimaryColors } from "@rilldata/web-common/features/themes/color-config";
+import {
+  defaultPrimaryColors,
+  defaultSecondaryColors,
+} from "@rilldata/web-common/features/themes/color-config";
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import {
   type MetricsViewSpecDimension,
@@ -87,7 +90,7 @@ export function getChartData(
         theme: {
           primary: theme.primary || chroma(`hsl(${defaultPrimaryColors[500]})`),
           secondary:
-            theme.secondary || chroma(`hsl(${defaultPrimaryColors[500]})`),
+            theme.secondary || chroma(`hsl(${defaultSecondaryColors[500]})`),
         },
       };
     },
