@@ -296,8 +296,6 @@ export class CanvasEntity {
     themeName: string | undefined,
     embeddedTheme: V1ThemeSpec | undefined,
   ) => {
-    if (!themeName && !embeddedTheme) return;
-
     let themeSpec: V1ThemeSpec | undefined;
 
     if (themeName) {
