@@ -110,26 +110,35 @@ func New(ctx context.Context, dsn string, adm *admin.Service) (jobs.Client, erro
 
 	periodicJobs := []*river.PeriodicJob{
 		// NOTE: Add new periodic jobs here
-		newPeriodicJob(&ValidateDeploymentsArgs{}, "*/30 * * * *", true),                  // half-hourly
-		newPeriodicJob(&PaymentFailedGracePeriodCheckArgs{}, "0 1 * * *", true),           // daily at 1am UTC
-		newPeriodicJob(&TrialEndingSoonArgs{}, "5 1 * * *", true),                         // daily at 1:05am UTC
-		newPeriodicJob(&TrialEndCheckArgs{}, "10 1 * * *", true),                          // daily at 1:10am UTC
-		newPeriodicJob(&TrialGracePeriodCheckArgs{}, "15 1 * * *", true),                  // daily at 1:15am UTC
-		newPeriodicJob(&SubscriptionCancellationCheckArgs{}, "20 1 * * *", true),          // daily at 1:20am UTC
-		newPeriodicJob(&DeleteUnusedUserTokenArgs{}, "0 */12 * * *", true),                // every 12 hours
-		newPeriodicJob(&DeleteUnusedServiceTokenArgs{}, "0 */12 * * *", true),             // every 12 hours
-		newPeriodicJob(&deleteUnusedGithubReposArgs{}, "0 */6 * * *", true),               // every 6 hours
-		newPeriodicJob(&HibernateInactiveOrgsArgs{}, "0 7 * * 1", true),                   // Monday at 7:00am UTC
-		newPeriodicJob(&CheckProvisionersArgs{}, "0 */15 * * *", true),                    // every 15 minutes
-		newPeriodicJob(&BillingReporterArgs{}, adm.Biller.GetReportingWorkerCron(), true), // configured by the admin billing service
-		newPeriodicJob(&DeleteExpiredAuthCodesArgs{}, "0 */6 * * *", true),                // every 6 hours
-		newPeriodicJob(&DeleteExpiredDeviceAuthCodesArgs{}, "0 */6 * * *", true),          // every 6 hours
-		newPeriodicJob(&DeleteExpiredTokensArgs{}, "0 */6 * * *", true),                   // every 6 hours
-		newPeriodicJob(&DeleteExpiredVirtualFilesArgs{}, "0 */6 * * *", true),             // every 6 hours
-		newPeriodicJob(&DeleteUnusedAssetsArgs{}, "0 */6 * * *", true),                    // every 6 hours
-		newPeriodicJob(&DeploymentsHealthCheckArgs{}, "0 */10 * * *", true),               // every 10 minutes
-		newPeriodicJob(&HibernateExpiredDeploymentsArgs{}, "0 */15 * * *", true),          // every 15 minutes
-		newPeriodicJob(&RunAutoscalerArgs{}, adm.AutoscalerCron, true),                    // configured by the admin autoscaler service
+		newPeriodicJob(&ValidateDeploymentsArgs{}, "*/30 * * * *", true),         // half-hourly
+		newPeriodicJob(&PaymentFailedGracePeriodCheckArgs{}, "0 1 * * *", true),  // daily at 1am UTC
+		newPeriodicJob(&TrialEndingSoonArgs{}, "5 1 * * *", true),                // daily at 1:05am UTC
+		newPeriodicJob(&TrialEndCheckArgs{}, "10 1 * * *", true),                 // daily at 1:10am UTC
+		newPeriodicJob(&TrialGracePeriodCheckArgs{}, "15 1 * * *", true),         // daily at 1:15am UTC
+		newPeriodicJob(&SubscriptionCancellationCheckArgs{}, "20 1 * * *", true), // daily at 1:20am UTC
+		newPeriodicJob(&DeleteUnusedUserTokenArgs{}, "0 */12 * * *", true),       // every 12 hours
+		newPeriodicJob(&DeleteUnusedServiceTokenArgs{}, "0 */12 * * *", true),    // every 12 hours
+		newPeriodicJob(&deleteUnusedGithubReposArgs{}, "0 */6 * * *", true),      // every 6 hours
+		newPeriodicJob(&HibernateInactiveOrgsArgs{}, "0 7 * * 1", true),          // Monday at 7:00am UTC
+		newPeriodicJob(&CheckProvisionersArgs{}, "0 */15 * * *", true),           // every 15 minutes
+		newPeriodicJob(&DeleteExpiredAuthCodesArgs{}, "0 */6 * * *", true),       // every 6 hours
+		newPeriodicJob(&DeleteExpiredDeviceAuthCodesArgs{}, "0 */6 * * *", true), // every 6 hours
+		newPeriodicJob(&DeleteExpiredTokensArgs{}, "0 */6 * * *", true),          // every 6 hours
+		newPeriodicJob(&DeleteExpiredVirtualFilesArgs{}, "0 */6 * * *", true),    // every 6 hours
+		newPeriodicJob(&DeleteUnusedAssetsArgs{}, "0 */6 * * *", true),           // every 6 hours
+		newPeriodicJob(&DeploymentsHealthCheckArgs{}, "0 */10 * * *", true),      // every 10 minutes
+		newPeriodicJob(&HibernateExpiredDeploymentsArgs{}, "0 */15 * * *", true), // every 15 minutes
+	}
+
+	// Add periodic jobs that are configured by other services
+	if adm.Biller.GetReportingWorkerCron() != "" {
+		// configured by the admin billing service
+		periodicJobs = append(periodicJobs, newPeriodicJob(&BillingReporterArgs{}, adm.Biller.GetReportingWorkerCron(), true))
+	}
+
+	if adm.AutoscalerCron == "" {
+		// configured by the admin autoscaler service
+		periodicJobs = append(periodicJobs, newPeriodicJob(&RunAutoscalerArgs{}, adm.AutoscalerCron, true))
 	}
 
 	// Wire our zap logger to a slog logger for the river client
