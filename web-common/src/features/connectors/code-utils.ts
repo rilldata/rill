@@ -27,9 +27,7 @@ import { makeSufficientlyQualifiedTableName } from "./olap/olap-config";
 const YAML_MODEL_TEMPLATE = `type: model
 connector: {{ connector }}
 materialize: true
-sql: {{ sql }}
-dev:
-  sql: {{ sql }} limit 10000
+sql: {{ sql }}{{ dev_section }}
 `;
 
 export function compileConnectorYAML(
@@ -304,10 +302,15 @@ export async function createYamlModelFromTable(
   // Use the sufficiently qualified table name directly
   const selectStatement = `select * from ${sufficientlyQualifiedTableName}`;
 
-  const yamlContent = YAML_MODEL_TEMPLATE.replace(
-    "{{ connector }}",
-    connector,
-  ).replace(/{{ sql }}/g, selectStatement);
+  // Determine if dev section should be included based on connector type
+  const shouldIncludeDevSection = driverName !== "redshift";
+  const devSection = shouldIncludeDevSection
+    ? `\ndev:\n  sql: ${selectStatement} limit 10000`
+    : "";
+
+  const yamlContent = YAML_MODEL_TEMPLATE.replace("{{ connector }}", connector)
+    .replace(/{{ sql }}/g, selectStatement)
+    .replace("{{ dev_section }}", devSection);
 
   // Write the YAML file
   await runtimeServicePutFile(instanceId, {
