@@ -147,11 +147,9 @@ type configProperties struct {
 	// Provision is set when Managed is true and provisioning should be handled by this driver.
 	// (In practice, this gets set on local and means we should start an embedded Clickhouse server).
 	Provision bool `mapstructure:"provision"`
-	// DSN is the connection string. Either DSN can be passed or the individual properties below can be set.
+	// DSN is the connection string for both read and write operations when using a single connection
 	DSN string `mapstructure:"dsn"`
-	// ReadDSN is the connection string for read operations. Takes precedence over DSN for reads.
-	ReadDSN string `mapstructure:"read_dsn"`
-	// WriteDSN is the connection string for write operations. Takes precedence over DSN for writes.
+	// WriteDSN is the connection string for write operations. When set, DSN is used for reads and this for writes.
 	WriteDSN string `mapstructure:"write_dsn"`
 	// Host configuration. Should not be set if DSN is set.
 	Host string `mapstructure:"host"`
@@ -223,14 +221,19 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		conf.MaxOpenConns = 20
 	}
 
+	// Set default for MaxIdleConns if not specified
+	if conf.MaxIdleConns == 0 {
+		conf.MaxIdleConns = 5
+	}
+
 	var readOpts, writeOpts *clickhouse.Options
 	var embed *embedClickHouse
 
 	// Determine connection options based on configuration priority
 	switch {
-	case conf.ReadDSN != "" && conf.WriteDSN != "":
+	case conf.DSN != "" && conf.WriteDSN != "":
 		// Separate read and write DSNs
-		if readOpts, err = clickhouse.ParseDSN(conf.ReadDSN); err != nil {
+		if readOpts, err = clickhouse.ParseDSN(conf.DSN); err != nil {
 			return nil, fmt.Errorf("failed to parse read DSN: %w", err)
 		}
 		if writeOpts, err = clickhouse.ParseDSN(conf.WriteDSN); err != nil {
@@ -261,6 +264,9 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 
 		opts, err := embed.start()
 		if err != nil {
+			if stopErr := embed.stop(); stopErr != nil {
+				logger.Warn("failed to stop embedded ClickHouse after startup failure", zap.Error(stopErr))
+			}
 			return nil, err
 		}
 
@@ -269,10 +275,10 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		// Build from individual host configuration
 		opts := buildOptsFromOptions(conf)
 		readOpts, writeOpts = opts, opts
-	case conf.ReadDSN != "" || conf.WriteDSN != "":
-		return nil, errors.New("when not providing a 'dsn', both 'read_dsn' and 'write_dsn' must be specified for separate read/write connections")
+	case conf.WriteDSN != "":
+		return nil, errors.New("when not providing a 'dsn', both 'dsn' and 'write_dsn' must be specified for separate read/write connections")
 	default:
-		return nil, errors.New("must specify either 'dsn' or both 'read_dsn' and 'write_dsn'")
+		return nil, errors.New("must specify either 'dsn' for single connection or both 'dsn' and 'write_dsn' for dual connections")
 	}
 
 	// Apply common configuration to both connection options
@@ -294,7 +300,15 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		// Single connection for both read and write
 		readDB = sqlx.NewDb(otelsql.OpenDB(clickhouse.Connector(readOpts)), "clickhouse")
 		writeDB = readDB
+
+		// Configure connection pool settings
 		readDB.SetMaxOpenConns(conf.MaxOpenConns)
+		readDB.SetMaxIdleConns(conf.MaxIdleConns)
+		if conf.ConnMaxLifetime != "" {
+			if d, err := time.ParseDuration(conf.ConnMaxLifetime); err == nil {
+				readDB.SetConnMaxLifetime(d)
+			}
+		}
 
 		if err = readDB.Ping(); err != nil {
 			return nil, fmt.Errorf("failed to ping connection: %w", err)
@@ -309,7 +323,13 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		writeDB = sqlx.NewDb(otelsql.OpenDB(clickhouse.Connector(writeOpts)), "clickhouse")
 
 		readDB.SetMaxOpenConns(conf.MaxOpenConns)
-		writeDB.SetMaxOpenConns(conf.MaxOpenConns)
+		readDB.SetMaxIdleConns(conf.MaxIdleConns)
+
+		if conf.ConnMaxLifetime != "" {
+			if d, err := time.ParseDuration(conf.ConnMaxLifetime); err == nil {
+				readDB.SetConnMaxLifetime(d)
+			}
+		}
 
 		if err = readDB.Ping(); err != nil {
 			return nil, fmt.Errorf("failed to ping read connection: %w", err)
@@ -329,11 +349,11 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 
 	// group by positional args are supported post 22.7 and we use them heavily in our queries
 	row := readDB.QueryRow(`
-		WITH
-			splitByChar('.', version()) AS parts,
-			toInt32(parts[1]) AS major,
-			toInt32(parts[2]) AS minor
-		SELECT (major > 22) OR ((major = 22) AND (minor >= 7)) AS is_supported
+        WITH
+            splitByChar('.', version()) AS parts,
+            toInt32(parts[1]) AS major,
+            toInt32(parts[2]) AS minor
+        SELECT (major > 22) OR ((major = 22) AND (minor >= 7)) AS is_supported
 `)
 	var isSupported bool
 	if err := row.Scan(&isSupported); err != nil {

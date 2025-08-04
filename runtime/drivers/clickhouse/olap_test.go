@@ -619,9 +619,9 @@ func TestClickhouseDualDSN(t *testing.T) {
 	dsn := testclickhouse.Start(t)
 
 	t.Run("SeparateReadWriteDSNs", func(t *testing.T) {
-		// Test with both read_dsn and write_dsn specified
+		// Test with both dsn and write_dsn specified
 		conn, err := driver{}.Open("default", map[string]any{
-			"read_dsn":  dsn,
+			"dsn":       dsn,
 			"write_dsn": dsn,
 			"mode":      "readwrite",
 		}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
@@ -655,16 +655,6 @@ func TestClickhouseDualDSN(t *testing.T) {
 		require.NoError(t, err)
 	})
 
-	t.Run("OnlyReadDSN_ShouldFail", func(t *testing.T) {
-		// Test that providing only read_dsn fails
-		_, err := driver{}.Open("default", map[string]any{
-			"read_dsn": dsn,
-			"mode":     "readwrite",
-		}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
-		require.Error(t, err)
-		require.Contains(t, err.Error(), "both 'read_dsn' and 'write_dsn' must be specified")
-	})
-
 	t.Run("OnlyWriteDSN_ShouldFail", func(t *testing.T) {
 		// Test that providing only write_dsn fails
 		_, err := driver{}.Open("default", map[string]any{
@@ -672,14 +662,13 @@ func TestClickhouseDualDSN(t *testing.T) {
 			"mode":      "readwrite",
 		}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 		require.Error(t, err)
-		require.Contains(t, err.Error(), "both 'read_dsn' and 'write_dsn' must be specified")
+		require.Contains(t, err.Error(), "when not providing a 'dsn', both 'dsn' and 'write_dsn' must be specified for separate read/write connections")
 	})
 
 	t.Run("DualDSNWithRegularDSN_UsesDualDSN", func(t *testing.T) {
-		// Test that read_dsn and write_dsn take precedence over dsn
+		// Test that dsn and write_dsn configuration works correctly
 		conn, err := driver{}.Open("default", map[string]any{
-			"dsn":       "clickhouse://invalid:9000", // This should be ignored
-			"read_dsn":  dsn,
+			"dsn":       dsn,
 			"write_dsn": dsn,
 			"mode":      "readwrite",
 		}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
@@ -698,10 +687,10 @@ func TestClickhouseDualDSN(t *testing.T) {
 		require.NoError(t, res.Close())
 	})
 
-	t.Run("InvalidReadDSN_ShouldFail", func(t *testing.T) {
-		// Test that invalid read_dsn causes failure
+	t.Run("InvalidDSN_ShouldFail", func(t *testing.T) {
+		// Test that invalid dsn causes failure
 		_, err := driver{}.Open("default", map[string]any{
-			"read_dsn":  "invalid-dsn",
+			"dsn":       "invalid-dsn",
 			"write_dsn": dsn,
 			"mode":      "readwrite",
 		}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
@@ -712,7 +701,7 @@ func TestClickhouseDualDSN(t *testing.T) {
 	t.Run("InvalidWriteDSN_ShouldFail", func(t *testing.T) {
 		// Test that invalid write_dsn causes failure
 		_, err := driver{}.Open("default", map[string]any{
-			"read_dsn":  dsn,
+			"dsn":       dsn,
 			"write_dsn": "invalid-dsn",
 			"mode":      "readwrite",
 		}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
@@ -736,6 +725,15 @@ func TestClickhouseDualDSN(t *testing.T) {
 		// Should use the same connection for both read and write when using single DSN
 		require.Equal(t, c.readDB, c.writeDB, "Read and write should share connection when using single DSN")
 	})
+
+	t.Run("NoConfiguration_ShouldFail", func(t *testing.T) {
+		// Test that providing no valid configuration fails with appropriate error
+		_, err := driver{}.Open("default", map[string]any{
+			"mode": "readwrite",
+		}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "must specify either 'dsn' for single connection or both 'dsn' and 'write_dsn' for dual connections")
+	})
 }
 
 func TestClickhouseDualDSNFunctionality(t *testing.T) {
@@ -744,7 +742,7 @@ func TestClickhouseDualDSNFunctionality(t *testing.T) {
 	t.Run("ReadWriteOperationsWithDualDSN", func(t *testing.T) {
 		// Test that both read and write operations work with dual DSN setup
 		conn, err := driver{}.Open("default", map[string]any{
-			"read_dsn":  dsn,
+			"dsn":       dsn,
 			"write_dsn": dsn,
 			"mode":      "readwrite",
 		}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())

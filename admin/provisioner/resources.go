@@ -94,11 +94,9 @@ func NewClickhouseConfig(cfg map[string]any) (*ClickhouseConfig, error) {
 
 func (c *ClickhouseConfig) AsMap() map[string]any {
 	res := make(map[string]any)
-	if c.DSN != "" {
-		res["dsn"] = c.DSN
-	}
-	if c.WriteDSN != "" {
-		res["write_dsn"] = c.WriteDSN
+	err := mapstructure.Decode(c, &res)
+	if err != nil {
+		panic(err)
 	}
 	return res
 }

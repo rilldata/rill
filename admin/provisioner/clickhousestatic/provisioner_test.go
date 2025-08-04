@@ -44,26 +44,11 @@ func TestClickHouseStatic(t *testing.T) {
 	require.NoError(t, err)
 	dsn := fmt.Sprintf("clickhouse://default:default@%v:%v", host, port.Port())
 
-	// Create the provisioner with direct DSN value (not environment variable)
+	// Create the provisioner
 	specJSON, err := json.Marshal(&Spec{
-		DSNEnv: dsn,
+		DSN: dsn,
 	})
 	require.NoError(t, err)
-
-	// Set environment variable to the DSN value
-	envVar := "TEST_CLICKHOUSE_DSN_DIRECT"
-	err = os.Setenv(envVar, dsn)
-	require.NoError(t, err)
-	t.Cleanup(func() {
-		os.Unsetenv(envVar)
-	})
-
-	// Update spec to use environment variable
-	specJSON, err = json.Marshal(&Spec{
-		DSNEnv: envVar,
-	})
-	require.NoError(t, err)
-
 	p, err := New(specJSON, nil, zap.NewNop())
 	require.NoError(t, err)
 
@@ -163,63 +148,6 @@ func provisionClickHouse(t *testing.T, p provisioner.Provisioner) (*provisioner.
 	return out, db
 }
 
-func TestClickHouseStaticWithEnvVar(t *testing.T) {
-	// Create a test ClickHouse cluster
-	container, err := testcontainersclickhouse.Run(
-		context.Background(),
-		"clickhouse/clickhouse-server:24.11.1.2557",
-		// Add a user config file that enables access management for the "default" user
-		testcontainers.CustomizeRequestOption(func(req *testcontainers.GenericContainerRequest) error {
-			req.Files = append(req.Files, testcontainers.ContainerFile{
-				Reader:            strings.NewReader(`<clickhouse><users><default><access_management>1</access_management></default></users></clickhouse>`),
-				ContainerFilePath: "/etc/clickhouse-server/users.d/default.xml",
-				FileMode:          0o755,
-			})
-			return nil
-		}),
-	)
-	require.NoError(t, err)
-	t.Cleanup(func() {
-		err := container.Terminate(context.Background())
-		require.NoError(t, err)
-	})
-	host, err := container.Host(context.Background())
-	require.NoError(t, err)
-	port, err := container.MappedPort(context.Background(), "9000/tcp")
-	require.NoError(t, err)
-	dsn := fmt.Sprintf("clickhouse://default:default@%v:%v", host, port.Port())
-
-	// Set environment variable
-	envVar := "TEST_CLICKHOUSE_DSN"
-	err = os.Setenv(envVar, dsn)
-	require.NoError(t, err)
-	t.Cleanup(func() {
-		os.Unsetenv(envVar)
-	})
-
-	// Create the provisioner using environment variable
-	specJSON, err := json.Marshal(&Spec{
-		DSNEnv: envVar,
-	})
-	require.NoError(t, err)
-	p, err := New(specJSON, nil, zap.NewNop())
-	require.NoError(t, err)
-
-	// Provision a resource
-	r, db := provisionClickHouse(t, p)
-	defer db.Close()
-
-	// Verify the resource works
-	_, err = db.Exec("CREATE TABLE test (id UInt64) ENGINE = Memory")
-	require.NoError(t, err)
-	_, err = db.Exec("INSERT INTO test VALUES (1)")
-	require.NoError(t, err)
-
-	// Cleanup
-	err = p.Deprovision(context.Background(), r)
-	require.NoError(t, err)
-}
-
 func TestClickHouseStaticEnvVarNotSet(t *testing.T) {
 	// Test with environment variable that doesn't exist
 	specJSON, err := json.Marshal(&Spec{
@@ -228,26 +156,7 @@ func TestClickHouseStaticEnvVarNotSet(t *testing.T) {
 	require.NoError(t, err)
 	_, err = New(specJSON, nil, zap.NewNop())
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "environment variable NONEXISTENT_CLICKHOUSE_DSN is not set or empty")
-}
-
-func TestClickHouseStaticWriteDSNEnvVarNotSet(t *testing.T) {
-	// Test with write environment variable that doesn't exist
-	envVar := "TEST_CLICKHOUSE_READ_DSN"
-	err := os.Setenv(envVar, "clickhouse://localhost:9000")
-	require.NoError(t, err)
-	t.Cleanup(func() {
-		os.Unsetenv(envVar)
-	})
-
-	specJSON, err := json.Marshal(&Spec{
-		DSNEnv:      envVar,
-		WriteDSNEnv: "NONEXISTENT_WRITE_DSN",
-	})
-	require.NoError(t, err)
-	_, err = New(specJSON, nil, zap.NewNop())
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "environment variable NONEXISTENT_WRITE_DSN is not set or empty")
+	require.Contains(t, err.Error(), "environment variable \"NONEXISTENT_CLICKHOUSE_DSN\" is not set or empty")
 }
 
 func TestClickHouseStaticEnvVarEmpty(t *testing.T) {
@@ -265,7 +174,7 @@ func TestClickHouseStaticEnvVarEmpty(t *testing.T) {
 	require.NoError(t, err)
 	_, err = New(specJSON, nil, zap.NewNop())
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "environment variable EMPTY_CLICKHOUSE_DSN is not set or empty")
+	require.Contains(t, err.Error(), "environment variable \"EMPTY_CLICKHOUSE_DSN\" is not set or empty")
 }
 
 func TestClickHouseStaticHumanReadableNaming(t *testing.T) {
@@ -294,17 +203,9 @@ func TestClickHouseStaticHumanReadableNaming(t *testing.T) {
 	require.NoError(t, err)
 	dsn := fmt.Sprintf("clickhouse://default:default@%v:%v", host, port.Port())
 
-	// Set environment variable
-	envVar := "TEST_CLICKHOUSE_DSN_NAMING"
-	err = os.Setenv(envVar, dsn)
-	require.NoError(t, err)
-	t.Cleanup(func() {
-		os.Unsetenv(envVar)
-	})
-
 	// Create the provisioner
 	specJSON, err := json.Marshal(&Spec{
-		DSNEnv: envVar,
+		DSN: dsn,
 	})
 	require.NoError(t, err)
 	p, err := New(specJSON, nil, zap.NewNop())
@@ -388,17 +289,9 @@ func TestClickHouseStaticFallbackNaming(t *testing.T) {
 	require.NoError(t, err)
 	dsn := fmt.Sprintf("clickhouse://default:default@%v:%v", host, port.Port())
 
-	// Set environment variable
-	envVar := "TEST_CLICKHOUSE_DSN_FALLBACK"
-	err = os.Setenv(envVar, dsn)
-	require.NoError(t, err)
-	t.Cleanup(func() {
-		os.Unsetenv(envVar)
-	})
-
 	// Create the provisioner
 	specJSON, err := json.Marshal(&Spec{
-		DSNEnv: envVar,
+		DSN: dsn,
 	})
 	require.NoError(t, err)
 	p, err := New(specJSON, nil, zap.NewNop())

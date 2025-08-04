@@ -22,7 +22,11 @@ func init() {
 }
 
 type Spec struct {
-	// DSNEnv variable that contains the clickhouse DSN (required)
+	// DSN with admin permissions for a Clickhouse service.
+	// This will be used to create a new (virtual) database and access-restricted user for each provisioned resource.
+	DSN string `json:"dsn"`
+	// DSNEnv variable that contains the clickhouse DSN.
+	// This is an alternative to specifying the DSN directly, which can be useful for injecting secrets
 	DSNEnv string `json:"dsn_env"`
 	// WriteDSNEnv with permissions for write operations (optional)
 	WriteDSNEnv string `json:"write_dsn_env,omitempty"`
@@ -35,12 +39,9 @@ type Spec struct {
 // Provisioner provisions Clickhouse resources using a static, multi-tenant Clickhouse service.
 // It creates a new (virtual) database and user with access restricted to that database for each resource.
 type Provisioner struct {
-	spec     *Spec
-	logger   *zap.Logger
-	readDB   *sql.DB // For health checks and read operations
-	writeDB  *sql.DB // For provisioning operations (may be same as readDB)
-	dsn      string
-	writeDSN string
+	spec   *Spec
+	logger *zap.Logger
+	ch     *sql.DB
 }
 
 var _ provisioner.Provisioner = (*Provisioner)(nil)
@@ -52,10 +53,16 @@ func New(specJSON []byte, _ database.DB, logger *zap.Logger) (provisioner.Provis
 		return nil, fmt.Errorf("failed to parse provisioner spec: %w", err)
 	}
 
-	// Get primary DSN from the specified environment variable (required)
-	dsn := os.Getenv(spec.DSNEnv)
-	if dsn == "" {
-		return nil, fmt.Errorf("environment variable %s is not set or empty", spec.DSNEnv)
+	var dsn string
+	if spec.DSN != "" {
+		dsn = spec.DSN
+	} else if spec.DSNEnv != "" {
+		dsn = os.Getenv(spec.DSNEnv)
+		if dsn == "" {
+			return nil, fmt.Errorf("environment variable %q is not set or empty", spec.DSNEnv)
+		}
+	} else {
+		return nil, fmt.Errorf("either dsn or dsn_env must be specified")
 	}
 
 	// Get optional write DSN
@@ -63,7 +70,7 @@ func New(specJSON []byte, _ database.DB, logger *zap.Logger) (provisioner.Provis
 	if spec.WriteDSNEnv != "" {
 		writeDSN = os.Getenv(spec.WriteDSNEnv)
 		if writeDSN == "" {
-			return nil, fmt.Errorf("environment variable %s is not set or empty", spec.WriteDSNEnv)
+			return nil, fmt.Errorf("environment variable %q is not set or empty", spec.WriteDSNEnv)
 		}
 	}
 
@@ -80,12 +87,9 @@ func New(specJSON []byte, _ database.DB, logger *zap.Logger) (provisioner.Provis
 	ch := clickhouse.OpenDB(opts)
 
 	return &Provisioner{
-		spec:     spec,
-		logger:   logger,
-		readDB:   ch,
-		writeDB:  ch,
-		dsn:      dsn,
-		writeDSN: writeDSN,
+		spec:   spec,
+		logger: logger,
+		ch:     ch,
 	}, nil
 }
 
@@ -100,17 +104,8 @@ func (p *Provisioner) Supports(rt provisioner.ResourceType) bool {
 func (p *Provisioner) Close() error {
 	var err error
 
-	if closeErr := p.readDB.Close(); closeErr != nil {
+	if closeErr := p.ch.Close(); closeErr != nil {
 		err = closeErr
-	}
-
-	// Only close writeDB if it's different from readDB
-	if p.writeDB != p.readDB {
-		if closeErr := p.writeDB.Close(); closeErr != nil {
-			if err == nil {
-				err = closeErr
-			}
-		}
 	}
 
 	return err
@@ -129,6 +124,15 @@ func (p *Provisioner) Provision(ctx context.Context, r *provisioner.Resource, op
 		if err != nil {
 			return nil, fmt.Errorf("failed to ping clickhouse resource: %w", err)
 		}
+
+		// Ping the write DSN if it exists
+		if cfg.WriteDSN != "" {
+			err := p.pingWithResourceDSN(ctx, cfg.WriteDSN)
+			if err != nil {
+				return nil, fmt.Errorf("failed to ping clickhouse write resource: %w", err)
+			}
+		}
+
 		return r, nil
 	}
 
@@ -151,13 +155,13 @@ func (p *Provisioner) Provision(ctx context.Context, r *provisioner.Resource, op
 	}
 
 	// Idempotently create the schema
-	_, err = p.writeDB.ExecContext(ctx, fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s %s COMMENT ?", dbName, p.onCluster()), string(annotationsJSON))
+	_, err = p.ch.ExecContext(ctx, fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s %s COMMENT ?", dbName, p.onCluster()), string(annotationsJSON))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create clickhouse database: %w", err)
 	}
 
 	// Idempotently create the user.
-	_, err = p.writeDB.ExecContext(ctx, fmt.Sprintf("CREATE USER IF NOT EXISTS %s %s IDENTIFIED WITH sha256_password BY ? DEFAULT DATABASE %s GRANTEES NONE", user, p.onCluster(), dbName), password)
+	_, err = p.ch.ExecContext(ctx, fmt.Sprintf("CREATE USER IF NOT EXISTS %s %s IDENTIFIED WITH sha256_password BY ? DEFAULT DATABASE %s GRANTEES NONE", user, p.onCluster(), dbName), password)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create clickhouse user: %w", err)
 	}
@@ -165,13 +169,13 @@ func (p *Provisioner) Provision(ctx context.Context, r *provisioner.Resource, op
 	// When creating the user, the password assignment is not idempotent (if there are two concurrent invocations, we don't know which password was used).
 	// By adding the password separately, we ensure all passwords will work.
 	// NOTE: Requires ClickHouse 24.9 or later.
-	_, err = p.writeDB.ExecContext(ctx, fmt.Sprintf("ALTER USER %s %s ADD IDENTIFIED WITH sha256_password BY ?", user, p.onCluster()), password)
+	_, err = p.ch.ExecContext(ctx, fmt.Sprintf("ALTER USER %s %s ADD IDENTIFIED WITH sha256_password BY ?", user, p.onCluster()), password)
 	if err != nil {
 		return nil, fmt.Errorf("failed to add password for clickhouse user: %w", err)
 	}
 
 	// Grant privileges on the database to the user
-	_, err = p.writeDB.ExecContext(ctx, fmt.Sprintf(`
+	_, err = p.ch.ExecContext(ctx, fmt.Sprintf(`
 		GRANT %s
 			SELECT,
 			INSERT,
@@ -195,13 +199,13 @@ func (p *Provisioner) Provision(ctx context.Context, r *provisioner.Resource, op
 	// Grant access to system.parts for reporting disk usage.
 	// NOTE 1: ClickHouse automatically adds row filters to restrict result to tables the user has access to.
 	// NOTE 2: We do not need to explicitly grant access to system.tables and system.columns because ClickHouse adds those implicitly.
-	_, err = p.writeDB.ExecContext(ctx, fmt.Sprintf("GRANT %s SELECT ON system.parts TO %s", p.onCluster(), user))
+	_, err = p.ch.ExecContext(ctx, fmt.Sprintf("GRANT %s SELECT ON system.parts TO %s", p.onCluster(), user))
 	if err != nil {
 		return nil, fmt.Errorf("failed to grant system privileges to clickhouse user: %w", err)
 	}
 
 	// Grant some additional global privileges to the user
-	_, err = p.writeDB.ExecContext(ctx, fmt.Sprintf(`
+	_, err = p.ch.ExecContext(ctx, fmt.Sprintf(`
 		GRANT %s
 			URL,
 			REMOTE,
@@ -218,25 +222,30 @@ func (p *Provisioner) Provision(ctx context.Context, r *provisioner.Resource, op
 
 	// Create the resource DSN - always use the primary DSN as the base
 	// The client will use this for reads, and can optionally use writeDSN for writes
-	resourceDSN, err := url.Parse(p.dsn)
+	resourceDSN, err := url.Parse(p.spec.DSN)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse base DSN: %w", err)
 	}
 	resourceDSN.User = url.UserPassword(user, password)
-	resourceDSN.Path = dbName
+	resourceDSN.Path = "/" + dbName
 
 	cfg = &provisioner.ClickhouseConfig{
 		DSN: resourceDSN.String(),
 	}
 
 	// If we have a separate write DSN, include it in the config
-	if p.writeDSN != "" {
-		writeResourceDSN, err := url.Parse(p.writeDSN)
+	if p.spec.WriteDSNEnv != "" {
+		writeDSN := os.Getenv(p.spec.WriteDSNEnv)
+		if writeDSN == "" {
+			return nil, fmt.Errorf("environment variable %q is not set or empty", p.spec.WriteDSNEnv)
+		}
+
+		writeResourceDSN, err := url.Parse(writeDSN)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse write DSN: %w", err)
 		}
 		writeResourceDSN.User = url.UserPassword(user, password)
-		writeResourceDSN.Path = dbName
+		writeResourceDSN.Path = "/" + dbName
 
 		cfg.WriteDSN = writeResourceDSN.String()
 	}
@@ -273,13 +282,13 @@ func (p *Provisioner) Deprovision(ctx context.Context, r *provisioner.Resource) 
 	}
 
 	// Drop the database
-	_, err = p.writeDB.ExecContext(ctx, fmt.Sprintf("DROP DATABASE IF EXISTS %s %s", opts.Auth.Database, p.onCluster()))
+	_, err = p.ch.ExecContext(ctx, fmt.Sprintf("DROP DATABASE IF EXISTS %s %s", opts.Auth.Database, p.onCluster()))
 	if err != nil {
 		return fmt.Errorf("failed to drop clickhouse database: %w", err)
 	}
 
 	// Drop the user
-	_, err = p.writeDB.ExecContext(ctx, fmt.Sprintf("DROP USER IF EXISTS %s %s", opts.Auth.Username, p.onCluster()))
+	_, err = p.ch.ExecContext(ctx, fmt.Sprintf("DROP USER IF EXISTS %s %s", opts.Auth.Username, p.onCluster()))
 	if err != nil {
 		return fmt.Errorf("failed to drop clickhouse user: %w", err)
 	}
