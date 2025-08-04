@@ -26,6 +26,7 @@ import { makeSufficientlyQualifiedTableName } from "./olap/olap-config";
 
 const YAML_MODEL_TEMPLATE = `type: model
 connector: {{ connector }}
+materialize: true
 sql: {{ sql }}
 dev:
   sql: {{ sql }} limit 10000
