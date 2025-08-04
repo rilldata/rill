@@ -1,6 +1,6 @@
 $schema: 'http://json-schema.org/draft-07/schema#'
-$id: theme.schema.yaml
-title: Theme YAML
+$id: themes.schema.yaml
+title: Themes YAML
 type: object
 description: | 
   In your Rill project directory, create a `<theme_name>.yaml` file in any directory containing `type: theme`. Rill will automatically ingest the theme next time you run `rill start` or deploy to Rill Cloud.

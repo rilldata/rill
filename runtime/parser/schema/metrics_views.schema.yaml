@@ -1,6 +1,6 @@
 $schema: 'http://json-schema.org/draft-07/schema#'
-$id: metrics_view.schema.yaml
-title: Metrics View YAML
+$id: metrics_views.schema.yaml
+title: Metrics Views YAML
 type: object
 description: In your Rill project directory, create a metrics view, `<metrics_view>.yaml`, file in the `metrics` directory. Rill will ingest the metric view definition next time you run `rill start`.
 allOf:

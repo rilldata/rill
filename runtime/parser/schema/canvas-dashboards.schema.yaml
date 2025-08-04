@@ -1,8 +1,8 @@
 $schema: 'http://json-schema.org/draft-07/schema#'
-$id: canvas.schema.yaml
-title: Canvas YAML
+$id: canvas-dashboards.schema.yaml
+title: Canvas Dashboards YAML
 type: object
-description: In your Rill project directory, create a explore dashboard, `<dashboard_name>.yaml`, file in the `dashboards` directory. Rill will ingest the dashboard definition next time you run `rill start`.
+description: In your Rill project directory, create a canvas dashboard, `<dashboard_name>.yaml`, file in the `dashboards` directory. Rill will ingest the dashboard definition next time you run `rill start`.
 allOf:
   - title: Properties
     type: object

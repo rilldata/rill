@@ -1,7 +1,7 @@
 ---
 note: GENERATED. DO NOT EDIT.
 title: Project YAML
-sidebar_position: 40
+sidebar_position: 39
 ---
 
 The `rill.yaml` file contains metadata about your project.
@@ -46,7 +46,7 @@ olap_connector: clickhouse
 
 ## Project-wide defaults
 
-In `rill.yaml`, project-wide defaults can be specified for a resource type within a project. Unless otherwise specified, _individual resources will inherit any defaults_ that have been specified in `rill.yaml`. For available properties that can be configured, please refer to the YAML specification for each individual resource type - [model](model.md), [metrics_view](metrics-view.md), and [explore](explore.md)
+In `rill.yaml`, project-wide defaults can be specified for a resource type within a project. Unless otherwise specified, _individual resources will inherit any defaults_ that have been specified in `rill.yaml`. For available properties that can be configured, please refer to the YAML specification for each individual resource type - [model](advanced-models.md), [metrics_view](metrics-views.md), and [explore](explore-dashboards.md)
 
 :::note Use plurals when specifying project-wide defaults
 In your `rill.yaml`, the top level property for the resource type needs to be **plural**, such as `models`, `metrics_views` and `explores`.
@@ -54,7 +54,7 @@ In your `rill.yaml`, the top level property for the resource type needs to be **
 
 :::info Hierarchy of inheritance and property overrides
 As a general rule of thumb, properties that have been specified at a more _granular_ level will supercede or override higher level properties that have been inherited. Therefore, in order of inheritance, Rill will prioritize properties in the following order:
-1. Individual [models](model.md)/[metrics_views](metrics-view.md)/[explore](explore.md) object level properties (e.g. `model.yaml` or `explore.yaml`)
+1. Individual [models](advanced-models.md)/[metrics_views](metrics-views.md)/[explore](explore-dashboards.md) object level properties (e.g. `advanced-models.yaml` or `explore-dashboards.yaml`)
 2. [Environment](/docs/build/models/environments.md) level properties (e.g. a specific property that have been set for `dev`)
 3. [Project-wide defaults](#project-wide-defaults) for a specific property and resource type
 :::

@@ -1,6 +1,6 @@
 $schema: 'http://json-schema.org/draft-07/schema#'
-$id: advanced-model.schema.yaml
-title: Advanced Model YAML
+$id: advanced-models.schema.yaml
+title: Advanced Models YAML
 type: object
 allOf:
   - title: Properties
@@ -14,7 +14,7 @@ allOf:
         $ref: '#/definitions/schedule_properties'
         description: Specifies the refresh schedule that Rill should follow to re-ingest and update the underlying model data 
       connector:
-        $ref: 'connector.schema.yaml#'
+        $ref: 'connectors.schema.yaml#'
       sql:
         type: string
         description: Raw SQL query to run against source
@@ -150,7 +150,7 @@ allOf:
   - type: object
     allOf:
       - if:
-          title: Additional properties when `connector` is [`athena`](./connector#athena)
+          title: Additional properties when `connector` is [`athena`](./connectors#athena)
           properties:
             connector:
               const: athena
@@ -159,7 +159,7 @@ allOf:
         then:
           $ref: '#/definitions/model/definitions/athena'
       - if:
-          title: Additional properties when `connector` is [`azure`](./connector#azure)
+          title: Additional properties when `connector` is [`azure`](./connectors#azure)
           properties:
             connector:
               const: azure
@@ -168,7 +168,7 @@ allOf:
         then:
           $ref: '#/definitions/model/definitions/azure'
       - if:
-          title: Additional properties when `connector` is [`bigquery`](./connector#bigquery)
+          title: Additional properties when `connector` is [`bigquery`](./connectors#bigquery)
           properties:
             connector:
               const: bigquery
@@ -177,7 +177,7 @@ allOf:
         then:
           $ref: '#/definitions/model/definitions/bigquery'
       - if:
-          title: Additional properties when `connector` is [`duckdb`](./connector#duckdb)
+          title: Additional properties when `connector` is [`duckdb`](./connectors#duckdb)
           properties:
             connector:
               const: duckdb
@@ -186,7 +186,7 @@ allOf:
         then:
           $ref: '#/definitions/model/definitions/duckdb'
       - if:
-          title: Additional properties when `connector` is [`gcs`](./connector#gcs)
+          title: Additional properties when `connector` is [`gcs`](./connectors#gcs)
           properties:
             connector:
               const: gcs
@@ -194,17 +194,17 @@ allOf:
             - connector
         then:
           $ref: '#/definitions/model/definitions/gcs'
+      # - if:
+      #     title: Additional properties when `connector` is [`local_file`](./connectors#local_file)
+      #     properties:
+      #       connector:
+      #         const: local_file
+      #     required:
+      #       - connector
+      #   then:
+      #     $ref: '#/definitions/model/definitions/local_file'
       - if:
-          title: Additional properties when `connector` is [`local_file`](./connector#local_file)
-          properties:
-            connector:
-              const: local_file
-          required:
-            - connector
-        then:
-          $ref: '#/definitions/model/definitions/local_file'
-      - if:
-          title: Additional properties when `connector` is [`redshift`](./connector#redshift)
+          title: Additional properties when `connector` is [`redshift`](./connectors#redshift)
           properties:
             connector:
               const: redshift
@@ -213,7 +213,7 @@ allOf:
         then:
           $ref: '#/definitions/model/definitions/redshift'
       - if:
-          title: Additional properties when `connector` is [`s3`](./connector#s3)
+          title: Additional properties when `connector` is [`s3`](./connectors#s3)
           properties:
             connector:
               const: s3

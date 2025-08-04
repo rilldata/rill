@@ -7,7 +7,7 @@ description: |
 
   :::info Working with resources outside their native folders
 
-  It is possible to define resources (such as [models](advanced-model.md), [metrics-views](metrics-view.md), [dashboards](explore.md), [custom APIs](api.md), or [themes](theme.md)) within <u>any</u> nested folder within your Rill project directory. However, for any YAML configuration file, it is then imperative that the `type` property is then appropriately defined within the underlying resource configuration or Rill will not able to resolve the resource type correctly!
+  It is possible to define resources (such as [models](advanced-models.md), [metrics-views](metrics-views.md), [dashboards](explore-dashboards.md), [custom APIs](apis.md), or [themes](themes.md)) within <u>any</u> nested folder within your Rill project directory. However, for any YAML configuration file, it is then imperative that the `type` property is then appropriately defined within the underlying resource configuration or Rill will not able to resolve the resource type correctly!
 
   :::
 
@@ -21,15 +21,15 @@ description: |
 
   :::
 oneOf:
-  - $ref: 'alert.schema.yaml#'
-  - $ref: 'api.schema.yaml#'
-  - $ref: 'canvas.schema.yaml#'
+  - $ref: 'alerts.schema.yaml#'
+  - $ref: 'apis.schema.yaml#'
+  - $ref: 'canvas-dashboards.schema.yaml#'
   # - $ref: 'component.schema.yaml#'
-  - $ref: 'connector.schema.yaml#'
-  - $ref: 'explore.schema.yaml#'
-  - $ref: 'metrics_view.schema.yaml#'
-  - $ref: 'advanced-model.schema.yaml#'
-  - $ref: 'theme.schema.yaml#'
+  - $ref: 'connectors.schema.yaml#'
+  - $ref: 'explore-dashboards.schema.yaml#'
+  - $ref: 'metrics_views.schema.yaml#'
+  - $ref: 'advanced-models.schema.yaml#'
+  - $ref: 'themes.schema.yaml#'
 definitions:
   common_properties:
     type: object

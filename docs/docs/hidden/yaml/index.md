@@ -10,7 +10,7 @@ When you create models and dashboards, these objects are represented as object f
 
 :::info Working with resources outside their native folders
 
-It is possible to define resources (such as [models](model.md), [metrics-views](metrics-view.md), [dashboards](explore.md), [custom APIs](api.md), or [themes](theme.md)) within <u>any</u> nested folder within your Rill project directory. However, for any YAML configuration file, it is then imperative that the `type` property is then appropriately defined within the underlying resource configuration or Rill will not able to resolve the resource type correctly!
+It is possible to define resources (such as [models](advanced-models.md), [metrics-views](metrics-views.md), [dashboards](explore-dashboards.md), [custom APIs](apis.md), or [themes](themes.md)) within <u>any</u> nested folder within your Rill project directory. However, for any YAML configuration file, it is then imperative that the `type` property is then appropriately defined within the underlying resource configuration or Rill will not able to resolve the resource type correctly!
 
 :::
 
@@ -28,13 +28,12 @@ For more information about using Git or cloning projects locally, please see our
 ## Project files types
 
 
-- [Alert YAML](alert.md)
-- [API YAML](api.md)
-- [Canvas YAML](canvas.md)
-- [Component YAML](component.md)
-- [Connector YAML](connector.md)
-- [Explore YAML](explore.md)
-- [Metrics View YAML](metrics-view.md)
-- [Model YAML](model.md)
-- [Theme YAML](theme.md)
+- [Alerts YAML](alerts.md)
+- [APIs YAML](apis.md)
+- [Canvas Dashboards YAML](canvas-dashboards.md)
+- [Connectors YAML](connectors.md)
+- [Explore Dashboards YAML](explore-dashboards.md)
+- [Metrics Views YAML](metrics-views.md)
+- [Advanced Models YAML](advanced-models.md)
+- [Themes YAML](themes.md)
 - [Project YAML](project.md)

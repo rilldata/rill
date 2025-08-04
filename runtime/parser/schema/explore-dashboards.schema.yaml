@@ -1,6 +1,6 @@
 $schema: 'http://json-schema.org/draft-07/schema#'
-$id: explore.schema.yaml
-title: Explore YAML
+$id: explore-dashboards.schema.yaml
+title: Explore Dashboards YAML
 type: object
 description: In your Rill project directory, create a explore dashboard, `<dashboard_name>.yaml`, file in the `dashboards` directory. Rill will ingest the dashboard definition next time you run `rill start`.
 allOf:
