@@ -617,7 +617,7 @@ func generateConnectorExample(connectorType string, connectorDef *yaml.Node) str
 	// Fallback: if driver wasn't found, use the connector type name
 	if !driverAdded {
 		// Special case for MotherDuck which uses duckdb driver
-		if connectorType == "motherduck" {
+		if connectorType == "MotherDuck" {
 			example.WriteString("driver: duckdb                                   # Must be `duckdb` _(required)_\n\n")
 		} else {
 			example.WriteString(fmt.Sprintf("driver: %s                                   # Must be `%s` _(required)_\n\n", strings.ToLower(connectorType), strings.ToLower(connectorType)))

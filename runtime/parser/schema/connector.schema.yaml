@@ -43,7 +43,7 @@ allOf:
 definitions:
   athena:
     type: object
-    title: athena
+    title: Athena
     description: Configuration properties specific to the athena
     properties:
       driver:
@@ -84,7 +84,7 @@ definitions:
       - driver
   azure:
     type: object
-    title: azure
+    title: Azure
     description: Configuration properties specific to the azure
     properties:
       driver:
@@ -114,7 +114,7 @@ definitions:
       - azure_storage_bucket
   bigquery:
     type: object
-    title: bigquery
+    title: BigQuery
     description: Configuration properties specific to the bigquery
     properties:
       driver:
@@ -134,7 +134,7 @@ definitions:
       - driver
   clickhouse:
     type: object
-    title: clickhouse
+    title: ClickHouse
     description: Configuration properties specific to the clickhouse
     properties:
       driver:
@@ -202,7 +202,7 @@ definitions:
       - driver
   druid:
     type: object
-    title: druid
+    title: Druid
     description: Configuration properties specific to the druid
     properties:
       driver:
@@ -241,7 +241,7 @@ definitions:
       - dsn
   duckdb:
     type: object
-    title: duckdb
+    title: DuckDB
     description: Configuration properties specific to the duckdb
     properties:
       driver:
@@ -279,7 +279,7 @@ definitions:
       - driver
   gcs:
     type: object
-    title: gcs
+    title: GCS
     description: Configuration properties specific to the gcs
     properties:
       driver:
@@ -306,7 +306,7 @@ definitions:
       - bucket
   https:
     type: object
-    title: https
+    title: HTTPS
     description: Configuration properties specific to the https
     properties:
       driver:
@@ -344,7 +344,7 @@ definitions:
   #     - sql
   motherduck:
     type: object
-    title: motherduck
+    title: MotherDuck
     description: Configuration properties specific to the motherduck
     properties:
       driver:
@@ -363,7 +363,7 @@ definitions:
       - init_sql
   mysql:
     type: object
-    title: mysql
+    title: MySQL
     description: Configuration properties specific to the mysql
     properties:
       driver:
@@ -395,7 +395,7 @@ definitions:
       - driver
   pinot:
     type: object
-    title: pinot
+    title: Pinot
     description: Configuration properties specific to the pinot
     properties:
       driver:
@@ -439,7 +439,7 @@ definitions:
       - controller_host
   postgres:
     type: object
-    title: postgres
+    title: Postgres
     description: Configuration properties specific to the postgres
     properties:
       driver:
@@ -471,7 +471,7 @@ definitions:
       - driver
   redshift:
     type: object
-    title: redshift
+    title: Redshift
     description: Configuration properties specific to the redshift
     properties:
       driver:
@@ -506,7 +506,7 @@ definitions:
       - database
   s3:
     type: object
-    title: s3
+    title: S3
     description: Configuration properties specific to the s3
     properties:
       driver:
@@ -542,7 +542,7 @@ definitions:
       - bucket
   salesforce:
     type: object
-    title: salesforce
+    title: Salesforce
     description: Configuration properties specific to the salesforce
     properties:
       driver:
@@ -570,7 +570,7 @@ definitions:
       - endpoint
   slack:
     type: object
-    title: slack
+    title: Slack
     description: Configuration properties specific to the slack
     properties:
       driver:
@@ -585,7 +585,7 @@ definitions:
       - bot_token
   snowflake:
     type: object
-    title: snowflake
+    title: Snowflake
     description: Configuration properties specific to the snowflake
     properties:
       driver:
@@ -603,7 +603,7 @@ definitions:
       - dsn
   sqlite:
     type: object
-    title: sqlite
+    title: SQLite
     description: Configuration properties specific to the sqlite
     properties:
       driver:
