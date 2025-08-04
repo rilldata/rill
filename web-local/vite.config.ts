@@ -13,14 +13,6 @@ const config = defineConfig({
       external: (id) => id.startsWith("@rilldata/web-admin/"),
     },
   },
-  optimizeDeps: {
-    exclude: [
-      "@clickhouse/client",
-      "@clickhouse/client-common",
-      "testcontainers",
-      "tree-kill",
-    ],
-  },
   resolve: {
     alias: {
       src: "/src", // trick to get absolute imports to work
