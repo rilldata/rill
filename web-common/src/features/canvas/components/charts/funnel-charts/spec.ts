@@ -110,7 +110,9 @@ export function generateVLFunnelChartSpec(
   const percentageTextLayer: UnitSpec<Field> = {
     mark: {
       type: "text",
-      dx: 10,
+      dx: {
+        expr: `scale('x', datum['funnel_width']) < 10 ? 20 : 10`,
+      },
       align: "left",
       fontWeight: 600,
     },
@@ -159,7 +161,7 @@ export function generateVLFunnelChartSpec(
     mark: {
       type: "text",
       dx: {
-        expr: `-(scale('x', datum['funnel_width'])) - 10`,
+        expr: `scale('x', datum['funnel_width']) < 10 ? -20 : -(scale('x', datum['funnel_width'])) - 10`,
       },
       align: "right",
       limit: 200,
