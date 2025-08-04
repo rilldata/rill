@@ -1,6 +1,6 @@
 $schema: 'http://json-schema.org/draft-07/schema#'
 $id: apis.schema.yaml
-title: APIs YAML
+title: API YAML
 type: object
 description: In your Rill project directory, create a new file name `<api-name>.yaml` in the `apis` directory containing a custom API definition. See comprehensive documentation on how to define and use [custom APIs](/integrate/custom-apis/index.md)
 examples:

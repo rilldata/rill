@@ -1,6 +1,6 @@
 $schema: 'http://json-schema.org/draft-07/schema#'
 $id: connectors.schema.yaml
-title: Connectors YAML
+title: Connector YAML
 type: object
 description: |
   Connector YAML files define how Rill connects to external data sources and OLAP engines. Each connector specifies a driver type and its required connection parameters.

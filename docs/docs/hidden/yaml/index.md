@@ -28,12 +28,14 @@ For more information about using Git or cloning projects locally, please see our
 ## Project files types
 
 
-- [Alerts YAML](alerts.md)
-- [APIs YAML](apis.md)
-- [Canvas Dashboards YAML](canvas-dashboards.md)
-- [Connectors YAML](connectors.md)
-- [Explore Dashboards YAML](explore-dashboards.md)
-- [Metrics Views YAML](metrics-views.md)
-- [Advanced Models YAML](advanced-models.md)
-- [Themes YAML](themes.md)
-- [Project YAML](project.md)
+- [Connector YAML](connectors.md)
+- [Source YAML](sources.md)
+- [Model SQL](models.md)
+- [Models YAML](advanced-models.md)
+- [Metrics View YAML](metrics-views.md)
+- [Canvas Dashboard YAML](canvas-dashboards.md)
+- [Explore Dashboard YAML](explore-dashboards.md)
+- [Alert YAML](alerts.md)
+- [API YAML](apis.md)
+- [Theme YAML](themes.md)
+- [Project YAML](rillyaml.md)

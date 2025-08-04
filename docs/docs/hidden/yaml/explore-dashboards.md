@@ -1,7 +1,7 @@
 ---
 note: GENERATED. DO NOT EDIT.
-title: Explore Dashboards YAML
-sidebar_position: 35
+title: Explore Dashboard YAML
+sidebar_position: 37
 ---
 
 In your Rill project directory, create a explore dashboard, `<dashboard_name>.yaml`, file in the `dashboards` directory. Rill will ingest the dashboard definition next time you run `rill start`.

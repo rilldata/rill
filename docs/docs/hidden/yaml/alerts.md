@@ -1,7 +1,7 @@
 ---
 note: GENERATED. DO NOT EDIT.
-title: Alerts YAML
-sidebar_position: 31
+title: Alert YAML
+sidebar_position: 38
 ---
 
 Along with alertings at the dashboard level and can be created via the UI, there might be more extensive alerting that you might want to develop and can be done so the an alert.yaml. When creating an alert via a YAML file, you'll see this denoted in the UI as `Created through code`.

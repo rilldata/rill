@@ -1,7 +1,7 @@
 ---
 note: GENERATED. DO NOT EDIT.
-title: Metrics Views YAML
-sidebar_position: 36
+title: Metrics View YAML
+sidebar_position: 35
 ---
 
 In your Rill project directory, create a metrics view, `<metrics_view>.yaml`, file in the `metrics` directory. Rill will ingest the metric view definition next time you run `rill start`.

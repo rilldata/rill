@@ -1,7 +1,7 @@
 ---
 note: GENERATED. DO NOT EDIT.
-title: APIs YAML
-sidebar_position: 32
+title: API YAML
+sidebar_position: 39
 ---
 
 In your Rill project directory, create a new file name `<api-name>.yaml` in the `apis` directory containing a custom API definition. See comprehensive documentation on how to define and use [custom APIs](/integrate/custom-apis/index.md)

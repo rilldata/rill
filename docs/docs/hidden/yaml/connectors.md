@@ -1,10 +1,56 @@
 ---
 note: GENERATED. DO NOT EDIT.
-title: Connectors YAML
-sidebar_position: 34
+title: Connector YAML
+sidebar_position: 31
 ---
 
 Connector YAML files define how Rill connects to external data sources and OLAP engines. Each connector specifies a driver type and its required connection parameters.
+
+
+## Available Connector Types
+
+Choose from the following connector types based on your data source:
+
+### OLAP Engines
+
+- [**DuckDB**](#duckdb) - Embedded DuckDB engine (default)
+- [**ClickHouse**](#clickhouse) - ClickHouse analytical database
+- [**MotherDuck**](#motherduck) - MotherDuck cloud database
+- [**Druid**](#druid) - Apache Druid
+- [**Pinot**](#pinot) - Apache Pinot
+
+### Data Warehouses
+
+- [**Snowflake**](#snowflake) - Snowflake data warehouse
+- [**BigQuery**](#bigquery) - Google BigQuery
+- [**Redshift**](#redshift) - Amazon Redshift
+- [**Athena**](#athena) - Amazon Athena
+
+### Databases
+
+- [**PostgreSQL**](#postgres) - PostgreSQL databases
+- [**MySQL**](#mysql) - MySQL databases
+- [**SQLite**](#sqlite) - SQLite databases
+
+### Cloud Storage
+
+- [**GCS**](#gcs) - Google Cloud Storage
+- [**S3**](#s3) - Amazon S3 storage
+- [**Azure**](#azure) - Azure Blob Storage
+
+### Other
+
+- [**HTTPS**](#https) - Public files via HTTP/HTTPS
+- [**Salesforce**](#salesforce) - Salesforce data
+- [**Slack**](#slack) - Slack data
+- [**Local File**](#local_file) - Local file system
+
+:::warning Security Recommendation
+For all credential parameters (passwords, tokens, keys), use environment variables with the syntax `{{.env.<connector_type>.<parameter_name>}}`. This keeps sensitive data out of your YAML files and version control. See our [credentials documentation](/build/credentials/) for complete setup instructions.
+:::
+
+## Connector Details
+
 
 
 ## Properties
@@ -17,726 +63,864 @@ _[string]_ - Refers to the resource type and must be `connector` _(required)_
 
 _[string]_ - The type of connector, see [available connectors](#available-connector-types) (required) _(required)_
 
-## One of Properties Options
-- [Athena](#athena)
-- [Azure](#azure)
-- [BigQuery](#bigquery)
-- [ClickHouse](#clickhouse)
-- [Druid](#druid)
-- [DuckDB](#duckdb)
-- [GCS](#gcs)
-- [HTTPS](#https)
-- [MotherDuck](#motherduck)
-- [MySQL](#mysql)
-- [Pinot](#pinot)
-- [Postgres](#postgres)
-- [Redshift](#redshift)
-- [S3](#s3)
-- [Salesforce](#salesforce)
-- [Slack](#slack)
-- [Snowflake](#snowflake)
-- [SQLite](#sqlite)
-
-#### Option 1: Athena
-
-**Type:** _[object]_
-
-**Description:** Configuration properties specific to the athena
-
 ## Athena
 
 Configuration properties specific to the athena
 
-### `driver`
+```yaml
+type: connector                                  # Must be `connector` (required)
+driver: athena                                   # Must be `athena` _(required)_
+
+aws_access_key_id: "myawsaccesskey"  # AWS Access Key ID used for authentication. Required when using static credentials directly or as base credentials for assuming a role.
+aws_secret_access_key: "myawssecretkey"# AWS Secret Access Key paired with the Access Key ID. Required when using static credentials directly or as base credentials for assuming a role.
+aws_access_token: "mytemporarytoken" # AWS session token used with temporary credentials. Required only if the Access Key and Secret Key are part of a temporary session credentials.
+role_arn: "arn:aws:iam::123456789012:role/MyRole"# ARN of the IAM role to assume. When specified, the SDK uses the base credentials to call STS AssumeRole and obtain temporary credentials scoped to this role.
+role_session_name: "MySession"       # Session name to associate with the STS AssumeRole session. Used only if 'role_arn' is specified. Useful for identifying and auditing the session.
+external_id: "MyExternalID"          # External ID required by some roles when assuming them, typically for cross-account access. Used only if 'role_arn' is specified and the role's trust policy requires it.
+workgroup: "primary"                 # Athena workgroup to use for query execution. Defaults to 'primary' if not specified.
+output_location: "s3://my-bucket/athena-output/"# S3 URI where Athena query results should be stored (e.g., s3://your-bucket/athena/results/). Optional if the selected workgroup has a default result configuration.
+aws_region: "us-east-1"              # AWS region where Athena and the result S3 bucket are located (e.g., us-east-1). Defaults to 'us-east-1' if not specified.
+allow_host_access: true              # Allow the Athena client to access host environment configurations such as environment variables or local AWS credential files. Defaults to true, enabling use of credentials and settings from the host environment unless explicitly disabled.
+```
+
+
+
+#### `driver`
 
 _[string]_ - Refers to the driver type and must be driver `athena` _(required)_
 
-### `aws_access_key_id`
+#### `aws_access_key_id`
 
 _[string]_ - AWS Access Key ID used for authentication. Required when using static credentials directly or as base credentials for assuming a role. 
 
-### `aws_secret_access_key`
+#### `aws_secret_access_key`
 
 _[string]_ - AWS Secret Access Key paired with the Access Key ID. Required when using static credentials directly or as base credentials for assuming a role. 
 
-### `aws_access_token`
+#### `aws_access_token`
 
 _[string]_ - AWS session token used with temporary credentials. Required only if the Access Key and Secret Key are part of a temporary session credentials. 
 
-### `role_arn`
+#### `role_arn`
 
 _[string]_ - ARN of the IAM role to assume. When specified, the SDK uses the base credentials to call STS AssumeRole and obtain temporary credentials scoped to this role. 
 
-### `role_session_name`
+#### `role_session_name`
 
 _[string]_ - Session name to associate with the STS AssumeRole session. Used only if 'role_arn' is specified. Useful for identifying and auditing the session. 
 
-### `external_id`
+#### `external_id`
 
 _[string]_ - External ID required by some roles when assuming them, typically for cross-account access. Used only if 'role_arn' is specified and the role's trust policy requires it. 
 
-### `workgroup`
+#### `workgroup`
 
 _[string]_ - Athena workgroup to use for query execution. Defaults to 'primary' if not specified. 
 
-### `output_location`
+#### `output_location`
 
 _[string]_ - S3 URI where Athena query results should be stored (e.g., s3://your-bucket/athena/results/). Optional if the selected workgroup has a default result configuration. 
 
-### `aws_region`
+#### `aws_region`
 
 _[string]_ - AWS region where Athena and the result S3 bucket are located (e.g., us-east-1). Defaults to 'us-east-1' if not specified. 
 
-### `allow_host_access`
+#### `allow_host_access`
 
 _[boolean]_ - Allow the Athena client to access host environment configurations such as environment variables or local AWS credential files. Defaults to true, enabling use of credentials and settings from the host environment unless explicitly disabled. 
-
-#### Option 2: Azure
-
-**Type:** _[object]_
-
-**Description:** Configuration properties specific to the azure
 
 ## Azure
 
 Configuration properties specific to the azure
 
-### `driver`
+```yaml
+type: connector                                  # Must be `connector` (required)
+driver: azure                                   # Must be `azure` _(required)_
+
+azure_storage_account: "myaccount"   # Azure storage account name
+azure_storage_key: "example_value"   # Azure storage access key
+azure_storage_sas_token: "mytemporarytoken"# Optional azure SAS token for authentication
+azure_storage_connection_string: "example_value"# Optional azure connection string for storage account
+azure_storage_bucket: "my-bucket"    # Name of the Azure Blob Storage container (equivalent to an S3 bucket) _(required)_
+allow_host_access: true              # Allow access to host environment configuration
+```
+
+
+
+#### `driver`
 
 _[string]_ - Refers to the driver type and must be driver `azure` _(required)_
 
-### `azure_storage_account`
+#### `azure_storage_account`
 
 _[string]_ - Azure storage account name 
 
-### `azure_storage_key`
+#### `azure_storage_key`
 
 _[string]_ - Azure storage access key 
 
-### `azure_storage_sas_token`
+#### `azure_storage_sas_token`
 
 _[string]_ - Optional azure SAS token for authentication 
 
-### `azure_storage_connection_string`
+#### `azure_storage_connection_string`
 
 _[string]_ - Optional azure connection string for storage account 
 
-### `azure_storage_bucket`
+#### `azure_storage_bucket`
 
 _[string]_ - Name of the Azure Blob Storage container (equivalent to an S3 bucket) _(required)_
 
-### `allow_host_access`
+#### `allow_host_access`
 
 _[boolean]_ - Allow access to host environment configuration 
-
-#### Option 3: BigQuery
-
-**Type:** _[object]_
-
-**Description:** Configuration properties specific to the bigquery
 
 ## BigQuery
 
 Configuration properties specific to the bigquery
 
-### `driver`
+```yaml
+type: connector                                  # Must be `connector` (required)
+driver: bigquery                                   # Must be `bigquery` _(required)_
+
+google_application_credentials: "example_value"# Raw contents of the Google Cloud service account key (in JSON format) used for authentication.
+project_id: "myproject"              # ID of the Google Cloud project to use for BigQuery operations. This can be omitted only if the project ID is included in the service account key.
+allow_host_access: true              # Enable the BigQuery client to use credentials from the host environment when no service account JSON is provided. This includes Application Default Credentials from environment variables, local credential files, or the Google Compute Engine metadata server. Defaults to true, allowing seamless authentication in GCP environments.
+```
+
+
+
+#### `driver`
 
 _[string]_ - Refers to the driver type and must be driver `bigquery` _(required)_
 
-### `google_application_credentials`
+#### `google_application_credentials`
 
 _[string]_ - Raw contents of the Google Cloud service account key (in JSON format) used for authentication. 
 
-### `project_id`
+#### `project_id`
 
 _[string]_ - ID of the Google Cloud project to use for BigQuery operations. This can be omitted only if the project ID is included in the service account key. 
 
-### `allow_host_access`
+#### `allow_host_access`
 
 _[boolean]_ - Enable the BigQuery client to use credentials from the host environment when no service account JSON is provided. This includes Application Default Credentials from environment variables, local credential files, or the Google Compute Engine metadata server. Defaults to true, allowing seamless authentication in GCP environments. 
-
-#### Option 4: ClickHouse
-
-**Type:** _[object]_
-
-**Description:** Configuration properties specific to the clickhouse
 
 ## ClickHouse
 
 Configuration properties specific to the clickhouse
 
-### `driver`
+```yaml
+type: connector                                  # Must be `connector` (required)
+driver: clickhouse                                   # Must be `clickhouse` _(required)_
+
+managed: true                        # `true` means Rill will provision the connector using the default provisioner. `false` disables automatic provisioning.
+mode: "example_value"                # `read` - Controls the operation mode for the ClickHouse connection. Defaults to 'read' for safe operation with external databases. Set to 'readwrite' to enable model creation and table mutations. Note: When 'managed: true', this is automatically set to 'readwrite'.
+dsn: "postgresql://user:pass@localhost:5432/db"# DSN(Data Source Name) for the ClickHouse connection
+username: "myusername"               # Username for authentication
+password: "mypassword"               # Password for authentication
+host: "localhost"                    # Host where the ClickHouse instance is running
+port: 123                            # Port where the ClickHouse instance is accessible
+database: "mydatabase"               # Name of the ClickHouse database within the cluster
+ssl: true                            # Indicates whether a secured SSL connection is required
+cluster: "mycluster"                 # Cluster name, required for running distributed queries
+log_queries: true                    # Controls whether to log raw SQL queries
+settings_override: "example_value"   # override the default settings used in queries. example `readonly = 1, session_timezone = 'UTC'`
+embed_port: 123                      # Port to run ClickHouse locally (0 for random port)
+can_scale_to_zero: true              # Indicates if the database can scale to zero
+max_open_conns: 123                  # Maximum number of open connections to the database
+max_idle_conns: 123                  # Maximum number of idle connections in the pool
+dial_timeout: "example_value"        # Timeout for dialing the ClickHouse server
+conn_max_lifetime: "example_value"   # Maximum time a connection may be reused
+read_timeout: "example_value"        # Maximum time for a connection to read data
+```
+
+
+
+#### `driver`
 
 _[string]_ - Refers to the driver type and must be driver `clickhouse` _(required)_
 
-### `managed`
+#### `managed`
 
 _[boolean]_ - `true` means Rill will provision the connector using the default provisioner. `false` disables automatic provisioning. 
 
-### `mode`
+#### `mode`
 
 _[string]_ - `read` - Controls the operation mode for the ClickHouse connection. Defaults to 'read' for safe operation with external databases. Set to 'readwrite' to enable model creation and table mutations. Note: When 'managed: true', this is automatically set to 'readwrite'. 
 
-### `dsn`
+#### `dsn`
 
 _[string]_ - DSN(Data Source Name) for the ClickHouse connection 
 
-### `username`
+#### `username`
 
 _[string]_ - Username for authentication 
 
-### `password`
+#### `password`
 
 _[string]_ - Password for authentication 
 
-### `host`
+#### `host`
 
 _[string]_ - Host where the ClickHouse instance is running 
 
-### `port`
+#### `port`
 
 _[integer]_ - Port where the ClickHouse instance is accessible 
 
-### `database`
+#### `database`
 
 _[string]_ - Name of the ClickHouse database within the cluster 
 
-### `ssl`
+#### `ssl`
 
 _[boolean]_ - Indicates whether a secured SSL connection is required 
 
-### `cluster`
+#### `cluster`
 
 _[string]_ - Cluster name, required for running distributed queries 
 
-### `log_queries`
+#### `log_queries`
 
 _[boolean]_ - Controls whether to log raw SQL queries 
 
-### `settings_override`
+#### `settings_override`
 
 _[string]_ - override the default settings used in queries. example `readonly = 1, session_timezone = 'UTC'` 
 
-### `embed_port`
+#### `embed_port`
 
 _[integer]_ - Port to run ClickHouse locally (0 for random port) 
 
-### `can_scale_to_zero`
+#### `can_scale_to_zero`
 
 _[boolean]_ - Indicates if the database can scale to zero 
 
-### `max_open_conns`
+#### `max_open_conns`
 
 _[integer]_ - Maximum number of open connections to the database 
 
-### `max_idle_conns`
+#### `max_idle_conns`
 
 _[integer]_ - Maximum number of idle connections in the pool 
 
-### `dial_timeout`
+#### `dial_timeout`
 
 _[string]_ - Timeout for dialing the ClickHouse server 
 
-### `conn_max_lifetime`
+#### `conn_max_lifetime`
 
 _[string]_ - Maximum time a connection may be reused 
 
-### `read_timeout`
+#### `read_timeout`
 
 _[string]_ - Maximum time for a connection to read data 
-
-#### Option 5: Druid
-
-**Type:** _[object]_
-
-**Description:** Configuration properties specific to the druid
 
 ## Druid
 
 Configuration properties specific to the druid
 
-### `driver`
+```yaml
+type: connector                                  # Must be `connector` (required)
+driver: druid                                   # Must be `druid` _(required)_
+
+dsn: "postgresql://user:pass@localhost:5432/db"# Data Source Name (DSN) for connecting to Druid _(required)_
+username: "myusername"               # Username for authenticating with Druid
+password: "mypassword"               # Password for authenticating with Druid
+host: "localhost"                    # Hostname of the Druid coordinator or broker
+port: 123                            # Port number of the Druid service
+ssl: true                            # Enable SSL for secure connection
+log_queries: true                    # Log raw SQL queries sent to Druid
+max_open_conns: 123                  # Maximum number of open database connections (0 = default, -1 = unlimited)
+skip_version_check: true             # Skip checking Druid version compatibility
+```
+
+
+
+#### `driver`
 
 _[string]_ - Refers to the driver type and must be driver `druid` _(required)_
 
-### `dsn`
+#### `dsn`
 
 _[string]_ - Data Source Name (DSN) for connecting to Druid _(required)_
 
-### `username`
+#### `username`
 
 _[string]_ - Username for authenticating with Druid 
 
-### `password`
+#### `password`
 
 _[string]_ - Password for authenticating with Druid 
 
-### `host`
+#### `host`
 
 _[string]_ - Hostname of the Druid coordinator or broker 
 
-### `port`
+#### `port`
 
 _[integer]_ - Port number of the Druid service 
 
-### `ssl`
+#### `ssl`
 
 _[boolean]_ - Enable SSL for secure connection 
 
-### `log_queries`
+#### `log_queries`
 
 _[boolean]_ - Log raw SQL queries sent to Druid 
 
-### `max_open_conns`
+#### `max_open_conns`
 
 _[integer]_ - Maximum number of open database connections (0 = default, -1 = unlimited) 
 
-### `skip_version_check`
+#### `skip_version_check`
 
 _[boolean]_ - Skip checking Druid version compatibility 
-
-#### Option 6: DuckDB
-
-**Type:** _[object]_
-
-**Description:** Configuration properties specific to the duckdb
 
 ## DuckDB
 
 Configuration properties specific to the duckdb
 
-### `driver`
+```yaml
+type: connector                                  # Must be `connector` (required)
+driver: duckdb                                   # Must be `duckdb` _(required)_
+
+pool_size: 123                       # Number of concurrent connections and queries allowed
+allow_host_access: true              # Whether access to the local environment and file system is allowed
+cpu: 123                             # Number of CPU cores available to the database
+memory_limit_gb: 123                 # Amount of memory in GB available to the database
+read_write_ratio: 123.45             # Ratio of resources allocated to the read database; used to divide CPU and memory
+init_sql: |
+  INSTALL 'motherduck';
+  LOAD 'motherduck';
+  SET motherduck_token= '{{ .env.motherduck_token }}'# is executed during database initialization.
+conn_init_sql: |
+  INSTALL 'motherduck';
+  LOAD 'motherduck';
+  SET motherduck_token= '{{ .env.motherduck_token }}'# is executed when a new connection is initialized.
+secrets: "example_value"             # Comma-separated list of other connector names to create temporary secrets for in DuckDB before executing a model.
+log_queries: true                    # Whether to log raw SQL queries executed through OLAP
+```
+
+
+
+#### `driver`
 
 _[string]_ - Refers to the driver type and must be driver `duckdb` _(required)_
 
-### `pool_size`
+#### `pool_size`
 
 _[integer]_ - Number of concurrent connections and queries allowed 
 
-### `allow_host_access`
+#### `allow_host_access`
 
 _[boolean]_ - Whether access to the local environment and file system is allowed 
 
-### `cpu`
+#### `cpu`
 
 _[integer]_ - Number of CPU cores available to the database 
 
-### `memory_limit_gb`
+#### `memory_limit_gb`
 
 _[integer]_ - Amount of memory in GB available to the database 
 
-### `read_write_ratio`
+#### `read_write_ratio`
 
 _[number]_ - Ratio of resources allocated to the read database; used to divide CPU and memory 
 
-### `init_sql`
+#### `init_sql`
 
 _[string]_ - is executed during database initialization. 
 
-### `conn_init_sql`
+#### `conn_init_sql`
 
 _[string]_ - is executed when a new connection is initialized. 
 
-### `secrets`
+#### `secrets`
 
 _[string]_ - Comma-separated list of other connector names to create temporary secrets for in DuckDB before executing a model. 
 
-### `log_queries`
+#### `log_queries`
 
 _[boolean]_ - Whether to log raw SQL queries executed through OLAP 
-
-#### Option 7: GCS
-
-**Type:** _[object]_
-
-**Description:** Configuration properties specific to the gcs
 
 ## GCS
 
 Configuration properties specific to the gcs
 
-### `driver`
+```yaml
+type: connector                                  # Must be `connector` (required)
+driver: gcs                                   # Must be `gcs` _(required)_
+
+google_application_credentials: "example_value"# Google Cloud credentials JSON string
+bucket: "my-bucket"                  # Name of gcs bucket _(required)_
+allow_host_access: true              # Allow access to host environment configuration
+key_id: "example_value"              # Optional S3-compatible Key ID when used in compatibility mode
+secret: "example_value"              # Optional S3-compatible Secret when used in compatibility mode
+```
+
+
+
+#### `driver`
 
 _[string]_ - Refers to the driver type and must be driver `gcs` _(required)_
 
-### `google_application_credentials`
+#### `google_application_credentials`
 
 _[string]_ - Google Cloud credentials JSON string 
 
-### `bucket`
+#### `bucket`
 
 _[string]_ - Name of gcs bucket _(required)_
 
-### `allow_host_access`
+#### `allow_host_access`
 
 _[boolean]_ - Allow access to host environment configuration 
 
-### `key_id`
+#### `key_id`
 
 _[string]_ - Optional S3-compatible Key ID when used in compatibility mode 
 
-### `secret`
+#### `secret`
 
 _[string]_ - Optional S3-compatible Secret when used in compatibility mode 
-
-#### Option 8: HTTPS
-
-**Type:** _[object]_
-
-**Description:** Configuration properties specific to the https
 
 ## HTTPS
 
 Configuration properties specific to the https
 
-### `driver`
+```yaml
+type: connector                                  # Must be `connector` (required)
+driver: https                                   # Must be `https` _(required)_
+
+path: "md:my_db"                     # The full HTTPS URI to fetch data from _(required)_
+headers: "example_value"             # HTTP headers to include in the request
+```
+
+
+
+#### `driver`
 
 _[string]_ - Refers to the driver type and must be driver `https` _(required)_
 
-### `path`
+#### `path`
 
 _[string]_ - The full HTTPS URI to fetch data from _(required)_
 
-### `headers`
+#### `headers`
 
 _[object]_ - HTTP headers to include in the request 
-
-#### Option 9: MotherDuck
-
-**Type:** _[object]_
-
-**Description:** Configuration properties specific to the motherduck
 
 ## MotherDuck
 
 Configuration properties specific to the motherduck
 
-### `driver`
+```yaml
+type: connector                                  # Must be `connector` (required)
+driver: duckdb                                   # Must be `duckdb` _(required)_
+
+path: "md:my_db"                     # Path to your MD database _(required)_
+init_sql: |
+  INSTALL 'motherduck';
+  LOAD 'motherduck';
+  SET motherduck_token= '{{ .env.motherduck_token }}'# SQL executed during database initialization. _(required)_
+```
+
+
+
+#### `driver`
 
 _[string]_ - Refers to the driver type and must be driver `duckdb` _(required)_
 
-### `path`
+#### `path`
 
 _[string]_ - Path to your MD database _(required)_
 
-### `init_sql`
+#### `init_sql`
 
 _[string]_ - SQL executed during database initialization. _(required)_
-
-#### Option 10: MySQL
-
-**Type:** _[object]_
-
-**Description:** Configuration properties specific to the mysql
 
 ## MySQL
 
 Configuration properties specific to the mysql
 
-### `driver`
+```yaml
+type: connector                                  # Must be `connector` (required)
+driver: mysql                                   # Must be `mysql` _(required)_
+
+dsn: "postgresql://user:pass@localhost:5432/db"# DSN(Data Source Name) for the mysql connection
+host: "localhost"                    # Hostname of the MySQL server
+port: 123                            # Port number for the MySQL server
+database: "mydatabase"               # Name of the MySQL database
+user: "example_value"                # Username for authentication
+password: "mypassword"               # Password for authentication
+ssl_mode: "example_value"            # SSL mode can be DISABLED, PREFERRED or REQUIRED
+```
+
+
+
+#### `driver`
 
 _[string]_ - Refers to the driver type and must be driver `mysql` _(required)_
 
-### `dsn`
+#### `dsn`
 
 _[string]_ - DSN(Data Source Name) for the mysql connection 
 
-### `host`
+#### `host`
 
 _[string]_ - Hostname of the MySQL server 
 
-### `port`
+#### `port`
 
 _[integer]_ - Port number for the MySQL server 
 
-### `database`
+#### `database`
 
 _[string]_ - Name of the MySQL database 
 
-### `user`
+#### `user`
 
 _[string]_ - Username for authentication 
 
-### `password`
+#### `password`
 
 _[string]_ - Password for authentication 
 
-### `ssl_mode`
+#### `ssl_mode`
 
 _[string]_ - SSL mode can be DISABLED, PREFERRED or REQUIRED 
-
-#### Option 11: Pinot
-
-**Type:** _[object]_
-
-**Description:** Configuration properties specific to the pinot
 
 ## Pinot
 
 Configuration properties specific to the pinot
 
-### `driver`
+```yaml
+type: connector                                  # Must be `connector` (required)
+driver: pinot                                   # Must be `pinot` _(required)_
+
+dsn: "postgresql://user:pass@localhost:5432/db"# DSN(Data Source Name) for the Pinot connection _(required)_
+username: "myusername"               # Username for authenticating with Pinot
+password: "mypassword"               # Password for authenticating with Pinot
+broker_host: "localhost"             # Hostname of the Pinot broker _(required)_
+broker_port: 123                     # Port number for the Pinot broker
+controller_host: "localhost"         # Hostname of the Pinot controller _(required)_
+controller_port: 123                 # Port number for the Pinot controller
+ssl: true                            # Enable SSL connection to Pinot
+log_queries: true                    # Log raw SQL queries executed through Pinot
+max_open_conns: 123                  # Maximum number of open connections to the Pinot database
+```
+
+
+
+#### `driver`
 
 _[string]_ - Refers to the driver type and must be driver `pinot` _(required)_
 
-### `dsn`
+#### `dsn`
 
 _[string]_ - DSN(Data Source Name) for the Pinot connection _(required)_
 
-### `username`
+#### `username`
 
 _[string]_ - Username for authenticating with Pinot 
 
-### `password`
+#### `password`
 
 _[string]_ - Password for authenticating with Pinot 
 
-### `broker_host`
+#### `broker_host`
 
 _[string]_ - Hostname of the Pinot broker _(required)_
 
-### `broker_port`
+#### `broker_port`
 
 _[integer]_ - Port number for the Pinot broker 
 
-### `controller_host`
+#### `controller_host`
 
 _[string]_ - Hostname of the Pinot controller _(required)_
 
-### `controller_port`
+#### `controller_port`
 
 _[integer]_ - Port number for the Pinot controller 
 
-### `ssl`
+#### `ssl`
 
 _[boolean]_ - Enable SSL connection to Pinot 
 
-### `log_queries`
+#### `log_queries`
 
 _[boolean]_ - Log raw SQL queries executed through Pinot 
 
-### `max_open_conns`
+#### `max_open_conns`
 
 _[integer]_ - Maximum number of open connections to the Pinot database 
-
-#### Option 12: Postgres
-
-**Type:** _[object]_
-
-**Description:** Configuration properties specific to the postgres
 
 ## Postgres
 
 Configuration properties specific to the postgres
 
-### `driver`
+```yaml
+type: connector                                  # Must be `connector` (required)
+driver: postgres                                   # Must be `postgres` _(required)_
+
+dsn: "postgresql://user:pass@localhost:5432/db"# DSN(Data Source Name) for the postgres connection
+host: "localhost"                    # Hostname of the Postgres server
+port: 5432                           # Port number for the Postgres server
+dbname: "example_value"              # Name of the Postgres database
+user: "example_value"                # Username for authentication
+password: "mypassword"               # Password for authentication
+sslmode: "example_value"             # SSL mode can be disable, allow, prefer or require
+```
+
+
+
+#### `driver`
 
 _[string]_ - Refers to the driver type and must be driver `postgres` _(required)_
 
-### `dsn`
+#### `dsn`
 
 _[string]_ - DSN(Data Source Name) for the postgres connection 
 
-### `host`
+#### `host`
 
 _[string]_ - Hostname of the Postgres server 
 
-### `port`
+#### `port`
 
 _[string]_ - Port number for the Postgres server 
 
-### `dbname`
+#### `dbname`
 
 _[string]_ - Name of the Postgres database 
 
-### `user`
+#### `user`
 
 _[string]_ - Username for authentication 
 
-### `password`
+#### `password`
 
 _[string]_ - Password for authentication 
 
-### `sslmode`
+#### `sslmode`
 
 _[string]_ - SSL mode can be disable, allow, prefer or require 
-
-#### Option 13: Redshift
-
-**Type:** _[object]_
-
-**Description:** Configuration properties specific to the redshift
 
 ## Redshift
 
 Configuration properties specific to the redshift
 
-### `driver`
+```yaml
+type: connector                                  # Must be `connector` (required)
+driver: redshift                                   # Must be `redshift` _(required)_
+
+aws_access_key_id: "myawsaccesskey"  # AWS Access Key ID used for authenticating with Redshift. _(required)_
+aws_secret_access_key: "myawssecretkey"# AWS Secret Access Key used for authenticating with Redshift. _(required)_
+aws_access_token: "mytemporarytoken" # AWS Session Token for temporary credentials (optional).
+region: "us-east-1"                  # AWS region where the Redshift cluster or workgroup is hosted (e.g., 'us-east-1').
+database: "mydatabase"               # Name of the Redshift database to query. _(required)_
+workgroup: "primary"                 # Workgroup name for Redshift Serverless, in case of provisioned Redshift clusters use 'cluster_identifier'.
+cluster_identifier: "mycluster"      # Cluster identifier for provisioned Redshift clusters, in case of Redshift Serverless use 'workgroup' .
+```
+
+
+
+#### `driver`
 
 _[string]_ - Refers to the driver type and must be driver `redshift` _(required)_
 
-### `aws_access_key_id`
+#### `aws_access_key_id`
 
 _[string]_ - AWS Access Key ID used for authenticating with Redshift. _(required)_
 
-### `aws_secret_access_key`
+#### `aws_secret_access_key`
 
 _[string]_ - AWS Secret Access Key used for authenticating with Redshift. _(required)_
 
-### `aws_access_token`
+#### `aws_access_token`
 
 _[string]_ - AWS Session Token for temporary credentials (optional). 
 
-### `region`
+#### `region`
 
 _[string]_ - AWS region where the Redshift cluster or workgroup is hosted (e.g., 'us-east-1'). 
 
-### `database`
+#### `database`
 
 _[string]_ - Name of the Redshift database to query. _(required)_
 
-### `workgroup`
+#### `workgroup`
 
 _[string]_ - Workgroup name for Redshift Serverless, in case of provisioned Redshift clusters use 'cluster_identifier'. 
 
-### `cluster_identifier`
+#### `cluster_identifier`
 
 _[string]_ - Cluster identifier for provisioned Redshift clusters, in case of Redshift Serverless use 'workgroup' . 
-
-#### Option 14: S3
-
-**Type:** _[object]_
-
-**Description:** Configuration properties specific to the s3
 
 ## S3
 
 Configuration properties specific to the s3
 
-### `driver`
+```yaml
+type: connector                                  # Must be `connector` (required)
+driver: s3                                   # Must be `s3` _(required)_
+
+aws_access_key_id: "myawsaccesskey"  # AWS Access Key ID used for authentication
+aws_secret_access_key: "myawssecretkey"# AWS Secret Access Key used for authentication
+aws_access_token: "mytemporarytoken" # Optional AWS session token for temporary credentials
+bucket: "my-bucket"                  # Name of s3 bucket _(required)_
+endpoint: "https://api.example.com"  # Optional custom endpoint URL for S3-compatible storage
+region: "us-east-1"                  # AWS region of the S3 bucket
+allow_host_access: true              # Allow access to host environment configuration
+retain_files: true                   # Whether to retain intermediate files after processing
+```
+
+
+
+#### `driver`
 
 _[string]_ - Refers to the driver type and must be driver `s3` _(required)_
 
-### `aws_access_key_id`
+#### `aws_access_key_id`
 
 _[string]_ - AWS Access Key ID used for authentication 
 
-### `aws_secret_access_key`
+#### `aws_secret_access_key`
 
 _[string]_ - AWS Secret Access Key used for authentication 
 
-### `aws_access_token`
+#### `aws_access_token`
 
 _[string]_ - Optional AWS session token for temporary credentials 
 
-### `bucket`
+#### `bucket`
 
 _[string]_ - Name of s3 bucket _(required)_
 
-### `endpoint`
+#### `endpoint`
 
 _[string]_ - Optional custom endpoint URL for S3-compatible storage 
 
-### `region`
+#### `region`
 
 _[string]_ - AWS region of the S3 bucket 
 
-### `allow_host_access`
+#### `allow_host_access`
 
 _[boolean]_ - Allow access to host environment configuration 
 
-### `retain_files`
+#### `retain_files`
 
 _[boolean]_ - Whether to retain intermediate files after processing 
-
-#### Option 15: Salesforce
-
-**Type:** _[object]_
-
-**Description:** Configuration properties specific to the salesforce
 
 ## Salesforce
 
 Configuration properties specific to the salesforce
 
-### `driver`
+```yaml
+type: connector                                  # Must be `connector` (required)
+driver: salesforce                                   # Must be `salesforce` _(required)_
+
+username: "myusername"               # Salesforce account username _(required)_
+password: "mypassword"               # Salesforce account password (secret)
+key: "example_value"                 # Authentication key for Salesforce (secret)
+endpoint: "https://api.example.com"  # Salesforce API endpoint URL _(required)_
+client_id: "example_value"           # Client ID used for Salesforce OAuth authentication
+```
+
+
+
+#### `driver`
 
 _[string]_ - Refers to the driver type and must be driver `salesforce` _(required)_
 
-### `username`
+#### `username`
 
 _[string]_ - Salesforce account username _(required)_
 
-### `password`
+#### `password`
 
 _[string]_ - Salesforce account password (secret) 
 
-### `key`
+#### `key`
 
 _[string]_ - Authentication key for Salesforce (secret) 
 
-### `endpoint`
+#### `endpoint`
 
 _[string]_ - Salesforce API endpoint URL _(required)_
 
-### `client_id`
+#### `client_id`
 
 _[string]_ - Client ID used for Salesforce OAuth authentication 
-
-#### Option 16: Slack
-
-**Type:** _[object]_
-
-**Description:** Configuration properties specific to the slack
 
 ## Slack
 
 Configuration properties specific to the slack
 
-### `driver`
+```yaml
+type: connector                                  # Must be `connector` (required)
+driver: slack                                   # Must be `slack` _(required)_
+
+bot_token: "mytemporarytoken"        # Bot token used for authenticating Slack API requests _(required)_
+```
+
+
+
+#### `driver`
 
 _[string]_ - Refers to the driver type and must be driver `slack` _(required)_
 
-### `bot_token`
+#### `bot_token`
 
 _[string]_ - Bot token used for authenticating Slack API requests _(required)_
-
-#### Option 17: Snowflake
-
-**Type:** _[object]_
-
-**Description:** Configuration properties specific to the snowflake
 
 ## Snowflake
 
 Configuration properties specific to the snowflake
 
-### `driver`
+```yaml
+type: connector                                  # Must be `connector` (required)
+driver: snowflake                                   # Must be `snowflake` _(required)_
+
+dsn: "postgresql://user:pass@localhost:5432/db"# DSN (Data Source Name) for the Snowflake connection _(required)_
+parallel_fetch_limit: 123            # Maximum number of concurrent fetches during query execution
+```
+
+
+
+#### `driver`
 
 _[string]_ - Refers to the driver type and must be driver `snowflake` _(required)_
 
-### `dsn`
+#### `dsn`
 
 _[string]_ - DSN (Data Source Name) for the Snowflake connection _(required)_
 
-### `parallel_fetch_limit`
+#### `parallel_fetch_limit`
 
 _[integer]_ - Maximum number of concurrent fetches during query execution 
-
-#### Option 18: SQLite
-
-**Type:** _[object]_
-
-**Description:** Configuration properties specific to the sqlite
 
 ## SQLite
 
 Configuration properties specific to the sqlite
 
-### `driver`
+```yaml
+type: connector                                  # Must be `connector` (required)
+driver: sqlite                                   # Must be `sqlite` _(required)_
+
+dsn: "postgresql://user:pass@localhost:5432/db"# DSN(Data Source Name) for the sqlite connection _(required)_
+```
+
+
+
+#### `driver`
 
 _[string]_ - Refers to the driver type and must be driver `sqlite` _(required)_
 
-### `dsn`
+#### `dsn`
 
 _[string]_ - DSN(Data Source Name) for the sqlite connection _(required)_

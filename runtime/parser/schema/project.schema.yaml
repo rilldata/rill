@@ -21,14 +21,18 @@ description: |
 
   :::
 oneOf:
-  - $ref: 'alerts.schema.yaml#'
-  - $ref: 'apis.schema.yaml#'
+  - $ref: 'connectors.schema.yaml#'
+  - $ref: 'sources.schema.yaml#'
+  - $ref: 'models.schema.yaml#'
+  - $ref: 'advanced-models.schema.yaml#'
+  - $ref: 'metrics_views.schema.yaml#'
   - $ref: 'canvas-dashboards.schema.yaml#'
   # - $ref: 'component.schema.yaml#'
-  - $ref: 'connectors.schema.yaml#'
   - $ref: 'explore-dashboards.schema.yaml#'
-  - $ref: 'metrics_views.schema.yaml#'
-  - $ref: 'advanced-models.schema.yaml#'
+
+
+  - $ref: 'alerts.schema.yaml#'
+  - $ref: 'apis.schema.yaml#'
   - $ref: 'themes.schema.yaml#'
 definitions:
   common_properties:

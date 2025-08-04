@@ -1,6 +1,6 @@
 $schema: 'http://json-schema.org/draft-07/schema#'
 $id: advanced-models.schema.yaml
-title: Advanced Models YAML
+title: Models YAML
 type: object
 allOf:
   - title: Properties

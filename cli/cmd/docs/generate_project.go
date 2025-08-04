@@ -71,7 +71,17 @@ func GenerateProjectDocsCmd(rootCmd *cobra.Command, ch *cmdutil.Helper) *cobra.C
 				requiredMap := getRequiredMapFromNode(resource)
 				resourceFilebuf.WriteString(generateDoc(sidebarPosition, 0, resource, "", requiredMap))
 				resTitle := getScalarValue(resource, "title")
-				fileName := sanitizeFileName(resTitle) + ".md"
+				resId := getScalarValue(resource, "$id")
+				
+				// Use $id if available, otherwise fall back to title
+				var fileName string
+				if resId != "" {
+					// Remove .schema.yaml extension and convert to .md
+					fileName = strings.TrimSuffix(resId, ".schema.yaml") + ".md"
+				} else {
+					fileName = sanitizeFileName(resTitle) + ".md"
+				}
+				
 				filePath := filepath.Join(outputDir, fileName)
 				if err := os.WriteFile(filePath, []byte(resourceFilebuf.String()), 0o644); err != nil {
 					return fmt.Errorf("failed writing resource doc: %w", err)

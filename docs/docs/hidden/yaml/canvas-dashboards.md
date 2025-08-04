@@ -1,7 +1,7 @@
 ---
 note: GENERATED. DO NOT EDIT.
-title: Canvas Dashboards YAML
-sidebar_position: 33
+title: Canvas Dashboard YAML
+sidebar_position: 36
 ---
 
 In your Rill project directory, create a canvas dashboard, `<dashboard_name>.yaml`, file in the `dashboards` directory. Rill will ingest the dashboard definition next time you run `rill start`.
