@@ -549,8 +549,8 @@ func generateDoc(sidebarPosition, level int, node *yaml.Node, indent string, req
 						required = "_(required)_"
 					}
 					
-					doc.WriteString(fmt.Sprintf("\n\n### `%s`\n\n", propName))
-					doc.WriteString(fmt.Sprintf("**Type:** %s\n\n**Description:** %s\n\n%s", 
+					doc.WriteString(fmt.Sprintf("\n\n#### `%s`\n\n", propName))
+					doc.WriteString(fmt.Sprintf("%s - %s %s", 
 						getPrintableType(propValue), 
 						getPrintableDescription(propValue, indent, "(no description)"), 
 						required))

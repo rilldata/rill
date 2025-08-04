@@ -18,7 +18,7 @@ allOf:
     required:
       - type
       - driver
-  - $ref: '#/definitions/common_properties'
+
   - oneOf:
       - $ref: '#/definitions/athena'
       - $ref: '#/definitions/azure'
@@ -39,6 +39,7 @@ allOf:
       - $ref: '#/definitions/slack'
       - $ref: '#/definitions/snowflake'
       - $ref: '#/definitions/sqlite'
+
 definitions:
   athena:
     type: object
@@ -615,22 +616,3 @@ definitions:
     required:
       - driver
       - dsn
-  common_properties:
-    type: object
-    title: "Common Properties"
-    properties:
-      name:
-        type: string
-        description: Name is usually inferred from the filename, but can be specified manually.
-      refs:
-        type: array
-        description: 'List of resource references'
-        items:
-          type: string
-          description: A string reference like `<resource-name>` or `<type/resource-name>`.
-      dev:
-        type: object
-        description: Overrides any properties in development environment.
-      prod:
-        type: object
-        description: Overrides any properties in production environment. 
