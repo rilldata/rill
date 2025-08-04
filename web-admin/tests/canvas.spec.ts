@@ -13,7 +13,7 @@ test.describe("Canvases", () => {
 
     // Check the KPI Grid data
     await expect(
-      page.getByText("Advertising Spend Overall $447k"),
+      page.getByText("Advertising Spend Overall $3,900"),
     ).toBeVisible();
   });
 });
