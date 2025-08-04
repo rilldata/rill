@@ -192,10 +192,12 @@ export class AnnotationsStore {
     scaler: GraphicScale,
     config: SimpleDataGraphicConfiguration,
   ): AnnotationGroup {
-    const left = scaler(annotation.startTime);
-    const right = annotation.endTime
-      ? scaler(annotation.endTime)
-      : left + AnnotationWidth;
+    const left = config.bodyLeft / 2 + scaler(annotation.startTime);
+    const right =
+      config.bodyLeft / 2 +
+      (annotation.endTime
+        ? scaler(annotation.endTime)
+        : left + AnnotationWidth);
     return <AnnotationGroup>{
       items: [annotation],
       top: config.plotBottom - AnnotationHeight,
