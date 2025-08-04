@@ -12,8 +12,15 @@ import {
   createMultiLayerBaseSpec,
   createPositionEncoding,
 } from "../builder";
-import type { ChartDataResult } from "../types";
+import type { ChartDataResult, ChartSortDirection } from "../types";
 import type { FunnelChartSpec } from "./FunnelChart";
+
+function createFunnelSortEncoding(sort: ChartSortDirection | undefined) {
+  if (sort && Array.isArray(sort)) {
+    return sort;
+  }
+  return null;
+}
 
 export function generateVLFunnelChartSpec(
   config: FunnelChartSpec,
@@ -37,6 +44,8 @@ export function generateVLFunnelChartSpec(
     data,
   );
 
+  const funnelSort = createFunnelSortEncoding(config.stage?.sort);
+
   if (config.measure?.field) {
     const modeTransforms: Transform[] =
       config.mode === "order"
@@ -57,23 +66,57 @@ export function generateVLFunnelChartSpec(
             },
           ];
 
-    const percentageTransforms: Transform[] = [
-      {
-        window: [{ op: "max", field: config.measure.field, as: "max_value" }],
-      },
-      {
-        calculate: `round((datum['${sanitizeValueForVega(config.measure.field)}'] / datum.max_value) * 100) + '%'`,
-        as: "percentage",
-      },
-    ];
+    const percentageTransforms: Transform[] = [];
 
+    if (
+      Array.isArray(funnelSort) &&
+      funnelSort.length > 0 &&
+      config.stage?.field
+    ) {
+      // Use joinaggregate to create a reference value field
+      const firstStageInSort = funnelSort[0];
+      percentageTransforms.push(
+        {
+          // Mark rows that match the first stage in custom sort
+          calculate: `datum['${sanitizeValueForVega(config.stage.field)}'] === '${sanitizeValueForVega(firstStageInSort)}' ? datum['${sanitizeValueForVega(config.measure.field)}'] : 0`,
+          as: "is_reference_stage",
+        },
+        {
+          // Use joinaggregate to get the maximum value where is_reference_stage > 0
+          // This gives us the measure value for the first stage in custom sort
+          joinaggregate: [
+            {
+              op: "max",
+              field: "is_reference_stage",
+              as: "reference_value",
+            },
+          ],
+        },
+      );
+    } else {
+      // For non-custom sort, use the first value in data order
+      percentageTransforms.push({
+        window: [
+          {
+            op: "first_value",
+            field: config.measure.field,
+            as: "reference_value",
+          },
+        ],
+      });
+    }
+
+    percentageTransforms.push({
+      calculate: `round((datum['${sanitizeValueForVega(config.measure.field)}'] / datum.reference_value) * 100) + '%'`,
+      as: "percentage",
+    });
     spec.transform = [...modeTransforms, ...percentageTransforms];
   }
 
   spec.encoding = {
     y: {
       ...yEncoding,
-      sort: null,
+      sort: funnelSort,
       axis: {
         labels: false,
         title: null,
