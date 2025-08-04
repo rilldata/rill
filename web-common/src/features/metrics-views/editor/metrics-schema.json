@@ -202,12 +202,80 @@
       "description": "Numeric aggregates of columns from your data model."
     },
     "parent_dimensions": {
-      "type": "string",
-      "description": "Dimensions to include from parent metrics view. It supports \"*\", a list or duckdb regex to include/exclude dimensions, if not specified, this will inherit all dimensions from the parent metrics view."
+      "type": "object",
+      "description": "Dimensions to include from parent metrics view. It supports \"*\", a list of names or advanced matching using regex(key - regex), DuckDB expression(key - expr), or exclusion(key - exclude). if not specified, this will inherit all dimensions from the parent metrics view.",
+      "oneOf": [
+        {
+          "type": "string",
+          "description": "Wildcard '*' selector that includes all available fields in the selection."
+        },
+        {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Explicit list of fields to include in the selection."
+        },
+        {
+          "type": "object",
+          "properties": {
+            "regex": {
+              "type": "string",
+              "description": "Select dimensions using a regular expression."
+            },
+            "expr": {
+              "type": "string",
+              "description": "DuckDB SQL expression to select fields based on custom logic."
+            },
+            "exclude": {
+              "type": "object",
+              "description": "Select all dimensions except those listed here."
+            }
+          },
+          "oneOf": [
+            { "required": ["regex"] },
+            { "required": ["expr"] },
+            { "required": ["exclude"] }
+          ],
+          "additionalProperties": false
+        }
+      ]
     },
     "parent_measures": {
-      "type": "string",
-      "description": "Measures to include from parent metrics view. It supports  \"*\", a list or duckdb regex to include/exclude measures, if not specified, this will inherit all measures from the parent metrics view."
+      "type": "object",
+      "description": "Measures to include from parent metrics view. It supports  \"*\", a list of names or advanced matching using regex(key - regex), DuckDB expression(key - expr), or exclusion(key - exclude). if not specified, this will inherit all measures from the parent metrics view.",
+      "oneOf": [
+        {
+          "type": "string",
+          "description": "Wildcard '*' selector that includes all available fields in the selection."
+        },
+        {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Explicit list of fields to include in the selection."
+        },
+        {
+          "type": "object",
+          "properties": {
+            "regex": {
+              "type": "string",
+              "description": "Select measures using a regular expression."
+            },
+            "expr": {
+              "type": "string",
+              "description": "DuckDB SQL expression to select fields based on custom logic."
+            },
+            "exclude": {
+              "type": "object",
+              "description": "Select all measures except those listed here."
+            }
+          },
+          "oneOf": [
+            { "required": ["regex"] },
+            { "required": ["expr"] },
+            { "required": ["exclude"] }
+          ],
+          "additionalProperties": false
+        }
+      ]
     },
     "explore": {
       "type": "object",
@@ -234,12 +302,80 @@
           "description": "Custom banner displayed at the header of the explore view."
         },
         "dimensions": {
-          "type": "string",
-          "description": "Dimensions to include from the metrics view. It supports \"*\", a list or duckdb regex to include/exclude dimensions, if not specified, this will include all dimensions from the metrics view."
+          "type": "object",
+          "description": "Dimensions to include from the metrics view. It supports \"*\", a list of names or advanced matching using regex(key - regex), DuckDB expression(key - expr), or exclusion(key - exclude). if not specified, this will include all dimensions from the metrics view.",
+          "oneOf": [
+            {
+              "type": "string",
+              "description": "Wildcard '*' selector that includes all available fields in the selection."
+            },
+            {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Explicit list of fields to include in the selection."
+            },
+            {
+              "type": "object",
+              "properties": {
+                "regex": {
+                  "type": "string",
+                  "description": "Select dimensions using a regular expression."
+                },
+                "expr": {
+                  "type": "string",
+                  "description": "DuckDB SQL expression to select fields based on custom logic."
+                },
+                "exclude": {
+                  "type": "object",
+                  "description": "Select all dimensions except those listed here."
+                }
+              },
+              "oneOf": [
+                { "required": ["regex"] },
+                { "required": ["expr"] },
+                { "required": ["exclude"] }
+              ],
+              "additionalProperties": false
+            }
+          ]
         },
         "measures": {
-          "type": "string",
-          "description": "Measures to include from the metrics view. It supports  \"*\", a list or duckdb regex to include/exclude measures, if not specified, this will include all measures from the parent metrics view."
+          "type": "object",
+          "description": "Measures to include from the metrics view. It supports  \"*\", a list of names or advanced matching using regex(key - regex), DuckDB expression(key - expr), or exclusion(key - exclude). if not specified, this will include all measures from the parent metrics view.",
+          "oneOf": [
+            {
+              "type": "string",
+              "description": "Wildcard '*' selector that includes all available fields in the selection."
+            },
+            {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Explicit list of fields to include in the selection."
+            },
+            {
+              "type": "object",
+              "properties": {
+                "regex": {
+                  "type": "string",
+                  "description": "Select measures using a regular expression."
+                },
+                "expr": {
+                  "type": "string",
+                  "description": "DuckDB SQL expression to select fields based on custom logic."
+                },
+                "exclude": {
+                  "type": "object",
+                  "description": "Select all measures except those listed here."
+                }
+              },
+              "oneOf": [
+                { "required": ["regex"] },
+                { "required": ["expr"] },
+                { "required": ["exclude"] }
+              ],
+              "additionalProperties": false
+            }
+          ]
         },
         "theme": {
           "oneOf": [
