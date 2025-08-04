@@ -496,6 +496,10 @@ func generateDoc(sidebarPosition, level int, node *yaml.Node, indent string, req
 				doc.WriteString("- [**Slack**](#slack) - Slack data\n")
 				doc.WriteString("- [**Local File**](#local_file) - Local file system\n\n")
 
+				doc.WriteString(":::warning Security Recommendation\n")
+				doc.WriteString("For all credential parameters (passwords, tokens, keys), use environment variables with the syntax `{{.env.<connector_type>.<parameter_name>}}`. This keeps sensitive data out of your YAML files and version control. See our [credentials documentation](/build/credentials/) for complete setup instructions.\n")
+				doc.WriteString(":::\n\n")
+
 				doc.WriteString("## Connector Details\n\n")
 				break
 			}
