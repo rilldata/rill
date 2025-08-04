@@ -61,6 +61,7 @@ func New(specJSON []byte, _ database.DB, logger *zap.Logger) (provisioner.Provis
 		if dsn == "" {
 			return nil, fmt.Errorf("environment variable %q is not set or empty", spec.DSNEnv)
 		}
+		spec.DSN = dsn
 	} else {
 		return nil, fmt.Errorf("either dsn or dsn_env must be specified")
 	}
