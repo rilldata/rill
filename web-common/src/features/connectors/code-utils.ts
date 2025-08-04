@@ -24,7 +24,8 @@ import {
 } from "../../runtime-client";
 import { makeSufficientlyQualifiedTableName } from "./olap/olap-config";
 
-const YAML_MODEL_TEMPLATE = `connector: {{ connector }}
+const YAML_MODEL_TEMPLATE = `type: model
+connector: {{ connector }}
 sql: {{ sql }}
 dev:
   sql: {{ sql }} limit 10000
