@@ -27,7 +27,9 @@ import { makeSufficientlyQualifiedTableName } from "./olap/olap-config";
 const YAML_MODEL_TEMPLATE = `type: model
 connector: {{ connector }}
 materialize: true
-sql: {{ sql }}{{ dev_section }}
+sql: {{ sql }}
+{{ dev_section }}
+{{ redshift_properties }}
 `;
 
 export function compileConnectorYAML(
@@ -308,8 +310,13 @@ export async function createYamlModelFromTable(
     ? `\ndev:\n  sql: ${selectStatement} limit 10000`
     : "";
 
+  // Add Redshift-specific properties if this is a Redshift connector
+  const redshiftProperties =
+    driverName === "redshift" ? `output_location: ""\nrole_arn: ""` : "";
+
   const yamlContent = YAML_MODEL_TEMPLATE.replace("{{ connector }}", connector)
     .replace(/{{ sql }}/g, selectStatement)
+    .replace("{{ redshift_properties }}", redshiftProperties)
     .replace("{{ dev_section }}", devSection);
 
   // Write the YAML file
