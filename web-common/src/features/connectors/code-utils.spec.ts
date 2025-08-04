@@ -8,9 +8,7 @@ import {
 const YAML_MODEL_TEMPLATE = `type: model
 connector: {{ connector }}
 materialize: true
-sql: {{ sql }}
-{{ dev_section }}
-{{ redshift_properties }}
+sql: {{ sql }}{{ dev_section }}
 `;
 
 describe("YAML Model Template", () => {
@@ -21,49 +19,38 @@ describe("YAML Model Template", () => {
     const devSection = shouldIncludeDevSection
       ? `\ndev:\n  sql: ${selectStatement} limit 10000`
       : "";
-    const redshiftProperties = "";
 
     const yamlContent = YAML_MODEL_TEMPLATE.replace(
       "{{ connector }}",
       connector,
     )
       .replace(/{{ sql }}/g, selectStatement)
-      .replace("{{ redshift_properties }}", redshiftProperties)
       .replace("{{ dev_section }}", devSection);
 
     expect(yamlContent).toContain("dev:");
     expect(yamlContent).toContain("limit 10000");
     expect(yamlContent).toContain("connector: clickhouse");
-    expect(yamlContent).not.toContain("output_location");
-    expect(yamlContent).not.toContain("role_arn");
   });
 
-  it("should include Redshift properties and exclude dev section for Redshift connector", () => {
+  it("should exclude dev section for Redshift connector", () => {
     const connector = "redshift";
     const selectStatement = "select * from my_table";
     const shouldIncludeDevSection = false;
     const devSection = shouldIncludeDevSection
       ? `\ndev:\n  sql: ${selectStatement} limit 10000`
       : "";
-    const redshiftProperties = `output_location: "{{ .env.connector.${connector}.output_location }}"
-role_arn: "{{ .env.connector.${connector}.role_arn }}"
-database: "{{ .env.connector.${connector}.database }}"`;
 
     const yamlContent = YAML_MODEL_TEMPLATE.replace(
       "{{ connector }}",
       connector,
     )
       .replace(/{{ sql }}/g, selectStatement)
-      .replace("{{ redshift_properties }}", redshiftProperties)
       .replace("{{ dev_section }}", devSection);
 
     expect(yamlContent).not.toContain("dev:");
     expect(yamlContent).not.toContain("limit 10000");
     expect(yamlContent).toContain("connector: redshift");
     expect(yamlContent).toContain("sql: select * from my_table");
-    expect(yamlContent).toContain("output_location");
-    expect(yamlContent).toContain("role_arn");
-    expect(yamlContent).toContain("database");
   });
 });
 
