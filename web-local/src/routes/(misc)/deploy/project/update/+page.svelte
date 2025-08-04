@@ -4,13 +4,13 @@
   import {
     getIsOrgOnTrial,
     getPlanUpgradeUrl,
-  } from "@rilldata/web-common/features/organization/utils";
-  import { addPosthogSessionIdToUrl } from "@rilldata/web-common/lib/analytics/posthog";
+  } from "@rilldata/web-common/features/organization/utils.ts";
+  import { addPosthogSessionIdToUrl } from "@rilldata/web-common/lib/analytics/posthog.ts";
   import { waitUntil } from "@rilldata/web-common/lib/waitUtils.ts";
   import {
     createLocalServiceGetProjectRequest,
     createLocalServiceRedeploy,
-  } from "@rilldata/web-common/runtime-client/local-service";
+  } from "@rilldata/web-common/runtime-client/local-service.ts";
   import DeployError from "@rilldata/web-common/features/project/deploy/DeployError.svelte";
   import CTAHeader from "@rilldata/web-common/components/calls-to-action/CTAHeader.svelte";
   import CTANeedHelp from "@rilldata/web-common/components/calls-to-action/CTANeedHelp.svelte";
@@ -21,7 +21,7 @@
 
   export let data: PageData;
 
-  const { orgName, projectName, newManagedRepo } = data;
+  const { orgName, projectName, createManagedRepo } = data;
 
   $: projectQuery = createLocalServiceGetProjectRequest(orgName, projectName);
 
@@ -37,7 +37,6 @@
 
   async function updateProject() {
     const project = get(projectQuery).data?.project;
-    console.log("Updating project...", !!project);
     if (!project) return;
     // We always use Redeploy instead of GitPush.
     // GitPush is a simple wrapper around the `git push` command.
@@ -50,7 +49,7 @@
       // This is mainly set to true in E2E tests.
       reupload: !$legacyArchiveDeploy,
       rearchive: $legacyArchiveDeploy,
-      newManagedRepo: Boolean(newManagedRepo),
+      createManagedRepo,
     });
     const projectUrl = resp.frontendUrl; // https://ui.rilldata.com/<org>/<project>
     const projectUrlWithSessionId = addPosthogSessionIdToUrl(projectUrl);

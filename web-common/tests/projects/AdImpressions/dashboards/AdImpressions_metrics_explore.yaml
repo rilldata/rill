@@ -1,0 +1,10 @@
+# Explore YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/explore-dashboards
+
+type: explore
+
+display_name: "AdImpressions dashboard"
+metrics_view: AdImpressions_metrics
+
+dimensions: '*'
+measures: '*'

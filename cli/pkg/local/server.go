@@ -525,12 +525,12 @@ func (s *Server) RedeployProject(ctx context.Context, r *connect.Request[localv1
 		}
 	} else if r.Msg.Reupload {
 		if projResp.Project.ManagedGitId != "" {
-		  // If rill-managed project then push to the repo based on org/project passed in.
+			// If rill-managed project then push to the repo based on org/project passed in.
 			err = s.app.ch.GitHelper(projResp.Project.OrgName, projResp.Project.Name, s.app.ProjectPath).PushToManagedRepo(ctx)
 			if err != nil {
 				return nil, err
 			}
-		} else if projResp.Project.ArchiveAssetId != "" || r.Msg.NewManagedRepo {
+		} else if projResp.Project.ArchiveAssetId != "" || r.Msg.CreateManagedRepo {
 			// project was previously deployed using zip and ship, or we are overwriting another project already connected to github
 			ghRepo, err := s.app.ch.GitHelper(projResp.Project.OrgName, projResp.Project.Name, s.app.ProjectPath).PushToNewManagedRepo(ctx)
 			if err != nil {

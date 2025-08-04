@@ -5,10 +5,10 @@ export const load = ({ url: { searchParams } }) => {
   const projectName = searchParams.get("project");
   if (!orgName || !projectName) throw redirect(307, "/deploy");
 
-  const newManagedRepo = searchParams.get("new_managed_repo") ?? false;
+  const createManagedRepo = searchParams.get("create_managed_repo") === "true";
   return {
     orgName,
     projectName,
-    newManagedRepo,
+    createManagedRepo,
   };
 };

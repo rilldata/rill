@@ -1,12 +1,21 @@
 <script lang="ts">
   import { Button } from "@rilldata/web-common/components/button";
-  import type { Project } from "@rilldata/web-common/proto/gen/rill/admin/v1/api_pb";
-  import { createLocalServiceListMatchingProjectsRequest } from "@rilldata/web-common/runtime-client/local-service";
+  import {
+    getSelectOrganizationRoute,
+    getUpdateProjectRoute,
+  } from "@rilldata/web-common/features/project/deploy/route-utils.ts";
+  import type { Project } from "@rilldata/web-common/proto/gen/rill/admin/v1/api_pb.ts";
+  import { createLocalServiceListMatchingProjectsRequest } from "@rilldata/web-common/runtime-client/local-service.ts";
   import ProjectSelector from "@rilldata/web-common/features/project/deploy/ProjectSelector.svelte";
 
   const matchingProjects = createLocalServiceListMatchingProjectsRequest();
 
   let selectedProject: Project | undefined = undefined;
+
+  $: deployUrl = getUpdateProjectRoute(
+    selectedProject?.orgName ?? "",
+    selectedProject?.name ?? "",
+  );
 </script>
 
 <div class="flex flex-col gap-y-2">
@@ -22,14 +31,9 @@
   </div>
 </div>
 
-<Button
-  wide
-  type="primary"
-  href="/deploy/update?org={selectedProject?.orgName}&project={selectedProject?.name}"
-  disabled={!selectedProject}
->
+<Button wide type="primary" href={deployUrl} disabled={!selectedProject}>
   Update selected project
 </Button>
-<Button wide type="ghost" href="/deploy/organization">
+<Button wide type="ghost" href={getSelectOrganizationRoute()}>
   Or deploy to other project
 </Button>

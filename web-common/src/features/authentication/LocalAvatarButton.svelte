@@ -57,7 +57,10 @@
   </div>
 {:else if $user.data && $metadata.data}
   <DropdownMenu.Root>
-    <DropdownMenu.Trigger class="flex-none w-7" aria-label="Avatar">
+    <DropdownMenu.Trigger
+      class="flex-none w-7"
+      aria-label="Avatar logged {loggedIn ? 'in' : 'out'}"
+    >
       {#if loggedIn && !photoUrlErrored}
         <Avatar
           src={$user.data?.user?.photoUrl}

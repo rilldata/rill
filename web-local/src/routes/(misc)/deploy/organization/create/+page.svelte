@@ -3,9 +3,12 @@
   import { Button } from "@rilldata/web-common/components/button";
   import CreateNewOrgForm from "@rilldata/web-common/features/organization/CreateNewOrgForm.svelte";
   import { CreateNewOrgFormId } from "@rilldata/web-common/features/organization/CreateNewOrgForm.svelte";
+  import { getCreateProjectRoute } from "@rilldata/web-common/features/project/deploy/route-utils.ts";
 
   function selectOrg(orgName: string) {
-    setTimeout(() => void goto(`/deploy/new?org=${orgName}`));
+    // This navigation gets cancelled if we do not have `setTimeout` here.
+    // TODO: investigate why
+    setTimeout(() => void goto(getCreateProjectRoute(orgName)));
   }
 </script>
 

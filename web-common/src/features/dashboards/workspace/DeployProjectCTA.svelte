@@ -24,6 +24,7 @@
     createLocalServiceGitStatus,
     getLocalServiceGitStatusQueryKey,
   } from "@rilldata/web-common/runtime-client/local-service";
+  import { onMount } from "svelte";
   import Rocket from "svelte-radix/Rocket.svelte";
   import { writable, get } from "svelte/store";
   import { Button } from "../../../components/button";
@@ -37,11 +38,6 @@
   const userQuery = createLocalServiceGetCurrentUser();
   const metadata = createLocalServiceGetMetadata();
   const matchingProjectsQuery = createLocalServiceListMatchingProjectsRequest();
-
-  $: autoOpenDeploy = $page.url.searchParams.get("deploy") === "true";
-  $: if (autoOpenDeploy) {
-    void onDeploy();
-  }
 
   $: isDeployed = !!$matchingProjectsQuery.data?.projects?.length;
 
@@ -68,16 +64,7 @@
     deploy: "true",
   });
 
-  async function onDeploy() {
-    let didAutoDeploy = false;
-    if (autoOpenDeploy) {
-      autoOpenDeploy = false;
-      didAutoDeploy = true;
-      // If it was an auto-deploy, then unset the param from the url.
-      // This prevents the user from saving/sharing a url that would open the deploy dropdown.
-      void goto(copyWithAdditionalArguments($page.url, {}, { deploy: false }));
-    }
-
+  async function onDeploy(resumingDeploy = false) {
     if (hasRemoteChanges) {
       remoteChangeDialog = true;
       return;
@@ -88,11 +75,14 @@
     await waitUntil(() => !get(userQuery).isLoading);
     const userResp = get(userQuery).data;
     if (!userResp?.user) {
-      if (didAutoDeploy) {
+      if (resumingDeploy) {
         // Redirect loop breaker.
-        // Right now we set auto deploy during a login flow.
-        // So if it is true without a user then there was an unexpected error somewhere.
-        // TODO: show error
+        // Right now we set `deploy=true` during a login flow to resume deploy intent.
+        // So if it is true without a user, then there was an unexpected error somewhere.
+        eventBus.emit("notification", {
+          type: "error",
+          message: "Authentication failed. Please try deploying again.",
+        });
         return;
       }
       // Login url is on a separate domain, so use window.open instead of goto.
@@ -142,6 +132,15 @@
 
     errorFromGitCommand = new Error(resp.output);
   }
+
+  onMount(() => {
+    if ($page.url.searchParams.get("deploy") === "true") {
+      // If we are resuming deploy, then unset the param from the url.
+      // This prevents the user from saving/sharing a url that would open the deploy dropdown.
+      void goto(copyWithAdditionalArguments($page.url, {}, { deploy: false }));
+      void onDeploy(true);
+    }
+  });
 </script>
 
 {#if isDeployed}
@@ -153,7 +152,7 @@
   <Tooltip distance={8}>
     <Button
       {loading}
-      onClick={onDeploy}
+      onClick={() => onDeploy()}
       type={hasValidDashboard ? "primary" : "secondary"}
     >
       <Rocket size="16px" />

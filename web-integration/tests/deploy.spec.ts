@@ -1,18 +1,19 @@
 import { makeTempDir } from "@rilldata/web-common/tests/utils/make-temp-dir";
 import { execAsync } from "@rilldata/web-common/tests/utils/spawn";
-import dotenv from "dotenv";
-import path from "path";
-import { fileURLToPath } from "url";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { test } from "./setup/base";
 import { expect, type Page } from "@playwright/test";
 import { isOrgDeleted } from "@rilldata/web-common/tests/utils/is-org-deleted";
 
 test.describe("Deploy journey", () => {
   const cliHomeDir = makeTempDir("deploy_home");
-  const deployOrgName = "e2e-org";
+  const deployFirstOrgName = "e2e-org-first";
   const deploySecondOrgName = "e2e-org-second";
   const deployThirdOrgName = "e2e-org-third";
-  const sharedProjectDir = makeTempDir("adbids");
+  // Create consistent folders to facilitate running individual tests, not just the full suite.
+  const sharedFirstProjectDir = join(tmpdir(), "adbids");
+  const sharedSecondProjectDir = join(tmpdir(), "adimpressions");
 
   test.use({
     cliHomeDir,
@@ -21,12 +22,12 @@ test.describe("Deploy journey", () => {
 
   test.describe.configure({
     mode: "serial",
-    timeout: 180_000,
+    timeout: 60_000,
   });
 
   test.afterAll(async () => {
     const allOrgNames = [
-      deployOrgName,
+      deployFirstOrgName,
       deploySecondOrgName,
       deployThirdOrgName,
     ];
@@ -59,9 +60,9 @@ test.describe("Deploy journey", () => {
       .toBeTruthy();
   });
 
-  test.describe("Update flow", () => {
+  test.describe("Create/Update flow", () => {
     test.use({
-      projectDir: sharedProjectDir,
+      projectDir: sharedFirstProjectDir,
     });
 
     test("Should create new org and deploy", async ({ rillDevPage }) => {
@@ -70,11 +71,7 @@ test.describe("Deploy journey", () => {
 
       await rillDevPage.getByRole("button", { name: "Deploy" }).click();
 
-      await login(rillDevPage);
-
-      // Deploy should continue after logging in
-
-      // 1st time deploy modal is opened after the login
+      // 1st time deploy modal is opened
       await expect(
         rillDevPage.getByText("Deploy this project for free"),
       ).toBeVisible();
@@ -93,13 +90,15 @@ test.describe("Deploy journey", () => {
       // Org name should be auto-generated
       await expect(deployPage.getByLabel("URL")).toHaveValue("E2E-Org");
       // Update the org name directly
-      await deployPage.getByLabel("URL").fill(deployOrgName);
+      await deployPage.getByLabel("URL").fill(deployFirstOrgName);
       // Update the display name
       await deployPage
         .getByLabel("Organization display name")
         .fill("E2E Test Org");
       // Org name should not be updated
-      await expect(deployPage.getByLabel("URL")).toHaveValue(deployOrgName);
+      await expect(deployPage.getByLabel("URL")).toHaveValue(
+        deployFirstOrgName,
+      );
       // Click the continue button to deploy
       await deployPage.getByRole("button", { name: "Continue" }).click();
 
@@ -131,16 +130,12 @@ test.describe("Deploy journey", () => {
     test("Should deploy to another project from the same local project folder", async ({
       rillDevPage,
     }) => {
-      await ensureLogout(rillDevPage);
-
       // Start waiting for popup before clicking Deploy.
       const popupPromise = rillDevPage.waitForEvent("popup");
 
       await rillDevPage.getByRole("button", { name: "Deploy" }).click();
 
-      await login(rillDevPage);
-
-      // Deploy should continue after logging in
+      // Update popup is opened
       await expect(
         rillDevPage.getByText("Push local changes to Rill Cloud?"),
       ).toBeVisible();
@@ -201,8 +196,6 @@ test.describe("Deploy journey", () => {
     test("Should be able to redeploy to different projects with same name", async ({
       rillDevPage,
     }) => {
-      await ensureLogout(rillDevPage);
-
       // Update the title of dashboard
       await rillDevPage.goto(
         rillDevPage.url() + "/files/dashboards/AdBids_metrics_explore.yaml",
@@ -216,16 +209,13 @@ test.describe("Deploy journey", () => {
 
       await rillDevPage.getByRole("button", { name: "Deploy" }).click();
 
-      await login(rillDevPage);
-
-      // Deploy should continue after logging in
       await expect(
         rillDevPage.getByText("Push local changes to Rill Cloud?"),
       ).toBeVisible();
 
       // Select the 1st org's project
       await rillDevPage
-        .getByRole("button", { name: `${deployOrgName}/adbids` })
+        .getByRole("button", { name: `${deployFirstOrgName}/adbids` })
         .click();
 
       // Hit update
@@ -246,9 +236,6 @@ test.describe("Deploy journey", () => {
       await rillDevPage.bringToFront();
 
       // Update the title of dashboard again
-      await rillDevPage.goto(
-        rillDevPage.url() + "/files/dashboards/AdBids_metrics_explore.yaml",
-      );
       await rillDevPage
         .getByTitle("Display name")
         .fill("Adbids dashboard edited second org");
@@ -281,8 +268,6 @@ test.describe("Deploy journey", () => {
   test("Should create a third org and deploy for a fresh project", async ({
     rillDevPage,
   }) => {
-    await ensureLogout(rillDevPage);
-
     // Start waiting for popup before clicking Deploy.
     const popupPromise = rillDevPage.waitForEvent("popup");
 
@@ -290,8 +275,6 @@ test.describe("Deploy journey", () => {
 
     // Await for the popped up deploy page after hitting deploy
     const deployPage = await popupPromise;
-
-    await login(deployPage);
 
     // Org selection page is opened.
     await expect(deployPage.getByText("Select an organization")).toBeVisible();
@@ -333,52 +316,68 @@ test.describe("Deploy journey", () => {
     // Check that the dashboards are listed
     await expect(deployPage.getByText("AdBids_metrics_explore")).toBeVisible();
   });
+
+  test.describe("Overwrite flow", () => {
+    test.use({
+      project: "AdImpressions",
+      projectDir: sharedSecondProjectDir,
+    });
+
+    test("Should overwrite a different project of a different org", async ({
+      rillDevPage,
+    }) => {
+      // Start waiting for popup before clicking Deploy.
+      const popupPromise = rillDevPage.waitForEvent("popup");
+
+      await rillDevPage.getByRole("button", { name: "Deploy" }).click();
+
+      // Await for the popped up deploy page after hitting deploy
+      const deployPage = await popupPromise;
+
+      // Org selection page is opened.
+      await expect(
+        deployPage.getByText("Select an organization"),
+      ).toBeVisible();
+
+      // Create a new org from the dropdown.
+      await deployPage.getByLabel("Select organization").click();
+      await deployPage.getByText(deployFirstOrgName).click();
+
+      // Click the "Or overwrite an existing project" button to select a project to overwrite
+      await deployPage
+        .getByRole("button", { name: "Or overwrite an existing project" })
+        .click();
+
+      // Select the adbids project to overwrite
+      await deployPage
+        .getByRole("button", { name: `${deployFirstOrgName}/adbids` })
+        .click();
+
+      // Hit "Update selected project" to continue to deploy
+      await deployPage
+        .getByRole("button", { name: "Update selected project" })
+        .click();
+
+      // Overwrite configuration shows up.
+      await expect(
+        deployPage.getByText(
+          "Are you sure you want to overwrite this project?",
+        ),
+      ).toBeVisible();
+      // Confirm overwrite
+      await deployPage.getByRole("button", { name: "Yes, overwrite" }).click();
+
+      // Deploy loader should show up.
+      await expect(
+        deployPage.getByText("Hang tight! We're deploying your project..."),
+      ).toBeVisible();
+
+      await ensureProjectRedeployed(deployPage);
+
+      await ensureDashboardTitle(deployPage, "AdImpressions dashboard");
+    });
+  });
 });
-
-async function login(deployPage: Page) {
-  // Load environment variables from our root `.env` file
-  // We need this here again since this would be a separate process compared to setup.
-  const __dirname = path.dirname(fileURLToPath(import.meta.url));
-  dotenv.config({ path: path.resolve(__dirname, "../../.env") });
-
-  // Check that the required environment variables are set.
-  if (
-    !process.env.RILL_DEVTOOL_E2E_ADMIN_ACCOUNT_EMAIL ||
-    !process.env.RILL_DEVTOOL_E2E_ADMIN_ACCOUNT_PASSWORD
-  ) {
-    throw new Error(
-      "Missing required environment variables for authentication",
-    );
-  }
-
-  // Login 1st to start deploy.
-
-  // Fill in the email
-  const emailInput = deployPage.locator('input[name="username"]');
-  await emailInput.waitFor({ state: "visible" });
-  await emailInput.click();
-  await emailInput.fill(process.env.RILL_DEVTOOL_E2E_ADMIN_ACCOUNT_EMAIL);
-
-  // Click the continue button
-  await deployPage
-    .locator('button[type="submit"][data-action-button-primary="true"]', {
-      hasText: "Continue",
-    })
-    .click();
-
-  // Fill in the password
-  const passwordInput = deployPage.locator('input[name="password"]');
-  await passwordInput.waitFor({ state: "visible" });
-  await passwordInput.click();
-  await passwordInput.fill(process.env.RILL_DEVTOOL_E2E_ADMIN_ACCOUNT_PASSWORD);
-
-  // Click the continue button
-  await deployPage
-    .locator('button[type="submit"][data-action-button-primary="true"]', {
-      hasText: "Continue",
-    })
-    .click();
-}
 
 async function assertAndSkipInvite(page: Page) {
   // Deploy is a success and invite page is opened. This can take a while, so it has increased timeout.
@@ -393,16 +392,6 @@ async function assertAndSkipInvite(page: Page) {
 
   // Skip invite and continue to status page.
   await page.getByRole("button", { name: "Skip for now" }).click();
-}
-
-async function ensureLogout(page: Page) {
-  await page.getByLabel("Avatar", { exact: true }).click();
-
-  try {
-    await page.getByText("Logout").click();
-  } catch {
-    // nothing to do if already logged out
-  }
 }
 
 async function ensureProjectRedeployed(page: Page) {
@@ -431,8 +420,7 @@ async function ensureDashboardTitle(page: Page, title: string) {
     ).toBeVisible();
     // Title is already updated so return
     return;
-  } catch (e) {
-    console.log(e);
+  } catch {
     // no-op
   }
 
@@ -441,6 +429,7 @@ async function ensureDashboardTitle(page: Page, title: string) {
     .poll(
       async () => {
         await page.reload();
+        await page.waitForTimeout(1000); // Wait for page to fully load
         const listing = page
           .getByRole("link", {
             name: title,
@@ -450,8 +439,8 @@ async function ensureDashboardTitle(page: Page, title: string) {
       },
       {
         // Increased timeout for the 1st dashboard to make reconcile.
-        intervals: [10_000, 10_000, 20_000, 20_000, 30_000, 30_000],
-        timeout: 120_000,
+        intervals: [10_000, 20_000, 30_000],
+        timeout: 60_000,
       },
     )
     .toBeTruthy();

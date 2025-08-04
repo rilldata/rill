@@ -4,6 +4,10 @@
   import ProjectSelector from "@rilldata/web-common/features/project/deploy/ProjectSelector.svelte";
   import ProjectSelectorItem from "@rilldata/web-common/features/project/deploy/ProjectSelectorItem.svelte";
   import RequestProjectAccessDialog from "@rilldata/web-common/features/project/deploy/RequestProjectAccessDialog.svelte";
+  import {
+    getSelectOrganizationRoute,
+    getUpdateProjectRoute,
+  } from "@rilldata/web-common/features/project/deploy/route-utils.ts";
   import { getManageProjectAccess } from "@rilldata/web-common/features/project/selectors.ts";
   import type { Project } from "@rilldata/web-common/proto/gen/rill/admin/v1/api_pb";
   import Rocket from "svelte-radix/Rocket.svelte";
@@ -21,7 +25,7 @@
   $: enableUpdate = !!selectedProject;
 
   $: deployUrl = selectedProject
-    ? `/deploy/update?org=${selectedProject.orgName}&project=${selectedProject.name}`
+    ? getUpdateProjectRoute(selectedProject.orgName, selectedProject.name)
     : "";
 
   let showRequestProjectAccess = false;
@@ -72,7 +76,7 @@
       {/if}
       <Button
         type="secondary"
-        href="/deploy/organization"
+        href={getSelectOrganizationRoute()}
         target="_blank"
         onClick={() => (open = false)}
       >

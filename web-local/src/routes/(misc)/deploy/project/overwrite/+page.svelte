@@ -1,14 +1,18 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import { Button } from "@rilldata/web-common/components/button";
+  import { getUpdateProjectRoute } from "@rilldata/web-common/features/project/deploy/route-utils.ts";
   import { getManageProjectAccess } from "@rilldata/web-common/features/project/selectors.ts";
   import type { Project } from "@rilldata/web-common/proto/gen/rill/admin/v1/api_pb.ts";
   import { createLocalServiceListProjectsForOrgRequest } from "@rilldata/web-common/runtime-client/local-service.ts";
   import ProjectSelector from "@rilldata/web-common/features/project/deploy/ProjectSelector.svelte";
   import RequestProjectAccessDialog from "@rilldata/web-common/features/project/deploy/RequestProjectAccessDialog.svelte";
   import OverwriteProjectConfirmationDialog from "@rilldata/web-common/features/project/deploy/OverwriteProjectConfirmationDialog.svelte";
+  import type { PageData } from "./$types";
 
-  $: orgParam = $page.url.searchParams.get("org") ?? "";
+  export let data: PageData;
+
+  const orgParam = data.org;
 
   $: projectsForOrg = createLocalServiceListProjectsForOrgRequest(orgParam, {
     query: {
@@ -21,7 +25,11 @@
     selectedProject?.orgName ?? "",
     selectedProject?.name ?? "",
   );
-  $: deployUrl = `/deploy/update?org=${selectedProject?.orgName}&project=${selectedProject?.name}&new_managed_repo=true`;
+  $: deployUrl = getUpdateProjectRoute(
+    selectedProject?.orgName ?? "",
+    selectedProject?.name ?? "",
+    true,
+  );
 
   let showOverwriteProjectConfirmation = false;
   let showRequestProjectAccess = false;

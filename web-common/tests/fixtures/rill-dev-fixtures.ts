@@ -1,5 +1,6 @@
 import type { Page } from "@playwright/test";
 import { asyncWaitUntil } from "@rilldata/web-common/lib/waitUtils.ts";
+import { RILL_DEV_STORAGE_STATE } from "@rilldata/web-integration/tests/constants.ts";
 import axios from "axios";
 import { spawn } from "node:child_process";
 import { cpSync, existsSync, mkdirSync, rmSync } from "node:fs";
@@ -93,7 +94,7 @@ export const rillDev = base.extend<MyFixtures>({
     });
 
     const context = await browser.newContext({
-      storageState: { cookies: [], origins: [] },
+      storageState: RILL_DEV_STORAGE_STATE,
     });
     const page = await context.newPage();
 

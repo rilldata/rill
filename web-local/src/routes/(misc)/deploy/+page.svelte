@@ -4,6 +4,12 @@
   import CTAMessage from "@rilldata/web-common/components/calls-to-action/CTAMessage.svelte";
   import CancelCircleInverse from "@rilldata/web-common/components/icons/CancelCircleInverse.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
+  import {
+    getCreateOrganizationRoute,
+    getSelectOrganizationRoute,
+    getSelectProjectRoute,
+    getUpdateProjectRoute,
+  } from "@rilldata/web-common/features/project/deploy/route-utils.ts";
   import { waitUntil } from "@rilldata/web-common/lib/waitUtils.ts";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
   import { BehaviourEventAction } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
@@ -59,9 +65,9 @@
       if (isPartOfAtLeastOneOrg) {
         // If the user has at least one org we show the selector.
         // Note: The selector has the option to create a new org, so we show it even when there is only one org.
-        return goto(`/deploy/organization`);
+        return goto(getSelectOrganizationRoute());
       } else {
-        return goto(`/deploy/organization/new`);
+        return goto(getCreateOrganizationRoute());
       }
     }
 
@@ -69,10 +75,10 @@
       const singleProject = $matchingProjects.data!.projects[0];
       // Project already exists. Run a redeploy
       return goto(
-        `/deploy/update?org=${singleProject.orgName}&project=${singleProject.name}`,
+        getUpdateProjectRoute(singleProject.orgName, singleProject.name),
       );
     } else {
-      return goto(`/deploy/select-project`);
+      return goto(getSelectProjectRoute());
     }
   }
 
