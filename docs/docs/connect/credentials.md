@@ -1,5 +1,5 @@
 ---
-title: Configure connector credentials
+title: Configure Local credentials
 sidebar_label: Configure Local Credentials
 sidebar_position: 15
 ---

@@ -7,80 +7,26 @@ toc_max_heading_level: 3
 className: connect-connect
 ---
 
-<!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->
+
 
 import ConnectorIcon from '@site/src/components/ConnectorIcon';
 
-## Connection Strategies
+Rill supports importing data from multiple sources to power your analytics and data applications. Whether you're working with cloud data warehouses, databases, file storage, or streaming data sources, Rill provides seamless connectivity and data ingestion capabilities.
 
-Rill offers flexible connection strategies to fit different data architectures and requirements.
+## Getting Started with Connectors
 
-- ### _[Rill Managed OLAP + Data Ingestion (Default)](/connect/data-source)_:
-  
-  Use Rill's embedded **ClickHouse / DuckDB** (depending on size of data) as the OLAP engine and ingest data from external sources.  Full Rill functionality with some caveats depending which embedded engine you select. 
+In order to connect and browse through your data, you'll need to create a connector file. Browse through the options below for our supported connectors. Each connector is designed to handle the specific authentication and configuration requirements of your data source.
 
-:::tip Rill Defaults with DuckDB
-When starting Rill for the first time, Rill will autopopulate the connector with a `duckdb.yaml`. To use ClickHouse, create a managed ClickHouse connector, `clickhouse.yaml` with `managed: true`. For more information, see our [ClickHouse](/connect/olap/clickhouse) docs.
+### What You Can Do After Connecting
 
+Once the connector is created, you can directly create:
+- **Models** - Transform and combine data from multiple sources using SQL
+- **Metrics Views** - Define key business metrics and KPIs
+- **Dashboards** - Visualize your data with interactive charts and tables
+
+:::warning OLAP Engine Limitations
+Rill supports connecting your data to both [DuckDB](/connect/olap/duckdb) and [ClickHouse](/connect/olap/clickhouse). However, there are still some features in development for managed ClickHouse. [Contact our team](/contact) for more informaton and scheduled feature releases!
 :::
-
-- ### _[Bring Your Own OLAP (BYO OLAP)](/connect/olap)_: 
-  
-  Large-scale datasets (100GB+) or existing OLAP infrastructure Connect to existing **ClickHouse**, **Druid**, **Pinot**, or **MotherDuck** instances. Use Rill's live connectors to ingest data directly into your OLAP engines.
-
-:::note Modeling on BYO-OLAP
- Some modeling features may be limited depending on the engine.
-:::
-
-## Supported OLAP Engines
-
-### DuckDB
-### ClickHouse
-### MotherDuck
-### Druid
-### Pinot
-
-<div className="connector-icon-grid">
-  <ConnectorIcon
-    icon={<img src="/img/connect/icons/Logo-DuckDB.svg" alt="DuckDB" />}
-    content="DuckDB is the default engine for Rill Developer."
-    link="/connect/olap/duckdb"
-    linkLabel="Learn more"
-    referenceLink="duckdb"
-  />
-
-  <ConnectorIcon
-    icon={<img src="/img/connect/icons/Logo-Clickhouse.svg" alt="ClickHouse" />}
-    content="High-performance columnar database for real-time analytics and data warehousing."
-    link="/connect/olap/clickhouse"
-    linkLabel="Learn more"
-    referenceLink="clickhouse"
-  />
-
-  <ConnectorIcon
-    icon={<img src="/img/connect/icons/Logo-Motherduck.svg" alt="MotherDuck" />}
-    content="Cloud-native DuckDB service for scalable analytics and data processing."
-    link="/connect/olap/motherduck"
-    linkLabel="Learn more"
-    referenceLink="motherduck"
-  />
-
-  <ConnectorIcon
-    icon={<img src="/img/connect/icons/Logo-Druid.svg" alt="Druid" />}
-    content="Real-time analytics database designed for high-performance OLAP queries."
-    link="/connect/olap/druid"
-    linkLabel="Learn more"
-    referenceLink="druid"
-  />
-
-  <ConnectorIcon
-    icon={<img src="/img/connect/icons/Logo-Pinot.svg" alt="Pinot" />}
-    content="Distributed OLAP datastore for real-time analytics and business intelligence."
-    link="/connect/olap/pinot"
-    linkLabel="Learn more"
-    referenceLink="pinot"
-  />
-</div>
 
 
 ## Data Warehouse Connectors
@@ -257,3 +203,17 @@ When starting Rill for the first time, Rill will autopopulate the connector with
     referenceLink="ai"
   />
 </div>
+
+
+
+## Externally Hosted Services
+If you have a firewall in front of your externally hosted service, you will need to whitelist the IP addresses below. This will allow you to connect to/from your service once your project is deployed to Rill Cloud. 
+```
+35.196.245.100
+34.74.117.37
+35.196.153.31
+34.75.22.143
+34.148.167.51
+35.237.60.193
+```
+**

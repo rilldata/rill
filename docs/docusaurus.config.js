@@ -381,7 +381,7 @@ const config = {
             to: '/connect/data-source/https'
           },
           {
-            from: '/connect/templating',
+            from: '/deploy/templating',
             to: '/connect/templating'
           },
           // Example: Add new redirects here
