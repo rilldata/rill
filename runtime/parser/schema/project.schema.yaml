@@ -352,13 +352,7 @@ definitions:
     type: object
     title: Connector YAML
     description: |
-      When you add olap_connector to your rill.yaml file, you will need to set up a `<connector_name>.yaml` file in the 'connectors' directory. This file requires the following parameters,type and driver (see below for more parameter options). Rill will automatically test the connectivity to the OLAP engine upon saving the file. This can be viewed in the connectors tab in the UI.
-
-      :::tip Did you know?
-
-      Starting from Rill 0.46, you can directly create OLAP engines from the UI! Select + Add -> Data -> Connect an OLAP engine
-
-      :::
+      Connector YAML files define how Rill connects to external data sources and OLAP engines. Each connector specifies a driver type and its required connection parameters.
     allOf:
       - title: Properties
         type: object
@@ -367,9 +361,13 @@ definitions:
             type: string
             const: connector
             description: Refers to the resource type and must be `connector`
+          driver:
+            type: string
+            description: The type of connector, see [available connectors](#available-connector-types) (required)
         required:
           - type
-      - $ref: '#/definitions/common_properties'
+          - driver
+      # - $ref: '#/definitions/common_properties'
       - oneOf:
           - $ref: '#/definitions/connector/definitions/athena'
           - $ref: '#/definitions/connector/definitions/azure'
