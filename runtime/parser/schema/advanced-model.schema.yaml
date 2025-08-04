@@ -150,7 +150,7 @@ allOf:
   - type: object
     allOf:
       - if:
-          title: Additional properties when `connector` is `athena` or [named connector](./connector.md#name) for athena
+          title: Additional properties when `connector` is [`athena`](./connector#athena)
           properties:
             connector:
               const: athena
@@ -159,7 +159,7 @@ allOf:
         then:
           $ref: '#/definitions/model/definitions/athena'
       - if:
-          title: Additional properties when `connector` is `azure` or [named connector](./connector.md#name) of azure
+          title: Additional properties when `connector` is [`azure`](./connector#azure)
           properties:
             connector:
               const: azure
@@ -168,7 +168,7 @@ allOf:
         then:
           $ref: '#/definitions/model/definitions/azure'
       - if:
-          title: Additional properties when `connector` is `bigquery` or [named connector](./connector.md#name) of bigquery
+          title: Additional properties when `connector` is [`bigquery`](./connector#bigquery)
           properties:
             connector:
               const: bigquery
@@ -177,7 +177,7 @@ allOf:
         then:
           $ref: '#/definitions/model/definitions/bigquery'
       - if:
-          title: Additional properties when `connector` is `duckdb` or [named connector](./connector.md#name) of duckdb
+          title: Additional properties when `connector` is [`duckdb`](./connector#duckdb)
           properties:
             connector:
               const: duckdb
@@ -186,7 +186,7 @@ allOf:
         then:
           $ref: '#/definitions/model/definitions/duckdb'
       - if:
-          title: Additional properties when `connector` is `gcs` or [named connector](./connector.md#name) of gcs
+          title: Additional properties when `connector` is [`gcs`](./connector#gcs)
           properties:
             connector:
               const: gcs
@@ -195,7 +195,7 @@ allOf:
         then:
           $ref: '#/definitions/model/definitions/gcs'
       - if:
-          title: Additional properties when `connector` is `local_file` or [named connector](./connector.md#name) of local_file
+          title: Additional properties when `connector` is [`local_file`](./connector#local_file)
           properties:
             connector:
               const: local_file
@@ -204,7 +204,7 @@ allOf:
         then:
           $ref: '#/definitions/model/definitions/local_file'
       - if:
-          title: Additional properties when `connector` is `redshift` or [named connector](./connector.md#name) of redshift
+          title: Additional properties when `connector` is [`redshift`](./connector#redshift)
           properties:
             connector:
               const: redshift
@@ -213,7 +213,7 @@ allOf:
         then:
           $ref: '#/definitions/model/definitions/redshift'
       - if:
-          title: Additional properties when `connector` is `s3` or [named connector](./connector.md#name) of s3
+          title: Additional properties when `connector` is [`s3`](./connector#s3)
           properties:
             connector:
               const: s3
@@ -222,7 +222,7 @@ allOf:
         then:
           $ref: '#/definitions/model/definitions/s3'
       - if:
-          title: Additional properties when `connector` is `salesforce` or [named connector](./connector.md#name) of salesforce
+          title: Additional properties when `connector` is [`salesforce`](./connector#salesforce)
           properties:
             connector:
               const: salesforce

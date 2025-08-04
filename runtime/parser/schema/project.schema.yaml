@@ -7,7 +7,7 @@ description: |
 
   :::info Working with resources outside their native folders
 
-  It is possible to define resources (such as [models](model.md), [metrics-views](metrics-view.md), [dashboards](explore.md), [custom APIs](api.md), or [themes](theme.md)) within <u>any</u> nested folder within your Rill project directory. However, for any YAML configuration file, it is then imperative that the `type` property is then appropriately defined within the underlying resource configuration or Rill will not able to resolve the resource type correctly!
+  It is possible to define resources (such as [models](advanced-model.md), [metrics-views](metrics-view.md), [dashboards](explore.md), [custom APIs](api.md), or [themes](theme.md)) within <u>any</u> nested folder within your Rill project directory. However, for any YAML configuration file, it is then imperative that the `type` property is then appropriately defined within the underlying resource configuration or Rill will not able to resolve the resource type correctly!
 
   :::
 
