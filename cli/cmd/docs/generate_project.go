@@ -147,26 +147,52 @@ func resolveRefsYAML(node, root *yaml.Node) error {
 			keyNode := node.Content[i]
 			valNode := node.Content[i+1]
 
-			if keyNode.Value == "$ref" && valNode.Kind == yaml.ScalarNode && strings.HasPrefix(valNode.Value, "#/") {
-				// Resolve local reference
-				ptrPath := strings.TrimPrefix(valNode.Value, "#/")
-				resolved, err := resolveYAMLPointer(root, ptrPath)
-				if err != nil {
-					return fmt.Errorf("resolve $ref %q: %w", valNode.Value, err)
-				}
+			if keyNode.Value == "$ref" && valNode.Kind == yaml.ScalarNode {
+				if strings.HasPrefix(valNode.Value, "#/") {
+					// Resolve local reference
+					ptrPath := strings.TrimPrefix(valNode.Value, "#/")
+					resolved, err := resolveYAMLPointer(root, ptrPath)
+					if err != nil {
+						return fmt.Errorf("resolve $ref %q: %w", valNode.Value, err)
+					}
 
-				// Replace the entire mapping with the resolved content
-				// First, remove $ref entry
-				node.Content = append(node.Content[:i], node.Content[i+2:]...)
-				// Then merge resolved content into current node
-				if resolved.Kind == yaml.MappingNode {
-					// Insert resolved mapping node's content at current position
-					node.Content = append(resolved.Content, node.Content...)
-				} else {
-					return fmt.Errorf("$ref does not point to a mapping node")
+					// Replace the entire mapping with the resolved content
+					// First, remove $ref entry
+					node.Content = append(node.Content[:i], node.Content[i+2:]...)
+					// Then merge resolved content into current node
+					if resolved.Kind == yaml.MappingNode {
+						// Insert resolved mapping node's content at current position
+						node.Content = append(resolved.Content, node.Content...)
+					} else {
+						return fmt.Errorf("$ref does not point to a mapping node")
+					}
+					// We modified Content length; restart loop
+					return resolveRefsYAML(node, root)
+				} else if strings.HasSuffix(valNode.Value, ".yaml#") {
+					// Resolve external file reference
+					fileName := strings.TrimSuffix(valNode.Value, "#")
+					// Remove quotes if present
+					fileName = strings.Trim(fileName, "'\"")
+					
+					// Load the external schema file
+					externalSchema, err := parseSchemaYAML("runtime/parser/schema/" + fileName)
+					if err != nil {
+						return fmt.Errorf("failed to load external schema %q: %w", fileName, err)
+					}
+
+					// Replace the entire mapping with the external schema content
+					// First, remove $ref entry
+					node.Content = append(node.Content[:i], node.Content[i+2:]...)
+					// Then merge external schema content into current node
+					if externalSchema.Kind == yaml.MappingNode {
+						// Insert external schema's content at current position
+						node.Content = append(externalSchema.Content, node.Content...)
+					} else {
+						return fmt.Errorf("external schema %q does not contain a mapping node", fileName)
+					}
+					// We modified Content length; restart loop
+					return resolveRefsYAML(node, root)
 				}
-				// We modified Content length; restart loop
-				return resolveRefsYAML(node, root)
 			}
 			if err := resolveRefsYAML(valNode, root); err != nil {
 				return err

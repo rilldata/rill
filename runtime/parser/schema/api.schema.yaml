@@ -1,76 +1,58 @@
 $schema: 'http://json-schema.org/draft-07/schema#'
-$id: project.schema.yaml
-title: YAML Syntax
+$id: api.schema.yaml
+title: API YAML
 type: object
-description: |
-  When you create models and dashboards, these objects are represented as object files on the file system. You can find these files in your `models` and `dashboards` folders in your project by default. 
-
-  :::info Working with resources outside their native folders
-
-  It is possible to define resources (such as [models](model.md), [metrics-views](metrics-view.md), [dashboards](explore.md), [custom APIs](api.md), or [themes](theme.md)) within <u>any</u> nested folder within your Rill project directory. However, for any YAML configuration file, it is then imperative that the `type` property is then appropriately defined within the underlying resource configuration or Rill will not able to resolve the resource type correctly!
-
-  :::
-
-  Projects can simply be rehydrated from Rill project files into an explorable data application as long as there is sufficient access and credentials to the source data - figuring out the dependencies, pulling down data, & validating your model queries and metrics configurations. The result is a set of functioning exploratory dashboards.
-
-  You can see a few different example projects by visiting our [example github repository](https://github.com/rilldata/rill-examples).
-
-  :::tip
-
-  For more information about using Git or cloning projects locally, please see our page on [GitHub Basics](/deploy/deploy-dashboard/github-101).
-
-  :::
-oneOf:
-  - $ref: 'alert.schema.yaml#'
-  - $ref: 'api.schema.yaml#'
-  - $ref: 'canvas.schema.yaml#'
-  # - $ref: 'component.schema.yaml#'
-  - $ref: 'connector.schema.yaml#'
-  - $ref: 'explore.schema.yaml#'
-  - $ref: 'metrics_view.schema.yaml#'
-  - $ref: 'advanced-model.schema.yaml#'
-  - $ref: 'theme.schema.yaml#'
-definitions:
-  common_properties:
-    type: object
-    title: "Common Properties"
-    properties:
-      name:
-        type: string
-        description: Name is usually inferred from the filename, but can be specified manually.
-      refs:
-        type: array
-        description: 'List of resource references'
-        items:
-          type: string
-          description: A string reference like `<resource-name>` or `<type/resource-name>`.
-      dev:
-        type: object
-        description: Overrides any properties in development environment.
-      prod:
-        type: object
-        description: Overrides any properties in production environment.
-  component_variable_properties:
+description: In your Rill project directory, create a new file name `<api-name>.yaml` in the `apis` directory containing a custom API definition. See comprehensive documentation on how to define and use [custom APIs](/integrate/custom-apis/index.md)
+examples:
+  - # Example: This api returns the top 10 authors by net line changes since the specified date provided in the arguments.
+    type: api
+    name: metrics_view_api
+    metrics_sql: |-
+      SELECT author_name, net_line_changes
+      FROM advanced_metrics_view
+        where author_date > '{{ .args.date }}'
+        order by net_line_changes DESC
+        limit 10
+allOf:
+  - title: Properties
     type: object
     properties:
-      name:
-        type: string
-        description: Unique identifier for the variable
       type:
         type: string
-        description: Data type of the variable (e.g., string, number, boolean)
-      value:
-        description: Default value for the variable. Can be any valid JSON value type
-        type:
-          - string
-          - number
-          - boolean
-          - object
-          - array
+        const: api
+        description: Refers to the resource type and must be `api`
+      openapi:
+        type: object
+        description: OpenAPI specification for the API endpoint
+        properties:
+          summary:
+            type: string
+            description: A brief description of what the API endpoint does
+          parameters:
+            type: array
+            description: List of parameters that the API endpoint accepts
+            items:
+              type: object
+              additionalProperties: true
+          request_schema:
+            type: object
+            description: JSON schema for the request body (use nested YAML instead of a JSON string)
+            additionalProperties: true
+          response_schema:
+            type: object
+            description: JSON schema for the response body (use nested YAML instead of a JSON string)
+            additionalProperties: true
+      security:
+        $ref: '#/definitions/security_policy_properties'
+      skip_nested_security:
+        type: boolean
+        description: Flag to control security inheritance
+    allOf:
+      - $ref: '#/definitions/data_properties'
     required:
-      - name
-      - type
-    additionalProperties: false
+      - type       
+  - $ref: '#/definitions/common_properties'
+definitions:
   data_properties:
     oneOf:
       - title: SQL Query
@@ -138,103 +120,6 @@ definitions:
             additionalProperties: true
         required:
           - resource_status
-  explore_time_range_properties:
-    oneOf:
-      - type: string
-        description: a valid [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations) duration or one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) extensions for the selection
-      - type: object
-        description: Object containing time range and comparison configuration
-        properties:
-          range:
-            type: string
-            description: a valid [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations) duration or one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) extensions for the selection
-          comparison_offsets:
-            type: array
-            description: list of time comparison options for this time range selection (optional). Must be one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions)
-            items:
-              oneOf:
-                - type: string
-                  description: Offset string only (range is inferred)
-                - type: object
-                  description: Object containing offset and range configuration for time comparison
-                  properties:
-                    offset:
-                      type: string
-                      description: Time offset for comparison (e.g., 'P1D' for one day ago)
-                    range:
-                      type: string
-                      description: Custom time range for comparison period
-                  additionalProperties: false
-        required:
-          - range
-        additionalProperties: false
-  notify_properties:
-    type: object
-    properties:
-      email:
-        type: object
-        description: Send notifications via email.
-        properties:
-          recipients:
-            type: array
-            description: An array of email addresses to notify.
-            items:
-              type: string
-            minItems: 1
-        required:
-          - recipients
-      slack:
-        type: object
-        description: Send notifications via Slack.
-        properties:
-          users:
-            type: array
-            description: An array of Slack user IDs to notify.
-            items:
-              type: string
-            minItems: 1
-          channels:
-            type: array
-            description: An array of Slack channel IDs to notify.
-            items:
-              type: string
-            minItems: 1
-          webhooks:
-            type: array
-            description: An array of Slack webhook URLs to send notifications to.
-            items:
-              type: string
-            minItems: 1
-        anyOf:
-          - required:
-              - channels
-          - required:
-              - users
-          - required:
-              - webhooks
-    anyOf:
-        - required:
-          - slack
-        - required:
-          - email
-  schedule_properties:
-    type: object
-    properties:
-      cron:
-        type: string
-        description: A cron expression that defines the execution schedule
-      time_zone:
-        type: string
-        description: Time zone to interpret the schedule in (e.g., 'UTC', 'America/Los_Angeles').
-      disable:
-        type: boolean
-        description: 'If true, disables the resource without deleting it.'
-      ref_update:
-        type: boolean
-        description: 'If true, allows the resource to run when a dependency updates.'
-      run_in_dev:
-        type: boolean
-        description: 'If true, allows the schedule to run in development mode.'
   security_policy_properties:
     type: object
     description: Defines security rules and access control policies for resources
@@ -331,3 +216,22 @@ definitions:
               description: SQL expression for row filtering (for row_filter type rules)
           required:
             - type
+  common_properties:
+    type: object
+    title: "Common Properties"
+    properties:
+      name:
+        type: string
+        description: Name is usually inferred from the filename, but can be specified manually.
+      refs:
+        type: array
+        description: 'List of resource references'
+        items:
+          type: string
+          description: A string reference like `<resource-name>` or `<type/resource-name>`.
+      dev:
+        type: object
+        description: Overrides any properties in development environment.
+      prod:
+        type: object
+        description: Overrides any properties in production environment. 
