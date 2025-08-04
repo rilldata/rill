@@ -28,7 +28,7 @@ allOf:
       - $ref: '#/definitions/duckdb'
       - $ref: '#/definitions/gcs'
       - $ref: '#/definitions/https'
-      - $ref: '#/definitions/local_file'
+      # - $ref: '#/definitions/local_file'
       - $ref: '#/definitions/motherduck'
       - $ref: '#/definitions/mysql'
       - $ref: '#/definitions/pinot'
@@ -324,24 +324,24 @@ definitions:
     required:
       - driver
       - path
-  local_file:
-    type: object
-    title: local_file
-    description: Configuration properties specific to the local_file
-    properties:
-      driver:
-        type: string
-        description: Refers to the driver type and must be driver `local_file`
-        const: local_file
-      dsn:
-        type: string
-        description: Data Source Name (DSN) indicating the file path or location of the local file
-      allow_host_access:
-        type: boolean
-        description: Flag to indicate if access to host-level file paths is permitted
-    required:
-      - driver
-      - dsn
+  # local_file:
+  #   type: object
+  #   title: local_file
+  #   description: Configuration properties specific to the local_file
+  #   properties:
+  #     driver:
+  #       type: string
+  #       description: Refers to the driver type and must be driver `local_file`
+  #       const: local_file
+  #     sql:
+  #       type: string
+  #       description: SQL query to execute on the local file, file should exist in the local root data directory
+  #     allow_host_access:
+  #       type: boolean
+  #       description: Flag to indicate if access to host-level file paths is permitted
+  #   required:
+  #     - driver
+  #     - sql
   motherduck:
     type: object
     title: motherduck
