@@ -1,5 +1,6 @@
 import type { CartesianChartSpec } from "@rilldata/web-common/features/canvas/components/charts/cartesian-charts/CartesianChart";
 import type { HeatmapChartSpec } from "@rilldata/web-common/features/canvas/components/charts/heatmap-charts/HeatmapChart";
+import { COMPARIONS_COLORS } from "@rilldata/web-common/features/dashboards/config";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
 import { adjustOffsetForZone } from "@rilldata/web-common/lib/convertTimestampPreview";
 import { timeGrainToDuration } from "@rilldata/web-common/lib/time/grains";
@@ -125,14 +126,16 @@ export function adjustDataForTimeZone(
   if (!data) return data;
 
   return data.map((datum) => {
+    // Create a shallow copy of the datum to avoid mutating the original
+    const adjustedDatum = { ...datum };
     timeFields.forEach((timeField) => {
-      datum[timeField] = adjustOffsetForZone(
+      adjustedDatum[timeField] = adjustOffsetForZone(
         datum[timeField] as string,
         selectedTimezone,
         timeGrainToDuration(timeGrain),
       );
     });
-    return datum;
+    return adjustedDatum;
   });
 }
 
@@ -243,4 +246,26 @@ export function getLinkStateForTimeDimensionDetail(
   return {
     canLink: false,
   };
+}
+
+export function getColorForValues(
+  colorValues: string[] | undefined,
+  // if provided, use the colors for mentioned values
+  overrideColorMapping: { value: string; color: string }[] | undefined,
+): { value: string; color: string }[] | undefined {
+  if (!colorValues || colorValues.length === 0) return undefined;
+
+  const colorMapping = colorValues.map((value, index) => {
+    const overrideColor = overrideColorMapping?.find(
+      (mapping) => mapping.value === value,
+    );
+    return {
+      value,
+      color:
+        overrideColor?.color ||
+        COMPARIONS_COLORS[index % COMPARIONS_COLORS.length],
+    };
+  });
+
+  return colorMapping;
 }

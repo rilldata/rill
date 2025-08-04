@@ -11,8 +11,10 @@
   import {
     makeFullyQualifiedTableName,
     makeTablePreviewHref,
-  } from "./olap-config";
-  import type { ConnectorExplorerStore } from "../connector-explorer-store";
+  } from "../olap/olap-config";
+  import { useIsModelingSupportedForConnectorOLAP as useIsModelingSupportedForConnector } from "../selectors";
+  import { runtime } from "../../../runtime-client/runtime-store";
+  import type { ConnectorExplorerStore } from "./connector-explorer-store";
 
   export let instanceId: string;
   export let driver: string;
@@ -20,8 +22,10 @@
   export let database: string; // The backend interprets an empty string as the default database
   export let databaseSchema: string; // The backend interprets an empty string as the default schema
   export let table: string;
-  export let hasUnsupportedDataTypes: boolean;
+  export let hasUnsupportedDataTypes: boolean = false;
   export let store: ConnectorExplorerStore;
+  export let useNewAPI: boolean = false;
+  export let showGenerateMetricsAndDashboard: boolean = false;
 
   let contextMenuOpen = false;
 
@@ -30,6 +34,13 @@
 
   const { allowContextMenu, allowNavigateToTable, allowShowSchema } = store;
 
+  $: ({ instanceId: runtimeInstanceId } = $runtime);
+  $: isModelingSupportedForConnector = useIsModelingSupportedForConnector(
+    runtimeInstanceId,
+    connector,
+  );
+  $: isModelingSupported = $isModelingSupportedForConnector.data;
+
   $: fullyQualifiedTableName = makeFullyQualifiedTableName(
     driver,
     database,
@@ -37,17 +48,16 @@
     table,
   );
   $: tableId = `${connector}-${fullyQualifiedTableName}`;
-  $: href = makeTablePreviewHref(
-    driver,
-    connector,
-    database,
-    databaseSchema,
-    table,
-  );
 
-  $: open = $page.url.pathname === href;
+  // Only generate preview href for OLAP connectors (legacy API)
+  $: href = !useNewAPI
+    ? makeTablePreviewHref(driver, connector, database, databaseSchema, table)
+    : undefined;
 
-  $: element = allowNavigateToTable ? "a" : "button";
+  $: open = href ? $page.url.pathname === href : false;
+
+  // For new API, don't allow navigation until we implement table preview for non-OLAP
+  $: element = allowNavigateToTable && !useNewAPI ? "a" : "button";
 </script>
 
 <li aria-label={tableId} class="table-entry group" class:open>
@@ -72,7 +82,7 @@
     <svelte:element
       this={element}
       class="clickable-text"
-      {...allowNavigateToTable ? { href } : {}}
+      {...allowNavigateToTable && !useNewAPI && href ? { href } : {}}
       role="menuitem"
       tabindex="0"
       on:click={() => {
@@ -85,7 +95,7 @@
       </span>
     </svelte:element>
 
-    {#if hasUnsupportedDataTypes}
+    {#if hasUnsupportedDataTypes && !useNewAPI}
       <UnsupportedTypesIndicator
         {instanceId}
         {connector}
@@ -95,7 +105,7 @@
       />
     {/if}
 
-    {#if allowContextMenu}
+    {#if allowContextMenu && (showGenerateMetricsAndDashboard || isModelingSupported)}
       <DropdownMenu.Root bind:open={contextMenuOpen}>
         <DropdownMenu.Trigger asChild let:builder>
           <ContextButton
@@ -114,14 +124,21 @@
           side="right"
           sideOffset={16}
         >
-          <TableMenuItems {connector} {database} {databaseSchema} {table} />
+          <TableMenuItems
+            {connector}
+            {database}
+            {databaseSchema}
+            {table}
+            {showGenerateMetricsAndDashboard}
+            {isModelingSupported}
+          />
         </DropdownMenu.Content>
       </DropdownMenu.Root>
     {/if}
   </div>
 
   {#if allowShowSchema && showSchema}
-    <TableSchema {connector} {database} {databaseSchema} {table} />
+    <TableSchema {connector} {database} {databaseSchema} {table} {useNewAPI} />
   {/if}
 </li>
 
