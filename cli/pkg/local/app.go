@@ -70,6 +70,7 @@ type AppOptions struct {
 	Variables      map[string]string
 	LocalURL       string
 	AllowedOrigins []string
+	ServeUI        bool
 }
 
 func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
@@ -237,6 +238,16 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 		sugarLogger.Infof("Hydrating project '%s'", projectPath)
 	}
 
+	// Determine the frontend URL based on whether we're serving the UI
+	var frontendURL string
+	if opts.ServeUI {
+		// In production: The runtime serves the UI
+		frontendURL = opts.LocalURL // e.g., "http://localhost:9009"
+	} else {
+		// In development: Vite serves the frontend on a separate port (3001)
+		frontendURL = "http://localhost:3001"
+	}
+
 	// Create instance with its repo set to the project directory
 	inst := &drivers.Instance{
 		ID:                               DefaultInstanceID,
@@ -249,6 +260,7 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 		Variables:                        vars,
 		Annotations:                      map[string]string{},
 		IgnoreInitialInvalidProjectError: !isInit, // See ProjectParser reconciler for details
+		FrontendURL:                      frontendURL,
 	}
 	err = rt.CreateInstance(ctx, inst)
 	if err != nil {
