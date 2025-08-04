@@ -13,7 +13,6 @@
   import AnnotationGroupPopover from "@rilldata/web-common/components/data-graphic/marks/AnnotationGroupPopover.svelte";
   import {
     type Annotation,
-    type AnnotationGroup,
     AnnotationsStore,
   } from "@rilldata/web-common/components/data-graphic/marks/annotations.ts";
   import { ScaleType } from "@rilldata/web-common/components/data-graphic/state";

@@ -22,8 +22,8 @@ export function mousePositionToDomainActionFactory(): MousePositionToDomainActio
   const coordinateStore = writable<DomainCoordinates>({
     ...DEFAULT_COORDINATES,
   });
-  const xScale: ScaleStore = getContext(contexts.scale("x"));
-  const yScale: ScaleStore = getContext(contexts.scale("y"));
+  const xScale = getContext<ScaleStore>(contexts.scale("x"));
+  const yScale = getContext<ScaleStore>(contexts.scale("y"));
 
   let offsetX: number;
   let offsetY: number;
@@ -50,8 +50,8 @@ export function mousePositionToDomainActionFactory(): MousePositionToDomainActio
 
     coordinateStore.set({
       x: get(xScale).invert(offsetX),
-      xActual: offsetX,
       y: get(yScale).invert(offsetY),
+      xActual: offsetX,
       yActual: offsetY,
     });
     mouseover.set(true);

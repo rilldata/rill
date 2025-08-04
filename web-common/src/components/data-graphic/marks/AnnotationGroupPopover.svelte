@@ -16,6 +16,8 @@
     hoveredAnnotationGroup,
     annotationPopoverOpened,
     annotationPopoverHovered,
+    annotationPopoverTextHiddenCount,
+    textHiddenActions,
   } = annotationsStore;
   const plotConfig = getContext<SimpleConfigurationStore>(contexts.config);
 
@@ -34,7 +36,8 @@
   let showingMore = false;
   $: hasMoreAnnotations =
     !!$hoveredAnnotationGroup &&
-    $hoveredAnnotationGroup.items.length > MaxAnnotationCount;
+    ($hoveredAnnotationGroup.items.length > MaxAnnotationCount ||
+      $annotationPopoverTextHiddenCount > 0);
   $: annotationsToShow =
     (showingMore
       ? $hoveredAnnotationGroup?.items
@@ -74,18 +77,24 @@
       <Popover.Content
         side="right"
         sideOffset={popoverOffset}
-        class="w-80 max-h-[600px] overflow-y-auto"
+        class="w-80"
+        padding="0"
       >
         <div
-          class="flex flex-col gap-y-1"
+          class="flex flex-col gap-y-1 p-2 max-h-[600px] overflow-y-auto"
           on:mouseenter={() => annotationPopoverHovered.set(true)}
           on:mouseleave={() => annotationPopoverHovered.set(false)}
           role="menu"
           tabindex="-1"
         >
           {#each annotationsToShow as annotation, i (i)}
-            <div class="flex flex-col gap-y-1">
-              <div class="text-popover-foreground font-medium text-sm">
+            <div class="flex flex-col gap-y-1 p-2">
+              <div
+                class="text-popover-foreground font-medium text-sm w-full {showingMore
+                  ? 'text-wrap break-words'
+                  : 'h-5 truncate'}"
+                use:textHiddenActions
+              >
                 {annotation.description}
               </div>
               <div class="text-muted-foreground font-normal text-sm">
@@ -96,7 +105,7 @@
           {#if hasMoreAnnotations && !showingMore}
             <button
               on:click={() => (showingMore = true)}
-              class="flex flex-row items-center gap-x-1 mt-1 p-1 text-muted-foreground hover:bg-accent hover:rounded-sm"
+              class="flex flex-row items-center gap-x-1 mb-1 p-1 text-sm text-muted-foreground hover:bg-accent hover:rounded-sm outline-0"
             >
               <EllipsisVertical size="16px" />
               <span>See more</span>

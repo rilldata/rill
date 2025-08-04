@@ -5,6 +5,7 @@ import type {
 } from "@rilldata/web-common/components/data-graphic/state/types";
 import { Throttler } from "@rilldata/web-common/lib/throttler.ts";
 import type { V1MetricsViewAnnotationsResponseAnnotation } from "@rilldata/web-common/runtime-client";
+import type { ActionReturn } from "svelte/action";
 import { get, writable } from "svelte/store";
 
 export type Annotation = V1MetricsViewAnnotationsResponseAnnotation & {
@@ -33,8 +34,9 @@ export class AnnotationsStore {
     undefined,
   );
 
-  public annotationPopoverOpened = writable<boolean>(false);
-  public annotationPopoverHovered = writable<boolean>(false);
+  public annotationPopoverOpened = writable(false);
+  public annotationPopoverHovered = writable(false);
+  public annotationPopoverTextHiddenCount = writable(0);
 
   private hoverCheckThrottler = new Throttler(100, 100);
 
@@ -64,6 +66,32 @@ export class AnnotationsStore {
       ),
     );
   }
+
+  public textHiddenActions = (node: HTMLElement): ActionReturn<void> => {
+    let hidden = false;
+    const checkTextHidden = () => {
+      const currentlyHidden =
+        node.scrollWidth > node.clientWidth ||
+        node.scrollHeight > node.clientHeight;
+      if (currentlyHidden === hidden) return;
+
+      this.annotationPopoverTextHiddenCount.set(
+        get(this.annotationPopoverTextHiddenCount) + (currentlyHidden ? 1 : -1),
+      );
+      hidden = currentlyHidden;
+    };
+    checkTextHidden();
+
+    node.addEventListener("resize", checkTextHidden);
+    return {
+      destroy: () => {
+        this.annotationPopoverTextHiddenCount.set(
+          get(this.annotationPopoverTextHiddenCount) + (hidden ? -1 : 0),
+        );
+        node.removeEventListener("resize", checkTextHidden);
+      },
+    };
+  };
 
   private checkHover(
     mouseoverValue: DomainCoordinates | undefined,
