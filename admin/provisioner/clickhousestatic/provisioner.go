@@ -142,8 +142,8 @@ func (p *Provisioner) Provision(ctx context.Context, r *provisioner.Resource, op
 	dbName := fmt.Sprintf("rill_%s", id)
 
 	// Use org and project names to create a more human-readable database name.
-	orgName := sanitizeName(getAnnotationValue(opts.Annotations, "org"))
-	projectName := sanitizeName(getAnnotationValue(opts.Annotations, "project"))
+	orgName := sanitizeName(getAnnotationValue(opts.Annotations, "organization_name"))
+	projectName := sanitizeName(getAnnotationValue(opts.Annotations, "project_name"))
 	if orgName != "" && projectName != "" {
 		dbName = fmt.Sprintf("rill_%s_%s_%s", orgName, projectName, id)
 	}
@@ -356,18 +356,17 @@ func sanitizeName(name string) string {
 		return ""
 	}
 
-	// Replace invalid characters with underscores and convert to lowercase
-	sanitized := strings.ToLower(name)
-	sanitized = strings.ReplaceAll(sanitized, "-", "_")
-	sanitized = strings.ReplaceAll(sanitized, " ", "_")
+	// Replace invalid characters with underscores
+	name = strings.ReplaceAll(name, "-", "_")
+	name = strings.ReplaceAll(name, " ", "_")
 
 	// Remove any characters that aren't alphanumeric or underscore
 	var result strings.Builder
-	for _, r := range sanitized {
-		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '_' {
+	for _, r := range name {
+		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '_' {
 			result.WriteRune(r)
 		}
 	}
 
-	return result.String()
+	return strings.ToLower(result.String())
 }

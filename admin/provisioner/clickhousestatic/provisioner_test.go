@@ -222,8 +222,8 @@ func TestClickHouseStaticHumanReadableNaming(t *testing.T) {
 	opts := &provisioner.ResourceOptions{
 		Args: nil,
 		Annotations: map[string]string{
-			"org":     "Acme-Corp",
-			"project": "My-Project",
+			"organization_name": "Acme-Corp",
+			"project_name":      "My-Project",
 		},
 		RillVersion: "dev",
 	}
