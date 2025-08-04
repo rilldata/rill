@@ -349,18 +349,18 @@ definitions:
     properties:
       driver:
         type: string
-        description: Refers to the driver type and must be driver `motherduck`
-        const: motherduck
-      dsn:
+        description: Refers to the driver type and must be driver `duckdb`
+        const: duckdb
+      path:
         type: string
-        description: Data Source Name (DSN) specifying the MotherDuck connection endpoint
-      token:
+        description: Path to your MD database
+      init_sql:
         type: string
-        description: Authentication token for accessing MotherDuck (secret)
+        description: SQL executed during database initialization.
     required:
       - driver
-      - dsn
-      - token
+      - path
+      - init_sql
   mysql:
     type: object
     title: mysql

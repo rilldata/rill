@@ -616,7 +616,12 @@ func generateConnectorExample(connectorType string, connectorDef *yaml.Node) str
 
 	// Fallback: if driver wasn't found, use the connector type name
 	if !driverAdded {
-		example.WriteString(fmt.Sprintf("driver: %s                                   # Must be `%s` _(required)_\n\n", strings.ToLower(connectorType), strings.ToLower(connectorType)))
+		// Special case for MotherDuck which uses duckdb driver
+		if connectorType == "motherduck" {
+			example.WriteString("driver: duckdb                                   # Must be `duckdb` _(required)_\n\n")
+		} else {
+			example.WriteString(fmt.Sprintf("driver: %s                                   # Must be `%s` _(required)_\n\n", strings.ToLower(connectorType), strings.ToLower(connectorType)))
+		}
 	}
 
 	// Get all properties from the schema
@@ -704,7 +709,7 @@ func generateExampleValue(propName, propType string, propNode *yaml.Node) string
 		case strings.Contains(propName, "dsn"):
 			return "\"postgresql://user:pass@localhost:5432/db\""
 		case strings.Contains(propName, "path"):
-			return "\"/path/to/file\""
+			return "\"md:my_db\""
 		case strings.Contains(propName, "uri"):
 			return "\"s3://bucket/path\""
 		case strings.Contains(propName, "endpoint"):
@@ -723,6 +728,8 @@ func generateExampleValue(propName, propType string, propNode *yaml.Node) string
 			return "\"MyExternalID\""
 		case strings.Contains(propName, "location"):
 			return "\"s3://my-bucket/athena-output/\""
+		case strings.Contains(propName, "init_sql"):
+			return "|\n  INSTALL 'motherduck';\n  LOAD 'motherduck';\n  SET motherduck_token= '{{ .env.motherduck_token }}'"
 		default:
 			return "\"example_value\""
 		}
