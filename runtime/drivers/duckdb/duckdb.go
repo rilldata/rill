@@ -503,26 +503,26 @@ func (c *connection) reopenDB(ctx context.Context) error {
 			return err
 		}
 
+		dbInitQueries = append(dbInitQueries,
+			"SET GLOBAL preserve_insertion_order TO false",
+			fmt.Sprintf("SET extension_directory=%s", safeSQLString(extensionDir)),
+		)
 		// Find the instance dir for the data dir
-		// other drivers always write to a path which is a subdirectory of the instance directory
+		// other drivers always write (except in tests) to a path which is a subdirectory of the instance directory
 		tempDir, err := c.storage.TempDir()
 		if err != nil {
 			return err
 		}
-		for {
-			if tempDir == "" || filepath.Base(tempDir) == c.instanceID {
-				break
+		if strings.Contains(tempDir, c.instanceID) {
+			for tempDir != "" && tempDir != string(filepath.ListSeparator) && tempDir != "." {
+				if filepath.Base(tempDir) == c.instanceID {
+					break
+				}
+				tempDir = filepath.Dir(tempDir)
 			}
-			tempDir = filepath.Dir(tempDir)
+			dbInitQueries = append(dbInitQueries, fmt.Sprintf("SET allowed_directories=[%s, %s, 'http://', 'https://']", safeSQLString(dataDir+string(filepath.Separator)), safeSQLString(tempDir+string(filepath.Separator))),
+				"SET enable_external_access=false")
 		}
-		dbInitQueries = append(dbInitQueries,
-			"SET GLOBAL preserve_insertion_order TO false",
-			fmt.Sprintf("SET extension_directory=%s", safeSQLString(extensionDir)),
-			fmt.Sprintf("SET allowed_directories=[%s, %s, 'http://', 'https://']",
-				safeSQLString(dataDir+string(filepath.Separator)),
-				safeSQLString(tempDir+string(filepath.Separator))),
-			"SET enable_external_access=false",
-		)
 	}
 
 	// Add init SQL if provided
