@@ -194,13 +194,6 @@ export function useChatCore(options?: ChatCoreOptions) {
           const { instanceId } = variables;
 
           if (response.conversationId && context?.optimisticConversationId) {
-            // Remove optimistic cache entry first
-            const optimisticCacheKey = getConversationCacheKey(
-              instanceId,
-              context.optimisticConversationId,
-            );
-            void queryClient.removeQueries({ queryKey: optimisticCacheKey });
-
             // Fetch the specific conversation to get complete data including title
             const conversationResponse = await queryClient.fetchQuery(
               getRuntimeServiceGetConversationQueryOptions(
@@ -244,9 +237,15 @@ export function useChatCore(options?: ChatCoreOptions) {
                 };
               }
             });
-
             // Update current conversation ID to committed ID
             currentConversationId.set(response.conversationId);
+
+            // Remove optimistic cache entry
+            const optimisticCacheKey = getConversationCacheKey(
+              instanceId,
+              context.optimisticConversationId,
+            );
+            void queryClient.removeQueries({ queryKey: optimisticCacheKey });
           }
         },
 
