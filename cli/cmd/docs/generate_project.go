@@ -504,7 +504,7 @@ func generateDoc(sidebarPosition, level int, node *yaml.Node, indent string, req
 				doc.WriteString("- [**HTTPS**](#https) - Public files via HTTP/HTTPS\n")
 				doc.WriteString("- [**Salesforce**](#salesforce) - Salesforce data\n")
 				doc.WriteString("- [**Slack**](#slack) - Slack data\n")
-				doc.WriteString("- [**Local File**](#local_file) - Local file system\n\n")
+				// doc.WriteString("- [**Local File**](#local_file) - Local file system\n\n")
 
 				doc.WriteString(":::warning Security Recommendation\n")
 				doc.WriteString("For all credential parameters (passwords, tokens, keys), use environment variables with the syntax `{{.env.<connector_type>.<parameter_name>}}`. This keeps sensitive data out of your YAML files and version control. See our [credentials documentation](/build/credentials/) for complete setup instructions.\n")

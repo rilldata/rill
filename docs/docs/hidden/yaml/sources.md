@@ -24,7 +24,7 @@ _[string]_ - Refers to the resource type and must be `model` _(required)_
 
 ### `connector`
 
-_[string]_ - Refers to the connector type for the source, see [connectors](/connect) for more information _(required)_
+_[string]_ - Refers to the connector type for the source, see [connectors](/build/connect/) for more information _(required)_
 
 ### `uri`
 

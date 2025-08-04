@@ -43,8 +43,6 @@ Choose from the following connector types based on your data source:
 - [**HTTPS**](#https) - Public files via HTTP/HTTPS
 - [**Salesforce**](#salesforce) - Salesforce data
 - [**Slack**](#slack) - Slack data
-- [**Local File**](#local_file) - Local file system
-
 :::warning Security Recommendation
 For all credential parameters (passwords, tokens, keys), use environment variables with the syntax `{{.env.<connector_type>.<parameter_name>}}`. This keeps sensitive data out of your YAML files and version control. See our [credentials documentation](/build/credentials/) for complete setup instructions.
 :::

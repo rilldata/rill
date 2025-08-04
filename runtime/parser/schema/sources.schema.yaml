@@ -23,7 +23,7 @@ allOf:
         description: Refers to the resource type and must be `model`
       connector:
         type: string
-        description: Refers to the connector type for the source, see [connectors](/connect) for more information
+        description: Refers to the connector type for the source, see [connectors](/build/connect/) for more information
         enum:
           - https
           - s3

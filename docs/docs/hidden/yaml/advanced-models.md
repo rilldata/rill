@@ -26,12 +26,11 @@ _[object]_ - Specifies the refresh schedule that Rill should follow to re-ingest
 
 ### `connector`
 
-_[object]_ - Connector YAML files define how Rill connects to external data sources and OLAP engines. Each connector specifies a driver type and its required connection parameters.
- 
+_[string]_ - Refers to the resource type and must be `connector` 
 
-  - **`type`** - _[string]_ - Refers to the resource type and must be `connector` _(required)_
+### `driver`
 
-  - **`driver`** - _[string]_ - The type of connector, see [available connectors](#available-connector-types) (required) _(required)_
+_[string]_ - The type of connector, see [available connectors](../yaml/connectors#available-connector-types) (required) 
 
 ### `sql`
 
@@ -417,7 +416,7 @@ _[object]_ - Settings related to glob file matching.
 
 _[string]_ - Size of a batch (e.g., '100MB') 
 
-## Additional properties when `connector` is [`salesforce`](./connector#salesforce)
+## Additional properties when `connector` is [`salesforce`](./connectors#salesforce)
 
 ### `soql`
 

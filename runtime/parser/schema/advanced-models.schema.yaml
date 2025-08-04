@@ -14,7 +14,12 @@ allOf:
         $ref: '#/definitions/schedule_properties'
         description: Specifies the refresh schedule that Rill should follow to re-ingest and update the underlying model data 
       connector:
-        $ref: 'connectors.schema.yaml#'
+        type: string
+        const: connector
+        description: Refers to the resource type and must be `connector`
+      driver:
+        type: string
+        description: The type of connector, see [available connectors](../yaml/connectors#available-connector-types) (required)
       sql:
         type: string
         description: Raw SQL query to run against source
@@ -194,15 +199,6 @@ allOf:
             - connector
         then:
           $ref: '#/definitions/model/definitions/gcs'
-      # - if:
-      #     title: Additional properties when `connector` is [`local_file`](./connectors#local_file)
-      #     properties:
-      #       connector:
-      #         const: local_file
-      #     required:
-      #       - connector
-      #   then:
-      #     $ref: '#/definitions/model/definitions/local_file'
       - if:
           title: Additional properties when `connector` is [`redshift`](./connectors#redshift)
           properties:
@@ -222,7 +218,7 @@ allOf:
         then:
           $ref: '#/definitions/model/definitions/s3'
       - if:
-          title: Additional properties when `connector` is [`salesforce`](./connector#salesforce)
+          title: Additional properties when `connector` is [`salesforce`](./connectors#salesforce)
           properties:
             connector:
               const: salesforce
