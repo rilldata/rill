@@ -320,6 +320,11 @@ func (e *Executor) Query(ctx context.Context, qry *Query, executionTime *time.Ti
 		return nil, err
 	}
 
+	err = e.wrapClickhouseComputedTimeDim(ast)
+	if err != nil {
+		return nil, err
+	}
+
 	var res *drivers.Result
 	if !pivoting {
 		sql, args, err := ast.SQL()
@@ -433,6 +438,11 @@ func (e *Executor) Export(ctx context.Context, qry *Query, executionTime *time.T
 	}
 
 	if err := e.rewriteDruidGroups(ast); err != nil {
+		return "", err
+	}
+
+	err = e.wrapClickhouseComputedTimeDim(ast)
+	if err != nil {
 		return "", err
 	}
 

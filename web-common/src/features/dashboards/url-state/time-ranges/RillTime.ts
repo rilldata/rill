@@ -372,7 +372,7 @@ export class RillIsoInterval implements RillTimeInterval {
   }
 
   public getLabel(): [label: string, supported: boolean] {
-    return ["", false];
+    return ["Custom", true];
   }
 
   public getGrain() {

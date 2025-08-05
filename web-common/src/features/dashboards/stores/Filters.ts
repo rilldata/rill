@@ -1,4 +1,4 @@
-import { DimensionFilterMode } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/dimension-filter-mode.ts";
+import { DimensionFilterMode } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/constants";
 import {
   getDimensionDisplayName,
   getMeasureDisplayName,

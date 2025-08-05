@@ -8,7 +8,10 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { writeFileEnsuringDir } from "@rilldata/web-common/tests/utils/fs";
 import { test as setup } from "./base";
-import { RILL_DEVTOOL_BACKGROUND_PROCESS_PID_FILE } from "../constants";
+import {
+  RILL_DEV_STORAGE_STATE,
+  RILL_DEVTOOL_BACKGROUND_PROCESS_PID_FILE,
+} from "../constants";
 import { isServiceReady } from "@rilldata/web-common/tests/utils/is-service-ready";
 
 setup.describe("global setup", () => {
@@ -94,5 +97,54 @@ setup.describe("global setup", () => {
       })
       .toBeTruthy();
     console.log("Runtime service ready");
+  });
+
+  setup("should log in with the admin account", async ({ page }) => {
+    // Again, check that the required environment variables are set. This is for type-safety.
+    if (
+      !process.env.RILL_DEVTOOL_E2E_ADMIN_ACCOUNT_EMAIL ||
+      !process.env.RILL_DEVTOOL_E2E_ADMIN_ACCOUNT_PASSWORD
+    ) {
+      throw new Error(
+        "Missing required environment variables for authentication",
+      );
+    }
+
+    // Log in with the admin account
+    await page.goto("/");
+
+    // Fill in the email
+    const emailInput = page.locator('input[name="username"]');
+    await emailInput.waitFor({ state: "visible" });
+    await emailInput.click();
+    await emailInput.fill(process.env.RILL_DEVTOOL_E2E_ADMIN_ACCOUNT_EMAIL);
+
+    // Click the continue button
+    await page
+      .locator('button[type="submit"][data-action-button-primary="true"]', {
+        hasText: "Continue",
+      })
+      .click();
+
+    // Fill in the password
+    const passwordInput = page.locator('input[name="password"]');
+    await passwordInput.waitFor({ state: "visible" });
+    await passwordInput.click();
+    await passwordInput.fill(
+      process.env.RILL_DEVTOOL_E2E_ADMIN_ACCOUNT_PASSWORD,
+    );
+
+    // Click the continue button
+    await page
+      .locator('button[type="submit"][data-action-button-primary="true"]', {
+        hasText: "Continue",
+      })
+      .click();
+
+    await page.waitForURL("/");
+
+    // Save the admin's Rill auth cookies to file.
+    // Subsequent tests can seed their browser with this state, instead of needing to go through the log-in flow again.
+    await page.context().storageState({ path: RILL_DEV_STORAGE_STATE });
   });
 });

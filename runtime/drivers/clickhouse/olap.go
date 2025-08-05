@@ -64,6 +64,9 @@ func (c *Connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 		c.logger.Info("clickhouse query", zap.String("sql", c.Dialect().SanitizeQueryForLogging(stmt.Query)), zap.Any("args", stmt.Args), observability.ZapCtx(ctx))
 	}
 
+	// We can not directly append settings to the query as in Execute method because some queries like CREATE TABLE will not support it.
+	// Instead, we set the settings in the context.
+	// TODO: Fix query_settings_override not honoured here.
 	settings := map[string]any{
 		"cast_keep_nullable":        1,
 		"insert_distributed_sync":   1,

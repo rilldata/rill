@@ -1,3 +1,4 @@
+import { validateRillTime } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser.ts";
 import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config.ts";
 import { isoDurationToFullTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import {
@@ -45,7 +46,7 @@ const PreviousCompleteRangeReverseMap: Record<string, TimeRangePreset> = {};
 for (const preset in PreviousCompleteRangeMap) {
   const range: V1TimeRange = PreviousCompleteRangeMap[preset];
   PreviousCompleteRangeReverseMap[
-    `${range.isoDuration}_${range.isoOffset}_${range.roundToGrain}`
+    `${range.isoDuration}_${range.isoOffset ?? ""}_${range.roundToGrain}`
   ] = preset as TimeRangePreset;
 }
 
@@ -55,6 +56,11 @@ export function mapSelectedTimeRangeToV1TimeRange(
   explore: V1ExploreSpec,
 ): V1TimeRange | undefined {
   if (!selectedTimeRange?.name) return undefined;
+  if (!validateRillTime(selectedTimeRange.name)) {
+    return {
+      expression: selectedTimeRange.name,
+    };
+  }
 
   const timeRange: V1TimeRange = {};
   switch (selectedTimeRange.name) {
