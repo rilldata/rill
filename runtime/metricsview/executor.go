@@ -580,14 +580,14 @@ func (e *Executor) Search(ctx context.Context, qry *SearchQuery, executionTime *
 }
 
 type AnnotationsQuery struct {
-	MetricsView string              `mapstructure:"metrics_view"`
-	Measures    []string            `mapstructure:"measures"`
-	TimeRange   *TimeRange          `mapstructure:"time_range"`
-	Limit       *int64              `mapstructure:"limit"`
-	Offset      *int64              `mapstructure:"offset"`
-	TimeZone    string              `mapstructure:"time_zone"`
-	TimeGrain   runtimev1.TimeGrain `mapstructure:"time_grain"`
-	Priority    int                 `mapstructure:"priority"`
+	MetricsView string     `mapstructure:"metrics_view"`
+	Measures    []string   `mapstructure:"measures"`
+	TimeRange   *TimeRange `mapstructure:"time_range"`
+	Limit       *int64     `mapstructure:"limit"`
+	Offset      *int64     `mapstructure:"offset"`
+	TimeZone    string     `mapstructure:"time_zone"`
+	TimeGrain   TimeGrain  `mapstructure:"time_grain"`
+	Priority    int        `mapstructure:"priority"`
 }
 
 func (q *AnnotationsQuery) AsMap() (map[string]any, error) {
@@ -876,9 +876,9 @@ END) as time_grain`)
 		args = append(args, start, end)
 	}
 
-	if annotation.HasGrain && qry.TimeGrain != runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
+	if annotation.HasGrain && qry.TimeGrain != TimeGrainUnspecified {
 		b.WriteString(" AND (time_grain == 0 OR time_grain <= ?)")
-		args = append(args, int(qry.TimeGrain))
+		args = append(args, int(qry.TimeGrain.ToTimeutil()))
 	}
 
 	b.WriteString(" ORDER BY time")

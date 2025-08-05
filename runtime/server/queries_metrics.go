@@ -512,9 +512,18 @@ func (s *Server) MetricsViewAnnotations(ctx context.Context, req *runtimev1.Metr
 		limit = &req.Offset
 	}
 
-	tr := metricsview.TimeRange{}
+	qry := metricsview.AnnotationsQuery{
+		MetricsView: req.MetricsViewName,
+		Measures:    req.Measures,
+		Limit:       limit,
+		Offset:      offset,
+		TimeZone:    req.TimeZone,
+		TimeGrain:   metricsview.TimeGrainFromProto(req.TimeGrain),
+		Priority:    int(req.Priority),
+	}
+
 	if req.TimeRange != nil {
-		tr = metricsview.TimeRange{
+		qry.TimeRange = &metricsview.TimeRange{
 			Start:         req.TimeRange.Start.AsTime(),
 			End:           req.TimeRange.End.AsTime(),
 			Expression:    req.TimeRange.Expression,
@@ -525,19 +534,16 @@ func (s *Server) MetricsViewAnnotations(ctx context.Context, req *runtimev1.Metr
 		}
 	}
 
+	props, err := qry.AsMap()
+	if err != nil {
+		return nil, err
+	}
+
 	res, err := s.runtime.Resolve(ctx, &runtime.ResolveOptions{
-		InstanceID: req.InstanceId,
-		Resolver:   "annotations",
-		ResolverProperties: map[string]any{
-			"metrics_view": req.MetricsViewName,
-			"measures":     req.Measures,
-			"priority":     req.Priority,
-			"time_range":   tr,
-			"time_grain":   req.TimeGrain,
-			"limit":        limit,
-			"offset":       offset,
-		},
-		Claims: auth.GetClaims(ctx).SecurityClaims(),
+		InstanceID:         req.InstanceId,
+		Resolver:           "annotations",
+		ResolverProperties: props,
+		Claims:             auth.GetClaims(ctx).SecurityClaims(),
 	})
 	if err != nil {
 		return nil, err

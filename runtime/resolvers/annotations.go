@@ -104,21 +104,24 @@ func (r *annotationsResolver) Validate(ctx context.Context) error {
 }
 
 func (r *annotationsResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverResult, error) {
-	tsRes, err := resolveTimestampResult(ctx, r.runtime, r.instanceID, r.query.MetricsView, r.mv.TimeDimension, r.claims, r.query.Priority)
-	if err != nil {
-		return nil, err
-	}
-
-	if r.query.TimeRange == nil || r.query.TimeRange.IsZero() {
-		r.query.TimeRange = &metricsview.TimeRange{
-			Start: tsRes.Min,
-			End:   tsRes.Max,
+	// Only resolve time stamps if an absolute time range is not specified.
+	if r.query.TimeRange == nil || r.query.TimeRange.Start.IsZero() || r.query.TimeRange.End.IsZero() {
+		tsRes, err := resolveTimestampResult(ctx, r.runtime, r.instanceID, r.query.MetricsView, r.mv.TimeDimension, r.claims, r.query.Priority)
+		if err != nil {
+			return nil, err
 		}
-	}
 
-	err = r.executor.BindAnnotationsQuery(ctx, r.query, tsRes)
-	if err != nil {
-		return nil, err
+		if r.query.TimeRange == nil || r.query.TimeRange.IsZero() {
+			r.query.TimeRange = &metricsview.TimeRange{
+				Start: tsRes.Min,
+				End:   tsRes.Max,
+			}
+		}
+
+		err = r.executor.BindAnnotationsQuery(ctx, r.query, tsRes)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	res, err := r.executor.Annotations(ctx, r.query)

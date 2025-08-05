@@ -163,6 +163,36 @@ _[array of object]_ - Used to define the numeric aggregates of columns from your
 
   - **`treat_nulls_as`** - _[string]_ - used to configure what value to fill in for missing time buckets. This also works generally as COALESCING over non empty time buckets. 
 
+### `annotations`
+
+_[array of object]_ - Used to define annotations that can be displayed on charts 
+
+  - **`name`** - _[string]_ - A stable identifier for the annotation. Defaults to model or table names when not specified 
+
+  - **`model`** - _[string]_ - Refers to the model powering the annotation (either table or model is required). The model must have 'time' and 'description' columns. Optional columns include 'time_end' for range annotations and 'grain' to specify when the annotation should appear based on dashboard grain level. 
+
+  - **`database`** - _[string]_ - Refers to the database to use in the OLAP engine (to be used in conjunction with table). Otherwise, will use the default database or schema if not specified 
+
+  - **`database_schema`** - _[string]_ - Refers to the schema to use in the OLAP engine (to be used in conjunction with table). Otherwise, will use the default database or schema if not specified 
+
+  - **`table`** - _[string]_ - Refers to the table powering the annotation, should be used instead of model for annotations from external OLAP tables (either table or model is required) 
+
+  - **`connector`** - _[string]_ - Refers to the connector to use for the annotation 
+
+  - **`measures`** - _[anyOf]_ - Specifies which measures to apply the annotation to. Applies to all measures if not specified 
+
+    - **option 1** - _[string]_ - Simple field name as a string.
+
+    - **option 2** - _[array of anyOf]_ - List of field selectors, each can be a string or an object with detailed configuration.
+
+      - **option 1** - _[string]_ - Shorthand field selector, interpreted as the name.
+
+      - **option 2** - _[object]_ - Detailed field selector configuration with name and optional time grain.
+
+        - **`name`** - _[string]_ - Name of the field to select. _(required)_
+
+        - **`time_grain`** - _[string]_ - Time grain for time-based dimensions. 
+
 ### `security`
 
 _[object]_ - Defines security rules and access control policies for resources 

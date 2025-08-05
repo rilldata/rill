@@ -111,7 +111,7 @@ tests:
       time_range:
         start: 2024-01-01T00:00:00Z
         end: 2024-03-31T00:00:00Z
-      time_grain: 5
+      time_grain: "day"
     result:
       - time: "2024-01-05T00:00:00Z"
         grain: "day"
