@@ -2,12 +2,18 @@ package server
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io"
+	"strings"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/metricsview"
+	"github.com/rilldata/rill/runtime/pkg/mapstructureutil"
 	"github.com/rilldata/rill/runtime/pkg/observability"
+	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"github.com/rilldata/rill/runtime/pkg/rilltime"
 	"github.com/rilldata/rill/runtime/pkg/timeutil"
 	"github.com/rilldata/rill/runtime/queries"
@@ -482,6 +488,120 @@ func (s *Server) MetricsViewTimeRanges(ctx context.Context, req *runtimev1.Metri
 	return &runtimev1.MetricsViewTimeRangesResponse{
 		TimeRanges: timeRanges,
 	}, nil
+}
+
+func (s *Server) MetricsViewAnnotations(ctx context.Context, req *runtimev1.MetricsViewAnnotationsRequest) (*runtimev1.MetricsViewAnnotationsResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.metric_view", req.MetricsViewName),
+		attribute.String("args.measures", strings.Join(req.Measures, ",")),
+	)
+
+	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadMetrics) {
+		return nil, ErrForbidden
+	}
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+
+	var limit *int64
+	if req.Limit != 0 {
+		limit = &req.Limit
+	}
+
+	var offset *int64
+	if req.Offset != 0 {
+		limit = &req.Offset
+	}
+
+	qry := metricsview.AnnotationsQuery{
+		MetricsView: req.MetricsViewName,
+		Measures:    req.Measures,
+		Limit:       limit,
+		Offset:      offset,
+		TimeZone:    req.TimeZone,
+		TimeGrain:   metricsview.TimeGrainFromProto(req.TimeGrain),
+		Priority:    int(req.Priority),
+	}
+
+	if req.TimeRange != nil {
+		qry.TimeRange = &metricsview.TimeRange{
+			Start:         req.TimeRange.Start.AsTime(),
+			End:           req.TimeRange.End.AsTime(),
+			Expression:    req.TimeRange.Expression,
+			IsoDuration:   req.TimeRange.IsoDuration,
+			IsoOffset:     req.TimeRange.IsoOffset,
+			RoundToGrain:  metricsview.TimeGrainFromProto(req.TimeRange.RoundToGrain),
+			TimeDimension: req.TimeRange.TimeDimension,
+		}
+	}
+
+	props, err := qry.AsMap()
+	if err != nil {
+		return nil, err
+	}
+
+	res, err := s.runtime.Resolve(ctx, &runtime.ResolveOptions{
+		InstanceID:         req.InstanceId,
+		Resolver:           "annotations",
+		ResolverProperties: props,
+		Claims:             auth.GetClaims(ctx).SecurityClaims(),
+	})
+	if err != nil {
+		return nil, err
+	}
+	defer res.Close()
+
+	rows := make([]*runtimev1.MetricsViewAnnotationsResponse_Annotation, 0)
+	for {
+		row, err := res.Next()
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				break
+			}
+			return nil, err
+		}
+		var ann annotation
+		err = mapstructureutil.WeakDecode(row, &ann)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+
+		additionalFieldsPb, err := pbutil.ToStruct(ann.AdditionalFields, res.Schema())
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+
+		var timeEnd *timestamppb.Timestamp
+		if !ann.TimeEnd.IsZero() {
+			timeEnd = timestamppb.New(ann.TimeEnd)
+		}
+
+		var grain *string
+		if ann.Grain != "" {
+			grain = &ann.Grain
+		}
+
+		rows = append(rows, &runtimev1.MetricsViewAnnotationsResponse_Annotation{
+			Time:             timestamppb.New(ann.Time),
+			TimeEnd:          timeEnd,
+			Description:      ann.Description,
+			Grain:            grain,
+			ForMeasures:      ann.ForMeasures,
+			AdditionalFields: additionalFieldsPb,
+		})
+	}
+
+	return &runtimev1.MetricsViewAnnotationsResponse{
+		Rows: rows,
+	}, nil
+}
+
+type annotation struct {
+	Time             time.Time      `mapstructure:"time"`
+	TimeEnd          time.Time      `mapstructure:"time_end"`
+	Description      string         `mapstructure:"description"`
+	Grain            string         `mapstructure:"grain"`
+	ForMeasures      []string       `mapstructure:"for_measures"`
+	AdditionalFields map[string]any `mapstructure:",remain"`
 }
 
 func resolveMVAndSecurity(ctx context.Context, rt *runtime.Runtime, instanceID, metricsViewName string) (*runtimev1.MetricsViewState, *runtime.ResolvedSecurity, error) {

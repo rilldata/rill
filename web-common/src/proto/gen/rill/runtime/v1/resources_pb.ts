@@ -1383,6 +1383,13 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
   measures: MetricsViewSpec_Measure[] = [];
 
   /**
+   * Annotations in the metrics view
+   *
+   * @generated from field: repeated rill.runtime.v1.MetricsViewSpec.Annotation annotations = 29;
+   */
+  annotations: MetricsViewSpec_Annotation[] = [];
+
+  /**
    * Security for the metrics view
    *
    * @generated from field: repeated rill.runtime.v1.SecurityRule security_rules = 23;
@@ -1441,6 +1448,7 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
     { no: 20, name: "watermark_expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "dimensions", kind: "message", T: MetricsViewSpec_Dimension, repeated: true },
     { no: 7, name: "measures", kind: "message", T: MetricsViewSpec_Measure, repeated: true },
+    { no: 29, name: "annotations", kind: "message", T: MetricsViewSpec_Annotation, repeated: true },
     { no: 23, name: "security_rules", kind: "message", T: SecurityRule, repeated: true },
     { no: 12, name: "first_day_of_week", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 13, name: "first_month_of_year", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
@@ -1843,6 +1851,120 @@ export class MetricsViewSpec_Measure extends Message<MetricsViewSpec_Measure> {
 
   static equals(a: MetricsViewSpec_Measure | PlainMessage<MetricsViewSpec_Measure> | undefined, b: MetricsViewSpec_Measure | PlainMessage<MetricsViewSpec_Measure> | undefined): boolean {
     return proto3.util.equals(MetricsViewSpec_Measure, a, b);
+  }
+}
+
+/**
+ * Annotations that can be applied to measures. Each annotation needs to have a model or a table defined.
+ * 1. The underlying model/table has to have a `time` and `description` columns.
+ * 2. Can additionally have `time_end` column to convert the annotation to range type annotation.
+ * 3. Can additionally have `grain` column, this is used to not query for annotations greater than selected grain in dashboard. Also forces `time` and `time_end` in UI to be truncated to selected grain.
+ *
+ * @generated from message rill.runtime.v1.MetricsViewSpec.Annotation
+ */
+export class MetricsViewSpec_Annotation extends Message<MetricsViewSpec_Annotation> {
+  /**
+   * @generated from field: string name = 1;
+   */
+  name = "";
+
+  /**
+   * Connector containing the table
+   *
+   * @generated from field: string connector = 2;
+   */
+  connector = "";
+
+  /**
+   * Name of the database where table is located (optional)
+   *
+   * @generated from field: string database = 3;
+   */
+  database = "";
+
+  /**
+   * Name of the database schema where table is located (optional)
+   *
+   * @generated from field: string database_schema = 4;
+   */
+  databaseSchema = "";
+
+  /**
+   * Name of the model that source of annotation
+   *
+   * @generated from field: string table = 5;
+   */
+  table = "";
+
+  /**
+   * Name of the model that source of annotation. Either table or model should be set.
+   *
+   * @generated from field: string model = 6;
+   */
+  model = "";
+
+  /**
+   * Measures to apply the annotation to. If `measures_selector` is set, this will only be set in `state.valid_spec`.
+   *
+   * @generated from field: repeated string measures = 7;
+   */
+  measures: string[] = [];
+
+  /**
+   * Dynamic selector for `measures`. Will be processed during validation, so it will always be empty in `state.valid_spec`.
+   *
+   * @generated from field: rill.runtime.v1.FieldSelector measures_selector = 8;
+   */
+  measuresSelector?: FieldSelector;
+
+  /**
+   * Signifies that the underlying table has `time_end` column. Will be used while querying to add additional filter.
+   *
+   * @generated from field: bool has_time_end = 10;
+   */
+  hasTimeEnd = false;
+
+  /**
+   * Signifies that the underlying table has `grain` column. Will be used while querying to add additional filter.
+   *
+   * @generated from field: bool has_grain = 11;
+   */
+  hasGrain = false;
+
+  constructor(data?: PartialMessage<MetricsViewSpec_Annotation>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.MetricsViewSpec.Annotation";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "database", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "database_schema", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "table", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "model", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 7, name: "measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 8, name: "measures_selector", kind: "message", T: FieldSelector },
+    { no: 10, name: "has_time_end", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 11, name: "has_grain", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec_Annotation {
+    return new MetricsViewSpec_Annotation().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewSpec_Annotation {
+    return new MetricsViewSpec_Annotation().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewSpec_Annotation {
+    return new MetricsViewSpec_Annotation().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: MetricsViewSpec_Annotation | PlainMessage<MetricsViewSpec_Annotation> | undefined, b: MetricsViewSpec_Annotation | PlainMessage<MetricsViewSpec_Annotation> | undefined): boolean {
+    return proto3.util.equals(MetricsViewSpec_Annotation, a, b);
   }
 }
 
