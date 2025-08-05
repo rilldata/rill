@@ -1,5 +1,6 @@
 import { makeTempDir } from "@rilldata/web-common/tests/utils/make-temp-dir";
 import { execAsync } from "@rilldata/web-common/tests/utils/spawn";
+import { RILL_DEV_STORAGE_STATE } from "@rilldata/web-integration/tests/constants.ts";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "./setup/base";
@@ -18,6 +19,7 @@ test.describe("Deploy journey", () => {
   test.use({
     cliHomeDir,
     project: "AdBids",
+    rillDevBrowserState: RILL_DEV_STORAGE_STATE,
   });
 
   test.describe.configure({

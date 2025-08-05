@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { page } from "$app/stores";
   import { Button } from "@rilldata/web-common/components/button";
   import { getUpdateProjectRoute } from "@rilldata/web-common/features/project/deploy/route-utils.ts";
   import { getManageProjectAccess } from "@rilldata/web-common/features/project/selectors.ts";

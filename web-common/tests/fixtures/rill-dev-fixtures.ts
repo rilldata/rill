@@ -1,6 +1,5 @@
 import type { Page } from "@playwright/test";
 import { asyncWaitUntil } from "@rilldata/web-common/lib/waitUtils.ts";
-import { RILL_DEV_STORAGE_STATE } from "@rilldata/web-integration/tests/constants.ts";
 import axios from "axios";
 import { spawn } from "node:child_process";
 import { cpSync, existsSync, mkdirSync, rmSync } from "node:fs";
@@ -16,6 +15,7 @@ type MyFixtures = {
   project: string | undefined;
   projectDir: string | undefined;
   rillDevPage: Page;
+  rillDevBrowserState: string | undefined;
 };
 
 export const rillDev = base.extend<MyFixtures>({
@@ -26,8 +26,14 @@ export const rillDev = base.extend<MyFixtures>({
   // We default to using a randomly created temporary directory for project.
   // This can be used to get a consistent
   projectDir: [undefined, { option: true }],
+  // If set, used to create the context used to create the rillDevPage.
+  // A fresh context is used if not provided.
+  rillDevBrowserState: [undefined, { option: true }],
 
-  rillDevPage: async ({ browser, project, projectDir, cliHomeDir }, use) => {
+  rillDevPage: async (
+    { browser, project, projectDir, cliHomeDir, rillDevBrowserState },
+    use,
+  ) => {
     const TEST_PORT = await getOpenPort();
     const TEST_GRPC_PORT = await getOpenPort();
     const TEST_PROJECT_DIRECTORY =
@@ -93,9 +99,15 @@ export const rillDev = base.extend<MyFixtures>({
       }
     });
 
-    const context = await browser.newContext({
-      storageState: RILL_DEV_STORAGE_STATE,
-    });
+    const context = await browser.newContext(
+      rillDevBrowserState
+        ? {
+            storageState: rillDevBrowserState,
+          }
+        : {
+            storageState: { cookies: [], origins: [] },
+          },
+    );
     const page = await context.newPage();
 
     await page.goto(`http://localhost:${TEST_PORT}`);
