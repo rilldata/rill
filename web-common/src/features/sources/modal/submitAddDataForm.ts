@@ -51,13 +51,18 @@ export async function submitAddSourceForm(
     formValues,
   );
 
-  // Make a new <source>.yaml file
-  const newSourceFilePath = getFileAPIPathFromNameAndType(
-    formValues.name as string,
-    EntityType.Table,
+  const newConnectorName = getName(
+    connector.name as string,
+    fileArtifacts.getNamesForKind(ResourceKind.Connector),
+  );
+
+  // Make a new <connector>.yaml file
+  const newConnectorFilePath = getFileAPIPathFromNameAndType(
+    newConnectorName,
+    EntityType.Connector,
   );
   await runtimeServicePutFile(instanceId, {
-    path: newSourceFilePath,
+    path: newConnectorFilePath,
     blob: compileSourceYAML(rewrittenConnector, rewrittenFormValues),
     create: true,
     createOnly: false, // The modal might be opened from a YAML file with placeholder text, so the file might already exist
@@ -70,13 +75,13 @@ export async function submitAddSourceForm(
       queryClient,
       rewrittenConnector,
       rewrittenFormValues,
-      "source",
+      "connector",
     ),
     create: true,
     createOnly: false,
   });
 
-  await goto(`/files/${newSourceFilePath}`);
+  await goto(`/files/${newConnectorFilePath}`);
 }
 
 export async function submitAddOLAPConnectorForm(
