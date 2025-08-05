@@ -18,19 +18,19 @@ Rill offers flexible connection strategies to fit different data architectures a
 - ### _[Rill Managed OLAP + Data Ingestion (Default)](/connect/data-source)_:
   
   Use Rill's embedded **ClickHouse / DuckDB** (depending on size of data) as the OLAP engine and ingest data from external sources.  Full Rill functionality with some caveats depending which embedded engine you select. 
+ 
+      :::tip Rill Defaults with DuckDB
+      When starting Rill for the first time, Rill will autopopulate the connector with a `duckdb.yaml`. To use ClickHouse, create a managed ClickHouse connector, `clickhouse.yaml` with `managed: true`. For more information, see our [ClickHouse](/connect/olap/clickhouse) docs.
 
-:::tip Rill Defaults with DuckDB
-When starting Rill for the first time, Rill will autopopulate the connector with a `duckdb.yaml`. To use ClickHouse, create a managed ClickHouse connector, `clickhouse.yaml` with `managed: true`. For more information, see our [ClickHouse](/connect/olap/clickhouse) docs.
-
-:::
+      :::
 
 - ### _[Bring Your Own OLAP (BYO OLAP)](/connect/olap)_: 
   
   Large-scale datasets (100GB+) or existing OLAP infrastructure Connect to existing **ClickHouse**, **Druid**, **Pinot**, or **MotherDuck** instances. Use Rill's live connectors to ingest data directly into your OLAP engines.
 
-:::note Modeling on BYO-OLAP
- Some modeling features may be limited depending on the engine.
-:::
+    :::note Modeling on BYO-OLAP
+    Some modeling features may be limited depending on the engine.
+    :::
 
 ## Supported OLAP Engines
 
@@ -201,8 +201,7 @@ When starting Rill for the first time, Rill will autopopulate the connector with
 ### HTTPS
 ### Local File
 ### Salesforce
-### Google Sheets
-### Slack
+
 
 <div className="connector-icon-grid">
   <ConnectorIcon
@@ -238,6 +237,14 @@ When starting Rill for the first time, Rill will autopopulate the connector with
     link="/connect/data-source/googlesheets"
     linkLabel="Learn more"
   />
+</div>
+
+## Other Integrations
+
+### Google Sheets
+### Slack
+
+<div className="connector-icon-grid">
 
   <ConnectorIcon
     icon={<img src="/img/connect/icons/Logo-Slack.svg" alt="Slack" className="sheets-icon" />}

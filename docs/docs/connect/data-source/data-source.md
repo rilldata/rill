@@ -184,24 +184,6 @@ Rill supports connecting your data to both [DuckDB](/connect/olap/duckdb) and [C
     link="/connect/data-source/googlesheets"
     linkLabel="Learn more"
   />
-
-  <ConnectorIcon
-    icon={<img src="/img/connect/icons/Logo-Slack.svg" alt="Slack" className="sheets-icon" />}
-    header="Slack"
-    content="Connect to Slack to extract data from channels, messages, and other workspace information."
-    link="/connect/data-source/slack"
-    linkLabel="Learn more"
-    referenceLink="slack"
-  />
-
-  <ConnectorIcon
-    icon={<img src="/img/connect/icons/Logo-AI.svg" alt="AI" className="sheets-icon" />}
-    header="AI"
-    content="Define your own OpenAI Connector and define your own API key."
-    link="/build/metrics-view/#creating-metrics-with-ai"
-    linkLabel="Learn more"
-    referenceLink="ai"
-  />
 </div>
 
 

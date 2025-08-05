@@ -1,5 +1,5 @@
 ---
-title: Configure Local credentials
+title: Configure Local Credentials
 sidebar_label: Configure Local Credentials
 sidebar_position: 15
 ---
