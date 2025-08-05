@@ -17,9 +17,12 @@ import {
 import { ResourceKind } from "../entity-management/resource-selectors";
 import type { ErrorType } from "@rilldata/web-common/runtime-client/http-client";
 
-// Helper function to determine if SQL modeling is supported
-// Previously `clickhouseModeling` was used to determine if SQL modeling was supported
-function isSqlModelingSupported(spec: V1ConnectorSpec) {
+// Helper function to determine if a connector prefers SQL-based modeling
+// Connectors that prefer SQL models include:
+// - DuckDB (embedded database with full SQL support)
+// - Provisioned (managed) connectors
+// - Read-write mode connectors
+function prefersSqlBasedModeling(spec: V1ConnectorSpec) {
   return (
     spec.driver === "duckdb" ||
     spec.provision === true ||
@@ -69,19 +72,12 @@ function createModelingSupportQueryOptions(
       if (!spec) return false;
 
       if (modelingType === "sql") {
-        // SQL modeling is supported if:
-        // - DuckDB (embedded database with full SQL support)
-        // - Provisioned (managed) connectors
-        // - Read-write mode connectors
-        return isSqlModelingSupported(spec);
+        // SQL-based modeling is preferred for connectors that prefer SQL models
+        return prefersSqlBasedModeling(spec);
       } else {
-        // YAML modeling is supported for connectors that support connector type specification:
-        // These connectors use YAML files with "connector: postgres" syntax
-        // - Postgres, MySQL, SQL Server, etc. (external databases)
-        // - NOT DuckDB (uses SQL models)
-        // - NOT provisioned connectors (uses SQL models)
-        // - NOT read-write mode connectors (uses SQL models)
-        return !isSqlModelingSupported(spec);
+        // YAML-based modeling is preferred for connectors that prefer YAML models
+        // These are typically external databases (Postgres, MySQL, etc.)
+        return !prefersSqlBasedModeling(spec);
       }
     },
   };
@@ -93,9 +89,11 @@ function createModelingSupportQueryOptions(
  */
 
 /**
- * Check if modeling is supported for a specific connector based on its properties
+ * Check if SQL-based modeling is preferred for a specific connector
+ * Note: When modeling is supported, users can use either SQL or YAML
+ * This function determines which approach is preferred for the connector
  */
-export function useIsModelingSupportedForConnectorOLAP(
+export function useIsSqlBasedModelingSupportedForConnector(
   instanceId: string,
   connectorName: string,
 ): CreateQueryResult<boolean, ErrorType<RpcStatus>> {
@@ -105,9 +103,11 @@ export function useIsModelingSupportedForConnectorOLAP(
 }
 
 /**
- * Check if YAML modeling is supported for a specific connector based on its properties
+ * Check if YAML-based modeling is preferred for a specific connector
+ * Note: When modeling is supported, users can use either SQL or YAML
+ * This function determines which approach is preferred for the connector
  */
-export function useIsYamlModelingSupportedForConnector(
+export function useIsYamlBasedModelingSupportedForConnector(
   instanceId: string,
   connectorName: string,
 ): CreateQueryResult<boolean, ErrorType<RpcStatus>> {
@@ -116,7 +116,13 @@ export function useIsYamlModelingSupportedForConnector(
   );
 }
 
-export function useIsModelingSupportedForDefaultOlapDriverOLAP(
+// Legacy alias for backward compatibility
+export const useIsModelingSupportedForConnectorOLAP =
+  useIsSqlBasedModelingSupportedForConnector;
+export const useIsYamlModelingSupportedForConnector =
+  useIsYamlBasedModelingSupportedForConnector;
+
+export function useIsSqlBasedModelingSupportedForDefaultOlapDriver(
   instanceId: string,
 ): CreateQueryResult<boolean, ErrorType<RpcStatus>> {
   const instanceQuery = createRuntimeServiceGetInstance(instanceId, {
@@ -135,6 +141,10 @@ export function useIsModelingSupportedForDefaultOlapDriverOLAP(
 
   return createQuery(queryOptions);
 }
+
+// Legacy alias for backward compatibility
+export const useIsModelingSupportedForDefaultOlapDriverOLAP =
+  useIsSqlBasedModelingSupportedForDefaultOlapDriver;
 
 export function useDatabasesOLAP(instanceId: string, connector: string) {
   return createConnectorServiceOLAPListTables(

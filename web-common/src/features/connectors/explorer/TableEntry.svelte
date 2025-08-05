@@ -12,8 +12,8 @@
     makeFullyQualifiedTableName,
     makeTablePreviewHref,
   } from "../olap/olap-config";
-  import { useIsModelingSupportedForConnectorOLAP as useIsModelingSupportedForConnector } from "../selectors";
-  import { useIsYamlModelingSupportedForConnector } from "../selectors";
+  import { useIsSqlBasedModelingSupportedForConnector } from "../selectors";
+  import { useIsYamlBasedModelingSupportedForConnector } from "../selectors";
   import { runtime } from "../../../runtime-client/runtime-store";
   import type { ConnectorExplorerStore } from "./connector-explorer-store";
 
@@ -36,15 +36,15 @@
   const { allowContextMenu, allowNavigateToTable, allowShowSchema } = store;
 
   $: ({ instanceId: runtimeInstanceId } = $runtime);
-  $: isModelingSupportedForConnector = useIsModelingSupportedForConnector(
-    runtimeInstanceId,
-    connector,
-  );
-  $: isModelingSupported = $isModelingSupportedForConnector.data;
+  $: isSqlBasedModelingSupportedForConnector =
+    useIsSqlBasedModelingSupportedForConnector(runtimeInstanceId, connector);
+  $: isSqlBasedModelingSupported =
+    $isSqlBasedModelingSupportedForConnector.data;
 
-  $: isYamlModelingSupportedForConnector =
-    useIsYamlModelingSupportedForConnector(runtimeInstanceId, connector);
-  $: isYamlModelingSupported = $isYamlModelingSupportedForConnector.data;
+  $: isYamlBasedModelingSupportedForConnector =
+    useIsYamlBasedModelingSupportedForConnector(runtimeInstanceId, connector);
+  $: isYamlBasedModelingSupported =
+    $isYamlBasedModelingSupportedForConnector.data;
 
   $: fullyQualifiedTableName = makeFullyQualifiedTableName(
     driver,
@@ -110,7 +110,7 @@
       />
     {/if}
 
-    {#if allowContextMenu && (showGenerateMetricsAndDashboard || isModelingSupported || isYamlModelingSupported)}
+    {#if allowContextMenu && (showGenerateMetricsAndDashboard || isSqlBasedModelingSupported || isYamlBasedModelingSupported)}
       <DropdownMenu.Root bind:open={contextMenuOpen}>
         <DropdownMenu.Trigger asChild let:builder>
           <ContextButton
@@ -135,8 +135,8 @@
             {databaseSchema}
             {table}
             {showGenerateMetricsAndDashboard}
-            {isModelingSupported}
-            {isYamlModelingSupported}
+            isModelingSupported={isSqlBasedModelingSupported}
+            isYamlModelingSupported={isYamlBasedModelingSupported}
           />
         </DropdownMenu.Content>
       </DropdownMenu.Root>

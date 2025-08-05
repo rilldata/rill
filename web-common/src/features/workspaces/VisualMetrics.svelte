@@ -28,7 +28,7 @@
   import { tick } from "svelte";
   import { slide } from "svelte/transition";
   import { parseDocument, Scalar, YAMLMap, YAMLSeq } from "yaml";
-  import { useIsModelingSupportedForConnectorOLAP as useIsModelingSupportedForConnector } from "../connectors/selectors";
+  import { useIsSqlBasedModelingSupportedForConnector } from "../connectors/selectors";
   import ConnectorExplorer from "../connectors/explorer/ConnectorExplorer.svelte";
   import { connectorExplorerStore } from "../connectors/explorer/connector-explorer-store";
   import { FileArtifact } from "../entity-management/file-artifact";
@@ -103,10 +103,10 @@
     dimensions: parsedDocument.get("dimensions"),
   };
 
-  $: isModelingSupportedForConnector = olapConnector
-    ? useIsModelingSupportedForConnector(instanceId, olapConnector)
+  $: isSqlBasedModelingSupportedForConnector = olapConnector
+    ? useIsSqlBasedModelingSupportedForConnector(instanceId, olapConnector)
     : null;
-  $: isModelingSupported = $isModelingSupportedForConnector?.data;
+  $: isModelingSupported = $isSqlBasedModelingSupportedForConnector?.data;
 
   $: rawSmallestTimeGrain = parsedDocument.get("smallest_time_grain");
   $: rawTimeDimension = parsedDocument.get("timeseries");
