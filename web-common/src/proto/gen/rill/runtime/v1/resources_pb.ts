@@ -1812,13 +1812,6 @@ export class MetricsViewSpec_Measure extends Message<MetricsViewSpec_Measure> {
    */
   dataType?: Type;
 
-  /**
-   * All the annotations defined for this measure.
-   *
-   * @generated from field: repeated string annotations = 16;
-   */
-  annotations: string[] = [];
-
   constructor(data?: PartialMessage<MetricsViewSpec_Measure>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1842,7 +1835,6 @@ export class MetricsViewSpec_Measure extends Message<MetricsViewSpec_Measure> {
     { no: 6, name: "valid_percent_of_total", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 14, name: "treat_nulls_as", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 15, name: "data_type", kind: "message", T: Type },
-    { no: 16, name: "annotations", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec_Measure {

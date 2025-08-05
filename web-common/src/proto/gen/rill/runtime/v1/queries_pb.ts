@@ -3719,9 +3719,9 @@ export class MetricsViewAnnotationsRequest extends Message<MetricsViewAnnotation
  */
 export class MetricsViewAnnotationsResponse extends Message<MetricsViewAnnotationsResponse> {
   /**
-   * @generated from field: repeated rill.runtime.v1.MetricsViewAnnotationsResponse.Measure measures = 1;
+   * @generated from field: repeated rill.runtime.v1.MetricsViewAnnotationsResponse.Annotation rows = 1;
    */
-  measures: MetricsViewAnnotationsResponse_Measure[] = [];
+  rows: MetricsViewAnnotationsResponse_Annotation[] = [];
 
   constructor(data?: PartialMessage<MetricsViewAnnotationsResponse>) {
     super();
@@ -3731,7 +3731,7 @@ export class MetricsViewAnnotationsResponse extends Message<MetricsViewAnnotatio
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.MetricsViewAnnotationsResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "measures", kind: "message", T: MetricsViewAnnotationsResponse_Measure, repeated: true },
+    { no: 1, name: "rows", kind: "message", T: MetricsViewAnnotationsResponse_Annotation, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewAnnotationsResponse {
@@ -3777,7 +3777,7 @@ export class MetricsViewAnnotationsResponse_Annotation extends Message<MetricsVi
   description = "";
 
   /**
-   * Minimum grain this annotation is displayed for. Maps to `grain` column from the table.
+   * Optional. Minimum grain this annotation is displayed for. Maps to `grain` column from the table.
    *
    * @generated from field: optional string grain = 4;
    */
@@ -3789,6 +3789,13 @@ export class MetricsViewAnnotationsResponse_Annotation extends Message<MetricsVi
    * @generated from field: google.protobuf.Struct additional_fields = 5;
    */
   additionalFields?: Struct;
+
+  /**
+   * List of measure names that this annotation applies to. If empty, no restrictions apply.
+   *
+   * @generated from field: repeated string only_measures = 6;
+   */
+  onlyMeasures: string[] = [];
 
   constructor(data?: PartialMessage<MetricsViewAnnotationsResponse_Annotation>) {
     super();
@@ -3803,6 +3810,7 @@ export class MetricsViewAnnotationsResponse_Annotation extends Message<MetricsVi
     { no: 3, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "grain", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 5, name: "additional_fields", kind: "message", T: Struct },
+    { no: 6, name: "only_measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewAnnotationsResponse_Annotation {
@@ -3819,108 +3827,6 @@ export class MetricsViewAnnotationsResponse_Annotation extends Message<MetricsVi
 
   static equals(a: MetricsViewAnnotationsResponse_Annotation | PlainMessage<MetricsViewAnnotationsResponse_Annotation> | undefined, b: MetricsViewAnnotationsResponse_Annotation | PlainMessage<MetricsViewAnnotationsResponse_Annotation> | undefined): boolean {
     return proto3.util.equals(MetricsViewAnnotationsResponse_Annotation, a, b);
-  }
-}
-
-/**
- * @generated from message rill.runtime.v1.MetricsViewAnnotationsResponse.MeasureAnnotation
- */
-export class MetricsViewAnnotationsResponse_MeasureAnnotation extends Message<MetricsViewAnnotationsResponse_MeasureAnnotation> {
-  /**
-   * Not optional, not null
-   *
-   * @generated from field: string name = 1;
-   */
-  name = "";
-
-  /**
-   * Not optional, not null
-   *
-   * @generated from field: rill.runtime.v1.StructType schema = 2;
-   */
-  schema?: StructType;
-
-  /**
-   * Not optional, not null
-   *
-   * @generated from field: repeated rill.runtime.v1.MetricsViewAnnotationsResponse.Annotation data = 3;
-   */
-  data: MetricsViewAnnotationsResponse_Annotation[] = [];
-
-  constructor(data?: PartialMessage<MetricsViewAnnotationsResponse_MeasureAnnotation>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.MetricsViewAnnotationsResponse.MeasureAnnotation";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "schema", kind: "message", T: StructType },
-    { no: 3, name: "data", kind: "message", T: MetricsViewAnnotationsResponse_Annotation, repeated: true },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewAnnotationsResponse_MeasureAnnotation {
-    return new MetricsViewAnnotationsResponse_MeasureAnnotation().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewAnnotationsResponse_MeasureAnnotation {
-    return new MetricsViewAnnotationsResponse_MeasureAnnotation().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewAnnotationsResponse_MeasureAnnotation {
-    return new MetricsViewAnnotationsResponse_MeasureAnnotation().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: MetricsViewAnnotationsResponse_MeasureAnnotation | PlainMessage<MetricsViewAnnotationsResponse_MeasureAnnotation> | undefined, b: MetricsViewAnnotationsResponse_MeasureAnnotation | PlainMessage<MetricsViewAnnotationsResponse_MeasureAnnotation> | undefined): boolean {
-    return proto3.util.equals(MetricsViewAnnotationsResponse_MeasureAnnotation, a, b);
-  }
-}
-
-/**
- * @generated from message rill.runtime.v1.MetricsViewAnnotationsResponse.Measure
- */
-export class MetricsViewAnnotationsResponse_Measure extends Message<MetricsViewAnnotationsResponse_Measure> {
-  /**
-   * Not optional, not null
-   *
-   * @generated from field: string name = 1;
-   */
-  name = "";
-
-  /**
-   * Not optional, not null
-   *
-   * @generated from field: repeated rill.runtime.v1.MetricsViewAnnotationsResponse.MeasureAnnotation annotations = 2;
-   */
-  annotations: MetricsViewAnnotationsResponse_MeasureAnnotation[] = [];
-
-  constructor(data?: PartialMessage<MetricsViewAnnotationsResponse_Measure>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.MetricsViewAnnotationsResponse.Measure";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "annotations", kind: "message", T: MetricsViewAnnotationsResponse_MeasureAnnotation, repeated: true },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewAnnotationsResponse_Measure {
-    return new MetricsViewAnnotationsResponse_Measure().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewAnnotationsResponse_Measure {
-    return new MetricsViewAnnotationsResponse_Measure().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewAnnotationsResponse_Measure {
-    return new MetricsViewAnnotationsResponse_Measure().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: MetricsViewAnnotationsResponse_Measure | PlainMessage<MetricsViewAnnotationsResponse_Measure> | undefined, b: MetricsViewAnnotationsResponse_Measure | PlainMessage<MetricsViewAnnotationsResponse_Measure> | undefined): boolean {
-    return proto3.util.equals(MetricsViewAnnotationsResponse_Measure, a, b);
   }
 }
 

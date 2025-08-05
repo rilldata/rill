@@ -37,12 +37,6 @@ export const ConnectorDriverPropertyType = {
   TYPE_INFORMATIONAL: "TYPE_INFORMATIONAL",
 } as const;
 
-export interface MetricsViewAnnotationsResponseMeasureAnnotation {
-  name?: string;
-  schema?: V1StructType;
-  data?: V1MetricsViewAnnotationsResponseAnnotation[];
-}
-
 export interface MetricsViewFilterCond {
   name?: string;
   in?: unknown[];
@@ -73,6 +67,26 @@ export interface MetricsViewSpecDimensionSelector {
   name?: string;
   timeGrain?: V1TimeGrain;
   desc?: boolean;
+}
+
+export type MetricsViewSpecMeasureFormatD3Locale = { [key: string]: unknown };
+
+export interface MetricsViewSpecMeasure {
+  name?: string;
+  displayName?: string;
+  description?: string;
+  expression?: string;
+  type?: MetricsViewSpecMeasureType;
+  window?: MetricsViewSpecMeasureWindow;
+  perDimensions?: MetricsViewSpecDimensionSelector[];
+  requiredDimensions?: MetricsViewSpecDimensionSelector[];
+  referencedMeasures?: string[];
+  formatPreset?: string;
+  formatD3?: string;
+  formatD3Locale?: MetricsViewSpecMeasureFormatD3Locale;
+  validPercentOfTotal?: boolean;
+  treatNullsAs?: string;
+  dataType?: Runtimev1Type;
 }
 
 export type MetricsViewSpecMeasureType =
@@ -1319,7 +1333,7 @@ export interface V1MetricsViewAggregationSort {
 }
 
 export interface V1MetricsViewAnnotationsResponse {
-  measures?: V1MetricsViewAnnotationsResponseMeasure[];
+  rows?: V1MetricsViewAnnotationsResponseAnnotation[];
 }
 
 /**
@@ -1336,15 +1350,12 @@ export interface V1MetricsViewAnnotationsResponseAnnotation {
   timeEnd?: string;
   /** User defined description of the annotation applies. Maps to `description` column from the table. */
   description?: string;
-  /** Minimum grain this annotation is displayed for. Maps to `grain` column from the table. */
+  /** Optional. Minimum grain this annotation is displayed for. Maps to `grain` column from the table. */
   grain?: string;
   /** Any other fields are captured here. Will be used in predicates in the future. */
   additionalFields?: V1MetricsViewAnnotationsResponseAnnotationAdditionalFields;
-}
-
-export interface V1MetricsViewAnnotationsResponseMeasure {
-  name?: string;
-  annotations?: MetricsViewAnnotationsResponseMeasureAnnotation[];
+  /** List of measure names that this annotation applies to. If empty, no restrictions apply. */
+  onlyMeasures?: string[];
 }
 
 export interface V1MetricsViewColumn {
@@ -1497,7 +1508,7 @@ export interface V1MetricsViewSpec {
   /** Expression to evaluate a watermark for the metrics view. If not set, the watermark defaults to max(time_dimension). */
   watermarkExpression?: string;
   dimensions?: MetricsViewSpecDimension[];
-  measures?: V1MetricsViewSpecMeasure[];
+  measures?: MetricsViewSpecMeasure[];
   annotations?: V1MetricsViewSpecAnnotation[];
   securityRules?: V1SecurityRule[];
   /** ISO 8601 weekday number to use as the base for time aggregations by week. Defaults to 1 (Monday). */
@@ -1531,28 +1542,6 @@ export interface V1MetricsViewSpecAnnotation {
   hasTimeEnd?: boolean;
   /** Signifies that the underlying table has `grain` column. Will be used while querying to add additional filter. */
   hasGrain?: boolean;
-}
-
-export type V1MetricsViewSpecMeasureFormatD3Locale = { [key: string]: unknown };
-
-export interface V1MetricsViewSpecMeasure {
-  name?: string;
-  displayName?: string;
-  description?: string;
-  expression?: string;
-  type?: MetricsViewSpecMeasureType;
-  window?: MetricsViewSpecMeasureWindow;
-  perDimensions?: MetricsViewSpecDimensionSelector[];
-  requiredDimensions?: MetricsViewSpecDimensionSelector[];
-  referencedMeasures?: string[];
-  formatPreset?: string;
-  formatD3?: string;
-  formatD3Locale?: V1MetricsViewSpecMeasureFormatD3Locale;
-  validPercentOfTotal?: boolean;
-  treatNullsAs?: string;
-  dataType?: Runtimev1Type;
-  /** All the annotations defined for this measure. */
-  annotations?: string[];
 }
 
 export interface V1MetricsViewState {

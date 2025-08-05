@@ -280,11 +280,8 @@ func (e *Executor) validateIndividualDimensionsAndMeasures(ctx context.Context, 
 // Resolves the measure selector and stores the resolved measures in the annotation.
 func (e *Executor) validateAndNormalizeAnnotations(ctx context.Context, mv *runtimev1.MetricsViewSpec, res *ValidateMetricsViewResult) error {
 	allMeasures := make([]string, 0, len(mv.Measures))
-	measuresMap := make(map[string]*runtimev1.MetricsViewSpec_Measure)
 	for _, m := range mv.Measures {
 		allMeasures = append(allMeasures, m.Name)
-		m.Annotations = make([]string, 0) // Reset the annotations for each measure
-		measuresMap[m.Name] = m
 	}
 
 	// Get the controller used for getting the annotation's model
@@ -303,16 +300,6 @@ func (e *Executor) validateAndNormalizeAnnotations(ctx context.Context, mv *runt
 			res.OtherErrs = append(res.OtherErrs, fmt.Errorf("invalid measures for annotation %q: %w", annotation.Name, err))
 		}
 		annotation.MeasuresSelector = nil
-		for _, mn := range annotation.Measures {
-			m, ok := measuresMap[mn]
-			if !ok {
-				// Shouldn't happen since we resolved the measures earlier.
-				res.OtherErrs = append(res.OtherErrs, fmt.Errorf("invalid measure %q for annotation %q: %w", m, annotation.Name, err))
-				break
-			}
-			// Maintain a reverse map of measure to annotations used during querying.
-			measuresMap[mn].Annotations = append(measuresMap[mn].Annotations, annotation.Name)
-		}
 
 		if annotation.Model != "" {
 			res, err := ct.Get(ctx, &runtimev1.ResourceName{Name: annotation.Model, Kind: runtime.ResourceKindModel}, false)

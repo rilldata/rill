@@ -3277,21 +3277,6 @@ definitions:
       - TYPE_INFORMATIONAL
     default: TYPE_UNSPECIFIED
     title: Type of the property
-  MetricsViewAnnotationsResponseMeasureAnnotation:
-    type: object
-    properties:
-      name:
-        type: string
-        title: Not optional, not null
-      schema:
-        $ref: '#/definitions/v1StructType'
-        title: Not optional, not null
-      data:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/v1MetricsViewAnnotationsResponseAnnotation'
-        title: Not optional, not null
   MetricsViewFilterCond:
     type: object
     properties:
@@ -3352,6 +3337,49 @@ definitions:
         type: boolean
         title: Only for when ordering (optional)
     title: Selector for a dimension
+  MetricsViewSpecMeasure:
+    type: object
+    properties:
+      name:
+        type: string
+      displayName:
+        type: string
+      description:
+        type: string
+      expression:
+        type: string
+      type:
+        $ref: '#/definitions/MetricsViewSpecMeasureType'
+      window:
+        $ref: '#/definitions/MetricsViewSpecMeasureWindow'
+      perDimensions:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/MetricsViewSpecDimensionSelector'
+      requiredDimensions:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/MetricsViewSpecDimensionSelector'
+      referencedMeasures:
+        type: array
+        items:
+          type: string
+      formatPreset:
+        type: string
+      formatD3:
+        type: string
+      formatD3Locale:
+        type: object
+      validPercentOfTotal:
+        type: boolean
+      treatNullsAs:
+        type: string
+      dataType:
+        $ref: '#/definitions/runtimev1Type'
+        description: The data type of the measure. Only populated in ValidSpec.
+    title: Measures are aggregated computed values
   MetricsViewSpecMeasureType:
     type: string
     enum:
@@ -5388,11 +5416,11 @@ definitions:
   v1MetricsViewAnnotationsResponse:
     type: object
     properties:
-      measures:
+      rows:
         type: array
         items:
           type: object
-          $ref: '#/definitions/v1MetricsViewAnnotationsResponseMeasure'
+          $ref: '#/definitions/v1MetricsViewAnnotationsResponseAnnotation'
   v1MetricsViewAnnotationsResponseAnnotation:
     type: object
     properties:
@@ -5409,22 +5437,15 @@ definitions:
         description: User defined description of the annotation applies. Maps to `description` column from the table.
       grain:
         type: string
-        description: Minimum grain this annotation is displayed for. Maps to `grain` column from the table.
+        description: Optional. Minimum grain this annotation is displayed for. Maps to `grain` column from the table.
       additionalFields:
         type: object
         description: Any other fields are captured here. Will be used in predicates in the future.
-  v1MetricsViewAnnotationsResponseMeasure:
-    type: object
-    properties:
-      name:
-        type: string
-        title: Not optional, not null
-      annotations:
+      onlyMeasures:
         type: array
         items:
-          type: object
-          $ref: '#/definitions/MetricsViewAnnotationsResponseMeasureAnnotation'
-        title: Not optional, not null
+          type: string
+        description: List of measure names that this annotation applies to. If empty, no restrictions apply.
   v1MetricsViewColumn:
     type: object
     properties:
@@ -5731,7 +5752,7 @@ definitions:
         type: array
         items:
           type: object
-          $ref: '#/definitions/v1MetricsViewSpecMeasure'
+          $ref: '#/definitions/MetricsViewSpecMeasure'
         title: Measures in the metrics view
       annotations:
         type: array
@@ -5800,54 +5821,6 @@ definitions:
       1. The underlying model/table has to have a `time` and `description` columns.
       2. Can additionally have `time_end` column to convert the annotation to range type annotation.
       3. Can additionally have `grain` column, this is used to not query for annotations greater than selected grain in dashboard. Also forces `time` and `time_end` in UI to be truncated to selected grain.
-  v1MetricsViewSpecMeasure:
-    type: object
-    properties:
-      name:
-        type: string
-      displayName:
-        type: string
-      description:
-        type: string
-      expression:
-        type: string
-      type:
-        $ref: '#/definitions/MetricsViewSpecMeasureType'
-      window:
-        $ref: '#/definitions/MetricsViewSpecMeasureWindow'
-      perDimensions:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/MetricsViewSpecDimensionSelector'
-      requiredDimensions:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/MetricsViewSpecDimensionSelector'
-      referencedMeasures:
-        type: array
-        items:
-          type: string
-      formatPreset:
-        type: string
-      formatD3:
-        type: string
-      formatD3Locale:
-        type: object
-      validPercentOfTotal:
-        type: boolean
-      treatNullsAs:
-        type: string
-      dataType:
-        $ref: '#/definitions/runtimev1Type'
-        description: The data type of the measure. Only populated in ValidSpec.
-      annotations:
-        type: array
-        items:
-          type: string
-        description: All the annotations defined for this measure.
-    title: Measures are aggregated computed values
   v1MetricsViewState:
     type: object
     properties:
