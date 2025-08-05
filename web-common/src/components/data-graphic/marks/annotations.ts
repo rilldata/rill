@@ -166,7 +166,10 @@ export class AnnotationsStore {
       }
     }
 
-    return groups.filter((g) => g.left > 0);
+    // Filter out-of-bounds items.
+    return groups.filter(
+      (g) => g.left > config.plotLeft && g.left < config.plotRight,
+    );
   }
 
   private buildLookupTable(annotationGroups: AnnotationGroup[]) {

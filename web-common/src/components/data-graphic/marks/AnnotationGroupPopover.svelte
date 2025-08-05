@@ -5,7 +5,7 @@
     AnnotationsStore,
   } from "@rilldata/web-common/components/data-graphic/marks/annotations.ts";
   import type { SimpleConfigurationStore } from "@rilldata/web-common/components/data-graphic/state/types";
-  import EllipsisVertical from "@rilldata/web-common/components/icons/EllipsisVertical.svelte";
+  import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
   import * as Popover from "@rilldata/web-common/components/popover";
   import { builderActions, getAttrs } from "bits-ui";
   import { getContext } from "svelte";
@@ -107,7 +107,7 @@
               on:click={() => (showingMore = true)}
               class="flex flex-row items-center gap-x-1 mb-1 p-1 text-sm text-muted-foreground hover:bg-accent hover:rounded-sm outline-0"
             >
-              <EllipsisVertical size="16px" />
+              <ThreeDot className="rotate-90" size="16px" />
               <span>See more</span>
             </button>
           {/if}
