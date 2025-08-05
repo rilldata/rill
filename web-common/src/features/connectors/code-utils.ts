@@ -302,7 +302,7 @@ export async function createYamlModelFromTable(
   // Use the sufficiently qualified table name directly
   const selectStatement = `select * from ${sufficientlyQualifiedTableName}`;
 
-  // Determine if dev section should be included based on connector type
+  // NOTE: Redshift does not support LIMIT clauses in its UNLOAD data exports.
   const shouldIncludeDevSection = driverName !== "redshift";
   const devSection = shouldIncludeDevSection
     ? `\ndev:\n  sql: ${selectStatement} limit 10000`
