@@ -26,8 +26,8 @@
   export let databaseSchema: string = "";
   export let table: string;
   export let showGenerateMetricsAndDashboard: boolean = false;
-  export let prefersSqlModeling: boolean | undefined = false;
-  export let prefersYamlModeling: boolean | undefined = false;
+  export let showGenerateModel: boolean = false;
+  export let isModelingSupported: boolean | undefined = false;
 
   const { ai } = featureFlags;
 
@@ -73,8 +73,7 @@
   }
 
   async function handleCreateModelFromTable() {
-    // Use the preferred modeling approach for this connector
-    if (prefersSqlModeling) {
+    if (isModelingSupported) {
       await handleCreateModel(() =>
         createSqlModelFromTable(
           queryClient,
@@ -84,7 +83,7 @@
           table,
         ),
       );
-    } else if (prefersYamlModeling) {
+    } else if (showGenerateModel) {
       await handleCreateModel(() =>
         createYamlModelFromTable(
           queryClient,
@@ -98,14 +97,14 @@
   }
 </script>
 
-{#if prefersSqlModeling || prefersYamlModeling}
+{#if isModelingSupported || showGenerateModel}
   <NavigationMenuItem on:click={handleCreateModelFromTable}>
     <Model slot="icon" />
     Create model
   </NavigationMenuItem>
 {/if}
 
-{#if showGenerateMetricsAndDashboard && prefersSqlModeling}
+{#if showGenerateMetricsAndDashboard && isModelingSupported}
   <NavigationMenuItem on:click={createMetricsViewFromTable}>
     <MetricsViewIcon slot="icon" />
     <div class="flex gap-x-2 items-center">

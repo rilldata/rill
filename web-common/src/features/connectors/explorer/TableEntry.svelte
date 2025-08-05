@@ -8,11 +8,7 @@
   import TableMenuItems from "./TableMenuItems.svelte";
   import TableSchema from "./TableSchema.svelte";
   import UnsupportedTypesIndicator from "./UnsupportedTypesIndicator.svelte";
-
-  import {
-    usePrefersSqlBasedModelingForConnector,
-    usePrefersYamlBasedModelingForConnector,
-  } from "../selectors";
+  import { useIsModelingSupportedForConnectorOLAP as useIsModelingSupportedForConnector } from "../selectors";
   import { runtime } from "../../../runtime-client/runtime-store";
   import type { ConnectorExplorerStore } from "./connector-explorer-store";
   import {
@@ -30,6 +26,7 @@
   export let store: ConnectorExplorerStore;
   export let useNewAPI: boolean = false;
   export let showGenerateMetricsAndDashboard: boolean = false;
+  export let showGenerateModel: boolean = false;
 
   let contextMenuOpen = false;
 
@@ -39,16 +36,11 @@
   const { allowContextMenu, allowNavigateToTable, allowShowSchema } = store;
 
   $: ({ instanceId: runtimeInstanceId } = $runtime);
-  $: sqlBasedModelingQuery = usePrefersSqlBasedModelingForConnector(
+  $: isModelingSupportedForConnector = useIsModelingSupportedForConnector(
     runtimeInstanceId,
     connector,
   );
-  $: prefersSqlModeling = $sqlBasedModelingQuery.data;
-  $: yamlBasedModelingQuery = usePrefersYamlBasedModelingForConnector(
-    runtimeInstanceId,
-    connector,
-  );
-  $: prefersYamlModeling = $yamlBasedModelingQuery.data;
+  $: isModelingSupported = $isModelingSupportedForConnector.data;
 
   $: fullyQualifiedTableName = makeFullyQualifiedTableName(
     driver,
@@ -114,7 +106,7 @@
       />
     {/if}
 
-    {#if allowContextMenu && (showGenerateMetricsAndDashboard || prefersSqlModeling || prefersYamlModeling)}
+    {#if allowContextMenu && (showGenerateMetricsAndDashboard || isModelingSupported || showGenerateModel)}
       <DropdownMenu.Root bind:open={contextMenuOpen}>
         <DropdownMenu.Trigger asChild let:builder>
           <ContextButton
@@ -139,8 +131,8 @@
             {databaseSchema}
             {table}
             {showGenerateMetricsAndDashboard}
-            {prefersSqlModeling}
-            {prefersYamlModeling}
+            {showGenerateModel}
+            {isModelingSupported}
           />
         </DropdownMenu.Content>
       </DropdownMenu.Root>

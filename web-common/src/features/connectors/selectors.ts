@@ -12,23 +12,9 @@ import {
   getRuntimeServiceGetResourceQueryKey,
   runtimeServiceGetResource,
   type RpcStatus,
-  type V1ConnectorSpec,
 } from "../../runtime-client";
 import { ResourceKind } from "../entity-management/resource-selectors";
 import type { ErrorType } from "@rilldata/web-common/runtime-client/http-client";
-
-// Helper function to determine if a connector prefers SQL-based modeling
-// Connectors that prefer SQL models include:
-// - DuckDB (embedded database with full SQL support)
-// - Provisioned (managed) connectors
-// - Read-write mode connectors
-function prefersSqlBasedModeling(spec: V1ConnectorSpec) {
-  return (
-    spec.driver === "duckdb" ||
-    spec.provision === true ||
-    spec.properties?.mode === "readwrite"
-  );
-}
 
 /**
  * Creates query options for checking modeling support of a connector
@@ -36,7 +22,6 @@ function prefersSqlBasedModeling(spec: V1ConnectorSpec) {
 function createModelingSupportQueryOptions(
   instanceId: string,
   connectorName: string,
-  modelingType: "sql" | "yaml",
 ) {
   return {
     queryKey: getRuntimeServiceGetResourceQueryKey(instanceId, {
@@ -71,14 +56,15 @@ function createModelingSupportQueryOptions(
       const spec = data?.resource?.connector?.spec;
       if (!spec) return false;
 
-      if (modelingType === "sql") {
-        // SQL-based modeling is preferred for connectors that prefer SQL models
-        return prefersSqlBasedModeling(spec);
-      } else {
-        // YAML-based modeling is preferred for connectors that prefer YAML models
-        // These are typically external databases (Postgres, MySQL, etc.)
-        return !prefersSqlBasedModeling(spec);
-      }
+      // Modeling is supported if:
+      // - DuckDB (embedded database with full SQL support)
+      // - Provisioned (managed) connectors
+      // - Read-write mode connectors
+      return (
+        spec.driver === "duckdb" ||
+        spec.provision === true ||
+        spec.properties?.mode === "readwrite"
+      );
     },
   };
 }
@@ -89,34 +75,18 @@ function createModelingSupportQueryOptions(
  */
 
 /**
- * Check if SQL-based modeling is preferred for a specific connector
- * Note: When modeling is supported, users can use either SQL or YAML
- * This function determines which approach is preferred for the connector
+ * Check if modeling is supported for a specific connector based on its properties
  */
-export function usePrefersSqlBasedModelingForConnector(
+export function useIsModelingSupportedForConnectorOLAP(
   instanceId: string,
   connectorName: string,
 ): CreateQueryResult<boolean, ErrorType<RpcStatus>> {
   return createQuery(
-    createModelingSupportQueryOptions(instanceId, connectorName, "sql"),
+    createModelingSupportQueryOptions(instanceId, connectorName),
   );
 }
 
-/**
- * Check if YAML-based modeling is preferred for a specific connector
- * Note: When modeling is supported, users can use either SQL or YAML
- * This function determines which approach is preferred for the connector
- */
-export function usePrefersYamlBasedModelingForConnector(
-  instanceId: string,
-  connectorName: string,
-): CreateQueryResult<boolean, ErrorType<RpcStatus>> {
-  return createQuery(
-    createModelingSupportQueryOptions(instanceId, connectorName, "yaml"),
-  );
-}
-
-export function usePrefersSqlBasedModelingForDefaultOlapDriver(
+export function useIsModelingSupportedForDefaultOlapDriverOLAP(
   instanceId: string,
 ): CreateQueryResult<boolean, ErrorType<RpcStatus>> {
   const instanceQuery = createRuntimeServiceGetInstance(instanceId, {
@@ -129,16 +99,11 @@ export function usePrefersSqlBasedModelingForDefaultOlapDriver(
     return createModelingSupportQueryOptions(
       instanceId,
       olapConnectorName || "",
-      "sql",
     );
   });
 
   return createQuery(queryOptions);
 }
-
-// Legacy alias for backward compatibility
-export const useIsModelingSupportedForDefaultOlapDriverOLAP =
-  usePrefersSqlBasedModelingForDefaultOlapDriver;
 
 export function useDatabasesOLAP(instanceId: string, connector: string) {
   return createConnectorServiceOLAPListTables(

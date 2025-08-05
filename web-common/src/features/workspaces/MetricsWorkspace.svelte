@@ -12,8 +12,8 @@
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import {
-    usePrefersSqlBasedModelingForConnector,
-    usePrefersSqlBasedModelingForDefaultOlapDriver,
+    useIsModelingSupportedForConnectorOLAP as useIsModelingSupportedForConnector,
+    useIsModelingSupportedForDefaultOlapDriverOLAP as useIsModelingSupportedForDefaultOlapDriver,
   } from "../connectors/selectors";
   import PreviewButton from "../explores/PreviewButton.svelte";
   import GoToDashboardButton from "../metrics-views/GoToDashboardButton.svelte";
@@ -48,13 +48,15 @@
     resource?.metricsView?.state?.validSpec?.databaseSchema ?? "";
   $: table = resource?.metricsView?.state?.validSpec?.table ?? "";
 
-  $: isSqlBasedModelingSupportedForDefaultOlapDriver =
-    usePrefersSqlBasedModelingForDefaultOlapDriver(instanceId);
-  $: isSqlBasedModelingSupportedForConnector =
-    usePrefersSqlBasedModelingForConnector(instanceId, connector);
+  $: isModelingSupportedForDefaultOlapDriver =
+    useIsModelingSupportedForDefaultOlapDriver(instanceId);
+  $: isModelingSupportedForConnector = useIsModelingSupportedForConnector(
+    instanceId,
+    connector,
+  );
   $: isModelingSupported = connector
-    ? $isSqlBasedModelingSupportedForConnector.data
-    : $isSqlBasedModelingSupportedForDefaultOlapDriver.data;
+    ? $isModelingSupportedForConnector.data
+    : $isModelingSupportedForDefaultOlapDriver.data;
 
   async function onChangeCallback(newTitle: string) {
     const newRoute = await handleEntityRename(
