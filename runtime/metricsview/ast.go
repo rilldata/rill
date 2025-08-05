@@ -813,7 +813,15 @@ func (a *AST) buildSpineSelect(alias string, spine *Spine, tr *TimeRange) (*Sele
 		start := spine.TimeRange.Start
 		end := spine.TimeRange.End
 		grain := spine.TimeRange.Grain
-		sel, args, err := a.dialect.SelectTimeRangeBins(start, end, grain.ToProto(), timeAlias)
+		tz := time.UTC
+		if a.query.TimeZone != "" {
+			var err error
+			tz, err = time.LoadLocation(a.query.TimeZone)
+			if err != nil {
+				return nil, fmt.Errorf("invalid time zone %q: %w", a.query.TimeZone, err)
+			}
+		}
+		sel, args, err := a.dialect.SelectTimeRangeBins(start, end, grain.ToProto(), timeAlias, tz)
 		if err != nil {
 			return nil, fmt.Errorf("failed to generate time spine: %w", err)
 		}
