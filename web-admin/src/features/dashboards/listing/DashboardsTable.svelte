@@ -68,11 +68,10 @@
     {
       id: "title",
       accessorFn: (row: V1Resource) => {
-        const resource = row;
-        const isMetricsExplorer = !!resource?.explore;
+        const isMetricsExplorer = !!row?.explore;
         return isMetricsExplorer
-          ? resource.explore.spec.displayName
-          : resource.canvas.spec.displayName;
+          ? row.explore.spec.displayName
+          : row.canvas.spec.displayName;
       },
     },
     {
@@ -91,9 +90,8 @@
     {
       id: "description",
       accessorFn: (row: V1Resource) => {
-        const resource = row;
-        const isMetricsExplorer = !!resource?.explore;
-        return isMetricsExplorer ? resource.explore.spec.description : "";
+        const isMetricsExplorer = !!row?.explore;
+        return isMetricsExplorer ? row.explore.spec.description : "";
       },
     },
   ];
