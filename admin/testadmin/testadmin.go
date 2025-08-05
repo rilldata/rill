@@ -117,7 +117,7 @@ func New(t *testing.T) *Fixture {
 		Version:                   version.Version{},
 		MetricsProjectOrg:         "",
 		MetricsProjectName:        "",
-		AutoscalerCron:            "CRON_TZ=America/Los_Angeles 0 0 * * 1",
+		AutoscalerCron:            "",
 		ScaleDownConstraint:       0,
 	}
 	adm, err := admin.New(ctx, admOpts, logger, issuer, emailClient, &mockGithub{}, ai.NewNoop(), nil, billing.NewNoop(), payment.NewNoop())

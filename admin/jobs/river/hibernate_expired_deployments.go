@@ -33,7 +33,7 @@ func (w *HibernateExpiredDeploymentsWorker) Work(ctx context.Context, job *river
 
 	for _, depl := range depls {
 		w.logger.Info("hibernate: deleting deployment", zap.String("project_id", depl.ProjectID), zap.String("deployment_id", depl.ID))
-		err := hibernateExpiredDeployment(ctx, w, depl)
+		err := w.hibernateExpiredDeployment(ctx, depl)
 		if err != nil {
 			w.logger.Error("hibernate: failed to delete deployment", zap.String("project_id", depl.ProjectID), zap.String("deployment_id", depl.ID), zap.Error(err), observability.ZapCtx(ctx))
 			continue
@@ -46,7 +46,7 @@ func (w *HibernateExpiredDeploymentsWorker) Work(ctx context.Context, job *river
 	return nil
 }
 
-func hibernateExpiredDeployment(ctx context.Context, w *HibernateExpiredDeploymentsWorker, depl *database.Deployment) error {
+func (w *HibernateExpiredDeploymentsWorker) hibernateExpiredDeployment(ctx context.Context, depl *database.Deployment) error {
 	proj, err := w.admin.DB.FindProject(ctx, depl.ProjectID)
 	if err != nil {
 		return err

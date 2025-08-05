@@ -41,7 +41,7 @@ func (w *RunAutoscalerWorker) Work(ctx context.Context, job *river.Job[RunAutosc
 		return nil
 	}
 
-	recs, ok, err := allRecommendations(ctx, w)
+	recs, ok, err := w.allRecommendations(ctx)
 	if err != nil {
 		w.logger.Error("failed to autoscale: unable to fetch recommended slots", zap.Error(err))
 		return err
@@ -163,7 +163,7 @@ func (w *RunAutoscalerWorker) Work(ctx context.Context, job *river.Job[RunAutosc
 	return nil
 }
 
-func allRecommendations(ctx context.Context, w *RunAutoscalerWorker) ([]metrics.AutoscalerSlotsRecommendation, bool, error) {
+func (w *RunAutoscalerWorker) allRecommendations(ctx context.Context) ([]metrics.AutoscalerSlotsRecommendation, bool, error) {
 	client, ok, err := w.admin.OpenMetricsProject(ctx)
 	if err != nil {
 		return nil, false, err

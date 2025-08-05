@@ -31,6 +31,12 @@ var (
 	jobLatencyHistogram = observability.Must(meter.Int64Histogram("job_latency", metric.WithUnit("ms")))
 )
 
+type periodicJobConfig struct {
+	args       river.JobArgs
+	cron       string
+	runOnStart bool
+}
+
 type Client struct {
 	logger      *zap.Logger
 	dbPool      *pgxpool.Pool
@@ -108,37 +114,55 @@ func New(ctx context.Context, dsn string, adm *admin.Service) (jobs.Client, erro
 	river.AddWorker(workers, &HibernateExpiredDeploymentsWorker{admin: adm, logger: adm.Logger})
 	river.AddWorker(workers, &RunAutoscalerWorker{admin: adm, logger: adm.Logger})
 
-	periodicJobs := []*river.PeriodicJob{
-		// NOTE: Add new periodic jobs here
-		newPeriodicJob(&ValidateDeploymentsArgs{}, "*/30 * * * *", true),         // half-hourly
-		newPeriodicJob(&PaymentFailedGracePeriodCheckArgs{}, "0 1 * * *", true),  // daily at 1am UTC
-		newPeriodicJob(&TrialEndingSoonArgs{}, "5 1 * * *", true),                // daily at 1:05am UTC
-		newPeriodicJob(&TrialEndCheckArgs{}, "10 1 * * *", true),                 // daily at 1:10am UTC
-		newPeriodicJob(&TrialGracePeriodCheckArgs{}, "15 1 * * *", true),         // daily at 1:15am UTC
-		newPeriodicJob(&SubscriptionCancellationCheckArgs{}, "20 1 * * *", true), // daily at 1:20am UTC
-		newPeriodicJob(&DeleteUnusedUserTokenArgs{}, "0 */12 * * *", true),       // every 12 hours
-		newPeriodicJob(&DeleteUnusedServiceTokenArgs{}, "0 */12 * * *", true),    // every 12 hours
-		newPeriodicJob(&deleteUnusedGithubReposArgs{}, "0 */6 * * *", true),      // every 6 hours
-		newPeriodicJob(&HibernateInactiveOrgsArgs{}, "0 7 * * 1", true),          // Monday at 7:00am UTC
-		newPeriodicJob(&CheckProvisionersArgs{}, "0 */15 * * *", true),           // every 15 minutes
-		newPeriodicJob(&DeleteExpiredAuthCodesArgs{}, "0 */6 * * *", true),       // every 6 hours
-		newPeriodicJob(&DeleteExpiredDeviceAuthCodesArgs{}, "0 */6 * * *", true), // every 6 hours
-		newPeriodicJob(&DeleteExpiredTokensArgs{}, "0 */6 * * *", true),          // every 6 hours
-		newPeriodicJob(&DeleteExpiredVirtualFilesArgs{}, "0 */6 * * *", true),    // every 6 hours
-		newPeriodicJob(&DeleteUnusedAssetsArgs{}, "0 */6 * * *", true),           // every 6 hours
-		newPeriodicJob(&DeploymentsHealthCheckArgs{}, "0 */10 * * *", true),      // every 10 minutes
-		newPeriodicJob(&HibernateExpiredDeploymentsArgs{}, "0 */15 * * *", true), // every 15 minutes
+	jobConfigs := []periodicJobConfig{
+		{&ValidateDeploymentsArgs{}, "*/30 * * * *", true},         // half-hourly
+		{&PaymentFailedGracePeriodCheckArgs{}, "0 1 * * *", true},  // daily at 1am UTC
+		{&TrialEndingSoonArgs{}, "5 1 * * *", true},                // daily at 1:05am UTC
+		{&TrialEndCheckArgs{}, "10 1 * * *", true},                 // daily at 1:10am UTC
+		{&TrialGracePeriodCheckArgs{}, "15 1 * * *", true},         // daily at 1:15am UTC
+		{&SubscriptionCancellationCheckArgs{}, "20 1 * * *", true}, // daily at 1:20am UTC
+		{&DeleteUnusedUserTokenArgs{}, "0 */12 * * *", true},       // every 12 hours
+		{&DeleteUnusedServiceTokenArgs{}, "0 */12 * * *", true},    // every 12 hours
+		{&deleteUnusedGithubReposArgs{}, "0 */6 * * *", true},      // every 6 hours
+		{&HibernateInactiveOrgsArgs{}, "0 7 * * 1", true},          // Monday at 7:00am UTC
+		{&CheckProvisionersArgs{}, "0 */15 * * *", true},           // every 15 minutes
+		{&DeleteExpiredAuthCodesArgs{}, "0 */6 * * *", true},       // every 6 hours
+		{&DeleteExpiredDeviceAuthCodesArgs{}, "0 */6 * * *", true}, // every 6 hours
+		{&DeleteExpiredTokensArgs{}, "0 */6 * * *", true},          // every 6 hours
+		{&DeleteExpiredVirtualFilesArgs{}, "0 */6 * * *", true},    // every 6 hours
+		{&DeleteUnusedAssetsArgs{}, "0 */6 * * *", true},           // every 6 hours
+		{&DeploymentsHealthCheckArgs{}, "0 */10 * * *", true},      // every 10 minutes
+		{&HibernateExpiredDeploymentsArgs{}, "0 */15 * * *", true}, // every 15 minutes
 	}
+
+	var periodicJobs []*river.PeriodicJob
 
 	// Add periodic jobs that are configured by other services
 	if adm.Biller.GetReportingWorkerCron() != "" {
 		// configured by the admin billing service
-		periodicJobs = append(periodicJobs, newPeriodicJob(&BillingReporterArgs{}, adm.Biller.GetReportingWorkerCron(), true))
+		jobConfigs = append(jobConfigs, periodicJobConfig{
+			&BillingReporterArgs{},
+			adm.Biller.GetReportingWorkerCron(),
+			true,
+		})
 	}
 
-	if adm.AutoscalerCron == "" {
+	if adm.AutoscalerCron != "" {
 		// configured by the admin autoscaler service
-		periodicJobs = append(periodicJobs, newPeriodicJob(&RunAutoscalerArgs{}, adm.AutoscalerCron, true))
+		jobConfigs = append(jobConfigs, periodicJobConfig{
+			&RunAutoscalerArgs{},
+			adm.AutoscalerCron,
+			true,
+		})
+	}
+
+	// Create all periodic jobs
+	for _, config := range jobConfigs {
+		job, err := newPeriodicJob(config.args, config.cron, config.runOnStart)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create periodic job: %w", err)
+		}
+		periodicJobs = append(periodicJobs, job)
 	}
 
 	// Wire our zap logger to a slog logger for the river client
@@ -715,15 +739,14 @@ func (h *ErrorHandler) HandlePanic(ctx context.Context, job *rivertype.JobRow, p
 	return &river.ErrorHandlerResult{SetCancelled: true}
 }
 
-func newPeriodicJob(jobArgs river.JobArgs, cronExpr string, runOnStart bool) *river.PeriodicJob { // nolint:unparam // runOnStart may be used in the future
-	// Skip creating periodic job if cron expression is empty
+func newPeriodicJob(jobArgs river.JobArgs, cronExpr string, runOnStart bool) (*river.PeriodicJob, error) { // nolint:unparam // runOnStart may be used in the future
 	if cronExpr == "" {
-		return nil
+		return nil, fmt.Errorf("cron expression cannot be empty")
 	}
 
 	schedule, err := cron.ParseStandard(cronExpr)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("failed to parse cron expression %q: %w", cronExpr, err)
 	}
 
 	periodicJob := river.NewPeriodicJob(
@@ -734,7 +757,7 @@ func newPeriodicJob(jobArgs river.JobArgs, cronExpr string, runOnStart bool) *ri
 		&river.PeriodicJobOpts{RunOnStart: runOnStart},
 	)
 
-	return periodicJob
+	return periodicJob, nil
 }
 
 // Observability work wrapper for the job workers

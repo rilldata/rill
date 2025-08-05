@@ -104,7 +104,7 @@ func (w *DeploymentsHealthCheckWorker) Work(ctx context.Context, job *river.Job[
 				w.logger.Error("deployment health check: failed to find deployment", zap.String("instance_id", instance), zap.Error(err), observability.ZapCtx(ctx))
 				continue
 			}
-			annotations, err := annotationsForDeployment(ctx, w, d)
+			annotations, err := w.annotationsForDeployment(ctx, d)
 			if err != nil {
 				w.logger.Error("deployment health check: failed to find deployment_annotations", zap.String("project_id", d.ProjectID), zap.String("deployment_id", d.ID), zap.Error(err), observability.ZapCtx(ctx))
 				continue
@@ -190,7 +190,7 @@ func deploymentHealthCheck(ctx context.Context, w *DeploymentsHealthCheckWorker,
 			}
 		}
 
-		annotations, err := annotationsForDeployment(ctx, w, d)
+		annotations, err := w.annotationsForDeployment(ctx, d)
 		if err != nil {
 			w.logger.Error("deployment health check: failed to find deployment_annotations", zap.String("project_id", d.ProjectID), zap.String("deployment_id", d.ID), zap.Error(err), observability.ZapCtx(ctx))
 			continue
@@ -238,7 +238,7 @@ func deploymentHealthCheck(ctx context.Context, w *DeploymentsHealthCheckWorker,
 	return instances, true
 }
 
-func annotationsForDeployment(ctx context.Context, w *DeploymentsHealthCheckWorker, d *database.Deployment) (*admin.DeploymentAnnotations, error) {
+func (w *DeploymentsHealthCheckWorker) annotationsForDeployment(ctx context.Context, d *database.Deployment) (*admin.DeploymentAnnotations, error) {
 	proj, err := w.admin.DB.FindProject(ctx, d.ProjectID)
 	if err != nil {
 		return nil, err
