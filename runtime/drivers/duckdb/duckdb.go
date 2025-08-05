@@ -48,14 +48,6 @@ var spec = drivers.Spec{
 			Description: "Path to external DuckDB database.",
 			Placeholder: "/path/to/main.db",
 		},
-		{
-			Key:         "mode",
-			Type:        drivers.StringPropertyType,
-			Required:    false,
-			DisplayName: "Mode",
-			Description: "Set the mode for the DuckDB connection. By default, it is set to 'read' which allows only read operations. Set to 'readwrite' to enable model creation and table mutations.",
-			NoPrompt:    true,
-		},
 	},
 	// Important: Any edits to the below properties must be accompanied by changes to the client-side form validation schemas.
 	SourceProperties: []*drivers.PropertySpec{

@@ -38,7 +38,7 @@ type config struct {
 	// Secrets is a comma-separated list of connector names to create temporary secrets for before executing models.
 	// The secrets are not created for read queries.
 	Secrets string `mapstructure:"secrets"`
-	// Mode specifies the mode in which to open the database. It can be "read" (default) or "readwrite".
+	// Mode specifies the mode in which to open the database.
 	Mode string `mapstructure:"mode"`
 
 	// Path switches the implementation to use a generic rduckdb implementation backed by the db used in the Path
