@@ -901,12 +901,11 @@ export function createQueryServiceMetricsViewAggregation<
 export const queryServiceMetricsViewAnnotations = (
   instanceId: string,
   metricsViewName: string,
-  annotationName: string,
   queryServiceMetricsViewAnnotationsBody: QueryServiceMetricsViewAnnotationsBody,
   signal?: AbortSignal,
 ) => {
   return httpClient<V1MetricsViewAnnotationsResponse>({
-    url: `/v1/instances/${instanceId}/queries/metrics-views/${metricsViewName}/annotations/${annotationName}`,
+    url: `/v1/instances/${instanceId}/queries/metrics-views/${metricsViewName}/annotations`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
     data: queryServiceMetricsViewAnnotationsBody,
@@ -917,11 +916,10 @@ export const queryServiceMetricsViewAnnotations = (
 export const getQueryServiceMetricsViewAnnotationsQueryKey = (
   instanceId: string,
   metricsViewName: string,
-  annotationName: string,
   queryServiceMetricsViewAnnotationsBody: QueryServiceMetricsViewAnnotationsBody,
 ) => {
   return [
-    `/v1/instances/${instanceId}/queries/metrics-views/${metricsViewName}/annotations/${annotationName}`,
+    `/v1/instances/${instanceId}/queries/metrics-views/${metricsViewName}/annotations`,
     queryServiceMetricsViewAnnotationsBody,
   ] as const;
 };
@@ -932,7 +930,6 @@ export const getQueryServiceMetricsViewAnnotationsQueryOptions = <
 >(
   instanceId: string,
   metricsViewName: string,
-  annotationName: string,
   queryServiceMetricsViewAnnotationsBody: QueryServiceMetricsViewAnnotationsBody,
   options?: {
     query?: Partial<
@@ -951,7 +948,6 @@ export const getQueryServiceMetricsViewAnnotationsQueryOptions = <
     getQueryServiceMetricsViewAnnotationsQueryKey(
       instanceId,
       metricsViewName,
-      annotationName,
       queryServiceMetricsViewAnnotationsBody,
     );
 
@@ -961,7 +957,6 @@ export const getQueryServiceMetricsViewAnnotationsQueryOptions = <
     queryServiceMetricsViewAnnotations(
       instanceId,
       metricsViewName,
-      annotationName,
       queryServiceMetricsViewAnnotationsBody,
       signal,
     );
@@ -969,7 +964,7 @@ export const getQueryServiceMetricsViewAnnotationsQueryOptions = <
   return {
     queryKey,
     queryFn,
-    enabled: !!(instanceId && metricsViewName && annotationName),
+    enabled: !!(instanceId && metricsViewName),
     ...queryOptions,
   } as CreateQueryOptions<
     Awaited<ReturnType<typeof queryServiceMetricsViewAnnotations>>,
@@ -989,7 +984,6 @@ export function createQueryServiceMetricsViewAnnotations<
 >(
   instanceId: string,
   metricsViewName: string,
-  annotationName: string,
   queryServiceMetricsViewAnnotationsBody: QueryServiceMetricsViewAnnotationsBody,
   options?: {
     query?: Partial<
@@ -1007,7 +1001,6 @@ export function createQueryServiceMetricsViewAnnotations<
   const queryOptions = getQueryServiceMetricsViewAnnotationsQueryOptions(
     instanceId,
     metricsViewName,
-    annotationName,
     queryServiceMetricsViewAnnotationsBody,
     options,
   );

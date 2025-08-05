@@ -10072,17 +10072,6 @@ func (m *MetricsViewAnnotationsRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	if utf8.RuneCountInString(m.GetAnnotationName()) < 1 {
-		err := MetricsViewAnnotationsRequestValidationError{
-			field:  "AnnotationName",
-			reason: "value length must be at least 1 runes",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
-
 	// no validation rules for Priority
 
 	if all {
@@ -10243,36 +10232,7 @@ func (m *MetricsViewAnnotationsResponse) validate(all bool) error {
 
 	var errors []error
 
-	if all {
-		switch v := interface{}(m.GetSchema()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, MetricsViewAnnotationsResponseValidationError{
-					field:  "Schema",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, MetricsViewAnnotationsResponseValidationError{
-					field:  "Schema",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetSchema()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return MetricsViewAnnotationsResponseValidationError{
-				field:  "Schema",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
-
-	for idx, item := range m.GetData() {
+	for idx, item := range m.GetMeasures() {
 		_, _ = idx, item
 
 		if all {
@@ -10280,7 +10240,7 @@ func (m *MetricsViewAnnotationsResponse) validate(all bool) error {
 			case interface{ ValidateAll() error }:
 				if err := v.ValidateAll(); err != nil {
 					errors = append(errors, MetricsViewAnnotationsResponseValidationError{
-						field:  fmt.Sprintf("Data[%v]", idx),
+						field:  fmt.Sprintf("Measures[%v]", idx),
 						reason: "embedded message failed validation",
 						cause:  err,
 					})
@@ -10288,7 +10248,7 @@ func (m *MetricsViewAnnotationsResponse) validate(all bool) error {
 			case interface{ Validate() error }:
 				if err := v.Validate(); err != nil {
 					errors = append(errors, MetricsViewAnnotationsResponseValidationError{
-						field:  fmt.Sprintf("Data[%v]", idx),
+						field:  fmt.Sprintf("Measures[%v]", idx),
 						reason: "embedded message failed validation",
 						cause:  err,
 					})
@@ -10297,7 +10257,7 @@ func (m *MetricsViewAnnotationsResponse) validate(all bool) error {
 		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
 				return MetricsViewAnnotationsResponseValidationError{
-					field:  fmt.Sprintf("Data[%v]", idx),
+					field:  fmt.Sprintf("Measures[%v]", idx),
 					reason: "embedded message failed validation",
 					cause:  err,
 				}
@@ -16687,6 +16647,326 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = MetricsViewAnnotationsResponse_AnnotationValidationError{}
+
+// Validate checks the field values on
+// MetricsViewAnnotationsResponse_MeasureAnnotation with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *MetricsViewAnnotationsResponse_MeasureAnnotation) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on
+// MetricsViewAnnotationsResponse_MeasureAnnotation with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in
+// MetricsViewAnnotationsResponse_MeasureAnnotationMultiError, or nil if none found.
+func (m *MetricsViewAnnotationsResponse_MeasureAnnotation) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *MetricsViewAnnotationsResponse_MeasureAnnotation) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Name
+
+	if all {
+		switch v := interface{}(m.GetSchema()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, MetricsViewAnnotationsResponse_MeasureAnnotationValidationError{
+					field:  "Schema",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, MetricsViewAnnotationsResponse_MeasureAnnotationValidationError{
+					field:  "Schema",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetSchema()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return MetricsViewAnnotationsResponse_MeasureAnnotationValidationError{
+				field:  "Schema",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	for idx, item := range m.GetData() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, MetricsViewAnnotationsResponse_MeasureAnnotationValidationError{
+						field:  fmt.Sprintf("Data[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, MetricsViewAnnotationsResponse_MeasureAnnotationValidationError{
+						field:  fmt.Sprintf("Data[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return MetricsViewAnnotationsResponse_MeasureAnnotationValidationError{
+					field:  fmt.Sprintf("Data[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return MetricsViewAnnotationsResponse_MeasureAnnotationMultiError(errors)
+	}
+
+	return nil
+}
+
+// MetricsViewAnnotationsResponse_MeasureAnnotationMultiError is an error
+// wrapping multiple validation errors returned by
+// MetricsViewAnnotationsResponse_MeasureAnnotation.ValidateAll() if the
+// designated constraints aren't met.
+type MetricsViewAnnotationsResponse_MeasureAnnotationMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m MetricsViewAnnotationsResponse_MeasureAnnotationMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m MetricsViewAnnotationsResponse_MeasureAnnotationMultiError) AllErrors() []error { return m }
+
+// MetricsViewAnnotationsResponse_MeasureAnnotationValidationError is the
+// validation error returned by
+// MetricsViewAnnotationsResponse_MeasureAnnotation.Validate if the designated
+// constraints aren't met.
+type MetricsViewAnnotationsResponse_MeasureAnnotationValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e MetricsViewAnnotationsResponse_MeasureAnnotationValidationError) Field() string {
+	return e.field
+}
+
+// Reason function returns reason value.
+func (e MetricsViewAnnotationsResponse_MeasureAnnotationValidationError) Reason() string {
+	return e.reason
+}
+
+// Cause function returns cause value.
+func (e MetricsViewAnnotationsResponse_MeasureAnnotationValidationError) Cause() error {
+	return e.cause
+}
+
+// Key function returns key value.
+func (e MetricsViewAnnotationsResponse_MeasureAnnotationValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e MetricsViewAnnotationsResponse_MeasureAnnotationValidationError) ErrorName() string {
+	return "MetricsViewAnnotationsResponse_MeasureAnnotationValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e MetricsViewAnnotationsResponse_MeasureAnnotationValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sMetricsViewAnnotationsResponse_MeasureAnnotation.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = MetricsViewAnnotationsResponse_MeasureAnnotationValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = MetricsViewAnnotationsResponse_MeasureAnnotationValidationError{}
+
+// Validate checks the field values on MetricsViewAnnotationsResponse_Measure
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the first error encountered is returned, or nil if
+// there are no violations.
+func (m *MetricsViewAnnotationsResponse_Measure) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on
+// MetricsViewAnnotationsResponse_Measure with the rules defined in the proto
+// definition for this message. If any rules are violated, the result is a
+// list of violation errors wrapped in
+// MetricsViewAnnotationsResponse_MeasureMultiError, or nil if none found.
+func (m *MetricsViewAnnotationsResponse_Measure) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *MetricsViewAnnotationsResponse_Measure) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Name
+
+	for idx, item := range m.GetAnnotations() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, MetricsViewAnnotationsResponse_MeasureValidationError{
+						field:  fmt.Sprintf("Annotations[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, MetricsViewAnnotationsResponse_MeasureValidationError{
+						field:  fmt.Sprintf("Annotations[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return MetricsViewAnnotationsResponse_MeasureValidationError{
+					field:  fmt.Sprintf("Annotations[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return MetricsViewAnnotationsResponse_MeasureMultiError(errors)
+	}
+
+	return nil
+}
+
+// MetricsViewAnnotationsResponse_MeasureMultiError is an error wrapping
+// multiple validation errors returned by
+// MetricsViewAnnotationsResponse_Measure.ValidateAll() if the designated
+// constraints aren't met.
+type MetricsViewAnnotationsResponse_MeasureMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m MetricsViewAnnotationsResponse_MeasureMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m MetricsViewAnnotationsResponse_MeasureMultiError) AllErrors() []error { return m }
+
+// MetricsViewAnnotationsResponse_MeasureValidationError is the validation
+// error returned by MetricsViewAnnotationsResponse_Measure.Validate if the
+// designated constraints aren't met.
+type MetricsViewAnnotationsResponse_MeasureValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e MetricsViewAnnotationsResponse_MeasureValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e MetricsViewAnnotationsResponse_MeasureValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e MetricsViewAnnotationsResponse_MeasureValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e MetricsViewAnnotationsResponse_MeasureValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e MetricsViewAnnotationsResponse_MeasureValidationError) ErrorName() string {
+	return "MetricsViewAnnotationsResponse_MeasureValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e MetricsViewAnnotationsResponse_MeasureValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sMetricsViewAnnotationsResponse_Measure.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = MetricsViewAnnotationsResponse_MeasureValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = MetricsViewAnnotationsResponse_MeasureValidationError{}
 
 // Validate checks the field values on TopK_Entry with the rules defined in the
 // proto definition for this message. If any rules are violated, the first

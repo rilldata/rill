@@ -163,7 +163,7 @@ service QueryService {
 
   rpc MetricsViewAnnotations(MetricsViewAnnotationsRequest) returns (MetricsViewAnnotationsResponse) {
     option (google.api.http) = {
-      post: "/v1/instances/{instance_id}/queries/metrics-views/{metrics_view_name}/annotations/{annotation_name}",
+      post: "/v1/instances/{instance_id}/queries/metrics-views/{metrics_view_name}/annotations",
       body: "*"
     };
   }
@@ -847,7 +847,7 @@ message MetricsViewTimeRangesResponse {
 message MetricsViewAnnotationsRequest {
   string instance_id = 1;
   string metrics_view_name = 2 [(validate.rules).string.min_len = 1];
-  string annotation_name = 3 [(validate.rules).string.min_len = 1];
+  repeated string measures = 3;
   int32 priority = 4;
   TimeRange time_range = 5;
   // Optional
@@ -874,10 +874,23 @@ message MetricsViewAnnotationsResponse {
     google.protobuf.Struct additional_fields = 5;
   }
 
-  // Not optional, not null
-  StructType schema = 1;
-  // Not optional, not null
-  repeated Annotation data = 2;
+  message MeasureAnnotation {
+    // Not optional, not null
+    string name = 1;
+    // Not optional, not null
+    StructType schema = 2;
+    // Not optional, not null
+    repeated Annotation data = 3;
+  }
+
+  message Measure {
+    // Not optional, not null
+    string name = 1;
+    // Not optional, not null
+    repeated MeasureAnnotation annotations = 2;
+  }
+
+  repeated Measure measures = 1;
 }
 
 // **********

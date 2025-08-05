@@ -37,6 +37,12 @@ export const ConnectorDriverPropertyType = {
   TYPE_INFORMATIONAL: "TYPE_INFORMATIONAL",
 } as const;
 
+export interface MetricsViewAnnotationsResponseMeasureAnnotation {
+  name?: string;
+  schema?: V1StructType;
+  data?: V1MetricsViewAnnotationsResponseAnnotation[];
+}
+
 export interface MetricsViewFilterCond {
   name?: string;
   in?: unknown[];
@@ -67,26 +73,6 @@ export interface MetricsViewSpecDimensionSelector {
   name?: string;
   timeGrain?: V1TimeGrain;
   desc?: boolean;
-}
-
-export type MetricsViewSpecMeasureFormatD3Locale = { [key: string]: unknown };
-
-export interface MetricsViewSpecMeasure {
-  name?: string;
-  displayName?: string;
-  description?: string;
-  expression?: string;
-  type?: MetricsViewSpecMeasureType;
-  window?: MetricsViewSpecMeasureWindow;
-  perDimensions?: MetricsViewSpecDimensionSelector[];
-  requiredDimensions?: MetricsViewSpecDimensionSelector[];
-  referencedMeasures?: string[];
-  formatPreset?: string;
-  formatD3?: string;
-  formatD3Locale?: MetricsViewSpecMeasureFormatD3Locale;
-  validPercentOfTotal?: boolean;
-  treatNullsAs?: string;
-  dataType?: Runtimev1Type;
 }
 
 export type MetricsViewSpecMeasureType =
@@ -1333,8 +1319,7 @@ export interface V1MetricsViewAggregationSort {
 }
 
 export interface V1MetricsViewAnnotationsResponse {
-  schema?: V1StructType;
-  data?: V1MetricsViewAnnotationsResponseAnnotation[];
+  measures?: V1MetricsViewAnnotationsResponseMeasure[];
 }
 
 /**
@@ -1355,6 +1340,11 @@ export interface V1MetricsViewAnnotationsResponseAnnotation {
   grain?: string;
   /** Any other fields are captured here. Will be used in predicates in the future. */
   additionalFields?: V1MetricsViewAnnotationsResponseAnnotationAdditionalFields;
+}
+
+export interface V1MetricsViewAnnotationsResponseMeasure {
+  name?: string;
+  annotations?: MetricsViewAnnotationsResponseMeasureAnnotation[];
 }
 
 export interface V1MetricsViewColumn {
@@ -1507,7 +1497,7 @@ export interface V1MetricsViewSpec {
   /** Expression to evaluate a watermark for the metrics view. If not set, the watermark defaults to max(time_dimension). */
   watermarkExpression?: string;
   dimensions?: MetricsViewSpecDimension[];
-  measures?: MetricsViewSpecMeasure[];
+  measures?: V1MetricsViewSpecMeasure[];
   annotations?: V1MetricsViewSpecAnnotation[];
   securityRules?: V1SecurityRule[];
   /** ISO 8601 weekday number to use as the base for time aggregations by week. Defaults to 1 (Monday). */
@@ -1520,6 +1510,12 @@ export interface V1MetricsViewSpec {
   cacheKeyTtlSeconds?: string;
 }
 
+/**
+ * Annotations that can be applied to measures. Each annotation needs to have a model or a table defined.
+1. The underlying model/table has to have a `time` and `description` columns.
+2. Can additionally have `time_end` column to convert the annotation to range type annotation.
+3. Can additionally have `grain` column, this is used to not query for annotations greater than selected grain in dashboard. Also forces `time` and `time_end` in UI to be truncated to selected grain.
+ */
 export interface V1MetricsViewSpecAnnotation {
   name?: string;
   connector?: string;
@@ -1535,6 +1531,28 @@ export interface V1MetricsViewSpecAnnotation {
   hasTimeEnd?: boolean;
   /** Signifies that the underlying table has `grain` column. Will be used while querying to add additional filter. */
   hasGrain?: boolean;
+}
+
+export type V1MetricsViewSpecMeasureFormatD3Locale = { [key: string]: unknown };
+
+export interface V1MetricsViewSpecMeasure {
+  name?: string;
+  displayName?: string;
+  description?: string;
+  expression?: string;
+  type?: MetricsViewSpecMeasureType;
+  window?: MetricsViewSpecMeasureWindow;
+  perDimensions?: MetricsViewSpecDimensionSelector[];
+  requiredDimensions?: MetricsViewSpecDimensionSelector[];
+  referencedMeasures?: string[];
+  formatPreset?: string;
+  formatD3?: string;
+  formatD3Locale?: V1MetricsViewSpecMeasureFormatD3Locale;
+  validPercentOfTotal?: boolean;
+  treatNullsAs?: string;
+  dataType?: Runtimev1Type;
+  /** All the annotations defined for this measure. */
+  annotations?: string[];
 }
 
 export interface V1MetricsViewState {
@@ -2710,6 +2728,7 @@ export type QueryServiceMetricsViewAggregationBody = {
 };
 
 export type QueryServiceMetricsViewAnnotationsBody = {
+  measures?: string[];
   priority?: number;
   timeRange?: V1TimeRange;
   timeGrain?: V1TimeGrain;
