@@ -23,7 +23,7 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { fade, slide } from "svelte/transition";
   import ReconcilingSpinner from "../entity-management/ReconcilingSpinner.svelte";
-  import { getUserFriendlyError } from "../entity-management/error-utils";
+  import { getUserFriendlyError } from "../models/error-utils";
 
   export let fileArtifact: FileArtifact;
 
