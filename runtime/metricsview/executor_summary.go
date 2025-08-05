@@ -251,7 +251,12 @@ func (e *Executor) Summary(ctx context.Context) (*SummaryResult, error) {
 		index := i * 4
 		minValue := *values[index].(*interface{})
 		maxValue := *values[index+1].(*interface{})
-		hasNulls := *values[index+2].(*bool)
+		hasNullsInterface := *values[index+2].(*interface{})
+		hasNulls, ok := hasNullsInterface.(bool)
+		if !ok {
+			hasNulls = false
+		}
+
 		exampleValue := *values[index+3].(*interface{})
 
 		summaries[i] = DimensionSummary{
