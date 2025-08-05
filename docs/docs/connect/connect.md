@@ -26,7 +26,7 @@ Rill offers flexible connection strategies to fit different data architectures a
 
 - ### _[Bring Your Own OLAP (BYO OLAP)](/connect/olap)_: 
   
-  Large-scale datasets (100GB+) or existing OLAP infrastructure Connect to existing **ClickHouse**, **Druid**, **Pinot**, or **MotherDuck** instances. Use Rill's live connectors to ingest data directly into your OLAP engines.
+  Large-scale datasets (100GB+) or existing OLAP infrastructure Connect to existing **ClickHouse**, **Druid**, **Pinot**, or **MotherDuck** instances. Use Rill's "live connectors" to ingest data directly into your OLAP engines.
 
     :::note Modeling on BYO-OLAP
     Some modeling features may be limited depending on the engine.
@@ -79,6 +79,12 @@ Rill offers flexible connection strategies to fit different data architectures a
     link="/connect/olap/pinot"
     linkLabel="Learn more"
     referenceLink="pinot"
+  />
+    <ConnectorIcon
+    icon={<img src="/img/connect/icons/Headset.svg" alt="Pinot" />}
+    content="Don't see an OLAP engine that you're looking for? Chat with us about your use case!"
+    link="/contact"
+    linkLabel="Learn more"
   />
 </div>
 
@@ -233,7 +239,7 @@ Rill offers flexible connection strategies to fit different data architectures a
   <ConnectorIcon
     icon={<img src="/img/connect/icons/Logo-Sheets.svg" alt="Google Sheets" className="sheets-icon" />}
     header="Google Sheets"
-    content="Connect to Google Sheets to read data from spreadsheets with support for multiple sheets."
+    content="Connect to public Google Sheets to read data from spreadsheets with support for multiple sheets."
     link="/connect/data-source/googlesheets"
     linkLabel="Learn more"
   />
@@ -249,7 +255,7 @@ Rill offers flexible connection strategies to fit different data architectures a
   <ConnectorIcon
     icon={<img src="/img/connect/icons/Logo-Slack.svg" alt="Slack" className="sheets-icon" />}
     header="Slack"
-    content="Connect to Slack to extract data from channels, messages, and other workspace information."
+    content="Connect to Slack to send alerts and messages from Rill."
     link="/connect/data-source/slack"
     linkLabel="Learn more"
     referenceLink="slack"
@@ -264,3 +270,7 @@ Rill offers flexible connection strategies to fit different data architectures a
     referenceLink="ai"
   />
 </div>
+
+:::tip Missing a connector?
+We're constantly adding new data connectors. If you don't see what you need, [let us know](/contact) and we'll help you get connected.
+:::

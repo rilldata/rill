@@ -22,6 +22,9 @@ Rill supports connecting to ClickHouse v22.7 or newer versions.
 
 When using ClickHouse for local development, you can connect via connection parameters or using the DSN. Both local instances of ClickHouse and ClickHouse Cloud are supported.
 
+<img src='/img/connect/connector/byob-clickhouse.png' class='rounded-gif' />
+<br />
+
 1. Connect to an OLAP engine via Add Data. This will automatically create the `clickhouse.yaml` file in your `connectors` folder and populate the `.env` file with `connector.clickhouse.password` or `connector.clickhouse.dsn` depending on which you select in the UI.
 
 For more information on supported parameters, see our [ClickHouse connector YAML reference docs](/reference/project-files/connectors#clickhouse).
@@ -42,6 +45,10 @@ ssl: true # required for ClickHouse Cloud
 # or 
 
 dsn: "{{ .env.connector.clickhouse.dsn }}"
+
+# or, for managed
+
+managed: true
 ```
 
 2. You can create/edit the `.env` file manually in the project directory and add [`connector.clickhouse.dsn`](#connection-string-dsn).
@@ -55,7 +62,7 @@ If you are facing issues related to DSN connection errors in your dashboards eve
 
 ## Connection string (DSN)
 
-<img src='/img/reference/olap-engines/clickhouse/clickhouse-dsn.png' class='rounded-gif' />
+<img src='/img/connect/connector/byob-clickhouse-dsn.png' class='rounded-gif' />
 <br />
 
 Rill is able to connect to ClickHouse using the [ClickHouse Go Driver](https://clickhouse.com/docs/en/integrations/go). An appropriate connection string (DSN) will need to be set through the `connector.clickhouse.dsn` property in Rill.
@@ -94,7 +101,30 @@ connector.clickhouse.dsn="https://<hostname>:<port>?username=<username>&password
 
 If you would like to connect Rill to an existing ClickHouse instance, please don't hesitate to [contact us](/contact). We'd love to help!
 
-:::
+::: 
+
+## Rill Managed ClickHouse
+
+<img src='/img/connect/connector/managed-clickhouse.png' class='rounded-gif' />
+<br />
+
+
+By settiing `managed: true` in your ClickHouse connector, you will enable an embedded ClickHouse server to spin up with Rill. This will allow you to import data directly into this ClickHouse server without 
+having to worry about managing an external database. 
+
+
+```yaml
+# Connector YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/connectors
+  
+type: connector
+
+driver: clickhouse
+managed: true
+```
+
+Data ingestion features are not yet available in the UI, please refer to our [model documentation](/reference/project-files/advanced-models) on how to ingest data into ClickHouse. For a guide, see [ingesting data directly into ClickHouse](/guides/rill-clickhouse/r_ch_ingest).
+
 
 ## Configuring Rill Cloud
 

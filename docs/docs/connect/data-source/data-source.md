@@ -14,8 +14,15 @@ import ConnectorIcon from '@site/src/components/ConnectorIcon';
 Rill supports importing data from multiple sources to power your analytics and data applications. Whether you're working with cloud data warehouses, databases, file storage, or streaming data sources, Rill provides seamless connectivity and data ingestion capabilities.
 
 ## Getting Started with Connectors
+:::tip using clickhouse?
+
+Dont forget to [create a managed ClickHouse server](/connect/olap/clickhouse#rill-managed-clickhouse) before getting started!
+
+:::
 
 In order to connect and browse through your data, you'll need to create a connector file. Browse through the options below for our supported connectors. Each connector is designed to handle the specific authentication and configuration requirements of your data source.
+
+
 
 ### What You Can Do After Connecting
 
@@ -25,7 +32,7 @@ Once the connector is created, you can directly create:
 - **Dashboards** - Visualize your data with interactive charts and tables
 
 :::warning OLAP Engine Limitations
-Rill supports connecting your data to both [DuckDB](/connect/olap/duckdb) and [ClickHouse](/connect/olap/clickhouse). However, there are still some features in development for managed ClickHouse. [Contact our team](/contact) for more informaton and scheduled feature releases!
+Rill supports connecting your data to both [DuckDB](/connect/olap/duckdb) and [ClickHouse](/connect/olap/clickhouse). However, there are still some features in development for managed ClickHouse. For more information see our [managed ClickHouse docs](/connect/olap/clickhouse#rill-managed-clickhouse). If you've still got questions, [contact our team](/contact) for more informaton and scheduled feature releases!
 :::
 
 

@@ -77,16 +77,6 @@ MotherDuck connections are established through secure API endpoints. The connect
 motherduck_token="your_motherduck_service_token_here"
 ```
 
-:::info MotherDuck Features
-
-MotherDuck provides several advantages over local DuckDB:
-- **Serverless compute** - No need to manage infrastructure
-- **Automatic scaling** - Handles varying workloads automatically
-- **Collaborative data sharing** - Share data and queries with team members
-- **Built-in data lake integration** - Connect to S3, GCS, and other cloud storage
-- **Web-based interface** - Query and explore data through the MotherDuck console
-:::
-
 ## Configuring Rill Cloud
 
 When deploying a MotherDuck-backed project to Rill Cloud, you have the following options to pass the appropriate access token:

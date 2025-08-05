@@ -13,7 +13,7 @@ At a high level, configuring credentials and credentials management in Rill can 
 
 ## Setting credentials for Rill Developer
 
-When reading from a source (or using a different OLAP engine), Rill will attempt to use existing credentials that have been configured on your machine.
+When reading from a data source (or using a different OLAP engine), Rill will attempt to use existing credentials that have been configured on your machine.
 1. Credentials that have been configured in your local environment via the CLI (for [AWS](/connect/data-source/s3#local-credentials) / [Azure](/connect/data-source/azure#local-credentials) / [Google Cloud](/connect/data-source/gcs#rill-developer-local-credentials))
 2. Credentials that have been passed in directly through the connection string or DSN (typically for databases - see [Source YAML](/reference/project-files/sources) and [Connector YAML](/reference/project-files/connectors) for more details)
 3. Credentials that have been passed in as a [variable](/connect/templating) when starting Rill Developer via `rill start --env key=value`
@@ -59,7 +59,7 @@ It's never a good idea to commit sensitive information to Git and it goes agains
 
 ## Deploying to Rill Cloud 
 
-Please see our [deploy credentials page](/deploy/deploy-credentials#configure-environmental-variables-and-credentials-for-rill-cloud) to configure your credentials on Rill Cloud. If you have configured your credentials via the `.env` file this will be deployed with your project. If not, follow the steps to deploy then configure your credentials via the CLI running `rill env configure`.
+If you have configured your credentials via the `.env` file this will be deployed with your project. If not, follow the steps to deploy then configure your credentials via the CLI running [`rill env configure`](/deploy/deploy-credentials#configure-environmental-variables-and-credentials-for-rill-cloud).
 
 
 
