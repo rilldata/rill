@@ -28,9 +28,11 @@ type Spec struct {
 	// DSNEnv variable that contains the clickhouse DSN.
 	// This is an alternative to specifying the DSN directly, which can be useful for injecting secrets
 	DSNEnv string `json:"dsn_env"`
-	// WriteDSNEnv with permissions for write operations (optional)
+	// WriteDSN is an optional DSN that should be used for write operations.
+	// If a write DSN is specified, it will be used for the provisioning operations.
+	WriteDSN string `json:"write_dsn,omitempty"`
+	// WriteDSNEnv optionally specifies an environment variable that should be used to populate WriteDSN.
 	WriteDSNEnv string `json:"write_dsn_env,omitempty"`
-
 	// Cluster name for ClickHouse cluster operations.
 	// If specified, all DDL operations will include an ON CLUSTER clause.
 	Cluster string `json:"cluster,omitempty"`
@@ -53,35 +55,31 @@ func New(specJSON []byte, _ database.DB, logger *zap.Logger) (provisioner.Provis
 		return nil, fmt.Errorf("failed to parse provisioner spec: %w", err)
 	}
 
-	var dsn string
-	if spec.DSN != "" {
-		dsn = spec.DSN
-	} else if spec.DSNEnv != "" {
-		dsn = os.Getenv(spec.DSNEnv)
+	if spec.DSNEnv != "" {
+		dsn := os.Getenv(spec.DSNEnv)
 		if dsn == "" {
 			return nil, fmt.Errorf("environment variable %q is not set or empty", spec.DSNEnv)
 		}
 		spec.DSN = dsn
-	} else {
+	} else if spec.DSN == "" {
 		return nil, fmt.Errorf("either dsn or dsn_env must be specified")
 	}
 
 	// Get optional write DSN
-	var writeDSN string
 	if spec.WriteDSNEnv != "" {
-		writeDSN = os.Getenv(spec.WriteDSNEnv)
-		if writeDSN == "" {
+		dsn := os.Getenv(spec.WriteDSNEnv)
+		if dsn == "" {
 			return nil, fmt.Errorf("environment variable %q is not set or empty", spec.WriteDSNEnv)
 		}
+		spec.WriteDSN = dsn
 	}
 
 	// Use writeDSN for provisioning operations if available, otherwise use the primary DSN
-	provisioningDSN := dsn
-	if writeDSN != "" {
-		provisioningDSN = writeDSN
+	dsn := spec.DSN
+	if spec.WriteDSN != "" {
+		dsn = spec.WriteDSN
 	}
-
-	opts, err := clickhouse.ParseDSN(provisioningDSN)
+	opts, err := clickhouse.ParseDSN(dsn)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse DSN: %w", err)
 	}
@@ -103,13 +101,7 @@ func (p *Provisioner) Supports(rt provisioner.ResourceType) bool {
 }
 
 func (p *Provisioner) Close() error {
-	var err error
-
-	if closeErr := p.ch.Close(); closeErr != nil {
-		err = closeErr
-	}
-
-	return err
+	return p.ch.Close()
 }
 
 func (p *Provisioner) Provision(ctx context.Context, r *provisioner.Resource, opts *provisioner.ResourceOptions) (*provisioner.Resource, error) {
@@ -221,34 +213,28 @@ func (p *Provisioner) Provision(ctx context.Context, r *provisioner.Resource, op
 		return nil, fmt.Errorf("failed to grant global privileges to clickhouse user: %w", err)
 	}
 
-	// Create the resource DSN - always use the primary DSN as the base
-	// The client will use this for reads, and can optionally use writeDSN for writes
-	resourceDSN, err := url.Parse(p.spec.DSN)
+	// Prepare the config to return
+	cfg = &provisioner.ClickhouseConfig{}
+
+	// Build the DSN for the provisioned user and database using the provisioner's DSN as the base.
+	dsn, err := url.Parse(p.spec.DSN)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse base DSN: %w", err)
 	}
-	resourceDSN.User = url.UserPassword(user, password)
-	resourceDSN.Path = "/" + dbName
+	dsn.User = url.UserPassword(user, password)
+	dsn.Path = "/" + dbName
+	cfg.DSN = dsn.String()
 
-	cfg = &provisioner.ClickhouseConfig{
-		DSN: resourceDSN.String(),
-	}
-
-	// If we have a separate write DSN, include it in the config
-	if p.spec.WriteDSNEnv != "" {
-		writeDSN := os.Getenv(p.spec.WriteDSNEnv)
-		if writeDSN == "" {
-			return nil, fmt.Errorf("environment variable %q is not set or empty", p.spec.WriteDSNEnv)
-		}
-
-		writeResourceDSN, err := url.Parse(writeDSN)
+	// Optionally build a write DSN.
+	if p.spec.WriteDSN != "" {
+		writeDSN, err := url.Parse(p.spec.WriteDSN)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse write DSN: %w", err)
 		}
-		writeResourceDSN.User = url.UserPassword(user, password)
-		writeResourceDSN.Path = "/" + dbName
+		writeDSN.User = url.UserPassword(user, password)
+		writeDSN.Path = "/" + dbName
 
-		cfg.WriteDSN = writeResourceDSN.String()
+		cfg.WriteDSN = writeDSN.String()
 	}
 
 	return &provisioner.Resource{
