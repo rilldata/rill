@@ -35,12 +35,12 @@ func StatusCmd(ch *cmdutil.Helper) *cobra.Command {
 				if len(args) > 0 {
 					return fmt.Errorf("the --local flag cannot be used with <project-name> positional argument")
 				}
-			}
-
-			if !local && !cmd.Flags().Changed("project") && len(args) == 0 && ch.Interactive {
-				name, err = ch.InferProjectName(cmd.Context(), ch.Org, path)
-				if err != nil {
-					return fmt.Errorf("unable to infer project name (use `--project` to explicitly specify the name): %w", err)
+			} else {
+				if !cmd.Flags().Changed("project") && len(args) == 0 && ch.Interactive {
+					name, err = ch.InferProjectName(cmd.Context(), ch.Org, path)
+					if err != nil {
+						return fmt.Errorf("unable to infer project name (use `--project` to explicitly specify the name): %w", err)
+					}
 				}
 				// Project info and deployment info not available --local mode
 				proj, err := client.GetProject(cmd.Context(), &adminv1.GetProjectRequest{
@@ -89,6 +89,7 @@ func StatusCmd(ch *cmdutil.Helper) *cobra.Command {
 					// Deployment not available
 					return nil
 				}
+				fmt.Println("")
 			}
 
 			// 3. Print parser and resources info
@@ -116,7 +117,7 @@ func StatusCmd(ch *cmdutil.Helper) *cobra.Command {
 				table = append(table, newResourceTableRow(r))
 			}
 
-			ch.PrintfSuccess("\nResources\n\n")
+			ch.PrintfSuccess("Resources\n\n")
 			ch.PrintData(table)
 
 			if parser != nil {
