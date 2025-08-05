@@ -74,7 +74,7 @@ _[object]_ - Defines project-wide default settings for explores. Unless overridd
 
 ```yaml
 # For example, the following YAML configuration below will set a project-wide default for:
-# Models - Configure a [source refresh](/build/connect/source-refresh.md).
+# Models - Configure a [source refresh](/build/models/data-refresh.md).
 # Metrics View - Set the [first day of the week](metrics-view.md) for timeseries aggregations to be Sunday along with setting the smallest_time_grain.
 # Explore Dashboards - Set the [default](explore-dashboards.md) values when a user opens a dashboard, and available time zones and/or time ranges.
 models:

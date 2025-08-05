@@ -16,8 +16,8 @@ Once you've built your data pipeline, Rill provides powerful tools to explore, a
 ## Interactive Dashboards
 
 - **[Slice-and-Dice Explore Dashboards](/explore/dashboard-101)** - Interactive dashboards for dynamic data exploration and filtering
-- **[Pivot Tables](/explore/dashboard-101/pivot)** - Create cross-tabulations and data summaries
 - **[Time Dimension Details](/explore/dashboard-101/tdd)** - Drill down into time-based analysis
+- **[Pivot Tables](/explore/dashboard-101/pivot)** - Create cross-tabulations and data summaries
 - **[Filtering](/explore/filters)** - Apply filters to focus on specific data subsets
 <!-- - **[Traditional Canvas Dashboards](/explore/canvas-dashboards)** - Custom dashboard layouts with Vega-Lite visualizations -->
 

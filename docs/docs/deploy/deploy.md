@@ -11,12 +11,12 @@ Rill Developer is a great tool for building, testing, and viewing your data loca
 
 ### Credentials
 - [Deployment Credentials](/deploy/deploy-credentials) - Confirm deployment credentials based on your deployment environment
-- [Templating](/deploy/templating) - Template your project to differentiate betweem prod and dev
+
 
 ### Deployment
 - [Deploy your Dashboard](/deploy/deploy-dashboard) - Publish your dashboard to Rill Cloud
 - [GitHub Basics](/deploy/deploy-dashboard/github-101) - GitHub basics to get you started
-
+- [Templating](/deploy/templating) - Template your project to differentiate between prod and dev
 
 ### Post-Deployment Steps
 - [Performance Optimization](/deploy/performance) - Get better performance out of your dashboards

@@ -256,7 +256,7 @@ const config = {
           },
           {
             from: '/deploy/source-refresh',
-            to: '/build/connect/source-refresh'
+            to: '/build/models/data-refresh'
           },
           {
             from: '/reference/templating',

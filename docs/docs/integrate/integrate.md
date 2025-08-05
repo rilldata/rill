@@ -17,5 +17,7 @@ Extend Rill's capabilities by integrating dashboards and data into your existing
 ## Custom APIs
 
 - **[Create Custom APIs](/integrate/custom-api)** - Build custom APIs to retrieve aggregated data from your metrics views
+- **[Types of APIs](/integrate/custom-apis)** - See the different types of APIs to build
+
 
 
