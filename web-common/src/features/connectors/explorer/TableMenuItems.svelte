@@ -26,8 +26,8 @@
   export let databaseSchema: string = "";
   export let table: string;
   export let showGenerateMetricsAndDashboard: boolean = false;
-  export let isSqlModelingSupported: boolean | undefined = false;
-  export let isYamlModelingSupported: boolean | undefined = false;
+  export let prefersSqlModeling: boolean | undefined = false;
+  export let prefersYamlModeling: boolean | undefined = false;
 
   const { ai } = featureFlags;
 
@@ -53,16 +53,12 @@
     MetricsEventSpace.LeftPanel,
   );
 
-  async function handleCreateSqlModel() {
+  async function handleCreateModel(
+    modelCreationFn: () => Promise<[string, string]>,
+  ) {
     try {
       const previousActiveEntity = getScreenNameFromPage();
-      const [newModelPath, newModelName] = await createSqlModelFromTable(
-        queryClient,
-        connector,
-        database,
-        databaseSchema,
-        table,
-      );
+      const [newModelPath, newModelName] = await modelCreationFn();
       await goto(`/files${newModelPath}`);
       await behaviourEvent?.fireNavigationEvent(
         newModelName,
@@ -76,45 +72,40 @@
     }
   }
 
-  async function handleCreateYamlModel() {
-    try {
-      const previousActiveEntity = getScreenNameFromPage();
-      const [newModelPath, newModelName] = await createYamlModelFromTable(
-        queryClient,
-        connector,
-        database,
-        databaseSchema,
-        table,
+  async function handleCreateModelFromTable() {
+    // Use the preferred modeling approach for this connector
+    if (prefersSqlModeling) {
+      await handleCreateModel(() =>
+        createSqlModelFromTable(
+          queryClient,
+          connector,
+          database,
+          databaseSchema,
+          table,
+        ),
       );
-      await goto(`/files${newModelPath}`);
-      await behaviourEvent?.fireNavigationEvent(
-        newModelName,
-        BehaviourEventMedium.Menu,
-        MetricsEventSpace.LeftPanel,
-        previousActiveEntity,
-        MetricsEventScreenName.Model,
+    } else if (prefersYamlModeling) {
+      await handleCreateModel(() =>
+        createYamlModelFromTable(
+          queryClient,
+          connector,
+          database,
+          databaseSchema,
+          table,
+        ),
       );
-    } catch (err) {
-      console.error(err);
     }
   }
 </script>
 
-{#if isSqlModelingSupported}
-  <NavigationMenuItem on:click={handleCreateSqlModel}>
-    <Model slot="icon" />
-    Create new model
-  </NavigationMenuItem>
-{/if}
-
-{#if isYamlModelingSupported}
-  <NavigationMenuItem on:click={handleCreateYamlModel}>
+{#if prefersSqlModeling || prefersYamlModeling}
+  <NavigationMenuItem on:click={handleCreateModelFromTable}>
     <Model slot="icon" />
     Create model
   </NavigationMenuItem>
 {/if}
 
-{#if showGenerateMetricsAndDashboard && isSqlModelingSupported}
+{#if showGenerateMetricsAndDashboard && prefersSqlModeling}
   <NavigationMenuItem on:click={createMetricsViewFromTable}>
     <MetricsViewIcon slot="icon" />
     <div class="flex gap-x-2 items-center">

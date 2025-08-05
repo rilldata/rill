@@ -39,13 +39,10 @@
   $: ({ instanceId: runtimeInstanceId } = $runtime);
   $: isSqlBasedModelingSupportedForConnector =
     useIsSqlBasedModelingSupportedForConnector(runtimeInstanceId, connector);
-  $: isSqlBasedModelingSupported =
-    $isSqlBasedModelingSupportedForConnector.data;
-
+  $: prefersSqlModeling = $isSqlBasedModelingSupportedForConnector.data;
   $: isYamlBasedModelingSupportedForConnector =
     useIsYamlBasedModelingSupportedForConnector(runtimeInstanceId, connector);
-  $: isYamlBasedModelingSupported =
-    $isYamlBasedModelingSupportedForConnector.data;
+  $: prefersYamlModeling = $isYamlBasedModelingSupportedForConnector.data;
 
   $: fullyQualifiedTableName = makeFullyQualifiedTableName(
     driver,
@@ -111,7 +108,7 @@
       />
     {/if}
 
-    {#if allowContextMenu && (showGenerateMetricsAndDashboard || isSqlBasedModelingSupported || isYamlBasedModelingSupported)}
+    {#if allowContextMenu && (showGenerateMetricsAndDashboard || prefersSqlModeling || prefersYamlModeling)}
       <DropdownMenu.Root bind:open={contextMenuOpen}>
         <DropdownMenu.Trigger asChild let:builder>
           <ContextButton
@@ -136,8 +133,8 @@
             {databaseSchema}
             {table}
             {showGenerateMetricsAndDashboard}
-            isSqlModelingSupported={isSqlBasedModelingSupported}
-            isYamlModelingSupported={isYamlBasedModelingSupported}
+            {prefersSqlModeling}
+            {prefersYamlModeling}
           />
         </DropdownMenu.Content>
       </DropdownMenu.Root>
