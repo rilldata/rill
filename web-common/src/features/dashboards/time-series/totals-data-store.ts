@@ -1,4 +1,3 @@
-import { ComparisonDeltaPreviousSuffix } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { mergeDimensionAndMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import {
@@ -9,58 +8,31 @@ import {
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import {
-  getQueryServiceMetricsViewAggregationQueryOptions,
-  type V1MetricsViewAggregationMeasure,
+  createQueryServiceMetricsViewAggregation,
   type V1MetricsViewAggregationResponse,
 } from "@rilldata/web-common/runtime-client";
 import { type HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
-import {
-  createQuery,
-  keepPreviousData,
-  type CreateQueryResult,
-} from "@tanstack/svelte-query";
+import type { CreateQueryResult } from "@tanstack/svelte-query";
 import { derived } from "svelte/store";
 
 export function createTotalsForMeasure(
   ctx: StateManagers,
   measures: string[],
-  includeComparison = false,
+  isComparison = false,
 ): CreateQueryResult<V1MetricsViewAggregationResponse, HTTPError> {
-  const queryOptionsStore = derived(
+  return derived(
     [
       ctx.runtime,
       ctx.metricsViewName,
       useTimeControlStore(ctx),
       ctx.dashboardStore,
     ],
-    ([runtime, metricsViewName, timeControls, dashboard]) => {
-      const measuresList: V1MetricsViewAggregationMeasure[] = measures.flatMap(
-        (measureName) => {
-          const baseMeasure = { name: measureName };
-          if (!includeComparison) {
-            return [baseMeasure];
-          }
-          return [
-            baseMeasure,
-            {
-              name: measureName + ComparisonDeltaPreviousSuffix,
-              comparisonValue: { measure: measureName },
-            },
-          ];
-        },
-      );
-
-      const enabled =
-        !!timeControls.ready &&
-        !!ctx.dashboardStore &&
-        // in case of comparison, we need to wait for the comparison start time to be available
-        (!includeComparison || !!timeControls.comparisonTimeStart);
-
-      return getQueryServiceMetricsViewAggregationQueryOptions(
+    ([runtime, metricsViewName, timeControls, dashboard], set) =>
+      createQueryServiceMetricsViewAggregation(
         runtime.instanceId,
         metricsViewName,
         {
-          measures: measuresList,
+          measures: measures.map((measure) => ({ name: measure })),
           where: sanitiseExpression(
             mergeDimensionAndMeasureFilters(
               dashboard.whereFilter,
@@ -69,28 +41,23 @@ export function createTotalsForMeasure(
             undefined,
           ),
           timeRange: {
-            start: timeControls.timeStart,
-            end: timeControls.timeEnd,
+            start: isComparison
+              ? timeControls?.comparisonTimeStart
+              : timeControls.timeStart,
+            end: isComparison
+              ? timeControls?.comparisonTimeEnd
+              : timeControls.timeEnd,
           },
-          comparisonTimeRange: includeComparison
-            ? {
-                start: timeControls?.comparisonTimeStart,
-                end: timeControls?.comparisonTimeEnd,
-              }
-            : undefined,
         },
         {
           query: {
-            enabled,
+            enabled: !!timeControls.ready && !!ctx.dashboardStore,
             refetchOnMount: false,
-            placeholderData: keepPreviousData,
           },
         },
-      );
-    },
+        ctx.queryClient,
+      ).subscribe(set),
   );
-
-  return createQuery(queryOptionsStore, ctx.queryClient);
 }
 
 export function createUnfilteredTotalsForMeasure(
@@ -98,14 +65,14 @@ export function createUnfilteredTotalsForMeasure(
   measures: string[],
   dimensionName: string,
 ): CreateQueryResult<V1MetricsViewAggregationResponse, HTTPError> {
-  const queryOptionsStore = derived(
+  return derived(
     [
       ctx.runtime,
       ctx.metricsViewName,
       useTimeControlStore(ctx),
       ctx.dashboardStore,
     ],
-    ([runtime, metricsViewName, timeControls, dashboard]) => {
+    ([runtime, metricsViewName, timeControls, dashboard], set) => {
       const filter = sanitiseExpression(
         mergeDimensionAndMeasureFilters(
           dashboard.whereFilter,
@@ -119,9 +86,7 @@ export function createUnfilteredTotalsForMeasure(
         (e) => !matchExpressionByName(e, dimensionName),
       );
 
-      const enabled = !!timeControls.ready && !!ctx.dashboardStore;
-
-      return getQueryServiceMetricsViewAggregationQueryOptions(
+      createQueryServiceMetricsViewAggregation(
         runtime.instanceId,
         metricsViewName,
         {
@@ -132,13 +97,11 @@ export function createUnfilteredTotalsForMeasure(
         },
         {
           query: {
-            enabled,
-            placeholderData: keepPreviousData,
+            enabled: !!timeControls.ready && !!ctx.dashboardStore,
           },
         },
-      );
+        ctx.queryClient,
+      ).subscribe(set);
     },
   );
-
-  return createQuery(queryOptionsStore, ctx.queryClient);
 }

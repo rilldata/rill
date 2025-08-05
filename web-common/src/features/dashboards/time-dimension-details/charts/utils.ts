@@ -1,5 +1,4 @@
 import { TDDChartMap } from "@rilldata/web-common/components/vega/types";
-import { ComparisonDeltaPreviousSuffix } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import type { DimensionDataItem } from "@rilldata/web-common/features/dashboards/time-series/multiple-dimension-queries";
 import {
   type ChartField,
@@ -52,8 +51,8 @@ export function getVegaLiteSpecForTDD(
     ];
 
     measureFields.push({
-      name: expandedMeasureName + ComparisonDeltaPreviousSuffix,
-      label: measureLabel + " Previous",
+      name: `comparison.${expandedMeasureName}`,
+      label: `comparison.${measureLabel}`,
       formatterFunction: "measureFormatter",
     });
   } else if (isDimensional) {
@@ -69,17 +68,14 @@ export function getVegaLiteSpecForTDD(
       {
         name: "key",
         label: "Comparing",
-        values: [
-          expandedMeasureName,
-          expandedMeasureName + ComparisonDeltaPreviousSuffix,
-        ],
+        values: [expandedMeasureName, `comparison.${expandedMeasureName}`],
       },
     ];
 
     // For time comparison, time field contains `ts` or `comparison.ts` based on data
     temporalFields[0].tooltipName = "time";
     // For time comparison, measure field contains `<measureName>` or
-    // `<measureName>_prev` based on data
+    // `comparison.<measureName>` based on data
     measureFields[0].name = "measure";
   }
 
