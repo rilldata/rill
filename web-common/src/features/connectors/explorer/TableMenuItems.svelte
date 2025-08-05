@@ -26,7 +26,7 @@
   export let databaseSchema: string = "";
   export let table: string;
   export let showGenerateMetricsAndDashboard: boolean = false;
-  export let isModelingSupported: boolean | undefined = false;
+  export let isSqlModelingSupported: boolean | undefined = false;
   export let isYamlModelingSupported: boolean | undefined = false;
 
   const { ai } = featureFlags;
@@ -53,7 +53,7 @@
     MetricsEventSpace.LeftPanel,
   );
 
-  async function handleCreateModel() {
+  async function handleCreateSqlModel() {
     try {
       const previousActiveEntity = getScreenNameFromPage();
       const [newModelPath, newModelName] = await createSqlModelFromTable(
@@ -100,8 +100,8 @@
   }
 </script>
 
-{#if isModelingSupported}
-  <NavigationMenuItem on:click={handleCreateModel}>
+{#if isSqlModelingSupported}
+  <NavigationMenuItem on:click={handleCreateSqlModel}>
     <Model slot="icon" />
     Create new model
   </NavigationMenuItem>
@@ -114,7 +114,7 @@
   </NavigationMenuItem>
 {/if}
 
-{#if showGenerateMetricsAndDashboard && isModelingSupported}
+{#if showGenerateMetricsAndDashboard && isSqlModelingSupported}
   <NavigationMenuItem on:click={createMetricsViewFromTable}>
     <MetricsViewIcon slot="icon" />
     <div class="flex gap-x-2 items-center">

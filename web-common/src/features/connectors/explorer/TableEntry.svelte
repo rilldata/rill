@@ -136,7 +136,7 @@
             {databaseSchema}
             {table}
             {showGenerateMetricsAndDashboard}
-            isModelingSupported={isSqlBasedModelingSupported}
+            isSqlModelingSupported={isSqlBasedModelingSupported}
             isYamlModelingSupported={isYamlBasedModelingSupported}
           />
         </DropdownMenu.Content>
