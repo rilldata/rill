@@ -50,7 +50,7 @@ Connector YAML files define how Rill connects to external data sources and OLAP 
 
 
 :::warning Security Recommendation
-For all credential parameters (passwords, tokens, keys), use environment variables with the syntax `{{.env.<connector_type>.<parameter_name>}}`. This keeps sensitive data out of your YAML files and version control. See our [credentials documentation](/connect/credentials) for complete setup instructions.
+For all credential parameters (passwords, tokens, keys), use environment variables with the syntax `{{.env.connector.<connector_driver>.<parameter_name>}}`. This keeps sensitive data out of your YAML files and version control. See our [credentials documentation](/connect/credentials) for complete setup instructions.
 :::
 
 ### Athena
