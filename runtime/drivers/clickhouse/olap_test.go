@@ -614,7 +614,7 @@ func TestClickhouseDualDSN(t *testing.T) {
 			"mode":      "readwrite",
 		}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 		require.Error(t, err)
-		require.Contains(t, err.Error(), "when not providing a 'dsn', both 'dsn' and 'write_dsn' must be specified for separate read/write connections")
+		require.Contains(t, err.Error(), "no clickhouse connection configured")
 	})
 
 	t.Run("DualDSNWithRegularDSN_UsesDualDSN", func(t *testing.T) {
@@ -647,7 +647,7 @@ func TestClickhouseDualDSN(t *testing.T) {
 			"mode":      "readwrite",
 		}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 		require.Error(t, err)
-		require.Contains(t, err.Error(), "failed to parse read DSN")
+		require.Contains(t, err.Error(), "failed to parse DSN")
 	})
 
 	t.Run("InvalidWriteDSN_ShouldFail", func(t *testing.T) {
@@ -684,7 +684,7 @@ func TestClickhouseDualDSN(t *testing.T) {
 			"mode": "readwrite",
 		}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 		require.Error(t, err)
-		require.Contains(t, err.Error(), "must specify either 'dsn' for single connection or both 'dsn' and 'write_dsn' for dual connections")
+		require.Contains(t, err.Error(), "no clickhouse connection configured")
 	})
 }
 
