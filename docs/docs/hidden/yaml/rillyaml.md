@@ -189,6 +189,10 @@ mock_users:
       groups:
         - partners
     - email: anon@unknown.com
+    - email: embed@rilldata.com
+      name: embed
+      custom_variable_1: Value_1
+      custom_variable_2: Value_2
 ```
 
 ## Common Properties

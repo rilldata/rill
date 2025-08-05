@@ -50,5 +50,3 @@ allOf:
 
           If unsure, we would generally recommend leaving the defaults and/or reaching out for further guidance!
           :::
-    required:
-      - type

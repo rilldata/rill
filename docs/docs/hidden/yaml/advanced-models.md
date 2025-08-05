@@ -4,6 +4,22 @@ title: Models YAML
 sidebar_position: 34
 ---
 
+:::tip
+
+Both regular models and source models can use the Model YAML specification described on this page. While [SQL models](./models) are perfect for simple transformations, Model YAML files provide advanced capabilities for complex data processing scenarios.
+
+**When to use Model YAML:**
+- **Partitions** - Optimize performance with data partitioning strategies
+- **Incremental models** - Process only new or changed data efficiently
+- **Pre/post execution hooks** - Run custom logic before or after model execution
+- **Staging** - Create intermediate tables for complex transformations
+- **Output configuration** - Define specific output formats and destinations
+
+Model YAML files give you fine-grained control over how your data is processed and transformed, making them ideal for production workloads and complex analytics pipelines.
+
+:::
+
+
 ## Properties
 
 ### `type`
@@ -52,113 +68,53 @@ _[string]_ - Configure how changes to the model specifications are applied (opti
 
 _[oneOf]_ - Refers to the explicitly defined state of your model, cannot be used with partitions (optional) 
 
-#### Option 1: SQL Query
+      - **`sql`** - _[string]_ - Raw SQL query to run against existing models in the project. _(required)_
 
-**Type:** _[object]_
+      - **`connector`** - _[string]_ - specifies the connector to use when running SQL or glob queries. 
 
-**Description:** Executes a raw SQL query against the project's data models.
+      - **`metrics_sql`** - _[string]_ - SQL query that targets a metrics view in the project _(required)_
 
-    - **`sql`** - _[string]_ - Raw SQL query to run against existing models in the project. _(required)_
+      - **`api`** - _[string]_ - Name of a custom API defined in the project. _(required)_
 
-    - **`connector`** - _[string]_ - specifies the connector to use when running SQL or glob queries. 
+      - **`args`** - _[object]_ - Arguments to pass to the custom API. 
 
-#### Option 2: Metrics View Query
+      - **`glob`** - _[anyOf]_ - Defines the file path or pattern to query from the specified connector. _(required)_
 
-**Type:** _[object]_
+        - **option 1** - _[string]_ - A simple file path/glob pattern as a string.
 
-**Description:** Executes a SQL query that targets a defined metrics view.
+        - **option 2** - _[object]_ - An object-based configuration for specifying a file path/glob pattern with advanced options.
 
-    - **`metrics_sql`** - _[string]_ - SQL query that targets a metrics view in the project _(required)_
+      - **`connector`** - _[string]_ - Specifies the connector to use with the glob input. 
 
-#### Option 3: Custom API Call
+      - **`resource_status`** - _[object]_ - Based on resource status _(required)_
 
-**Type:** _[object]_
-
-**Description:** Calls a custom API defined in the project to compute data.
-
-    - **`api`** - _[string]_ - Name of a custom API defined in the project. _(required)_
-
-    - **`args`** - _[object]_ - Arguments to pass to the custom API. 
-
-#### Option 4: File Glob Query
-
-**Type:** _[object]_
-
-**Description:** Uses a file-matching pattern (glob) to query data from a connector.
-
-    - **`glob`** - _[anyOf]_ - Defines the file path or pattern to query from the specified connector. _(required)_
-
-      - **option 1** - _[string]_ - A simple file path/glob pattern as a string.
-
-      - **option 2** - _[object]_ - An object-based configuration for specifying a file path/glob pattern with advanced options.
-
-    - **`connector`** - _[string]_ - Specifies the connector to use with the glob input. 
-
-#### Option 5: Resource Status Check
-
-**Type:** _[object]_
-
-**Description:** Uses the status of a resource as data.
-
-    - **`resource_status`** - _[object]_ - Based on resource status _(required)_
-
-      - **`where_error`** - _[boolean]_ - Indicates whether the condition should trigger when the resource is in an error state. 
+        - **`where_error`** - _[boolean]_ - Indicates whether the condition should trigger when the resource is in an error state. 
 
 ### `partitions`
 
 _[oneOf]_ - Refers to the how your data is partitioned, cannot be used with state. (optional) 
 
-#### Option 1: SQL Query
+      - **`sql`** - _[string]_ - Raw SQL query to run against existing models in the project. _(required)_
 
-**Type:** _[object]_
+      - **`connector`** - _[string]_ - specifies the connector to use when running SQL or glob queries. 
 
-**Description:** Executes a raw SQL query against the project's data models.
+      - **`metrics_sql`** - _[string]_ - SQL query that targets a metrics view in the project _(required)_
 
-    - **`sql`** - _[string]_ - Raw SQL query to run against existing models in the project. _(required)_
+      - **`api`** - _[string]_ - Name of a custom API defined in the project. _(required)_
 
-    - **`connector`** - _[string]_ - specifies the connector to use when running SQL or glob queries. 
+      - **`args`** - _[object]_ - Arguments to pass to the custom API. 
 
-#### Option 2: Metrics View Query
+      - **`glob`** - _[anyOf]_ - Defines the file path or pattern to query from the specified connector. _(required)_
 
-**Type:** _[object]_
+        - **option 1** - _[string]_ - A simple file path/glob pattern as a string.
 
-**Description:** Executes a SQL query that targets a defined metrics view.
+        - **option 2** - _[object]_ - An object-based configuration for specifying a file path/glob pattern with advanced options.
 
-    - **`metrics_sql`** - _[string]_ - SQL query that targets a metrics view in the project _(required)_
+      - **`connector`** - _[string]_ - Specifies the connector to use with the glob input. 
 
-#### Option 3: Custom API Call
+      - **`resource_status`** - _[object]_ - Based on resource status _(required)_
 
-**Type:** _[object]_
-
-**Description:** Calls a custom API defined in the project to compute data.
-
-    - **`api`** - _[string]_ - Name of a custom API defined in the project. _(required)_
-
-    - **`args`** - _[object]_ - Arguments to pass to the custom API. 
-
-#### Option 4: File Glob Query
-
-**Type:** _[object]_
-
-**Description:** Uses a file-matching pattern (glob) to query data from a connector.
-
-    - **`glob`** - _[anyOf]_ - Defines the file path or pattern to query from the specified connector. _(required)_
-
-      - **option 1** - _[string]_ - A simple file path/glob pattern as a string.
-
-      - **option 2** - _[object]_ - An object-based configuration for specifying a file path/glob pattern with advanced options.
-
-    - **`connector`** - _[string]_ - Specifies the connector to use with the glob input. 
-
-#### Option 5: Resource Status Check
-
-**Type:** _[object]_
-
-**Description:** Uses the status of a resource as data.
-
-    - **`resource_status`** - _[object]_ - Based on resource status _(required)_
-
-      - **`where_error`** - _[boolean]_ - Indicates whether the condition should trigger when the resource is in an error state. 
+        - **`where_error`** - _[boolean]_ - Indicates whether the condition should trigger when the resource is in an error state. 
 
 ### `materialize`
 

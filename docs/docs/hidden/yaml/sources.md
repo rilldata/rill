@@ -13,8 +13,6 @@ sidebar_position: 32
 - See our [model YAML reference](advanced-models) for current documentation and best practices
 :::
 
-Source YAML files define data sources that can be imported into Rill projects.
-
 
 ## Properties
 
@@ -24,7 +22,7 @@ _[string]_ - Refers to the resource type and must be `model` _(required)_
 
 ### `connector`
 
-_[string]_ - Refers to the connector type for the source, see [connectors](/build/connect/) for more information _(required)_
+_[string]_ - Refers to the connector type for the source, see [connectors](/reference/project-files/connectors) for more information _(required)_
 
 ### `uri`
 

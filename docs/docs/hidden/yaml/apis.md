@@ -30,18 +30,6 @@ _[object]_ - Defines security rules and access control policies for resources
 
   - **`access`** - _[oneOf]_ - Expression indicating if the user should be granted access to the dashboard. If not defined, it will resolve to false and the dashboard won't be accessible to anyone. Needs to be a valid SQL expression that evaluates to a boolean. 
 
-#### Option 1
-
-**Type:** _[string]_
-
-**Description:** SQL expression that evaluates to a boolean to determine access
-
-#### Option 2
-
-**Type:** _[boolean]_
-
-**Description:** Direct boolean value to allow or deny access
-
   - **`row_filter`** - _[string]_ - SQL expression to filter the underlying model by. Can leverage templated user attributes to customize the filter for the requesting user. Needs to be a valid SQL expression that can be injected into a WHERE clause 
 
   - **`include`** - _[array of object]_ - List of dimension or measure names to include in the dashboard. If include is defined all other dimensions and measures are excluded 
@@ -83,17 +71,6 @@ _[object]_ - Defines security rules and access control policies for resources
 _[boolean]_ - Flag to control security inheritance 
 
 ## One of Properties Options
-- [SQL Query](#sql-query)
-- [Metrics View Query](#metrics-view-query)
-- [Custom API Call](#custom-api-call)
-- [File Glob Query](#file-glob-query)
-- [Resource Status Check](#resource-status-check)
-
-#### Option 1: SQL Query
-
-**Type:** _[object]_
-
-**Description:** Executes a raw SQL query against the project's data models.
 
 ## SQL Query
 
@@ -107,12 +84,6 @@ _[string]_ - Raw SQL query to run against existing models in the project. _(requ
 
 _[string]_ - specifies the connector to use when running SQL or glob queries. 
 
-#### Option 2: Metrics View Query
-
-**Type:** _[object]_
-
-**Description:** Executes a SQL query that targets a defined metrics view.
-
 ## Metrics View Query
 
 Executes a SQL query that targets a defined metrics view.
@@ -120,12 +91,6 @@ Executes a SQL query that targets a defined metrics view.
 ### `metrics_sql`
 
 _[string]_ - SQL query that targets a metrics view in the project _(required)_
-
-#### Option 3: Custom API Call
-
-**Type:** _[object]_
-
-**Description:** Calls a custom API defined in the project to compute data.
 
 ## Custom API Call
 
@@ -139,12 +104,6 @@ _[string]_ - Name of a custom API defined in the project. _(required)_
 
 _[object]_ - Arguments to pass to the custom API. 
 
-#### Option 4: File Glob Query
-
-**Type:** _[object]_
-
-**Description:** Uses a file-matching pattern (glob) to query data from a connector.
-
 ## File Glob Query
 
 Uses a file-matching pattern (glob) to query data from a connector.
@@ -153,19 +112,13 @@ Uses a file-matching pattern (glob) to query data from a connector.
 
 _[anyOf]_ - Defines the file path or pattern to query from the specified connector. _(required)_
 
-    - **option 1** - _[string]_ - A simple file path/glob pattern as a string.
+      - **option 1** - _[string]_ - A simple file path/glob pattern as a string.
 
-    - **option 2** - _[object]_ - An object-based configuration for specifying a file path/glob pattern with advanced options.
+      - **option 2** - _[object]_ - An object-based configuration for specifying a file path/glob pattern with advanced options.
 
 ### `connector`
 
 _[string]_ - Specifies the connector to use with the glob input. 
-
-#### Option 5: Resource Status Check
-
-**Type:** _[object]_
-
-**Description:** Uses the status of a resource as data.
 
 ## Resource Status Check
 
@@ -175,7 +128,7 @@ Uses the status of a resource as data.
 
 _[object]_ - Based on resource status _(required)_
 
-    - **`where_error`** - _[boolean]_ - Indicates whether the condition should trigger when the resource is in an error state. 
+      - **`where_error`** - _[boolean]_ - Indicates whether the condition should trigger when the resource is in an error state. 
 
 ## Common Properties
 

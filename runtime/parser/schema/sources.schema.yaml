@@ -11,8 +11,6 @@ description: |
   - Migrate to source models via the `type:model` parameter for existing projects
   - See our [model YAML reference](advanced-models) for current documentation and best practices
   :::
-
-  Source YAML files define data sources that can be imported into Rill projects.
 allOf:
   - title: Properties
     type: object
@@ -23,7 +21,7 @@ allOf:
         description: Refers to the resource type and must be `model`
       connector:
         type: string
-        description: Refers to the connector type for the source, see [connectors](/build/connect/) for more information
+        description: Refers to the connector type for the source, see [connectors](/reference/project-files/connectors) for more information
         enum:
           - https
           - s3

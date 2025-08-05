@@ -120,6 +120,8 @@ definitions:
             additionalProperties: true
         required:
           - resource_status
+
+
   security_policy_properties:
     type: object
     description: Defines security rules and access control policies for resources

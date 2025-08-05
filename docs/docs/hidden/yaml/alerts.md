@@ -52,85 +52,37 @@ _[string]_ - define the timeout of the alert in seconds (optional).
 
 _[oneOf]_ - Specifies one of the options to retrieve or compute the data used by alert _(required)_
 
-#### Option 1: SQL Query
+      - **`sql`** - _[string]_ - Raw SQL query to run against existing models in the project. _(required)_
 
-**Type:** _[object]_
+      - **`connector`** - _[string]_ - specifies the connector to use when running SQL or glob queries. 
 
-**Description:** Executes a raw SQL query against the project's data models.
+      - **`metrics_sql`** - _[string]_ - SQL query that targets a metrics view in the project _(required)_
 
-    - **`sql`** - _[string]_ - Raw SQL query to run against existing models in the project. _(required)_
+      - **`api`** - _[string]_ - Name of a custom API defined in the project. _(required)_
 
-    - **`connector`** - _[string]_ - specifies the connector to use when running SQL or glob queries. 
+      - **`args`** - _[object]_ - Arguments to pass to the custom API. 
 
-#### Option 2: Metrics View Query
+      - **`glob`** - _[anyOf]_ - Defines the file path or pattern to query from the specified connector. _(required)_
 
-**Type:** _[object]_
+        - **option 1** - _[string]_ - A simple file path/glob pattern as a string.
 
-**Description:** Executes a SQL query that targets a defined metrics view.
+        - **option 2** - _[object]_ - An object-based configuration for specifying a file path/glob pattern with advanced options.
 
-    - **`metrics_sql`** - _[string]_ - SQL query that targets a metrics view in the project _(required)_
+      - **`connector`** - _[string]_ - Specifies the connector to use with the glob input. 
 
-#### Option 3: Custom API Call
+      - **`resource_status`** - _[object]_ - Based on resource status _(required)_
 
-**Type:** _[object]_
-
-**Description:** Calls a custom API defined in the project to compute data.
-
-    - **`api`** - _[string]_ - Name of a custom API defined in the project. _(required)_
-
-    - **`args`** - _[object]_ - Arguments to pass to the custom API. 
-
-#### Option 4: File Glob Query
-
-**Type:** _[object]_
-
-**Description:** Uses a file-matching pattern (glob) to query data from a connector.
-
-    - **`glob`** - _[anyOf]_ - Defines the file path or pattern to query from the specified connector. _(required)_
-
-      - **option 1** - _[string]_ - A simple file path/glob pattern as a string.
-
-      - **option 2** - _[object]_ - An object-based configuration for specifying a file path/glob pattern with advanced options.
-
-    - **`connector`** - _[string]_ - Specifies the connector to use with the glob input. 
-
-#### Option 5: Resource Status Check
-
-**Type:** _[object]_
-
-**Description:** Uses the status of a resource as data.
-
-    - **`resource_status`** - _[object]_ - Based on resource status _(required)_
-
-      - **`where_error`** - _[boolean]_ - Indicates whether the condition should trigger when the resource is in an error state. 
+        - **`where_error`** - _[boolean]_ - Indicates whether the condition should trigger when the resource is in an error state. 
 
 ### `for`
 
 _[oneOf]_ - Specifies how user identity or attributes should be evaluated for security policy enforcement. 
 
-#### Option 1
+      - **`user_id`** - _[string]_ - The unique user ID used to evaluate security policies. _(required)_
 
-**Type:** _[object]_
+      - **`user_email`** - _[string]_ - The user's email address used to evaluate security policies. _(required)_
 
-**Description:** Specifies a unique user identifier for applying security policies.
-
-    - **`user_id`** - _[string]_ - The unique user ID used to evaluate security policies. _(required)_
-
-#### Option 2
-
-**Type:** _[object]_
-
-**Description:** Specifies a user's email address for applying security policies.
-
-    - **`user_email`** - _[string]_ - The user's email address used to evaluate security policies. _(required)_
-
-#### Option 3
-
-**Type:** _[object]_
-
-**Description:** Specifies a set of arbitrary user attributes for applying security policies.
-
-    - **`attributes`** - _[object]_ - A dictionary of user attributes used to evaluate security policies. _(required)_
+      - **`attributes`** - _[object]_ - A dictionary of user attributes used to evaluate security policies. _(required)_
 
 ### `on_recover`
 

@@ -6,49 +6,41 @@ sidebar_position: 31
 
 Connector YAML files define how Rill connects to external data sources and OLAP engines. Each connector specifies a driver type and its required connection parameters.
 
-
 ## Available Connector Types
 
-Choose from the following connector types based on your data source:
-
-### OLAP Engines
-
+### _OLAP Engines_
 - [**DuckDB**](#duckdb) - Embedded DuckDB engine (default)
 - [**ClickHouse**](#clickhouse) - ClickHouse analytical database
 - [**MotherDuck**](#motherduck) - MotherDuck cloud database
 - [**Druid**](#druid) - Apache Druid
 - [**Pinot**](#pinot) - Apache Pinot
 
-### Data Warehouses
-
+### _Data Warehouses_
 - [**Snowflake**](#snowflake) - Snowflake data warehouse
 - [**BigQuery**](#bigquery) - Google BigQuery
 - [**Redshift**](#redshift) - Amazon Redshift
 - [**Athena**](#athena) - Amazon Athena
 
-### Databases
-
+### _Databases_
 - [**PostgreSQL**](#postgres) - PostgreSQL databases
 - [**MySQL**](#mysql) - MySQL databases
 - [**SQLite**](#sqlite) - SQLite databases
 
-### Cloud Storage
-
+### _Cloud Storage_
 - [**GCS**](#gcs) - Google Cloud Storage
 - [**S3**](#s3) - Amazon S3 storage
 - [**Azure**](#azure) - Azure Blob Storage
 
-### Other
-
+### _Other_
 - [**HTTPS**](#https) - Public files via HTTP/HTTPS
 - [**Salesforce**](#salesforce) - Salesforce data
 - [**Slack**](#slack) - Slack data
+
 :::warning Security Recommendation
 For all credential parameters (passwords, tokens, keys), use environment variables with the syntax `{{.env.<connector_type>.<parameter_name>}}`. This keeps sensitive data out of your YAML files and version control. See our [credentials documentation](/build/credentials/) for complete setup instructions.
 :::
 
-## Connector Details
-
+--
 
 
 ## Properties

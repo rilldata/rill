@@ -7,6 +7,9 @@ allOf:
   - title: Properties
     type: object
     properties:
+      version:
+        type: string
+        description: The version of the metrics view schema
       type:
         type: string
         const: metrics_view
@@ -103,7 +106,7 @@ allOf:
               type: string
               description: a combination of operators and functions for aggregations
             window:
-              description: A measure window can be defined as a keyword string (e.g. 'time' or 'all') or an object with detailed window configuration.
+              description: A measure window can be defined as a keyword string (e.g. 'time' or 'all') or an object with detailed window configuration. For more information, see the [window functions](/build/metrics-view/advanced-expressions/windows) documentation.
               anyOf:
                 - type: string
                   enum:
@@ -156,11 +159,12 @@ allOf:
               type: string
               description: used to configure what value to fill in for missing time buckets. This also works generally as COALESCING over non empty time buckets.
           minItems: 1
-        security:
-          $ref: '#/definitions/security_policy_properties'
-          description: Defines a security policy for the dashboard
-      required:
-        - type
+      security:
+        $ref: '#/definitions/security_policy_properties'
+        description: Defines a security policy for the dashboard
+    required:
+      - type
+      - version
   - $ref: '#/definitions/common_properties'
 definitions:
   security_policy_properties:

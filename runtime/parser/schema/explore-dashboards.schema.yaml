@@ -14,15 +14,15 @@ allOf:
       display_name:
         type: string
         description: Refers to the display name for the explore dashboard
+      metrics_view:
+        type: string
+        description: Refers to the metrics view resource
       description:
         type: string
         description: Refers to the description of the explore dashboard
       banner:
         type: string
         description: Refers to the custom banner displayed at the header of an explore dashboard
-      metrics_view:
-        type: string
-        description: Refers to the metrics view resource
       dimensions:
         description: List of dimension names. Use '*' to select all dimensions (default) 
         $ref: '#/definitions/explore/definitions/field_selector_properties'
@@ -31,9 +31,11 @@ allOf:
         $ref: '#/definitions/explore/definitions/field_selector_properties'
       theme:
         oneOf:
-          - type: string
-            description: Name of an existing theme to apply to the dashboard
-          - $ref: '#/definitions/theme/definitions/theme_properties'
+          - title: Existing theme
+            type: string
+            description: Name of an existing theme to apply to the dashboard 
+          - title: Inline theme
+            type: object
             description: Inline theme configuration.
         description: Name of the theme to use. Only one of theme and embedded_theme can be set.
       time_ranges:
@@ -236,14 +238,17 @@ definitions:
     definitions:
       field_selector_properties:
         oneOf:
-          - type: string
+          - title: Wildcard(*) selector
+            type: string
             const: '*'
             description: Wildcard(*) selector that includes all available fields in the selection
-          - type: array
+          - title: Explicit list of fields
+            type: array
             items:
               type: string
             description: Explicit list of fields to include in the selection
-          - type: object
+          - title: Regex matching
+            type: object
             description: 'Advanced matching using regex, DuckDB expression, or exclusion'
             properties:
               regex:

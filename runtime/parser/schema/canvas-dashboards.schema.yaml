@@ -17,6 +17,46 @@ allOf:
       banner:
         type: string
         description: Refers to the custom banner displayed at the header of an Canvas dashboard
+      rows:
+        type: array
+        description: Refers to all of the rows displayed on the Canvas
+        items:
+          type: object
+          properties:
+            height:
+              type: string
+              description: Height of the row in px
+            items:
+              type: array
+              description: List of components to display in the row
+              items:
+                type: object
+                properties:
+                  component:
+                    type: string
+                    description: |
+                      Name of the component to display. Each component type has its own set of properties.
+                      Available component types:
+                      
+                          - **markdown** - Text component, uses markdown formatting
+                          - **kpi_grid** - KPI component, similar to TDD in Rill Explore, display quick KPI charts
+                          - **stacked_bar_normalized** - Bar chart normalized to 100% values
+                          - **line_chart** - Normal Line chart
+                          - **bar_chart** - Normal Bar chart
+                          - **stacked_bar** - Stacked Bar chart
+                          - **area_chart** - Line chart with area
+                          - **image** - Provide a URL to embed into canvas dashboard
+                          - **table** - Similar to Pivot table, add dimensions and measures to visualize your data
+                          - **heatmap** - Heat Map chart to visualize distribution of data
+                          - **donut_chart** - Donut or Pie chart to display sums of total
+
+                  width:
+                    type:
+                      - string
+                      - integer
+                    description: Width of the component (can be a number or string with unit) 
+                additionalProperties: true
+          additionalProperties: false
       max_width:
         type: integer
         description: Max width in pixels of the canvas
@@ -28,14 +68,20 @@ allOf:
       gap_y:
         type: integer
         description: Vertical gap in pixels of the canvas
-        minimum: 0
+        minimum: 
       theme:
         oneOf:
-          - type: string
+          - title: Existing theme
+            type: string
             description: Name of an existing theme to apply to the dashboard
-          - $ref: '#/definitions/theme/definitions/theme_properties'
+          - title: Inline theme
+            type: object
             description: Inline theme configuration.
-        description: Name of the theme to use. Only one of theme and embedded_theme can be set.
+            $ref: '#/definitions/theme'
+
+        description: Theme configuration. Can be either a string reference to an existing theme or an inline theme configuration object.
+       
+
       allow_custom_time_range:
         type: boolean
         description: Defaults to true, when set to false it will hide the ability to set a custom time range for the user. 
@@ -76,31 +122,6 @@ allOf:
         description: Variables that can be used in the canvas
         items:
           $ref: '#/definitions/component_variable_properties'
-      rows:
-        type: array
-        description: Refers to all of the rows displayed on the Canvas
-        items:
-          type: object
-          properties:
-            height:
-              type: string
-              description: Height of the row in px
-            items:
-              type: array
-              description: List of components to display in the row
-              items:
-                type: object
-                properties:
-                  component:
-                    type: string
-                    description: Name of the component to display
-                  width:
-                    type:
-                      - string
-                      - integer
-                    description: Width of the component (can be a number or string with unit) 
-                additionalProperties: true
-          additionalProperties: false
       security:
         $ref: '#/definitions/security_policy_properties'
         description: Security rules to apply for access to the canvas
@@ -112,16 +133,16 @@ definitions:
   explore_time_range_properties:
     oneOf:
       - type: string
-        description: a valid [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations) duration or one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) extensions for the selection
+        description: A valid ISO 8601 duration or one of the Rill ISO 8601 extensions for the selection
       - type: object
         description: Object containing time range and comparison configuration
         properties:
           range:
             type: string
-            description: a valid [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations) duration or one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) extensions for the selection
+            description: A valid ISO 8601 duration or one of the Rill ISO 8601 extensions for the selection
           comparison_offsets:
             type: array
-            description: list of time comparison options for this time range selection (optional). Must be one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions)
+            description: List of time comparison options for this time range selection (optional). Must be one of the Rill ISO 8601 extensions
             items:
               oneOf:
                 - type: string
@@ -276,22 +297,20 @@ definitions:
         type: object
         description: Overrides any properties in production environment.
   theme:
-    definitions:
-      theme_properties:
+    type: object
+    properties:
+      colors:
         type: object
+        description: Used to override the dashboard colors. Either primary or secondary color must be provided.
         properties:
-          colors:
-            type: object
-            description: Used to override the dashboard colors. Either primary or secondary color must be provided.
-            properties:
-              primary:
-                type: string
-                description: Overrides the primary blue color in the dashboard. Can have any hex (without the '#' character), [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats. Note that the hue of the input colors is used for variants but the saturation and lightness is copied over from the [blue color palette](https://tailwindcss.com/docs/customizing-colors).
-              secondary:
-                type: string
-                description: Overrides the secondary color in the dashboard. Applies to the loading spinner only as of now. Can have any hex (without the '#' character), [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats.
-            anyOf:
-              - required:
-                  - primary
-              - required:
-                  - secondary 
+          primary:
+            type: string
+            description: Overrides the primary blue color in the dashboard. Can have any hex (without the '#' character), [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats. Note that the hue of the input colors is used for variants but the saturation and lightness is copied over from the [blue color palette](https://tailwindcss.com/docs/customizing-colors).
+          secondary:
+            type: string
+            description: Overrides the secondary color in the dashboard. Applies to the loading spinner only as of now. Can have any hex (without the '#' character), [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats.
+        anyOf:
+          - required:
+              - primary
+          - required:
+              - secondary 

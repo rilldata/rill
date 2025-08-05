@@ -26,7 +26,7 @@ For consistency or documentation purposes, if you'd like to annotate your model 
 ```sql
 -- @type: model
 ```
- _(required)_
+ 
 
 ### `materialize`
 

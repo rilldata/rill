@@ -424,29 +424,17 @@ func generateDoc(sidebarPosition, level int, node *yaml.Node, indent string, req
 			if len(oneOf.Content) == 1 {
 				doc.WriteString(generateDoc(sidebarPosition, level, oneOf.Content[0], indent, getRequiredMapFromNode(oneOf.Content[0])))
 			} else {
+				// Remove the summary list to avoid duplication with detailed sections
 				if level == 1 {
 					doc.WriteString("\n\n## One of Properties Options")
-					for _, item := range oneOf.Content {
-						title := getScalarValue(item, "title")
-						if title != "" {
-							anchor := strings.ToLower(strings.ReplaceAll(title, " ", "-"))
-							doc.WriteString(fmt.Sprintf("\n- [%s](#%s)", title, anchor))
-						}
+				
 					}
-				}
+			
 
-				for i, item := range oneOf.Content {
+				for _, item := range oneOf.Content {
 					if hasType(item) || hasProperties(item) || hasCombinators(item) {
-						title := getScalarValue(item, "title")
-						if title != "" {
-							doc.WriteString(fmt.Sprintf("\n\n#### Option %d: %s", i+1, title))
-						} else {
-							doc.WriteString(fmt.Sprintf("\n\n#### Option %d", i+1))
-						}
-						doc.WriteString(fmt.Sprintf("\n\n**Type:** %s\n\n**Description:** %s",
-							getPrintableType(item),
-							getPrintableDescription(item, indent, "(no description)")))
-						doc.WriteString(generateDoc(sidebarPosition, level, item, indent+"  ", getRequiredMapFromNode(item)))
+
+						doc.WriteString(generateDoc(sidebarPosition, level, item, indent+"    ", getRequiredMapFromNode(item)))
 					}
 				}
 			}
@@ -465,55 +453,6 @@ func generateDoc(sidebarPosition, level int, node *yaml.Node, indent string, req
 
 	// AllOf
 	if allOf := getNodeForKey(node, "allOf"); allOf != nil && allOf.Kind == yaml.SequenceNode {
-		// Special handling for connector allOf
-		if isConnector && level == 1 {
-			doc.WriteString("\n\n## Available Connector Types\n\n")
-			doc.WriteString("Choose from the following connector types based on your data source:\n\n")
-
-			// Find the oneOf section within allOf
-			for _, item := range allOf.Content {
-				oneOf := getNodeForKey(item, "oneOf")
-				if oneOf == nil || oneOf.Kind != yaml.SequenceNode {
-					continue
-				}
-
-				doc.WriteString("### OLAP Engines\n\n")
-				doc.WriteString("- [**DuckDB**](#duckdb) - Embedded DuckDB engine (default)\n")
-				doc.WriteString("- [**ClickHouse**](#clickhouse) - ClickHouse analytical database\n")
-				doc.WriteString("- [**MotherDuck**](#motherduck) - MotherDuck cloud database\n")
-				doc.WriteString("- [**Druid**](#druid) - Apache Druid\n")
-				doc.WriteString("- [**Pinot**](#pinot) - Apache Pinot\n\n")
-
-				doc.WriteString("### Data Warehouses\n\n")
-				doc.WriteString("- [**Snowflake**](#snowflake) - Snowflake data warehouse\n")
-				doc.WriteString("- [**BigQuery**](#bigquery) - Google BigQuery\n")
-				doc.WriteString("- [**Redshift**](#redshift) - Amazon Redshift\n")
-				doc.WriteString("- [**Athena**](#athena) - Amazon Athena\n\n")
-
-				doc.WriteString("### Databases\n\n")
-				doc.WriteString("- [**PostgreSQL**](#postgres) - PostgreSQL databases\n")
-				doc.WriteString("- [**MySQL**](#mysql) - MySQL databases\n")
-				doc.WriteString("- [**SQLite**](#sqlite) - SQLite databases\n\n")
-
-				doc.WriteString("### Cloud Storage\n\n")
-				doc.WriteString("- [**GCS**](#gcs) - Google Cloud Storage\n")
-				doc.WriteString("- [**S3**](#s3) - Amazon S3 storage\n")
-				doc.WriteString("- [**Azure**](#azure) - Azure Blob Storage\n\n")
-
-				doc.WriteString("### Other\n\n")
-				doc.WriteString("- [**HTTPS**](#https) - Public files via HTTP/HTTPS\n")
-				doc.WriteString("- [**Salesforce**](#salesforce) - Salesforce data\n")
-				doc.WriteString("- [**Slack**](#slack) - Slack data\n")
-				// doc.WriteString("- [**Local File**](#local_file) - Local file system\n\n")
-
-				doc.WriteString(":::warning Security Recommendation\n")
-				doc.WriteString("For all credential parameters (passwords, tokens, keys), use environment variables with the syntax `{{.env.<connector_type>.<parameter_name>}}`. This keeps sensitive data out of your YAML files and version control. See our [credentials documentation](/build/credentials/) for complete setup instructions.\n")
-				doc.WriteString(":::\n\n")
-
-				doc.WriteString("## Connector Details\n\n")
-				break
-			}
-		}
 
 		for _, item := range allOf.Content {
 			// Skip oneOf items for connectors since we handle them separately

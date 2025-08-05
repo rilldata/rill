@@ -8,9 +8,13 @@ In your Rill project directory, create a metrics view, `<metrics_view>.yaml`, fi
 
 ## Properties
 
+### `version`
+
+_[string]_ - The version of the metrics view schema _(required)_
+
 ### `type`
 
-_[string]_ - Refers to the resource type and must be `metrics_view` 
+_[string]_ - Refers to the resource type and must be `metrics_view` _(required)_
 
 ### `display_name`
 
@@ -92,7 +96,7 @@ _[array of object]_ - Used to define the numeric aggregates of columns from your
 
   - **`expression`** - _[string]_ - a combination of operators and functions for aggregations 
 
-  - **`window`** - _[anyOf]_ - A measure window can be defined as a keyword string (e.g. 'time' or 'all') or an object with detailed window configuration. 
+  - **`window`** - _[anyOf]_ - A measure window can be defined as a keyword string (e.g. 'time' or 'all') or an object with detailed window configuration. For more information, see the [window functions](/build/metrics-view/advanced-expressions/windows) documentation. 
 
     - **option 1** - _[string]_ - Shorthand: `time` or `true` means time-partitioned, `all` means non-partitioned.
 
@@ -163,9 +167,47 @@ _[array of object]_ - Used to define the numeric aggregates of columns from your
 
   - **`treat_nulls_as`** - _[string]_ - used to configure what value to fill in for missing time buckets. This also works generally as COALESCING over non empty time buckets. 
 
-### `required`
+### `security`
 
-_[no type]_ - (no description) 
+_[object]_ - Defines security rules and access control policies for resources 
+
+  - **`access`** - _[oneOf]_ - Expression indicating if the user should be granted access to the dashboard. If not defined, it will resolve to false and the dashboard won't be accessible to anyone. Needs to be a valid SQL expression that evaluates to a boolean. 
+
+  - **`row_filter`** - _[string]_ - SQL expression to filter the underlying model by. Can leverage templated user attributes to customize the filter for the requesting user. Needs to be a valid SQL expression that can be injected into a WHERE clause 
+
+  - **`include`** - _[array of object]_ - List of dimension or measure names to include in the dashboard. If include is defined all other dimensions and measures are excluded 
+
+    - **`if`** - _[string]_ - Expression to decide if the column should be included or not. It can leverage templated user attributes. Needs to be a valid SQL expression that evaluates to a boolean _(required)_
+
+    - **`names`** - _[anyOf]_ - List of fields to include. Should match the name of one of the dashboard's dimensions or measures _(required)_
+
+      - **option 1** - _[array of string]_ - List of specific field names to include
+
+      - **option 2** - _[string]_ - Wildcard '*' to include all fields
+
+  - **`exclude`** - _[array of object]_ - List of dimension or measure names to exclude from the dashboard. If exclude is defined all other dimensions and measures are included 
+
+    - **`if`** - _[string]_ - Expression to decide if the column should be excluded or not. It can leverage templated user attributes. Needs to be a valid SQL expression that evaluates to a boolean _(required)_
+
+    - **`names`** - _[anyOf]_ - List of fields to exclude. Should match the name of one of the dashboard's dimensions or measures _(required)_
+
+      - **option 1** - _[array of string]_ - List of specific field names to exclude
+
+      - **option 2** - _[string]_ - Wildcard '*' to exclude all fields
+
+  - **`rules`** - _[array of object]_ - List of detailed security rules that can be used to define complex access control policies 
+
+    - **`type`** - _[string]_ - Type of security rule - access (overall access), field_access (field-level access), or row_filter (row-level filtering) _(required)_
+
+    - **`action`** - _[string]_ - Whether to allow or deny access for this rule 
+
+    - **`if`** - _[string]_ - Conditional expression that determines when this rule applies. Must be a valid SQL expression that evaluates to a boolean 
+
+    - **`names`** - _[array of string]_ - List of field names this rule applies to (for field_access type rules) 
+
+    - **`all`** - _[boolean]_ - When true, applies the rule to all fields (for field_access type rules) 
+
+    - **`sql`** - _[string]_ - SQL expression for row filtering (for row_filter type rules) 
 
 ## Common Properties
 

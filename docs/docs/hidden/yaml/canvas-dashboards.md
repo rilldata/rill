@@ -20,6 +20,32 @@ _[string]_ - Refers to the display name for the canvas
 
 _[string]_ - Refers to the custom banner displayed at the header of an Canvas dashboard 
 
+### `rows`
+
+_[array of object]_ - Refers to all of the rows displayed on the Canvas _(required)_
+
+  - **`height`** - _[string]_ - Height of the row in px 
+
+  - **`items`** - _[array of object]_ - List of components to display in the row 
+
+    - **`component`** - _[string]_ - Name of the component to display. Each component type has its own set of properties.
+    Available component types:
+    
+        - **markdown** - Text component, uses markdown formatting
+        - **kpi_grid** - KPI component, similar to TDD in Rill Explore, display quick KPI charts
+        - **stacked_bar_normalized** - Bar chart normalized to 100% values
+        - **line_chart** - Normal Line chart
+        - **bar_chart** - Normal Bar chart
+        - **stacked_bar** - Stacked Bar chart
+        - **area_chart** - Line chart with area
+        - **image** - Provide a URL to embed into canvas dashboard
+        - **table** - Similar to Pivot table, add dimensions and measures to visualize your data
+        - **heatmap** - Heat Map chart to visualize distribution of data
+        - **donut_chart** - Donut or Pie chart to display sums of total
+ 
+
+    - **`width`** - _[string, integer]_ - Width of the component (can be a number or string with unit) 
+
 ### `max_width`
 
 _[integer]_ - Max width in pixels of the canvas 
@@ -34,25 +60,13 @@ _[integer]_ - Vertical gap in pixels of the canvas
 
 ### `theme`
 
-_[oneOf]_ - Name of the theme to use. Only one of theme and embedded_theme can be set. 
+_[oneOf]_ - Theme configuration. Can be either a string reference to an existing theme or an inline theme configuration object. 
 
-#### Option 1
+      - **`colors`** - _[object]_ - Used to override the dashboard colors. Either primary or secondary color must be provided. 
 
-**Type:** _[string]_
+        - **`primary`** - _[string]_ - Overrides the primary blue color in the dashboard. Can have any hex (without the '#' character), [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats. Note that the hue of the input colors is used for variants but the saturation and lightness is copied over from the [blue color palette](https://tailwindcss.com/docs/customizing-colors). 
 
-**Description:** Name of an existing theme to apply to the dashboard
-
-#### Option 2
-
-**Type:** _[object]_
-
-**Description:** Inline theme configuration.
-
-    - **`colors`** - _[object]_ - Used to override the dashboard colors. Either primary or secondary color must be provided. 
-
-      - **`primary`** - _[string]_ - Overrides the primary blue color in the dashboard. Can have any hex (without the '#' character), [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats. Note that the hue of the input colors is used for variants but the saturation and lightness is copied over from the [blue color palette](https://tailwindcss.com/docs/customizing-colors). 
-
-      - **`secondary`** - _[string]_ - Overrides the secondary color in the dashboard. Applies to the loading spinner only as of now. Can have any hex (without the '#' character), [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats. 
+        - **`secondary`** - _[string]_ - Overrides the secondary color in the dashboard. Applies to the loading spinner only as of now. Can have any hex (without the '#' character), [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats. 
 
 ### `allow_custom_time_range`
 
@@ -62,37 +76,13 @@ _[boolean]_ - Defaults to true, when set to false it will hide the ability to se
 
 _[array of oneOf]_ - Overrides the list of default time range selections available in the dropdown. It can be string or an object with a 'range' and optional 'comparison_offsets' 
 
-#### Option 1
+      - **`range`** - _[string]_ - A valid ISO 8601 duration or one of the Rill ISO 8601 extensions for the selection _(required)_
 
-**Type:** _[string]_
+      - **`comparison_offsets`** - _[array of oneOf]_ - List of time comparison options for this time range selection (optional). Must be one of the Rill ISO 8601 extensions 
 
-**Description:** a valid [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations) duration or one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) extensions for the selection
+            - **`offset`** - _[string]_ - Time offset for comparison (e.g., 'P1D' for one day ago) 
 
-#### Option 2
-
-**Type:** _[object]_
-
-**Description:** Object containing time range and comparison configuration
-
-    - **`range`** - _[string]_ - a valid [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations) duration or one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) extensions for the selection _(required)_
-
-    - **`comparison_offsets`** - _[array of oneOf]_ - list of time comparison options for this time range selection (optional). Must be one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) 
-
-#### Option 1
-
-**Type:** _[string]_
-
-**Description:** Offset string only (range is inferred)
-
-#### Option 2
-
-**Type:** _[object]_
-
-**Description:** Object containing offset and range configuration for time comparison
-
-        - **`offset`** - _[string]_ - Time offset for comparison (e.g., 'P1D' for one day ago) 
-
-        - **`range`** - _[string]_ - Custom time range for comparison period 
+            - **`range`** - _[string]_ - Custom time range for comparison period 
 
 ### `time_zones`
 
@@ -124,35 +114,11 @@ _[array of object]_ - Variables that can be used in the canvas
 
   - **`value`** - _[string, number, boolean, object, array]_ - Default value for the variable. Can be any valid JSON value type 
 
-### `rows`
-
-_[array of object]_ - Refers to all of the rows displayed on the Canvas _(required)_
-
-  - **`height`** - _[string]_ - Height of the row in px 
-
-  - **`items`** - _[array of object]_ - List of components to display in the row 
-
-    - **`component`** - _[string]_ - Name of the component to display 
-
-    - **`width`** - _[string, integer]_ - Width of the component (can be a number or string with unit) 
-
 ### `security`
 
 _[object]_ - Defines security rules and access control policies for resources 
 
   - **`access`** - _[oneOf]_ - Expression indicating if the user should be granted access to the dashboard. If not defined, it will resolve to false and the dashboard won't be accessible to anyone. Needs to be a valid SQL expression that evaluates to a boolean. 
-
-#### Option 1
-
-**Type:** _[string]_
-
-**Description:** SQL expression that evaluates to a boolean to determine access
-
-#### Option 2
-
-**Type:** _[boolean]_
-
-**Description:** Direct boolean value to allow or deny access
 
   - **`row_filter`** - _[string]_ - SQL expression to filter the underlying model by. Can leverage templated user attributes to customize the filter for the requesting user. Needs to be a valid SQL expression that can be injected into a WHERE clause 
 
