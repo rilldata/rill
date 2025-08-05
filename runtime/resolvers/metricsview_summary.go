@@ -65,22 +65,6 @@ func newMetricsSummaryResolver(ctx context.Context, opts *runtime.ResolverOption
 		return nil, fmt.Errorf("metrics view %q is invalid", res.Meta.Name.Name)
 	}
 
-	if mv.TimeDimension == "" {
-		// Check if there are any dimensions with time data types
-		hasTimeDimensions := false
-		for _, dim := range mv.Dimensions {
-			if dim.DataType != nil {
-				switch dim.DataType.Code {
-				case runtimev1.Type_CODE_TIMESTAMP, runtimev1.Type_CODE_DATE, runtimev1.Type_CODE_TIME:
-					hasTimeDimensions = true
-				}
-			}
-		}
-		if !hasTimeDimensions {
-			return nil, fmt.Errorf("no time dimensions found for metrics view %q", tr.MetricsView)
-		}
-	}
-
 	security, err := opts.Runtime.ResolveSecurity(opts.InstanceID, opts.Claims, res)
 	if err != nil {
 		return nil, err
@@ -129,7 +113,7 @@ func (r *metricsSummaryResolver) ResolveInteractive(ctx context.Context) (runtim
 
 	row := map[string]any{
 		"dimensions": summary.Dimensions,
-		"time_range": summary.TimeRange,
+		"time_range": summary.DefaultTimeDimension,
 	}
 
 	schema := &runtimev1.StructType{

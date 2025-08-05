@@ -180,11 +180,10 @@ func (s *Server) mcpGetMetricsView() (mcp.Tool, server.ToolHandlerFunc) {
 func (s *Server) mcpQueryMetricsViewSummary() (mcp.Tool, server.ToolHandlerFunc) {
 	tool := mcp.NewTool("query_metrics_view_summary",
 		mcp.WithDescription(`
-           	Retrieve the total time range available for a given metrics view.
-            Note: All subsequent queries of the metrics view should be constrained to this time range to ensure accurate results.
 			Retrieve summary statistics for a metrics view including:
 			- Total time range available
 			- Sample values and data types for each dimension
+			Note: All subsequent queries of the metrics view should be constrained to this time range to ensure accurate results.
 		`),
 		mcp.WithString("metrics_view",
 			mcp.Required(),

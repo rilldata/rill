@@ -20,19 +20,18 @@ const (
 
 // SummaryResult is the statistics for a single metrics view.
 type SummaryResult struct {
-	Dimensions []DimensionSummary `json:"dimensions"`
-	TimeRange  TimestampsResult   `json:"time_range"`
+	DefaultTimeDimension DimensionSummary   `json:"default_time_dimension,omitempty"`
+	Dimensions           []DimensionSummary `json:"dimensions"`
 }
 
 // DimensionSummary provides statistics for a single dimension in the metrics view.
 type DimensionSummary struct {
-	Name      string           `json:"name"`
-	DataType  string           `json:"data_type"`
-	Value     any              `json:"value,omitempty"`
-	HasNulls  bool             `json:"has_nulls,omitempty"`
-	MinValue  any              `json:"min_value,omitempty"`
-	MaxValue  any              `json:"max_value,omitempty"`
-	TimeRange TimestampsResult `json:"time_range,omitempty"`
+	Name         string `json:"name"`
+	DataType     string `json:"data_type"`
+	ExampleValue any    `json:"example_value,omitempty"`
+	HasNulls     bool   `json:"has_nulls,omitempty"`
+	MinValue     any    `json:"min_value,omitempty"`
+	MaxValue     any    `json:"max_value,omitempty"`
 }
 
 // Summary provides statistics for all dimensions and measures in the metrics view.
@@ -92,40 +91,11 @@ func (e *Executor) Summary(ctx context.Context) (*SummaryResult, error) {
 	if defaultTimeDimName != "" {
 		defaultTimeRange, err = e.Timestamps(ctx, defaultTimeDimName)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get default time range: %w", err)
+			return nil, fmt.Errorf("failed to get default time range for dimension %q: %w", defaultTimeDimName, err)
 		}
 	}
 
 	timeDimensionSummaries := make([]DimensionSummary, 0, len(timeDimensions)+1)
-
-	// Validate time range
-	if defaultTimeRange.Max.IsZero() {
-		// If we have no time data, still process time dimensions we found
-		for _, dim := range timeDimensions {
-			var dataType string
-			if dim.DataType != nil {
-				dataType = dim.DataType.Code.String()
-			}
-
-			timeDimensionSummaries = append(timeDimensionSummaries, DimensionSummary{
-				Name:     dim.Name,
-				DataType: dataType,
-			})
-		}
-
-		// Include default time dimension if it wasn't found in explicit dimensions
-		if !defaultTimeDimFound && defaultTimeDimName != "" && e.security.CanAccessField(defaultTimeDimName) {
-			timeDimensionSummaries = append(timeDimensionSummaries, DimensionSummary{
-				Name:     defaultTimeDimName,
-				DataType: "TIMESTAMP", // Assume timestamp for default time dimension
-			})
-		}
-
-		return &SummaryResult{
-			Dimensions: timeDimensionSummaries,
-			TimeRange:  defaultTimeRange,
-		}, nil
-	}
 
 	// Process each time dimension found in the dimensions list
 	for _, dim := range timeDimensions {
@@ -139,27 +109,45 @@ func (e *Executor) Summary(ctx context.Context) (*SummaryResult, error) {
 			dataType = dim.DataType.Code.String()
 		}
 
-		timeDimensionSummaries = append(timeDimensionSummaries, DimensionSummary{
-			Name:      dim.Name,
-			TimeRange: timeRange,
-			DataType:  dataType,
-		})
+		summary := DimensionSummary{
+			Name:     dim.Name,
+			DataType: dataType,
+		}
+
+		// Only populate min/max if we have time data
+		if !timeRange.Min.IsZero() {
+			summary.MinValue = timeRange.Min
+		}
+		if !timeRange.Max.IsZero() {
+			summary.MaxValue = timeRange.Max
+		}
+
+		timeDimensionSummaries = append(timeDimensionSummaries, summary)
 	}
 
 	// Include default time dimension if it wasn't found in explicit dimensions
 	if !defaultTimeDimFound && defaultTimeDimName != "" && e.security.CanAccessField(defaultTimeDimName) {
-		timeDimensionSummaries = append(timeDimensionSummaries, DimensionSummary{
-			Name:      defaultTimeDimName,
-			TimeRange: defaultTimeRange,
-			DataType:  "TIMESTAMP", // Assume timestamp for default time dimension
-		})
+		summary := DimensionSummary{
+			Name:     defaultTimeDimName,
+			DataType: "TIMESTAMP", // Assume timestamp for default time dimension
+		}
+
+		// Only populate min/max if we have time data
+		if !defaultTimeRange.Min.IsZero() {
+			summary.MinValue = defaultTimeRange.Min
+		}
+		if !defaultTimeRange.Max.IsZero() {
+			summary.MaxValue = defaultTimeRange.Max
+		}
+
+		timeDimensionSummaries = append(timeDimensionSummaries, summary)
 	}
 
 	// Create summaries for normal dimensions
 	if len(dimensions) == 0 {
 		return &SummaryResult{
-			Dimensions: timeDimensionSummaries,
-			TimeRange:  defaultTimeRange,
+			Dimensions:           timeDimensionSummaries,
+			DefaultTimeDimension: createDefaultTimeDimensionSummary(defaultTimeDimName, defaultTimeRange),
 		}, nil
 	}
 
@@ -181,13 +169,13 @@ func (e *Executor) Summary(ctx context.Context) (*SummaryResult, error) {
 			fmt.Sprintf("MIN(%s) AS %s", expr, dialect.EscapeIdentifier(dimName+"__min")),
 			fmt.Sprintf("MAX(%s) AS %s", expr, dialect.EscapeIdentifier(dimName+"__max")),
 			fmt.Sprintf("COUNT(*) - COUNT(%s) > 0 AS %s", expr, dialect.EscapeIdentifier(dimName+"__has_nulls")),
-			fmt.Sprintf("ANY_VALUE(%s) AS %s", expr, dialect.EscapeIdentifier(dimName+"__sample")),
+			fmt.Sprintf("ANY_VALUE(%s) AS %s", expr, dialect.EscapeIdentifier(dimName+"__example")),
 		)
 	}
 
 	if len(selectClauses) == 0 {
 		if len(failedDimensions) > 0 {
-			return nil, fmt.Errorf("failed to get expressions for all dimensions: %v", failedDimensions)
+			return nil, fmt.Errorf("failed to get expressions for dimensions: %v", failedDimensions)
 		}
 		return nil, fmt.Errorf("no dimensions to summarize")
 	}
@@ -217,12 +205,17 @@ func (e *Executor) Summary(ctx context.Context) (*SummaryResult, error) {
 	}
 
 	escapedTableName := e.olap.Dialect().EscapeTable(e.metricsView.Database, e.metricsView.DatabaseSchema, e.metricsView.Table)
-	sql := fmt.Sprintf("SELECT %s FROM %s %s LIMIT %d",
-		strings.Join(selectClauses, ", "),
-		escapedTableName,
-		whereClause,
-		1,
-	)
+	var sqlBuilder strings.Builder
+	sqlBuilder.WriteString("SELECT ")
+	sqlBuilder.WriteString(strings.Join(selectClauses, ", "))
+	sqlBuilder.WriteString(" FROM ")
+	sqlBuilder.WriteString(escapedTableName)
+	if whereClause != "" {
+		sqlBuilder.WriteString(" ")
+		sqlBuilder.WriteString(whereClause)
+	}
+	sqlBuilder.WriteString(" LIMIT 1")
+	sql := sqlBuilder.String()
 
 	rows, err := e.olap.Query(ctx, &drivers.Statement{
 		Query:            sql,
@@ -241,7 +234,7 @@ func (e *Executor) Summary(ctx context.Context) (*SummaryResult, error) {
 	values := make([]interface{}, len(dimensions)*4)
 
 	// Create scan targets
-	for i := 0; i < len(values); i++ {
+	for i := range values {
 		values[i] = new(interface{})
 	}
 
@@ -259,21 +252,21 @@ func (e *Executor) Summary(ctx context.Context) (*SummaryResult, error) {
 		minValue := *values[index].(*interface{})
 		maxValue := *values[index+1].(*interface{})
 		hasNulls := *values[index+2].(*bool)
-		sampleValue := *values[index+3].(*interface{})
+		exampleValue := *values[index+3].(*interface{})
 
 		summaries[i] = DimensionSummary{
-			Name:     dim.Name,
-			DataType: dataType,
-			MinValue: minValue,
-			MaxValue: maxValue,
-			HasNulls: hasNulls,
-			Value:    sampleValue,
+			Name:         dim.Name,
+			DataType:     dataType,
+			MinValue:     minValue,
+			MaxValue:     maxValue,
+			HasNulls:     hasNulls,
+			ExampleValue: exampleValue,
 		}
 	}
 
 	return &SummaryResult{
-		Dimensions: append(timeDimensionSummaries, summaries...),
-		TimeRange:  defaultTimeRange,
+		Dimensions:           append(timeDimensionSummaries, summaries...),
+		DefaultTimeDimension: createDefaultTimeDimensionSummary(defaultTimeDimName, defaultTimeRange),
 	}, nil
 }
 
@@ -282,4 +275,23 @@ func getDimensionDataType(dim *runtimev1.MetricsViewSpec_Dimension) string {
 		return dim.DataType.Code.String()
 	}
 	return ""
+}
+
+func createDefaultTimeDimensionSummary(defaultTimeDimName string, timeRange TimestampsResult) DimensionSummary {
+	summary := DimensionSummary{}
+
+	if defaultTimeDimName != "" {
+		summary.Name = defaultTimeDimName
+		summary.DataType = "TIMESTAMP"
+
+		// Only populate min/max values if we have time data
+		if !timeRange.Min.IsZero() {
+			summary.MinValue = timeRange.Min
+		}
+		if !timeRange.Max.IsZero() {
+			summary.MaxValue = timeRange.Max
+		}
+	}
+
+	return summary
 }
