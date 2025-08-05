@@ -10,6 +10,9 @@ import (
 const (
 	poolSizeMin int = 2
 	poolSizeMax int = 5
+
+	modeReadOnly  = "read"
+	modeReadWrite = "readwrite"
 )
 
 // config represents the DuckDB driver config
@@ -35,6 +38,8 @@ type config struct {
 	// Secrets is a comma-separated list of connector names to create temporary secrets for before executing models.
 	// The secrets are not created for read queries.
 	Secrets string `mapstructure:"secrets"`
+	// Mode specifies the mode in which to open the database. It can be "read" (default) or "readwrite".
+	Mode string `mapstructure:"mode"`
 
 	// Path switches the implementation to use a generic rduckdb implementation backed by the db used in the Path
 	Path string `mapstructure:"path"`
@@ -53,6 +58,11 @@ func newConfig(cfgMap map[string]any) (*config, error) {
 	err := mapstructure.WeakDecode(cfgMap, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("could not decode config: %w", err)
+	}
+
+	// Validate mode if specified
+	if cfg.Mode != "" && cfg.Mode != modeReadOnly && cfg.Mode != modeReadWrite {
+		return nil, fmt.Errorf("invalid mode '%s': must be 'read' or 'readwrite'", cfg.Mode)
 	}
 
 	// Set pool size

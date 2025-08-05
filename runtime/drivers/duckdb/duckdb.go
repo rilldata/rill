@@ -48,6 +48,14 @@ var spec = drivers.Spec{
 			Description: "Path to external DuckDB database.",
 			Placeholder: "/path/to/main.db",
 		},
+		{
+			Key:         "mode",
+			Type:        drivers.StringPropertyType,
+			Required:    false,
+			DisplayName: "Mode",
+			Description: "Set the mode for the DuckDB connection. By default, it is set to 'read' which allows only read operations. Set to 'readwrite' to enable model creation and table mutations.",
+			NoPrompt:    true,
+		},
 	},
 	// Important: Any edits to the below properties must be accompanied by changes to the client-side form validation schemas.
 	SourceProperties: []*drivers.PropertySpec{
@@ -127,6 +135,16 @@ var motherduckSpec = drivers.Spec{
 			Placeholder: "my_new_source",
 			Required:    true,
 		},
+		{
+			Key:         "mode",
+			Type:        drivers.StringPropertyType,
+			Required:    false,
+			DisplayName: "Mode",
+			Description: "Set the mode for the DuckDB connection. By default, it is set to 'read' which allows only read operations. Set to 'readwrite' to enable model creation and table mutations.",
+			Placeholder: modeReadOnly,
+			Default:     modeReadOnly,
+			NoPrompt:    true,
+		},
 	},
 }
 
@@ -153,6 +171,18 @@ func (d Driver) Open(instanceID string, cfgMap map[string]any, st *storage.Clien
 	olapSemSize := cfg.PoolSize - 1
 	if olapSemSize < 1 {
 		olapSemSize = 1
+	}
+
+	// Set the mode for the connection
+	if cfg.Mode == "" {
+		// The default mode depends on the connection type:
+		// - For generic connections (Motherduck/DuckLake with Path/Attach), default to "read"
+		// - For connections using the embedded DuckDB, default to "readwrite" to maintain compatibility
+		if cfg.Path != "" || cfg.Attach != "" {
+			cfg.Mode = modeReadOnly
+		} else {
+			cfg.Mode = modeReadWrite
+		}
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -384,6 +414,11 @@ func (c *connection) AsObjectStore() (drivers.ObjectStore, bool) {
 
 // AsModelExecutor implements drivers.Handle.
 func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
+	if opts.OutputHandle == c && c.config.Mode != modeReadWrite {
+		c.logger.Warn("Model execution is disabled. To enable modeling on this DuckDB database, set 'mode: readwrite' in your connector configuration. WARNING: This will allow Rill to create and overwrite tables in your database.")
+		return nil, false
+	}
+
 	if opts.InputHandle == c && opts.OutputHandle == c {
 		return &selfToSelfExecutor{c}, true
 	}
@@ -422,6 +457,10 @@ func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecu
 
 // AsModelManager implements drivers.Handle.
 func (c *connection) AsModelManager(instanceID string) (drivers.ModelManager, bool) {
+	if c.config.Mode != modeReadWrite {
+		c.logger.Warn("Model execution is disabled. To enable modeling on this DuckDB database, set 'mode: readwrite' in your connector configuration. WARNING: This will allow Rill to create and overwrite tables in your database.")
+		return nil, false
+	}
 	return c, true
 }
 
