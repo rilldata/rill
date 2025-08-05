@@ -44,14 +44,6 @@ var spec = drivers.Spec{
 			Required:    true,
 			Hint:        "Glob patterns are supported",
 		},
-		{
-			Key:         "name",
-			Type:        drivers.StringPropertyType,
-			DisplayName: "Source name",
-			Description: "The name of the source",
-			Placeholder: "my_new_source",
-			Required:    true,
-		},
 	},
 	ImplementsObjectStore: true,
 }
