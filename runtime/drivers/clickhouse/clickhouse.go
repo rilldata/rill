@@ -148,9 +148,10 @@ type configProperties struct {
 	// Provision is set when Managed is true and provisioning should be handled by this driver.
 	// (In practice, this gets set on local and means we should start an embedded Clickhouse server).
 	Provision bool `mapstructure:"provision"`
-	// DSN is the connection string for both read and write operations when using a single connection
+	// DSN is the connection string. Either DSN can be passed or the individual properties below can be set.
+	// Additionally, WriteDSN can optionally be used to use a different connection for mutations.
 	DSN string `mapstructure:"dsn"`
-	// WriteDSN is the connection string for write operations. When set, DSN is used for reads and this for writes.
+	// WriteDSN is the connection string for write operations. When set, the normal connection config (DSN or host, etc.) is used for reads and this for writes.
 	WriteDSN string `mapstructure:"write_dsn"`
 	// Host configuration. Should not be set if DSN is set.
 	Host string `mapstructure:"host"`
