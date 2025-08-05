@@ -5,6 +5,10 @@
   import { SelectSeparator } from "@rilldata/web-common/components/select";
   import CreateNewOrgForm from "@rilldata/web-common/features/organization/CreateNewOrgForm.svelte";
   import { CreateNewOrgFormId } from "@rilldata/web-common/features/organization/CreateNewOrgForm.svelte";
+  import {
+    getCreateProjectRoute,
+    getOverwriteProjectRoute,
+  } from "@rilldata/web-common/features/project/deploy/route-utils.ts";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
   import { createLocalServiceGetCurrentUser } from "@rilldata/web-common/runtime-client/local-service.ts";
 
@@ -13,7 +17,8 @@
   let selectedOrg = "";
   let isNewOrgDialogOpen = false;
 
-  $: deployUrl = `/deploy/new?org=${selectedOrg}`;
+  $: createProjectUrl = getCreateProjectRoute(selectedOrg);
+  $: overwriteProjectUrl = getOverwriteProjectRoute(selectedOrg);
 
   $: orgOptions =
     $user.data?.rillUserOrgs?.map((o) => ({ value: o, label: o })) ?? [];
@@ -60,8 +65,17 @@
   </div>
 </Select>
 
-<Button wide type="primary" href={deployUrl} disabled={!selectedOrg}>
-  Continue
+<Button wide type="primary" href={createProjectUrl} disabled={!selectedOrg}>
+  Deploy as a new project
+</Button>
+<Button
+  wide
+  type="ghost"
+  href={overwriteProjectUrl}
+  disabled={!selectedOrg}
+  class="-mt-2"
+>
+  Or overwrite an existing project
 </Button>
 
 <Dialog.Root bind:open={isNewOrgDialogOpen}>
