@@ -8,19 +8,19 @@ project_files:
     output: clickhouse
     sql: |
       select parseDateTimeBestEffort('2024-01-01T00:00:00Z') as time, 'DK' as country, 1 as val union all
-      select parseDateTimeBestEffort('2024-01-02T00:00:00Z') as time, 'US' as country, 2 as val union all
-      select parseDateTimeBestEffort('2024-01-03T00:00:00Z') as time, 'US' as country, 3 as val union all
-      select parseDateTimeBestEffort('2024-01-04T00:00:00Z') as time, 'US' as country, 4 as val union all
-      select parseDateTimeBestEffort('2024-01-05T00:00:00Z') as time, 'DK' as country, 5 as val
+      select parseDateTimeBestEffort('2024-01-15T00:00:00Z') as time, 'US' as country, 2 as val union all
+      select parseDateTimeBestEffort('2024-02-01T00:00:00Z') as time, 'US' as country, 3 as val union all
+      select parseDateTimeBestEffort('2024-02-15T00:00:00Z') as time, 'US' as country, 4 as val union all
+      select parseDateTimeBestEffort('2024-03-01T00:00:00Z') as time, 'DK' as country, 5 as val
   duckdb_data.yaml:
     type: model
     connector: duckdb
     sql: |
       select '2024-01-01T00:00:00Z'::TIMESTAMP as time, 'DK' as country, 1 as val union all
-      select '2024-01-02T00:00:00Z'::TIMESTAMP as time, 'US' as country, 2 as val union all
-      select '2024-01-03T00:00:00Z'::TIMESTAMP as time, 'US' as country, 3 as val union all
-      select '2024-01-04T00:00:00Z'::TIMESTAMP as time, 'US' as country, 4 as val union all
-      select '2024-01-05T00:00:00Z'::TIMESTAMP as time, 'DK' as country, 5 as val
+      select '2024-01-15T00:00:00Z'::TIMESTAMP as time, 'US' as country, 2 as val union all
+      select '2024-02-01T00:00:00Z'::TIMESTAMP as time, 'US' as country, 3 as val union all
+      select '2024-02-15T00:00:00Z'::TIMESTAMP as time, 'US' as country, 4 as val union all
+      select '2024-03-01T00:00:00Z'::TIMESTAMP as time, 'DK' as country, 5 as val
   simple_duckdb_annotation.yaml:
     type: model
     connector: duckdb
@@ -60,32 +60,37 @@ project_files:
         expression: count(*)
       - name: sum
         expression: sum(val)
+      - name: mes_for_grain_annotation
+        expression: count(*)
     annotations:
       - model: simple_duckdb_annotation
+        measures: ['count']
       - table: time_end_clickhouse_annotation
         connector: clickhouse
+        measures: ['sum']
       - model: grain_duckdb_annotation
+        measures: ['mes_for_grain_annotation']
 tests:
   - name: query_simple_duckdb_annotations
     resolver: annotations
     properties:
       metrics_view: duckdb_metrics
-      annotation: simple_duckdb_annotation
-    args:
+      measures: ['count']
       time_range:
         start: 2024-01-07T00:00:00Z
         end: 2024-03-29T00:00:00Z
     result:
       - time: "2024-02-16T00:00:00Z"
         description: "2nd event"
+        for_measures: ['count']
       - time: "2024-03-27T00:00:00Z"
         description: "3rd event"
+        for_measures: ['count']
   - name: query_time_end_clickhouse_annotation
     resolver: annotations
     properties:
       metrics_view: duckdb_metrics
-      annotation: time_end_clickhouse_annotation
-    args:
+      measures: ['sum']
       time_range:
         start: 2024-01-01T00:00:00Z
         end: 2024-03-29T00:00:00Z
@@ -93,15 +98,16 @@ tests:
       - time: "2024-01-05T00:00:00Z"
         time_end: "2024-01-09T00:00:00Z"
         description: "1st event"
+        for_measures: ['sum']
       - time: "2024-02-16T00:00:00Z"
         time_end: "2024-02-20T00:00:00Z"
         description: "2nd event"
+        for_measures: ['sum']
   - name: query_grain_duckdb_annotation
     resolver: annotations
     properties:
       metrics_view: duckdb_metrics
-      annotation: grain_duckdb_annotation
-    args:
+      measures: ['mes_for_grain_annotation']
       time_range:
         start: 2024-01-01T00:00:00Z
         end: 2024-03-31T00:00:00Z
@@ -111,7 +117,38 @@ tests:
         grain: "day"
         description: "1st event"
         time_grain: 5
+        for_measures: ['mes_for_grain_annotation']
       - time: "2024-03-27T00:00:00Z"
         grain: "hour"
         description: "3rd event"
         time_grain: 4
+        for_measures: ['mes_for_grain_annotation']
+  - name: query_all_annotations
+    resolver: annotations
+    properties:
+      metrics_view: duckdb_metrics
+    result:
+      - time: "2024-01-05T00:00:00Z"
+        description: "1st event"
+        for_measures: ['count']
+      - time: "2024-02-16T00:00:00Z"
+        description: "2nd event"
+        for_measures: ['count']
+      - time: "2024-01-05T00:00:00Z"
+        time_end: "2024-01-09T00:00:00Z"
+        description: "1st event"
+        for_measures: ['sum']
+      - time: "2024-02-16T00:00:00Z"
+        time_end: "2024-02-20T00:00:00Z"
+        description: "2nd event"
+        for_measures: ['sum']
+      - time: "2024-01-05T00:00:00Z"
+        description: "1st event"
+        grain: "day"
+        time_grain: 5
+        for_measures: ['mes_for_grain_annotation']
+      - time: "2024-02-16T00:00:00Z"
+        description: "2nd event"
+        grain: "month"
+        time_grain: 7
+        for_measures: ['mes_for_grain_annotation']

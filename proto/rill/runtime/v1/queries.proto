@@ -873,7 +873,7 @@ message MetricsViewAnnotationsResponse {
     // Any other fields are captured here. Will be used in predicates in the future.
     google.protobuf.Struct additional_fields = 5;
     // List of measure names that this annotation applies to. If empty, no restrictions apply.
-    repeated string only_measures = 6;
+    repeated string for_measures = 6;
   }
 
   repeated Annotation rows = 1;

@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"slices"
 	"strings"
 	"time"
 
@@ -495,39 +494,13 @@ func (s *Server) MetricsViewAnnotations(ctx context.Context, req *runtimev1.Metr
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
 		attribute.String("args.metric_view", req.MetricsViewName),
-		attribute.String("args.annotation", strings.Join(req.Measures, ",")),
+		attribute.String("args.measures", strings.Join(req.Measures, ",")),
 	)
 
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadMetrics) {
 		return nil, ErrForbidden
 	}
 	s.addInstanceRequestAttributes(ctx, req.InstanceId)
-
-	mv, _, err := resolveMVAndSecurity(ctx, s.runtime, req.InstanceId, req.MetricsViewName)
-	if err != nil {
-		return nil, err
-	}
-
-	ts, err := queries.ResolveTimestampResult(ctx, s.runtime, req.InstanceId, req.MetricsViewName, mv.ValidSpec.TimeDimension, auth.GetClaims(ctx).SecurityClaims(), int(req.Priority))
-	if err != nil {
-		return nil, err
-	}
-
-	// If there are no requested measures, return all measures of the metrics view.
-	reqMeasures := req.Measures
-	if len(reqMeasures) == 0 {
-		for _, mes := range mv.ValidSpec.Measures {
-			reqMeasures = append(reqMeasures, mes.Name)
-		}
-	}
-
-	// If there is no requested time range, return for all time of the metrics view.
-	if req.TimeRange == nil {
-		req.TimeRange = &runtimev1.TimeRange{
-			Start: timestamppb.New(ts.Min),
-			End:   timestamppb.New(ts.Max),
-		}
-	}
 
 	var limit *int64
 	if req.Limit != 0 {
@@ -539,29 +512,76 @@ func (s *Server) MetricsViewAnnotations(ctx context.Context, req *runtimev1.Metr
 		limit = &req.Offset
 	}
 
+	tr := metricsview.TimeRange{}
+	if req.TimeRange != nil {
+		tr = metricsview.TimeRange{
+			Start:         req.TimeRange.Start.AsTime(),
+			End:           req.TimeRange.End.AsTime(),
+			Expression:    req.TimeRange.Expression,
+			IsoDuration:   req.TimeRange.IsoDuration,
+			IsoOffset:     req.TimeRange.IsoOffset,
+			RoundToGrain:  metricsview.TimeGrainFromProto(req.TimeRange.RoundToGrain),
+			TimeDimension: req.TimeRange.TimeDimension,
+		}
+	}
+
+	res, err := s.runtime.Resolve(ctx, &runtime.ResolveOptions{
+		InstanceID: req.InstanceId,
+		Resolver:   "annotations",
+		ResolverProperties: map[string]any{
+			"metrics_view": req.MetricsViewName,
+			"measures":     req.Measures,
+			"priority":     req.Priority,
+			"time_range":   tr,
+			"time_grain":   req.TimeGrain,
+			"limit":        limit,
+			"offset":       offset,
+		},
+		Claims: auth.GetClaims(ctx).SecurityClaims(),
+	})
+	if err != nil {
+		return nil, err
+	}
+	defer res.Close()
+
 	rows := make([]*runtimev1.MetricsViewAnnotationsResponse_Annotation, 0)
-
-	for _, ann := range mv.ValidSpec.Annotations {
-		annMeasures := make([]string, 0)
-
-		// Collect measures that are requested.
-		for _, measure := range ann.Measures {
-			if slices.Contains(reqMeasures, measure) {
-				annMeasures = append(annMeasures, measure)
-			}
-		}
-
-		// If none of the measures in the annotation are requested, skip the annotation.
-		if len(annMeasures) == 0 {
-			continue
-		}
-
-		rowsForAnn, err := s.resolveAnnotation(ctx, req, ann.Name, limit, offset, ts, annMeasures)
+	for {
+		row, err := res.Next()
 		if err != nil {
+			if errors.Is(err, io.EOF) {
+				break
+			}
 			return nil, err
 		}
+		var ann annotation
+		err = mapstructureutil.WeakDecode(row, &ann)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
 
-		rows = append(rows, rowsForAnn...)
+		additionalFieldsPb, err := pbutil.ToStruct(ann.AdditionalFields, res.Schema())
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+
+		var timeEnd *timestamppb.Timestamp
+		if !ann.TimeEnd.IsZero() {
+			timeEnd = timestamppb.New(ann.TimeEnd)
+		}
+
+		var grain *string
+		if ann.Grain != "" {
+			grain = &ann.Grain
+		}
+
+		rows = append(rows, &runtimev1.MetricsViewAnnotationsResponse_Annotation{
+			Time:             timestamppb.New(ann.Time),
+			TimeEnd:          timeEnd,
+			Description:      ann.Description,
+			Grain:            grain,
+			ForMeasures:      ann.ForMeasures,
+			AdditionalFields: additionalFieldsPb,
+		})
 	}
 
 	return &runtimev1.MetricsViewAnnotationsResponse{
@@ -574,6 +594,7 @@ type annotation struct {
 	TimeEnd          time.Time      `mapstructure:"time_end"`
 	Description      string         `mapstructure:"description"`
 	Grain            string         `mapstructure:"grain"`
+	ForMeasures      []string       `mapstructure:"for_measures"`
 	AdditionalFields map[string]any `mapstructure:",remain"`
 }
 
@@ -631,80 +652,6 @@ func lookupMetricsView(ctx context.Context, rt *runtime.Runtime, instanceID, nam
 	}
 
 	return res, mv.State, nil
-}
-
-func (s *Server) resolveAnnotation(ctx context.Context, req *runtimev1.MetricsViewAnnotationsRequest, ann string, limit, offset *int64, ts metricsview.TimestampsResult, onlyMeasures []string) ([]*runtimev1.MetricsViewAnnotationsResponse_Annotation, error) {
-	res, err := s.runtime.Resolve(ctx, &runtime.ResolveOptions{
-		InstanceID: req.InstanceId,
-		Resolver:   "annotations",
-		ResolverProperties: map[string]any{
-			"metrics_view": req.MetricsViewName,
-			"annotation":   ann,
-		},
-		Args: map[string]any{
-			"priority": req.Priority,
-			"time_range": metricsview.TimeRange{
-				Start:         req.TimeRange.Start.AsTime(),
-				End:           req.TimeRange.End.AsTime(),
-				Expression:    req.TimeRange.Expression,
-				IsoDuration:   req.TimeRange.IsoDuration,
-				IsoOffset:     req.TimeRange.IsoOffset,
-				RoundToGrain:  metricsview.TimeGrainFromProto(req.TimeRange.RoundToGrain),
-				TimeDimension: req.TimeRange.TimeDimension,
-			},
-			"time_grain": req.TimeGrain,
-			"limit":      limit,
-			"offset":     offset,
-			"timestamps": &ts,
-		},
-		Claims: auth.GetClaims(ctx).SecurityClaims(),
-	})
-	if err != nil {
-		return nil, err
-	}
-	defer res.Close()
-
-	rows := make([]*runtimev1.MetricsViewAnnotationsResponse_Annotation, 0)
-	for {
-		row, err := res.Next()
-		if err != nil {
-			if errors.Is(err, io.EOF) {
-				break
-			}
-			return nil, err
-		}
-		var ann annotation
-		err = mapstructureutil.WeakDecode(row, &ann)
-		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
-		}
-
-		additionalFieldsPb, err := pbutil.ToStruct(ann.AdditionalFields, res.Schema())
-		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
-		}
-
-		var timeEnd *timestamppb.Timestamp
-		if !ann.TimeEnd.IsZero() {
-			timeEnd = timestamppb.New(ann.TimeEnd)
-		}
-
-		var grain *string
-		if ann.Grain != "" {
-			grain = &ann.Grain
-		}
-
-		rows = append(rows, &runtimev1.MetricsViewAnnotationsResponse_Annotation{
-			Time:             timestamppb.New(ann.Time),
-			TimeEnd:          timeEnd,
-			Description:      ann.Description,
-			Grain:            grain,
-			AdditionalFields: additionalFieldsPb,
-			OnlyMeasures:     onlyMeasures,
-		})
-	}
-
-	return rows, nil
 }
 
 func valOrNullTime(v time.Time) *timestamppb.Timestamp {

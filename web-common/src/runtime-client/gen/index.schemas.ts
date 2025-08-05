@@ -1355,7 +1355,7 @@ export interface V1MetricsViewAnnotationsResponseAnnotation {
   /** Any other fields are captured here. Will be used in predicates in the future. */
   additionalFields?: V1MetricsViewAnnotationsResponseAnnotationAdditionalFields;
   /** List of measure names that this annotation applies to. If empty, no restrictions apply. */
-  onlyMeasures?: string[];
+  forMeasures?: string[];
 }
 
 export interface V1MetricsViewColumn {

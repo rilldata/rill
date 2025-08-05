@@ -5441,7 +5441,7 @@ definitions:
       additionalFields:
         type: object
         description: Any other fields are captured here. Will be used in predicates in the future.
-      onlyMeasures:
+      forMeasures:
         type: array
         items:
           type: string

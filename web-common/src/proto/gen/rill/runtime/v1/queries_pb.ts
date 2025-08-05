@@ -3793,9 +3793,9 @@ export class MetricsViewAnnotationsResponse_Annotation extends Message<MetricsVi
   /**
    * List of measure names that this annotation applies to. If empty, no restrictions apply.
    *
-   * @generated from field: repeated string only_measures = 6;
+   * @generated from field: repeated string for_measures = 6;
    */
-  onlyMeasures: string[] = [];
+  forMeasures: string[] = [];
 
   constructor(data?: PartialMessage<MetricsViewAnnotationsResponse_Annotation>) {
     super();
@@ -3810,7 +3810,7 @@ export class MetricsViewAnnotationsResponse_Annotation extends Message<MetricsVi
     { no: 3, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "grain", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 5, name: "additional_fields", kind: "message", T: Struct },
-    { no: 6, name: "only_measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 6, name: "for_measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewAnnotationsResponse_Annotation {

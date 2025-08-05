@@ -16,7 +16,7 @@ import {
   getQueryServiceMetricsViewAnnotationsQueryOptions,
   type V1MetricsViewAnnotationsResponseAnnotation,
 } from "@rilldata/web-common/runtime-client";
-import { createQueries } from "@tanstack/svelte-query";
+import { createQuery } from "@tanstack/svelte-query";
 import { derived, type Readable } from "svelte/store";
 
 export function getAnnotationsForMeasure({
@@ -36,55 +36,45 @@ export function getAnnotationsForMeasure({
   const selectedPeriod = TIME_GRAIN[selectedTimeRange?.interval ?? ""]
     ?.duration as Period | undefined;
 
-  const annotationsQueries = derived(exploreValidSpec, (exploreValidSpec) => {
-    const metricsViewSpec = exploreValidSpec.data?.metricsView;
-    const exploreSpec = exploreValidSpec.data?.explore;
-    const metricsViewName = exploreSpec?.metricsView;
-    const annotations = metricsViewSpec?.annotations;
-    if (!metricsViewName || !annotations) return [];
+  const annotationsQueryOptions = derived(
+    exploreValidSpec,
+    (exploreValidSpec) => {
+      const exploreSpec = exploreValidSpec.data?.explore;
+      const metricsViewName = exploreSpec?.metricsView ?? "";
 
-    const annotationNames = annotations.filter((a) =>
-      a.measures?.includes(measureName),
-    );
-    return annotationNames.map((annotation) =>
-      getQueryServiceMetricsViewAnnotationsQueryOptions(
+      return getQueryServiceMetricsViewAnnotationsQueryOptions(
         instanceId,
         metricsViewName,
-        annotation.name!,
         {
           timeRange: {
             start: selectedTimeRange?.start.toISOString(),
             end: selectedTimeRange?.end.toISOString(),
           },
           timeGrain: selectedTimeRange?.interval,
+          measures: [measureName],
         },
         {
           query: {
-            enabled: !!selectedTimeRange,
+            enabled: !!metricsViewName && !!selectedTimeRange,
           },
         },
-      ),
-    );
-  });
-
-  return createQueries({
-    queries: annotationsQueries,
-    combine: (responses) => {
-      const annotations = responses
-        .map(
-          (r) =>
-            r.data?.data?.map((a) =>
-              convertV1AnnotationsResponseItemToAnnotation(
-                a,
-                selectedPeriod,
-                selectedTimezone,
-              ),
-            ) ?? [],
-        )
-        .flat();
-      annotations.sort((a, b) => a.startTime.getTime() - b.startTime.getTime());
-      return annotations;
+      );
     },
+  );
+
+  const annotationsQuery = createQuery(annotationsQueryOptions);
+
+  return derived(annotationsQuery, (annotationsQuery) => {
+    const annotations =
+      annotationsQuery.data?.rows?.map((a) =>
+        convertV1AnnotationsResponseItemToAnnotation(
+          a,
+          selectedPeriod,
+          selectedTimezone,
+        ),
+      ) ?? [];
+    annotations.sort((a, b) => a.startTime.getTime() - b.startTime.getTime());
+    return annotations;
   });
 }
 
