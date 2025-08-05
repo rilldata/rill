@@ -22,7 +22,7 @@ import {
   runtimeServiceGetInstance,
   runtimeServicePutFile,
 } from "../../runtime-client";
-import { makeSufficientlyQualifiedTableName } from "./olap/olap-config";
+import { makeSufficientlyQualifiedTableName } from "./connectors-utils";
 
 const YAML_MODEL_TEMPLATE = `type: model
 connector: {{ connector }}

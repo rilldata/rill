@@ -8,14 +8,15 @@
   import TableMenuItems from "./TableMenuItems.svelte";
   import TableSchema from "./TableSchema.svelte";
   import UnsupportedTypesIndicator from "./UnsupportedTypesIndicator.svelte";
-  import {
-    makeFullyQualifiedTableName,
-    makeTablePreviewHref,
-  } from "../olap/olap-config";
+
   import { useIsSqlBasedModelingSupportedForConnector } from "../selectors";
   import { useIsYamlBasedModelingSupportedForConnector } from "../selectors";
   import { runtime } from "../../../runtime-client/runtime-store";
   import type { ConnectorExplorerStore } from "./connector-explorer-store";
+  import {
+    makeFullyQualifiedTableName,
+    makeTablePreviewHref,
+  } from "../connectors-utils";
 
   export let instanceId: string;
   export let driver: string;
