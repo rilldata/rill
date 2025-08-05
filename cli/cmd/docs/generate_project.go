@@ -71,17 +71,17 @@ func GenerateProjectDocsCmd(rootCmd *cobra.Command, ch *cmdutil.Helper) *cobra.C
 				requiredMap := getRequiredMapFromNode(resource)
 				resourceFilebuf.WriteString(generateDoc(sidebarPosition, 0, resource, "", requiredMap))
 				resTitle := getScalarValue(resource, "title")
-				resId := getScalarValue(resource, "$id")
-				
+				resID := getScalarValue(resource, "$id")
+
 				// Use $id if available, otherwise fall back to title
 				var fileName string
-				if resId != "" {
+				if resID != "" {
 					// Remove .schema.yaml extension and convert to .md
-					fileName = strings.TrimSuffix(resId, ".schema.yaml") + ".md"
+					fileName = strings.TrimSuffix(resID, ".schema.yaml") + ".md"
 				} else {
 					fileName = sanitizeFileName(resTitle) + ".md"
 				}
-				
+
 				filePath := filepath.Join(outputDir, fileName)
 				if err := os.WriteFile(filePath, []byte(resourceFilebuf.String()), 0o644); err != nil {
 					return fmt.Errorf("failed writing resource doc: %w", err)
@@ -427,13 +427,10 @@ func generateDoc(sidebarPosition, level int, node *yaml.Node, indent string, req
 				// Remove the summary list to avoid duplication with detailed sections
 				if level == 1 {
 					doc.WriteString("\n\n## One of Properties Options")
-				
-					}
-			
+				}
 
 				for _, item := range oneOf.Content {
 					if hasType(item) || hasProperties(item) || hasCombinators(item) {
-
 						doc.WriteString(generateDoc(sidebarPosition, level, item, indent+"    ", getRequiredMapFromNode(item)))
 					}
 				}
@@ -453,7 +450,6 @@ func generateDoc(sidebarPosition, level int, node *yaml.Node, indent string, req
 
 	// AllOf
 	if allOf := getNodeForKey(node, "allOf"); allOf != nil && allOf.Kind == yaml.SequenceNode {
-
 		for _, item := range allOf.Content {
 			// Skip oneOf items for connectors since we handle them separately
 			if isConnector && getNodeForKey(item, "oneOf") != nil {
