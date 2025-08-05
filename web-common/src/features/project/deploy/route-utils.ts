@@ -1,3 +1,10 @@
+export function getDeployRoute(pageUrl: URL) {
+  const deployUrl = new URL(pageUrl);
+  deployUrl.pathname = "/deploy";
+  deployUrl.search = "";
+  return deployUrl.toString();
+}
+
 export function getCreateProjectRoute(orgName: string) {
   return `/deploy/project/create?org=${orgName}`;
 }

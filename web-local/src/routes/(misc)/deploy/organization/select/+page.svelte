@@ -17,7 +17,7 @@
   let selectedOrg = "";
   let isNewOrgDialogOpen = false;
 
-  $: deployUrl = getCreateProjectRoute(selectedOrg);
+  $: createProjectUrl = getCreateProjectRoute(selectedOrg);
   $: overwriteProjectUrl = getOverwriteProjectRoute(selectedOrg);
 
   $: orgOptions =
@@ -65,7 +65,7 @@
   </div>
 </Select>
 
-<Button wide type="primary" href={deployUrl} disabled={!selectedOrg}>
+<Button wide type="primary" href={createProjectUrl} disabled={!selectedOrg}>
   Deploy as a new project
 </Button>
 <Button

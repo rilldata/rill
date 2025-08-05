@@ -8,6 +8,7 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import TrialDetailsDialog from "@rilldata/web-common/features/billing/TrialDetailsDialog.svelte";
+  import { getDeployRoute } from "@rilldata/web-common/features/project/deploy/route-utils.ts";
   import UpdateProjectPopup from "@rilldata/web-common/features/project/deploy/UpdateProjectPopup.svelte";
   import { copyWithAdditionalArguments } from "@rilldata/web-common/lib/url-utils";
   import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
@@ -26,7 +27,7 @@
   } from "@rilldata/web-common/runtime-client/local-service";
   import { onMount } from "svelte";
   import Rocket from "svelte-radix/Rocket.svelte";
-  import { writable, get } from "svelte/store";
+  import { writable, get, derived } from "svelte/store";
   import { Button } from "../../../components/button";
 
   export let hasValidDashboard: boolean;
@@ -39,11 +40,7 @@
   const metadata = createLocalServiceGetMetadata();
   const matchingProjectsQuery = createLocalServiceListMatchingProjectsRequest();
 
-  $: isDeployed = !!$matchingProjectsQuery.data?.projects?.length;
-
   const gitStatusQuery = createLocalServiceGitStatus();
-  $: hasRemoteChanges =
-    $gitStatusQuery.data && $gitStatusQuery.data.remoteCommits > 0;
   const gitPullMutation = createLocalServiceGitPull();
 
   $: ({ isPending: githubPullPending, error: githubPullError } =
@@ -51,15 +48,21 @@
   let errorFromGitCommand: Error | null = null;
   $: error = githubPullError ?? errorFromGitCommand;
 
-  $: userIsLoggedIn = !!$userQuery.data?.user;
-  // gitStatusQuery is refetched. So we have to check `isFetching` to get the correct loading status.
-  $: loading =
-    $gitStatusQuery.isFetching ||
-    (userIsLoggedIn ? $matchingProjectsQuery.isLoading : false);
+  const deploymentState = derived(
+    [gitStatusQuery, userQuery, matchingProjectsQuery],
+    ([$git, $user, $projects]) => ({
+      // gitStatusQuery is refetched. So we have to check `isFetching` to get the correct loading status.
+      loading:
+        $git.isFetching || ($user.data?.user ? $projects.isLoading : false),
+      isDeployed: !!$projects.data?.projects?.length,
+      hasRemoteChanges: $git.data && $git.data.remoteCommits > 0,
+    }),
+  );
+  $: ({ loading, isDeployed, hasRemoteChanges } = $deploymentState);
 
   $: allowPrimary.set(isDeployed || !hasValidDashboard);
 
-  $: deployPageUrl = `${$page.url.protocol}//${$page.url.host}/deploy`;
+  $: deployPageUrl = getDeployRoute($page.url);
   $: redirectPageUrl = copyWithAdditionalArguments($page.url, {
     deploy: "true",
   });
