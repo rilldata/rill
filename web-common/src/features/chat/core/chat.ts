@@ -13,6 +13,7 @@ import type {
   V1AppContext,
   V1Conversation,
   V1GetConversationResponse,
+  V1ListConversationsResponse,
   V1Message,
 } from "../../../runtime-client";
 import {
@@ -205,29 +206,22 @@ export function useChatCore(options?: ChatCoreOptions) {
             // Add the new conversation to the `listConversations` TanStack Query Cache
             const listQueryKey =
               getRuntimeServiceListConversationsQueryKey(instanceId);
-            queryClient.setQueryData(listQueryKey, (oldList: any) => {
-              if (!oldList?.conversations) {
-                return {
-                  conversations: [conversationResponse.conversation],
-                };
-              }
+            queryClient.setQueryData(
+              listQueryKey,
+              (oldList: V1ListConversationsResponse | undefined) => {
+                // Return unchanged if conversation data is missing
+                if (!conversationResponse.conversation) {
+                  return oldList;
+                }
 
-              // Add new conversation to the beginning of the list (most recent first)
-              const existingIndex = oldList.conversations.findIndex(
-                (conv: any) => conv.id === response.conversationId,
-              );
+                // Create new list if no conversations exist
+                if (!oldList?.conversations) {
+                  return {
+                    conversations: [conversationResponse.conversation],
+                  };
+                }
 
-              if (existingIndex >= 0) {
-                // Update existing conversation
-                const updatedConversations = [...oldList.conversations];
-                updatedConversations[existingIndex] =
-                  conversationResponse.conversation;
-                return {
-                  ...oldList,
-                  conversations: updatedConversations,
-                };
-              } else {
-                // Add new conversation to the beginning
+                // Add new conversation to beginning (most recent first)
                 return {
                   ...oldList,
                   conversations: [
@@ -235,8 +229,9 @@ export function useChatCore(options?: ChatCoreOptions) {
                     ...oldList.conversations,
                   ],
                 };
-              }
-            });
+              },
+            );
+
             // Update current conversation ID to committed ID
             currentConversationId.set(response.conversationId);
 
@@ -535,13 +530,9 @@ export function useChatCore(options?: ChatCoreOptions) {
     listConversationsQuery,
     ($query) => $query.data,
   );
-  const getConversationData = derived(
-    getConversationQuery,
-    ($query) => $query.data,
-  );
   const currentConversation = derived(
-    getConversationData,
-    ($data) => $data?.conversation || null,
+    getConversationQuery,
+    ($query) => $query.data?.conversation || null,
   );
 
   // Component-level action wrappers
