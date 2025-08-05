@@ -5,6 +5,8 @@ import type { V1Resource } from "@rilldata/web-common/runtime-client";
 import { createRuntimeServiceListResources } from "@rilldata/web-common/runtime-client";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
 import { derived } from "svelte/store";
+import { createSmartRefetchInterval } from "../../shared/refetch-interval-store";
+import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 
 export function useDashboardsLastUpdated(
   instanceId: string,
@@ -49,7 +51,7 @@ export interface DashboardResource {
 // This iteration of `useDashboards` returns the above `DashboardResource` type, which includes `refreshedOn`
 export function useDashboardsV2(
   instanceId: string,
-): CreateQueryResult<DashboardResource[]> {
+): CreateQueryResult<DashboardResource[], HTTPError> {
   return createRuntimeServiceListResources(instanceId, undefined, {
     query: {
       select: (data) => {
@@ -79,6 +81,7 @@ export function useDashboardsV2(
         );
         return allDashboards;
       },
+      refetchInterval: createSmartRefetchInterval,
     },
   });
 }
