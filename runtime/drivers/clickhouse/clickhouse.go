@@ -5,7 +5,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
-  "strings"
+	"strings"
 	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
