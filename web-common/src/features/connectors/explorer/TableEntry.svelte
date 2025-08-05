@@ -9,8 +9,10 @@
   import TableSchema from "./TableSchema.svelte";
   import UnsupportedTypesIndicator from "./UnsupportedTypesIndicator.svelte";
 
-  import { useIsSqlBasedModelingSupportedForConnector } from "../selectors";
-  import { useIsYamlBasedModelingSupportedForConnector } from "../selectors";
+  import {
+    usePrefersSqlBasedModelingForConnector,
+    usePrefersYamlBasedModelingForConnector,
+  } from "../selectors";
   import { runtime } from "../../../runtime-client/runtime-store";
   import type { ConnectorExplorerStore } from "./connector-explorer-store";
   import {
@@ -37,12 +39,16 @@
   const { allowContextMenu, allowNavigateToTable, allowShowSchema } = store;
 
   $: ({ instanceId: runtimeInstanceId } = $runtime);
-  $: isSqlBasedModelingSupportedForConnector =
-    useIsSqlBasedModelingSupportedForConnector(runtimeInstanceId, connector);
-  $: prefersSqlModeling = $isSqlBasedModelingSupportedForConnector.data;
-  $: isYamlBasedModelingSupportedForConnector =
-    useIsYamlBasedModelingSupportedForConnector(runtimeInstanceId, connector);
-  $: prefersYamlModeling = $isYamlBasedModelingSupportedForConnector.data;
+  $: sqlBasedModelingQuery = usePrefersSqlBasedModelingForConnector(
+    runtimeInstanceId,
+    connector,
+  );
+  $: prefersSqlModeling = $sqlBasedModelingQuery.data;
+  $: yamlBasedModelingQuery = usePrefersYamlBasedModelingForConnector(
+    runtimeInstanceId,
+    connector,
+  );
+  $: prefersYamlModeling = $yamlBasedModelingQuery.data;
 
   $: fullyQualifiedTableName = makeFullyQualifiedTableName(
     driver,

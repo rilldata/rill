@@ -93,7 +93,7 @@ function createModelingSupportQueryOptions(
  * Note: When modeling is supported, users can use either SQL or YAML
  * This function determines which approach is preferred for the connector
  */
-export function useIsSqlBasedModelingSupportedForConnector(
+export function usePrefersSqlBasedModelingForConnector(
   instanceId: string,
   connectorName: string,
 ): CreateQueryResult<boolean, ErrorType<RpcStatus>> {
@@ -107,7 +107,7 @@ export function useIsSqlBasedModelingSupportedForConnector(
  * Note: When modeling is supported, users can use either SQL or YAML
  * This function determines which approach is preferred for the connector
  */
-export function useIsYamlBasedModelingSupportedForConnector(
+export function usePrefersYamlBasedModelingForConnector(
   instanceId: string,
   connectorName: string,
 ): CreateQueryResult<boolean, ErrorType<RpcStatus>> {
@@ -116,13 +116,7 @@ export function useIsYamlBasedModelingSupportedForConnector(
   );
 }
 
-// Legacy alias for backward compatibility
-export const useIsModelingSupportedForConnectorOLAP =
-  useIsSqlBasedModelingSupportedForConnector;
-export const useIsYamlModelingSupportedForConnector =
-  useIsYamlBasedModelingSupportedForConnector;
-
-export function useIsSqlBasedModelingSupportedForDefaultOlapDriver(
+export function usePrefersSqlBasedModelingForDefaultOlapDriver(
   instanceId: string,
 ): CreateQueryResult<boolean, ErrorType<RpcStatus>> {
   const instanceQuery = createRuntimeServiceGetInstance(instanceId, {
@@ -144,7 +138,7 @@ export function useIsSqlBasedModelingSupportedForDefaultOlapDriver(
 
 // Legacy alias for backward compatibility
 export const useIsModelingSupportedForDefaultOlapDriverOLAP =
-  useIsSqlBasedModelingSupportedForDefaultOlapDriver;
+  usePrefersSqlBasedModelingForDefaultOlapDriver;
 
 export function useDatabasesOLAP(instanceId: string, connector: string) {
   return createConnectorServiceOLAPListTables(
