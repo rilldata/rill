@@ -158,7 +158,6 @@ export function maybeRewriteToDuckDb(
 
   switch (connector.name) {
     case "s3":
-    case "gcs":
     case "https":
     case "azure":
     case "local_file":
