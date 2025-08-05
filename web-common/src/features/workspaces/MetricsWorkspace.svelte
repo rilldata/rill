@@ -12,8 +12,8 @@
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import {
-    useIsSqlBasedModelingSupportedForConnector,
-    useIsSqlBasedModelingSupportedForDefaultOlapDriver,
+    usePrefersSqlBasedModelingForConnector,
+    usePrefersSqlBasedModelingForDefaultOlapDriver,
   } from "../connectors/selectors";
   import PreviewButton from "../explores/PreviewButton.svelte";
   import GoToDashboardButton from "../metrics-views/GoToDashboardButton.svelte";
@@ -49,9 +49,9 @@
   $: table = resource?.metricsView?.state?.validSpec?.table ?? "";
 
   $: isSqlBasedModelingSupportedForDefaultOlapDriver =
-    useIsSqlBasedModelingSupportedForDefaultOlapDriver(instanceId);
+    usePrefersSqlBasedModelingForDefaultOlapDriver(instanceId);
   $: isSqlBasedModelingSupportedForConnector =
-    useIsSqlBasedModelingSupportedForConnector(instanceId, connector);
+    usePrefersSqlBasedModelingForConnector(instanceId, connector);
   $: isModelingSupported = connector
     ? $isSqlBasedModelingSupportedForConnector.data
     : $isSqlBasedModelingSupportedForDefaultOlapDriver.data;
