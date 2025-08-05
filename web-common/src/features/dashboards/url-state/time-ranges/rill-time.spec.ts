@@ -143,6 +143,14 @@ describe("rill time", () => {
         V1TimeGrain.TIME_GRAIN_DAY,
         undefined,
       ],
+
+      [
+        `2025-02-20T01:23:45Z,2025-07-15T02:34:50Z`,
+        `Custom`,
+        false,
+        undefined,
+        undefined,
+      ],
     ];
 
     const compiledGrammar = nearley.Grammar.fromCompiled(grammar);

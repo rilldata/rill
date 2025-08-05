@@ -4,6 +4,7 @@
   import AmazonRedshift from "@rilldata/web-common/components/icons/connectors/AmazonRedshift.svelte";
   import MySQL from "@rilldata/web-common/components/icons/connectors/MySQL.svelte";
   import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
+  import { cn } from "@rilldata/web-common/lib/shadcn";
   import {
     createRuntimeServiceListConnectorDrivers,
     type V1ConnectorDriver,
@@ -31,14 +32,13 @@
   } from "../../../metrics/service/BehaviourEventTypes";
   import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import { useIsModelingSupportedForDefaultOlapDriver } from "../../connectors/olap/selectors";
+  import { connectorIconMapping } from "../../connectors/connector-icon-mapping";
+  import { useIsModelingSupportedForDefaultOlapDriverOLAP as useIsModelingSupportedForDefaultOlapDriver } from "../../connectors/selectors";
   import { duplicateSourceName } from "../sources-store";
   import AddDataForm from "./AddDataForm.svelte";
   import DuplicateSource from "./DuplicateSource.svelte";
   import LocalSourceUpload from "./LocalSourceUpload.svelte";
   import RequestConnectorForm from "./RequestConnectorForm.svelte";
-  import { connectorIconMapping } from "../../connectors/connector-icon-mapping";
-  import { cn } from "@rilldata/web-common/lib/shadcn";
 
   let step = 0;
   let selectedConnector: null | V1ConnectorDriver = null;
@@ -172,6 +172,7 @@
 
   $: isModelingSupportedForDefaultOlapDriver =
     useIsModelingSupportedForDefaultOlapDriver($runtime.instanceId);
+  $: isModelingSupported = $isModelingSupportedForDefaultOlapDriver.data;
 </script>
 
 {#if step >= 1 || $duplicateSourceName}
@@ -193,7 +194,7 @@
       noClose={step === 1}
     >
       {#if step === 1}
-        {#if $isModelingSupportedForDefaultOlapDriver}
+        {#if isModelingSupported}
           <Dialog.Title>Add a source</Dialog.Title>
           <section class="mb-1">
             <div class="connector-grid">

@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+  "strings"
 	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
@@ -98,7 +99,7 @@ var spec = drivers.Spec{
 		{
 			Key:         "password",
 			Type:        drivers.StringPropertyType,
-			Required:    true,
+			Required:    false,
 			DisplayName: "Password",
 			Description: "Password to connect to the ClickHouse server",
 			Placeholder: "Database password",
@@ -192,6 +193,43 @@ type configProperties struct {
 	ReadTimeout string `mapstructure:"read_timeout"`
 }
 
+func (c *configProperties) validate() error {
+	var set []string
+	if c.Host != "" {
+		set = append(set, "host")
+	}
+	if c.Port != 0 {
+		set = append(set, "port")
+	}
+	if c.Username != "" {
+		set = append(set, "username")
+	}
+	if c.Password != "" {
+		set = append(set, "password")
+	}
+	if c.Database != "" {
+		set = append(set, "database")
+	}
+	if c.SSL {
+		set = append(set, "ssl")
+	}
+
+	if c.DSN != "" {
+		if len(set) > 0 {
+			return fmt.Errorf("only one of 'dsn' or [%s] can be set", strings.Join(set, ", "))
+		}
+	}
+	if c.Managed {
+		if c.DSN != "" {
+			set = append(set, "dsn")
+		}
+		if len(set) > 0 {
+			return fmt.Errorf("managed ClickHouse does not support setting [%s] properties", strings.Join(set, ", "))
+		}
+	}
+	return nil
+}
+
 // Open connects to Clickhouse using std API.
 // Connection string format : https://github.com/ClickHouse/clickhouse-go?tab=readme-ov-file#dsn
 func (d driver) Open(instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
@@ -206,6 +244,8 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 	if err != nil {
 		return nil, err
 	}
+
+	// Set defaults
 
 	// If the managed flag is set we are free to allow overwriting tables.
 	if conf.Managed {
@@ -227,6 +267,11 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 	}
 
 	var readOpts, writeOpts *clickhouse.Options
+	// Validate configs
+	if err := conf.validate(); err != nil {
+		return nil, err
+	}
+
 	var embed *embedClickHouse
 
 	// Determine connection options based on configuration priority

@@ -3,6 +3,7 @@
   import Model from "@rilldata/web-common/components/icons/Model.svelte";
   import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
   import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import {
@@ -15,23 +16,17 @@
   import { runtime } from "../../../runtime-client/runtime-store";
   import { featureFlags } from "../../feature-flags";
   import { useCreateMetricsViewFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
-  import { createModelFromTable } from "./createModel";
-  import { useIsModelingSupportedForOlapDriver } from "./selectors";
-  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-
+  import { createModelFromTable } from "../olap/createModel";
   const { ai } = featureFlags;
 
   export let connector: string;
   export let database: string = "";
   export let databaseSchema: string = "";
   export let table: string;
+  export let showGenerateMetricsAndDashboard: boolean = false;
+  export let isModelingSupported: boolean | undefined = false;
 
   $: ({ instanceId } = $runtime);
-
-  $: isModelingSupportedForOlapDriver = useIsModelingSupportedForOlapDriver(
-    instanceId,
-    connector,
-  );
   $: createMetricsViewFromTable = useCreateMetricsViewFromTableUIAction(
     instanceId,
     connector,
@@ -77,31 +72,33 @@
   }
 </script>
 
-{#if $isModelingSupportedForOlapDriver}
+{#if isModelingSupported}
   <NavigationMenuItem on:click={handleCreateModel}>
     <Model slot="icon" />
     Create new model
   </NavigationMenuItem>
 {/if}
 
-<NavigationMenuItem on:click={createMetricsViewFromTable}>
-  <MetricsViewIcon slot="icon" />
-  <div class="flex gap-x-2 items-center">
-    Generate metrics
-    {#if $ai}
-      with AI
-      <WandIcon class="w-3 h-3" />
-    {/if}
-  </div>
-</NavigationMenuItem>
+{#if showGenerateMetricsAndDashboard}
+  <NavigationMenuItem on:click={createMetricsViewFromTable}>
+    <MetricsViewIcon slot="icon" />
+    <div class="flex gap-x-2 items-center">
+      Generate metrics
+      {#if $ai}
+        with AI
+        <WandIcon class="w-3 h-3" />
+      {/if}
+    </div>
+  </NavigationMenuItem>
 
-<NavigationMenuItem on:click={createExploreFromTable}>
-  <ExploreIcon slot="icon" />
-  <div class="flex gap-x-2 items-center">
-    Generate dashboard
-    {#if $ai}
-      with AI
-      <WandIcon class="w-3 h-3" />
-    {/if}
-  </div>
-</NavigationMenuItem>
+  <NavigationMenuItem on:click={createExploreFromTable}>
+    <ExploreIcon slot="icon" />
+    <div class="flex gap-x-2 items-center">
+      Generate dashboard
+      {#if $ai}
+        with AI
+        <WandIcon class="w-3 h-3" />
+      {/if}
+    </div>
+  </NavigationMenuItem>
+{/if}

@@ -5,22 +5,24 @@
   import { LIST_SLIDE_DURATION as duration } from "../../../layout/config";
   import type { V1AnalyzedConnector } from "../../../runtime-client";
   import DatabaseSchemaEntry from "./DatabaseSchemaEntry.svelte";
-  import { useDatabaseSchemas } from "./selectors";
-  import type { ConnectorExplorerStore } from "../connector-explorer-store";
+  import { useSchemasForDatabase } from "../selectors";
+  import { useDatabaseSchemasOLAP as useDatabaseSchemasLegacy } from "../selectors";
+  import type { ConnectorExplorerStore } from "./connector-explorer-store";
 
   export let instanceId: string;
   export let connector: V1AnalyzedConnector;
   export let database: string;
   export let store: ConnectorExplorerStore;
+  export let useNewAPI: boolean = false;
 
   $: connectorName = connector?.name as string;
   $: expandedStore = store.getItem(connectorName, database);
   $: expanded = $expandedStore;
-  $: databaseSchemasQuery = useDatabaseSchemas(
-    instanceId,
-    connector?.name as string,
-    database,
-  );
+
+  // Use appropriate selector based on API version
+  $: databaseSchemasQuery = useNewAPI
+    ? useSchemasForDatabase(instanceId, connectorName, database)
+    : useDatabaseSchemasLegacy(instanceId, connectorName, database);
 
   $: ({ data, error, isLoading } = $databaseSchemasQuery);
 </script>
@@ -48,7 +50,9 @@
   <ol transition:slide={{ duration }}>
     {#if expanded}
       {#if error}
-        <span class="message">Error: {error.response.data?.message}</span>
+        <span class="message"
+          >Error: {error.message || error.response?.data?.message}</span
+        >
       {:else if isLoading}
         <span class="message">Loading schemas...</span>
       {:else if data}
@@ -61,6 +65,7 @@
               {connector}
               {database}
               {store}
+              {useNewAPI}
               databaseSchema={schema ?? ""}
             />
           {/each}

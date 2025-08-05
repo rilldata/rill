@@ -1,14 +1,14 @@
 <script lang="ts">
-  import CaretDownIcon from "../../components/icons/CaretDownIcon.svelte";
-  import { Tag } from "../../components/tag";
+  import CaretDownIcon from "../../../components/icons/CaretDownIcon.svelte";
+  import { Tag } from "../../../components/tag";
   import {
     type V1AnalyzedConnector,
     createRuntimeServiceGetInstance,
-  } from "../../runtime-client";
-  import { runtime } from "../../runtime-client/runtime-store";
+  } from "../../../runtime-client";
+  import { runtime } from "../../../runtime-client/runtime-store";
   import type { ConnectorExplorerStore } from "./connector-explorer-store";
-  import { connectorIconMapping } from "./connector-icon-mapping";
-  import DatabaseExplorer from "./olap/DatabaseExplorer.svelte";
+  import { connectorIconMapping } from "../connector-icon-mapping";
+  import DatabaseExplorer from "./DatabaseExplorer.svelte";
 
   export let connector: V1AnalyzedConnector;
   export let store: ConnectorExplorerStore;
@@ -23,10 +23,16 @@
   $: olapConnector = $instance.data?.instance?.olapConnector;
   $: isOlapConnector = olapConnector === connector.name;
   $: implementsOlap = connector.driver?.implementsOlap;
+  $: implementsSqlStore = connector.driver?.implementsSqlStore;
+  $: implementsWarehouse = connector.driver?.implementsWarehouse;
+
+  // Show connectors that can provide table browsing (OLAP, SQL stores, or warehouses)
+  $: canBrowseTables =
+    implementsOlap || implementsSqlStore || implementsWarehouse;
 </script>
 
-<!-- For now, only show OLAP connectors -->
-{#if implementsOlap}
+<!-- Show all connectors that support table browsing -->
+{#if canBrowseTables}
   {#if connector.name}
     <li class="connector-entry">
       <button

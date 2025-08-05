@@ -71,11 +71,15 @@ export function getChartData(
           $timeAndFilterStore.timeRange.timeZone || "UTC",
         );
       }
+
+      const domainValues = component.getChartDomainValues();
+
       return {
         data: data || [],
         isFetching: chartData?.isFetching ?? false,
         error: chartData?.error,
         fields: fieldSpecMap,
+        domainValues,
       };
     },
   );
