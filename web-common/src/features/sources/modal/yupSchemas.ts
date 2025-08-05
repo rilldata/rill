@@ -22,10 +22,6 @@ export const getYupSchema = {
       .string()
       .matches(/^gs:\/\//, "Must be a GS URI (e.g. gs://bucket/path)")
       .required("GS URI is required"),
-    name: yup
-      .string()
-      .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
-      .required("Source name is required"),
   }),
 
   https: yup.object().shape({
