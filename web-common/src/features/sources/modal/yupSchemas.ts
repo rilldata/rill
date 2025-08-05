@@ -92,12 +92,7 @@ export const getYupSchema = {
   }),
 
   postgres: yup.object().shape({
-    sql: yup.string().optional(),
-    database_url: yup.string(),
-    name: yup
-      .string()
-      .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
-      .optional(),
+    database_url: yup.string().required("Database URL is required"),
   }),
 
   snowflake: yup.object().shape({
