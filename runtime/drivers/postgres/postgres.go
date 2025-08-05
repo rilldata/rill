@@ -37,7 +37,7 @@ var spec = drivers.Spec{
 		{
 			Key:         "sql",
 			Type:        drivers.StringPropertyType,
-			Required:    true,
+			Required:    false,
 			DisplayName: "SQL",
 			Description: "Query to extract data from Postgres.",
 			Placeholder: "select * from table;",
@@ -58,7 +58,7 @@ var spec = drivers.Spec{
 			DisplayName: "Source name",
 			Description: "The name of the source",
 			Placeholder: "my_new_source",
-			Required:    true,
+			Required:    false,
 		},
 	},
 	ImplementsSQLStore: true,
