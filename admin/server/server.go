@@ -186,7 +186,8 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 		return nil, fmt.Errorf("failed to create transcoder: %w", err)
 	}
 
-	// Add specific route for GetCurrentUser with cookie refresh
+	// Add auth cookie refresh specifically for the GetCurrentUser RPC.
+	// This is sufficient to refresh the cookie on each page load without unnecessarily refreshing cookies in each API call.
 	mux.Handle("/v1/users/current", s.authenticator.HTTPMiddlewareWithCookieRefresh(transcoder))
 
 	mux.Handle("/v1/", transcoder)
