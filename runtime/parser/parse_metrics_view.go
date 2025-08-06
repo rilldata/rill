@@ -18,21 +18,21 @@ import (
 
 // MetricsViewYAML is the raw structure of a MetricsView resource defined in YAML
 type MetricsViewYAML struct {
-	commonYAML        `yaml:",inline"`       // Not accessed here, only setting it so we can use KnownFields for YAML parsing
-	Parent            string `yaml:"parent"` // Parent metrics view, if any
-	DisplayName       string `yaml:"display_name"`
-	Title             string `yaml:"title"` // Deprecated: use display_name
-	Description       string `yaml:"description"`
-	AIInstructions    string `yaml:"ai_instructions"`
-	Model             string `yaml:"model"`
-	Database          string `yaml:"database"`
-	DatabaseSchema    string `yaml:"database_schema"`
-	Table             string `yaml:"table"`
-	TimeDimension     string `yaml:"timeseries"`
-	Watermark         string `yaml:"watermark"`
-	SmallestTimeGrain string `yaml:"smallest_time_grain"`
-	FirstDayOfWeek    uint32 `yaml:"first_day_of_week"`
-	FirstMonthOfYear  uint32 `yaml:"first_month_of_year"`
+	commonYAML        `yaml:",inline"` // Not accessed here, only setting it so we can use KnownFields for YAML parsing
+	Parent            string           `yaml:"parent"` // Parent metrics view, if any
+	DisplayName       string           `yaml:"display_name"`
+	Title             string           `yaml:"title"` // Deprecated: use display_name
+	Description       string           `yaml:"description"`
+	AIInstructions    string           `yaml:"ai_instructions"`
+	Model             string           `yaml:"model"`
+	Database          string           `yaml:"database"`
+	DatabaseSchema    string           `yaml:"database_schema"`
+	Table             string           `yaml:"table"`
+	TimeDimension     string           `yaml:"timeseries"`
+	Watermark         string           `yaml:"watermark"`
+	SmallestTimeGrain string           `yaml:"smallest_time_grain"`
+	FirstDayOfWeek    uint32           `yaml:"first_day_of_week"`
+	FirstMonthOfYear  uint32           `yaml:"first_month_of_year"`
 	Dimensions        []*struct {
 		Name                    string
 		DisplayName             string `yaml:"display_name"`
@@ -80,8 +80,6 @@ type MetricsViewYAML struct {
 		DisplayName          string                 `yaml:"display_name"`
 		Description          string                 `yaml:"description"`
 		Banner               string                 `yaml:"banner"`
-		Dimensions           *FieldSelectorYAML     `yaml:"dimensions"`
-		Measures             *FieldSelectorYAML     `yaml:"measures"`
 		Theme                yaml.Node              `yaml:"theme"` // Name (string) or inline theme definition (map)
 		TimeRanges           []ExploreTimeRangeYAML `yaml:"time_ranges"`
 		TimeZones            []string               `yaml:"time_zones"` // Single time zone or list of time zones
@@ -799,18 +797,6 @@ func (p *Parser) parseAndInsertInlineExplore(tmp *MetricsViewYAML, mvName string
 		return false, nil, fmt.Errorf("setting defaults or available time zones or ranges under metrics view is deprecated, set them under explore key")
 	}
 
-	// Parse the dimensions and measures selectors
-	var dimensionsSelector *runtimev1.FieldSelector
-	dimensions, ok := tmp.Explore.Dimensions.TryResolve()
-	if !ok {
-		dimensionsSelector = tmp.Explore.Dimensions.Proto()
-	}
-	var measuresSelector *runtimev1.FieldSelector
-	measures, ok := tmp.Explore.Measures.TryResolve()
-	if !ok {
-		measuresSelector = tmp.Explore.Measures.Proto()
-	}
-
 	var timeRanges []*runtimev1.ExploreTimeRange
 	for _, tr := range tmp.Explore.TimeRanges {
 		if _, err := rilltime.Parse(tr.Range, rilltime.ParseOptions{}); err != nil {
@@ -931,10 +917,8 @@ func (p *Parser) parseAndInsertInlineExplore(tmp *MetricsViewYAML, mvName string
 	r.ExploreSpec.Description = tmp.Explore.Description
 	r.ExploreSpec.MetricsView = mvName
 	r.ExploreSpec.Banner = tmp.Explore.Banner
-	r.ExploreSpec.Dimensions = dimensions
-	r.ExploreSpec.DimensionsSelector = dimensionsSelector
-	r.ExploreSpec.Measures = measures
-	r.ExploreSpec.MeasuresSelector = measuresSelector
+	r.ExploreSpec.DimensionsSelector = &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}}
+	r.ExploreSpec.MeasuresSelector = &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}}
 	r.ExploreSpec.Theme = themeName
 	r.ExploreSpec.EmbeddedTheme = themeSpec
 	r.ExploreSpec.TimeRanges = timeRanges
