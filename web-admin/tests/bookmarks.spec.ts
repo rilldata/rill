@@ -252,8 +252,8 @@ test.describe("Bookmarks", () => {
     test("Visiting home should restore home bookmark", async ({
       adminPage,
     }) => {
-      await adminPage.goto("/e2e/openrtb");
       // Navigate to the explore
+      await adminPage.goto("/e2e/openrtb/-/dashboards");
       await adminPage
         .getByRole("link", { name: "Programmatic Ads Auction For Bookmarks" })
         .first()

@@ -90,7 +90,7 @@
   use:builderActions={{ builders }}
   on:click={handleClick}
   style={forcedStyle}
-  {...href ? { "data-sveltekit-preload-data": preload } : {}}
+  {...href ? { "data-sveltekit-preload-data": preload ? "hover" : "off" } : {}}
   {...dataAttributes}
 >
   {#if loading}

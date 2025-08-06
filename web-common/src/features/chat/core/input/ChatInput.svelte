@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount, tick } from "svelte";
-  import IconButton from "../../../components/button/IconButton.svelte";
-  import SendIcon from "../../../components/icons/SendIcon.svelte";
+  import IconButton from "../../../../components/button/IconButton.svelte";
+  import SendIcon from "../../../../components/icons/SendIcon.svelte";
 
   export let value = "";
   export let disabled = false;
@@ -36,7 +36,11 @@
 
   // Public method to focus input (can be called from parent)
   export function focusInput() {
-    textarea?.focus();
+    tick().then(() => {
+      setTimeout(() => {
+        textarea?.focus();
+      }, 0);
+    });
   }
 
   onMount(() => {

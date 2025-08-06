@@ -3,9 +3,8 @@ import { test } from "./setup/base";
 
 test.describe("Canvases", () => {
   test("should have data", async ({ page }) => {
-    await page.goto("/e2e/openrtb");
-
     // Navigate to canvas
+    await page.goto("/e2e/openrtb/-/dashboards");
     await page
       .getByRole("link", { name: "Bids Canvas Dashboard" })
       .first()
