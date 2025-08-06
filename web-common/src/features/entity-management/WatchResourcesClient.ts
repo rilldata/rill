@@ -120,6 +120,7 @@ export class WatchResourcesClient {
 
         switch (res.name.kind as ResourceKind) {
           case ResourceKind.Connector:
+            console.log("connector: ", res.resource);
             // Invalidate the list of connectors
             void queryClient.invalidateQueries({
               queryKey: getRuntimeServiceAnalyzeConnectorsQueryKey(
@@ -135,11 +136,27 @@ export class WatchResourcesClient {
               }),
             });
 
+            // If it's a new connector, show the "Source imported successfully" modal
+            const isConnectorModel =
+              res.resource.meta?.filePaths?.[0]?.startsWith("/connectors/");
+            const isSourceConnector =
+              res.resource.meta?.filePaths?.[0]?.startsWith("/sources/");
+            const isNewConnector =
+              (isConnectorModel || isSourceConnector) &&
+              res.resource.meta.specVersion === "1" && // First file version
+              res.resource.meta.stateVersion === "2" && // First ingest is complete
+              (await isLeafResource(res.resource, this.instanceId)); // Protects against existing projects reconciling anew
+            if (isNewConnector) {
+              const filePath = res.resource?.meta?.filePaths?.[0] as string;
+              sourceImportedPath.set(filePath);
+            }
+
             // Done
             return;
 
           case ResourceKind.Source:
           case ResourceKind.Model: {
+            console.log("model: ", res.resource);
             // TODO: differentiate between a Model's executorConnector and resultConnector
             const connectorName =
               (res.name.kind as ResourceKind) === ResourceKind.Source
