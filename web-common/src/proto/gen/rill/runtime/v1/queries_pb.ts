@@ -3777,11 +3777,11 @@ export class MetricsViewAnnotationsResponse_Annotation extends Message<MetricsVi
   description = "";
 
   /**
-   * Optional. Minimum grain this annotation is displayed for. Maps to `grain` column from the table.
+   * Optional. Minimum duration this annotation is displayed for. Maps to `duration` column from the table.
    *
-   * @generated from field: optional string grain = 4;
+   * @generated from field: optional string duration = 4;
    */
-  grain?: string;
+  duration?: string;
 
   /**
    * Any other fields are captured here. Will be used in predicates in the future.
@@ -3808,7 +3808,7 @@ export class MetricsViewAnnotationsResponse_Annotation extends Message<MetricsVi
     { no: 1, name: "time", kind: "message", T: Timestamp },
     { no: 2, name: "time_end", kind: "message", T: Timestamp, opt: true },
     { no: 3, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "grain", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 4, name: "duration", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 5, name: "additional_fields", kind: "message", T: Struct },
     { no: 6, name: "for_measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
