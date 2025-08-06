@@ -575,16 +575,16 @@ func (s *Server) MetricsViewAnnotations(ctx context.Context, req *runtimev1.Metr
 			timeEnd = timestamppb.New(ann.TimeEnd)
 		}
 
-		var grain *string
-		if ann.Grain != "" {
-			grain = &ann.Grain
+		var dur *string
+		if ann.Duration != "" {
+			dur = &ann.Duration
 		}
 
 		rows = append(rows, &runtimev1.MetricsViewAnnotationsResponse_Annotation{
 			Time:             timestamppb.New(ann.Time),
 			TimeEnd:          timeEnd,
 			Description:      ann.Description,
-			Grain:            grain,
+			Duration:         dur,
 			ForMeasures:      ann.ForMeasures,
 			AdditionalFields: additionalFieldsPb,
 		})
@@ -599,7 +599,7 @@ type annotation struct {
 	Time             time.Time      `mapstructure:"time"`
 	TimeEnd          time.Time      `mapstructure:"time_end"`
 	Description      string         `mapstructure:"description"`
-	Grain            string         `mapstructure:"grain"`
+	Duration         string         `mapstructure:"duration"`
 	ForMeasures      []string       `mapstructure:"for_measures"`
 	AdditionalFields map[string]any `mapstructure:",remain"`
 }

@@ -847,20 +847,20 @@ func (e *Executor) executeAnnotationsQuery(ctx context.Context, qry *Annotations
 	b := &strings.Builder{}
 
 	b.WriteString("SELECT *")
-	if annotation.HasGrain {
+	if annotation.HasDuration {
 		// Convert the string grain to an integer so that it is easy to calculate "greater than or equal to".
 		b.WriteString(`,(CASE
-  WHEN grain = 'millisecond' THEN 1
-  WHEN grain = 'second' THEN 2
-  WHEN grain = 'minute' THEN 3
-  WHEN grain = 'hour' THEN 4
-  WHEN grain = 'day' THEN 5
-  WHEN grain = 'week' THEN 6
-  WHEN grain = 'month' THEN 7
-  WHEN grain = 'quarter' THEN 8
-  WHEN grain = 'year' THEN 9
+  WHEN duration = 'millisecond' THEN 1
+  WHEN duration = 'second' THEN 2
+  WHEN duration = 'minute' THEN 3
+  WHEN duration = 'hour' THEN 4
+  WHEN duration = 'day' THEN 5
+  WHEN duration = 'week' THEN 6
+  WHEN duration = 'month' THEN 7
+  WHEN duration = 'quarter' THEN 8
+  WHEN duration = 'year' THEN 9
   ELSE 0
-END) as time_grain`)
+END) as __rill_time_grain`)
 	}
 
 	b.WriteString(" FROM ")
@@ -876,8 +876,8 @@ END) as time_grain`)
 		args = append(args, start, end)
 	}
 
-	if annotation.HasGrain && qry.TimeGrain != TimeGrainUnspecified {
-		b.WriteString(" AND (time_grain == 0 OR time_grain <= ?)")
+	if annotation.HasDuration && qry.TimeGrain != TimeGrainUnspecified {
+		b.WriteString(" AND (__rill_time_grain == 0 OR __rill_time_grain <= ?)")
 		args = append(args, int(qry.TimeGrain.ToTimeutil()))
 	}
 

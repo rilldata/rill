@@ -1230,7 +1230,7 @@ definitions:
                   description: A stable identifier for the annotation. Defaults to model or table names when not specified
                 model:
                   type: string
-                  description: Refers to the model powering the annotation (either table or model is required). The model must have 'time' and 'description' columns. Optional columns include 'time_end' for range annotations and 'grain' to specify when the annotation should appear based on dashboard grain level.
+                  description: Refers to the model powering the annotation (either table or model is required). The model must have 'time' and 'description' columns. Optional columns include 'time_end' for range annotations and 'duration' to specify when the annotation should appear based on dashboard grain level.
                 database:
                   type: string
                   description: Refers to the database to use in the OLAP engine (to be used in conjunction with table). Otherwise, will use the default database or schema if not specified
