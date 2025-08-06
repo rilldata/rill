@@ -188,7 +188,7 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 
 	// Add auth cookie refresh specifically for the GetCurrentUser RPC.
 	// This is sufficient to refresh the cookie on each page load without unnecessarily refreshing cookies in each API call.
-	mux.Handle("/v1/users/current", s.authenticator.HTTPMiddlewareWithCookieRefresh(transcoder))
+	mux.Handle("/v1/users/current", s.authenticator.CookieRefreshMiddleware(transcoder))
 
 	mux.Handle("/v1/", transcoder)
 	mux.Handle("/rill.admin.v1.AdminService/", transcoder)
