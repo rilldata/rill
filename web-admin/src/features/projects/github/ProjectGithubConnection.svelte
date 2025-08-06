@@ -58,7 +58,7 @@
   function confirmConnectToGithub() {
     // prompt reselection repos since a new repo might be created here.
     repoSelectionOpen.set(true);
-    void githubData.reselectRepos();
+    void githubData.startRepoSelection();
     behaviourEvent?.fireGithubIntentEvent(
       BehaviourEventAction.GithubConnectStart,
       {
