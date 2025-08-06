@@ -1119,7 +1119,7 @@ oneOf:
             sample: false
         required:
           - type
-      - $ref: '#/definitions/data_properties'
+      - $ref: '#/definitions/api_data_properties'
       # - $ref: '#/definitions/common_properties'
 
   # Themes
@@ -1389,7 +1389,7 @@ definitions:
   #     - name
   #     - type
   #   additionalProperties: false
-  data_properties:
+  api_data_properties:
     oneOf:
       - title: SQL Query
         type: object
@@ -1460,6 +1460,85 @@ definitions:
 
               glob: "data/*.csv"
               ```
+        properties:
+          glob:
+            description: Defines the file path or pattern to query from the specified connector.
+            anyOf:
+              - type: string
+                description: A simple file path/glob pattern as a string.
+                sample: "data/*.csv"
+              - type: object
+                description: An object-based configuration for specifying a file path/glob pattern with advanced options.
+                additionalProperties: true
+          connector:
+            type: string
+            description: Specifies the connector to use with the glob input.
+        required:
+          - glob
+
+      - title: Resource Status Check
+        type: object
+        description: Uses the status of a resource as data.
+        properties:
+          resource_status:
+            type: object
+            description: Based on resource status
+            properties:
+              where_error:
+                type: boolean
+                description: Indicates whether the condition should trigger when the resource is in an error state.
+                sample: true
+            additionalProperties: true
+        required:
+          - resource_status
+        examples: |
+          ```yaml
+          resource_status:
+            where_error: true
+          ```
+  data_properties:
+    oneOf:
+      - title: SQL Query
+        type: object
+        description: Executes a raw SQL query against the project's data models.
+        properties:
+          sql:
+            type: string
+            description: Raw SQL query to run against existing models in the project.
+          connector:
+            type: string
+            description: specifies the connector to use when running SQL or glob queries.
+        required:
+          - sql
+
+
+      - title: Metrics View Query
+        type: object
+        description: Executes a SQL query that targets a defined metrics view.
+        properties:
+          metrics_sql:
+            type: string
+            description: SQL query that targets a metrics view in the project
+        required:
+          - metrics_sql
+
+      - title: Custom API Call
+        type: object
+        description: Calls a custom API defined in the project to compute data.
+        properties:
+          api:
+            type: string
+            description: Name of a custom API defined in the project.
+          args:
+            type: object
+            description: Arguments to pass to the custom API.
+            additionalProperties: true
+        required:
+          - api
+
+      - title: File Glob Query
+        type: object
+        description: Uses a file-matching pattern (glob) to query data from a connector.
         properties:
           glob:
             description: Defines the file path or pattern to query from the specified connector.

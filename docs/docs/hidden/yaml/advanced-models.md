@@ -94,50 +94,22 @@ state:
  
 
   - **option 1** - _[object]_ - Executes a raw SQL query against the project's data models.
-  ```yaml
-  type: api
-  
-  connector: "duckdb"
-  sql: "SELECT * FROM user_metrics WHERE date >= '2024-01-01'"
-  ```
-
 
     - **`sql`** - _[string]_ - Raw SQL query to run against existing models in the project. _(required)_
 
     - **`connector`** - _[string]_ - specifies the connector to use when running SQL or glob queries. 
 
   - **option 2** - _[object]_ - Executes a SQL query that targets a defined metrics view.
-    ```yaml
-    type: api
-  
-    metrics_sql: "SELECT * FROM user_metrics WHERE date >= '2024-01-01'"
-    ```
-
 
     - **`metrics_sql`** - _[string]_ - SQL query that targets a metrics view in the project _(required)_
 
   - **option 3** - _[object]_ - Calls a custom API defined in the project to compute data.
-    ```yaml
-    type: api
-  
-    api: "user_analytics_api"
-    args:
-      start_date: "2024-01-01"
-      limit: 10
-    ```
-
 
     - **`api`** - _[string]_ - Name of a custom API defined in the project. _(required)_
 
     - **`args`** - _[object]_ - Arguments to pass to the custom API. 
 
   - **option 4** - _[object]_ - Uses a file-matching pattern (glob) to query data from a connector.
-    ```yaml
-    type: api
-  
-    glob: "data/*.csv"
-    ```
-
 
     - **`glob`** - _[anyOf]_ - Defines the file path or pattern to query from the specified connector. _(required)_
 
@@ -174,50 +146,22 @@ partitions:
  
 
   - **option 1** - _[object]_ - Executes a raw SQL query against the project's data models.
-  ```yaml
-  type: api
-  
-  connector: "duckdb"
-  sql: "SELECT * FROM user_metrics WHERE date >= '2024-01-01'"
-  ```
-
 
     - **`sql`** - _[string]_ - Raw SQL query to run against existing models in the project. _(required)_
 
     - **`connector`** - _[string]_ - specifies the connector to use when running SQL or glob queries. 
 
   - **option 2** - _[object]_ - Executes a SQL query that targets a defined metrics view.
-    ```yaml
-    type: api
-  
-    metrics_sql: "SELECT * FROM user_metrics WHERE date >= '2024-01-01'"
-    ```
-
 
     - **`metrics_sql`** - _[string]_ - SQL query that targets a metrics view in the project _(required)_
 
   - **option 3** - _[object]_ - Calls a custom API defined in the project to compute data.
-    ```yaml
-    type: api
-  
-    api: "user_analytics_api"
-    args:
-      start_date: "2024-01-01"
-      limit: 10
-    ```
-
 
     - **`api`** - _[string]_ - Name of a custom API defined in the project. _(required)_
 
     - **`args`** - _[object]_ - Arguments to pass to the custom API. 
 
   - **option 4** - _[object]_ - Uses a file-matching pattern (glob) to query data from a connector.
-    ```yaml
-    type: api
-  
-    glob: "data/*.csv"
-    ```
-
 
     - **`glob`** - _[anyOf]_ - Defines the file path or pattern to query from the specified connector. _(required)_
 
