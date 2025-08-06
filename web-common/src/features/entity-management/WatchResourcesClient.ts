@@ -119,7 +119,7 @@ export class WatchResourcesClient {
         });
 
         switch (res.name.kind as ResourceKind) {
-          case ResourceKind.Connector:
+          case ResourceKind.Connector: {
             console.log("connector: ", res.resource);
             // Invalidate the list of connectors
             void queryClient.invalidateQueries({
@@ -153,6 +153,7 @@ export class WatchResourcesClient {
 
             // Done
             return;
+          }
 
           case ResourceKind.Source:
           case ResourceKind.Model: {
