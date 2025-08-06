@@ -157,7 +157,7 @@ func SetupGitIgnore(ctx context.Context, repo drivers.RepoStore) error {
 		return nil
 	}
 
-	gitIgnoreContent := strings.ReplaceAll(string(contents), "\r\n", "\n")
+	gitIgnoreContent := strings.ReplaceAll(contents, "\r\n", "\n")
 	gitIgnoreEntries := strings.Split(gitIgnoreContent, "\n")
 	var added bool
 	for _, path := range []string{".DS_Store", ".env", "tmp"} {

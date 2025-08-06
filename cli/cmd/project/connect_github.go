@@ -233,6 +233,16 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 		}
 	}
 
+	// Ensure gitignore is set up so that we don't upload files that should not be tracked by Git.
+	repo, _, err := cmdutil.RepoForProjectPath(localProjectPath)
+	if err != nil {
+		return err
+	}
+	err = cmdutil.SetupGitIgnore(ctx, repo)
+	if err != nil {
+		return fmt.Errorf("failed to set up .gitignore: %w", err)
+	}
+
 	// Create the project (automatically deploys prod branch)
 	res, err := createProjectFlow(ctx, ch, &adminv1.CreateProjectRequest{
 		OrganizationName: ch.Org,
