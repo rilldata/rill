@@ -423,24 +423,37 @@ func generateDoc(sidebarPosition, level int, node *yaml.Node, indent string, req
 					for _, example := range examples.Content {
 						b, err := yaml.Marshal(example)
 						if err != nil {
+							panic(err)
+						}
+						doc.WriteString(fmt.Sprintf("\n\n```yaml\n%s```", string(b)))
 					}
-					doc.WriteString(fmt.Sprintf("\n\n```yaml\n%s```", string(b)))
+				} else if examples.Kind == yaml.ScalarNode {
+					// Handle string examples (like markdown code blocks)
+					doc.WriteString(fmt.Sprintf("\n\n%s", examples.Value))
 				}
 			}
 		}
 	} else if items := getNodeForKey(node, "items"); items != nil && items.Kind == yaml.MappingNode {
 		items := getNodeForKey(node, "items")
-		doc.WriteString(generateDoc(sidebarPosition, level, items, indent, getRequiredMapFromNode(items)))
+		doc.WriteString(generateDoc(sidebarPosition, level, items, indent, getRequiredMapFromNode(items), rootSchema, id))
 	}
 
 	// OneOf
 	if oneOf := getNodeForKey(node, "oneOf"); oneOf != nil && oneOf.Kind == yaml.SequenceNode {
-		// Skip oneOf processing for connectors at level 1 since we handle it in allOf
-		if !(isConnector && level == 1) {
-			if len(oneOf.Content) == 1 {
-				doc.WriteString(generateDoc(sidebarPosition, level, oneOf.Content[0], indent, getRequiredMapFromNode(oneOf.Content[0])))
-				if level == 1 {
-					doc.WriteString("\n\n## One of Properties Options")
+		// Special handling for connectors - generate copiable text for each connector type
+		if id == "connectors" {
+			doc.WriteString("\n\n## Available Connector Types\n\n")
+			for _, item := range oneOf.Content {
+				// Since $ref values are already resolved, look for connector definitions directly
+				title := getScalarValue(item, "title")
+				if title != "" {
+					doc.WriteString(fmt.Sprintf("\n\n### %s\n\n", title))
+					// Add description first
+					description := getPrintableDescription(item, indent, "")
+					if description != "" {
+						doc.WriteString(fmt.Sprintf("%s\n\n", description))
+					}
+				}
 
 				// Generate the connector definition documentation (properties, etc.)
 				if properties := getNodeForKey(item, "properties"); properties != nil && properties.Kind == yaml.MappingNode {
