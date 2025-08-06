@@ -3,7 +3,7 @@
   import {
     createAdminServiceGetCurrentUser,
     createAdminServiceListOrganizationMemberUsergroups,
-    createAdminServiceListOrganizationMemberUsers,
+    createAdminServiceListOrganizationMemberUsersInfinite,
   } from "@rilldata/web-admin/client";
   import CreateUserGroupDialog from "@rilldata/web-admin/features/organizations/users/CreateUserGroupDialog.svelte";
   import EditUserGroupDialog from "@rilldata/web-admin/features/organizations/users/EditUserGroupDialog.svelte";
@@ -28,8 +28,23 @@
       pageToken,
       includeCounts: true,
     });
-  $: listOrganizationMemberUsers =
-    createAdminServiceListOrganizationMemberUsers(organization);
+  $: listOrganizationMemberUsersInfinite =
+    createAdminServiceListOrganizationMemberUsersInfinite(
+      organization,
+      {
+        pageSize: PAGE_SIZE,
+      },
+      {
+        query: {
+          getNextPageParam: (lastPage) => {
+            if (lastPage.nextPageToken !== "") {
+              return lastPage.nextPageToken;
+            }
+            return undefined;
+          },
+        },
+      },
+    );
 
   const currentUser = createAdminServiceGetCurrentUser();
 
@@ -45,6 +60,12 @@
   );
 
   $: isFetchingNextPage = $listOrganizationMemberUsergroups.isFetching;
+
+  // Flatten all pages of organization users
+  $: allOrganizationUsers =
+    $listOrganizationMemberUsersInfinite.data?.pages.flatMap(
+      (page) => page.members ?? [],
+    ) ?? [];
 
   function handleLoadMore() {
     if (hasNextPage) {
@@ -77,7 +98,7 @@
     <div class="text-red-500">
       Error loading organization user groups: {$listOrganizationMemberUsergroups.error}
     </div>
-  {:else if $listOrganizationMemberUsergroups.isSuccess && $listOrganizationMemberUsers.isSuccess}
+  {:else if $listOrganizationMemberUsergroups.isSuccess && $listOrganizationMemberUsersInfinite.isSuccess}
     <div class="flex flex-col">
       <div class="flex flex-row gap-x-4">
         <Search
@@ -100,7 +121,7 @@
         <OrgGroupsTable
           data={filteredGroups}
           currentUserEmail={$currentUser.data?.user.email}
-          searchUsersList={$listOrganizationMemberUsers.data?.members ?? []}
+          searchUsersList={allOrganizationUsers}
           {hasNextPage}
           {isFetchingNextPage}
           onLoadMore={handleLoadMore}
@@ -122,13 +143,13 @@
 <CreateUserGroupDialog
   bind:open={isCreateUserGroupDialogOpen}
   groupName={userGroupName}
-  organizationUsers={$listOrganizationMemberUsers.data?.members ?? []}
+  organizationUsers={allOrganizationUsers}
   currentUserEmail={$currentUser.data?.user.email}
 />
 
 <EditUserGroupDialog
   bind:open={isEditUserGroupDialogOpen}
   groupName={userGroupName}
-  organizationUsers={$listOrganizationMemberUsers.data?.members ?? []}
+  organizationUsers={allOrganizationUsers}
   currentUserEmail={$currentUser.data?.user.email}
 />

@@ -1218,7 +1218,7 @@ definitions:
                   type: string
                   description: |
                     Controls the formatting of this measure using a predefined preset. Measures cannot have both `format_preset` and `format_d3`. If neither is supplied, the measure will be formatted using the `humanize` preset by default.
-                    
+
                       Available options:
                       - `humanize`: Round numbers into thousands (K), millions(M), billions (B), etc.
                       - `none`: Raw output.
@@ -1240,6 +1240,33 @@ definitions:
                   type: string
                   description: used to configure what value to fill in for missing time buckets. This also works generally as COALESCING over non empty time buckets.
             minItems: 1
+          annotations:
+            type: array
+            description: Used to define annotations that can be displayed on charts
+            items:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: A stable identifier for the annotation. Defaults to model or table names when not specified
+                model:
+                  type: string
+                  description: Refers to the model powering the annotation (either table or model is required). The model must have 'time' and 'description' columns. Optional columns include 'time_end' for range annotations and 'duration' to specify when the annotation should appear based on dashboard grain level.
+                database:
+                  type: string
+                  description: Refers to the database to use in the OLAP engine (to be used in conjunction with table). Otherwise, will use the default database or schema if not specified
+                database_schema:
+                  type: string
+                  description: Refers to the schema to use in the OLAP engine (to be used in conjunction with table). Otherwise, will use the default database or schema if not specified
+                table:
+                  type: string
+                  description: Refers to the table powering the annotation, should be used instead of model for annotations from external OLAP tables (either table or model is required)
+                connector:
+                  type: string
+                  description: Refers to the connector to use for the annotation
+                measures:
+                  $ref: '#/definitions/metrics_view/definitions/field_selectors_properties'
+                  description: Specifies which measures to apply the annotation to. Applies to all measures if not specified
           security:
             $ref: '#/definitions/security_policy_properties'
             description: Defines a security policy for the dashboard
@@ -1713,7 +1740,7 @@ definitions:
     title: Theme YAML 
     description: | 
       In your Rill project directory, create a `<theme_name>.yaml` file in any directory containing `type: theme`. Rill will automatically ingest the theme next time you run `rill start` or deploy to Rill Cloud.
-      
+
       To apply that theme to a dashboard, add `default_theme: <name of theme>` to the yaml file for that dashboard. Alternatively, you can add this to the end of the URL in your browser: `?theme=<name of theme>`
     examples:
       - # Example: You can copy this directly into your <theme_name>.yaml file

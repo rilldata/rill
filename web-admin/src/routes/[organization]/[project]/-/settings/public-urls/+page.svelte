@@ -5,12 +5,12 @@
     createAdminServiceRevokeMagicAuthToken,
     getAdminServiceListMagicAuthTokensQueryKey,
   } from "@rilldata/web-admin/client";
-  import type { DashboardResource } from "@rilldata/web-admin/features/dashboards/listing/selectors";
-  import { useDashboardsV2 } from "@rilldata/web-admin/features/dashboards/listing/selectors";
+  import { useDashboards } from "@rilldata/web-admin/features/dashboards/listing/selectors";
   import NoPublicURLCTA from "@rilldata/web-admin/features/public-urls/NoPublicURLCTA.svelte";
   import PublicURLsTable from "@rilldata/web-admin/features/public-urls/PublicURLsTable.svelte";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
 
@@ -39,29 +39,26 @@
       },
     );
 
-  function useValidDashboardTitle(dashboard: DashboardResource) {
-    return (
-      dashboard?.resource.explore?.spec?.displayName ||
-      dashboard?.resource.meta.name.name
-    );
-  }
-
   $: allRows =
     $magicAuthTokensInfiniteQuery.data?.pages.flatMap(
       (page) => page.tokens ?? [],
     ) ?? [];
 
-  $: dashboards = useDashboardsV2(instanceId);
+  $: dashboards = useDashboards(instanceId);
 
   $: allRowsWithDashboardTitle = allRows.map((token) => {
     const dashboard = $dashboards.data?.find(
-      (d) => d.resource.meta.name.name === token.resourceName,
+      (d) => d.meta.name.name === token.resourceName,
     );
     return {
       ...token,
       dashboardTitle: useValidDashboardTitle(dashboard),
     };
   });
+
+  function useValidDashboardTitle(dashboard: V1Resource) {
+    return dashboard?.explore?.spec?.displayName || dashboard?.meta.name.name;
+  }
 
   // REVISIT when server-side sorting is implemented
   $: sortedAllRowsWithDashboardTitle = allRowsWithDashboardTitle.sort(

@@ -22,6 +22,7 @@
   import TDDAlternateChart from "@rilldata/web-common/features/dashboards/time-dimension-details/charts/TDDAlternateChart.svelte";
   import { chartInteractionColumn } from "@rilldata/web-common/features/dashboards/time-dimension-details/time-dimension-data-store";
   import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
+  import { getAnnotationsForMeasure } from "@rilldata/web-common/features/dashboards/time-series/annotations-selectors.ts";
   import BackToExplore from "@rilldata/web-common/features/dashboards/time-series/BackToExplore.svelte";
   import {
     useTimeSeriesDataStore,
@@ -36,6 +37,7 @@
     type AvailableTimeGrain,
   } from "@rilldata/web-common/lib/time/types";
   import type { MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
   import { Button } from "../../../components/button";
   import Pivot from "../../../components/icons/Pivot.svelte";
   import { TIME_GRAIN } from "../../../lib/time/config";
@@ -80,6 +82,7 @@
       measures: { setMeasureVisibility },
     },
     validSpecStore,
+    dashboardStore,
   } = getStateManagers();
 
   const timeControlsStore = useTimeControlStore(getStateManagers());
@@ -91,6 +94,8 @@
     showTimeComparison,
     ready: timeControlsReady,
   } = $timeControlsStore);
+
+  $: ({ instanceId } = $runtime);
 
   let scrubStart;
   let scrubEnd;
@@ -262,6 +267,16 @@
 
   $: timeGrainOptions = getAllowedGrains(minTimeGrain);
 
+  $: annotationsForMeasures = renderedMeasures.map((measure) =>
+    getAnnotationsForMeasure({
+      instanceId,
+      exploreName,
+      measureName: measure.name!,
+      selectedTimeRange,
+      selectedTimezone: $dashboardStore.selectedTimezone,
+    }),
+  );
+
   let showReplacePivotModal = false;
   function startPivotForTimeseries() {
     const pivot = $exploreState?.pivot;
@@ -418,7 +433,7 @@
       class="flex flex-col gap-y-2 overflow-y-scroll h-full max-h-fit"
     >
       <!-- FIXME: this is pending the remaining state work for show/hide measures and dimensions -->
-      {#each renderedMeasures as measure (measure.name)}
+      {#each renderedMeasures as measure, i (measure.name)}
         <!-- FIXME: I can't select the big number by the measure id. -->
 
         {@const bigNum = measure.name ? totals?.[measure.name] : null}
@@ -524,6 +539,7 @@
               {exploreName}
               data={formattedData}
               {dimensionData}
+              annotations={annotationsForMeasures[i]}
               zone={$exploreState?.selectedTimezone}
               xAccessor="ts_position"
               labelAccessor="ts"

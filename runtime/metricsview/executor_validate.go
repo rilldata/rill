@@ -10,7 +10,9 @@ import (
 	"sync"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/fieldselectorpb"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -124,6 +126,12 @@ func (e *Executor) ValidateAndNormalizeMetricsView(ctx context.Context) (*Valida
 	if err != nil {
 		// One or more dimension/measure expressions failed to validate. We need to check each one individually to provide useful errors.
 		e.validateIndividualDimensionsAndMeasures(ctx, t, mv, cols, res)
+	}
+
+	// Check and rewrite annotations
+	err = e.validateAndNormalizeAnnotations(ctx, mv, res)
+	if err != nil {
+		return res, err
 	}
 
 	// Pinot does have any native support for time shift using time grain specifiers
@@ -265,6 +273,94 @@ func (e *Executor) validateIndividualDimensionsAndMeasures(ctx context.Context, 
 	// Sort errors by index (for stable output)
 	slices.SortFunc(res.DimensionErrs, func(a, b IndexErr) int { return a.Idx - b.Idx })
 	slices.SortFunc(res.MeasureErrs, func(a, b IndexErr) int { return a.Idx - b.Idx })
+}
+
+// validateAndNormalizeAnnotations validates the annotations by checking the model/table defined with expected columns.
+// Rewrites the annotations to use the resolved table name from the defined model.
+// Resolves the measure selector and stores the resolved measures in the annotation.
+func (e *Executor) validateAndNormalizeAnnotations(ctx context.Context, mv *runtimev1.MetricsViewSpec, res *ValidateMetricsViewResult) error {
+	allMeasures := make([]string, 0, len(mv.Measures))
+	for _, m := range mv.Measures {
+		allMeasures = append(allMeasures, m.Name)
+	}
+
+	// Get the controller used for getting the annotation's model
+	ct, err := e.rt.Controller(ctx, e.instanceID)
+	if err != nil {
+		return fmt.Errorf("failed to get controller: %w", err)
+	}
+
+	// Different models could be in the same or different connector. Maintain a map to reuse connections.
+	olaps := make(map[string]drivers.OLAPStore)
+	olapReleases := make([]func(), 0)
+	for _, annotation := range mv.Annotations {
+		// Resolve the measures selector
+		annotation.Measures, err = fieldselectorpb.ResolveFields(annotation.Measures, annotation.MeasuresSelector, allMeasures)
+		if err != nil {
+			res.OtherErrs = append(res.OtherErrs, fmt.Errorf("invalid measures for annotation %q: %w", annotation.Name, err))
+		}
+		annotation.MeasuresSelector = nil
+
+		if annotation.Model != "" {
+			res, err := ct.Get(ctx, &runtimev1.ResourceName{Name: annotation.Model, Kind: runtime.ResourceKindModel}, false)
+			if err == nil && res.GetModel().State.ResultTable != "" {
+				annotation.Table = res.GetModel().State.ResultTable
+				annotation.Connector = res.GetModel().State.ResultConnector
+			} else {
+				annotation.Table = annotation.Model
+			}
+		}
+
+		// Get the connector for the model either from the map or acquire a new one
+		olap, ok := olaps[annotation.Connector]
+		if !ok {
+			var release func()
+			olap, release, err = e.rt.OLAP(ctx, e.instanceID, annotation.Connector)
+			if err != nil {
+				res.OtherErrs = append(res.OtherErrs, fmt.Errorf("failed to acquire connection to table %q for annotation %q: %w", annotation.Table, annotation.Name, err))
+				break // other connections might fail as well
+			}
+			olapReleases = append(olapReleases, release)
+		}
+
+		// Get the table schema
+		tableSchema, err := olap.InformationSchema().Lookup(ctx, annotation.Database, annotation.DatabaseSchema, annotation.Table)
+		if err != nil {
+			res.OtherErrs = append(res.OtherErrs, fmt.Errorf("failed to get table details %q for annotation %q: %w", annotation.Table, annotation.Name, err))
+			continue
+		}
+
+		// Validate the table for required columns and save metadata about optional columns. This metadata will be used during querying the table.
+		var hasTime, hasDesc bool
+		for _, field := range tableSchema.Schema.Fields {
+			switch field.Name {
+			case "time":
+				hasTime = true
+
+			case "time_end":
+				annotation.HasTimeEnd = true
+
+			case "duration":
+				annotation.HasDuration = true
+
+			case "description":
+				hasDesc = true
+			}
+		}
+
+		if !hasTime {
+			res.OtherErrs = append(res.OtherErrs, fmt.Errorf(`table %q for annotation %q does not have the required "time" column`, annotation.Table, annotation.Name))
+		}
+		if !hasDesc {
+			res.OtherErrs = append(res.OtherErrs, fmt.Errorf(`table %q for annotation %q does not have the required "description" column`, annotation.Table, annotation.Name))
+		}
+	}
+
+	for _, release := range olapReleases {
+		release()
+	}
+
+	return nil
 }
 
 // validateTimeDimension validates the time dimension in the metrics view.
