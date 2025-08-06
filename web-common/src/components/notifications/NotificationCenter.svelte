@@ -5,7 +5,7 @@
   import { onMount } from "svelte";
   import { NOTIFICATION_TIMEOUT } from "./constants";
 
-  let notifications: NotificationMessage[] = [];
+  let notifications: NotificationMessage[] = [{ message: "greeting" }];
   let currentTimeoutId: number | null = null;
 
   onMount(() => {
@@ -54,6 +54,6 @@
   }
 </script>
 
-{#each notifications as notification}
+{#each notifications as notification, i (i)}
   <Notification {notification} onClose={clear} />
 {/each}
