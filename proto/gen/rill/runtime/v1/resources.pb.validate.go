@@ -12613,7 +12613,7 @@ func (m *MetricsViewSpec_Annotation) validate(all bool) error {
 
 	// no validation rules for HasTimeEnd
 
-	// no validation rules for HasGrain
+	// no validation rules for HasDuration
 
 	if len(errors) > 0 {
 		return MetricsViewSpec_AnnotationMultiError(errors)

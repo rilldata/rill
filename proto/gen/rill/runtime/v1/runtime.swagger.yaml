@@ -5435,9 +5435,9 @@ definitions:
       description:
         type: string
         description: User defined description of the annotation applies. Maps to `description` column from the table.
-      grain:
+      duration:
         type: string
-        description: Optional. Minimum grain this annotation is displayed for. Maps to `grain` column from the table.
+        description: Optional. Minimum duration this annotation is displayed for. Maps to `duration` column from the table.
       additionalFields:
         type: object
         description: Any other fields are captured here. Will be used in predicates in the future.
@@ -5813,14 +5813,14 @@ definitions:
       hasTimeEnd:
         type: boolean
         description: Signifies that the underlying table has `time_end` column. Will be used while querying to add additional filter.
-      hasGrain:
+      hasDuration:
         type: boolean
-        description: Signifies that the underlying table has `grain` column. Will be used while querying to add additional filter.
+        description: Signifies that the underlying table has `duration` column. Will be used while querying to add additional filter.
     description: |-
       Annotations that can be applied to measures. Each annotation needs to have a model or a table defined.
       1. The underlying model/table has to have a `time` and `description` columns.
       2. Can additionally have `time_end` column to convert the annotation to range type annotation.
-      3. Can additionally have `grain` column, this is used to not query for annotations greater than selected grain in dashboard. Also forces `time` and `time_end` in UI to be truncated to selected grain.
+      3. Can additionally have `duration` column, this is used to not query for annotations greater than selected grain in dashboard. Also forces `time` and `time_end` in UI to be truncated to selected grain.
   v1MetricsViewState:
     type: object
     properties:

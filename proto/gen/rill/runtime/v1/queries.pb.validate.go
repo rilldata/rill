@@ -16562,8 +16562,8 @@ func (m *MetricsViewAnnotationsResponse_Annotation) validate(all bool) error {
 
 	}
 
-	if m.Grain != nil {
-		// no validation rules for Grain
+	if m.Duration != nil {
+		// no validation rules for Duration
 	}
 
 	if len(errors) > 0 {

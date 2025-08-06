@@ -340,8 +340,8 @@ func (e *Executor) validateAndNormalizeAnnotations(ctx context.Context, mv *runt
 			case "time_end":
 				annotation.HasTimeEnd = true
 
-			case "grain":
-				annotation.HasGrain = true
+			case "duration":
+				annotation.HasDuration = true
 
 			case "description":
 				hasDesc = true
