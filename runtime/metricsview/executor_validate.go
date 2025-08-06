@@ -183,6 +183,9 @@ func (e *Executor) resolveParentMetricsView(ctx context.Context) error {
 	if res.GetMetricsView() == nil {
 		return fmt.Errorf("parent resource %q is not a metrics view", e.metricsView.Parent)
 	}
+	if res.GetMetricsView().State.ValidSpec == nil {
+		return fmt.Errorf("parent metrics view %q is invalid", e.metricsView.Parent)
+	}
 	parent := res.GetMetricsView().State.ValidSpec
 
 	e.metricsView.Connector = parent.Connector

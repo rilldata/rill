@@ -88,7 +88,9 @@ func (r *MetricsViewReconciler) Reconcile(ctx context.Context, n *runtimev1.Reso
 		}
 	}
 
-	refs := self.Meta.Refs
+	refsForHasInternalRefCheck := self.Meta.Refs
+	parentModel := ""
+	parentTable := ""
 	if mv.Spec.Parent != "" {
 		parent, err := r.C.Get(ctx, &runtimev1.ResourceName{
 			Name: mv.Spec.Parent,
@@ -97,7 +99,12 @@ func (r *MetricsViewReconciler) Reconcile(ctx context.Context, n *runtimev1.Reso
 		if err != nil {
 			return runtime.ReconcileResult{Err: fmt.Errorf("failed to get parent metrics view %q: %w", mv.Spec.Parent, err)}
 		}
-		refs = parent.Meta.Refs
+		refsForHasInternalRefCheck = parent.Meta.Refs
+		if parent.GetMetricsView().State.ValidSpec == nil {
+			return runtime.ReconcileResult{Err: fmt.Errorf("parent metrics view %q deos not have a valid state", parent.Meta.Name.Name)}
+		}
+		parentModel = parent.GetMetricsView().State.ValidSpec.Model
+		parentTable = parent.GetMetricsView().State.ValidSpec.Table
 		if dataRefreshedOn == nil {
 			dataRefreshedOn = parent.GetMetricsView().State.DataRefreshedOn
 		}
@@ -105,9 +112,9 @@ func (r *MetricsViewReconciler) Reconcile(ctx context.Context, n *runtimev1.Reso
 
 	// Find out if the metrics view has a ref to a source or model in the same project.
 	hasInternalRef := false
-	for _, ref := range refs {
+	for _, ref := range refsForHasInternalRefCheck {
 		// Check that the name matches the metrics view's table. This is to avoid false positive for annotation's model.
-		if (ref.Name == mv.Spec.Table || ref.Name == mv.Spec.Model) &&
+		if (ref.Name == mv.Spec.Table || ref.Name == mv.Spec.Model || ref.Name == parentTable || ref.Name == parentModel) &&
 			(ref.Kind == runtime.ResourceKindSource || ref.Kind == runtime.ResourceKindModel) {
 			hasInternalRef = true
 		}
