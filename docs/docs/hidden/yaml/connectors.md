@@ -40,8 +40,24 @@ Connector YAML files define how Rill connects to external data sources and OLAP 
 For all credential parameters (passwords, tokens, keys), use environment variables with the syntax `{{.env.connector.<connector_driver>.<parameter_name>}}`. This keeps sensitive data out of your YAML files and version control. See our [credentials documentation](/build/credentials/) for complete setup instructions.
 :::
 
---
 
+## Common Properties
+
+### `name`
+
+_[string]_ - Name is usually inferred from the filename, but can be specified manually. 
+
+### `refs`
+
+_[array of string]_ - List of resource references 
+
+### `dev`
+
+_[object]_ - Overrides any properties in development environment. 
+
+### `prod`
+
+_[object]_ - Overrides any properties in production environment. 
 
 ## Properties
 
@@ -52,6 +68,36 @@ _[string]_ - Refers to the resource type and must be `connector` _(required)_
 ### `driver`
 
 _[string]_ - The type of connector, see [available connectors](#available-connector-types) (required) _(required)_
+
+## Common Properties
+
+```yaml
+type: connector                                  # Must be `connector` (required)
+driver: common properties                                   # Must be `common properties` _(required)_
+
+name: "example_value"                # Name is usually inferred from the filename, but can be specified manually.
+refs: "example_value"                # List of resource references
+dev: "example_value"                 # Overrides any properties in development environment.
+prod: "example_value"                # Overrides any properties in production environment.
+```
+
+
+
+#### `name`
+
+_[string]_ - Name is usually inferred from the filename, but can be specified manually. 
+
+#### `refs`
+
+_[array of string]_ - List of resource references 
+
+#### `dev`
+
+_[object]_ - Overrides any properties in development environment. 
+
+#### `prod`
+
+_[object]_ - Overrides any properties in production environment. 
 
 ## Athena
 

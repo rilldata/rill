@@ -42,11 +42,7 @@ _[object]_ - Specifies the refresh schedule that Rill should follow to re-ingest
 
 ### `connector`
 
-_[string]_ - Refers to the resource type and must be `connector` 
-
-### `driver`
-
-_[string]_ - The type of connector, see [available connectors](../yaml/connectors#available-connector-types) (required) 
+_[string]_ - Refers to the resource type and is needed if setting an explicit OLAP engine. IE `clickhouse` 
 
 ### `sql`
 

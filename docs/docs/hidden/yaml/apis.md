@@ -130,24 +130,6 @@ _[object]_ - Based on resource status _(required)_
 
       - **`where_error`** - _[boolean]_ - Indicates whether the condition should trigger when the resource is in an error state. 
 
-## Common Properties
-
-### `name`
-
-_[string]_ - Name is usually inferred from the filename, but can be specified manually. 
-
-### `refs`
-
-_[array of string]_ - List of resource references 
-
-### `dev`
-
-_[object]_ - Overrides any properties in development environment. 
-
-### `prod`
-
-_[object]_ - Overrides any properties in production environment. 
-
 ## Examples
 
 ```yaml

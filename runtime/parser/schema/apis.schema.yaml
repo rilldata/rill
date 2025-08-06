@@ -51,7 +51,7 @@ allOf:
       - $ref: '#/definitions/data_properties'
     required:
       - type       
-  - $ref: '#/definitions/common_properties'
+  
 definitions:
   data_properties:
     oneOf:
@@ -218,22 +218,4 @@ definitions:
               description: SQL expression for row filtering (for row_filter type rules)
           required:
             - type
-  common_properties:
-    type: object
-    title: "Common Properties"
-    properties:
-      name:
-        type: string
-        description: Name is usually inferred from the filename, but can be specified manually.
-      refs:
-        type: array
-        description: 'List of resource references'
-        items:
-          type: string
-          description: A string reference like `<resource-name>` or `<type/resource-name>`.
-      dev:
-        type: object
-        description: Overrides any properties in development environment.
-      prod:
-        type: object
-        description: Overrides any properties in production environment. 
+  

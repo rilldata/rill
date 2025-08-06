@@ -34,10 +34,7 @@ allOf:
       connector:
         type: string
         const: connector
-        description: Refers to the resource type and must be `connector`
-      driver:
-        type: string
-        description: The type of connector, see [available connectors](../yaml/connectors#available-connector-types) (required)
+        description: Refers to the resource type and is needed if setting an explicit OLAP engine. IE `clickhouse`
       sql:
         type: string
         description: Raw SQL query to run against source
