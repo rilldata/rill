@@ -62,7 +62,7 @@ _[oneOf]_ - List of measure names. Use ''*'' to select all measures (default)
 
 ### `theme`
 
-_[oneOf]_ - Name of the theme to use or define a theme inline. Either theme name or embedded theme can be set. 
+_[oneOf]_ - Name of the theme to use or define a theme inline. Either theme name or inline theme can be set. 
 
   - **option 1** - _[string]_ - Name of an existing theme to apply to the dashboard
 

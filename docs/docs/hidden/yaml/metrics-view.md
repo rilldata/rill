@@ -289,7 +289,7 @@ _[object]_ - Defines an optional inline explore view for the metrics view. If no
 
   - **`banner`** - _[string]_ - Custom banner displayed at the header of the explore view. 
 
-  - **`theme`** - _[oneOf]_ - Name of the theme to use or define a theme inline. Either theme name or embedded theme can be set. 
+  - **`theme`** - _[oneOf]_ - Name of the theme to use or define a theme inline. Either theme name or inline theme can be set. 
 
     - **option 1** - _[string]_ - Name of an existing theme to apply to the explore view.
 
