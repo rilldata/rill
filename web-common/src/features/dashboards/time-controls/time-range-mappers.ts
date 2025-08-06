@@ -46,7 +46,7 @@ const PreviousCompleteRangeReverseMap: Record<string, TimeRangePreset> = {};
 for (const preset in PreviousCompleteRangeMap) {
   const range: V1TimeRange = PreviousCompleteRangeMap[preset];
   PreviousCompleteRangeReverseMap[
-    `${range.isoDuration}_${range.isoOffset}_${range.roundToGrain}`
+    `${range.isoDuration}_${range.isoOffset ?? ""}_${range.roundToGrain}`
   ] = preset as TimeRangePreset;
 }
 

@@ -1,6 +1,6 @@
 <script lang="ts">
   import {
-    createAdminServiceListOrganizationMemberUsers,
+    createAdminServiceListOrganizationMemberUsersInfinite,
     createAdminServiceUpdateOrganization,
     getAdminServiceGetOrganizationQueryKey,
   } from "@rilldata/web-admin/client";
@@ -15,14 +15,34 @@
   export let organization: string;
   export let currentBillingContact: string | undefined;
 
-  $: adminUsers = createAdminServiceListOrganizationMemberUsers(organization, {
-    role: OrgUserRoles.Admin,
-  });
-  $: selectableUsers =
-    $adminUsers.data?.members?.map((u) => ({
-      value: u.userEmail,
-      label: u.userName ? `${u.userName} (${u.userEmail})` : u.userEmail,
-    })) ?? [];
+  const PAGE_SIZE = 20;
+
+  $: adminUsersInfinite = createAdminServiceListOrganizationMemberUsersInfinite(
+    organization,
+    {
+      role: OrgUserRoles.Admin,
+      pageSize: PAGE_SIZE,
+    },
+    {
+      query: {
+        getNextPageParam: (lastPage) => {
+          if (lastPage.nextPageToken !== "") {
+            return lastPage.nextPageToken;
+          }
+          return undefined;
+        },
+      },
+    },
+  );
+
+  // Flatten all pages of admin users
+  $: allAdminUsers =
+    $adminUsersInfinite.data?.pages.flatMap((page) => page.members ?? []) ?? [];
+
+  $: selectableUsers = allAdminUsers.map((u) => ({
+    value: u.userEmail,
+    label: u.userName ? `${u.userName} (${u.userEmail})` : u.userEmail,
+  }));
   $: selectedBillingContact = currentBillingContact ?? "";
   $: selectedDifferntBillingContact =
     currentBillingContact !== selectedBillingContact;
@@ -30,7 +50,7 @@
   const updateOrg = createAdminServiceUpdateOrganization();
 
   async function handleAssignAsBillingContact() {
-    const selectedBillingContactUser = $adminUsers.data?.members?.find(
+    const selectedBillingContactUser = allAdminUsers.find(
       (u) => u.userEmail === selectedBillingContact,
     );
     const selectedBillingContactName =

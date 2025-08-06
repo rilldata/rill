@@ -9,8 +9,17 @@
     Axis,
     Grid,
   } from "@rilldata/web-common/components/data-graphic/guides";
+  import Annotations from "@rilldata/web-common/components/data-graphic/marks/Annotations.svelte";
+  import AnnotationGroupPopover from "@rilldata/web-common/components/data-graphic/marks/AnnotationGroupPopover.svelte";
+  import {
+    type Annotation,
+    AnnotationsStore,
+  } from "@rilldata/web-common/components/data-graphic/marks/annotations.ts";
   import { ScaleType } from "@rilldata/web-common/components/data-graphic/state";
-  import type { ScaleStore } from "@rilldata/web-common/components/data-graphic/state/types";
+  import type {
+    ScaleStore,
+    SimpleConfigurationStore,
+  } from "@rilldata/web-common/components/data-graphic/state/types";
   import { ComparisonDeltaPreviousSuffix } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
@@ -29,6 +38,7 @@
   import { extent } from "d3-array";
   import { getContext } from "svelte";
   import { cubicOut } from "svelte/easing";
+  import type { Readable } from "svelte/store";
   import { fly } from "svelte/transition";
   import {
     type DashboardTimeControls,
@@ -61,6 +71,7 @@
   export let showTimeDimensionDetail: boolean;
   export let data: TimeSeriesDatum[];
   export let dimensionData: DimensionDataItem[] = [];
+  export let annotations: Readable<Annotation[]> | undefined = undefined;
   export let xAccessor = "ts";
   export let labelAccessor = "label";
   export let yAccessor = "value";
@@ -87,11 +98,15 @@
 
   const tweenProps = { duration: 400, easing: cubicOut };
   const xScale = getContext<ScaleStore>(contexts.scale("x"));
+  const plotConfig = getContext<SimpleConfigurationStore>(contexts.config);
 
   let hovered: boolean = false;
   let scrub;
   let cursorClass;
   let preventScrubReset;
+
+  const annotationsStore = new AnnotationsStore();
+  $: annotationsStore.updateData($annotations ?? [], $xScale, $plotConfig);
 
   $: hoveredTime =
     (mouseoverValue?.x instanceof Date && mouseoverValue?.x) ||
@@ -252,6 +267,7 @@
 <div class={`${cursorClass} select-none`}>
   <SimpleDataGraphic
     bind:hovered
+    let:mouseOverThisChart
     bind:mouseoverValue
     {height}
     left={0}
@@ -388,5 +404,12 @@
       stop={scrubEnd}
       timeGrainLabel={TIME_GRAIN[timeGrain].label}
     />
+
+    {#if annotations && $annotations}
+      <Annotations {annotationsStore} {mouseoverValue} {mouseOverThisChart} />
+    {/if}
   </SimpleDataGraphic>
+
+  <!-- Contains non-svg elements. So keep it outside SimpleDataGraphic -->
+  <AnnotationGroupPopover {annotationsStore} />
 </div>
