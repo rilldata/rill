@@ -26,7 +26,7 @@ _[object]_ - OpenAPI specification for the API endpoint
 
 ### `security`
 
-_[object]_ - Defines security rules and access control policies for resources 
+_[object]_ - Defines [security rules and access control policies](/manage/security) for resources 
 
   - **`access`** - _[oneOf]_ - Expression indicating if the user should be granted access to the dashboard. If not defined, it will resolve to false and the dashboard won't be accessible to anyone. Needs to be a valid SQL expression that evaluates to a boolean. 
 
@@ -162,22 +162,3 @@ _[object]_ - Based on resource status _(required)_
 resource_status:
   where_error: true
 ```
-
-
-## Common Properties
-
-### `name`
-
-_[string]_ - Name is usually inferred from the filename, but can be specified manually. 
-
-### `refs`
-
-_[array of string]_ - List of resource references 
-
-### `dev`
-
-_[object]_ - Overrides any properties in development environment. 
-
-### `prod`
-
-_[object]_ - Overrides any properties in production environment. 

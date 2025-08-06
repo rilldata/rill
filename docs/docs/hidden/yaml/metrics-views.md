@@ -16,6 +16,10 @@ _[string]_ - The version of the metrics view schema
 
 _[string]_ - Refers to the resource type and must be `metrics_view` _(required)_
 
+### `connector`
+
+_[string]_ - Refers to the connector type for the metrics view, see [OLAP engines](/build/olap) for more information 
+
 ### `display_name`
 
 _[string]_ - Refers to the display name for the metrics view 
@@ -26,7 +30,7 @@ _[string]_ - Refers to the description for the metrics view
 
 ### `ai_instructions`
 
-_[string]_ - Extra instructions for AI agents. Used to guide natural language question answering and routing. 
+_[string]_ - Extra instructions for [AI agents](/explore/mcp). Used to guide natural language question answering and routing. 
 
 ### `model`
 
@@ -136,7 +140,7 @@ _[array of object]_ - Used to define the numeric aggregates of columns from your
 
         - **`time_grain`** - _[string]_ - Time grain for time-based dimensions. 
 
-  - **`requires`** - _[anyOf]_ - using an available measure or dimension in your metrics view to set a required parameter, cannot be used with simple measures 
+  - **`requires`** - _[anyOf]_ - using an available measure or dimension in your metrics view to set a required parameter, cannot be used with simple measures. See [referencing measures](/build/metrics-view/advanced-expressions/referencing) for more information. 
 
     - **option 1** - _[string]_ - Simple field name as a string.
 
@@ -212,7 +216,7 @@ _[array of object]_ - Used to define annotations that can be displayed on charts
 
 ### `security`
 
-_[object]_ - Defines security rules and access control policies for resources 
+_[object]_ - Defines [security rules and access control policies](/manage/security) for resources 
 
   - **`access`** - _[oneOf]_ - Expression indicating if the user should be granted access to the dashboard. If not defined, it will resolve to false and the dashboard won't be accessible to anyone. Needs to be a valid SQL expression that evaluates to a boolean. 
 

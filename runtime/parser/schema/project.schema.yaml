@@ -421,6 +421,9 @@ oneOf:
             type: string
             const: metrics_view
             description: Refers to the resource type and must be `metrics_view`
+          connector:
+            type: string
+            description: Refers to the connector type for the metrics view, see [OLAP engines](/build/olap) for more information
           display_name:
             type: string
             description: Refers to the display name for the metrics view
@@ -429,7 +432,7 @@ oneOf:
             description: Refers to the description for the metrics view
           ai_instructions:
             type: string
-            description: Extra instructions for AI agents. Used to guide natural language question answering and routing.
+            description: Extra instructions for [AI agents](/explore/mcp). Used to guide natural language question answering and routing.
           model:
             type: string
             description: Refers to the model powering the dashboard (either model or table is required)
@@ -543,7 +546,7 @@ oneOf:
                   description: for per dimensions
                 requires:
                   $ref: '#/definitions/field_selectors_properties'
-                  description: using an available measure or dimension in your metrics view to set a required parameter, cannot be used with simple measures
+                  description: using an available measure or dimension in your metrics view to set a required parameter, cannot be used with simple measures. See [referencing measures](/build/metrics-view/advanced-expressions/referencing) for more information.
                 valid_percent_of_total:
                   type: boolean
                   description: a boolean indicating whether percent-of-total values should be rendered for this measure
@@ -1117,7 +1120,7 @@ oneOf:
         required:
           - type
       - $ref: '#/definitions/data_properties'
-      - $ref: '#/definitions/common_properties'
+      # - $ref: '#/definitions/common_properties'
 
   # Themes
   - title: Theme YAML
@@ -1176,7 +1179,7 @@ oneOf:
             description: Optional feature flags. Can be specified as a map of feature names to booleans.
           ai_instructions:
             type: string
-            description: Extra instructions for LLM/AI features. Used to guide natural language question answering and routing.
+            description: Extra instructions for [AI agents](/explore/mcp). Used to guide natural language question answering and routing.
       - title: Configuring the default OLAP Engine  
         description: |
           Rill allows you to specify the default OLAP engine to use in your project via `rill.yaml`.
@@ -1187,7 +1190,7 @@ oneOf:
         properties:
           olap_connector:
             type: string
-            description: Specifies the default OLAP engine for the project. Defaults to duckdb if not set.
+            description: Specifies the [default OLAP engine](/build/olap) for the project. Defaults to duckdb if not set.
             examples: 
             - olap_connector: clickhouse
       - title: Project-wide defaults
@@ -1592,7 +1595,7 @@ definitions:
         description: 'If true, allows the schedule to run in development mode.'
   security_policy_properties:
     type: object
-    description: Defines security rules and access control policies for resources
+    description: Defines [security rules and access control policies](/manage/security) for resources
     properties:
       access:
         oneOf:
@@ -1689,7 +1692,7 @@ definitions:
 
   dashboard_security_policy_properties:
     type: object
-    description: Defines security rules and access control policies for dashboards (without row filtering)
+    description: Defines [security rules and access control policies](/manage/security) for dashboards (without row filtering)
     properties:
       access:
         oneOf:

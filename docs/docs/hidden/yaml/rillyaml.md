@@ -26,7 +26,7 @@ _[object]_ - Optional feature flags. Can be specified as a map of feature names 
 
 ### `ai_instructions`
 
-_[string]_ - Extra instructions for LLM/AI features. Used to guide natural language question answering and routing. 
+_[string]_ - Extra instructions for [AI agents](/explore/mcp). Used to guide natural language question answering and routing. 
 
 ## Configuring the default OLAP Engine
 
@@ -38,7 +38,7 @@ Please see our reference documentation on [OLAP Engines](/docs/reference/olap-en
 
 ### `olap_connector`
 
-_[string]_ - Specifies the default OLAP engine for the project. Defaults to duckdb if not set. 
+_[string]_ - Specifies the [default OLAP engine](/build/olap) for the project. Defaults to duckdb if not set. 
 
 ```yaml
 olap_connector: clickhouse
