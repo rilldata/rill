@@ -18,21 +18,21 @@ import (
 
 // MetricsViewYAML is the raw structure of a MetricsView resource defined in YAML
 type MetricsViewYAML struct {
-	commonYAML        `yaml:",inline"` // Not accessed here, only setting it so we can use KnownFields for YAML parsing
-	Parent            string           `yaml:"parent"` // Parent metrics view, if any
-	DisplayName       string           `yaml:"display_name"`
-	Title             string           `yaml:"title"` // Deprecated: use display_name
-	Description       string           `yaml:"description"`
-	AIInstructions    string           `yaml:"ai_instructions"`
-	Model             string           `yaml:"model"`
-	Database          string           `yaml:"database"`
-	DatabaseSchema    string           `yaml:"database_schema"`
-	Table             string           `yaml:"table"`
-	TimeDimension     string           `yaml:"timeseries"`
-	Watermark         string           `yaml:"watermark"`
-	SmallestTimeGrain string           `yaml:"smallest_time_grain"`
-	FirstDayOfWeek    uint32           `yaml:"first_day_of_week"`
-	FirstMonthOfYear  uint32           `yaml:"first_month_of_year"`
+	commonYAML        `yaml:",inline"`       // Not accessed here, only setting it so we can use KnownFields for YAML parsing
+	Parent            string `yaml:"parent"` // Parent metrics view, if any
+	DisplayName       string `yaml:"display_name"`
+	Title             string `yaml:"title"` // Deprecated: use display_name
+	Description       string `yaml:"description"`
+	AIInstructions    string `yaml:"ai_instructions"`
+	Model             string `yaml:"model"`
+	Database          string `yaml:"database"`
+	DatabaseSchema    string `yaml:"database_schema"`
+	Table             string `yaml:"table"`
+	TimeDimension     string `yaml:"timeseries"`
+	Watermark         string `yaml:"watermark"`
+	SmallestTimeGrain string `yaml:"smallest_time_grain"`
+	FirstDayOfWeek    uint32 `yaml:"first_day_of_week"`
+	FirstMonthOfYear  uint32 `yaml:"first_month_of_year"`
 	Dimensions        []*struct {
 		Name                    string
 		DisplayName             string `yaml:"display_name"`
@@ -645,7 +645,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 	}
 
 	// validate and insert inline explore, if true and no error is returned from the method then an explore resource is created so no error should be returned after this point
-	skipExplore, exploreRes, err := p.parseInlineExplore(tmp, node.Name, node.Paths)
+	skipExplore, exploreRes, err := p.parseAndInsertInlineExplore(tmp, node.Name, node.Paths)
 	if err != nil {
 		return fmt.Errorf("failed to parse inline explore: %w", err)
 	}
@@ -655,7 +655,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 	if err != nil {
 		// If we fail to insert the metrics view, we must delete the inline explore if it was created.
 		if exploreRes != nil {
-			p.deleteResource(exploreRes)
+			panic(fmt.Sprintf("failed to insert metrics view %q, but inline explore was created: %s", node.Name, exploreRes.Name))
 		}
 		return err
 	}
@@ -786,8 +786,8 @@ func (p *Parser) parseMetricsView(node *Node) error {
 	return nil
 }
 
-// parseInlineExplore parses and validates the inline explore definition in a metrics view YAML. It returns true if automatic explore emission should be skipped, false otherwise.
-func (p *Parser) parseInlineExplore(tmp *MetricsViewYAML, mvName string, mvPaths []string) (bool, *Resource, error) {
+// parseAndInsertInlineExplore parses and validates the inline explore definition in a metrics view YAML. It returns true if automatic explore emission should be skipped, false otherwise.
+func (p *Parser) parseAndInsertInlineExplore(tmp *MetricsViewYAML, mvName string, mvPaths []string) (bool, *Resource, error) {
 	if tmp.Explore == nil {
 		return false, nil, nil
 	}

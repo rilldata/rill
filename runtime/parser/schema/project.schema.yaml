@@ -992,10 +992,10 @@ definitions:
             description: Refers to the metrics view resource
           dimensions:
             description: List of dimension names. Use '*' to select all dimensions (default) 
-            $ref: '#/definitions/explore/definitions/field_selector_properties'
+            $ref: '#/definitions/field_selector_properties'
           measures:
             description: List of measure names. Use ''*'' to select all measures (default)
-            $ref: '#/definitions/explore/definitions/field_selector_properties'
+            $ref: '#/definitions/field_selector_properties'
           theme:
             oneOf:
               - type: string
@@ -1025,10 +1025,10 @@ definitions:
             properties:
               dimensions:
                 description: Provides the default dimensions to load on viewing the dashboard
-                $ref: '#/definitions/explore/definitions/field_selector_properties'
+                $ref: '#/definitions/field_selector_properties'
               measures:
                 description: Provides the default measures to load on viewing the dashboard
-                $ref: '#/definitions/explore/definitions/field_selector_properties'
+                $ref: '#/definitions/field_selector_properties'
               time_range:
                 description: Refers to the default time range shown when a user initially loads the dashboard. The value must be either a valid [ISO 8601 duration](https://en.wikipedia.org/wiki/ISO_8601#Durations) (for example, PT12H for 12 hours, P1M for 1 month, or P26W for 26 weeks) or one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions)
                 type: string
@@ -1052,37 +1052,7 @@ definitions:
             $ref: '#/definitions/security_policy_properties'
         required:
           - type       
-      - $ref: '#/definitions/common_properties'  
-    definitions:
-      field_selector_properties:
-        oneOf:
-          - type: string
-            const: '*'
-            description: Wildcard(*) selector that includes all available fields in the selection
-          - type: array
-            items:
-              type: string
-            description: Explicit list of fields to include in the selection
-          - type: object
-            description: 'Advanced matching using regex, DuckDB expression, or exclusion'
-            properties:
-              regex:
-                type: string
-                description: Select dimensions using a regular expression
-              expr:
-                type: string
-                description: DuckDB SQL expression to select fields based on custom logic
-              exclude:
-                type: object
-                description: Select all dimensions except those listed here
-            additionalProperties: false
-            oneOf:
-              - required:
-                  - regex
-              - required:
-                  - expr
-              - required:
-                  - exclude 
+      - $ref: '#/definitions/common_properties'
   metrics_view:
     type: object
     title: Metrics View YAML
@@ -1245,49 +1215,20 @@ definitions:
             minItems: 1
           parent_dimensions:
             description: Optional field selectors for dimensions to inherit from the parent metrics view.
-            $ref: '#/definitions/fields_selector'
+            $ref: '#/definitions/field_selector_properties'
           parent_measures:
             description: Optional field selectors for measures to inherit from the parent metrics view.
-            $ref: '#/definitions/fields_selector'
+            $ref: '#/definitions/field_selector_properties'
           security:
             $ref: '#/definitions/security_policy_properties'
             description: Defines a security policy for the dashboard
           explore:
-            $ref: '#/definitions/explore_properties'
-            description: Defines an inline explore view for the metrics view
+            $ref: '#/definitions/metrics_view/definitions/explore_properties'
+            description: Defines an optional inline explore view for the metrics view. If not specified a default explore will be emitted unless `skip` is set to true.
         required:
           - type
       - $ref: '#/definitions/common_properties' 
     definitions:
-      fields_selector:
-        oneOf:
-          - type: string
-            const: '*'
-            description: Wildcard(*) selector that includes all available fields in the selection
-          - type: array
-            items:
-              type: string
-            description: Explicit list of fields to include in the selection
-          - type: object
-            description: 'Advanced matching using regex, DuckDB expression, or exclusion'
-            properties:
-              regex:
-                type: string
-                description: Select dimensions using a regular expression
-              expr:
-                type: string
-                description: DuckDB SQL expression to select fields based on custom logic
-              exclude:
-                type: object
-                description: Select all dimensions except those listed here
-            additionalProperties: false
-            oneOf:
-              - required:
-                  - regex
-              - required:
-                  - expr
-              - required:
-                  - exclude
       field_selectors_properties:
         anyOf:
           - type: string
@@ -1348,12 +1289,6 @@ definitions:
           banner:
             type: string
             description: Custom banner displayed at the header of the explore view.
-          dimensions:
-            description: List of dimension names. Use '*' to select all dimensions (default).
-            $ref: '#/definitions/explore/definitions/field_selector_properties'
-          measures:
-            description: List of measure names. Use '*' to select all measures (default).
-            $ref: '#/definitions/explore/definitions/field_selector_properties'
           theme:
             oneOf:
               - type: string
@@ -1382,10 +1317,10 @@ definitions:
             description: Preset UI state to show by default.
             properties:
               dimensions:
-                $ref: '#/definitions/explore/definitions/field_selector_properties'
+                $ref: '#/definitions/field_selector_properties'
                 description: Default dimensions to load on viewing the explore view.
               measures:
-                $ref: '#/definitions/explore/definitions/field_selector_properties'
+                $ref: '#/definitions/field_selector_properties'
                 description: Default measures to load on viewing the explore view.
               time_range:
                 type: string
@@ -1396,7 +1331,7 @@ definitions:
               comparison_dimension:
                 type: string
                 description: Default dimension to use for comparison when comparison_mode is 'dimension'.
-          additionalProperties: false
+            additionalProperties: false
           embeds:
             type: object
             description: Configuration options for embedded explore views.
@@ -1405,7 +1340,7 @@ definitions:
                 type: boolean
                 description: When true, hides the pivot table view in embedded mode.
             additionalProperties: false
-      additionalProperties: false
+        additionalProperties: false
   model:
     type: object
     title: Model YAML
@@ -2171,3 +2106,32 @@ definitions:
               description: SQL expression for row filtering (for row_filter type rules)
           required:
             - type
+  field_selector_properties:
+    oneOf:
+      - type: string
+        const: '*'
+        description: Wildcard(*) selector that includes all available fields in the selection
+      - type: array
+        items:
+          type: string
+        description: Explicit list of fields to include in the selection
+      - type: object
+        description: 'Advanced matching using regex, DuckDB expression, or exclusion'
+        properties:
+          regex:
+            type: string
+            description: Select fields using a regular expression
+          expr:
+            type: string
+            description: DuckDB SQL expression to select fields based on custom logic
+          exclude:
+            type: object
+            description: Select all fields except those listed here
+        additionalProperties: false
+        oneOf:
+          - required:
+              - regex
+          - required:
+              - expr
+          - required:
+              - exclude
