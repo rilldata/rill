@@ -50,48 +50,6 @@ _[array of object]_ - Refers to all of the rows displayed on the Canvas
 
     - **`width`** - _[string, integer]_ - Width of the component (can be a number or string with unit) 
 
-### `components`
-
-_[array of object]_ - Array of components to display on the canvas 
-
-  - **`type`** - _[string]_ - Type of component (chart, table, text, etc.) 
-
-  - **`title`** - _[string]_ - Title for the component 
-
-  - **`data`** - _[oneOf]_ - Data source for the component 
-
-      - **`sql`** - _[string]_ - Raw SQL query to run against existing models in the project. _(required)_
-
-      - **`connector`** - _[string]_ - specifies the connector to use when running SQL or glob queries. 
-
-      - **`metrics_sql`** - _[string]_ - SQL query that targets a metrics view in the project _(required)_
-
-      - **`api`** - _[string]_ - Name of a custom API defined in the project. _(required)_
-
-      - **`args`** - _[object]_ - Arguments to pass to the custom API. 
-
-      - **`glob`** - _[anyOf]_ - Defines the file path or pattern to query from the specified connector. _(required)_
-
-        - **option 1** - _[string]_ - A simple file path/glob pattern as a string.
-
-        - **option 2** - _[object]_ - An object-based configuration for specifying a file path/glob pattern with advanced options.
-
-      - **`connector`** - _[string]_ - Specifies the connector to use with the glob input. 
-
-      - **`resource_status`** - _[object]_ - Based on resource status _(required)_
-
-        - **`where_error`** - _[boolean]_ - Indicates whether the condition should trigger when the resource is in an error state. 
-
-```yaml
-resource_status:
-  where_error: true
-```
-
-
-  - **`layout`** - _[object]_ - Layout configuration for the component 
-
-  - **`style`** - _[object]_ - Styling configuration for the component 
-
 ### `max_width`
 
 _[integer]_ - Max width in pixels of the canvas 
@@ -114,7 +72,7 @@ _[boolean]_ - Defaults to true, when set to false it will hide the ability to se
 
 ### `time_ranges`
 
-_[array of oneOf]_ - Overrides the list of default time range selections available in the dropdown. It can be string or an object with a 'range' and optional 'comparison_offsets'
+_[array of anyOf]_ - Overrides the list of default time range selections available in the dropdown. It can be string or an object with a 'range' and optional 'comparison_offsets'
   ```yaml
   time_ranges:
     - PT15M // Simplified syntax to specify only the range
@@ -128,9 +86,17 @@ _[array of oneOf]_ - Overrides the list of default time range selections availab
   ```
  
 
+  - **option 1** - _[string]_ - a valid [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations) duration or one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) extensions for the selection
+
+  - **option 2** - _[object]_ - Object containing time range and comparison configuration
+
     - **`range`** - _[string]_ - a valid [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations) duration or one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) extensions for the selection _(required)_
 
-    - **`comparison_offsets`** - _[array of oneOf]_ - list of time comparison options for this time range selection (optional). Must be one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) 
+    - **`comparison_offsets`** - _[array of anyOf]_ - list of time comparison options for this time range selection (optional). Must be one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) 
+
+      - **option 1** - _[string]_ - Offset string only (range is inferred)
+
+      - **option 2** - _[object]_ - Object containing offset and range configuration for time comparison
 
         - **`offset`** - _[string]_ - Time offset for comparison (e.g., 'P1D' for one day ago) 
 
@@ -149,3 +115,21 @@ _[object]_ - Indicates if filters should be enabled for the canvas.
 _[object]_ - Defines security rules and access control policies for dashboards (without row filtering) 
 
   - **`access`** - _[oneOf]_ - Expression indicating if the user should be granted access to the dashboard. If not defined, it will resolve to false and the dashboard won't be accessible to anyone. Needs to be a valid SQL expression that evaluates to a boolean. 
+
+## Common Properties
+
+### `name`
+
+_[string]_ - Name is usually inferred from the filename, but can be specified manually. 
+
+### `refs`
+
+_[array of string]_ - List of resource references 
+
+### `dev`
+
+_[object]_ - Overrides any properties in development environment. 
+
+### `prod`
+
+_[object]_ - Overrides any properties in production environment. 

@@ -532,18 +532,18 @@ oneOf:
                           description: 'Controls whether the window is partitioned. When true, calculations are performed within each partition separately.'
                         order:
                           type: string
+                          $ref: '#/definitions/field_selectors_properties'
                           description: 'Specifies the fields to order the window by, determining the sequence of rows within each partition.'
                         frame:
                           type: string
                           description: 'Defines the window frame boundaries for calculations, specifying which rows are included in the window relative to the current row.'
                       additionalProperties: false
                 per:
-                  type: string
+                  $ref: '#/definitions/field_selectors_properties'
                   description: for per dimensions
                 requires:
-                  type: object
+                  $ref: '#/definitions/field_selectors_properties'
                   description: using an available measure or dimension in your metrics view to set a required parameter, cannot be used with simple measures
-                  additionalProperties: true
                 valid_percent_of_total:
                   type: boolean
                   description: a boolean indicating whether percent-of-total values should be rendered for this measure
@@ -559,9 +559,6 @@ oneOf:
                       - `currency_eur`: Round to 2 decimal points with a euro sign (€).
                       - `percentage`: Convert a rate into a percentage with a % sign.
                       - `interval_ms`: Convert milliseconds into human-readable durations like hours (h), days (d), years (y), etc. (optional)
-                format:
-                  type: string
-                  description: a custom format string for the measure
                 format_d3:
                   type: string
                   description: 'Controls the formatting of this measure using a [d3-format](https://d3js.org/d3-format) string. If an invalid format string is supplied, the measure will fall back to `format_preset: humanize`. A measure cannot have both `format_preset` and `format_d3`. If neither is provided, the humanize preset is used by default. Example: `format_d3: ".2f"` formats using fixed-point notation with two decimal places. Example: `format_d3: ",.2r"` formats using grouped thousands with two significant digits. (optional)'
@@ -582,34 +579,11 @@ oneOf:
                     currency:
                       type: array
                       description: the currency symbol
-                decimals:
-                  type: integer
-                  description: number of decimal places to display
-                prefix:
-                  type: string
-                  description: text to display before the measure value
-                suffix:
-                  type: string
-                  description: text to display after the measure value
-                multiplier:
-                  type: number
-                  description: multiply the measure value by this number
-                hidden:
-                  type: boolean
-                  description: if true, the measure will not be displayed in the UI
+
                 treat_nulls_as:
                   type: string
                   description: used to configure what value to fill in for missing time buckets. This also works generally as COALESCING over non empty time buckets.
-                drill_through:
-                  type: object
-                  description: configuration for drill-through functionality
-                  properties:
-                    enabled:
-                      type: boolean
-                      description: whether drill-through is enabled for this measure
-                    target:
-                      type: string
-                      description: the target dashboard or URL for drill-through
+                
               required:
                 - name
                 - display_name
@@ -751,29 +725,7 @@ oneOf:
                         description: Width of the component (can be a number or string with unit)
                     additionalProperties: true
               additionalProperties: false
-          components:
-            type: array
-            description: Array of components to display on the canvas
-            items:
-              type: object
-              properties:
-                type:
-                  type: string
-                  description: Type of component (chart, table, text, etc.)
-                title:
-                  type: string
-                  description: Title for the component
-                data:
-                  $ref: '#/definitions/data_properties'
-                  description: Data source for the component
-                layout:
-                  type: object
-                  description: Layout configuration for the component
-                  additionalProperties: true
-                style:
-                  type: object
-                  description: Styling configuration for the component
-                  additionalProperties: true
+         
           max_width:
             type: integer
             description: Max width in pixels of the canvas
@@ -830,6 +782,7 @@ oneOf:
         required:
           - type
           - display_name
+      - $ref: '#/definitions/common_properties'
 
   # Explore Dashboards
   - title: Explore Dashboard YAML
@@ -873,88 +826,10 @@ oneOf:
               dimensions:
               regex: "^public_.*$"
               ```
-            anyOf:
-              - type: string
-                description: Simple field name as a string.
-              - type: array
-                description: List of field selectors, each can be a string or an object with detailed configuration.
-                items:
-                  anyOf:
-                    - type: string
-                      description: Shorthand field selector, interpreted as the name.
-                    - type: object
-                      description: Detailed field selector configuration with name and optional time grain.
-                      properties:
-                        name:
-                          type: string
-                          description: Name of the field to select.
-                        time_grain:
-                          type: string
-                          description: Time grain for time-based dimensions.
-                          enum:
-                            - ''
-                            - ms
-                            - millisecond
-                            - s
-                            - second
-                            - min
-                            - minute
-                            - h
-                            - hour
-                            - d
-                            - day
-                            - w
-                            - week
-                            - month
-                            - q
-                            - quarter
-                            - 'y'
-                            - year
-                      required:
-                        - name
-                      additionalProperties: false
+            $ref: '#/definitions/field_selector_properties'
           measures:
             description: List of measure names. Use '*' to select all measures (default)
-            anyOf:
-              - type: string
-                description: Simple field name as a string.
-              - type: array
-                description: List of field selectors, each can be a string or an object with detailed configuration.
-                items:
-                  anyOf:
-                    - type: string
-                      description: Shorthand field selector, interpreted as the name.
-                    - type: object
-                      description: Detailed field selector configuration with name and optional time grain.
-                      properties:
-                        name:
-                          type: string
-                          description: Name of the field to select.
-                        time_grain:
-                          type: string
-                          description: Time grain for time-based dimensions.
-                          enum:
-                            - ''
-                            - ms
-                            - millisecond
-                            - s
-                            - second
-                            - min
-                            - minute
-                            - h
-                            - hour
-                            - d
-                            - day
-                            - w
-                            - week
-                            - month
-                            - q
-                            - quarter
-                            - 'y'
-                            - year
-                      required:
-                        - name
-                      additionalProperties: false
+            $ref: '#/definitions/field_selector_properties'
           theme:
             oneOf:
               - title: Existing theme
@@ -1014,88 +889,10 @@ oneOf:
             properties:
               dimensions:
                 description: Provides the default dimensions to load on viewing the dashboard
-                anyOf:
-                  - type: string
-                    description: Simple field name as a string.
-                  - type: array
-                    description: List of field selectors, each can be a string or an object with detailed configuration.
-                    items:
-                      anyOf:
-                        - type: string
-                          description: Shorthand field selector, interpreted as the name.
-                        - type: object
-                          description: Detailed field selector configuration with name and optional time grain.
-                          properties:
-                            name:
-                              type: string
-                              description: Name of the field to select.
-                            time_grain:
-                              type: string
-                              description: Time grain for time-based dimensions.
-                              enum:
-                                - ''
-                                - ms
-                                - millisecond
-                                - s
-                                - second
-                                - min
-                                - minute
-                                - h
-                                - hour
-                                - d
-                                - day
-                                - w
-                                - week
-                                - month
-                                - q
-                                - quarter
-                                - 'y'
-                                - year
-                          required:
-                            - name
-                          additionalProperties: false
+                $ref: '#/definitions/field_selector_properties'
               measures:
                 description: Provides the default measures to load on viewing the dashboard
-                anyOf:
-                  - type: string
-                    description: Simple field name as a string.
-                  - type: array
-                    description: List of field selectors, each can be a string or an object with detailed configuration.
-                    items:
-                      anyOf:
-                        - type: string
-                          description: Shorthand field selector, interpreted as the name.
-                        - type: object
-                          description: Detailed field selector configuration with name and optional time grain.
-                          properties:
-                            name:
-                              type: string
-                              description: Name of the field to select.
-                            time_grain:
-                              type: string
-                              description: Time grain for time-based dimensions.
-                              enum:
-                                - ''
-                                - ms
-                                - millisecond
-                                - s
-                                - second
-                                - min
-                                - minute
-                                - h
-                                - hour
-                                - d
-                                - day
-                                - w
-                                - week
-                                - month
-                                - q
-                                - quarter
-                                - 'y'
-                                - year
-                          required:
-                            - name
-                          additionalProperties: false
+                $ref: '#/definitions/field_selector_properties'
               time_range:
                 description: Refers to the default time range shown when a user initially loads the dashboard. The value must be either a valid [ISO 8601 duration](https://en.wikipedia.org/wiki/ISO_8601#Durations) (for example, PT12H for 12 hours, P1M for 1 month, or P26W for 26 weeks) or one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions)
                 type: string
@@ -1114,20 +911,7 @@ oneOf:
                 type: boolean
                 description: When true, hides the pivot table view in embedded mode
             additionalProperties: false
-          filters:
-            type: array
-            description: Default filters to apply to the dashboard
-            items:
-              type: object
-              properties:
-                dimension:
-                  type: string
-                  description: Dimension to filter on
-                value:
-                  description: Value to filter by
-                operator:
-                  type: string
-                  description: Filter operator (eq, ne, in, etc.)
+        
           security:
             description: Security rules to apply for access to the explore dashboard
             $ref: '#/definitions/dashboard_security_policy_properties'
@@ -1135,6 +919,7 @@ oneOf:
           - type
           - display_name
           - metrics_view
+      - $ref: '#/definitions/common_properties'
 
   # Alerts
   - title: Alert YAML
@@ -1338,7 +1123,11 @@ oneOf:
   - title: Theme YAML
     id: themes
     type: object
-    description: Themes allow you to customize the appearance of your dashboards and UI components.
+    description: | 
+      In your Rill project directory, create a `<theme_name>.yaml` file in any directory containing `type: theme`. Rill will automatically ingest the theme next time you run `rill start` or deploy to Rill Cloud.
+      
+      To apply that theme to a dashboard, add `default_theme: <name of theme>` to the yaml file for that dashboard. Alternatively, you can add this to the end of the URL in your browser: `?theme=<name of theme>`
+
     allOf:
       - title: Properties
         type: object
@@ -1347,12 +1136,6 @@ oneOf:
             type: string
             const: theme
             description: Refers to the resource type and must be `theme`
-          display_name:
-            type: string
-            description: Display name for the theme
-          description:
-            type: string
-            description: Description for the theme
           colors:
             type: object
             description: Color palette for the theme
@@ -1363,31 +1146,8 @@ oneOf:
               secondary:
                 type: string
                 description: Secondary color
-              accent:
-                type: string
-                description: Accent color
-              background:
-                type: string
-                description: Background color
-              text:
-                type: string
-                description: Text color
             additionalProperties: true
-          fonts:
-            type: object
-            description: Font configuration for the theme
-            properties:
-              family:
-                type: string
-                description: Font family
-              size:
-                type: string
-                description: Base font size
-            additionalProperties: true
-          spacing:
-            type: object
-            description: Spacing configuration for the theme
-            additionalProperties: true
+      
         required:
           - type
           - display_name
@@ -1734,7 +1494,7 @@ definitions:
             where_error: true
           ```
   explore_time_range_properties:
-    oneOf:
+    anyOf:
       - type: string
         description: a valid [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations) duration or one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) extensions for the selection
       - type: object
@@ -1747,7 +1507,7 @@ definitions:
             type: array
             description: list of time comparison options for this time range selection (optional). Must be one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions)
             items:
-              oneOf:
+              anyOf:
                 - type: string
                   description: Offset string only (range is inferred)
                 - type: object
@@ -2599,3 +2359,77 @@ definitions:
       - dsn
       - driver
       - dsn
+  field_selectors_properties:
+    anyOf:
+      - type: string
+        description: 'Simple field name as a string.'
+      - type: array
+        description: 'List of field selectors, each can be a string or an object with detailed configuration.'
+        items:
+          anyOf:
+            - type: string
+              description: 'Shorthand field selector, interpreted as the name.'
+            - type: object
+              description: 'Detailed field selector configuration with name and optional time grain.'
+              properties:
+                name:
+                  type: string
+                  description: 'Name of the field to select.'
+                time_grain:
+                  type: string
+                  description: 'Time grain for time-based dimensions.'
+                  enum:
+                    - ''
+                    - ms
+                    - millisecond
+                    - s
+                    - second
+                    - min
+                    - minute
+                    - h
+                    - hour
+                    - d
+                    - day
+                    - w
+                    - week
+                    - month
+                    - q
+                    - quarter
+                    - 'y'
+                    - year
+              required:
+                - name
+              additionalProperties: false
+        minItems: 1 
+  field_selector_properties:
+    anyOf:
+      - title: Wildcard(*) selector
+        type: string
+        const: '*'
+        description: Wildcard(*) selector that includes all available fields in the selection
+      - title: Explicit list of fields
+        type: array
+        items:
+          type: string
+        description: Explicit list of fields to include in the selection
+      - title: Regex matching
+        type: object
+        description: 'Advanced matching using regex, DuckDB expression, or exclusion'
+        properties:
+          regex:
+            type: string
+            description: Select dimensions using a regular expression
+          expr:
+            type: string
+            description: DuckDB SQL expression to select fields based on custom logic
+          exclude:
+            type: object
+            description: Select all dimensions except those listed here
+        additionalProperties: false
+        oneOf:
+          - required:
+              - regex
+          - required:
+              - expr
+          - required:
+              - exclude

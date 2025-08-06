@@ -47,33 +47,33 @@ _[anyOf]_ - List of dimension names. Use '*' to select all dimensions (default)
  ```
  
 
-  - **option 1** - _[string]_ - Simple field name as a string.
+  - **option 1** - _[string]_ - Wildcard(*) selector that includes all available fields in the selection
 
-  - **option 2** - _[array of anyOf]_ - List of field selectors, each can be a string or an object with detailed configuration.
+  - **option 2** - _[array of string]_ - Explicit list of fields to include in the selection
 
-    - **option 1** - _[string]_ - Shorthand field selector, interpreted as the name.
+  - **option 3** - _[object]_ - Advanced matching using regex, DuckDB expression, or exclusion
 
-    - **option 2** - _[object]_ - Detailed field selector configuration with name and optional time grain.
+    - **`regex`** - _[string]_ - Select dimensions using a regular expression 
 
-      - **`name`** - _[string]_ - Name of the field to select. _(required)_
+    - **`expr`** - _[string]_ - DuckDB SQL expression to select fields based on custom logic 
 
-      - **`time_grain`** - _[string]_ - Time grain for time-based dimensions. 
+    - **`exclude`** - _[object]_ - Select all dimensions except those listed here 
 
 ### `measures`
 
 _[anyOf]_ - List of measure names. Use '*' to select all measures (default) 
 
-  - **option 1** - _[string]_ - Simple field name as a string.
+  - **option 1** - _[string]_ - Wildcard(*) selector that includes all available fields in the selection
 
-  - **option 2** - _[array of anyOf]_ - List of field selectors, each can be a string or an object with detailed configuration.
+  - **option 2** - _[array of string]_ - Explicit list of fields to include in the selection
 
-    - **option 1** - _[string]_ - Shorthand field selector, interpreted as the name.
+  - **option 3** - _[object]_ - Advanced matching using regex, DuckDB expression, or exclusion
 
-    - **option 2** - _[object]_ - Detailed field selector configuration with name and optional time grain.
+    - **`regex`** - _[string]_ - Select dimensions using a regular expression 
 
-      - **`name`** - _[string]_ - Name of the field to select. _(required)_
+    - **`expr`** - _[string]_ - DuckDB SQL expression to select fields based on custom logic 
 
-      - **`time_grain`** - _[string]_ - Time grain for time-based dimensions. 
+    - **`exclude`** - _[object]_ - Select all dimensions except those listed here 
 
 ### `theme`
 
@@ -81,11 +81,19 @@ _[oneOf]_ - Name of the theme to use. Only one of theme and embedded_theme can b
 
 ### `time_range`
 
-_[oneOf]_ - Default time range for the dashboard 
+_[anyOf]_ - Default time range for the dashboard 
+
+  - **option 1** - _[string]_ - a valid [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations) duration or one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) extensions for the selection
+
+  - **option 2** - _[object]_ - Object containing time range and comparison configuration
 
     - **`range`** - _[string]_ - a valid [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations) duration or one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) extensions for the selection _(required)_
 
-    - **`comparison_offsets`** - _[array of oneOf]_ - list of time comparison options for this time range selection (optional). Must be one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) 
+    - **`comparison_offsets`** - _[array of anyOf]_ - list of time comparison options for this time range selection (optional). Must be one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) 
+
+      - **option 1** - _[string]_ - Offset string only (range is inferred)
+
+      - **option 2** - _[object]_ - Object containing offset and range configuration for time comparison
 
         - **`offset`** - _[string]_ - Time offset for comparison (e.g., 'P1D' for one day ago) 
 
@@ -93,7 +101,7 @@ _[oneOf]_ - Default time range for the dashboard
 
 ### `time_ranges`
 
-_[array of oneOf]_ - Overrides the list of default time range selections available in the dropdown. It can be string or an object with a 'range' and optional 'comparison_offsets'
+_[array of anyOf]_ - Overrides the list of default time range selections available in the dropdown. It can be string or an object with a 'range' and optional 'comparison_offsets'
   ```yaml
   time_ranges:
     - PT15M // Simplified syntax to specify only the range
@@ -107,9 +115,17 @@ _[array of oneOf]_ - Overrides the list of default time range selections availab
   ```
  
 
+  - **option 1** - _[string]_ - a valid [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations) duration or one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) extensions for the selection
+
+  - **option 2** - _[object]_ - Object containing time range and comparison configuration
+
     - **`range`** - _[string]_ - a valid [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations) duration or one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) extensions for the selection _(required)_
 
-    - **`comparison_offsets`** - _[array of oneOf]_ - list of time comparison options for this time range selection (optional). Must be one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) 
+    - **`comparison_offsets`** - _[array of anyOf]_ - list of time comparison options for this time range selection (optional). Must be one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) 
+
+      - **option 1** - _[string]_ - Offset string only (range is inferred)
+
+      - **option 2** - _[object]_ - Object containing offset and range configuration for time comparison
 
         - **`offset`** - _[string]_ - Time offset for comparison (e.g., 'P1D' for one day ago) 
 
@@ -146,31 +162,31 @@ _[object]_ - defines the defaults YAML struct
 
   - **`dimensions`** - _[anyOf]_ - Provides the default dimensions to load on viewing the dashboard 
 
-    - **option 1** - _[string]_ - Simple field name as a string.
+    - **option 1** - _[string]_ - Wildcard(*) selector that includes all available fields in the selection
 
-    - **option 2** - _[array of anyOf]_ - List of field selectors, each can be a string or an object with detailed configuration.
+    - **option 2** - _[array of string]_ - Explicit list of fields to include in the selection
 
-      - **option 1** - _[string]_ - Shorthand field selector, interpreted as the name.
+    - **option 3** - _[object]_ - Advanced matching using regex, DuckDB expression, or exclusion
 
-      - **option 2** - _[object]_ - Detailed field selector configuration with name and optional time grain.
+      - **`regex`** - _[string]_ - Select dimensions using a regular expression 
 
-        - **`name`** - _[string]_ - Name of the field to select. _(required)_
+      - **`expr`** - _[string]_ - DuckDB SQL expression to select fields based on custom logic 
 
-        - **`time_grain`** - _[string]_ - Time grain for time-based dimensions. 
+      - **`exclude`** - _[object]_ - Select all dimensions except those listed here 
 
   - **`measures`** - _[anyOf]_ - Provides the default measures to load on viewing the dashboard 
 
-    - **option 1** - _[string]_ - Simple field name as a string.
+    - **option 1** - _[string]_ - Wildcard(*) selector that includes all available fields in the selection
 
-    - **option 2** - _[array of anyOf]_ - List of field selectors, each can be a string or an object with detailed configuration.
+    - **option 2** - _[array of string]_ - Explicit list of fields to include in the selection
 
-      - **option 1** - _[string]_ - Shorthand field selector, interpreted as the name.
+    - **option 3** - _[object]_ - Advanced matching using regex, DuckDB expression, or exclusion
 
-      - **option 2** - _[object]_ - Detailed field selector configuration with name and optional time grain.
+      - **`regex`** - _[string]_ - Select dimensions using a regular expression 
 
-        - **`name`** - _[string]_ - Name of the field to select. _(required)_
+      - **`expr`** - _[string]_ - DuckDB SQL expression to select fields based on custom logic 
 
-        - **`time_grain`** - _[string]_ - Time grain for time-based dimensions. 
+      - **`exclude`** - _[object]_ - Select all dimensions except those listed here 
 
   - **`time_range`** - _[string]_ - Refers to the default time range shown when a user initially loads the dashboard. The value must be either a valid [ISO 8601 duration](https://en.wikipedia.org/wiki/ISO_8601#Durations) (for example, PT12H for 12 hours, P1M for 1 month, or P26W for 26 weeks) or one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) 
 
@@ -184,18 +200,26 @@ _[object]_ - Configuration options for embedded dashboard views
 
   - **`hide_pivot`** - _[boolean]_ - When true, hides the pivot table view in embedded mode 
 
-### `filters`
-
-_[array of object]_ - Default filters to apply to the dashboard 
-
-  - **`dimension`** - _[string]_ - Dimension to filter on 
-
-  - **`value`** - _[no type]_ - Value to filter by 
-
-  - **`operator`** - _[string]_ - Filter operator (eq, ne, in, etc.) 
-
 ### `security`
 
 _[object]_ - Defines security rules and access control policies for dashboards (without row filtering) 
 
   - **`access`** - _[oneOf]_ - Expression indicating if the user should be granted access to the dashboard. If not defined, it will resolve to false and the dashboard won't be accessible to anyone. Needs to be a valid SQL expression that evaluates to a boolean. 
+
+## Common Properties
+
+### `name`
+
+_[string]_ - Name is usually inferred from the filename, but can be specified manually. 
+
+### `refs`
+
+_[array of string]_ - List of resource references 
+
+### `dev`
+
+_[object]_ - Overrides any properties in development environment. 
+
+### `prod`
+
+_[object]_ - Overrides any properties in production environment. 
