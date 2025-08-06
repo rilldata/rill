@@ -401,21 +401,18 @@ const config = {
             to: '/other/granting/google-bigquery'
           },
           {
-            from: '/manage/granting/granting',
-            to: '/other/granting/granting'
+            from: '/manage/granting/aws-s3-bucket',
+            to: '/other/granting/aws-s3-bucket'
           },
           {
-            from: '/manage/granting/snowflake-warehouse',
-            to: '/other/granting/snowflake-warehouse'
+            from: '/manage/granting/',
+            to: '/other/granting/'
           },
+
           {
             from: '/home/FAQ',
             to: '/other/FAQ'
           },
-
-
-
-
           // {
           //   from: '/old-page',
           //   to: '/new-page',
