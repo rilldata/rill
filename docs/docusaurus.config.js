@@ -384,7 +384,38 @@ const config = {
             from: '/deploy/templating',
             to: '/connect/templating'
           },
-          // Example: Add new redirects here
+          {
+            from: '/manage/account-management/billing',
+            to: '/other/account-management/billing'
+          },
+          {
+            from: '/manage/granting/azure-storage-container',
+            to: '/other/granting/azure-storage-container'
+          },
+          {
+            from: '/manage/granting/gcs-bucket',
+            to: '/other/granting/gcs-bucket'
+          },
+          {
+            from: '/manage/granting/google-bigquery',
+            to: '/other/granting/google-bigquery'
+          },
+          {
+            from: '/manage/granting/granting',
+            to: '/other/granting/granting'
+          },
+          {
+            from: '/manage/granting/snowflake-warehouse',
+            to: '/other/granting/snowflake-warehouse'
+          },
+          {
+            from: '/home/FAQ',
+            to: '/other/FAQ'
+          },
+
+
+
+
           // {
           //   from: '/old-page',
           //   to: '/new-page',
