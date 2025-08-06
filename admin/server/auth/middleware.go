@@ -90,8 +90,10 @@ func (a *Authenticator) HTTPMiddlewareLenient(next http.Handler) http.Handler {
 	return a.httpMiddleware(next, true)
 }
 
-// HTTPMiddlewareWithCookieRefresh is a middleware that refreshes the auth cookie
-func (a *Authenticator) HTTPMiddlewareWithCookieRefresh(next http.Handler) http.Handler {
+// CookieRefreshMiddleware is a middleware that refreshes the auth cookie.
+// This enables us to do rolling cookie refreshes so we can have a relatively short cookie max age.
+// Note that it does not update the auth token encrypted inside the cookie.
+func (a *Authenticator) CookieRefreshMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		sess := a.cookies.Get(r, cookieName)
 		if authToken, ok := sess.Values[cookieFieldAccessToken].(string); ok && authToken != "" {
