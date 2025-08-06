@@ -427,3 +427,23 @@ func TestSanitizeName(t *testing.T) {
 		})
 	}
 }
+
+func TestGenerateDatabaseName(t *testing.T) {
+	tests := []struct {
+		id          string
+		annotations map[string]string
+		expected    string
+	}{
+		{"12345", nil, "rill_12345"},
+		{"12345", map[string]string{"organization_name": "Acme-Corp"}, "rill_acme_corp_12345"},
+		{"12345", map[string]string{"project_name": "My-Project"}, "rill_my_project_12345"},
+		{"12345", map[string]string{"organization_name": "Acme-Corp", "project_name": "My-Project"}, "rill_acme_corp_my_project_12345"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.id, func(t *testing.T) {
+			result := generateDatabaseName(tt.id, tt.annotations)
+			require.Equal(t, tt.expected, result)
+		})
+	}
+}
