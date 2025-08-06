@@ -169,7 +169,7 @@ _[array of object]_ - Used to define annotations that can be displayed on charts
 
   - **`name`** - _[string]_ - A stable identifier for the annotation. Defaults to model or table names when not specified 
 
-  - **`model`** - _[string]_ - Refers to the model powering the annotation (either table or model is required). The model must have 'time' and 'description' columns. Optional columns include 'time_end' for range annotations and 'grain' to specify when the annotation should appear based on dashboard grain level. 
+  - **`model`** - _[string]_ - Refers to the model powering the annotation (either table or model is required). The model must have 'time' and 'description' columns. Optional columns include 'time_end' for range annotations and 'duration' to specify when the annotation should appear based on dashboard grain level. 
 
   - **`database`** - _[string]_ - Refers to the database to use in the OLAP engine (to be used in conjunction with table). Otherwise, will use the default database or schema if not specified 
 

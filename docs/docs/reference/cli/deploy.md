@@ -15,7 +15,7 @@ rill deploy [<path>] [flags]
 ```
       --path string           Path to project repository (default: current directory) (default ".")
       --subpath string        Relative path to project in the repository (for monorepos)
-      --remote string         Remote name (default: first Git remote)
+      --remote string         Remote name (default: origin) (default "origin")
       --org string            Org to deploy project in
       --project string        Project name (default: Git repo name)
       --description string    Project description

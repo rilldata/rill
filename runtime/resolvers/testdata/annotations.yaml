@@ -44,11 +44,11 @@ project_files:
     type: model
     connector: duckdb
     sql: |
-      select '2024-01-05T00:00:00Z' as time, 'day' as grain, '1st event' as description
+      select '2024-01-05T00:00:00Z' as time, 'day' as duration, '1st event' as description
       union all
-      select '2024-02-16T00:00:00Z' as time, 'month' as grain, '2nd event' as description
+      select '2024-02-16T00:00:00Z' as time, 'month' as duration, '2nd event' as description
       union all
-      select '2024-03-27T00:00:00Z' as time, 'hour' as grain, '3rd event' as description
+      select '2024-03-27T00:00:00Z' as time, 'hour' as duration, '3rd event' as description
   duckdb_metrics.yaml:
     type: metrics_view
     model: duckdb_data
@@ -114,14 +114,14 @@ tests:
       time_grain: "day"
     result:
       - time: "2024-01-05T00:00:00Z"
-        grain: "day"
+        duration: "day"
         description: "1st event"
-        time_grain: 5
+        __rill_time_grain: 5
         for_measures: ['mes_for_grain_annotation']
       - time: "2024-03-27T00:00:00Z"
-        grain: "hour"
+        duration: "hour"
         description: "3rd event"
-        time_grain: 4
+        __rill_time_grain: 4
         for_measures: ['mes_for_grain_annotation']
   - name: query_all_annotations
     resolver: annotations
@@ -144,11 +144,11 @@ tests:
         for_measures: ['sum']
       - time: "2024-01-05T00:00:00Z"
         description: "1st event"
-        grain: "day"
-        time_grain: 5
+        duration: "day"
+        __rill_time_grain: 5
         for_measures: ['mes_for_grain_annotation']
       - time: "2024-02-16T00:00:00Z"
         description: "2nd event"
-        grain: "month"
-        time_grain: 7
+        duration: "month"
+        __rill_time_grain: 7
         for_measures: ['mes_for_grain_annotation']
