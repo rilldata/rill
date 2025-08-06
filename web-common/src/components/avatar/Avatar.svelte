@@ -24,6 +24,7 @@
     "font-medium",
     "uppercase",
   )}
+  aria-label="User avatar"
 >
   <div
     class={cn(

@@ -14,6 +14,7 @@ import {
   CreateOrganizationRequest,
   ListMatchingProjectsRequest,
   ListProjectsForOrgRequest,
+  GetProjectRequest,
   GitStatusRequest,
   GitPullRequest,
   GitPushRequest,
@@ -430,4 +431,47 @@ export function createLocalServiceGitPush<
     PartialMessage<GitPushRequest>,
     unknown
   >({ mutationFn: localServiceGitPush, ...mutationOptions });
+}
+
+export function localServiceGetProjectRequest(
+  organizationName: string,
+  name: string,
+) {
+  return getClient().getProject(
+    new GetProjectRequest({
+      organizationName,
+      name,
+    }),
+  );
+}
+export const getLocalServiceGetProjectRequestQueryKey = (
+  organizationName: string,
+  name: string,
+) => [`/v1/local/get-project`, organizationName, name];
+export function createLocalServiceGetProjectRequest<
+  TData = Awaited<ReturnType<typeof localServiceGetProjectRequest>>,
+  TError = ConnectError,
+>(
+  organizationName: string,
+  name: string,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof localServiceGetProjectRequest>>,
+        TError,
+        TData
+      >
+    >;
+  },
+) {
+  const { query: queryOptions } = options ?? {};
+  return createQuery({
+    ...queryOptions,
+    queryKey:
+      queryOptions?.queryKey ??
+      getLocalServiceGetProjectRequestQueryKey(organizationName, name),
+    queryFn:
+      queryOptions?.queryFn ??
+      (() => localServiceGetProjectRequest(organizationName, name)),
+  });
 }

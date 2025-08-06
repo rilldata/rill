@@ -12,9 +12,9 @@
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import {
-    useIsModelingSupportedForConnector,
-    useIsModelingSupportedForDefaultOlapDriver,
-  } from "../connectors/olap/selectors";
+    useIsModelingSupportedForConnectorOLAP as useIsModelingSupportedForConnector,
+    useIsModelingSupportedForDefaultOlapDriverOLAP as useIsModelingSupportedForDefaultOlapDriver,
+  } from "../connectors/selectors";
   import PreviewButton from "../explores/PreviewButton.svelte";
   import GoToDashboardButton from "../metrics-views/GoToDashboardButton.svelte";
   import { mapParseErrorsToLines } from "../metrics-views/errors";

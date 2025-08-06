@@ -1786,6 +1786,8 @@ func (m *RedeployProjectRequest) validate(all bool) error {
 
 	// no validation rules for Rearchive
 
+	// no validation rules for CreateManagedRepo
+
 	if len(errors) > 0 {
 		return RedeployProjectRequestMultiError(errors)
 	}
