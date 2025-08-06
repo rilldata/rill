@@ -430,20 +430,54 @@ func TestSanitizeName(t *testing.T) {
 
 func TestGenerateDatabaseName(t *testing.T) {
 	tests := []struct {
+		name        string
 		id          string
 		annotations map[string]string
 		expected    string
 	}{
-		{"12345", nil, "rill_12345"},
-		{"12345", map[string]string{"organization_name": "Acme-Corp"}, "rill_acme_corp_12345"},
-		{"12345", map[string]string{"project_name": "My-Project"}, "rill_my_project_12345"},
-		{"12345", map[string]string{"organization_name": "Acme-Corp", "project_name": "My-Project"}, "rill_acme_corp_my_project_12345"},
+		{
+			name:        "with org and project",
+			id:          "77cf2b72_65ab_4bbe_a10e_627bcff4915e",
+			annotations: map[string]string{"organization_name": "rilldata", "project_name": "dev-project-1"},
+			expected:    "rill_rilldata_dev_project_1_77cf2b72_65ab_4bbe_a10e_627bcff4915",
+		},
+		{
+			name:        "with org only",
+			id:          "12345",
+			annotations: map[string]string{"organization_name": "acme-corp"},
+			expected:    "rill_acme_corp_12345",
+		},
+		{
+			name:        "with project only",
+			id:          "12345",
+			annotations: map[string]string{"project_name": "my-project"},
+			expected:    "rill_my_project_12345",
+		},
+		{
+			name:        "no annotations",
+			id:          "12345",
+			annotations: map[string]string{},
+			expected:    "rill_12345",
+		},
+		{
+			name:        "nil annotations",
+			id:          "12345",
+			annotations: nil,
+			expected:    "rill_12345",
+		},
+		{
+			name:        "long name truncated",
+			id:          "very_long_resource_id_that_will_cause_truncation_12345678",
+			annotations: map[string]string{"organization_name": "very_long_organization_name", "project_name": "very_long_project_name"},
+			expected:    "rill_very_long_organization_name_very_long_project_name_very_lo",
+		},
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.id, func(t *testing.T) {
+		t.Run(tt.name, func(t *testing.T) {
 			result := generateDatabaseName(tt.id, tt.annotations)
 			require.Equal(t, tt.expected, result)
+			require.LessOrEqual(t, len(result), 63, "database name should not exceed 63 characters")
 		})
 	}
 }

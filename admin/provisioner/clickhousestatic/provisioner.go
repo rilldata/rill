@@ -330,26 +330,30 @@ func generateDatabaseName(resourceID string, annotations map[string]string) stri
 	orgName := sanitizeName(getAnnotationValue(annotations, "organization_name"))
 	projectName := sanitizeName(getAnnotationValue(annotations, "project_name"))
 
-	// Limit component lengths to avoid overly long database names
-	if len(orgName) > 20 {
-		orgName = orgName[:20]
-	}
-	if len(projectName) > 20 {
-		projectName = projectName[:20]
-	}
-	if len(resourceID) > 20 {
-		resourceID = resourceID[:20]
-	}
+	var builder strings.Builder
+	builder.WriteString("rill")
 
 	// Build database name based on available components for human readability
-	if orgName != "" && projectName != "" {
-		return fmt.Sprintf("rill_%s_%s_%s", orgName, projectName, resourceID)
-	} else if orgName != "" {
-		return fmt.Sprintf("rill_%s_%s", orgName, resourceID)
-	} else if projectName != "" {
-		return fmt.Sprintf("rill_%s_%s", projectName, resourceID)
+	if orgName != "" {
+		builder.WriteString("_")
+		builder.WriteString(orgName)
+	}
+	if projectName != "" {
+		builder.WriteString("_")
+		builder.WriteString(projectName)
+	}
+	builder.WriteString("_")
+	builder.WriteString(resourceID)
+
+	dbName := builder.String()
+
+	// Ensure the total length doesn't exceed 63 characters
+	if len(dbName) > 63 {
+		dbName = dbName[:63]
 	}
 
-	// Fallback to simple naming
-	return fmt.Sprintf("rill_%s", resourceID)
+	// Remove any trailing underscores
+	dbName = strings.TrimRight(dbName, "_")
+
+	return dbName
 }
