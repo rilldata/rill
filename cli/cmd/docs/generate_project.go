@@ -491,8 +491,9 @@ func generateDoc(sidebarPosition, level int, node *yaml.Node, indent string, req
 						doc.WriteString("\n\n## One of Properties Options")
 					}
 
-					for _, item := range oneOf.Content {
+					for i, item := range oneOf.Content {
 						if hasType(item) || hasProperties(item) || hasCombinators(item) {
+							doc.WriteString(fmt.Sprintf("\n\n%s- **option %d** - %s - %s", indent, i+1, getPrintableType(item), getPrintableDescription(item, indent, "(no description)")))
 							doc.WriteString(generateDoc(sidebarPosition, level, item, indent+"  ", getRequiredMapFromNode(item), rootSchema, id))
 						}
 						

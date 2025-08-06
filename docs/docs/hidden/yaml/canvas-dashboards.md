@@ -66,13 +66,17 @@ _[integer]_ - Vertical gap in pixels of the canvas
 
 _[oneOf]_ - Theme configuration. Can be either a string reference to an existing theme or an inline theme configuration object. 
 
+  - **option 1** - _[string]_ - Name of an existing theme to apply to the dashboard
+
+  - **option 2** - _[object]_ - Inline theme configuration.
+
 ### `allow_custom_time_range`
 
 _[boolean]_ - Defaults to true, when set to false it will hide the ability to set a custom time range for the user. 
 
 ### `time_ranges`
 
-_[array of anyOf]_ - Overrides the list of default time range selections available in the dropdown. It can be string or an object with a 'range' and optional 'comparison_offsets'
+_[array of oneOf]_ - Overrides the list of default time range selections available in the dropdown. It can be string or an object with a 'range' and optional 'comparison_offsets'
   ```yaml
   time_ranges:
     - PT15M // Simplified syntax to specify only the range
@@ -92,7 +96,7 @@ _[array of anyOf]_ - Overrides the list of default time range selections availab
 
     - **`range`** - _[string]_ - a valid [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations) duration or one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) extensions for the selection _(required)_
 
-    - **`comparison_offsets`** - _[array of anyOf]_ - list of time comparison options for this time range selection (optional). Must be one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) 
+    - **`comparison_offsets`** - _[array of oneOf]_ - list of time comparison options for this time range selection (optional). Must be one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) 
 
       - **option 1** - _[string]_ - Offset string only (range is inferred)
 
@@ -115,6 +119,10 @@ _[object]_ - Indicates if filters should be enabled for the canvas.
 _[object]_ - Defines [security rules and access control policies](/manage/security) for dashboards (without row filtering) 
 
   - **`access`** - _[oneOf]_ - Expression indicating if the user should be granted access to the dashboard. If not defined, it will resolve to false and the dashboard won't be accessible to anyone. Needs to be a valid SQL expression that evaluates to a boolean. 
+
+    - **option 1** - _[string]_ - SQL expression that evaluates to a boolean to determine access
+
+    - **option 2** - _[boolean]_ - Direct boolean value to allow or deny access
 
 ## Common Properties
 

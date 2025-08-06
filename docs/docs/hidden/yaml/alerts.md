@@ -44,15 +44,51 @@ _[string]_ - Description for the alert
 
 _[oneOf]_ - Data source for the alert _(required)_
 
+  - **option 1** - _[object]_ - Executes a raw SQL query against the project's data models.
+  ```yaml
+  type: api
+  
+  connector: "duckdb"
+  sql: "SELECT * FROM user_metrics WHERE date >= '2024-01-01'"
+  ```
+
+
     - **`sql`** - _[string]_ - Raw SQL query to run against existing models in the project. _(required)_
 
     - **`connector`** - _[string]_ - specifies the connector to use when running SQL or glob queries. 
 
+  - **option 2** - _[object]_ - Executes a SQL query that targets a defined metrics view.
+    ```yaml
+    type: api
+  
+    metrics_sql: "SELECT * FROM user_metrics WHERE date >= '2024-01-01'"
+    ```
+
+
     - **`metrics_sql`** - _[string]_ - SQL query that targets a metrics view in the project _(required)_
+
+  - **option 3** - _[object]_ - Calls a custom API defined in the project to compute data.
+    ```yaml
+    type: api
+  
+    api: "user_analytics_api"
+    args:
+      start_date: "2024-01-01"
+      limit: 10
+    ```
+
 
     - **`api`** - _[string]_ - Name of a custom API defined in the project. _(required)_
 
     - **`args`** - _[object]_ - Arguments to pass to the custom API. 
+
+  - **option 4** - _[object]_ - Uses a file-matching pattern (glob) to query data from a connector.
+    ```yaml
+    type: api
+  
+    glob: "data/*.csv"
+    ```
+
 
     - **`glob`** - _[anyOf]_ - Defines the file path or pattern to query from the specified connector. _(required)_
 
@@ -61,6 +97,8 @@ _[oneOf]_ - Data source for the alert _(required)_
       - **option 2** - _[object]_ - An object-based configuration for specifying a file path/glob pattern with advanced options.
 
     - **`connector`** - _[string]_ - Specifies the connector to use with the glob input. 
+
+  - **option 5** - _[object]_ - Uses the status of a resource as data.
 
     - **`resource_status`** - _[object]_ - Based on resource status _(required)_
 
@@ -94,9 +132,15 @@ _[string]_ - define the timeout of the alert in seconds (optional).
 
 _[oneOf]_ - Specifies how user identity or attributes should be evaluated for security policy enforcement. 
 
+  - **option 1** - _[object]_ - Specifies a unique user identifier for applying security policies.
+
     - **`user_id`** - _[string]_ - The unique user ID used to evaluate security policies. _(required)_
 
+  - **option 2** - _[object]_ - Specifies a user's email address for applying security policies.
+
     - **`user_email`** - _[string]_ - The user's email address used to evaluate security policies. _(required)_
+
+  - **option 3** - _[object]_ - Specifies a set of arbitrary user attributes for applying security policies.
 
     - **`attributes`** - _[object]_ - A dictionary of user attributes used to evaluate security policies. _(required)_
 

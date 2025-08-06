@@ -842,7 +842,7 @@ oneOf:
                 type: object
                 description: Inline theme configuration.
             description: Name of the theme to use. Only one of theme and embedded_theme can be set.
-          time_range:
+          time_ranges:
             $ref: '#/definitions/explore_time_range_properties'
             description: Default time range for the dashboard
           time_ranges:
@@ -896,7 +896,7 @@ oneOf:
               measures:
                 description: Provides the default measures to load on viewing the dashboard
                 $ref: '#/definitions/field_selector_properties'
-              time_range:
+              time_ranges:
                 description: Refers to the default time range shown when a user initially loads the dashboard. The value must be either a valid [ISO 8601 duration](https://en.wikipedia.org/wiki/ISO_8601#Durations) (for example, PT12H for 12 hours, P1M for 1 month, or P26W for 26 weeks) or one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions)
                 type: string
               comparison_mode:
@@ -1497,7 +1497,7 @@ definitions:
             where_error: true
           ```
   explore_time_range_properties:
-    anyOf:
+    oneOf:
       - type: string
         description: a valid [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations) duration or one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) extensions for the selection
       - type: object
@@ -1510,7 +1510,7 @@ definitions:
             type: array
             description: list of time comparison options for this time range selection (optional). Must be one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions)
             items:
-              anyOf:
+              oneOf:
                 - type: string
                   description: Offset string only (range is inferred)
                 - type: object
@@ -2363,13 +2363,13 @@ definitions:
       - driver
       - dsn
   field_selectors_properties:
-    anyOf:
+    oneOf:
       - type: string
         description: 'Simple field name as a string.'
       - type: array
         description: 'List of field selectors, each can be a string or an object with detailed configuration.'
         items:
-          anyOf:
+          oneOf:
             - type: string
               description: 'Shorthand field selector, interpreted as the name.'
             - type: object
@@ -2405,7 +2405,7 @@ definitions:
               additionalProperties: false
         minItems: 1 
   field_selector_properties:
-    anyOf:
+    oneOf:
       - title: Wildcard(*) selector
         type: string
         const: '*'

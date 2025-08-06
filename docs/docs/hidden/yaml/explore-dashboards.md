@@ -30,7 +30,7 @@ _[string]_ - Refers to the custom banner displayed at the header of an explore d
 
 ### `dimensions`
 
-_[anyOf]_ - List of dimension names. Use '*' to select all dimensions (default)
+_[oneOf]_ - List of dimension names. Use '*' to select all dimensions (default)
  ```yaml
  # Example: Select a dimension
  dimensions:
@@ -61,7 +61,7 @@ _[anyOf]_ - List of dimension names. Use '*' to select all dimensions (default)
 
 ### `measures`
 
-_[anyOf]_ - List of measure names. Use '*' to select all measures (default) 
+_[oneOf]_ - List of measure names. Use '*' to select all measures (default) 
 
   - **option 1** - _[string]_ - Wildcard(*) selector that includes all available fields in the selection
 
@@ -79,9 +79,13 @@ _[anyOf]_ - List of measure names. Use '*' to select all measures (default)
 
 _[oneOf]_ - Name of the theme to use. Only one of theme and embedded_theme can be set. 
 
-### `time_range`
+  - **option 1** - _[string]_ - Name of an existing theme to apply to the dashboard
 
-_[anyOf]_ - Default time range for the dashboard 
+  - **option 2** - _[object]_ - Inline theme configuration.
+
+### `time_ranges`
+
+_[oneOf]_ - Default time range for the dashboard 
 
   - **option 1** - _[string]_ - a valid [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations) duration or one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) extensions for the selection
 
@@ -89,7 +93,7 @@ _[anyOf]_ - Default time range for the dashboard
 
     - **`range`** - _[string]_ - a valid [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations) duration or one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) extensions for the selection _(required)_
 
-    - **`comparison_offsets`** - _[array of anyOf]_ - list of time comparison options for this time range selection (optional). Must be one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) 
+    - **`comparison_offsets`** - _[array of oneOf]_ - list of time comparison options for this time range selection (optional). Must be one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) 
 
       - **option 1** - _[string]_ - Offset string only (range is inferred)
 
@@ -101,7 +105,7 @@ _[anyOf]_ - Default time range for the dashboard
 
 ### `time_ranges`
 
-_[array of anyOf]_ - Overrides the list of default time range selections available in the dropdown. It can be string or an object with a 'range' and optional 'comparison_offsets'
+_[array of oneOf]_ - Overrides the list of default time range selections available in the dropdown. It can be string or an object with a 'range' and optional 'comparison_offsets'
   ```yaml
   time_ranges:
     - PT15M // Simplified syntax to specify only the range
@@ -121,7 +125,7 @@ _[array of anyOf]_ - Overrides the list of default time range selections availab
 
     - **`range`** - _[string]_ - a valid [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations) duration or one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) extensions for the selection _(required)_
 
-    - **`comparison_offsets`** - _[array of anyOf]_ - list of time comparison options for this time range selection (optional). Must be one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) 
+    - **`comparison_offsets`** - _[array of oneOf]_ - list of time comparison options for this time range selection (optional). Must be one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) 
 
       - **option 1** - _[string]_ - Offset string only (range is inferred)
 
@@ -160,7 +164,7 @@ _[object]_ - defines the defaults YAML struct
   ```
  
 
-  - **`dimensions`** - _[anyOf]_ - Provides the default dimensions to load on viewing the dashboard 
+  - **`dimensions`** - _[oneOf]_ - Provides the default dimensions to load on viewing the dashboard 
 
     - **option 1** - _[string]_ - Wildcard(*) selector that includes all available fields in the selection
 
@@ -174,7 +178,7 @@ _[object]_ - defines the defaults YAML struct
 
       - **`exclude`** - _[object]_ - Select all dimensions except those listed here 
 
-  - **`measures`** - _[anyOf]_ - Provides the default measures to load on viewing the dashboard 
+  - **`measures`** - _[oneOf]_ - Provides the default measures to load on viewing the dashboard 
 
     - **option 1** - _[string]_ - Wildcard(*) selector that includes all available fields in the selection
 
@@ -188,7 +192,7 @@ _[object]_ - defines the defaults YAML struct
 
       - **`exclude`** - _[object]_ - Select all dimensions except those listed here 
 
-  - **`time_range`** - _[string]_ - Refers to the default time range shown when a user initially loads the dashboard. The value must be either a valid [ISO 8601 duration](https://en.wikipedia.org/wiki/ISO_8601#Durations) (for example, PT12H for 12 hours, P1M for 1 month, or P26W for 26 weeks) or one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) 
+  - **`time_ranges`** - _[string]_ - Refers to the default time range shown when a user initially loads the dashboard. The value must be either a valid [ISO 8601 duration](https://en.wikipedia.org/wiki/ISO_8601#Durations) (for example, PT12H for 12 hours, P1M for 1 month, or P26W for 26 weeks) or one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) 
 
   - **`comparison_mode`** - _[string]_ - Controls how to compare current data with historical or categorical baselines. Options: `none` (no comparison), `time` (compares with past based on default_time_range), `dimension` (compares based on comparison_dimension values) 
 
@@ -205,6 +209,10 @@ _[object]_ - Configuration options for embedded dashboard views
 _[object]_ - Defines [security rules and access control policies](/manage/security) for dashboards (without row filtering) 
 
   - **`access`** - _[oneOf]_ - Expression indicating if the user should be granted access to the dashboard. If not defined, it will resolve to false and the dashboard won't be accessible to anyone. Needs to be a valid SQL expression that evaluates to a boolean. 
+
+    - **option 1** - _[string]_ - SQL expression that evaluates to a boolean to determine access
+
+    - **option 2** - _[boolean]_ - Direct boolean value to allow or deny access
 
 ## Common Properties
 
