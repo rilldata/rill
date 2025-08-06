@@ -246,7 +246,7 @@ definitions:
                 description: Name of an existing theme to apply to the dashboard
               - $ref: '#/definitions/theme/definitions/theme_properties'
                 description: Inline theme configuration.
-            description: Name of the theme to use. Either theme name or embedded theme can be set.
+            description: Name of the theme to use or define a theme inline. Either theme name or embedded theme can be set.
           allow_custom_time_range:
             type: boolean
             description: Defaults to true, when set to false it will hide the ability to set a custom time range for the user. 
@@ -1002,7 +1002,7 @@ definitions:
                 description: Name of an existing theme to apply to the dashboard
               - $ref: '#/definitions/theme/definitions/theme_properties'
                 description: Inline theme configuration.
-            description: Name of the theme to use. Either theme name or embedded theme can be set.
+            description: Name of the theme to use or define a theme inline. Either theme name or embedded theme can be set.
           time_ranges:
             type: array
             description: Overrides the list of default time range selections available in the dropdown. It can be string or an object with a 'range' and optional 'comparison_offsets'
@@ -1322,7 +1322,7 @@ definitions:
                 description: Name of an existing theme to apply to the explore view.
               - $ref: '#/definitions/theme/definitions/theme_properties'
                 description: Inline theme configuration.
-            description: Name of the theme to use. Either theme name or embedded theme can be set.
+            description: Name of the theme to use or define a theme inline. Either theme name or embedded theme can be set.
           time_ranges:
             type: array
             description: Overrides the list of default time range selections available in the dropdown. It can be string or an object with a 'range' and optional 'comparison_offsets'.
