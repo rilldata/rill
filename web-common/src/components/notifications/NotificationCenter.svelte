@@ -5,7 +5,7 @@
   import { onMount } from "svelte";
   import { NOTIFICATION_TIMEOUT } from "./constants";
 
-  let notifications: NotificationMessage[] = [{ message: "greeting" }];
+  let notifications: NotificationMessage[] = [];
   let currentTimeoutId: number | null = null;
 
   onMount(() => {
