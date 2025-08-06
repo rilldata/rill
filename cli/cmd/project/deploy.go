@@ -157,6 +157,11 @@ func DeployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployO
 	if err != nil {
 		return err
 	}
+	// Ensure gitignore is set up so that we don't upload files that should not be tracked by Git.
+	err = cmdutil.SetupGitIgnore(ctx, repo)
+	if err != nil {
+		return fmt.Errorf("failed to set up .gitignore: %w", err)
+	}
 
 	projResp, err := adminClient.GetProject(ctx, &adminv1.GetProjectRequest{OrganizationName: ch.Org, Name: opts.Name})
 	if err != nil {
