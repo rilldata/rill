@@ -65,10 +65,6 @@ _[object]_ - Overrides any properties in production environment.
 
 _[string]_ - Refers to the resource type and must be `connector` _(required)_
 
-### `driver`
-
-_[string]_ - The type of connector, see [available connectors](#available-connector-types) (required) _(required)_
-
 ## Common Properties
 
 ```yaml

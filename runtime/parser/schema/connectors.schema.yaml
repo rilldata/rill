@@ -48,9 +48,9 @@ allOf:
         type: string
         const: connector
         description: Refers to the resource type and must be `connector`
-      driver:
-        type: string
-        description: The type of connector, see [available connectors](#available-connector-types) (required)
+      # driver:
+      #   type: string
+      #   description: The type of connector, see [available connectors](#available-connector-types) (required)
     required:
       - type
       - driver
