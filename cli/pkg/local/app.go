@@ -206,9 +206,13 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 
 	// The repo connector is the local project directory
 	repoConnector := &runtimev1.Connector{
-		Type:   "file",
-		Name:   "repo",
-		Config: map[string]string{"dsn": projectPath},
+		Type: "file",
+		Name: "repo",
+		Config: map[string]string{
+			"dsn":          projectPath,
+			"admin_url":    opts.Ch.AdminURL(),
+			"access_token": opts.Ch.AdminToken(),
+		},
 	}
 	connectors = append(connectors, repoConnector)
 

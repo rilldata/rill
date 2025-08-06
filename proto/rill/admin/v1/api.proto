@@ -2337,6 +2337,8 @@ message GetRepoMetaResponse {
   // A unique branch name generated for temporary/ephemeral use in edit mode where files may be mutated.
   // This enables checkpointing progress across hibernations and also more easily pinning to a specific commit of the base branch to delay conflict resolution.
   string git_edit_branch = 8;
+  // Whether the git repo is managed by Rill.
+  bool managed_git_repo = 10; 
   // Signed URL for downloading a tarball of project files. If this is set, the git_* fields will be empty (and vice versa).
   string archive_download_url = 4;
   // A stable ID for the archive returned from archive_download_url.

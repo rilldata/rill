@@ -11314,6 +11314,13 @@ export class GetRepoMetaResponse extends Message<GetRepoMetaResponse> {
   gitEditBranch = "";
 
   /**
+   * Whether the git repo is managed by Rill.
+   *
+   * @generated from field: bool managed_git_repo = 10;
+   */
+  managedGitRepo = false;
+
+  /**
    * Signed URL for downloading a tarball of project files. If this is set, the git_* fields will be empty (and vice versa).
    *
    * @generated from field: string archive_download_url = 4;
@@ -11348,6 +11355,7 @@ export class GetRepoMetaResponse extends Message<GetRepoMetaResponse> {
     { no: 3, name: "git_subpath", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 7, name: "git_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "git_edit_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 10, name: "managed_git_repo", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 4, name: "archive_download_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "archive_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "archive_created_on", kind: "message", T: Timestamp },
