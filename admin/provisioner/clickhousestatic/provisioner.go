@@ -25,12 +25,14 @@ type Spec struct {
 	// DSN with admin permissions for a Clickhouse service.
 	// This will be used to create a new (virtual) database and access-restricted user for each provisioned resource.
 	DSN string `json:"dsn"`
-	// Path to a file that we should load the DSN from.
-	// This is an alternative to specifying the DSN directly, which can be useful for secrets management.
-	DSNPath string `json:"dsn_path"`
-	// ENV variable that contains the clickhouse DSN.
+	// DSNEnv variable that contains the clickhouse DSN.
 	// This is an alternative to specifying the DSN directly, which can be useful for injecting secrets
 	DSNEnv string `json:"dsn_env"`
+	// WriteDSN is an optional DSN that should be used for write operations.
+	// If a write DSN is specified, it will be used for the provisioning operations.
+	WriteDSN string `json:"write_dsn,omitempty"`
+	// WriteDSNEnv optionally specifies an environment variable that should be used to populate WriteDSN.
+	WriteDSNEnv string `json:"write_dsn_env,omitempty"`
 	// Cluster name for ClickHouse cluster operations.
 	// If specified, all DDL operations will include an ON CLUSTER clause.
 	Cluster string `json:"cluster,omitempty"`
@@ -53,23 +55,31 @@ func New(specJSON []byte, _ database.DB, logger *zap.Logger) (provisioner.Provis
 		return nil, fmt.Errorf("failed to parse provisioner spec: %w", err)
 	}
 
-	if spec.DSNPath != "" {
-		dsn, err := os.ReadFile(spec.DSNPath)
-		if err != nil {
-			return nil, fmt.Errorf("failed to read DSN file: %w", err)
-		}
-		spec.DSN = strings.TrimSpace(string(dsn))
-	}
-
-	if spec.DSNEnv != "" && spec.DSN == "" && spec.DSNPath == "" {
+	if spec.DSNEnv != "" {
 		dsn := os.Getenv(spec.DSNEnv)
 		if dsn == "" {
-			return nil, fmt.Errorf("environment variable %s is not set or empty", spec.DSNEnv)
+			return nil, fmt.Errorf("environment variable %q is not set or empty", spec.DSNEnv)
 		}
 		spec.DSN = dsn
+	} else if spec.DSN == "" {
+		return nil, fmt.Errorf("either dsn or dsn_env must be specified")
 	}
 
-	opts, err := clickhouse.ParseDSN(spec.DSN)
+	// Get optional write DSN
+	if spec.WriteDSNEnv != "" {
+		dsn := os.Getenv(spec.WriteDSNEnv)
+		if dsn == "" {
+			return nil, fmt.Errorf("environment variable %q is not set or empty", spec.WriteDSNEnv)
+		}
+		spec.WriteDSN = dsn
+	}
+
+	// Use writeDSN for provisioning operations if available, otherwise use the primary DSN
+	dsn := spec.DSN
+	if spec.WriteDSN != "" {
+		dsn = spec.WriteDSN
+	}
+	opts, err := clickhouse.ParseDSN(dsn)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse DSN: %w", err)
 	}
@@ -101,11 +111,19 @@ func (p *Provisioner) Provision(ctx context.Context, r *provisioner.Resource, op
 		return nil, err
 	}
 
-	// If the config has already been populated, do a health check and exit early (currently there's nothing to update).
+	// If the config has already been populated, do a health check and exit early
 	if cfg.DSN != "" {
 		err := p.pingWithResourceDSN(ctx, cfg.DSN)
 		if err != nil {
 			return nil, fmt.Errorf("failed to ping clickhouse resource: %w", err)
+		}
+
+		// Ping the write DSN if it exists
+		if cfg.WriteDSN != "" {
+			err := p.pingWithResourceDSN(ctx, cfg.WriteDSN)
+			if err != nil {
+				return nil, fmt.Errorf("failed to ping clickhouse write resource: %w", err)
+			}
 		}
 
 		return r, nil
@@ -117,8 +135,8 @@ func (p *Provisioner) Provision(ctx context.Context, r *provisioner.Resource, op
 	dbName := fmt.Sprintf("rill_%s", id)
 
 	// Use org and project names to create a more human-readable database name.
-	orgName := sanitizeName(getAnnotationValue(opts.Annotations, "org"))
-	projectName := sanitizeName(getAnnotationValue(opts.Annotations, "project"))
+	orgName := sanitizeName(getAnnotationValue(opts.Annotations, "organization_name"))
+	projectName := sanitizeName(getAnnotationValue(opts.Annotations, "project_name"))
 	if orgName != "" && projectName != "" {
 		dbName = fmt.Sprintf("rill_%s_%s_%s", orgName, projectName, id)
 	}
@@ -195,16 +213,30 @@ func (p *Provisioner) Provision(ctx context.Context, r *provisioner.Resource, op
 		return nil, fmt.Errorf("failed to grant global privileges to clickhouse user: %w", err)
 	}
 
-	// Build DSN for the resource and return it
+	// Prepare the config to return
+	cfg = &provisioner.ClickhouseConfig{}
+
+	// Build the DSN for the provisioned user and database using the provisioner's DSN as the base.
 	dsn, err := url.Parse(p.spec.DSN)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse base DSN: %w", err)
 	}
 	dsn.User = url.UserPassword(user, password)
-	dsn.Path = dbName
-	cfg = &provisioner.ClickhouseConfig{
-		DSN: dsn.String(),
+	dsn.Path = "/" + dbName
+	cfg.DSN = dsn.String()
+
+	// Optionally build a write DSN.
+	if p.spec.WriteDSN != "" {
+		writeDSN, err := url.Parse(p.spec.WriteDSN)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse write DSN: %w", err)
+		}
+		writeDSN.User = url.UserPassword(user, password)
+		writeDSN.Path = "/" + dbName
+
+		cfg.WriteDSN = writeDSN.String()
 	}
+
 	return &provisioner.Resource{
 		ID:     r.ID,
 		Type:   r.Type,
@@ -230,7 +262,7 @@ func (p *Provisioner) Deprovision(ctx context.Context, r *provisioner.Resource) 
 		return nil
 	}
 
-	// Parse the DSN
+	// Parse the DSN to get database and user info
 	opts, err := clickhouse.ParseDSN(cfg.DSN)
 	if err != nil {
 		return fmt.Errorf("failed to parse DSN during deprovisioning: %w", err)
@@ -311,18 +343,17 @@ func sanitizeName(name string) string {
 		return ""
 	}
 
-	// Replace invalid characters with underscores and convert to lowercase
-	sanitized := strings.ToLower(name)
-	sanitized = strings.ReplaceAll(sanitized, "-", "_")
-	sanitized = strings.ReplaceAll(sanitized, " ", "_")
+	// Replace invalid characters with underscores
+	name = strings.ReplaceAll(name, "-", "_")
+	name = strings.ReplaceAll(name, " ", "_")
 
 	// Remove any characters that aren't alphanumeric or underscore
 	var result strings.Builder
-	for _, r := range sanitized {
-		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '_' {
+	for _, r := range name {
+		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '_' {
 			result.WriteRune(r)
 		}
 	}
 
-	return result.String()
+	return strings.ToLower(result.String())
 }
