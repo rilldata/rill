@@ -294,9 +294,9 @@ func TestClickHouseStaticHumanReadableNaming(t *testing.T) {
 	opts2, err := clickhouse.ParseDSN(cfg.DSN)
 	require.NoError(t, err)
 	// Check that the database name follows the expected format
-	expectedID := strings.ReplaceAll(resourceID, "-", "")
+	expectedID := sanitizeName(resourceID)
 	expectedDBName := fmt.Sprintf("rill_acme_corp_my_project_%s", expectedID)
-	expectedUser := fmt.Sprintf("rill_%s", expectedID) // User name remains UUID format
+	expectedUser := fmt.Sprintf("rill_%s", expectedID) // User name uses sanitized format
 
 	require.Equal(t, expectedDBName, opts2.Auth.Database)
 	require.Equal(t, expectedUser, opts2.Auth.Username)
@@ -377,9 +377,9 @@ func TestClickHouseStaticFallbackNaming(t *testing.T) {
 	opts2, err := clickhouse.ParseDSN(cfg.DSN)
 	require.NoError(t, err)
 	// Check that the database name follows the fallback format
-	expectedID := strings.ReplaceAll(resourceID, "-", "")
+	expectedID := sanitizeName(resourceID)
 	expectedDBName := fmt.Sprintf("rill_%s", expectedID)
-	expectedUser := fmt.Sprintf("rill_%s", expectedID) // User name always uses UUID format
+	expectedUser := fmt.Sprintf("rill_%s", expectedID) // User name uses sanitized format
 
 	require.Equal(t, expectedDBName, opts2.Auth.Database)
 	require.Equal(t, expectedUser, opts2.Auth.Username)
