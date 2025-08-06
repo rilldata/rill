@@ -1100,6 +1100,28 @@ oneOf:
     id: alerts
     type: object
     description: Along with alertings at the dashboard level and can be created via the UI, there might be more extensive alerting that you might want to develop and can be done so the an alert.yaml. When creating an alert via a YAML file, you'll see this denoted in the UI as `Created through code`.
+    examples:
+      - # Example: To send alert when data lags by more than 1 day to slack channel #rill-cloud-alerts
+        type: alert
+        display_name: Data lags by more than 1 day
+        # Check the alert every hour.
+        refresh:
+          cron: 0 * * * *
+        # Query that returns non-empty results if the metrics lag by more than 1 day.
+        data:
+          sql: |-
+            SELECT  *
+            FROM
+            (
+              SELECT  MAX(event_time) AS max_time
+              FROM rill_metrics_model
+            )
+            WHERE max_time < NOW() - INTERVAL '1 day'
+        # Send notifications in Slack.
+        notify:
+          slack:
+            channels:
+              - '#rill-cloud-alerts'
     allOf:
       - title: Properties
         type: object
@@ -1126,6 +1148,76 @@ oneOf:
           data:
             $ref: '#/definitions/data_properties'
             description: Data source for the alert
+          intervals:
+            type: object
+            description: define the interval of the alert to check
+            properties:
+              duration:
+                type: string
+                description: a valid ISO8601 duration to define the interval duration
+              limit:
+                type: integer
+                description: maximum number of intervals to check for on invocation
+                minimum: 0
+              check_unclosed:
+                type: boolean
+                description: 'boolean, whether unclosed intervals should be checked'
+          watermark:
+            type: string
+            enum:
+              - trigger_time
+              - inherit
+            description: Specifies how the watermark is determined for incremental processing. Use 'trigger_time' to set it at runtime or 'inherit' to use the upstream model's watermark.
+          timeout:
+            type: string
+            description: define the timeout of the alert in seconds (optional).
+          for:
+            description: "Specifies how user identity or attributes should be evaluated for security policy enforcement."
+            oneOf:
+              - type: object
+                description: Specifies a unique user identifier for applying security policies.
+                properties:
+                  user_id:
+                    type: string
+                    description: "The unique user ID used to evaluate security policies."
+                required:
+                  - user_id
+                additionalProperties: false
+              - type: object
+                description: Specifies a user's email address for applying security policies.
+                properties:
+                  user_email:
+                    type: string
+                    description: "The user's email address used to evaluate security policies."
+                    format: email
+                required:
+                  - user_email
+                additionalProperties: false
+              - type: object
+                description: Specifies a set of arbitrary user attributes for applying security policies.
+                properties:
+                  attributes:
+                    type: object
+                    description: A dictionary of user attributes used to evaluate security policies.
+                    additionalProperties: true
+                required:
+                  - attributes
+                additionalProperties: false
+          on_recover:
+            type: boolean
+            description: Send an alert when a previously failing alert recovers. Defaults to false.
+          on_fail:
+            type: boolean
+            description: Send an alert when a failure occurs. Defaults to true.
+          on_error:
+            type: boolean
+            description: Send an alert when an error occurs during evaluation. Defaults to false.
+          renotify:
+            type: boolean
+            description: Enable repeated notifications for unresolved alerts. Defaults to false.
+          renotify_after:
+            type: string
+            description: Defines the re-notification interval for the alert (e.g., '10m','24h'), equivalent to snooze duration in UI, defaults to 'Off'
           condition:
             type: object
             description: Condition that triggers the alert
@@ -1141,12 +1233,16 @@ oneOf:
           notify:
             $ref: '#/definitions/notify_properties'
             description: Notification configuration
+          annotations:
+            type: object
+            description: Key value pair used for annotations
+            additionalProperties:
+              type: string
 
         required:
           - type
-          - display_name
+          - refresh
           - data
-          - condition
           - notify
       - $ref: '#/definitions/common_properties'
 

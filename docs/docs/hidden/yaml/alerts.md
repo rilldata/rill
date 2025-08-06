@@ -20,7 +20,7 @@ _[object]_ - Refresh schedule for the alert
     cron: "* * * * *"
     #every: "24h"
   ```
- 
+ _(required)_
 
   - **`cron`** - _[string]_ - A cron expression that defines the execution schedule 
 
@@ -34,7 +34,7 @@ _[object]_ - Refresh schedule for the alert
 
 ### `display_name`
 
-_[string]_ - Display name for the alert _(required)_
+_[string]_ - Display name for the alert 
 
 ### `description`
 
@@ -72,9 +72,57 @@ resource_status:
 ```
 
 
+### `intervals`
+
+_[object]_ - define the interval of the alert to check 
+
+  - **`duration`** - _[string]_ - a valid ISO8601 duration to define the interval duration 
+
+  - **`limit`** - _[integer]_ - maximum number of intervals to check for on invocation 
+
+  - **`check_unclosed`** - _[boolean]_ - boolean, whether unclosed intervals should be checked 
+
+### `watermark`
+
+_[string]_ - Specifies how the watermark is determined for incremental processing. Use 'trigger_time' to set it at runtime or 'inherit' to use the upstream model's watermark. 
+
+### `timeout`
+
+_[string]_ - define the timeout of the alert in seconds (optional). 
+
+### `for`
+
+_[oneOf]_ - Specifies how user identity or attributes should be evaluated for security policy enforcement. 
+
+    - **`user_id`** - _[string]_ - The unique user ID used to evaluate security policies. _(required)_
+
+    - **`user_email`** - _[string]_ - The user's email address used to evaluate security policies. _(required)_
+
+    - **`attributes`** - _[object]_ - A dictionary of user attributes used to evaluate security policies. _(required)_
+
+### `on_recover`
+
+_[boolean]_ - Send an alert when a previously failing alert recovers. Defaults to false. 
+
+### `on_fail`
+
+_[boolean]_ - Send an alert when a failure occurs. Defaults to true. 
+
+### `on_error`
+
+_[boolean]_ - Send an alert when an error occurs during evaluation. Defaults to false. 
+
+### `renotify`
+
+_[boolean]_ - Enable repeated notifications for unresolved alerts. Defaults to false. 
+
+### `renotify_after`
+
+_[string]_ - Defines the re-notification interval for the alert (e.g., '10m','24h'), equivalent to snooze duration in UI, defaults to 'Off' 
+
 ### `condition`
 
-_[object]_ - Condition that triggers the alert _(required)_
+_[object]_ - Condition that triggers the alert 
 
   - **`operator`** - _[string]_ - Comparison operator (gt, lt, eq, etc.) 
 
@@ -97,6 +145,10 @@ _[object]_ - Notification configuration _(required)_
     - **`channels`** - _[array of string]_ - An array of Slack channel IDs to notify. 
 
     - **`webhooks`** - _[array of string]_ - An array of Slack webhook URLs to send notifications to. 
+
+### `annotations`
+
+_[object]_ - Key value pair used for annotations 
 
 ## Common Properties
 
