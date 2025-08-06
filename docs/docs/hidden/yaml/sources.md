@@ -18,7 +18,7 @@ sidebar_position: 32
 
 ### `type`
 
-_[string]_ - Refers to the resource type and must be `model` _(required)_
+_[string]_ - Refers to the resource type and must be `connector` _(required)_
 
 ### `connector`
 
@@ -68,8 +68,11 @@ _[string]_ - The maximum time to wait for source ingestion
 ### `refresh`
 
 _[object]_ - Specifies the refresh schedule that Rill should follow to re-ingest and update the underlying source data (optional).
-- **cron** - a cron schedule expression, which should be encapsulated in single quotes, e.g. `* * * * *` (optional)
-- **every** - a Go duration string, such as `24h` (optional)
+```yaml
+refresh:
+  cron: "* * * * *"
+  every: "24h"
+```
  
 
   - **`cron`** - _[string]_ - A cron schedule expression, which should be encapsulated in single quotes, e.g. `* * * * *` 
@@ -91,3 +94,21 @@ _[object]_ - Specifies the raw parameters to inject into the DuckDB read_csv, re
 ### `dsn`
 
 _[string]_ - Used to set the Snowflake connection string 
+
+## Common Properties
+
+### `name`
+
+_[string]_ - Name is usually inferred from the filename, but can be specified manually. 
+
+### `refs`
+
+_[array of string]_ - List of resource references 
+
+### `dev`
+
+_[object]_ - Overrides any properties in development environment. 
+
+### `prod`
+
+_[object]_ - Overrides any properties in production environment. 

@@ -4,7 +4,7 @@ title: Canvas Dashboard YAML
 sidebar_position: 36
 ---
 
-In your Rill project directory, create a canvas dashboard, `<dashboard_name>.yaml`, file in the `dashboards` directory. Rill will ingest the dashboard definition next time you run `rill start`.
+Canvas dashboards provide a flexible way to create custom dashboards with drag-and-drop components.
 
 ## Properties
 
@@ -14,7 +14,11 @@ _[string]_ - Refers to the resource type and must be `canvas` _(required)_
 
 ### `display_name`
 
-_[string]_ - Refers to the display name for the canvas 
+_[string]_ - Refers to the display name for the canvas _(required)_
+
+### `description`
+
+_[string]_ - Description for the canvas dashboard 
 
 ### `banner`
 
@@ -22,7 +26,7 @@ _[string]_ - Refers to the custom banner displayed at the header of an Canvas da
 
 ### `rows`
 
-_[array of object]_ - Refers to all of the rows displayed on the Canvas _(required)_
+_[array of object]_ - Refers to all of the rows displayed on the Canvas 
 
   - **`height`** - _[string]_ - Height of the row in px 
 
@@ -46,6 +50,48 @@ _[array of object]_ - Refers to all of the rows displayed on the Canvas _(requir
 
     - **`width`** - _[string, integer]_ - Width of the component (can be a number or string with unit) 
 
+### `components`
+
+_[array of object]_ - Array of components to display on the canvas 
+
+  - **`type`** - _[string]_ - Type of component (chart, table, text, etc.) 
+
+  - **`title`** - _[string]_ - Title for the component 
+
+  - **`data`** - _[oneOf]_ - Data source for the component 
+
+      - **`sql`** - _[string]_ - Raw SQL query to run against existing models in the project. _(required)_
+
+      - **`connector`** - _[string]_ - specifies the connector to use when running SQL or glob queries. 
+
+      - **`metrics_sql`** - _[string]_ - SQL query that targets a metrics view in the project _(required)_
+
+      - **`api`** - _[string]_ - Name of a custom API defined in the project. _(required)_
+
+      - **`args`** - _[object]_ - Arguments to pass to the custom API. 
+
+      - **`glob`** - _[anyOf]_ - Defines the file path or pattern to query from the specified connector. _(required)_
+
+        - **option 1** - _[string]_ - A simple file path/glob pattern as a string.
+
+        - **option 2** - _[object]_ - An object-based configuration for specifying a file path/glob pattern with advanced options.
+
+      - **`connector`** - _[string]_ - Specifies the connector to use with the glob input. 
+
+      - **`resource_status`** - _[object]_ - Based on resource status _(required)_
+
+        - **`where_error`** - _[boolean]_ - Indicates whether the condition should trigger when the resource is in an error state. 
+
+```yaml
+resource_status:
+  where_error: true
+```
+
+
+  - **`layout`** - _[object]_ - Layout configuration for the component 
+
+  - **`style`** - _[object]_ - Styling configuration for the component 
+
 ### `max_width`
 
 _[integer]_ - Max width in pixels of the canvas 
@@ -62,27 +108,33 @@ _[integer]_ - Vertical gap in pixels of the canvas
 
 _[oneOf]_ - Theme configuration. Can be either a string reference to an existing theme or an inline theme configuration object. 
 
-      - **`colors`** - _[object]_ - Used to override the dashboard colors. Either primary or secondary color must be provided. 
-
-        - **`primary`** - _[string]_ - Overrides the primary blue color in the dashboard. Can have any hex (without the '#' character), [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats. Note that the hue of the input colors is used for variants but the saturation and lightness is copied over from the [blue color palette](https://tailwindcss.com/docs/customizing-colors). 
-
-        - **`secondary`** - _[string]_ - Overrides the secondary color in the dashboard. Applies to the loading spinner only as of now. Can have any hex (without the '#' character), [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats. 
-
 ### `allow_custom_time_range`
 
 _[boolean]_ - Defaults to true, when set to false it will hide the ability to set a custom time range for the user. 
 
 ### `time_ranges`
 
-_[array of oneOf]_ - Overrides the list of default time range selections available in the dropdown. It can be string or an object with a 'range' and optional 'comparison_offsets' 
+_[array of oneOf]_ - Overrides the list of default time range selections available in the dropdown. It can be string or an object with a 'range' and optional 'comparison_offsets'
+  ```yaml
+  time_ranges:
+    - PT15M // Simplified syntax to specify only the range
+    - PT1H
+    - PT6H
+    - P7D
+    - range: P5D // Advanced syntax to specify comparison_offsets as well
+    - P4W
+    - rill-TD // Today
+    - rill-WTD // Week-To-date
+  ```
+ 
 
-      - **`range`** - _[string]_ - A valid ISO 8601 duration or one of the Rill ISO 8601 extensions for the selection _(required)_
+    - **`range`** - _[string]_ - a valid [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations) duration or one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) extensions for the selection _(required)_
 
-      - **`comparison_offsets`** - _[array of oneOf]_ - List of time comparison options for this time range selection (optional). Must be one of the Rill ISO 8601 extensions 
+    - **`comparison_offsets`** - _[array of oneOf]_ - list of time comparison options for this time range selection (optional). Must be one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) 
 
-            - **`offset`** - _[string]_ - Time offset for comparison (e.g., 'P1D' for one day ago) 
+        - **`offset`** - _[string]_ - Time offset for comparison (e.g., 'P1D' for one day ago) 
 
-            - **`range`** - _[string]_ - Custom time range for comparison period 
+        - **`range`** - _[string]_ - Custom time range for comparison period 
 
 ### `time_zones`
 
@@ -92,84 +144,8 @@ _[array of string]_ - Refers to the time zones that should be pinned to the top 
 
 _[object]_ - Indicates if filters should be enabled for the canvas. 
 
-  - **`enable`** - _[boolean]_ - Toggles filtering functionality for the canvas dashboard. 
-
-### `defaults`
-
-_[object]_ - Preset UI state to show by default 
-
-  - **`time_range`** - _[string]_ - Default time range to display when the dashboard loads 
-
-  - **`comparison_mode`** - _[string]_ - Default comparison mode for metrics (none, time, or dimension) 
-
-  - **`comparison_dimension`** - _[string]_ - Default dimension to use for comparison when comparison_mode is 'dimension' 
-
-### `variables`
-
-_[array of object]_ - Variables that can be used in the canvas 
-
-  - **`name`** - _[string]_ - Unique identifier for the variable _(required)_
-
-  - **`type`** - _[string]_ - Data type of the variable (e.g., string, number, boolean) _(required)_
-
-  - **`value`** - _[string, number, boolean, object, array]_ - Default value for the variable. Can be any valid JSON value type 
-
 ### `security`
 
-_[object]_ - Defines security rules and access control policies for resources 
+_[object]_ - Defines security rules and access control policies for dashboards (without row filtering) 
 
   - **`access`** - _[oneOf]_ - Expression indicating if the user should be granted access to the dashboard. If not defined, it will resolve to false and the dashboard won't be accessible to anyone. Needs to be a valid SQL expression that evaluates to a boolean. 
-
-  - **`row_filter`** - _[string]_ - SQL expression to filter the underlying model by. Can leverage templated user attributes to customize the filter for the requesting user. Needs to be a valid SQL expression that can be injected into a WHERE clause 
-
-  - **`include`** - _[array of object]_ - List of dimension or measure names to include in the dashboard. If include is defined all other dimensions and measures are excluded 
-
-    - **`if`** - _[string]_ - Expression to decide if the column should be included or not. It can leverage templated user attributes. Needs to be a valid SQL expression that evaluates to a boolean _(required)_
-
-    - **`names`** - _[anyOf]_ - List of fields to include. Should match the name of one of the dashboard's dimensions or measures _(required)_
-
-      - **option 1** - _[array of string]_ - List of specific field names to include
-
-      - **option 2** - _[string]_ - Wildcard '*' to include all fields
-
-  - **`exclude`** - _[array of object]_ - List of dimension or measure names to exclude from the dashboard. If exclude is defined all other dimensions and measures are included 
-
-    - **`if`** - _[string]_ - Expression to decide if the column should be excluded or not. It can leverage templated user attributes. Needs to be a valid SQL expression that evaluates to a boolean _(required)_
-
-    - **`names`** - _[anyOf]_ - List of fields to exclude. Should match the name of one of the dashboard's dimensions or measures _(required)_
-
-      - **option 1** - _[array of string]_ - List of specific field names to exclude
-
-      - **option 2** - _[string]_ - Wildcard '*' to exclude all fields
-
-  - **`rules`** - _[array of object]_ - List of detailed security rules that can be used to define complex access control policies 
-
-    - **`type`** - _[string]_ - Type of security rule - access (overall access), field_access (field-level access), or row_filter (row-level filtering) _(required)_
-
-    - **`action`** - _[string]_ - Whether to allow or deny access for this rule 
-
-    - **`if`** - _[string]_ - Conditional expression that determines when this rule applies. Must be a valid SQL expression that evaluates to a boolean 
-
-    - **`names`** - _[array of string]_ - List of field names this rule applies to (for field_access type rules) 
-
-    - **`all`** - _[boolean]_ - When true, applies the rule to all fields (for field_access type rules) 
-
-    - **`sql`** - _[string]_ - SQL expression for row filtering (for row_filter type rules) 
-
-## Common Properties
-
-### `name`
-
-_[string]_ - Name is usually inferred from the filename, but can be specified manually. 
-
-### `refs`
-
-_[array of string]_ - List of resource references 
-
-### `dev`
-
-_[object]_ - Overrides any properties in development environment. 
-
-### `prod`
-
-_[object]_ - Overrides any properties in production environment. 

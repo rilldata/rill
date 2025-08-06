@@ -4,7 +4,7 @@ title: API YAML
 sidebar_position: 39
 ---
 
-In your Rill project directory, create a new file name `<api-name>.yaml` in the `apis` directory containing a custom API definition. See comprehensive documentation on how to define and use [custom APIs](/integrate/custom-apis/index.md)
+Custom APIs allow you to create endpoints that can be called to retrieve or manipulate data.
 
 ## Properties
 
@@ -75,6 +75,13 @@ _[boolean]_ - Flag to control security inheritance
 ## SQL Query
 
 Executes a raw SQL query against the project's data models.
+  ```yaml
+  type: api
+  
+  connector: "duckdb"
+  sql: "SELECT * FROM user_metrics WHERE date >= '2024-01-01'"
+  ```
+
 
 ### `sql`
 
@@ -87,6 +94,12 @@ _[string]_ - specifies the connector to use when running SQL or glob queries.
 ## Metrics View Query
 
 Executes a SQL query that targets a defined metrics view.
+    ```yaml
+    type: api
+  
+    metrics_sql: "SELECT * FROM user_metrics WHERE date >= '2024-01-01'"
+    ```
+
 
 ### `metrics_sql`
 
@@ -95,6 +108,15 @@ _[string]_ - SQL query that targets a metrics view in the project _(required)_
 ## Custom API Call
 
 Calls a custom API defined in the project to compute data.
+    ```yaml
+    type: api
+  
+    api: "user_analytics_api"
+    args:
+      start_date: "2024-01-01"
+      limit: 10
+    ```
+
 
 ### `api`
 
@@ -107,14 +129,20 @@ _[object]_ - Arguments to pass to the custom API.
 ## File Glob Query
 
 Uses a file-matching pattern (glob) to query data from a connector.
+    ```yaml
+    type: api
+  
+    glob: "data/*.csv"
+    ```
+
 
 ### `glob`
 
 _[anyOf]_ - Defines the file path or pattern to query from the specified connector. _(required)_
 
-      - **option 1** - _[string]_ - A simple file path/glob pattern as a string.
+    - **option 1** - _[string]_ - A simple file path/glob pattern as a string.
 
-      - **option 2** - _[object]_ - An object-based configuration for specifying a file path/glob pattern with advanced options.
+    - **option 2** - _[object]_ - An object-based configuration for specifying a file path/glob pattern with advanced options.
 
 ### `connector`
 
@@ -128,18 +156,28 @@ Uses the status of a resource as data.
 
 _[object]_ - Based on resource status _(required)_
 
-      - **`where_error`** - _[boolean]_ - Indicates whether the condition should trigger when the resource is in an error state. 
-
-## Examples
+    - **`where_error`** - _[boolean]_ - Indicates whether the condition should trigger when the resource is in an error state. 
 
 ```yaml
-# Example: This api returns the top 10 authors by net line changes since the specified date provided in the arguments.
-type: api
-name: metrics_view_api
-metrics_sql: |-
-    SELECT author_name, net_line_changes
-    FROM advanced_metrics_view
-      where author_date > '{{ .args.date }}'
-      order by net_line_changes DESC
-      limit 10
+resource_status:
+  where_error: true
 ```
+
+
+## Common Properties
+
+### `name`
+
+_[string]_ - Name is usually inferred from the filename, but can be specified manually. 
+
+### `refs`
+
+_[array of string]_ - List of resource references 
+
+### `dev`
+
+_[object]_ - Overrides any properties in development environment. 
+
+### `prod`
+
+_[object]_ - Overrides any properties in production environment. 

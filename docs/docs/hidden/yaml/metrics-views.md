@@ -10,7 +10,7 @@ In your Rill project directory, create a metrics view, `<metrics_view>.yaml`, fi
 
 ### `version`
 
-_[string]_ - The version of the metrics view schema _(required)_
+_[string]_ - The version of the metrics view schema 
 
 ### `type`
 
@@ -30,7 +30,7 @@ _[string]_ - Extra instructions for AI agents. Used to guide natural language qu
 
 ### `model`
 
-_[string]_ - Refers to the model powering the dashboard (either model or table is required) 
+_[string]_ - Refers to the model powering the dashboard (either model or table is required) _(required)_
 
 ### `database`
 
@@ -86,15 +86,17 @@ _[array of object]_ - Relates to exploring segments or dimensions of your data a
 
 _[array of object]_ - Used to define the numeric aggregates of columns from your data model 
 
-  - **`name`** - _[string]_ - a stable identifier for the measure 
+  - **`name`** - _[string]_ - a stable identifier for the measure _(required)_
 
-  - **`display_name`** - _[string]_ - the display name of your measure. 
+  - **`display_name`** - _[string]_ - the display name of your measure. _(required)_
 
-  - **`description`** - _[string]_ - a freeform text description of the dimension 
+  - **`label`** - _[string]_ - a label for your measure, deprecated use display_name 
+
+  - **`description`** - _[string]_ - a freeform text description of the measure 
 
   - **`type`** - _[string]_ - Measure calculation type: "simple" for basic aggregations, "derived" for calculations using other measures, or "time_comparison" for period-over-period analysis. Defaults to "simple" unless dependencies exist. 
 
-  - **`expression`** - _[string]_ - a combination of operators and functions for aggregations 
+  - **`expression`** - _[string]_ - a combination of operators and functions for aggregations _(required)_
 
   - **`window`** - _[anyOf]_ - A measure window can be defined as a keyword string (e.g. 'time' or 'all') or an object with detailed window configuration. For more information, see the [window functions](/build/metrics-view/advanced-expressions/windows) documentation. 
 
@@ -104,49 +106,15 @@ _[array of object]_ - Used to define the numeric aggregates of columns from your
 
       - **`partition`** - _[boolean]_ - Controls whether the window is partitioned. When true, calculations are performed within each partition separately. 
 
-      - **`order`** - _[anyOf]_ - Specifies the fields to order the window by, determining the sequence of rows within each partition. 
-
-        - **option 1** - _[string]_ - Simple field name as a string.
-
-        - **option 2** - _[array of anyOf]_ - List of field selectors, each can be a string or an object with detailed configuration.
-
-          - **option 1** - _[string]_ - Shorthand field selector, interpreted as the name.
-
-          - **option 2** - _[object]_ - Detailed field selector configuration with name and optional time grain.
-
-            - **`name`** - _[string]_ - Name of the field to select. _(required)_
-
-            - **`time_grain`** - _[string]_ - Time grain for time-based dimensions. 
+      - **`order`** - _[string]_ - Specifies the fields to order the window by, determining the sequence of rows within each partition. 
 
       - **`frame`** - _[string]_ - Defines the window frame boundaries for calculations, specifying which rows are included in the window relative to the current row. 
 
-  - **`per`** - _[anyOf]_ - for per dimensions 
+  - **`per`** - _[string]_ - for per dimensions 
 
-    - **option 1** - _[string]_ - Simple field name as a string.
+  - **`requires`** - _[object]_ - using an available measure or dimension in your metrics view to set a required parameter, cannot be used with simple measures 
 
-    - **option 2** - _[array of anyOf]_ - List of field selectors, each can be a string or an object with detailed configuration.
-
-      - **option 1** - _[string]_ - Shorthand field selector, interpreted as the name.
-
-      - **option 2** - _[object]_ - Detailed field selector configuration with name and optional time grain.
-
-        - **`name`** - _[string]_ - Name of the field to select. _(required)_
-
-        - **`time_grain`** - _[string]_ - Time grain for time-based dimensions. 
-
-  - **`requires`** - _[anyOf]_ - using an available measure or dimension in your metrics view to set a required parameter, cannot be used with simple measures 
-
-    - **option 1** - _[string]_ - Simple field name as a string.
-
-    - **option 2** - _[array of anyOf]_ - List of field selectors, each can be a string or an object with detailed configuration.
-
-      - **option 1** - _[string]_ - Shorthand field selector, interpreted as the name.
-
-      - **option 2** - _[object]_ - Detailed field selector configuration with name and optional time grain.
-
-        - **`name`** - _[string]_ - Name of the field to select. _(required)_
-
-        - **`time_grain`** - _[string]_ - Time grain for time-based dimensions. 
+  - **`valid_percent_of_total`** - _[boolean]_ - a boolean indicating whether percent-of-total values should be rendered for this measure 
 
   - **`format_preset`** - _[string]_ - Controls the formatting of this measure using a predefined preset. Measures cannot have both `format_preset` and `format_d3`. If neither is supplied, the measure will be formatted using the `humanize` preset by default.
   
@@ -159,13 +127,40 @@ _[array of object]_ - Used to define the numeric aggregates of columns from your
     - `interval_ms`: Convert milliseconds into human-readable durations like hours (h), days (d), years (y), etc. (optional)
  
 
+  - **`format`** - _[string]_ - a custom format string for the measure 
+
   - **`format_d3`** - _[string]_ - Controls the formatting of this measure using a [d3-format](https://d3js.org/d3-format) string. If an invalid format string is supplied, the measure will fall back to `format_preset: humanize`. A measure cannot have both `format_preset` and `format_d3`. If neither is provided, the humanize preset is used by default. Example: `format_d3: ".2f"` formats using fixed-point notation with two decimal places. Example: `format_d3: ",.2r"` formats using grouped thousands with two significant digits. (optional) 
 
-  - **`format_d3_locale`** - _[object]_ - locale configuration passed through to D3, enabling changing the currency symbol among other things. For details, see the docs for D3's [formatLocale](https://d3js.org/d3-format#formatLocale) 
+  - **`format_d3_locale`** - _[object]_ - locale configuration passed through to D3, enabling changing the currency symbol among other things. For details, see the docs for D3's formatLocale.
+    ```yaml
+    format_d3: "$,"
+    format_d3_locale:
+      grouping: [3, 2]
+      currency: ["₹", ""]
+    ```
+ 
 
-  - **`valid_percent_of_total`** - _[boolean]_ - a boolean indicating whether percent-of-total values should be rendered for this measure 
+    - **`grouping`** - _[array]_ - the grouping of the currency symbol 
+
+    - **`currency`** - _[array]_ - the currency symbol 
+
+  - **`decimals`** - _[integer]_ - number of decimal places to display 
+
+  - **`prefix`** - _[string]_ - text to display before the measure value 
+
+  - **`suffix`** - _[string]_ - text to display after the measure value 
+
+  - **`multiplier`** - _[number]_ - multiply the measure value by this number 
+
+  - **`hidden`** - _[boolean]_ - if true, the measure will not be displayed in the UI 
 
   - **`treat_nulls_as`** - _[string]_ - used to configure what value to fill in for missing time buckets. This also works generally as COALESCING over non empty time buckets. 
+
+  - **`drill_through`** - _[object]_ - configuration for drill-through functionality 
+
+    - **`enabled`** - _[boolean]_ - whether drill-through is enabled for this measure 
+
+    - **`target`** - _[string]_ - the target dashboard or URL for drill-through 
 
 ### `annotations`
 

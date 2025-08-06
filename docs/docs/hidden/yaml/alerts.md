@@ -12,13 +12,15 @@ Along with alertings at the dashboard level and can be created via the UI, there
 
 _[string]_ - Refers to the resource type and must be `alert` _(required)_
 
-### `display_name`
-
-_[string]_ - Refers to the display name for the alert 
-
 ### `refresh`
 
-_[object]_ - Specifies the refresh schedule that Rill should follow to re-ingest and update the underlying data _(required)_
+_[object]_ - Refresh schedule for the alert
+  ```yaml
+  refresh:
+    cron: "* * * * *"
+    #every: "24h"
+  ```
+ 
 
   - **`cron`** - _[string]_ - A cron expression that defines the execution schedule 
 
@@ -30,83 +32,59 @@ _[object]_ - Specifies the refresh schedule that Rill should follow to re-ingest
 
   - **`run_in_dev`** - _[boolean]_ - If true, allows the schedule to run in development mode. 
 
-### `intervals`
+### `display_name`
 
-_[object]_ - define the interval of the alert to check 
+_[string]_ - Display name for the alert _(required)_
 
-  - **`duration`** - _[string]_ - a valid ISO8601 duration to define the interval duration 
+### `description`
 
-  - **`limit`** - _[integer]_ - maximum number of intervals to check for on invocation 
-
-  - **`check_unclosed`** - _[boolean]_ - boolean, whether unclosed intervals should be checked 
-
-### `watermark`
-
-_[string]_ - Specifies how the watermark is determined for incremental processing.  Use 'trigger_time' to set it at runtime or 'inherit' to use the upstream model's watermark. 
-
-### `timeout`
-
-_[string]_ - define the timeout of the alert in seconds (optional). 
+_[string]_ - Description for the alert 
 
 ### `data`
 
-_[oneOf]_ - Specifies one of the options to retrieve or compute the data used by alert _(required)_
+_[oneOf]_ - Data source for the alert _(required)_
 
-      - **`sql`** - _[string]_ - Raw SQL query to run against existing models in the project. _(required)_
+    - **`sql`** - _[string]_ - Raw SQL query to run against existing models in the project. _(required)_
 
-      - **`connector`** - _[string]_ - specifies the connector to use when running SQL or glob queries. 
+    - **`connector`** - _[string]_ - specifies the connector to use when running SQL or glob queries. 
 
-      - **`metrics_sql`** - _[string]_ - SQL query that targets a metrics view in the project _(required)_
+    - **`metrics_sql`** - _[string]_ - SQL query that targets a metrics view in the project _(required)_
 
-      - **`api`** - _[string]_ - Name of a custom API defined in the project. _(required)_
+    - **`api`** - _[string]_ - Name of a custom API defined in the project. _(required)_
 
-      - **`args`** - _[object]_ - Arguments to pass to the custom API. 
+    - **`args`** - _[object]_ - Arguments to pass to the custom API. 
 
-      - **`glob`** - _[anyOf]_ - Defines the file path or pattern to query from the specified connector. _(required)_
+    - **`glob`** - _[anyOf]_ - Defines the file path or pattern to query from the specified connector. _(required)_
 
-        - **option 1** - _[string]_ - A simple file path/glob pattern as a string.
+      - **option 1** - _[string]_ - A simple file path/glob pattern as a string.
 
-        - **option 2** - _[object]_ - An object-based configuration for specifying a file path/glob pattern with advanced options.
+      - **option 2** - _[object]_ - An object-based configuration for specifying a file path/glob pattern with advanced options.
 
-      - **`connector`** - _[string]_ - Specifies the connector to use with the glob input. 
+    - **`connector`** - _[string]_ - Specifies the connector to use with the glob input. 
 
-      - **`resource_status`** - _[object]_ - Based on resource status _(required)_
+    - **`resource_status`** - _[object]_ - Based on resource status _(required)_
 
-        - **`where_error`** - _[boolean]_ - Indicates whether the condition should trigger when the resource is in an error state. 
+      - **`where_error`** - _[boolean]_ - Indicates whether the condition should trigger when the resource is in an error state. 
 
-### `for`
+```yaml
+resource_status:
+  where_error: true
+```
 
-_[oneOf]_ - Specifies how user identity or attributes should be evaluated for security policy enforcement. 
 
-      - **`user_id`** - _[string]_ - The unique user ID used to evaluate security policies. _(required)_
+### `condition`
 
-      - **`user_email`** - _[string]_ - The user's email address used to evaluate security policies. _(required)_
+_[object]_ - Condition that triggers the alert _(required)_
 
-      - **`attributes`** - _[object]_ - A dictionary of user attributes used to evaluate security policies. _(required)_
+  - **`operator`** - _[string]_ - Comparison operator (gt, lt, eq, etc.) 
 
-### `on_recover`
+  - **`threshold`** - _[no type]_ - Threshold value for the condition 
 
-_[boolean]_ - Send an alert when a previously failing alert recovers. Defaults to false. 
-
-### `on_fail`
-
-_[boolean]_ - Send an alert when a failure occurs. Defaults to true. 
-
-### `on_error`
-
-_[boolean]_ - Send an alert when an error occurs during evaluation. Defaults to false. 
-
-### `renotify`
-
-_[boolean]_ - Enable repeated notifications for unresolved alerts. Defaults to false. 
-
-### `renotify_after`
-
-_[string]_ - Defines the re-notification interval for the alert (e.g., '10m','24h'), equivalent to snooze duration in UI, defaults to 'Off' 
+  - **`measure`** - _[string]_ - Measure to compare against the threshold 
 
 ### `notify`
 
-_[object]_ - Defines how and where to send notifications. At least one method (email or Slack) is required. _(required)_
+_[object]_ - Notification configuration _(required)_
 
   - **`email`** - _[object]_ - Send notifications via email. 
 
@@ -119,10 +97,6 @@ _[object]_ - Defines how and where to send notifications. At least one method (e
     - **`channels`** - _[array of string]_ - An array of Slack channel IDs to notify. 
 
     - **`webhooks`** - _[array of string]_ - An array of Slack webhook URLs to send notifications to. 
-
-### `annotations`
-
-_[object]_ - Key value pair used for annotations 
 
 ## Common Properties
 
@@ -141,29 +115,3 @@ _[object]_ - Overrides any properties in development environment.
 ### `prod`
 
 _[object]_ - Overrides any properties in production environment. 
-
-## Examples
-
-```yaml
-# Example: To send alert when data lags by more than 1 day to slack channel #rill-cloud-alerts
-type: alert
-display_name: Data lags by more than 1 day
-# Check the alert every hour.
-refresh:
-    cron: 0 * * * *
-# Query that returns non-empty results if the metrics lag by more than 1 day.
-data:
-    sql: |-
-        SELECT  *
-        FROM
-        (
-          SELECT  MAX(event_time) AS max_time
-          FROM rill_metrics_model
-        )
-        WHERE max_time < NOW() - INTERVAL '1 day'
-# Send notifications in Slack.
-notify:
-    slack:
-        channels:
-            - '#rill-cloud-alerts'
-```

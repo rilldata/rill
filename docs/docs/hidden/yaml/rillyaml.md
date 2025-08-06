@@ -197,6 +197,14 @@ mock_users:
 
 ## Common Properties
 
+### `name`
+
+_[string]_ - Name is usually inferred from the filename, but can be specified manually. 
+
+### `refs`
+
+_[array of string]_ - List of resource references 
+
 ### `dev`
 
 _[object]_ - Overrides any properties in development environment. 
