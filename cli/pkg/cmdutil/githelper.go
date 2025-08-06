@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/rilldata/rill/cli/pkg/gitutil"
@@ -139,6 +140,37 @@ func (g *GitHelper) setGitConfig(ctx context.Context, c *gitutil.Config) error {
 
 	g.gitConfig = c
 	return nil
+}
+
+func SetupGitIgnore(ctx context.Context, repo drivers.RepoStore) error {
+	// Ensure .gitignore exists and contains necessary entries
+	contents, err := repo.Get(ctx, ".gitignore")
+	if err != nil {
+		if !strings.Contains(err.Error(), "no such file") {
+			return err
+		}
+		// Create .gitignore if it does not exist
+		err = repo.Put(ctx, ".gitignore", strings.NewReader(".DS_Store\n\n# Rill\n.env\ntmp\n"))
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	gitIgnoreContent := strings.ReplaceAll(string(contents), "\r\n", "\n")
+	gitIgnoreEntries := strings.Split(gitIgnoreContent, "\n")
+	var added bool
+	for _, path := range []string{".DS_Store", ".env", "tmp"} {
+		if slices.Contains(gitIgnoreEntries, path) {
+			continue // already exists
+		}
+		added = true
+		gitIgnoreContent += fmt.Sprintf("\n%s", path)
+	}
+	if !added {
+		return nil // nothing to add
+	}
+	return repo.Put(ctx, ".gitignore", strings.NewReader(gitIgnoreContent))
 }
 
 func EnsureGitignoreHasDotenv(ctx context.Context, repo drivers.RepoStore) (bool, error) {
