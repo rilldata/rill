@@ -54,6 +54,24 @@ _[string]_ - Refers to the resource type and is needed if setting an explicit OL
 
 _[string]_ - Raw SQL query to run against source _(required)_
 
+### `pre_exec`
+
+_[string]_ - Refers to SQL queries to run before the main query, available for DuckDB-based models. (optional). 
+Ensure pre_exec queries are idempotent. Use IF NOT EXISTS statements when applicable.
+```yaml
+pre_exec: ATTACH IF NOT EXISTS 'dbname=postgres host=localhost port=5432 user=postgres password=postgres' AS postgres_db (TYPE POSTGRES)
+```
+ 
+
+### `post_exec`
+
+_[string]_ - Refers to a SQL query that is run after the main query, available for DuckDB-based models. (optional). 
+Ensure post_exec queries are idempotent. Use IF EXISTS statements when applicable.
+```yaml
+post_exec: DETACH DATABASE IF EXISTS postgres_db
+```
+ 
+
 ### `timeout`
 
 _[string]_ - The maximum time to wait for model ingestion 
@@ -68,7 +86,12 @@ _[string]_ - Configure how changes to the model specifications are applied (opti
 
 ### `state`
 
-_[oneOf]_ - Refers to the explicitly defined state of your model, cannot be used with partitions (optional) 
+_[oneOf]_ - Refers to the explicitly defined state of your model, cannot be used with partitions (optional)
+```yaml
+state:
+   sql: SELECT MAX(date) as max_date
+```
+ 
 
     - **`sql`** - _[string]_ - Raw SQL query to run against existing models in the project. _(required)_
 
@@ -100,7 +123,17 @@ resource_status:
 
 ### `partitions`
 
-_[oneOf]_ - Refers to the how your data is partitioned, cannot be used with state. (optional) 
+_[oneOf]_ - Refers to the how your data is partitioned, cannot be used with state. (optional)
+```yaml
+partitions:
+  glob: gcs://my_bucket/y=*/m=*/d=*/*.parquet
+```
+```yaml
+partitions:
+  connector: duckdb
+  sql: SELECT range AS num FROM range(0,10)
+  ```
+ 
 
     - **`sql`** - _[string]_ - Raw SQL query to run against existing models in the project. _(required)_
 
@@ -144,9 +177,17 @@ _[integer]_ - Refers to the number of concurrent partitions that can be read at 
 
 ### `stage`
 
-_[object]_ - in the case of staging models, where an input source does not support direct write to the output and a staging table is required 
+_[object]_ - in the case of staging models, where an input source does not support direct write to the output and a staging table is required
+```yaml
+stage:
+  connector: s3
+  path: s3://my_bucket/my_staging_table
+```
+ 
 
   - **`connector`** - _[string]_ - Refers to the connector type for the staging table _(required)_
+
+  - **`path`** - _[string]_ - Refers to the path to the staging table 
 
 ### `output`
 

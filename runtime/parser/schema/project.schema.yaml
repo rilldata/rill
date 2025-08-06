@@ -293,6 +293,22 @@ oneOf:
           sql:
             type: string
             description: Raw SQL query to run against source
+          pre_exec:
+            type: string
+            description: |
+              Refers to SQL queries to run before the main query, available for DuckDB-based models. (optional). 
+              Ensure pre_exec queries are idempotent. Use IF NOT EXISTS statements when applicable.
+              ```yaml
+              pre_exec: ATTACH IF NOT EXISTS 'dbname=postgres host=localhost port=5432 user=postgres password=postgres' AS postgres_db (TYPE POSTGRES)
+              ```
+          post_exec:
+            type: string
+            description: |
+              Refers to a SQL query that is run after the main query, available for DuckDB-based models. (optional). 
+              Ensure post_exec queries are idempotent. Use IF EXISTS statements when applicable.
+              ```yaml
+              post_exec: DETACH DATABASE IF EXISTS postgres_db
+              ```
           timeout:
             type: string
             description: The maximum time to wait for model ingestion
@@ -308,10 +324,25 @@ oneOf:
             description: Configure how changes to the model specifications are applied (optional). 'reset' will drop and recreate the model automatically, 'manual' will require a manual full or incremental refresh to apply changes, and 'patch' will switch to the new logic without re-processing historical data (only applies for incremental models).
           state:
             $ref: '#/definitions/data_properties'
-            description: Refers to the explicitly defined state of your model, cannot be used with partitions (optional)
+            description: |
+              Refers to the explicitly defined state of your model, cannot be used with partitions (optional)
+              ```yaml
+              state:
+                 sql: SELECT MAX(date) as max_date
+              ```
           partitions:
             $ref: '#/definitions/data_properties'
-            description: Refers to the how your data is partitioned, cannot be used with state. (optional)
+            description: | 
+              Refers to the how your data is partitioned, cannot be used with state. (optional)
+              ```yaml
+              partitions:
+                glob: gcs://my_bucket/y=*/m=*/d=*/*.parquet
+              ```
+              ```yaml
+              partitions:
+                connector: duckdb
+                sql: SELECT range AS num FROM range(0,10)
+                ```
           materialize:
             type: boolean
             description: models will be materialized in olap
@@ -327,9 +358,19 @@ oneOf:
               connector:
                 type: string
                 description: Refers to the connector type for the staging table
+              path:
+                type: string
+                description: Refers to the path to the staging table
+
             required:
               - connector
-            description: in the case of staging models, where an input source does not support direct write to the output and a staging table is required
+            description: | 
+              in the case of staging models, where an input source does not support direct write to the output and a staging table is required
+              ```yaml
+              stage:
+                connector: s3
+                path: s3://my_bucket/my_staging_table
+              ```
             additionalProperties: true
           output:
             type: object

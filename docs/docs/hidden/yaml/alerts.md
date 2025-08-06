@@ -167,3 +167,29 @@ _[object]_ - Overrides any properties in development environment.
 ### `prod`
 
 _[object]_ - Overrides any properties in production environment. 
+
+## Examples
+
+```yaml
+# Example: To send alert when data lags by more than 1 day to slack channel #rill-cloud-alerts
+type: alert
+display_name: Data lags by more than 1 day
+# Check the alert every hour.
+refresh:
+    cron: 0 * * * *
+# Query that returns non-empty results if the metrics lag by more than 1 day.
+data:
+    sql: |-
+        SELECT  *
+        FROM
+        (
+          SELECT  MAX(event_time) AS max_time
+          FROM rill_metrics_model
+        )
+        WHERE max_time < NOW() - INTERVAL '1 day'
+# Send notifications in Slack.
+notify:
+    slack:
+        channels:
+            - '#rill-cloud-alerts'
+```
