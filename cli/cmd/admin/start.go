@@ -391,11 +391,13 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				if runJobs {
 					for _, job := range conf.Jobs {
 						job := job
-						_, err := jobs.EnqueueByKind(cmd.Context(), job)
-						if err != nil {
-							logger.Error("failed to enqueue job", zap.String("job", job), zap.Error(err))
-							os.Exit(1)
-						}
+						group.Go(func() error {
+							_, err := jobs.EnqueueByKind(cmd.Context(), job)
+							if err != nil {
+								return err
+							}
+							return nil
+						})
 					}
 				}
 			}
