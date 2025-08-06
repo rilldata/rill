@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"google.golang.org/grpc"
 	"strings"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
@@ -102,7 +101,7 @@ func LogsCmd(ch *cmdutil.Helper) *cobra.Command {
 				return context.Cause(ctx)
 			}
 
-			res, err := rt.GetLogs(cmd.Context(), &runtimev1.GetLogsRequest{InstanceId: depl.RuntimeInstanceId, Ascending: true, Limit: int32(tail), Level: lvl}, grpc.MaxCallRecvMsgSize(17*1024*1024)) // setting grpc received message size to 16MB(default max logbuffer size)+1MB(buffer).)
+			res, err := rt.GetLogs(cmd.Context(), &runtimev1.GetLogsRequest{InstanceId: depl.RuntimeInstanceId, Ascending: true, Limit: int32(tail), Level: lvl})
 			if err != nil {
 				return fmt.Errorf("failed to get logs: %w", err)
 			}
