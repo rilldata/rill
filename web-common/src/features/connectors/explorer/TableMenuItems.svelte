@@ -104,7 +104,7 @@
   </NavigationMenuItem>
 {/if}
 
-{#if showGenerateMetricsAndDashboard && isModelingSupported}
+{#if showGenerateMetricsAndDashboard}
   <NavigationMenuItem on:click={createMetricsViewFromTable}>
     <MetricsViewIcon slot="icon" />
     <div class="flex gap-x-2 items-center">
