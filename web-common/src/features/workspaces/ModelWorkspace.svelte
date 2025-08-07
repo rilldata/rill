@@ -23,6 +23,7 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { fade, slide } from "svelte/transition";
   import ReconcilingSpinner from "../entity-management/ReconcilingSpinner.svelte";
+  import { getUserFriendlyError } from "../models/error-utils";
 
   export let fileArtifact: FileArtifact;
 
@@ -149,7 +150,9 @@
               class="error bottom-4 break-words overflow-auto p-6 border-2 border-gray-300 font-bold text-gray-700 w-full shrink-0 max-h-[60%] bg-gray-100 flex flex-col gap-2"
             >
               {#each allErrors as error (error.message)}
-                <div>{error.message}</div>
+                <div>
+                  {getUserFriendlyError(error.message ?? "")}
+                </div>
               {/each}
             </div>
           {/if}
