@@ -13,7 +13,7 @@
   import { runtime } from "../../runtime-client/runtime-store";
   import { createRuntimeServiceGetInstance } from "../../runtime-client";
 
-  // Get current OLAP connector to check if it's ClickHouse
+  // Get current OLAP connector; enable Add Data only when the default is DuckDB
   $: ({ instanceId } = $runtime);
   $: instance = createRuntimeServiceGetInstance(instanceId, {
     sensitive: true,
