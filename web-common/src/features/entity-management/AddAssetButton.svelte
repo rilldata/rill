@@ -45,7 +45,6 @@
 
   $: ({ instanceId } = $runtime);
 
-  // Get current OLAP connector; enable Add Data only when the default is DuckDB
   $: instance = createRuntimeServiceGetInstance(instanceId, {
     sensitive: true,
   });
