@@ -194,7 +194,7 @@ allow_host_access: true                          # Allow host-level file path ac
 ---
 type: connector                                  # Must be `connector` (required)
 driver: duckdb                                   # Must be `duckdb` _(required)_
-
+mode: "read"                                     # Operation mode: `read` or `readwrite` _(default: read)_  
 
 path: "md:my_db"                                # Path to your MD database
 
