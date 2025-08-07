@@ -10,6 +10,16 @@
   } from "../../metrics/service/BehaviourEventTypes";
   import { MetricsEventSpace } from "../../metrics/service/MetricsTypes";
   import { addSourceModal } from "../sources/modal/add-source-visibility";
+  import { runtime } from "../../runtime-client/runtime-store";
+  import { createRuntimeServiceGetInstance } from "../../runtime-client";
+
+  // Get current OLAP connector to check if it's ClickHouse
+  $: ({ instanceId } = $runtime);
+  $: instance = createRuntimeServiceGetInstance(instanceId, {
+    sensitive: true,
+  });
+  $: currentOlapConnector = $instance.data?.instance?.olapConnector;
+  $: isDuckDBDefault = currentOlapConnector === "duckdb";
 
   async function openShowAddSourceModal() {
     addSourceModal.open();
@@ -35,15 +45,34 @@
       Build fast operational dashboards that your team will actually use.
     </Subheading>
   </div>
-  <button
-    class="pl-2 pr-4 py-2 rounded-sm bg-gradient-to-b from-primary-400 to-primary-500 hover:from-primary-500 hover:to-primary-500"
-    on:click={openShowAddSourceModal}
-  >
-    <div
-      class="flex flex-row gap-x-1 items-center text-sm font-medium text-white"
-    >
-      <Add className="text-white" />
-      Connect your data
+  {#if !isDuckDBDefault}
+    <div class="flex flex-col gap-y-2">
+      <p class="text-sm text-gray-500">
+        Other OLAP connectors work with existing database tables
+      </p>
+      <button
+        class="pl-2 pr-4 py-2 rounded-sm bg-gray-300 cursor-not-allowed"
+        disabled
+      >
+        <div
+          class="flex flex-row gap-x-1 items-center text-sm font-medium text-gray-500"
+        >
+          <Add className="text-gray-500" />
+          Connect your data (not available)
+        </div>
+      </button>
     </div>
-  </button>
+  {:else}
+    <button
+      class="pl-2 pr-4 py-2 rounded-sm bg-gradient-to-b from-primary-400 to-primary-500 hover:from-primary-500 hover:to-primary-500"
+      on:click={openShowAddSourceModal}
+    >
+      <div
+        class="flex flex-row gap-x-1 items-center text-sm font-medium text-white"
+      >
+        <Add className="text-white" />
+        Connect your data
+      </div>
+    </button>
+  {/if}
 </section>

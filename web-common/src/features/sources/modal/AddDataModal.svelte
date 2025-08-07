@@ -7,6 +7,7 @@
   import { cn } from "@rilldata/web-common/lib/shadcn";
   import {
     createRuntimeServiceListConnectorDrivers,
+    createRuntimeServiceGetInstance,
     type V1ConnectorDriver,
   } from "@rilldata/web-common/runtime-client";
   import { onMount } from "svelte";
@@ -44,6 +45,14 @@
   let selectedConnector: null | V1ConnectorDriver = null;
   let requestConnector = false;
   let isSubmittingForm = false;
+
+  // Get current OLAP connector to check if it's ClickHouse
+  $: ({ instanceId } = $runtime);
+  $: instance = createRuntimeServiceGetInstance(instanceId, {
+    sensitive: true,
+  });
+  $: currentOlapConnector = $instance.data?.instance?.olapConnector;
+  $: isDuckDBDefault = currentOlapConnector === "duckdb";
 
   const SOURCES = [
     "gcs",
@@ -274,15 +283,33 @@
         {:else if selectedConnector.name === "local_file"}
           <LocalSourceUpload on:close={resetModal} on:back={back} />
         {:else if selectedConnector.name}
-          <AddDataForm
-            connector={selectedConnector}
-            formType={OLAP_CONNECTORS.includes(selectedConnector.name)
-              ? "connector"
-              : "source"}
-            onClose={resetModal}
-            onBack={back}
-            on:submitting={handleSubmittingChange}
-          />
+          {#if isDuckDBDefault}
+            <AddDataForm
+              connector={selectedConnector}
+              formType={OLAP_CONNECTORS.includes(selectedConnector.name)
+                ? "connector"
+                : "source"}
+              onClose={resetModal}
+              onBack={back}
+              on:submitting={handleSubmittingChange}
+            />
+          {:else}
+            <div class="p-6">
+              <div class="text-center">
+                <h3 class="text-lg font-semibold text-gray-900 mb-2">
+                  Add Data Not Available
+                </h3>
+                <p class="text-gray-600 mb-4">
+                  The "Add Data" form is only available when DuckDB is the
+                  default OLAP connector.
+                </p>
+                <p class="text-sm text-gray-500">
+                  Other OLAP connectors work with existing database tables
+                  rather than importing new data sources.
+                </p>
+              </div>
+            </div>
+          {/if}
         {/if}
       {/if}
 
