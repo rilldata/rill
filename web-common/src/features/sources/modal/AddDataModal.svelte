@@ -52,7 +52,7 @@
     sensitive: true,
   });
   $: currentOlapConnector = $instance.data?.instance?.olapConnector;
-  $: isDuckDBDefault = currentOlapConnector === "duckdb";
+  $: isOlapDuckdb = currentOlapConnector === "duckdb";
 
   const SOURCES = [
     "gcs",
@@ -283,7 +283,7 @@
         {:else if selectedConnector.name === "local_file"}
           <LocalSourceUpload on:close={resetModal} on:back={back} />
         {:else if selectedConnector.name}
-          {#if isDuckDBDefault}
+          {#if isOlapDuckdb}
             <AddDataForm
               connector={selectedConnector}
               formType={OLAP_CONNECTORS.includes(selectedConnector.name)

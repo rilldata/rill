@@ -19,7 +19,7 @@
     sensitive: true,
   });
   $: currentOlapConnector = $instance.data?.instance?.olapConnector;
-  $: isDuckDBDefault = currentOlapConnector === "duckdb";
+  $: isOlapDuckdb = currentOlapConnector === "duckdb";
 
   async function openShowAddSourceModal() {
     addSourceModal.open();
@@ -45,7 +45,7 @@
       Build fast operational dashboards that your team will actually use.
     </Subheading>
   </div>
-  {#if !isDuckDBDefault}
+  {#if !isOlapDuckdb}
     <div class="flex flex-col gap-y-2">
       <p class="text-sm text-gray-500">
         Other OLAP connectors work with existing database tables
