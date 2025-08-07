@@ -130,9 +130,16 @@ func (p *Provisioner) Provision(ctx context.Context, r *provisioner.Resource, op
 	}
 
 	// Prepare for creating the schema and user.
-	id := sanitizeName(r.ID)
+	id := strings.ReplaceAll(r.ID, "-", "")
 	user := fmt.Sprintf("rill_%s", id)
-	dbName := generateDatabaseName(id, opts.Annotations)
+	dbName := fmt.Sprintf("rill_%s", id)
+
+	// Use org and project names to create a more human-readable database name.
+	orgName := sanitizeName(getAnnotationValue(opts.Annotations, "organization_name"))
+	projectName := sanitizeName(getAnnotationValue(opts.Annotations, "project_name"))
+	if orgName != "" && projectName != "" {
+		dbName = fmt.Sprintf("rill_%s_%s_%s", orgName, projectName, id)
+	}
 
 	password := newPassword()
 	annotationsJSON, err := json.Marshal(opts.Annotations)
@@ -141,13 +148,13 @@ func (p *Provisioner) Provision(ctx context.Context, r *provisioner.Resource, op
 	}
 
 	// Idempotently create the schema
-	_, err = p.ch.ExecContext(ctx, fmt.Sprintf("CREATE DATABASE IF NOT EXISTS `%s` %s COMMENT ?", dbName, p.onCluster()), string(annotationsJSON))
+	_, err = p.ch.ExecContext(ctx, fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s %s COMMENT ?", dbName, p.onCluster()), string(annotationsJSON))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create clickhouse database: %w", err)
 	}
 
 	// Idempotently create the user.
-	_, err = p.ch.ExecContext(ctx, fmt.Sprintf("CREATE USER IF NOT EXISTS `%s` %s IDENTIFIED WITH sha256_password BY ? DEFAULT DATABASE `%s` GRANTEES NONE", user, p.onCluster(), dbName), password)
+	_, err = p.ch.ExecContext(ctx, fmt.Sprintf("CREATE USER IF NOT EXISTS %s %s IDENTIFIED WITH sha256_password BY ? DEFAULT DATABASE %s GRANTEES NONE", user, p.onCluster(), dbName), password)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create clickhouse user: %w", err)
 	}
@@ -155,13 +162,29 @@ func (p *Provisioner) Provision(ctx context.Context, r *provisioner.Resource, op
 	// When creating the user, the password assignment is not idempotent (if there are two concurrent invocations, we don't know which password was used).
 	// By adding the password separately, we ensure all passwords will work.
 	// NOTE: Requires ClickHouse 24.9 or later.
-	_, err = p.ch.ExecContext(ctx, fmt.Sprintf("ALTER USER `%s` %s ADD IDENTIFIED WITH sha256_password BY ?", user, p.onCluster()), password)
+	_, err = p.ch.ExecContext(ctx, fmt.Sprintf("ALTER USER %s %s ADD IDENTIFIED WITH sha256_password BY ?", user, p.onCluster()), password)
 	if err != nil {
 		return nil, fmt.Errorf("failed to add password for clickhouse user: %w", err)
 	}
 
 	// Grant privileges on the database to the user
-	_, err = p.ch.ExecContext(ctx, fmt.Sprintf(`GRANT %s SELECT, INSERT, ALTER, CREATE TABLE, CREATE DICTIONARY, CREATE VIEW, DROP TABLE, DROP DICTIONARY, DROP VIEW, TRUNCATE, OPTIMIZE, SHOW DICTIONARIES, dictGet ON `+"`%s`"+`.* TO `+"`%s`", p.onCluster(), dbName, user))
+	_, err = p.ch.ExecContext(ctx, fmt.Sprintf(`
+		GRANT %s
+			SELECT,
+			INSERT,
+			ALTER,
+			CREATE TABLE,
+			CREATE DICTIONARY,
+			CREATE VIEW,
+			DROP TABLE,
+			DROP DICTIONARY,
+			DROP VIEW,
+			TRUNCATE,
+			OPTIMIZE,
+			SHOW DICTIONARIES,
+			dictGet
+		ON %s.* TO %s
+	`, p.onCluster(), dbName, user))
 	if err != nil {
 		return nil, fmt.Errorf("failed to grant privileges to clickhouse user: %w", err)
 	}
@@ -169,13 +192,23 @@ func (p *Provisioner) Provision(ctx context.Context, r *provisioner.Resource, op
 	// Grant access to system.parts for reporting disk usage.
 	// NOTE 1: ClickHouse automatically adds row filters to restrict result to tables the user has access to.
 	// NOTE 2: We do not need to explicitly grant access to system.tables and system.columns because ClickHouse adds those implicitly.
-	_, err = p.ch.ExecContext(ctx, fmt.Sprintf("GRANT %s SELECT ON system.parts TO `%s`", p.onCluster(), user))
+	_, err = p.ch.ExecContext(ctx, fmt.Sprintf("GRANT %s SELECT ON system.parts TO %s", p.onCluster(), user))
 	if err != nil {
 		return nil, fmt.Errorf("failed to grant system privileges to clickhouse user: %w", err)
 	}
 
 	// Grant some additional global privileges to the user
-	_, err = p.ch.ExecContext(ctx, fmt.Sprintf(`GRANT %s URL, REMOTE, MONGO, MYSQL, POSTGRES, S3, AZURE ON *.* TO `+"`%s`", p.onCluster(), user))
+	_, err = p.ch.ExecContext(ctx, fmt.Sprintf(`
+		GRANT %s
+			URL,
+			REMOTE,
+			MONGO,
+			MYSQL,
+			POSTGRES,
+			S3,
+			AZURE
+		ON *.* TO %s
+	`, p.onCluster(), user))
 	if err != nil {
 		return nil, fmt.Errorf("failed to grant global privileges to clickhouse user: %w", err)
 	}
@@ -236,13 +269,13 @@ func (p *Provisioner) Deprovision(ctx context.Context, r *provisioner.Resource) 
 	}
 
 	// Drop the database
-	_, err = p.ch.ExecContext(ctx, fmt.Sprintf("DROP DATABASE IF EXISTS `%s` %s", opts.Auth.Database, p.onCluster()))
+	_, err = p.ch.ExecContext(ctx, fmt.Sprintf("DROP DATABASE IF EXISTS %s %s", opts.Auth.Database, p.onCluster()))
 	if err != nil {
 		return fmt.Errorf("failed to drop clickhouse database: %w", err)
 	}
 
 	// Drop the user
-	_, err = p.ch.ExecContext(ctx, fmt.Sprintf("DROP USER IF EXISTS `%s` %s", opts.Auth.Username, p.onCluster()))
+	_, err = p.ch.ExecContext(ctx, fmt.Sprintf("DROP USER IF EXISTS %s %s", opts.Auth.Username, p.onCluster()))
 	if err != nil {
 		return fmt.Errorf("failed to drop clickhouse user: %w", err)
 	}
@@ -323,37 +356,4 @@ func sanitizeName(name string) string {
 	}
 
 	return strings.ToLower(result.String())
-}
-
-// generateDatabaseName creates a predictable, length-controlled database name
-func generateDatabaseName(resourceID string, annotations map[string]string) string {
-	orgName := sanitizeName(getAnnotationValue(annotations, "organization_name"))
-	projectName := sanitizeName(getAnnotationValue(annotations, "project_name"))
-
-	var builder strings.Builder
-	builder.WriteString("rill")
-
-	// Build database name based on available components for human readability
-	if orgName != "" {
-		builder.WriteString("_")
-		builder.WriteString(orgName)
-	}
-	if projectName != "" {
-		builder.WriteString("_")
-		builder.WriteString(projectName)
-	}
-	builder.WriteString("_")
-	builder.WriteString(resourceID)
-
-	dbName := builder.String()
-
-	// Ensure the total length doesn't exceed 63 characters
-	if len(dbName) > 63 {
-		dbName = dbName[:63]
-	}
-
-	// Remove any trailing underscores
-	dbName = strings.TrimRight(dbName, "_")
-
-	return dbName
 }
