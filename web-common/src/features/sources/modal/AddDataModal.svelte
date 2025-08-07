@@ -62,7 +62,7 @@
     "https",
   ];
 
-  const OLAP_CONNECTORS = ["clickhouse", "druid", "pinot", "motherduck"];
+  const OLAP_CONNECTORS = ["motherduck", "clickhouse", "druid", "pinot"];
 
   const SORT_ORDER = [...SOURCES, ...OLAP_CONNECTORS];
 
