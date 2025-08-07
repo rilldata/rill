@@ -92,11 +92,7 @@
               <p>{step.description}</p>
             </div>
             {#if step.id === "source"}
-              <Button
-                type="secondary"
-                onClick={addSourceModal.open}
-                disabled={olapConnector !== "duckdb"}
-              >
+              <Button type="secondary" onClick={addSourceModal.open}>
                 <IconSpaceFixer pullLeft><Add /></IconSpaceFixer>
                 <span>Add data</span>
               </Button>
