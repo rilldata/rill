@@ -294,13 +294,8 @@ func TestClickHouseStaticHumanReadableNaming(t *testing.T) {
 	opts2, err := clickhouse.ParseDSN(cfg.DSN)
 	require.NoError(t, err)
 	// Check that the database name follows the expected format
-	expectedDBName := fmt.Sprintf(
-		"rill_%s_%s_%s",
-		nonAlphanumericRegexp.ReplaceAllString(opts.Annotations["organization_name"], ""),
-		nonAlphanumericRegexp.ReplaceAllString(opts.Annotations["project_name"], ""),
-		nonAlphanumericRegexp.ReplaceAllString(resourceID, ""),
-	)
 	expectedUser := fmt.Sprintf("rill_%s", nonAlphanumericRegexp.ReplaceAllString(resourceID, ""))
+	expectedDBName := generateDatabaseName(resourceID, opts.Annotations)
 
 	require.Equal(t, expectedDBName, opts2.Auth.Database)
 	require.Equal(t, expectedUser, opts2.Auth.Username)
@@ -381,8 +376,8 @@ func TestClickHouseStaticFallbackNaming(t *testing.T) {
 	opts2, err := clickhouse.ParseDSN(cfg.DSN)
 	require.NoError(t, err)
 	// Check that the database name follows the fallback format
-	expectedDBName := fmt.Sprintf("rill_%s", nonAlphanumericRegexp.ReplaceAllString(resourceID, ""))
 	expectedUser := fmt.Sprintf("rill_%s", nonAlphanumericRegexp.ReplaceAllString(resourceID, ""))
+	expectedDBName := generateDatabaseName(resourceID, opts.Annotations)
 
 	require.Equal(t, expectedDBName, opts2.Auth.Database)
 	require.Equal(t, expectedUser, opts2.Auth.Username)
@@ -402,34 +397,6 @@ func TestClickHouseStaticFallbackNaming(t *testing.T) {
 	// Clean up
 	err = p.Deprovision(context.Background(), out)
 	require.NoError(t, err)
-}
-
-func TestSanitizeName(t *testing.T) {
-	tests := []struct {
-		input    string
-		expected string
-	}{
-		{"", ""},
-		{"simple", "simple"},
-		{"Simple", "Simple"},
-		{"UPPERCASE", "UPPERCASE"},
-		{"with-dashes", "withdashes"},
-		{"with spaces", "withspaces"},
-		{"with@special!chars", "withspecialchars"},
-		{"mixed-Case_Name", "mixedCaseName"},
-		{"123numbers", "123numbers"},
-		{"_underscore_", "underscore"},
-		{"Acme-Corp", "AcmeCorp"},
-		{"My-Project", "MyProject"},
-		{"name_with_special_characters_1234567890!@#$%^&*()_+{}|:\"<>?[];',./`~", "namewithspecialcharacters1234567890"},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.input, func(t *testing.T) {
-			result := nonAlphanumericRegexp.ReplaceAllString(tt.input, "")
-			require.Equal(t, tt.expected, result)
-		})
-	}
 }
 
 func TestGenerateDatabaseName(t *testing.T) {

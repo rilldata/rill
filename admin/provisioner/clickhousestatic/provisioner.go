@@ -338,5 +338,5 @@ func generateDatabaseName(resourceID string, annotations map[string]string) stri
 		name = name[:63]
 	}
 	name = strings.TrimRight(name, "_")
-	return name
+	return strings.ToLower(name)
 }
