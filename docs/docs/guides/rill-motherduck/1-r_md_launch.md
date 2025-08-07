@@ -15,12 +15,15 @@ You will need to [install Rill](https://docs.rilldata.com/home/install).
 curl https://rill.sh | sh
 ```
 
-You need access to either a [locally running ClickHouse Server](https://clickhouse.com/docs/en/install) or [ClickHouse Cloud](https://docs.rilldata.com/reference/olap-engines/clickhouse#connecting-to-clickhouse-cloud). We recommend using ClickHouse Cloud as this will make deploying to Rill Cloud easier. Please review the documentation, [here](https://docs.rilldata.com/reference/olap-engines/clickhouse).
+You need a MotherDuck token to connect to your MotherDuck database. 
+Check our MotherDuck's documentation on [how to generate an access token](https://motherduck.com/docs/key-tasks/authenticating-and-connecting-to-motherduck/authenticating-to-motherduck/#authentication-using-an-access-token).
+
+
 :::
 ## Start Rill Developer
 
 ```yaml
-rill start my-rill-clickhouse
+rill start my-rill-motherduck
 ```
 
 After running the command, Rill Developer should automatically open in your default browser. If not, you can access it via the following url:

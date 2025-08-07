@@ -1,14 +1,12 @@
 ---
-title: "3. Create Metrics View Dashboard in Rill"
-sidebar_label: "3. Create Metrics View Dashboard in Rill"
+title: "3. Create Metrics View in Rill"
+sidebar_label: "3. Create Metrics View in Rill"
 sidebar_position: 3
 hide_table_of_contents: false
 tags:
   - OLAP:ClickHouse
   - Tutorial
 ---
-
-## Create the Metrics View.
 
 If you noticed in the previous screenshot, we had a table called `uk_price_paid`. This is a dataset that is used in ClickHouse's Learning portal, so we thought it was fitting to go ahead and continue on this dataset.
 
