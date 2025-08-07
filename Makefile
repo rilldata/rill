@@ -12,15 +12,19 @@ cli: cli.prepare
 
 .PHONY: cli.prepare
 cli.prepare:
+	rm -rf runtime/pkg/examples/embed/dist || true
+	mkdir -p runtime/pkg/examples/embed/dist
+	git clone --quiet https://github.com/rilldata/rill-examples.git runtime/pkg/examples/embed/dist
+	find runtime/pkg/examples/embed/dist -mindepth 1 -maxdepth 1 -type d \
+	! -name 'rill-openrtb-prog-ads' \
+	! -name 'rill-github-analytics' \
+	! -name 'rill-cost-monitoring' \
+	-exec rm -rf {} +
 	npm install
 	npm run build
 	rm -rf cli/pkg/web/embed/dist || true
 	mkdir -p cli/pkg/web/embed/dist
 	cp -r web-local/build/* cli/pkg/web/embed/dist
-	rm -rf runtime/pkg/examples/embed/dist || true
-	mkdir -p runtime/pkg/examples/embed/dist
-	git clone --quiet https://github.com/rilldata/rill-examples.git runtime/pkg/examples/embed/dist
-	rm -rf runtime/pkg/examples/embed/dist/.git
 	go run scripts/embed_duckdb_ext/main.go
 
 .PHONY: coverage.go
