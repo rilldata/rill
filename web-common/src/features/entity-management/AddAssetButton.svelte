@@ -35,7 +35,6 @@
     resourceIconMapping,
   } from "./resource-icon-mapping";
   import { ResourceKind, useFilteredResources } from "./resource-selectors";
-  import { createRuntimeServiceGetInstance } from "../../runtime-client";
 
   let active = false;
   let showExploreDialog = false;
@@ -44,12 +43,6 @@
   const createFolder = createRuntimeServiceCreateDirectory();
 
   $: ({ instanceId } = $runtime);
-
-  $: instance = createRuntimeServiceGetInstance(instanceId, {
-    sensitive: true,
-  });
-  $: currentOlapConnector = $instance.data?.instance?.olapConnector;
-  $: isOlapDuckdb = currentOlapConnector === "duckdb";
 
   $: currentFile = $page.params.file;
   $: currentDirectory = currentFile
@@ -188,17 +181,9 @@
       aria-label="Add Data"
       class="flex gap-x-2"
       on:click={handleAddData}
-      disabled={!isOlapDuckdb}
     >
       <svelte:component this={Database} color="#C026D3" size="16px" />
-      <div class="flex flex-col items-start">
-        Data
-        {#if !isOlapDuckdb}
-          <span class="text-gray-500 text-xs">
-            Only available with DuckDB
-          </span>
-        {/if}
-      </div>
+      Data
     </DropdownMenu.Item>
     <DropdownMenu.Item
       aria-label="Add Model"
