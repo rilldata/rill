@@ -53,7 +53,6 @@
     "athena",
     "redshift",
     "duckdb",
-    "motherduck",
     "postgres",
     "mysql",
     "sqlite",
@@ -63,7 +62,7 @@
     "https",
   ];
 
-  const OLAP_CONNECTORS = ["clickhouse", "druid", "pinot"];
+  const OLAP_CONNECTORS = ["clickhouse", "druid", "pinot", "motherduck"];
 
   const SORT_ORDER = [...SOURCES, ...OLAP_CONNECTORS];
 
