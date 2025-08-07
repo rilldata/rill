@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/url"
 	"os"
+	"regexp"
 	"strings"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
@@ -16,6 +17,8 @@ import (
 	"github.com/rilldata/rill/admin/provisioner"
 	"go.uber.org/zap"
 )
+
+var nonAlphanumericRegexp = regexp.MustCompile(`[^a-zA-Z0-9]+`)
 
 func init() {
 	provisioner.Register("clickhouse-static", New)
@@ -130,16 +133,8 @@ func (p *Provisioner) Provision(ctx context.Context, r *provisioner.Resource, op
 	}
 
 	// Prepare for creating the schema and user.
-	id := strings.ReplaceAll(r.ID, "-", "")
-	user := fmt.Sprintf("rill_%s", id)
-	dbName := fmt.Sprintf("rill_%s", id)
-
-	// Use org and project names to create a more human-readable database name.
-	orgName := sanitizeName(getAnnotationValue(opts.Annotations, "organization_name"))
-	projectName := sanitizeName(getAnnotationValue(opts.Annotations, "project_name"))
-	if orgName != "" && projectName != "" {
-		dbName = fmt.Sprintf("rill_%s_%s_%s", orgName, projectName, id)
-	}
+	user := fmt.Sprintf("rill_%s", nonAlphanumericRegexp.ReplaceAllString(r.ID, ""))
+	dbName := generateDatabaseName(r.ID, opts.Annotations)
 
 	password := newPassword()
 	annotationsJSON, err := json.Marshal(opts.Annotations)
@@ -329,31 +324,19 @@ func newPassword() string {
 	return fmt.Sprintf("1Rr!%x", b[:])
 }
 
-// Helper function to get annotation value
-func getAnnotationValue(annotations map[string]string, key string) string {
-	if annotations == nil {
-		return ""
+func generateDatabaseName(resourceID string, annotations map[string]string) string {
+	name := "rill"
+	if org, ok := annotations["organization_name"]; ok {
+		name += "_" + nonAlphanumericRegexp.ReplaceAllString(org, "")
 	}
-	return annotations[key]
-}
-
-// Helper function to sanitize names for ClickHouse identifiers
-func sanitizeName(name string) string {
-	if name == "" {
-		return ""
+	if proj, ok := annotations["project_name"]; ok {
+		name += "_" + nonAlphanumericRegexp.ReplaceAllString(proj, "")
 	}
-
-	// Replace invalid characters with underscores
-	name = strings.ReplaceAll(name, "-", "_")
-	name = strings.ReplaceAll(name, " ", "_")
-
-	// Remove any characters that aren't alphanumeric or underscore
-	var result strings.Builder
-	for _, r := range name {
-		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '_' {
-			result.WriteRune(r)
-		}
+	name += "_" + nonAlphanumericRegexp.ReplaceAllString(resourceID, "")
+	// Optionally, trim to 63 chars and remove trailing underscores if needed
+	if len(name) > 63 {
+		name = name[:63]
 	}
-
-	return strings.ToLower(result.String())
+	name = strings.TrimRight(name, "_")
+	return name
 }

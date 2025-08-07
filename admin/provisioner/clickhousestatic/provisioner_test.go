@@ -294,9 +294,13 @@ func TestClickHouseStaticHumanReadableNaming(t *testing.T) {
 	opts2, err := clickhouse.ParseDSN(cfg.DSN)
 	require.NoError(t, err)
 	// Check that the database name follows the expected format
-	expectedID := sanitizeName(resourceID)
-	expectedDBName := fmt.Sprintf("rill_acme_corp_my_project_%s", expectedID)
-	expectedUser := fmt.Sprintf("rill_%s", expectedID) // User name uses sanitized format
+	expectedDBName := fmt.Sprintf(
+		"rill_%s_%s_%s",
+		nonAlphanumericRegexp.ReplaceAllString(opts.Annotations["organization_name"], ""),
+		nonAlphanumericRegexp.ReplaceAllString(opts.Annotations["project_name"], ""),
+		nonAlphanumericRegexp.ReplaceAllString(resourceID, ""),
+	)
+	expectedUser := fmt.Sprintf("rill_%s", nonAlphanumericRegexp.ReplaceAllString(resourceID, ""))
 
 	require.Equal(t, expectedDBName, opts2.Auth.Database)
 	require.Equal(t, expectedUser, opts2.Auth.Username)
@@ -377,9 +381,8 @@ func TestClickHouseStaticFallbackNaming(t *testing.T) {
 	opts2, err := clickhouse.ParseDSN(cfg.DSN)
 	require.NoError(t, err)
 	// Check that the database name follows the fallback format
-	expectedID := sanitizeName(resourceID)
-	expectedDBName := fmt.Sprintf("rill_%s", expectedID)
-	expectedUser := fmt.Sprintf("rill_%s", expectedID) // User name uses sanitized format
+	expectedDBName := fmt.Sprintf("rill_%s", nonAlphanumericRegexp.ReplaceAllString(resourceID, ""))
+	expectedUser := fmt.Sprintf("rill_%s", nonAlphanumericRegexp.ReplaceAllString(resourceID, ""))
 
 	require.Equal(t, expectedDBName, opts2.Auth.Database)
 	require.Equal(t, expectedUser, opts2.Auth.Username)
@@ -408,21 +411,22 @@ func TestSanitizeName(t *testing.T) {
 	}{
 		{"", ""},
 		{"simple", "simple"},
-		{"Simple", "simple"},
-		{"UPPERCASE", "uppercase"},
-		{"with-dashes", "with_dashes"},
-		{"with spaces", "with_spaces"},
+		{"Simple", "Simple"},
+		{"UPPERCASE", "UPPERCASE"},
+		{"with-dashes", "withdashes"},
+		{"with spaces", "withspaces"},
 		{"with@special!chars", "withspecialchars"},
-		{"mixed-Case_Name", "mixed_case_name"},
+		{"mixed-Case_Name", "mixedCaseName"},
 		{"123numbers", "123numbers"},
-		{"_underscore_", "_underscore_"},
-		{"Acme-Corp", "acme_corp"},
-		{"My-Project", "my_project"},
+		{"_underscore_", "underscore"},
+		{"Acme-Corp", "AcmeCorp"},
+		{"My-Project", "MyProject"},
+		{"name_with_special_characters_1234567890!@#$%^&*()_+{}|:\"<>?[];',./`~", "namewithspecialcharacters1234567890"},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.input, func(t *testing.T) {
-			result := sanitizeName(tt.input)
+			result := nonAlphanumericRegexp.ReplaceAllString(tt.input, "")
 			require.Equal(t, tt.expected, result)
 		})
 	}
@@ -439,19 +443,19 @@ func TestGenerateDatabaseName(t *testing.T) {
 			name:        "with org and project",
 			id:          "77cf2b72_65ab_4bbe_a10e_627bcff4915e",
 			annotations: map[string]string{"organization_name": "rilldata", "project_name": "dev-project-1"},
-			expected:    "rill_rilldata_dev_project_1_77cf2b72_65ab_4bbe_a10e_627bcff4915",
+			expected:    "rill_rilldata_devproject1_77cf2b7265ab4bbea10e627bcff4915e",
 		},
 		{
 			name:        "with org only",
 			id:          "12345",
 			annotations: map[string]string{"organization_name": "acme-corp"},
-			expected:    "rill_acme_corp_12345",
+			expected:    "rill_acmecorp_12345",
 		},
 		{
 			name:        "with project only",
 			id:          "12345",
 			annotations: map[string]string{"project_name": "my-project"},
-			expected:    "rill_my_project_12345",
+			expected:    "rill_myproject_12345",
 		},
 		{
 			name:        "no annotations",
@@ -469,7 +473,7 @@ func TestGenerateDatabaseName(t *testing.T) {
 			name:        "long name truncated",
 			id:          "very_long_resource_id_that_will_cause_truncation_12345678",
 			annotations: map[string]string{"organization_name": "very_long_organization_name", "project_name": "very_long_project_name"},
-			expected:    "rill_very_long_organization_name_very_long_project_name_very_lo",
+			expected:    "rill_verylongorganizationname_verylongprojectname_verylongresou",
 		},
 	}
 
