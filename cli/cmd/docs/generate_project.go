@@ -516,7 +516,6 @@ func generateDoc(sidebarPosition, level int, node *yaml.Node, indent string, req
 				}
 			} else {
 				if !(id == "connectors" || id == "apis") {
-								}
 
 				if len(oneOf.Content) == 1 {
 					doc.WriteString(generateDoc(sidebarPosition, level, oneOf.Content[0], indent, getRequiredMapFromNode(oneOf.Content[0]), rootSchema, id))
