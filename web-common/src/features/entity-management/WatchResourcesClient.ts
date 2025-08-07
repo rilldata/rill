@@ -119,8 +119,7 @@ export class WatchResourcesClient {
         });
 
         switch (res.name.kind as ResourceKind) {
-          case ResourceKind.Connector: {
-            console.log("connector: ", res.resource);
+          case ResourceKind.Connector:
             // Invalidate the list of connectors
             void queryClient.invalidateQueries({
               queryKey: getRuntimeServiceAnalyzeConnectorsQueryKey(
@@ -138,11 +137,9 @@ export class WatchResourcesClient {
 
             // Done
             return;
-          }
 
           case ResourceKind.Source:
           case ResourceKind.Model: {
-            console.log("model: ", res.resource);
             // TODO: differentiate between a Model's executorConnector and resultConnector
             const connectorName =
               (res.name.kind as ResourceKind) === ResourceKind.Source
