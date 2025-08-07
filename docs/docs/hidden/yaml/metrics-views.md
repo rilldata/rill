@@ -112,6 +112,14 @@ _[array of object]_ - Used to define the numeric aggregates of columns from your
 
       - **`order`** - _[string]_ - Specifies the fields to order the window by, determining the sequence of rows within each partition. 
 
+        - **option 1** - _[string]_ - Simple field name as a string.
+
+        - **option 2** - _[array of oneOf]_ - List of field selectors, each can be a string or an object with detailed configuration.
+
+          - **option 1** - _[string]_ - Shorthand field selector, interpreted as the name.
+
+          - **option 2** - _[object]_ - Detailed field selector configuration with name and optional time grain.
+
             - **`name`** - _[string]_ - Name of the field to select. _(required)_
 
             - **`time_grain`** - _[string]_ - Time grain for time-based dimensions. 
@@ -120,11 +128,27 @@ _[array of object]_ - Used to define the numeric aggregates of columns from your
 
   - **`per`** - _[oneOf]_ - for per dimensions 
 
+    - **option 1** - _[string]_ - Simple field name as a string.
+
+    - **option 2** - _[array of oneOf]_ - List of field selectors, each can be a string or an object with detailed configuration.
+
+      - **option 1** - _[string]_ - Shorthand field selector, interpreted as the name.
+
+      - **option 2** - _[object]_ - Detailed field selector configuration with name and optional time grain.
+
         - **`name`** - _[string]_ - Name of the field to select. _(required)_
 
         - **`time_grain`** - _[string]_ - Time grain for time-based dimensions. 
 
   - **`requires`** - _[oneOf]_ - using an available measure or dimension in your metrics view to set a required parameter, cannot be used with simple measures. See [referencing measures](/build/metrics-view/advanced-expressions/referencing) for more information. 
+
+    - **option 1** - _[string]_ - Simple field name as a string.
+
+    - **option 2** - _[array of oneOf]_ - List of field selectors, each can be a string or an object with detailed configuration.
+
+      - **option 1** - _[string]_ - Shorthand field selector, interpreted as the name.
+
+      - **option 2** - _[object]_ - Detailed field selector configuration with name and optional time grain.
 
         - **`name`** - _[string]_ - Name of the field to select. _(required)_
 
@@ -195,6 +219,10 @@ _[array of object]_ - Used to define annotations that can be displayed on charts
 _[object]_ - Defines [security rules and access control policies](/manage/security) for resources 
 
   - **`access`** - _[oneOf]_ - Expression indicating if the user should be granted access to the dashboard. If not defined, it will resolve to false and the dashboard won't be accessible to anyone. Needs to be a valid SQL expression that evaluates to a boolean. 
+
+    - **option 1** - _[string]_ - SQL expression that evaluates to a boolean to determine access
+
+    - **option 2** - _[boolean]_ - Direct boolean value to allow or deny access
 
   - **`row_filter`** - _[string]_ - SQL expression to filter the underlying model by. Can leverage templated user attributes to customize the filter for the requesting user. Needs to be a valid SQL expression that can be injected into a WHERE clause 
 

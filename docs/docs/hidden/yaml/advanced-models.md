@@ -29,12 +29,6 @@ _[string]_ - Refers to the resource type and must be `model` _(required)_
 ### `refresh`
 
 _[object]_ - Specifies the refresh schedule that Rill should follow to re-ingest and update the underlying model data 
-```yaml
-refresh:
-  cron: "* * * * *"
-  #every: "24h"
-```
- 
 
   - **`cron`** - _[string]_ - A cron expression that defines the execution schedule 
 
@@ -45,6 +39,13 @@ refresh:
   - **`ref_update`** - _[boolean]_ - If true, allows the resource to run when a dependency updates. 
 
   - **`run_in_dev`** - _[boolean]_ - If true, allows the schedule to run in development mode. 
+
+```yaml
+refresh:
+  cron: "* * * * *"
+  #every: "24h"
+```
+
 
 ### `connector`
 
@@ -86,22 +87,25 @@ _[string]_ - Configure how changes to the model specifications are applied (opti
 
 ### `state`
 
-_[oneOf]_ - Refers to the explicitly defined state of your model, cannot be used with partitions (optional)
-```yaml
-state:
-   sql: SELECT MAX(date) as max_date
-```
- 
+_[oneOf]_ - Refers to the explicitly defined state of your model, cannot be used with partitions (optional) 
+
+  - **option 1** - _[object]_ - Executes a raw SQL query against the project's data models.
 
     - **`sql`** - _[string]_ - Raw SQL query to run against existing models in the project. _(required)_
 
     - **`connector`** - _[string]_ - specifies the connector to use when running SQL or glob queries. 
 
+  - **option 2** - _[object]_ - Executes a SQL query that targets a defined metrics view.
+
     - **`metrics_sql`** - _[string]_ - SQL query that targets a metrics view in the project _(required)_
+
+  - **option 3** - _[object]_ - Calls a custom API defined in the project to compute data.
 
     - **`api`** - _[string]_ - Name of a custom API defined in the project. _(required)_
 
     - **`args`** - _[object]_ - Arguments to pass to the custom API. 
+
+  - **option 4** - _[object]_ - Uses a file-matching pattern (glob) to query data from a connector.
 
     - **`glob`** - _[anyOf]_ - Defines the file path or pattern to query from the specified connector. _(required)_
 
@@ -111,13 +115,54 @@ state:
 
     - **`connector`** - _[string]_ - Specifies the connector to use with the glob input. 
 
+  - **option 5** - _[object]_ - Uses the status of a resource as data.
+
     - **`resource_status`** - _[object]_ - Based on resource status _(required)_
 
       - **`where_error`** - _[boolean]_ - Indicates whether the condition should trigger when the resource is in an error state. 
 
+```yaml
+state:
+   sql: SELECT MAX(date) as max_date
+```
+
+
 ### `partitions`
 
-_[oneOf]_ - Refers to the how your data is partitioned, cannot be used with state. (optional)
+_[oneOf]_ - Refers to the how your data is partitioned, cannot be used with state. (optional) 
+
+  - **option 1** - _[object]_ - Executes a raw SQL query against the project's data models.
+
+    - **`sql`** - _[string]_ - Raw SQL query to run against existing models in the project. _(required)_
+
+    - **`connector`** - _[string]_ - specifies the connector to use when running SQL or glob queries. 
+
+  - **option 2** - _[object]_ - Executes a SQL query that targets a defined metrics view.
+
+    - **`metrics_sql`** - _[string]_ - SQL query that targets a metrics view in the project _(required)_
+
+  - **option 3** - _[object]_ - Calls a custom API defined in the project to compute data.
+
+    - **`api`** - _[string]_ - Name of a custom API defined in the project. _(required)_
+
+    - **`args`** - _[object]_ - Arguments to pass to the custom API. 
+
+  - **option 4** - _[object]_ - Uses a file-matching pattern (glob) to query data from a connector.
+
+    - **`glob`** - _[anyOf]_ - Defines the file path or pattern to query from the specified connector. _(required)_
+
+      - **option 1** - _[string]_ - A simple file path/glob pattern as a string.
+
+      - **option 2** - _[object]_ - An object-based configuration for specifying a file path/glob pattern with advanced options.
+
+    - **`connector`** - _[string]_ - Specifies the connector to use with the glob input. 
+
+  - **option 5** - _[object]_ - Uses the status of a resource as data.
+
+    - **`resource_status`** - _[object]_ - Based on resource status _(required)_
+
+      - **`where_error`** - _[boolean]_ - Indicates whether the condition should trigger when the resource is in an error state. 
+
 ```yaml
 partitions:
   glob: gcs://my_bucket/y=*/m=*/d=*/*.parquet
@@ -127,29 +172,7 @@ partitions:
   connector: duckdb
   sql: SELECT range AS num FROM range(0,10)
   ```
- 
 
-    - **`sql`** - _[string]_ - Raw SQL query to run against existing models in the project. _(required)_
-
-    - **`connector`** - _[string]_ - specifies the connector to use when running SQL or glob queries. 
-
-    - **`metrics_sql`** - _[string]_ - SQL query that targets a metrics view in the project _(required)_
-
-    - **`api`** - _[string]_ - Name of a custom API defined in the project. _(required)_
-
-    - **`args`** - _[object]_ - Arguments to pass to the custom API. 
-
-    - **`glob`** - _[anyOf]_ - Defines the file path or pattern to query from the specified connector. _(required)_
-
-      - **option 1** - _[string]_ - A simple file path/glob pattern as a string.
-
-      - **option 2** - _[object]_ - An object-based configuration for specifying a file path/glob pattern with advanced options.
-
-    - **`connector`** - _[string]_ - Specifies the connector to use with the glob input. 
-
-    - **`resource_status`** - _[object]_ - Based on resource status _(required)_
-
-      - **`where_error`** - _[boolean]_ - Indicates whether the condition should trigger when the resource is in an error state. 
 
 ### `materialize`
 
@@ -165,17 +188,18 @@ _[integer]_ - Refers to the number of concurrent partitions that can be read at 
 
 ### `stage`
 
-_[object]_ - in the case of staging models, where an input source does not support direct write to the output and a staging table is required
+_[object]_ - in the case of staging models, where an input source does not support direct write to the output and a staging table is required 
+
+  - **`connector`** - _[string]_ - Refers to the connector type for the staging table _(required)_
+
+  - **`path`** - _[string]_ - Refers to the path to the staging table 
+
 ```yaml
 stage:
   connector: s3
   path: s3://my_bucket/my_staging_table
 ```
- 
 
-  - **`connector`** - _[string]_ - Refers to the connector type for the staging table _(required)_
-
-  - **`path`** - _[string]_ - Refers to the path to the staging table 
 
 ### `output`
 
@@ -246,3 +270,11 @@ _[object]_ - Overrides any properties in production environment.
 ## Depending on the connector, additional properties may be required
 
 Depending on the connector, additional properties may be required, for more information see the [connectors](./connectors.md) documentation
+
+
+## Examples
+
+### Incremental model 
+```yaml
+test    
+```

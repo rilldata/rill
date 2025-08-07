@@ -516,31 +516,16 @@ func generateDoc(sidebarPosition, level int, node *yaml.Node, indent string, req
 				}
 			} else {
 				if !(id == "connectors" || id == "apis") {
-					// Check if this is a field_selector_properties definition (used in explore dashboards)
-					title := getScalarValue(node, "title")
-					if title == "Wildcard(*) selector" || title == "Explicit list of fields" || title == "Regex matching" {
-						// This is field_selector_properties, use numbered options format
-						for i, item := range oneOf.Content {
-							if hasType(item) || hasProperties(item) || hasCombinators(item) {
-								itemTitle := getScalarValue(item, "title")
-								if itemTitle != "" {
-									doc.WriteString(fmt.Sprintf("\n\n%s- **option %d** - _[%s]_ - %s", indent, i+1, getPrintableType(item), itemTitle))
-								} else {
-									doc.WriteString(fmt.Sprintf("\n\n%s- **option %d** - %s - %s", indent, i+1, getPrintableType(item), getPrintableDescription(item, indent, "(no description)")))
 								}
-								doc.WriteString(generateDoc(sidebarPosition, level, item, indent+"  ", getRequiredMapFromNode(item), rootSchema, id))
-							}
-						}
-					} else {
-						// Regular oneOf processing
-						if len(oneOf.Content) == 1 {
-							doc.WriteString(generateDoc(sidebarPosition, level, oneOf.Content[0], indent, getRequiredMapFromNode(oneOf.Content[0]), rootSchema, id))
-						} else {
-							for _, item := range oneOf.Content {
-								if hasType(item) || hasProperties(item) || hasCombinators(item) {
-									doc.WriteString(generateDoc(sidebarPosition, level, item, indent+"  ", getRequiredMapFromNode(item), rootSchema, id))
-								}
-							}
+
+				if len(oneOf.Content) == 1 {
+					doc.WriteString(generateDoc(sidebarPosition, level, oneOf.Content[0], indent, getRequiredMapFromNode(oneOf.Content[0]), rootSchema, id))
+				} else {
+					for i, item := range oneOf.Content {
+						if hasType(item) || hasProperties(item) || hasCombinators(item) {
+							doc.WriteString(fmt.Sprintf("\n\n%s- **option %d** - %s - %s", indent, i+1, getPrintableType(item), getPrintableDescription(item, indent, "(no description)")))
+							doc.WriteString(generateDoc(sidebarPosition, level, item, indent+"  ", getRequiredMapFromNode(item), rootSchema, id))
+
 						}
 					}
 				}

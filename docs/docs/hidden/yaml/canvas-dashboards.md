@@ -88,9 +88,17 @@ _[array of oneOf]_ - Overrides the list of default time range selections availab
   ```
  
 
+  - **option 1** - _[string]_ - a valid [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations) duration or one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) extensions for the selection
+
+  - **option 2** - _[object]_ - Object containing time range and comparison configuration
+
     - **`range`** - _[string]_ - a valid [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations) duration or one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) extensions for the selection _(required)_
 
     - **`comparison_offsets`** - _[array of oneOf]_ - list of time comparison options for this time range selection (optional). Must be one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) 
+
+      - **option 1** - _[string]_ - Offset string only (range is inferred)
+
+      - **option 2** - _[object]_ - Object containing offset and range configuration for time comparison
 
         - **`offset`** - _[string]_ - Time offset for comparison (e.g., 'P1D' for one day ago) 
 
@@ -119,13 +127,27 @@ _[object]_ - defines the defaults YAML struct
 
 ### `theme`
 
-_[oneOf]_ - Theme configuration. Can be either a string reference to an existing theme or an inline theme configuration object. 
+_[oneOf]_ - Name of the theme to use. Only one of theme and embedded_theme can be set. 
+
+  - **option 1** - _[string]_ - Name of an existing theme to apply to the dashboard
+
+  - **option 2** - _[object]_ - Inline theme configuration.
+
+    - **`colors`** - _[object]_ - Used to override the dashboard colors. Either primary or secondary color must be provided. 
+
+      - **`primary`** - _[string]_ - Overrides the primary blue color in the dashboard. Can have any hex (without the '#' character), [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats. Note that the hue of the input colors is used for variants but the saturation and lightness is copied over from the [blue color palette](https://tailwindcss.com/docs/customizing-colors). 
+
+      - **`secondary`** - _[string]_ - Overrides the secondary color in the dashboard. Applies to the loading spinner only as of now. Can have any hex (without the '#' character), [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats. 
 
 ### `security`
 
 _[object]_ - Defines [security rules and access control policies](/manage/security) for dashboards (without row filtering) 
 
   - **`access`** - _[oneOf]_ - Expression indicating if the user should be granted access to the dashboard. If not defined, it will resolve to false and the dashboard won't be accessible to anyone. Needs to be a valid SQL expression that evaluates to a boolean. 
+
+    - **option 1** - _[string]_ - SQL expression that evaluates to a boolean to determine access
+
+    - **option 2** - _[boolean]_ - Direct boolean value to allow or deny access
 
 ## Common Properties
 

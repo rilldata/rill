@@ -40,3 +40,14 @@ _[object]_ - Overrides any properties in development environment.
 ### `prod`
 
 _[object]_ - Overrides any properties in production environment. 
+
+## Examples
+
+```yaml
+# Example: You can copy this directly into your <theme_name>.yaml file
+type: theme
+
+colors:
+  primary: plum
+  secondary: violet
+```

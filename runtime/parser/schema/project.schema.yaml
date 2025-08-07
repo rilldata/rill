@@ -21,8 +21,22 @@ description: |
 
   :::
 oneOf:
+  - $ref: '#/definitions/connectors'
+  - $ref: '#/definitions/sources'
+  - $ref: '#/definitions/models'
+  - $ref: '#/definitions/advanced-models'
+  - $ref: '#/definitions/metrics-views'
+  - $ref: '#/definitions/canvas-dashboards'
+  - $ref: '#/definitions/explore-dashboards'
+  - $ref: '#/definitions/alerts'
+  - $ref: '#/definitions/apis'
+  - $ref: '#/definitions/themes'
+  - $ref: '#/definitions/rillyaml'
+
+definitions:
   # Connector YAML
-  - title: Connector YAML
+  connectors:
+    title: Connector YAML
     id: connectors
     type: object
     description: |
@@ -94,9 +108,10 @@ oneOf:
           - $ref: '#/definitions/slack'
           - $ref: '#/definitions/snowflake'
           - $ref: '#/definitions/sqlite'
-
+    
   # Source YAML
-  - title: Source YAML
+  sources:
+    title: Source YAML
     type: object
     id: sources
     description: |
@@ -197,8 +212,10 @@ oneOf:
           - type
           - connector
       - $ref: '#/definitions/common_properties'
+  
   # Model SQL
-  - title: Model SQL
+  models: 
+    title: Model SQL
     type: object
     id: models
     description: |
@@ -250,7 +267,9 @@ oneOf:
               :::
 
   # Advanced Models
-  - title: Models YAML
+  advanced-models:
+
+    title: Models YAML
     id: advanced-models
     type: object
     description: |
@@ -278,8 +297,8 @@ oneOf:
             description: Refers to the resource type and must be `model`
           refresh:
             $ref: '#/definitions/schedule_properties'
-            description: |
-              Specifies the refresh schedule that Rill should follow to re-ingest and update the underlying model data 
+            description: Specifies the refresh schedule that Rill should follow to re-ingest and update the underlying model data 
+            examples: |
               ```yaml
               refresh:
                 cron: "* * * * *"
@@ -324,16 +343,16 @@ oneOf:
             description: Configure how changes to the model specifications are applied (optional). 'reset' will drop and recreate the model automatically, 'manual' will require a manual full or incremental refresh to apply changes, and 'patch' will switch to the new logic without re-processing historical data (only applies for incremental models).
           state:
             $ref: '#/definitions/data_properties'
-            description: |
-              Refers to the explicitly defined state of your model, cannot be used with partitions (optional)
+            description:  Refers to the explicitly defined state of your model, cannot be used with partitions (optional)
+            examples: |
               ```yaml
               state:
                  sql: SELECT MAX(date) as max_date
               ```
           partitions:
             $ref: '#/definitions/data_properties'
-            description: | 
-              Refers to the how your data is partitioned, cannot be used with state. (optional)
+            description: Refers to the how your data is partitioned, cannot be used with state. (optional)
+            examples: |
               ```yaml
               partitions:
                 glob: gcs://my_bucket/y=*/m=*/d=*/*.parquet
@@ -364,8 +383,8 @@ oneOf:
 
             required:
               - connector
-            description: | 
-              in the case of staging models, where an input source does not support direct write to the output and a staging table is required
+            description: in the case of staging models, where an input source does not support direct write to the output and a staging table is required
+            examples: |
               ```yaml
               stage:
                 connector: s3
@@ -466,9 +485,15 @@ oneOf:
       - title: Depending on the connector, additional properties may be required
         description: |
           Depending on the connector, additional properties may be required, for more information see the [connectors](./connectors.md) documentation
-
+    examples: |
+        ### Incremental model 
+        ```yaml
+        test    
+        ```
+  
   # Metrics Views
-  - title: Metrics View YAML
+  metrics-views:
+    title: Metrics View YAML
     id: metrics-views
     type: object
     description: In your Rill project directory, create a metrics view, `<metrics_view>.yaml`, file in the `metrics` directory. Rill will ingest the metric view definition next time you run `rill start`.
@@ -730,7 +755,8 @@ oneOf:
       - $ref: '#/definitions/common_properties'
 
   # Canvas Dashboards
-  - title: Canvas Dashboard YAML
+  canvas-dashboards:
+    title: Canvas Dashboard YAML
     id: canvas-dashboards
     type: object
     description: Canvas dashboards provide a flexible way to create custom dashboards with drag-and-drop components.
@@ -862,14 +888,11 @@ oneOf:
             additionalProperties: false
           theme:
             oneOf:
-              - title: Existing theme
-                type: string
+              - type: string
                 description: Name of an existing theme to apply to the dashboard
-              - title: Inline theme
-                type: object
+              - $ref: '#/definitions/theme_properties'
                 description: Inline theme configuration.
-            description: Theme configuration. Can be either a string reference to an existing theme or an inline theme configuration object.
-          
+            description: Name of the theme to use. Only one of theme and embedded_theme can be set.
           security:
             description: Security rules to apply for access to the canvas dashboard
             $ref: '#/definitions/dashboard_security_policy_properties'
@@ -878,8 +901,9 @@ oneOf:
           - display_name
       - $ref: '#/definitions/common_properties'
 
-  # Explore Dashboards
-  - title: Explore Dashboard YAML
+  # Explore dashboards
+  explore-dashboards:
+    title: Explore Dashboard YAML
     id: explore-dashboards
     type: object
     description: Explore dashboards provide an interactive way to explore data with predefined metrics and dimensions.
@@ -941,11 +965,9 @@ oneOf:
               ```
           theme:
             oneOf:
-              - title: Existing theme
-                type: string
+              - type: string
                 description: Name of an existing theme to apply to the dashboard
-              - title: Inline theme
-                type: object
+              - $ref: '#/definitions/theme_properties'
                 description: Inline theme configuration.
             description: Name of the theme to use. Only one of theme and embedded_theme can be set.
           time_ranges:
@@ -1032,7 +1054,8 @@ oneOf:
       - $ref: '#/definitions/common_properties'
 
   # Alerts
-  - title: Alert YAML
+  alerts: 
+    title: Alert YAML
     id: alerts
     type: object
     description: Along with alertings at the dashboard level and can be created via the UI, there might be more extensive alerting that you might want to develop and can be done so the an alert.yaml. When creating an alert via a YAML file, you'll see this denoted in the UI as `Created through code`.
@@ -1171,7 +1194,8 @@ oneOf:
       - $ref: '#/definitions/common_properties'
 
   # APIs
-  - title: API YAML
+  apis:
+    title: API YAML
     id: apis
     type: object
     description: Custom APIs allow you to create endpoints that can be called to retrieve or manipulate data.
@@ -1218,14 +1242,23 @@ oneOf:
       # - $ref: '#/definitions/common_properties'
 
   # Themes
-  - title: Theme YAML
+  themes:
+    title: Theme YAML
     id: themes
     type: object
     description: | 
       In your Rill project directory, create a `<theme_name>.yaml` file in any directory containing `type: theme`. Rill will automatically ingest the theme next time you run `rill start` or deploy to Rill Cloud.
       
       To apply that theme to a dashboard, add `default_theme: <name of theme>` to the yaml file for that dashboard. Alternatively, you can add this to the end of the URL in your browser: `?theme=<name of theme>`
-
+    examples: |
+        ```yaml
+        # Example: You can copy this directly into your <theme_name>.yaml file
+        type: theme
+        
+        colors:
+          primary: plum
+          secondary: violet
+        ```
     allOf:
       - title: Properties
         type: object
@@ -1252,7 +1285,8 @@ oneOf:
       - $ref: '#/definitions/common_properties'
 
   # Rill YAML
-  - title: Project YAML
+  rillyaml:
+    title: Project YAML
     id: rillyaml
     type: object
     description: The `rill.yaml` file contains metadata about your project.
@@ -1443,7 +1477,8 @@ oneOf:
               required:
                 - email
       - $ref: '#/definitions/common_properties'
-definitions:
+
+  # Common Properties
   common_properties:
     type: object
     title: "Common Properties"
@@ -1463,27 +1498,26 @@ definitions:
       prod:
         type: object
         description: Overrides any properties in production environment.
-  # component_variable_properties:
-  #   type: object
-  #   properties:
-  #     name:
-  #       type: string
-  #       description: Unique identifier for the variable
-  #     type:
-  #       type: string
-  #       description: Data type of the variable (e.g., string, number, boolean)
-  #     value:
-  #       description: Default value for the variable. Can be any valid JSON value type
-  #       type:
-  #         - string
-  #         - number
-  #         - boolean
-  #         - object
-  #         - array
-  #   required:
-  #     - name
-  #     - type
-  #   additionalProperties: false
+
+  # Reusable Properties
+  theme_properties:
+    type: object
+    properties:
+      colors:
+        type: object
+        description: Used to override the dashboard colors. Either primary or secondary color must be provided.
+        properties:
+          primary:
+            type: string
+            description: Overrides the primary blue color in the dashboard. Can have any hex (without the '#' character), [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats. Note that the hue of the input colors is used for variants but the saturation and lightness is copied over from the [blue color palette](https://tailwindcss.com/docs/customizing-colors).
+          secondary:
+            type: string
+            description: Overrides the secondary color in the dashboard. Applies to the loading spinner only as of now. Can have any hex (without the '#' character), [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats.
+        anyOf:
+          - required:
+              - primary
+          - required:
+              - secondary
   api_data_properties:
     oneOf:
       - title: SQL Query
@@ -1852,7 +1886,6 @@ definitions:
               description: SQL expression for row filtering (for row_filter type rules)
           required:
             - type
-
   dashboard_security_policy_properties:
     type: object
     description: Defines [security rules and access control policies](/manage/security) for dashboards (without row filtering)
@@ -1864,8 +1897,81 @@ definitions:
           - type: boolean
             description: Direct boolean value to allow or deny access
         description: Expression indicating if the user should be granted access to the dashboard. If not defined, it will resolve to false and the dashboard won't be accessible to anyone. Needs to be a valid SQL expression that evaluates to a boolean.
+  field_selectors_properties:
+    oneOf:
+      - type: string
+        description: 'Simple field name as a string.'
+      - type: array
+        description: 'List of field selectors, each can be a string or an object with detailed configuration.'
+        items:
+          oneOf:
+            - type: string
+              description: 'Shorthand field selector, interpreted as the name.'
+            - type: object
+              description: 'Detailed field selector configuration with name and optional time grain.'
+              properties:
+                name:
+                  type: string
+                  description: 'Name of the field to select.'
+                time_grain:
+                  type: string
+                  description: 'Time grain for time-based dimensions.'
+                  enum:
+                    - ''
+                    - ms
+                    - millisecond
+                    - s
+                    - second
+                    - min
+                    - minute
+                    - h
+                    - hour
+                    - d
+                    - day
+                    - w
+                    - week
+                    - month
+                    - q
+                    - quarter
+                    - 'y'
+                    - year
+              required:
+                - name
+              additionalProperties: false
+        minItems: 1 
+  field_selector_properties:
+    oneOf:
+      - title: Wildcard(*) selector
+        type: string
+        const: '*'
+        description: Wildcard(*) selector that includes all available fields in the selection
+      - title: Explicit list of fields
+        type: array
+        items:
+          type: string
+        description: Explicit list of fields to include in the selection
+      - title: Regex matching
+        type: object
+        description: 'Advanced matching using regex, DuckDB expression, or exclusion'
+        properties:
+          regex:
+            type: string
+            description: Select dimensions using a regular expression
+          expr:
+            type: string
+            description: DuckDB SQL expression to select fields based on custom logic
+          exclude:
+            type: object
+            description: Select all dimensions except those listed here
+        additionalProperties: false
+        oneOf:
+          - required:
+              - regex
+          - required:
+              - expr
+          - required:
+              - exclude
   
-
   # Connector definitions
   athena:
     type: object
@@ -2525,77 +2631,27 @@ definitions:
       - dsn
       - driver
       - dsn
-  field_selectors_properties:
-    oneOf:
-      - type: string
-        description: 'Simple field name as a string.'
-      - type: array
-        description: 'List of field selectors, each can be a string or an object with detailed configuration.'
-        items:
-          oneOf:
-            - type: string
-              description: 'Shorthand field selector, interpreted as the name.'
-            - type: object
-              description: 'Detailed field selector configuration with name and optional time grain.'
-              properties:
-                name:
-                  type: string
-                  description: 'Name of the field to select.'
-                time_grain:
-                  type: string
-                  description: 'Time grain for time-based dimensions.'
-                  enum:
-                    - ''
-                    - ms
-                    - millisecond
-                    - s
-                    - second
-                    - min
-                    - minute
-                    - h
-                    - hour
-                    - d
-                    - day
-                    - w
-                    - week
-                    - month
-                    - q
-                    - quarter
-                    - 'y'
-                    - year
-              required:
-                - name
-              additionalProperties: false
-        minItems: 1 
-  field_selector_properties:
-    oneOf:
-      - title: Wildcard(*) selector
-        type: string
-        const: '*'
-        description: Wildcard(*) selector that includes all available fields in the selection
-      - title: Explicit list of fields
-        type: array
-        items:
-          type: string
-        description: Explicit list of fields to include in the selection
-      - title: Regex matching
-        type: object
-        description: 'Advanced matching using regex, DuckDB expression, or exclusion'
-        properties:
-          regex:
-            type: string
-            description: Select dimensions using a regular expression
-          expr:
-            type: string
-            description: DuckDB SQL expression to select fields based on custom logic
-          exclude:
-            type: object
-            description: Select all dimensions except those listed here
-        additionalProperties: false
-        oneOf:
-          - required:
-              - regex
-          - required:
-              - expr
-          - required:
-              - exclude
+
+
+
+  # component_variable_properties:
+  #   type: object
+  #   properties:
+  #     name:
+  #       type: string
+  #       description: Unique identifier for the variable
+  #     type:
+  #       type: string
+  #       description: Data type of the variable (e.g., string, number, boolean)
+  #     value:
+  #       description: Default value for the variable. Can be any valid JSON value type
+  #       type:
+  #         - string
+  #         - number
+  #         - boolean
+  #         - object
+  #         - array
+  #   required:
+  #     - name
+  #     - type
+  #   additionalProperties: false
