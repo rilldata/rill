@@ -14,6 +14,7 @@
   import {
     createLocalServiceDeploy,
     createLocalServiceGetCurrentProject,
+    createLocalServiceGitStatus,
   } from "@rilldata/web-common/runtime-client/local-service.ts";
   import DeployError from "@rilldata/web-common/features/project/deploy/DeployError.svelte";
   import CTAHeader from "@rilldata/web-common/components/calls-to-action/CTAHeader.svelte";
@@ -27,6 +28,7 @@
 
   const project = createLocalServiceGetCurrentProject();
   const deployMutation = createLocalServiceDeploy();
+  const gitStatus = createLocalServiceGitStatus();
 
   $: ({ legacyArchiveDeploy } = featureFlags);
 
@@ -38,16 +40,17 @@
   void newProject(orgParam);
 
   async function newProject(orgName: string) {
-    await waitUntil(() => !!$project.data);
+    await waitUntil(() => !!$project.data && !$gitStatus.isPending);
     const projectResp = $project.data as GetCurrentProjectResponse;
+    const gitStatusResp = $gitStatus.data;
 
     const resp = await $deployMutation.mutateAsync({
       org: orgName,
       projectName: projectResp.localProjectName,
       // If `legacyArchiveDeploy` is enabled, then use the archive route. Else use upload route.
       // This is mainly set to true in E2E tests.
-      upload: !$legacyArchiveDeploy,
-      archive: $legacyArchiveDeploy,
+      upload: !$legacyArchiveDeploy && !gitStatusResp?.githubUrl,
+      archive: $legacyArchiveDeploy && !gitStatusResp?.githubUrl,
     });
     // wait for the telemetry to finish since the page will be redirected after a deploy success
     await behaviourEvent?.fireDeployEvent(BehaviourEventAction.DeploySuccess);
