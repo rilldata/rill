@@ -30,10 +30,6 @@ _[object]_ - Defines [security rules and access control policies](/manage/securi
 
   - **`access`** - _[oneOf]_ - Expression indicating if the user should be granted access to the dashboard. If not defined, it will resolve to false and the dashboard won't be accessible to anyone. Needs to be a valid SQL expression that evaluates to a boolean. 
 
-    - **option 1** - _[string]_ - SQL expression that evaluates to a boolean to determine access
-
-    - **option 2** - _[boolean]_ - Direct boolean value to allow or deny access
-
   - **`row_filter`** - _[string]_ - SQL expression to filter the underlying model by. Can leverage templated user attributes to customize the filter for the requesting user. Needs to be a valid SQL expression that can be injected into a WHERE clause 
 
   - **`include`** - _[array of object]_ - List of dimension or measure names to include in the dashboard. If include is defined all other dimensions and measures are excluded 
@@ -76,25 +72,9 @@ _[boolean]_ - Flag to control security inheritance
 
 ## One of Properties Options
 
-- **option 1** - _[object]_ - Executes a raw SQL query against the project's data models.
-```yaml
-type: api
-
-connector: "duckdb"
-sql: "SELECT * FROM user_metrics WHERE date >= '2024-01-01'"
-```
-
-
 ## SQL Query
 
 Executes a raw SQL query against the project's data models.
-  ```yaml
-  type: api
-  
-  connector: "duckdb"
-  sql: "SELECT * FROM user_metrics WHERE date >= '2024-01-01'"
-  ```
-
 
 ### `sql`
 
@@ -104,51 +84,30 @@ _[string]_ - Raw SQL query to run against existing models in the project. _(requ
 
 _[string]_ - specifies the connector to use when running SQL or glob queries. 
 
-- **option 2** - _[object]_ - Executes a SQL query that targets a defined metrics view.
-  ```yaml
-  type: api
-
-  metrics_sql: "SELECT * FROM user_metrics WHERE date >= '2024-01-01'"
-  ```
+```yaml
+type: api
+sql: "SELECT * FROM table_name WHERE date >= '2024-01-01'"
+```
 
 
 ## Metrics View Query
 
 Executes a SQL query that targets a defined metrics view.
-    ```yaml
-    type: api
-  
-    metrics_sql: "SELECT * FROM user_metrics WHERE date >= '2024-01-01'"
-    ```
-
 
 ### `metrics_sql`
 
 _[string]_ - SQL query that targets a metrics view in the project _(required)_
 
-- **option 3** - _[object]_ - Calls a custom API defined in the project to compute data.
-  ```yaml
-  type: api
+```yaml
+type: api
 
-  api: "user_analytics_api"
-  args:
-    start_date: "2024-01-01"
-    limit: 10
-  ```
+metrics_sql: "SELECT * FROM user_metrics WHERE date >= '2024-01-01'"
+```
 
 
 ## Custom API Call
 
 Calls a custom API defined in the project to compute data.
-    ```yaml
-    type: api
-  
-    api: "user_analytics_api"
-    args:
-      start_date: "2024-01-01"
-      limit: 10
-    ```
-
 
 ### `api`
 
@@ -158,23 +117,18 @@ _[string]_ - Name of a custom API defined in the project. _(required)_
 
 _[object]_ - Arguments to pass to the custom API. 
 
-- **option 4** - _[object]_ - Uses a file-matching pattern (glob) to query data from a connector.
-  ```yaml
-  type: api
-
-  glob: "data/*.csv"
-  ```
+```yaml
+type: api
+api: "user_analytics_api"
+args:
+  start_date: "2024-01-01"
+  limit: 10
+```
 
 
 ## File Glob Query
 
 Uses a file-matching pattern (glob) to query data from a connector.
-    ```yaml
-    type: api
-  
-    glob: "data/*.csv"
-    ```
-
 
 ### `glob`
 
@@ -188,7 +142,12 @@ _[anyOf]_ - Defines the file path or pattern to query from the specified connect
 
 _[string]_ - Specifies the connector to use with the glob input. 
 
-- **option 5** - _[object]_ - Uses the status of a resource as data.
+```yaml
+type: api
+
+glob: "data/*.csv"
+```
+
 
 ## Resource Status Check
 
@@ -201,6 +160,7 @@ _[object]_ - Based on resource status _(required)_
     - **`where_error`** - _[boolean]_ - Indicates whether the condition should trigger when the resource is in an error state. 
 
 ```yaml
+type: api
 resource_status:
   where_error: true
 ```

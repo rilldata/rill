@@ -93,23 +93,15 @@ state:
 ```
  
 
-  - **option 1** - _[object]_ - Executes a raw SQL query against the project's data models.
-
     - **`sql`** - _[string]_ - Raw SQL query to run against existing models in the project. _(required)_
 
     - **`connector`** - _[string]_ - specifies the connector to use when running SQL or glob queries. 
 
-  - **option 2** - _[object]_ - Executes a SQL query that targets a defined metrics view.
-
     - **`metrics_sql`** - _[string]_ - SQL query that targets a metrics view in the project _(required)_
-
-  - **option 3** - _[object]_ - Calls a custom API defined in the project to compute data.
 
     - **`api`** - _[string]_ - Name of a custom API defined in the project. _(required)_
 
     - **`args`** - _[object]_ - Arguments to pass to the custom API. 
-
-  - **option 4** - _[object]_ - Uses a file-matching pattern (glob) to query data from a connector.
 
     - **`glob`** - _[anyOf]_ - Defines the file path or pattern to query from the specified connector. _(required)_
 
@@ -119,17 +111,9 @@ state:
 
     - **`connector`** - _[string]_ - Specifies the connector to use with the glob input. 
 
-  - **option 5** - _[object]_ - Uses the status of a resource as data.
-
     - **`resource_status`** - _[object]_ - Based on resource status _(required)_
 
       - **`where_error`** - _[boolean]_ - Indicates whether the condition should trigger when the resource is in an error state. 
-
-```yaml
-resource_status:
-  where_error: true
-```
-
 
 ### `partitions`
 
@@ -145,23 +129,15 @@ partitions:
   ```
  
 
-  - **option 1** - _[object]_ - Executes a raw SQL query against the project's data models.
-
     - **`sql`** - _[string]_ - Raw SQL query to run against existing models in the project. _(required)_
 
     - **`connector`** - _[string]_ - specifies the connector to use when running SQL or glob queries. 
 
-  - **option 2** - _[object]_ - Executes a SQL query that targets a defined metrics view.
-
     - **`metrics_sql`** - _[string]_ - SQL query that targets a metrics view in the project _(required)_
-
-  - **option 3** - _[object]_ - Calls a custom API defined in the project to compute data.
 
     - **`api`** - _[string]_ - Name of a custom API defined in the project. _(required)_
 
     - **`args`** - _[object]_ - Arguments to pass to the custom API. 
-
-  - **option 4** - _[object]_ - Uses a file-matching pattern (glob) to query data from a connector.
 
     - **`glob`** - _[anyOf]_ - Defines the file path or pattern to query from the specified connector. _(required)_
 
@@ -171,17 +147,9 @@ partitions:
 
     - **`connector`** - _[string]_ - Specifies the connector to use with the glob input. 
 
-  - **option 5** - _[object]_ - Uses the status of a resource as data.
-
     - **`resource_status`** - _[object]_ - Based on resource status _(required)_
 
       - **`where_error`** - _[boolean]_ - Indicates whether the condition should trigger when the resource is in an error state. 
-
-```yaml
-resource_status:
-  where_error: true
-```
-
 
 ### `materialize`
 
@@ -225,6 +193,38 @@ _[object]_ - to define the properties of output
 
   - **`partition_by`** - _[string]_ - Column or expression to partition the table by 
 
+  **Additional properties for `output` when `connector` is `clickhouse`**
+
+  - **`type`** - _[string]_ - Type to materialize the model into. Can be 'TABLE', 'VIEW' or 'DICTIONARY' 
+
+  - **`columns`** - _[string]_ - Column names and types. Can also include indexes. If unspecified, detected from the query. 
+
+  - **`engine_full`** - _[string]_ - Full engine definition in SQL format. Can include partition keys, order, TTL, etc. 
+
+  - **`engine`** - _[string]_ - Table engine to use. Default is MergeTree 
+
+  - **`order_by`** - _[string]_ - ORDER BY clause. 
+
+  - **`partition_by`** - _[string]_ - Partition BY clause. 
+
+  - **`primary_key`** - _[string]_ - PRIMARY KEY clause. 
+
+  - **`sample_by`** - _[string]_ - SAMPLE BY clause. 
+
+  - **`ttl`** - _[string]_ - TTL settings for the table or columns. 
+
+  - **`table_settings`** - _[string]_ - Table-specific settings. 
+
+  - **`query_settings`** - _[string]_ - Settings used in insert/create table as select queries. 
+
+  - **`distributed_settings`** - _[string]_ - Settings for distributed table. 
+
+  - **`distributed_sharding_key`** - _[string]_ - Sharding key for distributed table. 
+
+  - **`dictionary_source_user`** - _[string]_ - User for accessing the source dictionary table (used if type is DICTIONARY). 
+
+  - **`dictionary_source_password`** - _[string]_ - Password for the dictionary source user. 
+
 ## Common Properties
 
 ### `name`
@@ -242,3 +242,7 @@ _[object]_ - Overrides any properties in development environment.
 ### `prod`
 
 _[object]_ - Overrides any properties in production environment. 
+
+## Depending on the connector, additional properties may be required
+
+Depending on the connector, additional properties may be required, for more information see the [connectors](./connectors.md) documentation

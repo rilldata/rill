@@ -40,48 +40,6 @@ _[string]_ - Display name for the alert
 
 _[string]_ - Description for the alert 
 
-### `data`
-
-_[oneOf]_ - Data source for the alert _(required)_
-
-  - **option 1** - _[object]_ - Executes a raw SQL query against the project's data models.
-
-    - **`sql`** - _[string]_ - Raw SQL query to run against existing models in the project. _(required)_
-
-    - **`connector`** - _[string]_ - specifies the connector to use when running SQL or glob queries. 
-
-  - **option 2** - _[object]_ - Executes a SQL query that targets a defined metrics view.
-
-    - **`metrics_sql`** - _[string]_ - SQL query that targets a metrics view in the project _(required)_
-
-  - **option 3** - _[object]_ - Calls a custom API defined in the project to compute data.
-
-    - **`api`** - _[string]_ - Name of a custom API defined in the project. _(required)_
-
-    - **`args`** - _[object]_ - Arguments to pass to the custom API. 
-
-  - **option 4** - _[object]_ - Uses a file-matching pattern (glob) to query data from a connector.
-
-    - **`glob`** - _[anyOf]_ - Defines the file path or pattern to query from the specified connector. _(required)_
-
-      - **option 1** - _[string]_ - A simple file path/glob pattern as a string.
-
-      - **option 2** - _[object]_ - An object-based configuration for specifying a file path/glob pattern with advanced options.
-
-    - **`connector`** - _[string]_ - Specifies the connector to use with the glob input. 
-
-  - **option 5** - _[object]_ - Uses the status of a resource as data.
-
-    - **`resource_status`** - _[object]_ - Based on resource status _(required)_
-
-      - **`where_error`** - _[boolean]_ - Indicates whether the condition should trigger when the resource is in an error state. 
-
-```yaml
-resource_status:
-  where_error: true
-```
-
-
 ### `intervals`
 
 _[object]_ - define the interval of the alert to check 
@@ -100,19 +58,39 @@ _[string]_ - Specifies how the watermark is determined for incremental processin
 
 _[string]_ - define the timeout of the alert in seconds (optional). 
 
+### `data`
+
+_[oneOf]_ - Data source for the alert _(required)_
+
+    - **`sql`** - _[string]_ - Raw SQL query to run against existing models in the project. _(required)_
+
+    - **`connector`** - _[string]_ - specifies the connector to use when running SQL or glob queries. 
+
+    - **`metrics_sql`** - _[string]_ - SQL query that targets a metrics view in the project _(required)_
+
+    - **`api`** - _[string]_ - Name of a custom API defined in the project. _(required)_
+
+    - **`args`** - _[object]_ - Arguments to pass to the custom API. 
+
+    - **`glob`** - _[anyOf]_ - Defines the file path or pattern to query from the specified connector. _(required)_
+
+      - **option 1** - _[string]_ - A simple file path/glob pattern as a string.
+
+      - **option 2** - _[object]_ - An object-based configuration for specifying a file path/glob pattern with advanced options.
+
+    - **`connector`** - _[string]_ - Specifies the connector to use with the glob input. 
+
+    - **`resource_status`** - _[object]_ - Based on resource status _(required)_
+
+      - **`where_error`** - _[boolean]_ - Indicates whether the condition should trigger when the resource is in an error state. 
+
 ### `for`
 
 _[oneOf]_ - Specifies how user identity or attributes should be evaluated for security policy enforcement. 
 
-  - **option 1** - _[object]_ - Specifies a unique user identifier for applying security policies.
-
     - **`user_id`** - _[string]_ - The unique user ID used to evaluate security policies. _(required)_
 
-  - **option 2** - _[object]_ - Specifies a user's email address for applying security policies.
-
     - **`user_email`** - _[string]_ - The user's email address used to evaluate security policies. _(required)_
-
-  - **option 3** - _[object]_ - Specifies a set of arbitrary user attributes for applying security policies.
 
     - **`attributes`** - _[object]_ - A dictionary of user attributes used to evaluate security policies. _(required)_
 
@@ -135,16 +113,6 @@ _[boolean]_ - Enable repeated notifications for unresolved alerts. Defaults to f
 ### `renotify_after`
 
 _[string]_ - Defines the re-notification interval for the alert (e.g., '10m','24h'), equivalent to snooze duration in UI, defaults to 'Off' 
-
-### `condition`
-
-_[object]_ - Condition that triggers the alert 
-
-  - **`operator`** - _[string]_ - Comparison operator (gt, lt, eq, etc.) 
-
-  - **`threshold`** - _[no type]_ - Threshold value for the condition 
-
-  - **`measure`** - _[string]_ - Measure to compare against the threshold 
 
 ### `notify`
 

@@ -479,10 +479,9 @@ func generateDoc(sidebarPosition, level int, node *yaml.Node, indent string, req
 
 
 			}
-		
-		} else {
+		// only for APIs, no other oneOf uses this, so we can be specific
+		} else if id == "apis" {
 			// Skip oneOf processing for connectors and data_properties at level 1 since we handle it above
-			if !(id == "connectors") {
 				if len(oneOf.Content) == 1 {
 					doc.WriteString(generateDoc(sidebarPosition, level, oneOf.Content[0], indent, getRequiredMapFromNode(oneOf.Content[0]), rootSchema, id))
 				} else {
@@ -491,10 +490,10 @@ func generateDoc(sidebarPosition, level int, node *yaml.Node, indent string, req
 						doc.WriteString("\n\n## One of Properties Options")
 					}
 
-					for i, item := range oneOf.Content {
+					for _, item := range oneOf.Content {
 						if hasType(item) || hasProperties(item) || hasCombinators(item) {
-							doc.WriteString(fmt.Sprintf("\n\n%s- **option %d** - %s - %s", indent, i+1, getPrintableType(item), getPrintableDescription(item, indent, "(no description)")))
 							doc.WriteString(generateDoc(sidebarPosition, level, item, indent+"  ", getRequiredMapFromNode(item), rootSchema, id))
+
 						}
 						
 						// Handle examples for oneOf items
@@ -511,6 +510,36 @@ func generateDoc(sidebarPosition, level int, node *yaml.Node, indent string, req
 							} else if examples.Kind == yaml.ScalarNode {
 								// Handle string examples (like markdown code blocks)
 								doc.WriteString(fmt.Sprintf("\n\n%s", examples.Value))
+							}
+						}
+					}
+				}
+			} else {
+				if !(id == "connectors" || id == "apis") {
+					// Check if this is a field_selector_properties definition (used in explore dashboards)
+					title := getScalarValue(node, "title")
+					if title == "Wildcard(*) selector" || title == "Explicit list of fields" || title == "Regex matching" {
+						// This is field_selector_properties, use numbered options format
+						for i, item := range oneOf.Content {
+							if hasType(item) || hasProperties(item) || hasCombinators(item) {
+								itemTitle := getScalarValue(item, "title")
+								if itemTitle != "" {
+									doc.WriteString(fmt.Sprintf("\n\n%s- **option %d** - _[%s]_ - %s", indent, i+1, getPrintableType(item), itemTitle))
+								} else {
+									doc.WriteString(fmt.Sprintf("\n\n%s- **option %d** - %s - %s", indent, i+1, getPrintableType(item), getPrintableDescription(item, indent, "(no description)")))
+								}
+								doc.WriteString(generateDoc(sidebarPosition, level, item, indent+"  ", getRequiredMapFromNode(item), rootSchema, id))
+							}
+						}
+					} else {
+						// Regular oneOf processing
+						if len(oneOf.Content) == 1 {
+							doc.WriteString(generateDoc(sidebarPosition, level, oneOf.Content[0], indent, getRequiredMapFromNode(oneOf.Content[0]), rootSchema, id))
+						} else {
+							for _, item := range oneOf.Content {
+								if hasType(item) || hasProperties(item) || hasCombinators(item) {
+									doc.WriteString(generateDoc(sidebarPosition, level, item, indent+"  ", getRequiredMapFromNode(item), rootSchema, id))
+								}
 							}
 						}
 					}

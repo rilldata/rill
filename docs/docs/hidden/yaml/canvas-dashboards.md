@@ -62,13 +62,11 @@ _[integer]_ - Horizontal gap in pixels of the canvas
 
 _[integer]_ - Vertical gap in pixels of the canvas 
 
-### `theme`
+### `filters`
 
-_[oneOf]_ - Theme configuration. Can be either a string reference to an existing theme or an inline theme configuration object. 
+_[object]_ - Indicates if filters should be enabled for the canvas. 
 
-  - **option 1** - _[string]_ - Name of an existing theme to apply to the dashboard
-
-  - **option 2** - _[object]_ - Inline theme configuration.
+  - **`enable`** - _[boolean]_ - Toggles filtering functionality for the canvas dashboard. 
 
 ### `allow_custom_time_range`
 
@@ -90,17 +88,9 @@ _[array of oneOf]_ - Overrides the list of default time range selections availab
   ```
  
 
-  - **option 1** - _[string]_ - a valid [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations) duration or one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) extensions for the selection
-
-  - **option 2** - _[object]_ - Object containing time range and comparison configuration
-
     - **`range`** - _[string]_ - a valid [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations) duration or one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) extensions for the selection _(required)_
 
     - **`comparison_offsets`** - _[array of oneOf]_ - list of time comparison options for this time range selection (optional). Must be one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) 
-
-      - **option 1** - _[string]_ - Offset string only (range is inferred)
-
-      - **option 2** - _[object]_ - Object containing offset and range configuration for time comparison
 
         - **`offset`** - _[string]_ - Time offset for comparison (e.g., 'P1D' for one day ago) 
 
@@ -110,19 +100,32 @@ _[array of oneOf]_ - Overrides the list of default time range selections availab
 
 _[array of string]_ - Refers to the time zones that should be pinned to the top of the time zone selector. It should be a list of [IANA time zone identifiers](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones) 
 
-### `filters`
+### `defaults`
 
-_[object]_ - Indicates if filters should be enabled for the canvas. 
+_[object]_ - defines the defaults YAML struct
+  ```yaml
+  defaults: #define all the defaults within here
+    time_range: P1M
+    comparison_mode: dimension #time, none
+    comparison_dimension: filename
+  ```
+ 
+
+  - **`time_range`** - _[string]_ - Refers to the default time range shown when a user initially loads the dashboard. The value must be either a valid [ISO 8601 duration](https://en.wikipedia.org/wiki/ISO_8601#Durations) (for example, PT12H for 12 hours, P1M for 1 month, or P26W for 26 weeks) or one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) 
+
+  - **`comparison_mode`** - _[string]_ - Controls how to compare current data with historical or categorical baselines. Options: `none` (no comparison), `time` (compares with past based on default_time_range), `dimension` (compares based on comparison_dimension values) 
+
+  - **`comparison_dimension`** - _[string]_ - for dimension mode, specify the comparison dimension by name 
+
+### `theme`
+
+_[oneOf]_ - Theme configuration. Can be either a string reference to an existing theme or an inline theme configuration object. 
 
 ### `security`
 
 _[object]_ - Defines [security rules and access control policies](/manage/security) for dashboards (without row filtering) 
 
   - **`access`** - _[oneOf]_ - Expression indicating if the user should be granted access to the dashboard. If not defined, it will resolve to false and the dashboard won't be accessible to anyone. Needs to be a valid SQL expression that evaluates to a boolean. 
-
-    - **option 1** - _[string]_ - SQL expression that evaluates to a boolean to determine access
-
-    - **option 2** - _[boolean]_ - Direct boolean value to allow or deny access
 
 ## Common Properties
 
