@@ -4,21 +4,21 @@ sidebar_label: "3. Create Metrics View in Rill"
 sidebar_position: 3
 hide_table_of_contents: false
 tags:
-  - OLAP:ClickHouse
+  - OLAP:MotherDuck
   - Tutorial
 ---
 
-If you noticed in the previous screenshot, we had a table called `uk_price_paid`. This is a dataset that is used in ClickHouse's Learning portal, so we thought it was fitting to go ahead and continue on this dataset.
+You'll need to use a table that exists in your database. In this tutorial, we'll be using `rill_auction_data`.
 
 :::note
-In the case that you have not already added this table to your local or Cloud database, please follow the steps on [ClickHouse's site](https://clickhouse.com/docs/en/getting-started/example-datasets/uk-price-paid) for the steps to do so!
+Don't have any good dataset to use? See [Ingest into MotherDuck](./r_md_ingest.md) to ingest directly into MotherDuck from Rill.
 :::
 
 ### Create metrics view
 
 Let's create a metrics view based on the table via the `Generate metrics via AI`.
 
-<img src = '/img/tutorials/ch/ai-generate.gif' class='rounded-gif' />
+<img src = '/img/tutorials/md/MotherDuck-metrics-ai.png' class='rounded-gif' />
 <br />
 
 ### What are we looking at?
@@ -33,10 +33,11 @@ This is our metrics view, where we can define measures and dimensions to be used
 version: 1
 type: metrics_view
 
-title: UK Price Paid Metrics
-connector: clickhouse
-table: uk_price_paid
-timeseries: date
+display_name: Auction Data Raw Metrics
+connector: motherduck
+model: auction_data_raw
+timeseries: __time
+
 
 dimensions:
     ...
@@ -54,7 +55,7 @@ While we go into more details in our [Rill Basics course](/guides/rill-basics/da
 
 `timeseries` - This is our time column that is used on as our x-axis for graphs.
 
-`connector` - this is our manually defined ClickHouse connector
+`connector` - this is our manually defined MotherDuck connector
 
 `dimensions` - These are our categorical columns that we can use on the dashboard to filter and slice;
 
