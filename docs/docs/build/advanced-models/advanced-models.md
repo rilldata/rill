@@ -12,17 +12,16 @@ Unlike SQL models, YAML file models allow you to fine-tune a model to perform ad
 
 ## When to use Advanced Models? 
 
-For the majority of users on a DuckDB backed Rill project, advanced models are not required. When a project gets larger and refreshing the whole datasets becomes a time-consuming and costly task, we introduce incremental ingestion to help alleviate the problem. Along with incremental modeling, we use partitions to divide a dataset into smaller, more manageable datasets. When enabling partitions, you are able to refresh individual sections of data if required. 
+For the majority of users on a DuckDB backed Rill project, advanced models are not required. When a project gets larger and refreshing the whole datasets becomes a time-consuming and costly task, we introduce incremental ingestion to help alleviate the problem. Along with incremental modeling, we use partitions to divide a dataset into smaller, more manageable partitonis. After enabling partitions, you will be able to refresh individual partitonis of data when required. 
 
-Another use case is when using multiple OLAP engines. This allows you to specify where your SQL is running. While we do not officially support ClickHouse modeling, this is available behind a feature flag `clickhouseModeling`. When both DuckDB and ClickHouse are enabled in a single environment, you will need to define `connector: duckdb/clickhouse` in the YAML to tell Rill where to run the SQL query.
-
+Another use case is when using multiple OLAP engines. This allows you to specify where your SQL query is running. When both DuckDB and ClickHouse are enabled in a single environment, you will need to define `connector: duckdb/clickhouse` in the YAML to tell Rill where to run the SQL query, as well as define the `output` location. For more information, refer to the [YAML reference](/reference/project-files/advanced-models)
 
 ## Types of Advanced Models
 
 1. [Incremental Models](./incremental-models)
 2. [Partitioned Models](./partitions)
 3. [Staging Models](./staging)
-4. [DuckDB `pre_exec`/`post_exec` Models](#duckdb-models-pre-exec-sql-post-exec)
+4. [DuckDB `pre_exec`/`post_exec` Models](#duckdb-models-pre-exec-post-exec-sql)
 
 
 ## Creating an Advanced Model
@@ -36,19 +35,23 @@ type: model
 connector: duckdb
 
 sql: select * from <source>
+
+output:
+  connector: duckdb
+  table: output_name
 ```
 
 Please refer to [our reference documentation](../../reference/project-files/advanced-models) linked above for the available parameters to set in your model.
 
 :::note
 
-Currently, there isn't a UI button to start off with an advanced model YAML. Creating a model in Rill will always create a model.sql file. 
+Currently, there isn't a UI button to start off with an advanced model YAML. Creating a model in Rill via the UI will always create a model.sql file. Instead, start with a blank file and rename it model_name.yaml and add the above sample code.
 
 :::
 
 
 
-## DuckDB Model's pre-exec, SQL, post-exec 
+## DuckDB Model's pre-exec, post-exec SQL
 
 While we install a set of core libraries and extensions with our embedded DuckDB, there might be specific use cases where you want to add a different one. In order to do this, you will need to use the pre-exec parameter to ensure that everything is loaded before running your SQL query. 
 

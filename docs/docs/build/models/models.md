@@ -8,7 +8,7 @@ sidebar_position: 00
 <img src = '/img/build/model/model.png' class='rounded-gif' />
 <br />
 
-In Rill, [data models](/reference/project-files/models.md) are built using SQL `SELECT` statements applied to your source data. They allow you to join, transform, and clean data.
+In Rill, [data models](/reference/project-files/models.md) are built using SQL `SELECT` statements applied to your source data. They allow you to join, transform, and clean data. For simple models, we recommend .SQL files, but also provide [YAML based moddels](/build/advanced-models) for more complex setups.
 
 ## SQL transformations
 
@@ -16,22 +16,24 @@ By default, data transformations in Rill Developer are powered by DuckDB and its
 
 It is possible to change the default [OLAP engine](https://docs.rilldata.com/build/olap/) for [the entire project](https://docs.rilldata.com/reference/project-files/rill-yaml#configuring-the-default-olap-engine) or [a specific metrics view](https://docs.rilldata.com/reference/project-files/metrics-views). You will need to define the connector credentials within your Rill project or via environment variables.
 
-For additional tips on commonly used expressions (either in models or dashboard definitions), visit our [common expressions page](../metrics-view/advanced-expressions/advanced-expressions.md).
+:::tip Support OLAP engines for modeling
+We support modeling on [ClickHouse\*](/reference/olap-engines/clickhouse), [DuckDB](/reference/olap-engines/duckdb) and [MotherDuck\*](/reference/olap-engines/motherduck). For more information, see each OLAP engine page for further information.
+
+\* indicates some caveats with modeling and encourage you to read the documentation before getting started.
+::: 
+
+For additional tips on advanced expressions (either in models or measureß definitions), visit our [advanced expressions page](../metrics-view/advanced-expressions/advanced-expressions.md).
 
 
 ## Adding a data model
 
-### Using the UI
-In the UI, add a new data model by clicking the '+' icon next to 'Models' in the left-hand navigation pane. You can now begin typing a DuckDB SQL `SELECT` query for your model in the code editor – with real-time feedback.
-
-### Using code
-When you add a data model using the UI, a code definition will automatically be created as a `<model_name>.sql` file in the `models` folder of your Rill project.
+Add a new data model by either clicking 'model' in the 'Add' menu or select the '...' in any connector view or existing model. When you add a data, a code definition will automatically be created as a `<model_name>.sql` file in the `models` folder of your Rill project.
 
 You can also create a model outside of the application and add it to Rill by placing a `<model_name>.sql` file in the `models` directory containing a DuckDB SQL `SELECT` statement. Rill will automatically detect and parse the model the next time you run `rill start`.
 
-:::tip
+:::tip reference page
 
-See also our [Model YAML](../../reference/project-files/models) reference page.
+See also our [Model SQL](../../reference/project-files/models) reference page.
 
 :::
 
@@ -43,6 +45,16 @@ It is powerful to be able to translate many ad hoc questions into a data framewo
 
 To experience the full potential of Rill, model your data sources into "One Big Table" – a granular resource that contains as much information as possible and can be rolled up in a meaningful way. This flexible OBT can be combined with a generalizable [metrics definition](/build/dashboards) to enable ad hoc slice-and-dice discovery through Rill's interactive dashboard.
 
+:::tip materializing metrics powered models
+
+We recommend materializing the model that powers your [metrics view](/build/metrics-view). You can materialze a SQL model by adding this to the top of the file. This will greatly improve the performance of your dashboards.
+
+```sql
+-- @materialize: true
+```
+
+:::
+
 ### Intermediate processing
 
 Models can also be cross-referenced with each other to produce the final output for your dashboard. The advantage here is that more complex, intermediate data transformations can be utilized to achieve your final source for the dashboard. Example ideas for modeling:
@@ -50,6 +62,33 @@ Models can also be cross-referenced with each other to produce the final output 
 - Lookups for id/name joins
 - Unnesting and merging complex data types
 - Combining multiple sources with data cleansing or transformation requirements
+
+## Model Materializaton
+
+```sql
+-- @materialize: true
+```
+
+Model materialization is something to consider when creating intermediate models. Intermediate models are not, by default, materialized and are views in your underlying database engine. There are some pros and cons of enabling it during the development process.
+
+The pros include improved performance for downstream models and dashboards, especially with complex logic and/or large data sizes. Some cons are certain edge cases like cross joins might have a degreaded keystroke-by-keystroke experience, and materialized models are billable.
+
+
+If you are seeing degraded performance, the first recommendation you'll hear from us is to materialize the metrics powered model.
+
+### Default Model Materialization
+If you want, you can change the default behavior of all models in Rill by setting the default model behavior in the rill.yaml file.
+
+```yaml
+models:
+  materialize: true
+```
+
+To override this on a per-model basis, simply set the specific model.sql to false.
+```sql
+-- @materialize: false
+```
+
 
 ## Working with Pivots
 
