@@ -12,6 +12,7 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
+import type { Color } from "chroma-js";
 import type { TimeUnit } from "vega-lite/build/src/timeunit";
 
 export type ChartType =
@@ -42,6 +43,7 @@ export type ChartDataResult = {
   isFetching: boolean;
   fields: ChartFieldsMap;
   error?: HTTPError | null;
+  theme: { primary: Color; secondary: Color };
   domainValues?: ChartDomainValues;
 };
 
