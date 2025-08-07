@@ -92,22 +92,14 @@
               <p>{step.description}</p>
             </div>
             {#if step.id === "source"}
-              {#if olapConnector === "duckdb"}
-                <Button type="secondary" onClick={addSourceModal.open}>
-                  <IconSpaceFixer pullLeft><Add /></IconSpaceFixer>
-                  <span>Add data</span>
-                </Button>
-              {:else}
-                <div class="text-center">
-                  <p class="text-sm text-gray-500 mb-2">
-                    Other OLAP connectors work with existing database tables
-                  </p>
-                  <Button type="secondary" disabled>
-                    <IconSpaceFixer pullLeft><Add /></IconSpaceFixer>
-                    <span>Add data (not available)</span>
-                  </Button>
-                </div>
-              {/if}
+              <Button
+                type="secondary"
+                onClick={addSourceModal.open}
+                disabled={olapConnector !== "duckdb"}
+              >
+                <IconSpaceFixer pullLeft><Add /></IconSpaceFixer>
+                <span>Add data</span>
+              </Button>
             {/if}
           </div>
         </li>
