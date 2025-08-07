@@ -42,7 +42,7 @@ After logging into [Rill Cloud](https://ui.rilldata.com), you should see all pro
 
 ## Navigating the Dashboard
 
-<img src = '/img/explore/dashboard101/quickstart.png' class='rounded-gif' />
+<img src = '/img/explore/canvas/canvas-dashboard.png' class='rounded-gif' />
 <br />
 
 
@@ -62,7 +62,7 @@ Similar to our [Explore dashboards](/explore/dashboard-101), Canvas Dashboards a
 <!-- - _**Alerts, Bookmarks and Sharing:**_ You can create an [alert](/explore/alerts/alerts.md) by selecting the bell, customizing the default view of the dashboard (see `purple` box) to a predefined set of metrics, dimensions, and filters by selecting the [bookmark](/explore/bookmarks.md), or share the dashboard ([internally by clicking the `Share` button](/manage/user-management#admin-invites-user-from-rill-cloud) or [externally via Public URLs](/explore/public-url.md)) . -->
 
 ## Component Navigation
-<img src = '/img/explore/dashboard101/quickstart.png' class='rounded-gif' />
+<img src = '/img/explore/canvas/canvas-navigaton.png' class='rounded-gif' />
 <br />
 
 
