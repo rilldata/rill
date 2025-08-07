@@ -13,7 +13,7 @@ sidebar_position: 05
   boxShadow: "0px 4px 15px rgba(0, 0, 0, 0.2)"  /* Shadow effect */
 }}>
   <iframe credentialless="true"
-    src="https://www.youtube.com/embed/Idr2bvQw9_I?si=-xB0ppGOIavlmsE-"
+    src="https://www.youtube.com/embed/z3ZHqypdGgc?si=X_oH9_wgNaiGzKOZ"
     frameBorder="0"
     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
     allowFullScreen
