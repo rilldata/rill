@@ -173,6 +173,11 @@
   $: isModelingSupportedForDefaultOlapDriver =
     useIsModelingSupportedForDefaultOlapDriver($runtime.instanceId);
   $: isModelingSupported = $isModelingSupportedForDefaultOlapDriver.data;
+
+  $: isConnectorType =
+    selectedConnector?.implementsOlap ||
+    selectedConnector?.implementsSqlStore ||
+    selectedConnector?.implementsWarehouse;
 </script>
 
 {#if step >= 1 || $duplicateSourceName}
@@ -276,9 +281,7 @@
         {:else if selectedConnector.name}
           <AddDataForm
             connector={selectedConnector}
-            formType={OLAP_CONNECTORS.includes(selectedConnector.name)
-              ? "connector"
-              : "source"}
+            formType={isConnectorType ? "connector" : "source"}
             onClose={resetModal}
             onBack={back}
             on:submitting={handleSubmittingChange}
