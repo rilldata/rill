@@ -3,6 +3,10 @@
   "title": "The definition for metrics views",
   "type": "object",
   "properties": {
+    "parent": {
+      "type": "string",
+      "description": "The parent metrics view from which this metrics view is derived. If specified, this will inherit properties from the parent."
+    },
     "title": {
       "type": "string",
       "description": "The display name for the dashboard."
@@ -196,8 +200,398 @@
         "required": ["expression"]
       },
       "description": "Numeric aggregates of columns from your data model."
+    },
+    "parent_dimensions": {
+      "type": "object",
+      "description": "Dimensions to include from parent metrics view. It supports \"*\", a list of names or advanced matching using regex(key - regex), DuckDB expression(key - expr), or exclusion(key - exclude). if not specified, this will inherit all dimensions from the parent metrics view.",
+      "oneOf": [
+        {
+          "type": "string",
+          "description": "Wildcard '*' selector that includes all available fields in the selection."
+        },
+        {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Explicit list of fields to include in the selection."
+        },
+        {
+          "type": "object",
+          "properties": {
+            "regex": {
+              "type": "string",
+              "description": "Select dimensions using a regular expression."
+            },
+            "expr": {
+              "type": "string",
+              "description": "DuckDB SQL expression to select fields based on custom logic."
+            },
+            "exclude": {
+              "type": "object",
+              "description": "Select all dimensions except those listed here."
+            }
+          },
+          "oneOf": [
+            { "required": ["regex"] },
+            { "required": ["expr"] },
+            { "required": ["exclude"] }
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "parent_measures": {
+      "type": "object",
+      "description": "Measures to include from parent metrics view. It supports  \"*\", a list of names or advanced matching using regex(key - regex), DuckDB expression(key - expr), or exclusion(key - exclude). if not specified, this will inherit all measures from the parent metrics view.",
+      "oneOf": [
+        {
+          "type": "string",
+          "description": "Wildcard '*' selector that includes all available fields in the selection."
+        },
+        {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Explicit list of fields to include in the selection."
+        },
+        {
+          "type": "object",
+          "properties": {
+            "regex": {
+              "type": "string",
+              "description": "Select measures using a regular expression."
+            },
+            "expr": {
+              "type": "string",
+              "description": "DuckDB SQL expression to select fields based on custom logic."
+            },
+            "exclude": {
+              "type": "object",
+              "description": "Select all measures except those listed here."
+            }
+          },
+          "oneOf": [
+            { "required": ["regex"] },
+            { "required": ["expr"] },
+            { "required": ["exclude"] }
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "explore": {
+      "type": "object",
+      "description": "Defines an inline explore view for the metrics view.",
+      "properties": {
+        "skip": {
+          "type": "boolean",
+          "description": "If true, disables the explore view for this metrics view."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name for the explore."
+        },
+        "display_name": {
+          "type": "string",
+          "description": "Display name for the explore view."
+        },
+        "description": {
+          "type": "string",
+          "description": "Description for the explore view."
+        },
+        "banner": {
+          "type": "string",
+          "description": "Custom banner displayed at the header of the explore view."
+        },
+        "dimensions": {
+          "type": "object",
+          "description": "Dimensions to include from the metrics view. It supports \"*\", a list of names or advanced matching using regex(key - regex), DuckDB expression(key - expr), or exclusion(key - exclude). if not specified, this will include all dimensions from the metrics view.",
+          "oneOf": [
+            {
+              "type": "string",
+              "description": "Wildcard '*' selector that includes all available fields in the selection."
+            },
+            {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Explicit list of fields to include in the selection."
+            },
+            {
+              "type": "object",
+              "properties": {
+                "regex": {
+                  "type": "string",
+                  "description": "Select dimensions using a regular expression."
+                },
+                "expr": {
+                  "type": "string",
+                  "description": "DuckDB SQL expression to select fields based on custom logic."
+                },
+                "exclude": {
+                  "type": "object",
+                  "description": "Select all dimensions except those listed here."
+                }
+              },
+              "oneOf": [
+                { "required": ["regex"] },
+                { "required": ["expr"] },
+                { "required": ["exclude"] }
+              ],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "measures": {
+          "type": "object",
+          "description": "Measures to include from the metrics view. It supports  \"*\", a list of names or advanced matching using regex(key - regex), DuckDB expression(key - expr), or exclusion(key - exclude). if not specified, this will include all measures from the parent metrics view.",
+          "oneOf": [
+            {
+              "type": "string",
+              "description": "Wildcard '*' selector that includes all available fields in the selection."
+            },
+            {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Explicit list of fields to include in the selection."
+            },
+            {
+              "type": "object",
+              "properties": {
+                "regex": {
+                  "type": "string",
+                  "description": "Select measures using a regular expression."
+                },
+                "expr": {
+                  "type": "string",
+                  "description": "DuckDB SQL expression to select fields based on custom logic."
+                },
+                "exclude": {
+                  "type": "object",
+                  "description": "Select all measures except those listed here."
+                }
+              },
+              "oneOf": [
+                { "required": ["regex"] },
+                { "required": ["expr"] },
+                { "required": ["exclude"] }
+              ],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "theme": {
+          "oneOf": [
+            {
+              "type": "string",
+              "description": "Name of an existing theme to apply to the explore view."
+            },
+            {
+              "type": "object",
+              "properties": {
+                "colors": {
+                  "type": "object",
+                  "properties": {
+                    "primary": {
+                      "type": "string",
+                      "description": "Overrides the primary blue color in the dashboard."
+                    },
+                    "secondary": {
+                      "type": "string",
+                      "description": "Overrides the secondary color in the dashboard."
+                    }
+                  },
+                  "anyOf": [
+                    { "required": ["primary"] },
+                    { "required": ["secondary"] }
+                  ],
+                  "description": "Used to override the dashboard colors. Either primary or secondary color must be provided."
+                }
+              },
+              "required": ["colors"]
+            }
+          ],
+          "description": "Name of the theme to use. Only one of theme and embedded_theme can be set."
+        },
+        "time_ranges": {
+          "type": "array",
+          "description": "Overrides the list of default time range selections available in the dropdown. It can be string or an object with a 'range' and optional 'comparison_offsets'.",
+          "items": {
+            "oneOf": [
+              {
+                "type": "string",
+                "description": "A valid ISO 8601 duration or Rill extension for the selection."
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "range": {
+                    "type": "string",
+                    "description": "A valid ISO 8601 duration or Rill extension for the selection."
+                  },
+                  "comparison_offsets": {
+                    "type": "array",
+                    "description": "List of time comparison options for this time range selection.",
+                    "items": {
+                      "oneOf": [
+                        {
+                          "type": "string",
+                          "description": "Offset string only (range is inferred)"
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "offset": {
+                              "type": "string",
+                              "description": "Time offset for comparison (e.g., 'P1D' for one day ago)"
+                            },
+                            "range": {
+                              "type": "string",
+                              "description": "Custom time range for comparison period"
+                            }
+                          },
+                          "required": ["offset"],
+                          "additionalProperties": false
+                        }
+                      ]
+                    }
+                  }
+                },
+                "required": ["range"],
+                "additionalProperties": false
+              }
+            ]
+          }
+        },
+        "time_zones": {
+          "type": "array",
+          "description": "List of time zones to pin to the top of the time zone selector. Should be a list of IANA time zone identifiers.",
+          "items": { "type": "string" }
+        },
+        "lock_time_zone": {
+          "type": "boolean",
+          "description": "When true, the explore view will be locked to the first time zone provided in the time_zones list. If no time_zones are provided, it will be locked to UTC."
+        },
+        "allow_custom_time_range": {
+          "type": "boolean",
+          "description": "Defaults to true. When set to false, hides the ability to set a custom time range for the user."
+        },
+        "defaults": {
+          "type": "object",
+          "description": "Preset UI state to show by default.",
+          "properties": {
+            "dimensions": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "Wildcard '*' selector that includes all available fields in the selection."
+                },
+                {
+                  "type": "array",
+                  "items": { "type": "string" },
+                  "description": "Explicit list of fields to include in the selection."
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "regex": {
+                      "type": "string",
+                      "description": "Select dimensions using a regular expression."
+                    },
+                    "expr": {
+                      "type": "string",
+                      "description": "DuckDB SQL expression to select fields based on custom logic."
+                    },
+                    "exclude": {
+                      "type": "object",
+                      "description": "Select all dimensions except those listed here."
+                    }
+                  },
+                  "oneOf": [
+                    { "required": ["regex"] },
+                    { "required": ["expr"] },
+                    { "required": ["exclude"] }
+                  ],
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "measures": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "Wildcard '*' selector that includes all available fields in the selection."
+                },
+                {
+                  "type": "array",
+                  "items": { "type": "string" },
+                  "description": "Explicit list of fields to include in the selection."
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "regex": {
+                      "type": "string",
+                      "description": "Select measures using a regular expression."
+                    },
+                    "expr": {
+                      "type": "string",
+                      "description": "DuckDB SQL expression to select fields based on custom logic."
+                    },
+                    "exclude": {
+                      "type": "object",
+                      "description": "Select all measures except those listed here."
+                    }
+                  },
+                  "oneOf": [
+                    { "required": ["regex"] },
+                    { "required": ["expr"] },
+                    { "required": ["exclude"] }
+                  ],
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "time_range": {
+              "type": "string",
+              "description": "Default time range to display when the explore view loads."
+            },
+            "comparison_mode": {
+              "type": "string",
+              "enum": ["none", "time", "dimension"],
+              "description": "Default comparison mode for metrics (none, time, or dimension)."
+            },
+            "comparison_dimension": {
+              "type": "string",
+              "description": "Default dimension to use for comparison when comparison_mode is 'dimension'."
+            }
+          },
+          "additionalProperties": false
+        },
+        "embeds": {
+          "type": "object",
+          "description": "Configuration options for embedded explore views.",
+          "properties": {
+            "hide_pivot": {
+              "type": "boolean",
+              "description": "When true, hides the pivot table view in embedded mode."
+            }
+          },
+          "additionalProperties": false
+        }
+      }
     }
   },
-  "oneOf": [{ "required": ["model"] }, { "required": ["table"] }],
-  "required": ["dimensions", "measures"]
+  "if": {
+    "not": {
+      "properties": {
+        "parent": { "type": "string" }
+      }
+    }
+  },
+  "then": {
+    "allOf": [
+      {
+        "oneOf": [{ "required": ["model"] }, { "required": ["table"] }]
+      },
+      { "required": ["dimensions", "measures"] }
+    ]
+  }
 }
