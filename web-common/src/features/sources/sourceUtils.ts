@@ -9,10 +9,16 @@ import { makeDotEnvConnectorKey } from "../connectors/code-utils";
 import { sanitizeEntityName } from "../entity-management/name-utils";
 
 // Helper text that we put at the top of every Source YAML file
-const TOP_OF_FILE = `# Connector YAML
+const CONNECTOR_FILE_TOP = `# Connector YAML
 # Reference documentation: https://docs.rilldata.com/reference/project-files/connectors
 
 type: connector`;
+
+const LOCAL_FILE_TOP = `# Source YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/sources
+
+type: model
+materialize: true`;
 
 export function compileSourceYAML(
   connector: V1ConnectorDriver,
@@ -72,12 +78,13 @@ export function compileSourceYAML(
     })
     .join("\n");
 
-  // Return the compiled YAML
-  return `${TOP_OF_FILE}\n\ndriver: ${connector.name}\n` + compiledKeyValues;
+  return (
+    `${CONNECTOR_FILE_TOP}\n\ndriver: ${connector.name}\n` + compiledKeyValues
+  );
 }
 
 export function compileLocalFileSourceYAML(path: string) {
-  return `${TOP_OF_FILE}\n\ndriver: duckdb\nsql: "${buildDuckDbQuery(path)}"`;
+  return `${LOCAL_FILE_TOP}\n\ndriver: duckdb\nsql: "${buildDuckDbQuery(path)}"`;
 }
 
 function buildDuckDbQuery(path: string): string {
