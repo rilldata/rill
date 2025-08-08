@@ -5,9 +5,9 @@ sidebar_position: 13
 hide_table_of_contents: false
 ---
 
-## What is Rill Developer and Rill Cloud?
+## What is Rill Cloud and Rill Developer?
 
-Rill offers two unique but complementary experiences within our broader product suite, **Rill Developer** and **Rill Cloud**.
+Rill offers two unique but complementary experiences within our broader product suite, **Rill Cloud** and **Rill Developer**.
 
 As the name suggests, Rill _Developer_ is designed with the developer in mind, where project development actually occurs. Rill Developer is meant for the primary developers of project assets and dashboards, allowing them to import, wrangle, iterate on, and explore the data before presenting it for broader consumption by the team. Rill Developer is meant to run on your local machine - see here for some [recommendations and best practices](/deploy/performance#local-development--rill-developer) - but it is a simple process to [deploy a project](/deploy/deploy-dashboard) once ready to Rill Cloud.
 

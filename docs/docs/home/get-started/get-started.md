@@ -42,7 +42,7 @@ This will:
 
 <br/>
 :::note Rill Developer vs Rill Cloud
-Rill Developer is your local development environment where you build and test your analytics projects. Once ready, you can deploy to Rill Cloud for team collaboration and production use. For more details, see our [Developer vs Cloud comparison](/home/concepts/developerVsCloud.md).
+Rill Developer is your local development environment where you build and test your analytics projects. Once ready, you can deploy to Rill Cloud for team collaboration and production use. For more details, see our [Developer vs Cloud comparison](/home/concepts/cloud-vs-developer).
 :::
 
 ### Step 2: Connect Your Data
