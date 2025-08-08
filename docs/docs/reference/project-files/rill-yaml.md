@@ -65,7 +65,7 @@ In your `rill.yaml`, the top level property for the resource type needs to be **
 :::
 
 For example, the following YAML configuration below will set a project-wide default for:
-- **Sources** - Configure a [source refresh](/build/models/source-refresh).
+- **Sources** - Configure a [source refresh](/build/models/data-refresh).
 - **Models** - Automatically materialize the models as tables instead of views (the default behavior if unspecified).
 - **Metrics View** - Set the [first day of the week](metrics-views.md) for timeseries aggregations to be Sunday along with setting the smallest_time_grain.
 - **Explore Dashboards** - Set the [default](explore-dashboards.md) values when a user opens a dashboard, and available time zones and/or time ranges.
@@ -175,7 +175,7 @@ Don't forget the leading `/` when specifying the path for `ignore_paths` and thi
 
 ## Testing access policies 
 
-During development, it is always a good idea to check if your [access policies](/manage/security.md) are behaving the way you designed them to before pushing these changes into production. You can set mock users which enables a drop down in the dashboard preview to view as a specific user. 
+During development, it is always a good idea to check if your [access policies](/build/metrics-view/security) are behaving the way you designed them to before pushing these changes into production. You can set mock users which enables a drop down in the dashboard preview to view as a specific user. 
 
 ```yaml
 mock_users:

@@ -264,7 +264,7 @@ const config = {
           },
           {
             from: '/deploy/source-refresh',
-            to: '/build/models/source-refresh'
+            to: '/build/models/data-refresh'
           },
           {
             from: '/reference/templating',
@@ -289,6 +289,10 @@ const config = {
           {
             from: '/share/scheduled-reports',
             to: '/explore/exports'
+          },
+          {
+            from: '/manage/security',
+            to: '/build/metrics-view/security'
           },
           // OLAP Engine redirects
           {
@@ -441,6 +445,7 @@ const config = {
           //   from: '/old-page',
           //   to: '/new-page',
           // }
+
         ],
       },
     ],
