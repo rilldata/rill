@@ -94,7 +94,7 @@ regex: "^public_.*$"
 
 ### `theme`
 
-_[oneOf]_ - Name of the theme to use or define a theme inline. Either theme name or inline theme can be set. 
+_[oneOf]_ - Name of the theme to use. Only one of theme and embedded_theme can be set. 
 
   - **option 1** - _[string]_ - Name of an existing theme to apply to the dashboard
 
