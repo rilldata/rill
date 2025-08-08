@@ -126,7 +126,7 @@ The main screen of any Rill dashboard is called the _Explore_ page. As seen abov
 <br/>
 
 
-- _**Dimensions:**_  All _**dimensions**_ available in the underlying model on the right-hand side via leaderboard / toplist charts. You can add, remove or re-order any dimension from the page by simply selecting them from the dropdown above the charts (see `green` boxes). You can also drill into leaderboards further (see `blue` box) to see all corresponding metrics for a specific dimension. Within that drilldown, you can also then sort by metric, search your dimensions, and/or [export data](../exports.md). It is also possible to display [multiple measures in the dimension leaderboard](multi-metrics).
+- _**Dimensions:**_  All _**dimensions**_ available in the underlying model on the right-hand side via leaderboard / toplist charts. You can add, remove or re-order any dimension from the page by simply selecting them from the dropdown above the charts (see `green` boxes). You can also drill into leaderboards further (see `blue` box) to see all corresponding metrics for a specific dimension. Within that drilldown, you can also then sort by metric, search your dimensions, and/or [export data](../exports.md). It is also possible to display [multiple measures in the dimension leaderboard](/explore/dashboard-101/multi-metrics).
 
 
 :::info Search for individual attributes
