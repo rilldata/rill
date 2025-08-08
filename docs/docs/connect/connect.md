@@ -32,7 +32,7 @@ Rill offers flexible connection strategies to fit different data architectures a
     Some modeling features may be limited depending on the engine.
     :::
 
-## Supported OLAP Engines
+## OLAP Engines
 
 ### DuckDB
 ### ClickHouse
@@ -80,16 +80,14 @@ Rill offers flexible connection strategies to fit different data architectures a
     linkLabel="Learn more"
     referenceLink="pinot"
   />
-    <ConnectorIcon
-    icon={<img src="/img/connect/icons/Headset.svg" alt="Pinot" />}
-    content="Don't see an OLAP engine that you're looking for? Chat with us about your use case!"
-    link="/contact"
-    linkLabel="Learn more"
-  />
 </div>
 
+:::tip Missing an OLAP Engine?
+Rill is continually evaluating additional OLAP engines that can be added. For a full list of OLAP engines that we support, refer to our [OLAP Engines](/connect/olap) page. If you don't see an OLAP engine that you'd like to use, please don't hesitate to [reach out](/contact)!
+:::
 
-## Data Warehouse Connectors
+
+## Data Warehouse
 
 ### Athena
 ### BigQuery
@@ -166,7 +164,7 @@ Rill offers flexible connection strategies to fit different data architectures a
 </div>
 
 
-## Cloud Storage Connectors
+## Object Storage
 
 ### Azure
 ### Google Cloud Storage
@@ -202,7 +200,7 @@ Rill offers flexible connection strategies to fit different data architectures a
 
 </div>
 
-## Other Connectors
+## Other Data Connectors
 
 ### HTTPS
 ### Local File
@@ -245,6 +243,10 @@ Rill offers flexible connection strategies to fit different data architectures a
   />
 </div>
 
+:::tip Missing a connector?
+We're constantly adding new data connectors. If you don't see what you need, [let us know](/contact) and we'll help you get connected.
+:::
+
 ## Other Integrations
 
 ### Google Sheets
@@ -271,6 +273,3 @@ Rill offers flexible connection strategies to fit different data architectures a
   />
 </div>
 
-:::tip Missing a connector?
-We're constantly adding new data connectors. If you don't see what you need, [let us know](/contact) and we'll help you get connected.
-:::

@@ -15,8 +15,6 @@ Along with supporting ingestion from your various [sources](/connect/data-source
 2. Set the [OLAP engine](/reference/project-files/metrics-views) for a specific dashboard, on the metrics view
 
 :::warning OLAP Engine Limitations
-**Experimental Feature**: Modeling on external OLAP engines is currently behind a feature flag and has limited functionality.
-
 **Important Considerations:**
 - **Use a test database** to avoid accidentally overwriting production data
 - **Perform modeling upstream** since this is a live connection to your existing data
@@ -25,7 +23,7 @@ Along with supporting ingestion from your various [sources](/connect/data-source
 :::
 
 
-## Supported OLAP Engines
+## OLAP Engines
 
 Rill supports the use of several different OLAP engines to power your dashboards, including:
 

@@ -36,7 +36,7 @@ Rill supports connecting your data to both [DuckDB](/connect/olap/duckdb) and [C
 :::
 
 
-## Data Warehouse Connectors
+## Data Warehouse
 
 ### Athena
 ### BigQuery
@@ -113,7 +113,7 @@ Rill supports connecting your data to both [DuckDB](/connect/olap/duckdb) and [C
 </div>
 
 
-## Cloud Storage Connectors
+## Object Storage
 
 ### Azure
 ### Google Cloud Storage
@@ -149,7 +149,7 @@ Rill supports connecting your data to both [DuckDB](/connect/olap/duckdb) and [C
 
 </div>
 
-## Other Connectors
+## Other Data Connectors
 
 ### HTTPS
 ### Local File
@@ -205,4 +205,3 @@ If you have a firewall in front of your externally hosted service, you will need
 34.148.167.51
 35.237.60.193
 ```
-**
