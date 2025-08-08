@@ -16,13 +16,13 @@ Rill's strategy for fast dashboards is threefold:
 
 2) *Use an integrated OLAP database* to drive dashboards, by orchestrating (and aggregating, per above) data out of cloud data warehouses, lakehouses, or object stores.
 
-3) *Implement BI-as-code* to bring version control, collaboration, and automation to your analytics stack. This approach allows engineering teams to maintain control while enabling business users to make UI-based adjustments when needed. [Learn more about BI-as-code](/concepts/bi-as-code).
+3) *Implement BI-as-code* to bring version control, collaboration, and automation to your analytics stack. This approach allows engineering teams to maintain control while enabling business users to make UI-based adjustments when needed. [Learn more about BI-as-code](/home/concepts/bi-as-code).
 
 The decoupling of BI applications and database servers served a purpose at one phase in the evolution of data stacks, but the cost and performance trade-offs have begun to shift in favor of consolidated analytics offerings.
 
 ## Architecture
 
-![architecture](../../static/img/concepts/architecture/architecture.png)
+![architecture](/img/concepts/architecture/architecture.png)
 
 
 Engineering teams frequently get ad hoc requests from product, finance, and operations for insights into data sets that are readily available in object storage. Over time, writing complex SQL or Python reports against the data lake can become a burden and a distraction. With Rill, engineering teams can write SQL to design and deploy a small set of data models to answer a broad range of inquiries. Rill's architecture automatically turns SQL-based data models into interactive, exploratory dashboards with no additional design effort. Engineers can focus on defining expressions for core business metrics in SQL, and Rill takes care of the rest.
