@@ -11,7 +11,7 @@ In Rill, partitions are a special type of state that allows you to explicitly pa
 
 
 ### Defining a Partition in a Model
-Under the `partitions:` parameter, you will define the pattern in which your data is stored. Both SQL and glob patterns support [templating](/deploy/templating) and can be used to separate `dev` and `prod` instances. 
+Under the `partitions:` parameter, you will define the pattern in which your data is stored. Both SQL and glob patterns support [templating](/connect/templating) and can be used to separate `dev` and `prod` instances. 
 
 ### SQL
 When defining your SQL, it is important to understand the data that you are querying and creating a partition that makes sense. For example, possibly selecting a distinct customer_name per partition, or possibly partition the SQL by a chronological partition, such as month.
