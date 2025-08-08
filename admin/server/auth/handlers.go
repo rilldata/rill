@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"time"
 
 	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/rilldata/rill/admin/database"
@@ -160,8 +161,8 @@ func (a *Authenticator) authStart(w http.ResponseWriter, r *http.Request, signup
 //
 // authLoginCallback doesn't set the auth cookie directly because the final redirect destination may be an org with a custom domain.
 // So we need to ensure that the auth token is set in a cookie on the custom domain instead of the primary domain.
-// So after creating a new token, it redirects to authWithToken on the same domain as the final redirect destination (if any, else it stays on the same domain).
-// authWithToken will then set the actual auth cookie and do the final redirect back to the UI.
+// So we issue a short-lived nonce token for the browser auth callback, and then redirect to authWithToken on the same domain as the final redirect destination (if any, else it stays on the same domain).
+// authWithToken will then validate the nonce token and create a new auth token and set the actual auth cookie and do the final redirect back to the UI.
 func (a *Authenticator) authLoginCallback(w http.ResponseWriter, r *http.Request) {
 	// Get auth cookie
 	sess := a.cookies.Get(r, cookieName)
@@ -261,8 +262,9 @@ func (a *Authenticator) authLoginCallback(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	// Issue a new persistent auth token
-	authToken, err := a.admin.IssueUserAuthToken(r.Context(), user.ID, database.AuthClientIDRillWeb, "Browser session", nil, nil)
+	// Issue a short-lived nonce token (2-minute TTL) for browser auth callback
+	ttl := 2 * time.Minute
+	authNonceToken, err := a.admin.IssueUserAuthToken(r.Context(), user.ID, database.AuthClientIDRillWeb, "Nonce Token", nil, &ttl)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("failed to issue API token: %s", err), http.StatusInternalServerError)
 		return
@@ -274,19 +276,47 @@ func (a *Authenticator) authLoginCallback(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	// Redirect to authWithToken to set the token in a cookie.
+	// Redirect to authWithToken to validate the nonce token and set the token in a cookie.
 	// We don't set the cookie directly here because the auth flow may have started from an org with a custom domain (see authStart),
 	// in which case the token needs to be set in a cookie on the custom domain instead of the primary domain (where authLoginCallback is called).
-	tokenStr := authToken.Token().String()
-	withTokenURL := a.admin.URLs.WithCustomDomainFromRedirectURL(redirect).AuthWithToken(tokenStr, redirect)
+	nonceTokenStr := authNonceToken.Token().String()
+	withTokenURL := a.admin.URLs.WithCustomDomainFromRedirectURL(redirect).AuthWithToken(nonceTokenStr, redirect)
 	http.Redirect(w, r, withTokenURL, http.StatusTemporaryRedirect)
 }
 
 // authWithToken extracts an auth token from the query params and sets it in the auth cookie.
 // It then redirects the user to the frontend. The redirect destination can be overridden by passing a "redirect" query parameter.
 func (a *Authenticator) authWithToken(w http.ResponseWriter, r *http.Request) {
-	// Get new auth token
-	newToken := r.URL.Query().Get("token")
+	nonceToken := r.URL.Query().Get("nonce_token")
+	var newToken string
+	if nonceToken != "" {
+		validated, err := a.admin.ValidateAuthToken(r.Context(), nonceToken)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusUnauthorized)
+			return
+		}
+		mdl, ok := validated.TokenModel().(*database.UserAuthToken)
+		if !ok {
+			http.Error(w, "invalid token model", http.StatusBadRequest)
+			return
+		}
+		newAuthToken, err := a.admin.IssueUserAuthToken(r.Context(), mdl.UserID, database.AuthClientIDRillWeb, "Browser session", nil, nil)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("failed to issue API token: %s", err), http.StatusInternalServerError)
+			return
+		}
+		newToken = newAuthToken.Token().String()
+
+		err = a.admin.RevokeAuthToken(r.Context(), nonceToken)
+		if err != nil {
+			a.logger.Info("failed to revoke nonce token during auth", zap.Error(err), observability.ZapCtx(r.Context()))
+			// The nonce token was probably manually revoked. We can still continue.
+		}
+	} else {
+		// Get new auth token
+		newToken = r.URL.Query().Get("token")
+	}
+
 	if newToken == "" {
 		http.Error(w, "token not provided", http.StatusBadRequest)
 		return
