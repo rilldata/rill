@@ -29,6 +29,8 @@ export const SOURCES = [
   "https",
 ];
 
+// TODO: create CONNECTORS
+// TODO: rename to OLAP_ENGINEs
 export const OLAP_CONNECTORS = ["clickhouse", "druid", "pinot"];
 
 export const SORT_ORDER = [...SOURCES, ...OLAP_CONNECTORS];
