@@ -81,23 +81,34 @@ func (e *Executor) wrapClickhouseComputedTimeDimWalk(a *AST, n *SelectNode, comp
 	if wrapNeeded {
 		a.wrapSelect(n, a.generateIdentifier())
 		// first change alias in the inner query
+		dims := make([]FieldNode, 0, len(n.FromSelect.DimFields))
 		for i, f := range n.FromSelect.DimFields {
+			dims = append(dims, f)
 			if uniqName, ok := computedTimeDims[f.Name]; ok {
-				n.FromSelect.DimFields[i].Name = uniqName
+				dims[i].Name = uniqName
 			}
 		}
+		n.FromSelect.DimFields = dims
+
 		// check if there are order bys in the inner query and use new alias
-		for j, order := range n.FromSelect.OrderBy {
+		orderBys := make([]OrderFieldNode, 0, len(n.FromSelect.OrderBy))
+		for i, order := range n.FromSelect.OrderBy {
+			orderBys = append(orderBys, order)
 			if uniqName, ok := computedTimeDims[order.Name]; ok {
 				// change the order by name to the uniqName
-				n.FromSelect.OrderBy[j].Name = uniqName
+				orderBys[i].Name = uniqName
 			}
 		}
+		n.FromSelect.OrderBy = orderBys
+
 		// last change the expressions in the outer query to use the uniqName but keep the return alias same as the actual query dimension name so change the expression and keep f.Name as is
+		dims = make([]FieldNode, 0, len(n.DimFields))
 		for i, f := range n.DimFields {
+			dims = append(dims, f)
 			if uniqName, ok := computedTimeDims[f.Name]; ok {
-				n.DimFields[i].Expr = a.sqlForMember(n.FromSelect.Alias, uniqName)
+				dims[i].Expr = a.sqlForMember(n.FromSelect.Alias, uniqName)
 			}
 		}
+		n.DimFields = dims
 	}
 }
