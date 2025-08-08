@@ -78,7 +78,7 @@ refresh:
 
 :::tip Why are source refreshes only enabled by default for Rill Cloud?
 
-Source refreshes are primarily meant to _help keep the data in your deployed dashboards on Rill Cloud up-to-date_ (without needing to manually trigger refreshes). For more details, see our documentation on [configuring source refreshes](/build/models/source-refresh).
+Source refreshes are primarily meant to _help keep the data in your deployed dashboards on Rill Cloud up-to-date_ (without needing to manually trigger refreshes). For more details, see our documentation on [configuring source refreshes](/build/models/data-refresh).
 
 :::
 
