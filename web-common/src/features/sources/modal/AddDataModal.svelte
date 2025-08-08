@@ -39,7 +39,7 @@
   import DuplicateSource from "./DuplicateSource.svelte";
   import LocalSourceUpload from "./LocalSourceUpload.svelte";
   import RequestConnectorForm from "./RequestConnectorForm.svelte";
-  import { OLAP_CONNECTORS, SORT_ORDER, SOURCES } from "./constants";
+  import { OLAP_ENGINES, SORT_ORDER, SOURCES } from "./constants";
 
   let step = 0;
   let selectedConnector: null | V1ConnectorDriver = null;
@@ -75,10 +75,10 @@
           data.connectors &&
           data.connectors
             .filter(
-              // Only show connectors in SOURCES or OLAP_CONNECTORS
+              // Only show connectors in SOURCES or OLAP_ENGINES
               (a) =>
                 a.name &&
-                (SOURCES.includes(a.name) || OLAP_CONNECTORS.includes(a.name)),
+                (SOURCES.includes(a.name) || OLAP_ENGINES.includes(a.name)),
             )
             .sort(
               // CAST SAFETY: we have filtered out any connectors that
@@ -205,7 +205,7 @@
           <Dialog.Title>Connect an OLAP engine</Dialog.Title>
 
           <div class="connector-grid">
-            {#each connectors?.filter((c) => c.name && OLAP_CONNECTORS.includes(c.name)) as connector (connector.name)}
+            {#each connectors?.filter((c) => c.name && OLAP_ENGINES.includes(c.name)) as connector (connector.name)}
               {#if connector.name}
                 <button
                   id={connector.name}
