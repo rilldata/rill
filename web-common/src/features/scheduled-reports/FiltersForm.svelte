@@ -57,7 +57,7 @@
 
     removeDimensionFilter,
     toggleDimensionFilterMode,
-    toggleDimensionValueSelection,
+    toggleMultipleDimensionValueSelections,
     applyDimensionInListMode,
     applyDimensionContainsMode,
 
@@ -343,7 +343,9 @@
                 onRemove={() => removeDimensionFilter(name)}
                 onToggleFilterMode={() => toggleDimensionFilterMode(name)}
                 onSelect={(value) =>
-                  toggleDimensionValueSelection(name, value, true)}
+                  toggleMultipleDimensionValueSelections(name, [value], true)}
+                onMultiSelect={(values) =>
+                  toggleMultipleDimensionValueSelections(name, values, true)}
                 onApplyInList={(values) =>
                   applyDimensionInListMode(name, values)}
                 onApplyContainsMode={(searchText) =>
