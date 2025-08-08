@@ -51,7 +51,7 @@ localhost:9009
 Welcome to Rill Developer!
 
 :::note What is Rill Developer? 
-Rill Developer is used to develop your Rill project, as editing in Rill Cloud is not yet available. In Rill Developer, you will create connections to your source files, perform last-mile ETL, define metrics in the metrics layer, and finally create a dashboard. For more details on the differences between Rill Developer and Rill Cloud, see our documentation [here](/concepts/developerVsCloud.md).
+Rill Developer is used to develop your Rill project, as editing in Rill Cloud is not yet available. In Rill Developer, you will create connections to your source files, perform last-mile ETL, define metrics in the metrics layer, and finally create a dashboard. For more details on the differences between Rill Developer and Rill Cloud, see our documentation [here](/home/concepts/cloud-vs-developer)
 :::
 
 <img src = '/img/tutorials/rill-basics/new-rill-project.png' class='rounded-gif' />
