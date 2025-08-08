@@ -110,7 +110,7 @@ This allows the ability for a more detailed view into your time series without h
 
 
 ### Time Comparisons
-Time comparison is a key feature of Rill and is recommended to find insights quicker by highlighting differences between periods. To compare different periods, first select your time period for analysis - either a predefined period or a custom range in top left time picker. After selecting that range, select the toggle to enable Time Comparisons. For more information see our [time series filter documentation](time-series).
+Time comparison is a key feature of Rill and is recommended to find insights quicker by highlighting differences between periods. To compare different periods, first select your time period for analysis - either a predefined period or a custom range in top left time picker. After selecting that range, select the toggle to enable Time Comparisons. For more information see our [time series filter documentation](/explore/filters/time-series).
 
 
 <img src = '/img/explore/alerts/time-series.gif' class='rounded-gif' />

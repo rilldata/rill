@@ -87,7 +87,7 @@ Rill is continually evaluating additional OLAP engines that can be added. For a 
 :::
 
 
-## Data Warehouse
+## Data Warehouses
 
 ### Athena
 ### BigQuery
@@ -166,9 +166,11 @@ Rill is continually evaluating additional OLAP engines that can be added. For a 
 
 ## Object Storage
 
-### Azure
-### Google Cloud Storage
 ### Amazon S3
+### Google Cloud Storage
+### Microsoft Azure Blob Storage
+
+
 
 <div className="connector-icon-grid">
 
@@ -180,15 +182,7 @@ Rill is continually evaluating additional OLAP engines that can be added. For a 
     linkLabel="Learn more"
     referenceLink="s3"
   />
-  <ConnectorIcon
-    icon={<img src="/img/connect/icons/Logo-Azure.svg" alt="Microsoft Azure" />}
-    header="Azure"
-    content="Connect to Microsoft Azure Blob Storage to read data files with support for various formats."
-    link="/connect/data-source/azure"
-    linkLabel="Learn more"
-    referenceLink="azure"
-  />
-  <ConnectorIcon
+    <ConnectorIcon
     icon={<img src="/img/connect/icons/Logo-GCS.svg" alt="Google Cloud Storage" />}
     header="Google Cloud Storage"
     content="Google Cloud Storage for scalable object storage and data lakes."
@@ -197,17 +191,35 @@ Rill is continually evaluating additional OLAP engines that can be added. For a 
     referenceLink="gcs"
   />
 
+  <ConnectorIcon
+    icon={<img src="/img/connect/icons/Logo-Azure.svg" alt="Microsoft Azure" />}
+    header="Azure"
+    content="Connect to Microsoft Azure Blob Storage to read data files with support for various formats."
+    link="/connect/data-source/azure"
+    linkLabel="Learn more"
+    referenceLink="azure"
+  />
+
 
 </div>
 
 ## Other Data Connectors
 
+### Google Sheets
 ### HTTPS
 ### Local File
 ### Salesforce
 
 
 <div className="connector-icon-grid">
+
+  <ConnectorIcon
+    icon={<img src="/img/connect/icons/Logo-Sheets.svg" alt="Google Sheets" className="sheets-icon" />}
+    header="Google Sheets"
+    content="Connect to public Google Sheets to read data from spreadsheets with support for multiple sheets."
+    link="/connect/data-source/googlesheets"
+    linkLabel="Learn more"
+  />
   <ConnectorIcon
     icon={<p className="https-icon">https:// </p>}
     header="HTTPS"
@@ -216,7 +228,6 @@ Rill is continually evaluating additional OLAP engines that can be added. For a 
     linkLabel="Learn more"
     referenceLink="https"
   />
-
   <ConnectorIcon
     icon={<img src="/img/connect/icons/Logo-Local.svg" alt="Local File" />}
     header="Local File"
@@ -234,13 +245,6 @@ Rill is continually evaluating additional OLAP engines that can be added. For a 
     referenceLink="salesforce"
   />
 
-  <ConnectorIcon
-    icon={<img src="/img/connect/icons/Logo-Sheets.svg" alt="Google Sheets" className="sheets-icon" />}
-    header="Google Sheets"
-    content="Connect to public Google Sheets to read data from spreadsheets with support for multiple sheets."
-    link="/connect/data-source/googlesheets"
-    linkLabel="Learn more"
-  />
 </div>
 
 :::tip Missing a connector?
@@ -249,20 +253,11 @@ We're constantly adding new data connectors. If you don't see what you need, [le
 
 ## Other Integrations
 
-### Google Sheets
+### Open AI
 ### Slack
 
+
 <div className="connector-icon-grid">
-
-  <ConnectorIcon
-    icon={<img src="/img/connect/icons/Logo-Slack.svg" alt="Slack" className="sheets-icon" />}
-    header="Slack"
-    content="Connect to Slack to send alerts and messages from Rill."
-    link="/connect/data-source/slack"
-    linkLabel="Learn more"
-    referenceLink="slack"
-  />
-
   <ConnectorIcon
     icon={<img src="/img/connect/icons/Logo-AI.svg" alt="AI" className="sheets-icon" />}
     header="AI"
@@ -270,6 +265,14 @@ We're constantly adding new data connectors. If you don't see what you need, [le
     link="/build/metrics-view/#creating-metrics-with-ai"
     linkLabel="Learn more"
     referenceLink="ai"
+  />
+  <ConnectorIcon
+    icon={<img src="/img/connect/icons/Logo-Slack.svg" alt="Slack" className="sheets-icon" />}
+    header="Slack"
+    content="Connect to Slack to send alerts and messages from Rill."
+    link="/connect/data-source/slack"
+    linkLabel="Learn more"
+    referenceLink="slack"
   />
 </div>
 

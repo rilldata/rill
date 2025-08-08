@@ -1,42 +1,45 @@
 ---
-title: "Connect to your Data"
-description: Import local files or remote data sources
-sidebar_label: "Connectors"
+title: "Rill Managed OLAP + Data Ingestion"
+description: Import local files or remote data sources into Rill's embedded Analytics Engine
 sidebar_position: 00
 toc_max_heading_level: 3
 className: connect-connect
 ---
 
 
+By default, Rill will use a managed embedded analytics engine (**DuckDB** or **ClickHouse**) to support data ingestion.  Whether you're working with cloud data warehouses, databases, file storage, or streaming data sources, Rill provides seamless connectivity and data ingestion capabilities. Once this has been ingested, create [downstream models](/build/models), [metrics views](/build/metrics-view) and [visualize your data](/build/dashboards).
 
-import ConnectorIcon from '@site/src/components/ConnectorIcon';
-
-Rill supports importing data from multiple sources to power your analytics and data applications. Whether you're working with cloud data warehouses, databases, file storage, or streaming data sources, Rill provides seamless connectivity and data ingestion capabilities.
-
-## Getting Started with Connectors
 :::tip using clickhouse?
 
 Dont forget to [create a managed ClickHouse server](/connect/olap/clickhouse#rill-managed-clickhouse) before getting started!
 
+
+```yaml
+# Connector YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/connectors
+  
+type: connector
+
+driver: clickhouse
+managed: true
+```
+
 :::
+ 
+
+
+
+import ConnectorIcon from '@site/src/components/ConnectorIcon';
+
 
 In order to connect and browse through your data, you'll need to create a connector file. Browse through the options below for our supported connectors. Each connector is designed to handle the specific authentication and configuration requirements of your data source.
 
-
-
-### What You Can Do After Connecting
-
-Once the connector is created, you can directly create:
-- **Models** - Transform and combine data from multiple sources using SQL
-- **Metrics Views** - Define key business metrics and KPIs
-- **Dashboards** - Visualize your data with interactive charts and tables
-
 :::warning OLAP Engine Limitations
-Rill supports connecting your data to both [DuckDB](/connect/olap/duckdb) and [ClickHouse](/connect/olap/clickhouse). However, there are still some features in development for managed ClickHouse. For more information see our [managed ClickHouse docs](/connect/olap/clickhouse#rill-managed-clickhouse). If you've still got questions, [contact our team](/contact) for more informaton and scheduled feature releases!
+Rill supports connecting your data to both [DuckDB](/connect/olap/duckdb) and [ClickHouse](/connect/olap/clickhouse). However, there are still some features in development for managed ClickHouse. For more information see our [managed ClickHouse docs](/connect/olap/clickhouse#rill-managed-clickhouse). If you've still got questions, [contact our team](/contact) for more information and scheduled feature releases!
 :::
 
 
-## Data Warehouse
+## Data Warehouses
 
 ### Athena
 ### BigQuery
@@ -114,10 +117,11 @@ Rill supports connecting your data to both [DuckDB](/connect/olap/duckdb) and [C
 
 
 ## Object Storage
-
-### Azure
-### Google Cloud Storage
 ### Amazon S3
+### Google Cloud Storage
+### Microsoft Azure Blob Storage
+
+
 
 <div className="connector-icon-grid">
 
@@ -130,14 +134,6 @@ Rill supports connecting your data to both [DuckDB](/connect/olap/duckdb) and [C
     referenceLink="s3"
   />
   <ConnectorIcon
-    icon={<img src="/img/connect/icons/Logo-Azure.svg" alt="Microsoft Azure" />}
-    header="Azure"
-    content="Connect to Microsoft Azure Blob Storage to read data files with support for various formats."
-    link="/connect/data-source/azure"
-    linkLabel="Learn more"
-    referenceLink="azure"
-  />
-  <ConnectorIcon
     icon={<img src="/img/connect/icons/Logo-GCS.svg" alt="Google Cloud Storage" />}
     header="Google Cloud Storage"
     content="Google Cloud Storage for scalable object storage and data lakes."
@@ -145,19 +141,36 @@ Rill supports connecting your data to both [DuckDB](/connect/olap/duckdb) and [C
     linkLabel="Learn more"
     referenceLink="gcs"
   />
+  <ConnectorIcon
+    icon={<img src="/img/connect/icons/Logo-Azure.svg" alt="Microsoft Azure" />}
+    header="Azure"
+    content="Connect to Microsoft Azure Blob Storage to read data files with support for various formats."
+    link="/connect/data-source/azure"
+    linkLabel="Learn more"
+    referenceLink="azure"
+  />
+
 
 
 </div>
 
 ## Other Data Connectors
 
+### Google Sheets
 ### HTTPS
 ### Local File
 ### Salesforce
-### Google Sheets
-### Slack
+
+
 
 <div className="connector-icon-grid">
+  <ConnectorIcon
+    icon={<img src="/img/connect/icons/Logo-Sheets.svg" alt="Google Sheets" className="sheets-icon" />}
+    header="Google Sheets"
+    content="Connect to Google Sheets to read data from spreadsheets."
+    link="/connect/data-source/googlesheets"
+    linkLabel="Learn more"
+  />
   <ConnectorIcon
     icon={<p className="https-icon">https:// </p>}
     header="HTTPS"
@@ -166,7 +179,6 @@ Rill supports connecting your data to both [DuckDB](/connect/olap/duckdb) and [C
     linkLabel="Learn more"
     referenceLink="https"
   />
-
   <ConnectorIcon
     icon={<img src="/img/connect/icons/Logo-Local.svg" alt="Local File" />}
     header="Local File"
@@ -174,7 +186,6 @@ Rill supports connecting your data to both [DuckDB](/connect/olap/duckdb) and [C
     link="/connect/data-source/local-file"
     linkLabel="Learn more"
   />
-
   <ConnectorIcon
     icon={<img src="/img/connect/icons/Logo-Salesforce.svg" alt="Salesforce" />}
     header="Salesforce"
@@ -184,13 +195,6 @@ Rill supports connecting your data to both [DuckDB](/connect/olap/duckdb) and [C
     referenceLink="salesforce"
   />
 
-  <ConnectorIcon
-    icon={<img src="/img/connect/icons/Logo-Sheets.svg" alt="Google Sheets" className="sheets-icon" />}
-    header="Google Sheets"
-    content="Connect to Google Sheets to read data from spreadsheets with support for multiple sheets."
-    link="/connect/data-source/googlesheets"
-    linkLabel="Learn more"
-  />
 </div>
 
 

@@ -19,9 +19,9 @@ Another use case is when using multiple OLAP engines. This allows you to specify
 
 ## Types of Advanced Models
 
-1. [Incremental Models](./incremental-models)
-2. [Partitioned Models](./partitions)
-3. [Staging Models](./staging)
+1. [Incremental Models](/build/advanced-models/incremental-models)
+2. [Partitioned Models](/build/advanced-models/partitions)
+3. [Staging Models](/build/advanced-models/staging)
 4. [DuckDB `pre_exec`/`post_exec` Models](#duckdb-models-pre-exec-sql-post-exec)
 
 

@@ -19,6 +19,7 @@ const config = {
   // netlify settings
   url: "https://docs.rilldata.com",
   baseUrl: "/",
+  trailingSlash: false,
 
   onBrokenLinks: "throw",
   onBrokenMarkdownLinks: "throw",

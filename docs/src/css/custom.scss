@@ -4,6 +4,7 @@
 @use 'utilities';
 @use 'tile-icon';
 @use 'connector-icon';
+@use 'ClickHouseDSNGenerator';
 
 
 
@@ -36,7 +37,7 @@ body {
   transform: none !important;
 }
 
-[data-theme='dark'] .pagination-nav__link:hover {
+[data-theme='dark'] .pagination-nav__link:hover { 
   background: transparent !important;
 }
 

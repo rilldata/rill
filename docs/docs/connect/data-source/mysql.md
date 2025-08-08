@@ -37,6 +37,12 @@ rill env pull
 ```
 :::
 
+## Separating Dev and Prod Environments
+
+When ingesting data locally, consider setting parameters in your connector file to limit how much data is retrieved, since costs can scale with the data source. This also helps other developers clone the project and iterate quickly by reducing ingestion time.
+
+For more details, see our [Dev/Prod setup docs](/connect/templating).
+
 ## Cloud deployment
 
 Once a project with a MySQL source has been deployed, Rill requires you to explicitly provide the connection string using the following command:

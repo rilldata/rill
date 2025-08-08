@@ -47,6 +47,12 @@ If this project has already been deployed to Rill Cloud and credentials have bee
 
 :::
 
+## Separating Dev and Prod Environments
+
+When ingesting data locally, consider setting parameters in your connector file to limit how much data is retrieved, since costs can scale with the data source. This also helps other developers clone the project and iterate quickly by reducing ingestion time.
+
+For more details, see our [Dev/Prod setup docs](/connect/templating).
+
 ## Cloud deployment
 
 When deploying a project to Rill Cloud, Rill requires you to explicitly provide an access key and secret for an AWS service account with access to Athena used in your project. Please refer to our [connector YAML reference docs](/reference/project-files/connectors#athena) for more information.
