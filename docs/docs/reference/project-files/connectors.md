@@ -192,7 +192,7 @@ path: "md:my_db"                                # Path to your MD database
 init_sql: |                                     # SQL executed during database initialization.
   INSTALL 'motherduck';                         # Install motherduck extension
   LOAD 'motherduck';                            # Load the extensions
-  SET motherduck_token= '{{ .env.motherduck_token }}' # Define the motherduck token
+  SET motherduck_token= '{{ .env.connector.motherduck.access_token }}' # Define the motherduck token
 ```
 
 ### MySQL

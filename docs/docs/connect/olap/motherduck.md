@@ -22,7 +22,7 @@ Rill supports connecting to MotherDuck using the latest DuckDB-compatible driver
 
 When using MotherDuck for local development, you can connect using your MotherDuck access token. The connection is established through MotherDuck's secure API endpoints.
 
-1. Connect to MotherDuck via Add Data. This will automatically create the `motherduck.yaml` file in your `connectors` folder and populate the `.env` file with `motherduck_token`.
+1. Connect to MotherDuck via modifying the existing /connectors/duckdb.yaml. 
 
 ```yaml
 # Connector YAML
@@ -37,15 +37,16 @@ path: "md:my_db"                                # Path to your MD database
 init_sql: |                                     # SQL executed during database initialization.
   INSTALL 'motherduck';                         -- Install motherduck extension
   LOAD 'motherduck';                            -- Load the extensions
-  SET motherduck_token= '{{ .env.motherduck_token }}' -- Define the motherduck token
+  SET motherduck_token= '{{ .env.connector.motherduck.access_token }}' -- Define the motherduck token
 ```
 
-2. You can create/edit the `.env` file manually in the project directory and add your MotherDuck access token.
-3. If this project `motherduck_token` as a variable to `rill start` directly (e.g., `rill start --env motherduck_tokenn=...`).
+:::tip Dont have an .env file?
 
-:::tip Getting connection errors after setting `.env`?
+If it's your first time running Rill, a .env file wont exist yet. Either make a blank file and rename to .env and add your token or run `touch .env` from the project directory in the CLI.
 
-If you are facing issues related to connection errors in your dashboards even after setting the token via the project's `.env` file, try restarting Rill using the `rill start --reset` command.
+```
+connector.motherduck.access_token="TOKEN_HERE"
+```
 
 :::
 
@@ -102,20 +103,13 @@ olap_connector: motherduck
 :::info Interested in using multiple OLAP engines in the same project?
 
 Please see our [Using Multiple OLAP Engines](/connect/olap/multiple-olap) page.
-
 :::
-
-## Reading from Multiple Databases
-
-Rill supports reading from multiple databases in MotherDuck from within the same project in Rill Developer. All accessible tables (given the permission set of your access token) should automatically be listed in the lower left-hand tab, which can then be used to [create dashboards](/build/dashboards).
-
 
 
 ## Additional Notes
 
 - MotherDuck uses the same SQL syntax as DuckDB, so all standard DuckDB functions and features are available
 - For dashboards powered by MotherDuck, [measure definitions](/build/metrics-view/#measures) should follow standard [DuckDB SQL](https://duckdb.org/docs/sql/introduction) syntax
-- The service provides built-in monitoring and usage analytics through the MotherDuck console
 
 :::info Need help connecting to MotherDuck?
 
