@@ -64,12 +64,8 @@ export const getYupSchema = {
   }),
 
   bigquery: yup.object().shape({
-    sql: yup.string().required("sql is required"),
-    project_id: yup.string().required("project_id is required"),
-    name: yup
-      .string()
-      .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
-      .required("Source name is required"),
+    google_application_credentials: yup.string().optional(),
+    project_id: yup.string().optional(),
   }),
 
   azure: yup.object().shape({
