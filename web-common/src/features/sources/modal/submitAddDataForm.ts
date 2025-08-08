@@ -198,13 +198,19 @@ export async function submitAddOLAPConnectorForm(
    * Update the project configuration and navigate to the new connector
    */
 
-  // Update the `rill.yaml` file
-  await runtimeServicePutFile(instanceId, {
-    path: "rill.yaml",
-    blob: await updateRillYAMLWithOlapConnector(queryClient, newConnectorName),
-    create: true,
-    createOnly: false,
-  });
+  // Update the `rill.yaml` file only for actual OLAP connectors (ClickHouse, Druid, Pinot)
+  // Data warehouses like BigQuery, Snowflake, etc. should not be set as olap_connector
+  if (OLAP_CONNECTORS.includes(connector.name as string)) {
+    await runtimeServicePutFile(instanceId, {
+      path: "rill.yaml",
+      blob: await updateRillYAMLWithOlapConnector(
+        queryClient,
+        newConnectorName,
+      ),
+      create: true,
+      createOnly: false,
+    });
+  }
 
   // Go to the new connector file
   await goto(`/files/${newConnectorFilePath}`);

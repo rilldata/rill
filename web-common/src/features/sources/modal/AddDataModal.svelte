@@ -260,9 +260,7 @@
         {:else if selectedConnector.name}
           <AddDataForm
             connector={selectedConnector}
-            formType={OLAP_CONNECTORS.includes(selectedConnector.name)
-              ? "connector"
-              : "source"}
+            formType={isConnectorType ? "connector" : "source"}
             onClose={resetModal}
             onBack={back}
             on:submitting={handleSubmittingChange}
