@@ -87,7 +87,7 @@ Rill is continually evaluating additional OLAP engines that can be added. For a 
 :::
 
 
-## Data Warehouses
+## Data Warehouse
 
 ### Athena
 ### BigQuery
