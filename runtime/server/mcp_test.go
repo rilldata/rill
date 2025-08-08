@@ -15,7 +15,7 @@ import (
 
 // testCtx provides authentication context for testing
 func testCtx() context.Context {
-	return auth.WithOpen(context.Background())
+	return auth.WithClaims(context.Background(), auth.NewOpenClaims())
 }
 
 func newMCPTestServer(t *testing.T) (*Server, string) {

@@ -22,5 +22,5 @@ func getTestServer(t *testing.T) (*server.Server, string) {
 }
 
 func testCtx() context.Context {
-	return auth.WithOpen(context.Background())
+	return auth.WithClaims(context.Background(), auth.NewOpenClaims())
 }
