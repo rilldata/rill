@@ -55,7 +55,10 @@ export function fillTimeRange(
       timeRangeSummary,
       executionTime,
     );
-    if (exploreState.selectedTimeRange) {
+    if (
+      exploreState.selectedTimeRange?.start &&
+      exploreState.selectedTimeRange?.end
+    ) {
       exploreState.selectedTimeRange.name = TimeRangePreset.CUSTOM;
     }
   }
