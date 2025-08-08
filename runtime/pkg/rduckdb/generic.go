@@ -41,6 +41,8 @@ type GenericOptions struct {
 	Attach string
 	// DBName is set to the name of the database identified by the Path.
 	DBName string
+	// SchemaName switches the default schema.
+	SchemaName string
 
 	// LocalDataDir is the path to the local DuckDB database file.
 	LocalDataDir string
@@ -456,13 +458,17 @@ func (m *generic) acquireConn(ctx context.Context) (*sqlx.Conn, error) {
 	if err != nil {
 		return nil, fmt.Errorf("acquire connection failed: %w", err)
 	}
-	if m.opts.DBName == "" {
-		// if dbName is not set, we are using the default database
-		return conn, nil
+	if m.opts.DBName != "" {
+		_, err = conn.ExecContext(ctx, fmt.Sprintf("USE %s", safeSQLString(m.opts.DBName)))
+		if err != nil {
+			return nil, fmt.Errorf("acquire connection failed: %w", err)
+		}
 	}
-	_, err = conn.ExecContext(ctx, fmt.Sprintf("USE %s", safeSQLString(m.opts.DBName)))
-	if err != nil {
-		return nil, fmt.Errorf("acquire connection failed: %w", err)
+	if m.opts.SchemaName != "" {
+		_, err = conn.ExecContext(ctx, fmt.Sprintf("USE %s", safeSQLString(m.opts.SchemaName)))
+		if err != nil {
+			return nil, fmt.Errorf("acquire connection failed: %w", err)
+		}
 	}
 	return conn, nil
 }
