@@ -100,7 +100,12 @@ func (r *metricsViewTimeRangeResolver) Close() error {
 }
 
 func (r *metricsViewTimeRangeResolver) CacheKey(ctx context.Context) ([]byte, bool, error) {
-	return cacheKeyForMetricsView(ctx, r.runtime, r.instanceID, r.mvName, r.args.Priority)
+	key, ok, err := cacheKeyForMetricsView(ctx, r.runtime, r.instanceID, r.mvName, r.args.Priority)
+	if err != nil {
+		return nil, false, err
+	}
+	key = append(key, []byte(r.args.TimeDimension)...)
+	return key, ok, nil
 }
 
 func (r *metricsViewTimeRangeResolver) Refs() []*runtimev1.ResourceName {

@@ -5,6 +5,10 @@ import {
   type CanvasResponse,
 } from "@rilldata/web-common/features/canvas/selector";
 import type { CanvasSpecResponseStore } from "@rilldata/web-common/features/canvas/types";
+import {
+  defaultPrimaryColors,
+  defaultSecondaryColors,
+} from "@rilldata/web-common/features/themes/color-config";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
   getRuntimeServiceGetResourceQueryKey,
@@ -292,8 +296,6 @@ export class CanvasEntity {
     themeName: string | undefined,
     embeddedTheme: V1ThemeSpec | undefined,
   ) => {
-    if (!themeName && !embeddedTheme) return;
-
     let themeSpec: V1ThemeSpec | undefined;
 
     if (themeName) {
@@ -317,10 +319,10 @@ export class CanvasEntity {
     this.theme.set({
       primary: themeSpec?.primaryColorRaw
         ? chroma(themeSpec.primaryColorRaw)
-        : undefined,
+        : chroma(`hsl(${defaultPrimaryColors[500]})`),
       secondary: themeSpec?.secondaryColorRaw
         ? chroma(themeSpec.secondaryColorRaw)
-        : undefined,
+        : chroma(`hsl(${defaultSecondaryColors[500]})`),
     });
 
     updateThemeVariables(themeSpec);

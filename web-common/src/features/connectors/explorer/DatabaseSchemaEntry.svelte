@@ -106,6 +106,9 @@
             connector={connectorName}
             showGenerateMetricsAndDashboard={connector.driver.implementsOlap ??
               false}
+            showGenerateModel={(connector.driver.implementsWarehouse ||
+              connector.driver.implementsSqlStore) ??
+              false}
             {database}
             {databaseSchema}
             table={tableInfo.name}
