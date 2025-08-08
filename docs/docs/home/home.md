@@ -75,7 +75,7 @@ A conversion dataset used by marketers, mobile developers, or product teams to a
 
 A compilation of projects that deep dives in Rill's features using  ClickHouse's GitHub commit information.
 
-- <a href="https://github.com/rilldata/rill-examples/tree/main/my-rill-tutorial">GitHub →</a><br />
+- <a href="https://github.com/rilldata/rill-examples/tree/demo/my-rill-tutorial">GitHub →</a><br />
 - <a href="/guides/rill-basics/launch">Walkthrough →</a><br />
 - <a href="https://ui.rilldata.com/demo/my-rill-tutorial">Live Demo →</a>
 

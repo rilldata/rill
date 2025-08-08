@@ -57,7 +57,7 @@ Rill Developer is used to develop your Rill project, as editing in Rill Cloud is
 <img src = '/img/tutorials/rill-basics/new-rill-project.png' class='rounded-gif' />
 <br />
 
-Let's go ahead and select `Start with an empty project`. If you want to skip the basics, you can select one of the quick start projects and refer to our Quick Start Guide for the corresponding project. Note that we have many more projects available in our public repo [here](https://github.com/rilldata/rill-examples).
+Let's go ahead and select `Start with an empty project`. If you want to skip the basics, you can select one of the quick start projects and refer to our Quick Start Guide for the corresponding project. Note that we have many more projects available in our public repo [here](https://github.com/rilldata/rill-examples/tree/demo).
 
 <details>
   <summary>Where am I in the terminal?</summary>
