@@ -39,33 +39,12 @@
   import DuplicateSource from "./DuplicateSource.svelte";
   import LocalSourceUpload from "./LocalSourceUpload.svelte";
   import RequestConnectorForm from "./RequestConnectorForm.svelte";
+  import { OLAP_CONNECTORS, SORT_ORDER, SOURCES } from "./constants";
 
   let step = 0;
   let selectedConnector: null | V1ConnectorDriver = null;
   let requestConnector = false;
   let isSubmittingForm = false;
-
-  const SOURCES = [
-    "gcs",
-    "s3",
-    "azure",
-    "bigquery",
-    "athena",
-    "redshift",
-    "duckdb",
-    "motherduck",
-    "postgres",
-    "mysql",
-    "sqlite",
-    "snowflake",
-    "salesforce",
-    "local_file",
-    "https",
-  ];
-
-  const OLAP_CONNECTORS = ["clickhouse", "druid", "pinot"];
-
-  const SORT_ORDER = [...SOURCES, ...OLAP_CONNECTORS];
 
   const ICONS = {
     gcs: GoogleCloudStorage,
