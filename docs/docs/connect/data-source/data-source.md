@@ -36,7 +36,7 @@ Rill supports connecting your data to both [DuckDB](/connect/olap/duckdb) and [C
 :::
 
 
-## Data Warehouse
+## Data Warehouses
 
 ### Athena
 ### BigQuery
