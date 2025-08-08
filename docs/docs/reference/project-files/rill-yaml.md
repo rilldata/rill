@@ -50,7 +50,7 @@ olap_connector: clickhouse
 
 :::info Curious about OLAP Engines?
 
-Please see our reference documentation on [OLAP Engines](../olap-engines/olap-engines.md).
+Please see our reference documentation on [OLAP Engines](/connect/olap).
 
 :::
  
@@ -65,6 +65,7 @@ In your `rill.yaml`, the top level property for the resource type needs to be **
 :::
 
 For example, the following YAML configuration below will set a project-wide default for:
+
 - **Sources** - Configure a [source refresh](/build/models/data-refresh.md).
 - **Models** - Automatically materialize the models as tables instead of views (the default behavior if unspecified).
 - **Metrics View** - Set the [first day of the week](metrics-views.md) for timeseries aggregations to be Sunday along with setting the smallest_time_grain.
@@ -127,7 +128,7 @@ As a general rule of thumb, properties that have been specified at a more _granu
 
 ## Setting variables
 
-Primarily useful for [templating](/deploy/templating.md), variables can be set in the `rill.yaml` file directly. This allows variables to be set for your projects deployed to Rill Cloud while still being able to use different variable values locally if you prefer. 
+Primarily useful for [templating](/connect/templating), variables can be set in the `rill.yaml` file directly. This allows variables to be set for your projects deployed to Rill Cloud while still being able to use different variable values locally if you prefer. 
 
 To define a variable in `rill.yaml`, pass in the appropriate key-value pair for the variable under the `env` key:
 ```yaml
@@ -153,7 +154,7 @@ Variables can also be set through your project's `<RILL_PROJECT_HOME>/.env` file
 variable=xyz
 ```
 
-Similar to how [connector credentials can be pushed / pulled](/build/credentials/credentials.md#pulling-credentials-and-variables-from-a-deployed-project-on-rill-cloud) from local to cloud or vice versa, project variables set locally in Rill Developer can be pushed to Rill Cloud and/or pulled back to your local instance from your deployed project by using the `rill env push` and `rill env pull` commands respectively.
+Similar to how [connector credentials can be pushed / pulled](/connect/credentials#pulling-credentials-and-variables-from-a-deployed-project-on-rill-cloud) from local to cloud or vice versa, project variables set locally in Rill Developer can be pushed to Rill Cloud and/or pulled back to your local instance from your deployed project by using the `rill env push` and `rill env pull` commands respectively.
 
 :::
 

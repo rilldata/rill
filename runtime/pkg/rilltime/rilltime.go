@@ -39,8 +39,10 @@ var (
 		{"Of", `(?i)of`},
 		{"As", `(?i)as`},
 		{"Tz", `(?i)tz`},
+		// Separate entry is needed outside of Punct
+		{"RangeSeparator", `[,]`},
 		// needed for misc. direct character references used
-		{"Punct", `[-[!@#$%^&*()+_={}\|:;"'<,>.?/]]`},
+		{"Punct", `[-[!@#$%^&*()+_={}\|:;"'<>.?/]]`},
 		{"Whitespace", `[ \t]+`},
 	})
 	rillTimeParser = participle.MustBuild[Expression](
@@ -149,7 +151,7 @@ type StartEndInterval struct {
 // IsoInterval is an interval formed by ISO timestamps. Allows for partial timestamps in ISOPointInTime.
 type IsoInterval struct {
 	Start *ISOPointInTime `parser:"@@"`
-	End   *ISOPointInTime `parser:"((To | '/') @@)?"`
+	End   *ISOPointInTime `parser:"((To | '/' | RangeSeparator) @@)?"`
 }
 
 type PointInTime struct {

@@ -4,18 +4,19 @@
   import ResourceError from "@rilldata/web-admin/features/projects/ResourceError.svelte";
   import ExploreIcon from "@rilldata/web-common/components/icons/ExploreIcon.svelte";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
+  import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { flexRender, type Row } from "@tanstack/svelte-table";
   import { createEventDispatcher } from "svelte";
   import Table from "../../../components/table/Table.svelte";
   import DashboardsTableCompositeCell from "./DashboardsTableCompositeCell.svelte";
-  import { useDashboardsV2, type DashboardResource } from "./selectors";
+  import { useDashboards } from "./selectors";
 
   export let isEmbedded = false;
 
   $: ({ instanceId } = $runtime);
 
-  $: dashboards = useDashboardsV2(instanceId);
+  $: dashboards = useDashboards(instanceId);
   $: ({
     data: dashboardsData,
     isLoading,
@@ -38,9 +39,7 @@
     {
       id: "composite",
       cell: ({ row }) => {
-        const dashboardResource = row.original as DashboardResource;
-        const resource = dashboardResource.resource;
-        const refreshedOn = dashboardResource.refreshedOn;
+        const resource = row.original as V1Resource;
         const name = resource.meta.name.name;
 
         // If not a Metrics Explorer, it's a Custom Dashboard.
@@ -51,6 +50,9 @@
         const description = isMetricsExplorer
           ? resource.explore.spec.description
           : "";
+        const refreshedOn = isMetricsExplorer
+          ? resource.explore?.state?.dataRefreshedOn
+          : resource.canvas?.state?.dataRefreshedOn;
 
         return flexRender(DashboardsTableCompositeCell, {
           name,
@@ -65,28 +67,31 @@
     },
     {
       id: "title",
-      accessorFn: (row: DashboardResource) => {
-        const resource = row.resource;
-        const isMetricsExplorer = !!resource?.explore;
+      accessorFn: (row: V1Resource) => {
+        const isMetricsExplorer = !!row?.explore;
         return isMetricsExplorer
-          ? resource.explore.spec.displayName
-          : resource.canvas.spec.displayName;
+          ? row.explore.spec.displayName
+          : row.canvas.spec.displayName;
       },
     },
     {
       id: "name",
-      accessorFn: (row: DashboardResource) => row.resource.meta.name.name,
+      accessorFn: (row: V1Resource) => row.meta.name.name,
     },
     {
       id: "lastRefreshed",
-      accessorFn: (row: DashboardResource) => row.refreshedOn,
+      accessorFn: (row: V1Resource) => {
+        const isMetricsExplorer = !!row?.explore;
+        return isMetricsExplorer
+          ? row.explore?.state?.dataRefreshedOn
+          : row.canvas?.state?.dataRefreshedOn;
+      },
     },
     {
       id: "description",
-      accessorFn: (row: DashboardResource) => {
-        const resource = row.resource;
-        const isMetricsExplorer = !!resource?.explore;
-        return isMetricsExplorer ? resource.explore.spec.description : "";
+      accessorFn: (row: V1Resource) => {
+        const isMetricsExplorer = !!row?.explore;
+        return isMetricsExplorer ? row.explore.spec.description : "";
       },
     },
   ];
@@ -100,8 +105,8 @@
 
   const dispatch = createEventDispatcher();
 
-  function handleClickRow(e: CustomEvent<Row<DashboardResource>>) {
-    dispatch("select-resource", e.detail.original.resource.meta.name);
+  function handleClickRow(e: CustomEvent<Row<V1Resource>>) {
+    dispatch("select-resource", e.detail.original.meta.name);
   }
 </script>
 

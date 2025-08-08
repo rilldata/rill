@@ -1576,7 +1576,7 @@ func (r *ModelReconciler) shouldTrigger(ctx context.Context, self *runtimev1.Res
 	// Determine if the spec changed
 	specChanged := model.State.SpecHash != specHash
 
-	// Determine if our refresh clause or DAG refs indicate we should trigger
+	// Determine if our refresh clause or DAG refs or a manual action indicate we should trigger
 	scheduledTrigger := model.State.RefsHash != refsHash
 	scheduledTrigger = scheduledTrigger || !refreshOn.IsZero() && time.Now().After(refreshOn)
 
@@ -1585,7 +1585,7 @@ func (r *ModelReconciler) shouldTrigger(ctx context.Context, self *runtimev1.Res
 	// Reset mode is the default. It does a full refresh when the model spec changes.
 	case runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET:
 		full := model.Spec.TriggerFull || firstRun || specChanged
-		trigger := full || model.Spec.Trigger || scheduledTrigger
+		trigger := full || scheduledTrigger || model.Spec.Trigger
 		return trigger, full, nil
 
 	// Manual mode requires a manual full or incremental trigger to run when the model spec changes.
@@ -1620,7 +1620,7 @@ func (r *ModelReconciler) shouldTrigger(ctx context.Context, self *runtimev1.Res
 			r.C.Logger.Info("Updated model definition without a full refresh because change_mode=patch", zap.String("model", self.Meta.Name.Name), observability.ZapCtx(ctx))
 		}
 
-		return specChanged || scheduledTrigger, false, nil
+		return specChanged || scheduledTrigger || model.Spec.Trigger, false, nil
 	default:
 		return false, false, fmt.Errorf("unknown change mode %q", model.Spec.ChangeMode)
 	}

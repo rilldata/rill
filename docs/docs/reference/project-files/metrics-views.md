@@ -28,7 +28,7 @@ In your Rill project directory, create a metrics view, `<metrics_view>.yaml`, fi
 
 **`timeseries`** — Refers to the timestamp column from your model that will underlie x-axis data in the line charts. If not specified, the line charts will not appear _(optional)_.
 
-**`connector`** — Refers to the OLAP engine, if you are not using DuckDB, IE: [ClickHouse OLAP engine](../olap-engines/multiple-olap.md). _(optional)_.
+**`connector`** — Refers to the OLAP engine, if you are not using DuckDB, IE: [ClickHouse OLAP engine](/connect/olap/multiple-olap). _(optional)_.
 
 **`model`** — Refers to the **model** powering the dashboard with no path specified; should only be used for [Rill models](/build/models/models.md) _(either **model** or **table** is required)_.
 

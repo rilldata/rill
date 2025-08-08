@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { EditorView } from "@codemirror/view";
+  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import { initBlankDashboardYAML } from "@rilldata/web-common/features/metrics-views/metrics-internal-store";
   import { useModels } from "@rilldata/web-common/features/models/selectors";
   import {
@@ -7,9 +8,8 @@
     runtimeServicePutFile,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { useIsModelingSupportedForDefaultOlapDriver } from "../../connectors/olap/selectors";
+  import { useIsModelingSupportedForDefaultOlapDriverOLAP as useIsModelingSupportedForDefaultOlapDriver } from "../../connectors/selectors";
   import { createDashboardFromTableInMetricsEditor } from "../ai-generation/generateMetricsView";
-  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
 
   export let metricsName: string;
   export let filePath: string;
@@ -19,6 +19,7 @@
 
   $: isModelingSupportedForDefaultOlapDriver =
     useIsModelingSupportedForDefaultOlapDriver(instanceId);
+  $: isModelingSupported = $isModelingSupportedForDefaultOlapDriver.data;
   $: models = useModels(instanceId);
 
   const buttonClasses =
@@ -60,7 +61,7 @@
 </script>
 
 <div class="whitespace-normal">
-  {#if $isModelingSupportedForDefaultOlapDriver}
+  {#if isModelingSupported}
     Auto-generate a
     <DropdownMenu.Root>
       <DropdownMenu.Trigger asChild let:builder>
@@ -94,7 +95,6 @@
     on:click={async () => {
       onCreateSkeletonMetricsConfig();
     }}
-    >{#if $isModelingSupportedForDefaultOlapDriver}s{:else}S{/if}tart with a
-    skeleton</button
+    >{#if isModelingSupported}s{:else}S{/if}tart with a skeleton</button
   >, or just start typing.
 </div>

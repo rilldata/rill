@@ -17,11 +17,6 @@ These tutorials were built to help you get started with Rill and empower you to 
 Here at Rill, we believe in business-speed visual analytics. Gone are the days of waiting for your dashboard to load! By utilizing OLAP engines, we strive for quick, reactive dashboards that you can drill down into further to make real-time decisions. Not only that, you'll also be able to make traditional dashboards that we call Canvas Dashboards.
 
 
-<!-- - [**6 Steps to Rill Cloud:**](/guides/rill-basics/launch) Learn the basics, understand the core concepts of Rill, and deploy to Cloud!
-- [**Rill + ClickHouse:**](/guides/rill-clickhouse/) For our friends from **ClickHouse**, we have created a dedicated course that goes over the same topics as Rill Basics! After completing, you can continue to Rill Advanced.
-- **Explore the Various Guides:** Explore the various guides on how to use Rill to the maximum capability and get the most out of our platform! -->
-
-
 import TileIcon from '@site/src/components/TileIcon';
 
 
@@ -62,6 +57,7 @@ Follow along, refer to the in-line linked documentation, and explore our product
     link="/guides/setting-up-mcp"
     />
 </div>
+
 
 Each section is crafted to ensure a smooth and comprehensive learning experience. Happy learning!
 

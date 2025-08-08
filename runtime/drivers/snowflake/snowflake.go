@@ -8,6 +8,7 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/mitchellh/mapstructure"
@@ -26,7 +27,7 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "Snowflake",
 	Description: "Connect to Snowflake.",
-	DocsURL:     "https://docs.rilldata.com/reference/connectors/snowflake",
+	DocsURL:     "https://docs.rilldata.com/connect/data-source/snowflake",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:    "dsn",
@@ -49,7 +50,7 @@ var spec = drivers.Spec{
 			Type:        drivers.StringPropertyType,
 			DisplayName: "Snowflake Connection String",
 			Required:    false,
-			DocsURL:     "https://docs.rilldata.com/reference/connectors/snowflake",
+			DocsURL:     "https://docs.rilldata.com/connect/data-source/snowflake",
 			Placeholder: "<username>@<account_identifier>/<database>/<schema>?warehouse=<warehouse>&role=<role>&authenticator=SNOWFLAKE_JWT&privateKey=<privateKey_base64_url_encoded>",
 			Hint:        "Can be configured here or by setting the 'connector.snowflake.dsn' environment variable (using '.env' or '--env')",
 			Secret:      true,
@@ -83,43 +84,78 @@ type configProperties struct {
 	Extras             map[string]any `mapstructure:",remain"`
 }
 
-func (cp configProperties) resolveDSN() (string, error) {
-	if cp.DSN != "" {
-		return cp.DSN, nil
+func (c *configProperties) validate() error {
+	var set []string
+	if c.Account != "" {
+		set = append(set, "account")
+	}
+	if c.User != "" {
+		set = append(set, "user")
+	}
+	if c.Database != "" {
+		set = append(set, "database")
+	}
+	if c.Password != "" {
+		set = append(set, "password")
+	}
+	if c.Schema != "" {
+		set = append(set, "schema")
+	}
+	if c.Warehouse != "" {
+		set = append(set, "warehouse")
+	}
+	if c.Role != "" {
+		set = append(set, "role")
+	}
+	if c.Authenticator != "" {
+		set = append(set, "authenticator")
+	}
+	if c.PrivateKey != "" {
+		set = append(set, "privateKey")
+	}
+	if c.DSN != "" && len(set) > 0 {
+		return fmt.Errorf("snowflake: Only one of 'dsn' or [%s] can be set", strings.Join(set, ", "))
+	}
+	return nil
+}
+
+func (c *configProperties) resolveDSN() (string, error) {
+	if c.DSN != "" {
+		return c.DSN, nil
 	}
 
-	if cp.Account == "" || cp.User == "" || cp.Database == "" {
+	if c.Account == "" || c.User == "" || c.Database == "" {
 		return "", errors.New("missing required fields: account, user, or database")
 	}
 
-	if cp.Password == "" && cp.PrivateKey == "" {
+	if c.Password == "" && c.PrivateKey == "" {
 		return "", errors.New("either password or privateKey must be provided")
 	}
 
 	cfg := &gosnowflake.Config{
-		Account:   cp.Account,
-		User:      cp.User,
-		Password:  cp.Password,
-		Database:  cp.Database,
-		Schema:    cp.Schema,
-		Warehouse: cp.Warehouse,
-		Role:      cp.Role,
+		Account:   c.Account,
+		User:      c.User,
+		Password:  c.Password,
+		Database:  c.Database,
+		Schema:    c.Schema,
+		Warehouse: c.Warehouse,
+		Role:      c.Role,
 		Params:    map[string]*string{},
 	}
 
-	if cp.PrivateKey != "" {
-		privateKey, err := parseRSAPrivateKey(cp.PrivateKey)
+	if c.PrivateKey != "" {
+		privateKey, err := parseRSAPrivateKey(c.PrivateKey)
 		if err != nil {
 			return "", err
 		}
 		cfg.PrivateKey = privateKey
 		cfg.Authenticator = gosnowflake.AuthTypeJwt
-	} else if cp.Authenticator != "" {
-		cfg.Params["authenticator"] = &cp.Authenticator
+	} else if c.Authenticator != "" {
+		cfg.Params["authenticator"] = &c.Authenticator
 	}
 
 	// Apply extra params
-	for k, v := range cp.Extras {
+	for k, v := range c.Extras {
 		switch val := v.(type) {
 		case string:
 			cfg.Params[k] = &val
@@ -140,6 +176,9 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 	conf := &configProperties{}
 	err := mapstructure.WeakDecode(config, conf)
 	if err != nil {
+		return nil, err
+	}
+	if err := conf.validate(); err != nil {
 		return nil, err
 	}
 

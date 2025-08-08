@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"maps"
 	"net/url"
+	"strings"
 
 	"github.com/XSAM/otelsql"
 	"github.com/jmoiron/sqlx"
@@ -25,7 +26,7 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "Pinot",
 	Description: "Connect to Apache Pinot.",
-	DocsURL:     "https://docs.rilldata.com/reference/olap-engines/pinot",
+	DocsURL:     "https://docs.rilldata.com/connect/olap/pinot",
 	// Important: Any edits to the below properties must be accompanied by changes to the client-side form validation schemas.
 	ConfigProperties: []*drivers.PropertySpec{
 		{
@@ -118,6 +119,20 @@ type configProperties struct {
 	TimeoutMS int64 `mapstructure:"timeout_ms"`
 }
 
+func (c *configProperties) validate() error {
+	var set []string
+	if c.BrokerHost != "" {
+		set = append(set, "broker_host")
+	}
+	if c.ControllerHost != "" {
+		set = append(set, "controller_host")
+	}
+	if c.DSN != "" && len(set) > 0 {
+		return fmt.Errorf("pinot: Only one of 'dsn' or [%s] can be set", strings.Join(set, ", "))
+	}
+	return nil
+}
+
 // Open a connection to Apache Pinot using HTTP API.
 func (d driver) Open(instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {
@@ -127,6 +142,10 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 	conf := &configProperties{}
 	err := mapstructure.WeakDecode(config, conf)
 	if err != nil {
+		return nil, err
+	}
+
+	if err := conf.validate(); err != nil {
 		return nil, err
 	}
 

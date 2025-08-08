@@ -37,8 +37,8 @@ rill start --environment prod
 ```
 
 ## Specifying environment specific YAML overrides
-<!-- 
-Environment overrides can be applied to source properties in the [YAML configuration](/reference/project-files/sources.md) of a source. For example, let's say that you have a [S3](/connect/data-source/s3.md) source defined but you only wanted to read from a particular month partition during local development. Then, in your `source.yaml` file, you can define it as: -->
+
+Environment overrides can be applied to source properties in the [YAML configuration](/reference/project-files/sources.md) of a source. For example, let's say that you have a [S3](/connect/data-source/s3.md) source defined but you only wanted to read from a particular month partition during local development. Then, in your `source.yaml` file, you can define it as:
 
 ```yaml
 type: source
