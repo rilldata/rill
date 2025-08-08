@@ -106,13 +106,11 @@ export const getYupSchema = {
   }),
 
   athena: yup.object().shape({
-    sql: yup.string().required("sql is required"),
-    output_location: yup.string(),
-    workgroup: yup.string(),
-    name: yup
+    aws_access_key_id: yup.string().required("AWS access key ID is required"),
+    aws_secret_access_key: yup
       .string()
-      .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
-      .required("Source name is required"),
+      .required("AWS secret access key is required"),
+    output_location: yup.string().required("S3 URI is required"),
   }),
 
   redshift: yup.object().shape({
