@@ -1,7 +1,7 @@
 ---
 note: GENERATED. DO NOT EDIT.
 title: Alert YAML
-sidebar_position: 31
+sidebar_position: 38
 ---
 
 Along with alertings at the dashboard level and can be created via the UI, there might be more extensive alerting that you might want to develop and can be done so the an alert.yaml. When creating an alert via a YAML file, you'll see this denoted in the UI as `Created through code`.
@@ -12,13 +12,15 @@ Along with alertings at the dashboard level and can be created via the UI, there
 
 _[string]_ - Refers to the resource type and must be `alert` _(required)_
 
-### `display_name`
-
-_[string]_ - Refers to the display name for the alert 
-
 ### `refresh`
 
-_[object]_ - Specifies the refresh schedule that Rill should follow to re-ingest and update the underlying data _(required)_
+_[object]_ - Refresh schedule for the alert
+  ```yaml
+  refresh:
+    cron: "* * * * *"
+    #every: "24h"
+  ```
+ _(required)_
 
   - **`cron`** - _[string]_ - A cron expression that defines the execution schedule 
 
@@ -29,6 +31,14 @@ _[object]_ - Specifies the refresh schedule that Rill should follow to re-ingest
   - **`ref_update`** - _[boolean]_ - If true, allows the resource to run when a dependency updates. 
 
   - **`run_in_dev`** - _[boolean]_ - If true, allows the schedule to run in development mode. 
+
+### `display_name`
+
+_[string]_ - Display name for the alert 
+
+### `description`
+
+_[string]_ - Description for the alert 
 
 ### `intervals`
 
@@ -42,7 +52,7 @@ _[object]_ - define the interval of the alert to check
 
 ### `watermark`
 
-_[string]_ - Specifies how the watermark is determined for incremental processing.  Use 'trigger_time' to set it at runtime or 'inherit' to use the upstream model's watermark. 
+_[string]_ - Specifies how the watermark is determined for incremental processing. Use 'trigger_time' to set it at runtime or 'inherit' to use the upstream model's watermark. 
 
 ### `timeout`
 
@@ -50,7 +60,7 @@ _[string]_ - define the timeout of the alert in seconds (optional).
 
 ### `data`
 
-_[oneOf]_ - Specifies one of the options to retrieve or compute the data used by alert _(required)_
+_[oneOf]_ - Data source for the alert _(required)_
 
   - **option 1** - _[object]_ - Executes a raw SQL query against the project's data models.
 
@@ -122,7 +132,7 @@ _[string]_ - Defines the re-notification interval for the alert (e.g., '10m','24
 
 ### `notify`
 
-_[object]_ - Defines how and where to send notifications. At least one method (email or Slack) is required. _(required)_
+_[object]_ - Notification configuration _(required)_
 
   - **`email`** - _[object]_ - Send notifications via email. 
 

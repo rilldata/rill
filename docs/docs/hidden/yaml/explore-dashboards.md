@@ -1,10 +1,10 @@
 ---
 note: GENERATED. DO NOT EDIT.
-title: Explore YAML
-sidebar_position: 36
+title: Explore Dashboard YAML
+sidebar_position: 37
 ---
 
-In your Rill project directory, create a explore dashboard, `<dashboard_name>.yaml`, file in the `dashboards` directory. Rill will ingest the dashboard definition next time you run `rill start`.
+Explore dashboards provide an interactive way to explore data with predefined metrics and dimensions.
 
 ## Properties
 
@@ -14,7 +14,11 @@ _[string]_ - Refers to the resource type and must be `explore` _(required)_
 
 ### `display_name`
 
-_[string]_ - Refers to the display name for the explore dashboard 
+_[string]_ - Refers to the display name for the explore dashboard _(required)_
+
+### `metrics_view`
+
+_[string]_ - Refers to the metrics view resource _(required)_
 
 ### `description`
 
@@ -23,10 +27,6 @@ _[string]_ - Refers to the description of the explore dashboard
 ### `banner`
 
 _[string]_ - Refers to the custom banner displayed at the header of an explore dashboard 
-
-### `metrics_view`
-
-_[string]_ - Refers to the metrics view resource 
 
 ### `dimensions`
 
@@ -44,9 +44,25 @@ _[oneOf]_ - List of dimension names. Use '*' to select all dimensions (default)
 
     - **`exclude`** - _[object]_ - Select all fields except those listed here 
 
+```yaml
+# Example: Select a dimension
+dimensions:
+  - country
+
+# Example: Select all dimensions except one
+dimensions:
+  exclude:
+    - country
+
+# Example: Select all dimensions that match a regex
+dimensions:
+regex: "^public_.*$"
+```
+
+
 ### `measures`
 
-_[oneOf]_ - List of measure names. Use ''*'' to select all measures (default) 
+_[oneOf]_ - List of measure names. Use '*' to select all measures (default) 
 
   - **option 1** - _[string]_ - Wildcard(*) selector that includes all available fields in the selection
 
@@ -60,9 +76,25 @@ _[oneOf]_ - List of measure names. Use ''*'' to select all measures (default)
 
     - **`exclude`** - _[object]_ - Select all fields except those listed here 
 
+```yaml
+# Example: Select a dimension
+measures:
+  - sum_of_total
+
+# Example: Select all dimensions except one
+measures:
+  exclude:
+    - sum_of_total
+
+# Example: Select all dimensions that match a regex
+measures:
+regex: "^public_.*$"
+```
+
+
 ### `theme`
 
-_[oneOf]_ - Name of the theme to use or define a theme inline. Either theme name or inline theme can be set. 
+_[oneOf]_ - Name of the theme to use. Only one of theme and embedded_theme can be set. 
 
   - **option 1** - _[string]_ - Name of an existing theme to apply to the dashboard
 
@@ -76,7 +108,19 @@ _[oneOf]_ - Name of the theme to use or define a theme inline. Either theme name
 
 ### `time_ranges`
 
-_[array of oneOf]_ - Overrides the list of default time range selections available in the dropdown. It can be string or an object with a 'range' and optional 'comparison_offsets' 
+_[array of oneOf]_ - Overrides the list of default time range selections available in the dropdown. It can be string or an object with a 'range' and optional 'comparison_offsets'
+  ```yaml
+  time_ranges:
+    - PT15M // Simplified syntax to specify only the range
+    - PT1H
+    - PT6H
+    - P7D
+    - range: P5D // Advanced syntax to specify comparison_offsets as well
+    - P4W
+    - rill-TD // Today
+    - rill-WTD // Week-To-date
+  ```
+ 
 
   - **option 1** - _[string]_ - a valid [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations) duration or one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) extensions for the selection
 
@@ -108,7 +152,20 @@ _[boolean]_ - Defaults to true, when set to false it will hide the ability to se
 
 ### `defaults`
 
-_[object]_ - defines the defaults YAML struct 
+_[object]_ - defines the defaults YAML struct
+  ```yaml
+  defaults: #define all the defaults within here
+    dimensions:
+      - dim_1
+      - dim_2
+    measures:
+      - measure_1
+      - measure_2
+    time_range: P1M
+    comparison_mode: dimension #time, none
+    comparison_dimension: filename
+  ```
+ 
 
   - **`dimensions`** - _[oneOf]_ - Provides the default dimensions to load on viewing the dashboard 
 
@@ -152,49 +209,13 @@ _[object]_ - Configuration options for embedded dashboard views
 
 ### `security`
 
-_[object]_ - Defines security rules and access control policies for resources 
+_[object]_ - Defines [security rules and access control policies](/manage/security) for dashboards (without row filtering) 
 
   - **`access`** - _[oneOf]_ - Expression indicating if the user should be granted access to the dashboard. If not defined, it will resolve to false and the dashboard won't be accessible to anyone. Needs to be a valid SQL expression that evaluates to a boolean. 
 
     - **option 1** - _[string]_ - SQL expression that evaluates to a boolean to determine access
 
     - **option 2** - _[boolean]_ - Direct boolean value to allow or deny access
-
-  - **`row_filter`** - _[string]_ - SQL expression to filter the underlying model by. Can leverage templated user attributes to customize the filter for the requesting user. Needs to be a valid SQL expression that can be injected into a WHERE clause 
-
-  - **`include`** - _[array of object]_ - List of dimension or measure names to include in the dashboard. If include is defined all other dimensions and measures are excluded 
-
-    - **`if`** - _[string]_ - Expression to decide if the column should be included or not. It can leverage templated user attributes. Needs to be a valid SQL expression that evaluates to a boolean _(required)_
-
-    - **`names`** - _[anyOf]_ - List of fields to include. Should match the name of one of the dashboard's dimensions or measures _(required)_
-
-      - **option 1** - _[array of string]_ - List of specific field names to include
-
-      - **option 2** - _[string]_ - Wildcard '*' to include all fields
-
-  - **`exclude`** - _[array of object]_ - List of dimension or measure names to exclude from the dashboard. If exclude is defined all other dimensions and measures are included 
-
-    - **`if`** - _[string]_ - Expression to decide if the column should be excluded or not. It can leverage templated user attributes. Needs to be a valid SQL expression that evaluates to a boolean _(required)_
-
-    - **`names`** - _[anyOf]_ - List of fields to exclude. Should match the name of one of the dashboard's dimensions or measures _(required)_
-
-      - **option 1** - _[array of string]_ - List of specific field names to exclude
-
-      - **option 2** - _[string]_ - Wildcard '*' to exclude all fields
-
-  - **`rules`** - _[array of object]_ - List of detailed security rules that can be used to define complex access control policies 
-
-    - **`type`** - _[string]_ - Type of security rule - access (overall access), field_access (field-level access), or row_filter (row-level filtering) _(required)_
-
-    - **`action`** - _[string]_ - Whether to allow or deny access for this rule 
-
-    - **`if`** - _[string]_ - Conditional expression that determines when this rule applies. Must be a valid SQL expression that evaluates to a boolean 
-
-    - **`names`** - _[array of string]_ - List of field names this rule applies to (for field_access type rules) 
-
-    - **`all`** - _[boolean]_ - When true, applies the rule to all fields (for field_access type rules) 
-
-    - **`sql`** - _[string]_ - SQL expression for row filtering (for row_filter type rules) 
 
 ## Common Properties
 

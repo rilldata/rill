@@ -1,8 +1,24 @@
 ---
 note: GENERATED. DO NOT EDIT.
-title: Model YAML
-sidebar_position: 38
+title: Models YAML
+sidebar_position: 34
 ---
+
+:::tip
+
+Both regular models and source models can use the Model YAML specification described on this page. While [SQL models](./models) are perfect for simple transformations, Model YAML files provide advanced capabilities for complex data processing scenarios.
+
+**When to use Model YAML:**
+- **Partitions** - Optimize performance with data partitioning strategies
+- **Incremental models** - Process only new or changed data efficiently
+- **Pre/post execution hooks** - Run custom logic before or after model execution
+- **Staging** - Create intermediate tables for complex transformations
+- **Output configuration** - Define specific output formats and destinations
+
+Model YAML files give you fine-grained control over how your data is processed and transformed, making them ideal for production workloads and complex analytics pipelines.
+
+:::
+
 
 ## Properties
 
@@ -24,14 +40,38 @@ _[object]_ - Specifies the refresh schedule that Rill should follow to re-ingest
 
   - **`run_in_dev`** - _[boolean]_ - If true, allows the schedule to run in development mode. 
 
+```yaml
+refresh:
+  cron: "* * * * *"
+  #every: "24h"
+```
+
+
 ### `connector`
 
-_[string]_ - Refers to the connector type  or [named connector](./connector.md#name) for the source.
- 
+_[string]_ - Refers to the resource type and is needed if setting an explicit OLAP engine. IE `clickhouse` 
 
 ### `sql`
 
 _[string]_ - Raw SQL query to run against source _(required)_
+
+### `pre_exec`
+
+_[string]_ - Refers to SQL queries to run before the main query, available for DuckDB-based models. (optional). 
+Ensure pre_exec queries are idempotent. Use IF NOT EXISTS statements when applicable.
+```yaml
+pre_exec: ATTACH IF NOT EXISTS 'dbname=postgres host=localhost port=5432 user=postgres password=postgres' AS postgres_db (TYPE POSTGRES)
+```
+ 
+
+### `post_exec`
+
+_[string]_ - Refers to a SQL query that is run after the main query, available for DuckDB-based models. (optional). 
+Ensure post_exec queries are idempotent. Use IF EXISTS statements when applicable.
+```yaml
+post_exec: DETACH DATABASE IF EXISTS postgres_db
+```
+ 
 
 ### `timeout`
 
@@ -81,6 +121,12 @@ _[oneOf]_ - Refers to the explicitly defined state of your model, cannot be used
 
       - **`where_error`** - _[boolean]_ - Indicates whether the condition should trigger when the resource is in an error state. 
 
+```yaml
+state:
+   sql: SELECT MAX(date) as max_date
+```
+
+
 ### `partitions`
 
 _[oneOf]_ - Refers to the how your data is partitioned, cannot be used with state. (optional) 
@@ -117,6 +163,17 @@ _[oneOf]_ - Refers to the how your data is partitioned, cannot be used with stat
 
       - **`where_error`** - _[boolean]_ - Indicates whether the condition should trigger when the resource is in an error state. 
 
+```yaml
+partitions:
+  glob: gcs://my_bucket/y=*/m=*/d=*/*.parquet
+```
+```yaml
+partitions:
+  connector: duckdb
+  sql: SELECT range AS num FROM range(0,10)
+  ```
+
+
 ### `materialize`
 
 _[boolean]_ - models will be materialized in olap 
@@ -134,6 +191,15 @@ _[integer]_ - Refers to the number of concurrent partitions that can be read at 
 _[object]_ - in the case of staging models, where an input source does not support direct write to the output and a staging table is required 
 
   - **`connector`** - _[string]_ - Refers to the connector type for the staging table _(required)_
+
+  - **`path`** - _[string]_ - Refers to the path to the staging table 
+
+```yaml
+stage:
+  connector: s3
+  path: s3://my_bucket/my_staging_table
+```
+
 
 ### `output`
 
@@ -201,198 +267,14 @@ _[object]_ - Overrides any properties in development environment.
 
 _[object]_ - Overrides any properties in production environment. 
 
-## Additional properties when `connector` is `athena` or [named connector](./connector.md#name) for athena
+## Depending on the connector, additional properties may be required
 
-### `output_location`
+Depending on the connector, additional properties may be required, for more information see the [connectors](./connectors.md) documentation
 
-_[string]_ - Output location for query results in S3. 
 
-### `workgroup`
+## Examples
 
-_[string]_ - AWS Athena workgroup to use for queries. 
-
-### `region`
-
-_[string]_ - AWS region to connect to Athena and the output location. 
-
-## Additional properties when `connector` is `azure` or [named connector](./connector.md#name) of azure
-
-### `path`
-
-_[string]_ - Path to the source 
-
-### `account`
-
-_[string]_ - Account identifier 
-
-### `uri`
-
-_[string]_ - Source URI 
-
-### `extract`
-
-_[object]_ - Arbitrary key-value pairs for extraction settings 
-
-### `glob`
-
-_[object]_ - Settings related to glob file matching. 
-
-  - **`max_total_size`** - _[integer]_ - Maximum total size (in bytes) matched by glob 
-
-  - **`max_objects_matched`** - _[integer]_ - Maximum number of objects matched by glob 
-
-  - **`max_objects_listed`** - _[integer]_ - Maximum number of objects listed in glob 
-
-  - **`page_size`** - _[integer]_ - Page size for glob listing 
-
-### `batch_size`
-
-_[string]_ - Size of a batch (e.g., '100MB') 
-
-## Additional properties when `connector` is `bigquery` or [named connector](./connector.md#name) of bigquery
-
-### `project_id`
-
-_[string]_ - ID of the BigQuery project. 
-
-## Additional properties when `connector` is `duckdb` or [named connector](./connector.md#name) of duckdb
-
-### `path`
-
-_[string]_ - Path to the data source. 
-
-### `format`
-
-_[string]_ - Format of the data source (e.g., csv, json, parquet). 
-
-### `pre_exec`
-
-_[string]_ - refers to SQL queries to run before the main query, available for DuckDB-based models. _(optional)_. Ensure `pre_exec` queries are idempotent. Use `IF NOT EXISTS` statements when applicable. 
-
-### `post_exec`
-
-_[string]_ - refers to a SQL query that is run after the main query, available for DuckDB-based models. _(optional)_. Ensure `post_exec` queries are idempotent. Use `IF EXISTS` statements when applicable. 
-
+### Incremental model 
 ```yaml
-pre_exec: ATTACH IF NOT EXISTS 'dbname=postgres host=localhost port=5432 user=postgres password=postgres' AS postgres_db (TYPE POSTGRES);
-sql: SELECT * FROM postgres_query('postgres_db', 'SELECT * FROM USERS')
-post_exec: DETACH DATABASE IF EXISTS postgres_db
+test    
 ```
-
-## Additional properties when `connector` is `gcs` or [named connector](./connector.md#name) of gcs
-
-### `path`
-
-_[string]_ - Path to the source 
-
-### `uri`
-
-_[string]_ - Source URI 
-
-### `extract`
-
-_[object]_ - key-value pairs for extraction settings 
-
-### `glob`
-
-_[object]_ - Settings related to glob file matching. 
-
-  - **`max_total_size`** - _[integer]_ - Maximum total size (in bytes) matched by glob 
-
-  - **`max_objects_matched`** - _[integer]_ - Maximum number of objects matched by glob 
-
-  - **`max_objects_listed`** - _[integer]_ - Maximum number of objects listed in glob 
-
-  - **`page_size`** - _[integer]_ - Page size for glob listing 
-
-### `batch_size`
-
-_[string]_ - Size of a batch (e.g., '100MB') 
-
-## Additional properties when `connector` is `local_file` or [named connector](./connector.md#name) of local_file
-
-### `path`
-
-_[string]_ - Path to the data source. 
-
-### `format`
-
-_[string]_ - Format of the data source (e.g., csv, json, parquet). 
-
-## Additional properties when `connector` is `redshift` or [named connector](./connector.md#name) of redshift
-
-### `output_location`
-
-_[string]_ - S3 location where query results are stored. 
-
-### `workgroup`
-
-_[string]_ - Redshift Serverless workgroup to use. 
-
-### `database`
-
-_[string]_ - Name of the Redshift database. 
-
-### `cluster_identifier`
-
-_[string]_ - Identifier of the Redshift cluster. 
-
-### `role_arn`
-
-_[string]_ - ARN of the IAM role to assume for Redshift access. 
-
-### `region`
-
-_[string]_ - AWS region of the Redshift deployment. 
-
-## Additional properties when `connector` is `s3` or [named connector](./connector.md#name) of s3
-
-### `region`
-
-_[string]_ - AWS region 
-
-### `endpoint`
-
-_[string]_ - AWS Endpoint 
-
-### `path`
-
-_[string]_ - Path to the source 
-
-### `uri`
-
-_[string]_ - Source URI 
-
-### `extract`
-
-_[object]_ - key-value pairs for extraction settings 
-
-### `glob`
-
-_[object]_ - Settings related to glob file matching. 
-
-  - **`max_total_size`** - _[integer]_ - Maximum total size (in bytes) matched by glob 
-
-  - **`max_objects_matched`** - _[integer]_ - Maximum number of objects matched by glob 
-
-  - **`max_objects_listed`** - _[integer]_ - Maximum number of objects listed in glob 
-
-  - **`page_size`** - _[integer]_ - Page size for glob listing 
-
-### `batch_size`
-
-_[string]_ - Size of a batch (e.g., '100MB') 
-
-## Additional properties when `connector` is `salesforce` or [named connector](./connector.md#name) of salesforce
-
-### `soql`
-
-_[string]_ - SOQL query to execute against the Salesforce instance. 
-
-### `sobject`
-
-_[string]_ - Salesforce object (e.g., Account, Contact) targeted by the query. 
-
-### `queryAll`
-
-_[boolean]_ - Whether to include deleted and archived records in the query (uses queryAll API). 

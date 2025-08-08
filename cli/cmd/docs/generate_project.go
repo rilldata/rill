@@ -29,25 +29,15 @@ func GenerateProjectDocsCmd(rootCmd *cobra.Command, ch *cmdutil.Helper) *cobra.C
 			projectPath := "runtime/parser/schema/project.schema.yaml"
 			projectFilesSchema, err := parseSchemaYAML(projectPath)
 			if err != nil {
-				return fmt.Errorf("resource schema error: %w", err)
+				return fmt.Errorf("project schema error: %w", err)
 			}
 
-			rillyamlPath := "runtime/parser/schema/rillyaml.schema.yaml"
-			rillYamlSchema, err := parseSchemaYAML(rillyamlPath)
-			if err != nil {
-				return fmt.Errorf("rillyaml schema error: %w", err)
-			}
-
-			// Add rillyaml to projectFilesSchema's oneOf
-			oneOfNode := getNodeForKey(projectFilesSchema, "oneOf")
-			if oneOfNode == nil {
-				oneOfNode = &yaml.Node{Kind: yaml.SequenceNode, Tag: "!!seq"}
-				projectFilesSchema.Content = append(projectFilesSchema.Content,
-					&yaml.Node{Kind: yaml.ScalarNode, Value: "oneOf"},
-					oneOfNode,
-				)
-			}
-			oneOfNode.Content = append(oneOfNode.Content, rillYamlSchema)
+			// Load rillyaml schema
+			// rillyamlPath := "runtime/parser/schema/rillyaml.schema.yaml"
+			// rillyamlSchema, err := parseSchemaYAML(rillyamlPath)
+			// if err != nil {
+			// 	return fmt.Errorf("rillyaml schema error: %w", err)
+			// }
 
 			var projectFilesbuf strings.Builder
 			sidebarPosition := 30
@@ -65,19 +55,51 @@ func GenerateProjectDocsCmd(rootCmd *cobra.Command, ch *cmdutil.Helper) *cobra.C
 			projectFilesbuf.WriteString(fmt.Sprintf("%s\n\n", desc))
 			projectFilesbuf.WriteString("## Project files types\n\n")
 
+			// Get the oneOf node which contains all resource types
+			oneOfNode := getNodeForKey(projectFilesSchema, "oneOf")
+			if oneOfNode == nil {
+				return fmt.Errorf("no oneOf found in project schema")
+			}
+
 			for _, resource := range oneOfNode.Content {
 				sidebarPosition++
 				var resourceFilebuf strings.Builder
 				requiredMap := getRequiredMapFromNode(resource)
-				resourceFilebuf.WriteString(generateDoc(sidebarPosition, 0, resource, "", requiredMap))
 				resTitle := getScalarValue(resource, "title")
-				fileName := sanitizeFileName(resTitle) + ".md"
+				resID := getScalarValue(resource, "id")
+				
+				resourceFilebuf.WriteString(generateDoc(sidebarPosition, 0, resource, "", requiredMap, projectFilesSchema, resID))
+
+				// Use id if available, otherwise fall back to title
+				var fileName string
+				if resID != "" {
+					// Use the id directly for the filename
+					fileName = resID + ".md"
+				} else {
+					fileName = sanitizeFileName(resTitle) + ".md"
+				}
+
 				filePath := filepath.Join(outputDir, fileName)
 				if err := os.WriteFile(filePath, []byte(resourceFilebuf.String()), 0o644); err != nil {
 					return fmt.Errorf("failed writing resource doc: %w", err)
 				}
 				projectFilesbuf.WriteString(fmt.Sprintf("\n- [%s](%s)", resTitle, fileName))
 			}
+
+			// Generate rillyaml documentation
+			// sidebarPosition++
+			// var rillyamlFilebuf strings.Builder
+			// rillyamlTitle := getScalarValue(rillyamlSchema, "title")
+			// // rillyamlDesc := getPrintableDescription(rillyamlSchema, "", "")
+			// requiredMap := getRequiredMapFromNode(rillyamlSchema)
+			// rillyamlFilebuf.WriteString(generateDoc(sidebarPosition, 0, rillyamlSchema, "", requiredMap))
+
+			// rillyamlFileName := "rillyaml.md"
+			// rillyamlFilePath := filepath.Join(outputDir, rillyamlFileName)
+			// if err := os.WriteFile(rillyamlFilePath, []byte(rillyamlFilebuf.String()), 0o644); err != nil {
+			// 	return fmt.Errorf("failed writing rillyaml doc: %w", err)
+			// }
+			// projectFilesbuf.WriteString(fmt.Sprintf("\n- [%s](%s)", rillyamlTitle, rillyamlFileName))
 
 			if err := os.WriteFile(filepath.Join(outputDir, "index.md"), []byte(projectFilesbuf.String()), 0o644); err != nil {
 				return fmt.Errorf("failed writing index.md: %w", err)
@@ -87,6 +109,7 @@ func GenerateProjectDocsCmd(rootCmd *cobra.Command, ch *cmdutil.Helper) *cobra.C
 			return nil
 		},
 	}
+
 	return cmd
 }
 
@@ -147,26 +170,52 @@ func resolveRefsYAML(node, root *yaml.Node) error {
 			keyNode := node.Content[i]
 			valNode := node.Content[i+1]
 
-			if keyNode.Value == "$ref" && valNode.Kind == yaml.ScalarNode && strings.HasPrefix(valNode.Value, "#/") {
-				// Resolve local reference
-				ptrPath := strings.TrimPrefix(valNode.Value, "#/")
-				resolved, err := resolveYAMLPointer(root, ptrPath)
-				if err != nil {
-					return fmt.Errorf("resolve $ref %q: %w", valNode.Value, err)
-				}
+			if keyNode.Value == "$ref" && valNode.Kind == yaml.ScalarNode {
+				if strings.HasPrefix(valNode.Value, "#/") {
+					// Resolve local reference
+					ptrPath := strings.TrimPrefix(valNode.Value, "#/")
+					resolved, err := resolveYAMLPointer(root, ptrPath)
+					if err != nil {
+						return fmt.Errorf("resolve $ref %q: %w", valNode.Value, err)
+					}
 
-				// Replace the entire mapping with the resolved content
-				// First, remove $ref entry
-				node.Content = append(node.Content[:i], node.Content[i+2:]...)
-				// Then merge resolved content into current node
-				if resolved.Kind == yaml.MappingNode {
-					// Insert resolved mapping node's content at current position
-					node.Content = append(resolved.Content, node.Content...)
-				} else {
-					return fmt.Errorf("$ref does not point to a mapping node")
+					// Replace the entire mapping with the resolved content
+					// First, remove $ref entry
+					node.Content = append(node.Content[:i], node.Content[i+2:]...)
+					// Then merge resolved content into current node
+					if resolved.Kind == yaml.MappingNode {
+						// Insert resolved mapping node's content at current position
+						node.Content = append(resolved.Content, node.Content...)
+					} else {
+						return fmt.Errorf("$ref does not point to a mapping node")
+					}
+					// We modified Content length; restart loop
+					return resolveRefsYAML(node, root)
+				} else if strings.HasSuffix(valNode.Value, ".yaml#") {
+					// Resolve external file reference
+					fileName := strings.TrimSuffix(valNode.Value, "#")
+					// Remove quotes if present
+					fileName = strings.Trim(fileName, "'\"")
+
+					// Load the external schema file
+					externalSchema, err := parseSchemaYAML("runtime/parser/schema/" + fileName)
+					if err != nil {
+						return fmt.Errorf("failed to load external schema %q: %w", fileName, err)
+					}
+
+					// Replace the entire mapping with the external schema content
+					// First, remove $ref entry
+					node.Content = append(node.Content[:i], node.Content[i+2:]...)
+					// Then merge external schema content into current node
+					if externalSchema.Kind == yaml.MappingNode {
+						// Insert external schema's content at current position
+						node.Content = append(externalSchema.Content, node.Content...)
+					} else {
+						return fmt.Errorf("external schema %q does not contain a mapping node", fileName)
+					}
+					// We modified Content length; restart loop
+					return resolveRefsYAML(node, root)
 				}
-				// We modified Content length; restart loop
-				return resolveRefsYAML(node, root)
 			}
 			if err := resolveRefsYAML(valNode, root); err != nil {
 				return err
@@ -311,7 +360,7 @@ func getPrintableDescription(node *yaml.Node, indentation, defaultValue string) 
 	return desc
 }
 
-func generateDoc(sidebarPosition, level int, node *yaml.Node, indent string, requiredFields map[string]bool) string {
+func generateDoc(sidebarPosition, level int, node *yaml.Node, indent string, requiredFields map[string]bool, rootSchema *yaml.Node, id string) string {
 	if node == nil || node.Kind != yaml.MappingNode {
 		return ""
 	}
@@ -320,6 +369,12 @@ func generateDoc(sidebarPosition, level int, node *yaml.Node, indent string, req
 	currentLevel := level
 	title := getScalarValue(node, "title")
 	description := getPrintableDescription(node, indent, "")
+	
+	// Get the id at level 0, otherwise use the passed id
+	if level == 0 {
+		id = getScalarValue(node, "id")
+	}
+
 	if level == 0 {
 		doc.WriteString("---\n")
 		doc.WriteString("note: GENERATED. DO NOT EDIT.\n")
@@ -329,6 +384,7 @@ func generateDoc(sidebarPosition, level int, node *yaml.Node, indent string, req
 		if description != "" {
 			doc.WriteString(fmt.Sprintf("\n\n%s", description))
 		}
+
 		level++ // level zero is to print base level info and its only onetime for a page so increasing level
 	} else if level == 1 {
 		if title != "" {
@@ -358,46 +414,118 @@ func generateDoc(sidebarPosition, level int, node *yaml.Node, indent string, req
 			propType := getScalarValue(propertiesValueNode, "type")
 			if propType == "object" || propType == "array" || hasCombinators(propertiesValueNode) {
 				newlevel := level + 1
-				doc.WriteString(generateDoc(sidebarPosition, newlevel, propertiesValueNode, indent+"  ", getRequiredMapFromNode(propertiesValueNode)))
+				doc.WriteString(generateDoc(sidebarPosition, newlevel, propertiesValueNode, indent+"  ", getRequiredMapFromNode(propertiesValueNode), rootSchema, id))
 			}
 
-			if examples := getNodeForKey(propertiesValueNode, "examples"); examples != nil && examples.Kind == yaml.SequenceNode {
-				for _, example := range examples.Content {
-					b, err := yaml.Marshal(example)
-					if err != nil {
-						panic(err)
+			if examples := getNodeForKey(propertiesValueNode, "examples"); examples != nil {
+				if examples.Kind == yaml.SequenceNode {
+					// Handle array of YAML examples
+					for _, example := range examples.Content {
+						b, err := yaml.Marshal(example)
+						if err != nil {
+							panic(err)
+						}
+						doc.WriteString(fmt.Sprintf("\n\n```yaml\n%s```", string(b)))
 					}
-					doc.WriteString(fmt.Sprintf("\n\n```yaml\n%s```", string(b)))
+				} else if examples.Kind == yaml.ScalarNode {
+					// Handle string examples (like markdown code blocks)
+					doc.WriteString(fmt.Sprintf("\n\n%s", examples.Value))
 				}
 			}
 		}
 	} else if items := getNodeForKey(node, "items"); items != nil && items.Kind == yaml.MappingNode {
 		items := getNodeForKey(node, "items")
-		doc.WriteString(generateDoc(sidebarPosition, level, items, indent, getRequiredMapFromNode(items)))
+		doc.WriteString(generateDoc(sidebarPosition, level, items, indent, getRequiredMapFromNode(items), rootSchema, id))
 	}
 
 	// OneOf
 	if oneOf := getNodeForKey(node, "oneOf"); oneOf != nil && oneOf.Kind == yaml.SequenceNode {
-		if len(oneOf.Content) == 1 {
-			doc.WriteString(generateDoc(sidebarPosition, level, oneOf.Content[0], indent, getRequiredMapFromNode(oneOf.Content[0])))
-		} else {
-			if level == 1 {
-				doc.WriteString("\n\n## One of Properties Options")
-				for _, item := range oneOf.Content {
-					title := getScalarValue(item, "title")
-					if title != "" {
-						anchor := strings.ToLower(strings.ReplaceAll(title, " ", "-"))
-						doc.WriteString(fmt.Sprintf("\n- [%s](#%s)", title, anchor))
+		// Special handling for connectors - generate copiable text for each connector type
+		if id == "connectors" {
+			doc.WriteString("\n\n## Available Connector Types\n\n")
+			for _, item := range oneOf.Content {
+				// Since $ref values are already resolved, look for connector definitions directly
+				title := getScalarValue(item, "title")
+				exampleOutput := generateConnectorExample(title, item)
+
+				if title != "" {
+					doc.WriteString(fmt.Sprintf("\n\n### %s\n\n", title))
+					// Generate copiable example for this connector
+					doc.WriteString(fmt.Sprintf("\n\n\n%s", exampleOutput))
+					// Add description first
+					description := getPrintableDescription(item, indent, "")
+					if description != "" {
+						doc.WriteString(fmt.Sprintf("%s\n\n", description))
 					}
 				}
-				for _, item := range oneOf.Content {
-					doc.WriteString(generateDoc(sidebarPosition, level, item, indent, getRequiredMapFromNode(item)))
+
+				// Generate the connector definition documentation (properties, etc.)
+				if properties := getNodeForKey(item, "properties"); properties != nil && properties.Kind == yaml.MappingNode {
+					for j := 0; j < len(properties.Content); j += 2 {
+						propName := properties.Content[j].Value
+						propValue := properties.Content[j+1]
+						required := ""
+						if requiredFields := getRequiredMapFromNode(item); requiredFields[propName] {
+							required = "_(required)_"
+						}
+
+						doc.WriteString(fmt.Sprintf("\n\n#### `%s`\n\n", propName))
+						doc.WriteString(fmt.Sprintf("%s - %s %s",
+							getPrintableType(propValue),
+							getPrintableDescription(propValue, indent, "(no description)"),
+							required))
+					}
+				}
+
+
+			}
+		// only for APIs, no other oneOf uses this, so we can be specific
+		} else if id == "apis" {
+			// Skip oneOf processing for connectors and data_properties at level 1 since we handle it above
+				if len(oneOf.Content) == 1 {
+					doc.WriteString(generateDoc(sidebarPosition, level, oneOf.Content[0], indent, getRequiredMapFromNode(oneOf.Content[0]), rootSchema, id))
+				} else {
+					// Remove the summary list to avoid duplication with detailed sections
+					if level == 1 {
+						doc.WriteString("\n\n## One of Properties Options")
+					}
+
+					for _, item := range oneOf.Content {
+						if hasType(item) || hasProperties(item) || hasCombinators(item) {
+							doc.WriteString(generateDoc(sidebarPosition, level, item, indent+"  ", getRequiredMapFromNode(item), rootSchema, id))
+
+						}
+						
+						// Handle examples for oneOf items
+						if examples := getNodeForKey(item, "examples"); examples != nil {
+							if examples.Kind == yaml.SequenceNode {
+								// Handle array of YAML examples
+								for _, example := range examples.Content {
+									b, err := yaml.Marshal(example)
+									if err != nil {
+										panic(err)
+									}
+									doc.WriteString(fmt.Sprintf("\n\n```yaml\n%s```", string(b)))
+								}
+							} else if examples.Kind == yaml.ScalarNode {
+								// Handle string examples (like markdown code blocks)
+								doc.WriteString(fmt.Sprintf("\n\n%s", examples.Value))
+							}
+						}
+					}
 				}
 			} else {
-				for i, item := range oneOf.Content {
-					if hasType(item) || hasProperties(item) || hasCombinators(item) {
-						doc.WriteString(fmt.Sprintf("\n\n%s- **option %d** - %s - %s", indent, i+1, getPrintableType(item), getPrintableDescription(item, indent, "(no description)")))
-						doc.WriteString(generateDoc(sidebarPosition, level, item, indent+"  ", getRequiredMapFromNode(item)))
+				if !(id == "connectors" || id == "apis") {
+
+				if len(oneOf.Content) == 1 {
+					doc.WriteString(generateDoc(sidebarPosition, level, oneOf.Content[0], indent, getRequiredMapFromNode(oneOf.Content[0]), rootSchema, id))
+				} else {
+					for i, item := range oneOf.Content {
+						if hasType(item) || hasProperties(item) || hasCombinators(item) {
+							doc.WriteString(fmt.Sprintf("\n\n%s- **option %d** - %s - %s", indent, i+1, getPrintableType(item), getPrintableDescription(item, indent, "(no description)")))
+							doc.WriteString(generateDoc(sidebarPosition, level, item, indent+"  ", getRequiredMapFromNode(item), rootSchema, id))
+
+						}
 					}
 				}
 			}
@@ -409,7 +537,7 @@ func generateDoc(sidebarPosition, level int, node *yaml.Node, indent string, req
 		for i, item := range anyOf.Content {
 			if hasType(item) || hasProperties(item) || hasCombinators(item) {
 				doc.WriteString(fmt.Sprintf("\n\n%s- **option %d** - %s - %s", indent, i+1, getPrintableType(item), getPrintableDescription(item, indent, "(no description)")))
-				doc.WriteString(generateDoc(sidebarPosition, level, item, indent+"  ", getRequiredMapFromNode(item)))
+				doc.WriteString(generateDoc(sidebarPosition, level, item, indent+"  ", getRequiredMapFromNode(item), rootSchema, id))
 			}
 		}
 	}
@@ -417,6 +545,12 @@ func generateDoc(sidebarPosition, level int, node *yaml.Node, indent string, req
 	// AllOf
 	if allOf := getNodeForKey(node, "allOf"); allOf != nil && allOf.Kind == yaml.SequenceNode {
 		for _, item := range allOf.Content {
+			// Special handling for connector oneOf
+			if id == "connectors" && getNodeForKey(item, "oneOf") != nil {
+				doc.WriteString(generateDoc(sidebarPosition, level, item, indent, getRequiredMapFromNode(item), rootSchema, id))
+				continue
+			}
+
 			if hasIf(item) {
 				ifNode := getNodeForKey(item, "if")
 				title := getScalarValue(ifNode, "title")
@@ -426,22 +560,67 @@ func generateDoc(sidebarPosition, level int, node *yaml.Node, indent string, req
 					doc.WriteString(fmt.Sprintf("\n\n%s**%s**", indent, title))
 				}
 				thenNode := getNodeForKey(item, "then")
-				doc.WriteString(generateDoc(sidebarPosition, level, thenNode, indent, getRequiredMapFromNode(item)))
+				doc.WriteString(generateDoc(sidebarPosition, level, thenNode, indent, getRequiredMapFromNode(item), rootSchema, id))
 			} else {
-				doc.WriteString(generateDoc(sidebarPosition, level, item, indent, getRequiredMapFromNode(item)))
+				doc.WriteString(generateDoc(sidebarPosition, level, item, indent, getRequiredMapFromNode(item), rootSchema, id))
 			}
 		}
 	}
 
-	// Examples
-	if examples := getNodeForKey(node, "examples"); examples != nil && examples.Kind == yaml.SequenceNode && currentLevel == 0 {
-		doc.WriteString("\n\n## Examples")
-		for _, example := range examples.Content {
-			b, err := yaml.Marshal(example)
-			if err != nil {
-				panic(err)
+	// Definitions (for connectors)
+	if definitions := getNodeForKey(node, "definitions"); definitions != nil && definitions.Kind == yaml.MappingNode && id == "connectors" && level == 1 {
+		for i := 0; i < len(definitions.Content); i += 2 {
+			connectorDef := definitions.Content[i+1]
+
+			title := getScalarValue(connectorDef, "title")
+			if title != "" {
+				doc.WriteString(fmt.Sprintf("\n\n## %s\n\n", title))
+				// Add description first
+				description := getPrintableDescription(connectorDef, indent, "")
+				if description != "" {
+					doc.WriteString(fmt.Sprintf("%s\n\n", description))
+				}
 			}
-			doc.WriteString(fmt.Sprintf("\n\n```yaml\n%s```", string(b)))
+			exampleOutput := generateConnectorExample(title, connectorDef)
+			doc.WriteString(fmt.Sprintf("\n\n#### Example\n\n%s", exampleOutput))
+
+			// Generate the connector definition documentation (properties, etc.) but skip the header
+			// We need to process properties manually to avoid duplicate headers
+			if properties := getNodeForKey(connectorDef, "properties"); properties != nil && properties.Kind == yaml.MappingNode {
+				for j := 0; j < len(properties.Content); j += 2 {
+					propName := properties.Content[j].Value
+					propValue := properties.Content[j+1]
+					required := ""
+					if requiredFields := getRequiredMapFromNode(connectorDef); requiredFields[propName] {
+						required = "_(required)_"
+					}
+					// changed to #### so its not in the sidebar, and more compact
+					doc.WriteString(fmt.Sprintf("\n\n#### `%s`\n\n", propName))
+					doc.WriteString(fmt.Sprintf("%s - %s %s",
+						getPrintableType(propValue),
+						getPrintableDescription(propValue, indent, "(no description)"),
+						required))
+				}
+			}
+
+		}
+	}
+
+	// Examples
+	if examples := getNodeForKey(node, "examples"); examples != nil && currentLevel == 0 {
+		doc.WriteString("\n\n## Examples")
+		if examples.Kind == yaml.SequenceNode {
+			// Handle array of YAML examples
+			for _, example := range examples.Content {
+				b, err := yaml.Marshal(example)
+				if err != nil {
+					panic(err)
+				}
+				doc.WriteString(fmt.Sprintf("\n\n```yaml\n%s```", string(b)))
+			}
+		} else if examples.Kind == yaml.ScalarNode {
+			// Handle string examples (like markdown code blocks)
+			doc.WriteString(fmt.Sprintf("\n\n%s", examples.Value))
 		}
 	}
 
@@ -463,3 +642,83 @@ func hasProperties(node *yaml.Node) bool {
 func hasCombinators(node *yaml.Node) bool {
 	return getNodeForKey(node, "anyOf") != nil || getNodeForKey(node, "oneOf") != nil || getNodeForKey(node, "allOf") != nil
 }
+
+func generateConnectorExample(connectorType string, connectorDef *yaml.Node) string {
+	if connectorDef == nil {
+		return ""
+	}
+
+	var example strings.Builder
+	example.WriteString("```yaml\n")
+	example.WriteString("type: connector                                  # Must be `connector` (required)\n")
+
+	// Get the driver from the schema and add it first
+	driverAdded := false
+	if driver := getNodeForKey(connectorDef, "driver"); driver != nil {
+		if constVal := getScalarValue(driver, "const"); constVal != "" {
+			example.WriteString(fmt.Sprintf("driver: %s                                   # Must be `%s` _(required)_\n\n", constVal, constVal))
+			driverAdded = true
+		}
+	}
+
+	// Fallback: if driver wasn't found, use the connector type name
+	if !driverAdded {
+		// Special case for MotherDuck which uses duckdb driver
+		if connectorType == "MotherDuck" {
+			example.WriteString("driver: duckdb                                   # Must be `duckdb` _(required)_\n\n")
+		} else {
+			example.WriteString(fmt.Sprintf("driver: %s                                   # Must be `%s` _(required)_\n\n", strings.ToLower(connectorType), strings.ToLower(connectorType)))
+		}
+	}
+
+	// Get all properties from the schema
+	if properties := getNodeForKey(connectorDef, "properties"); properties != nil && properties.Kind == yaml.MappingNode {
+		for i := 0; i < len(properties.Content); i += 2 {
+			propName := properties.Content[i].Value
+			propValue := properties.Content[i+1]
+
+			// Skip the driver property since we already added it
+			if propName == "driver" {
+				continue
+			}
+
+			// Get property description
+			description := getPrintableDescription(propValue, "", "")
+			if description == "" {
+				description = "Property description"
+			}
+
+			// Get sample value from the schema
+			sampleValue := getScalarValue(propValue, "sample")
+			if sampleValue == "" {
+				// Fallback to const value if no sample
+				sampleValue = getScalarValue(propValue, "const")
+			}
+			if sampleValue == "" {
+				// Final fallback
+				sampleValue = "example_value"
+			}
+
+			// Check if it's required
+			required := ""
+			if requiredFields := getRequiredMapFromNode(connectorDef); requiredFields[propName] {
+				required = " _(required)_"
+			}
+
+			// Format the line with proper alignment
+			example.WriteString(fmt.Sprintf("%s: %s", propName, sampleValue))
+
+			// Add padding for alignment
+			padding := 35 - len(propName) - len(sampleValue)
+			if padding > 0 {
+				example.WriteString(strings.Repeat(" ", padding))
+			}
+
+			example.WriteString(fmt.Sprintf("# %s%s\n", description, required))
+		}
+	}
+
+	example.WriteString("```\n\n")
+	return example.String()
+}
+
