@@ -398,7 +398,7 @@ type fetchResult struct {
 // mcpSearch returns a list of potentially relevant search results from the data set exposed by the MCP server.
 func (s *Server) mcpSearch() (mcp.Tool, server.ToolHandlerFunc) {
 	tool := mcp.NewTool("search",
-		mcp.WithDescription("Search for information (stub implementation)"),
+		mcp.WithDescription("Search for information (unimplemented)"),
 		mcp.WithString("query",
 			mcp.Required(),
 			mcp.Description("Search query"),
@@ -417,7 +417,7 @@ func (s *Server) mcpSearch() (mcp.Tool, server.ToolHandlerFunc) {
 // mcpFetch is used to retrieve the full contents of a search result document or item
 func (s *Server) mcpFetch() (mcp.Tool, server.ToolHandlerFunc) {
 	tool := mcp.NewTool("fetch",
-		mcp.WithDescription("Fetch information by unique ID (stub implementation)"),
+		mcp.WithDescription("Fetch information by unique ID (unimplemented)"),
 		mcp.WithString("id",
 			mcp.Required(),
 			mcp.Description("Unique ID of the document to fetch"),
