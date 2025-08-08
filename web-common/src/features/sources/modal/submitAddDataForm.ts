@@ -32,7 +32,7 @@ import { EntityType } from "../../entity-management/types";
 import { EMPTY_PROJECT_TITLE } from "../../welcome/constants";
 import { isProjectInitialized } from "../../welcome/is-project-initialized";
 import { compileSourceYAML, maybeRewriteToDuckDb } from "../sourceUtils";
-import { OLAP_CONNECTORS } from "./constants";
+import { OLAP_ENGINES } from "./constants";
 
 interface AddDataFormValues {
   // name: string; // Commenting out until we add user-provided names for Connectors
@@ -175,7 +175,7 @@ export async function submitAddOLAPConnectorForm(
 
   // Test the connection to the OLAP database (only for original OLAP connectors)
   // If the connection test fails, rollback the changes
-  if (OLAP_CONNECTORS.includes(connector.name as string)) {
+  if (OLAP_ENGINES.includes(connector.name as string)) {
     const result = await testOLAPConnector(
       instanceId,
       connector.name as string,
@@ -200,7 +200,7 @@ export async function submitAddOLAPConnectorForm(
 
   // Update the `rill.yaml` file only for actual OLAP connectors (ClickHouse, Druid, Pinot)
   // Data warehouses like BigQuery, Snowflake, etc. should not be set as olap_connector
-  if (OLAP_CONNECTORS.includes(connector.name as string)) {
+  if (OLAP_ENGINES.includes(connector.name as string)) {
     await runtimeServicePutFile(instanceId, {
       path: "rill.yaml",
       blob: await updateRillYAMLWithOlapConnector(

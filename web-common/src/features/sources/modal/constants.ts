@@ -11,6 +11,8 @@ export const CONNECTION_TAB_OPTIONS: { value: string; label: string }[] = [
   { value: "dsn", label: "Enter connection string" },
 ];
 
+// TODO: create CONNECTORS
+// Note: some of these are using models like S3, GCS, etc. (ImplementsObjectStore)
 export const SOURCES = [
   "gcs",
   "s3",
@@ -29,8 +31,6 @@ export const SOURCES = [
   "https",
 ];
 
-// TODO: create CONNECTORS
-// TODO: rename to OLAP_ENGINEs
-export const OLAP_CONNECTORS = ["clickhouse", "druid", "pinot"];
+export const OLAP_ENGINES = ["clickhouse", "druid", "pinot"];
 
-export const SORT_ORDER = [...SOURCES, ...OLAP_CONNECTORS];
+export const SORT_ORDER = [...SOURCES, ...OLAP_ENGINES];
