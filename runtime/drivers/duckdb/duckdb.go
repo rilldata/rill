@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"maps"
 	"net/url"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -497,9 +498,31 @@ func (c *connection) reopenDB(ctx context.Context) error {
 	// We want to set preserve_insertion_order=false in hosted environments only (where source data is never viewed directly). Setting it reduces batch data ingestion time by ~40%.
 	// Hack: Using AllowHostAccess as a proxy indicator for a hosted environment.
 	if !c.config.AllowHostAccess {
+		extensionDir, err := extensions.ExtensionsDir()
+		if err != nil {
+			return err
+		}
+
 		dbInitQueries = append(dbInitQueries,
 			"SET GLOBAL preserve_insertion_order TO false",
+			fmt.Sprintf("SET extension_directory=%s", safeSQLString(extensionDir)),
 		)
+		// Find the instance dir for the data dir
+		// other drivers always write (except in tests) to a path which is a subdirectory of the instance directory
+		tempDir, err := c.storage.TempDir()
+		if err != nil {
+			return err
+		}
+		if strings.Contains(tempDir, c.instanceID) {
+			for tempDir != "" && tempDir != string(filepath.ListSeparator) && tempDir != "." {
+				if filepath.Base(tempDir) == c.instanceID {
+					break
+				}
+				tempDir = filepath.Dir(tempDir)
+			}
+			dbInitQueries = append(dbInitQueries, fmt.Sprintf("SET allowed_directories=[%s, %s, 'http://', 'https://']", safeSQLString(dataDir+string(filepath.Separator)), safeSQLString(tempDir+string(filepath.Separator))),
+				"SET enable_external_access=false")
+		}
 	}
 
 	// Add init SQL if provided
