@@ -20,9 +20,19 @@ Here at Rill, we believe in business-speed visual analytics. Gone are the days o
 ---
 Follow along, refer to the in-line linked documentation, and explore our product to make the most out of these guides! Please reach out to ask any questions or provide feedback on our Community Slack or Discord!
 
-- [**6 Steps to Rill Cloud:**](/guides/rill-basics/launch) Learn the basics, understand the core concepts of Rill, and deploy to Cloud!
-- [**Rill + ClickHouse:**](/guides/rill-clickhouse) For our friends from **ClickHouse**, we have created a dedicated course that goes over the same topics as Rill Basics! After completing, you can continue to Rill Advanced.
-- **Explore the Various Guides:** Explore the various guides on how to use Rill to the maximum capability and get the most out of our platform!
+- [**Source to Published Dashboard:**](/guides/rill-basics/launch) Learn the basics, understand the core concepts of Rill, and deploy to Cloud!
+- [**Visualize ClickHouse tables in Rill:**](/guides/rill-clickhouse) For our friends from **ClickHouse**, we have created a dedicated course using ClickHouse!
+- [**Clone a Project:**](/guides/) Step-by-step guide to clone an already deployed instance from Rill Cloud to your local machine
+- [**GitHub Analytics:**](/guides/) Analyze your own GitHub repository by modifying the python file, download_commits.py
+- [**Cost Monitornig Analytics:**](/guides/) Analyze your cost and usage data
+- [**OpenRTB Analytics:**](/guides/) Analyze real-time bidding data to track impressions, bids, wins and more.
+
+<!-- - [**Rill + MotherDuck:**](
+
+/guides/rill-motherduck) For our friends from **MotherDuck**, we have created a dedicated course using MotherDuck! -->
+<!-- - **Explore the Various Guides:** Explore the various guides on how to use Rill to the maximum capability and get the most out of our platform! -->
+<!-- - [**GA4 Analytics:**](/guides/) text
+- [**Logging Analytics:**](/guides/) text -->
 
 Each section is crafted to ensure a smooth and comprehensive learning experience. Happy learning!
 
