@@ -32,6 +32,7 @@ import { EntityType } from "../../entity-management/types";
 import { EMPTY_PROJECT_TITLE } from "../../welcome/constants";
 import { isProjectInitialized } from "../../welcome/is-project-initialized";
 import { compileSourceYAML, maybeRewriteToDuckDb } from "../sourceUtils";
+import { OLAP_CONNECTORS } from "./constants";
 
 interface AddDataFormValues {
   // name: string; // Commenting out until we add user-provided names for Connectors
@@ -174,7 +175,6 @@ export async function submitAddOLAPConnectorForm(
 
   // Test the connection to the OLAP database (only for original OLAP connectors)
   // If the connection test fails, rollback the changes
-  const OLAP_CONNECTORS = ["clickhouse", "druid", "pinot"];
   if (OLAP_CONNECTORS.includes(connector.name as string)) {
     const result = await testOLAPConnector(
       instanceId,
