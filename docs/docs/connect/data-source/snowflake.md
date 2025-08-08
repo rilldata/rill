@@ -48,6 +48,12 @@ To determine your [Snowflake account identifier](https://docs.snowflake.com/en/u
 
 :::
 
+## Separating Dev and Prod Environments
+
+When ingesting data locally, consider setting parameters in your connector file to limit how much data is retrieved, since costs can scale with the data source. This also helps other developers clone the project and iterate quickly by reducing ingestion time.
+
+For more details, see our [Dev/Prod setup docs](/connect/templating).
+
 ## Cloud deployment
 
 When deploying a project to Rill Cloud (i.e., `rill deploy`), Rill requires credentials to be passed via the Snowflake connection string as a source configuration `dsn` field or by passing/updating the credentials used by Rill Cloud directly by running:

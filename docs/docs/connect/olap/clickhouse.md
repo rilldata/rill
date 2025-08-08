@@ -5,6 +5,7 @@ sidebar_label: ClickHouse
 sidebar_position: 00
 ---
 import LoomVideo from '@site/src/components/LoomVideo'; // Adjust the path as needed
+import ClickHouseDSNGenerator from '@site/src/components/ClickHouseDSNGenerator';
 
 <LoomVideo loomId='b96143c386104576bcfe6cabe1038c38' />
 
@@ -18,9 +19,11 @@ Rill supports connecting to an existing ClickHouse instance and using it as an O
 Rill supports connecting to ClickHouse v22.7 or newer versions.
 :::
 
-## Configuring Rill Developer with ClickHouse
+## Connect to ClickHouse
 
 When using ClickHouse for local development, you can connect via connection parameters or using the DSN. Both local instances of ClickHouse and ClickHouse Cloud are supported.
+
+### Connection Parameters
 
 <img src='/img/connect/connector/byob-clickhouse.png' class='rounded-gif' />
 <br />
@@ -60,18 +63,18 @@ If you are facing issues related to DSN connection errors in your dashboards eve
 
 :::
 
-## Connection string (DSN)
+### Connection String (DSN)
 
 <img src='/img/connect/connector/byob-clickhouse-dsn.png' class='rounded-gif' />
 <br />
 
 Rill is able to connect to ClickHouse using the [ClickHouse Go Driver](https://clickhouse.com/docs/en/integrations/go). An appropriate connection string (DSN) will need to be set through the `connector.clickhouse.dsn` property in Rill.
 
-A very simple example might look like the following:
 
 ```bash
 connector.clickhouse.dsn="clickhouse://<hostname>:<port>?username=<username>&password=<password>"
 ```
+
 
 :::info Check your port
 
@@ -79,28 +82,29 @@ In most situations, the default port is 9440 for TLS and 9000 when not using TLS
 
 :::
 
+
 :::note DSN properties
 
 For more information about available DSN properties and setting an appropriate connection string, please refer to ClickHouse's [documentation](https://github.com/ClickHouse/clickhouse-go?tab=readme-ov-file#dsn).
 
 :::
-
-### Connecting to ClickHouse Cloud
+## Connect to ClickHouse Cloud
 
 If you are connecting to an existing [ClickHouse Cloud](https://clickhouse.com/cloud) instance, you can retrieve connection details about your instance by clicking on the `Connect` tab from within the admin settings navigation page. This will provide relevant information, such as the hostname, port, and username being used for your instance that you can then use to construct your DSN.
 
-![ClickHouse Cloud connection string](/img/reference/olap-engines/clickhouse/clickhouse-cloud.png)
+<img src='/img/connect/connector/clickhouse-cloud.png' class='rounded-gif' />
+<br />
 
-Because ClickHouse Cloud requires a secure connection over [https](https://github.com/ClickHouse/clickhouse-go?tab=readme-ov-file#http-support-experimental), you will need to pass in `secure=true` and `skip_verify=true` as additional URL parameters as part of your https URL (for your DSN):
 
-```bash
-connector.clickhouse.dsn="https://<hostname>:<port>?username=<username>&password=<password>&secure=true&skip_verify=true"
-```
+Because ClickHouse Cloud requires a secure connection over [https](https://github.com/ClickHouse/clickhouse-go?tab=readme-ov-file#http-support-experimental), you will need to pass in `secure=true` and `skip_verify=true` as additional URL parameters as part of your https URL (for your DSN).
+
+Use the below generator to create the DSN or use the connection parameters in ClickHouse Cloud's UI.
+
+<ClickHouseDSNGenerator />
+
 
 :::info Need help connecting to ClickHouse?
-
 If you would like to connect Rill to an existing ClickHouse instance, please don't hesitate to [contact us](/contact). We'd love to help!
-
 ::: 
 
 ## Rill Managed ClickHouse
@@ -124,6 +128,7 @@ managed: true
 ```
 
 Data ingestion features are not yet available in the UI, please refer to our [model documentation](/reference/project-files/advanced-models) on how to ingest data into ClickHouse. For a guide, see [ingesting data directly into ClickHouse](/guides/rill-clickhouse/r_ch_ingest).
+
 
 ## Read Only Connector
 

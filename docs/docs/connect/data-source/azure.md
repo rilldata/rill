@@ -1,7 +1,7 @@
 ---
 title: Azure Blob Storage
 description: Connect to data in Azure Blob Storage
-sidebar_label: ABS 
+sidebar_label: Azure Blob Storage 
 sidebar_position: 05
 ---
 
@@ -84,6 +84,12 @@ As another alternative, you can configure credentials using a Shared Access Sign
 If this project has already been deployed to Rill Cloud and credentials have been set for this source, you can use `rill env pull` to [pull these cloud credentials](//connect/credentials/#rill-env-pull) locally (into your local `.env` file). Please note that this may override any credentials you have set locally for this source.
 
 :::
+
+## Separating Dev and Prod Environments
+
+When ingesting data locally, consider setting parameters in your connector file to limit how much data is retrieved, since costs can scale with the data source. This also helps other developers clone the project and iterate quickly by reducing ingestion time.
+
+For more details, see our [Dev/Prod setup docs](/connect/templating).
 
 ## Cloud deployment
 
