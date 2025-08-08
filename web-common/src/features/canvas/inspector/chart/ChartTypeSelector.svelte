@@ -39,7 +39,7 @@
         <Button
           square
           small
-          type="secondary"
+          type="ghost"
           label={CHART_CONFIG[chart].title}
           selected={type === chart}
           onClick={() => selectChartType(chart)}
@@ -61,6 +61,6 @@
   }
 
   .chart-icons {
-    @apply flex border px-2 py-1 gap-x-4 rounded-[2px];
+    @apply flex flex-wrap border px-1 py-1 gap-x-3 gap-y-2 rounded-[2px];
   }
 </style>

@@ -21,7 +21,7 @@ Here at Rill, we believe in business-speed visual analytics. Gone are the days o
 Follow along, refer to the in-line linked documentation, and explore our product to make the most out of these guides! Please reach out to ask any questions or provide feedback on our Community Slack or Discord!
 
 - [**6 Steps to Rill Cloud:**](/guides/rill-basics/launch) Learn the basics, understand the core concepts of Rill, and deploy to Cloud!
-- [**Rill + ClickHouse:**](/guides/rill-clickhouse/) For our friends from **ClickHouse**, we have created a dedicated course that goes over the same topics as Rill Basics! After completing, you can continue to Rill Advanced.
+- [**Rill + ClickHouse:**](/guides/rill-clickhouse) For our friends from **ClickHouse**, we have created a dedicated course that goes over the same topics as Rill Basics! After completing, you can continue to Rill Advanced.
 - **Explore the Various Guides:** Explore the various guides on how to use Rill to the maximum capability and get the most out of our platform!
 
 Each section is crafted to ensure a smooth and comprehensive learning experience. Happy learning!

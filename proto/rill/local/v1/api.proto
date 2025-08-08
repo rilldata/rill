@@ -155,6 +155,7 @@ message RedeployProjectRequest {
   bool reupload = 2;
   // temporarily used for testing
   bool rearchive = 3;
+  bool create_managed_repo = 4;
 }
 
 message RedeployProjectResponse {

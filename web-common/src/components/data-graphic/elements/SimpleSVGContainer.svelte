@@ -4,17 +4,19 @@ to the props.
 -->
 <script lang="ts">
   import { getContext } from "svelte";
-
   import { mousePositionToDomainActionFactory } from "../actions/mouse-position-to-domain-action-factory";
   import { createScrubAction } from "../actions/scrub-action-factory";
   import { contexts } from "../constants";
   import type { DomainCoordinates } from "../constants/types";
-  import type { ScaleStore, SimpleConfigurationStore } from "../state/types";
+  import type {
+    ScaleStore,
+    SimpleConfigurationStore,
+  } from "@rilldata/web-common/components/data-graphic/state/types";
 
-  const config = getContext(contexts.config) as SimpleConfigurationStore;
-  const xScale = getContext(contexts.scale("x")) as ScaleStore;
-  const yScale = getContext(contexts.scale("y")) as ScaleStore;
-  const { coordinates, mousePositionToDomain } =
+  const config = getContext<SimpleConfigurationStore>(contexts.config);
+  const xScale = getContext<ScaleStore>(contexts.scale("x"));
+  const yScale = getContext<ScaleStore>(contexts.scale("y"));
+  const { coordinates, mousePositionToDomain, mouseover } =
     mousePositionToDomainActionFactory();
 
   const scrubActionObject = createScrubAction({
@@ -41,11 +43,13 @@ to the props.
 
   export let mouseoverValue: DomainCoordinates | undefined = undefined;
   export let hovered: boolean = false;
+  export let mouseOverThisChart: boolean = false;
   export let overflowHidden = true;
 
   $: mouseoverValue = $coordinates;
 
   $: hovered = $coordinates.x !== undefined;
+  $: mouseOverThisChart = $mouseover;
 </script>
 
 <!-- svelte-ignore a11y-click-events-have-key-events -->

@@ -26,6 +26,22 @@ export function toggleDimensionValueSelection(
    */
   isExclusiveFilter?: boolean,
 ) {
+  return toggleMultipleDimensionValueSelections(
+    { dashboard },
+    dimensionName,
+    [dimensionValue],
+    keepPillVisible,
+    isExclusiveFilter,
+  );
+}
+
+export function toggleMultipleDimensionValueSelections(
+  { dashboard }: DashboardMutables,
+  dimensionName: string,
+  dimensionValues: string[],
+  keepPillVisible?: boolean,
+  isExclusiveFilter?: boolean,
+) {
   if (dashboard.temporaryFilterName !== null) {
     dashboard.temporaryFilterName = null;
   }
@@ -34,7 +50,7 @@ export function toggleDimensionValueSelection(
   const exprIdx = getWhereFilterExpressionIndex({ dashboard })(dimensionName);
   if (exprIdx === undefined || exprIdx === -1) {
     dashboard.whereFilter.cond?.exprs?.push(
-      createInExpression(dimensionName, [dimensionValue], isExclude),
+      createInExpression(dimensionName, dimensionValues, isExclude),
     );
     return;
   }
@@ -72,33 +88,31 @@ export function toggleDimensionValueSelection(
     });
     dashboard.whereFilter.cond!.exprs![exprIdx] = createInExpression(
       dimensionName,
-      [dimensionValue],
+      dimensionValues,
       isExclude,
     );
     return;
   }
 
-  const inIdx = getValueIndexInExpression(expr, dimensionValue) as number;
-  if (inIdx === -1) {
-    if (isExclusiveFilter) {
-      expr.cond.exprs.splice(1, expr.cond.exprs.length - 1, {
-        val: dimensionValue,
-      });
-    } else {
-      expr.cond.exprs.push({ val: dimensionValue });
-    }
-  } else {
-    expr.cond.exprs.splice(inIdx, 1);
+  dimensionValues.forEach((v) => {
+    const removedIndex = toggleDimensionFilterValue(
+      expr,
+      v,
+      !!isExclusiveFilter,
+    );
+    if (removedIndex === -1) return;
+
     // Only decrement pinIndex if the removed value was before the pinned value
-    if (dashboard.tdd.pinIndex >= inIdx) {
+    if (dashboard.tdd.pinIndex >= removedIndex) {
       dashboard.tdd.pinIndex--;
     }
-    // remove the dimension entry if all values are removed
-    if (expr.cond.exprs.length === 1) {
-      dashboard.whereFilter.cond?.exprs?.splice(exprIdx, 1);
-      if (keepPillVisible) {
-        dashboard.temporaryFilterName = dimensionName;
-      }
+  });
+
+  // remove the dimension entry if all values are removed
+  if (expr.cond.exprs.length === 1) {
+    dashboard.whereFilter.cond?.exprs?.splice(exprIdx, 1);
+    if (keepPillVisible) {
+      dashboard.temporaryFilterName = dimensionName;
     }
   }
 }
@@ -256,6 +270,29 @@ export function setFilters(
   dashboard.dimensionThresholdFilters = dimensionThresholdFilters;
 }
 
+export function toggleDimensionFilterValue(
+  expr: V1Expression,
+  dimensionValue: string,
+  isExclusiveFilter: boolean,
+) {
+  if (!expr.cond?.exprs) return -1;
+
+  const inIdx = getValueIndexInExpression(expr, dimensionValue);
+  if (inIdx === -1) {
+    if (isExclusiveFilter) {
+      expr.cond.exprs.splice(1, expr.cond.exprs.length - 1, {
+        val: dimensionValue,
+      });
+    } else {
+      expr.cond.exprs.push({ val: dimensionValue });
+    }
+    return -1;
+  } else {
+    expr.cond.exprs.splice(inIdx, 1);
+    return inIdx;
+  }
+}
+
 export const dimensionFilterActions = {
   /**
    * Toggles whether the given dimension value is selected in the
@@ -266,6 +303,7 @@ export const dimensionFilterActions = {
    * the include/exclude mode is a toggle for the entire dimension.
    */
   toggleDimensionValueSelection,
+  toggleMultipleDimensionValueSelections,
   applyDimensionInListMode,
   applyDimensionContainsMode,
   toggleDimensionFilterMode,

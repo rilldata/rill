@@ -246,7 +246,7 @@ definitions:
                 description: Name of an existing theme to apply to the dashboard
               - $ref: '#/definitions/theme/definitions/theme_properties'
                 description: Inline theme configuration.
-            description: Name of the theme to use. Only one of theme and embedded_theme can be set.
+            description: Name of the theme to use or define a theme inline. Either theme name or inline theme can be set.
           allow_custom_time_range:
             type: boolean
             description: Defaults to true, when set to false it will hide the ability to set a custom time range for the user. 
@@ -992,17 +992,17 @@ definitions:
             description: Refers to the metrics view resource
           dimensions:
             description: List of dimension names. Use '*' to select all dimensions (default) 
-            $ref: '#/definitions/explore/definitions/field_selector_properties'
+            $ref: '#/definitions/field_selector_properties'
           measures:
             description: List of measure names. Use ''*'' to select all measures (default)
-            $ref: '#/definitions/explore/definitions/field_selector_properties'
+            $ref: '#/definitions/field_selector_properties'
           theme:
             oneOf:
               - type: string
                 description: Name of an existing theme to apply to the dashboard
               - $ref: '#/definitions/theme/definitions/theme_properties'
                 description: Inline theme configuration.
-            description: Name of the theme to use. Only one of theme and embedded_theme can be set.
+            description: Name of the theme to use or define a theme inline. Either theme name or inline theme can be set.
           time_ranges:
             type: array
             description: Overrides the list of default time range selections available in the dropdown. It can be string or an object with a 'range' and optional 'comparison_offsets'
@@ -1025,10 +1025,10 @@ definitions:
             properties:
               dimensions:
                 description: Provides the default dimensions to load on viewing the dashboard
-                $ref: '#/definitions/explore/definitions/field_selector_properties'
+                $ref: '#/definitions/field_selector_properties'
               measures:
                 description: Provides the default measures to load on viewing the dashboard
-                $ref: '#/definitions/explore/definitions/field_selector_properties'
+                $ref: '#/definitions/field_selector_properties'
               time_range:
                 description: Refers to the default time range shown when a user initially loads the dashboard. The value must be either a valid [ISO 8601 duration](https://en.wikipedia.org/wiki/ISO_8601#Durations) (for example, PT12H for 12 hours, P1M for 1 month, or P26W for 26 weeks) or one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions)
                 type: string
@@ -1052,37 +1052,7 @@ definitions:
             $ref: '#/definitions/security_policy_properties'
         required:
           - type       
-      - $ref: '#/definitions/common_properties'  
-    definitions:
-      field_selector_properties:
-        oneOf:
-          - type: string
-            const: '*'
-            description: Wildcard(*) selector that includes all available fields in the selection
-          - type: array
-            items:
-              type: string
-            description: Explicit list of fields to include in the selection
-          - type: object
-            description: 'Advanced matching using regex, DuckDB expression, or exclusion'
-            properties:
-              regex:
-                type: string
-                description: Select dimensions using a regular expression
-              expr:
-                type: string
-                description: DuckDB SQL expression to select fields based on custom logic
-              exclude:
-                type: object
-                description: Select all dimensions except those listed here
-            additionalProperties: false
-            oneOf:
-              - required:
-                  - regex
-              - required:
-                  - expr
-              - required:
-                  - exclude 
+      - $ref: '#/definitions/common_properties'
   metrics_view:
     type: object
     title: Metrics View YAML
@@ -1095,6 +1065,9 @@ definitions:
             type: string
             const: metrics_view
             description: Refers to the resource type and must be `metrics_view`
+          parent:
+            type: string
+            description: Refers to the parent metrics from which this metrics view is derived. If specified, this will inherit properties from the parent metrics view
           display_name:
             type: string
             description: Refers to the display name for the metrics view
@@ -1218,7 +1191,7 @@ definitions:
                   type: string
                   description: |
                     Controls the formatting of this measure using a predefined preset. Measures cannot have both `format_preset` and `format_d3`. If neither is supplied, the measure will be formatted using the `humanize` preset by default.
-                    
+
                       Available options:
                       - `humanize`: Round numbers into thousands (K), millions(M), billions (B), etc.
                       - `none`: Raw output.
@@ -1240,9 +1213,45 @@ definitions:
                   type: string
                   description: used to configure what value to fill in for missing time buckets. This also works generally as COALESCING over non empty time buckets.
             minItems: 1
+          parent_dimensions:
+            description: Optional field selectors for dimensions to inherit from the parent metrics view.
+            $ref: '#/definitions/field_selector_properties'
+          parent_measures:
+            description: Optional field selectors for measures to inherit from the parent metrics view.
+            $ref: '#/definitions/field_selector_properties'
+          annotations:
+            type: array
+            description: Used to define annotations that can be displayed on charts
+            items:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: A stable identifier for the annotation. Defaults to model or table names when not specified
+                model:
+                  type: string
+                  description: Refers to the model powering the annotation (either table or model is required). The model must have 'time' and 'description' columns. Optional columns include 'time_end' for range annotations and 'duration' to specify when the annotation should appear based on dashboard grain level.
+                database:
+                  type: string
+                  description: Refers to the database to use in the OLAP engine (to be used in conjunction with table). Otherwise, will use the default database or schema if not specified
+                database_schema:
+                  type: string
+                  description: Refers to the schema to use in the OLAP engine (to be used in conjunction with table). Otherwise, will use the default database or schema if not specified
+                table:
+                  type: string
+                  description: Refers to the table powering the annotation, should be used instead of model for annotations from external OLAP tables (either table or model is required)
+                connector:
+                  type: string
+                  description: Refers to the connector to use for the annotation
+                measures:
+                  $ref: '#/definitions/metrics_view/definitions/field_selectors_properties'
+                  description: Specifies which measures to apply the annotation to. Applies to all measures if not specified
           security:
             $ref: '#/definitions/security_policy_properties'
             description: Defines a security policy for the dashboard
+          explore:
+            $ref: '#/definitions/metrics_view/definitions/explore_properties'
+            description: Defines an optional inline explore view for the metrics view. If not specified a default explore will be emitted unless `skip` is set to true.
         required:
           - type
       - $ref: '#/definitions/common_properties' 
@@ -1289,6 +1298,76 @@ definitions:
                     - name
                   additionalProperties: false
             minItems: 1
+      explore_properties:
+        type: object
+        properties:
+          skip:
+            type: boolean
+            description: If true, disables the explore view for this metrics view.
+          name:
+            type: string
+            description: Name of the explore view.
+          display_name:
+            type: string
+            description: Display name for the explore view.
+          description:
+            type: string
+            description: Description for the explore view.
+          banner:
+            type: string
+            description: Custom banner displayed at the header of the explore view.
+          theme:
+            oneOf:
+              - type: string
+                description: Name of an existing theme to apply to the explore view.
+              - $ref: '#/definitions/theme/definitions/theme_properties'
+                description: Inline theme configuration.
+            description: Name of the theme to use or define a theme inline. Either theme name or inline theme can be set.
+          time_ranges:
+            type: array
+            description: Overrides the list of default time range selections available in the dropdown. It can be string or an object with a 'range' and optional 'comparison_offsets'.
+            items:
+              $ref: '#/definitions/explore_time_range_properties'
+          time_zones:
+            type: array
+            description: List of time zones to pin to the top of the time zone selector. Should be a list of IANA time zone identifiers.
+            items:
+              type: string
+          lock_time_zone:
+            type: boolean
+            description: When true, the explore view will be locked to the first time zone provided in the time_zones list. If no time_zones are provided, it will be locked to UTC.
+          allow_custom_time_range:
+            type: boolean
+            description: Defaults to true. When set to false, hides the ability to set a custom time range for the user.
+          defaults:
+            type: object
+            description: Preset UI state to show by default.
+            properties:
+              dimensions:
+                $ref: '#/definitions/field_selector_properties'
+                description: Default dimensions to load on viewing the explore view.
+              measures:
+                $ref: '#/definitions/field_selector_properties'
+                description: Default measures to load on viewing the explore view.
+              time_range:
+                type: string
+                description: Default time range to display when the explore view loads.
+              comparison_mode:
+                type: string
+                description: Default comparison mode for metrics (none, time, or dimension).
+              comparison_dimension:
+                type: string
+                description: Default dimension to use for comparison when comparison_mode is 'dimension'.
+            additionalProperties: false
+          embeds:
+            type: object
+            description: Configuration options for embedded explore views.
+            properties:
+              hide_pivot:
+                type: boolean
+                description: When true, hides the pivot table view in embedded mode.
+            additionalProperties: false
+        additionalProperties: false
   model:
     type: object
     title: Model YAML
@@ -1713,7 +1792,7 @@ definitions:
     title: Theme YAML 
     description: | 
       In your Rill project directory, create a `<theme_name>.yaml` file in any directory containing `type: theme`. Rill will automatically ingest the theme next time you run `rill start` or deploy to Rill Cloud.
-      
+
       To apply that theme to a dashboard, add `default_theme: <name of theme>` to the yaml file for that dashboard. Alternatively, you can add this to the end of the URL in your browser: `?theme=<name of theme>`
     examples:
       - # Example: You can copy this directly into your <theme_name>.yaml file
@@ -2054,3 +2133,32 @@ definitions:
               description: SQL expression for row filtering (for row_filter type rules)
           required:
             - type
+  field_selector_properties:
+    oneOf:
+      - type: string
+        const: '*'
+        description: Wildcard(*) selector that includes all available fields in the selection
+      - type: array
+        items:
+          type: string
+        description: Explicit list of fields to include in the selection
+      - type: object
+        description: 'Advanced matching using regex, DuckDB expression, or exclusion'
+        properties:
+          regex:
+            type: string
+            description: Select fields using a regular expression
+          expr:
+            type: string
+            description: DuckDB SQL expression to select fields based on custom logic
+          exclude:
+            type: object
+            description: Select all fields except those listed here
+        additionalProperties: false
+        oneOf:
+          - required:
+              - regex
+          - required:
+              - expr
+          - required:
+              - exclude

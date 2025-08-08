@@ -69,7 +69,8 @@ Note: Rill requires users to confirm their email address before letting them int
 
 When a user loads a dashboard, the policies are resolved in two phases:
 
-1. The templating engine first replaces expressions like `{{ .user.domain }}` with actual values ([Templating reference](/connect/Thank you))
+
+1. The templating engine first replaces expressions like `{{ .user.domain }}` with actual values ([Templating reference](/connect/templating))
 2. The resulting expression is then evaluated contextually:
   - The `access` and `if` values are evaluated as SQL expressions and resolved to a `true` or `false` value
   - The `row_filter` value is injected into the `WHERE` clause of the SQL queries used to render the dashboard
@@ -204,7 +205,7 @@ security:
 
 For some use cases, the built-in user attributes do not provide sufficient context to correctly restrict access. For example, a dashboard for a multi-tenant SaaS application might have a `tenant_id` column and external users should only be able to see data for the tenant they belong to.
 
-To support this, ingest a separate data [source](/build/connect) containing mappings of user email addresses to tenant IDs and reference it in the row-level filter. This can be a locally created csv file or any hosted data source.
+To support this, ingest a separate data [source](/connect) containing mappings of user email addresses to tenant IDs and reference it in the row-level filter. This can be a locally created csv file or any hosted data source.
 
 For example, a locally created `mappings.csv` file in the `data` directory of our Rill project with the following contents:
 ```csv
