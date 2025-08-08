@@ -8,7 +8,7 @@ import Video from '@site/src/components/Video';
 <!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->
 
 :::tip Rill's Default Engine
-This guide assumes you'll be using Rill's default embedded engine, DuckDB. If you're looking to set up Rill with ClickHouse, check out our [ClickHouse Guide](/guides/rill-clickhouse/)!
+This guide assumes you'll be using Rill's default embedded engine, DuckDB. If you're looking to set up Rill with ClickHouse, check out our [ClickHouse Guide](/guides/rill-clickhouse)!
 :::
 
 ## What is Rill Developer?
@@ -47,7 +47,7 @@ Rill Developer is your local development environment where you build and test yo
 
 ### Step 2: Connect Your Data
 
-Rill supports a wide range of data sources through our [connector library](/reference/connectors). For this tutorial, we'll use a sample dataset hosted on Google Cloud Storage.
+Rill supports a wide range of data sources through our [connector library](/connect). For this tutorial, we'll use a sample dataset hosted on Google Cloud Storage.
 
 **What happens when you connect data:**
 - Rill automatically detects your data schema
@@ -120,8 +120,8 @@ Once your dashboard is created, you can:
 
 This quick start covered the basics, but Rill offers much more:
 
-- **[Data Modeling](/build/models/)** - Transform and prepare your data with SQL
-- **[Metrics Layer](/build/metrics-view/)** - Define business KPIs and calculations
-- **[Deployment](/deploy/deploy-dashboard/)** - Share your dashboards with your team
+- **[Data Modeling](/build/models)** - Transform and prepare your data with SQL
+- **[Metrics Layer](/build/metrics-view)** - Define business KPIs and calculations
+- **[Deployment](/deploy/deploy-dashboard)** - Share your dashboards with your team
 
 Ready to build something more complex? Check out our [comprehensive tutorial](/guides/rill-basics/launch) for a complete walkthrough of Rill's advanced features.

@@ -30,7 +30,7 @@ This approach allows engineering teams to maintain control over their analytics 
 
 ## Key Benefits
  
-### [Version Control & Collaboration](/deploy/deploy-dashboard/)
+### [Version Control & Collaboration](/deploy/deploy-dashboard)
 - Track changes to your analytics assets in Git
 - Review and approve changes through pull requests
 - Maintain a clear history of how metrics and dashboards evolve over time
@@ -49,7 +49,7 @@ This approach allows engineering teams to maintain control over their analytics 
 - Leverage existing development practices
 
 ### Flexibility & Coexistence
-- Define [core metrics and dimensions in code](/build/metrics-view/)
+- Define [core metrics and dimensions in code](/build/metrics-view)
 - Make UI-based adjustments when needed
 - Both code-defined and UI-created assets live in harmony
 - Best of both worlds: developer control and business agility
@@ -63,5 +63,5 @@ For a deeper dive into BI-as-code and its benefits, check out our blog post: [Wh
 
 - [Learn about Rill's Architecture](/concepts/architecture)
 - [Get started with Rill](/home/install)
-- [Explore the Reference](/reference/connectors/)
+- [Explore the Reference](/connect)
 - [Step-by-step Tutorial](/guides)

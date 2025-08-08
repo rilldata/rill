@@ -194,11 +194,11 @@ select '2022-02-16T00:00:00Z' as time, '2022-02-20T00:00:00Z' as time_end, '2nd 
 union all
 select '2022-03-27T00:00:00Z' as time, '2022-04-11T00:00:00Z' as time_end, '3rd event' as description`,
 			"grain_annotation.sql": `
-select '2022-01-05T00:00:00Z' as time, 'day' as grain, '1st event' as description
+select '2022-01-05T00:00:00Z' as time, 'day' as duration, '1st event' as description
 union all
-select '2022-02-16T00:00:00Z' as time, 'month' as grain, '2nd event' as description
+select '2022-02-16T00:00:00Z' as time, 'month' as duration, '2nd event' as description
 union all
-select '2022-03-27T00:00:00Z' as time, 'hour' as grain, '3rd event' as description`,
+select '2022-03-27T00:00:00Z' as time, 'hour' as duration, '3rd event' as description`,
 		},
 	})
 	testruntime.RequireReconcileState(t, rt, instanceID, 6, 0, 0)
@@ -263,12 +263,12 @@ annotations:
   - model: grain_annotation`,
 			annotation: []*runtimev1.MetricsViewSpec_Annotation{
 				{
-					Name:      "grain_annotation",
-					Connector: "duckdb",
-					Table:     "grain_annotation",
-					Model:     "grain_annotation",
-					Measures:  []string{"val_sum"},
-					HasGrain:  true,
+					Name:        "grain_annotation",
+					Connector:   "duckdb",
+					Table:       "grain_annotation",
+					Model:       "grain_annotation",
+					Measures:    []string{"val_sum"},
+					HasDuration: true,
 				},
 			},
 			errorContains: "",

@@ -91,7 +91,7 @@ func New(logger *zap.Logger, adm *admin.Service, issuer *runtimeauth.Issuer, lim
 	cookieStore := cookies.New(logger, opts.SessionKeyPairs...)
 
 	// Auth tokens are validated against the DB on each request, so we can set a long MaxAge.
-	cookieStore.MaxAge(60 * 60 * 24 * 365 * 10) // 10 years
+	cookieStore.MaxAge(60 * 60 * 24 * 14) // 14 days
 
 	// Set Secure if the admin service is served over HTTPS (will resolve to true in production and false in local dev environments).
 	cookieStore.Options.Secure = adm.URLs.IsHTTPS()
@@ -185,6 +185,11 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create transcoder: %w", err)
 	}
+
+	// Add auth cookie refresh specifically for the GetCurrentUser RPC.
+	// This is sufficient to refresh the cookie on each page load without unnecessarily refreshing cookies in each API call.
+	mux.Handle("/v1/users/current", s.authenticator.CookieRefreshMiddleware(transcoder))
+
 	mux.Handle("/v1/", transcoder)
 	mux.Handle("/rill.admin.v1.AdminService/", transcoder)
 	mux.Handle("/rill.admin.v1.AIService/", transcoder)

@@ -906,8 +906,7 @@ These are not currently parsed from YAML, but will be derived from the parent me
   banner?: string;
   lockTimeZone?: boolean;
   allowCustomTimeRange?: boolean;
-  /** When true, it indicates that the explore was defined in a metrics view.
-This currently happens for legacy metrics views (that don't have `version: 1`), which also emits explores. */
+  /** When true, it indicates that the explore was defined in a metrics view either explicitly or emitted because version was not set. */
   definedInMetricsView?: boolean;
 }
 
@@ -1350,8 +1349,8 @@ export interface V1MetricsViewAnnotationsResponseAnnotation {
   timeEnd?: string;
   /** User defined description of the annotation applies. Maps to `description` column from the table. */
   description?: string;
-  /** Optional. Minimum grain this annotation is displayed for. Maps to `grain` column from the table. */
-  grain?: string;
+  /** Optional. Minimum duration this annotation is displayed for. Maps to `duration` column from the table. */
+  duration?: string;
   /** Any other fields are captured here. Will be used in predicates in the future. */
   additionalFields?: V1MetricsViewAnnotationsResponseAnnotationAdditionalFields;
   /** List of measure names that this annotation applies to. If empty, no restrictions apply. */
@@ -1493,6 +1492,8 @@ export interface V1MetricsViewSort {
 }
 
 export interface V1MetricsViewSpec {
+  /** name of parent metrics view, if this is a derived metrics view. If this is set then certain fields like table, connector, database*, model, dimensions, and measures will only be set in `state.valid_spec`. */
+  parent?: string;
   connector?: string;
   database?: string;
   databaseSchema?: string;
@@ -1509,6 +1510,8 @@ export interface V1MetricsViewSpec {
   watermarkExpression?: string;
   dimensions?: MetricsViewSpecDimension[];
   measures?: MetricsViewSpecMeasure[];
+  parentDimensions?: V1FieldSelector;
+  parentMeasures?: V1FieldSelector;
   annotations?: V1MetricsViewSpecAnnotation[];
   securityRules?: V1SecurityRule[];
   /** ISO 8601 weekday number to use as the base for time aggregations by week. Defaults to 1 (Monday). */
@@ -1525,7 +1528,7 @@ export interface V1MetricsViewSpec {
  * Annotations that can be applied to measures. Each annotation needs to have a model or a table defined.
 1. The underlying model/table has to have a `time` and `description` columns.
 2. Can additionally have `time_end` column to convert the annotation to range type annotation.
-3. Can additionally have `grain` column, this is used to not query for annotations greater than selected grain in dashboard. Also forces `time` and `time_end` in UI to be truncated to selected grain.
+3. Can additionally have `duration` column, this is used to not query for annotations greater than selected grain in dashboard. Also forces `time` and `time_end` in UI to be truncated to selected grain.
  */
 export interface V1MetricsViewSpecAnnotation {
   name?: string;
@@ -1540,8 +1543,8 @@ export interface V1MetricsViewSpecAnnotation {
   measuresSelector?: V1FieldSelector;
   /** Signifies that the underlying table has `time_end` column. Will be used while querying to add additional filter. */
   hasTimeEnd?: boolean;
-  /** Signifies that the underlying table has `grain` column. Will be used while querying to add additional filter. */
-  hasGrain?: boolean;
+  /** Signifies that the underlying table has `duration` column. Will be used while querying to add additional filter. */
+  hasDuration?: boolean;
 }
 
 export interface V1MetricsViewState {

@@ -87,7 +87,7 @@ function convertV1AnnotationsResponseItemToAnnotation(
   let endTime = annotation.timeEnd ? new Date(annotation.timeEnd) : undefined;
 
   // Only truncate start and ceil end when there is a grain column in the annotation.
-  if (period && annotation.grain) {
+  if (period && annotation.duration) {
     startTime = getStartOfPeriod(startTime, period, selectedTimezone);
     if (endTime) {
       endTime = getOffset(

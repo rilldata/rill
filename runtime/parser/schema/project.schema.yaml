@@ -1956,13 +1956,13 @@ definitions:
         properties:
           regex:
             type: string
-            description: Select dimensions using a regular expression
+            description: Select fields using a regular expression
           expr:
             type: string
             description: DuckDB SQL expression to select fields based on custom logic
           exclude:
             type: object
-            description: Select all dimensions except those listed here
+            description: Select all fields except those listed here
         additionalProperties: false
         oneOf:
           - required:

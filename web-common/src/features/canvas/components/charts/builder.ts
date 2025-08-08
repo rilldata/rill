@@ -121,6 +121,11 @@ export function createColorEncoding(
     return baseEncoding;
   }
   if (typeof colorField === "string") {
+    if (colorField === "primary") {
+      return { value: data.theme.primary.css("hsl") };
+    } else if (colorField === "secondary") {
+      return { value: data.theme.secondary.css("hsl") };
+    }
     return { value: colorField };
   }
   return {};

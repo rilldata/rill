@@ -1291,6 +1291,13 @@ export class MetricsView extends Message<MetricsView> {
  */
 export class MetricsViewSpec extends Message<MetricsViewSpec> {
   /**
+   * name of parent metrics view, if this is a derived metrics view. If this is set then certain fields like table, connector, database*, model, dimensions, and measures will only be set in `state.valid_spec`.
+   *
+   * @generated from field: string parent = 30;
+   */
+  parent = "";
+
+  /**
    * Connector containing the table
    *
    * @generated from field: string connector = 1;
@@ -1383,6 +1390,20 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
   measures: MetricsViewSpec_Measure[] = [];
 
   /**
+   * Dynamic selector for dimensions from parent metrics view. Will be processed during validation, so it will always be empty in `state.valid_spec`. Can only be used if parent is set.
+   *
+   * @generated from field: rill.runtime.v1.FieldSelector parent_dimensions = 31;
+   */
+  parentDimensions?: FieldSelector;
+
+  /**
+   * Dynamic selector for measures from parent metrics view. Will be processed during validation, so it will always be empty in `state.valid_spec`. Can only be used if parent is set.
+   *
+   * @generated from field: rill.runtime.v1.FieldSelector parent_measures = 32;
+   */
+  parentMeasures?: FieldSelector;
+
+  /**
    * Annotations in the metrics view
    *
    * @generated from field: repeated rill.runtime.v1.MetricsViewSpec.Annotation annotations = 29;
@@ -1435,6 +1456,7 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.MetricsViewSpec";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 30, name: "parent", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 1, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 21, name: "database", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 22, name: "database_schema", kind: "scalar", T: 9 /* ScalarType.STRING */ },
@@ -1448,6 +1470,8 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
     { no: 20, name: "watermark_expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "dimensions", kind: "message", T: MetricsViewSpec_Dimension, repeated: true },
     { no: 7, name: "measures", kind: "message", T: MetricsViewSpec_Measure, repeated: true },
+    { no: 31, name: "parent_dimensions", kind: "message", T: FieldSelector },
+    { no: 32, name: "parent_measures", kind: "message", T: FieldSelector },
     { no: 29, name: "annotations", kind: "message", T: MetricsViewSpec_Annotation, repeated: true },
     { no: 23, name: "security_rules", kind: "message", T: SecurityRule, repeated: true },
     { no: 12, name: "first_day_of_week", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
@@ -1858,7 +1882,7 @@ export class MetricsViewSpec_Measure extends Message<MetricsViewSpec_Measure> {
  * Annotations that can be applied to measures. Each annotation needs to have a model or a table defined.
  * 1. The underlying model/table has to have a `time` and `description` columns.
  * 2. Can additionally have `time_end` column to convert the annotation to range type annotation.
- * 3. Can additionally have `grain` column, this is used to not query for annotations greater than selected grain in dashboard. Also forces `time` and `time_end` in UI to be truncated to selected grain.
+ * 3. Can additionally have `duration` column, this is used to not query for annotations greater than selected grain in dashboard. Also forces `time` and `time_end` in UI to be truncated to selected grain.
  *
  * @generated from message rill.runtime.v1.MetricsViewSpec.Annotation
  */
@@ -1925,11 +1949,11 @@ export class MetricsViewSpec_Annotation extends Message<MetricsViewSpec_Annotati
   hasTimeEnd = false;
 
   /**
-   * Signifies that the underlying table has `grain` column. Will be used while querying to add additional filter.
+   * Signifies that the underlying table has `duration` column. Will be used while querying to add additional filter.
    *
-   * @generated from field: bool has_grain = 11;
+   * @generated from field: bool has_duration = 11;
    */
-  hasGrain = false;
+  hasDuration = false;
 
   constructor(data?: PartialMessage<MetricsViewSpec_Annotation>) {
     super();
@@ -1948,7 +1972,7 @@ export class MetricsViewSpec_Annotation extends Message<MetricsViewSpec_Annotati
     { no: 7, name: "measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 8, name: "measures_selector", kind: "message", T: FieldSelector },
     { no: 10, name: "has_time_end", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 11, name: "has_grain", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 11, name: "has_duration", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec_Annotation {
@@ -2402,8 +2426,7 @@ export class ExploreSpec extends Message<ExploreSpec> {
   allowCustomTimeRange = false;
 
   /**
-   * When true, it indicates that the explore was defined in a metrics view.
-   * This currently happens for legacy metrics views (that don't have `version: 1`), which also emits explores.
+   * When true, it indicates that the explore was defined in a metrics view either explicitly or emitted because version was not set.
    *
    * @generated from field: bool defined_in_metrics_view = 21;
    */

@@ -21,6 +21,15 @@ Starting in version 0.50, the metrics view has been separated from the dashboard
 For migration steps, see [Migrations](/other/v50-dashboard-changes#how-to-migrate-your-current-dashboards).
 :::
 
+
+## Creating Metric Views with AI
+
+In order to streamline the process and get to a dashboard as quickly as possible, we've added the "Create Metrics with AI" and "Create Dashboard with AI" options! This will pass your schema to OpenAI to suggest measure and dimensions to get started with Rill. You can define you own OpenAI key by creating a [connector file](/reference/project-files/connectors#ai). If you want to disable AI from your environment, please set the following in the `rill.yaml`.
+```yaml
+features:
+  ai: false
+```
+
 ## Creating valid metrics
 
 ### Timeseries
@@ -99,3 +108,4 @@ Rill Developer is meant to be developer-friendly and has been built around the i
 
 <img src = 'https://cdn.rilldata.com/docs/release-notes/36_hot_reload.gif' class='rounded-gif' />
 <br />
+
