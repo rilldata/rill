@@ -6,7 +6,7 @@ sidebar_position: 45
 ---
 
 
-The Rill project file `rill.yaml` is often overlooked but is a powerful tool, as it sets defaults, environment variables, and connector settings. Let's walk through setting up [`mock_users`](/manage/security#in-rill-developer) to test row access policies, default security settings for your metrics views and explore dashboards, refresh schedules, MCP `ai_instructions`, and the default OLAP connector.
+The Rill project file `rill.yaml` is often overlooked but is a powerful tool, as it sets defaults, environment variables, and connector settings. Let's walk through setting up [`mock_users`](/build/metrics-view/security#testing-policies-in-rill-developer) to test row access policies, default security settings for your metrics views and explore dashboards, refresh schedules, MCP `ai_instructions`, and the default OLAP connector.
 
 <img src = '/img/tutorials/admin/project.png' class='rounded-gif' />
 <br />
@@ -106,7 +106,7 @@ You can create a test mock user to ensure that this dashboard is working as desi
 
 
 ## Metrics Views Defaults
-By default, Rill is open to access (to your organization users), unless otherwise defined. To add project-level access to the Rill project, you can add a default metrics view security policy in the `rill.yaml` file. Like a metrics_view, you can define the security as shown below. For more information, read our [dashboard access documentation](/manage/security#examples).
+By default, Rill is open to access (to your organization users), unless otherwise defined. To add project-level access to the Rill project, you can add a default metrics view security policy in the `rill.yaml` file. Like a metrics_view, you can define the security as shown below. For more information, read our [dashboard access documentation](/build/metrics-view/security#examples).
 
 ```
 metrics_views:

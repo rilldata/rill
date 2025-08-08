@@ -24,7 +24,7 @@ By default, data transformations in Rill Developer are powered by DuckDB and its
 It is possible to change the default [OLAP engine](https://docs.rilldata.com/connect/olap) for [the entire project](https://docs.rilldata.com/reference/project-files/rill-yaml#configuring-the-default-olap-engine) or [a specific metrics view](https://docs.rilldata.com/reference/project-files/metrics-views). You will need to define the connector credentials within your Rill project or via environment variables.
 
 :::tip Support OLAP engines for modeling
-We support modeling on [ClickHouse\*](/reference/olap-engines/clickhouse), [DuckDB](/reference/olap-engines/duckdb) and [MotherDuck\*](/reference/olap-engines/motherduck). For more information, see each OLAP engine page for further information.
+We support modeling on [ClickHouse\*](/connect/olap/clickhouse), [DuckDB](/connect/olap/duckdb) and [MotherDuck\*](/connect/olap/motherduck). For more information, see each OLAP engine page for further information.
 
 \* indicates some caveats with modeling and encourage you to read the documentation before getting started.
 ::: 

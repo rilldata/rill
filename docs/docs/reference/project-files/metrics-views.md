@@ -95,7 +95,7 @@ measures:
 
 **`first_month_of_year`** — Refers to the first month of the year for time grain aggregation. The valid values are 1 through 12 where January=`1` and December=`12` _(optional)_.
 
-**`security`** - Defines a [security policy](/manage/security) for the dashboard _(optional)_.
+**`security`** - Defines a [security policy](/build/metrics-view/security) for the dashboard _(optional)_.
   - **`access`** - Expression indicating if the user should be granted access to the dashboard. If not defined, it will resolve to `false` and the dashboard won't be accessible to anyone. Needs to be a valid SQL expression that evaluates to a boolean _(optional)_.
   - **`row_filter`** - SQL expression to filter the underlying model by. Can leverage templated user attributes to customize the filter for the requesting user. Needs to be a valid SQL expression that can be injected into a `WHERE` clause _(optional)_.
   - **`exclude`** - List of dimension or measure names to exclude from the dashboard. If `exclude` is defined all other dimensions and measures are included _(optional)_.

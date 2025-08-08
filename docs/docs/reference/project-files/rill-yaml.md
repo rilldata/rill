@@ -19,7 +19,7 @@ The `rill.yaml` file contains metadata about your project.
 
 **`olap_connector`** - the default OLAP engine to use in your project
 
-**`mock_users`** — a list of mock users to test against dashboard [security policies](/manage/security). For each mock user, possible attributes include:
+**`mock_users`** — a list of mock users to test against dashboard [security policies](/build/metrics-view/security). For each mock user, possible attributes include:
 
   - **`email`** — the mock user's email _(required)_
   - **`name`** — the mock user's name

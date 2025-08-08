@@ -37,8 +37,17 @@ defaults: #define all the defaults within here, was default_* in previous dashbo
     dimensions: 
     measures:
     ...
+```
+
+## Define Dashboard Access
+
+Along with [metrics views security policies](/build/metrics-view/security), you can set access on the dashboard level. This might be useful if there are a few dashboards that you want to limit to a set of users with a specific set of dimensions. 
+
+Or, the dashboard needs some QA by the team with [full data](/connect/templating) before sharing to the rest of the team.
+
+```yaml
 security:
-    access: #only dashboard access can be defined here, other security policies must be set on the metrics view
+  access: '{{ has "partners" .user.groups }}' #only dashboard access can be defined here, other security policies must be set on the metrics view
 ```
 
 
@@ -47,26 +56,13 @@ For more details about available configurations and properties, check our [Dashb
 :::
 
 ### Preview a Dashboard in Rill Developer
-Once a dashboard is ready to preview, before [deploying to Rill Cloud](/deploy/deploy-dashboard), you can preview the dashboard in Rill Developer. Especially if you are setting up [dashboard policies](/manage/security), it is recommended to preview and test the dashboard before deploying.
+Once a dashboard is ready to preview, before [deploying to Rill Cloud](/deploy/deploy-dashboard), you can preview the dashboard in Rill Developer. Especially if you are setting up [dashboard policies](/build/metrics-view/security), it is recommended to preview and test the dashboard before deploying.
 
 <img src = '/img/build/dashboard/preview-dashboard.png' class='rounded-gif' />
 <br />
 
 
-### Clickable Dimension Links 
-Adding an additional parameter to your dimension in the [metrics view](/build/metrics-view) can allow for clickable links directly from the dashboard.
-
-```yaml
-dimensions:
-  - label: Company Url
-    column: Company URL
-    uri: true #if already set to the URL, also accepts SQL expressions
-```
- <img src = '/img/build/dashboard/clickable-dimension.png' class='rounded-gif' />
-<br />
-
-
-### Multi-editor and external IDE support
+## Multi-editor and external IDE support
 
 Rill Developer is meant to be developer friendly and has been built around the idea of keystroke-by-keystroke feedback when modeling your data, allowing live interactivity and a real-time feedback loop to iterate quickly (or make adjustments as necessary) with your models and dashboards. Additionally, Rill Developer supports "hot reloading", which means that you can keep two windows of Rill open at the same time and/or use a preferred editor, such as VSCode, side-by-side with the dashboard that you're actively developing!
 

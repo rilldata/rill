@@ -112,7 +112,7 @@ The next section of logs is creating a metrics view and explore dashboard. You'l
 
 ### Partitioned Models
 
-The main takeaway for partitioned models is that you'll be able to see the number of partitions that Rill will start ingesting. This is especially important when creating [dev/prod](/deploy/templating) environments and you're trying to avoid ingesting large amounts of data locally.
+The main takeaway for partitioned models is that you'll be able to see the number of partitions that Rill will start ingesting. This is especially important when creating [dev/prod](/connect/templating) environments and you're trying to avoid ingesting large amounts of data locally.
 
 ```bash
 Resolved model partitions       {"model": "staging_to_CH", "partitions": 16}

@@ -240,7 +240,7 @@ row_filter: >
       dimension_2 = '{{ .user.custom_variable_2 }}' 
 ```
 
-In order to test the view of your embed dashboard, you can add the same custom variables to [your mock users](#testing-your-policies) as seen below:
+In order to test the view of your embed dashboard, you can add the same custom variables to [your mock users](#testing-policies-in-rill-developer) as seen below:
 ```yaml
 - email: embed@rilldata.com
   name: embed

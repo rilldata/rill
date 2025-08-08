@@ -216,7 +216,7 @@ const config = {
           },
           {
             from: '/develop/security',
-            to: '/manage/security'
+            to: '/build/metrics-view/security'
           },
           {
             from: '/deploy/credentials/',
