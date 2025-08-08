@@ -36,7 +36,7 @@ Rill supports connecting your data to both [DuckDB](/connect/olap/duckdb) and [C
 :::
 
 
-## Data Warehouse
+## Data Warehouses
 
 ### Athena
 ### BigQuery
@@ -114,10 +114,11 @@ Rill supports connecting your data to both [DuckDB](/connect/olap/duckdb) and [C
 
 
 ## Object Storage
-
-### Azure
-### Google Cloud Storage
 ### Amazon S3
+### Google Cloud Storage
+### Microsoft Azure Blob Storage
+
+
 
 <div className="connector-icon-grid">
 
@@ -130,14 +131,6 @@ Rill supports connecting your data to both [DuckDB](/connect/olap/duckdb) and [C
     referenceLink="s3"
   />
   <ConnectorIcon
-    icon={<img src="/img/connect/icons/Logo-Azure.svg" alt="Microsoft Azure" />}
-    header="Azure"
-    content="Connect to Microsoft Azure Blob Storage to read data files with support for various formats."
-    link="/connect/data-source/azure"
-    linkLabel="Learn more"
-    referenceLink="azure"
-  />
-  <ConnectorIcon
     icon={<img src="/img/connect/icons/Logo-GCS.svg" alt="Google Cloud Storage" />}
     header="Google Cloud Storage"
     content="Google Cloud Storage for scalable object storage and data lakes."
@@ -145,19 +138,36 @@ Rill supports connecting your data to both [DuckDB](/connect/olap/duckdb) and [C
     linkLabel="Learn more"
     referenceLink="gcs"
   />
+  <ConnectorIcon
+    icon={<img src="/img/connect/icons/Logo-Azure.svg" alt="Microsoft Azure" />}
+    header="Azure"
+    content="Connect to Microsoft Azure Blob Storage to read data files with support for various formats."
+    link="/connect/data-source/azure"
+    linkLabel="Learn more"
+    referenceLink="azure"
+  />
+
 
 
 </div>
 
 ## Other Data Connectors
 
+### Google Sheets
 ### HTTPS
 ### Local File
 ### Salesforce
-### Google Sheets
-### Slack
+
+
 
 <div className="connector-icon-grid">
+  <ConnectorIcon
+    icon={<img src="/img/connect/icons/Logo-Sheets.svg" alt="Google Sheets" className="sheets-icon" />}
+    header="Google Sheets"
+    content="Connect to Google Sheets to read data from spreadsheets with support for multiple sheets."
+    link="/connect/data-source/googlesheets"
+    linkLabel="Learn more"
+  />
   <ConnectorIcon
     icon={<p className="https-icon">https:// </p>}
     header="HTTPS"
@@ -166,7 +176,6 @@ Rill supports connecting your data to both [DuckDB](/connect/olap/duckdb) and [C
     linkLabel="Learn more"
     referenceLink="https"
   />
-
   <ConnectorIcon
     icon={<img src="/img/connect/icons/Logo-Local.svg" alt="Local File" />}
     header="Local File"
@@ -174,7 +183,6 @@ Rill supports connecting your data to both [DuckDB](/connect/olap/duckdb) and [C
     link="/connect/data-source/local-file"
     linkLabel="Learn more"
   />
-
   <ConnectorIcon
     icon={<img src="/img/connect/icons/Logo-Salesforce.svg" alt="Salesforce" />}
     header="Salesforce"
@@ -184,13 +192,6 @@ Rill supports connecting your data to both [DuckDB](/connect/olap/duckdb) and [C
     referenceLink="salesforce"
   />
 
-  <ConnectorIcon
-    icon={<img src="/img/connect/icons/Logo-Sheets.svg" alt="Google Sheets" className="sheets-icon" />}
-    header="Google Sheets"
-    content="Connect to Google Sheets to read data from spreadsheets with support for multiple sheets."
-    link="/connect/data-source/googlesheets"
-    linkLabel="Learn more"
-  />
 </div>
 
 
