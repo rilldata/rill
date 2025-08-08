@@ -114,22 +114,13 @@ export const getYupSchema = {
   }),
 
   redshift: yup.object().shape({
-    sql: yup.string().required("SQL is required"),
-    database: yup.string().required("database name is required"),
-    output_location: yup.string().required("S3 location for temporary files"),
+    aws_access_key_id: yup.string().required("AWS access key ID is required"),
+    aws_secret_access_key: yup
+      .string()
+      .required("AWS secret access key is required"),
     workgroup: yup.string().optional(),
-    cluster_identifier: yup.string().optional(),
-    role_arn: yup
-      .string()
-      .required("Role ARN associated with the Redshift cluster"),
-    region: yup.string().optional(),
-    name: yup
-      .string()
-      .matches(
-        /^[a-zA-Z_][a-zA-Z0-9_]*$/,
-        "Source name must start with a letter or underscore and contain only letters, numbers, and underscores",
-      )
-      .required("Source name is required"),
+    region: yup.string().optional(), // TODO: add validation
+    database: yup.string().required("database name is required"),
   }),
 
   mysql: yup.object().shape({
