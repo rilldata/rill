@@ -6,7 +6,7 @@ sidebar_position: 00
 
 import TileIcon from '@site/src/components/TileIcon';
 
-Rill Developer is a great tool for building, testing, and viewing your data locally but once your ready to share your findings you'll need to publish the dashboard to Rill Cloud! To understand the differences, see [Rill Developer vs Rill Cloud](/home/concepts/developerVsCloud).
+Rill Developer is a great tool for building, testing, and viewing your data locally but once your ready to share your findings you'll need to publish the dashboard to Rill Cloud! To understand the differences, see [Rill Developer vs Rill Cloud](/home/concepts/cloud-vs-developer).
 
 
 ### Credentials
