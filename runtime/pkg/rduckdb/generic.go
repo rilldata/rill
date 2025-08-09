@@ -422,6 +422,7 @@ func (m *generic) schemaUsingConn(ctx context.Context, ilike, name string, conn 
 	q := fmt.Sprintf(`
 		SELECT
 			coalesce(t.table_catalog, current_database()) AS "database",
+			current_schema() AS "schema",
 			t.table_name AS "name",
 			t.table_type = 'VIEW' AS "view", 
 			array_agg(c.column_name ORDER BY c.ordinal_position) AS "column_names",
@@ -434,8 +435,8 @@ func (m *generic) schemaUsingConn(ctx context.Context, ilike, name string, conn 
 		WHERE database = current_database() 
 			AND t.table_schema = current_schema()
 			%s
-		GROUP BY 1, 2, 3
-		ORDER BY 1, 2, 3
+		GROUP BY ALL
+		ORDER BY ALL
 	`, whereClause)
 
 	var res []*Table
