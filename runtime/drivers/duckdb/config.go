@@ -44,6 +44,9 @@ type config struct {
 	// DatabaseName is the name of the attached DuckDB database specified in the Path.
 	// This is usually not required but can be set if our auto detection of name fails.
 	DatabaseName string `mapstructure:"database_name"`
+	// SchemaName can be set to switch the default schema used by the DuckDB database.
+	// Only applicable for the generic rduckdb implementation.
+	SchemaName string `mapstructure:"schema_name"`
 }
 
 func newConfig(cfgMap map[string]any) (*config, error) {

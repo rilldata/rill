@@ -7,6 +7,7 @@ import (
 
 type Table struct {
 	Database       string `db:"database"`
+	Schema         string `db:"schema"`
 	Name           string `db:"name"`
 	View           bool   `db:"view"`
 	ColumnNames    []any  `db:"column_names"`
@@ -37,9 +38,12 @@ func (d *db) Schema(ctx context.Context, ilike, name string) ([]*Table, error) {
 		args = []any{name}
 	}
 
+	// the database schema changes with every ingestion
+	// we pin the read connection to the latest schema and set schema as `main` to give impression that everything is in the same schema
 	q := fmt.Sprintf(`
 		SELECT
 			coalesce(t.table_catalog, current_database()) AS "database",
+			'main' AS "schema",
 			t.table_name AS "name",
 			t.table_type = 'VIEW' AS "view", 
 			array_agg(c.column_name ORDER BY c.ordinal_position) AS "column_names",
@@ -52,8 +56,8 @@ func (d *db) Schema(ctx context.Context, ilike, name string) ([]*Table, error) {
 		WHERE database = current_database() 
 			AND t.table_schema = current_schema()
 			%s
-		GROUP BY 1, 2, 3
-		ORDER BY 1, 2, 3
+		GROUP BY ALL
+		ORDER BY ALL
 	`, whereClause)
 
 	var res []*Table
