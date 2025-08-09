@@ -413,6 +413,30 @@ const config = {
             from: '/home/FAQ',
             to: '/other/FAQ'
           },
+          {
+            from: '/concepts/developerVsCloud',
+            to: '/home/concepts/cloud-vs-developer'
+          },
+          {
+            from: '/concepts/OLAP',
+            to: '/home/concepts/OLAP'
+          },
+          {
+            from: '/concepts/architecture',
+            to: '/home/concepts/architecture'
+          },
+          {
+            from: '/concepts/operational',
+            to: '/home/concepts/operational'
+          },
+          {
+            from: '/concepts/metrics-layer',
+            to: '/home/concepts/metrics-layer'
+          },
+          {
+            from: '/concepts/bi-as-code',
+            to: '/home/concepts/bi-as-code'
+          },
           // {
           //   from: '/old-page',
           //   to: '/new-page',

@@ -54,6 +54,6 @@
   }
 </script>
 
-{#each notifications as notification}
+{#each notifications as notification, i (i)}
   <Notification {notification} onClose={clear} />
 {/each}
