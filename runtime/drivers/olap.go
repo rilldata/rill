@@ -325,14 +325,17 @@ func (d Dialect) DimensionSelectPair(db, dbSchema, table string, dim *runtimev1.
 	return unnestColName, colName, fmt.Sprintf(`, LATERAL UNNEST(%s) %s(%s)`, dim.Expression, unnestTableName, unnestColName), nil
 }
 
-func (d Dialect) LateralUnnest(expr, tableAlias, colName string, forBinaryCondition bool) (tbl string, auto bool, err error) {
+func (d Dialect) LateralUnnest(expr, tableAlias, colName string, baseTable string, forBinaryCondition bool) (tbl string, auto bool, err error) {
 	// druid does not support EXISTS which we use in binary conditions with UNNEST, auto unnest should be sufficient as we don't need values we just need to check existence
 	if d == DialectPinot || d == DialectClickHouse || (d == DialectDruid && forBinaryCondition) {
 		return "", true, nil
 	}
 
 	if d == DialectDruid {
-		return fmt.Sprintf(`UNNEST(MV_TO_ARRAY(%s)) %s(%s)`, expr, tableAlias, d.EscapeIdentifier(colName)), false, nil
+		if baseTable == "" {
+			return fmt.Sprintf(`LATERAL UNNEST(%s) %s(%s)`, expr, tableAlias, d.EscapeIdentifier(colName)), false, nil
+		}
+		return fmt.Sprintf(`UNNEST(MV_TO_ARRAY(%s.%s)) %s(%s)`, baseTable, expr, tableAlias, d.EscapeIdentifier(colName)), false, nil
 	}
 
 	return fmt.Sprintf(`LATERAL UNNEST(%s) %s(%s)`, expr, tableAlias, d.EscapeIdentifier(colName)), false, nil

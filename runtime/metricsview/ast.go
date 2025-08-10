@@ -184,7 +184,7 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedSecurity, qry *Q
 		if dim.Unnest {
 			unnestAlias := ast.generateIdentifier()
 
-			tblWithAlias, auto, err := ast.dialect.LateralUnnest(f.Expr, unnestAlias, f.Name, false)
+			tblWithAlias, auto, err := ast.dialect.LateralUnnest(f.Expr, unnestAlias, f.Name, ast.dialect.EscapeTable(mv.Database, mv.DatabaseSchema, mv.Table), false)
 			if err != nil {
 				return nil, fmt.Errorf("failed to unnest field %q: %w", f.Name, err)
 			}

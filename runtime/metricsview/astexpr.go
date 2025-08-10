@@ -232,7 +232,7 @@ func (b *sqlExprBuilder) writeBinaryCondition(exprs []*Expression, op Operator) 
 
 		// Generate unnest join
 		unnestTableAlias := b.ast.generateIdentifier()
-		unnestFrom, auto, err := b.ast.dialect.LateralUnnest(leftExpr, unnestTableAlias, left.Name, true)
+		unnestFrom, auto, err := b.ast.dialect.LateralUnnest(leftExpr, unnestTableAlias, left.Name, "", true)
 		if err != nil {
 			return err
 		}
