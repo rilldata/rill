@@ -36,7 +36,8 @@ export const ComparisonDeltaPreviousSuffix = "_prev";
 export const ComparisonDeltaAbsoluteSuffix = "_delta";
 export const ComparisonDeltaRelativeSuffix = "_delta_perc";
 export const ComparisonPercentOfTotal = "_percent_of_total";
-export const MeasureModifierSuffixRegex = /_delta(?:_perc)?|_percent_of_total/;
+export const MeasureModifierSuffixRegex =
+  /_prev|_delta(?:_perc)?|_percent_of_total/;
 
 export function mapExprToMeasureFilter(
   expr: V1Expression | undefined,
