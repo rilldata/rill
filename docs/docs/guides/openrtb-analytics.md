@@ -94,7 +94,7 @@ Metrics in Rill define the measures and dimensions that power your RTB dashboard
 
 ```yaml
 # Metrics view YAML
-# Reference documentation: https://docs.rilldata.com/reference/project-files/dashboards
+# Reference documentation: https://docs.rilldata.com/reference/project-files/metrics-views
 
 version: 1
 model: "auction_data_model"

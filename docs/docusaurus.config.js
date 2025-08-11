@@ -412,7 +412,6 @@ const config = {
             from: '/manage/granting/',
             to: '/other/granting/'
           },
-
           {
             from: '/home/FAQ',
             to: '/other/FAQ'
@@ -421,6 +420,30 @@ const config = {
             from: '/reference/project-files/models',
             to: '/build/models'
           },
+          {
+            from: '/concepts/developerVsCloud',
+            to: '/home/concepts/cloud-vs-developer'
+          },
+          {
+            from: '/concepts/OLAP',
+            to: '/home/concepts/OLAP'
+          },
+          {
+            from: '/concepts/architecture',
+            to: '/home/concepts/architecture'
+          },
+          {
+            from: '/concepts/operational',
+            to: '/home/concepts/operational'
+          },
+          {
+            from: '/concepts/metrics-layer',
+            to: '/home/concepts/metrics-layer'
+          },
+          {
+            from: '/concepts/bi-as-code',
+            to: '/home/concepts/bi-as-code'
+          }
           // {
           //   from: '/old-page',
           //   to: '/new-page',
