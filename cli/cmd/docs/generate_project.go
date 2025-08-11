@@ -474,30 +474,9 @@ func generateDoc(sidebarPosition, level int, node *yaml.Node, indent string, req
 							getPrintableType(propValue),
 							getPrintableDescription(propValue, indent, "(no description)"),
 							required))
-					}
-				}
 
-
-			}
-		// only for APIs, no other oneOf uses this, so we can be specific
-		} else if id == "apis" {
-			// Skip oneOf processing for connectors and data_properties at level 1 since we handle it above
-				if len(oneOf.Content) == 1 {
-					doc.WriteString(generateDoc(sidebarPosition, level, oneOf.Content[0], indent, getRequiredMapFromNode(oneOf.Content[0]), rootSchema, id))
-				} else {
-					// Remove the summary list to avoid duplication with detailed sections
-					if level == 1 {
-						doc.WriteString("\n\n## One of Properties Options")
-					}
-
-					for _, item := range oneOf.Content {
-						if hasType(item) || hasProperties(item) || hasCombinators(item) {
-							doc.WriteString(generateDoc(sidebarPosition, level, item, indent+"  ", getRequiredMapFromNode(item), rootSchema, id))
-
-						}
-						
-						// Handle examples for oneOf items
-						if examples := getNodeForKey(item, "examples"); examples != nil {
+						// Display examples inline with the property
+						if examples := getNodeForKey(propValue, "examples"); examples != nil {
 							if examples.Kind == yaml.SequenceNode {
 								// Handle array of YAML examples
 								for _, example := range examples.Content {
@@ -514,17 +493,59 @@ func generateDoc(sidebarPosition, level int, node *yaml.Node, indent string, req
 						}
 					}
 				}
-			} else {
-				if !(id == "connectors" || id == "apis") {
 
-				if len(oneOf.Content) == 1 {
-					doc.WriteString(generateDoc(sidebarPosition, level, oneOf.Content[0], indent, getRequiredMapFromNode(oneOf.Content[0]), rootSchema, id))
+
+			}
+		} else {
+
+			if len(oneOf.Content) == 1 {
+				doc.WriteString(generateDoc(sidebarPosition, level, oneOf.Content[0], indent, getRequiredMapFromNode(oneOf.Content[0]), rootSchema, id))
+			} else {
+				if level == 1 {
+					doc.WriteString("\n\n## One of Properties Options")
+					for _, item := range oneOf.Content {
+						title := getScalarValue(item, "title")
+						if title != "" {
+							anchor := strings.ToLower(strings.ReplaceAll(title, " ", "-"))
+							doc.WriteString(fmt.Sprintf("\n- [%s](#%s)", title, anchor))
+						}
+					}
+					for _, item := range oneOf.Content {
+						doc.WriteString(generateDoc(sidebarPosition, level, item, indent, getRequiredMapFromNode(item), rootSchema, id))
+
+						// Display examples for each oneOf item (examples are defined at item level, not property level)
+						if examples := getNodeForKey(item, "examples"); examples != nil {
+							if examples.Kind == yaml.ScalarNode {
+								// Handle string examples (like markdown code blocks)
+								doc.WriteString(fmt.Sprintf("\n\n%s", examples.Value))
+							}
+						}
+					}
 				} else {
 					for i, item := range oneOf.Content {
 						if hasType(item) || hasProperties(item) || hasCombinators(item) {
 							doc.WriteString(fmt.Sprintf("\n\n%s- **option %d** - %s - %s", indent, i+1, getPrintableType(item), getPrintableDescription(item, indent, "(no description)")))
 							doc.WriteString(generateDoc(sidebarPosition, level, item, indent+"  ", getRequiredMapFromNode(item), rootSchema, id))
 
+
+						// 	// Handle examples for oneOf items
+						// if id == "apis" {
+						// 	if examples := getNodeForKey(item, "examples"); examples != nil {
+						// 		if examples.Kind == yaml.SequenceNode {
+						// 			// Handle array of YAML examples
+						// 			for _, example := range examples.Content {
+						// 				b, err := yaml.Marshal(example)
+						// 				if err != nil {
+						// 					panic(err)
+						// 				}
+						// 				doc.WriteString(fmt.Sprintf("\n\n```yaml\n%s```", string(b)))
+						// 				}
+						// 		} else if examples.Kind == yaml.ScalarNode {
+						// 				// Handle string examples (like markdown code blocks)
+						// 			doc.WriteString(fmt.Sprintf("\n\n%s", examples.Value))
+						// 			}
+						// 		}
+						// 	}
 						}
 					}
 				}

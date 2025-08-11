@@ -30,6 +30,10 @@ _[object]_ - Defines [security rules and access control policies](/manage/securi
 
   - **`access`** - _[oneOf]_ - Expression indicating if the user should be granted access to the dashboard. If not defined, it will resolve to false and the dashboard won't be accessible to anyone. Needs to be a valid SQL expression that evaluates to a boolean. 
 
+    - **option 1** - _[string]_ - SQL expression that evaluates to a boolean to determine access
+
+    - **option 2** - _[boolean]_ - Direct boolean value to allow or deny access
+
   - **`row_filter`** - _[string]_ - SQL expression to filter the underlying model by. Can leverage templated user attributes to customize the filter for the requesting user. Needs to be a valid SQL expression that can be injected into a WHERE clause 
 
   - **`include`** - _[array of object]_ - List of dimension or measure names to include in the dashboard. If include is defined all other dimensions and measures are excluded 
@@ -71,6 +75,11 @@ _[object]_ - Defines [security rules and access control policies](/manage/securi
 _[boolean]_ - Flag to control security inheritance 
 
 ## One of Properties Options
+- [SQL Query](#sql-query)
+- [Metrics View Query](#metrics-view-query)
+- [Custom API Call](#custom-api-call)
+- [File Glob Query](#file-glob-query)
+- [Resource Status Check](#resource-status-check)
 
 ## SQL Query
 
@@ -134,9 +143,9 @@ Uses a file-matching pattern (glob) to query data from a connector.
 
 _[anyOf]_ - Defines the file path or pattern to query from the specified connector. _(required)_
 
-    - **option 1** - _[string]_ - A simple file path/glob pattern as a string.
+  - **option 1** - _[string]_ - A simple file path/glob pattern as a string.
 
-    - **option 2** - _[object]_ - An object-based configuration for specifying a file path/glob pattern with advanced options.
+  - **option 2** - _[object]_ - An object-based configuration for specifying a file path/glob pattern with advanced options.
 
 ### `connector`
 
@@ -157,7 +166,7 @@ Uses the status of a resource as data.
 
 _[object]_ - Based on resource status _(required)_
 
-    - **`where_error`** - _[boolean]_ - Indicates whether the condition should trigger when the resource is in an error state. 
+  - **`where_error`** - _[boolean]_ - Indicates whether the condition should trigger when the resource is in an error state. 
 
 ```yaml
 type: api

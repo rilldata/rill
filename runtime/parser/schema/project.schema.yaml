@@ -1523,7 +1523,6 @@ definitions:
       - title: SQL Query
         type: object
         description:  Executes a raw SQL query against the project's data models.
-
         properties:
           sql:
             type: string
