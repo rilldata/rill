@@ -148,6 +148,15 @@ func RunGitPull(ctx context.Context, path string, discardLocal bool, remote, rem
 	return "", nil
 }
 
+func InferGitRepoRoot(path string) (string, error) {
+	cmd := exec.Command("git", "-C", path, "rev-parse", "--show-toplevel")
+	data, err := cmd.Output()
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(string(data)), nil
+}
+
 // countCommitsAhead counts the number of commits in `from` branch not present in `to` branch.
 func countCommitsAhead(path, to, from string) (int32, error) {
 	cmd := exec.Command("git", "-C", path, "rev-list", "--count", fmt.Sprintf("%s..%s", to, from))

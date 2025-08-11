@@ -1,10 +1,15 @@
 package deploy
 
 import (
+	"path/filepath"
+	"strings"
+
 	"github.com/rilldata/rill/cli/cmd/auth"
 	"github.com/rilldata/rill/cli/cmd/project"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
+	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/local"
+	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/spf13/cobra"
 )
 
@@ -28,6 +33,11 @@ func DeployCmd(ch *cmdutil.Helper) *cobra.Command {
 				opts.GitPath = args[0]
 			}
 
+			var err error
+			github, err = shouldConnectGithub(opts, !managed && !archive, ch)
+			if err != nil {
+				return err
+			}
 			if !managed && !github && !archive {
 				confirmed, err := cmdutil.ConfirmPrompt("Enable automatic deploys to Rill Cloud from GitHub?", "", false)
 				if err != nil {
@@ -80,4 +90,59 @@ func DeployCmd(ch *cmdutil.Helper) *cobra.Command {
 	deployCmd.Flags().BoolVar(&github, "github", false, "Use github repo to create the project")
 
 	return deployCmd
+}
+
+func shouldConnectGithub(opts *project.DeployOpts, inferGitSubPath bool, ch *cmdutil.Helper) (bool, error) {
+	var err error
+	opts.GitPath, err = fileutil.ExpandHome(opts.GitPath)
+	if err != nil {
+		return false, err
+	}
+	opts.GitPath, err = filepath.Abs(opts.GitPath)
+	if err != nil {
+		return false, err
+	}
+
+	if !inferGitSubPath || opts.SubPath != "" {
+		return false, nil
+	}
+
+	repoRoot, err := gitutil.InferGitRepoRoot(opts.GitPath)
+	if err != nil {
+		return false, nil // not a git repo
+	}
+
+	remote, err := gitutil.ExtractGitRemote(repoRoot, opts.RemoteName, false)
+	if err != nil {
+		return false, err
+	}
+	if remote.URL == "" {
+		// no remote configured
+		return false, nil
+	}
+	if !strings.HasPrefix(remote.URL, "https://github.com") {
+		// not a GitHub repo should not prompt for GitHub connection
+		return false, nil
+	}
+
+	subPath, err := filepath.Rel(repoRoot, opts.GitPath)
+	if err == nil {
+		ch.PrintfBold("Detected git repository at: ")
+		ch.Printf("%s\n", repoRoot)
+		ch.PrintfBold("Connected to Github repository: ")
+		ch.Printf("%s\n", remote.URL)
+		if subPath != "." {
+			ch.PrintfBold("Project location within repo:")
+			ch.Printf(" %s\n", subPath)
+		}
+		confirmed, err := cmdutil.ConfirmPrompt("Enable automatic deploys to Rill Cloud from GitHub?", "", true)
+		if err != nil {
+			return false, err
+		}
+		if confirmed {
+			opts.SubPath = subPath
+			opts.GitPath = repoRoot
+		}
+	}
+	return true, nil
 }
