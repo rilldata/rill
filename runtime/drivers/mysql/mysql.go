@@ -30,15 +30,6 @@ var spec = drivers.Spec{
 		{
 			Key:         "dsn",
 			Type:        drivers.StringPropertyType,
-			Placeholder: "mysql://user:password@host:3306/my-db",
-			Secret:      true,
-		},
-	},
-	// Important: Any edits to the below properties must be accompanied by changes to the client-side form validation schemas.
-	SourceProperties: []*drivers.PropertySpec{
-		{
-			Key:         "dsn",
-			Type:        drivers.StringPropertyType,
 			DisplayName: "MySQL Connection String",
 			Required:    true,
 			DocsURL:     "https://dev.mysql.com/doc/refman/8.4/en/connecting-using-uri-or-key-value-pairs.html#connecting-using-uri",

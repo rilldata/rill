@@ -28,13 +28,6 @@ var spec = drivers.Spec{
 	DocsURL:     "https://docs.rilldata.com/connect/data-source/postgres",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
-			Key:    "database_url",
-			Secret: true,
-		},
-	},
-	// Important: Any edits to the below properties must be accompanied by changes to the client-side form validation schemas.
-	SourceProperties: []*drivers.PropertySpec{
-		{
 			Key:         "database_url",
 			Type:        drivers.StringPropertyType,
 			DisplayName: "Postgres Connection String",
