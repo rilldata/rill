@@ -2,7 +2,7 @@
 title: "Bring Your Own  OLAP Engine (Live Connector)"
 description: Configure the OLAP engine used by Rill
 sidebar_label: "OLAP Engines"
-sidebar_position: 00
+sidebar_position: 0
 toc_max_heading_level: 3
 className: connect-connect
 ---
@@ -13,7 +13,7 @@ Rill supports connecting directly to your own OLAP engine via a "live connector"
 
 :::tip Models on Live Connectors
 
-Rill also offers the ability to ingest and create tables directly from a [data source](/connect/data-source) to your OLAP engine via the live connector, however you'll need to consider a few topiucs.
+Rill also offers the ability to ingest and create tables directly from a [data source](/connect/data-source) to your OLAP engine via the live connector, however you'll need to consider a few topics.
 
 - **Use a test database** to avoid accidentally overwriting production data
 - **Incremental processing and related queries are not supported**

@@ -1,8 +1,8 @@
 ---
-title: Amazon Athena
-description: Connect to data in Amazon Athena
+title: Athena
+description: Connect to Amazon Athena for serverless querying of data stored in S3
 sidebar_label: Athena
-sidebar_position: 00
+sidebar_position: 0
 ---
 
 <!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->

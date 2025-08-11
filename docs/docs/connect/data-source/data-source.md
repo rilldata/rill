@@ -1,13 +1,13 @@
 ---
-title: "Rill Managed OLAP + Data Ingestion"
-description: Import local files or remote data sources into Rill's embedded Analytics Engine
-sidebar_position: 00
+title: Data Sources
+sidebar_label: Data Sources
+sidebar_position: 0
 toc_max_heading_level: 3
 className: connect-connect
 ---
 
 
-By default, Rill will use a managed embedded analytics engine (**DuckDB** or **ClickHouse**) to support data ingestion.  Whether you're working with cloud data warehouses, databases, file storage, or streaming data sources, Rill provides seamless connectivity and data ingestion capabilities. Once this has been ingested, create [downstream models](/build/models), [metrics views](/build/metrics-view) and [visualize your data](/build/dashboards).
+By default, Rill will use a managed embedded analytics engine (**DuckDB** or **ClickHouse**) to support data ingestion.  Whether you're working with cloud data warehouses, databases, file storage, or streaming data sources, Rill provides seamless connectivity and data ingestion capabilities. Once you have connected to your data source you can create [downstream models](/build/models), [metrics views](/build/metrics-view) and [visualize your data](/build/dashboards).
 
 :::tip using clickhouse?
 
@@ -209,3 +209,25 @@ If you have a firewall in front of your externally hosted service, you will need
 34.148.167.51
 35.237.60.193
 ```
+
+
+## Managed OLAP Engine Caveats
+
+When deciding on which managed OLAP engine to use with Rill, you'll need to decide based on the following factors:
+
+- **Size of data**: Consider the volume and growth rate of your datasets
+- **Familiarity with respective OLAP engine features**: Assess your team's expertise with each engine's capabilities
+- **Integration complexity**: Consider how well each engine integrates with your existing data infrastructure
+
+In the case of **sub 100GB of data**, we recommend keeping the default engine, DuckDB, in order to minimize the integration complexity. The reason for this is that [DuckDB has built-in functions](https://duckdb.org/docs/stable/data/data_sources) to support the connectors listed on this page. 
+
+On the other hand, if you need to analyze **100s of GB of data**, we would recommend using Managed ClickHouse. This will add some complexity ([staging tables](/build/advanced-models/staging)), but will in turn provide better dashboard performance. 
+
+If data leans either way, a good deciding factor for which OLAP engine to use is your **familiarity with their SQL syntax**. Whether you're [creating models](/build/models#intermediate-processing) or using [arithmetic functions](/build/metrics-view/advanced-expressions) in the metrics view, you'll need to utilize the engine's built-in functions.
+
+
+:::note Supported Connectors
+
+If there's a connector that you're interested in or you're looking for the list of currently supported ClickHouse connectors, [contact us](/contact)! 
+:::
+
