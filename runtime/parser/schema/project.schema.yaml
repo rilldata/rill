@@ -71,6 +71,7 @@ definitions:
       - [**HTTPS**](#https) - Public files via HTTP/HTTPS
       - [**Salesforce**](#salesforce) - Salesforce data
       - [**Slack**](#slack) - Slack data
+      - [**OpenAPI**](#openapi) - OpenAPI data
 
       :::warning Security Recommendation
       For all credential parameters (passwords, tokens, keys), use environment variables with the syntax `{{.env.connector.<connector_driver>.<parameter_name>}}`. This keeps sensitive data out of your YAML files and version control. See our [credentials documentation](/connect/credentials/) for complete setup instructions.
@@ -108,6 +109,7 @@ definitions:
           - $ref: '#/definitions/slack'
           - $ref: '#/definitions/snowflake'
           - $ref: '#/definitions/sqlite'
+          - $ref: '#/definitions/openapi'        
     
   # Source YAML
   sources:
@@ -2485,27 +2487,56 @@ definitions:
     required:
       - driver
       - dsn
+  openapi:
+    type: object
+    title: OpenAPI
+    properties:
+      driver:
+        type: string
+        description: The driver type, must be set to "openapi"
+        const: openapi
+      api_key:
+        type: string
+        description: API key for connecting to OpenAI
+        sample: "sk-1234567890"
+      model:
+        type: string
+        description: The OpenAI model to use (e.g., 'gpt-4o')
+        sample: "gpt-4o"
+      base_url:
+        type: string
+        description: The base URL for the OpenAI API (e.g., 'https://api.openai.com/v1')
+        sample: "https://api.openai.com/v1"
+      api_type:
+        type: string
+        description: The type of OpenAI API to use
+        sample: OPEN_AI
+      api_version:
+        type: string
+        description: The version of the OpenAI API to use (e.g., '2023-05-15'). Required when API Type is AZURE or AZURE_AD
+        sample: "2023-05-15"
+    required: 
+      - api_key
 
 
-
-  # component_variable_properties:
-  #   type: object
-  #   properties:
-  #     name:
-  #       type: string
-  #       description: Unique identifier for the variable
-  #     type:
-  #       type: string
-  #       description: Data type of the variable (e.g., string, number, boolean)
-  #     value:
-  #       description: Default value for the variable. Can be any valid JSON value type
-  #       type:
-  #         - string
-  #         - number
-  #         - boolean
-  #         - object
-  #         - array
-  #   required:
-  #     - name
-  #     - type
-  #   additionalProperties: false
+    # component_variable_properties:
+    #   type: object
+    #   properties:
+    #     name:
+    #       type: string
+    #       description: Unique identifier for the variable
+    #     type:
+    #       type: string
+    #       description: Data type of the variable (e.g., string, number, boolean)
+    #     value:
+    #       description: Default value for the variable. Can be any valid JSON value type
+    #       type:
+    #         - string
+    #         - number
+    #         - boolean
+    #         - object
+    #         - array
+    #   required:
+    #     - name
+    #     - type
+    #   additionalProperties: false

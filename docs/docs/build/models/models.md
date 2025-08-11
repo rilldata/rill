@@ -8,7 +8,7 @@ sidebar_position: 00
 <img src = '/img/build/model/model.png' class='rounded-gif' />
 <br />
 
-In Rill, data models are built using SQL `SELECT` statements applied to your source data. They allow you to join, transform, and clean data. Under the hood, _by default_, data models are created as views in DuckDB. For simple models, we recommend .SQL files, but also provide [YAML based moddels](/build/advanced-models) for more complex setups.
+In Rill, data models are built using SQL `SELECT` statements applied to your source data. They allow you to join, transform, and clean data. Under the hood, _by default_, data models are created as views in DuckDB. For simple models, we recommend .SQL files, but also provide [YAML based models](/build/advanced-models) for more complex setups.
 
 :::tip Avoid Pre-aggregated Metrics
 
@@ -44,7 +44,7 @@ For consistency or documentation purposes, if you'd like to annotate your model 
 ```
 
 
-## Model Materializaton
+## Model Materialization
 
 ```sql
 -- @materialize: true
@@ -52,7 +52,7 @@ For consistency or documentation purposes, if you'd like to annotate your model 
 
 Model materialization is something to consider when creating intermediate models. Intermediate models are not, by default, materialized and are views in your underlying database engine. There are some pros and cons of enabling it during the development process.
 
-The pros include improved performance for downstream models and dashboards, especially with complex logic and/or large data sizes. Some cons are certain edge cases like cross joins might have a degreaded keystroke-by-keystroke experience, and materialized models are billable.
+The pros include improved performance for downstream models and dashboards, especially with complex logic and/or large data sizes. Some cons are certain edge cases like cross joins might have a degraded keystroke-by-keystroke experience, and materialized models are billable.
 
 
 If you are seeing degraded performance, the first recommendation you'll hear from us is to materialize the metrics powered model.
@@ -102,7 +102,7 @@ We support modeling on [ClickHouse\*](/connect/olap/clickhouse), [DuckDB](/conne
 \* indicates some caveats with modeling and encourage you to read the documentation before getting started.
 ::: 
 
-For additional tips on advanced expressions (either in models or measureß definitions), visit our [advanced expressions page](../metrics-view/advanced-expressions/advanced-expressions.md).
+For additional tips on advanced expressions (either in models or measures definitions), visit our [advanced expressions page](../metrics-view/advanced-expressions/advanced-expressions.md).
 
 
 
@@ -146,7 +146,7 @@ To experience the full potential of Rill, model your data sources into "One Big 
 
 :::tip materializing metrics powered models
 
-We recommend materializing the model that powers your [metrics view](/build/metrics-view). You can materialze a SQL model by adding this to the top of the file. This will greatly improve the performance of your dashboards.
+We recommend materializing the model that powers your [metrics view](/build/metrics-view). You can materialize a SQL model by adding this to the top of the file. This will greatly improve the performance of your dashboards.
 
 ```sql
 -- @materialize: true

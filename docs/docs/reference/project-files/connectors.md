@@ -35,6 +35,7 @@ Connector YAML files define how Rill connects to external data sources and OLAP 
 - [**HTTPS**](#https) - Public files via HTTP/HTTPS
 - [**Salesforce**](#salesforce) - Salesforce data
 - [**Slack**](#slack) - Slack data
+- [**OpenAPI**](#openapi) - OpenAPI data
 
 :::warning Security Recommendation
 For all credential parameters (passwords, tokens, keys), use environment variables with the syntax `{{.env.connector.<connector_driver>.<parameter_name>}}`. This keeps sensitive data out of your YAML files and version control. See our [credentials documentation](/connect/credentials/) for complete setup instructions.
@@ -946,3 +947,45 @@ _[string]_ - Refers to the driver type and must be driver `sqlite` _(required)_
 ### `dsn`
 
 _[string]_ - DSN(Data Source Name) for the sqlite connection _(required)_
+
+### OpenAPI
+
+
+
+
+```yaml
+type: connector                                  # Must be `connector` (required)
+driver: openapi                                   # Must be `openapi` _(required)_
+
+api_key: sk-1234567890               # API key for connecting to OpenAI _(required)_
+model: gpt-4o                        # The OpenAI model to use (e.g., 'gpt-4o')
+base_url: https://api.openai.com/v1  # The base URL for the OpenAI API (e.g., 'https://api.openai.com/v1')
+api_type: OPEN_AI                    # The type of OpenAI API to use
+api_version: 2023-05-15              # The version of the OpenAI API to use (e.g., '2023-05-15'). Required when API Type is AZURE or AZURE_AD
+```
+
+
+
+### `driver`
+
+_[string]_ - The driver type, must be set to "openapi" 
+
+### `api_key`
+
+_[string]_ - API key for connecting to OpenAI _(required)_
+
+### `model`
+
+_[string]_ - The OpenAI model to use (e.g., 'gpt-4o') 
+
+### `base_url`
+
+_[string]_ - The base URL for the OpenAI API (e.g., 'https://api.openai.com/v1') 
+
+### `api_type`
+
+_[string]_ - The type of OpenAI API to use 
+
+### `api_version`
+
+_[string]_ - The version of the OpenAI API to use (e.g., '2023-05-15'). Required when API Type is AZURE or AZURE_AD 

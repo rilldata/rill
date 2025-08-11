@@ -8,7 +8,7 @@ sidebar_position: 33
 This file is used to define YAML models. For more information on our SQL models, see the [SQL models](/build/models/) documentation.
 :::tip
 
-Both regular models and source models can use the Model YAML specification described on this page. While [SQL models](/build/models) are perfect for simple transformations, Model YAML files provide advanced capabilities for complex data processing scenarios.
+Both regular models and source models can use the Model YAML specification described on this page. While [SQL models](./models) are perfect for simple transformations, Model YAML files provide advanced capabilities for complex data processing scenarios.
 
 **When to use Model YAML:**
 - **Partitions** - Optimize performance with data partitioning strategies

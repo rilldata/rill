@@ -32,7 +32,7 @@ _[string]_ - Extra instructions for LLM/AI features. Used to guide natural langu
 
 Rill allows you to specify the default OLAP engine to use in your project via `rill.yaml`.
 :::info Curious about OLAP Engines?
-Please see our reference documentation on [OLAP Engines](/connect/olap).
+Please see our reference documentation on [OLAP Engines](/docs/connect/olap).
 :::
 
 
@@ -55,7 +55,7 @@ In your `rill.yaml`, the top level property for the resource type needs to be **
 :::info Hierarchy of inheritance and property overrides
 As a general rule of thumb, properties that have been specified at a more _granular_ level will supercede or override higher level properties that have been inherited. Therefore, in order of inheritance, Rill will prioritize properties in the following order:
 1. Individual [models](advanced-models.md)/[metrics_views](metrics-views.md)/[explore](explore-dashboards.md) object level properties (e.g. `advanced-models.yaml` or `explore-dashboards.yaml`)
-2. [Environment](/build/models/environments.md) level properties (e.g. a specific property that have been set for `dev`)
+2. [Environment](/docs/build/models/environments.md) level properties (e.g. a specific property that have been set for `dev`)
 3. [Project-wide defaults](#project-wide-defaults) for a specific property and resource type
 :::
 
