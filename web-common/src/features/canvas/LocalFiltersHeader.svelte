@@ -46,8 +46,6 @@
   $: displayComparisonTimeRange = $timeAndFilterStore.comparisonTimeRange;
 
   $: hasTimeFilters = "time_filters" in $specStore && $specStore.time_filters;
-
-  $: $timeAndFilterStore);
 </script>
 
 {#if "metrics_view" in $specStore}
