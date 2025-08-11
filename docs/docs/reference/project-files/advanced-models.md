@@ -1,13 +1,14 @@
 ---
-title: Model YAML
-sidebar_label: Model YAML
-sidebar_position: 20
-hide_table_of_contents: true
+note: GENERATED. DO NOT EDIT.
+title: Models YAML
+sidebar_position: 33
 ---
 
+
+This file is used to define YAML models. For more information on our SQL models, see the [SQL models](/build/models/) documentation.
 :::tip
 
-Both regular models and source models can use the Model YAML specification described on this page. While [SQL models](./models) are perfect for simple transformations, Model YAML files provide advanced capabilities for complex data processing scenarios.
+Both regular models and source models can use the Model YAML specification described on this page. While [SQL models](/build/models) are perfect for simple transformations, Model YAML files provide advanced capabilities for complex data processing scenarios.
 
 **When to use Model YAML:**
 - **Partitions** - Optimize performance with data partitioning strategies
@@ -23,72 +24,310 @@ Model YAML files give you fine-grained control over how your data is processed a
 
 ## Properties
 
-**`type`** - refers to the resource type and must be 'model'_(required)_ 
+### `type`
 
-**`refresh`** - Specifies the refresh schedule that Rill should follow to re-ingest and update the underlying source data _(optional)_.
-  - **`cron`** - a cron schedule expression, which should be encapsulated in single quotes, e.g. `'* * * * *'` _(optional)_
-  - **`every`** - a Go duration string, such as `24h` ([docs](https://pkg.go.dev/time#ParseDuration)) _(optional)_
-```
+_[string]_ - Refers to the resource type and must be `model` _(required)_
+
+### `refresh`
+
+_[object]_ - Specifies the refresh schedule that Rill should follow to re-ingest and update the underlying model data 
+
+  - **`cron`** - _[string]_ - A cron expression that defines the execution schedule 
+
+  - **`time_zone`** - _[string]_ - Time zone to interpret the schedule in (e.g., 'UTC', 'America/Los_Angeles'). 
+
+  - **`disable`** - _[boolean]_ - If true, disables the resource without deleting it. 
+
+  - **`ref_update`** - _[boolean]_ - If true, allows the resource to run when a dependency updates. 
+
+  - **`run_in_dev`** - _[boolean]_ - If true, allows the schedule to run in development mode. 
+
+```yaml
 refresh:
-    cron: "0 8 * * *"
+    cron: "* * * * *"
 ```
 
-**`timeout`** — The maximum time to wait for model ingestion _(optional)_.
+### `connector`
 
-**`incremental`** - set to `true` or `false` whether incremental modeling is required _(optional)_
+_[string]_ - Refers to the resource type and is needed if setting an explicit OLAP engine. IE `clickhouse` 
 
-**`state`** - refers to the explicitly defined state of your model, cannot be used with `partitions` _(optional)_.
-  - **`sql/glob`** - refers to the location of the data depending if the data is cloud storage or a data warehouse.
+### `sql`
 
-**`partitions`** - refers to the how your data is partitioned, cannot be used with `state`.  _(optional)_.
-  - **`connector`** - refers to the connector that the partitions is using _(optional)_.
-  - **`sql`** - refers to the SQL query used to access the data in your data warehouse, use `sql` or `glob` _(optional)_.
-  - **`glob`** - refers to the location of the data in your cloud warehouse, use `sql` or `glob` _(optional)_.
-    - **`path`** - in the case `glob` is selected, you will need to set the path of your source _(optional)_. 
-    - **`partition`** - in the case `glob` is selected, you can defined how to partition the table. directory or hive _(optional)_.
-    
-```yaml
-partitions:
-  connector: duckdb
-  sql: SELECT range AS num FROM range(0,10)
-```
-```yaml
-partitions:
-  glob:
-    connector: [s3/gcs]
-    path: [s3/gs]://path/to/file/**/*.parquet[.csv]
-```
+_[string]_ - Raw SQL query to run against source _(required)_
 
-**`pre_exec`** – refers to SQL queries to run before the main query, available for DuckDB-based models. _(optional)_. Ensure `pre_exec` queries are idempotent. Use `IF NOT EXISTS` statements when applicable.
+### `pre_exec`
 
-**`sql`** - refers to the SQL query for your model. _(required)_.
-
-**`post_exec`** – refers to a SQL query that is run after the main query, available for DuckDB-based models. _(optional)_. Ensure `post_exec` queries are dempotent. Use `IF EXISTS` statements when applicable.
-
+_[string]_ - Refers to SQL queries to run before the main query, available for DuckDB-based models. (optional). Ensure pre_exec queries are idempotent. Use IF NOT EXISTS statements when applicable. 
 
 ```yaml
 pre_exec: ATTACH IF NOT EXISTS 'dbname=postgres host=localhost port=5432 user=postgres password=postgres' AS postgres_db (TYPE POSTGRES)
+```
 
-sql: SELECT * FROM postgres_query('postgres_db', 'SELECT * FROM USERS')
+### `post_exec`
 
+_[string]_ - Refers to a SQL query that is run after the main query, available for DuckDB-based models. (optional). Ensure post_exec queries are idempotent. Use IF EXISTS statements when applicable. 
+
+```yaml
 post_exec: DETACH DATABASE IF EXISTS postgres_db
 ```
 
+### `timeout`
 
-**`partitions_watermark`** - refers to a customizable timestamp that can be set to check if an object has been updated _(optional)_. 
+_[string]_ - The maximum time to wait for model ingestion 
 
-**`partitions_concurrency`** - refers to the number of concurrent partitions that can be read at the same time _(optional)_. 
+### `incremental`
 
-**`stage`** - in the case of staging models, where an input source does not support direct write to the output and a staging table is required _(optional)_. 
-  - **`connector`** - refers to the connector type for the staging table
-  - **`path`** - path of the temporary staging table
+_[boolean]_ - whether incremental modeling is required (optional) 
 
-**`output`** - in the case of staging models, where the output needs to be defined where the staging table will write the temporary data _(optional)_. 
-  - **`connector`** - refers to the connector type for the staging table  _(optional)_.
-  - **`incremental_strategy`** - refers to how the incremental refresh will behave, (merge or append)  _(optional)_.
-  - **`unique_key`** - required if incremental_strategy is defined, refers to the unique column to use to merge  _(optional)_.
-  - **`materialize`** - refers to the output table being materialized  _(optional)_.
-  - **`columns`** - refers to a list of columns if you required to manually define column name and types  _(optional)_.
-  - **`engine_full`** - refers to the ClickHouse engine specifications, (ENGINE = ... PARTITION BY ... ORDER BY ... SETTINGS ...) _(optional)_.
+### `change_mode`
 
-**`materialize`** - refers to the model being materialized as a table or not _(optional)_. 
+_[string]_ - Configure how changes to the model specifications are applied (optional). 'reset' will drop and recreate the model automatically, 'manual' will require a manual full or incremental refresh to apply changes, and 'patch' will switch to the new logic without re-processing historical data (only applies for incremental models). 
+
+### `state`
+
+_[oneOf]_ - Refers to the explicitly defined state of your model, cannot be used with partitions (optional) 
+
+  - **option 1** - _[object]_ - Executes a raw SQL query against the project's data models.
+
+    - **`sql`** - _[string]_ - Raw SQL query to run against existing models in the project. _(required)_
+
+    - **`connector`** - _[string]_ - specifies the connector to use when running SQL or glob queries. 
+
+  - **option 2** - _[object]_ - Executes a SQL query that targets a defined metrics view.
+
+    - **`metrics_sql`** - _[string]_ - SQL query that targets a metrics view in the project _(required)_
+
+  - **option 3** - _[object]_ - Calls a custom API defined in the project to compute data.
+
+    - **`api`** - _[string]_ - Name of a custom API defined in the project. _(required)_
+
+    - **`args`** - _[object]_ - Arguments to pass to the custom API. 
+
+  - **option 4** - _[object]_ - Uses a file-matching pattern (glob) to query data from a connector.
+
+    - **`glob`** - _[anyOf]_ - Defines the file path or pattern to query from the specified connector. _(required)_
+
+      - **option 1** - _[string]_ - A simple file path/glob pattern as a string.
+
+      - **option 2** - _[object]_ - An object-based configuration for specifying a file path/glob pattern with advanced options.
+
+    - **`connector`** - _[string]_ - Specifies the connector to use with the glob input. 
+
+  - **option 5** - _[object]_ - Uses the status of a resource as data.
+
+    - **`resource_status`** - _[object]_ - Based on resource status _(required)_
+
+      - **`where_error`** - _[boolean]_ - Indicates whether the condition should trigger when the resource is in an error state. 
+
+```yaml
+state:
+    sql: SELECT MAX(date) as max_date
+```
+
+### `partitions`
+
+_[oneOf]_ - Refers to the how your data is partitioned, cannot be used with state. (optional) 
+
+  - **option 1** - _[object]_ - Executes a raw SQL query against the project's data models.
+
+    - **`sql`** - _[string]_ - Raw SQL query to run against existing models in the project. _(required)_
+
+    - **`connector`** - _[string]_ - specifies the connector to use when running SQL or glob queries. 
+
+  - **option 2** - _[object]_ - Executes a SQL query that targets a defined metrics view.
+
+    - **`metrics_sql`** - _[string]_ - SQL query that targets a metrics view in the project _(required)_
+
+  - **option 3** - _[object]_ - Calls a custom API defined in the project to compute data.
+
+    - **`api`** - _[string]_ - Name of a custom API defined in the project. _(required)_
+
+    - **`args`** - _[object]_ - Arguments to pass to the custom API. 
+
+  - **option 4** - _[object]_ - Uses a file-matching pattern (glob) to query data from a connector.
+
+    - **`glob`** - _[anyOf]_ - Defines the file path or pattern to query from the specified connector. _(required)_
+
+      - **option 1** - _[string]_ - A simple file path/glob pattern as a string.
+
+      - **option 2** - _[object]_ - An object-based configuration for specifying a file path/glob pattern with advanced options.
+
+    - **`connector`** - _[string]_ - Specifies the connector to use with the glob input. 
+
+  - **option 5** - _[object]_ - Uses the status of a resource as data.
+
+    - **`resource_status`** - _[object]_ - Based on resource status _(required)_
+
+      - **`where_error`** - _[boolean]_ - Indicates whether the condition should trigger when the resource is in an error state. 
+
+```yaml
+partitions:
+    glob: gcs://my_bucket/y=*/m=*/d=*/*.parquet
+```
+
+```yaml
+partitions:
+    connector: duckdb
+    sql: SELECT range AS num FROM range(0,10)
+```
+
+### `materialize`
+
+_[boolean]_ - models will be materialized in olap 
+
+### `partitions_watermark`
+
+_[string]_ - Refers to a customizable timestamp that can be set to check if an object has been updated (optional). 
+
+### `partitions_concurrency`
+
+_[integer]_ - Refers to the number of concurrent partitions that can be read at the same time (optional). 
+
+### `stage`
+
+_[object]_ - in the case of staging models, where an input source does not support direct write to the output and a staging table is required 
+
+  - **`connector`** - _[string]_ - Refers to the connector type for the staging table _(required)_
+
+  - **`path`** - _[string]_ - Refers to the path to the staging table 
+
+```yaml
+stage:
+    connector: s3
+    path: s3://my_bucket/my_staging_table
+```
+
+### `output`
+
+_[object]_ - to define the properties of output 
+
+  - **`table`** - _[string]_ - Name of the output table. If not specified, the model name is used. 
+
+  - **`materialize`** - _[boolean]_ - Whether to materialize the model as a table or view 
+
+  - **`connector`** - _[string]_ - Refers to the connector type for the output table. Can be `clickhouse` or `duckdb` and their named connector 
+
+  - **`incremental_strategy`** - _[string]_ - Strategy to use for incremental updates. Can be 'append', 'merge' or 'partition_overwrite' 
+
+  - **`unique_key`** - _[array of string]_ - List of columns that uniquely identify a row for merge strategy 
+
+  - **`partition_by`** - _[string]_ - Column or expression to partition the table by 
+
+  **Additional properties for `output` when `connector` is `clickhouse`**
+
+  - **`type`** - _[string]_ - Type to materialize the model into. Can be 'TABLE', 'VIEW' or 'DICTIONARY' 
+
+  - **`columns`** - _[string]_ - Column names and types. Can also include indexes. If unspecified, detected from the query. 
+
+  - **`engine_full`** - _[string]_ - Full engine definition in SQL format. Can include partition keys, order, TTL, etc. 
+
+  - **`engine`** - _[string]_ - Table engine to use. Default is MergeTree 
+
+  - **`order_by`** - _[string]_ - ORDER BY clause. 
+
+  - **`partition_by`** - _[string]_ - Partition BY clause. 
+
+  - **`primary_key`** - _[string]_ - PRIMARY KEY clause. 
+
+  - **`sample_by`** - _[string]_ - SAMPLE BY clause. 
+
+  - **`ttl`** - _[string]_ - TTL settings for the table or columns. 
+
+  - **`table_settings`** - _[string]_ - Table-specific settings. 
+
+  - **`query_settings`** - _[string]_ - Settings used in insert/create table as select queries. 
+
+  - **`distributed_settings`** - _[string]_ - Settings for distributed table. 
+
+  - **`distributed_sharding_key`** - _[string]_ - Sharding key for distributed table. 
+
+  - **`dictionary_source_user`** - _[string]_ - User for accessing the source dictionary table (used if type is DICTIONARY). 
+
+  - **`dictionary_source_password`** - _[string]_ - Password for the dictionary source user. 
+
+## Common Properties
+
+### `name`
+
+_[string]_ - Name is usually inferred from the filename, but can be specified manually. 
+
+### `refs`
+
+_[array of string]_ - List of resource references 
+
+### `dev`
+
+_[object]_ - Overrides any properties in development environment. 
+
+### `prod`
+
+_[object]_ - Overrides any properties in production environment. 
+
+## Depending on the connector, additional properties may be required
+
+Depending on the connector, additional properties may be required, for more information see the [connectors](./connectors.md) documentation
+
+
+## Examples
+
+```yaml
+### Incremental model 
+type: model
+incremental: true
+connector: bigquery
+state:
+    sql: SELECT MAX(date) as max_date
+sql: "SELECT ... FROM events \n  {{ if incremental }} \n      WHERE event_time > '{{.state.max_date}}' \n  {{end}}\n"
+output:
+    connector: duckdb
+```
+
+```yaml
+### Partitioned model 
+type: model
+partitions:
+    glob:
+        connector: gcs
+        path: gs://rilldata-public/github-analytics/Clickhouse/2025/*/commits_*.parquet
+sql: SELECT * FROM read_parquet('{{ .partition.uri }}')
+output:
+    connector: duckdb
+    incremental_strategy: append
+```
+
+```yaml
+### Partitioned Incremental model 
+type: model
+incremental: true
+refresh:
+    cron: "0 8 * * *"
+partitions:
+    glob:
+        path: gs://rilldata-public/github-analytics/Clickhouse/2025/*/*
+        partition: directory
+sql: "SELECT * \n  FROM read_parquet('gs://rilldata-public/{{ .partition.path }}/commits_*.parquet') \n  WHERE '{{ .partition.path }}' IS NOT NULL\n"
+output:
+    connector: duckdb
+    incremental_strategy: append
+```
+
+```yaml
+### Staging model 
+type: model
+connector: snowflake
+# Use DuckDB to generate a range of days from 1st Jan to today
+partitions:
+    connector: duckdb
+    sql: SELECT range as day FROM range(TIMESTAMPTZ '2024-01-01', now(), INTERVAL 1 DAY)
+# Don't reload previously ingested partitions on every refresh
+incremental: true
+# Query Snowflake for all events belonging to the current partition
+sql: SELECT * FROM events WHERE date_trunc('day', event_time) = '{{ .partition.day }}'
+# Since ClickHouse can't ingest from Snowflake or vice versa, we use S3 as a temporary staging connector
+stage:
+    connector: s3
+    path: s3://bucket/temp-data
+# Produce the final output into ClickHouse, requires a clickhouse.yaml connector defined.
+output:
+    connector: clickhouse
+```

@@ -40,10 +40,10 @@ export function getPathForNewResourceFile(
   const allNames =
     newKind === ResourceKind.Source || newKind === ResourceKind.Model
       ? // sources and models share the name
-        [
-          ...fileArtifacts.getNamesForKind(ResourceKind.Source),
-          ...fileArtifacts.getNamesForKind(ResourceKind.Model),
-        ]
+      [
+        ...fileArtifacts.getNamesForKind(ResourceKind.Source),
+        ...fileArtifacts.getNamesForKind(ResourceKind.Model),
+      ]
       : fileArtifacts.getNamesForKind(newKind);
 
   const { folderName, extension } = ResourceKindMap[newKind];
@@ -143,7 +143,7 @@ export function generateBlobForNewResourceFile(
       return ""; // This is constructed in the `features/sources/modal` directory
     case ResourceKind.Model:
       return `-- Model SQL
--- Reference documentation: https://docs.rilldata.com/reference/project-files/models
+-- Reference documentation: https://docs.rilldata.com/build/models
 
 SELECT 'Hello, World!' AS Greeting`;
     case ResourceKind.MetricsView:
