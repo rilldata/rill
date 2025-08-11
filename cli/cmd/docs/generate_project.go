@@ -67,7 +67,7 @@ func GenerateProjectDocsCmd(rootCmd *cobra.Command, ch *cmdutil.Helper) *cobra.C
 				requiredMap := getRequiredMapFromNode(resource)
 				resTitle := getScalarValue(resource, "title")
 				resID := getScalarValue(resource, "id")
-				
+
 				resourceFilebuf.WriteString(generateDoc(sidebarPosition, 0, resource, "", requiredMap, projectFilesSchema, resID))
 
 				// Use id if available, otherwise fall back to title
@@ -369,7 +369,7 @@ func generateDoc(sidebarPosition, level int, node *yaml.Node, indent string, req
 	currentLevel := level
 	title := getScalarValue(node, "title")
 	description := getPrintableDescription(node, indent, "")
-	
+
 	// Get the id at level 0, otherwise use the passed id
 	if level == 0 {
 		id = getScalarValue(node, "id")
@@ -494,7 +494,6 @@ func generateDoc(sidebarPosition, level int, node *yaml.Node, indent string, req
 					}
 				}
 
-
 			}
 		} else {
 
@@ -527,25 +526,6 @@ func generateDoc(sidebarPosition, level int, node *yaml.Node, indent string, req
 							doc.WriteString(fmt.Sprintf("\n\n%s- **option %d** - %s - %s", indent, i+1, getPrintableType(item), getPrintableDescription(item, indent, "(no description)")))
 							doc.WriteString(generateDoc(sidebarPosition, level, item, indent+"  ", getRequiredMapFromNode(item), rootSchema, id))
 
-
-						// 	// Handle examples for oneOf items
-						// if id == "apis" {
-						// 	if examples := getNodeForKey(item, "examples"); examples != nil {
-						// 		if examples.Kind == yaml.SequenceNode {
-						// 			// Handle array of YAML examples
-						// 			for _, example := range examples.Content {
-						// 				b, err := yaml.Marshal(example)
-						// 				if err != nil {
-						// 					panic(err)
-						// 				}
-						// 				doc.WriteString(fmt.Sprintf("\n\n```yaml\n%s```", string(b)))
-						// 				}
-						// 		} else if examples.Kind == yaml.ScalarNode {
-						// 				// Handle string examples (like markdown code blocks)
-						// 			doc.WriteString(fmt.Sprintf("\n\n%s", examples.Value))
-						// 			}
-						// 		}
-						// 	}
 						}
 					}
 				}
@@ -742,4 +722,3 @@ func generateConnectorExample(connectorType string, connectorDef *yaml.Node) str
 	example.WriteString("```\n\n")
 	return example.String()
 }
-
