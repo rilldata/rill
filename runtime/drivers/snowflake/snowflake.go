@@ -27,7 +27,7 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "Snowflake",
 	Description: "Connect to Snowflake.",
-	DocsURL:     "https://docs.rilldata.com/reference/connectors/snowflake",
+	DocsURL:     "https://docs.rilldata.com/connect/data-source/snowflake",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:    "dsn",
@@ -50,7 +50,7 @@ var spec = drivers.Spec{
 			Type:        drivers.StringPropertyType,
 			DisplayName: "Snowflake Connection String",
 			Required:    false,
-			DocsURL:     "https://docs.rilldata.com/reference/connectors/snowflake",
+			DocsURL:     "https://docs.rilldata.com/connect/data-source/snowflake",
 			Placeholder: "<username>@<account_identifier>/<database>/<schema>?warehouse=<warehouse>&role=<role>&authenticator=SNOWFLAKE_JWT&privateKey=<privateKey_base64_url_encoded>",
 			Hint:        "Can be configured here or by setting the 'connector.snowflake.dsn' environment variable (using '.env' or '--env')",
 			Secret:      true,

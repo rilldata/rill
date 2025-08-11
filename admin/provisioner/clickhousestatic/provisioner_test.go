@@ -213,7 +213,7 @@ func TestClickHouseStaticEnvVarNotSet(t *testing.T) {
 	require.NoError(t, err)
 	_, err = New(specJSON, nil, zap.NewNop())
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "environment variable NONEXISTENT_CLICKHOUSE_DSN is not set or empty")
+	require.Contains(t, err.Error(), "environment variable \"NONEXISTENT_CLICKHOUSE_DSN\" is not set or empty")
 }
 
 func TestClickHouseStaticEnvVarEmpty(t *testing.T) {
@@ -231,7 +231,7 @@ func TestClickHouseStaticEnvVarEmpty(t *testing.T) {
 	require.NoError(t, err)
 	_, err = New(specJSON, nil, zap.NewNop())
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "environment variable EMPTY_CLICKHOUSE_DSN is not set or empty")
+	require.Contains(t, err.Error(), "environment variable \"EMPTY_CLICKHOUSE_DSN\" is not set or empty")
 }
 
 func TestClickHouseStaticHumanReadableNaming(t *testing.T) {
@@ -279,8 +279,8 @@ func TestClickHouseStaticHumanReadableNaming(t *testing.T) {
 	opts := &provisioner.ResourceOptions{
 		Args: nil,
 		Annotations: map[string]string{
-			"org":     "Acme-Corp",
-			"project": "My-Project",
+			"organization_name": "Acme-Corp",
+			"project_name":      "My-Project",
 		},
 		RillVersion: "dev",
 	}
