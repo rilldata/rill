@@ -13,7 +13,6 @@ Whether you start Rill from the terminal or your favorite IDE, that window will 
 ```bash
 Reconciled resource             {"name": "commits__ (copy)_metrics_explore", "type": "Explore", "elapsed": "1ms"}
 Executed model partition        {"model": "CH_incremental_commits_directory", "key": "55454ed4ad31cd3266988fe523103637", "data": {"path":"github-analytics/Clickhouse/2025/08","uri":"gs://rilldata-public/github-analytics/Clickhouse/2025/08"}, "elapsed": "283.188333ms"}
-# debug
 Executed model partition        {"model": "staging_to_CH", "key": "0030406e528b3799c8cbad6bfe609e83", "trace_id": "3073a89ac5cee9e7e3433ce0a34d291a", "span_id": "c3cb402d7b4af9b6", "data": {"day":"2022-12-20T00:00:00Z"}}
 # verbose
 grpc finished call      {"protocol": "grpc", "peer.address": "::1", "grpc.component": "server", "grpc.method_type": "unary", "grpc.method": "/rill.runtime.v1.RuntimeService/GetResource", "instance_id": "default", "args.instance_id": "default", "args.name.kind": "rill.runtime.v1.Theme", "args.name.name": "theme", "args.skip_security_checks": false, "grpc.code": "OK", "duration": "38.125µs"}

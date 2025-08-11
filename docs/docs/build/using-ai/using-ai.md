@@ -1,7 +1,7 @@
 ---
 title: Using AI to Create a Rill Project
-sidebar_label: with AI Agent 
 sidebar_position: 00
+class: hidden
 ---
 
 Given our BI-as-code approach, it is an obvious expectation that users will build Rill projects solely with an AI agent. You may have even seen one of our demo or live discussions showcasing this feature. But, we've all experienced, even the best language models, suggest random and even outlandish properties that doesn't actually exist. How do we fix that?

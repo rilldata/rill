@@ -1,4 +1,5 @@
 position: 100
-label: Using AI 
+label: " "
 collapsible: true
 collapsed: true
+className: "hidden"
