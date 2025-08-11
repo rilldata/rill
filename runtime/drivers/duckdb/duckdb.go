@@ -49,33 +49,6 @@ var spec = drivers.Spec{
 			Placeholder: "/path/to/main.db",
 		},
 	},
-	// Important: Any edits to the below properties must be accompanied by changes to the client-side form validation schemas.
-	SourceProperties: []*drivers.PropertySpec{
-		{
-			Key:         "db",
-			Type:        drivers.StringPropertyType,
-			Required:    true,
-			DisplayName: "DB",
-			Description: "Path to DuckDB database",
-			Placeholder: "/path/to/duckdb.db",
-		},
-		{
-			Key:         "sql",
-			Type:        drivers.StringPropertyType,
-			Required:    true,
-			DisplayName: "SQL",
-			Description: "Query to extract data from DuckDB.",
-			Placeholder: "select * from table;",
-		},
-		{
-			Key:         "name",
-			Type:        drivers.StringPropertyType,
-			DisplayName: "Source name",
-			Description: "The name of the source",
-			Placeholder: "my_new_source",
-			Required:    true,
-		},
-	},
 	ImplementsOLAP: true,
 }
 
