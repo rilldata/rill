@@ -1,6 +1,5 @@
 import { timeGrainToVegaTimeUnitMap } from "@rilldata/web-common/components/vega/util";
 import { COMPARIONS_COLORS } from "@rilldata/web-common/features/dashboards/config";
-import { ComparisonDeltaPreviousSuffix } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import {
   MainAreaColorGradientDark,
   MainLineColor,
@@ -27,7 +26,7 @@ function patchSpecForTimeComparison(
     { fold: ["ts", "comparison_ts"] },
     // Add a measure field to hold the right measure value
     {
-      calculate: `(datum['key'] === 'comparison_ts' ? datum['${measureName + ComparisonDeltaPreviousSuffix}'] : datum['${measureName}'])`,
+      calculate: `(datum['key'] === 'comparison_ts' ? datum['comparison.${measureName}'] : datum['${measureName}'])`,
       as: "measure",
     },
     // Add a time field to hold the right time value

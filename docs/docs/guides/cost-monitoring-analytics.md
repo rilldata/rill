@@ -94,7 +94,7 @@ Metrics in Rill define the measures and dimensions that power your margin monito
 
 ```yaml
 # Metrics view YAML
-# Reference documentation: https://docs.rilldata.com/reference/project-files/dashboards
+# Reference documentation: https://docs.rilldata.com/reference/project-files/metrics-views
 # This file was generated using AI.
 
 version: 1
