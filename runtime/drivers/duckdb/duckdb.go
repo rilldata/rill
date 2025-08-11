@@ -93,6 +93,16 @@ var motherduckSpec = drivers.Spec{
 			Key:  "db",
 			Type: drivers.StringPropertyType,
 		},
+		{
+			Key:         "mode",
+			Type:        drivers.StringPropertyType,
+			Required:    false,
+			DisplayName: "Mode",
+			Description: "Set the mode for the DuckDB connection. By default, it is set to 'read' which allows only read operations. Set to 'readwrite' to enable model creation and table mutations.",
+			Placeholder: modeReadOnly,
+			Default:     modeReadOnly,
+			NoPrompt:    true,
+		},
 	},
 	SourceProperties: []*drivers.PropertySpec{
 		{
@@ -126,16 +136,6 @@ var motherduckSpec = drivers.Spec{
 			Description: "The name of the source",
 			Placeholder: "my_new_source",
 			Required:    true,
-		},
-		{
-			Key:         "mode",
-			Type:        drivers.StringPropertyType,
-			Required:    false,
-			DisplayName: "Mode",
-			Description: "Set the mode for the DuckDB connection. By default, it is set to 'read' which allows only read operations. Set to 'readwrite' to enable model creation and table mutations.",
-			Placeholder: modeReadOnly,
-			Default:     modeReadOnly,
-			NoPrompt:    true,
 		},
 	},
 }
