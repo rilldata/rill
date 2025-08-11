@@ -44,10 +44,8 @@ _[object]_ - Specifies the refresh schedule that Rill should follow to re-ingest
 
 ```yaml
 refresh:
-  cron: "* * * * *"
-  #every: "24h"
+    cron: "* * * * *"
 ```
-
 
 ### `connector`
 
@@ -59,21 +57,19 @@ _[string]_ - Raw SQL query to run against source _(required)_
 
 ### `pre_exec`
 
-_[string]_ - Refers to SQL queries to run before the main query, available for DuckDB-based models. (optional). 
-Ensure pre_exec queries are idempotent. Use IF NOT EXISTS statements when applicable.
+_[string]_ - Refers to SQL queries to run before the main query, available for DuckDB-based models. (optional). Ensure pre_exec queries are idempotent. Use IF NOT EXISTS statements when applicable. 
+
 ```yaml
 pre_exec: ATTACH IF NOT EXISTS 'dbname=postgres host=localhost port=5432 user=postgres password=postgres' AS postgres_db (TYPE POSTGRES)
 ```
- 
 
 ### `post_exec`
 
-_[string]_ - Refers to a SQL query that is run after the main query, available for DuckDB-based models. (optional). 
-Ensure post_exec queries are idempotent. Use IF EXISTS statements when applicable.
+_[string]_ - Refers to a SQL query that is run after the main query, available for DuckDB-based models. (optional). Ensure post_exec queries are idempotent. Use IF EXISTS statements when applicable. 
+
 ```yaml
 post_exec: DETACH DATABASE IF EXISTS postgres_db
 ```
- 
 
 ### `timeout`
 
@@ -128,7 +124,6 @@ state:
     sql: SELECT MAX(date) as max_date
 ```
 
-
 ### `partitions`
 
 _[oneOf]_ - Refers to the how your data is partitioned, cannot be used with state. (optional) 
@@ -167,14 +162,14 @@ _[oneOf]_ - Refers to the how your data is partitioned, cannot be used with stat
 
 ```yaml
 partitions:
-  glob: gcs://my_bucket/y=*/m=*/d=*/*.parquet
+    glob: gcs://my_bucket/y=*/m=*/d=*/*.parquet
 ```
+
 ```yaml
 partitions:
-  connector: duckdb
-  sql: SELECT range AS num FROM range(0,10)
-  ```
-
+    connector: duckdb
+    sql: SELECT range AS num FROM range(0,10)
+```
 
 ### `materialize`
 
@@ -198,10 +193,9 @@ _[object]_ - in the case of staging models, where an input source does not suppo
 
 ```yaml
 stage:
-  connector: s3
-  path: s3://my_bucket/my_staging_table
+    connector: s3
+    path: s3://my_bucket/my_staging_table
 ```
-
 
 ### `output`
 
@@ -276,96 +270,64 @@ Depending on the connector, additional properties may be required, for more info
 
 ## Examples
 
-### Incremental model 
 ```yaml
+### Incremental model 
 type: model
 incremental: true
-connector: bigquery 
-
+connector: bigquery
 state:
-  sql: SELECT MAX(date) as max_date
-
-sql: |
-      SELECT ... FROM events 
-        {{ if incremental }} 
-            WHERE event_time > '{{.state.max_date}}' 
-        {{end}}
+    sql: SELECT MAX(date) as max_date
+sql: "SELECT ... FROM events \n  {{ if incremental }} \n      WHERE event_time > '{{.state.max_date}}' \n  {{end}}\n"
 output:
-connector: duckdb 
+    connector: duckdb
 ```
 
+```yaml
 ### Partitioned model 
-```yaml
 type: model
-
 partitions:
-  glob:
-    connector: gcs
-    path: gs://rilldata-public/github-analytics/Clickhouse/2025/*/commits_*.parquet
-
+    glob:
+        connector: gcs
+        path: gs://rilldata-public/github-analytics/Clickhouse/2025/*/commits_*.parquet
 sql: SELECT * FROM read_parquet('{{ .partition.uri }}')
-
 output:
-  connector: duckdb
-  incremental_strategy: append
+    connector: duckdb
+    incremental_strategy: append
 ```
 
-### Partitioned Incremental model 
 ```yaml
+### Partitioned Incremental model 
 type: model
-
 incremental: true
 refresh:
     cron: "0 8 * * *"
-
 partitions:
-  glob:
-    path: gs://rilldata-public/github-analytics/Clickhouse/2025/*/*
-    partition: directory
-  
-sql: |
-  SELECT * 
-    FROM read_parquet('gs://rilldata-public/{{ .partition.path }}/commits_*.parquet') 
-    WHERE '{{ .partition.path }}' IS NOT NULL
-
-
+    glob:
+        path: gs://rilldata-public/github-analytics/Clickhouse/2025/*/*
+        partition: directory
+sql: "SELECT * \n  FROM read_parquet('gs://rilldata-public/{{ .partition.path }}/commits_*.parquet') \n  WHERE '{{ .partition.path }}' IS NOT NULL\n"
 output:
-  connector: duckdb
-  incremental_strategy: append
+    connector: duckdb
+    incremental_strategy: append
 ```
 
-### Staging model 
 ```yaml
-type: model 
+### Staging model 
+type: model
 connector: snowflake
-
 # Use DuckDB to generate a range of days from 1st Jan to today
 partitions:
-  connector: duckdb
-  sql: SELECT range as day FROM range(TIMESTAMPTZ '2024-01-01', now(), INTERVAL 1 DAY)
-
+    connector: duckdb
+    sql: SELECT range as day FROM range(TIMESTAMPTZ '2024-01-01', now(), INTERVAL 1 DAY)
 # Don't reload previously ingested partitions on every refresh
 incremental: true
-
 # Query Snowflake for all events belonging to the current partition
 sql: SELECT * FROM events WHERE date_trunc('day', event_time) = '{{ .partition.day }}'
-
 # Since ClickHouse can't ingest from Snowflake or vice versa, we use S3 as a temporary staging connector
 stage:
-  connector: s3
-  path: s3://bucket/temp-data
-
+    connector: s3
+    path: s3://bucket/temp-data
 # Produce the final output into ClickHouse, requires a clickhouse.yaml connector defined.
 output:
-  connector: clickhouse
-```
-### Materialized SQL Model
-
-```sql
--- Model SQL
--- Reference  documentation: https://docs.rilldata.com/reference/project-files/models
--- @type: model
--- @materialize: true
-
-select * from your_table
+    connector: clickhouse
 ```

@@ -246,13 +246,9 @@ definitions:
           refresh:
             $ref: '#/definitions/schedule_properties'
             description: Specifies the refresh schedule that Rill should follow to re-ingest and update the underlying model data 
-            examples: |
-              ```yaml
-              refresh:
-                cron: "* * * * *"
-                #every: "24h"
-              ```
-
+            examples: 
+              - refresh:
+                  cron: "* * * * *"
           connector:
             type: string
             const: connector
@@ -262,20 +258,14 @@ definitions:
             description: Raw SQL query to run against source
           pre_exec:
             type: string
-            description: |
-              Refers to SQL queries to run before the main query, available for DuckDB-based models. (optional). 
-              Ensure pre_exec queries are idempotent. Use IF NOT EXISTS statements when applicable.
-              ```yaml
-              pre_exec: ATTACH IF NOT EXISTS 'dbname=postgres host=localhost port=5432 user=postgres password=postgres' AS postgres_db (TYPE POSTGRES)
-              ```
+            description: Refers to SQL queries to run before the main query, available for DuckDB-based models. (optional). Ensure pre_exec queries are idempotent. Use IF NOT EXISTS statements when applicable.
+            examples: 
+              - pre_exec: ATTACH IF NOT EXISTS 'dbname=postgres host=localhost port=5432 user=postgres password=postgres' AS postgres_db (TYPE POSTGRES)
           post_exec:
             type: string
-            description: |
-              Refers to a SQL query that is run after the main query, available for DuckDB-based models. (optional). 
-              Ensure post_exec queries are idempotent. Use IF EXISTS statements when applicable.
-              ```yaml
-              post_exec: DETACH DATABASE IF EXISTS postgres_db
-              ```
+            description: Refers to a SQL query that is run after the main query, available for DuckDB-based models. (optional). Ensure post_exec queries are idempotent. Use IF EXISTS statements when applicable.
+            examples: 
+              - post_exec: DETACH DATABASE IF EXISTS postgres_db
           timeout:
             type: string
             description: The maximum time to wait for model ingestion
@@ -292,24 +282,18 @@ definitions:
           state:
             $ref: '#/definitions/data_properties'
             description:  Refers to the explicitly defined state of your model, cannot be used with partitions (optional)
-            examples: |
-              ```yaml
-              state:
+            examples: 
+              - state:
                   sql: SELECT MAX(date) as max_date
-              ```
           partitions:
             $ref: '#/definitions/data_properties'
             description: Refers to the how your data is partitioned, cannot be used with state. (optional)
-            examples: |
-              ```yaml
-              partitions:
-                glob: gcs://my_bucket/y=*/m=*/d=*/*.parquet
-              ```
-              ```yaml
-              partitions:
-                connector: duckdb
-                sql: SELECT range AS num FROM range(0,10)
-                ```
+            examples: 
+              - partitions:
+                  glob: gcs://my_bucket/y=*/m=*/d=*/*.parquet
+              - partitions:
+                  connector: duckdb
+                  sql: SELECT range AS num FROM range(0,10)
           materialize:
             type: boolean
             description: models will be materialized in olap
@@ -332,12 +316,11 @@ definitions:
             required:
               - connector
             description: in the case of staging models, where an input source does not support direct write to the output and a staging table is required
-            examples: |
-              ```yaml
-              stage:
-                connector: s3
-                path: s3://my_bucket/my_staging_table
-              ```
+            examples: 
+              - stage:
+                  connector: s3
+                  path: s3://my_bucket/my_staging_table
+
             additionalProperties: true
           output:
             type: object
@@ -433,9 +416,8 @@ definitions:
       - title: Depending on the connector, additional properties may be required
         description: |
           Depending on the connector, additional properties may be required, for more information see the [connectors](./connectors.md) documentation
-    examples: |
-        ### Incremental model 
-        ```yaml
+    examples: 
+      - ### Incremental model 
         type: model
         incremental: true
         connector: bigquery 
@@ -449,11 +431,9 @@ definitions:
                     WHERE event_time > '{{.state.max_date}}' 
                 {{end}}
         output:
-        connector: duckdb 
-        ```
+          connector: duckdb 
 
-        ### Partitioned model 
-        ```yaml
+      - ### Partitioned model 
         type: model
 
         partitions:
@@ -466,10 +446,8 @@ definitions:
         output:
           connector: duckdb
           incremental_strategy: append
-        ```
 
-        ### Partitioned Incremental model 
-        ```yaml
+      - ### Partitioned Incremental model 
         type: model
 
         incremental: true
@@ -490,10 +468,8 @@ definitions:
         output:
           connector: duckdb
           incremental_strategy: append
-        ```
 
-        ### Staging model 
-        ```yaml
+      - ### Staging model 
         type: model 
         connector: snowflake
 
@@ -516,17 +492,8 @@ definitions:
         # Produce the final output into ClickHouse, requires a clickhouse.yaml connector defined.
         output:
           connector: clickhouse
-        ```
-        ### Materialized SQL Model
 
-        ```sql
-        -- Model SQL
-        -- Reference  documentation: https://docs.rilldata.com/reference/project-files/models
-        -- @type: model
-        -- @materialize: true
-        
-        select * from your_table
-        ```
+
   # Metrics Views
   metrics-views:
     title: Metrics View YAML
@@ -966,39 +933,37 @@ definitions:
           dimensions:
             description:  List of dimension names. Use '*' to select all dimensions (default)
             $ref: '#/definitions/field_selector_properties'
-            examples: |
-              ```yaml
-              # Example: Select a dimension
-              dimensions:
-                - country
-
-              # Example: Select all dimensions except one
-              dimensions:
-                exclude:
+            examples: 
+              - # Example: Select a dimension
+                dimensions:
                   - country
 
-              # Example: Select all dimensions that match a regex
-              dimensions:
-              regex: "^public_.*$"
-              ```
+                # Example: Select all dimensions except one
+                dimensions:
+                  exclude:
+                    - country
+
+                # Example: Select all dimensions that match a regex
+                dimensions:
+                regex: "^public_.*$"
+              
           measures:
             description: List of measure names. Use '*' to select all measures (default)
             $ref: '#/definitions/field_selector_properties'
-            examples: |
-              ```yaml
-              # Example: Select a dimension
-              measures:
-                - sum_of_total
-
-              # Example: Select all dimensions except one
-              measures:
-                exclude:
+            examples: 
+              - # Example: Select a measure
+                measures:
                   - sum_of_total
 
-              # Example: Select all dimensions that match a regex
-              measures:
-              regex: "^public_.*$"
-              ```
+                # Example: Select all measures except one
+                measures:
+                  exclude:
+                    - sum_of_total
+
+                # Example: Select all measures that match a regex
+                measures:
+                regex: "^public_.*$"
+              
           theme:
             oneOf:
               - type: string
@@ -1286,15 +1251,13 @@ definitions:
       In your Rill project directory, create a `<theme_name>.yaml` file in any directory containing `type: theme`. Rill will automatically ingest the theme next time you run `rill start` or deploy to Rill Cloud.
       
       To apply that theme to a dashboard, add `default_theme: <name of theme>` to the yaml file for that dashboard. Alternatively, you can add this to the end of the URL in your browser: `?theme=<name of theme>`
-    examples: |
-        ```yaml
-        # Example: You can copy this directly into your <theme_name>.yaml file
+    examples: 
+      - # Example: You can copy this directly into your <theme_name>.yaml file
         type: theme
         
         colors:
           primary: plum
           secondary: violet
-        ```
     allOf:
       - title: Properties
         type: object
@@ -2520,8 +2483,6 @@ definitions:
         description: DSN(Data Source Name) for the sqlite connection
         sample: "file:./mydatabase.db"
     required:
-      - driver
-      - dsn
       - driver
       - dsn
 

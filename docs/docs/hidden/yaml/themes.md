@@ -46,8 +46,7 @@ _[object]_ - Overrides any properties in production environment.
 ```yaml
 # Example: You can copy this directly into your <theme_name>.yaml file
 type: theme
-
 colors:
-  primary: plum
-  secondary: violet
+    primary: plum
+    secondary: violet
 ```

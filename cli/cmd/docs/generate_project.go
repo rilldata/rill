@@ -38,12 +38,6 @@ func GenerateProjectDocsCmd(rootCmd *cobra.Command, ch *cmdutil.Helper) *cobra.C
 				return fmt.Errorf("rillyaml schema error: %w", err)
 			}
 
-			// advModelPath := "runtime/parser/schema/advanced-models.schema.yaml"
-			// advModelSchema, err := parseSchemaYAML(advModelPath)
-			// if err != nil {
-			// 	return fmt.Errorf("advanced-models schema error: %w", err)
-			// }
-
 			var projectFilesbuf strings.Builder
 			sidebarPosition := 30
 
@@ -67,8 +61,6 @@ func GenerateProjectDocsCmd(rootCmd *cobra.Command, ch *cmdutil.Helper) *cobra.C
 			}
 
 			oneOfNode.Content = append(oneOfNode.Content, rillYamlSchema)
-			// oneOfNode.Content = append(oneOfNode.Content, advModelSchema)
-
 
 			for _, resource := range oneOfNode.Content {
 				sidebarPosition++
