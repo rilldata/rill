@@ -26,19 +26,19 @@ _[object]_ - Optional feature flags. Can be specified as a map of feature names 
 
 ### `ai_instructions`
 
-_[string]_ - Extra instructions for [AI agents](/explore/mcp). Used to guide natural language question answering and routing. 
+_[string]_ - Extra instructions for LLM/AI features. Used to guide natural language question answering and routing. 
 
 ## Configuring the default OLAP Engine
 
 Rill allows you to specify the default OLAP engine to use in your project via `rill.yaml`.
 :::info Curious about OLAP Engines?
-Please see our reference documentation on [OLAP Engines](/connect/olap).
+Please see our reference documentation on [OLAP Engines](/docs/connect/olap).
 :::
 
 
 ### `olap_connector`
 
-_[string]_ - Specifies the [default OLAP engine](/connect/olap) for the project. Defaults to duckdb if not set. 
+_[string]_ - Specifies the default OLAP engine for the project. Defaults to duckdb if not set. 
 
 ```yaml
 olap_connector: clickhouse
@@ -74,7 +74,7 @@ _[object]_ - Defines project-wide default settings for explores. Unless overridd
 
 ```yaml
 # For example, the following YAML configuration below will set a project-wide default for:
-# Models - Configure a [source refresh](/build/connect/source-refresh.md).
+# Models - Configure a [source refresh](/build/build/models/source-refresh.md).
 # Metrics View - Set the [first day of the week](metrics-view.md) for timeseries aggregations to be Sunday along with setting the smallest_time_grain.
 # Explore Dashboards - Set the [default](explore-dashboards.md) values when a user opens a dashboard, and available time zones and/or time ranges.
 models:
@@ -112,7 +112,7 @@ explores:
 
 ## Setting variables
 
-Primarily useful for [templating](/connect/templating.md), variables can be set in the `rill.yaml` file directly. This allows variables to be set for your projects deployed to Rill Cloud while still being able to use different variable values locally if you prefer. 
+Primarily useful for [templating](/connect/templating), variables can be set in the `rill.yaml` file directly. This allows variables to be set for your projects deployed to Rill Cloud while still being able to use different variable values locally if you prefer. 
 :::info Overriding variables locally
 Variables also follow an order of precedence and can be overridden locally. By default, any variables defined will be inherited from `rill.yaml`. However, if you manually pass in a variable when starting Rill Developer locally via the CLI, this value will be used instead for the current instance of your running project:
 ```bash
@@ -124,7 +124,7 @@ Variables can also be set through your project's `<RILL_PROJECT_HOME>/.env` file
 ```bash
 variable=xyz
 ```
-Similar to how [connector credentials can be pushed / pulled](/connect/credentials#pulling-credentials-and-variables-from-a-deployed-project-on-rill-cloud) from local to cloud or vice versa, project variables set locally in Rill Developer can be pushed to Rill Cloud and/or pulled back to your local instance from your deployed project by using the `rill env push` and `rill env pull` commands respectively.
+Similar to how [connector credentials can be pushed / pulled](/connect/credentials.md#pulling-credentials-and-variables-from-a-deployed-project-on-rill-cloud) from local to cloud or vice versa, project variables set locally in Rill Developer can be pushed to Rill Cloud and/or pulled back to your local instance from your deployed project by using the `rill env push` and `rill env pull` commands respectively.
 :::
 
 
@@ -196,14 +196,6 @@ mock_users:
 ```
 
 ## Common Properties
-
-### `name`
-
-_[string]_ - Name is usually inferred from the filename, but can be specified manually. 
-
-### `refs`
-
-_[array of string]_ - List of resource references 
 
 ### `dev`
 

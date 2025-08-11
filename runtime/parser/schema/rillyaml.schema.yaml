@@ -1,5 +1,5 @@
 $schema: 'http://json-schema.org/draft-07/schema#'
-$id: rillyaml.schema.yaml
+id: rill-yaml.schema.yaml
 title: Project YAML
 type: object
 description: The `rill.yaml` file contains metadata about your project.
@@ -112,7 +112,7 @@ allOf:
       ```bash
       variable=xyz
       ```
-      Similar to how [connector credentials can be pushed / pulled](/build/credentials/credentials.md#pulling-credentials-and-variables-from-a-deployed-project-on-rill-cloud) from local to cloud or vice versa, project variables set locally in Rill Developer can be pushed to Rill Cloud and/or pulled back to your local instance from your deployed project by using the `rill env push` and `rill env pull` commands respectively.
+      Similar to how [connector credentials can be pushed / pulled](/connect/credentials.md#pulling-credentials-and-variables-from-a-deployed-project-on-rill-cloud) from local to cloud or vice versa, project variables set locally in Rill Developer can be pushed to Rill Cloud and/or pulled back to your local instance from your deployed project by using the `rill env push` and `rill env pull` commands respectively.
       :::
     type: object
     properties:

@@ -1,7 +1,7 @@
 ---
 note: GENERATED. DO NOT EDIT.
 title: Explore Dashboard YAML
-sidebar_position: 37
+sidebar_position: 36
 ---
 
 Explore dashboards provide an interactive way to explore data with predefined metrics and dimensions.

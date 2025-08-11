@@ -32,12 +32,17 @@ func GenerateProjectDocsCmd(rootCmd *cobra.Command, ch *cmdutil.Helper) *cobra.C
 				return fmt.Errorf("project schema error: %w", err)
 			}
 
-			// Load rillyaml schema
-			// rillyamlPath := "runtime/parser/schema/rillyaml.schema.yaml"
-			// rillyamlSchema, err := parseSchemaYAML(rillyamlPath)
-			// if err != nil {
-			// 	return fmt.Errorf("rillyaml schema error: %w", err)
-			// }
+			rillyamlPath := "runtime/parser/schema/rillyaml.schema.yaml"
+			rillYamlSchema, err := parseSchemaYAML(rillyamlPath)
+			if err != nil {
+				return fmt.Errorf("rillyaml schema error: %w", err)
+			}
+
+			advModelPath := "runtime/parser/schema/advanced-models.schema.yaml"
+			advModelSchema, err := parseSchemaYAML(advModelPath)
+			if err != nil {
+				return fmt.Errorf("advanced-models schema error: %w", err)
+			}
 
 			var projectFilesbuf strings.Builder
 			sidebarPosition := 30
@@ -61,6 +66,10 @@ func GenerateProjectDocsCmd(rootCmd *cobra.Command, ch *cmdutil.Helper) *cobra.C
 				return fmt.Errorf("no oneOf found in project schema")
 			}
 
+			oneOfNode.Content = append(oneOfNode.Content, rillYamlSchema)
+			oneOfNode.Content = append(oneOfNode.Content, advModelSchema)
+
+
 			for _, resource := range oneOfNode.Content {
 				sidebarPosition++
 				var resourceFilebuf strings.Builder
@@ -68,16 +77,19 @@ func GenerateProjectDocsCmd(rootCmd *cobra.Command, ch *cmdutil.Helper) *cobra.C
 				resTitle := getScalarValue(resource, "title")
 				resID := getScalarValue(resource, "id")
 
-				resourceFilebuf.WriteString(generateDoc(sidebarPosition, 0, resource, "", requiredMap, projectFilesSchema, resID))
 
 				// Use id if available, otherwise fall back to title
 				var fileName string
 				if resID != "" {
-					// Use the id directly for the filename
+					// Strip .schema.yaml extension from the id
+					resID = strings.TrimSuffix(resID, ".schema.yaml")
 					fileName = resID + ".md"
 				} else {
 					fileName = sanitizeFileName(resTitle) + ".md"
 				}
+
+				resourceFilebuf.WriteString(generateDoc(sidebarPosition, 0, resource, "", requiredMap, resID))
+
 
 				filePath := filepath.Join(outputDir, fileName)
 				if err := os.WriteFile(filePath, []byte(resourceFilebuf.String()), 0o644); err != nil {
@@ -85,21 +97,6 @@ func GenerateProjectDocsCmd(rootCmd *cobra.Command, ch *cmdutil.Helper) *cobra.C
 				}
 				projectFilesbuf.WriteString(fmt.Sprintf("\n- [%s](%s)", resTitle, fileName))
 			}
-
-			// Generate rillyaml documentation
-			// sidebarPosition++
-			// var rillyamlFilebuf strings.Builder
-			// rillyamlTitle := getScalarValue(rillyamlSchema, "title")
-			// // rillyamlDesc := getPrintableDescription(rillyamlSchema, "", "")
-			// requiredMap := getRequiredMapFromNode(rillyamlSchema)
-			// rillyamlFilebuf.WriteString(generateDoc(sidebarPosition, 0, rillyamlSchema, "", requiredMap))
-
-			// rillyamlFileName := "rillyaml.md"
-			// rillyamlFilePath := filepath.Join(outputDir, rillyamlFileName)
-			// if err := os.WriteFile(rillyamlFilePath, []byte(rillyamlFilebuf.String()), 0o644); err != nil {
-			// 	return fmt.Errorf("failed writing rillyaml doc: %w", err)
-			// }
-			// projectFilesbuf.WriteString(fmt.Sprintf("\n- [%s](%s)", rillyamlTitle, rillyamlFileName))
 
 			if err := os.WriteFile(filepath.Join(outputDir, "index.md"), []byte(projectFilesbuf.String()), 0o644); err != nil {
 				return fmt.Errorf("failed writing index.md: %w", err)
@@ -360,7 +357,7 @@ func getPrintableDescription(node *yaml.Node, indentation, defaultValue string) 
 	return desc
 }
 
-func generateDoc(sidebarPosition, level int, node *yaml.Node, indent string, requiredFields map[string]bool, rootSchema *yaml.Node, id string) string {
+func generateDoc(sidebarPosition, level int, node *yaml.Node, indent string, requiredFields map[string]bool, id string) string {
 	if node == nil || node.Kind != yaml.MappingNode {
 		return ""
 	}
@@ -414,7 +411,7 @@ func generateDoc(sidebarPosition, level int, node *yaml.Node, indent string, req
 			propType := getScalarValue(propertiesValueNode, "type")
 			if propType == "object" || propType == "array" || hasCombinators(propertiesValueNode) {
 				newlevel := level + 1
-				doc.WriteString(generateDoc(sidebarPosition, newlevel, propertiesValueNode, indent+"  ", getRequiredMapFromNode(propertiesValueNode), rootSchema, id))
+				doc.WriteString(generateDoc(sidebarPosition, newlevel, propertiesValueNode, indent+"  ", getRequiredMapFromNode(propertiesValueNode), id))
 			}
 
 			if examples := getNodeForKey(propertiesValueNode, "examples"); examples != nil {
@@ -435,7 +432,7 @@ func generateDoc(sidebarPosition, level int, node *yaml.Node, indent string, req
 		}
 	} else if items := getNodeForKey(node, "items"); items != nil && items.Kind == yaml.MappingNode {
 		items := getNodeForKey(node, "items")
-		doc.WriteString(generateDoc(sidebarPosition, level, items, indent, getRequiredMapFromNode(items), rootSchema, id))
+		doc.WriteString(generateDoc(sidebarPosition, level, items, indent, getRequiredMapFromNode(items), id))
 	}
 
 	// OneOf
@@ -469,7 +466,7 @@ func generateDoc(sidebarPosition, level int, node *yaml.Node, indent string, req
 							required = "_(required)_"
 						}
 
-						doc.WriteString(fmt.Sprintf("\n\n#### `%s`\n\n", propName))
+						doc.WriteString(fmt.Sprintf("\n\n### `%s`\n\n", propName))
 						doc.WriteString(fmt.Sprintf("%s - %s %s",
 							getPrintableType(propValue),
 							getPrintableDescription(propValue, indent, "(no description)"),
@@ -498,7 +495,7 @@ func generateDoc(sidebarPosition, level int, node *yaml.Node, indent string, req
 		} else {
 
 			if len(oneOf.Content) == 1 {
-				doc.WriteString(generateDoc(sidebarPosition, level, oneOf.Content[0], indent, getRequiredMapFromNode(oneOf.Content[0]), rootSchema, id))
+				doc.WriteString(generateDoc(sidebarPosition, level, oneOf.Content[0], indent, getRequiredMapFromNode(oneOf.Content[0]), id))
 			} else {
 				if level == 1 {
 					doc.WriteString("\n\n## One of Properties Options")
@@ -510,7 +507,7 @@ func generateDoc(sidebarPosition, level int, node *yaml.Node, indent string, req
 						}
 					}
 					for _, item := range oneOf.Content {
-						doc.WriteString(generateDoc(sidebarPosition, level, item, indent, getRequiredMapFromNode(item), rootSchema, id))
+						doc.WriteString(generateDoc(sidebarPosition, level, item, indent, getRequiredMapFromNode(item), id))
 
 						// Display examples for each oneOf item (examples are defined at item level, not property level)
 						if examples := getNodeForKey(item, "examples"); examples != nil {
@@ -524,8 +521,7 @@ func generateDoc(sidebarPosition, level int, node *yaml.Node, indent string, req
 					for i, item := range oneOf.Content {
 						if hasType(item) || hasProperties(item) || hasCombinators(item) {
 							doc.WriteString(fmt.Sprintf("\n\n%s- **option %d** - %s - %s", indent, i+1, getPrintableType(item), getPrintableDescription(item, indent, "(no description)")))
-							doc.WriteString(generateDoc(sidebarPosition, level, item, indent+"  ", getRequiredMapFromNode(item), rootSchema, id))
-
+							doc.WriteString(generateDoc(sidebarPosition, level, item, indent+"  ", getRequiredMapFromNode(item), id))
 						}
 					}
 				}
@@ -538,7 +534,7 @@ func generateDoc(sidebarPosition, level int, node *yaml.Node, indent string, req
 		for i, item := range anyOf.Content {
 			if hasType(item) || hasProperties(item) || hasCombinators(item) {
 				doc.WriteString(fmt.Sprintf("\n\n%s- **option %d** - %s - %s", indent, i+1, getPrintableType(item), getPrintableDescription(item, indent, "(no description)")))
-				doc.WriteString(generateDoc(sidebarPosition, level, item, indent+"  ", getRequiredMapFromNode(item), rootSchema, id))
+				doc.WriteString(generateDoc(sidebarPosition, level, item, indent+"  ", getRequiredMapFromNode(item), id))
 			}
 		}
 	}
@@ -548,7 +544,7 @@ func generateDoc(sidebarPosition, level int, node *yaml.Node, indent string, req
 		for _, item := range allOf.Content {
 			// Special handling for connector oneOf
 			if id == "connectors" && getNodeForKey(item, "oneOf") != nil {
-				doc.WriteString(generateDoc(sidebarPosition, level, item, indent, getRequiredMapFromNode(item), rootSchema, id))
+				doc.WriteString(generateDoc(sidebarPosition, level, item, indent, getRequiredMapFromNode(item), id))
 				continue
 			}
 
@@ -561,9 +557,9 @@ func generateDoc(sidebarPosition, level int, node *yaml.Node, indent string, req
 					doc.WriteString(fmt.Sprintf("\n\n%s**%s**", indent, title))
 				}
 				thenNode := getNodeForKey(item, "then")
-				doc.WriteString(generateDoc(sidebarPosition, level, thenNode, indent, getRequiredMapFromNode(item), rootSchema, id))
+				doc.WriteString(generateDoc(sidebarPosition, level, thenNode, indent, getRequiredMapFromNode(item), id))
 			} else {
-				doc.WriteString(generateDoc(sidebarPosition, level, item, indent, getRequiredMapFromNode(item), rootSchema, id))
+				doc.WriteString(generateDoc(sidebarPosition, level, item, indent, getRequiredMapFromNode(item), id))
 			}
 		}
 	}

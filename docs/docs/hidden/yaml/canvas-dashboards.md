@@ -1,7 +1,7 @@
 ---
 note: GENERATED. DO NOT EDIT.
 title: Canvas Dashboard YAML
-sidebar_position: 36
+sidebar_position: 35
 ---
 
 Canvas dashboards provide a flexible way to create custom dashboards with drag-and-drop components.

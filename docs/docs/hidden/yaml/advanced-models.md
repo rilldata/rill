@@ -1,7 +1,7 @@
 ---
 note: GENERATED. DO NOT EDIT.
 title: Models YAML
-sidebar_position: 34
+sidebar_position: 42
 ---
 
 :::tip
@@ -123,7 +123,7 @@ _[oneOf]_ - Refers to the explicitly defined state of your model, cannot be used
 
 ```yaml
 state:
-   sql: SELECT MAX(date) as max_date
+    sql: SELECT MAX(date) as max_date
 ```
 
 
