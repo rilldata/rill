@@ -480,7 +480,6 @@ func generateDoc(sidebarPosition, level int, node *yaml.Node, indent string, req
 						}
 					}
 				}
-
 			}
 		} else {
 			if len(oneOf.Content) == 1 {
@@ -588,10 +587,8 @@ func generateDoc(sidebarPosition, level int, node *yaml.Node, indent string, req
 						required))
 				}
 			}
-
 		}
 	}
-
 	// Examples
 	if examples := getNodeForKey(node, "examples"); examples != nil && currentLevel == 0 {
 		doc.WriteString("\n\n## Examples")
