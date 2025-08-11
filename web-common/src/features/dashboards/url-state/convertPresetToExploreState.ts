@@ -221,6 +221,7 @@ export function fromTimeRangeUrlParam(tr: string) {
       end: new Date(end),
     } as DashboardTimeControls;
   }
+
   return {
     name: tr,
   } as DashboardTimeControls;

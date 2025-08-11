@@ -6,6 +6,7 @@ import playwright from "eslint-plugin-playwright";
 import eslintPluginSvelte from "eslint-plugin-svelte";
 import globals from "globals";
 import tsEslint from "typescript-eslint";
+import { globalIgnores } from "eslint/config";
 
 export default [
   js.configs.recommended,
@@ -104,4 +105,7 @@ export default [
       "svelte/no-inner-declarations": "off", // This rule isn't working
     },
   },
+  globalIgnores([
+    "*/src/features/dashboards/url-state/time-ranges/rill-time.cjs",
+  ]),
 ];

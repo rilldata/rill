@@ -21,7 +21,8 @@ import (
 
 // Constants for AI completion
 const (
-	aiGenerateTimeout     = 30 * time.Second
+	completionTimeout     = 120 * time.Second // Overall timeout for entire AI completion
+	aiRequestTimeout      = 20 * time.Second  // Timeout for individual AI API calls
 	maxToolCallIterations = 20
 )
 
@@ -301,7 +302,7 @@ func (r *Runtime) executeAICompletion(ctx context.Context, instanceID string, al
 	defer release()
 
 	// Apply timeout
-	ctx, cancel := context.WithTimeout(ctx, aiGenerateTimeout)
+	ctx, cancel := context.WithTimeout(ctx, completionTimeout)
 	defer cancel()
 
 	// Get available tools
@@ -335,8 +336,10 @@ func (r *Runtime) executeAICompletion(ctx context.Context, instanceID string, al
 			completionMessages[i] = runtimeMessageToAICompletionMessage(msg)
 		}
 
-		// Call the AI service - returns structured ContentBlocks
-		res, err := ai.Complete(ctx, completionMessages, tools)
+		// Call the AI service with individual timeout - returns structured ContentBlocks
+		aiCtx, aiCancel := context.WithTimeout(ctx, aiRequestTimeout)
+		res, err := ai.Complete(aiCtx, completionMessages, tools)
+		aiCancel()
 		if err != nil {
 			return nil, err
 		}

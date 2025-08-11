@@ -1,6 +1,5 @@
 import type { GraphicScale } from "@rilldata/web-common/components/data-graphic/state/types";
 import { bisectData } from "@rilldata/web-common/components/data-graphic/utils";
-import { ComparisonDeltaPreviousSuffix } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { createIndexMap } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
 import {
   createAndExpression,
@@ -20,10 +19,7 @@ import { removeZoneOffset } from "../../../lib/time/timezone";
 import { getDurationMultiple, getOffset } from "../../../lib/time/transforms";
 import { TimeOffsetType } from "../../../lib/time/types";
 import { roundToNearestTimeUnit } from "./round-to-nearest-time-unit";
-import {
-  ComparisonTimeSuffix,
-  type TimeSeriesDatum,
-} from "./timeseries-data-store";
+import type { TimeSeriesDatum } from "./timeseries-data-store";
 
 /** sets extents to 0 if it makes sense; otherwise, inflates each extent component */
 export function niceMeasureExtents(
@@ -48,17 +44,21 @@ export function toComparisonKeys(
   return Object.keys(d).reduce((acc, key) => {
     if (key === "records") {
       Object.entries(d.records).forEach(([key, value]) => {
-        acc[key + ComparisonDeltaPreviousSuffix] = value;
+        acc[`comparison.${key}`] = value;
       });
-    } else if (key === "ts") {
-      acc["comparison.ts"] = adjustOffsetForZone(d[key], zone, grainDuration);
+    } else if (`comparison.${key}` === "comparison.ts") {
+      acc[`comparison.${key}`] = adjustOffsetForZone(
+        d[key],
+        zone,
+        grainDuration,
+      );
       acc["comparison.ts_position"] = getOffset(
         acc["comparison.ts"],
         offsetDuration,
         TimeOffsetType.ADD,
       );
     } else {
-      acc[key + ComparisonDeltaPreviousSuffix] = d[key];
+      acc[`comparison.${key}`] = d[key];
     }
     return acc;
   }, {});
@@ -98,67 +98,6 @@ export function updateChartInteractionStore(
       xHover: xHoverColNum,
     }));
   }
-}
-
-/**
- * This function processes raw metrics aggregation data and:
- * - Adjusts timestamps to the specified timezone for rendering
- * - Calculates positioning offsets for centering data points within time grain intervals
- */
-export function prepareTimeSeriesOffsets(
-  timeSeriesData: V1MetricsViewAggregationResponseDataItem[],
-  timeDimension: string | undefined,
-  timeGrainDuration: string,
-  zone: string,
-): TimeSeriesDatum[] {
-  return timeSeriesData?.map((datum) => {
-    const emptyPt = {
-      ts: undefined,
-      ts_position: undefined,
-      ...datum,
-    };
-
-    if (!timeDimension || !datum?.[timeDimension]) {
-      return emptyPt;
-    }
-
-    const comparisonTime = datum?.[timeDimension + ComparisonTimeSuffix] as
-      | string
-      | Date
-      | undefined;
-    const currentTime = datum[timeDimension] as string | Date | undefined;
-
-    const ts = adjustOffsetForZone(currentTime, zone, timeGrainDuration);
-
-    if (!ts || typeof ts === "string") {
-      return emptyPt;
-    }
-    const offsetDuration = getDurationMultiple(timeGrainDuration, 0.5);
-    const ts_position = getOffset(ts, offsetDuration, TimeOffsetType.ADD);
-
-    let ts_comparison: Date | undefined;
-    let ts_comparison_position: Date | undefined;
-    if (comparisonTime) {
-      ts_comparison = adjustOffsetForZone(
-        comparisonTime,
-        zone,
-        timeGrainDuration,
-      ) as Date;
-      ts_comparison_position = getOffset(
-        ts_comparison,
-        offsetDuration,
-        TimeOffsetType.ADD,
-      );
-    }
-
-    return {
-      ts,
-      ts_position,
-      "comparison.ts": ts_comparison,
-      "comparison.ts_position": ts_comparison_position,
-      ...datum,
-    };
-  });
 }
 
 export function prepareTimeSeries(

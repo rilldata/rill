@@ -265,7 +265,7 @@ var Connectors = map[string]ConnectorAcquireFunc{
 		port, err := mysqlContainer.MappedPort(ctx, "3306/tcp")
 		require.NoError(t, err)
 
-		dsn := fmt.Sprintf("mysql:mysql@tcp(%v:%v)/mysql", host, port.Port())
+		dsn := fmt.Sprintf("mysql://mysql:mysql@%v:%v/mysql", host, port.Port())
 		ip, err := mysqlContainer.ContainerIP(context.Background())
 		require.NoError(t, err)
 

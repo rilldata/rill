@@ -1,8 +1,8 @@
 <script lang="ts">
+  import { IconButton } from "@rilldata/web-common/components/button";
   import { EyeIcon, EyeOffIcon } from "lucide-svelte";
   import { onMount } from "svelte";
   import { slide } from "svelte/transition";
-  import { IconButton } from "@rilldata/web-common/components/button";
   import FieldSwitcher from "./FieldSwitcher.svelte";
   import InputLabel from "./InputLabel.svelte";
   import Select from "./Select.svelte";
@@ -25,7 +25,7 @@
   export let optional = false;
   export let truncate = false;
   export let width: string = "100%";
-  export let size: "sm" | "md" | "lg" = "lg";
+  export let size: "sm" | "md" | "lg" | "xl" = "lg";
   export let labelGap = 1;
   export let selected: number = -1;
   export let full = false;
@@ -137,101 +137,104 @@
     <FieldSwitcher {fields} {selected} onClick={onFieldSwitch} />
   {/if}
 
-  {#if !options}
-    <div
-      class="input-wrapper {textClass}"
-      style:padding-left="{leftPadding}px"
-      style:width
-      class:error-input-wrapper={!!errors?.length}
-      style:font-family={fontFamily}
-    >
-      {#if $$slots.icon}
-        <span class="mr-1 flex-none">
-          <slot name="icon" />
-        </span>
-      {/if}
+  <div class="flex flex-row">
+    <slot name="prefix" />
+    {#if !options}
+      <div
+        class="input-wrapper {textClass}"
+        style:padding-left="{leftPadding}px"
+        style:width
+        class:error-input-wrapper={!!errors?.length}
+        style:font-family={fontFamily}
+      >
+        {#if $$slots.icon}
+          <span class="mr-1 flex-none">
+            <slot name="icon" />
+          </span>
+        {/if}
 
-      {#if multiline && typeof value !== "number"}
-        <div
-          {id}
-          contenteditable
-          class="multiline-input"
-          class:pointer-events-none={disabled}
-          {placeholder}
-          role="textbox"
-          tabindex="0"
-          aria-multiline="true"
-          bind:this={inputElement}
-          bind:textContent={value}
-          on:keydown={onKeydown}
-          on:blur={onElementBlur}
-          on:focus={() => (focus = true)}
-        />
-      {:else}
-        <input
-          title={label || title}
-          {id}
-          {type}
-          {placeholder}
-          name={id}
-          class={size}
-          {disabled}
-          value={value ?? (inputType === "number" ? null : "")}
-          autocomplete={autocomplete ? "on" : "off"}
-          bind:this={inputElement}
-          on:input={(e) => {
-            if (inputType === "number") {
-              if (e.currentTarget.value === "") {
-                value = undefined;
-              } else {
-                value = e.currentTarget.valueAsNumber;
+        {#if multiline && typeof value !== "number"}
+          <div
+            {id}
+            contenteditable
+            class="multiline-input"
+            class:pointer-events-none={disabled}
+            {placeholder}
+            role="textbox"
+            tabindex="0"
+            aria-multiline="true"
+            bind:this={inputElement}
+            bind:textContent={value}
+            on:keydown={onKeydown}
+            on:blur={onElementBlur}
+            on:focus={() => (focus = true)}
+          />
+        {:else}
+          <input
+            title={label || title}
+            {id}
+            {type}
+            {placeholder}
+            name={id}
+            class={size}
+            {disabled}
+            value={value ?? (inputType === "number" ? null : "")}
+            autocomplete={autocomplete ? "on" : "off"}
+            bind:this={inputElement}
+            on:input={(e) => {
+              if (inputType === "number") {
+                if (e.currentTarget.value === "") {
+                  value = undefined;
+                } else {
+                  value = e.currentTarget.valueAsNumber;
+                }
+                return;
               }
-              return;
-            }
-            value = e.currentTarget.value;
-            onInput(value, e);
-          }}
-          on:keydown={onKeydown}
-          on:blur={onElementBlur}
-          on:focus={() => (focus = true)}
-        />
-      {/if}
-      {#if secret}
-        <IconButton
-          size={20}
-          disableHover
-          ariaLabel={showPassword ? "Hide password" : "Show password"}
-          on:click={() => {
-            showPassword = !showPassword;
-          }}
-        >
-          {#if showPassword}
-            <EyeOffIcon size="14px" class="text-muted-foreground" />
-          {:else}
-            <EyeIcon size="14px" class="text-muted-foreground" />
-          {/if}
-        </IconButton>
-      {/if}
-    </div>
-  {:else if typeof value !== "number"}
-    <Select
-      {disabled}
-      {enableSearch}
-      ringFocus
-      {sameWidth}
-      {id}
-      {lockable}
-      {lockTooltip}
-      bind:selectElement
-      bind:value
-      {options}
-      {onChange}
-      {size}
-      fontSize={size === "sm" ? 12 : 14}
-      {truncate}
-      placeholder={disabled ? disabledMessage : placeholder}
-    />
-  {/if}
+              value = e.currentTarget.value;
+              onInput(value, e);
+            }}
+            on:keydown={onKeydown}
+            on:blur={onElementBlur}
+            on:focus={() => (focus = true)}
+          />
+        {/if}
+        {#if secret}
+          <IconButton
+            size={20}
+            disableHover
+            ariaLabel={showPassword ? "Hide password" : "Show password"}
+            on:click={() => {
+              showPassword = !showPassword;
+            }}
+          >
+            {#if showPassword}
+              <EyeOffIcon size="14px" class="text-muted-foreground" />
+            {:else}
+              <EyeIcon size="14px" class="text-muted-foreground" />
+            {/if}
+          </IconButton>
+        {/if}
+      </div>
+    {:else if typeof value !== "number"}
+      <Select
+        {disabled}
+        {enableSearch}
+        ringFocus
+        {sameWidth}
+        {id}
+        {lockable}
+        {lockTooltip}
+        bind:selectElement
+        bind:value
+        {options}
+        {onChange}
+        {size}
+        fontSize={size === "sm" ? 12 : 14}
+        {truncate}
+        placeholder={disabled ? disabledMessage : placeholder}
+      />
+    {/if}
+  </div>
 
   {#if errors && (alwaysShowError || (!focus && hasValue))}
     {#if typeof errors === "string"}
@@ -247,8 +250,14 @@
     {/if}
   {/if}
 
-  {#if description}
-    <div class="description">{description}</div>
+  {#if $$slots.description || description}
+    <div class="description">
+      {#if $$slots.description}
+        <slot name="description" />
+      {:else}
+        {description}
+      {/if}
+    </div>
   {/if}
 </div>
 
@@ -270,10 +279,15 @@
     height: 30px;
   }
 
+  .xl {
+    height: 38px;
+    font-size: 16px;
+  }
+
   .input-wrapper {
     @apply overflow-hidden;
     @apply flex justify-center items-center pr-1;
-    @apply bg-white justify-center;
+    @apply bg-surface justify-center;
     @apply border border-gray-300 rounded-[2px];
     @apply cursor-pointer;
     @apply h-fit w-fit;
@@ -281,7 +295,7 @@
 
   input,
   .multiline-input {
-    @apply p-0 bg-white;
+    @apply bg-surface p-0;
     @apply size-full;
     @apply outline-none border-0;
     @apply cursor-text;

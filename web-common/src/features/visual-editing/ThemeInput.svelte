@@ -5,12 +5,12 @@
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import type { V1ThemeSpec } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { featureFlags } from "../feature-flags";
   import {
     defaultPrimaryColors,
     defaultSecondaryColors,
   } from "../themes/color-config";
   import { useTheme } from "../themes/selectors";
-  import { featureFlags } from "../feature-flags";
 
   const DEFAULT_PRIMARY = `hsl(${defaultPrimaryColors[500].split(" ").join(",")})`;
   const DEFAULT_SECONDARY = `hsl(${defaultSecondaryColors[500].split(" ").join(",")})`;
@@ -136,6 +136,7 @@
       {small}
       stringColor={effectivePrimary}
       label="Primary"
+      labelFirst
       disabled={isPresetMode}
       allowLightnessControl={$darkMode}
       onChange={(color) => handleColorChange(color, true)}
@@ -145,6 +146,7 @@
       {small}
       stringColor={effectiveSecondary}
       label="Secondary"
+      labelFirst
       disabled={isPresetMode}
       allowLightnessControl={$darkMode}
       onChange={(color) => handleColorChange(color, false)}

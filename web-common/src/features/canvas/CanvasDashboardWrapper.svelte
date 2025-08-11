@@ -1,6 +1,9 @@
 <script lang="ts">
+  import { onDestroy, onMount } from "svelte";
   import CanvasFilters from "./filters/CanvasFilters.svelte";
-
+  import { getCanvasStore } from "./state-managers/state-managers";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { page } from "$app/stores";
   export let maxWidth: number;
   export let clientWidth = 0;
   export let showGrabCursor = false;
@@ -8,9 +11,23 @@
   export let canvasName: string;
   export let onClick: () => void = () => {};
 
+  $: ({ instanceId } = $runtime);
+
+  $: ({
+    canvasEntity: { saveSnapshot, restoreSnapshot },
+  } = getCanvasStore(canvasName, instanceId));
+
   let contentRect = new DOMRectReadOnly(0, 0, 0, 0);
 
   $: ({ width: clientWidth } = contentRect);
+
+  onMount(async () => {
+    await restoreSnapshot();
+  });
+
+  onDestroy(() => {
+    saveSnapshot($page.url.searchParams.toString());
+  });
 </script>
 
 <main class="size-full flex flex-col dashboard-theme-boundary overflow-hidden">

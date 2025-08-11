@@ -1,6 +1,7 @@
 <script lang="ts">
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
+  import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import { BaseChart } from "@rilldata/web-common/features/canvas/components/charts/BaseChart";
   import type { BaseCanvasComponent } from "../components/BaseCanvasComponent";
@@ -53,7 +54,7 @@
 {/if}
 
 <div>
-  {#each entries as [key, config] (key)}
+  {#each entries as [key, config] (`${component.id}-${key}`)}
     {#if config.showInUI !== false}
       <div class="component-param">
         <!-- TEXT, NUMBER, RILL_TIME -->
@@ -144,6 +145,22 @@
               placeholder={config.label ?? key}
             />
           </div>
+
+          <!-- SELECT DROPDOWN -->
+        {:else if config.type === "select"}
+          <Select
+            id={key}
+            label={config.label ?? key}
+            options={config.meta?.options ?? []}
+            value={$specStore[key] ?? config.meta?.default}
+            full={true}
+            size="sm"
+            sameWidth
+            fontSize={12}
+            onChange={(newValue) => {
+              component.updateProperty(key, newValue);
+            }}
+          />
 
           <!-- KPI SPARKLINE INPUT -->
         {:else if config.type === "sparkline"}

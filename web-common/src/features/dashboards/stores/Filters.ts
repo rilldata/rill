@@ -1,9 +1,10 @@
-import { DimensionFilterMode } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/dimension-filter-mode.ts";
+import { DimensionFilterMode } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/constants";
 import {
   getDimensionDisplayName,
   getMeasureDisplayName,
 } from "@rilldata/web-common/features/dashboards/filters/getDisplayName.ts";
 import type { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry.ts";
+import { toggleDimensionFilterValue } from "@rilldata/web-common/features/dashboards/state-managers/actions/dimension-filters.ts";
 import {
   type DimensionFilterItem,
   getDimensionFilters,
@@ -19,7 +20,6 @@ import {
   createAndExpression,
   createInExpression,
   createLikeExpression,
-  getValueIndexInExpression,
   matchExpressionByName,
   negateExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
@@ -265,9 +265,23 @@ export class Filters {
     this.dimensionThresholdFilters.set(dtfs);
   };
 
-  public toggleDimensionValueSelection = (
+  toggleDimensionValueSelection = (
     dimensionName: string,
     dimensionValue: string,
+    keepPillVisible?: boolean,
+    isExclusiveFilter?: boolean,
+  ) => {
+    this.toggleMultipleDimensionValueSelections(
+      dimensionName,
+      [dimensionValue],
+      keepPillVisible,
+      isExclusiveFilter,
+    );
+  };
+
+  toggleMultipleDimensionValueSelections = (
+    dimensionName: string,
+    dimensionValues: string[],
     keepPillVisible?: boolean,
     isExclusiveFilter?: boolean,
   ) => {
@@ -275,55 +289,45 @@ export class Filters {
     if (tempFilter !== null) {
       this.temporaryFilterName.set(null);
     }
+
     const excludeMode = get(this.dimensionFilterExcludeMode);
     const isExclude = !!excludeMode.get(dimensionName);
     const wf = get(this.whereFilter);
 
     // Use the derived selector:
-    const exprIndex = this.getWhereFilterExpressionIndex(dimensionName);
+    let exprIndex = this.getWhereFilterExpressionIndex(dimensionName) ?? -1;
+    let expr = wf.cond?.exprs?.[exprIndex];
 
-    if (exprIndex === undefined || exprIndex === -1) {
-      wf.cond?.exprs?.push(
-        createInExpression(dimensionName, [dimensionValue], isExclude),
-      );
-      this.whereFilter.set(wf);
-      return;
+    const wasLikeFilter =
+      expr?.cond?.op === V1Operation.OPERATION_LIKE ||
+      expr?.cond?.op === V1Operation.OPERATION_NLIKE;
+    if (!expr?.cond?.exprs || wasLikeFilter) {
+      expr = createInExpression(dimensionName, [], isExclude);
+      wf.cond?.exprs?.push(expr);
+      exprIndex = wf.cond!.exprs!.length - 1;
     }
 
-    const expr = wf.cond?.exprs?.[exprIndex];
-    if (!expr?.cond?.exprs) return;
-    this.dimensionsWithInlistFilter.update((dimensionsWithInlistFilter) =>
-      dimensionsWithInlistFilter.filter((d) => d !== dimensionName),
+    const wasInListFilter = get(this.dimensionsWithInlistFilter).includes(
+      dimensionName,
     );
-    if (
-      expr.cond?.op === V1Operation.OPERATION_LIKE ||
-      expr.cond?.op === V1Operation.OPERATION_NLIKE
-    ) {
-      wf.cond?.exprs?.push(
-        createInExpression(dimensionName, [dimensionValue], isExclude),
+    if (wasInListFilter) {
+      this.dimensionsWithInlistFilter.update((dimensionsWithInlistFilter) =>
+        dimensionsWithInlistFilter.filter((d) => d !== dimensionName),
       );
-      this.whereFilter.set(wf);
-      return;
     }
 
-    const inIdx = getValueIndexInExpression(expr, dimensionValue) as number;
-    if (inIdx === -1) {
-      if (isExclusiveFilter) {
-        expr.cond.exprs.splice(1, expr.cond.exprs.length - 1, {
-          val: dimensionValue,
-        });
-      } else {
-        expr.cond.exprs.push({ val: dimensionValue });
-      }
-    } else {
-      expr.cond.exprs.splice(inIdx, 1);
-      if (expr.cond.exprs.length === 1) {
-        wf.cond?.exprs?.splice(exprIndex, 1);
-        if (keepPillVisible) {
-          this.temporaryFilterName.set(dimensionName);
-        }
+    dimensionValues.forEach((dimensionValue) => {
+      toggleDimensionFilterValue(expr, dimensionValue, !!isExclusiveFilter);
+    });
+
+    if (expr?.cond?.exprs?.length === 1) {
+      wf.cond?.exprs?.splice(exprIndex, 1);
+
+      if (keepPillVisible) {
+        this.setTemporaryFilterName(dimensionName);
       }
     }
+
     this.whereFilter.set(wf);
   };
 

@@ -2,15 +2,15 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import {
+    allTimeZones,
+    formatIANAs,
     getAbbreviationForIANA,
     getLocalIANA,
-    formatIANAs,
-    allTimeZones,
   } from "@rilldata/web-common/lib/time/timezone";
+  import type { DateTime } from "luxon";
+  import { localStorageStore } from "@rilldata/web-common/lib/store-utils";
   import ZoneDisplay from "./ZoneDisplay.svelte";
   import Search from "@rilldata/web-common/components/search/Search.svelte";
-  import { localStorageStore } from "@rilldata/web-common/lib/store-utils";
-  import type { DateTime } from "luxon";
 
   const browserIANA = getLocalIANA();
 
@@ -25,8 +25,8 @@
 
   const recents = localStorageStore<string[]>(`${context}-recent-zones`, []);
 
-  let open = false;
   let searchValue = "";
+  let open = false;
 
   $: ianaMap = formatIANAs(allTimeZones, watermark);
 

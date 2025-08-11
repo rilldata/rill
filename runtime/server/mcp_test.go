@@ -62,6 +62,8 @@ func TestMCPListTools(t *testing.T) {
 		"get_metrics_view",
 		"query_metrics_view",
 		"query_metrics_view_summary",
+		"search",
+		"fetch",
 	}
 
 	require.Len(t, tools, len(expectedToolNames))
