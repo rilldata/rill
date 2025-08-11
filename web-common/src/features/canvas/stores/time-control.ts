@@ -55,7 +55,6 @@ export class TimeControls {
   /**
    * Writables which can be updated by the user
    */
-  // selectedTimeRange: Writable<DashboardTimeControls | undefined>;
   selectedComparisonTimeRange: Writable<DashboardTimeControls | undefined>;
   showTimeComparison: Writable<boolean>;
   selectedTimezone: Writable<string>;

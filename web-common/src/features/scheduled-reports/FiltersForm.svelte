@@ -45,28 +45,21 @@
   const ROW_HEIGHT = "26px";
   $: ({
     whereFilter,
-
     allDimensionFilterItems,
     isFilterExcludeMode,
     dimensionHasFilter,
-
     allMeasureFilterItems,
     measureHasFilter,
-
     hasFilters,
-
     removeDimensionFilter,
     toggleDimensionFilterMode,
     toggleMultipleDimensionValueSelections,
     applyDimensionInListMode,
     applyDimensionContainsMode,
-
     removeMeasureFilter,
     setMeasureFilter,
-
     setTemporaryFilterName,
     clearAllFilters,
-
     metricsViewMetadata: {
       metricsViewName,
       allDimensions,
@@ -74,13 +67,12 @@
       validSpecQuery,
     },
   } = filters);
+
   $: ({
     selectedTimezone,
     allTimeRange,
-
     timeRangeStateStore,
     comparisonRangeStateStore,
-
     setTimeZone,
     selectTimeRange,
     setSelectedComparisonRange,
@@ -243,6 +235,7 @@
   }
 </script>
 
+showFullRange
 <div
   class="flex flex-col gap-y-2 size-full pointer-events-none"
   style:max-width="{maxWidth}px"
