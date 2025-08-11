@@ -1,7 +1,7 @@
 ---
 title: Integrate Rill into your Application
 sidebar_label: Integrate
-sidebar_position: 00
+sidebar_position: 0
 ---
 
 Extend Rill's capabilities by integrating dashboards and data into your existing applications and workflows.
@@ -10,7 +10,7 @@ Extend Rill's capabilities by integrating dashboards and data into your existing
 
 - **[Embed Dashboards](/integrate/embedding)** - Embed Rill dashboards directly into your applications using iframes
 - **[Control your Embedded Dashboards](/integrate/embed-iframe-api)** - Programmatically control embedded dashboards from your application
-- **[See it in Action](https://rill-embedding-example.netlify.app/)** - View a live example of embedded Rill dashboards
+- **[See it Live](https://rill-embedding-example.netlify.app/)** - View a live example of embedded Rill dashboards
 
 
 

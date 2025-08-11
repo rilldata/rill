@@ -1,7 +1,7 @@
 ---
 title: Explore your Data in Rill 
 sidebar_label: Explore
-sidebar_position: 00
+sidebar_position: 0
 ---
 
 # Explore Your Data in Rill
@@ -16,6 +16,7 @@ Once you've built your data pipeline, Rill provides powerful tools to explore, a
 ### Interactive Dashboards
 
 - **[Slice-and-Dice Explore Dashboards](/explore/dashboard-101)** - Interactive dashboards for dynamic data exploration and filtering
+- **[Multiple Measures in Dimension Leaderboard](/explore/dashboard-101/multi-metrics)** - Easily compare multiple measures in the dimension leaderboard
 - **[Time Dimension Details](/explore/dashboard-101/tdd)** - Drill down into time-based analysis
 - **[Pivot Tables](/explore/dashboard-101/pivot)** - Create cross-tabulations and data summaries
 - **[Filtering](/explore/filters)** - Apply filters to focus on specific data subsets
