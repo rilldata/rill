@@ -1,15 +1,10 @@
 package deploy
 
 import (
-	"path/filepath"
-	"strings"
-
 	"github.com/rilldata/rill/cli/cmd/auth"
 	"github.com/rilldata/rill/cli/cmd/project"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/local"
-	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/spf13/cobra"
 )
 
@@ -32,7 +27,7 @@ func DeployCmd(ch *cmdutil.Helper) *cobra.Command {
 				opts.GitPath = args[0]
 			}
 
-			err := shouldConnectGithub(opts, ch)
+			err := opts.ValidatePathAndSetupGit(ch)
 			if err != nil {
 				return err
 			}
@@ -87,64 +82,4 @@ func DeployCmd(ch *cmdutil.Helper) *cobra.Command {
 	deployCmd.Flags().BoolVar(&opts.Github, "github", false, "Use github repo to create the project")
 
 	return deployCmd
-}
-
-func shouldConnectGithub(opts *project.DeployOpts, ch *cmdutil.Helper) error {
-	if opts.Managed || opts.ArchiveUpload {
-		return nil
-	}
-
-	var err error
-	opts.GitPath, err = fileutil.ExpandHome(opts.GitPath)
-	if err != nil {
-		return err
-	}
-	opts.GitPath, err = filepath.Abs(opts.GitPath)
-	if err != nil {
-		return err
-	}
-
-	repoRoot, err := gitutil.InferGitRepoRoot(opts.GitPath)
-	if err != nil {
-		// Not a git repository, no need to connect to GitHub
-		return nil
-	}
-
-	remote, err := gitutil.ExtractGitRemote(repoRoot, opts.RemoteName, false)
-	if err != nil {
-		return err
-	}
-	if remote.URL == "" {
-		// no remote configured
-		return nil
-	}
-	if !strings.HasPrefix(remote.URL, "https://github.com") {
-		// not a GitHub repo should not prompt for GitHub connection
-		return nil
-	}
-
-	subPath, err := filepath.Rel(repoRoot, opts.GitPath)
-	if err == nil {
-		ch.PrintfBold("Detected git repository at: ")
-		ch.Printf("%s\n", repoRoot)
-		ch.PrintfBold("Connected to Github repository: ")
-		ch.Printf("%s\n", remote.URL)
-		if subPath != "." {
-			ch.PrintfBold("Project location within repo: ")
-			ch.Printf("%s\n", subPath)
-		}
-		confirmed, err := cmdutil.ConfirmPrompt("Enable automatic deploys to Rill Cloud from GitHub?", "", true)
-		if err != nil {
-			return err
-		}
-		if confirmed {
-			opts.SubPath = subPath
-			opts.GitPath = repoRoot
-			opts.Github = true
-			return nil
-		}
-		ch.Printf("Skipping GitHub connection. You can connect later using `rill project connect-github`.\n")
-		opts.Managed = true
-	}
-	return nil
 }
