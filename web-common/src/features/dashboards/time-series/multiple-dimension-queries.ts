@@ -17,21 +17,21 @@ import {
 } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-import { type TimeSeriesDatum } from "@rilldata/web-common/features/dashboards/time-series/timeseries-data-store";
+import {
+  type TimeSeriesDatum,
+  createMetricsViewTimeSeries,
+} from "@rilldata/web-common/features/dashboards/time-series/timeseries-data-store";
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import {
   type V1Expression,
   type V1MetricsViewAggregationResponse,
-  type V1MetricsViewTimeSeriesResponse,
   V1TimeGrain,
   type V1TimeSeriesValue,
   createQueryServiceMetricsViewAggregation,
-  getQueryServiceMetricsViewTimeSeriesQueryOptions,
 } from "@rilldata/web-common/runtime-client";
 import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 import {
   type CreateQueryResult,
-  createQuery,
   keepPreviousData,
 } from "@tanstack/svelte-query";
 import { DashboardState_ActivePage } from "../../../proto/gen/rill/ui/v1/dashboard_pb";
@@ -56,67 +56,6 @@ interface DimensionTopList {
   values: (string | null)[];
   filter: V1Expression;
   totals?: number[];
-}
-
-/**
- * TODO: Deprecate this in favor of aggregation queries with a time spine
- * In the future we will move to a pivot data store structure for Time dimension
- * detail page and as such all these queries will be deprecated.
- */
-function createMetricsViewTimeSeries(
-  ctx: StateManagers,
-  measures: string[],
-  isComparison = false,
-): CreateQueryResult<V1MetricsViewTimeSeriesResponse, HTTPError> {
-  const queryOptionsStore = derived(
-    [
-      ctx.runtime,
-      ctx.metricsViewName,
-      ctx.dashboardStore,
-      useTimeControlStore(ctx),
-    ],
-    ([runtime, metricsViewName, dashboardStore, timeControls]) => {
-      const enabled =
-        !!timeControls.ready &&
-        !!ctx.dashboardStore &&
-        // in case of comparison, we need to wait for the comparison start time to be available
-        (!isComparison || !!timeControls.comparisonAdjustedStart);
-
-      return getQueryServiceMetricsViewTimeSeriesQueryOptions(
-        runtime.instanceId,
-        metricsViewName,
-        {
-          measureNames: measures,
-          where: sanitiseExpression(
-            mergeDimensionAndMeasureFilters(
-              dashboardStore.whereFilter,
-              dashboardStore.dimensionThresholdFilters,
-            ),
-            undefined,
-          ),
-          timeStart: isComparison
-            ? timeControls.comparisonAdjustedStart
-            : timeControls.adjustedStart,
-          timeEnd: isComparison
-            ? timeControls.comparisonAdjustedEnd
-            : timeControls.adjustedEnd,
-          timeGranularity:
-            timeControls.selectedTimeRange?.interval ??
-            timeControls.minTimeGrain,
-          timeZone: dashboardStore.selectedTimezone,
-        },
-        {
-          query: {
-            enabled,
-            placeholderData: keepPreviousData,
-            refetchOnMount: false,
-          },
-        },
-      );
-    },
-  );
-
-  return createQuery(queryOptionsStore, ctx.queryClient);
 }
 
 /***
