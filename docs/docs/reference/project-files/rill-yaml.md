@@ -32,7 +32,7 @@ _[string]_ - Extra instructions for LLM/AI features. Used to guide natural langu
 
 Rill allows you to specify the default OLAP engine to use in your project via `rill.yaml`.
 :::info Curious about OLAP Engines?
-Please see our reference documentation on [OLAP Engines](/docs/connect/olap).
+Please see our reference documentation on [OLAP Engines](/connect/olap).
 :::
 
 

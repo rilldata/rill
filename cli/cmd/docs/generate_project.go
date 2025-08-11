@@ -69,7 +69,6 @@ func GenerateProjectDocsCmd(rootCmd *cobra.Command, ch *cmdutil.Helper) *cobra.C
 				resTitle := getScalarValue(resource, "title")
 				resID := getScalarValue(resource, "id")
 
-
 				// Use id if available, otherwise fall back to title
 				var fileName string
 				if resID != "" {
@@ -81,7 +80,6 @@ func GenerateProjectDocsCmd(rootCmd *cobra.Command, ch *cmdutil.Helper) *cobra.C
 				}
 
 				resourceFilebuf.WriteString(generateDoc(sidebarPosition, 0, resource, "", requiredMap, resID))
-
 
 				filePath := filepath.Join(outputDir, fileName)
 				if err := os.WriteFile(filePath, []byte(resourceFilebuf.String()), 0o644); err != nil {
@@ -485,7 +483,6 @@ func generateDoc(sidebarPosition, level int, node *yaml.Node, indent string, req
 
 			}
 		} else {
-
 			if len(oneOf.Content) == 1 {
 				doc.WriteString(generateDoc(sidebarPosition, level, oneOf.Content[0], indent, getRequiredMapFromNode(oneOf.Content[0]), id))
 			} else {
