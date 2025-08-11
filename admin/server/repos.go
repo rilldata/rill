@@ -87,12 +87,13 @@ func (s *Server) GetRepoMeta(ctx context.Context, req *adminv1.GetRepoMetaReques
 	}
 
 	return &adminv1.GetRepoMetaResponse{
-		ExpiresOn:     timestamppb.New(expiresAt),
-		LastUpdatedOn: timestamppb.New(proj.UpdatedOn),
-		GitUrl:        gitURL,
-		GitSubpath:    proj.Subpath,
-		GitBranch:     proj.ProdBranch,
-		GitEditBranch: editBranch,
+		ExpiresOn:      timestamppb.New(expiresAt),
+		LastUpdatedOn:  timestamppb.New(proj.UpdatedOn),
+		GitUrl:         gitURL,
+		GitSubpath:     proj.Subpath,
+		GitBranch:      proj.ProdBranch,
+		GitEditBranch:  editBranch,
+		ManagedGitRepo: proj.ManagedGitRepoID != nil,
 	}, nil
 }
 
