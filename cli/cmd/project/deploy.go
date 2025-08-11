@@ -32,17 +32,20 @@ var (
 )
 
 type DeployOpts struct {
-	GitPath       string
-	SubPath       string
-	RemoteName    string
-	Name          string
-	Description   string
-	Public        bool
-	Provisioner   string
-	ProdVersion   string
-	ProdBranch    string
-	Slots         int
+	GitPath     string
+	SubPath     string
+	RemoteName  string
+	Name        string
+	Description string
+	Public      bool
+	Provisioner string
+	ProdVersion string
+	ProdBranch  string
+	Slots       int
+
 	ArchiveUpload bool
+	Managed       bool
+	Github        bool
 }
 
 func DeployCmd(ch *cmdutil.Helper) *cobra.Command {
