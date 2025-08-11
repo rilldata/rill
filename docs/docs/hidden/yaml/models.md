@@ -50,3 +50,16 @@ There are both pros and cons to materializing your models.
 If unsure, we would generally recommend leaving the defaults and/or reaching out for further guidance!
 :::
  
+
+## Examples
+
+### Materialized SQL Model
+
+```sql-
+-- Model SQL
+-- Reference  documentation: https://docs.rilldata.com/reference/project-files/models
+-- @type: model
+-- @materialize: true
+
+select * from your_table
+```

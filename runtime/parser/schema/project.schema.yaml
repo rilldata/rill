@@ -230,6 +230,18 @@ definitions:
         -- @property: value
         ```
         We will cover different available configurable properties in the below sections.
+    examples:  |
+        ### Materialized SQL Model
+
+        ```sql-
+        -- Model SQL
+        -- Reference  documentation: https://docs.rilldata.com/reference/project-files/models
+        -- @type: model
+        -- @materialize: true
+        
+        select * from your_table
+        ```
+
     allOf:
       - title: Properties
         type: object
