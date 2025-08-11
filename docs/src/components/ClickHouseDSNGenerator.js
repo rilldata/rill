@@ -79,7 +79,7 @@ const ClickHouseDSNGenerator = () => {
     };
 
     return (
-        <div className="container">
+        <div className="ch_container">
             <div className="formSection">
                 {/* <h4>Generate ClickHouse DSN</h4> */}
 

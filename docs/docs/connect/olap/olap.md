@@ -1,5 +1,5 @@
 ---
-title: "BYO OLAP Engine (Live Connector)"
+title: "Bring Your Own  OLAP Engine (Live Connector)"
 description: Configure the OLAP engine used by Rill
 sidebar_label: "OLAP Engines"
 sidebar_position: 00

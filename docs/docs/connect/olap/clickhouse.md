@@ -98,10 +98,16 @@ If you are connecting to an existing [ClickHouse Cloud](https://clickhouse.com/c
 
 Because ClickHouse Cloud requires a secure connection over [https](https://github.com/ClickHouse/clickhouse-go?tab=readme-ov-file#http-support-experimental), you will need to pass in `secure=true` and `skip_verify=true` as additional URL parameters as part of your https URL (for your DSN).
 
-Use the below generator to create the DSN or use the connection parameters in ClickHouse Cloud's UI. Don't forget to enable the SSL option!
+### Generate Connection String
+Use the below generator and add the ClickHouse Cloud parameters to generate a connection string.
 
 <ClickHouseDSNGenerator />
 
+### UI Connection Parameters
+If you're connecting via the UI, don't forget to enable the SSL option.
+
+<img src='/img/connect/connector/managed-clickhouse.png' class='rounded-gif' />
+<br />
 
 :::info Need help connecting to ClickHouse?
 If you would like to connect Rill to an existing ClickHouse instance, please don't hesitate to [contact us](/contact). We'd love to help!

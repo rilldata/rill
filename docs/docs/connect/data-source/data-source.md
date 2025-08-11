@@ -11,7 +11,7 @@ By default, Rill will use a managed embedded analytics engine (**DuckDB** or **C
 
 :::tip using clickhouse?
 
-Dont forget to [create a managed ClickHouse server](/connect/olap/clickhouse#rill-managed-clickhouse) before getting started!
+Don't forget to [create a managed ClickHouse server](/connect/olap/clickhouse#rill-managed-clickhouse) before getting started!
 
 
 ```yaml
