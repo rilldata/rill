@@ -437,6 +437,10 @@ const config = {
             from: '/concepts/bi-as-code',
             to: '/home/concepts/bi-as-code'
           },
+          {
+            from: '/reference/project-files/models',
+            to: '/reference/project-files/advanced-models'
+          },
           // {
           //   from: '/old-page',
           //   to: '/new-page',
