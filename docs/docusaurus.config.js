@@ -417,6 +417,10 @@ const config = {
             from: '/home/FAQ',
             to: '/other/FAQ'
           },
+          {
+            from: '/reference/project-files/models',
+            to: '/build/models'
+          },
           // {
           //   from: '/old-page',
           //   to: '/new-page',
