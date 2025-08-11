@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import CodeBlock from '@theme/CodeBlock';
+import '../css/ClickHouseDSNGenerator.scss';
+
 
 const ClickHouseDSNGenerator = () => {
     const [formData, setFormData] = useState({
