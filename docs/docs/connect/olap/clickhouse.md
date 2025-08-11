@@ -5,7 +5,6 @@ sidebar_label: ClickHouse
 sidebar_position: 00
 ---
 import LoomVideo from '@site/src/components/LoomVideo'; // Adjust the path as needed
-import ClickHouseDSNGenerator from '@site/src/components/ClickHouseDSNGenerator';
 
 <LoomVideo loomId='b96143c386104576bcfe6cabe1038c38' />
 
@@ -95,19 +94,18 @@ If you are connecting to an existing [ClickHouse Cloud](https://clickhouse.com/c
 <img src='/img/connect/connector/clickhouse-cloud.png' class='rounded-gif' />
 <br />
 
+Using the information in the ClickHouse UI, populate the parameters of your connection. As ClickHosue Cloud requires a secure connection, keep the SSL option checked.
 
+
+<img src='/img/connect/connector/clickhouse-ssl.png' class='rounded-gif' />
+<br />
+
+### Connection String (DSN)
 Because ClickHouse Cloud requires a secure connection over [https](https://github.com/ClickHouse/clickhouse-go?tab=readme-ov-file#http-support-experimental), you will need to pass in `secure=true` and `skip_verify=true` as additional URL parameters as part of your https URL (for your DSN).
 
-### Generate Connection String
-Use the below generator and add the ClickHouse Cloud parameters to generate a connection string.
-
-<ClickHouseDSNGenerator />
-
-### UI Connection Parameters
-If you're connecting via the UI, don't forget to enable the SSL option.
-
-<img src='/img/connect/connector/managed-clickhouse.png' class='rounded-gif' />
-<br />
+```yaml
+https://<hostname>:<port>?username=<username>&password=<password>&secure=true&skip_verify=true
+```
 
 :::info Need help connecting to ClickHouse?
 If you would like to connect Rill to an existing ClickHouse instance, please don't hesitate to [contact us](/contact). We'd love to help!
