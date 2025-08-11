@@ -1,9 +1,11 @@
 ---
 note: GENERATED. DO NOT EDIT.
 title: Models YAML
-sidebar_position: 42
+sidebar_position: 33
 ---
 
+
+This file is used to define YAML models. For more information on our SQL models, see the [SQL models](/build/models/) documentation.
 :::tip
 
 Both regular models and source models can use the Model YAML specification described on this page. While [SQL models](./models) are perfect for simple transformations, Model YAML files provide advanced capabilities for complex data processing scenarios.
@@ -356,4 +358,14 @@ stage:
 # Produce the final output into ClickHouse, requires a clickhouse.yaml connector defined.
 output:
   connector: clickhouse
+```
+### Materialized SQL Model
+
+```sql
+-- Model SQL
+-- Reference  documentation: https://docs.rilldata.com/reference/project-files/models
+-- @type: model
+-- @materialize: true
+
+select * from your_table
 ```

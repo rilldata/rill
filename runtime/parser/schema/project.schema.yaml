@@ -24,7 +24,6 @@ oneOf:
   - $ref: '#/definitions/connectors'
   - $ref: '#/definitions/sources'
   - $ref: '#/definitions/models'
-  # - $ref: '#/definitions/advanced-models' separated due to parsing YAML issues
   - $ref: '#/definitions/metrics-views'
   - $ref: '#/definitions/canvas-dashboards'
   - $ref: '#/definitions/explore-dashboards'
@@ -216,32 +215,26 @@ definitions:
   
   # Model SQL
   models: 
-    title: Model SQL
+    title: Models YAML
+    id: advanced-models.schema.yaml
     type: object
-    id: models
     description: |
-      When using Rill Developer, data transformations are powered by DuckDB and their dialect of SQL. Under the hood, by default, data models are created as views in DuckDB. Please check our modeling page and DuckDB documentation for more details about how to construct and write your model SQL syntax.
 
-      In your Rill project directory, you can also create a `<model_name>.sql` file containing an appropriate DuckDB `SELECT` statement, most commonly within the default `models` directory, to represent a model (or set of SQL transformations). Rill will automatically detect and parse the model next time you run `rill start`.
+      This file is used to define YAML models. For more information on our SQL models, see the [SQL models](/build/models/) documentation.
+      :::tip
 
-        ### Annotating your models with properties
-        In most cases, objects are represented in Rill as YAML files. Models are unique in that any model.sql file can be considered a model resource in Rill, representing a SQL transformation that you would like to inform using a set of inputs and outputting a view or table (depending on the materialization type). For most other resources, available properties can be set directly via the corresponding YAML file. In the case of a model SQL file though, configurable properties should be set by annotating the top of the file using the following syntax:
-        ```sql
-        -- @property: value
-        ```
-        We will cover different available configurable properties in the below sections.
-    examples:  |
-        ### Materialized SQL Model
+      Both regular models and source models can use the Model YAML specification described on this page. While [SQL models](./models) are perfect for simple transformations, Model YAML files provide advanced capabilities for complex data processing scenarios.
 
-        ```sql-
-        -- Model SQL
-        -- Reference  documentation: https://docs.rilldata.com/reference/project-files/models
-        -- @type: model
-        -- @materialize: true
-        
-        select * from your_table
-        ```
+      **When to use Model YAML:**
+      - **Partitions** - Optimize performance with data partitioning strategies
+      - **Incremental models** - Process only new or changed data efficiently
+      - **Pre/post execution hooks** - Run custom logic before or after model execution
+      - **Staging** - Create intermediate tables for complex transformations
+      - **Output configuration** - Define specific output formats and destinations
 
+      Model YAML files give you fine-grained control over how your data is processed and transformed, making them ideal for production workloads and complex analytics pipelines.
+
+      :::
     allOf:
       - title: Properties
         type: object
@@ -249,36 +242,291 @@ definitions:
           type:
             type: string
             const: model
-            description: |
-              By default, any new model that is created in a Rill project will populate a corresponding .sql file representing the model. Similarly, a .sql file that is directly created in the project directory will also be automatically assumed by Rill to be a model by default. Therefore, it is not necessary to annotate the model resource with the type property.
-
-              For consistency or documentation purposes, if you'd like to annotate your model resource as well with the type property, you can do so by adding the following to the top of your model_name.sql:
-              ```sql
-              -- @type: model
+            description: Refers to the resource type and must be `model`
+          refresh:
+            $ref: '#/definitions/schedule_properties'
+            description: Specifies the refresh schedule that Rill should follow to re-ingest and update the underlying model data 
+            examples: |
+              ```yaml
+              refresh:
+                cron: "* * * * *"
+                #every: "24h"
               ```
+
+          connector:
+            type: string
+            const: connector
+            description: Refers to the resource type and is needed if setting an explicit OLAP engine. IE `clickhouse`
+          sql:
+            type: string
+            description: Raw SQL query to run against source
+          pre_exec:
+            type: string
+            description: |
+              Refers to SQL queries to run before the main query, available for DuckDB-based models. (optional). 
+              Ensure pre_exec queries are idempotent. Use IF NOT EXISTS statements when applicable.
+              ```yaml
+              pre_exec: ATTACH IF NOT EXISTS 'dbname=postgres host=localhost port=5432 user=postgres password=postgres' AS postgres_db (TYPE POSTGRES)
+              ```
+          post_exec:
+            type: string
+            description: |
+              Refers to a SQL query that is run after the main query, available for DuckDB-based models. (optional). 
+              Ensure post_exec queries are idempotent. Use IF EXISTS statements when applicable.
+              ```yaml
+              post_exec: DETACH DATABASE IF EXISTS postgres_db
+              ```
+          timeout:
+            type: string
+            description: The maximum time to wait for model ingestion
+          incremental:
+            type: boolean
+            description: whether incremental modeling is required (optional)
+          change_mode:
+            type: string
+            enum:
+              - reset
+              - manual
+              - patch
+            description: Configure how changes to the model specifications are applied (optional). 'reset' will drop and recreate the model automatically, 'manual' will require a manual full or incremental refresh to apply changes, and 'patch' will switch to the new logic without re-processing historical data (only applies for incremental models).
+          state:
+            $ref: '#/definitions/data_properties'
+            description:  Refers to the explicitly defined state of your model, cannot be used with partitions (optional)
+            examples: |
+              ```yaml
+              state:
+                  sql: SELECT MAX(date) as max_date
+              ```
+          partitions:
+            $ref: '#/definitions/data_properties'
+            description: Refers to the how your data is partitioned, cannot be used with state. (optional)
+            examples: |
+              ```yaml
+              partitions:
+                glob: gcs://my_bucket/y=*/m=*/d=*/*.parquet
+              ```
+              ```yaml
+              partitions:
+                connector: duckdb
+                sql: SELECT range AS num FROM range(0,10)
+                ```
           materialize:
             type: boolean
-            description: |
-              As mentioned, models will be materialized in DuckDB as views by default. However, you can choose to materialize them as tables instead of views. To do this, you can add the following annotation to the top of your model SQL file:
-              ```sql
-              -- @materialize: true
-              ```
+            description: models will be materialized in olap
+          partitions_watermark:
+            type: string
+            description: Refers to a customizable timestamp that can be set to check if an object has been updated (optional).
+          partitions_concurrency:
+            type: integer
+            description: Refers to the number of concurrent partitions that can be read at the same time (optional).
+          stage:
+            type: object
+            properties:
+              connector:
+                type: string
+                description: Refers to the connector type for the staging table
+              path:
+                type: string
+                description: Refers to the path to the staging table
 
-              Alternatively, it is possible to set it as a project-wide default as well that your models inherit via your rill.yaml file:
+            required:
+              - connector
+            description: in the case of staging models, where an input source does not support direct write to the output and a staging table is required
+            examples: |
               ```yaml
-              models:
-                materialize: true
+              stage:
+                connector: s3
+                path: s3://my_bucket/my_staging_table
               ```
+            additionalProperties: true
+          output:
+            type: object
+            description: to define the properties of output
+            properties:
+              table:
+                type: string
+                description: Name of the output table. If not specified, the model name is used.
+              materialize:
+                type: boolean
+                description: Whether to materialize the model as a table or view
+              connector:
+                type: string
+                description: Refers to the connector type for the output table. Can be `clickhouse` or `duckdb` and their named connector 
+              incremental_strategy:
+                type: string
+                enum:
+                  - append
+                  - merge
+                  - partition_overwrite
+                description: Strategy to use for incremental updates. Can be 'append', 'merge' or 'partition_overwrite'
+              unique_key:
+                type: array
+                items:
+                  type: string
+                description: List of columns that uniquely identify a row for merge strategy
+              partition_by:
+                type: string
+                description: Column or expression to partition the table by
+            allOf:
+              - if:
+                  title: Additional properties for `output` when `connector` is `clickhouse`
+                  properties:
+                    connector:
+                      const: clickhouse
+                  required:
+                    - connector
+                then:
+                  properties:
+                    type:
+                      type: string
+                      description: Type to materialize the model into. Can be 'TABLE', 'VIEW' or 'DICTIONARY'
+                      enum:
+                        - TABLE
+                        - VIEW
+                        - DICTIONARY
+                    columns:
+                      type: string
+                      description: Column names and types. Can also include indexes. If unspecified, detected from the query.
+                    engine_full:
+                      type: string
+                      description: Full engine definition in SQL format. Can include partition keys, order, TTL, etc.
+                    engine:
+                      type: string
+                      description: Table engine to use. Default is MergeTree
+                    order_by:
+                      type: string
+                      description: ORDER BY clause.
+                    partition_by:
+                      type: string
+                      description: Partition BY clause.
+                    primary_key:
+                      type: string
+                      description: PRIMARY KEY clause.
+                    sample_by:
+                      type: string
+                      description: SAMPLE BY clause.
+                    ttl:
+                      type: string
+                      description: TTL settings for the table or columns.
+                    table_settings:
+                      type: string
+                      description: Table-specific settings.
+                    query_settings:
+                      type: string
+                      description: Settings used in insert/create table as select queries.
+                    distributed_settings:
+                      type: string
+                      description: Settings for distributed table.
+                    distributed_sharding_key:
+                      type: string
+                      description: Sharding key for distributed table.
+                    dictionary_source_user:
+                      type: string
+                      description: User for accessing the source dictionary table (used if type is DICTIONARY).
+                    dictionary_source_password:
+                      type: string
+                      description: Password for the dictionary source user.
+        required:
+          - type
+          - sql
+      - $ref: '#/definitions/common_properties'
+      - title: Depending on the connector, additional properties may be required
+        description: |
+          Depending on the connector, additional properties may be required, for more information see the [connectors](./connectors.md) documentation
+    examples: |
+        ### Incremental model 
+        ```yaml
+        type: model
+        incremental: true
+        connector: bigquery 
 
-              :::info To materialize or not to materialize?
+        state:
+          sql: SELECT MAX(date) as max_date
 
-              There are both pros and cons to materializing your models.
-              - Pros can include improved performance for downstream models and dashboards, especially with the SQL is complex and/or the data size is large. We generally recommend _materializing_ final models that power dashboards.
-              - Cons can include a degraded keystroke-by-keystroke modeling experience or for specific edge cases, such as when using cross joins.
+        sql: |
+              SELECT ... FROM events 
+                {{ if incremental }} 
+                    WHERE event_time > '{{.state.max_date}}' 
+                {{end}}
+        output:
+        connector: duckdb 
+        ```
 
-              If unsure, we would generally recommend leaving the defaults and/or reaching out for further guidance!
-              :::
+        ### Partitioned model 
+        ```yaml
+        type: model
 
+        partitions:
+          glob:
+            connector: gcs
+            path: gs://rilldata-public/github-analytics/Clickhouse/2025/*/commits_*.parquet
+
+        sql: SELECT * FROM read_parquet('{{ .partition.uri }}')
+
+        output:
+          connector: duckdb
+          incremental_strategy: append
+        ```
+
+        ### Partitioned Incremental model 
+        ```yaml
+        type: model
+
+        incremental: true
+        refresh:
+            cron: "0 8 * * *"
+
+        partitions:
+          glob:
+            path: gs://rilldata-public/github-analytics/Clickhouse/2025/*/*
+            partition: directory
+          
+        sql: |
+          SELECT * 
+            FROM read_parquet('gs://rilldata-public/{{ .partition.path }}/commits_*.parquet') 
+            WHERE '{{ .partition.path }}' IS NOT NULL
+
+
+        output:
+          connector: duckdb
+          incremental_strategy: append
+        ```
+
+        ### Staging model 
+        ```yaml
+        type: model 
+        connector: snowflake
+
+        # Use DuckDB to generate a range of days from 1st Jan to today
+        partitions:
+          connector: duckdb
+          sql: SELECT range as day FROM range(TIMESTAMPTZ '2024-01-01', now(), INTERVAL 1 DAY)
+
+        # Don't reload previously ingested partitions on every refresh
+        incremental: true
+
+        # Query Snowflake for all events belonging to the current partition
+        sql: SELECT * FROM events WHERE date_trunc('day', event_time) = '{{ .partition.day }}'
+
+        # Since ClickHouse can't ingest from Snowflake or vice versa, we use S3 as a temporary staging connector
+        stage:
+          connector: s3
+          path: s3://bucket/temp-data
+
+        # Produce the final output into ClickHouse, requires a clickhouse.yaml connector defined.
+        output:
+          connector: clickhouse
+        ```
+        ### Materialized SQL Model
+
+        ```sql
+        -- Model SQL
+        -- Reference  documentation: https://docs.rilldata.com/reference/project-files/models
+        -- @type: model
+        -- @materialize: true
+        
+        select * from your_table
+        ```
   # Metrics Views
   metrics-views:
     title: Metrics View YAML

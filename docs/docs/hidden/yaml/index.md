@@ -30,7 +30,7 @@ For more information about using Git or cloning projects locally, please see our
 
 - [Connector YAML](connectors.md)
 - [Source YAML](sources.md)
-- [Model SQL](models.md)
+- [Models YAML](advanced-models.md)
 - [Metrics View YAML](metrics-views.md)
 - [Canvas Dashboard YAML](canvas-dashboards.md)
 - [Explore Dashboard YAML](explore-dashboards.md)
@@ -39,4 +39,3 @@ For more information about using Git or cloning projects locally, please see our
 - [Theme YAML](themes.md)
 - [Component YAML](component.md)
 - [Project YAML](rill-yaml.md)
-- [Models YAML](advanced-models.md)
