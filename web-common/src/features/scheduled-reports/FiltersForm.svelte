@@ -235,7 +235,6 @@
   }
 </script>
 
-showFullRange
 <div
   class="flex flex-col gap-y-2 size-full pointer-events-none"
   style:max-width="{maxWidth}px"
