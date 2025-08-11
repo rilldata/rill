@@ -71,32 +71,6 @@ var spec = drivers.Spec{
 			Required:    true,
 		},
 	},
-	// SourceProperties: []*drivers.PropertySpec{
-	// 	{
-	// 		Key:         "output_location",
-	// 		Type:        drivers.StringPropertyType,
-	// 		DisplayName: "S3 output location",
-	// 		Description: "Output location in S3 for temporary data.",
-	// 		Placeholder: "s3://bucket-name/path/",
-	// 		Required:    true,
-	// 	},
-	// 	{
-	// 		Key:         "cluster_identifier",
-	// 		Type:        drivers.StringPropertyType,
-	// 		DisplayName: "Redshift cluster identifier",
-	// 		Description: "Redshift cluster identifier",
-	// 		Placeholder: "redshift-cluster-1",
-	// 		Required:    false,
-	// 	},
-	// 	{
-	// 		Key:         "role_arn",
-	// 		Type:        drivers.StringPropertyType,
-	// 		DisplayName: "Redshift role ARN",
-	// 		Description: "Redshift role ARN",
-	// 		Placeholder: "arn:aws:iam::03214372:role/service-role/AmazonRedshift-CommandsAccessRole-20240307T203902",
-	// 		Required:    true,
-	// 	},
-	// },
 	ImplementsWarehouse: true,
 }
 
