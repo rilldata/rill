@@ -4,7 +4,12 @@ import {
 } from "@rilldata/web-common/components/vega/util";
 import type { TooltipValue } from "@rilldata/web-common/features/canvas/components/charts/types";
 import type { VisualizationSpec } from "svelte-vega";
+import type { Field } from "vega-lite/build/src/channeldef";
+import type { LayerSpec } from "vega-lite/build/src/spec/layer";
+import type { UnitSpec } from "vega-lite/build/src/spec/unit";
 import {
+  buildHoverPointOverlay,
+  buildHoverRuleLayer,
   createColorEncoding,
   createConfigWithLegend,
   createDefaultTooltipEncoding,
@@ -51,90 +56,29 @@ export function generateVLLineChartSpec(
 
   spec.encoding = { x: createPositionEncoding(config.x, data) };
 
-  spec.layer = [
+  const layers: Array<LayerSpec<Field> | UnitSpec<Field>> = [
     {
       encoding: {
         y: createPositionEncoding(config.y, data),
         color: createColorEncoding(config.color, data),
       },
-      layer: [
-        { mark: "line" },
-        {
-          transform: [{ filter: { param: "hover", empty: false } }],
-          mark: {
-            type: "point",
-            filled: true,
-            opacity: 1,
-            size: 50,
-            clip: true,
-            stroke: "white",
-            strokeWidth: 1,
-          },
-        },
-      ],
+      layer: [{ mark: "line" }, buildHoverPointOverlay()],
     },
-    {
-      transform:
+    buildHoverRuleLayer({
+      xField,
+      yField,
+      defaultTooltip: defaultTooltipChannel,
+      multiValueTooltipChannel,
+      xSort: config.x?.sort,
+      primaryColor: data.theme.primary,
+      pivot:
         xField && yField && colorField && multiValueTooltipChannel?.length
-          ? [
-              {
-                pivot: colorField,
-                value: yField,
-                groupby: [xField],
-              },
-            ]
-          : [],
-      mark: {
-        type: "rule",
-        clip: true,
-      },
-      encoding: {
-        x: {
-          field: xField,
-          ...(yField && config.x?.sort === "y"
-            ? {
-                sort: {
-                  field: yField,
-                  order: "ascending",
-                },
-              }
-            : yField && config.x?.sort === "-y"
-              ? {
-                  sort: {
-                    field: yField,
-                    order: "descending",
-                  },
-                }
-              : {}),
-        },
-        color: {
-          condition: [
-            {
-              param: "hover",
-              empty: false,
-              value: "var(--color-primary-300)",
-            },
-          ],
-          value: "transparent",
-        },
-        tooltip: multiValueTooltipChannel?.length
-          ? multiValueTooltipChannel
-          : defaultTooltipChannel,
-      },
-      params: [
-        {
-          name: "hover",
-          select: {
-            type: "point",
-            encodings: ["x"],
-            nearest: true,
-            on: "pointerover",
-            clear: "pointerout",
-          },
-        },
-      ],
-    },
+          ? { field: colorField, value: yField, groupby: [xField] }
+          : undefined,
+    }),
   ];
+
+  spec.layer = layers;
 
   return {
     ...spec,

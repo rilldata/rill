@@ -36,10 +36,6 @@ export function generateSpec(
   return CHART_CONFIG[chartType]?.generateSpec(rillChartSpec, data);
 }
 
-export function isChartLineLike(chartType: ChartType) {
-  return chartType === "line_chart" || chartType === "area_chart";
-}
-
 export function mergedVlConfig(
   userProvidedConfig: string | undefined,
   specConfig: Config | undefined,

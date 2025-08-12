@@ -1,24 +1,32 @@
-import type { VisualizationSpec } from "svelte-vega";
-import {
-  createMultiLayerBaseSpec,
-  createPositionEncoding,
-  createConfigWithLegend,
-} from "../builder";
-import type { ChartDataResult } from "../types";
-import type { MultiMetricChartSpec } from "./MultiMetricChart";
 import {
   sanitizeFieldName,
   sanitizeValueForVega,
 } from "@rilldata/web-common/components/vega/util";
 import type { TooltipValue } from "@rilldata/web-common/features/canvas/components/charts/types";
+import type { VisualizationSpec } from "svelte-vega";
+import type { Field } from "vega-lite/build/src/channeldef";
+import type { LayerSpec } from "vega-lite/build/src/spec/layer";
+import type { UnitSpec } from "vega-lite/build/src/spec/unit";
+import {
+  buildHoverPointOverlay,
+  buildHoverRuleLayer,
+  createConfigWithLegend,
+  createMultiLayerBaseSpec,
+  createPositionEncoding,
+} from "../builder";
+import type { ChartDataResult } from "../types";
+import type { MultiMetricChartSpec } from "./MultiMetricChart";
 
 export function generateVLMultiMetricChartSpec(
   config: MultiMetricChartSpec,
   data: ChartDataResult,
 ): VisualizationSpec {
+  const measureField = "Measure";
+  const valueField = "value";
+
   const spec = createMultiLayerBaseSpec();
   const vegaConfig = createConfigWithLegend(config, {
-    field: "Measure",
+    field: measureField,
     type: "nominal",
   });
 
@@ -27,21 +35,48 @@ export function generateVLMultiMetricChartSpec(
   spec.transform = [
     {
       fold: measures,
-      as: ["Measure", "value"],
+      as: [measureField, valueField],
     },
   ];
 
-  // X encoding
   spec.encoding = { x: createPositionEncoding(config.x, data) };
 
-  const markType = config.mark_type || "grouped_bar";
+  const markType = config.mark_type || "stacked_bar";
   const xField = sanitizeValueForVega(config.x?.field);
 
-  // Create measure display names map
   const measureDisplayNames: Record<string, string> = {};
   measures.forEach((measure) => {
     measureDisplayNames[measure] = data.fields[measure]?.displayName || measure;
   });
+
+  const legend = {
+    labelExpr:
+      Object.entries(measureDisplayNames)
+        .map(([key, value]) => `datum.value === '${key}' ? '${value}' : `)
+        .join("") + "datum.value",
+  };
+
+  const baseColorEncoding = {
+    field: measureField,
+    type: "nominal" as const,
+    legend,
+  };
+
+  const baseYEncoding = {
+    field: valueField,
+    type: "quantitative" as const,
+    title: "Value",
+  };
+
+  const sumYEncoding = {
+    aggregate: "sum" as const,
+    ...baseYEncoding,
+  };
+
+  const stackedYEncoding = {
+    ...sumYEncoding,
+    stack: "zero" as const,
+  };
 
   // Build multi-value tooltip for hover rule
   let multiValueTooltipChannel: TooltipValue[] | undefined;
@@ -82,7 +117,6 @@ export function generateVLMultiMetricChartSpec(
     {
       field: "Measure",
       type: "nominal",
-      title: "Metric",
     },
     {
       field: "value",
@@ -92,204 +126,61 @@ export function generateVLMultiMetricChartSpec(
   ];
 
   if (markType === "line") {
-    spec.layer = [
+    const layers: Array<LayerSpec<Field> | UnitSpec<Field>> = [
       {
         encoding: {
-          y: {
-            field: "value",
-            type: "quantitative",
-            title: "Value",
-          },
-          color: {
-            field: "Measure",
-            type: "nominal",
-            legend: {
-              labelExpr:
-                Object.entries(measureDisplayNames)
-                  .map(
-                    ([key, value]) =>
-                      `datum.value === '${key}' ? '${value}' : `,
-                  )
-                  .join("") + "datum.value",
-            },
-          },
+          y: baseYEncoding,
+          color: baseColorEncoding,
         },
         layer: [
           { mark: { type: "line", clip: true } },
-          {
-            transform: [{ filter: { param: "hover", empty: false } }],
-            mark: {
-              type: "point",
-              filled: true,
-              opacity: 1,
-              size: 50,
-              clip: true,
-              stroke: "white",
-              strokeWidth: 1,
-            },
-          },
+          buildHoverPointOverlay(),
         ],
       },
-      {
-        transform:
+      buildHoverRuleLayer({
+        xField,
+        defaultTooltip,
+        multiValueTooltipChannel,
+        primaryColor: data.theme.primary,
+        pivot:
           xField && measures.length && multiValueTooltipChannel?.length
-            ? [
-                {
-                  pivot: "Measure",
-                  value: "value",
-                  groupby: [xField],
-                },
-              ]
-            : [],
-        mark: {
-          type: "rule",
-          clip: true,
-        },
-        encoding: {
-          x: {
-            field: xField,
-          },
-          color: {
-            condition: [
-              {
-                param: "hover",
-                empty: false,
-                value: "var(--color-primary-300)",
-              },
-            ],
-            value: "transparent",
-          },
-          tooltip: multiValueTooltipChannel?.length
-            ? multiValueTooltipChannel
-            : defaultTooltip,
-        },
-        params: [
-          {
-            name: "hover",
-            select: {
-              type: "point",
-              encodings: ["x"],
-              nearest: true,
-              on: "pointerover",
-              clear: "pointerout",
-            },
-          },
-        ],
-      },
+            ? { field: "Measure", value: "value", groupby: [xField] }
+            : undefined,
+      }),
     ];
+    spec.layer = layers;
   } else if (markType === "stacked_area") {
-    spec.layer = [
+    const layers: Array<LayerSpec<Field> | UnitSpec<Field>> = [
       {
         encoding: {
-          y: {
-            aggregate: "sum",
-            field: "value",
-            type: "quantitative",
-            stack: "zero",
-            title: "Value",
-          },
-          color: {
-            field: "Measure",
-            type: "nominal",
-            legend: {
-              labelExpr:
-                Object.entries(measureDisplayNames)
-                  .map(
-                    ([key, value]) =>
-                      `datum.value === '${key}' ? '${value}' : `,
-                  )
-                  .join("") + "datum.value",
-            },
-          },
+          y: stackedYEncoding,
+          color: baseColorEncoding,
         },
         layer: [
           { mark: { type: "area", clip: true } },
           { mark: { type: "line", opacity: 0.5 } },
-          {
-            transform: [{ filter: { param: "hover", empty: false } }],
-            mark: {
-              type: "point",
-              filled: true,
-              opacity: 1,
-              size: 50,
-              clip: true,
-              stroke: "white",
-              strokeWidth: 1,
-            },
-          },
+          buildHoverPointOverlay(),
         ],
       },
-      {
-        transform:
+      buildHoverRuleLayer({
+        xField,
+        defaultTooltip,
+        multiValueTooltipChannel,
+        primaryColor: data.theme.primary,
+        pivot:
           xField && measures.length && multiValueTooltipChannel?.length
-            ? [
-                {
-                  pivot: "Measure",
-                  value: "value",
-                  groupby: [xField],
-                },
-              ]
-            : [],
-        mark: {
-          type: "rule",
-          clip: true,
-        },
-        encoding: {
-          x: {
-            field: xField,
-          },
-          color: {
-            condition: [
-              {
-                param: "hover",
-                empty: false,
-                value: "var(--color-primary-300)",
-              },
-            ],
-            value: "transparent",
-          },
-          tooltip: multiValueTooltipChannel?.length
-            ? multiValueTooltipChannel
-            : defaultTooltip,
-        },
-        params: [
-          {
-            name: "hover",
-            select: {
-              type: "point",
-              encodings: ["x"],
-              nearest: true,
-              on: "pointerover",
-              clear: "pointerout",
-            },
-          },
-        ],
-      },
+            ? { field: "Measure", value: "value", groupby: [xField] }
+            : undefined,
+      }),
     ];
+    spec.layer = layers;
   } else if (markType === "stacked_bar") {
     spec.layer = [
       {
         mark: { type: "bar", clip: true },
         encoding: {
-          y: {
-            aggregate: "sum",
-            field: "value",
-            type: "quantitative",
-            title: "Value",
-          },
-          color: {
-            field: "Measure",
-            type: "nominal",
-            legend: {
-              labelExpr:
-                Object.entries(measureDisplayNames)
-                  .map(
-                    ([key, value]) =>
-                      `datum.value === '${key}' ? '${value}' : `,
-                  )
-                  .join("") + "datum.value",
-            },
-          },
+          y: sumYEncoding,
+          color: baseColorEncoding,
           tooltip: defaultTooltip,
         },
       },
@@ -299,26 +190,9 @@ export function generateVLMultiMetricChartSpec(
       {
         mark: { type: "bar", clip: true },
         encoding: {
-          y: {
-            aggregate: "sum",
-            field: "value",
-            type: "quantitative",
-            title: "Value",
-          },
-          xOffset: { field: "Measure" },
-          color: {
-            field: "Measure",
-            type: "nominal",
-            legend: {
-              labelExpr:
-                Object.entries(measureDisplayNames)
-                  .map(
-                    ([key, value]) =>
-                      `datum.value === '${key}' ? '${value}' : `,
-                  )
-                  .join("") + "datum.value",
-            },
-          },
+          y: sumYEncoding,
+          xOffset: { field: measureField },
+          color: baseColorEncoding,
           tooltip: defaultTooltip,
         },
       },
