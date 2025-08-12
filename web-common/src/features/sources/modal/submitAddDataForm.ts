@@ -173,7 +173,7 @@ export async function submitAddOLAPConnectorForm(
     throw new Error(errorMessage);
   }
 
-  // Test the connection to the OLAP database (only for original OLAP connectors)
+  // Test the connection to the OLAP database (only for OLAP_ENGINES connectors)
   // If the connection test fails, rollback the changes
   if (OLAP_ENGINES.includes(connector.name as string)) {
     const result = await testOLAPConnector(
