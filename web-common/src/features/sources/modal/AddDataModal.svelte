@@ -156,7 +156,8 @@
   $: isConnectorType =
     selectedConnector?.implementsOlap ||
     selectedConnector?.implementsSqlStore ||
-    selectedConnector?.implementsWarehouse;
+    (selectedConnector?.implementsWarehouse &&
+      selectedConnector?.name !== "salesforce");
 </script>
 
 {#if step >= 1 || $duplicateSourceName}
