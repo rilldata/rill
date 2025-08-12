@@ -73,7 +73,7 @@ export interface FieldsByType {
 }
 
 export function getFieldsByType(spec: ChartSpec): FieldsByType {
-  const measures: string[] = [];
+  let measures: string[] = [];
   const dimensions: string[] = [];
   const timeDimensions: string[] = [];
 
@@ -110,6 +110,10 @@ export function getFieldsByType(spec: ChartSpec): FieldsByType {
   };
 
   checkFields(spec);
+
+  if ("measures" in spec && Array.isArray(spec.measures)) {
+    measures = spec.measures;
+  }
   return {
     measures,
     dimensions,
@@ -220,7 +224,8 @@ export function getLinkStateForTimeDimensionDetail(
     };
 
   const hasXAxis = "x" in spec;
-  if (!hasXAxis)
+  const hasYAxis = "y" in spec;
+  if (!hasXAxis || !hasYAxis)
     return {
       canLink: false,
     };
