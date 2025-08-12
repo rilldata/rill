@@ -339,6 +339,13 @@ export class GitStatusResponse extends Message<GitStatusResponse> {
   githubUrl = "";
 
   /**
+   * Subpath where the project was started.
+   *
+   * @generated from field: string subpath = 7;
+   */
+  subpath = "";
+
+  /**
    * If the repo is managed by Rill.
    *
    * @generated from field: bool managed_git = 3;
@@ -376,6 +383,7 @@ export class GitStatusResponse extends Message<GitStatusResponse> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "github_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 7, name: "subpath", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "managed_git", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 4, name: "local_changes", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 5, name: "local_commits", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
@@ -396,6 +404,92 @@ export class GitStatusResponse extends Message<GitStatusResponse> {
 
   static equals(a: GitStatusResponse | PlainMessage<GitStatusResponse> | undefined, b: GitStatusResponse | PlainMessage<GitStatusResponse> | undefined): boolean {
     return proto3.util.equals(GitStatusResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.local.v1.GitRepoStatusRequest
+ */
+export class GitRepoStatusRequest extends Message<GitRepoStatusRequest> {
+  /**
+   * @generated from field: string remote = 1;
+   */
+  remote = "";
+
+  constructor(data?: PartialMessage<GitRepoStatusRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.local.v1.GitRepoStatusRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "remote", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GitRepoStatusRequest {
+    return new GitRepoStatusRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GitRepoStatusRequest {
+    return new GitRepoStatusRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GitRepoStatusRequest {
+    return new GitRepoStatusRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GitRepoStatusRequest | PlainMessage<GitRepoStatusRequest> | undefined, b: GitRepoStatusRequest | PlainMessage<GitRepoStatusRequest> | undefined): boolean {
+    return proto3.util.equals(GitRepoStatusRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.local.v1.GitRepoStatusResponse
+ */
+export class GitRepoStatusResponse extends Message<GitRepoStatusResponse> {
+  /**
+   * @generated from field: bool has_access = 1;
+   */
+  hasAccess = false;
+
+  /**
+   * @generated from field: string grant_access_url = 2;
+   */
+  grantAccessUrl = "";
+
+  /**
+   * @generated from field: string default_branch = 3;
+   */
+  defaultBranch = "";
+
+  constructor(data?: PartialMessage<GitRepoStatusResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.local.v1.GitRepoStatusResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "has_access", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 2, name: "grant_access_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "default_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GitRepoStatusResponse {
+    return new GitRepoStatusResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GitRepoStatusResponse {
+    return new GitRepoStatusResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GitRepoStatusResponse {
+    return new GitRepoStatusResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GitRepoStatusResponse | PlainMessage<GitRepoStatusResponse> | undefined, b: GitRepoStatusResponse | PlainMessage<GitRepoStatusResponse> | undefined): boolean {
+    return proto3.util.equals(GitRepoStatusResponse, a, b);
   }
 }
 

@@ -18,6 +18,7 @@ import {
   GitStatusRequest,
   GitPullRequest,
   GitPushRequest,
+  GitRepoStatusRequest,
 } from "@rilldata/web-common/proto/gen/rill/local/v1/api_pb";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import {
@@ -380,6 +381,41 @@ export function createLocalServiceGitStatus<
     ...queryOptions,
     queryKey: queryOptions?.queryKey ?? getLocalServiceGitStatusQueryKey(),
     queryFn: queryOptions?.queryFn ?? (() => localServiceGitStatus()),
+  });
+}
+
+export function localServiceGitRepoStatus(remote: string) {
+  return getClient().gitRepoStatus(
+    new GitRepoStatusRequest({
+      remote,
+    }),
+  );
+}
+export const getLocalServiceGitRepoStatusQueryKey = (remote: string) => [
+  `/v1/local/git-repo-status`,
+  remote,
+];
+export function createLocalServiceGitRepoStatus<
+  TData = Awaited<ReturnType<typeof localServiceGitRepoStatus>>,
+  TError = ConnectError,
+>(
+  remote: string,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof localServiceGitRepoStatus>>,
+        TError,
+        TData
+      >
+    >;
+  },
+) {
+  const { query: queryOptions } = options ?? {};
+  return createQuery({
+    ...queryOptions,
+    queryKey:
+      queryOptions?.queryKey ?? getLocalServiceGitRepoStatusQueryKey(remote),
+    queryFn: queryOptions?.queryFn ?? (() => localServiceGitRepoStatus(remote)),
   });
 }
 

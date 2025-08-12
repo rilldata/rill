@@ -35,3 +35,12 @@ export function getCreateOrganizationRoute() {
 export function getSelectOrganizationRoute() {
   return `/deploy/organization/select`;
 }
+
+export function getGithubAccessUrl(grantAccessUrl: string, pageUrl: URL) {
+  const redirectUrl = new URL(pageUrl);
+  redirectUrl.searchParams.set("mode", "github");
+
+  const githubAccessUrl = new URL(grantAccessUrl);
+  githubAccessUrl.searchParams.set("redirect", redirectUrl.toString());
+  return githubAccessUrl.toString();
+}

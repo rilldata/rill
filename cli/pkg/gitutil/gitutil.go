@@ -217,26 +217,6 @@ func GetSyncStatus(repoPath, branch, remote string) (SyncStatus, error) {
 	return SyncStatusSynced, nil
 }
 
-func DetectGitRoo(repoPath string) (string, error) {
-	repo, err := git.PlainOpenWithOptions(repoPath, &git.PlainOpenOptions{
-		DetectDotGit: true,
-	})
-	if err != nil {
-		return "", err
-	}
-
-	w, err := repo.Worktree()
-	if err != nil {
-		if errors.Is(err, git.ErrIsBareRepository) {
-			// no commits can be made in bare repository
-			return repoPath, nil
-		}
-		return "", err
-	}
-
-	return w.Filesystem.Root(), nil
-}
-
 func CommitAndForcePush(ctx context.Context, projectPath string, config *Config, commitMsg string, author *object.Signature) error {
 	// init git repo
 	repo, err := git.PlainInitWithOptions(projectPath, &git.PlainInitOptions{
