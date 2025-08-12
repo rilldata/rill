@@ -153,6 +153,32 @@ export function getFileTypeFromPath(fileName) {
 }
 
 /**
+ * Builds a PostgreSQL connection string from form values
+ */
+function buildPostgresConnectionString(
+  formValues: Record<string, unknown>,
+): string {
+  const host = (formValues.host as string) || "localhost";
+  const port = (formValues.port as string) || "5432";
+  const database = formValues.database as string;
+  const username = formValues.username as string;
+  const password = formValues.password as string;
+  const sslmode = (formValues.sslmode as string) || "prefer";
+
+  // Build connection string in PostgreSQL format
+  const params = [
+    `host=${host}`,
+    `port=${port}`,
+    `dbname=${database}`,
+    `user=${username}`,
+    `password=${password}`,
+    `sslmode=${sslmode}`,
+  ].join(" ");
+
+  return params;
+}
+
+/**
  * Convert applicable connectors to DuckDB. We do this to leverage DuckDB's native,
  * well-documented file reading capabilities.
  */
@@ -198,6 +224,33 @@ export function maybeRewriteToDuckDb(
         },
       ];
 
+      break;
+    case "postgres":
+      connectorCopy.name = "duckdb";
+
+      const connectionString = buildPostgresConnectionString(formValues);
+      formValues.sql = `ATTACH '${connectionString}' AS postgres_db (TYPE postgres);\nSELECT * FROM postgres_db.${formValues.schema || "public"}.${formValues.table}`;
+
+      // Clean up PostgreSQL-specific properties
+      [
+        "host",
+        "port",
+        "database",
+        "schema",
+        "table",
+        "username",
+        "password",
+        "sslmode",
+      ].forEach((key) => {
+        delete formValues[key];
+      });
+
+      connectorCopy.sourceProperties = [
+        {
+          key: "sql",
+          type: ConnectorDriverPropertyType.TYPE_STRING,
+        },
+      ];
       break;
   }
 
