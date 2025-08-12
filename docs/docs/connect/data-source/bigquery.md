@@ -32,6 +32,12 @@ If this project has already been deployed to Rill Cloud and credentials have bee
 
 :::
 
+## Separating Dev and Prod Environments
+
+When ingesting data locally, consider setting parameters in your connector file to limit how much data is retrieved, since costs can scale with the data source. This also helps other developers clone the project and iterate quickly by reducing ingestion time.
+
+For more details, see our [Dev/Prod setup docs](/connect/templating).
+
 ## Cloud deployment
 
 When deploying a project to Rill Cloud, Rill requires you to explicitly provide a JSON key file for a Google Cloud service account with access to BigQuery used in your project.
