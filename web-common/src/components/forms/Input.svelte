@@ -148,7 +148,7 @@
       {#if textInputPrefix}
         <div
           class:text-sm={size !== "xl"}
-          class="{size} bg-neutral-100 items-center flex flex-none cursor-default line-clamp-1 text-gray-500 m-0 p-0 border-r border-gray-300 text-base px-2 mr-2"
+          class="{size} bg-neutral-100 items-center flex flex-none cursor-default line-clamp-1 text-gray-500 border-r border-gray-300 text-base px-2 mr-2"
         >
           {textInputPrefix}
         </div>
@@ -296,7 +296,7 @@
     @apply bg-surface justify-center;
     @apply border border-gray-300 rounded-[2px];
     @apply cursor-pointer;
-    @apply h-fit w-fit p-0;
+    @apply h-fit w-fit;
   }
 
   input,
