@@ -79,7 +79,13 @@ export const getYupSchema = {
   }),
 
   postgres: yup.object().shape({
-    database_url: yup.string().required("Database URL is required"),
+    dsn: yup.string().optional(),
+    host: yup.string().optional(),
+    port: yup.string().optional(),
+    user: yup.string().optional(),
+    password: yup.string().optional(),
+    dbname: yup.string().optional(),
+    sslmode: yup.string().optional(),
   }),
 
   snowflake: yup.object().shape({
