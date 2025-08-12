@@ -32,6 +32,12 @@ export function generateVLMultiMetricChartSpec(
 
   // Fold measures into a long format for easier encoding
   const measures = config.measures || [];
+
+  const measureDisplayNames: Record<string, string> = {};
+  measures.forEach((measure) => {
+    measureDisplayNames[measure] = data.fields[measure]?.displayName || measure;
+  });
+
   spec.transform = [
     {
       fold: measures,
@@ -43,11 +49,6 @@ export function generateVLMultiMetricChartSpec(
 
   const markType = config.mark_type || "stacked_bar";
   const xField = sanitizeValueForVega(config.x?.field);
-
-  const measureDisplayNames: Record<string, string> = {};
-  measures.forEach((measure) => {
-    measureDisplayNames[measure] = data.fields[measure]?.displayName || measure;
-  });
 
   const legend = {
     labelExpr:
@@ -65,7 +66,7 @@ export function generateVLMultiMetricChartSpec(
   const baseYEncoding = {
     field: valueField,
     type: "quantitative" as const,
-    title: "Value",
+    title: null,
   };
 
   const sumYEncoding = {
@@ -102,29 +103,6 @@ export function generateVLMultiMetricChartSpec(
     multiValueTooltipChannel = multiValueTooltipChannel.slice(0, 50);
   }
 
-  // Default tooltip with proper formatting
-  const defaultTooltip: TooltipValue[] = [
-    ...(config.x
-      ? [
-          {
-            field: xField,
-            title: data.fields[config.x.field]?.displayName || config.x.field,
-            type: config.x.type,
-            ...(config.x.type === "temporal" && { format: "%b %d, %Y %H:%M" }),
-          },
-        ]
-      : []),
-    {
-      field: measureField,
-      type: "nominal",
-    },
-    {
-      field: valueField,
-      type: "quantitative",
-      title: "Value",
-    },
-  ];
-
   let xBand: number | undefined = undefined;
 
   if (
@@ -136,7 +114,7 @@ export function generateVLMultiMetricChartSpec(
 
   const hoverRuleLayer = buildHoverRuleLayer({
     xField,
-    defaultTooltip,
+    defaultTooltip: [],
     multiValueTooltipChannel,
     primaryColor: data.theme.primary,
     xBand: xBand,
@@ -148,59 +126,66 @@ export function generateVLMultiMetricChartSpec(
 
   const hoverPointLayer = buildHoverPointOverlay();
 
-  if (markType === "line") {
-    const layers: Array<LayerSpec<Field> | UnitSpec<Field>> = [
-      {
-        encoding: {
-          y: baseYEncoding,
-          color: baseColorEncoding,
+  switch (markType) {
+    case "line": {
+      const layers: Array<LayerSpec<Field> | UnitSpec<Field>> = [
+        {
+          encoding: {
+            y: baseYEncoding,
+            color: baseColorEncoding,
+          },
+          layer: [{ mark: { type: "line", clip: true } }, hoverPointLayer],
         },
-        layer: [{ mark: { type: "line", clip: true } }, hoverPointLayer],
-      },
-      hoverRuleLayer,
-    ];
-    spec.layer = layers;
-  } else if (markType === "stacked_area") {
-    const layers: Array<LayerSpec<Field> | UnitSpec<Field>> = [
-      {
-        encoding: {
-          y: stackedYEncoding,
-          color: baseColorEncoding,
+        hoverRuleLayer,
+      ];
+      spec.layer = layers;
+      break;
+    }
+    case "stacked_area": {
+      const layers: Array<LayerSpec<Field> | UnitSpec<Field>> = [
+        {
+          encoding: {
+            y: stackedYEncoding,
+            color: baseColorEncoding,
+          },
+          layer: [
+            { mark: { type: "area", clip: true } },
+            { mark: { type: "line", opacity: 0.5 } },
+            hoverPointLayer,
+          ],
         },
-        layer: [
-          { mark: { type: "area", clip: true } },
-          { mark: { type: "line", opacity: 0.5 } },
-          hoverPointLayer,
-        ],
-      },
-      hoverRuleLayer,
-    ];
-    spec.layer = layers;
-  } else if (markType === "stacked_bar") {
-    spec.layer = [
-      hoverRuleLayer,
-      {
-        mark: { type: "bar", clip: true, width: { band: 0.9 } },
-        encoding: {
-          y: sumYEncoding,
-          color: baseColorEncoding,
-          tooltip: defaultTooltip,
+        hoverRuleLayer,
+      ];
+      spec.layer = layers;
+      break;
+    }
+    case "stacked_bar": {
+      spec.layer = [
+        hoverRuleLayer,
+        {
+          mark: { type: "bar", clip: true, width: { band: 0.9 } },
+          encoding: {
+            y: sumYEncoding,
+            color: baseColorEncoding,
+          },
         },
-      },
-    ];
-  } else if (markType === "grouped_bar") {
-    spec.layer = [
-      hoverRuleLayer,
-      {
-        mark: { type: "bar", clip: true, width: { band: 0.9 } },
-        encoding: {
-          y: sumYEncoding,
-          xOffset: { field: measureField },
-          color: baseColorEncoding,
-          tooltip: defaultTooltip,
+      ];
+      break;
+    }
+    case "grouped_bar": {
+      spec.layer = [
+        hoverRuleLayer,
+        {
+          mark: { type: "bar", clip: true, width: { band: 0.9 } },
+          encoding: {
+            y: sumYEncoding,
+            xOffset: { field: measureField },
+            color: baseColorEncoding,
+          },
         },
-      },
-    ];
+      ];
+      break;
+    }
   }
 
   return {
