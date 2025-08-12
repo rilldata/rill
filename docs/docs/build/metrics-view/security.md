@@ -1,58 +1,116 @@
 ---
 title: Who Can Access Your Data
-description: Control who has access to view your metrics and data
+description: Control who can view your metrics and data
 sidebar_label: Data Access Control
 sidebar_position: 10
 ---
 
-Rill supports granular access policies for dashboards. They allow the dashboard developer to configure dashboard-level, row-level and column-level restrictions based on user attributes such as email address and domain. Our goal with access to policies is to avoid dashboard sprawl by creating a single configuration of the dashboard that can then be sliced or restricted into multiple views via different policies. Using those access controls, a single dashboard can now serve dozens of teams and use cases to ensure consistent metric definitions and better dashboard findability.
+Rill supports **granular access policies** that let you control:
 
+- **Who can open a dashboard**
+- **What data rows they can see**
+- **Which dimensions and measures are visible**
+
+Policies are based on user attributes such as **email address**, **domain**, or **custom attributes**.  
+This avoids dashboard sprawl — instead of creating multiple dashboards for each audience, you can build **one dashboard** and tailor it for many teams and use cases.
+
+---
+
+## How Does It Work?
+
+Access policies are defined in the corresponding **metrics view** or **[dashboard YAML](/build/dashboards/#define-dashboard-access)**.  
+There are three types of rules:
+
+- **Dashboard Access:** (`access`)  A boolean expression deciding if a user can open the dashboard.   
+  ```yaml
+  security:
+    access: "{{ .user.admin }} OR '{{ .user.domain }}' == 'example.com'"
+  ```
+
+- **Row-level access** (`row_filter`) – a SQL expression that will be injected into the WHERE clause of all dashboard queries to restrict access to a subset of rows
+  ```yaml
+  security:
+    row_filter: region = '{{ .user.region }}'
+  ```
+- **Column-level access**: (`include` or `exclude`) – lists of boolean expressions that determine which dimension and measure names will be available to the user
+  ```yaml
+  security:
+    exclude:
+      - if: "'{{ .user.domain }}' != 'example.com'"
+        names:
+          - ssn
+          - id
+
+  ```
+
+When a user loads a dashboard, the policies are resolved in two phases:
+  1. The templating engine first replaces expressions like `{{ .user.domain }}` with actual values ([Templating reference](/connect/templating))
+  2. The resulting expression is then evaluated contextually:
+    - The `access` and `if` values are evaluated as SQL expressions and resolved to a `true` or `false` value
+    - The `row_filter` value is injected into the `WHERE` clause of the SQL queries used to render the dashboard
+ 
 Typical use cases include:
 
-- **Granting or Restricting Access** to data and as a result, dashboards
-- **Hiding specific dimensions and measures** from specific groups of users, creating a tailored dashboard experience
-- **Restricting Access to Internal users** of your organization, allowing specific dashboards to be viewed by internal users only
-- **Partner-filtered Dashboards** where external users can only access the subset of their data
-- **Embedded** use cases, passing custom attributes to Rill
-- **Combination of all the above**
+- [**Granting or Restricting Access**](#restrict-dashboard-access-to-users-matching-specific-criteria) to data and, as a result, dashboards
+- [**Hiding specific dimensions and measures**](#conditionally-hide-a-dashboard-dimension-or-measure) from specific groups of users, creating a tailored dashboard experience
+- [**Restricting Access to Internal users**](#hide-dimensions-or-measures-for-members-of-a-certain-group) of your organization, allowing specific dashboards to be viewed by internal users only
+- [**Partner-filtered Dashboards**](#show-only-data-from-the-users-own-domain) where external users can only access the subset of their data
+- [**Embedded**](#advanced-example-custom-attributes-embed-dashboards) use cases, passing custom attributes to Rill
 
 
-:::tip Assuming Access to Project is already given
+:::tip Project Access Required
 
-Access Policies assume that the user already has access to the project in Rill Cloud. For more information on user management, see our [User Management](/manage/user-management) and [Project Management](/manage/project-management) for more information!
+Access Policies assume that the user already has access to the project in Rill Cloud. For more information on user management, see our [User Management](/manage/user-management) and [Project Management](/manage/project-management) documentation.
 
 :::
 
-## Configurations
-
-There are three levels of considerations for access policies. 
-
-- **Data Access** - `access`– a boolean expression that determines if a user can or can't access the dashboard
-- **Row-level access:** `row_filter` – a SQL expression that will be injected into the WHERE clause of all dashboard queries to restrict access to a subset of rows
-- **Column-level access**: `include` or `exclude` – lists of boolean expressions that determine which dimension and measure names will be available to the user
-
-<img src='/img/manage/security/access.png' />
-
-```yaml
-security:
-   access: true
-   row_filter: ...
-   #include:
-   #exclude:
-```
-
-For more information, see our [metric view YAML reference page](/reference/project-files/metrics-views)  for more information.
-
-
-# Setting up Data Access
+## Creating Access Policies
 
 There are two locations that control data access in Rill.
 
 ### Project Level Defaults
 
-By default, when a user is granted access to your project, they have access to all metrics views. This is not always the desired behavior as some organizations will invite partner users to the Rill Cloud UI. In these instances, project level defaults that only give access to internal domain are required.
+By default, when a user is granted access to your project, they have access to all metrics views and, if there is [no dashboard policy](/build/dashboards/#define-dashboard-access), all dashboards. While this is the default behavior, it can be easily changed in the project's `rill.yaml`. This will lock down all metrics views and block all users who are not Rill Administrators or do not have 'example.com' as their domain.
 
-### Metrics View Specific
+```yaml
+metrics_views:
+  security:
+    access: "{{ .user.admin }} OR '{{ .user.domain }}' == 'example.com'"
+```
+
+### Object Specific Policies
+
+You can define policies directly in a specific metrics view or dashboard YAML to override the project-level defaults.
+
+```yaml
+security:
+  access: '{{ has "partners" .user.groups }}'
+  row_filter: "domain = '{{ .user.domain }}'"
+  exclude:
+    - if: "'{{ .user.domain }}' != 'example.com'"
+      names: 
+        - ssn
+        - id
+```
+
+:::tip Access Policy Behavior
+
+When combining access policies from project defaults and object-specific policies, keep the following in mind:
+- Object-level `access`, `exclude`, and `include` override project defaults
+- Object-level `row_filter` ANDs with project-level filters
+
+:::
+
+## Dashboards Access 
+
+Dashboards also have an `access` key that can override the metrics view access rules. Both [explore](/build/dashboards/#define-dashboard-access) and [canvas](/build/canvas/#define-dashboard-access) dashboards can set the following:
+
+```yaml
+security:
+  access: true
+```
+
+This is useful if you want to apply specific rules to the metrics view for metrics SQL API access, but want different rules for the visual dashboard in Rill.
 
 ## User Attributes
 - `.user.email` – the current user's email address, for example john.doe@example.com (string)
@@ -60,26 +118,17 @@ By default, when a user is granted access to your project, they have access to a
 - `.user.name` - the current user's name, for example John Doe (string)
 - `.user.admin`– a boolean value indicating whether the current user is an org or project admin, for example true (bool) 
 - `.user.groups` - a list of user groups the user belongs to in the project's org (list of strings), e.g. ["marketing","sales","finance"]
-- `.user.attribute` - where `attribute` is s custom variables that you can pass via an embedded dashboard from the application. 
+- `.user.attribute` - where `attribute` is a custom variable that you can pass via an embedded dashboard from your application
 
-Note: Rill requires users to confirm their email address before letting them interact with the platform so a user cannot fake an email address or email domain.
-
-
-## Templating and expression evaluation
-
-When a user loads a dashboard, the policies are resolved in two phases:
+Note: Rill requires users to confirm their email address before letting them interact with the platform, so a user cannot fake an email address or email domain.
 
 
-1. The templating engine first replaces expressions like `{{ .user.domain }}` with actual values ([Templating reference](/connect/templating))
-2. The resulting expression is then evaluated contextually:
-  - The `access` and `if` values are evaluated as SQL expressions and resolved to a `true` or `false` value
-  - The `row_filter` value is injected into the `WHERE` clause of the SQL queries used to render the dashboard
 
 ## Testing Policies in Rill Developer
 
 In development (on `localhost`), you can test your policies by adding "mock users" to your project and viewing the dashboard as one of them.
 
-In your project's `rill.yaml` file, add a `mock_users` section. Each mock user must have an `email` attribute, and can optionally have `name` and `admin` attributes. For example:
+In your project's `rill.yaml` file, add a `mock_users` section. Each mock user must have an `email` attribute and can optionally have `name` and `admin` attributes. For example:
 ```yaml
 # rill.yaml
 mock_users:
@@ -92,21 +141,19 @@ mock_users:
 - email: anon@unknown.com
 ```
 
-On the dashboard page (provided you've added a policy) you'll see a "View as" button in the top right corner. Click this button and select one of your mock users. You'll see the dashboard as that user would see it.
-
+On the dashboard page (provided you've added a policy), you'll see a "View as" button in the top right corner. Click this button and select one of your mock users. You'll see the dashboard as that user would see it.
 
 ### Rill Cloud
-In case you want to test what your users are seeing in Rill Cloud after deploying, you can find this in the dropdown of your account. You will see the actual users in the dropdown of this list, not the mock users defined in the rill.yaml file. 
-****
+If you want to test what your users are seeing in Rill Cloud after deploying, you can find this in the dropdown of your account. You will see the actual users in the dropdown of this list, not the mock users defined in the rill.yaml file.
 
 <img src = '/img/manage/access-policies/rill-cloud-view-as.png' class='rounded-gif' />
 <br />
 
 ### Embedded Dashboards
 
-When [requestimg an embedded dashboard from Rill](/integrate/embedding) from your frontend, you can pass the `attributes` parameter with custom names to ensurer that the resulting dashboard is displaying the correct information.
-~For more information, see [our embedding docs](/integrate/embedding#backend-build-an-iframe-url).
+When [requesting an embedded dashboard from Rill](/integrate/embedding) from your frontend, you can pass the `attributes` parameter with custom names to ensure that the resulting dashboard displays the correct information.
 
+For more information, see [our embedding docs](/integrate/embedding#backend-build-an-iframe-url).
 
 ## Examples
 
@@ -119,7 +166,7 @@ security:
 ```
 
 :::note DEFAULT SECURITY IS FALSE
-If the `security` section is defined and `access` is not, then `access` will default to `false`, meaning that it won't be accessible to anyone and users will need to invited individually.
+If the `security` section is defined and `access` is not, then `access` will default to `false`, meaning that it won't be accessible to anyone and users will need to be invited individually.
 :::
 
 ### Restrict dashboard access to specific user groups
@@ -129,7 +176,6 @@ Group membership can be utilized to specify which users have access to a specifi
 security:
   access: '{{ has "partners" .user.groups }}'
 ```
-
 
 ### Show only data from the user's own domain
 
@@ -142,12 +188,12 @@ security:
 ```
 
 :::note FILTERS SHOULD BE VALID SQL
-The `filter` value needs to be valid SQL syntax for a `WHERE` clause. It will be injected into every SQL query used to render the dashboard.
+The `row_filter` value needs to be valid SQL syntax for a `WHERE` clause. It will be injected into every SQL query used to render the dashboard.
 :::
 
 ### Conditionally hide a dashboard dimension or measure
 
-You can include or exclude dimensions and measures based on a boolean expression. For example, to exclude a dimension named `ssn` and `id` for users whose email domain is not `example.com`:
+You can include or exclude dimensions and measures based on a boolean expression. For example, to exclude dimensions named `ssn` and `id` for users whose email domain is not `example.com`:
 
 ```yaml
 security:
@@ -176,7 +222,7 @@ security:
       names: '*'
 ```
 
-Note that the `'*'` must be quoted (using single or double quotes), and **must** be provided as a scalar value, not as an entry in a list.
+Note that the `'*'` must be quoted (using single or double quotes) and **must** be provided as a scalar value, not as an entry in a list.
 
 ### Filter queries based on the user's groups
 
@@ -200,21 +246,20 @@ security:
         - profit
 ```
 
-
 ### Advanced Example: Mapping Dimensions and Attributes
 
-For some use cases, the built-in user attributes do not provide sufficient context to correctly restrict access. For example, a dashboard for a multi-tenant SaaS application might have a `tenant_id` column and external users should only be able to see data for the tenant they belong to.
+For some use cases, the built-in user attributes do not provide sufficient context to correctly restrict access. For example, a dashboard for a multi-tenant SaaS application might have a `tenant_id` column, and external users should only be able to see data for the tenant they belong to.
 
-To support this, ingest a separate data [source](/connect) containing mappings of user email addresses to tenant IDs and reference it in the row-level filter. This can be a locally created csv file or any hosted data source.
+To support this, ingest a separate data [source](/connect) containing mappings of user email addresses to tenant IDs and reference it in the row-level filter. This can be a locally created CSV file or any hosted data source.
 
-For example, a locally created `mappings.csv` file in the `data` directory of our Rill project with the following contents:
+For example, a locally created `mappings.csv` file in the `data` directory of your Rill project with the following contents:
 ```csv
 email,tenant_id
 john.doe@example.com,1
 jane.doe@example.com,2
 ```
 
-This requires to be ingested as a source in Rill like any other data source:
+This needs to be ingested as a source in Rill like any other data source:
 ```yaml
 # sources/mappings.yaml
 type: local_file
@@ -229,10 +274,9 @@ security:
   row_filter: "tenant_id IN (SELECT tenant_id FROM mappings WHERE email = '{{ .user.email }}')"
 ```
 
-
 ### Advanced Example: Custom attributes (Embed Dashboards)
 
-Another use case for row access policies is to ensure that your embed dashboards is providing a specific view for your end users. During the [embed dashboard request](/integrate/embedding), you can pass custom attributes (other than the ones provided OOB) that maps directly to a value within your Rill explore dashboard.
+Another use case for row access policies is to ensure that your embedded dashboard provides a specific view for your end users. During the [embed dashboard request](/integrate/embedding), you can pass custom attributes (other than the ones provided out-of-the-box) that map directly to a value within your Rill explore dashboard.
 
 ```yaml
 row_filter: >
@@ -240,10 +284,12 @@ row_filter: >
       dimension_2 = '{{ .user.custom_variable_2 }}' 
 ```
 
-In order to test the view of your embed dashboard, you can add the same custom variables to [your mock users](#testing-policies-in-rill-developer) as seen below:
+In order to test the view of your embedded dashboard, you can add the same custom variables to [your mock users](#testing-policies-in-rill-developer) as seen below:
 ```yaml
 - email: embed@rilldata.com
   name: embed
   custom_variable_1: Value_1
   custom_variable_2: Value_2
-  ```
+```
+
+

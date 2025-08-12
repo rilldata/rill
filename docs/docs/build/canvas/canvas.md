@@ -70,7 +70,7 @@ While we encourage creating Canvas dashboards via the visual editing experience 
 
 ## Define Dashboard Access
 
-Along with [metrics views security policies](/build/metrics-view/security), you can set access on the dashboard level. This might be useful if there are a few dashboards that you want to limit to a set of users with a specific set of dimensions. 
+Along with [metrics views security policies](/build/metrics-view/security), you can set access on the dashboard level.  Access on dashboards will override the access rules in metrics views. This might be useful if there are a few dashboards that you want to limit to a set of users with a specific set of dimensions. 
 
 Or, the dashboard needs some QA by the team with [full data](/connect/templating) before sharing to the rest of the team.
 
