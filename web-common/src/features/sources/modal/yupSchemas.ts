@@ -87,11 +87,12 @@ export const getYupSchema = {
   }),
 
   salesforce: yup.object().shape({
-    username: yup.string().required("Username is required"),
-    password: yup.string().optional(),
-    key: yup.string().optional(),
-    endpoint: yup.string().required("Endpoint is required"),
-    client_id: yup.string().optional(),
+    soql: yup.string().required("soql is required"),
+    sobject: yup.string().required("sobject is required"),
+    name: yup
+      .string()
+      .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
+      .required("Source name is required"),
   }),
 
   athena: yup.object().shape({
