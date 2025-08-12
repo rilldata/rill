@@ -113,12 +113,6 @@ export function generateVLStackedBarNormalizedSpec(
   spec.encoding = { x: createPositionEncoding(config.x, data) };
 
   const layers: Array<LayerSpec<Field> | UnitSpec<Field>> = [
-    {
-      mark: { type: "bar", clip: true },
-      encoding: {
-        ...baseEncoding,
-      },
-    },
     buildHoverRuleLayer({
       xField,
       yField,
@@ -132,6 +126,12 @@ export function generateVLStackedBarNormalizedSpec(
           ? { field: colorField, value: yField, groupby: [xField] }
           : undefined,
     }),
+    {
+      mark: { type: "bar", clip: true, width: { band: 0.9 } },
+      encoding: {
+        ...baseEncoding,
+      },
+    },
   ];
 
   spec.layer = layers;

@@ -56,14 +56,6 @@ export function generateVLStackedBarChartSpec(
   spec.encoding = { x: createPositionEncoding(config.x, data) };
 
   const layers: Array<LayerSpec<Field> | UnitSpec<Field>> = [
-    {
-      mark: { type: "bar", clip: true },
-      encoding: {
-        y: createPositionEncoding(config.y, data),
-        color: createColorEncoding(config.color, data),
-        tooltip: defaultTooltipChannel,
-      },
-    },
     buildHoverRuleLayer({
       xField,
       yField,
@@ -77,6 +69,15 @@ export function generateVLStackedBarChartSpec(
           ? { field: colorField, value: yField, groupby: [xField] }
           : undefined,
     }),
+    {
+      mark: { type: "bar", clip: true, width: { band: 0.9 } },
+      encoding: {
+        y: createPositionEncoding(config.y, data),
+        color: createColorEncoding(config.color, data),
+        tooltip: defaultTooltipChannel,
+        order: { value: 1 },
+      },
+    },
   ];
 
   spec.layer = layers;

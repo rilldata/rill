@@ -56,8 +56,21 @@ export function generateVLBarChartSpec(
   spec.encoding = { x: createPositionEncoding(config.x, data) };
 
   const layers: Array<LayerSpec<Field> | UnitSpec<Field>> = [
+    buildHoverRuleLayer({
+      xField,
+      yField,
+      defaultTooltip: defaultTooltipChannel,
+      multiValueTooltipChannel,
+      xSort: config.x?.sort,
+      primaryColor: data.theme.primary,
+      xBand: config.x?.type === "temporal" ? 0.5 : undefined,
+      pivot:
+        xField && yField && colorField && multiValueTooltipChannel?.length
+          ? { field: colorField, value: yField, groupby: [xField] }
+          : undefined,
+    }),
     {
-      mark: { type: "bar", clip: true },
+      mark: { type: "bar", clip: true, width: { band: 0.9 } },
       encoding: {
         y: createPositionEncoding(config.y, data),
         color: createColorEncoding(config.color, data),
@@ -73,19 +86,6 @@ export function generateVLBarChartSpec(
           : {}),
       },
     },
-    buildHoverRuleLayer({
-      xField,
-      yField,
-      defaultTooltip: defaultTooltipChannel,
-      multiValueTooltipChannel,
-      xSort: config.x?.sort,
-      primaryColor: data.theme.primary,
-      xBand: config.x?.type === "temporal" ? 0.5 : undefined,
-      pivot:
-        xField && yField && colorField && multiValueTooltipChannel?.length
-          ? { field: colorField, value: yField, groupby: [xField] }
-          : undefined,
-    }),
   ];
 
   spec.layer = layers;

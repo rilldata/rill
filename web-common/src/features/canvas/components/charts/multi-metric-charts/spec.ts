@@ -146,6 +146,8 @@ export function generateVLMultiMetricChartSpec(
         : undefined,
   });
 
+  const hoverPointLayer = buildHoverPointOverlay();
+
   if (markType === "line") {
     const layers: Array<LayerSpec<Field> | UnitSpec<Field>> = [
       {
@@ -153,10 +155,7 @@ export function generateVLMultiMetricChartSpec(
           y: baseYEncoding,
           color: baseColorEncoding,
         },
-        layer: [
-          { mark: { type: "line", clip: true } },
-          buildHoverPointOverlay(),
-        ],
+        layer: [{ mark: { type: "line", clip: true } }, hoverPointLayer],
       },
       hoverRuleLayer,
     ];
@@ -171,7 +170,7 @@ export function generateVLMultiMetricChartSpec(
         layer: [
           { mark: { type: "area", clip: true } },
           { mark: { type: "line", opacity: 0.5 } },
-          buildHoverPointOverlay(),
+          hoverPointLayer,
         ],
       },
       hoverRuleLayer,
@@ -179,21 +178,21 @@ export function generateVLMultiMetricChartSpec(
     spec.layer = layers;
   } else if (markType === "stacked_bar") {
     spec.layer = [
+      hoverRuleLayer,
       {
-        mark: { type: "bar", clip: true },
+        mark: { type: "bar", clip: true, width: { band: 0.9 } },
         encoding: {
           y: sumYEncoding,
           color: baseColorEncoding,
           tooltip: defaultTooltip,
         },
       },
-      hoverRuleLayer,
     ];
   } else if (markType === "grouped_bar") {
     spec.layer = [
       hoverRuleLayer,
       {
-        mark: { type: "bar", clip: true },
+        mark: { type: "bar", clip: true, width: { band: 0.9 } },
         encoding: {
           y: sumYEncoding,
           xOffset: { field: measureField },
