@@ -115,15 +115,36 @@ export function generateVLMultiMetricChartSpec(
         ]
       : []),
     {
-      field: "Measure",
+      field: measureField,
       type: "nominal",
     },
     {
-      field: "value",
+      field: valueField,
       type: "quantitative",
       title: "Value",
     },
   ];
+
+  let xBand: number | undefined = undefined;
+
+  if (
+    config.x?.type === "temporal" &&
+    (markType === "stacked_bar" || markType === "grouped_bar")
+  ) {
+    xBand = 0.5;
+  }
+
+  const hoverRuleLayer = buildHoverRuleLayer({
+    xField,
+    defaultTooltip,
+    multiValueTooltipChannel,
+    primaryColor: data.theme.primary,
+    xBand: xBand,
+    pivot:
+      xField && measures.length && multiValueTooltipChannel?.length
+        ? { field: measureField, value: valueField, groupby: [xField] }
+        : undefined,
+  });
 
   if (markType === "line") {
     const layers: Array<LayerSpec<Field> | UnitSpec<Field>> = [
@@ -137,16 +158,7 @@ export function generateVLMultiMetricChartSpec(
           buildHoverPointOverlay(),
         ],
       },
-      buildHoverRuleLayer({
-        xField,
-        defaultTooltip,
-        multiValueTooltipChannel,
-        primaryColor: data.theme.primary,
-        pivot:
-          xField && measures.length && multiValueTooltipChannel?.length
-            ? { field: "Measure", value: "value", groupby: [xField] }
-            : undefined,
-      }),
+      hoverRuleLayer,
     ];
     spec.layer = layers;
   } else if (markType === "stacked_area") {
@@ -162,16 +174,7 @@ export function generateVLMultiMetricChartSpec(
           buildHoverPointOverlay(),
         ],
       },
-      buildHoverRuleLayer({
-        xField,
-        defaultTooltip,
-        multiValueTooltipChannel,
-        primaryColor: data.theme.primary,
-        pivot:
-          xField && measures.length && multiValueTooltipChannel?.length
-            ? { field: "Measure", value: "value", groupby: [xField] }
-            : undefined,
-      }),
+      hoverRuleLayer,
     ];
     spec.layer = layers;
   } else if (markType === "stacked_bar") {
@@ -184,9 +187,11 @@ export function generateVLMultiMetricChartSpec(
           tooltip: defaultTooltip,
         },
       },
+      hoverRuleLayer,
     ];
   } else if (markType === "grouped_bar") {
     spec.layer = [
+      hoverRuleLayer,
       {
         mark: { type: "bar", clip: true },
         encoding: {

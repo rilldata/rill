@@ -285,6 +285,7 @@ export function buildHoverRuleLayer(args: {
   yField?: string;
   xSort?: ChartSortDirection;
   primaryColor: Color;
+  xBand?: number;
 }): UnitSpec<Field> {
   const {
     xField,
@@ -294,6 +295,7 @@ export function buildHoverRuleLayer(args: {
     yField,
     xSort,
     primaryColor,
+    xBand,
   } = args;
 
   return {
@@ -315,6 +317,7 @@ export function buildHoverRuleLayer(args: {
     encoding: {
       x: {
         field: xField,
+        ...(xBand !== undefined ? { bandPosition: xBand } : {}),
         ...(yField && xSort === "y"
           ? {
               sort: {
@@ -336,7 +339,7 @@ export function buildHoverRuleLayer(args: {
           {
             param: "hover",
             empty: false,
-            value: primaryColor.css("hsl"),
+            value: primaryColor.brighten().css(),
           },
         ],
         value: "transparent",
