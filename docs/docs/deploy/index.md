@@ -4,10 +4,7 @@ sidebar_label: Publish
 sidebar_position: 0
 ---
 
-import TileIcon from '@site/src/components/TileIcon';
-
 Rill Developer is a great tool for building, testing, and viewing your data locally, but once you're ready to share your findings, you'll need to publish the dashboard to Rill Cloud! To understand the differences, see [Rill Developer vs Rill Cloud](/home/concepts/cloud-vs-developer).
-
 
 ### Credentials
 - [**Deployment Credentials**](/deploy/deploy-credentials) - Confirm deployment credentials based on your deployment environment
@@ -20,8 +17,3 @@ Rill Developer is a great tool for building, testing, and viewing your data loca
 - [**Performance Optimization**](/deploy/performance) - Get better performance out of your dashboards
 - [**Managing Project Errors**](/deploy/project-errors) - Troubleshooting errors in Rill Cloud
 
-
-:::tip First time publishing?
-Publishing your dashboard to Rill for the first time will prompt you to register or login and will automatically start your 30-day free trial! We'll handle all the small setup things that are needed, but you can change these at any time.
-
-:::
