@@ -503,9 +503,14 @@ func (c *connection) reopenDB(ctx context.Context) error {
 			return err
 		}
 
+		secretDir, err := c.storage.DataDir("secrets")
+		if err != nil {
+			return err
+		}
 		dbInitQueries = append(dbInitQueries,
 			"SET GLOBAL preserve_insertion_order TO false",
 			fmt.Sprintf("SET extension_directory=%s", safeSQLString(extensionDir)),
+			fmt.Sprintf("SET secret_directory=%s", safeSQLString(secretDir)),
 		)
 		// Find the instance dir for the data dir
 		// other drivers always write (except in tests) to a path which is a subdirectory of the instance directory
@@ -520,7 +525,10 @@ func (c *connection) reopenDB(ctx context.Context) error {
 				}
 				tempDir = filepath.Dir(tempDir)
 			}
-			dbInitQueries = append(dbInitQueries, fmt.Sprintf("SET allowed_directories=[%s, %s, 'http://', 'https://']", safeSQLString(dataDir+string(filepath.Separator)), safeSQLString(tempDir+string(filepath.Separator))),
+			dbInitQueries = append(dbInitQueries, fmt.Sprintf(`SET allowed_directories=[%s, %s, %s, 'http://', 'https://']`,
+				safeSQLString(dataDir+string(filepath.Separator)),
+				safeSQLString(tempDir+string(filepath.Separator)),
+			),
 				"SET enable_external_access=false")
 		}
 	}
