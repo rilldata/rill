@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"maps"
 	"strings"
 
 	"github.com/jmoiron/sqlx"
@@ -26,7 +25,7 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "Postgres",
 	Description: "Connect to Postgres.",
-	DocsURL:     "https://docs.rilldata.com/reference/connectors/postgres",
+	DocsURL:     "https://docs.rilldata.com/connect/data-source/postgres",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:    "database_url",
@@ -78,6 +77,39 @@ type ConfigProperties struct {
 	SSLMode     string `mapstructure:"sslmode"`
 }
 
+func (c *ConfigProperties) Validate() error {
+	var dsn string
+	if c.DSN != "" {
+		dsn = c.DSN
+	} else {
+		dsn = c.DatabaseURL
+	}
+
+	var set []string
+	if c.Host != "" {
+		set = append(set, "host")
+	}
+	if c.Port != "" {
+		set = append(set, "port")
+	}
+	if c.User != "" {
+		set = append(set, "user")
+	}
+	if c.Password != "" {
+		set = append(set, "password")
+	}
+	if c.DBname != "" {
+		set = append(set, "dbname")
+	}
+	if c.SSLMode != "" {
+		set = append(set, "sslmode")
+	}
+	if dsn != "" && len(set) > 0 {
+		return fmt.Errorf("postgres: Only one of 'dsn' or [%s] can be set", strings.Join(set, ", "))
+	}
+	return nil
+}
+
 func (c *ConfigProperties) ResolveDSN() string {
 	if c.DSN != "" {
 		return c.DSN
@@ -112,8 +144,18 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		return nil, errors.New("postgres driver can't be shared")
 	}
 
+	conf := &ConfigProperties{}
+	err := mapstructure.WeakDecode(config, conf)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode config: %w", err)
+	}
+
+	if err := conf.Validate(); err != nil {
+		return nil, err
+	}
+
 	return &connection{
-		config: config,
+		config: conf,
 	}, nil
 }
 
@@ -130,7 +172,7 @@ func (d driver) TertiarySourceConnectors(ctx context.Context, src map[string]any
 }
 
 type connection struct {
-	config map[string]any
+	config *ConfigProperties
 }
 
 // Ping implements drivers.Handle.
@@ -161,7 +203,9 @@ func (c *connection) Driver() string {
 
 // Config implements drivers.Connection.
 func (c *connection) Config() map[string]any {
-	return maps.Clone(c.config)
+	var m map[string]any
+	_ = mapstructure.WeakDecode(c.config, &m)
+	return m
 }
 
 // Close implements drivers.Connection.
@@ -236,11 +280,7 @@ func (c *connection) AsNotifier(properties map[string]any) (drivers.Notifier, er
 
 // getDB opens a new sqlx.DB connection using the config.
 func (c *connection) getDB() (*sqlx.DB, error) {
-	conf := &ConfigProperties{}
-	if err := mapstructure.WeakDecode(c.config, conf); err != nil {
-		return nil, fmt.Errorf("failed to decode config: %w", err)
-	}
-	dsn := conf.ResolveDSN()
+	dsn := c.config.ResolveDSN()
 	if dsn == "" {
 		return nil, fmt.Errorf("database_url or dsn not provided")
 	}

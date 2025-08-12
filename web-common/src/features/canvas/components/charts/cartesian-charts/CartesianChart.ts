@@ -35,6 +35,7 @@ const DEFAULT_SORT = "-y";
 
 export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
   customSortXItems: string[] = [];
+  customColorValues: string[] = [];
 
   static chartInputParams: Record<string, ComponentInputParam> = {
     x: {
@@ -77,6 +78,7 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
           type: "dimension",
           defaultLegendOrientation: "top",
           limitSelector: { defaultLimit: DEFAULT_SPLIT_LIMIT },
+          colorMappingSelector: { enable: true },
           nullSelector: true,
         },
       },
@@ -92,6 +94,11 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
     const sortSelector = inputParams.x.meta?.chartFieldInput?.sortSelector;
     if (sortSelector) {
       sortSelector.customSortItems = this.customSortXItems;
+    }
+    const colorMappingSelector =
+      inputParams.color.meta?.chartFieldInput?.colorMappingSelector;
+    if (colorMappingSelector) {
+      colorMappingSelector.values = this.customColorValues;
     }
     return inputParams;
   }
@@ -259,6 +266,7 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
           const topColorValues = topNColorData.map(
             (d) => d[colorDimensionName] as string,
           );
+          this.customColorValues = topColorValues;
           const filterForTopColorValues = createInExpression(
             colorDimensionName,
             topColorValues,
@@ -320,7 +328,7 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
 
     return {
       metrics_view: metricsViewName,
-      color: "hsl(246, 66%, 50%)",
+      color: "primary",
       x: {
         type: timeDimension ? "temporal" : "nominal",
         field: timeDimension || randomDimension,
@@ -351,5 +359,18 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
     return colorLabel
       ? `${yLabel} ${preposition} ${xLabel} split by ${colorLabel}`
       : `${yLabel} ${preposition} ${xLabel}`;
+  }
+
+  getChartDomainValues() {
+    return {
+      xValues:
+        this.customSortXItems.length > 0
+          ? [...this.customSortXItems]
+          : undefined,
+      colorValues:
+        this.customColorValues.length > 0
+          ? [...this.customColorValues]
+          : undefined,
+    };
   }
 }

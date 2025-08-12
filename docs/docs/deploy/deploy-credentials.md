@@ -1,22 +1,23 @@
 ---
-title: Deployment Credentials
+title:  Deployment Credential Considerations
 description: Configuring credentials for your deployed project on Rill Cloud
 sidebar_label: Configure Deployment Credentials
 sidebar_position: 10
 ---
-## Overview
 
+:::tip Dev/prod setup
 
-When deploying a project, credentials that have been defined in your `.env` file will be automatically passed into your Rill Cloud project. However, for [remote sources](/reference/connectors/connectors.md) that are dynamically retrieving your credentials via the CLI, such as S3 and GCS, you will need to ensure that these are [defined in the .env file](/manage/project-management/variables-and-credentials#credentials-naming-schema). 
+We recommend reviewing the [Dev/Prod Setup](/connect/templating) documentation before deploying your project to Rill Cloud to ensure that your local testing and production environments have been separated. 
 
-
-[Local credentials](/build/credentials/#setting-credentials-for-rill-developer) are used by Rill Developer to connect to sources from your local machine, while [deployment credentials](/deploy/deploy-credentials#configure-environmental-variables-and-credentials-for-rill-cloud) are what is used by Rill Cloud for production workloads. There are a [few ways to set up credentials in Rill Developer](../build/credentials/#setting-credentials-for-rill-developer), however you will need to ensure that they are set up in your `.env` file for a seamless experience.
-
-:::info Separating development and production credentials
-
-As a general best practice, it is strongly recommended to use service accounts and dedicated service credentials for projects deployed to Rill Cloud, especially when used in a production capacity. This will be covered in more detail in the following section below.
+This will ensure that your shared dashboard will be decoupled from your dev environment, and you can further develop your dashboards locally without worrying about data availability. 
 
 :::
+
+When deploying a project, credentials that have been defined in your `.env` file will be automatically passed into your Rill Cloud project. However, for [remote sources](/connect) that are dynamically retrieving your credentials via the CLI, such as S3 and GCS, you will need to ensure that these are [defined in the .env file](/manage/project-management/variables-and-credentials#credentials-naming-schema). 
+
+
+[Local credentials](/connect/credentials#setting-credentials-for-rill-developer) are used by Rill Developer to connect to sources from your local machine, while [deployment credentials](/deploy/deploy-credentials#configure-environmental-variables-and-credentials-for-rill-cloud) are what is used by Rill Cloud for production workloads. There are a [few ways to set up credentials in Rill Developer](/connect/credentials/#setting-credentials-for-rill-developer), however you will need to ensure that they are set up in your `.env` file for a seamless experience.
+
 
 
 ## Configure Environmental Variables and Credentials for Rill Cloud 
@@ -42,6 +43,11 @@ Configuring connector "bigquery":
 Updated project variables
 ```
 ## Service Accounts
+:::info Separating development and production credentials
+
+As a general best practice, it is strongly recommended to use service accounts and dedicated service credentials for projects deployed to Rill Cloud, especially when used in a production capacity. This is covered in more detail in our [Dev/Prod Setup documentation](/connect/templating).
+
+:::
 
 Service accounts are non-human user accounts that provide an identity for processes or services running on a server to interact with external resources, such as databases, APIs, and cloud services. Unlike personal user accounts, service accounts are intended for use by software applications or automated tools and do not require interactive login. In the context of Rill, service accounts are credentials that should be used for projects deployed to Rill Cloud.
 
@@ -69,6 +75,6 @@ Using service accounts for production workflows and pipelines is a general best 
 
 :::warning Be careful of overriding local credentials and/or pushing the wrong credentials to Rill Cloud
 
-When using service accounts, it is very likely that different or even personal credentials are being used in local development (i.e., Rill Developer). Therefore, it is worth double-checking that the correct credentials are being used or set before [syncing credentials](../build/credentials/credentials.md#pulling-credentials-and-variables-from-a-deployed-project-on-rill-cloud) between your local instance of [Rill Developer and Rill Cloud](../build/connect/connect.md#rill-developer-vs-rill-cloud) using the `rill env push` and `rill env pull` commands respectively.
+When using service accounts, it is very likely that different or even personal credentials are being used in local development (i.e., Rill Developer). Therefore, it is worth double-checking that the correct credentials are being used or set before [syncing credentials](/connect/credentials#pulling-credentials-and-variables-from-a-deployed-project-on-rill-cloud) between your local instance of [Rill Developer and Rill Cloud](/home/concepts/cloud-vs-developer) using the `rill env push` and `rill env pull` commands respectively.
 
 :::

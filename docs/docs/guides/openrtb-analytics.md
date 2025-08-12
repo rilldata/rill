@@ -85,7 +85,7 @@ uri: "https://storage.googleapis.com/rilldata-public/auction_data.parquet"
 
 ## Step 4: Data Models
 
-In this case, we are not joining the data models and having two unique explore models and joining the visualization in a [Canvas Dashboard](/build/canvas/).
+In this case, we are not joining the data models and having two unique explore models and joining the visualization in a [Canvas Dashboard](/build/canvas).
 
 
 ## Step 5: Creating your Metrics View
@@ -94,7 +94,7 @@ Metrics in Rill define the measures and dimensions that power your RTB dashboard
 
 ```yaml
 # Metrics view YAML
-# Reference documentation: https://docs.rilldata.com/reference/project-files/dashboards
+# Reference documentation: https://docs.rilldata.com/reference/project-files/metrics-views
 
 version: 1
 model: "auction_data_model"

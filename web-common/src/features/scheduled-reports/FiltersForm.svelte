@@ -57,7 +57,7 @@
 
     removeDimensionFilter,
     toggleDimensionFilterMode,
-    toggleDimensionValueSelection,
+    toggleMultipleDimensionValueSelections,
     applyDimensionInListMode,
     applyDimensionContainsMode,
 
@@ -250,11 +250,13 @@
 >
   {#if $newPicker}
     {#if v1TimeRange}
-      <!-- We dont support the new dropdown in alert creation -->
-      <TimeRangeReadOnly
-        timeRange={v1TimeRange}
-        comparisonTimeRange={v1ComparisonTimeRange}
-      />
+      <div class="flex flex-wrap gap-2">
+        <!-- We dont support the new dropdown in alert creation -->
+        <TimeRangeReadOnly
+          timeRange={v1TimeRange}
+          comparisonTimeRange={v1ComparisonTimeRange}
+        />
+      </div>
     {/if}
   {:else}
     <div
@@ -343,7 +345,9 @@
                 onRemove={() => removeDimensionFilter(name)}
                 onToggleFilterMode={() => toggleDimensionFilterMode(name)}
                 onSelect={(value) =>
-                  toggleDimensionValueSelection(name, value, true)}
+                  toggleMultipleDimensionValueSelections(name, [value], true)}
+                onMultiSelect={(values) =>
+                  toggleMultipleDimensionValueSelections(name, values, true)}
                 onApplyInList={(values) =>
                   applyDimensionInListMode(name, values)}
                 onApplyContainsMode={(searchText) =>
