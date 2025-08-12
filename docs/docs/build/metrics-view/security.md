@@ -11,8 +11,7 @@ Rill supports **granular access policies** that let you control:
 - **What data rows they can see**
 - **Which dimensions and measures are visible**
 
-Policies are based on user attributes such as **email address**, **domain**, or **custom attributes**.  
-This avoids dashboard sprawl — instead of creating multiple dashboards for each audience, you can build **one dashboard** and tailor it for many teams and use cases.
+Policies are based on user attributes such as **email address**, **domain**, or **custom attributes**.  This avoids dashboard sprawl — instead of creating multiple dashboards for each audience, you can build **one dashboard** and tailor it for many teams and use cases.
 
 ---
 
@@ -21,7 +20,7 @@ This avoids dashboard sprawl — instead of creating multiple dashboards for eac
 Access policies are defined in the corresponding **metrics view** or **[dashboard YAML](/build/dashboards/#define-dashboard-access)**.  
 There are three types of rules:
 
-- **Dashboard Access:** (`access`)  A boolean expression deciding if a user can open the dashboard.   
+- **General Access:** (`access`) A boolean expression deciding if a user can access the metrics view
   ```yaml
   security:
     access: "{{ .user.admin }} OR '{{ .user.domain }}' == 'example.com'"
@@ -40,15 +39,14 @@ There are three types of rules:
         names:
           - ssn
           - id
-
   ```
 
 When a user loads a dashboard, the policies are resolved in two phases:
   1. The templating engine first replaces expressions like `{{ .user.domain }}` with actual values ([Templating reference](/connect/templating))
   2. The resulting expression is then evaluated contextually:
-    - The `access` and `if` values are evaluated as SQL expressions and resolved to a `true` or `false` value
-    - The `row_filter` value is injected into the `WHERE` clause of the SQL queries used to render the dashboard
- 
+     - The `access` and `if` values are evaluated as SQL expressions and resolved to a `true` or `false` value
+     - The `row_filter` value is injected into the `WHERE` clause of the SQL queries used to render the dashboard
+
 Typical use cases include:
 
 - [**Granting or Restricting Access**](#restrict-dashboard-access-to-users-matching-specific-criteria) to data and, as a result, dashboards
@@ -56,7 +54,6 @@ Typical use cases include:
 - [**Restricting Access to Internal users**](#hide-dimensions-or-measures-for-members-of-a-certain-group) of your organization, allowing specific dashboards to be viewed by internal users only
 - [**Partner-filtered Dashboards**](#show-only-data-from-the-users-own-domain) where external users can only access the subset of their data
 - [**Embedded**](#advanced-example-custom-attributes-embed-dashboards) use cases, passing custom attributes to Rill
-
 
 :::tip Project Access Required
 
@@ -76,6 +73,12 @@ By default, when a user is granted access to your project, they have access to a
 metrics_views:
   security:
     access: "{{ .user.admin }} OR '{{ .user.domain }}' == 'example.com'"
+    row_filter: "partner_id IN (SELECT id FROM mapping WHERE partner_domain = '{{ .user.domain }}') OR '{{ .user.domain }}' = 'example.com'"
+    exclude:
+      - if: "'{{ .user.domain }}' != 'example.com'"
+        names: 
+          - ssn
+          - id
 ```
 
 ### Object Specific Policies
@@ -101,7 +104,7 @@ When combining access policies from project defaults and object-specific policie
 
 :::
 
-## Dashboards Access 
+## Dashboard Access
 
 Dashboards also have an `access` key that can override the metrics view access rules. Both [explore](/build/dashboards/#define-dashboard-access) and [canvas](/build/canvas/#define-dashboard-access) dashboards can set the following:
 
@@ -279,9 +282,11 @@ security:
 Another use case for row access policies is to ensure that your embedded dashboard provides a specific view for your end users. During the [embed dashboard request](/integrate/embedding), you can pass custom attributes (other than the ones provided out-of-the-box) that map directly to a value within your Rill explore dashboard.
 
 ```yaml
-row_filter: >
-      dimension_1 = '{{ .user.custom_variable_1 }}' AND
-      dimension_2 = '{{ .user.custom_variable_2 }}' 
+security:
+  access: true
+  row_filter: >
+        dimension_1 = '{{ .user.custom_variable_1 }}' AND
+        dimension_2 = '{{ .user.custom_variable_2 }}' 
 ```
 
 In order to test the view of your embedded dashboard, you can add the same custom variables to [your mock users](#testing-policies-in-rill-developer) as seen below:
@@ -293,3 +298,11 @@ In order to test the view of your embedded dashboard, you can add the same custo
 ```
 
 
+### Advanced Example: Access to Dashboard in Rill and Embedded
+
+While not common, there are use cases where a dashboard is used both in the Rill Cloud UI and as an embedded dashboard. In this case, passing a similar user attribute could suffice, but if you need to pass a custom attribute, you'll need to add an extra layer of logic to your dashboard.
+
+```yaml
+security:
+  access: "{{ .user.admin }} OR '{{ .user.domain }}' == 'example.com' {{- if .user.custom_variable_1 }} OR true {{- end }}"
+```
