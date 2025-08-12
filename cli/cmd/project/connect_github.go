@@ -41,6 +41,7 @@ func GitPushCmd(ch *cmdutil.Helper) *cobra.Command {
 			if len(args) > 0 {
 				opts.GitPath = args[0]
 			}
+			opts.Github = true
 			return ConnectGithubFlow(cmd.Context(), ch, opts)
 		},
 	}
@@ -95,6 +96,10 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 	var localProjectPath string
 	var err error
 	if isLocalGitPath {
+		err = opts.ValidatePathAndSetupGit(ch)
+		if err != nil {
+			return err
+		}
 		// If it's a local path, we need to do some extra validation and rewrites.
 		localGitPath, localProjectPath, err = ValidateLocalProject(ch, opts.GitPath, opts.SubPath)
 		if err != nil {

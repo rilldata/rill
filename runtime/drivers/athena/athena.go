@@ -31,7 +31,7 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "Amazon Athena",
 	Description: "Connect to Amazon Athena database.",
-	DocsURL:     "https://docs.rilldata.com/reference/connectors/athena",
+	DocsURL:     "https://docs.rilldata.com/connect/data-source/athena",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:    "aws_access_key_id",

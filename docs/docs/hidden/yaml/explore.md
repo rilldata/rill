@@ -38,11 +38,11 @@ _[oneOf]_ - List of dimension names. Use '*' to select all dimensions (default)
 
   - **option 3** - _[object]_ - Advanced matching using regex, DuckDB expression, or exclusion
 
-    - **`regex`** - _[string]_ - Select dimensions using a regular expression 
+    - **`regex`** - _[string]_ - Select fields using a regular expression 
 
     - **`expr`** - _[string]_ - DuckDB SQL expression to select fields based on custom logic 
 
-    - **`exclude`** - _[object]_ - Select all dimensions except those listed here 
+    - **`exclude`** - _[object]_ - Select all fields except those listed here 
 
 ### `measures`
 
@@ -54,15 +54,15 @@ _[oneOf]_ - List of measure names. Use ''*'' to select all measures (default)
 
   - **option 3** - _[object]_ - Advanced matching using regex, DuckDB expression, or exclusion
 
-    - **`regex`** - _[string]_ - Select dimensions using a regular expression 
+    - **`regex`** - _[string]_ - Select fields using a regular expression 
 
     - **`expr`** - _[string]_ - DuckDB SQL expression to select fields based on custom logic 
 
-    - **`exclude`** - _[object]_ - Select all dimensions except those listed here 
+    - **`exclude`** - _[object]_ - Select all fields except those listed here 
 
 ### `theme`
 
-_[oneOf]_ - Name of the theme to use. Only one of theme and embedded_theme can be set. 
+_[oneOf]_ - Name of the theme to use or define a theme inline. Either theme name or inline theme can be set. 
 
   - **option 1** - _[string]_ - Name of an existing theme to apply to the dashboard
 
@@ -118,11 +118,11 @@ _[object]_ - defines the defaults YAML struct
 
     - **option 3** - _[object]_ - Advanced matching using regex, DuckDB expression, or exclusion
 
-      - **`regex`** - _[string]_ - Select dimensions using a regular expression 
+      - **`regex`** - _[string]_ - Select fields using a regular expression 
 
       - **`expr`** - _[string]_ - DuckDB SQL expression to select fields based on custom logic 
 
-      - **`exclude`** - _[object]_ - Select all dimensions except those listed here 
+      - **`exclude`** - _[object]_ - Select all fields except those listed here 
 
   - **`measures`** - _[oneOf]_ - Provides the default measures to load on viewing the dashboard 
 
@@ -132,11 +132,11 @@ _[object]_ - defines the defaults YAML struct
 
     - **option 3** - _[object]_ - Advanced matching using regex, DuckDB expression, or exclusion
 
-      - **`regex`** - _[string]_ - Select dimensions using a regular expression 
+      - **`regex`** - _[string]_ - Select fields using a regular expression 
 
       - **`expr`** - _[string]_ - DuckDB SQL expression to select fields based on custom logic 
 
-      - **`exclude`** - _[object]_ - Select all dimensions except those listed here 
+      - **`exclude`** - _[object]_ - Select all fields except those listed here 
 
   - **`time_range`** - _[string]_ - Refers to the default time range shown when a user initially loads the dashboard. The value must be either a valid [ISO 8601 duration](https://en.wikipedia.org/wiki/ISO_8601#Durations) (for example, PT12H for 12 hours, P1M for 1 month, or P26W for 26 weeks) or one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) 
 

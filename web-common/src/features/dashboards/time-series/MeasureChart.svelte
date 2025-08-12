@@ -9,8 +9,8 @@
     Axis,
     Grid,
   } from "@rilldata/web-common/components/data-graphic/guides";
-  import Annotations from "@rilldata/web-common/components/data-graphic/marks/Annotations.svelte";
   import AnnotationGroupPopover from "@rilldata/web-common/components/data-graphic/marks/AnnotationGroupPopover.svelte";
+  import Annotations from "@rilldata/web-common/components/data-graphic/marks/Annotations.svelte";
   import {
     type Annotation,
     AnnotationsStore,
@@ -20,14 +20,12 @@
     ScaleStore,
     SimpleConfigurationStore,
   } from "@rilldata/web-common/components/data-graphic/state/types";
-  import { ComparisonDeltaPreviousSuffix } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { tableInteractionStore } from "@rilldata/web-common/features/dashboards/time-dimension-details/time-dimension-data-store";
   import DimensionValueMouseover from "@rilldata/web-common/features/dashboards/time-series/DimensionValueMouseover.svelte";
   import MeasurePan from "@rilldata/web-common/features/dashboards/time-series/MeasurePan.svelte";
   import type { DimensionDataItem } from "@rilldata/web-common/features/dashboards/time-series/multiple-dimension-queries";
-  import type { TimeSeriesDatum } from "@rilldata/web-common/features/dashboards/time-series/timeseries-data-store";
   import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
   import { numberKindForMeasure } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
   import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
@@ -69,7 +67,7 @@
 
   export let showComparison = false;
   export let showTimeDimensionDetail: boolean;
-  export let data: TimeSeriesDatum[];
+  export let data;
   export let dimensionData: DimensionDataItem[] = [];
   export let annotations: Readable<Annotation[]> | undefined = undefined;
   export let xAccessor = "ts";
@@ -141,16 +139,13 @@
    * TODO: Optimize this such that we don't need to fetch main chart data
    * when comparing dimensions
    */
-  $: [xExtentMin, xExtentMax] = extent(data, (d) => d?.[xAccessor] as Date);
-  $: [yExtentMin, yExtentMax] = extent(data, (d) => d?.[yAccessor] as number);
+  $: [xExtentMin, xExtentMax] = extent(data, (d) => d[xAccessor]);
+  $: [yExtentMin, yExtentMax] = extent(data, (d) => d[yAccessor]);
   let comparisonExtents;
 
   /** if we are making a comparison, factor this into the extents calculation.*/
   $: if (showComparison) {
-    comparisonExtents = extent(
-      data,
-      (d) => d?.[yAccessor + ComparisonDeltaPreviousSuffix] as number,
-    );
+    comparisonExtents = extent(data, (d) => d[`comparison.${yAccessor}`]);
 
     yExtentMin = Math.min(yExtentMin, comparisonExtents[0] || yExtentMin);
     yExtentMax = Math.max(yExtentMax, comparisonExtents[1] || yExtentMax);
@@ -162,7 +157,7 @@
   // Move to utils
   $: if (isComparingDimension) {
     let dimExtents = dimensionData.map((d) =>
-      extent(d?.data || [], (datum) => datum?.[yAccessor] as number),
+      extent(d?.data || [], (datum) => datum[yAccessor]),
     );
 
     yExtentMin = dimExtents
