@@ -21,9 +21,6 @@ Rill implements BI-as-code through a combination of:
 3. **Git Integration**: Version control your analytics assets
 4. **CLI Tools**: Deploy and manage your analytics stack from the command line
    
-<div style={{ textAlign: 'center' }}>
-  <img src="/img/concepts/metrics-view/metrics-view-components.png" style={{ width: '100%', borderRadius: '15px', padding: '20px' }} />
-</div>
 
 
 This approach allows engineering teams to maintain control over their analytics stack while enabling business users to make adjustments through the UI when needed.
@@ -58,10 +55,3 @@ This approach allows engineering teams to maintain control over their analytics 
 ## Learn More
 
 For a deeper dive into BI-as-code and its benefits, check out our blog post: [What is BI-as-code?](https://www.rilldata.com/blog/bi-as-code-and-the-new-era-of-genbi)
-
-## Next Steps
-
-- [Learn about Rill's Architecture](/home/concepts/architecture)
-- [Get started with Rill](/home/install)
-- [Explore the Reference](/connect)
-- [Step-by-step Tutorial](/guides)

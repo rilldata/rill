@@ -422,15 +422,15 @@ const config = {
           },
           {
             from: '/concepts/developerVsCloud',
-            to: '/home/concepts/cloud-vs-developer'
+            to: '/deploy/cloud-vs-developer'
           },
           {
             from: '/concepts/OLAP',
-            to: '/home/concepts/OLAP'
+            to: '/connect/olap'
           },
           {
             from: '/concepts/architecture',
-            to: '/home/concepts/architecture'
+            to: '/build/structure'
           },
           {
             from: '/concepts/operational',
@@ -438,11 +438,11 @@ const config = {
           },
           {
             from: '/concepts/metrics-layer',
-            to: '/home/concepts/metrics-layer'
+            to: '/build/metrics-view'
           },
           {
             from: '/concepts/bi-as-code',
-            to: '/home/concepts/bi-as-code'
+            to: '/build/using-ai/bi-as-code'
           }
           // {
           //   from: '/old-page',

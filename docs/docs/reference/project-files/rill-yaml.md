@@ -56,7 +56,7 @@ Please see our reference documentation on [OLAP Engines](/connect/olap).
  
 ## Project-wide defaults
 
-In `rill.yaml`, project-wide defaults can be specified for a resource type within a project. Unless otherwise specified, _individual resources will inherit any defaults_ that have been specified in `rill.yaml`. For available properties that can be configured, please refer to the YAML specification for each individual resource type - [sources](sources.md), [models](models.md), and [dashboards](explore-dashboards.md)
+In `rill.yaml`, project-wide defaults can be specified for a resource type within a project. Unless otherwise specified, _individual resources will inherit any defaults_ that have been specified in `rill.yaml`. For available properties that can be configured, please refer to the YAML specification for each individual resource type - [sources](sources.md), [models](advanced-models.md), and [dashboards](explore-dashboards.md)
 
 :::note Use plurals when specifying project-wide defaults
 
@@ -119,7 +119,7 @@ explores:
 :::info Hierarchy of inheritance and property overrides
 
 As a general rule of thumb, properties that have been specified at a more _granular_ level will supercede or override higher level properties that have been inherited. Therefore, in order of inheritance, Rill will prioritize properties in the following order:
-1. Individual [source](/reference/project-files/sources.md)/[model](/reference/project-files/models.md)/[dashboard](/reference/project-files/explore-dashboards.md) object level properties (e.g. `source.yaml` or `dashboard.yaml`)
+1. Individual [source](/reference/project-files/sources.md)/[model](/reference/project-files/advanced-models.md)/[dashboard](/reference/project-files/explore-dashboards.md) object level properties (e.g. `source.yaml` or `dashboard.yaml`)
 2. [Environment](/docs/build/models/environments.md) level properties (e.g. a specific property that have been set for `dev`)
 3. [Project-wide defaults](/reference/project-files/rill-yaml.md#project-wide-defaults) for a specific property and resource type
 

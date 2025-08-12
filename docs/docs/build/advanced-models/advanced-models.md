@@ -1,5 +1,5 @@
 ---
-title: Create Advanced Models
+title: Create YAML Models
 description: Create Advanced Models
 sidebar_label: Create Advanced Models
 sidebar_position: 00
@@ -10,13 +10,13 @@ sidebar_position: 00
 
 Unlike SQL models, YAML file models allow you to fine-tune a model to perform additional capabilities such as pre-exec, post-exec SQL, partitioning, and incremental modeling. This is an important addition to modeling, as it allows the user to customize the model's build process. In the case of partitions and incremental modeling, this will reduce the amount of data ingested into Rill at each interval and allow insight into specific issues per partition. Another use case is when using [multiple OLAP engines](/connect/olap/multiple-olap), this allows you to define where a SQL query is run. 
 
-## When to use Advanced Models? 
+## When to use a YAML Models? 
 
-For the majority of users on a DuckDB backed Rill project, advanced models are not required. When a project gets larger and refreshing the whole datasets becomes a time-consuming and costly task, we introduce incremental ingestion to help alleviate the problem. Along with incremental modeling, we use partitions to divide a dataset into smaller, more manageable partitonis. After enabling partitions, you will be able to refresh individual partitonis of data when required. 
+For the majority of users on a DuckDB backed Rill project, YAML models are not required. When a project gets larger and refreshing the whole datasets becomes a time-consuming and costly task, we introduce incremental ingestion to help alleviate the problem. Along with incremental modeling, we use partitions to divide a dataset into smaller, more manageable partitonis. After enabling partitions, you will be able to refresh individual partitonis of data when required. 
 
 Another use case is when using multiple OLAP engines. This allows you to specify where your SQL query is running. When both DuckDB and ClickHouse are enabled in a single environment, you will need to define `connector: duckdb/clickhouse` in the YAML to tell Rill where to run the SQL query, as well as define the `output` location. For more information, refer to the [YAML reference](/reference/project-files/advanced-models)
 
-## Types of Advanced Models
+## Types of YAML Models
 
 1. [Incremental Models](./incremental-models)
 2. [Partitioned Models](./partitions)
@@ -24,7 +24,7 @@ Another use case is when using multiple OLAP engines. This allows you to specify
 4. [DuckDB `pre_exec`/`post_exec` Models](#duckdb-models-pre-exec-post-exec-sql)
 
 
-## Creating an Advanced Model
+## Creating a YAML Model
 You can get started with an advanced model with the following code block: 
 
 ```yaml

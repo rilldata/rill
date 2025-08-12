@@ -1,5 +1,4 @@
 position: 100
-label: " "
+label: "Using AI"
 collapsible: true
 collapsed: true
-className: "hidden"

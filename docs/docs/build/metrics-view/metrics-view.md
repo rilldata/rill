@@ -8,6 +8,11 @@ sidebar_position: 00
 <img src = '/img/build/metrics-view/visual-metrics-editor.gif' class='rounded-gif' />
 <br />
 
+## What is a Metrics View?
+
+A metrics layer is a `centralized framework` used to define and organize **key metrics** for your organization. Having a centralized layer allows an organization to easily manage and reuse calculations across various reports, dashboards, and data tools.
+
+
 In Rill, your metrics view is defined by _metric definitions_. Metric definitions are composed of:
 * _**model**_ - A data model creating a One Big Table that will power the metrics view.
 * _**timeseries**_ - A column from your model that will underlie x-axis data in the line charts. Time will be truncated into different time periods.

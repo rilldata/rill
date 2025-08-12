@@ -1,5 +1,5 @@
 ---
-title: Create Models
+title: Create SQL Models
 description: Create models from source data and apply SQL transformations
 sidebar_label: Create Models
 sidebar_position: 00

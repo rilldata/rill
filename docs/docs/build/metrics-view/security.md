@@ -11,27 +11,26 @@ Rill supports **granular access policies** that let you control:
 - **What data rows they can see**
 - **Which dimensions and measures are visible**
 
-Policies are based on user attributes such as **email address**, **domain**, or **custom attributes**.  This avoids dashboard sprawl — instead of creating multiple dashboards for each audience, you can build **one dashboard** and tailor it for many teams and use cases.
+Policies are based on user attributes such as **email address**, **domain**, or **custom attributes**.  This avoids dashboard sprawl — instead of creating multiple dashboards for each audience, you can build _**one dashboard**_ and tailor it for many teams and use cases.
 
----
 
 ## How Does It Work?
 
-Access policies are defined in the corresponding **metrics view** or **[dashboard YAML](/build/dashboards/#define-dashboard-access)**.  
+Access policies are defined in the **metrics view** and/or **[dashboard YAML](/build/dashboards/#define-dashboard-access)**.  
 There are three types of rules:
 
-- **General Access:** (`access`) A boolean expression deciding if a user can access the metrics view
+ **General Access:** (`access`) A boolean expression deciding if a user can access the metrics view
   ```yaml
   security:
     access: "{{ .user.admin }} OR '{{ .user.domain }}' == 'example.com'"
   ```
 
-- **Row-level access** (`row_filter`) – a SQL expression that will be injected into the WHERE clause of all dashboard queries to restrict access to a subset of rows
+ **Row-level access** (`row_filter`) – a SQL expression that will be injected into the WHERE clause of all dashboard queries to restrict access to a subset of rows
   ```yaml
   security:
     row_filter: region = '{{ .user.region }}'
   ```
-- **Column-level access**: (`include` or `exclude`) – lists of boolean expressions that determine which dimension and measure names will be available to the user
+**Column-level access**: (`include` or `exclude`) – lists of boolean expressions that determine which dimension and measure names will be available to the user
   ```yaml
   security:
     exclude:

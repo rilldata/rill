@@ -1,11 +1,11 @@
 ---
 title: "Rill Project Logs"
-description: Alter dashboard look and feel
+description: "Understanding and debugging Rill project logs"
 sidebar_label: "Rill Project Logs"
 sidebar_position: 30
 ---
 
-Whether you start Rill from the terminal or your favorite IDE, that window will output the project logs. From reconciling items to partition ingestion and beyond, browsing the project logs is a great place to start when troubleshooting errors or slow loading models.
+Whether you start Rill from the terminal or your favorite IDE, the terminal window will output the project logs. From reconciling items to partition ingestion and beyond, browsing the project logs is a great place to start when troubleshooting errors or slow-loading models.
 
 
 ## Dissecting the Format of Common Logs
@@ -66,7 +66,7 @@ grpc finished call      {"protocol": "grpc", "peer.address": "::1", "grpc.compon
 
 ### Project Creation
 
-When you first initialize a Rill project, you'll see Rill reconcile a resource "duckdb" of type "connector". This is expected as we explicitly create this file to initialize a connection to our embedded DuckDB.
+When you first initialize a Rill project, you'll see Rill reconcile a resource "duckdb" of type "Connector". This is expected as we explicitly create this file to initialize a connection to our embedded DuckDB.
 
 ```bash
 Rill will create project files in "~/Desktop/GitHub/testing-folder/dsn". Do you want to continue? Yes
@@ -96,7 +96,7 @@ Once connected, you'll likely create a model and see this also reconciling in th
 
 ### Creating Rill Objects
 
-The next section of logs is creating a metrics view and explore dashboard. You'll see some errors are thrown in the metrics view and resolved in Rill Developer.
+The next section of logs shows the creation of a metrics view and explore dashboard. You'll see some errors thrown in the metrics view that get resolved in Rill Developer.
 
 ```bash
 2025-08-05T17:00:08.191 INFO    Reconciling resource    {"name": "commits___metrics", "type": "MetricsView"}
@@ -137,7 +137,7 @@ Similar to the Rill Developer experience, you can view the logs in Rill Cloud to
 rill project logs
 ```
 
-To continually view the progression of your logs, use `-f` or `--follow`.
+To continuously view the progression of your logs, use `-f` or `--follow`.
 
 ```
 rill project logs -f
