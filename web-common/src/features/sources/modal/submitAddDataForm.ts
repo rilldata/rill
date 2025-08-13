@@ -39,7 +39,7 @@ interface AddDataFormValues {
   [key: string]: unknown;
 }
 
-export async function submitAddSourceForm(
+export async function submitAddSourceOrConnectorForm(
   queryClient: QueryClient,
   connector: V1ConnectorDriver,
   formValues: AddDataFormValues,
