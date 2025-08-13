@@ -1,23 +1,21 @@
 ---
 title: Dev/Prod Connector Environments
 description: Dev/Prod Setup
-sidebar_label: Dev/Prod Connector Setup
+sidebar_label: Dev/Prod Connectors
 sidebar_position: 19
 ---
 
 Rill uses the Go programming language's [native templating engine](https://pkg.go.dev/text/template), known as `text/template`, which you might know from projects such as [Helm](https://helm.sh/) or [Hugo](https://gohugo.io/). It additionally includes the [Sprig](http://masterminds.github.io/sprig/) library of utility functions.
 
-Templating can be a powerful tool to help introduce dynamic conditional statements based on local variables that have been passed in to Rill or based on the environment being used. Some common use cases may include but are not limited to:
-- Defining an [**environment specific database / cluster**](/connect/templating#environment-specific-connectors) to connect to between development and production
-- Pointing to [**different source data endpoints / databases**](/connect/templating#environment-specific-data-source-location) between your development and production environments
-
+Templating can be a powerful tool to help introduce dynamic conditional statements based on local variables that have been passed into Rill or based on the environment being used. Some common use cases may include but are not limited to:
+- Defining an [**environment-specific database/cluster**](/connect/templating#environment-specific-connectors) to connect to between development and production
+- Pointing to [**different source data endpoints/databases**](/connect/templating#environment-specific-data-source-location) between your development and production environments
 
 :::info Where can you template in Rill?
 
 For the most part, templating should be used in [SQL models](../build/models/models.md) and when defining [connector properties](/connect). If you have further questions about templating, please don't hesitate to [reach out](/contact) and we'd love to assist you further!
 
 :::
-
 
 ## Why Use Templating?
 
@@ -33,11 +31,11 @@ Unless explicitly defined, Rill Developer will use a `dev` environment. If you w
 
 :::
 
-## Setting up Environmental Variables
+## Setting Up Environmental Variables
 
 You can set up environmental variables in several locations in Rill. Please review our [configure local credentials documentation](/connect/credentials#setting-credentials-for-rill-developer) for more information.
 
-## Environment Specific Connectors
+## Environment-Specific Connectors
 
 The most common use case for connector templating is defining separate databases for your development and production operations. This approach gives you the freedom to experiment, test, and iterate on your models without the risk of accidentally modifying or corrupting your production data.
 
@@ -69,27 +67,26 @@ In this example:
 
 :::warning Managing dev and prod credentials
 
-Some connectors will reference two unique databases and require two unique credentials for dev and prod. In this case, you can either define an unique environmental variable for both and reference them separately in the connector.
+Some connectors will reference two unique databases and require two unique credentials for dev and prod. In this case, you can either define a unique environmental variable for both and reference them separately in the connector.
 
-IE: 
+IE:
 ```
 "{{ .env.connector.dev_clickhouse.username }}"
 "{{ .env.connector.prod_clickhouse.username }}"
 ```
+
 Or, by creating a separate connector altogether.
 
 ```yaml
-#/connectors/dev_clickhouse.yaml
-#/connectors/prod_clickhouse.yaml
+# /connectors/dev_clickhouse.yaml
+# /connectors/prod_clickhouse.yaml
 ```
 
 :::
 
-
-## Environment Specific Data Source Location
+## Environment-Specific Data Source Location
 
 Rill allows you to configure different data source locations for different environments (development, staging, production) using templating. This enables you to work with development datasets locally while pointing to production data sources in cloud deployments.
-
 
 ```yaml
 type: connector
@@ -101,7 +98,6 @@ project_id: rilldata
 google_application_credentials: '{{ .env.connector.bigquery.google_application_credentials}}'
 ```
 
-
 ```yaml
 type: connector                                  
 driver: postgres                                
@@ -110,7 +106,7 @@ dev:
 dsn: "postgres://user:password@localhost:5432/database"
 ```
 
-## Additional resources
+## Additional Resources
 
 - [Official docs](https://pkg.go.dev/text/template) (Go)
 - [Learn Go Template Syntax](https://developer.hashicorp.com/nomad/tutorials/templates/go-template-syntax) (HashiCorp)

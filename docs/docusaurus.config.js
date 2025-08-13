@@ -414,10 +414,6 @@ const config = {
             to: '/other/FAQ'
           },
           {
-            from: '/reference/project-files/models',
-            to: '/build/models'
-          },
-          {
             from: '/concepts/developerVsCloud',
             to: '/deploy/cloud-vs-developer'
           },
@@ -429,10 +425,10 @@ const config = {
             from: '/concepts/architecture',
             to: '/build/structure'
           },
-          {
-            from: '/concepts/operational',
-            to: '/home/concepts/operational'
-          },
+          // {
+          //   from: '/concepts/operational',
+          //   to: '/home/concepts/operational'
+          // },
           {
             from: '/concepts/metrics-layer',
             to: '/build/metrics-view'

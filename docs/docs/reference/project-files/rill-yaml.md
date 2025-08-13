@@ -15,34 +15,33 @@ The `rill.yaml` file contains metadata about your project.
 
 **`description`** - Description of your project.
 
-**`ai_instructions`** - extra instructions for AI assistants. Any information you add here will be added to the system prompt for AI assistants when they interact with your project.
+**`ai_instructions`** - Extra instructions for AI assistants. Any information you add here will be added to the system prompt for AI assistants when they interact with your project.
 
-**`olap_connector`** - the default OLAP engine to use in your project
+**`olap_connector`** - The default OLAP engine to use in your project
 
-**`mock_users`** — a list of mock users to test against dashboard [security policies](/build/metrics-view/security). For each mock user, possible attributes include:
+**`mock_users`** — A list of mock users to test against dashboard [security policies](/build/metrics-view/security). For each mock user, possible attributes include:
 
   - **`email`** — the mock user's email _(required)_
   - **`name`** — the mock user's name
   - **`admin`** — whether or not the mock user is an admin
 
-**`models`** - See [project wide defaults](/reference/project-files/rill-yaml#project-wide-defaults)
+**`models`** - See [project-wide defaults](/reference/project-files/rill-yaml#project-wide-defaults)
 
-**`metrics_views`** - See [project wide defaults](/reference/project-files/rill-yaml#project-wide-defaults)
+**`metrics_views`** - See [project-wide defaults](/reference/project-files/rill-yaml#project-wide-defaults)
 
-**`explores`** - See [project wide defaults](/reference/project-files/rill-yaml#project-wide-defaults)
+**`explores`** - See [project-wide defaults](/reference/project-files/rill-yaml#project-wide-defaults)
 
-**`canvases`** - See [project wide defaults](/reference/project-files/rill-yaml#project-wide-defaults)
+**`canvases`** - See [project-wide defaults](/reference/project-files/rill-yaml#project-wide-defaults)
 
-**`apis`** - See [project wide defaults](/reference/project-files/rill-yaml#project-wide-defaults)
+**`apis`** - See [project-wide defaults](/reference/project-files/rill-yaml#project-wide-defaults)
 
 **`ignorepath`** (array) - See [ignoring files](/reference/project-files/rill-yaml#ignoring-files-and-directories-within-rill)
 
-**`public_paths`** (array) - Makes assets available over http, useful if you need to include images in Canvas dashboards (defaults to `./public`)
+**`public_paths`** (array) - Makes assets available over HTTP, useful if you need to include images in Canvas dashboards (defaults to `./public`)
 
+## Configuring the Default OLAP Engine
 
-## Configuring the default OLAP Engine
-
-Rill allows you to specify the default OLAP engine to use in your project via `rill.yaml`. This setting is configurable using the `olap_connector` property (and will otherwise revert to `duckdb` if not specified). 
+Rill allows you to specify the default OLAP engine to use in your project via `rill.yaml`. This setting is configurable using the `olap_connector` property (and will otherwise revert to `duckdb` if not specified).
 
 ```yaml
 olap_connector: clickhouse
@@ -53,14 +52,14 @@ olap_connector: clickhouse
 Please see our reference documentation on [OLAP Engines](/connect/olap).
 
 :::
- 
-## Project-wide defaults
 
-In `rill.yaml`, project-wide defaults can be specified for a resource type within a project. Unless otherwise specified, _individual resources will inherit any defaults_ that have been specified in `rill.yaml`. For available properties that can be configured, please refer to the YAML specification for each individual resource type - [sources](sources.md), [models](advanced-models.md), and [dashboards](explore-dashboards.md)
+## Project-Wide Defaults
+
+In `rill.yaml`, project-wide defaults can be specified for a resource type within a project. Unless otherwise specified, _individual resources will inherit any defaults_ that have been specified in `rill.yaml`. For available properties that can be configured, please refer to the YAML specification for each individual resource type - [sources](sources.md), [models](/reference/project-files/models), and [dashboards](explore-dashboards.md)
 
 :::note Use plurals when specifying project-wide defaults
 
-In your `rill.yaml`, the top level property for the resource type needs to be **plural**, such as `sources`, `models`, and `dashboards`.
+In your `rill.yaml`, the top-level property for the resource type needs to be **plural**, such as `sources`, `models`, and `dashboards`.
 
 :::
 
@@ -118,18 +117,19 @@ explores:
 
 :::info Hierarchy of inheritance and property overrides
 
-As a general rule of thumb, properties that have been specified at a more _granular_ level will supercede or override higher level properties that have been inherited. Therefore, in order of inheritance, Rill will prioritize properties in the following order:
-1. Individual [source](/reference/project-files/sources.md)/[model](/reference/project-files/advanced-models.md)/[dashboard](/reference/project-files/explore-dashboards.md) object level properties (e.g. `source.yaml` or `dashboard.yaml`)
-2. [Environment](/docs/build/models/templating.md) level properties (e.g. a specific property that have been set for `dev`)
+As a general rule of thumb, properties that have been specified at a more _granular_ level will supersede or override higher-level properties that have been inherited. Therefore, in order of inheritance, Rill will prioritize properties in the following order:
+1. Individual [source](/reference/project-files/sources.md)/[model](/reference/project-files/models.md)/[dashboard](/reference/project-files/explore-dashboards.md) object level properties (e.g., `source.yaml` or `dashboard.yaml`)
+2. [Environment](/docs/build/models/templating.md) level properties (e.g., a specific property that has been set for `dev`)
 3. [Project-wide defaults](/reference/project-files/rill-yaml.md#project-wide-defaults) for a specific property and resource type
 
 :::
 
-## Setting variables
+## Setting Variables
 
-Primarily useful for [templating](/connect/templating), variables can be set in the `rill.yaml` file directly. This allows variables to be set for your projects deployed to Rill Cloud while still being able to use different variable values locally if you prefer. 
+Primarily useful for [templating](/connect/templating), variables can be set in the `rill.yaml` file directly. This allows variables to be set for your projects deployed to Rill Cloud while still being able to use different variable values locally if you prefer.
 
 To define a variable in `rill.yaml`, pass in the appropriate key-value pair for the variable under the `env` key:
+
 ```yaml
 env:
   numeric_var: 10
@@ -149,15 +149,16 @@ rill start --env numeric_var=100 --env string_var="different_value"
 :::tip Setting variables through `.env`
 
 Variables can also be set through your project's `<RILL_PROJECT_HOME>/.env` file (or using the `rill env set` CLI command), such as:
+
 ```bash
 variable=xyz
 ```
 
-Similar to how [connector credentials can be pushed / pulled](/connect/credentials#pulling-credentials-and-variables-from-a-deployed-project-on-rill-cloud) from local to cloud or vice versa, project variables set locally in Rill Developer can be pushed to Rill Cloud and/or pulled back to your local instance from your deployed project by using the `rill env push` and `rill env pull` commands respectively.
+Similar to how [connector credentials can be pushed/pulled](/connect/credentials#pulling-credentials-and-variables-from-a-deployed-project-on-rill-cloud) from local to cloud or vice versa, project variables set locally in Rill Developer can be pushed to Rill Cloud and/or pulled back to your local instance from your deployed project by using the `rill env push` and `rill env pull` commands respectively.
 
 :::
 
-## Ignoring files and directories within Rill
+## Ignoring Files and Directories Within Rill
 
 There are times where you may have extraneous directories or files within your Rill project that you would like to be ignored by Rill (potentially also leading to parsing errors). The `ignore_paths` property can be specified in your `rill.yaml` file for this purpose by specifying a list of directories and/or files to ignore.
 
@@ -173,9 +174,9 @@ Don't forget the leading `/` when specifying the path for `ignore_paths` and thi
 
 :::
 
-## Testing access policies 
+## Testing Access Policies
 
-During development, it is always a good idea to check if your [access policies](/build/metrics-view/security) are behaving the way you designed them to before pushing these changes into production. You can set mock users which enables a drop down in the dashboard preview to view as a specific user. 
+During development, it is always a good idea to check if your [access policies](/build/metrics-view/security) are behaving the way you designed them to before pushing these changes into production. You can set mock users which enables a dropdown in the dashboard preview to view as a specific user.
 
 ```yaml
 mock_users:
@@ -188,12 +189,11 @@ mock_users:
 - email: anon@unknown.com
 ```
 
-
-<img src = '/img/reference/project-files/View-as.png' class='centered' />
+<img src='/img/reference/project-files/View-as.png' class='centered' />
 <br />
 
 :::info The View as selector is not visible in my dashboard, why?
 
-This feature is _only_ enabled when you have set a security policy on the dashboard. By default, the dashboard and it's contents is viewable by every user.
+This feature is _only_ enabled when you have set a security policy on the dashboard. By default, the dashboard and its contents are viewable by every user.
 
 :::
