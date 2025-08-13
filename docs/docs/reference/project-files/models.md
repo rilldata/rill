@@ -1,66 +1,93 @@
 ---
-title: Model SQL
-sidebar_label: Model SQL
-sidebar_position: 15
+title: Model YAML
+sidebar_label: Model YAML
+sidebar_position: 20
 hide_table_of_contents: true
 ---
 
-When using Rill Developer, data transformations are powered by DuckDB and their dialect of SQL. Under the hood, _by default_, data models are created as views in DuckDB. Please check our [modeling](/build/models/models.md) page and [DuckDB documentation](https://duckdb.org/docs/sql/introduction) for more details about how to construct and write your model SQL syntax.
+:::tip
 
-In your Rill project directory, you can also create a `<model_name>.sql` file containing an appropriate DuckDB `SELECT` statement, most commonly within the default `models` directory, to represent a model (or set of SQL transformations). Rill will automatically detect and parse the model next time you run `rill start`.
+Both regular models and source models can use the Model YAML specification described on this page. While [SQL models](/build/models/sql-models) are perfect for simple transformations, Model YAML files provide advanced capabilities for complex data processing scenarios.
 
-:::tip Did you know?
+**When to use Model YAML:**
+- **Partitions** - Optimize performance with data partitioning strategies
+- **Incremental models** - Process only new or changed data efficiently
+- **Pre/post execution hooks** - Run custom logic before or after model execution
+- **Staging** - Create intermediate tables for complex transformations
+- **Output configuration** - Define specific output formats and destinations
 
-Rill will automatically assume any `.sql` file within the Rill project directory to be a model, including `.sql` files that might be nested _under multiple levels_ or within subfolders in a directory (such as `models`). Models are unique in that they are a resource that doesn't necessarily need the `type` property specified.
-
-:::
-
-## Annotating your models with properties
-
-In most cases, objects are represented in Rill as YAML files. Models are unique in that any `<model>.sql` file can be considered a model resource in Rill, representing a SQL transformation that you would like to inform using a set of inputs and outputting a view or table (depending on the materialization type). For most other resources, available properties can be set directly via the corresponding YAML file. In the case of a model SQL file though, configurable properties should be set by annotating the top of the file using the following syntax:
-
-```sql
--- @property: value
-```
-
-We will cover different available configurable properties in the below sections.
-
-## Marking your model SQL file as a model resource type
-
-By default, any new model that is created in a Rill project will populate a corresponding `.sql` file representing the model. Similarly, a `.sql` file that is directly created in the project directory will also be _automatically assumed_ by Rill to be a model by default. Therefore, it is not necessary to annotate the model resource with the `type` property.
-
-For consistency or documentation purposes, if you'd like to annotate your model resource as well with the `type` property, you can do so by adding the following to the top of your `<model_name>.sql`:
-```sql
--- @type: model
-```
-
-:::note
-
-This only applies to models as models are defined using _SQL files_. For other resources whose configuration is handled in YAML, the `type` property is still required.
+Model YAML files give you fine-grained control over how your data is processed and transformed, making them ideal for production workloads and complex analytics pipelines.
 
 :::
 
-## Model materialization
+## Properties
 
-As mentioned, models will be materialized in DuckDB as views by default. However, you can choose to materialize them as tables instead of views. To do this, you can add the following annotation to the top of your model SQL file:
+**`type`** - Refers to the resource type and must be 'model' _(required)_
 
-```sql
--- @materialize: true
-```
-
-Alternatively, it is possible to set it as a [project-wide default](rill-yaml.md#project-wide-defaults) as well that your models inherit via your `rill.yaml` file:
+**`refresh`** - Specifies the refresh schedule that Rill should follow to re-ingest and update the underlying source data _(optional)_.
+  - **`cron`** - A cron schedule expression, which should be encapsulated in single quotes, e.g., `'* * * * *'` _(optional)_
+  - **`every`** - A Go duration string, such as `24h` ([docs](https://pkg.go.dev/time#ParseDuration)) _(optional)_
 
 ```yaml
-models:
-  materialize: true
+refresh:
+    cron: "0 8 * * *"
 ```
 
-:::info To materialize or not to materialize? 
+**`timeout`** — The maximum time to wait for model ingestion _(optional)_.
 
-There are both pros and cons to materializing your models.
-- Pros can include improved performance for downstream models and dashboards, especially with the SQL is complex and/or the data size is large. We generally recommend _materializing_ final models that power dashboards.
-- Cons can include a degraded keystroke-by-keystroke modeling experience or for specific edge cases, such as when using cross joins.
+**`incremental`** - Set to `true` or `false` whether incremental modeling is required _(optional)_
 
-If unsure, we would generally recommend leaving the defaults and/or [reaching out](/contact) for further guidance!
+**`state`** - Refers to the explicitly defined state of your model, cannot be used with `partitions` _(optional)_.
+  - **`sql/glob`** - Refers to the location of the data depending on whether the data is cloud storage or a data warehouse.
 
-:::
+**`partitions`** - Refers to how your data is partitioned, cannot be used with `state` _(optional)_.
+  - **`connector`** - Refers to the connector that the partitions are using _(optional)_.
+  - **`sql`** - Refers to the SQL query used to access the data in your data warehouse, use `sql` or `glob` _(optional)_.
+  - **`glob`** - Refers to the location of the data in your cloud warehouse, use `sql` or `glob` _(optional)_.
+    - **`path`** - In the case `glob` is selected, you will need to set the path of your source _(optional)_.
+    - **`partition`** - In the case `glob` is selected, you can define how to partition the table: directory or hive _(optional)_.
+    
+```yaml
+partitions:
+  connector: duckdb
+  sql: SELECT range AS num FROM range(0,10)
+```
+
+```yaml
+partitions:
+  glob:
+    connector: [s3/gcs]
+    path: [s3/gs]://path/to/file/**/*.parquet[.csv]
+```
+
+**`pre_exec`** – Refers to SQL queries to run before the main query, available for DuckDB-based models _(optional)_. Ensure `pre_exec` queries are idempotent. Use `IF NOT EXISTS` statements when applicable.
+
+**`sql`** - Refers to the SQL query for your model _(required)_.
+
+**`post_exec`** – Refers to a SQL query that is run after the main query, available for DuckDB-based models _(optional)_. Ensure `post_exec` queries are idempotent. Use `IF EXISTS` statements when applicable.
+
+```yaml
+pre_exec: ATTACH IF NOT EXISTS 'dbname=postgres host=localhost port=5432 user=postgres password=postgres' AS postgres_db (TYPE POSTGRES)
+
+sql: SELECT * FROM postgres_query('postgres_db', 'SELECT * FROM USERS')
+
+post_exec: DETACH DATABASE IF EXISTS postgres_db
+```
+
+**`partitions_watermark`** - Refers to a customizable timestamp that can be set to check if an object has been updated _(optional)_.
+
+**`partitions_concurrency`** - Refers to the number of concurrent partitions that can be read at the same time _(optional)_.
+
+**`stage`** - In the case of staging models, where an input source does not support direct write to the output and a staging table is required _(optional)_.
+  - **`connector`** - Refers to the connector type for the staging table
+  - **`path`** - Path of the temporary staging table
+
+**`output`** - In the case of staging models, where the output needs to be defined where the staging table will write the temporary data _(optional)_.
+  - **`connector`** - Refers to the connector type for the staging table _(optional)_.
+  - **`incremental_strategy`** - Refers to how the incremental refresh will behave (merge or append) _(optional)_.
+  - **`unique_key`** - Required if incremental_strategy is defined, refers to the unique column to use to merge _(optional)_.
+  - **`materialize`** - Refers to the output table being materialized _(optional)_.
+  - **`columns`** - Refers to a list of columns if you require to manually define column name and types _(optional)_.
+  - **`engine_full`** - Refers to the ClickHouse engine specifications (ENGINE = ... PARTITION BY ... ORDER BY ... SETTINGS ...) _(optional)_.
+
+**`materialize`** - Refers to the model being materialized as a table or not _(optional)_.
