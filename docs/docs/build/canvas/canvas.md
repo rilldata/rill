@@ -68,6 +68,17 @@ While we encourage creating Canvas dashboards via the visual editing experience 
 <img src = '/img/build/canvas/code-toggle.png' class='rounded-gif' />
 
 
+## Define Dashboard Access
+
+Along with [metrics views security policies](/build/metrics-view/security), you can set access on the dashboard level.  Access on dashboards will override the access rules in metrics views. This might be useful if there are a few dashboards that you want to limit to a set of users with a specific set of dimensions. 
+
+Or, the dashboard needs some QA by the team with [full data](/connect/templating) before sharing to the rest of the team.
+
+```yaml
+security:
+  access: '{{ has "partners" .user.groups }}' #only dashboard access can be defined here, other security policies must be set on the metrics view
+```
+
 ## Example Canvas Dashboards 
 Here are a few deployed examples of Canvas dashboards that you can check out!
 
