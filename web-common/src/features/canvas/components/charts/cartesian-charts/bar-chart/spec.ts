@@ -1,14 +1,11 @@
-import {
-  sanitizeFieldName,
-  sanitizeValueForVega,
-} from "@rilldata/web-common/components/vega/util";
-import type { TooltipValue } from "@rilldata/web-common/features/canvas/components/charts/types";
+import { sanitizeValueForVega } from "@rilldata/web-common/components/vega/util";
 import type { VisualizationSpec } from "svelte-vega";
 import type { Field } from "vega-lite/build/src/channeldef";
 import type { LayerSpec } from "vega-lite/build/src/spec/layer";
 import type { UnitSpec } from "vega-lite/build/src/spec/unit";
 import {
   buildHoverRuleLayer,
+  createCartesianMultiValueTooltipChannel,
   createColorEncoding,
   createConfigWithLegend,
   createDefaultTooltipEncoding,
@@ -34,24 +31,10 @@ export function generateVLBarChartSpec(
     [config.x, config.y, config.color],
     data,
   );
-  let multiValueTooltipChannel: TooltipValue[] | undefined;
-
-  if (colorField && config.x && yField) {
-    multiValueTooltipChannel = data.data?.map((value) => ({
-      field: sanitizeValueForVega(value?.[colorField] as string),
-      type: "quantitative",
-      formatType: sanitizeFieldName(yField),
-    }));
-
-    multiValueTooltipChannel.unshift({
-      field: xField,
-      title: data.fields[config.x.field]?.displayName || config.x.field,
-      type: config.x?.type,
-      ...(config.x.type === "temporal" && { format: "%b %d, %Y %H:%M" }),
-    });
-
-    multiValueTooltipChannel = multiValueTooltipChannel.slice(0, 50);
-  }
+  const multiValueTooltipChannel = createCartesianMultiValueTooltipChannel(
+    { x: config.x, colorField, yField },
+    data,
+  );
 
   spec.encoding = { x: createPositionEncoding(config.x, data) };
 

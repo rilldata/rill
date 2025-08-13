@@ -277,6 +277,45 @@ export function buildHoverPointOverlay(): UnitSpec<Field> {
   };
 }
 
+/**
+ * Creates a multiValueTooltipChannel for cartesian charts (area, line, bar, stacked-bar)
+ * Maps data values based on colorField and includes x-field information
+ */
+export function createCartesianMultiValueTooltipChannel(
+  config: { x?: FieldConfig; colorField?: string; yField?: string },
+  data: ChartDataResult,
+): TooltipValue[] | undefined {
+  const { x: xConfig, colorField, yField } = config;
+
+  if (!colorField || !xConfig || !yField) {
+    return undefined;
+  }
+
+  const xField = sanitizeValueForVega(xConfig.field);
+  const sanitizedYField = sanitizeValueForVega(yField);
+
+  let multiValueTooltipChannel: TooltipValue[] | undefined;
+
+  multiValueTooltipChannel = data.data?.map((value) => ({
+    field: sanitizeValueForVega(value?.[colorField] as string),
+    type: "quantitative",
+    formatType: sanitizeFieldName(sanitizedYField),
+  }));
+
+  if (multiValueTooltipChannel) {
+    multiValueTooltipChannel.unshift({
+      field: xField,
+      title: data.fields[xConfig.field]?.displayName || xConfig.field,
+      type: xConfig?.type,
+      ...(xConfig.type === "temporal" && { format: "%b %d, %Y %H:%M" }),
+    });
+
+    multiValueTooltipChannel = multiValueTooltipChannel.slice(0, 50);
+  }
+
+  return multiValueTooltipChannel;
+}
+
 export function buildHoverRuleLayer(args: {
   xField?: string;
   defaultTooltip: TooltipValue[];
