@@ -58,6 +58,9 @@ export const TIMESTAMPS = new Set([
   "DATETIME",
   "TIMESTAMPTZ",
   "TIMESTAMP WITH TIME ZONE",
+  "TIMESTAMP_S",
+  "TIMESTAMP_MS",
+  "TIMESTAMP_NS",
 
   ...DATES,
 ]);
