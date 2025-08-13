@@ -2,7 +2,6 @@
 title: "Custom API"
 description: Create your own API to pull data out in flexible manner 
 sidebar_label: "Custom API"
-sidebar_position: 30
 ---
 
 Rill allows you to create custom APIs to pull data out in a flexible manner. You can write custom SQL queries and expose them as API endpoints.
