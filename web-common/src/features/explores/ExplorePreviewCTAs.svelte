@@ -12,7 +12,7 @@
   import {
     useDashboardPolicyCheck,
     useRillYamlPolicyCheck,
-  } from "../dashboards/granular-access-policies/useDashboardPolicyCheck";
+  } from "../dashboards/granular-access-policies/useSecurityPolicyCheck";
   import StateManagersProvider from "../dashboards/state-managers/StateManagersProvider.svelte";
   import { resourceColorMapping } from "../entity-management/resource-icon-mapping";
   import { ResourceKind } from "../entity-management/resource-selectors";
