@@ -153,6 +153,7 @@
     useIsModelingSupportedForDefaultOlapDriver($runtime.instanceId);
   $: isModelingSupported = $isModelingSupportedForDefaultOlapDriver.data;
 
+  // FIXME: excluding salesforce until we implement the table discovery APIs
   $: isConnectorType =
     selectedConnector?.implementsOlap ||
     selectedConnector?.implementsSqlStore ||
