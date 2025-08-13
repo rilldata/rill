@@ -9,7 +9,7 @@ Rill provides a comprehensive platform for building end-to-end data analytics so
 ### Modeling and Last Mile ETL
 - [**SQL Models**](/build/models) - Transform and prepare your data
 - [**Data Refresh**](/build/models/source-refresh) - Schedule your data refresh  
-- [**Additional Model Templating**](/build/models/environments) - Separate your production and development settings 
+- [**Additional Model Templating**](/build/models/templating) - Separate your production and development settings 
 - [**Advanced Modeling**](/build/advanced-models) - Incremental ingestion, data partitions, and more
 
 ### Define Measures and Dimensions

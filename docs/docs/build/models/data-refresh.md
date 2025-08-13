@@ -56,7 +56,7 @@ models:
 
 :::info Did you know?
 
-If you have both a project-wide default and model specific refresh schedule _configured in the same project_, the model specific refresh will **override** the project default based on how [inheritance](/build/models/environments#specifying-environment-specific-yaml-overrides) works in Rill. Otherwise, if not specified, the project-wide default will be used instead!
+If you have both a project-wide default and model specific refresh schedule _configured in the same project_, the model specific refresh will **override** the project default based on how [inheritance](/build/models/templating#specifying-environment-specific-yaml-overrides) works in Rill. Otherwise, if not specified, the project-wide default will be used instead!
 
 :::
 

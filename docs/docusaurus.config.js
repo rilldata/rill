@@ -440,7 +440,11 @@ const config = {
           {
             from: '/concepts/bi-as-code',
             to: '/build/using-ai/bi-as-code'
-          }
+          },
+          {
+            from: '/build/models/environments',
+            to: '/build/models/templating'
+          },
           // {
           //   from: '/old-page',
           //   to: '/new-page',
