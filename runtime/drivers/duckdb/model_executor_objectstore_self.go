@@ -53,32 +53,36 @@ func (e *objectStoreToSelfExecutor) Execute(ctx context.Context, opts *drivers.M
 }
 
 func (e *objectStoreToSelfExecutor) modelInputProperties(ctx context.Context, opts *drivers.ModelExecuteOptions) (map[string]any, error) {
-	parsed := &drivers.ObjectStoreModelInputProperties{}
-	if err := parsed.Decode(opts.InputProperties); err != nil {
+	inputProps := &drivers.ObjectStoreModelInputProperties{}
+	if err := inputProps.Decode(opts.InputProperties); err != nil {
 		return nil, fmt.Errorf("failed to parse input properties: %w", err)
 	}
 
 	m := &ModelInputProperties{}
 	var format string
-	if parsed.Format != "" {
-		format = fmt.Sprintf(".%s", parsed.Format)
+	if inputProps.Format != "" {
+		format = fmt.Sprintf(".%s", inputProps.Format)
 	} else {
-		format = fileutil.FullExt(parsed.Path)
+		format = fileutil.FullExt(inputProps.Path)
 	}
 
 	// Generate secret SQL to access the service and set as pre_exec_query
 	var err error
-	m.PreExec, err = objectStoreSecretSQL(ctx, opts, opts.InputConnector, parsed.Path, opts.InputProperties)
+	m.PreExec, err = objectStoreSecretSQL(ctx, opts, opts.InputConnector, inputProps.Path, opts.InputProperties)
 	if err != nil {
 		return nil, err
 	}
 
-	// Set SQL to read from the external source
-	from, err := sourceReader([]string{parsed.Path}, format, parsed.DuckDB)
-	if err != nil {
-		return nil, err
+	// Set SQL to use for reading from the object store.
+	if inputProps.SQL != "" {
+		m.SQL = inputProps.SQL
+	} else if inputProps.Path != "" {
+		from, err := sourceReader([]string{inputProps.Path}, format, inputProps.DuckDB)
+		if err != nil {
+			return nil, err
+		}
+		m.SQL = "SELECT * FROM " + from
 	}
-	m.SQL = "SELECT * FROM " + from
 
 	propsMap := make(map[string]any)
 	if err := mapstructure.Decode(m, &propsMap); err != nil {
@@ -227,8 +231,8 @@ type objectStoreToSelfExecutorNonNative struct {
 }
 
 func (e *objectStoreToSelfExecutorNonNative) Execute(ctx context.Context, opts *drivers.ModelExecuteOptions) (*drivers.ModelResult, error) {
-	parsed := &drivers.ObjectStoreModelInputProperties{}
-	if err := parsed.Decode(opts.InputProperties); err != nil {
+	inputProps := &drivers.ObjectStoreModelInputProperties{}
+	if err := inputProps.Decode(opts.InputProperties); err != nil {
 		return nil, fmt.Errorf("failed to parse input properties: %w", err)
 	}
 
@@ -237,7 +241,7 @@ func (e *objectStoreToSelfExecutorNonNative) Execute(ctx context.Context, opts *
 		return nil, fmt.Errorf("input handle is not an object store")
 	}
 
-	iter, err := store.DownloadFiles(ctx, parsed.Path)
+	iter, err := store.DownloadFiles(ctx, inputProps.Path)
 	if err != nil {
 		return nil, err
 	}
@@ -262,13 +266,13 @@ func (e *objectStoreToSelfExecutorNonNative) Execute(ctx context.Context, opts *
 	}
 
 	var format string
-	if parsed.Format != "" {
-		format = fmt.Sprintf(".%s", parsed.Format)
+	if inputProps.Format != "" {
+		format = fmt.Sprintf(".%s", inputProps.Format)
 	} else {
-		format = fileutil.FullExt(parsed.Path)
+		format = fileutil.FullExt(inputProps.Path)
 	}
 
-	fromClause, err := sourceReader(files, format, parsed.DuckDB)
+	fromClause, err := sourceReader(files, format, inputProps.DuckDB)
 	if err != nil {
 		return nil, err
 	}
