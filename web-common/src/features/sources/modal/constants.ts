@@ -41,3 +41,16 @@ export const SOURCES = [
 export const OLAP_ENGINES = ["clickhouse", "druid", "pinot"];
 
 export const SORT_ORDER = [...SOURCES, ...OLAP_ENGINES];
+
+/**
+ * Connectors that are automatically converted to DuckDB to leverage its native
+ * file reading capabilities and extensions.
+ */
+export const DUCKDB_NATIVE_CONNECTORS = [
+  "s3",
+  "gcs",
+  "https",
+  "azure",
+  "local_file",
+  "sqlite",
+] as const;

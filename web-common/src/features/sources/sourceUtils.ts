@@ -7,6 +7,7 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import { makeDotEnvConnectorKey } from "../connectors/code-utils";
 import { sanitizeEntityName } from "../entity-management/name-utils";
+import { DUCKDB_NATIVE_CONNECTORS } from "./modal/constants";
 
 // Helper text that we put at the top of every Source YAML file
 const SOURCE_MODEL_FILE_TOP = `# Source YAML
@@ -159,43 +160,36 @@ export function maybeRewriteToDuckDb(
   // Create a copy of the connector, so that we don't overwrite the original
   const connectorCopy = { ...connector };
 
-  switch (connector.name) {
-    case "s3":
-    case "gcs":
-    case "https":
-    case "azure":
-    case "local_file":
-      connectorCopy.name = "duckdb";
-
-      formValues.sql = buildDuckDbQuery(formValues.path as string);
-      delete formValues.path;
-
-      connectorCopy.sourceProperties = [
-        {
-          key: "sql",
-          type: ConnectorDriverPropertyType.TYPE_STRING,
-        },
-      ];
-
-      break;
-    case "sqlite":
-      connectorCopy.name = "duckdb";
-
-      formValues.sql = `SELECT * FROM sqlite_scan('${formValues.db as string}', '${
-        formValues.table as string
-      }');`;
-      delete formValues.db;
-      delete formValues.table;
-
-      connectorCopy.sourceProperties = [
-        {
-          key: "sql",
-          type: ConnectorDriverPropertyType.TYPE_STRING,
-        },
-      ];
-
-      break;
+  // Check if this connector should be converted to DuckDB
+  if (
+    !DUCKDB_NATIVE_CONNECTORS.includes(
+      connector.name as (typeof DUCKDB_NATIVE_CONNECTORS)[number],
+    )
+  ) {
+    return [connectorCopy, formValues];
   }
+
+  connectorCopy.name = "duckdb";
+
+  if (connector.name === "sqlite") {
+    // Handle SQLite specifically
+    formValues.sql = `SELECT * FROM sqlite_scan('${formValues.db as string}', '${
+      formValues.table as string
+    }');`;
+    delete formValues.db;
+    delete formValues.table;
+  } else {
+    // Handle file-based connectors (s3, gcs, https, azure, local_file)
+    formValues.sql = buildDuckDbQuery(formValues.path as string);
+    delete formValues.path;
+  }
+
+  connectorCopy.sourceProperties = [
+    {
+      key: "sql",
+      type: ConnectorDriverPropertyType.TYPE_STRING,
+    },
+  ];
 
   return [connectorCopy, formValues];
 }
