@@ -5,12 +5,20 @@ sidebar_label: Dev/Prod Model Setup
 sidebar_position: 19
 ---
 
+## Overview
+Environments allow the separation of logic between different deployments of Rill, most commonly when using a project in Rill Developer and Rill Cloud. Generally speaking, Rill Developer is meant primarily for local development purposes, where the developer may want to use a segment or sample of data for modeling purposes to help validate the model logic is correct and producing expected results. Then, once finalized and a project is ready to be deployed to Rill Cloud, the focus is on shared collaboration at scale and where most of the dashboard consumption in production will happen.
+
+There could be a few reasons to have separate logic for sources, models, and dashboards for Rill Developer and Rill Cloud, respectively:
+
+1. As the size of data grows, the locally embedded OLAP engine (using DuckDB) may start to face scaling challenges, which can impact performance and the "snappiness" of models and dashboards. Furthermore, for model development, the full data is often not needed and working with a sample is sufficient. For production, though, where analysts and business users are interacting with Rill dashboards to perform interactive, exploratory analysis or make decisions, it is important that these same models and dashboards are powered by the entire range of data available.
+2. For certain organizations, there might be a development and production version of source data. Therefore, you can develop your models and validate the results in Rill Developer against development data. When deployed to Rill Cloud, these same models and dashboards can then be powered by your production source, reflecting the most correct and up-to-date version of your business data.oduction source, reflecting the most correct and up-to-date version of your business data.
+
 Rill uses the Go programming language's [native templating engine](https://pkg.go.dev/text/template), known as `text/template`, which you might know from projects such as [Helm](https://helm.sh/) or [Hugo](https://gohugo.io/). It additionally includes the [Sprig](http://masterminds.github.io/sprig/) library of utility functions.
 
 Templating can be a powerful tool to help introduce dynamic conditional statements based on local variables that have been passed in to Rill or based on the environment being used. Some common use cases may include but are not limited to:
 
-- Working with a [**sample or subset of data**](/connect/templating#inline-sql-templating) during local development (but making sure the full dataset is being used in production dashboards)
-- Applying [**filters or other if/else predefined logic**](/connect/templating#inline-sql-templating) to run different SQL whether a model is being run locally or in production
+- Working with a [**sample or subset of data**](/build/models/templating#inline-sql-templating) during local development (but making sure the full dataset is being used in production dashboards)
+- Applying [**filters or other if/else predefined logic**](/build/models/templating#inline-sql-templating) to run different SQL whether a model is being run locally or in production
 
 :::info Where can you template in Rill?
 

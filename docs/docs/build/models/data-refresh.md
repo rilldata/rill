@@ -60,9 +60,9 @@ If you have both a project-wide default and model specific refresh schedule _con
 
 :::
 
-## Running scheduled refreshes in development
+## Running scheduled source refreshes in development
 
-By default, scheduled refreshes are **not** applied in Rill Developer. If you want to run or test scheduled refreshes in local development, you can override this behavior using the `run_in_dev` property:
+As an exception, scheduled source refreshes specified using `refresh:` are not applied in the `dev` environment by default. If you want to run or test scheduled refreshes in local development, you can override this behavior using the `run_in_dev` property:
 ```yaml
 refresh:
   cron: 0 * * * *

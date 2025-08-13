@@ -24,6 +24,18 @@ The YAML configuration file contains several key parameters:
 - **`dev`**: Configuration for development mode. Rill Developer runs in dev mode by default, but when deployed to Rill Cloud, the root-level SQL configuration executes.
 - **`sql`**: The actual SQL query to be executed. When nested under `dev:`, the query runs in Rill Developer environment.
 
+### Automatic Refresh Schedule
+
+Rill can automatically refresh your source models at specified intervals to ensure your data stays current. This feature allows you to set up scheduled data ingestion without manual intervention, keeping your analytics dashboards up-to-date with the latest information from your data sources.
+
+
+```yaml
+refresh:
+  every: 24h
+```
+
+For more information, see [Data Refresh Schedule](/build/models/data-refresh).
+
 ## Data Preview and Validation
 
 ### Table Preview

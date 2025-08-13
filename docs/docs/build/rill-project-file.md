@@ -14,12 +14,49 @@ The Rill project file `rill.yaml` is often overlooked but is a powerful tool, as
 For a list of all supported settings, see our [project YAML reference page](/reference/project-files/rill-yaml).
 
 
-## Project Refresh Schedule
+## Model Defaults
+
+### Project Refresh Schedule
 Set up your project's model refresh schedule. You can override this in the model's YAML file if needed.
 ```yaml
 models:
     refresh:
         cron: '0 * * * *'
+```
+
+### Default dev and prod environments
+
+Rill comes with default `dev` and `prod` properties defined, corresponding to Rill Developer and Rill Cloud, respectively. You can use these keys to set environment-specific YAML overrides or SQL logic.
+
+For example, the following `rill.yaml` file explicitly sets the default materialization setting for models to `false` in development and `true` in production:
+```yaml
+dev:
+  models:
+    materialize: false
+
+prod:
+  models:
+    materialize: true
+```
+
+### Specifying a custom environment
+
+When using Rill Developer, instead of defaulting to `dev`, you can run your project in production mode using the following command:
+
+```bash
+rill start --environment prod
+```
+
+## Specifying environment specific YAML overrides
+
+If you wanted to set a project-wide default in `rill.yaml` where models are [materialized](/build/models#model-materialization) only on Rill Cloud (i.e., `prod`) and dashboards use a different default [theme](/build/dashboards/customize.md#changing-themes--colors) in production compared to locally, you could do this by:
+
+```yaml
+prod:
+  models:
+    materialize: true
+  explores:
+    theme: <name_of_theme>
 ```
 
 ## Default OLAP Connector
