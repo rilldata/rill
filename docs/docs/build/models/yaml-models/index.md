@@ -1,7 +1,7 @@
 ---
-title: Create YAML Models
-description: Create Advanced Models
-sidebar_label: Create Advanced Models
+title: YAML Models
+description:  YAML Models
+sidebar_label:  YAML Models
 sidebar_position: 00
 ---
 
@@ -19,10 +19,11 @@ Another use case is when using multiple OLAP engines. This allows you to specify
 ## Types of YAML Models
 
 
-1. [Incremental Models](/build/advanced-models/incremental-models)
-2. [Partitioned Models](/build/advanced-models/partitions)
-3. [Staging Models](/build/advanced-models/staging)
-4. [DuckDB `pre_exec`/`post_exec` Models](#duckdb-models-pre-exec-sql-post-exec)
+1. [Source Models](/build/models/yaml-models/source-models)
+2. [Incremental Models](/build/models/yaml-models/incremental-models)
+3. [Partitioned Models](/build/models/yaml-models/partitions)
+4. [Staging Models](/build/models/yaml-models/staging)
+5. [DuckDB `pre_exec`/`post_exec` Models](#duckdb-models-pre-exec-sql-post-exec)
 
 
 

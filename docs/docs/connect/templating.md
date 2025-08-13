@@ -1,7 +1,7 @@
 ---
-title: Dev/Prod Environments
+title: Dev/Prod Connector Environments
 description: Dev/Prod Setup
-sidebar_label: Dev/Prod Setup
+sidebar_label: Dev/Prod Connector Setup
 sidebar_position: 19
 ---
 

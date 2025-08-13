@@ -1,8 +1,8 @@
 ---
-title: Configure Data Refresh
+title: Schedule Your Data Refresh
 description: Manage refresh schedules for models deployed to Rill Cloud
-sidebar_label: Configure Data Refresh
-sidebar_position: 16
+sidebar_label: Data Refresh Schedule
+sidebar_position: 10
 ---
 
 <!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->

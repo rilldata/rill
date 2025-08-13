@@ -5,7 +5,7 @@ sidebar_label: Incremental Models
 sidebar_position: 01
 ---
 
-Incremental models help with the ingestion of large datasets, as they allow a dataset to be broken down into smaller sections to ingest, rather than reading the entire dataset at once. Unlike [standard SQL models](../models/models.md) that are created via a .sql file, incremental models are defined in a YAML file and are used when a large dataset needs to be incrementally ingested to improve ingestion costs and time. 
+Incremental models help with the ingestion of large datasets, as they allow a dataset to be broken down into smaller sections to ingest, rather than reading the entire dataset at once. Unlike [standard SQL models](/build/models/sql-models) that are created via a .sql file, incremental models are defined in a YAML file and are used when a large dataset needs to be incrementally ingested to improve ingestion costs and time. 
 
 :::note Take a look at the Reference!
 If you are unsure what are the required parameters, please review the [reference page for Advanced Models](/reference/project-files/advanced-models).
