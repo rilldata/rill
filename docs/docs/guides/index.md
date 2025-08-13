@@ -8,7 +8,9 @@ tags:
 
 # Welcome to Rill Guides and Tutorials!
 
+
 ### We're thrilled you've joined us on this th-Rill-ing journey!
+
 
 These tutorials were built to help you get started with Rill and empower you to build your own projects. The journey covers data import, SQL transformations, dashboard creation, and finally deployment to Cloud. From there, you'll explore Rill Cloud-specific features, push local changes to Rill Cloud, and develop custom features.
 
@@ -17,6 +19,7 @@ Here at Rill, we believe in business-speed visual analytics. Gone are the days o
 
 ---
 Follow along, refer to the in-line linked documentation, and explore our product to make the most out of these guides! Please reach out to ask any questions or provide feedback on our Community Slack or Discord!
+
 
 - [**Source to Published Dashboard:**](/guides/rill-basics/launch) Learn the basics, understand the core concepts of Rill, and deploy to Cloud!
 - [**Visualize ClickHouse tables in Rill:**](/guides/rill-clickhouse) For our friends from **ClickHouse**, we have created a dedicated course using ClickHouse!
