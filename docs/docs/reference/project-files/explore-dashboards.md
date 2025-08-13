@@ -48,10 +48,16 @@ _[oneOf]_ - List of dimension names. Use '*' to select all dimensions (default)
 # Example: Select a dimension
 dimensions:
     - country
+```
+
+```yaml
 # Example: Select all dimensions except one
 dimensions:
     exclude:
         - country
+```
+
+```yaml
 # Example: Select all dimensions that match a regex
 dimensions:
 regex: "^public_.*$"
@@ -77,10 +83,16 @@ _[oneOf]_ - List of measure names. Use '*' to select all measures (default)
 # Example: Select a measure
 measures:
     - sum_of_total
+```
+
+```yaml
 # Example: Select all measures except one
 measures:
     exclude:
         - sum_of_total
+```
+
+```yaml
 # Example: Select all measures that match a regex
 measures:
 regex: "^public_.*$"

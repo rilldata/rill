@@ -30,7 +30,7 @@ You can get started with an advanced model with the following code block:
 
 ```yaml
 #Model YAML
-#Reference documentation: https://docs.rilldata.com/reference/project-files/advanced-models
+#Reference documentation: https://docs.rilldata.com/reference/project-files/models
 
 type: model
 connector: duckdb
@@ -38,7 +38,7 @@ connector: duckdb
 sql: select * from <source>
 ```
 
-Please refer to [our reference documentation](../../reference/project-files/advanced-models) linked above for the available parameters to set in your model.
+Please refer to [our reference documentation](/reference/project-files/models) linked above for the available parameters to set in your model.
 
 :::note
 

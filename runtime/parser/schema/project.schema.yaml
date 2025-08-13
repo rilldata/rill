@@ -7,7 +7,7 @@ description: |
 
   :::info Working with resources outside their native folders
 
-  It is possible to define resources (such as [models](advanced-models.md), [metrics-views](metrics-views.md), [dashboards](explore-dashboards.md), [custom APIs](apis.md), or [themes](themes.md)) within <u>any</u> nested folder within your Rill project directory. However, for any YAML configuration file, it is then imperative that the `type` property is then appropriately defined within the underlying resource configuration or Rill will not able to resolve the resource type correctly!
+  It is possible to define resources (such as [models](models.md), [metrics-views](metrics-views.md), [dashboards](explore-dashboards.md), [custom APIs](apis.md), or [themes](themes.md)) within <u>any</u> nested folder within your Rill project directory. However, for any YAML configuration file, it is then imperative that the `type` property is then appropriately defined within the underlying resource configuration or Rill will not able to resolve the resource type correctly!
 
   :::
 
@@ -123,7 +123,7 @@ definitions:
       **Next steps:**
       - Continue using sources if needed (backward compatible)
       - Migrate to source models via the `type:model` parameter for existing projects
-      - See our [model YAML reference](advanced-models) for current documentation and best practices
+      - See our [model YAML reference](models) for current documentation and best practices
       :::
     allOf:
       - title: Properties
@@ -218,7 +218,7 @@ definitions:
   # Model SQL
   models: 
     title: Models YAML
-    id: advanced-models.schema.yaml
+    id: models
     type: object
     description: |
 
@@ -940,12 +940,12 @@ definitions:
                 dimensions:
                   - country
 
-                # Example: Select all dimensions except one
+              - # Example: Select all dimensions except one
                 dimensions:
                   exclude:
                     - country
 
-                # Example: Select all dimensions that match a regex
+              - # Example: Select all dimensions that match a regex
                 dimensions:
                 regex: "^public_.*$"
               
@@ -957,12 +957,12 @@ definitions:
                 measures:
                   - sum_of_total
 
-                # Example: Select all measures except one
+              - # Example: Select all measures except one
                 measures:
                   exclude:
                     - sum_of_total
 
-                # Example: Select all measures that match a regex
+              - # Example: Select all measures that match a regex
                 measures:
                 regex: "^public_.*$"
               
