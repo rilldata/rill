@@ -5,11 +5,13 @@
   import DelayedSpinner from "../../../entity-management/DelayedSpinner.svelte";
   import ChatMessage from "./ChatMessage.svelte";
 
-  export let isConversationLoading = false;
   export let layout: "sidebar" | "fullpage" = "sidebar";
-  export let loading = false;
   export let messages: V1Message[] = [];
+  export let isConversationLoading = false;
+  export let isResponseLoading = false;
 
+  // $: console.log("ChatMessages: isResponseLoading", isResponseLoading);
+  // $: console.log("ChatMessages: messages", messages);
   let messagesContainer: HTMLDivElement;
 
   // Auto-scroll to bottom when messages change or loading state changes
@@ -48,7 +50,7 @@
       <ChatMessage message={msg} />
     {/each}
   {/if}
-  {#if loading}
+  {#if isResponseLoading}
     <div class="response-loading">
       <LoadingSpinner size="1.2em" /> Thinking...
     </div>

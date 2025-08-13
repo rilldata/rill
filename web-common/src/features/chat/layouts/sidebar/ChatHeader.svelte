@@ -1,12 +1,11 @@
 <script lang="ts">
-  import type { Readable } from "svelte/store";
   import IconButton from "../../../../components/button/IconButton.svelte";
   import Close from "../../../../components/icons/Close.svelte";
   import PlusIcon from "../../../../components/icons/PlusIcon.svelte";
   import type { V1Conversation } from "../../../../runtime-client";
   import ChatConversationDropdown from "./ChatConversationDropdown.svelte";
 
-  export let currentConversation: Readable<V1Conversation | null>;
+  export let currentConversation: V1Conversation | null;
   export let conversations: V1Conversation[] = [];
   export let onNewConversation: () => void;
   export let onSelectConversation: (conversation: V1Conversation) => void;
@@ -14,7 +13,7 @@
 </script>
 
 <div class="chatbot-header">
-  <span class="chatbot-title">{$currentConversation?.title || ""}</span>
+  <span class="chatbot-title">{currentConversation?.title || ""}</span>
   <div class="chatbot-header-actions">
     <IconButton
       ariaLabel="New conversation"
@@ -26,7 +25,7 @@
 
     <ChatConversationDropdown
       {conversations}
-      currentConversationId={$currentConversation?.id}
+      currentConversationId={currentConversation?.id}
       onSelect={onSelectConversation}
     />
 

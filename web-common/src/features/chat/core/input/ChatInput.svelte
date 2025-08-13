@@ -6,9 +6,16 @@
   export let value = "";
   export let disabled = false;
   export let placeholder = "Ask about your data...";
-  export let onSend: (message: string) => void;
+  export let onSend: () => void;
+  export let onInput: (value: string) => void = () => {};
 
   let textarea: HTMLTextAreaElement;
+
+  function handleInput(e: Event) {
+    const target = e.target as HTMLTextAreaElement;
+    onInput(target.value);
+    autoResize();
+  }
 
   function handleKeydown(e: KeyboardEvent) {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -19,12 +26,12 @@
 
   async function sendMessage() {
     if (!value.trim() || disabled) return;
-    const message = value;
+    onSend();
     value = "";
+    // Let the parent component manage the input value
     await tick();
     autoResize();
     textarea?.focus();
-    onSend(message);
   }
 
   function autoResize() {
@@ -39,7 +46,7 @@
     tick().then(() => {
       setTimeout(() => {
         textarea?.focus();
-      }, 0);
+      }, 100);
     });
   }
 
@@ -62,7 +69,7 @@
       {placeholder}
       rows="1"
       on:keydown={handleKeydown}
-      on:input={autoResize}
+      on:input={handleInput}
     />
     <IconButton
       ariaLabel="Send message"

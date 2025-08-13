@@ -1,69 +1,73 @@
 <script lang="ts">
-  import { page } from "$app/stores";
+  import { get } from "svelte/store";
   import AlertCircle from "../../../../components/icons/AlertCircle.svelte";
   import Resizer from "../../../../layout/Resizer.svelte";
-  import { useChatCore } from "../../core/chat";
+  import { runtime } from "../../../../runtime-client/runtime-store";
+  import { Chat } from "../../core/chat";
   import ChatFooter from "../../core/input/ChatFooter.svelte";
   import ChatInput from "../../core/input/ChatInput.svelte";
   import ChatMessages from "../../core/messages/ChatMessages.svelte";
   import ChatHeader from "./ChatHeader.svelte";
   import {
-    createSidebarConversationIdStore,
     SIDEBAR_DEFAULTS,
     sidebarActions,
     sidebarWidth,
   } from "./sidebar-store";
 
-  // Extract route parameters
-  $: organization = $page.params.organization || "";
-  $: project = $page.params.project || "";
+  $: ({ instanceId } = $runtime);
 
-  // Create project-specific conversation store
-  const sidebarConversationId = createSidebarConversationIdStore(
-    organization,
-    project,
-  );
-
-  // Use core chat logic with sidebar-specific state management
-  const {
-    listConversationsData,
-    currentConversation,
-    isConversationLoading,
-    loading,
-    error,
-    messages,
-    handleSendMessage,
-    createNewConversation,
-    selectConversation,
-  } = useChatCore({
-    initialConversationId: $sidebarConversationId,
-    onConversationChange: (id) => {
-      sidebarConversationId.set(id);
-    },
+  // Initialize chat with browser storage for conversation management
+  $: chat = new Chat(instanceId, {
+    conversationState: "browserStorage",
   });
 
+  $: listConversationsQuery = chat.listConversationsQuery();
+  $: conversations = $listConversationsQuery.data?.conversations ?? [];
+
+  $: pendingMessage = chat.pendingMessage;
+  $: currentConversation = chat.getCurrentConversation();
+  $: getConversationQuery = $currentConversation?.getConversationQuery();
+  $: isSending = $currentConversation?.isSending;
+
+  // Route between optimistic and real messages
+  $: displayMessages =
+    $currentConversation === null
+      ? $pendingMessage
+        ? [$pendingMessage]
+        : []
+      : ($getConversationQuery?.data?.conversation?.messages ?? []);
+
   // Local UI state
-  let input = "";
   let chatInputComponent: ChatInput;
+  let newConversationDraft = "";
 
   // Message handling with input focus
-  async function onSendMessage(message: string) {
-    await handleSendMessage(
-      message,
-      () => chatInputComponent?.focusInput(), // onSuccess - just focus input for sidebar
-      (failedMessage) => {
-        input = failedMessage;
-      }, // onError
-    );
+  async function handleSend() {
+    try {
+      if ($currentConversation) {
+        // Send message to existing conversation
+        await $currentConversation.sendMessage();
+      } else {
+        // No current conversation, start a new one with the input message
+        if (newConversationDraft.trim()) {
+          await chat.createConversation(newConversationDraft.trim());
+          newConversationDraft = "";
+        }
+      }
+
+      chatInputComponent?.focusInput();
+    } catch (error) {
+      console.error("Failed to send message:", error);
+    }
   }
 
-  // Conversation actions with input focus
   function onNewConversation() {
-    createNewConversation(() => chatInputComponent?.focusInput());
+    chat.enterNewConversationMode();
+    chatInputComponent?.focusInput();
   }
 
-  function onSelectConversation(conv) {
-    selectConversation(conv);
+  function onSelectConversation(conv: { id: string }) {
+    chat.selectConversation(conv.id);
   }
 </script>
 
@@ -80,8 +84,8 @@
   <div class="chat-sidebar-content">
     <div class="chatbot-header-container">
       <ChatHeader
-        {currentConversation}
-        conversations={$listConversationsData?.conversations || []}
+        currentConversation={$getConversationQuery?.data?.conversation ?? null}
+        {conversations}
         {onNewConversation}
         {onSelectConversation}
         onClose={sidebarActions.closeChat}
@@ -89,21 +93,34 @@
     </div>
     <ChatMessages
       layout="sidebar"
-      isConversationLoading={$isConversationLoading}
-      loading={$loading}
-      messages={$messages}
+      isConversationLoading={!!$getConversationQuery?.isLoading &&
+        !$pendingMessage}
+      isResponseLoading={$currentConversation ? $isSending : !!$pendingMessage}
+      messages={displayMessages}
     />
-    {#if $error}
+    {#if $getConversationQuery?.error}
       <div class="chat-input-error">
         <AlertCircle size="1.2em" />
-        {$error}
+        {$getConversationQuery?.error.message}
       </div>
     {/if}
     <ChatInput
       bind:this={chatInputComponent}
-      bind:value={input}
-      disabled={$loading}
-      onSend={onSendMessage}
+      value={$currentConversation
+        ? get($currentConversation.draftMessage)
+        : newConversationDraft}
+      disabled={$getConversationQuery?.isLoading ||
+        ($currentConversation
+          ? get($currentConversation.isSending)
+          : !!$pendingMessage)}
+      onInput={(v) => {
+        if ($currentConversation) {
+          $currentConversation.draftMessage.set(v);
+        } else {
+          newConversationDraft = v;
+        }
+      }}
+      onSend={handleSend}
     />
     <ChatFooter />
   </div>

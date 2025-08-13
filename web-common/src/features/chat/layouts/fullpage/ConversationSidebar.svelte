@@ -2,14 +2,24 @@
   import { page } from "$app/stores";
   import Button from "../../../../components/button/Button.svelte";
   import type { V1Conversation } from "../../../../runtime-client";
+  import DelayedContent from "../../../entity-management/DelayedContent.svelte";
+  import Spinner from "../../../entity-management/Spinner.svelte";
+  import { EntityStatus } from "../../../entity-management/types";
+  import type { Chat } from "../../core/chat";
 
-  export let conversations: V1Conversation[] = [];
+  export let chat: Chat;
   export let currentConversation: V1Conversation | null = null;
   export let onConversationClick: () => void = () => {};
   export let onNewConversationClick: () => void = () => {};
 
   // Get URL parameters for href construction
   $: ({ organization, project } = $page.params);
+
+  $: listConversationsQuery = chat.listConversationsQuery();
+
+  $: conversations = $listConversationsQuery.data?.conversations ?? [];
+  $: isLoading = $listConversationsQuery.isLoading;
+  $: isError = $listConversationsQuery.isError;
 
   // Handle conversation item clicks (for focus, navigation handled by href)
   function handleConversationItemClick() {
@@ -35,7 +45,18 @@
   </div>
 
   <div class="conversation-list" data-testid="conversation-list">
-    {#if conversations?.length}
+    {#if isLoading}
+      <div class="loading-conversations">
+        <DelayedContent visible={isLoading} delay={300}>
+          <div class="flex flex-row items-center gap-x-2">
+            <Spinner size="1em" status={EntityStatus.Running} />
+            Loading conversations...
+          </div>
+        </DelayedContent>
+      </div>
+    {:else if isError}
+      <div class="error-conversations">Error loading conversations</div>
+    {:else if conversations?.length}
       {#each conversations as conversation}
         <a
           href={`/${organization}/${project}/-/chat/${conversation.id}`}
@@ -82,6 +103,13 @@
     flex: 1;
     overflow-y: auto;
     padding: 0.25rem;
+  }
+
+  .loading-conversations {
+    padding: 0.5rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
   }
 
   .conversation-item {

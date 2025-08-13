@@ -32,17 +32,6 @@ function getConversationIdStorageKey(organization: string, project: string) {
   return `project-chat-conversation-id-${organization}-${project}`;
 }
 
-// Create project-specific conversation state
-export function createFullpageConversationIdStore(
-  organization: string,
-  project: string,
-) {
-  return sessionStorageStore<string | null>(
-    getConversationIdStorageKey(organization, project),
-    null,
-  );
-}
-
 /**
  * Retrieves the last conversation ID for the given project from sessionStorage.
  * Handles both JSON-stringified and raw string formats for backwards compatibility.
