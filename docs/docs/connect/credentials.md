@@ -4,9 +4,9 @@ sidebar_label: Configure Local Credentials
 sidebar_position: 15
 ---
 
-Rill requires credentials to connect to remote data sources such as private buckets (S3, GCS, Azure), data warehouses (Snowflake, BigQuery), OLAP engines (ClickHouse, Apache Druid) or other DuckDB sources (MotherDuck). Please refer to the appropriate [connector](/connect) and [OLAP engine](/connect/olap) page for instructions to configure credentials accordingly.
+Rill requires credentials to connect to remote data sources such as private buckets (S3, GCS, Azure), data warehouses (Snowflake, BigQuery), OLAP engines (ClickHouse, Apache Druid), or other DuckDB sources (MotherDuck). Please refer to the appropriate [connector](/connect) and [OLAP engine](/connect/olap) page for instructions to configure credentials accordingly.
 
-At a high level, configuring credentials and credentials management in Rill can be broken down into three categories:
+At a high level, configuring credentials and credential management in Rill can be broken down into three categories:
 - Setting credentials for Rill Developer
 - [Setting credentials for a Rill Cloud project](/deploy/deploy-credentials)
 - [Pushing and pulling credentials to / from Rill Cloud](/manage/project-management/variables-and-credentials)
@@ -23,7 +23,7 @@ For more details, please refer to the corresponding [connector](/connect) or [OL
 
 :::note Ensuring security of credentials in use
 
-If you plan to deploy a project (to Rill Cloud), it is not recommended to pass in credentials directly through the local connection string or DSN as your credentials will then be checked directly into your Git repository (and thus accessible by others). To ensure better security, credentials should be passed in as a variable / configured locally or specified in the project's local `.env` file (which is part of `.gitignore` and thus won't be included).
+If you plan to deploy a project (to Rill Cloud), it is not recommended to pass in credentials directly through the local connection string or DSN as your credentials will then be checked in directly to your Git repository (and thus accessible by others). To ensure better security, credentials should be passed in as a variable / configured locally or specified in the project's local `.env` file (which is part of `.gitignore` and thus won't be included).
 
 :::
 
@@ -97,4 +97,4 @@ If a credential and/or variable has already been configured in Rill Cloud, Rill 
 
 ### Credentials Naming Schema 
 
-Connector credentials are essentially a form of project variable, prefixed using the `connector.<connector_name>.<property>` syntax. For example, `connector.druid.dsn` and `connector.clickhouse.dsn` are both hard coded project variables (that happen to correspond to the [Druid](/connect/olap/druid) and [ClickHouse](/connect/olap/clickhouse) OLAP engines respectively). Please see below for each source and its required properties. If you have any questions or need specifics, [contact us](/contact)! 
+Connector credentials are essentially a form of project variable, prefixed using the `connector.<connector_name>.<property>` syntax. For example, `connector.druid.dsn` and `connector.clickhouse.dsn` are both hard coded project variables (that happen to correspond to the [Druid](/connect/olap/druid) and [ClickHouse](/connect/olap/clickhouse) OLAP engines respectively). Please see below for each source and its required properties. If you have any questions or need specifics, [contact us](/contact)!

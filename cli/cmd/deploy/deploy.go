@@ -10,7 +10,6 @@ import (
 
 // DeployCmd is the guided tour for deploying rill projects to rill cloud.
 func DeployCmd(ch *cmdutil.Helper) *cobra.Command {
-	var managed, github, archive bool
 	opts := &project.DeployOpts{}
 
 	deployCmd := &cobra.Command{
@@ -28,23 +27,26 @@ func DeployCmd(ch *cmdutil.Helper) *cobra.Command {
 				opts.GitPath = args[0]
 			}
 
-			if !managed && !github && !archive {
+			err := opts.ValidatePathAndSetupGit(ch)
+			if err != nil {
+				return err
+			}
+			if !opts.Managed && !opts.ArchiveUpload && !opts.Github {
 				confirmed, err := cmdutil.ConfirmPrompt("Enable automatic deploys to Rill Cloud from GitHub?", "", false)
 				if err != nil {
 					return err
 				}
 				if confirmed {
-					github = true
+					opts.Github = true
 				} else {
-					managed = true
+					opts.Managed = true
 				}
 			}
 
-			if archive {
-				opts.ArchiveUpload = true
+			if opts.ArchiveUpload {
 				return project.DeployWithUploadFlow(cmd.Context(), ch, opts)
 			}
-			if managed {
+			if opts.Managed {
 				return project.DeployWithUploadFlow(cmd.Context(), ch, opts)
 			}
 			return project.ConnectGithubFlow(cmd.Context(), ch, opts)
@@ -69,15 +71,15 @@ func DeployCmd(ch *cmdutil.Helper) *cobra.Command {
 		}
 	}
 
-	deployCmd.Flags().BoolVar(&managed, "managed", false, "Create project using rill managed repo")
+	deployCmd.Flags().BoolVar(&opts.Managed, "managed", false, "Create project using rill managed repo")
 
-	deployCmd.Flags().BoolVar(&archive, "archive", false, "Create project using tarballs(for testing only)")
+	deployCmd.Flags().BoolVar(&opts.ArchiveUpload, "archive", false, "Create project using tarballs(for testing only)")
 	err := deployCmd.Flags().MarkHidden("archive")
 	if err != nil {
 		panic(err)
 	}
 
-	deployCmd.Flags().BoolVar(&github, "github", false, "Use github repo to create the project")
+	deployCmd.Flags().BoolVar(&opts.Github, "github", false, "Use github repo to create the project")
 
 	return deployCmd
 }

@@ -2,7 +2,7 @@
 title: "Custom API Integration"
 description: How to integrate custom APIs with your application
 sidebar_label: "Custom API Integration"
-sidebar_position: 12
+sidebar_position: 20
 ---
 
 Rill exposes [custom APIs](/integrate/custom-apis/index.md) you have created with `type: api` as HTTP endpoints 

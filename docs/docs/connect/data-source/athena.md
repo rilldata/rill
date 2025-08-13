@@ -1,8 +1,8 @@
 ---
-title: Amazon Athena
-description: Connect to data in Amazon Athena
+title: Athena
+description: Connect to Amazon Athena for serverless querying of data stored in S3
 sidebar_label: Athena
-sidebar_position: 00
+sidebar_position: 0
 ---
 
 <!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->
@@ -46,6 +46,12 @@ You have now configured AWS access from your local environment. Rill will detect
 If this project has already been deployed to Rill Cloud and credentials have been set for this source, you can use `rill env pull` to [pull these cloud credentials](/connect/credentials#rill-env-pull) locally (into your local `.env` file). Please note that this may override any credentials you have set locally for this source.
 
 :::
+
+## Separating Dev and Prod Environments
+
+When ingesting data locally, consider setting parameters in your connector file to limit how much data is retrieved, since costs can scale with the data source. This also helps other developers clone the project and iterate quickly by reducing ingestion time.
+
+For more details, see our [Dev/Prod setup docs](/connect/templating).
 
 ## Cloud deployment
 

@@ -35,4 +35,4 @@ Defining security policies for your data is crucial for security. For more infor
 
 **`ai_instructions`**
 
-Provides context for LLMs, including instructions for creating Explore URLs. For more information, please refer to our [MCP Server pages](/explore/mcp.md).
+Provides context for LLMs, including instructions for creating Explore URLs. For more information, please refer to our [MCP Server pages](/explore/mcp#adding-ai-instructions-to-your-model).
