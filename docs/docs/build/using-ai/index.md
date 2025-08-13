@@ -4,7 +4,9 @@ sidebar_position: 00
 class: hidden
 ---
 
-Given our [BI-as-code](/build/using-ai/bi-as-code) approach, it is an obvious expectation that users will build Rill projects solely with an AI agent. You may have even seen one of our demo or live discussions showcasing this feature. But, we've all experienced, even the best language models, suggest random and even outlandish properties that doesn't actually exist. How do we fix that?
+Coming soon!
+
+<!-- Given our [BI-as-code](/build/using-ai/bi-as-code) approach, it is an obvious expectation that users will build Rill projects solely with an AI agent. You may have even seen one of our demo or live discussions showcasing this feature. But, we've all experienced, even the best language models, suggest random and even outlandish properties that doesn't actually exist. How do we fix that?
 
 ## Provide Context to your Agent
 The step that is easily and quite often skipped is forgetting to provide context and guidelines for your agent to use.  This w
@@ -40,6 +42,6 @@ You are not allowed to:
 
 Your goal is to produce YAML that will **pass `rill lint`**, assuming schema and project context are correct.
 
-If there is an issue during YAML file creation, review the logs and fix the issues. If you are unable to figure it out, comment the lines out.
+If there is an issue during YAML file creation, review the logs and fix the issues. If you are unable to figure it out, comment the lines out. -->
 ```
 

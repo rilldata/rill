@@ -109,5 +109,5 @@ theme:
     secondary: lightgreen
 ```
 
-**`security`** - Defines a [security policy](/manage/security) for the dashboard _(optional)_.
+**`security`** - Defines a [security policy](/build/metrics-view/security) for the dashboard _(optional)_.
   - **`access`** - Expression indicating if the user should be granted access to the dashboard. If not defined, it will resolve to `false` and the dashboard won't be accessible to anyone. Needs to be a valid SQL expression that evaluates to a boolean _(optional)_.

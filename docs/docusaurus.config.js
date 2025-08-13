@@ -213,7 +213,11 @@ const config = {
           },
           {
             from: '/develop/security',
-            to: '/manage/security'
+            to: '/build/metrics-view/security'
+          },
+          {
+            from: '/manage/security',
+            to: '/build/metrics-view/security'
           },
           {
             from: '/deploy/credentials/',
@@ -416,7 +420,7 @@ const config = {
           },
           {
             from: '/concepts/OLAP',
-            to: '/home/concepts/OLAP'
+            to: '/connect/olap#what-is-olap'
           },
           {
             from: '/concepts/architecture',
@@ -428,11 +432,19 @@ const config = {
           },
           {
             from: '/concepts/metrics-layer',
-            to: '/home/concepts/metrics-layer'
+            to: '/build/metrics-view'
           },
           {
             from: '/concepts/bi-as-code',
             to: '/home/concepts/bi-as-code'
+          },
+          {
+            from: '/home/concepts/metrics-layer',
+            to: '/build/metrics-view'
+          },
+          {
+            from: '/home/concepts/OLAP',
+            to: '/connect/olap#what-is-olap'
           },
           // {
           //   from: '/old-page',
