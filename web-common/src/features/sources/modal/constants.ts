@@ -11,8 +11,15 @@ export const CONNECTION_TAB_OPTIONS: { value: string; label: string }[] = [
   { value: "dsn", label: "Enter connection string" },
 ];
 
-// TODO: create CONNECTORS
-// Note: some of these are using models like S3, GCS, etc. (ImplementsObjectStore)
+/**
+ * Data source types supported by the application.
+ *
+ * Note: Source types are categorized into two groups:
+ * - Connector types (type: "connector"): External services like BigQuery, Athena, etc.
+ * - Model types (type: "model"): Local/embedded databases like DuckDB, MotherDuck, etc. (maybeRewriteToDuckDb)
+ *
+ * This categorization affects how the source is handled in the application.
+ */
 export const SOURCES = [
   "gcs",
   "s3",
