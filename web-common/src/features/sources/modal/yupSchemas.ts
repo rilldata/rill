@@ -49,8 +49,8 @@ export const getYupSchema = {
   }),
 
   motherduck: yup.object().shape({
-    dsn: yup.string().required("Connection string is required"),
-    token: yup.string().required("Access token is required"),
+    dsn: yup.string().optional(),
+    token: yup.string().optional(),
   }),
 
   sqlite: yup.object().shape({
