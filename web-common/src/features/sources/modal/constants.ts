@@ -16,7 +16,7 @@ export const CONNECTION_TAB_OPTIONS: { value: string; label: string }[] = [
  *
  * Note: Source types are categorized into two groups:
  * - Connector types (type: "connector"): External services like BigQuery, Athena, etc.
- * - Model types (type: "model"): Local/embedded databases like DuckDB, MotherDuck, etc. (maybeRewriteToDuckDb)
+ * - Model types (type: "model"): maybeRewriteToDuckDb
  *
  * This categorization affects how the source is handled in the application.
  */
