@@ -97,7 +97,7 @@ var motherduckSpec = drivers.Spec{
 			Required:    true,
 			DisplayName: "Access token",
 			Description: "MotherDuck access token",
-			Placeholder: "your.access_token.here",
+			Placeholder: "your_access_token",
 			Secret:      true,
 		},
 	},
