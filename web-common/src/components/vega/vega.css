@@ -7,6 +7,7 @@
 #rill-vg-tooltip {
   @apply absolute border border-slate-300 p-3 rounded-lg pointer-events-none;
   background: rgba(255, 255, 255, 0.9);
+  font-family: "Inter";
 
   & h2 {
     @apply text-slate-500 text-sm font-semibold mb-2;
@@ -16,16 +17,16 @@
     @apply border-spacing-0;
   }
 
-  & td {
+  & table tr td {
     @apply truncate py-0.5;
   }
 
-  & td.key {
-    @apply text-left px-1 font-normal truncate;
+  & table tr td.key {
+    @apply text-left px-1 font-normal truncate text-slate-600;
     max-width: 250px;
   }
 
-  & td.value {
+  & table tr td.value {
     @apply text-left truncate font-semibold;
     max-width: 250px;
   }
