@@ -59,6 +59,7 @@ export function generateVLBarChartSpec(
     buildHoverRuleLayer({
       xField,
       yField,
+      isBarMark: true,
       defaultTooltip: defaultTooltipChannel,
       multiValueTooltipChannel,
       xSort: config.x?.sort,

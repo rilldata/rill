@@ -286,6 +286,7 @@ export function buildHoverRuleLayer(args: {
   xSort?: ChartSortDirection;
   primaryColor: Color;
   xBand?: number;
+  isBarMark?: boolean;
 }): UnitSpec<Field> {
   const {
     xField,
@@ -296,6 +297,7 @@ export function buildHoverRuleLayer(args: {
     xSort,
     primaryColor,
     xBand,
+    isBarMark = false,
   } = args;
 
   return {
@@ -310,9 +312,10 @@ export function buildHoverRuleLayer(args: {
           ]
         : [],
     mark: {
-      type: "rule",
+      type: isBarMark ? "bar" : "rule",
       clip: true,
-      opacity: 0.8,
+      opacity: 0.6,
+      ...(!isBarMark && { strokeWidth: 5 }),
     },
     encoding: {
       x: {
@@ -339,7 +342,7 @@ export function buildHoverRuleLayer(args: {
           {
             param: "hover",
             empty: false,
-            value: primaryColor.brighten().css(),
+            value: isBarMark ? "#eee" : primaryColor.brighten().css(),
           },
         ],
         value: "transparent",
@@ -354,9 +357,9 @@ export function buildHoverRuleLayer(args: {
         select: {
           type: "point",
           encodings: ["x"],
-          nearest: true,
           on: "pointerover",
           clear: "pointerout",
+          ...(!isBarMark && { nearest: true }),
         },
       },
     ],

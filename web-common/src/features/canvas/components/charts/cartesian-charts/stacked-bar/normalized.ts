@@ -116,6 +116,7 @@ export function generateVLStackedBarNormalizedSpec(
     buildHoverRuleLayer({
       xField,
       yField,
+      isBarMark: true,
       defaultTooltip: baseEncoding.tooltip as TooltipValue[],
       multiValueTooltipChannel,
       xSort: config.x?.sort,

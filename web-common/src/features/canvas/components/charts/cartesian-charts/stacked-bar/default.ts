@@ -59,6 +59,7 @@ export function generateVLStackedBarChartSpec(
     buildHoverRuleLayer({
       xField,
       yField,
+      isBarMark: true,
       defaultTooltip: defaultTooltipChannel,
       multiValueTooltipChannel,
       xSort: config.x?.sort,

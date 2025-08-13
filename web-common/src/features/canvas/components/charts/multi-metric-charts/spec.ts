@@ -122,6 +122,7 @@ export function generateVLMultiMetricChartSpec(
       xField && measures.length && multiValueTooltipChannel?.length
         ? { field: measureField, value: valueField, groupby: [xField] }
         : undefined,
+    isBarMark: markType === "stacked_bar" || markType === "grouped_bar",
   });
 
   const hoverPointLayer = buildHoverPointOverlay();
