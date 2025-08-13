@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { page } from "$app/stores";
   import type { ConnectError } from "@connectrpc/connect";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types.ts";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
@@ -7,19 +6,14 @@
     getIsOrgOnTrial,
     getPlanUpgradeUrl,
   } from "@rilldata/web-common/features/organization/utils.ts";
-  import { getGithubAccessUrl } from "@rilldata/web-common/features/project/deploy/route-utils.ts";
+  import { getLocalGitRepoStatus } from "@rilldata/web-common/features/project/selectors.ts";
   import { addPosthogSessionIdToUrl } from "@rilldata/web-common/lib/analytics/posthog.ts";
   import { waitUntil } from "@rilldata/web-common/lib/waitUtils.ts";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics.ts";
   import { BehaviourEventAction } from "@rilldata/web-common/metrics/service/BehaviourEventTypes.ts";
   import {
-    GitRepoStatusResponse,
-    type GitStatusResponse,
-  } from "@rilldata/web-common/proto/gen/rill/local/v1/api_pb.ts";
-  import {
     createLocalServiceDeploy,
     createLocalServiceGetCurrentProject,
-    createLocalServiceGitRepoStatus,
     createLocalServiceGitStatus,
   } from "@rilldata/web-common/runtime-client/local-service.ts";
   import DeployError from "@rilldata/web-common/features/project/deploy/DeployError.svelte";
@@ -29,24 +23,14 @@
   import { onMount } from "svelte";
   import { derived } from "svelte/store";
   import type { PageData } from "./$types";
-  import DeployToSelfManagedGitDialog from "@rilldata/web-common/features/project/deploy/DeployToSelfManagedGitDialog.svelte";
 
   export let data: PageData;
-  const { org: orgParam, mode: modeParam } = data;
+  const { org: orgParam, useGit } = data;
 
   const projectQuery = createLocalServiceGetCurrentProject();
   const deployMutation = createLocalServiceDeploy();
   const gitStatusQuery = createLocalServiceGitStatus();
-  $: hasGitUrl =
-    !!$gitStatusQuery.data?.githubUrl && !$gitStatusQuery.data?.managedGit;
-  $: gitRepoStatusQuery = createLocalServiceGitRepoStatus(
-    $gitStatusQuery.data?.githubUrl ?? "",
-    {
-      query: {
-        enabled: hasGitUrl,
-      },
-    },
-  );
+  const gitRepoStatusQuery = getLocalGitRepoStatus();
 
   $: ({ legacyArchiveDeploy } = featureFlags);
 
@@ -58,11 +42,11 @@
       return {
         loading:
           $git.isPending ||
-          (hasGitUrl && $gitRepo.isPending) ||
+          (hasGitUrl ? $gitRepo.isPending : false) ||
           $project.isPending ||
           $deploy.isPending,
-        error: ($git.error ||
-          (hasGitUrl ? $gitRepo.error : undefined) ||
+        // TODO: use all git errors except "no repo"
+        error: ((hasGitUrl ? $gitRepo.error : undefined) ||
           $project.error ||
           $deploy.error) as ConnectError | undefined,
       };
@@ -74,47 +58,26 @@
   $: planUpgradeUrl = getPlanUpgradeUrl(orgParam);
   $: isOrgOnTrial = getIsOrgOnTrial(orgParam);
 
-  let showGithubDeployDialog = false;
-  $: ({ githubUrl, branch, subpath } =
-    $gitStatusQuery.data ??
-    <GitStatusResponse>{ githubUrl: "", branch: "", subpath: "" });
-
-  void newProject(orgParam);
-  type Mode = "unknown" | "github" | "rill";
-  let lastSeenMode: Mode = (modeParam as Mode | undefined) ?? "unknown";
-
-  async function newProject(orgName: string, mode: Mode = "unknown") {
+  async function newProject() {
+    console.log($projectQuery.data);
     if (!$projectQuery.data) return;
-    lastSeenMode = mode;
     const projectResp = $projectQuery.data;
     const gitRepoStatus = $gitRepoStatusQuery.data;
 
-    if (mode === "unknown") {
-      if (hasGitUrl) {
-        showGithubDeployDialog = true;
-        return;
-      }
-
-      mode = "rill";
-    } else if (mode === "github" && !gitRepoStatus?.hasAccess) {
-      if (gitRepoStatus) {
-        window.location.href = getGithubAccessUrl(
-          gitRepoStatus.grantAccessUrl,
-          $page.url,
-        );
-      } else {
-        // TODO: more comprehensive errors
-      }
+    if (useGit && !gitRepoStatus?.hasAccess) {
+      error = {
+        message: "Failed to access git repo. Please try again.",
+      } as ConnectError;
+      return;
     }
-    const useRillManaged = mode === "rill";
 
     const resp = await $deployMutation.mutateAsync({
-      org: orgName,
+      org: orgParam,
       projectName: projectResp.localProjectName,
       // If `legacyArchiveDeploy` is enabled, then use the archive route. Else use upload route.
       // This is mainly set to true in E2E tests.
-      upload: !$legacyArchiveDeploy && useRillManaged,
-      archive: $legacyArchiveDeploy && useRillManaged,
+      upload: !$legacyArchiveDeploy && !useGit,
+      archive: $legacyArchiveDeploy && !useGit,
     });
     // wait for the telemetry to finish since the page will be redirected after a deploy success
     await behaviourEvent?.fireDeployEvent(BehaviourEventAction.DeploySuccess);
@@ -128,7 +91,7 @@
   }
 
   function onRetry() {
-    void newProject(orgParam, lastSeenMode);
+    void newProject();
   }
 
   function onBack() {
@@ -138,7 +101,7 @@
   async function maybeNewProject() {
     await waitUntil(() => !loading);
     if (error) return;
-    void newProject(orgParam);
+    void newProject();
   }
 
   onMount(() => {
@@ -165,12 +128,3 @@
     {onBack}
   />
 {/if}
-
-<DeployToSelfManagedGitDialog
-  bind:open={showGithubDeployDialog}
-  {githubUrl}
-  {branch}
-  {subpath}
-  onUseRill={() => newProject(orgParam, "rill")}
-  onUseGithub={() => newProject(orgParam, "github")}
-/>

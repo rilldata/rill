@@ -26,6 +26,9 @@ import {
   createQuery,
   type CreateMutationOptions,
   type CreateQueryOptions,
+  type QueryFunction,
+  type DataTag,
+  type QueryKey,
 } from "@tanstack/svelte-query";
 import { get } from "svelte/store";
 
@@ -395,6 +398,36 @@ export const getLocalServiceGitRepoStatusQueryKey = (remote: string) => [
   `/v1/local/git-repo-status`,
   remote,
 ];
+export const getLocalServiceGitRepoStatusQueryOptions = <
+  TData = Awaited<ReturnType<typeof localServiceGitRepoStatus>>,
+  TError = ConnectError,
+>(
+  remote: string,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof localServiceGitRepoStatus>>,
+        TError,
+        TData
+      >
+    >;
+  },
+) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getLocalServiceGitRepoStatusQueryKey(remote);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof localServiceGitRepoStatus>>
+  > = () => localServiceGitRepoStatus(remote);
+
+  return { queryKey, queryFn, ...queryOptions } as CreateQueryOptions<
+    Awaited<ReturnType<typeof localServiceGitRepoStatus>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
 export function createLocalServiceGitRepoStatus<
   TData = Awaited<ReturnType<typeof localServiceGitRepoStatus>>,
   TError = ConnectError,
@@ -410,13 +443,11 @@ export function createLocalServiceGitRepoStatus<
     >;
   },
 ) {
-  const { query: queryOptions } = options ?? {};
-  return createQuery({
-    ...queryOptions,
-    queryKey:
-      queryOptions?.queryKey ?? getLocalServiceGitRepoStatusQueryKey(remote),
-    queryFn: queryOptions?.queryFn ?? (() => localServiceGitRepoStatus(remote)),
-  });
+  const queryOptions = getLocalServiceGitRepoStatusQueryOptions(
+    remote,
+    options,
+  );
+  return createQuery(queryOptions);
 }
 
 export function localServiceGitPull(args: PartialMessage<GitPullRequest>) {

@@ -9,6 +9,7 @@ import (
 	"io"
 	"io/fs"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -34,6 +35,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	"go.opentelemetry.io/otel/attribute"
+	"go.uber.org/zap"
 	"golang.org/x/oauth2"
 	githuboauth "golang.org/x/oauth2/github"
 	"google.golang.org/grpc/codes"
@@ -665,8 +667,17 @@ func (s *Server) githubConnectCallback(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		// request without state can come in multiple ways like
 		// 	- if user changes app installation directly on the settings page
-		//  - if admin user accepts the installation request
-		http.Redirect(w, r, s.admin.URLs.GithubConnectSuccessUI(false), http.StatusTemporaryRedirect)
+		//  - if admin user accepts the installation request. there could be a custom redirect url here.
+		if strings.HasPrefix(remoteURL, "http") {
+			decodedUrl, err := url.QueryUnescape(remoteURL)
+			if err != nil {
+				s.logger.Error("failed to unescape github remote url", zap.String("remote_url", remoteURL), zap.Error(err))
+			} else {
+				http.Redirect(w, r, decodedUrl, http.StatusTemporaryRedirect)
+			}
+		} else {
+			http.Redirect(w, r, s.admin.URLs.GithubConnectSuccessUI(false), http.StatusTemporaryRedirect)
+		}
 		return
 	}
 

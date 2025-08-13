@@ -6,7 +6,7 @@
   import CreateNewOrgForm from "@rilldata/web-common/features/organization/CreateNewOrgForm.svelte";
   import { CreateNewOrgFormId } from "@rilldata/web-common/features/organization/CreateNewOrgForm.svelte";
   import {
-    getCreateProjectRoute,
+    getDeployOrGithubRouteGetter,
     getOverwriteProjectRoute,
   } from "@rilldata/web-common/features/project/deploy/route-utils.ts";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
@@ -17,7 +17,8 @@
   let selectedOrg = "";
   let isNewOrgDialogOpen = false;
 
-  $: createProjectUrl = getCreateProjectRoute(selectedOrg);
+  const deployRouteGetter = getDeployOrGithubRouteGetter();
+  $: createProjectUrl = $deployRouteGetter(selectedOrg);
   $: overwriteProjectUrl = getOverwriteProjectRoute(selectedOrg);
 
   $: orgOptions =

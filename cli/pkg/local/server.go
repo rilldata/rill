@@ -318,7 +318,7 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 	}
 
 	var projRequest *adminv1.CreateProjectRequest
-	var gitPath string
+	gitPath := s.app.ProjectPath
 	if r.Msg.Archive { // old zip-and-ship, currently used only for testing until we figure out a good way to test using manged github repos
 		repo, release, err := s.app.Runtime.Repo(ctx, s.app.Instance.ID)
 		if err != nil {
