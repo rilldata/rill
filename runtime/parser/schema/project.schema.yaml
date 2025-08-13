@@ -947,7 +947,7 @@ definitions:
 
               - # Example: Select all dimensions that match a regex
                 dimensions:
-                regex: "^public_.*$"
+                  expr: "^public_.*$"
               
           measures:
             description: List of measure names. Use '*' to select all measures (default)
@@ -964,7 +964,7 @@ definitions:
 
               - # Example: Select all measures that match a regex
                 measures:
-                regex: "^public_.*$"
+                  expr: "^public_.*$"
               
           theme:
             oneOf:

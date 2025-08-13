@@ -60,7 +60,7 @@ dimensions:
 ```yaml
 # Example: Select all dimensions that match a regex
 dimensions:
-regex: "^public_.*$"
+    expr: "^public_.*$"
 ```
 
 ### `measures`
@@ -95,7 +95,7 @@ measures:
 ```yaml
 # Example: Select all measures that match a regex
 measures:
-regex: "^public_.*$"
+    expr: "^public_.*$"
 ```
 
 ### `theme`
