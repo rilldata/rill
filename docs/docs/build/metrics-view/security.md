@@ -97,9 +97,9 @@ security:
 
 :::tip Access Policy Behavior
 
-When combining access policies from project defaults and object-specific policies, keep the following in mind:
-- Object-level `access`, `exclude`, and `include` override project defaults
-- Object-level `row_filter` ANDs with project-level filters
+When combining access policies from project defaults and object-specific policies, remember that the object level policies will overwrite the project level ones. Dashboard and metrics ciew policies are binary logically ANDed.
+ 
+Not behaving as you're expecting? See our [troubleshooting guide.](/build/debugging/dashboard-access)
 
 :::
 
