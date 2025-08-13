@@ -26,7 +26,7 @@ li.theme-doc-sidebar-item-category-level-1 {
   }
   ul.menu__list {
     margin-left: 0.8rem;
-    border-left: 1px solid #ccc;
+    border-left: 1px solid  var(--ifm-menu-sidebar-color);
   }
   .menu__list-item:hover {
       border-left: 1px solid var(--ifm-color-primary);
@@ -60,6 +60,11 @@ li.theme-doc-sidebar-item-category-level-2 .menu__list-item-collapsible {
   &--active {
     font-weight: 600;
   }
+  &:hover {
+    color: var(--ifm-color-primary);
+    font-weight: 600;
+  }
+
 }
 
 .menu__caret:before,
