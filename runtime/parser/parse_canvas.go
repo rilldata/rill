@@ -34,6 +34,20 @@ type CanvasYAML struct {
 		TimeRange           string `yaml:"time_range"`
 		ComparisonMode      string `yaml:"comparison_mode"`
 		ComparisonDimension string `yaml:"comparison_dimension"`
+		Filters             *struct {
+			Dimensions []struct {
+				Dimension string   `yaml:"dimension"`
+				Values    []string `yaml:"values"`
+				Limit     *int     `yaml:"limit"`     // Optional limit for the number of values
+				Removable *bool    `yaml:"removable"` // Optional flag to indicate if the filter can be removed
+			} `yaml:"dimensions"`
+			Measures []struct {
+				Measure     string   `yaml:"measure"`
+				Values      []string `yaml:"values"`
+				ByDimension *string  `yaml:"by_dimension"` // Optional dimension to filter by
+				Operator    string   `yaml:"operator"`     // Optional operator for the measure filter (e.g., "equals", "greater_than")
+			} `yaml:"measures"`
+		} `yaml:"filters"`
 	} `yaml:"defaults"`
 	Variables []*ComponentVariableYAML `yaml:"variables"`
 	Rows      []*struct {
@@ -231,6 +245,10 @@ func (p *Parser) parseCanvas(node *Node) error {
 			TimeRange:           pointerIfNotEmpty(tmp.Defaults.TimeRange),
 			ComparisonMode:      mode,
 			ComparisonDimension: pointerIfNotEmpty(tmp.Defaults.ComparisonDimension),
+			Filters: &runtimev1.CanvasDefaultFilters{
+				Dimensions: make([]*runtimev1.CanvasDimensionFilter, len(tmp.Defaults.Filters.Dimensions)),
+				Measures:   make([]*runtimev1.CanvasMeasureFilter, len(tmp.Defaults.Filters.Measures)),
+			},
 		}
 	}
 
