@@ -211,6 +211,41 @@ func TestMotherDuckMutateTable(t *testing.T) {
 	require.NoError(t, db.Close())
 }
 
+func TestOtherSchema(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping test in short mode")
+	}
+	t.Parallel()
+	tempDir := t.TempDir()
+	randomDB := provisionDatabase(t)
+	db, err := NewGeneric(context.Background(), &GenericOptions{
+		DBInitQueries:      []string{"INSTALL motherduck; LOAD motherduck; SET motherduck_token = '" + os.Getenv("RILL_RUNTIME_MOTHERDUCK_TEST_TOKEN") + "'"},
+		Path:               fmt.Sprintf("md:%s", randomDB),
+		LocalDataDir:       tempDir,
+		LocalMemoryLimitGB: 2,
+		LocalCPU:           1,
+		Logger:             zap.NewNop(),
+		SchemaName:         "other",
+	})
+	require.NoError(t, err)
+	ctx := context.Background()
+
+	// create table in other schema
+	_, err = db.CreateTableAsSelect(ctx, "test_other", "SELECT * FROM test", &CreateTableOptions{})
+	require.NoError(t, err)
+
+	// query table
+	var greeting string
+	conn, release, err := db.AcquireReadConnection(ctx)
+	require.NoError(t, err)
+
+	conn.QueryRowContext(ctx, "SELECT * FROM test_other").Scan(&greeting)
+	require.Equal(t, "hello", greeting)
+	require.NoError(t, release())
+
+	require.NoError(t, db.Close())
+}
+
 func prepareMotherDuckDB(t *testing.T) DB {
 	tempDir := t.TempDir()
 	randomDB := provisionDatabase(t)
@@ -241,5 +276,11 @@ func provisionDatabase(t *testing.T) string {
 		require.NoError(t, err)
 		require.NoError(t, db.Close())
 	})
+
+	_, err = db.Exec(fmt.Sprintf("CREATE SCHEMA IF NOT EXISTS %s.other", name))
+	require.NoError(t, err)
+
+	_, err = db.Exec(fmt.Sprintf("CREATE OR REPLACE TABLE %s.other.test AS SELECT 'hello' AS greeting", name))
+	require.NoError(t, err)
 	return name
 }

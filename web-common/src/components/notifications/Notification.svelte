@@ -76,7 +76,7 @@
 
   aside {
     @apply absolute w-fit z-50 flex flex-col text-sm;
-    @apply bg-popover text-gray-800 p-0 rounded-md shadow-lg;
+    @apply bg-gray-800 text-gray-200 p-0 rounded-md shadow-lg;
   }
 
   .main-section {

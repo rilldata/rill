@@ -54,6 +54,7 @@ export type TimeRangeState = {
   adjustedStart?: string;
   adjustedEnd?: string;
 };
+
 export type ComparisonTimeRangeState = {
   showTimeComparison?: boolean;
   selectedComparisonTimeRange?: DashboardTimeControls;
@@ -62,6 +63,7 @@ export type ComparisonTimeRangeState = {
   comparisonTimeEnd?: string;
   comparisonAdjustedEnd?: string;
 };
+
 export type TimeControlState = {
   isFetching: boolean;
 

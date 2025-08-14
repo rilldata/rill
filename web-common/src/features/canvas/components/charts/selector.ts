@@ -3,11 +3,16 @@ import type { ChartSpec } from "@rilldata/web-common/features/canvas/components/
 import type { BaseChart } from "@rilldata/web-common/features/canvas/components/charts/BaseChart";
 import type { CanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
 import type { TimeAndFilterStore } from "@rilldata/web-common/features/canvas/stores/types";
+import {
+  defaultPrimaryColors,
+  defaultSecondaryColors,
+} from "@rilldata/web-common/features/themes/color-config";
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import {
   type MetricsViewSpecDimension,
   type MetricsViewSpecMeasure,
 } from "@rilldata/web-common/runtime-client";
+import chroma from "chroma-js";
 import { derived, type Readable } from "svelte/store";
 import type { ChartDataResult, TimeDimensionDefinition } from "./types";
 import { adjustDataForTimeZone, getFieldsByType } from "./util";
@@ -23,6 +28,8 @@ export function getChartData(
     timeAndFilterStore,
   );
   const { spec } = ctx.canvasEntity;
+
+  const themeStore = ctx.canvasEntity.theme;
 
   const { measures, dimensions, timeDimensions } = getFieldsByType(config);
 
@@ -45,8 +52,8 @@ export function getChartData(
   });
 
   return derived(
-    [chartDataQuery, timeAndFilterStore, ...fieldReadableMap],
-    ([chartData, $timeAndFilterStore, ...fieldMap]) => {
+    [chartDataQuery, timeAndFilterStore, themeStore, ...fieldReadableMap],
+    ([chartData, $timeAndFilterStore, theme, ...fieldMap]) => {
       const fieldSpecMap = allFields.reduce(
         (acc, field, index) => {
           acc[field.field] = fieldMap?.[index];
@@ -80,6 +87,11 @@ export function getChartData(
         error: chartData?.error,
         fields: fieldSpecMap,
         domainValues,
+        theme: {
+          primary: theme.primary || chroma(`hsl(${defaultPrimaryColors[500]})`),
+          secondary:
+            theme.secondary || chroma(`hsl(${defaultSecondaryColors[500]})`),
+        },
       };
     },
   );

@@ -1,7 +1,7 @@
 ---
 title: "Ingesting Data into ClickHouse"
 sidebar_label: "Ingesting Data Directly into ClickHouse"
-sidebar_position: 4
+sidebar_position: 50
 hide_table_of_contents: false
 tags:
   - OLAP:ClickHouse

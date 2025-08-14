@@ -299,8 +299,7 @@ export function getValueIndexInExpression(
   expr: V1Expression | undefined,
   value: string,
 ) {
-  if (!expr || !expr.cond?.exprs?.length) return -1;
-  return expr.cond?.exprs?.findIndex((e, i) => i > 0 && e.val === value);
+  return expr?.cond?.exprs?.findIndex((e, i) => i > 0 && e.val === value) ?? -1;
 }
 
 export function getValuesInExpression(expr?: V1Expression): any[] {

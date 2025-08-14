@@ -55,9 +55,14 @@ func (r *ValidateMetricsViewResult) Error() error {
 }
 
 // ValidateAndNormalizeMetricsView validates the dimensions and measures in the executor's metrics view and returns a ValidateMetricsViewResult
-// It also populates the schema of the metrics view if all dimensions and measures are valid.
+// It also inherits properties from parent metrics view and populates the schema of the metrics view if all dimensions and measures are valid.
 // Note - Beware that it modifies the metrics view spec in place to populate the dimension and measure types.
 func (e *Executor) ValidateAndNormalizeMetricsView(ctx context.Context) (*ValidateMetricsViewResult, error) {
+	err := e.resolveParentMetricsView(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve parent metrics view: %w", err)
+	}
+
 	// Create the result
 	res := &ValidateMetricsViewResult{}
 
@@ -154,6 +159,126 @@ func (e *Executor) ValidateAndNormalizeMetricsView(ctx context.Context) (*Valida
 	}
 
 	return res, nil
+}
+
+// resolves the parent metrics view and inherits all its dimensions and measures unless they are overridden in the current metrics view.
+func (e *Executor) resolveParentMetricsView(ctx context.Context) error {
+	if e.metricsView.Parent == "" {
+		// No parent metrics view to normalize
+		return nil
+	}
+	// Resolve the parent metrics view
+	ctrl, err := e.rt.Controller(ctx, e.instanceID)
+	if err != nil {
+		return fmt.Errorf("failed to get controller: %w", err)
+	}
+	// deep copy of parent metrics view that will be modified
+	res, err := ctrl.Get(ctx, &runtimev1.ResourceName{
+		Name: e.metricsView.Parent,
+		Kind: runtime.ResourceKindMetricsView,
+	}, false)
+	if err != nil {
+		return fmt.Errorf("failed to get parent metrics view %q: %w", e.metricsView.Parent, err)
+	}
+	if res.GetMetricsView() == nil {
+		return fmt.Errorf("parent resource %q is not a metrics view", e.metricsView.Parent)
+	}
+	if res.GetMetricsView().State.ValidSpec == nil {
+		return fmt.Errorf("parent metrics view %q is invalid", e.metricsView.Parent)
+	}
+	parent := res.GetMetricsView().State.ValidSpec
+
+	e.metricsView.Connector = parent.Connector
+	e.metricsView.Database = parent.Database
+	e.metricsView.DatabaseSchema = parent.DatabaseSchema
+	e.metricsView.Table = parent.Table
+	e.metricsView.Model = parent.Model
+	e.metricsView.CacheEnabled = parent.CacheEnabled
+	e.metricsView.CacheKeySql = parent.CacheKeySql
+	e.metricsView.CacheKeyTtlSeconds = parent.CacheKeyTtlSeconds
+
+	// Override the dimensions and measures in the normalized metrics view if defined in the current metrics view.
+	names := make([]string, 0, len(parent.Dimensions))
+	for _, d := range parent.Dimensions {
+		names = append(names, d.Name)
+	}
+	names, err = fieldselectorpb.Resolve(e.metricsView.ParentDimensions, names)
+	if err != nil {
+		return fmt.Errorf("failed to resolve parent dimensions selector: %w", err)
+	}
+	filteredDims := make([]*runtimev1.MetricsViewSpec_Dimension, 0, len(parent.Dimensions))
+	for _, d := range parent.Dimensions {
+		if slices.Contains(names, d.Name) {
+			filteredDims = append(filteredDims, d)
+		}
+	}
+	e.metricsView.Dimensions = filteredDims
+
+	names = make([]string, 0, len(parent.Measures))
+	for _, m := range parent.Measures {
+		names = append(names, m.Name)
+	}
+	names, err = fieldselectorpb.Resolve(e.metricsView.ParentMeasures, names)
+	if err != nil {
+		return fmt.Errorf("failed to resolve parent measures selector: %w", err)
+	}
+	filteredMeasures := make([]*runtimev1.MetricsViewSpec_Measure, 0, len(parent.Measures))
+	for _, m := range parent.Measures {
+		if slices.Contains(names, m.Name) {
+			filteredMeasures = append(filteredMeasures, m)
+		}
+	}
+	e.metricsView.Measures = filteredMeasures
+
+	// set selectors to nil now that they are resolved
+	e.metricsView.ParentDimensions = nil
+	e.metricsView.ParentMeasures = nil
+
+	hasAccessRule := false
+	for _, rule := range e.metricsView.SecurityRules {
+		if rule.GetAccess() != nil {
+			hasAccessRule = true
+			break
+		}
+	}
+	// append all parent security rules to the metrics view, except access if its already defined in the metrics view
+	for _, rule := range parent.SecurityRules {
+		if rule.GetAccess() != nil && hasAccessRule {
+			continue // skip access rules if already defined in the metrics view
+		}
+		e.metricsView.SecurityRules = append(e.metricsView.SecurityRules, rule)
+	}
+
+	// If the metrics view doesn't have a time dimension, use the parent's time dimension
+	if e.metricsView.TimeDimension == "" {
+		e.metricsView.TimeDimension = parent.TimeDimension
+	}
+	// If the metrics view doesn't have a watermark expression, use the parent's watermark expression
+	if e.metricsView.WatermarkExpression == "" {
+		e.metricsView.WatermarkExpression = parent.WatermarkExpression
+	}
+	// If the metrics view doesn't have a first day of week, use the parent's first day of week
+	if e.metricsView.FirstDayOfWeek == 0 {
+		e.metricsView.FirstDayOfWeek = parent.FirstDayOfWeek
+	}
+	// If the metrics view doesn't have a first month of year, use the parent's first month of year
+	if e.metricsView.FirstMonthOfYear == 0 {
+		e.metricsView.FirstMonthOfYear = parent.FirstMonthOfYear
+	}
+	// If the metrics view has a smallest time grain, make sure it is greater than or equal to the parent's smallest time grain.
+	if e.metricsView.SmallestTimeGrain != runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
+		if e.metricsView.SmallestTimeGrain < parent.SmallestTimeGrain {
+			return fmt.Errorf("invalid smallest time grain %s in metrics view %q, must be greater than or equal to parent metrics view smallest time grain %s", e.metricsView.SmallestTimeGrain, e.metricsView.Parent, parent.SmallestTimeGrain)
+		}
+	} else {
+		e.metricsView.SmallestTimeGrain = parent.SmallestTimeGrain
+	}
+	// If the metrics view doesn't have ai instructions, use the parent's ai instructions
+	if e.metricsView.AiInstructions == "" {
+		e.metricsView.AiInstructions = parent.AiInstructions
+	}
+
+	return nil
 }
 
 // validateAllDimensionsAndMeasures validates all dimensions and measures with one query. It returns an error if any of the expressions are invalid.
@@ -450,7 +575,7 @@ func (e *Executor) validateMeasure(ctx context.Context, t *drivers.OlapTable, m 
 	return err
 }
 
-// validateSchema validates that the metrics view's measures are numeric.
+// validateSchema validates that the metrics view's measures are numeric. Also populates the DataType field of each measure and dimension in the metrics view.
 func (e *Executor) validateSchema(ctx context.Context, res *ValidateMetricsViewResult) error {
 	// Resolve the schema of the metrics view's dimensions and measures
 	schema, err := e.Schema(ctx)

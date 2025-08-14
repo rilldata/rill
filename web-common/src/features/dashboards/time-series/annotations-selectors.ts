@@ -39,6 +39,7 @@ export function getAnnotationsForMeasure({
   const annotationsQueryOptions = derived(
     exploreValidSpec,
     (exploreValidSpec) => {
+      const metricsViewSpec = exploreValidSpec.data?.metricsView;
       const exploreSpec = exploreValidSpec.data?.explore;
       const metricsViewName = exploreSpec?.metricsView ?? "";
 
@@ -55,7 +56,10 @@ export function getAnnotationsForMeasure({
         },
         {
           query: {
-            enabled: !!metricsViewName && !!selectedTimeRange,
+            enabled:
+              !!metricsViewSpec?.annotations?.length &&
+              !!metricsViewName &&
+              !!selectedTimeRange,
           },
         },
       );

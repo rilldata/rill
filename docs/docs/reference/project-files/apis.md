@@ -11,7 +11,7 @@ See comprehensive documentation on how to define and use [custom APIs](/integrat
 
 **`type`** — Refers to the resource type and must be `api` _(required)_.
 
-**`connector`** — Refers to the OLAP engine if not already set in rill.yaml or if using [multiple OLAP connectors](../olap-engines/multiple-olap.md) in a single project. Only applies when using `sql` _(optional)_.
+**`connector`** — Refers to the OLAP engine if not already set in rill.yaml or if using [multiple OLAP connectors](/connect/olap/multiple-olap) in a single project. Only applies when using `sql` _(optional)_.
 
 Either one of the following:
 
