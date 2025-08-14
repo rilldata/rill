@@ -1,18 +1,33 @@
 <script lang="ts">
   import { afterUpdate } from "svelte";
   import LoadingSpinner from "../../../../components/icons/LoadingSpinner.svelte";
-  import type { V1Message } from "../../../../runtime-client";
   import DelayedSpinner from "../../../entity-management/DelayedSpinner.svelte";
+  import type { Chat } from "../chat";
   import ChatMessage from "./ChatMessage.svelte";
 
-  export let layout: "sidebar" | "fullpage" = "sidebar";
-  export let messages: V1Message[] = [];
-  export let isConversationLoading = false;
-  export let isResponseLoading = false;
+  export let chat: Chat;
+  export let layout: "sidebar" | "fullpage";
 
-  // $: console.log("ChatMessages: isResponseLoading", isResponseLoading);
-  // $: console.log("ChatMessages: messages", messages);
   let messagesContainer: HTMLDivElement;
+
+  $: pendingMessage = chat.pendingMessage;
+  $: currentConversationStore = chat.getCurrentConversation();
+  $: getConversationQuery = $currentConversationStore?.getConversationQuery();
+  $: isSending = $currentConversationStore?.isSending;
+
+  $: isConversationLoading =
+    !!$getConversationQuery?.isLoading && !$pendingMessage;
+  $: isResponseLoading = $currentConversationStore
+    ? $isSending
+    : !!$pendingMessage;
+
+  // Route between optimistic and real messages
+  $: messages =
+    $currentConversationStore === null
+      ? $pendingMessage
+        ? [$pendingMessage]
+        : []
+      : ($getConversationQuery?.data?.conversation?.messages ?? []);
 
   // Auto-scroll to bottom when messages change or loading state changes
   afterUpdate(() => {

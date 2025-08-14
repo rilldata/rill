@@ -75,6 +75,7 @@ export class Conversation {
     }
 
     // 1. Optimistic UI updates
+    this.draftMessage.set("");
     this.sendError.set(null);
     this.isSending.set(true);
 
@@ -123,7 +124,6 @@ export class Conversation {
       });
 
       // 5. On success, clear draft, invalidate query, and fire callback
-      this.draftMessage.set("");
       this.isSending.set(false);
       queryClient.invalidateQueries({ queryKey: cacheKey });
       options?.onSuccess?.(response);

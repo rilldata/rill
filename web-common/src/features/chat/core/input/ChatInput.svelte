@@ -2,18 +2,40 @@
   import { onMount, tick } from "svelte";
   import IconButton from "../../../../components/button/IconButton.svelte";
   import SendIcon from "../../../../components/icons/SendIcon.svelte";
+  import type { Chat } from "../chat";
 
-  export let value = "";
-  export let disabled = false;
-  export let placeholder = "Ask about your data...";
+  export let chat: Chat;
   export let onSend: () => void;
-  export let onInput: (value: string) => void = () => {};
 
   let textarea: HTMLTextAreaElement;
+  let placeholder = "Ask about your data...";
+  let newConversationDraft = "";
+
+  $: pendingMessage = chat.pendingMessage;
+  $: currentConversationStore = chat.getCurrentConversation();
+  $: getConversationQuery = $currentConversationStore?.getConversationQuery();
+  $: draftMessageStore = $currentConversationStore?.draftMessage;
+  $: isSendingStore = $currentConversationStore?.isSending;
+
+  $: value =
+    $currentConversationStore && $draftMessageStore
+      ? $draftMessageStore
+      : newConversationDraft;
+
+  $: disabled =
+    $getConversationQuery?.isLoading ||
+    ($currentConversationStore ? $isSendingStore : !!$pendingMessage);
 
   function handleInput(e: Event) {
     const target = e.target as HTMLTextAreaElement;
-    onInput(target.value);
+    const value = target.value;
+
+    if ($currentConversationStore) {
+      $currentConversationStore.draftMessage.set(value);
+    } else {
+      newConversationDraft = value;
+    }
+
     autoResize();
   }
 
@@ -26,8 +48,28 @@
 
   async function sendMessage() {
     if (!value.trim() || disabled) return;
-    onSend();
-    value = "";
+
+    // Message handling with input focus
+    try {
+      if ($currentConversationStore) {
+        // Send message to existing conversation
+        await $currentConversationStore.sendMessage();
+      } else {
+        // No current conversation, start a new one with the input message
+        if (newConversationDraft.trim()) {
+          const createConversationPromise = chat.createConversation(
+            newConversationDraft.trim(),
+          );
+          newConversationDraft = ""; // Immediately clear the draft
+          await createConversationPromise;
+        }
+      }
+
+      onSend();
+    } catch (error) {
+      console.error("Failed to send message:", error);
+    }
+
     // Let the parent component manage the input value
     await tick();
     autoResize();
@@ -64,7 +106,7 @@
   <div class="chat-input-container">
     <textarea
       bind:this={textarea}
-      bind:value
+      {value}
       class="chat-input"
       {placeholder}
       rows="1"

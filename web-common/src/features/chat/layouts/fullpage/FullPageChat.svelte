@@ -1,6 +1,5 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { get } from "svelte/store";
   import AlertCircle from "../../../../components/icons/AlertCircle.svelte";
   import { runtime } from "../../../../runtime-client/runtime-store";
   import { Chat } from "../../core/chat";
@@ -15,22 +14,10 @@
     conversationState: "url",
   });
 
-  $: pendingMessage = chat.pendingMessage;
-  $: currentConversation = chat.getCurrentConversation();
-  $: getConversationQuery = $currentConversation?.getConversationQuery();
-  $: isSending = $currentConversation?.isSending;
+  $: currentConversationStore = chat.getCurrentConversation();
+  $: getConversationQuery = $currentConversationStore?.getConversationQuery();
 
-  // Route between optimistic and real messages
-  $: displayMessages =
-    $currentConversation === null
-      ? $pendingMessage
-        ? [$pendingMessage]
-        : []
-      : ($getConversationQuery?.data?.conversation?.messages ?? []);
-
-  // Local UI state
   let chatInputComponent: ChatInput;
-  let newConversationDraft = "";
 
   // Focus on mount with a small delay for component initialization
   onMount(() => {
@@ -40,29 +27,8 @@
     }, 100);
   });
 
-  function handleConversationClick() {
+  function onMessageSend() {
     chatInputComponent?.focusInput();
-  }
-
-  async function handleSend() {
-    try {
-      if ($currentConversation) {
-        // Send message to existing conversation
-        await $currentConversation.sendMessage();
-      } else {
-        // Create new conversation with draft message
-        if (newConversationDraft.trim()) {
-          await chat.createConversation(newConversationDraft.trim());
-          newConversationDraft = ""; // Clear draft after successful creation
-        }
-      }
-
-      // Focus input after successful send
-      chatInputComponent?.focusInput();
-    } catch (error) {
-      console.error("Failed to send message:", error);
-      // TODO: Show user-friendly error message
-    }
   }
 </script>
 
@@ -70,10 +36,10 @@
   <!-- Conversation List Sidebar -->
   <ConversationSidebar
     {chat}
-    currentConversation={$getConversationQuery?.data?.conversation ?? null}
-    onConversationClick={handleConversationClick}
+    onConversationClick={() => {
+      chatInputComponent?.focusInput();
+    }}
     onNewConversationClick={() => {
-      chat.enterNewConversationMode();
       chatInputComponent?.focusInput();
     }}
   />
@@ -82,15 +48,7 @@
   <div class="chat-main">
     <div class="chat-content">
       <div class="chat-messages-wrapper">
-        <ChatMessages
-          layout="fullpage"
-          isConversationLoading={!!$getConversationQuery?.isLoading &&
-            !$pendingMessage}
-          isResponseLoading={$currentConversation
-            ? $isSending
-            : !!$pendingMessage}
-          messages={displayMessages}
-        />
+        <ChatMessages {chat} layout="fullpage" />
       </div>
     </div>
 
@@ -103,22 +61,9 @@
           </div>
         {/if}
         <ChatInput
+          {chat}
+          onSend={onMessageSend}
           bind:this={chatInputComponent}
-          value={$currentConversation
-            ? get($currentConversation.draftMessage)
-            : newConversationDraft}
-          disabled={$getConversationQuery?.isLoading ||
-            ($currentConversation
-              ? get($currentConversation.isSending)
-              : !!$pendingMessage)}
-          onInput={(v) => {
-            if ($currentConversation) {
-              $currentConversation.draftMessage.set(v);
-            } else {
-              newConversationDraft = v;
-            }
-          }}
-          onSend={handleSend}
         />
         <ChatFooter />
       </div>

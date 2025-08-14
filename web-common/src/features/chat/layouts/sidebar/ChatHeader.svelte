@@ -2,31 +2,46 @@
   import IconButton from "../../../../components/button/IconButton.svelte";
   import Close from "../../../../components/icons/Close.svelte";
   import PlusIcon from "../../../../components/icons/PlusIcon.svelte";
-  import type { V1Conversation } from "../../../../runtime-client";
+  import { type V1Conversation } from "../../../../runtime-client";
+  import type { Chat } from "../../core/chat";
   import ChatConversationDropdown from "./ChatConversationDropdown.svelte";
 
-  export let currentConversation: V1Conversation | null;
-  export let conversations: V1Conversation[] = [];
+  export let chat: Chat;
   export let onNewConversation: () => void;
-  export let onSelectConversation: (conversation: V1Conversation) => void;
   export let onClose: () => void;
+
+  $: currentConversationStore = chat.getCurrentConversation();
+  $: getConversationQuery = $currentConversationStore?.getConversationQuery();
+  $: currentConversationDto = $getConversationQuery?.data?.conversation ?? null;
+
+  $: listConversationsQuery = chat.listConversationsQuery();
+  $: conversations = $listConversationsQuery.data?.conversations ?? [];
+
+  function handleNewConversation() {
+    chat.enterNewConversationMode();
+    onNewConversation();
+  }
+
+  function handleSelectConversation(conversation: V1Conversation) {
+    chat.selectConversation(conversation.id!);
+  }
 </script>
 
 <div class="chatbot-header">
-  <span class="chatbot-title">{currentConversation?.title || ""}</span>
+  <span class="chatbot-title">{currentConversationDto?.title || ""}</span>
   <div class="chatbot-header-actions">
     <IconButton
       ariaLabel="New conversation"
       bgGray
-      on:click={onNewConversation}
+      on:click={handleNewConversation}
     >
       <PlusIcon className="text-gray-500" />
     </IconButton>
 
     <ChatConversationDropdown
       {conversations}
-      currentConversationId={currentConversation?.id}
-      onSelect={onSelectConversation}
+      currentConversationId={currentConversationDto?.id}
+      onSelect={handleSelectConversation}
     />
 
     <IconButton ariaLabel="Close chat" bgGray on:click={onClose}>

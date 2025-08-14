@@ -1,19 +1,21 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import Button from "../../../../components/button/Button.svelte";
-  import type { V1Conversation } from "../../../../runtime-client";
   import DelayedContent from "../../../entity-management/DelayedContent.svelte";
   import Spinner from "../../../entity-management/Spinner.svelte";
   import { EntityStatus } from "../../../entity-management/types";
   import type { Chat } from "../../core/chat";
 
   export let chat: Chat;
-  export let currentConversation: V1Conversation | null = null;
   export let onConversationClick: () => void = () => {};
   export let onNewConversationClick: () => void = () => {};
 
   // Get URL parameters for href construction
   $: ({ organization, project } = $page.params);
+
+  $: currentConversation = chat.getCurrentConversation();
+  $: getConversationQuery = $currentConversation?.getConversationQuery();
+  $: currentConversationDto = $getConversationQuery?.data?.conversation ?? null;
 
   $: listConversationsQuery = chat.listConversationsQuery();
 
@@ -28,6 +30,7 @@
 
   // Handle new conversation button click (for focus, navigation handled by href)
   function handleNewConversationButtonClick() {
+    chat.enterNewConversationMode();
     onNewConversationClick();
   }
 </script>
@@ -56,12 +59,12 @@
       </div>
     {:else if isError}
       <div class="error-conversations">Error loading conversations</div>
-    {:else if conversations?.length}
+    {:else if conversations.length}
       {#each conversations as conversation}
         <a
           href={`/${organization}/${project}/-/chat/${conversation.id}`}
           class="conversation-item"
-          class:active={conversation.id === currentConversation?.id}
+          class:active={conversation.id === currentConversationDto?.id}
           data-testid="conversation-item"
           data-conversation-id={conversation.id}
           on:click={handleConversationItemClick}
