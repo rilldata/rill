@@ -3,7 +3,7 @@ import type { Project } from "@rilldata/web-common/proto/gen/rill/admin/v1/api_p
 import {
   createLocalServiceGetProjectRequest,
   createLocalServiceGitStatus,
-  getLocalServiceGitRepoStatusQueryOptions,
+  getLocalServiceGithubRepoStatusQueryOptions,
 } from "@rilldata/web-common/runtime-client/local-service.ts";
 import { createQuery } from "@tanstack/svelte-query";
 import { derived } from "svelte/store";
@@ -72,11 +72,14 @@ export function getRequestProjectAccessUrl(project: Project) {
 
 export function getLocalGitRepoStatus() {
   const gitRepoOptions = derived(createLocalServiceGitStatus(), (gitStatus) =>
-    getLocalServiceGitRepoStatusQueryOptions(gitStatus.data?.githubUrl ?? "", {
-      query: {
-        enabled: !!gitStatus.data?.githubUrl && !gitStatus.data?.managedGit,
+    getLocalServiceGithubRepoStatusQueryOptions(
+      gitStatus.data?.githubUrl ?? "",
+      {
+        query: {
+          enabled: !!gitStatus.data?.githubUrl && !gitStatus.data?.managedGit,
+        },
       },
-    }),
+    ),
   );
 
   return createQuery(gitRepoOptions);

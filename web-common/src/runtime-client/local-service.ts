@@ -18,7 +18,7 @@ import {
   GitStatusRequest,
   GitPullRequest,
   GitPushRequest,
-  GitRepoStatusRequest,
+  GithubRepoStatusRequest,
 } from "@rilldata/web-common/proto/gen/rill/local/v1/api_pb";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import {
@@ -387,26 +387,26 @@ export function createLocalServiceGitStatus<
   });
 }
 
-export function localServiceGitRepoStatus(remote: string) {
-  return getClient().gitRepoStatus(
-    new GitRepoStatusRequest({
+export function localServiceGithubRepoStatus(remote: string) {
+  return getClient().githubRepoStatus(
+    new GithubRepoStatusRequest({
       remote,
     }),
   );
 }
-export const getLocalServiceGitRepoStatusQueryKey = (remote: string) => [
+export const getLocalServiceGithubRepoStatusQueryKey = (remote: string) => [
   `/v1/local/git-repo-status`,
   remote,
 ];
-export const getLocalServiceGitRepoStatusQueryOptions = <
-  TData = Awaited<ReturnType<typeof localServiceGitRepoStatus>>,
+export const getLocalServiceGithubRepoStatusQueryOptions = <
+  TData = Awaited<ReturnType<typeof localServiceGithubRepoStatus>>,
   TError = ConnectError,
 >(
   remote: string,
   options?: {
     query?: Partial<
       CreateQueryOptions<
-        Awaited<ReturnType<typeof localServiceGitRepoStatus>>,
+        Awaited<ReturnType<typeof localServiceGithubRepoStatus>>,
         TError,
         TData
       >
@@ -416,34 +416,34 @@ export const getLocalServiceGitRepoStatusQueryOptions = <
   const { query: queryOptions } = options ?? {};
 
   const queryKey =
-    queryOptions?.queryKey ?? getLocalServiceGitRepoStatusQueryKey(remote);
+    queryOptions?.queryKey ?? getLocalServiceGithubRepoStatusQueryKey(remote);
 
   const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof localServiceGitRepoStatus>>
-  > = () => localServiceGitRepoStatus(remote);
+    Awaited<ReturnType<typeof localServiceGithubRepoStatus>>
+  > = () => localServiceGithubRepoStatus(remote);
 
   return { queryKey, queryFn, ...queryOptions } as CreateQueryOptions<
-    Awaited<ReturnType<typeof localServiceGitRepoStatus>>,
+    Awaited<ReturnType<typeof localServiceGithubRepoStatus>>,
     TError,
     TData
   > & { queryKey: DataTag<QueryKey, TData, TError> };
 };
-export function createLocalServiceGitRepoStatus<
-  TData = Awaited<ReturnType<typeof localServiceGitRepoStatus>>,
+export function createLocalServiceGithubRepoStatus<
+  TData = Awaited<ReturnType<typeof localServiceGithubRepoStatus>>,
   TError = ConnectError,
 >(
   remote: string,
   options?: {
     query?: Partial<
       CreateQueryOptions<
-        Awaited<ReturnType<typeof localServiceGitRepoStatus>>,
+        Awaited<ReturnType<typeof localServiceGithubRepoStatus>>,
         TError,
         TData
       >
     >;
   },
 ) {
-  const queryOptions = getLocalServiceGitRepoStatusQueryOptions(
+  const queryOptions = getLocalServiceGithubRepoStatusQueryOptions(
     remote,
     options,
   );

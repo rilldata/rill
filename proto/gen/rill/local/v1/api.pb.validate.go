@@ -916,22 +916,22 @@ var _ interface {
 	ErrorName() string
 } = GitStatusResponseValidationError{}
 
-// Validate checks the field values on GitRepoStatusRequest with the rules
+// Validate checks the field values on GithubRepoStatusRequest with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
-func (m *GitRepoStatusRequest) Validate() error {
+func (m *GithubRepoStatusRequest) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on GitRepoStatusRequest with the rules
-// defined in the proto definition for this message. If any rules are
+// ValidateAll checks the field values on GithubRepoStatusRequest with the
+// rules defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// GitRepoStatusRequestMultiError, or nil if none found.
-func (m *GitRepoStatusRequest) ValidateAll() error {
+// GithubRepoStatusRequestMultiError, or nil if none found.
+func (m *GithubRepoStatusRequest) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *GitRepoStatusRequest) validate(all bool) error {
+func (m *GithubRepoStatusRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -941,19 +941,19 @@ func (m *GitRepoStatusRequest) validate(all bool) error {
 	// no validation rules for Remote
 
 	if len(errors) > 0 {
-		return GitRepoStatusRequestMultiError(errors)
+		return GithubRepoStatusRequestMultiError(errors)
 	}
 
 	return nil
 }
 
-// GitRepoStatusRequestMultiError is an error wrapping multiple validation
-// errors returned by GitRepoStatusRequest.ValidateAll() if the designated
+// GithubRepoStatusRequestMultiError is an error wrapping multiple validation
+// errors returned by GithubRepoStatusRequest.ValidateAll() if the designated
 // constraints aren't met.
-type GitRepoStatusRequestMultiError []error
+type GithubRepoStatusRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m GitRepoStatusRequestMultiError) Error() string {
+func (m GithubRepoStatusRequestMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -962,11 +962,11 @@ func (m GitRepoStatusRequestMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m GitRepoStatusRequestMultiError) AllErrors() []error { return m }
+func (m GithubRepoStatusRequestMultiError) AllErrors() []error { return m }
 
-// GitRepoStatusRequestValidationError is the validation error returned by
-// GitRepoStatusRequest.Validate if the designated constraints aren't met.
-type GitRepoStatusRequestValidationError struct {
+// GithubRepoStatusRequestValidationError is the validation error returned by
+// GithubRepoStatusRequest.Validate if the designated constraints aren't met.
+type GithubRepoStatusRequestValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -974,24 +974,24 @@ type GitRepoStatusRequestValidationError struct {
 }
 
 // Field function returns field value.
-func (e GitRepoStatusRequestValidationError) Field() string { return e.field }
+func (e GithubRepoStatusRequestValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e GitRepoStatusRequestValidationError) Reason() string { return e.reason }
+func (e GithubRepoStatusRequestValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e GitRepoStatusRequestValidationError) Cause() error { return e.cause }
+func (e GithubRepoStatusRequestValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e GitRepoStatusRequestValidationError) Key() bool { return e.key }
+func (e GithubRepoStatusRequestValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e GitRepoStatusRequestValidationError) ErrorName() string {
-	return "GitRepoStatusRequestValidationError"
+func (e GithubRepoStatusRequestValidationError) ErrorName() string {
+	return "GithubRepoStatusRequestValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e GitRepoStatusRequestValidationError) Error() string {
+func (e GithubRepoStatusRequestValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -1003,14 +1003,14 @@ func (e GitRepoStatusRequestValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sGitRepoStatusRequest.%s: %s%s",
+		"invalid %sGithubRepoStatusRequest.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = GitRepoStatusRequestValidationError{}
+var _ error = GithubRepoStatusRequestValidationError{}
 
 var _ interface {
 	Field() string
@@ -1018,24 +1018,24 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = GitRepoStatusRequestValidationError{}
+} = GithubRepoStatusRequestValidationError{}
 
-// Validate checks the field values on GitRepoStatusResponse with the rules
+// Validate checks the field values on GithubRepoStatusResponse with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
-func (m *GitRepoStatusResponse) Validate() error {
+func (m *GithubRepoStatusResponse) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on GitRepoStatusResponse with the rules
-// defined in the proto definition for this message. If any rules are
+// ValidateAll checks the field values on GithubRepoStatusResponse with the
+// rules defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// GitRepoStatusResponseMultiError, or nil if none found.
-func (m *GitRepoStatusResponse) ValidateAll() error {
+// GithubRepoStatusResponseMultiError, or nil if none found.
+func (m *GithubRepoStatusResponse) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *GitRepoStatusResponse) validate(all bool) error {
+func (m *GithubRepoStatusResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -1049,19 +1049,19 @@ func (m *GitRepoStatusResponse) validate(all bool) error {
 	// no validation rules for DefaultBranch
 
 	if len(errors) > 0 {
-		return GitRepoStatusResponseMultiError(errors)
+		return GithubRepoStatusResponseMultiError(errors)
 	}
 
 	return nil
 }
 
-// GitRepoStatusResponseMultiError is an error wrapping multiple validation
-// errors returned by GitRepoStatusResponse.ValidateAll() if the designated
+// GithubRepoStatusResponseMultiError is an error wrapping multiple validation
+// errors returned by GithubRepoStatusResponse.ValidateAll() if the designated
 // constraints aren't met.
-type GitRepoStatusResponseMultiError []error
+type GithubRepoStatusResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m GitRepoStatusResponseMultiError) Error() string {
+func (m GithubRepoStatusResponseMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -1070,11 +1070,11 @@ func (m GitRepoStatusResponseMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m GitRepoStatusResponseMultiError) AllErrors() []error { return m }
+func (m GithubRepoStatusResponseMultiError) AllErrors() []error { return m }
 
-// GitRepoStatusResponseValidationError is the validation error returned by
-// GitRepoStatusResponse.Validate if the designated constraints aren't met.
-type GitRepoStatusResponseValidationError struct {
+// GithubRepoStatusResponseValidationError is the validation error returned by
+// GithubRepoStatusResponse.Validate if the designated constraints aren't met.
+type GithubRepoStatusResponseValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -1082,24 +1082,24 @@ type GitRepoStatusResponseValidationError struct {
 }
 
 // Field function returns field value.
-func (e GitRepoStatusResponseValidationError) Field() string { return e.field }
+func (e GithubRepoStatusResponseValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e GitRepoStatusResponseValidationError) Reason() string { return e.reason }
+func (e GithubRepoStatusResponseValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e GitRepoStatusResponseValidationError) Cause() error { return e.cause }
+func (e GithubRepoStatusResponseValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e GitRepoStatusResponseValidationError) Key() bool { return e.key }
+func (e GithubRepoStatusResponseValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e GitRepoStatusResponseValidationError) ErrorName() string {
-	return "GitRepoStatusResponseValidationError"
+func (e GithubRepoStatusResponseValidationError) ErrorName() string {
+	return "GithubRepoStatusResponseValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e GitRepoStatusResponseValidationError) Error() string {
+func (e GithubRepoStatusResponseValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -1111,14 +1111,14 @@ func (e GitRepoStatusResponseValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sGitRepoStatusResponse.%s: %s%s",
+		"invalid %sGithubRepoStatusResponse.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = GitRepoStatusResponseValidationError{}
+var _ error = GithubRepoStatusResponseValidationError{}
 
 var _ interface {
 	Field() string
@@ -1126,7 +1126,7 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = GitRepoStatusResponseValidationError{}
+} = GithubRepoStatusResponseValidationError{}
 
 // Validate checks the field values on GitPullRequest with the rules defined in
 // the proto definition for this message. If any rules are violated, the first

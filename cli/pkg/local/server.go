@@ -459,7 +459,6 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 		if err != nil {
 			return nil, fmt.Errorf("failed to generate git commit signature: %w", err)
 		}
-		fmt.Println("Pushing .rillcloud", projResp.Project, author)
 		err = gitutil.CommitAndForcePush(ctx, gitPath, &gitutil.Config{Remote: projResp.Project.GitRemote, DefaultBranch: projResp.Project.ProdBranch}, "Autocommit .rillcloud dir", author)
 		if err != nil {
 			return nil, fmt.Errorf("failed to push .rillcloud directory to remote: %w", err)

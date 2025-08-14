@@ -590,8 +590,6 @@ func (s *Server) githubConnect(w http.ResponseWriter, r *http.Request) {
 	})
 	// TODO: what error to show here? Could show the unescape error as well.
 
-	fmt.Println("Using github redirect", redirectURL)
-
 	http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
 }
 
@@ -690,6 +688,14 @@ func (s *Server) githubConnectCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if remoteURL == "" {
+		// request without state can come in multiple ways like
+		// 	- if user changes app installation directly on the settings page
+		//  - if admin user accepts the installation request
+		http.Redirect(w, r, s.admin.URLs.GithubConnectSuccessUI(false), http.StatusTemporaryRedirect)
+		return
+	}
+
 	var state githubConnectState
 	err = json.Unmarshal([]byte(remoteURL), &state)
 	if err != nil {
@@ -697,13 +703,8 @@ func (s *Server) githubConnectCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Println("Got github state", remoteURL, state)
-
 	account, repo, ok := gitutil.SplitGithubRemote(state.Remote)
 	if !ok {
-		// request without state can come in multiple ways like
-		// 	- if user changes app installation directly on the settings page
-		//  - if admin user accepts the installation request. there could be a custom redirect url here.
 		if state.Redirect != "" {
 			http.Redirect(w, r, state.Redirect, http.StatusTemporaryRedirect)
 		} else {
@@ -903,7 +904,9 @@ func (s *Server) githubAuthCallback(w http.ResponseWriter, r *http.Request) {
 
 	redirect := ""
 	if value, ok := sess.Values[githubcookieFieldRedirect]; ok {
-		redirect = value.(string)
+		if strVal, ok := value.(string); ok {
+			redirect = strVal
+		}
 	}
 	delete(sess.Values, githubcookieFieldRedirect)
 
@@ -931,7 +934,6 @@ func (s *Server) githubAuthCallback(w http.ResponseWriter, r *http.Request) {
 	} else {
 		http.Redirect(w, r, s.admin.URLs.GithubConnectSuccessUI(false), http.StatusTemporaryRedirect)
 	}
-
 }
 
 // githubWebhook is called by Github to deliver events about new pushes, pull requests, changes to a repository, etc.
@@ -1287,12 +1289,12 @@ func (s *Server) githubAppInstallationURL(state githubConnectState) (string, err
 		return res, nil
 	}
 
-	stateJson, err := json.Marshal(state)
+	stateJSON, err := json.Marshal(state)
 	if err != nil {
 		return res, fmt.Errorf("failed to marshal github app installation state: %w", err)
 	}
 
-	return urlutil.MustWithQuery(res, map[string]string{"state": string(stateJson)}), nil
+	return urlutil.MustWithQuery(res, map[string]string{"state": string(stateJSON)}), nil
 }
 
 func (s *Server) gitSignFromClaims(ctx context.Context, claims auth.Claims) (*object.Signature, error) {

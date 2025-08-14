@@ -114,7 +114,7 @@ func (s *Server) GitStatus(ctx context.Context, r *connect.Request[localv1.GitSt
 	}), nil
 }
 
-func (s *Server) GitRepoStatus(ctx context.Context, r *connect.Request[localv1.GitRepoStatusRequest]) (*connect.Response[localv1.GitRepoStatusResponse], error) {
+func (s *Server) GithubRepoStatus(ctx context.Context, r *connect.Request[localv1.GithubRepoStatusRequest]) (*connect.Response[localv1.GithubRepoStatusResponse], error) {
 	// Get an authenticated admin client
 	if !s.app.ch.IsAuthenticated() {
 		return nil, errors.New("must authenticate before performing this action")
@@ -132,7 +132,7 @@ func (s *Server) GitRepoStatus(ctx context.Context, r *connect.Request[localv1.G
 		return nil, err
 	}
 
-	return connect.NewResponse(&localv1.GitRepoStatusResponse{
+	return connect.NewResponse(&localv1.GithubRepoStatusResponse{
 		HasAccess:      resp.HasAccess,
 		GrantAccessUrl: resp.GrantAccessUrl,
 		DefaultBranch:  resp.DefaultBranch,

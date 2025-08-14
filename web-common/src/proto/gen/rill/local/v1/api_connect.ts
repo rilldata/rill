@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { CreateOrganizationRequest, CreateOrganizationResponse, DeployProjectRequest, DeployProjectResponse, GetCurrentProjectRequest, GetCurrentProjectResponse, GetCurrentUserRequest, GetCurrentUserResponse, GetMetadataRequest, GetMetadataResponse, GetProjectRequest, GetProjectResponse, GetVersionRequest, GetVersionResponse, GitPullRequest, GitPullResponse, GitPushRequest, GitPushResponse, GitRepoStatusRequest, GitRepoStatusResponse, GitStatusRequest, GitStatusResponse, ListMatchingProjectsRequest, ListMatchingProjectsResponse, ListOrganizationsAndBillingMetadataRequest, ListOrganizationsAndBillingMetadataResponse, ListProjectsForOrgRequest, ListProjectsForOrgResponse, PingRequest, PingResponse, PushToGithubRequest, PushToGithubResponse, RedeployProjectRequest, RedeployProjectResponse } from "./api_pb.js";
+import { CreateOrganizationRequest, CreateOrganizationResponse, DeployProjectRequest, DeployProjectResponse, GetCurrentProjectRequest, GetCurrentProjectResponse, GetCurrentUserRequest, GetCurrentUserResponse, GetMetadataRequest, GetMetadataResponse, GetProjectRequest, GetProjectResponse, GetVersionRequest, GetVersionResponse, GithubRepoStatusRequest, GithubRepoStatusResponse, GitPullRequest, GitPullResponse, GitPushRequest, GitPushResponse, GitStatusRequest, GitStatusResponse, ListMatchingProjectsRequest, ListMatchingProjectsResponse, ListOrganizationsAndBillingMetadataRequest, ListOrganizationsAndBillingMetadataResponse, ListProjectsForOrgRequest, ListProjectsForOrgResponse, PingRequest, PingResponse, PushToGithubRequest, PushToGithubResponse, RedeployProjectRequest, RedeployProjectResponse } from "./api_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -57,14 +57,14 @@ export const LocalService = {
       kind: MethodKind.Unary,
     },
     /**
-     * GitRepoStatus returns info about a Github user account based on the caller's installations. Forwards to admin API of the same name.
+     * GithubRepoStatus returns info about a Github user account based on the caller's installations. Forwards to admin API of the same name.
      *
-     * @generated from rpc rill.local.v1.LocalService.GitRepoStatus
+     * @generated from rpc rill.local.v1.LocalService.GithubRepoStatus
      */
-    gitRepoStatus: {
-      name: "GitRepoStatus",
-      I: GitRepoStatusRequest,
-      O: GitRepoStatusResponse,
+    githubRepoStatus: {
+      name: "GithubRepoStatus",
+      I: GithubRepoStatusRequest,
+      O: GithubRepoStatusResponse,
       kind: MethodKind.Unary,
     },
     /**
