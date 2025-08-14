@@ -1,18 +1,14 @@
-import { page } from "$app/stores";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
   getRuntimeServiceGetConversationQueryOptions,
-  getRuntimeServiceListConversationsQueryKey,
   getRuntimeServiceListConversationsQueryOptions,
-  runtimeServiceComplete,
   type RpcStatus,
   type V1GetConversationResponse,
   type V1ListConversationsResponse,
-  type V1Message,
 } from "@rilldata/web-common/runtime-client";
 import { createQuery, type CreateQueryResult } from "@tanstack/svelte-query";
-import { derived, get, writable, type Readable } from "svelte/store";
-import { detectAppContext, getOptimisticMessageId } from "./chat-utils";
+import { derived, type Readable } from "svelte/store";
+import { NEW_CONVERSATION_ID } from "./chat-utils";
 import { Conversation } from "./conversation";
 import {
   BrowserStorageConversationSelector,
@@ -40,19 +36,28 @@ export interface ChatOptions {
  *
  * Usage:
  * - Access conversations: `chat.listConversationsQuery()` and `chat.getCurrentConversation()`
- * - Start new conversation: `chat.createConversation(message)`
  * - Navigate conversations: `chat.selectConversation(id)` or `chat.enterNewConversationMode()`
- * - Send to existing conversation: `conversation.sendMessage()` on the conversation instance
+ * - Send messages: `conversation.sendMessage()` on any conversation instance (new or existing)
  */
 export class Chat {
-  public pendingMessage = writable<V1Message | null>(null);
-  private conversationSelector: ConversationSelector;
+  private newConversation: Conversation;
   private conversations = new Map<string, Conversation>();
+  private conversationSelector: ConversationSelector;
 
   constructor(
     private instanceId: string,
     options: ChatOptions,
   ) {
+    this.newConversation = new Conversation(
+      this.instanceId,
+      NEW_CONVERSATION_ID,
+      {
+        onConversationCreated: (conversationId: string) => {
+          this.selectConversation(conversationId);
+        },
+      },
+    );
+
     switch (options.conversationState) {
       case "url":
         this.conversationSelector = new URLConversationSelector();
@@ -79,25 +84,43 @@ export class Chat {
     );
   }
 
-  getCurrentConversation(): Readable<Conversation | null> {
+  getCurrentConversation(): Readable<Conversation> {
     return derived(
       [this.conversationSelector.currentConversationId],
       ([$conversationId]) => {
-        if (!$conversationId) return null;
+        // If the conversation ID is "new", return the new conversation instance
+        if ($conversationId === NEW_CONVERSATION_ID) {
+          return this.newConversation;
+        }
 
-        // Check if we already have a conversation instance for this conversation ID
+        // If we already have a conversation instance for this conversation ID, return it
         const existing = this.conversations.get($conversationId);
         if (existing) return existing;
 
-        // If not, create a new conversation instance and store it
-        const conversation = Conversation.fromExistingId(
-          this.instanceId,
-          $conversationId,
-        );
+        // Otherwise, create a conversation instance and store it
+        const conversation = new Conversation(this.instanceId, $conversationId);
         this.conversations.set($conversationId, conversation);
         return conversation;
       },
     );
+  }
+
+  // This method is an optimization for getting a `GetConversation` QueryObserver for the current conversation
+  // However, this admittedly blurs the boundary between the `Chat` class and the `Conversation` class (it's "feature creep")
+  getCurrentConversationQuery(): CreateQueryResult<
+    V1GetConversationResponse,
+    RpcStatus
+  > {
+    const queryOptions = derived(
+      [this.conversationSelector.currentConversationId],
+      ([$conversationId]) =>
+        getRuntimeServiceGetConversationQueryOptions(
+          this.instanceId,
+          $conversationId,
+        ),
+    );
+
+    return createQuery(queryOptions, queryClient);
   }
 
   // ACTIONS
@@ -108,81 +131,5 @@ export class Chat {
 
   selectConversation(conversationId: string): void {
     this.conversationSelector.selectConversation(conversationId);
-  }
-
-  /**
-   * Creates a new conversation by sending the first message.
-   * Handles optimistic updates for immediate UI feedback.
-   */
-  async createConversation(initialMessage: string): Promise<void> {
-    if (!initialMessage.trim()) {
-      throw new Error("Cannot start a conversation with an empty message");
-    }
-
-    this.pendingMessage.set({
-      id: getOptimisticMessageId(),
-      role: "user" as const,
-      content: [{ text: initialMessage }],
-      createdOn: new Date().toISOString(),
-      updatedOn: new Date().toISOString(),
-    });
-
-    try {
-      // Hit the `Complete` API with no `conversationId` to create a new conversation
-      const response = await runtimeServiceComplete(this.instanceId, {
-        conversationId: undefined, // New conversation
-        messages: [
-          {
-            role: "user" as const,
-            content: [{ text: initialMessage }],
-          },
-        ],
-        appContext: detectAppContext(get(page)) ?? undefined,
-      });
-
-      if (!response.conversationId) {
-        throw new Error("Did not receive a conversation ID from the server.");
-      }
-
-      const realConversationId = response.conversationId;
-
-      // Transition optimistic state to real conversation
-
-      // Fetch complete conversation data (including the conversation title)
-      const conversationResponse =
-        await queryClient.fetchQuery<V1GetConversationResponse>(
-          getRuntimeServiceGetConversationQueryOptions(
-            this.instanceId,
-            realConversationId,
-          ),
-        );
-
-      const finalConversation = conversationResponse.conversation;
-      if (!finalConversation) {
-        throw new Error("Could not fetch the conversation.");
-      }
-
-      // Update conversation list cache
-      const listConversationsKey = getRuntimeServiceListConversationsQueryKey(
-        this.instanceId,
-      );
-      queryClient.setQueryData<V1ListConversationsResponse>(
-        listConversationsKey,
-        (old) => {
-          const conversations = old?.conversations ?? [];
-          conversations.unshift(finalConversation);
-          return { ...old, conversations };
-        },
-      );
-
-      // Switch to the real conversation
-      await this.conversationSelector.selectConversation(realConversationId);
-    } catch (error) {
-      console.error("Failed to start new conversation:", error);
-      throw error;
-    } finally {
-      // Clear optimistic state
-      this.pendingMessage.set(null);
-    }
   }
 }

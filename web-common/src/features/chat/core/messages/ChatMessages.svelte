@@ -10,24 +10,15 @@
 
   let messagesContainer: HTMLDivElement;
 
-  $: pendingMessage = chat.pendingMessage;
   $: currentConversationStore = chat.getCurrentConversation();
-  $: getConversationQuery = $currentConversationStore?.getConversationQuery();
-  $: isSending = $currentConversationStore?.isSending;
+  $: currentConversation = $currentConversationStore;
+  $: getConversationQuery = currentConversation.getConversationQuery();
+  $: isSendingMessageStore = currentConversation.isSendingMessage;
 
   $: isConversationLoading =
-    !!$getConversationQuery?.isLoading && !$pendingMessage;
-  $: isResponseLoading = $currentConversationStore
-    ? $isSending
-    : !!$pendingMessage;
-
-  // Route between optimistic and real messages
-  $: messages =
-    $currentConversationStore === null
-      ? $pendingMessage
-        ? [$pendingMessage]
-        : []
-      : ($getConversationQuery?.data?.conversation?.messages ?? []);
+    !!$getConversationQuery.isLoading && !$isSendingMessageStore;
+  $: isResponseLoading = $isSendingMessageStore;
+  $: messages = $getConversationQuery.data?.conversation?.messages ?? [];
 
   // Auto-scroll to bottom when messages change or loading state changes
   afterUpdate(() => {

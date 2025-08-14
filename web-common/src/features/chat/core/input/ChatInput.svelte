@@ -9,33 +9,20 @@
 
   let textarea: HTMLTextAreaElement;
   let placeholder = "Ask about your data...";
-  let newConversationDraft = "";
 
-  $: pendingMessage = chat.pendingMessage;
   $: currentConversationStore = chat.getCurrentConversation();
-  $: getConversationQuery = $currentConversationStore?.getConversationQuery();
-  $: draftMessageStore = $currentConversationStore?.draftMessage;
-  $: isSendingStore = $currentConversationStore?.isSending;
+  $: currentConversation = $currentConversationStore;
+  $: getConversationQuery = currentConversation.getConversationQuery();
+  $: draftMessageStore = currentConversation.draftMessage;
+  $: isSendingMessageStore = currentConversation.isSendingMessage;
 
-  $: value =
-    $currentConversationStore && $draftMessageStore
-      ? $draftMessageStore
-      : newConversationDraft;
-
-  $: disabled =
-    $getConversationQuery?.isLoading ||
-    ($currentConversationStore ? $isSendingStore : !!$pendingMessage);
+  $: value = $draftMessageStore;
+  $: disabled = $getConversationQuery?.isLoading || $isSendingMessageStore;
 
   function handleInput(e: Event) {
     const target = e.target as HTMLTextAreaElement;
     const value = target.value;
-
-    if ($currentConversationStore) {
-      $currentConversationStore.draftMessage.set(value);
-    } else {
-      newConversationDraft = value;
-    }
-
+    draftMessageStore.set(value);
     autoResize();
   }
 
@@ -51,20 +38,7 @@
 
     // Message handling with input focus
     try {
-      if ($currentConversationStore) {
-        // Send message to existing conversation
-        await $currentConversationStore.sendMessage();
-      } else {
-        // No current conversation, start a new one with the input message
-        if (newConversationDraft.trim()) {
-          const createConversationPromise = chat.createConversation(
-            newConversationDraft.trim(),
-          );
-          newConversationDraft = ""; // Immediately clear the draft
-          await createConversationPromise;
-        }
-      }
-
+      await currentConversation.sendMessage();
       onSend();
     } catch (error) {
       console.error("Failed to send message:", error);

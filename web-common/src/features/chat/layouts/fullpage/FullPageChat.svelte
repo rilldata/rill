@@ -15,7 +15,9 @@
   });
 
   $: currentConversationStore = chat.getCurrentConversation();
-  $: getConversationQuery = $currentConversationStore?.getConversationQuery();
+  $: getConversationQuery = $currentConversationStore.getConversationQuery();
+  // Alternative:
+  // $: currentConversationQuery = chat.getCurrentConversationQuery();
 
   let chatInputComponent: ChatInput;
 

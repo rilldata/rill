@@ -1,16 +1,24 @@
+import { page } from "$app/stores";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
   getRuntimeServiceGetConversationQueryKey,
   getRuntimeServiceGetConversationQueryOptions,
+  getRuntimeServiceListConversationsQueryKey,
   runtimeServiceComplete,
   type RpcStatus,
   type V1CompleteResponse,
   type V1GetConversationResponse,
+  type V1ListConversationsResponse,
   type V1Message,
 } from "@rilldata/web-common/runtime-client";
 import { createQuery, type CreateQueryResult } from "@tanstack/svelte-query";
 import { derived, get, writable, type Readable } from "svelte/store";
-import { formatChatError, getOptimisticMessageId } from "./chat-utils";
+import {
+  detectAppContext,
+  formatChatError,
+  getOptimisticMessageId,
+  NEW_CONVERSATION_ID,
+} from "./chat-utils";
 
 /**
  * Individual conversation state management.
@@ -20,23 +28,16 @@ import { formatChatError, getOptimisticMessageId } from "./chat-utils";
  */
 export class Conversation {
   public readonly draftMessage = writable<string>("");
-  public readonly isSending = writable(false);
-  public readonly sendError = writable<string | null>(null);
+  public readonly isSendingMessage = writable(false);
+  public readonly errorMessage = writable<string | null>(null);
 
-  private constructor(
+  constructor(
     private readonly instanceId: string,
-    private readonly conversationId: string,
+    public readonly conversationId: string,
+    private readonly options?: {
+      onConversationCreated?: (conversationId: string) => void;
+    },
   ) {}
-
-  /**
-   * Create a Conversation instance for an existing conversation
-   */
-  static fromExistingId(
-    instanceId: string,
-    conversationId: string,
-  ): Conversation {
-    return new Conversation(instanceId, conversationId);
-  }
 
   // QUERIES
 
@@ -51,7 +52,7 @@ export class Conversation {
         undefined,
         {
           query: {
-            enabled: true,
+            enabled: this.conversationId !== NEW_CONVERSATION_ID,
           },
         },
       ),
@@ -60,12 +61,132 @@ export class Conversation {
   }
 
   get canSendMessage(): Readable<boolean> {
-    return derived([this.isSending], ([$isSending]) => !$isSending);
+    return derived([this.isSendingMessage], ([$isSending]) => !$isSending);
   }
 
   // ACTIONS
 
   async sendMessage(options?: {
+    onSuccess?: (response: V1CompleteResponse) => void;
+    onError?: (failedMessage: string) => void;
+  }): Promise<V1CompleteResponse> {
+    if (this.conversationId === NEW_CONVERSATION_ID) {
+      return await this.sendInitialMessage(options);
+    } else {
+      return await this.sendSubsequentMessage(options);
+    }
+  }
+
+  private async sendInitialMessage(options?: {
+    onSuccess?: (response: V1CompleteResponse) => void;
+    onError?: (failedMessage: string) => void;
+  }): Promise<V1CompleteResponse> {
+    const initialMessage = get(this.draftMessage);
+
+    if (!initialMessage.trim()) {
+      throw new Error("Cannot start a conversation with an empty message");
+    }
+
+    // 1. Optimistic UI updates
+    this.draftMessage.set("");
+    this.errorMessage.set(null);
+    this.isSendingMessage.set(true);
+
+    const getNewConversationQueryKey = getRuntimeServiceGetConversationQueryKey(
+      this.instanceId,
+      this.conversationId,
+    );
+
+    // 2. Cancel outgoing refetches and snapshot previous value
+    await queryClient.cancelQueries({
+      queryKey: getNewConversationQueryKey,
+    });
+
+    // 3. Optimistically add user message to the `GetConversation` query
+    const userMessage: V1Message = {
+      id: getOptimisticMessageId(),
+      role: "user" as const,
+      content: [{ text: initialMessage }],
+      createdOn: new Date().toISOString(),
+      updatedOn: new Date().toISOString(),
+    };
+
+    queryClient.setQueryData<V1GetConversationResponse>(
+      getNewConversationQueryKey,
+      () => {
+        return {
+          conversation: {
+            messages: [userMessage],
+            updatedOn: new Date().toISOString(),
+          },
+        };
+      },
+    );
+
+    try {
+      // Hit the `Complete` API with no `conversationId` to create a new conversation
+      const response = await runtimeServiceComplete(this.instanceId, {
+        conversationId: undefined, // New conversation
+        messages: [
+          {
+            role: "user" as const,
+            content: [{ text: initialMessage }],
+          },
+        ],
+        appContext: detectAppContext(get(page)) ?? undefined,
+      });
+
+      if (!response.conversationId) {
+        throw new Error("Did not receive a conversation ID from the server.");
+      }
+
+      const realConversationId = response.conversationId;
+
+      // Transition optimistic state to real conversation
+
+      // Fetch complete conversation data (including the conversation title)
+      const conversationResponse =
+        await queryClient.fetchQuery<V1GetConversationResponse>(
+          getRuntimeServiceGetConversationQueryOptions(
+            this.instanceId,
+            realConversationId,
+          ),
+        );
+
+      const finalConversation = conversationResponse.conversation;
+      if (!finalConversation) {
+        throw new Error("Could not fetch the conversation.");
+      }
+
+      // Update conversation list cache
+      const listConversationsKey = getRuntimeServiceListConversationsQueryKey(
+        this.instanceId,
+      );
+      queryClient.setQueryData<V1ListConversationsResponse>(
+        listConversationsKey,
+        (old) => {
+          const conversations = old?.conversations ?? [];
+          conversations.unshift(finalConversation);
+          return { ...old, conversations };
+        },
+      );
+
+      options?.onSuccess?.(response);
+
+      // Call the conversation created callback to promote this to a real conversation
+      this.options?.onConversationCreated?.(realConversationId);
+
+      // Reset the `GetNewConversation` query cache
+      queryClient.removeQueries({ queryKey: getNewConversationQueryKey });
+
+      return response;
+    } catch (error) {
+      console.error("Failed to start new conversation:", error);
+      throw error;
+    }
+  }
+
+  private async sendSubsequentMessage(options?: {
     onSuccess?: (response: V1CompleteResponse) => void;
     onError?: (failedMessage: string) => void;
   }): Promise<V1CompleteResponse> {
@@ -76,8 +197,8 @@ export class Conversation {
 
     // 1. Optimistic UI updates
     this.draftMessage.set("");
-    this.sendError.set(null);
-    this.isSending.set(true);
+    this.errorMessage.set(null);
+    this.isSendingMessage.set(true);
 
     const cacheKey = getRuntimeServiceGetConversationQueryKey(
       this.instanceId,
@@ -124,7 +245,7 @@ export class Conversation {
       });
 
       // 5. On success, clear draft, invalidate query, and fire callback
-      this.isSending.set(false);
+      this.isSendingMessage.set(false);
       queryClient.invalidateQueries({ queryKey: cacheKey });
       options?.onSuccess?.(response);
 
@@ -136,8 +257,8 @@ export class Conversation {
       }
 
       const errorMessage = formatChatError(error as Error);
-      this.sendError.set(errorMessage);
-      this.isSending.set(false);
+      this.errorMessage.set(errorMessage);
+      this.isSendingMessage.set(false);
 
       // Fire the error callback
       options?.onError?.(text);

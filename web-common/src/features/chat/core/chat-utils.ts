@@ -14,6 +14,8 @@ import type { Page } from "@sveltejs/kit";
 // ID GENERATION
 // =============================================================================
 
+export const NEW_CONVERSATION_ID = "new";
+
 const OPTIMISTIC_MESSAGE_ID_PREFIX = "optimistic-message-";
 
 export function getOptimisticMessageId(): string {

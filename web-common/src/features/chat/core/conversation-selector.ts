@@ -10,6 +10,7 @@ import { goto } from "$app/navigation";
 import { page } from "$app/stores";
 import { derived, get, type Readable, type Writable } from "svelte/store";
 import { sessionStorageStore } from "../../../lib/store-utils/session-storage";
+import { NEW_CONVERSATION_ID } from "./chat-utils";
 
 // =============================================================================
 // CORE INTERFACE
@@ -24,9 +25,9 @@ import { sessionStorageStore } from "../../../lib/store-utils/session-storage";
 export interface ConversationSelector {
   /**
    * Single reactive source of truth for current conversation ID
-   * null indicates "new conversation" state
+   * NEW_CONVERSATION_ID indicates "new conversation" state
    */
-  readonly currentConversationId: Readable<string | null>;
+  readonly currentConversationId: Readable<string>;
 
   /**
    * Navigate to a specific existing conversation
@@ -60,13 +61,13 @@ export class URLConversationSelector implements ConversationSelector {
   // Single reactive source of truth
   readonly currentConversationId = derived(
     page,
-    ($page) => $page.params.conversationId || null,
+    ($page) => $page.params.conversationId || NEW_CONVERSATION_ID,
   );
 
   // Derived convenience property
   readonly isNewConversation = derived(
     this.currentConversationId,
-    ($id) => $id === null,
+    ($id) => $id === NEW_CONVERSATION_ID,
   );
 
   async selectConversation(id: string): Promise<void> {
@@ -101,10 +102,10 @@ export class URLConversationSelector implements ConversationSelector {
 export class BrowserStorageConversationSelector
   implements ConversationSelector
 {
-  private store: Writable<string | null>;
+  private store: Writable<string>;
 
   // Expose store as readonly reactive source
-  readonly currentConversationId: Readable<string | null>;
+  readonly currentConversationId: Readable<string>;
   readonly isNewConversation: Readable<boolean>;
 
   constructor() {
@@ -113,14 +114,17 @@ export class BrowserStorageConversationSelector
     const organization = currentPage.params.organization || "";
     const project = currentPage.params.project || "";
 
-    this.store = sessionStorageStore<string | null>(
+    this.store = sessionStorageStore<string>(
       `sidebar-conversation-id-${organization}-${project}`,
-      null,
+      NEW_CONVERSATION_ID,
     );
 
     // Expose as readonly reactive properties
     this.currentConversationId = { subscribe: this.store.subscribe };
-    this.isNewConversation = derived(this.store, ($id) => $id === null);
+    this.isNewConversation = derived(
+      this.store,
+      ($id) => $id === NEW_CONVERSATION_ID,
+    );
   }
 
   async selectConversation(id: string): Promise<void> {
@@ -128,14 +132,14 @@ export class BrowserStorageConversationSelector
   }
 
   async clearSelection(): Promise<void> {
-    this.store.set(null);
+    this.store.set(NEW_CONVERSATION_ID);
   }
 
   /**
    * Optional: Handle external conversation updates
    * This allows the selector to sync when conversation selection changes externally
    */
-  onConversationUpdate(conversationId: string | null): void {
+  onConversationUpdate(conversationId: string): void {
     this.store.set(conversationId);
   }
 }
