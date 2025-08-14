@@ -8,6 +8,7 @@
     setGithubData,
   } from "@rilldata/web-admin/features/projects/github/GithubData";
   import GithubRepoSelectionDialog from "@rilldata/web-admin/features/projects/github/GithubRepoSelectionDialog.svelte";
+  import NewGithubConnectionDialog from "@rilldata/web-admin/features/projects/github/NewGithubConnectionDialog.svelte";
   import { useGithubLastSynced } from "@rilldata/web-admin/features/projects/selectors";
   import { Button, IconButton } from "@rilldata/web-common/components/button";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
@@ -161,24 +162,11 @@
             Learn more ->
           </a>
         </span>
-        <ConnectToGithubButton
-          onContinue={confirmConnectToGithub}
-          loading={$userStatus.isFetching}
-          {isGithubConnected}
-        />
+        <NewGithubConnectionDialog {organization} {project} />
       {/if}
     </div>
   </div>
 {/if}
-
-<GithubRepoSelectionDialog
-  bind:open={$repoSelectionOpen}
-  currentGithubRemote={$proj.data?.project?.gitRemote}
-  currentSubpath={$proj.data?.project?.subpath}
-  currentBranch={$proj.data?.project?.prodBranch}
-  {organization}
-  {project}
-/>
 
 <DisconnectProjectConfirmDialog
   bind:open={disconnectConfirmOpen}

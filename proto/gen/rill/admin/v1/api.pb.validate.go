@@ -28919,6 +28919,8 @@ func (m *ConnectProjectToGithubRequest) validate(all bool) error {
 
 	// no validation rules for Force
 
+	// no validation rules for Create
+
 	if len(errors) > 0 {
 		return ConnectProjectToGithubRequestMultiError(errors)
 	}
