@@ -32,13 +32,14 @@ import { EntityType } from "../../entity-management/types";
 import { EMPTY_PROJECT_TITLE } from "../../welcome/constants";
 import { isProjectInitialized } from "../../welcome/is-project-initialized";
 import { compileSourceYAML, maybeRewriteToDuckDb } from "../sourceUtils";
+import { OLAP_ENGINES } from "./constants";
 
 interface AddDataFormValues {
   // name: string; // Commenting out until we add user-provided names for Connectors
   [key: string]: unknown;
 }
 
-export async function submitAddSourceForm(
+export async function submitAddSourceOrConnectorForm(
   queryClient: QueryClient,
   connector: V1ConnectorDriver,
   formValues: AddDataFormValues,
@@ -51,32 +52,74 @@ export async function submitAddSourceForm(
     formValues,
   );
 
-  // Make a new <source>.yaml file
-  const newSourceFilePath = getFileAPIPathFromNameAndType(
-    formValues.name as string,
-    EntityType.Table,
-  );
-  await runtimeServicePutFile(instanceId, {
-    path: newSourceFilePath,
-    blob: compileSourceYAML(rewrittenConnector, rewrittenFormValues),
-    create: true,
-    createOnly: false, // The modal might be opened from a YAML file with placeholder text, so the file might already exist
-  });
+  // Check if the connector was rewritten to DuckDB
+  const isRewrittenToDuckDb = rewrittenConnector.name === "duckdb";
 
-  // Create or update the `.env` file
-  await runtimeServicePutFile(instanceId, {
-    path: ".env",
-    blob: await updateDotEnvWithSecrets(
-      queryClient,
-      rewrittenConnector,
-      rewrittenFormValues,
-      "source",
-    ),
-    create: true,
-    createOnly: false,
-  });
+  if (isRewrittenToDuckDb) {
+    // Connectors that get rewritten to DuckDB (GCS, S3, Azure, etc.) create source files
+    const newSourceName = getName(
+      connector.name as string,
+      fileArtifacts.getNamesForKind(ResourceKind.Source),
+    );
 
-  await goto(`/files/${newSourceFilePath}`);
+    const newSourceFilePath = getFileAPIPathFromNameAndType(
+      newSourceName,
+      EntityType.Table,
+    );
+    await runtimeServicePutFile(instanceId, {
+      path: newSourceFilePath,
+      blob: compileSourceYAML(rewrittenConnector, rewrittenFormValues),
+      create: true,
+      createOnly: false,
+    });
+
+    // Create or update the `.env` file
+    await runtimeServicePutFile(instanceId, {
+      path: ".env",
+      blob: await updateDotEnvWithSecrets(
+        queryClient,
+        rewrittenConnector,
+        rewrittenFormValues,
+        "source",
+      ),
+      create: true,
+      createOnly: false,
+    });
+
+    await goto(`/files/${newSourceFilePath}`);
+  } else {
+    // Connectors that don't get rewritten (BigQuery, Athena, etc.) create connector files
+    const newConnectorName = getName(
+      connector.name as string,
+      fileArtifacts.getNamesForKind(ResourceKind.Connector),
+    );
+
+    const newConnectorFilePath = getFileAPIPathFromNameAndType(
+      newConnectorName,
+      EntityType.Connector,
+    );
+    await runtimeServicePutFile(instanceId, {
+      path: newConnectorFilePath,
+      blob: compileConnectorYAML(connector, formValues),
+      create: true,
+      createOnly: false,
+    });
+
+    // Create or update the `.env` file
+    await runtimeServicePutFile(instanceId, {
+      path: ".env",
+      blob: await updateDotEnvWithSecrets(
+        queryClient,
+        connector,
+        formValues,
+        "connector",
+      ),
+      create: true,
+      createOnly: false,
+    });
+
+    await goto(`/files/${newConnectorFilePath}`);
+  }
 }
 
 export async function submitAddOLAPConnectorForm(
@@ -167,19 +210,24 @@ export async function submitAddOLAPConnectorForm(
     throw new Error(errorMessage);
   }
 
-  // Test the connection to the OLAP database
+  // Test the connection to the OLAP database (only for OLAP_ENGINES connectors)
   // If the connection test fails, rollback the changes
-  const result = await testOLAPConnector(instanceId, connector.name as string);
-  if (!result.success) {
-    await rollbackConnectorChanges(
+  if (OLAP_ENGINES.includes(connector.name as string)) {
+    const result = await testOLAPConnector(
       instanceId,
-      newConnectorFilePath,
-      originalEnvBlob,
+      connector.name as string,
     );
-    throw {
-      message: result.error || "Unable to establish a connection",
-      details: result.details,
-    };
+    if (!result.success) {
+      await rollbackConnectorChanges(
+        instanceId,
+        newConnectorFilePath,
+        originalEnvBlob,
+      );
+      throw {
+        message: result.error || "Unable to establish a connection",
+        details: result.details,
+      };
+    }
   }
 
   /**
@@ -187,13 +235,19 @@ export async function submitAddOLAPConnectorForm(
    * Update the project configuration and navigate to the new connector
    */
 
-  // Update the `rill.yaml` file
-  await runtimeServicePutFile(instanceId, {
-    path: "rill.yaml",
-    blob: await updateRillYAMLWithOlapConnector(queryClient, newConnectorName),
-    create: true,
-    createOnly: false,
-  });
+  // Update the `rill.yaml` file only for actual OLAP connectors (ClickHouse, Druid, Pinot)
+  // Data warehouses like BigQuery, Snowflake, etc. should not be set as olap_connector
+  if (OLAP_ENGINES.includes(connector.name as string)) {
+    await runtimeServicePutFile(instanceId, {
+      path: "rill.yaml",
+      blob: await updateRillYAMLWithOlapConnector(
+        queryClient,
+        newConnectorName,
+      ),
+      create: true,
+      createOnly: false,
+    });
+  }
 
   // Go to the new connector file
   await goto(`/files/${newConnectorFilePath}`);

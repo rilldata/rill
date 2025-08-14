@@ -49,13 +49,13 @@ var spec = drivers.Spec{
 			Placeholder: "/path/to/main.db",
 		},
 	},
-	// Important: Any edits to the below properties must be accompanied by changes to the client-side form validation schemas.
+	// NOTE: reinstated SourceProperties to address https://github.com/rilldata/rill/pull/7726#discussion_r2271449022
 	SourceProperties: []*drivers.PropertySpec{
 		{
-			Key:         "db",
+			Key:         "path",
 			Type:        drivers.StringPropertyType,
 			Required:    true,
-			DisplayName: "DB",
+			DisplayName: "Path",
 			Description: "Path to DuckDB database",
 			Placeholder: "/path/to/duckdb.db",
 		},

@@ -19,7 +19,7 @@
   import { humanReadableErrorMessage } from "../errors/errors";
   import {
     submitAddOLAPConnectorForm,
-    submitAddSourceForm,
+    submitAddSourceOrConnectorForm,
   } from "./submitAddDataForm";
   import type { AddDataFormType, ConnectorType } from "./types";
   import { dsnSchema, getYupSchema } from "./yupSchemas";
@@ -157,7 +157,7 @@
     const values = event.form.data;
     try {
       if (formType === "source") {
-        await submitAddSourceForm(queryClient, connector, values);
+        await submitAddSourceOrConnectorForm(queryClient, connector, values);
       } else {
         await submitAddOLAPConnectorForm(queryClient, connector, values);
       }
