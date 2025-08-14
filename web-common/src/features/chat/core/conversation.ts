@@ -140,6 +140,8 @@ export class Conversation {
         throw new Error("Did not receive a conversation ID from the server.");
       }
 
+      this.isSendingMessage.set(false);
+
       const realConversationId = response.conversationId;
 
       // Transition optimistic state to real conversation
