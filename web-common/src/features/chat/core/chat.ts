@@ -1,9 +1,7 @@
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
-  getRuntimeServiceGetConversationQueryOptions,
   getRuntimeServiceListConversationsQueryOptions,
   type RpcStatus,
-  type V1GetConversationResponse,
   type V1ListConversationsResponse,
 } from "@rilldata/web-common/runtime-client";
 import { createQuery, type CreateQueryResult } from "@tanstack/svelte-query";
@@ -103,24 +101,6 @@ export class Chat {
         return conversation;
       },
     );
-  }
-
-  // This method is an optimization for getting a `GetConversation` QueryObserver for the current conversation
-  // However, this admittedly blurs the boundary between the `Chat` class and the `Conversation` class (it's "feature creep")
-  getCurrentConversationQuery(): CreateQueryResult<
-    V1GetConversationResponse,
-    RpcStatus
-  > {
-    const queryOptions = derived(
-      [this.conversationSelector.currentConversationId],
-      ([$conversationId]) =>
-        getRuntimeServiceGetConversationQueryOptions(
-          this.instanceId,
-          $conversationId,
-        ),
-    );
-
-    return createQuery(queryOptions, queryClient);
   }
 
   // ACTIONS

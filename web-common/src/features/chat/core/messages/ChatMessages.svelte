@@ -1,5 +1,6 @@
 <script lang="ts">
   import { afterUpdate } from "svelte";
+  import AlertCircle from "../../../../components/icons/AlertCircle.svelte";
   import LoadingSpinner from "../../../../components/icons/LoadingSpinner.svelte";
   import DelayedSpinner from "../../../entity-management/DelayedSpinner.svelte";
   import type { Chat } from "../chat";
@@ -14,9 +15,9 @@
   $: currentConversation = $currentConversationStore;
   $: getConversationQuery = currentConversation.getConversationQuery();
   $: isSendingMessageStore = currentConversation.isSendingMessage;
-
   $: isConversationLoading =
     !!$getConversationQuery.isLoading && !$isSendingMessageStore;
+  $: conversationQueryError = currentConversation.getConversationQueryError();
   $: isResponseLoading = $isSendingMessageStore;
   $: messages = $getConversationQuery.data?.conversation?.messages ?? [];
 
@@ -44,6 +45,11 @@
   {#if isConversationLoading}
     <div class="chat-loading">
       <DelayedSpinner isLoading={isConversationLoading} size="24px" />
+    </div>
+  {:else if $conversationQueryError}
+    <div class="chat-error">
+      <AlertCircle size="1.2em" />
+      Unable to load conversation: {$conversationQueryError}
     </div>
   {:else if messages.length === 0}
     <div class="chat-empty">
@@ -117,5 +123,19 @@
     gap: 0.5rem;
     padding: 1rem;
     font-size: 0.875rem;
+  }
+
+  .chat-error {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+    color: #991b1b;
+    background: #fef7f7;
+    border-left: 3px solid #f87171;
+    border-radius: 0.375rem;
+    margin: 0.5rem 1rem 0 1rem;
+    box-sizing: border-box;
   }
 </style>

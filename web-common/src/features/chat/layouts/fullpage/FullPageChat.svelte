@@ -1,6 +1,5 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import AlertCircle from "../../../../components/icons/AlertCircle.svelte";
   import { runtime } from "../../../../runtime-client/runtime-store";
   import { Chat } from "../../core/chat";
   import ChatFooter from "../../core/input/ChatFooter.svelte";
@@ -13,11 +12,6 @@
   $: chat = new Chat(instanceId, {
     conversationState: "url",
   });
-
-  $: currentConversationStore = chat.getCurrentConversation();
-  $: getConversationQuery = $currentConversationStore.getConversationQuery();
-  // Alternative:
-  // $: currentConversationQuery = chat.getCurrentConversationQuery();
 
   let chatInputComponent: ChatInput;
 
@@ -56,12 +50,6 @@
 
     <div class="chat-input-section">
       <div class="chat-input-wrapper">
-        {#if $getConversationQuery?.error}
-          <div class="chat-input-error">
-            <AlertCircle size="1.2em" />
-            {$getConversationQuery?.error.message}
-          </div>
-        {/if}
         <ChatInput
           {chat}
           onSend={onMessageSend}
@@ -144,20 +132,6 @@
   .chat-fullpage :global(.chat-empty-subtitle) {
     font-size: 1rem;
     color: #6b7280;
-  }
-
-  .chat-input-error {
-    display: flex;
-    align-items: flex-start;
-    gap: 0.5rem;
-    padding: 0.75rem 1rem;
-    font-size: 0.875rem;
-    color: #991b1b;
-    background: #fef7f7;
-    border-left: 3px solid #f87171;
-    border-radius: 0.375rem;
-    margin: 0 1rem 0.5rem 1rem;
-    box-sizing: border-box;
   }
 
   /* Responsive behavior for full-page layout */

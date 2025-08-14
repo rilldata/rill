@@ -1,5 +1,4 @@
 <script lang="ts">
-  import AlertCircle from "../../../../components/icons/AlertCircle.svelte";
   import Resizer from "../../../../layout/Resizer.svelte";
   import { runtime } from "../../../../runtime-client/runtime-store";
   import { Chat } from "../../core/chat";
@@ -19,10 +18,6 @@
   $: chat = new Chat(instanceId, {
     conversationState: "browserStorage",
   });
-
-  $: pendingMessage = chat.pendingMessage;
-  $: currentConversationStore = chat.getCurrentConversation();
-  $: getConversationQuery = $currentConversationStore?.getConversationQuery();
 
   let chatInputComponent: ChatInput;
 
@@ -54,12 +49,6 @@
       />
     </div>
     <ChatMessages {chat} layout="sidebar" />
-    {#if $getConversationQuery?.error}
-      <div class="chat-input-error">
-        <AlertCircle size="1.2em" />
-        {$getConversationQuery?.error.message}
-      </div>
-    {/if}
     <ChatInput {chat} bind:this={chatInputComponent} onSend={onMessageSend} />
     <ChatFooter />
   </div>
@@ -88,19 +77,5 @@
   .chatbot-header-container {
     position: relative;
     flex-shrink: 0;
-  }
-
-  .chat-input-error {
-    display: flex;
-    align-items: flex-start;
-    gap: 0.5rem;
-    padding: 0.75rem 1rem;
-    font-size: 0.875rem;
-    color: #991b1b;
-    background: #fef7f7;
-    border-left: 3px solid #f87171;
-    border-radius: 0.375rem;
-    margin: 0.5rem 1rem 0 1rem;
-    box-sizing: border-box;
   }
 </style>

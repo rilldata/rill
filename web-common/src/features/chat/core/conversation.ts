@@ -13,6 +13,7 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import { createQuery, type CreateQueryResult } from "@tanstack/svelte-query";
 import { derived, get, writable, type Readable } from "svelte/store";
+import type { HTTPError } from "../../../runtime-client/fetchWrapper";
 import {
   detectAppContext,
   formatChatError,
@@ -57,6 +58,15 @@ export class Conversation {
         },
       ),
       queryClient,
+    );
+  }
+
+  getConversationQueryError(): Readable<string | null> {
+    return derived(
+      this.getConversationQuery(),
+      ($getConversationQuery) =>
+        ($getConversationQuery.error as HTTPError)?.response?.data?.message ??
+        null,
     );
   }
 
