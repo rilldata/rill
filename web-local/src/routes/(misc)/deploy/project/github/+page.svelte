@@ -48,11 +48,14 @@
     <Tooltip.Trigger>
       <InfoCircle />
     </Tooltip.Trigger>
-    <Tooltip.Content side="right" sideOffset={8} class="w-80">
+    <Tooltip.Content
+      side="right"
+      sideOffset={8}
+      class="w-80 bg-gray-700 dark:bg-gray-900 shadow-md text-surface"
+    >
       Choosing not to link to this repo can create a scenario where your Rill
       Cloud project will be out of sync with your self-managed Git repo. You can
-      also link to this repo from the Project Status page in Rill Cloud to
-      prevent merge issues
+      always link to this repo from the Project Status page in Rill Cloud.
     </Tooltip.Content>
   </Tooltip.Root>
 </Button>

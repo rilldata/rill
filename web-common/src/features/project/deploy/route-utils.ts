@@ -83,7 +83,8 @@ export function getDeployRouteForLocalRepo(orgName: string) {
       deployUrl.search = "";
 
       const connectUrl = new URL($localGitRepoStatus.data.grantAccessUrl);
-      connectUrl.searchParams.set("remote", deployUrl.toString());
+      connectUrl.searchParams.set("remote", $gitStatus.data?.githubUrl ?? "");
+      connectUrl.searchParams.set("redirect", deployUrl.toString());
       return connectUrl.toString();
     },
   );

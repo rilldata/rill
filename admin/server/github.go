@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -44,10 +45,11 @@ import (
 )
 
 const (
-	githubcookieName        = "github_auth"
-	githubcookieFieldState  = "github_state"
-	githubcookieFieldRemote = "github_remote"
-	archivePullTimeout      = 10 * time.Minute
+	githubcookieName          = "github_auth"
+	githubcookieFieldState    = "github_state"
+	githubcookieFieldRemote   = "github_remote"
+	githubcookieFieldRedirect = "github_redirect"
+	archivePullTimeout        = 10 * time.Minute
 )
 
 var allowedPaths = []string{
@@ -224,7 +226,7 @@ func (s *Server) GetGithubRepoStatus(ctx context.Context, req *adminv1.GetGithub
 			// may be user authorised from another username
 			res := &adminv1.GetGithubRepoStatusResponse{
 				HasAccess:      false,
-				GrantAccessUrl: s.admin.URLs.GithubRetryAuthUI(req.Remote, user.GithubUsername),
+				GrantAccessUrl: s.admin.URLs.GithubRetryAuthUI(req.Remote, user.GithubUsername, ""),
 			}
 			return res, nil
 		}
@@ -553,6 +555,15 @@ func (s *Server) registerGithubEndpoints(mux *http.ServeMux) {
 	mux.Handle("/github/", observability.Middleware("admin", s.logger, inner))
 }
 
+type githubConnectState struct {
+	Remote   string `json:"remote"`
+	Redirect string `json:"redirect"`
+}
+
+func (g *githubConnectState) isEmpty() bool {
+	return g.Remote == "" && g.Redirect == ""
+}
+
 // githubConnect starts an installation flow of the Github App.
 // It's implemented as a non-gRPC endpoint mounted directly on /github/connect.
 // It redirects the user to Github to authorize Rill to access one or more repositories.
@@ -567,10 +578,20 @@ func (s *Server) githubConnect(w http.ResponseWriter, r *http.Request) {
 	}
 
 	query := r.URL.Query()
+
 	remote := query.Get("remote") // May not be set
+	redirect, _ := url.QueryUnescape(query.Get("redirect"))
+	// Ignore escape error, param will be omitted.
 
 	// Redirect to Github App for installation
-	redirectURL := s.githubAppInstallationURL(remote)
+	redirectURL, _ := s.githubAppInstallationURL(githubConnectState{
+		Remote:   remote,
+		Redirect: redirect,
+	})
+	// TODO: what error to show here? Could show the unescape error as well.
+
+	fmt.Println("Using github redirect", redirectURL)
+
 	http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
 }
 
@@ -663,18 +684,28 @@ func (s *Server) githubConnectCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	account, repo, ok := gitutil.SplitGithubRemote(remoteURL)
+	remoteURL, err = url.QueryUnescape(remoteURL)
+	if err != nil {
+		s.logger.Error("failed to parse state", zap.String("remote_url", remoteURL), zap.Error(err))
+		return
+	}
+
+	var state githubConnectState
+	err = json.Unmarshal([]byte(remoteURL), &state)
+	if err != nil {
+		s.logger.Error("failed to parse state", zap.String("remote_url", remoteURL), zap.Error(err))
+		return
+	}
+
+	fmt.Println("Got github state", remoteURL, state)
+
+	account, repo, ok := gitutil.SplitGithubRemote(state.Remote)
 	if !ok {
 		// request without state can come in multiple ways like
 		// 	- if user changes app installation directly on the settings page
 		//  - if admin user accepts the installation request. there could be a custom redirect url here.
-		if strings.HasPrefix(remoteURL, "http") {
-			decodedUrl, err := url.QueryUnescape(remoteURL)
-			if err != nil {
-				s.logger.Error("failed to unescape github remote url", zap.String("remote_url", remoteURL), zap.Error(err))
-			} else {
-				http.Redirect(w, r, decodedUrl, http.StatusTemporaryRedirect)
-			}
+		if state.Redirect != "" {
+			http.Redirect(w, r, state.Redirect, http.StatusTemporaryRedirect)
 		} else {
 			http.Redirect(w, r, s.admin.URLs.GithubConnectSuccessUI(false), http.StatusTemporaryRedirect)
 		}
@@ -683,7 +714,24 @@ func (s *Server) githubConnectCallback(w http.ResponseWriter, r *http.Request) {
 
 	if setupAction == "request" {
 		// access requested
-		redirectURL := s.admin.URLs.GithubConnectRequestUI(remoteURL)
+		redirectURL := s.admin.URLs.GithubConnectRequestUI(state.Remote)
+		http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
+		return
+	}
+
+	// install/update setupAction
+	// Verify that user installed the app on the right repo and we have access now
+	// This needs to come before collaborator check for private repos.
+	_, err = s.admin.GetGithubInstallation(ctx, state.Remote)
+	if err != nil {
+		if !errors.Is(err, admin.ErrGithubInstallationNotFound) {
+			http.Error(w, fmt.Sprintf("failed to check github repo status: %s", err), http.StatusInternalServerError)
+			return
+		}
+
+		// no access
+		// Redirect to UI retry page
+		redirectURL := s.admin.URLs.GithubConnectRetryUI(state.Remote, state.Redirect)
 		http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
 		return
 	}
@@ -697,29 +745,17 @@ func (s *Server) githubConnectCallback(w http.ResponseWriter, r *http.Request) {
 
 	if !isCollaborator {
 		// Redirect to retry page
-		redirectURL := s.admin.URLs.GithubRetryAuthUI(remoteURL, user.GithubUsername)
+		redirectURL := s.admin.URLs.GithubRetryAuthUI(state.Remote, user.GithubUsername, state.Redirect)
 		http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
 		return
 	}
 
-	// install/update setupAction
-	// Verify that user installed the app on the right repo and we have access now
-	_, err = s.admin.GetGithubInstallation(ctx, remoteURL)
-	if err != nil {
-		if !errors.Is(err, admin.ErrGithubInstallationNotFound) {
-			http.Error(w, fmt.Sprintf("failed to check github repo status: %s", err), http.StatusInternalServerError)
-			return
-		}
-
-		// no access
-		// Redirect to UI retry page
-		redirectURL := s.admin.URLs.GithubConnectRetryUI(remoteURL)
-		http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
-		return
+	// Redirect to UI success page or the redirect param
+	if state.Redirect != "" {
+		http.Redirect(w, r, state.Redirect, http.StatusTemporaryRedirect)
+	} else {
+		http.Redirect(w, r, s.admin.URLs.GithubConnectSuccessUI(false), http.StatusTemporaryRedirect)
 	}
-
-	// Redirect to UI success page
-	http.Redirect(w, r, s.admin.URLs.GithubConnectSuccessUI(false), http.StatusTemporaryRedirect)
 }
 
 // githubAuthLogin starts user authorization of github app.
@@ -753,6 +789,10 @@ func (s *Server) githubAuth(w http.ResponseWriter, r *http.Request) {
 	remote = normalizeGitRemote(remote) // Backwards compatibility
 	if remote != "" {
 		sess.Values[githubcookieFieldRemote] = remote
+	}
+	redirect := r.URL.Query().Get("redirect")
+	if redirect != "" {
+		sess.Values[githubcookieFieldRedirect] = redirect
 	}
 
 	// Save cookie
@@ -861,6 +901,12 @@ func (s *Server) githubAuthCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	redirect := ""
+	if value, ok := sess.Values[githubcookieFieldRedirect]; ok {
+		redirect = value.(string)
+	}
+	delete(sess.Values, githubcookieFieldRedirect)
+
 	ok, err = s.isCollaborator(ctx, account, repo, c, gitUser)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("user identification failed with error %s", err.Error()), http.StatusUnauthorized)
@@ -869,7 +915,7 @@ func (s *Server) githubAuthCallback(w http.ResponseWriter, r *http.Request) {
 
 	if !ok {
 		// Redirect to retry page
-		redirectURL := s.admin.URLs.GithubRetryAuthUI(remote, user.GithubUsername)
+		redirectURL := s.admin.URLs.GithubRetryAuthUI(remote, user.GithubUsername, redirect)
 		http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
 	}
 
@@ -879,8 +925,13 @@ func (s *Server) githubAuthCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Redirect to UI success page
-	http.Redirect(w, r, s.admin.URLs.GithubConnectSuccessUI(false), http.StatusTemporaryRedirect)
+	// Redirect to UI success page or the redirect param
+	if redirect != "" {
+		http.Redirect(w, r, redirect, http.StatusTemporaryRedirect)
+	} else {
+		http.Redirect(w, r, s.admin.URLs.GithubConnectSuccessUI(false), http.StatusTemporaryRedirect)
+	}
+
 }
 
 // githubWebhook is called by Github to deliver events about new pushes, pull requests, changes to a repository, etc.
@@ -1230,12 +1281,18 @@ func (s *Server) pushToGit(ctx context.Context, copyData func(projPath string) e
 	return nil
 }
 
-func (s *Server) githubAppInstallationURL(remote string) string {
+func (s *Server) githubAppInstallationURL(state githubConnectState) (string, error) {
 	res := fmt.Sprintf("https://github.com/apps/%s/installations/new", s.opts.GithubAppName)
-	if remote != "" {
-		res = urlutil.MustWithQuery(res, map[string]string{"state": remote})
+	if state.isEmpty() {
+		return res, nil
 	}
-	return res
+
+	stateJson, err := json.Marshal(state)
+	if err != nil {
+		return res, fmt.Errorf("failed to marshal github app installation state: %w", err)
+	}
+
+	return urlutil.MustWithQuery(res, map[string]string{"state": string(stateJson)}), nil
 }
 
 func (s *Server) gitSignFromClaims(ctx context.Context, claims auth.Claims) (*object.Signature, error) {
