@@ -57,6 +57,24 @@ export function getLastConversationId(
   }
 }
 
+/**
+ * Stores the conversation ID for the given project in sessionStorage.
+ * Uses JSON serialization for consistency with the getter function.
+ */
+export function setLastConversationId(
+  organization: string,
+  project: string,
+  conversationId: string | null,
+): void {
+  const storageKey = getConversationIdStorageKey(organization, project);
+
+  if (conversationId === null) {
+    sessionStorage.removeItem(storageKey);
+  } else {
+    sessionStorage.setItem(storageKey, JSON.stringify(conversationId));
+  }
+}
+
 // =============================================================================
 // FULLPAGE ACTIONS
 // =============================================================================

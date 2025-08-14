@@ -1,4 +1,7 @@
-import { getLastConversationId } from "@rilldata/web-common/features/chat/layouts/fullpage/fullpage-store";
+import {
+  getLastConversationId,
+  setLastConversationId,
+} from "@rilldata/web-common/features/chat/layouts/fullpage/fullpage-store";
 import { featureFlags } from "@rilldata/web-common/features/feature-flags.js";
 import { redirect } from "@sveltejs/kit";
 import { get } from "svelte/store";
@@ -21,9 +24,12 @@ export const load = async ({
 
   switch (route.id) {
     case "/[organization]/[project]/-/chat": {
-      // If user explicitly wants a new conversation, skip redirect logic
+      // If user explicitly wants a new conversation, clear stored ID and skip redirect logic
       const isExplicitNewConversation = url.searchParams.get("new") === "true";
-      if (isExplicitNewConversation) return;
+      if (isExplicitNewConversation) {
+        setLastConversationId(organization, project, null);
+        return;
+      }
 
       // Try to redirect to the last conversation
       const lastConversationId = getLastConversationId(organization, project);
@@ -44,6 +50,9 @@ export const load = async ({
       if (!conversationId?.trim()) {
         throw redirect(307, `/${organization}/${project}/-/chat`);
       }
+
+      // Store this conversation ID as the last accessed conversation
+      setLastConversationId(organization, project, conversationId);
 
       // Go to the conversation
       return;
