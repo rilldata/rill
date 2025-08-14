@@ -4,11 +4,10 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/spf13/cobra"
-
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/spf13/cobra"
 )
 
 func TablesCmd(ch *cmdutil.Helper) *cobra.Command {
