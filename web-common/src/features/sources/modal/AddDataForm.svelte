@@ -131,23 +131,6 @@
     );
   }
 
-  // Helper function to get default file extension for file-based connectors
-  function getDefaultFileExtension(connectorName: string): string {
-    switch (connectorName) {
-      case "gcs":
-      case "s3":
-      case "azure":
-      case "https":
-      case "local_file":
-        return "parquet"; // Default to parquet for better performance
-      case "sqlite":
-        return "db";
-      default:
-        return "csv";
-    }
-  }
-
-  // TODO: move to utils.ts
   // Compute disabled state for the submit button
   $: isSubmitDisabled = (() => {
     if (hasOnlyDsn() || connectionTab === "dsn") {
