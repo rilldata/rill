@@ -433,7 +433,7 @@ const config = {
           {
             from: '/concepts/bi-as-code',
             to: '/home/concepts/bi-as-code'
-          },
+          }
           // {
           //   from: '/old-page',
           //   to: '/new-page',
