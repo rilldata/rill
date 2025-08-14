@@ -16,7 +16,11 @@
     type SuperValidated,
   } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
-  import { inferSourceName } from "../sourceUtils";
+  import {
+    inferSourceName,
+    maybeRewriteToDuckDb,
+    compileSourceYAML,
+  } from "../sourceUtils";
   import { humanReadableErrorMessage } from "../errors/errors";
   import {
     submitAddConnectorForm,
@@ -127,6 +131,22 @@
     );
   }
 
+  // Helper function to get default file extension for file-based connectors
+  function getDefaultFileExtension(connectorName: string): string {
+    switch (connectorName) {
+      case "gcs":
+      case "s3":
+      case "azure":
+      case "https":
+      case "local_file":
+        return "parquet"; // Default to parquet for better performance
+      case "sqlite":
+        return "db";
+      default:
+        return "csv";
+    }
+  }
+
   // TODO: move to utils.ts
   // Compute disabled state for the submit button
   $: isSubmitDisabled = (() => {
@@ -208,13 +228,41 @@
     } else {
       const values =
         hasOnlyDsn() || connectionTab === "dsn" ? $dsnForm : $paramsForm;
-      return compileConnectorYAML(connector, values, {
-        fieldFilter: (property) => !property.noPrompt,
-        orderedProperties:
-          hasOnlyDsn() || connectionTab === "dsn"
-            ? filteredDsnProperties
-            : filteredParamsProperties,
-      });
+
+      let previewValues = { ...values };
+
+      if (connector.sourceProperties) {
+        for (const prop of connector.sourceProperties) {
+          if (prop.key && prop.required && !(prop.key in previewValues)) {
+            if (prop.placeholder) {
+              previewValues[prop.key] = prop.placeholder;
+            }
+          }
+        }
+      }
+
+      // Apply DuckDB rewrite logic for preview
+      const [rewrittenConnector, rewrittenFormValues] = maybeRewriteToDuckDb(
+        connector,
+        previewValues,
+      );
+
+      // Check if the connector was rewritten to DuckDB
+      const isRewrittenToDuckDb = rewrittenConnector.name === "duckdb";
+
+      if (isRewrittenToDuckDb) {
+        // Use compileSourceYAML for DuckDB-rewritten connectors
+        return compileSourceYAML(rewrittenConnector, rewrittenFormValues);
+      } else {
+        // Use compileConnectorYAML for regular connectors
+        return compileConnectorYAML(connector, values, {
+          fieldFilter: (property) => !property.noPrompt,
+          orderedProperties:
+            hasOnlyDsn() || connectionTab === "dsn"
+              ? filteredDsnProperties
+              : filteredParamsProperties,
+        });
+      }
     }
   })();
 
