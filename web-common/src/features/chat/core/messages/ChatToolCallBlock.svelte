@@ -1,6 +1,6 @@
 <script lang="ts">
-  import CaretDownIcon from "../../../components/icons/CaretDownIcon.svelte";
-  import ChevronRight from "../../../components/icons/ChevronRight.svelte";
+  import CaretDownIcon from "../../../../components/icons/CaretDownIcon.svelte";
+  import ChevronRight from "../../../../components/icons/ChevronRight.svelte";
 
   export let toolCall: any;
   export let toolResult: any = null;

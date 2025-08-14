@@ -7,7 +7,7 @@
   import { useExplore } from "@rilldata/web-common/features/explores/selectors";
   import { Button } from "../../components/button";
   import { runtime } from "../../runtime-client/runtime-store";
-  import ChatToggle from "../chat/ChatToggle.svelte";
+  import ChatToggle from "../chat/layouts/sidebar/ChatToggle.svelte";
   import ViewAsButton from "../dashboards/granular-access-policies/ViewAsButton.svelte";
   import {
     useDashboardPolicyCheck,
@@ -35,7 +35,7 @@
   );
   $: rillYamlPolicyCheck = useRillYamlPolicyCheck(instanceId);
 
-  const { readOnly, chat } = featureFlags;
+  const { readOnly, dashboardChat } = featureFlags;
 </script>
 
 <div class="flex gap-2 flex-shrink-0 ml-auto">
@@ -43,7 +43,7 @@
     <ViewAsButton />
   {/if}
   <StateManagersProvider {metricsViewName} {exploreName}>
-    {#if $chat}
+    {#if $dashboardChat}
       <ChatToggle />
     {/if}
     <GlobalDimensionSearch />
