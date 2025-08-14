@@ -37,15 +37,17 @@ type CanvasYAML struct {
 		Filters             *struct {
 			Dimensions []struct {
 				Dimension string   `yaml:"dimension"`
-				Values    []string `yaml:"values"`
-				Limit     *int     `yaml:"limit"`     // Optional limit for the number of values
-				Removable *bool    `yaml:"removable"` // Optional flag to indicate if the filter can be removed
+				Values    *[]string `yaml:"values"`
+				Limit     *int     `yaml:"limit"`     // Limit for the number of values
+				Removable *bool    `yaml:"removable"` // Flag to indicate if the filter can be removed
 			} `yaml:"dimensions"`
 			Measures []struct {
 				Measure     string   `yaml:"measure"`
-				Values      []string `yaml:"values"`
-				ByDimension *string  `yaml:"by_dimension"` // Optional dimension to filter by
-				Operator    string   `yaml:"operator"`     // Optional operator for the measure filter (e.g., "equals", "greater_than")
+				ByDimension *string  `yaml:"by_dimension"`
+				Operator    *string  `yaml:"operator"`     // Optional operator for the measure filter (e.g., "equals", "greater_than")
+				Values      *[]string `yaml:"values"`
+				Limit       *int     `yaml:"limit"`        // Limit for the number of values
+				Removable   *bool    `yaml:"removable"`    // Flag to indicate if the filter can be removed
 			} `yaml:"measures"`
 		} `yaml:"filters"`
 	} `yaml:"defaults"`
@@ -241,14 +243,73 @@ func (p *Parser) parseCanvas(node *Node) error {
 			return errors.New("can only set comparison_dimension when comparison_mode is 'dimension'")
 		}
 
+		var canvasFilters *runtimev1.CanvasDefaultFilters
+		if tmp.Defaults.Filters != nil {
+			// Parse dimension filters
+			dimensionFilters := make([]*runtimev1.CanvasDimensionFilter, len(tmp.Defaults.Filters.Dimensions))
+			for i, dimFilter := range tmp.Defaults.Filters.Dimensions {
+				filter := &runtimev1.CanvasDimensionFilter{
+					Dimension: dimFilter.Dimension,
+				}
+				if dimFilter.Values != nil {
+					filter.Values = *dimFilter.Values
+				}
+				if dimFilter.Limit != nil {
+					limit := uint32(*dimFilter.Limit)
+					filter.Limit = &limit
+				}
+				if dimFilter.Removable != nil {
+					filter.Removable = dimFilter.Removable
+				}
+				dimensionFilters[i] = filter
+			}
+
+			// Parse measure filters
+			measureFilters := make([]*runtimev1.CanvasMeasureFilter, len(tmp.Defaults.Filters.Measures))
+			for i, measureFilter := range tmp.Defaults.Filters.Measures {
+				filter := &runtimev1.CanvasMeasureFilter{
+					Measure: measureFilter.Measure,
+				}
+				if measureFilter.Values != nil {
+					// Convert string values to uint32 values for measure filters
+					values := make([]uint32, 0, len(*measureFilter.Values))
+					for j, val := range *measureFilter.Values {
+						// Parse string values as uint32 numbers for measure filters
+						parsed, err := strconv.ParseUint(val, 10, 32)
+						if err != nil {
+							return fmt.Errorf("invalid measure filter value %q at index %d: must be a valid number: %w", val, j, err)
+						}
+						values = append(values, uint32(parsed))
+					}
+					filter.Values = values
+				}
+				if measureFilter.Limit != nil {
+					limit := uint32(*measureFilter.Limit)
+					filter.Limit = &limit
+				}
+				if measureFilter.Removable != nil {
+					filter.Removable = measureFilter.Removable
+				}
+				if measureFilter.ByDimension != nil {
+					filter.ByDimension = measureFilter.ByDimension
+				}
+				if measureFilter.Operator != nil {
+					filter.Operator = measureFilter.Operator
+				}
+				measureFilters[i] = filter
+			}
+
+			canvasFilters = &runtimev1.CanvasDefaultFilters{
+				Dimensions: dimensionFilters,
+				Measures:   measureFilters,
+			}
+		}
+
 		defaultPreset = &runtimev1.CanvasPreset{
 			TimeRange:           pointerIfNotEmpty(tmp.Defaults.TimeRange),
 			ComparisonMode:      mode,
 			ComparisonDimension: pointerIfNotEmpty(tmp.Defaults.ComparisonDimension),
-			Filters: &runtimev1.CanvasDefaultFilters{
-				Dimensions: make([]*runtimev1.CanvasDimensionFilter, len(tmp.Defaults.Filters.Dimensions)),
-				Measures:   make([]*runtimev1.CanvasMeasureFilter, len(tmp.Defaults.Filters.Measures)),
-			},
+			Filters:             canvasFilters,
 		}
 	}
 

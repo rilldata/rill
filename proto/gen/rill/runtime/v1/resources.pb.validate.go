@@ -10375,6 +10375,39 @@ func (m *CanvasPreset) validate(all bool) error {
 		// no validation rules for ComparisonDimension
 	}
 
+	if m.Filters != nil {
+
+		if all {
+			switch v := interface{}(m.GetFilters()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, CanvasPresetValidationError{
+						field:  "Filters",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, CanvasPresetValidationError{
+						field:  "Filters",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetFilters()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return CanvasPresetValidationError{
+					field:  "Filters",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
 	if len(errors) > 0 {
 		return CanvasPresetMultiError(errors)
 	}
@@ -10451,6 +10484,408 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = CanvasPresetValidationError{}
+
+// Validate checks the field values on CanvasDimensionFilter with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *CanvasDimensionFilter) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on CanvasDimensionFilter with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// CanvasDimensionFilterMultiError, or nil if none found.
+func (m *CanvasDimensionFilter) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *CanvasDimensionFilter) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Dimension
+
+	if m.Limit != nil {
+		// no validation rules for Limit
+	}
+
+	if m.Removable != nil {
+		// no validation rules for Removable
+	}
+
+	if len(errors) > 0 {
+		return CanvasDimensionFilterMultiError(errors)
+	}
+
+	return nil
+}
+
+// CanvasDimensionFilterMultiError is an error wrapping multiple validation
+// errors returned by CanvasDimensionFilter.ValidateAll() if the designated
+// constraints aren't met.
+type CanvasDimensionFilterMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m CanvasDimensionFilterMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m CanvasDimensionFilterMultiError) AllErrors() []error { return m }
+
+// CanvasDimensionFilterValidationError is the validation error returned by
+// CanvasDimensionFilter.Validate if the designated constraints aren't met.
+type CanvasDimensionFilterValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e CanvasDimensionFilterValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e CanvasDimensionFilterValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e CanvasDimensionFilterValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e CanvasDimensionFilterValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e CanvasDimensionFilterValidationError) ErrorName() string {
+	return "CanvasDimensionFilterValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e CanvasDimensionFilterValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sCanvasDimensionFilter.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = CanvasDimensionFilterValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = CanvasDimensionFilterValidationError{}
+
+// Validate checks the field values on CanvasMeasureFilter with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *CanvasMeasureFilter) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on CanvasMeasureFilter with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// CanvasMeasureFilterMultiError, or nil if none found.
+func (m *CanvasMeasureFilter) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *CanvasMeasureFilter) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Measure
+
+	if m.Limit != nil {
+		// no validation rules for Limit
+	}
+
+	if m.Removable != nil {
+		// no validation rules for Removable
+	}
+
+	if m.ByDimension != nil {
+		// no validation rules for ByDimension
+	}
+
+	if m.Operator != nil {
+		// no validation rules for Operator
+	}
+
+	if len(errors) > 0 {
+		return CanvasMeasureFilterMultiError(errors)
+	}
+
+	return nil
+}
+
+// CanvasMeasureFilterMultiError is an error wrapping multiple validation
+// errors returned by CanvasMeasureFilter.ValidateAll() if the designated
+// constraints aren't met.
+type CanvasMeasureFilterMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m CanvasMeasureFilterMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m CanvasMeasureFilterMultiError) AllErrors() []error { return m }
+
+// CanvasMeasureFilterValidationError is the validation error returned by
+// CanvasMeasureFilter.Validate if the designated constraints aren't met.
+type CanvasMeasureFilterValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e CanvasMeasureFilterValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e CanvasMeasureFilterValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e CanvasMeasureFilterValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e CanvasMeasureFilterValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e CanvasMeasureFilterValidationError) ErrorName() string {
+	return "CanvasMeasureFilterValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e CanvasMeasureFilterValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sCanvasMeasureFilter.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = CanvasMeasureFilterValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = CanvasMeasureFilterValidationError{}
+
+// Validate checks the field values on CanvasDefaultFilters with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *CanvasDefaultFilters) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on CanvasDefaultFilters with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// CanvasDefaultFiltersMultiError, or nil if none found.
+func (m *CanvasDefaultFilters) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *CanvasDefaultFilters) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	for idx, item := range m.GetMeasures() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, CanvasDefaultFiltersValidationError{
+						field:  fmt.Sprintf("Measures[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, CanvasDefaultFiltersValidationError{
+						field:  fmt.Sprintf("Measures[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return CanvasDefaultFiltersValidationError{
+					field:  fmt.Sprintf("Measures[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	for idx, item := range m.GetDimensions() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, CanvasDefaultFiltersValidationError{
+						field:  fmt.Sprintf("Dimensions[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, CanvasDefaultFiltersValidationError{
+						field:  fmt.Sprintf("Dimensions[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return CanvasDefaultFiltersValidationError{
+					field:  fmt.Sprintf("Dimensions[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return CanvasDefaultFiltersMultiError(errors)
+	}
+
+	return nil
+}
+
+// CanvasDefaultFiltersMultiError is an error wrapping multiple validation
+// errors returned by CanvasDefaultFilters.ValidateAll() if the designated
+// constraints aren't met.
+type CanvasDefaultFiltersMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m CanvasDefaultFiltersMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m CanvasDefaultFiltersMultiError) AllErrors() []error { return m }
+
+// CanvasDefaultFiltersValidationError is the validation error returned by
+// CanvasDefaultFilters.Validate if the designated constraints aren't met.
+type CanvasDefaultFiltersValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e CanvasDefaultFiltersValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e CanvasDefaultFiltersValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e CanvasDefaultFiltersValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e CanvasDefaultFiltersValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e CanvasDefaultFiltersValidationError) ErrorName() string {
+	return "CanvasDefaultFiltersValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e CanvasDefaultFiltersValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sCanvasDefaultFilters.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = CanvasDefaultFiltersValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = CanvasDefaultFiltersValidationError{}
 
 // Validate checks the field values on API with the rules defined in the proto
 // definition for this message. If any rules are violated, the first error
