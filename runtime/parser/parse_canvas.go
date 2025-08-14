@@ -36,18 +36,18 @@ type CanvasYAML struct {
 		ComparisonDimension string `yaml:"comparison_dimension"`
 		Filters             *struct {
 			Dimensions []struct {
-				Dimension string   `yaml:"dimension"`
+				Dimension string    `yaml:"dimension"`
 				Values    *[]string `yaml:"values"`
-				Limit     *int     `yaml:"limit"`     // Limit for the number of values
-				Removable *bool    `yaml:"removable"` // Flag to indicate if the filter can be removed
+				Limit     *int      `yaml:"limit"`     // Limit for the number of values
+				Removable *bool     `yaml:"removable"` // Flag to indicate if the filter can be removed
 			} `yaml:"dimensions"`
 			Measures []struct {
-				Measure     string   `yaml:"measure"`
-				ByDimension *string  `yaml:"by_dimension"`
-				Operator    *string  `yaml:"operator"`     // Optional operator for the measure filter (e.g., "equals", "greater_than")
+				Measure     string    `yaml:"measure"`
+				ByDimension *string   `yaml:"by_dimension"`
+				Operator    *string   `yaml:"operator"` // Optional operator for the measure filter (e.g., "equals", "greater_than")
 				Values      *[]string `yaml:"values"`
-				Limit       *int     `yaml:"limit"`        // Limit for the number of values
-				Removable   *bool    `yaml:"removable"`    // Flag to indicate if the filter can be removed
+				Limit       *int      `yaml:"limit"`     // Limit for the number of values
+				Removable   *bool     `yaml:"removable"` // Flag to indicate if the filter can be removed
 			} `yaml:"measures"`
 		} `yaml:"filters"`
 	} `yaml:"defaults"`
