@@ -2,13 +2,20 @@ package project
 
 import (
 	"fmt"
-	"strconv"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/spf13/cobra"
 )
+
+// TableInfo represents information about a database table
+type TableInfo struct {
+	Name         string `json:"name" csv:"NAME" header:"NAME"`
+	RowCount     string `json:"row_count" csv:"ROW_COUNT" header:"ROW COUNT"`
+	ColumnCount  string `json:"column_count" csv:"COLUMN_COUNT" header:"COLUMN COUNT"`
+	DatabaseSize string `json:"database_size" csv:"DATABASE_SIZE" header:"DATABASE SIZE"`
+}
 
 func TablesCmd(ch *cmdutil.Helper) *cobra.Command {
 	var project, path string
@@ -55,15 +62,14 @@ func TablesCmd(ch *cmdutil.Helper) *cobra.Command {
 				return nil
 			}
 
-			ch.Printf("  DATABASE NAME (%d)                       ROW COUNT      COLUMN COUNT   DATABASE SIZE\n", len(res.Tables))
-			ch.Printf(" --------------------------------------- -------------- -------------- ---------------\n")
+			var tableInfos []TableInfo
 
 			for _, table := range res.Tables {
 				var dbSize string
 				if table.PhysicalSizeBytes == -1 {
 					dbSize = "unknown"
 				} else {
-					dbSize = formatBytes(table.PhysicalSizeBytes)
+					dbSize = ch.FormatBytes(table.PhysicalSizeBytes)
 				}
 
 				// Get table information for column count
@@ -76,7 +82,7 @@ func TablesCmd(ch *cmdutil.Helper) *cobra.Command {
 				if err != nil {
 					columnCount = "error"
 				} else if tableRes.Schema != nil {
-					columnCount = strconv.Itoa(len(tableRes.Schema.Fields))
+					columnCount = ch.FormatNumber(int64(len(tableRes.Schema.Fields)))
 				} else {
 					columnCount = "0"
 				}
@@ -94,7 +100,7 @@ func TablesCmd(ch *cmdutil.Helper) *cobra.Command {
 					for _, countValue := range queryRes.Data[0].Fields {
 						if countValue != nil {
 							if countValueNumber := countValue.GetNumberValue(); countValueNumber != 0 {
-								rowCount = strconv.FormatInt(int64(countValueNumber), 10)
+								rowCount = ch.FormatNumber(int64(countValueNumber))
 							} else {
 								rowCount = "0"
 							}
@@ -107,8 +113,15 @@ func TablesCmd(ch *cmdutil.Helper) *cobra.Command {
 					rowCount = "unknown"
 				}
 
-				ch.Printf("  %-39s %-14s %-14s %s\n", table.Name, rowCount, columnCount, dbSize)
+				tableInfos = append(tableInfos, TableInfo{
+					Name:         table.Name,
+					RowCount:     rowCount,
+					ColumnCount:  columnCount,
+					DatabaseSize: dbSize,
+				})
 			}
+
+			ch.PrintData(tableInfos)
 
 			return nil
 		},
@@ -119,25 +132,4 @@ func TablesCmd(ch *cmdutil.Helper) *cobra.Command {
 	tablesCmd.Flags().BoolVar(&local, "local", false, "Target local runtime instead of Rill Cloud")
 
 	return tablesCmd
-}
-
-// formatBytes converts bytes to human readable format
-func formatBytes(bytes int64) string {
-	const (
-		KB = 1024
-		MB = KB * 1024
-		GB = MB * 1024
-		TB = GB * 1024
-	)
-
-	if bytes < KB {
-		return fmt.Sprintf("%d B", bytes)
-	} else if bytes < MB {
-		return fmt.Sprintf("%.1f KiB", float64(bytes)/KB)
-	} else if bytes < GB {
-		return fmt.Sprintf("%.1f MiB", float64(bytes)/MB)
-	} else if bytes < TB {
-		return fmt.Sprintf("%.1f GiB", float64(bytes)/GB)
-	}
-	return fmt.Sprintf("%.1f TiB", float64(bytes)/TB)
 }
