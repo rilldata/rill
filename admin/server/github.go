@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/eapache/go-resiliency/retrier"
 	"github.com/go-git/go-billy/v5"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
@@ -46,6 +47,7 @@ const (
 	githubcookieFieldState  = "github_state"
 	githubcookieFieldRemote = "github_remote"
 	archivePullTimeout      = 10 * time.Minute
+	createRetries           = 3
 )
 
 var allowedPaths = []string{
@@ -294,6 +296,7 @@ func (s *Server) ConnectProjectToGithub(ctx context.Context, req *adminv1.Connec
 		attribute.String("args.branch", req.Branch),
 		attribute.String("args.subpath", req.Subpath),
 		attribute.Bool("args.force", req.Force),
+		attribute.Bool("args.create", req.Create),
 	)
 
 	// Backwards compatibility
@@ -344,6 +347,18 @@ func (s *Server) ConnectProjectToGithub(ctx context.Context, req *adminv1.Connec
 		Name:  safeStr(ghUser.Name),
 		Email: safeStr(ghUser.Email),
 		When:  time.Now(),
+	}
+
+	if req.Create {
+		org, repo, ok := gitutil.SplitGithubRemote(req.Remote)
+		if !ok {
+			return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("invalid remote: %q", req.Remote))
+		}
+
+		err = s.createRepo(ctx, client, org, repo, req.Branch)
+		if err != nil {
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		}
 	}
 
 	if proj.ArchiveAssetID != nil {
@@ -449,7 +464,7 @@ func (s *Server) CreateManagedGitRepo(ctx context.Context, req *adminv1.CreateMa
 	}, nil
 }
 
-// DisconnectProjectFromGithubRequest disconnects a project from Github by uploading the contents of a Github repository to a rill managed repository.
+// DisconnectProjectFromGithub disconnects a project from Github by uploading the contents of a Github repository to a rill managed repository.
 func (s *Server) DisconnectProjectFromGithub(ctx context.Context, req *adminv1.DisconnectProjectFromGithubRequest) (*adminv1.DisconnectProjectFromGithubResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.organization", req.Organization),
@@ -1087,6 +1102,27 @@ func (s *Server) fetchReposForInstallation(ctx context.Context, client *github.C
 	}
 
 	return repos, nil
+}
+
+func (s *Server) createRepo(ctx context.Context, client *github.Client, org, repo, branch string) error {
+	_, _, err := client.Repositories.Create(ctx, org, &github.Repository{Name: &repo, DefaultBranch: &branch})
+	if err != nil {
+		return fmt.Errorf("failed to create repo: %w", err)
+	}
+
+	// github.Repositories.Create returns before actually creating the repo. So do an exponential backoff check
+	err = retrier.New(retrier.ExponentialBackoff(createRetries, time.Second), nil).RunCtx(ctx, func(ctx context.Context) error {
+		_, _, err := client.Repositories.Get(ctx, org, repo)
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create repo: %w", err)
+	}
+
+	return nil
 }
 
 func (s *Server) pushToGit(ctx context.Context, copyData func(projPath string) error, remote, branch, subpath, token string, force bool, author *object.Signature) error {
