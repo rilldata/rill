@@ -36,10 +36,6 @@ export function generateSpec(
   return CHART_CONFIG[chartType]?.generateSpec(rillChartSpec, data);
 }
 
-export function isChartLineLike(chartType: ChartType) {
-  return chartType === "line_chart" || chartType === "area_chart";
-}
-
 export function mergedVlConfig(
   userProvidedConfig: string | undefined,
   specConfig: Config | undefined,
@@ -73,7 +69,7 @@ export interface FieldsByType {
 }
 
 export function getFieldsByType(spec: ChartSpec): FieldsByType {
-  const measures: string[] = [];
+  let measures: string[] = [];
   const dimensions: string[] = [];
   const timeDimensions: string[] = [];
 
@@ -110,6 +106,10 @@ export function getFieldsByType(spec: ChartSpec): FieldsByType {
   };
 
   checkFields(spec);
+
+  if ("measures" in spec && Array.isArray(spec.measures)) {
+    measures = spec.measures;
+  }
   return {
     measures,
     dimensions,
@@ -220,7 +220,8 @@ export function getLinkStateForTimeDimensionDetail(
     };
 
   const hasXAxis = "x" in spec;
-  if (!hasXAxis)
+  const hasYAxis = "y" in spec;
+  if (!hasXAxis || !hasYAxis)
     return {
       canLink: false,
     };

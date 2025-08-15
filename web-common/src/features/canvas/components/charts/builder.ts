@@ -6,6 +6,7 @@ import type { ChartSpec } from "@rilldata/web-common/features/canvas/components/
 import type { CartesianChartSpec } from "@rilldata/web-common/features/canvas/components/charts/cartesian-charts/CartesianChart";
 import type {
   ChartLegend,
+  ChartSortDirection,
   FieldConfig,
   TooltipValue,
 } from "@rilldata/web-common/features/canvas/components/charts/types";
@@ -13,6 +14,7 @@ import {
   getColorForValues,
   mergedVlConfig,
 } from "@rilldata/web-common/features/canvas/components/charts/util";
+import type { Color } from "chroma-js";
 import merge from "deepmerge";
 import type { VisualizationSpec } from "svelte-vega";
 import type { Config } from "vega-lite";
@@ -23,7 +25,7 @@ import type {
 } from "vega-lite/build/src/channeldef";
 import type { Encoding } from "vega-lite/build/src/encoding";
 import type { TopLevelParameter } from "vega-lite/build/src/spec/toplevel";
-import type { TopLevelUnitSpec } from "vega-lite/build/src/spec/unit";
+import type { TopLevelUnitSpec, UnitSpec } from "vega-lite/build/src/spec/unit";
 import type { ExprRef, SignalRef } from "vega-typings";
 import type { ChartDataResult } from "./types";
 
@@ -257,5 +259,148 @@ export function createEncoding(
       [config.x, config.y, config.color],
       data,
     ),
+  };
+}
+
+export function buildHoverPointOverlay(): UnitSpec<Field> {
+  return {
+    transform: [{ filter: { param: "hover", empty: false } }],
+    mark: {
+      type: "point",
+      filled: true,
+      opacity: 1,
+      size: 50,
+      clip: true,
+      stroke: "white",
+      strokeWidth: 1,
+    },
+  };
+}
+
+/**
+ * Creates a multiValueTooltipChannel for cartesian charts (area, line, bar, stacked-bar)
+ * Maps data values based on colorField and includes x-field information
+ */
+export function createCartesianMultiValueTooltipChannel(
+  config: { x?: FieldConfig; colorField?: string; yField?: string },
+  data: ChartDataResult,
+): TooltipValue[] | undefined {
+  const { x: xConfig, colorField, yField } = config;
+
+  if (!colorField || !xConfig || !yField) {
+    return undefined;
+  }
+
+  const xField = sanitizeValueForVega(xConfig.field);
+  const sanitizedYField = sanitizeValueForVega(yField);
+
+  let multiValueTooltipChannel: TooltipValue[] | undefined;
+
+  multiValueTooltipChannel = data.data?.map((value) => ({
+    field: sanitizeValueForVega(value?.[colorField] as string),
+    type: "quantitative",
+    formatType: sanitizeFieldName(sanitizedYField),
+  }));
+
+  if (multiValueTooltipChannel) {
+    multiValueTooltipChannel.unshift({
+      field: xField,
+      title: data.fields[xConfig.field]?.displayName || xConfig.field,
+      type: xConfig?.type,
+      ...(xConfig.type === "temporal" && { format: "%b %d, %Y %H:%M" }),
+    });
+
+    multiValueTooltipChannel = multiValueTooltipChannel.slice(0, 50);
+  }
+
+  return multiValueTooltipChannel;
+}
+
+export function buildHoverRuleLayer(args: {
+  xField?: string;
+  defaultTooltip: TooltipValue[];
+  multiValueTooltipChannel?: TooltipValue[];
+  pivot?: { field: string; value: string; groupby: string[] };
+  yField?: string;
+  xSort?: ChartSortDirection;
+  primaryColor: Color;
+  xBand?: number;
+  isBarMark?: boolean;
+}): UnitSpec<Field> {
+  const {
+    xField,
+    defaultTooltip,
+    multiValueTooltipChannel,
+    pivot,
+    yField,
+    xSort,
+    primaryColor,
+    xBand,
+    isBarMark = false,
+  } = args;
+
+  return {
+    transform:
+      xField && pivot && multiValueTooltipChannel?.length
+        ? [
+            {
+              pivot: pivot.field,
+              value: pivot.value,
+              groupby: pivot.groupby,
+            },
+          ]
+        : [],
+    mark: {
+      type: isBarMark ? "bar" : "rule",
+      clip: true,
+      opacity: 0.6,
+      ...(!isBarMark && { strokeWidth: 5 }),
+    },
+    encoding: {
+      x: {
+        field: xField,
+        ...(xBand !== undefined ? { bandPosition: xBand } : {}),
+        ...(yField && xSort === "y"
+          ? {
+              sort: {
+                field: yField,
+                order: "ascending",
+              },
+            }
+          : yField && xSort === "-y"
+            ? {
+                sort: {
+                  field: yField,
+                  order: "descending",
+                },
+              }
+            : {}),
+      },
+      color: {
+        condition: [
+          {
+            param: "hover",
+            empty: false,
+            value: isBarMark ? "#eee" : primaryColor.brighten().css(),
+          },
+        ],
+        value: "transparent",
+      },
+      tooltip: multiValueTooltipChannel?.length
+        ? multiValueTooltipChannel
+        : defaultTooltip,
+    },
+    params: [
+      {
+        name: "hover",
+        select: {
+          type: "point",
+          encodings: ["x"],
+          on: "pointerover",
+          clear: "pointerout",
+          ...(!isBarMark && { nearest: true }),
+        },
+      },
+    ],
   };
 }

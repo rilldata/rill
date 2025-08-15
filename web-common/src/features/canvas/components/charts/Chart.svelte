@@ -14,7 +14,7 @@
   import type { ChartSpec } from "./";
   import type { BaseChart } from "./BaseChart";
   import { getChartData } from "./selector";
-  import { generateSpec, isChartLineLike } from "./util";
+  import { generateSpec } from "./util";
   import { validateChartSchema } from "./validate";
 
   export let component: BaseChart<ChartSpec>;
@@ -111,7 +111,7 @@
           canvasDashboard
           data={{ "metrics-view": data }}
           {spec}
-          renderer={isChartLineLike(chartType) ? "svg" : "canvas"}
+          renderer="canvas"
           {expressionFunctions}
           config={getRillTheme(true, themePreference === "dark")}
         />

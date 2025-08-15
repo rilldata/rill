@@ -24,7 +24,8 @@ export type ChartType =
   | "donut_chart"
   | "pie_chart"
   | "heatmap"
-  | "funnel_chart";
+  | "funnel_chart"
+  | "multi_metric_chart";
 
 export type ChartDataQuery = CreateQueryResult<
   V1MetricsViewAggregationResponse,
