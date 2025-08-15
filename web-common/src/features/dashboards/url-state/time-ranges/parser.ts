@@ -22,6 +22,18 @@ export function validateRillTime(rillTime: string): Error | undefined {
 }
 
 /**
+ * Convenience method to parse and rill time and return its label.
+ */
+export function getRillTimeLabel(rillTime: string): string {
+  try {
+    const rt = parseRillTime(rillTime);
+    return rt.getLabel();
+  } catch {
+    return rillTime;
+  }
+}
+
+/**
  * Overrides the ref part of a rill time range.
  * @param rt RillTime instance to override
  * @param refOverride Ref to override with, should be in the format of `watermark` or `watermark/Y` or `watermark/Y+1Y` etc

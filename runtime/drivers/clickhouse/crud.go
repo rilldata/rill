@@ -370,7 +370,7 @@ func (c *Connection) renameView(ctx context.Context, oldName, newName, onCluster
 
 func (c *Connection) renameTable(ctx context.Context, oldName, newName, onCluster string) error {
 	var exists bool
-	err := c.db.QueryRowContext(ctx, fmt.Sprintf("EXISTS %s", safeSQLName(newName))).Scan(&exists)
+	err := c.writeDB.QueryRowContext(ctx, fmt.Sprintf("EXISTS %s", safeSQLName(newName))).Scan(&exists)
 	if err != nil {
 		return err
 	}

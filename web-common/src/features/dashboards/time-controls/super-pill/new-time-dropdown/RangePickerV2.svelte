@@ -58,6 +58,7 @@
   export let allowCustomTimeRange = true;
   export let availableTimeZones: string[];
   export let lockTimeZone = false;
+  export let showFullRange = true;
   export let onSelectTimeZone: (timeZone: string) => void;
   export let onSelectRange: (range: string) => void;
   export let onTimeGrainSelect: (grain: V1TimeGrain) => void;
@@ -96,7 +97,7 @@
       ? GrainAliasToV1TimeGrain[parsedTime.asOfLabel?.snap]
       : undefined;
 
-  $: dateTimeAnchor = returnAnchor(ref);
+  $: dateTimeAnchor = returnAnchor(ref, zone);
 
   $: selectedLabel = getRangeLabel(timeString);
 
@@ -192,7 +193,8 @@
     onSelectRange(newString);
   }
 
-  function returnAnchor(asOf: string): DateTime | undefined {
+  // Zone is taken as a param to make it reactive
+  function returnAnchor(asOf: string, zone: string): DateTime | undefined {
     if (asOf === "latest") {
       return maxDate.setZone(zone);
     } else if (asOf === "watermark" && watermark) {
@@ -223,12 +225,12 @@
     }
   }}
 >
-  <Popover.Trigger asChild let:builder id="super-pill-trigger">
+  <Popover.Trigger asChild let:builder id="super-pill-trigger-{context}">
     <Tooltip.Root openDelay={800}>
       <Tooltip.Trigger
         asChild
         let:builder={tooltipBuilder}
-        id="super-pill-trigger"
+        id="super-pill-trigger-{context}"
       >
         <button
           use:builderActions={{ builders: [builder, tooltipBuilder] }}
@@ -246,13 +248,15 @@
             </b>
           {/if}
 
-          <RangeDisplay {interval} />
+          {#if showFullRange}
+            <RangeDisplay {interval} />
 
-          <div
-            class="font-bold bg-gray-100 rounded-[2px] p-1 py-0 text-gray-600 text-[11px]"
-          >
-            {zoneAbbreviation}
-          </div>
+            <div
+              class="font-bold bg-gray-100 rounded-[2px] p-1 py-0 text-gray-600 text-[11px]"
+            >
+              {zoneAbbreviation}
+            </div>
+          {/if}
 
           <span class="flex-none transition-transform" class:-rotate-180={open}>
             <CaretDownIcon />

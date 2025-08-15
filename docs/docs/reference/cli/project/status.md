@@ -13,6 +13,7 @@ rill project status [<project-name>] [flags]
 ### Flags
 
 ```
+      --local            Target locally running Rill
       --path string      Project directory (default ".")
       --project string   Project Name
 ```

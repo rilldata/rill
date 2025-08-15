@@ -4,7 +4,6 @@
     WithGraphicContexts,
     WithTween,
   } from "@rilldata/web-common/components/data-graphic/functional-components";
-  import { ComparisonDeltaPreviousSuffix } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
   import { justEnoughPrecision } from "@rilldata/web-common/lib/formatters";
   import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
   import { cubicOut } from "svelte/easing";
@@ -77,9 +76,7 @@
       ? yScale(lastAvailablePoint[yAccessor])
       : (config.plotBottom - config.plotTop) / 2}
   <!-- these elements aren't used unless we are comparing-->
-  {@const comparisonY = yScale(
-    point?.[yAccessor + ComparisonDeltaPreviousSuffix] || 0,
-  )}
+  {@const comparisonY = yScale(point?.[`comparison.${yAccessor}`] || 0)}
   <WithTween
     value={{
       x,

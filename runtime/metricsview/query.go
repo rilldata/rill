@@ -62,19 +62,8 @@ type MeasureCompute struct {
 func (q *Query) AsMap() (map[string]any, error) {
 	queryMap := make(map[string]any)
 	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
-		Result: &queryMap,
-		DecodeHook: func(from reflect.Type, to reflect.Type, data any) (any, error) {
-			if from == reflect.TypeOf(&time.Time{}) {
-				t, ok := data.(*time.Time)
-				if !ok {
-					return nil, fmt.Errorf("expected *time.Time, got %T", data)
-				}
-				return map[string]any{
-					"t": t.Format(time.RFC3339Nano),
-				}, nil
-			}
-			return data, nil
-		},
+		Result:     &queryMap,
+		DecodeHook: timeDecodeFunc,
 	})
 	if err != nil {
 		return nil, err
@@ -361,6 +350,19 @@ func TimeGrainFromProto(t runtimev1.TimeGrain) TimeGrain {
 	default:
 		panic(fmt.Errorf("invalid time grain %q", t))
 	}
+}
+
+var timeDecodeFunc mapstructure.DecodeHookFunc = func(from reflect.Type, to reflect.Type, data any) (any, error) {
+	if from == reflect.TypeOf(&time.Time{}) {
+		t, ok := data.(*time.Time)
+		if !ok {
+			return nil, fmt.Errorf("expected *time.Time, got %T", data)
+		}
+		return map[string]any{
+			"t": t.Format(time.RFC3339Nano),
+		}, nil
+	}
+	return data, nil
 }
 
 const QueryJSONSchema = `

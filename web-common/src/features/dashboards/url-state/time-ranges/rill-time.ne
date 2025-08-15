@@ -46,6 +46,7 @@ start_end_interval => point_in_time _ "to"i _ point_in_time {% ([start, , , , en
 
 iso_interval => abs_time _ "to"i _ abs_time {% ([start, , , , end]) => new RillIsoInterval(start, end) %}
               | abs_time _ "/" _ abs_time   {% ([start, , , , end]) => new RillIsoInterval(start, end) %}
+              | abs_time _ "," _ abs_time   {% ([start, , , , end]) => new RillIsoInterval(start, end) %}
               | abs_time                    {% ([start]) => new RillIsoInterval(start, undefined) %}
 
 point_in_time              => point_in_time_with_snap:* point_in_time_without_snap {% ([points, last]) => new RillPointInTime([...points, last]) %}

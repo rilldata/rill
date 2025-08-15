@@ -17,10 +17,18 @@ export class VegaLiteTooltipHandler {
   distance = 0;
   pad = 8;
   public valueFormatter: VLTooltipFormatter;
+  private mouseLeaveHandler: ((event: Event) => void) | null = null;
 
   constructor(valueFormatter: VLTooltipFormatter) {
     this.valueFormatter = valueFormatter;
   }
+
+  removeTooltip = () => {
+    const existingEl = document.getElementById(TOOLTIP_ID);
+    if (existingEl) {
+      existingEl.remove();
+    }
+  };
 
   handleTooltip = (
     _view: View,
@@ -28,10 +36,8 @@ export class VegaLiteTooltipHandler {
     _item: unknown,
     value: unknown,
   ) => {
-    const existingEl = document.getElementById(TOOLTIP_ID);
-    if (existingEl) {
-      existingEl.remove();
-    }
+    this.removeTooltip();
+
     if (value == null || value === "") {
       return;
     }
@@ -60,4 +66,19 @@ export class VegaLiteTooltipHandler {
 
     el.setAttribute("style", `top: ${topPos}px; left: ${leftPos}px`);
   };
+
+  removeMouseLeaveHandler() {
+    if (this.mouseLeaveHandler) {
+      // Find all potential containers and remove listener
+      document.querySelectorAll(".vega-embed").forEach((container) => {
+        container.removeEventListener("mouseleave", this.mouseLeaveHandler!);
+      });
+      this.mouseLeaveHandler = null;
+    }
+  }
+
+  destroy() {
+    this.removeTooltip();
+    this.removeMouseLeaveHandler();
+  }
 }

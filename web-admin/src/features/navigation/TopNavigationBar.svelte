@@ -6,7 +6,7 @@
   import Rill from "@rilldata/web-common/components/icons/Rill.svelte";
   import Breadcrumbs from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
   import type { PathOption } from "@rilldata/web-common/components/navigation/breadcrumbs/types";
-  import ChatToggle from "@rilldata/web-common/features/chat/ChatToggle.svelte";
+  import ChatToggle from "@rilldata/web-common/features/chat/layouts/sidebar/ChatToggle.svelte";
   import GlobalDimensionSearch from "@rilldata/web-common/features/dashboards/dimension-search/GlobalDimensionSearch.svelte";
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
   import { useExplore } from "@rilldata/web-common/features/explores/selectors";
@@ -25,7 +25,7 @@
   import AvatarButton from "../authentication/AvatarButton.svelte";
   import SignIn from "../authentication/SignIn.svelte";
   import LastRefreshedDate from "../dashboards/listing/LastRefreshedDate.svelte";
-  import { useDashboardsV2 } from "../dashboards/listing/selectors";
+  import { useDashboards } from "../dashboards/listing/selectors";
   import PageTitle from "../public-urls/PageTitle.svelte";
   import { useReports } from "../scheduled-reports/selectors";
   import {
@@ -44,7 +44,7 @@
   export let planDisplayName: string | undefined;
 
   const user = createAdminServiceGetCurrentUser();
-  const { alerts: alertsFlag, dimensionSearch, chat } = featureFlags;
+  const { alerts: alertsFlag, dimensionSearch, dashboardChat } = featureFlags;
 
   $: ({ instanceId } = $runtime);
 
@@ -88,7 +88,7 @@
     },
   );
 
-  $: visualizationsQuery = useDashboardsV2(instanceId);
+  $: visualizationsQuery = useDashboards(instanceId);
 
   $: alertsQuery = useAlerts(instanceId, onAlertPage);
   $: reportsQuery = useReports(instanceId, onReportPage);
@@ -137,7 +137,7 @@
     new Map<string, PathOption>(),
   );
 
-  $: visualizationPaths = visualizations.reduce((map, { resource }) => {
+  $: visualizationPaths = visualizations.reduce((map, resource) => {
     const name = resource.meta.name.name;
     const isMetricsExplorer = !!resource?.explore;
     return map.set(name.toLowerCase(), {
@@ -235,7 +235,7 @@
             {#if $dimensionSearch}
               <GlobalDimensionSearch />
             {/if}
-            {#if $chat}
+            {#if $dashboardChat}
               <ChatToggle />
             {/if}
             {#if $user.isSuccess && $user.data.user && !onPublicURLPage}

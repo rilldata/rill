@@ -215,10 +215,10 @@ export class HeatmapChartComponent extends BaseChart<HeatmapChartSpec> {
           !!timeRange?.start &&
           !!timeRange?.end &&
           (config.x?.type === "nominal" && !Array.isArray(config.x?.sort)
-            ? !!xTopNData?.length
+            ? xTopNData !== undefined
             : true) &&
           (config.y?.type === "nominal" && !Array.isArray(config.y?.sort)
-            ? !!yTopNData?.length
+            ? yTopNData !== undefined
             : true);
 
         let combinedWhere: V1Expression | undefined = where;
@@ -361,5 +361,18 @@ export class HeatmapChartComponent extends BaseChart<HeatmapChartSpec> {
       : "";
 
     return `${colorLabel} by ${xLabel} and ${yLabel}`;
+  }
+
+  getChartDomainValues() {
+    return {
+      xValues:
+        this.customSortXItems.length > 0
+          ? [...this.customSortXItems]
+          : undefined,
+      yValues:
+        this.customSortYItems.length > 0
+          ? [...this.customSortYItems]
+          : undefined,
+    };
   }
 }

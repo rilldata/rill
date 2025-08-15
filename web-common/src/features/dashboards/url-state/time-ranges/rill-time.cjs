@@ -1,6 +1,5 @@
 // Generated automatically by nearley, version 2.20.1
 // http://github.com/Hardmath123/nearley
-// eslint-disable
 function id(x) {
   return x[0];
 }
@@ -305,6 +304,11 @@ let ParserRules = [
   {
     name: "iso_interval",
     symbols: ["abs_time", "_", { literal: "/" }, "_", "abs_time"],
+    postprocess: ([start, , , , end]) => new RillIsoInterval(start, end),
+  },
+  {
+    name: "iso_interval",
+    symbols: ["abs_time", "_", { literal: "," }, "_", "abs_time"],
     postprocess: ([start, , , , end]) => new RillIsoInterval(start, end),
   },
   {

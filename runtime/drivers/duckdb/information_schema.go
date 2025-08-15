@@ -78,11 +78,8 @@ func scanTables(rows []*rduckdb.Table) ([]*drivers.OlapTable, error) {
 
 	for _, row := range rows {
 		t := &drivers.OlapTable{
-			Database: row.Database,
-			// the database schema changes with every ingestion in duckdb(Refer rduckdb pkg for more info)
-			// we pin the read connection to the latest schema and set schema as `main` to give impression that everything is in the same schema
-			// This also means that fully qualified names should not be used anywhere
-			DatabaseSchema:          "main",
+			Database:                row.Database,
+			DatabaseSchema:          row.Schema,
 			IsDefaultDatabase:       true,
 			IsDefaultDatabaseSchema: true,
 			Name:                    row.Name,

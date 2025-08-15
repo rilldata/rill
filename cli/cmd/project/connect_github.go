@@ -41,6 +41,7 @@ func GitPushCmd(ch *cmdutil.Helper) *cobra.Command {
 			if len(args) > 0 {
 				opts.GitPath = args[0]
 			}
+			opts.Github = true
 			return ConnectGithubFlow(cmd.Context(), ch, opts)
 		},
 	}
@@ -48,7 +49,7 @@ func GitPushCmd(ch *cmdutil.Helper) *cobra.Command {
 	deployCmd.Flags().SortFlags = false
 	deployCmd.Flags().StringVar(&opts.GitPath, "path", ".", "Path to project repository (default: current directory)") // This can also be a remote .git URL (undocumented feature)
 	deployCmd.Flags().StringVar(&opts.SubPath, "subpath", "", "Relative path to project in the repository (for monorepos)")
-	deployCmd.Flags().StringVar(&opts.RemoteName, "remote", "", "Remote name (default: first Git remote)")
+	deployCmd.Flags().StringVar(&opts.RemoteName, "remote", "origin", "Remote name (default: origin)")
 	deployCmd.Flags().StringVar(&ch.Org, "org", ch.Org, "Org to deploy project in")
 	deployCmd.Flags().StringVar(&opts.Name, "name", "", "Project name (default: Git repo name)")
 	deployCmd.Flags().StringVar(&opts.Description, "description", "", "Project description")
@@ -95,6 +96,10 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 	var localProjectPath string
 	var err error
 	if isLocalGitPath {
+		err = opts.ValidatePathAndSetupGit(ch)
+		if err != nil {
+			return err
+		}
 		// If it's a local path, we need to do some extra validation and rewrites.
 		localGitPath, localProjectPath, err = ValidateLocalProject(ch, opts.GitPath, opts.SubPath)
 		if err != nil {

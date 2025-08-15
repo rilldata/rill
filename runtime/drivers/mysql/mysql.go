@@ -25,12 +25,12 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "MySQL",
 	Description: "Connect to MySQL.",
-	DocsURL:     "https://docs.rilldata.com/reference/connectors/mysql",
+	DocsURL:     "https://docs.rilldata.com/connect/data-source/mysql",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:         "dsn",
 			Type:        drivers.StringPropertyType,
-			Placeholder: "username:password@tcp(example.com:3306)/my-db",
+			Placeholder: "mysql://user:password@host:3306/my-db",
 			Secret:      true,
 		},
 	},
@@ -161,6 +161,7 @@ func (c *ConfigProperties) resolveGoFormatDSN() (string, error) {
 	cfg := mysql.Config{
 		User:      user,
 		Passwd:    pass,
+		Net:       "tcp",
 		Addr:      addr,
 		DBName:    dbName,
 		TLSConfig: tlsConfig,
