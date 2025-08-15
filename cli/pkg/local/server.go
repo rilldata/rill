@@ -330,6 +330,7 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 	}
 
 	var projRequest *adminv1.CreateProjectRequest
+	gitPath := s.app.ProjectPath
 	if r.Msg.Archive { // old zip-and-ship, currently used only for testing until we figure out a good way to test using manged github repos
 		assetID, err := cmdutil.UploadRepo(ctx, repo, s.app.ch, r.Msg.Org, r.Msg.ProjectName)
 		if err != nil {
@@ -374,8 +375,18 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 			return nil, fmt.Errorf("rill git app should be installed/authorized by user before deploying, please visit %s", userStatus.GrantAccessUrl)
 		}
 
+		gitPath, err = gitutil.InferGitRepoRoot(s.app.ProjectPath)
+		if err != nil {
+			return nil, err
+		}
+
+		subPath, err := filepath.Rel(gitPath, s.app.ProjectPath)
+		if err != nil {
+			return nil, err
+		}
+
 		// check if project is a git repo
-		remote, err := gitutil.ExtractGitRemote(s.app.ProjectPath, "", false)
+		remote, err := gitutil.ExtractGitRemote(gitPath, "", false)
 		if err != nil {
 			if errors.Is(err, gitutil.ErrGitRemoteNotFound) || errors.Is(err, git.ErrRepositoryNotExists) {
 				return nil, errors.New("project is not a valid git repository or not connected to a remote")
@@ -389,7 +400,7 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 
 		// check if there are uncommitted changes
 		// ignore errors since check is best effort and can fail in multiple cases
-		syncStatus, _ := gitutil.GetSyncStatus(s.app.ProjectPath, "", remote.Name)
+		syncStatus, _ := gitutil.GetSyncStatus(gitPath, "", remote.Name)
 		if syncStatus == gitutil.SyncStatusModified || syncStatus == gitutil.SyncStatusAhead {
 			return nil, errors.New("project has uncommitted changes")
 		}
@@ -414,7 +425,7 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 			ProdSlots:        int64(DefaultProdSlots(s.app.ch)),
 			Public:           false,
 			GitRemote:        githubRemote,
-			Subpath:          "",
+			Subpath:          subPath,
 			ProdBranch:       repoStatus.DefaultBranch,
 		}
 	}
@@ -445,16 +456,16 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 
 	// if the project is backed by git repo, we need to push the .rillcloud directory to the remote
 	if r.Msg.Upload {
-		err = s.app.ch.GitHelper(r.Msg.Org, r.Msg.ProjectName, s.app.ProjectPath).PushToManagedRepo(ctx)
+		err = s.app.ch.GitHelper(r.Msg.Org, r.Msg.ProjectName, gitPath).PushToManagedRepo(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("failed to push .rillcloud directory to remote: %w", err)
 		}
 	} else if !r.Msg.Archive {
-		author, err := s.app.ch.GitSignature(ctx, s.app.ProjectPath)
+		author, err := s.app.ch.GitSignature(ctx, gitPath)
 		if err != nil {
 			return nil, fmt.Errorf("failed to generate git commit signature: %w", err)
 		}
-		err = gitutil.CommitAndForcePush(ctx, s.app.ProjectPath, &gitutil.Config{Remote: projResp.Project.GitRemote, DefaultBranch: projResp.Project.ProdBranch}, "Autocommit .rillcloud dir", author)
+		err = gitutil.CommitAndForcePush(ctx, gitPath, &gitutil.Config{Remote: projResp.Project.GitRemote, DefaultBranch: projResp.Project.ProdBranch}, "Autocommit .rillcloud dir", author)
 		if err != nil {
 			return nil, fmt.Errorf("failed to push .rillcloud directory to remote: %w", err)
 		}

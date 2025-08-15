@@ -4,10 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"path/filepath"
 	"strings"
 
 	"connectrpc.com/connect"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
+	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	localv1 "github.com/rilldata/rill/proto/gen/rill/local/v1"
 )
 
@@ -17,19 +19,30 @@ func (s *Server) GitStatus(ctx context.Context, r *connect.Request[localv1.GitSt
 		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("not a git repository"))
 	}
 
+	gitPath, err := gitutil.InferGitRepoRoot(s.app.ProjectPath)
+	if err != nil {
+		return nil, err
+	}
+
+	subPath, err := filepath.Rel(gitPath, s.app.ProjectPath)
+	if err != nil {
+		return nil, err
+	}
+
 	// if there is a origin set, try with native git configurations
-	remote, err := gitutil.ExtractGitRemote(s.app.ProjectPath, "origin", false)
+	remote, err := gitutil.ExtractGitRemote(gitPath, "origin", false)
 	if err == nil && remote.URL != "" {
-		err = gitutil.GitFetch(ctx, s.app.ProjectPath, nil)
+		err = gitutil.GitFetch(ctx, gitPath, nil)
 		if err == nil {
 			// if native git fetch succeeds, return the status
-			gs, err := gitutil.RunGitStatus(s.app.ProjectPath, "origin")
+			gs, err := gitutil.RunGitStatus(gitPath, "origin")
 			if err != nil {
 				return nil, err
 			}
 			return connect.NewResponse(&localv1.GitStatusResponse{
 				Branch:        gs.Branch,
 				GithubUrl:     gs.RemoteURL,
+				Subpath:       subPath,
 				LocalChanges:  gs.LocalChanges,
 				LocalCommits:  gs.LocalCommits,
 				RemoteCommits: gs.RemoteCommits,
@@ -43,13 +56,14 @@ func (s *Server) GitStatus(ctx context.Context, r *connect.Request[localv1.GitSt
 	if !s.app.ch.IsAuthenticated() {
 		// if the user is not authenticated, we cannot fetch the project
 		// return the best effort status
-		gs, err := gitutil.RunGitStatus(s.app.ProjectPath, "origin")
+		gs, err := gitutil.RunGitStatus(gitPath, "origin")
 		if err != nil {
 			return nil, err
 		}
 		return connect.NewResponse(&localv1.GitStatusResponse{
 			Branch:    gs.Branch,
 			GithubUrl: gs.RemoteURL,
+			Subpath:   subPath,
 		}), nil
 	}
 
@@ -59,42 +73,69 @@ func (s *Server) GitStatus(ctx context.Context, r *connect.Request[localv1.GitSt
 			return nil, err
 		}
 		// If the project is not found return the best effort status
-		gs, err := gitutil.RunGitStatus(s.app.ProjectPath, "origin")
+		gs, err := gitutil.RunGitStatus(gitPath, "origin")
 		if err != nil {
 			return nil, err
 		}
 		return connect.NewResponse(&localv1.GitStatusResponse{
 			Branch:    gs.Branch,
 			GithubUrl: gs.RemoteURL,
+			Subpath:   subPath,
 		}), nil
 	}
 
 	// get ephemeral git credentials
-	config, err := s.app.ch.GitHelper(s.app.ch.Org, name, s.app.ProjectPath).GitConfig(ctx)
+	config, err := s.app.ch.GitHelper(s.app.ch.Org, name, gitPath).GitConfig(ctx)
 	if err != nil {
 		return nil, err
 	}
 	// set remote
 	// usually not needed but the older flow did not set the remote by name `rill`
-	err = gitutil.SetRemote(s.app.ProjectPath, config)
+	err = gitutil.SetRemote(gitPath, config)
 	if err != nil {
 		return nil, err
 	}
-	err = gitutil.GitFetch(ctx, s.app.ProjectPath, config)
+	err = gitutil.GitFetch(ctx, gitPath, config)
 	if err != nil {
 		return nil, err
 	}
-	gs, err := gitutil.RunGitStatus(s.app.ProjectPath, config.RemoteName())
+	gs, err := gitutil.RunGitStatus(gitPath, config.RemoteName())
 	if err != nil {
 		return nil, err
 	}
 	return connect.NewResponse(&localv1.GitStatusResponse{
 		Branch:        gs.Branch,
 		GithubUrl:     gs.RemoteURL,
+		Subpath:       subPath,
 		ManagedGit:    config.ManagedRepo,
 		LocalChanges:  gs.LocalChanges,
 		LocalCommits:  gs.LocalCommits,
 		RemoteCommits: gs.RemoteCommits,
+	}), nil
+}
+
+func (s *Server) GithubRepoStatus(ctx context.Context, r *connect.Request[localv1.GithubRepoStatusRequest]) (*connect.Response[localv1.GithubRepoStatusResponse], error) {
+	// Get an authenticated admin client
+	if !s.app.ch.IsAuthenticated() {
+		return nil, errors.New("must authenticate before performing this action")
+	}
+	c, err := s.app.ch.Client()
+	if err != nil {
+		return nil, err
+	}
+
+	// Forward the request to the admin server
+	resp, err := c.GetGithubRepoStatus(ctx, &adminv1.GetGithubRepoStatusRequest{
+		Remote: r.Msg.Remote,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return connect.NewResponse(&localv1.GithubRepoStatusResponse{
+		HasAccess:      resp.HasAccess,
+		GrantAccessUrl: resp.GrantAccessUrl,
+		DefaultBranch:  resp.DefaultBranch,
 	}), nil
 }
 
