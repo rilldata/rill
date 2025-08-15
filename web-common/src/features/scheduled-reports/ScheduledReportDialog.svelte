@@ -119,7 +119,23 @@
       slackChannels: array().of(string()),
       slackUsers: array().of(string().email("Invalid email")),
       columns: array().of(string()).min(1),
-    }),
+    }).test(
+      "at-least-one-recipient",
+      "At least one email recipient, slack user, or slack channel is required",
+      function (value) {
+        // Check if at least one array has non-empty values
+        const hasEmailRecipients =
+          value.emailRecipients?.filter(Boolean)?.length > 0;
+        const hasSlackUsers =
+          value.slackUsers?.filter(Boolean).length > 0 &&
+          value.enableSlackNotification;
+        const hasSlackChannels =
+          value.slackChannels?.filter(Boolean).length > 0 &&
+          value.enableSlackNotification;
+
+        return hasEmailRecipients || hasSlackUsers || hasSlackChannels;
+      },
+    ),
   ) as ValidationAdapter<ReportValues>;
 
   $: initialValues =
@@ -152,6 +168,8 @@
       invalidateAll: false,
     },
   ));
+
+  $: generalErrors = $errors._errors?.[0] ?? $mutation.error?.message;
 
   async function handleSubmit(values: ReportValues) {
     const refreshCron = convertFormValuesToCronExpression(
@@ -263,14 +281,14 @@
       {timeControls}
     />
 
+    {#if generalErrors}
+      <div class="text-red-500">{generalErrors}</div>
+    {/if}
     <div class="flex items-center gap-x-2 mt-5">
-      {#if $mutation.isError}
-        <div class="text-red-500">{$mutation.error.message}</div>
-      {/if}
       <div class="grow" />
       <Button onClick={() => (open = false)} type="secondary">Cancel</Button>
       <Button
-        disabled={$submitting || $form["emailRecipients"]?.length === 0}
+        disabled={$submitting}
         form={FORM_ID}
         submitForm
         type="primary"
