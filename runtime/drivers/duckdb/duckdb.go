@@ -101,6 +101,7 @@ var motherduckSpec = drivers.Spec{
 			Secret:      true,
 		},
 	},
+	ImplementsOLAP: true,
 }
 
 type Driver struct {
