@@ -19,7 +19,7 @@ The `rill.yaml` file contains metadata about your project.
 
 **`olap_connector`** - the default OLAP engine to use in your project
 
-**`mock_users`** — a list of mock users to test against dashboard [security policies](/manage/security). For each mock user, possible attributes include:
+**`mock_users`** — a list of mock users to test against dashboard [security policies](/build/metrics-view/security). For each mock user, possible attributes include:
 
   - **`email`** — the mock user's email _(required)_
   - **`name`** — the mock user's name
@@ -175,7 +175,7 @@ Don't forget the leading `/` when specifying the path for `ignore_paths` and thi
 
 ## Testing access policies 
 
-During development, it is always a good idea to check if your [access policies](/manage/security.md) are behaving the way you designed them to before pushing these changes into production. You can set mock users which enables a drop down in the dashboard preview to view as a specific user. 
+During development, it is always a good idea to check if your [access policies](/build/metrics-view/security.md) are behaving the way you designed them to before pushing these changes into production. You can set mock users which enables a drop down in the dashboard preview to view as a specific user. 
 
 ```yaml
 mock_users:

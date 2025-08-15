@@ -1,6 +1,6 @@
 ---
 title: Structure your project
-sidebar_label: Structure Project
+sidebar_label: Organize your Code Files
 sidebar_position: 00
 ---
 
