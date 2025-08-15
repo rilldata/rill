@@ -49,7 +49,6 @@ export const getYupSchema = {
   }),
 
   motherduck: yup.object().shape({
-    // dsn: yup.string().optional(),
     token: yup.string(),
     path: yup.string(),
   }),

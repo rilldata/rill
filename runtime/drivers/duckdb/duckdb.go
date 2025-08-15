@@ -101,14 +101,6 @@ var motherduckSpec = drivers.Spec{
 			Description: "Path to external DuckDB database.",
 			Placeholder: "/path/to/main.db",
 		},
-		// TODO: add DSN to config
-		// {
-		// 	Key:         "dsn",
-		// 	Type:        drivers.StringPropertyType,
-		// 	Required:    true,
-		// 	DisplayName: "MotherDuck Connection String",
-		// 	Placeholder: "md:motherduck.db",
-		// },
 	},
 }
 
