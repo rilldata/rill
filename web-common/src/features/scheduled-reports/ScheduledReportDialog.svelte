@@ -40,7 +40,7 @@
   import { get } from "svelte/store";
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup, type ValidationAdapter } from "sveltekit-superforms/adapters";
-  import { array, object, string } from "yup";
+  import { array, object, string, boolean } from "yup";
   import { Button } from "../../components/button";
   import {
     getRuntimeServiceGetResourceQueryKey,
@@ -116,6 +116,7 @@
     object({
       title: string().required("Required"),
       emailRecipients: array().of(string().email("Invalid email")),
+      enableSlackNotification: boolean(), // Needed to get the type for validation
       slackChannels: array().of(string()),
       slackUsers: array().of(string().email("Invalid email")),
       columns: array().of(string()).min(1),
@@ -124,14 +125,17 @@
       "At least one email recipient, slack user, or slack channel is required",
       function (value) {
         // Check if at least one array has non-empty values
-        const hasEmailRecipients =
-          value.emailRecipients?.filter(Boolean)?.length > 0;
-        const hasSlackUsers =
-          value.slackUsers?.filter(Boolean).length > 0 &&
-          value.enableSlackNotification;
-        const hasSlackChannels =
-          value.slackChannels?.filter(Boolean).length > 0 &&
-          value.enableSlackNotification;
+        const hasEmailRecipients = value.emailRecipients
+          ? value.emailRecipients.filter(Boolean).length > 0
+          : false;
+        if (!value.enableSlackNotification) return hasEmailRecipients;
+
+        const hasSlackUsers = value.slackUsers
+          ? value.slackUsers.filter(Boolean).length > 0
+          : false;
+        const hasSlackChannels = value.slackChannels
+          ? value.slackChannels.filter(Boolean).length > 0
+          : false;
 
         return hasEmailRecipients || hasSlackUsers || hasSlackChannels;
       },
