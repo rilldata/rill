@@ -84,7 +84,6 @@ export const aggregationRequestWithRowsAndColumns = ({
   selectedTimezone: string;
 }) => {
   return (aggregationRequest: V1MetricsViewAggregationRequest) => {
-    const allFields = new Set<string>([...rows, ...columns]);
     const isFlat = rows.length === 0;
 
     // Get measures defined as columns. We do allow adding measures as rows so need to check it.
@@ -123,13 +122,13 @@ export const aggregationRequestWithRowsAndColumns = ({
     const dimensions = [...dimensionsFromRows, ...dimensionsFromColumns];
 
     // Get the updated sort based on the new measures and dimensions
-    const updatedAggregationSort = getUpdatedAggregationSort(
+    const updatedAggregationSort = getUpdatedAggregationSort({
       aggregationRequest,
       measures,
       dimensions,
       pivotOn,
-      allFields,
-    );
+      selectedTimezone,
+    });
 
     return {
       ...aggregationRequest,
@@ -141,23 +140,43 @@ export const aggregationRequestWithRowsAndColumns = ({
   };
 };
 
-function getUpdatedAggregationSort(
-  aggregationRequest: V1MetricsViewAggregationRequest,
-  measures: V1MetricsViewAggregationMeasure[],
-  dimensions: V1MetricsViewAggregationDimension[],
-  pivotOn: string[],
-  allFields: Set<string>,
-) {
+function getUpdatedAggregationSort({
+  aggregationRequest,
+  measures,
+  dimensions,
+  pivotOn,
+  selectedTimezone,
+}: {
+  aggregationRequest: V1MetricsViewAggregationRequest;
+  measures: V1MetricsViewAggregationMeasure[];
+  dimensions: V1MetricsViewAggregationDimension[];
+  pivotOn: string[];
+  selectedTimezone: string;
+}) {
   const hasPivot = pivotOn.length > 0;
   const sort: V1MetricsViewAggregationSort[] =
-    aggregationRequest.sort?.filter((s) => {
-      if (!allFields.has(s.name!)) return false;
-      if (!hasPivot) return true;
-      // When there is a pivot we cannot sort by measure or the pivoted dimension
-      return (
-        !measures.find((m) => m.name === s.name) && !pivotOn.includes(s.name!)
-      );
-    }) ?? [];
+    (aggregationRequest.sort
+      ?.map((s) => {
+        const isMeasure = measures.find((m) => m.name === s.name);
+        // We cannot sort by measure when pivoting.
+        if (isMeasure) return hasPivot ? undefined : s;
+
+        const dim = getAggregationDimensionFromFieldName(
+          s.name!,
+          selectedTimezone,
+        );
+        const field = dim.alias ?? dim.name!;
+        const isDimension = dimensions.find(
+          (d) => (!!d.alias && d.alias === dim.alias) || d.name === dim.name,
+        );
+        return isDimension && !pivotOn.includes(field)
+          ? {
+              ...s,
+              name: field,
+            }
+          : undefined;
+      })
+      .filter(Boolean) as V1MetricsViewAggregationSort[]) ?? [];
 
   // Old sort is still valid. So retain it
   if (sort.length > 0) {

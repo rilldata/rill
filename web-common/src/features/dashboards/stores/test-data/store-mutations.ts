@@ -9,6 +9,7 @@ import {
   removeDimensionFilter,
   toggleDimensionValueSelection,
 } from "@rilldata/web-common/features/dashboards/state-managers/actions/dimension-filters";
+import { handleDimensionMeasureColumnHeaderClick } from "@rilldata/web-common/features/dashboards/state-managers/actions/dimension-table.ts";
 import {
   setPrimaryDimension,
   toggleDimensionVisibility,
@@ -246,6 +247,13 @@ export const AD_BIDS_SORT_ASC_BY_IMPRESSIONS: TestDashboardMutation = (mut) => {
   setSortDescending(mut);
   toggleSort(mut, mut.dashboard.dashboardSortType);
 };
+export const AD_BIDS_SORT_BY_PERCENT_CHANGE_IMPRESSIONS: TestDashboardMutation =
+  (mut) => {
+    handleDimensionMeasureColumnHeaderClick(
+      mut,
+      AD_BIDS_IMPRESSIONS_MEASURE + "_delta_perc",
+    );
+  };
 export const AD_BIDS_SORT_ASC_BY_BID_PRICE: TestDashboardMutation = (mut) => {
   setLeaderboardSortByMeasureName(mut, AD_BIDS_BID_PRICE_MEASURE);
   setSortDescending(mut);
@@ -438,6 +446,14 @@ export const AD_BIDS_OPEN_DOM_BP_PIVOT: TestDashboardMutation = () =>
       },
     ],
   );
+
+// Pivot actions are still using the old method. So they are not easily reusable.
+export const AD_BIDS_SET_TIME_PIVOT_FILTER = (field: string) => {
+  return (({ dashboard }) =>
+    (dashboard.pivot.sorting = [
+      { desc: true, id: field },
+    ])) as TestDashboardMutation;
+};
 
 export function applyMutationsToDashboard(
   name: string,
