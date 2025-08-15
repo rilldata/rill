@@ -378,6 +378,46 @@ func (b *sqlExprBuilder) writeILikeCondition(left, right *Expression, leftOverri
 		if b.ast.dialect.RequiresCastForLike() {
 			b.writeString("::TEXT")
 		}
+	} else if b.ast.dialect.SupportsRegexMatch() {
+		if not {
+			b.writeString(" NOT ")
+		}
+		b.writeString(b.ast.dialect.GetRegexMatchFunction())
+		b.writeByte('(')
+		if leftOverride != "" {
+			b.writeParenthesizedString(leftOverride)
+		} else {
+			err := b.writeExpression(left)
+			if err != nil {
+				return err
+			}
+		}
+		b.writeString(", ")
+		expr, err := convertLikeExpressionToRegexExpression(right)
+		if err != nil {
+			return fmt.Errorf("failed to convert LIKE expression to regex pattern: %w", err)
+		}
+		err = b.writeExpression(expr)
+		if err != nil {
+			return fmt.Errorf("failed to write regex pattern expression: %w", err)
+		}
+		b.writeByte(')')
+		if not {
+			b.writeString(" OR ")
+			if leftOverride != "" {
+				b.writeParenthesizedString(leftOverride)
+			} else {
+				err := b.writeExpression(left)
+				if err != nil {
+					return err
+				}
+			}
+			b.writeString(" IS NULL")
+		}
+
+		b.writeByte(')')
+
+		return nil
 	} else {
 		// Output: LOWER(<left>) [NOT] LIKE LOWER(<right>)
 
@@ -656,6 +696,17 @@ func (b *sqlExprBuilder) sqlForName(name string) (expr string, unnest bool, look
 	}
 
 	return "", false, nil, fmt.Errorf("name %q in expression is not a dimension or measure available in the current context", name)
+}
+
+func convertLikeExpressionToRegexExpression(like *Expression) (*Expression, error) {
+	val, ok := like.Value.(string)
+	if !ok {
+		return nil, fmt.Errorf("the pattern expression for regex match function must be a string value, got %T", like.Value)
+	}
+	// convert pattern to a case insensitive regex match pattern, e.g. "%foo%" becomes "^(?i).*foo.*$"
+	pattern := strings.ReplaceAll(val, "%", ".*")
+	pattern = fmt.Sprintf("^(?i)%s$", pattern)
+	return &Expression{Value: pattern}, nil
 }
 
 type lookupMeta struct {
