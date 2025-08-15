@@ -39,7 +39,11 @@ interface AddDataFormValues {
   [key: string]: unknown;
 }
 
-export async function submitAddSourceOrConnectorForm(
+/**
+ * Handles submission for sources, including those that get rewritten to DuckDB
+ * (GCS, S3, Azure, etc.) and actual source files.
+ */
+export async function submitAddSourceForm(
   queryClient: QueryClient,
   connector: V1ConnectorDriver,
   formValues: AddDataFormValues,
@@ -122,7 +126,13 @@ export async function submitAddSourceOrConnectorForm(
   }
 }
 
-export async function submitAddOLAPConnectorForm(
+/**
+ * Handles submission for all connector types:
+ * - OLAP engines (ClickHouse, Druid, Pinot)
+ * - Data warehouses (BigQuery, Snowflake, Redshift, etc.)
+ * - Databases (PostgreSQL, MySQL, SQLite, etc.)
+ */
+export async function submitAddConnectorForm(
   queryClient: QueryClient,
   connector: V1ConnectorDriver,
   formValues: AddDataFormValues,

@@ -18,8 +18,8 @@
   import { inferSourceName } from "../sourceUtils";
   import { humanReadableErrorMessage } from "../errors/errors";
   import {
-    submitAddOLAPConnectorForm,
-    submitAddSourceOrConnectorForm,
+    submitAddConnectorForm,
+    submitAddSourceForm,
   } from "./submitAddDataForm";
   import type { AddDataFormType, ConnectorType } from "./types";
   import { dsnSchema, getYupSchema } from "./yupSchemas";
@@ -157,9 +157,9 @@
     const values = event.form.data;
     try {
       if (formType === "source") {
-        await submitAddSourceOrConnectorForm(queryClient, connector, values);
+        await submitAddSourceForm(queryClient, connector, values);
       } else {
-        await submitAddOLAPConnectorForm(queryClient, connector, values);
+        await submitAddConnectorForm(queryClient, connector, values);
       }
       onClose();
     } catch (e) {
