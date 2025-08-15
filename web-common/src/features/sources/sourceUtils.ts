@@ -9,7 +9,12 @@ import { makeDotEnvConnectorKey } from "../connectors/code-utils";
 import { sanitizeEntityName } from "../entity-management/name-utils";
 
 // Helper text that we put at the top of every Source YAML file
-const TOP_OF_FILE = `# Source YAML
+const CONNECTOR_FILE_TOP = `# Connector YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/connectors
+
+type: connector`;
+
+const LOCAL_FILE_TOP = `# Source YAML
 # Reference documentation: https://docs.rilldata.com/reference/project-files/sources
 
 type: model
@@ -36,6 +41,7 @@ export function compileSourceYAML(
   // Compile key value pairs
   const compiledKeyValues = Object.keys(formValues)
     .filter((key) => {
+      // For connector files, exclude user-provided name since we use connector type
       if (key === "name") return false;
       const value = formValues[key];
       if (value === undefined) return false;
@@ -48,10 +54,7 @@ export function compileSourceYAML(
 
       const isSecretProperty = secretPropertyKeys.includes(key);
       if (isSecretProperty) {
-        // In Source YAML, explictly referencing `.env` secrets is not yet supported
-        // For now, `.env` secrets are implicitly referenced
-        return;
-
+        // For connector files, we include secret properties
         return `${key}: "{{ .env.${makeDotEnvConnectorKey(
           connector.name as string,
           key,
@@ -75,16 +78,13 @@ export function compileSourceYAML(
     })
     .join("\n");
 
-  // Return the compiled YAML
   return (
-    `${TOP_OF_FILE}\n\nconnector: "${connector.name}"\n` + compiledKeyValues
+    `${CONNECTOR_FILE_TOP}\n\ndriver: ${connector.name}\n` + compiledKeyValues
   );
 }
 
 export function compileLocalFileSourceYAML(path: string) {
-  return `${TOP_OF_FILE}\n\nconnector: "duckdb"\nsql: "${buildDuckDbQuery(
-    path,
-  )}"`;
+  return `${LOCAL_FILE_TOP}\n\ndriver: duckdb\nsql: "${buildDuckDbQuery(path)}"`;
 }
 
 function buildDuckDbQuery(path: string): string {
