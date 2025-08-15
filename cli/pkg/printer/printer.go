@@ -162,3 +162,36 @@ func (p *Printer) dataOut() io.Writer {
 	}
 	return os.Stdout
 }
+
+// FormatBytes converts bytes to human readable format
+func (p *Printer) FormatBytes(bytes int64) string {
+	const (
+		KB = 1024
+		MB = KB * 1024
+		GB = MB * 1024
+		TB = GB * 1024
+	)
+
+	if bytes < KB {
+		return fmt.Sprintf("%d B", bytes)
+	} else if bytes < MB {
+		return fmt.Sprintf("%.1f KiB", float64(bytes)/KB)
+	} else if bytes < GB {
+		return fmt.Sprintf("%.1f MiB", float64(bytes)/MB)
+	} else if bytes < TB {
+		return fmt.Sprintf("%.1f GiB", float64(bytes)/GB)
+	}
+	return fmt.Sprintf("%.1f TiB", float64(bytes)/TB)
+}
+
+// FormatNumber formats a number with appropriate suffix (K, M, B, etc.)
+func (p *Printer) FormatNumber(num int64) string {
+	if num < 1000 {
+		return fmt.Sprintf("%d", num)
+	} else if num < 1000000 {
+		return fmt.Sprintf("%.1fK", float64(num)/1000)
+	} else if num < 1000000000 {
+		return fmt.Sprintf("%.1fM", float64(num)/1000000)
+	}
+	return fmt.Sprintf("%.1fB", float64(num)/1000000000)
+}
