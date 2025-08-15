@@ -4749,6 +4749,11 @@ export class CanvasPreset extends Message<CanvasPreset> {
    */
   comparisonDimension?: string;
 
+  /**
+   * @generated from field: optional rill.runtime.v1.CanvasDefaultFilters filters = 9;
+   */
+  filters?: CanvasDefaultFilters;
+
   constructor(data?: PartialMessage<CanvasPreset>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4760,6 +4765,7 @@ export class CanvasPreset extends Message<CanvasPreset> {
     { no: 1, name: "time_range", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 2, name: "comparison_mode", kind: "enum", T: proto3.getEnumType(ExploreComparisonMode) },
     { no: 8, name: "comparison_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 9, name: "filters", kind: "message", T: CanvasDefaultFilters, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CanvasPreset {
@@ -4776,6 +4782,171 @@ export class CanvasPreset extends Message<CanvasPreset> {
 
   static equals(a: CanvasPreset | PlainMessage<CanvasPreset> | undefined, b: CanvasPreset | PlainMessage<CanvasPreset> | undefined): boolean {
     return proto3.util.equals(CanvasPreset, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.CanvasDimensionFilter
+ */
+export class CanvasDimensionFilter extends Message<CanvasDimensionFilter> {
+  /**
+   * @generated from field: string dimension = 1;
+   */
+  dimension = "";
+
+  /**
+   * @generated from field: repeated string values = 2;
+   */
+  values: string[] = [];
+
+  /**
+   * @generated from field: optional uint32 limit = 3;
+   */
+  limit?: number;
+
+  /**
+   * @generated from field: optional bool removable = 4;
+   */
+  removable?: boolean;
+
+  constructor(data?: PartialMessage<CanvasDimensionFilter>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.CanvasDimensionFilter";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "dimension", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "values", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 3, name: "limit", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
+    { no: 4, name: "removable", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CanvasDimensionFilter {
+    return new CanvasDimensionFilter().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CanvasDimensionFilter {
+    return new CanvasDimensionFilter().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CanvasDimensionFilter {
+    return new CanvasDimensionFilter().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: CanvasDimensionFilter | PlainMessage<CanvasDimensionFilter> | undefined, b: CanvasDimensionFilter | PlainMessage<CanvasDimensionFilter> | undefined): boolean {
+    return proto3.util.equals(CanvasDimensionFilter, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.CanvasMeasureFilter
+ */
+export class CanvasMeasureFilter extends Message<CanvasMeasureFilter> {
+  /**
+   * @generated from field: string measure = 1;
+   */
+  measure = "";
+
+  /**
+   * @generated from field: repeated uint32 values = 2;
+   */
+  values: number[] = [];
+
+  /**
+   * @generated from field: optional uint32 limit = 3;
+   */
+  limit?: number;
+
+  /**
+   * @generated from field: optional bool removable = 4;
+   */
+  removable?: boolean;
+
+  /**
+   * @generated from field: optional string by_dimension = 5;
+   */
+  byDimension?: string;
+
+  /**
+   * @generated from field: optional string operator = 6;
+   */
+  operator?: string;
+
+  constructor(data?: PartialMessage<CanvasMeasureFilter>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.CanvasMeasureFilter";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "measure", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "values", kind: "scalar", T: 13 /* ScalarType.UINT32 */, repeated: true },
+    { no: 3, name: "limit", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
+    { no: 4, name: "removable", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
+    { no: 5, name: "by_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 6, name: "operator", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CanvasMeasureFilter {
+    return new CanvasMeasureFilter().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CanvasMeasureFilter {
+    return new CanvasMeasureFilter().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CanvasMeasureFilter {
+    return new CanvasMeasureFilter().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: CanvasMeasureFilter | PlainMessage<CanvasMeasureFilter> | undefined, b: CanvasMeasureFilter | PlainMessage<CanvasMeasureFilter> | undefined): boolean {
+    return proto3.util.equals(CanvasMeasureFilter, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.CanvasDefaultFilters
+ */
+export class CanvasDefaultFilters extends Message<CanvasDefaultFilters> {
+  /**
+   * @generated from field: repeated rill.runtime.v1.CanvasMeasureFilter measures = 1;
+   */
+  measures: CanvasMeasureFilter[] = [];
+
+  /**
+   * @generated from field: repeated rill.runtime.v1.CanvasDimensionFilter dimensions = 2;
+   */
+  dimensions: CanvasDimensionFilter[] = [];
+
+  constructor(data?: PartialMessage<CanvasDefaultFilters>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.CanvasDefaultFilters";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "measures", kind: "message", T: CanvasMeasureFilter, repeated: true },
+    { no: 2, name: "dimensions", kind: "message", T: CanvasDimensionFilter, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CanvasDefaultFilters {
+    return new CanvasDefaultFilters().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CanvasDefaultFilters {
+    return new CanvasDefaultFilters().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CanvasDefaultFilters {
+    return new CanvasDefaultFilters().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: CanvasDefaultFilters | PlainMessage<CanvasDefaultFilters> | undefined, b: CanvasDefaultFilters | PlainMessage<CanvasDefaultFilters> | undefined): boolean {
+    return proto3.util.equals(CanvasDefaultFilters, a, b);
   }
 }
 

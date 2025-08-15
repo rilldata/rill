@@ -3824,6 +3824,33 @@ definitions:
         $ref: '#/definitions/v1CanvasSpec'
       state:
         $ref: '#/definitions/v1CanvasState'
+  v1CanvasDefaultFilters:
+    type: object
+    properties:
+      measures:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1CanvasMeasureFilter'
+      dimensions:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1CanvasDimensionFilter'
+  v1CanvasDimensionFilter:
+    type: object
+    properties:
+      dimension:
+        type: string
+      values:
+        type: array
+        items:
+          type: string
+      limit:
+        type: integer
+        format: int64
+      removable:
+        type: boolean
   v1CanvasItem:
     type: object
     properties:
@@ -3840,6 +3867,25 @@ definitions:
       widthUnit:
         type: string
         description: 'Unit of the width. Current possible values: empty string.'
+  v1CanvasMeasureFilter:
+    type: object
+    properties:
+      measure:
+        type: string
+      values:
+        type: array
+        items:
+          type: integer
+          format: int64
+      limit:
+        type: integer
+        format: int64
+      removable:
+        type: boolean
+      byDimension:
+        type: string
+      operator:
+        type: string
   v1CanvasPreset:
     type: object
     properties:
@@ -3857,6 +3903,8 @@ definitions:
       comparisonDimension:
         type: string
         description: If comparison_mode is EXPLORE_COMPARISON_MODE_DIMENSION, this indicates the dimension to use.
+      filters:
+        $ref: '#/definitions/v1CanvasDefaultFilters'
   v1CanvasRow:
     type: object
     properties:

@@ -793,6 +793,28 @@ message CanvasPreset {
   ExploreComparisonMode comparison_mode = 2;
   // If comparison_mode is EXPLORE_COMPARISON_MODE_DIMENSION, this indicates the dimension to use.
   optional string comparison_dimension = 8;
+  optional CanvasDefaultFilters filters = 9;
+}
+
+message CanvasDimensionFilter {
+  string dimension = 1;
+  repeated string values = 2;
+  optional uint32 limit = 3;
+  optional bool removable = 4;
+}
+
+message CanvasMeasureFilter {
+  string measure = 1;
+  repeated uint32 values = 2;
+  optional uint32 limit = 3;
+  optional bool removable = 4;
+  optional string by_dimension = 5;
+  optional string operator = 6;
+}
+
+message CanvasDefaultFilters {
+  repeated CanvasMeasureFilter measures = 1;
+  repeated CanvasDimensionFilter dimensions = 2;
 }
 
 // API defines a custom operation for querying data stored in Rill.
