@@ -99,7 +99,7 @@ var motherduckSpec = drivers.Spec{
 			Required:    true,
 			DisplayName: "Path",
 			Description: "Path to external DuckDB database.",
-			Placeholder: "/path/to/main.db",
+			Placeholder: "md:my_db",
 		},
 	},
 }
