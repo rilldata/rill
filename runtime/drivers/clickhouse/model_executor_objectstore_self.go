@@ -15,18 +15,6 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 )
 
-type objectStoreInputProps struct {
-	Path   string             `mapstructure:"path"`
-	Format drivers.FileFormat `mapstructure:"format"`
-}
-
-func (p *objectStoreInputProps) Validate() error {
-	if p.Path == "" {
-		return fmt.Errorf("clickhouse: path is required for the object store connector")
-	}
-	return nil
-}
-
 type objectStoreToSelfExecutor struct {
 	objectStore drivers.Handle
 	c           *Connection
@@ -42,34 +30,20 @@ func (e *objectStoreToSelfExecutor) Concurrency(desired int) (int, bool) {
 }
 
 func (e *objectStoreToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExecuteOptions) (*drivers.ModelResult, error) {
-	inputProps := &objectStoreInputProps{}
-	if err := mapstructure.WeakDecode(opts.InputProperties, inputProps); err != nil {
-		return nil, fmt.Errorf("failed to parse input properties: %w", err)
-	}
-	if err := inputProps.Validate(); err != nil {
+	inputProps := &drivers.ObjectStoreModelInputProperties{}
+	err := inputProps.Decode(opts.InputProperties)
+	if err != nil {
 		return nil, fmt.Errorf("invalid input properties: %w", err)
 	}
 
-	var glob string
-	if isGlob(inputProps.Path) {
-		glob = inputProps.Path
-	} else if filepath.Ext(inputProps.Path) != "" {
-		glob = inputProps.Path
-	} else {
-		if inputProps.Format == "" {
-			return nil, fmt.Errorf("clickhouse: format is required for non-glob paths")
-		}
-		var err error
-		glob, err = url.JoinPath(inputProps.Path, "**")
+	sql := inputProps.SQL
+	if sql == "" {
+		sql, err = e.genPathSQL(inputProps.Path, inputProps.Format)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	sql, err := e.genSQL(glob, format(inputProps.Format))
-	if err != nil {
-		return nil, err
-	}
 	props := &ModelInputProperties{SQL: sql}
 	propsMap := make(map[string]any)
 	if err := mapstructure.Decode(props, &propsMap); err != nil {
@@ -101,7 +75,23 @@ func (e *objectStoreToSelfExecutor) Execute(ctx context.Context, opts *drivers.M
 	return executor.Execute(ctx, newOpts)
 }
 
-func (e *objectStoreToSelfExecutor) genSQL(glob, format string) (string, error) {
+func (e *objectStoreToSelfExecutor) genPathSQL(path string, format drivers.FileFormat) (string, error) {
+	var glob string
+	if isGlob(path) {
+		glob = path
+	} else if filepath.Ext(path) != "" {
+		glob = path
+	} else {
+		if format == "" {
+			return "", fmt.Errorf("clickhouse: format is required for non-glob paths")
+		}
+		var err error
+		glob, err = url.JoinPath(path, "**")
+		if err != nil {
+			return "", err
+		}
+	}
+
 	switch e.objectStore.Driver() {
 	case "s3":
 		props := &s3.ConfigProperties{}
@@ -121,7 +111,7 @@ func (e *objectStoreToSelfExecutor) genSQL(glob, format string) (string, error) 
 		}
 		if format != "" {
 			sb.WriteString(", ")
-			sb.WriteString(format)
+			sb.WriteString(formatToSQL(format))
 		}
 		sb.WriteString(")")
 		return sb.String(), nil
@@ -143,7 +133,7 @@ func (e *objectStoreToSelfExecutor) genSQL(glob, format string) (string, error) 
 		}
 		if format != "" {
 			sb.WriteString(", ")
-			sb.WriteString(format)
+			sb.WriteString(formatToSQL(format))
 		}
 		sb.WriteString(")")
 		return sb.String(), nil
@@ -157,7 +147,7 @@ func isGlob(path string) bool {
 	return fileutil.IsGlob(glob)
 }
 
-func format(f drivers.FileFormat) string {
+func formatToSQL(f drivers.FileFormat) string {
 	switch f {
 	case drivers.FileFormatCSV:
 		return "CSV"
