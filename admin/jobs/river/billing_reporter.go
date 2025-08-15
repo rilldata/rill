@@ -1,15 +1,28 @@
-package worker
+package river
 
 import (
 	"context"
 	"fmt"
 	"time"
 
+	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/billing"
+	"github.com/riverqueue/river"
 	"go.uber.org/zap"
 )
 
-func (w *Worker) reportUsage(ctx context.Context) error {
+type BillingReporterArgs struct{}
+
+func (BillingReporterArgs) Kind() string { return "billing_reporter" }
+
+type BillingReporterWorker struct {
+	river.WorkerDefaults[BillingReporterArgs]
+	admin  *admin.Service
+	logger *zap.Logger
+}
+
+// NewBillingReporterWorker creates a new worker that reports billing information.
+func (w *BillingReporterWorker) Work(ctx context.Context, job *river.Job[BillingReporterArgs]) error {
 	// Get reporting granularity
 	var granularity time.Duration
 	var sqlGrainIdentifier string
