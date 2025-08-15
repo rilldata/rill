@@ -17,6 +17,29 @@ export function compileConnectorYAML(
     orderedProperties?: ConnectorDriverProperty[];
   },
 ) {
+  // Special handling for MotherDuck: convert to DuckDB driver with init_sql
+  if (connector.name === "motherduck") {
+    const token = formValues.token as string;
+    const path = formValues.path as string;
+
+    if (token && path) {
+      const MOTHERDUCK_TEMPLATE = `# Connector YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/connectors#motherduck
+  
+type: connector
+driver: duckdb
+
+path: "{{PATH}}"
+
+init_sql: |                                     # SQL executed during database initialization.
+  INSTALL 'motherduck';                         -- Install motherduck extension
+  LOAD 'motherduck';                            -- Load the extensions
+  SET motherduck_token= '{{ .env.connector.motherduck.token }}' -- Define the motherduck token`;
+
+      return MOTHERDUCK_TEMPLATE.replace("{{PATH}}", path);
+    }
+  }
+
   // Add instructions to the top of the file
   const topOfFile = `# Connector YAML
 # Reference documentation: https://docs.rilldata.com/reference/project-files/connectors
@@ -117,6 +140,17 @@ export async function updateDotEnvWithSecrets(
     } else {
       throw error;
     }
+  }
+
+  // Special handling for MotherDuck: use the correct environment variable key
+  if (connector.name === "motherduck" && formValues.token) {
+    const connectorSecretKey = "connector.motherduck.token";
+    blob = replaceOrAddEnvVariable(
+      blob,
+      connectorSecretKey,
+      formValues.token as string,
+    );
+    return blob;
   }
 
   // Get the secret keys

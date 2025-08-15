@@ -85,6 +85,14 @@ var motherduckSpec = drivers.Spec{
 	DocsURL:     "https://docs.rilldata.com/reference/connectors/motherduck",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
+			Key:         "path",
+			Type:        drivers.StringPropertyType,
+			Required:    true,
+			DisplayName: "Path",
+			Description: "Path to external DuckDB database.",
+			Placeholder: "md:my_db",
+		},
+		{
 			Key:         "token",
 			Type:        drivers.StringPropertyType,
 			Required:    true,
@@ -92,14 +100,6 @@ var motherduckSpec = drivers.Spec{
 			Description: "MotherDuck access token",
 			Placeholder: "your_access_token",
 			Secret:      true,
-		},
-		{
-			Key:         "path",
-			Type:        drivers.StringPropertyType,
-			Required:    true,
-			DisplayName: "Path",
-			Description: "Path to external DuckDB database.",
-			Placeholder: "md:my_db",
 		},
 	},
 }
