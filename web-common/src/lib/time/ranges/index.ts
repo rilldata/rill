@@ -179,8 +179,18 @@ export const prettyFormatTimeRange = (
   if (!start) {
     return end ? `- ${end}` : "";
   }
+  
   if (!end) {
-    return `${start} -`;
+    // Format single start timestamp
+    return start.toLocaleString(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "numeric",
+      hour12: true,
+      timeZone,
+    }).replace(/\s?([AP]M)/, (m) => m.toUpperCase()); // force AM/PM uppercase
   }
 
   const {

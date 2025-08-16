@@ -106,7 +106,7 @@ function convertV1AnnotationsResponseItemToAnnotation(
 
   const formattedTimeOrRange = prettyFormatTimeRange(
     startTime,
-    endTime ?? startTime,
+    endTime,
     TimeRangePreset.CUSTOM,
     selectedTimezone,
   );
