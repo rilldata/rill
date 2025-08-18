@@ -62,7 +62,7 @@ export async function submitAddSourceForm(
   if (isRewrittenToDuckDb) {
     // Connectors that get rewritten to DuckDB (GCS, S3, Azure, etc.) create source files
     const newSourceName = getName(
-      connector.name as string,
+      formValues.name as string,
       fileArtifacts.getNamesForKind(ResourceKind.Source),
     );
 
