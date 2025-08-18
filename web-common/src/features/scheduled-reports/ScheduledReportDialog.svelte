@@ -40,7 +40,7 @@
   import { get } from "svelte/store";
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup, type ValidationAdapter } from "sveltekit-superforms/adapters";
-  import { array, object, string, boolean } from "yup";
+  import { array, boolean, object, string } from "yup";
   import { Button } from "../../components/button";
   import {
     getRuntimeServiceGetResourceQueryKey,
@@ -228,12 +228,7 @@
                 : (props.reportSpec.annotations as V1ReportSpecAnnotations)[
                     "web_open_state"
                   ],
-            webOpenMode:
-              props.mode === "create"
-                ? "recipient" // To be changed to "filtered" once support is added
-                : ((props.reportSpec.annotations as V1ReportSpecAnnotations)[
-                    "web_open_mode"
-                  ] ?? "recipient"), // Backwards compatibility
+            webOpenMode: "filtered",
           },
         },
       });
