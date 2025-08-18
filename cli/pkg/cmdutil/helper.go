@@ -410,7 +410,7 @@ func (h *Helper) InferProjectName(ctx context.Context, org, pathToProject string
 	}
 	resp, err := c.ListProjectsForFingerprint(ctx, &adminv1.ListProjectsForFingerprintRequest{
 		DirectoryName: directoryName,
-		GithubUrl:     githubRemote,
+		GitRemote:     githubRemote,
 	})
 	if err != nil {
 		return "", err

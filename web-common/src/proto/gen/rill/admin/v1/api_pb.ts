@@ -1512,9 +1512,9 @@ export class ListProjectsForFingerprintRequest extends Message<ListProjectsForFi
   directoryName = "";
 
   /**
-   * @generated from field: string github_url = 2;
+   * @generated from field: string git_remote = 2;
    */
-  githubUrl = "";
+  gitRemote = "";
 
   /**
    * @generated from field: uint32 page_size = 3;
@@ -1535,7 +1535,7 @@ export class ListProjectsForFingerprintRequest extends Message<ListProjectsForFi
   static readonly typeName = "rill.admin.v1.ListProjectsForFingerprintRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "directory_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "github_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "git_remote", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "page_size", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 4, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);

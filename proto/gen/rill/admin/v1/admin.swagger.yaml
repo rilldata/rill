@@ -3452,7 +3452,7 @@ paths:
           in: query
           required: false
           type: string
-        - name: githubUrl
+        - name: gitRemote
           in: query
           required: false
           type: string

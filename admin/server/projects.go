@@ -145,7 +145,7 @@ func (s *Server) ListProjectsForOrganizationAndUser(ctx context.Context, req *ad
 func (s *Server) ListProjectsForFingerprint(ctx context.Context, req *adminv1.ListProjectsForFingerprintRequest) (*adminv1.ListProjectsForFingerprintResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.directory_name", req.DirectoryName),
-		attribute.String("args.github_url", req.GithubUrl),
+		attribute.String("args.git_remote", req.GitRemote),
 	)
 
 	claims := auth.GetClaims(ctx)
@@ -160,7 +160,7 @@ func (s *Server) ListProjectsForFingerprint(ctx context.Context, req *adminv1.Li
 	}
 	pageSize := validPageSize(req.PageSize)
 
-	projects, err := s.admin.DB.FindProjectsForUserAndFingerprint(ctx, userID, req.DirectoryName, req.GithubUrl, pageToken.Val, pageSize)
+	projects, err := s.admin.DB.FindProjectsForUserAndFingerprint(ctx, userID, req.DirectoryName, req.GitRemote, pageToken.Val, pageSize)
 	if err != nil {
 		return nil, err
 	}
@@ -2049,6 +2049,7 @@ func (s *Server) githubRepoIDForProject(ctx context.Context, p *database.Project
 		Name:                 p.Name,
 		Description:          p.Description,
 		Public:               p.Public,
+		DirectoryName:        p.DirectoryName,
 		ArchiveAssetID:       p.ArchiveAssetID,
 		GitRemote:            p.GitRemote,
 		GithubInstallationID: p.GithubInstallationID,

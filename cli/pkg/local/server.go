@@ -677,7 +677,7 @@ func (s *Server) ListCandidateProjects(ctx context.Context, r *connect.Request[l
 
 	resp, err := c.ListProjectsForFingerprint(ctx, &adminv1.ListProjectsForFingerprintRequest{
 		DirectoryName: directoryName,
-		GithubUrl:     githubURL,
+		GitRemote:     githubURL,
 	})
 	if err != nil {
 		return nil, err

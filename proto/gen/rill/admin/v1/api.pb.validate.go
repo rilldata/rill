@@ -3932,7 +3932,7 @@ func (m *ListProjectsForFingerprintRequest) validate(all bool) error {
 
 	// no validation rules for DirectoryName
 
-	// no validation rules for GithubUrl
+	// no validation rules for GitRemote
 
 	if m.GetPageSize() != 0 {
 

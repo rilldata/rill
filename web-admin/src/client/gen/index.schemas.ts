@@ -1956,7 +1956,7 @@ export type AdminServiceListProjectsForUserByNameParams = {
 
 export type AdminServiceListProjectsForFingerprintParams = {
   directoryName?: string;
-  githubUrl?: string;
+  gitRemote?: string;
   pageSize?: number;
   pageToken?: string;
 };
