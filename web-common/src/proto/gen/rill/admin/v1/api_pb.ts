@@ -11638,6 +11638,16 @@ export class GetReportMetaRequest extends Message<GetReportMetaRequest> {
    */
   webOpenMode = "";
 
+  /**
+   * @generated from field: string where_filter_json = 11;
+   */
+  whereFilterJson = "";
+
+  /**
+   * @generated from field: repeated string accessible_fields = 12;
+   */
+  accessibleFields: string[] = [];
+
   constructor(data?: PartialMessage<GetReportMetaRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -11654,6 +11664,8 @@ export class GetReportMetaRequest extends Message<GetReportMetaRequest> {
     { no: 8, name: "anon_recipients", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 9, name: "resources", kind: "message", T: ResourceName, repeated: true },
     { no: 10, name: "web_open_mode", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 11, name: "where_filter_json", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 12, name: "accessible_fields", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetReportMetaRequest {
