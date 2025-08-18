@@ -36,7 +36,6 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	"go.opentelemetry.io/otel/attribute"
-	"go.uber.org/zap"
 	"golang.org/x/oauth2"
 	githuboauth "golang.org/x/oauth2/github"
 	"google.golang.org/grpc/codes"
@@ -580,15 +579,22 @@ func (s *Server) githubConnect(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query()
 
 	remote := query.Get("remote") // May not be set
-	redirect, _ := url.QueryUnescape(query.Get("redirect"))
+	redirect, err := url.QueryUnescape(query.Get("redirect"))
+	if err != nil {
+		http.Error(w, fmt.Sprintf("failed to unescape redirect param: %s", err.Error()), http.StatusInternalServerError)
+		return
+	}
 	// Ignore escape error, param will be omitted.
 
 	// Redirect to Github App for installation
-	redirectURL, _ := s.githubAppInstallationURL(githubConnectState{
+	redirectURL, err := s.githubAppInstallationURL(githubConnectState{
 		Remote:   remote,
 		Redirect: redirect,
 	})
-	// TODO: what error to show here? Could show the unescape error as well.
+	if err != nil {
+		http.Error(w, fmt.Sprintf("failed to create redirect url: %s", err.Error()), http.StatusInternalServerError)
+		return
+	}
 
 	http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
 }
@@ -684,7 +690,7 @@ func (s *Server) githubConnectCallback(w http.ResponseWriter, r *http.Request) {
 
 	remoteURL, err = url.QueryUnescape(remoteURL)
 	if err != nil {
-		s.logger.Error("failed to parse state", zap.String("remote_url", remoteURL), zap.Error(err))
+		http.Error(w, fmt.Sprintf("failed to parse state for remote_url=%s: %s", remoteURL, err.Error()), http.StatusInternalServerError)
 		return
 	}
 
@@ -699,7 +705,7 @@ func (s *Server) githubConnectCallback(w http.ResponseWriter, r *http.Request) {
 	var state githubConnectState
 	err = json.Unmarshal([]byte(remoteURL), &state)
 	if err != nil {
-		s.logger.Error("failed to parse state", zap.String("remote_url", remoteURL), zap.Error(err))
+		http.Error(w, fmt.Sprintf("failed to parse state for remote_url=%s: %s", remoteURL, err.Error()), http.StatusInternalServerError)
 		return
 	}
 

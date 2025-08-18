@@ -51,11 +51,24 @@ export function getDeployOrGithubRouteGetter() {
     const hasLocalGitRepo = Boolean(
       $gitStatus.data?.githubUrl && !$gitStatus.data?.managedGit,
     );
-    return hasLocalGitRepo ? getDeployUsingGithubRoute : getCreateProjectRoute;
+    return {
+      isLoading: $gitStatus.isPending,
+      getter: hasLocalGitRepo
+        ? getDeployUsingGithubRoute
+        : getCreateProjectRoute,
+    };
   });
 }
 
-export function getDeployRouteForLocalRepo(orgName: string) {
+/**
+ * Returns a readable for the deploy route for the open project.
+ * 1. If the project is not a github repo it returns the create project route (/deploy/project/create) directly.
+ *    Right now this is just a safeguard. We check upfront for git repo
+ * 2. If the project is a github repo and we already have access to the repo then,
+ *    it returns the create project route with github option (/deploy/project/create?use_git=true).
+ * 3. If the project is a github repo and we do not have access to the repo then it returns github access route (/deploy/project/github)
+ */
+export function getDeployRouteForProject(orgName: string) {
   const localGitRepoStatusQuery = getLocalGitRepoStatus();
 
   return derived(

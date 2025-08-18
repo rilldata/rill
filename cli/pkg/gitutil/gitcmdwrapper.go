@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 	"strings"
 )
@@ -167,6 +168,23 @@ func InferGitRepoRoot(path string) (string, error) {
 		return "", err
 	}
 	return strings.TrimSpace(string(data)), nil
+}
+
+func InferGitRepoRootAndSubpath(path string) (string, string, error) {
+	repoRoot, err := InferGitRepoRoot(path)
+	if err != nil {
+		return "", "", err
+	}
+
+	subPath, err := filepath.Rel(repoRoot, path)
+	if err != nil {
+		return "", "", err
+	}
+	if subPath == "." {
+		subPath = ""
+	}
+
+	return repoRoot, subPath, nil
 }
 
 // countCommitsAhead counts the number of commits in `from` branch not present in `to` branch.

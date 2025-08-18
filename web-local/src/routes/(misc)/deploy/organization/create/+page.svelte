@@ -6,11 +6,12 @@
   import { getDeployOrGithubRouteGetter } from "@rilldata/web-common/features/project/deploy/route-utils.ts";
 
   const deployRouteGetter = getDeployOrGithubRouteGetter();
+  $: ({ isLoading, getter } = $deployRouteGetter);
 
   function selectOrg(orgName: string) {
     // This navigation gets cancelled if we do not have `setTimeout` here.
     // TODO: investigate why
-    setTimeout(() => void goto($deployRouteGetter(orgName)));
+    setTimeout(() => void goto(getter(orgName)));
   }
 </script>
 
@@ -31,6 +32,8 @@
   type="primary"
   submitForm
   form={CreateNewOrgFormId}
+  loading={isLoading}
+  disabled={isLoading}
 >
   Continue
 </Button>

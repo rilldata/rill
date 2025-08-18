@@ -18,7 +18,8 @@
   let isNewOrgDialogOpen = false;
 
   const deployRouteGetter = getDeployOrGithubRouteGetter();
-  $: createProjectUrl = $deployRouteGetter(selectedOrg);
+  $: ({ isLoading, getter } = $deployRouteGetter);
+  $: createProjectUrl = getter(selectedOrg);
   $: overwriteProjectUrl = getOverwriteProjectRoute(selectedOrg);
 
   $: orgOptions =
@@ -66,7 +67,13 @@
   </div>
 </Select>
 
-<Button wide type="primary" href={createProjectUrl} disabled={!selectedOrg}>
+<Button
+  wide
+  type="primary"
+  href={createProjectUrl}
+  loading={isLoading}
+  disabled={!selectedOrg || isLoading}
+>
   Deploy as a new project
 </Button>
 <Button

@@ -12,7 +12,7 @@
   $: repoName = getRepoNameFromGitRemote(gitRemote);
 </script>
 
-<div class="flex flex-col w-fit mx-auto text-center text-base text-sm">
+<div class="flex flex-col w-fit mx-auto text-center text-sm">
   <div class="flex flex-row gap-x-1 items-center">
     <Github className="w-4 h-4" />
     <a

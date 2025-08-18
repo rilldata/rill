@@ -3,9 +3,11 @@
   import Github from "@rilldata/web-common/components/icons/Github.svelte";
   import InfoCircle from "@rilldata/web-common/components/icons/InfoCircle.svelte";
   import * as Tooltip from "@rilldata/web-common/components/tooltip-v2";
+  import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
+  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types.ts";
   import {
     getCreateProjectRoute,
-    getDeployRouteForLocalRepo,
+    getDeployRouteForProject,
   } from "@rilldata/web-common/features/project/deploy/route-utils.ts";
   import { createLocalServiceGitStatus } from "@rilldata/web-common/runtime-client/local-service.ts";
   import GithubRepoDetails from "@rilldata/web-common/features/project/GithubRepoDetails.svelte";
@@ -15,7 +17,7 @@
   const orgParam = data.org;
 
   const gitStatusQuery = createLocalServiceGitStatus();
-  const deployUrl = getDeployRouteForLocalRepo(orgParam);
+  const deployUrl = getDeployRouteForProject(orgParam);
 </script>
 
 <div class="text-xl flex flex-col gap-y-4 items-center">
@@ -25,11 +27,15 @@
 <div class="text-base text-gray-500">
   We’ve detected a self-managed GitHub repo associated with this project:
 </div>
-<GithubRepoDetails
-  gitRemote={$gitStatusQuery.data?.githubUrl ?? ""}
-  branch={$gitStatusQuery.data?.branch ?? ""}
-  subpath={$gitStatusQuery.data?.subpath ?? ""}
-/>
+{#if $gitStatusQuery.isPending}
+  <Spinner status={EntityStatus.Running} size="2rem" duration={725} />
+{:else}
+  <GithubRepoDetails
+    gitRemote={$gitStatusQuery.data?.githubUrl ?? ""}
+    branch={$gitStatusQuery.data?.branch ?? ""}
+    subpath={$gitStatusQuery.data?.subpath ?? ""}
+  />
+{/if}
 <div class="text-base text-gray-500">
   In order to link Rill Cloud to this repo to sync project updates, you’ll need
   to authenticate and install Rill

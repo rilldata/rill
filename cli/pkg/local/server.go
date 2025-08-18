@@ -375,12 +375,7 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 			return nil, fmt.Errorf("rill git app should be installed/authorized by user before deploying, please visit %s", userStatus.GrantAccessUrl)
 		}
 
-		gitPath, err = gitutil.InferGitRepoRoot(s.app.ProjectPath)
-		if err != nil {
-			return nil, err
-		}
-
-		subPath, err := filepath.Rel(gitPath, s.app.ProjectPath)
+		gitPath, subPath, err := gitutil.InferGitRepoRootAndSubpath(s.app.ProjectPath)
 		if err != nil {
 			return nil, err
 		}
