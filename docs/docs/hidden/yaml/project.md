@@ -55,7 +55,7 @@ In your `rill.yaml`, the top level property for the resource type needs to be **
 :::info Hierarchy of inheritance and property overrides
 As a general rule of thumb, properties that have been specified at a more _granular_ level will supercede or override higher level properties that have been inherited. Therefore, in order of inheritance, Rill will prioritize properties in the following order:
 1. Individual [models](model.md)/[metrics_views](metrics-view.md)/[explore](explore.md) object level properties (e.g. `model.yaml` or `explore.yaml`)
-2. [Environment](/docs/build/models/environments.md) level properties (e.g. a specific property that have been set for `dev`)
+2. [Environment](/docs/build/models/templating.md) level properties (e.g. a specific property that have been set for `dev`)
 3. [Project-wide defaults](#project-wide-defaults) for a specific property and resource type
 :::
 
@@ -74,7 +74,7 @@ _[object]_ - Defines project-wide default settings for explores. Unless overridd
 
 ```yaml
 # For example, the following YAML configuration below will set a project-wide default for:
-# Models - Configure a [source refresh](/build/models/source-refresh).
+# Models - Configure a [source refresh](/build/models/data-refresh).
 # Metrics View - Set the [first day of the week](metrics-view.md) for timeseries aggregations to be Sunday along with setting the smallest_time_grain.
 # Explore Dashboards - Set the [default](explore-dashboards.md) values when a user opens a dashboard, and available time zones and/or time ranges.
 models:

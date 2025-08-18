@@ -65,7 +65,7 @@ In your `rill.yaml`, the top level property for the resource type needs to be **
 :::
 
 For example, the following YAML configuration below will set a project-wide default for:
-- **Sources** - Configure a [source refresh](/build/models/source-refresh).
+- **Sources** - Configure a [source refresh](/build/models/data-refresh).
 - **Models** - Automatically materialize the models as tables instead of views (the default behavior if unspecified).
 - **Metrics View** - Set the [first day of the week](metrics-views.md) for timeseries aggregations to be Sunday along with setting the smallest_time_grain.
 - **Explore Dashboards** - Set the [default](explore-dashboards.md) values when a user opens a dashboard, and available time zones and/or time ranges.
@@ -120,7 +120,7 @@ explores:
 
 As a general rule of thumb, properties that have been specified at a more _granular_ level will supercede or override higher level properties that have been inherited. Therefore, in order of inheritance, Rill will prioritize properties in the following order:
 1. Individual [source](/reference/project-files/sources.md)/[model](/reference/project-files/models.md)/[dashboard](/reference/project-files/explore-dashboards.md) object level properties (e.g. `source.yaml` or `dashboard.yaml`)
-2. [Environment](/docs/build/models/environments.md) level properties (e.g. a specific property that have been set for `dev`)
+2. [Environment](/docs/build/models/templating.md) level properties (e.g. a specific property that have been set for `dev`)
 3. [Project-wide defaults](/reference/project-files/rill-yaml.md#project-wide-defaults) for a specific property and resource type
 
 :::
