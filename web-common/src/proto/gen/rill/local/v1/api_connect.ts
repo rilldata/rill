@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { CreateOrganizationRequest, CreateOrganizationResponse, DeployProjectRequest, DeployProjectResponse, GetCurrentProjectRequest, GetCurrentProjectResponse, GetCurrentUserRequest, GetCurrentUserResponse, GetMetadataRequest, GetMetadataResponse, GetProjectRequest, GetProjectResponse, GetVersionRequest, GetVersionResponse, GitPullRequest, GitPullResponse, GitPushRequest, GitPushResponse, GitStatusRequest, GitStatusResponse, ListMatchingProjectsRequest, ListMatchingProjectsResponse, ListOrganizationsAndBillingMetadataRequest, ListOrganizationsAndBillingMetadataResponse, ListProjectsForOrgRequest, ListProjectsForOrgResponse, PingRequest, PingResponse, PushToGithubRequest, PushToGithubResponse, RedeployProjectRequest, RedeployProjectResponse } from "./api_pb.js";
+import { CreateOrganizationRequest, CreateOrganizationResponse, DeployProjectRequest, DeployProjectResponse, GetCurrentProjectRequest, GetCurrentProjectResponse, GetCurrentUserRequest, GetCurrentUserResponse, GetMetadataRequest, GetMetadataResponse, GetProjectRequest, GetProjectResponse, GetVersionRequest, GetVersionResponse, GitPullRequest, GitPullResponse, GitPushRequest, GitPushResponse, GitStatusRequest, GitStatusResponse, ListCandidateProjectsRequest, ListCandidateProjectsResponse, ListMatchingProjectsRequest, ListMatchingProjectsResponse, ListOrganizationsAndBillingMetadataRequest, ListOrganizationsAndBillingMetadataResponse, ListProjectsForOrgRequest, ListProjectsForOrgResponse, PingRequest, PingResponse, PushToGithubRequest, PushToGithubResponse, RedeployProjectRequest, RedeployProjectResponse } from "./api_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -128,6 +128,7 @@ export const LocalService = {
     },
     /**
      * GetCurrentProject returns the rill cloud project connected to the local project
+     * Deprecated: Use ListCandidateProjects instead.
      *
      * @generated from rpc rill.local.v1.LocalService.GetCurrentProject
      */
@@ -135,6 +136,17 @@ export const LocalService = {
       name: "GetCurrentProject",
       I: GetCurrentProjectRequest,
       O: GetCurrentProjectResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * ListCandidateProjects returns a list of cloud projects that are likely to have been deployed from the local project.
+     *
+     * @generated from rpc rill.local.v1.LocalService.ListCandidateProjects
+     */
+    listCandidateProjects: {
+      name: "ListCandidateProjects",
+      I: ListCandidateProjectsRequest,
+      O: ListCandidateProjectsResponse,
       kind: MethodKind.Unary,
     },
     /**

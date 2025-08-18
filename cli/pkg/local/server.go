@@ -329,6 +329,12 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 		return nil, fmt.Errorf("failed to set up .gitignore: %w", err)
 	}
 
+	// Get the project's directory name
+	directoryName := ""
+	if s.app.ProjectPath != "" {
+		directoryName = filepath.Base(s.app.ProjectPath)
+	}
+
 	var projRequest *adminv1.CreateProjectRequest
 	if r.Msg.Archive { // old zip-and-ship, currently used only for testing until we figure out a good way to test using manged github repos
 		assetID, err := cmdutil.UploadRepo(ctx, repo, s.app.ch, r.Msg.Org, r.Msg.ProjectName)
@@ -345,6 +351,7 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 			ProdVersion:      "",
 			ProdSlots:        int64(DefaultProdSlots(s.app.ch)),
 			Public:           false,
+			DirectoryName:    directoryName,
 			ArchiveAssetId:   assetID,
 		}
 	} else if r.Msg.Upload { // upload repo to rill managed storage instead of github
@@ -362,6 +369,7 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 			ProdVersion:      "",
 			ProdSlots:        int64(DefaultProdSlots(s.app.ch)),
 			Public:           false,
+			DirectoryName:    directoryName,
 			GitRemote:        ghRepo.Remote,
 		}
 	} else {
@@ -413,6 +421,7 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 			ProdVersion:      "",
 			ProdSlots:        int64(DefaultProdSlots(s.app.ch)),
 			Public:           false,
+			DirectoryName:    directoryName,
 			GitRemote:        githubRemote,
 			Subpath:          "",
 			ProdBranch:       repoStatus.DefaultBranch,
@@ -649,6 +658,33 @@ func (s *Server) GetCurrentProject(ctx context.Context, r *connect.Request[local
 	return connect.NewResponse(&localv1.GetCurrentProjectResponse{
 		LocalProjectName: localProjectName,
 		Project:          project,
+	}), nil
+}
+
+func (s *Server) ListCandidateProjects(ctx context.Context, r *connect.Request[localv1.ListCandidateProjectsRequest]) (*connect.Response[localv1.ListCandidateProjectsResponse], error) {
+	// Get authenticated admin client
+	if !s.app.ch.IsAuthenticated() {
+		return nil, errors.New("must authenticate before performing this action")
+	}
+	c, err := s.app.ch.Client()
+	if err != nil {
+		return nil, err
+	}
+
+	directoryName := filepath.Base(s.app.ProjectPath)
+	remote, _ := gitutil.ExtractGitRemote(s.app.ProjectPath, "", false)
+	githubURL, _ := remote.Github()
+
+	resp, err := c.ListProjectsForFingerprint(ctx, &adminv1.ListProjectsForFingerprintRequest{
+		DirectoryName: directoryName,
+		GithubUrl:     githubURL,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return connect.NewResponse(&localv1.ListCandidateProjectsResponse{
+		Projects: resp.Projects,
 	}), nil
 }
 

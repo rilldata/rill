@@ -249,6 +249,7 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 		Subpath:          opts.SubPath,
 		ProdBranch:       opts.ProdBranch,
 		Public:           opts.Public,
+		DirectoryName:    localGitPath,
 		GitRemote:        gitRemote,
 	})
 	if err != nil {

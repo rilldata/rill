@@ -5,6 +5,7 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -389,9 +390,9 @@ func (h *Helper) ProjectNamesByGitRemote(ctx context.Context, org, remote, subPa
 	return names, nil
 }
 
-func (h *Helper) InferProjectName(ctx context.Context, org, path string) (string, error) {
+func (h *Helper) InferProjectName(ctx context.Context, org, pathToProject string) (string, error) {
 	// Try loading the project from the .rillcloud directory
-	proj, err := h.LoadProject(ctx, path)
+	proj, err := h.LoadProject(ctx, pathToProject)
 	if err != nil {
 		return "", err
 	}
@@ -399,26 +400,30 @@ func (h *Helper) InferProjectName(ctx context.Context, org, path string) (string
 		return proj.Name, nil
 	}
 
-	// Verify projectPath is a Git repo with remote on Github
-	remote, err := gitutil.ExtractGitRemote(path, "", true)
+	directoryName := filepath.Base(pathToProject)
+	remote, _ := gitutil.ExtractGitRemote(pathToProject, "", true)
+	githubRemote, _ := remote.Github()
+
+	c, err := h.Client()
 	if err != nil {
 		return "", err
 	}
-	githubRemote, err := remote.Github()
+	resp, err := c.ListProjectsForFingerprint(ctx, &adminv1.ListProjectsForFingerprintRequest{
+		DirectoryName: directoryName,
+		GithubUrl:     githubRemote,
+	})
 	if err != nil {
 		return "", err
 	}
 
-	// Fetch project names matching the Github URL
-	names, err := h.ProjectNamesByGitRemote(ctx, org, githubRemote, "")
-	if err != nil {
-		return "", err
+	if len(resp.Projects) == 1 {
+		return resp.Projects[0].Name, nil
 	}
 
-	if len(names) == 1 {
-		return names[0], nil
+	var names []string
+	for _, p := range resp.Projects {
+		names = append(names, p.Name)
 	}
-
 	return SelectPrompt("Select project", names, "")
 }
 

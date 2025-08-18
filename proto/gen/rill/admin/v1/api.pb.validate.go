@@ -3907,6 +3907,273 @@ var _ interface {
 	ErrorName() string
 } = ListProjectsForOrganizationAndUserResponseValidationError{}
 
+// Validate checks the field values on ListProjectsForFingerprintRequest with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the first error encountered is returned, or nil if there are
+// no violations.
+func (m *ListProjectsForFingerprintRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ListProjectsForFingerprintRequest
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the result is a list of violation errors wrapped in
+// ListProjectsForFingerprintRequestMultiError, or nil if none found.
+func (m *ListProjectsForFingerprintRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ListProjectsForFingerprintRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for DirectoryName
+
+	// no validation rules for GithubUrl
+
+	if m.GetPageSize() != 0 {
+
+		if m.GetPageSize() > 1000 {
+			err := ListProjectsForFingerprintRequestValidationError{
+				field:  "PageSize",
+				reason: "value must be less than or equal to 1000",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+	}
+
+	// no validation rules for PageToken
+
+	if len(errors) > 0 {
+		return ListProjectsForFingerprintRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// ListProjectsForFingerprintRequestMultiError is an error wrapping multiple
+// validation errors returned by
+// ListProjectsForFingerprintRequest.ValidateAll() if the designated
+// constraints aren't met.
+type ListProjectsForFingerprintRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ListProjectsForFingerprintRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ListProjectsForFingerprintRequestMultiError) AllErrors() []error { return m }
+
+// ListProjectsForFingerprintRequestValidationError is the validation error
+// returned by ListProjectsForFingerprintRequest.Validate if the designated
+// constraints aren't met.
+type ListProjectsForFingerprintRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ListProjectsForFingerprintRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ListProjectsForFingerprintRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ListProjectsForFingerprintRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ListProjectsForFingerprintRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ListProjectsForFingerprintRequestValidationError) ErrorName() string {
+	return "ListProjectsForFingerprintRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ListProjectsForFingerprintRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sListProjectsForFingerprintRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ListProjectsForFingerprintRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ListProjectsForFingerprintRequestValidationError{}
+
+// Validate checks the field values on ListProjectsForFingerprintResponse with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the first error encountered is returned, or nil if there are
+// no violations.
+func (m *ListProjectsForFingerprintResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ListProjectsForFingerprintResponse
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the result is a list of violation errors wrapped in
+// ListProjectsForFingerprintResponseMultiError, or nil if none found.
+func (m *ListProjectsForFingerprintResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ListProjectsForFingerprintResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	for idx, item := range m.GetProjects() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ListProjectsForFingerprintResponseValidationError{
+						field:  fmt.Sprintf("Projects[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ListProjectsForFingerprintResponseValidationError{
+						field:  fmt.Sprintf("Projects[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ListProjectsForFingerprintResponseValidationError{
+					field:  fmt.Sprintf("Projects[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	// no validation rules for NextPageToken
+
+	if len(errors) > 0 {
+		return ListProjectsForFingerprintResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// ListProjectsForFingerprintResponseMultiError is an error wrapping multiple
+// validation errors returned by
+// ListProjectsForFingerprintResponse.ValidateAll() if the designated
+// constraints aren't met.
+type ListProjectsForFingerprintResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ListProjectsForFingerprintResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ListProjectsForFingerprintResponseMultiError) AllErrors() []error { return m }
+
+// ListProjectsForFingerprintResponseValidationError is the validation error
+// returned by ListProjectsForFingerprintResponse.Validate if the designated
+// constraints aren't met.
+type ListProjectsForFingerprintResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ListProjectsForFingerprintResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ListProjectsForFingerprintResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ListProjectsForFingerprintResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ListProjectsForFingerprintResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ListProjectsForFingerprintResponseValidationError) ErrorName() string {
+	return "ListProjectsForFingerprintResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ListProjectsForFingerprintResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sListProjectsForFingerprintResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ListProjectsForFingerprintResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ListProjectsForFingerprintResponseValidationError{}
+
 // Validate checks the field values on GetProjectRequest with the rules defined
 // in the proto definition for this message. If any rules are violated, the
 // first error encountered is returned, or nil if there are no violations.
@@ -9282,6 +9549,8 @@ func (m *CreateProjectRequest) validate(all bool) error {
 
 	// no validation rules for Public
 
+	// no validation rules for DirectoryName
+
 	// no validation rules for Provisioner
 
 	// no validation rules for ProdSlots
@@ -9771,6 +10040,10 @@ func (m *UpdateProjectRequest) validate(all bool) error {
 
 	if m.Public != nil {
 		// no validation rules for Public
+	}
+
+	if m.DirectoryName != nil {
+		// no validation rules for DirectoryName
 	}
 
 	if m.ProdBranch != nil {
@@ -39964,6 +40237,8 @@ func (m *Project) validate(all bool) error {
 	// no validation rules for Public
 
 	// no validation rules for CreatedByUserId
+
+	// no validation rules for DirectoryName
 
 	// no validation rules for Provisioner
 

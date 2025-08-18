@@ -262,6 +262,7 @@ func DeployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployO
 		ProdVersion:      opts.ProdVersion,
 		ProdSlots:        int64(opts.Slots),
 		Public:           opts.Public,
+		DirectoryName:    filepath.Base(localProjectPath),
 	}
 
 	ch.Printer.Println("Starting upload.")
