@@ -148,6 +148,18 @@ func RunGitPull(ctx context.Context, path string, discardLocal bool, remote, rem
 	return "", nil
 }
 
+func RunGitPush(ctx context.Context, path, remoteName, branchName string) error {
+	cmd := exec.CommandContext(ctx, "git", "-C", path, "push", remoteName, branchName)
+	if err := cmd.Run(); err != nil {
+		var execErr *exec.ExitError
+		if errors.As(err, &execErr) {
+			return fmt.Errorf("git push failed: %s", string(execErr.Stderr))
+		}
+		return fmt.Errorf("git push failed: %w", err)
+	}
+	return nil
+}
+
 // countCommitsAhead counts the number of commits in `from` branch not present in `to` branch.
 func countCommitsAhead(path, to, from string) (int32, error) {
 	cmd := exec.Command("git", "-C", path, "rev-list", "--count", fmt.Sprintf("%s..%s", to, from))
