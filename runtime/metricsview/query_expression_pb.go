@@ -1,6 +1,7 @@
 package metricsview
 
 import (
+	"fmt"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"google.golang.org/protobuf/types/known/structpb"
 )
@@ -119,6 +120,8 @@ func ExpressionToProto(expr *Expression) *runtimev1.Expression {
 			op = runtimev1.Operation_OPERATION_LIKE
 		case OperatorNilike:
 			op = runtimev1.Operation_OPERATION_NLIKE
+		default:
+			panic(fmt.Sprintf("unknown operator %q", expr.Condition.Operator))
 		}
 		exprs := make([]*runtimev1.Expression, 0, len(expr.Condition.Expressions))
 		for _, e := range expr.Condition.Expressions {
