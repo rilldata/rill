@@ -313,7 +313,6 @@
       {#if connector.name === "clickhouse"}
         <AddClickHouseForm
           {connector}
-          {formType}
           {onClose}
           setError={(error, details) => {
             clickhouseError = error;

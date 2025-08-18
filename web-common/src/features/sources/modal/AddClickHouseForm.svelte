@@ -17,11 +17,8 @@
   import { TabsContent } from "@rilldata/web-common/components/tabs";
   import { inferSourceName } from "../sourceUtils";
   import { humanReadableErrorMessage } from "../errors/errors";
-  import {
-    submitAddConnectorForm,
-    submitAddSourceForm,
-  } from "./submitAddDataForm";
-  import type { AddDataFormType, ConnectorType } from "./types";
+  import { submitAddConnectorForm } from "./submitAddDataForm";
+  import type { ConnectorType } from "./types";
   import { dsnSchema, getYupSchema } from "./yupSchemas";
   import Checkbox from "@rilldata/web-common/components/forms/Checkbox.svelte";
   import { isEmpty, normalizeErrors } from "./utils";
@@ -30,7 +27,6 @@
   import { getInitialFormValuesFromProperties } from "../sourceUtils";
 
   export let connector: V1ConnectorDriver;
-  export let formType: AddDataFormType;
   export let formId: string;
   export let submitting: boolean;
   export let isSubmitDisabled: boolean;
@@ -156,11 +152,7 @@
     if (!event.form.valid) return;
     const values = event.form.data;
     try {
-      if (formType === "source") {
-        await submitAddSourceForm(queryClient, connector, values);
-      } else {
-        await submitAddConnectorForm(queryClient, connector, values);
-      }
+      await submitAddConnectorForm(queryClient, connector, values);
       onClose();
     } catch (e) {
       let error: string;
