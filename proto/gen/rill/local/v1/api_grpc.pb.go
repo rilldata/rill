@@ -30,7 +30,6 @@ const (
 	LocalService_RedeployProject_FullMethodName                     = "/rill.local.v1.LocalService/RedeployProject"
 	LocalService_GetCurrentUser_FullMethodName                      = "/rill.local.v1.LocalService/GetCurrentUser"
 	LocalService_GetCurrentProject_FullMethodName                   = "/rill.local.v1.LocalService/GetCurrentProject"
-	LocalService_ListCandidateProjects_FullMethodName               = "/rill.local.v1.LocalService/ListCandidateProjects"
 	LocalService_ListOrganizationsAndBillingMetadata_FullMethodName = "/rill.local.v1.LocalService/ListOrganizationsAndBillingMetadata"
 	LocalService_CreateOrganization_FullMethodName                  = "/rill.local.v1.LocalService/CreateOrganization"
 	LocalService_ListMatchingProjects_FullMethodName                = "/rill.local.v1.LocalService/ListMatchingProjects"
@@ -67,10 +66,8 @@ type LocalServiceClient interface {
 	// GetCurrentUser returns the locally logged in user
 	GetCurrentUser(ctx context.Context, in *GetCurrentUserRequest, opts ...grpc.CallOption) (*GetCurrentUserResponse, error)
 	// GetCurrentProject returns the rill cloud project connected to the local project
-	// Deprecated: Use ListCandidateProjects instead.
+	// Deprecated: Use ListMatchingProjects instead.
 	GetCurrentProject(ctx context.Context, in *GetCurrentProjectRequest, opts ...grpc.CallOption) (*GetCurrentProjectResponse, error)
-	// ListCandidateProjects returns a list of cloud projects that are likely to have been deployed from the local project.
-	ListCandidateProjects(ctx context.Context, in *ListCandidateProjectsRequest, opts ...grpc.CallOption) (*ListCandidateProjectsResponse, error)
 	// ListOrganizationsAndBillingMetadata returns metadata about the current user's orgs.
 	ListOrganizationsAndBillingMetadata(ctx context.Context, in *ListOrganizationsAndBillingMetadataRequest, opts ...grpc.CallOption) (*ListOrganizationsAndBillingMetadataResponse, error)
 	// CreateOrganization creates a new organization
@@ -201,16 +198,6 @@ func (c *localServiceClient) GetCurrentProject(ctx context.Context, in *GetCurre
 	return out, nil
 }
 
-func (c *localServiceClient) ListCandidateProjects(ctx context.Context, in *ListCandidateProjectsRequest, opts ...grpc.CallOption) (*ListCandidateProjectsResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ListCandidateProjectsResponse)
-	err := c.cc.Invoke(ctx, LocalService_ListCandidateProjects_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *localServiceClient) ListOrganizationsAndBillingMetadata(ctx context.Context, in *ListOrganizationsAndBillingMetadataRequest, opts ...grpc.CallOption) (*ListOrganizationsAndBillingMetadataResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListOrganizationsAndBillingMetadataResponse)
@@ -290,10 +277,8 @@ type LocalServiceServer interface {
 	// GetCurrentUser returns the locally logged in user
 	GetCurrentUser(context.Context, *GetCurrentUserRequest) (*GetCurrentUserResponse, error)
 	// GetCurrentProject returns the rill cloud project connected to the local project
-	// Deprecated: Use ListCandidateProjects instead.
+	// Deprecated: Use ListMatchingProjects instead.
 	GetCurrentProject(context.Context, *GetCurrentProjectRequest) (*GetCurrentProjectResponse, error)
-	// ListCandidateProjects returns a list of cloud projects that are likely to have been deployed from the local project.
-	ListCandidateProjects(context.Context, *ListCandidateProjectsRequest) (*ListCandidateProjectsResponse, error)
 	// ListOrganizationsAndBillingMetadata returns metadata about the current user's orgs.
 	ListOrganizationsAndBillingMetadata(context.Context, *ListOrganizationsAndBillingMetadataRequest) (*ListOrganizationsAndBillingMetadataResponse, error)
 	// CreateOrganization creates a new organization
@@ -346,9 +331,6 @@ func (UnimplementedLocalServiceServer) GetCurrentUser(context.Context, *GetCurre
 }
 func (UnimplementedLocalServiceServer) GetCurrentProject(context.Context, *GetCurrentProjectRequest) (*GetCurrentProjectResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetCurrentProject not implemented")
-}
-func (UnimplementedLocalServiceServer) ListCandidateProjects(context.Context, *ListCandidateProjectsRequest) (*ListCandidateProjectsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ListCandidateProjects not implemented")
 }
 func (UnimplementedLocalServiceServer) ListOrganizationsAndBillingMetadata(context.Context, *ListOrganizationsAndBillingMetadataRequest) (*ListOrganizationsAndBillingMetadataResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListOrganizationsAndBillingMetadata not implemented")
@@ -584,24 +566,6 @@ func _LocalService_GetCurrentProject_Handler(srv interface{}, ctx context.Contex
 	return interceptor(ctx, in, info, handler)
 }
 
-func _LocalService_ListCandidateProjects_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListCandidateProjectsRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(LocalServiceServer).ListCandidateProjects(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: LocalService_ListCandidateProjects_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(LocalServiceServer).ListCandidateProjects(ctx, req.(*ListCandidateProjectsRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _LocalService_ListOrganizationsAndBillingMetadata_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListOrganizationsAndBillingMetadataRequest)
 	if err := dec(in); err != nil {
@@ -742,10 +706,6 @@ var LocalService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetCurrentProject",
 			Handler:    _LocalService_GetCurrentProject_Handler,
-		},
-		{
-			MethodName: "ListCandidateProjects",
-			Handler:    _LocalService_ListCandidateProjects_Handler,
 		},
 		{
 			MethodName: "ListOrganizationsAndBillingMetadata",

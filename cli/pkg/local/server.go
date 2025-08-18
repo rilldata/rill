@@ -32,7 +32,6 @@ import (
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	localv1 "github.com/rilldata/rill/proto/gen/rill/local/v1"
 	"github.com/rilldata/rill/proto/gen/rill/local/v1/localv1connect"
-	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
@@ -661,33 +660,6 @@ func (s *Server) GetCurrentProject(ctx context.Context, r *connect.Request[local
 	}), nil
 }
 
-func (s *Server) ListCandidateProjects(ctx context.Context, r *connect.Request[localv1.ListCandidateProjectsRequest]) (*connect.Response[localv1.ListCandidateProjectsResponse], error) {
-	// Get authenticated admin client
-	if !s.app.ch.IsAuthenticated() {
-		return nil, errors.New("must authenticate before performing this action")
-	}
-	c, err := s.app.ch.Client()
-	if err != nil {
-		return nil, err
-	}
-
-	directoryName := filepath.Base(s.app.ProjectPath)
-	remote, _ := gitutil.ExtractGitRemote(s.app.ProjectPath, "", false)
-	githubURL, _ := remote.Github()
-
-	resp, err := c.ListProjectsForFingerprint(ctx, &adminv1.ListProjectsForFingerprintRequest{
-		DirectoryName: directoryName,
-		GitRemote:     githubURL,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return connect.NewResponse(&localv1.ListCandidateProjectsResponse{
-		Projects: resp.Projects,
-	}), nil
-}
-
 func (s *Server) ListOrganizationsAndBillingMetadata(ctx context.Context, r *connect.Request[localv1.ListOrganizationsAndBillingMetadataRequest]) (*connect.Response[localv1.ListOrganizationsAndBillingMetadataResponse], error) {
 	// Get authenticated admin client
 	if !s.app.ch.IsAuthenticated() {
@@ -757,16 +729,20 @@ func (s *Server) ListMatchingProjects(ctx context.Context, r *connect.Request[lo
 		return nil, err
 	}
 
-	projectName := fileutil.Stem(s.app.ProjectPath)
-	projResp, err := c.ListProjectsForUserByName(ctx, &adminv1.ListProjectsForUserByNameRequest{
-		Name: projectName,
+	directoryName := filepath.Base(s.app.ProjectPath)
+	remote, _ := gitutil.ExtractGitRemote(s.app.ProjectPath, "", false)
+	githubURL, _ := remote.Github()
+
+	resp, err := c.ListProjectsForFingerprint(ctx, &adminv1.ListProjectsForFingerprintRequest{
+		DirectoryName: directoryName,
+		GitRemote:     githubURL,
 	})
 	if err != nil {
 		return nil, err
 	}
 
 	return connect.NewResponse(&localv1.ListMatchingProjectsResponse{
-		Projects: projResp.Projects,
+		Projects: resp.Projects,
 	}), nil
 }
 

@@ -61,9 +61,6 @@ const (
 	// LocalServiceGetCurrentProjectProcedure is the fully-qualified name of the LocalService's
 	// GetCurrentProject RPC.
 	LocalServiceGetCurrentProjectProcedure = "/rill.local.v1.LocalService/GetCurrentProject"
-	// LocalServiceListCandidateProjectsProcedure is the fully-qualified name of the LocalService's
-	// ListCandidateProjects RPC.
-	LocalServiceListCandidateProjectsProcedure = "/rill.local.v1.LocalService/ListCandidateProjects"
 	// LocalServiceListOrganizationsAndBillingMetadataProcedure is the fully-qualified name of the
 	// LocalService's ListOrganizationsAndBillingMetadata RPC.
 	LocalServiceListOrganizationsAndBillingMetadataProcedure = "/rill.local.v1.LocalService/ListOrganizationsAndBillingMetadata"
@@ -94,7 +91,6 @@ var (
 	localServiceRedeployProjectMethodDescriptor                     = localServiceServiceDescriptor.Methods().ByName("RedeployProject")
 	localServiceGetCurrentUserMethodDescriptor                      = localServiceServiceDescriptor.Methods().ByName("GetCurrentUser")
 	localServiceGetCurrentProjectMethodDescriptor                   = localServiceServiceDescriptor.Methods().ByName("GetCurrentProject")
-	localServiceListCandidateProjectsMethodDescriptor               = localServiceServiceDescriptor.Methods().ByName("ListCandidateProjects")
 	localServiceListOrganizationsAndBillingMetadataMethodDescriptor = localServiceServiceDescriptor.Methods().ByName("ListOrganizationsAndBillingMetadata")
 	localServiceCreateOrganizationMethodDescriptor                  = localServiceServiceDescriptor.Methods().ByName("CreateOrganization")
 	localServiceListMatchingProjectsMethodDescriptor                = localServiceServiceDescriptor.Methods().ByName("ListMatchingProjects")
@@ -129,10 +125,8 @@ type LocalServiceClient interface {
 	// GetCurrentUser returns the locally logged in user
 	GetCurrentUser(context.Context, *connect.Request[v1.GetCurrentUserRequest]) (*connect.Response[v1.GetCurrentUserResponse], error)
 	// GetCurrentProject returns the rill cloud project connected to the local project
-	// Deprecated: Use ListCandidateProjects instead.
+	// Deprecated: Use ListMatchingProjects instead.
 	GetCurrentProject(context.Context, *connect.Request[v1.GetCurrentProjectRequest]) (*connect.Response[v1.GetCurrentProjectResponse], error)
-	// ListCandidateProjects returns a list of cloud projects that are likely to have been deployed from the local project.
-	ListCandidateProjects(context.Context, *connect.Request[v1.ListCandidateProjectsRequest]) (*connect.Response[v1.ListCandidateProjectsResponse], error)
 	// ListOrganizationsAndBillingMetadata returns metadata about the current user's orgs.
 	ListOrganizationsAndBillingMetadata(context.Context, *connect.Request[v1.ListOrganizationsAndBillingMetadataRequest]) (*connect.Response[v1.ListOrganizationsAndBillingMetadataResponse], error)
 	// CreateOrganization creates a new organization
@@ -221,12 +215,6 @@ func NewLocalServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 			connect.WithSchema(localServiceGetCurrentProjectMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
-		listCandidateProjects: connect.NewClient[v1.ListCandidateProjectsRequest, v1.ListCandidateProjectsResponse](
-			httpClient,
-			baseURL+LocalServiceListCandidateProjectsProcedure,
-			connect.WithSchema(localServiceListCandidateProjectsMethodDescriptor),
-			connect.WithClientOptions(opts...),
-		),
 		listOrganizationsAndBillingMetadata: connect.NewClient[v1.ListOrganizationsAndBillingMetadataRequest, v1.ListOrganizationsAndBillingMetadataResponse](
 			httpClient,
 			baseURL+LocalServiceListOrganizationsAndBillingMetadataProcedure,
@@ -273,7 +261,6 @@ type localServiceClient struct {
 	redeployProject                     *connect.Client[v1.RedeployProjectRequest, v1.RedeployProjectResponse]
 	getCurrentUser                      *connect.Client[v1.GetCurrentUserRequest, v1.GetCurrentUserResponse]
 	getCurrentProject                   *connect.Client[v1.GetCurrentProjectRequest, v1.GetCurrentProjectResponse]
-	listCandidateProjects               *connect.Client[v1.ListCandidateProjectsRequest, v1.ListCandidateProjectsResponse]
 	listOrganizationsAndBillingMetadata *connect.Client[v1.ListOrganizationsAndBillingMetadataRequest, v1.ListOrganizationsAndBillingMetadataResponse]
 	createOrganization                  *connect.Client[v1.CreateOrganizationRequest, v1.CreateOrganizationResponse]
 	listMatchingProjects                *connect.Client[v1.ListMatchingProjectsRequest, v1.ListMatchingProjectsResponse]
@@ -336,11 +323,6 @@ func (c *localServiceClient) GetCurrentProject(ctx context.Context, req *connect
 	return c.getCurrentProject.CallUnary(ctx, req)
 }
 
-// ListCandidateProjects calls rill.local.v1.LocalService.ListCandidateProjects.
-func (c *localServiceClient) ListCandidateProjects(ctx context.Context, req *connect.Request[v1.ListCandidateProjectsRequest]) (*connect.Response[v1.ListCandidateProjectsResponse], error) {
-	return c.listCandidateProjects.CallUnary(ctx, req)
-}
-
 // ListOrganizationsAndBillingMetadata calls
 // rill.local.v1.LocalService.ListOrganizationsAndBillingMetadata.
 func (c *localServiceClient) ListOrganizationsAndBillingMetadata(ctx context.Context, req *connect.Request[v1.ListOrganizationsAndBillingMetadataRequest]) (*connect.Response[v1.ListOrganizationsAndBillingMetadataResponse], error) {
@@ -394,10 +376,8 @@ type LocalServiceHandler interface {
 	// GetCurrentUser returns the locally logged in user
 	GetCurrentUser(context.Context, *connect.Request[v1.GetCurrentUserRequest]) (*connect.Response[v1.GetCurrentUserResponse], error)
 	// GetCurrentProject returns the rill cloud project connected to the local project
-	// Deprecated: Use ListCandidateProjects instead.
+	// Deprecated: Use ListMatchingProjects instead.
 	GetCurrentProject(context.Context, *connect.Request[v1.GetCurrentProjectRequest]) (*connect.Response[v1.GetCurrentProjectResponse], error)
-	// ListCandidateProjects returns a list of cloud projects that are likely to have been deployed from the local project.
-	ListCandidateProjects(context.Context, *connect.Request[v1.ListCandidateProjectsRequest]) (*connect.Response[v1.ListCandidateProjectsResponse], error)
 	// ListOrganizationsAndBillingMetadata returns metadata about the current user's orgs.
 	ListOrganizationsAndBillingMetadata(context.Context, *connect.Request[v1.ListOrganizationsAndBillingMetadataRequest]) (*connect.Response[v1.ListOrganizationsAndBillingMetadataResponse], error)
 	// CreateOrganization creates a new organization
@@ -482,12 +462,6 @@ func NewLocalServiceHandler(svc LocalServiceHandler, opts ...connect.HandlerOpti
 		connect.WithSchema(localServiceGetCurrentProjectMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
-	localServiceListCandidateProjectsHandler := connect.NewUnaryHandler(
-		LocalServiceListCandidateProjectsProcedure,
-		svc.ListCandidateProjects,
-		connect.WithSchema(localServiceListCandidateProjectsMethodDescriptor),
-		connect.WithHandlerOptions(opts...),
-	)
 	localServiceListOrganizationsAndBillingMetadataHandler := connect.NewUnaryHandler(
 		LocalServiceListOrganizationsAndBillingMetadataProcedure,
 		svc.ListOrganizationsAndBillingMetadata,
@@ -542,8 +516,6 @@ func NewLocalServiceHandler(svc LocalServiceHandler, opts ...connect.HandlerOpti
 			localServiceGetCurrentUserHandler.ServeHTTP(w, r)
 		case LocalServiceGetCurrentProjectProcedure:
 			localServiceGetCurrentProjectHandler.ServeHTTP(w, r)
-		case LocalServiceListCandidateProjectsProcedure:
-			localServiceListCandidateProjectsHandler.ServeHTTP(w, r)
 		case LocalServiceListOrganizationsAndBillingMetadataProcedure:
 			localServiceListOrganizationsAndBillingMetadataHandler.ServeHTTP(w, r)
 		case LocalServiceCreateOrganizationProcedure:
@@ -605,10 +577,6 @@ func (UnimplementedLocalServiceHandler) GetCurrentUser(context.Context, *connect
 
 func (UnimplementedLocalServiceHandler) GetCurrentProject(context.Context, *connect.Request[v1.GetCurrentProjectRequest]) (*connect.Response[v1.GetCurrentProjectResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("rill.local.v1.LocalService.GetCurrentProject is not implemented"))
-}
-
-func (UnimplementedLocalServiceHandler) ListCandidateProjects(context.Context, *connect.Request[v1.ListCandidateProjectsRequest]) (*connect.Response[v1.ListCandidateProjectsResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("rill.local.v1.LocalService.ListCandidateProjects is not implemented"))
 }
 
 func (UnimplementedLocalServiceHandler) ListOrganizationsAndBillingMetadata(context.Context, *connect.Request[v1.ListOrganizationsAndBillingMetadataRequest]) (*connect.Response[v1.ListOrganizationsAndBillingMetadataResponse], error) {
