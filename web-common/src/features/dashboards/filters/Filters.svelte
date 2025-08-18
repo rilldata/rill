@@ -128,7 +128,11 @@
   $: exploreState = useExploreState($exploreName);
   $: activeTimeZone = $exploreState?.selectedTimezone;
 
-  $: selectedRangeAlias = selectedTimeRange?.name;
+  $: selectedRangeAlias =
+    selectedTimeRange?.name === TimeRangePreset.CUSTOM
+      ? `${selectedTimeRange.start.toISOString()},${selectedTimeRange.end.toISOString()}`
+      : selectedTimeRange?.name;
+
   $: activeTimeGrain = selectedTimeRange?.interval;
   $: defaultTimeRange = exploreSpec.defaultPreset?.timeRange;
 

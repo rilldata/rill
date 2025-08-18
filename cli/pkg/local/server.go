@@ -317,15 +317,21 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 		}
 	}
 
+	repo, release, err := s.app.Runtime.Repo(ctx, s.app.Instance.ID)
+	if err != nil {
+		return nil, err
+	}
+	defer release()
+
+	// Ensure .gitignore exists and contains necessary entries
+	err = cmdutil.SetupGitIgnore(ctx, repo)
+	if err != nil {
+		return nil, fmt.Errorf("failed to set up .gitignore: %w", err)
+	}
+
 	var projRequest *adminv1.CreateProjectRequest
 	gitPath := s.app.ProjectPath
 	if r.Msg.Archive { // old zip-and-ship, currently used only for testing until we figure out a good way to test using manged github repos
-		repo, release, err := s.app.Runtime.Repo(ctx, s.app.Instance.ID)
-		if err != nil {
-			return nil, err
-		}
-		defer release()
-
 		assetID, err := cmdutil.UploadRepo(ctx, repo, s.app.ch, r.Msg.Org, r.Msg.ProjectName)
 		if err != nil {
 			return nil, err

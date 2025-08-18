@@ -17,8 +17,6 @@
   import * as Elements from "./components";
   import RangePickerV2 from "./new-time-dropdown/RangePickerV2.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
-  import { page } from "$app/stores";
-  import { ExploreStateURLParams } from "../../url-state/url-params";
 
   export let allTimeRange: TimeRange;
   export let selectedRangeAlias: string | undefined;
@@ -53,15 +51,11 @@
 
   $: rangeBuckets = bucketYamlRanges(timeRanges);
 
-  $: ({
-    url: { searchParams },
-  } = $page);
+  $: v2TimeString = normalizeRangeString(selectedRangeAlias);
 
-  $: rawTimeString = searchParams.get(ExploreStateURLParams.TimeRange);
-
-  $: v2TimeString = normalizeRangeString(rawTimeString);
-
-  function normalizeRangeString(alias: string | null): string | undefined {
+  function normalizeRangeString(
+    alias: string | null | undefined,
+  ): string | undefined {
     return alias?.replace(",", " to ");
   }
 </script>
@@ -86,6 +80,7 @@
       zone={activeTimeZone}
       {lockTimeZone}
       {availableTimeZones}
+      {showFullRange}
       {onSelectTimeZone}
       {onSelectRange}
       {onTimeGrainSelect}
@@ -100,7 +95,7 @@
       {defaultTimeRange}
       {allowCustomTimeRange}
       selected={selectedRangeAlias ?? ""}
-      {onSelectRange}
+      {side}
       {interval}
       zone={activeTimeZone}
       applyCustomRange={(interval) => {
@@ -110,7 +105,7 @@
           end: interval.end.toJSDate(),
         });
       }}
-      {side}
+      {onSelectRange}
     />
   {/if}
 

@@ -45,28 +45,21 @@
   const ROW_HEIGHT = "26px";
   $: ({
     whereFilter,
-
     allDimensionFilterItems,
     isFilterExcludeMode,
     dimensionHasFilter,
-
     allMeasureFilterItems,
     measureHasFilter,
-
     hasFilters,
-
     removeDimensionFilter,
     toggleDimensionFilterMode,
     toggleMultipleDimensionValueSelections,
     applyDimensionInListMode,
     applyDimensionContainsMode,
-
     removeMeasureFilter,
     setMeasureFilter,
-
     setTemporaryFilterName,
     clearAllFilters,
-
     metricsViewMetadata: {
       metricsViewName,
       allDimensions,
@@ -74,13 +67,12 @@
       validSpecQuery,
     },
   } = filters);
+
   $: ({
     selectedTimezone,
     allTimeRange,
-
     timeRangeStateStore,
     comparisonRangeStateStore,
-
     setTimeZone,
     selectTimeRange,
     setSelectedComparisonRange,

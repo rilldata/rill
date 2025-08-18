@@ -112,14 +112,8 @@
     width="500px"
     {size}
     onInput={() => (orgNameChangedDirectly = true)}
+    textInputPrefix="https://ui.rilldata.com/"
   >
-    <div
-      slot="prefix"
-      class="bg-neutral-100 text-gray-500 border border-r-0 border-gray-300 text-base px-2 py-1.5
-      {size === 'xl' ? 'text-base' : 'h-[32px] text-sm'}"
-    >
-      https://ui.rilldata.com/
-    </div>
     <!-- TODO: once we have the path to docs we can add this back -->
     <!--    <div class="text-xs text-left" slot="description">-->
     <!--      Must comply with <a-->

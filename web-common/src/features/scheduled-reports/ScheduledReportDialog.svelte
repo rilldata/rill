@@ -40,7 +40,7 @@
   import { get } from "svelte/store";
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup, type ValidationAdapter } from "sveltekit-superforms/adapters";
-  import { array, object, string } from "yup";
+  import { array, object, string, boolean } from "yup";
   import { Button } from "../../components/button";
   import {
     getRuntimeServiceGetResourceQueryKey,
@@ -116,10 +116,30 @@
     object({
       title: string().required("Required"),
       emailRecipients: array().of(string().email("Invalid email")),
+      enableSlackNotification: boolean(), // Needed to get the type for validation
       slackChannels: array().of(string()),
       slackUsers: array().of(string().email("Invalid email")),
       columns: array().of(string()).min(1),
-    }),
+    }).test(
+      "at-least-one-recipient",
+      "At least one email recipient, slack user, or slack channel is required",
+      function (value) {
+        // Check if at least one array has non-empty values
+        const hasEmailRecipients = value.emailRecipients
+          ? value.emailRecipients.filter(Boolean).length > 0
+          : false;
+        if (!value.enableSlackNotification) return hasEmailRecipients;
+
+        const hasSlackUsers = value.slackUsers
+          ? value.slackUsers.filter(Boolean).length > 0
+          : false;
+        const hasSlackChannels = value.slackChannels
+          ? value.slackChannels.filter(Boolean).length > 0
+          : false;
+
+        return hasEmailRecipients || hasSlackUsers || hasSlackChannels;
+      },
+    ),
   ) as ValidationAdapter<ReportValues>;
 
   $: initialValues =
@@ -152,6 +172,8 @@
       invalidateAll: false,
     },
   ));
+
+  $: generalErrors = $errors._errors?.[0] ?? $mutation.error?.message;
 
   async function handleSubmit(values: ReportValues) {
     const refreshCron = convertFormValuesToCronExpression(
@@ -263,14 +285,14 @@
       {timeControls}
     />
 
+    {#if generalErrors}
+      <div class="text-red-500">{generalErrors}</div>
+    {/if}
     <div class="flex items-center gap-x-2 mt-5">
-      {#if $mutation.isError}
-        <div class="text-red-500">{$mutation.error.message}</div>
-      {/if}
       <div class="grow" />
       <Button onClick={() => (open = false)} type="secondary">Cancel</Button>
       <Button
-        disabled={$submitting || $form["emailRecipients"]?.length === 0}
+        disabled={$submitting}
         form={FORM_ID}
         submitForm
         type="primary"

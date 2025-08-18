@@ -107,8 +107,7 @@ export function grainAliasToDateTimeUnit(alias: TimeGrainAlias): DateTimeUnit {
 }
 
 const allowedGrains = [
-  // V1TimeGrain.TIME_GRAIN_MILLISECOND,
-  // V1TimeGrain.TIME_GRAIN_SECOND,
+  V1TimeGrain.TIME_GRAIN_SECOND,
   V1TimeGrain.TIME_GRAIN_MINUTE,
   V1TimeGrain.TIME_GRAIN_HOUR,
   V1TimeGrain.TIME_GRAIN_DAY,
