@@ -392,6 +392,7 @@ func (h *Helper) ProjectNamesByGitRemote(ctx context.Context, org, remote, subPa
 
 func (h *Helper) InferProjectName(ctx context.Context, org, pathToProject string) (string, error) {
 	// Try loading the project from the .rillcloud directory
+	// Newer projects will not have a .rillcloud directory.
 	proj, err := h.LoadProject(ctx, pathToProject)
 	if err != nil {
 		return "", err
@@ -415,13 +416,23 @@ func (h *Helper) InferProjectName(ctx context.Context, org, pathToProject string
 	if err != nil {
 		return "", err
 	}
+	if len(resp.Projects) == 0 {
+		return "", fmt.Errorf("no matching project found")
+	}
 
-	if len(resp.Projects) == 1 {
-		return resp.Projects[0].Name, nil
+	orgFiltered := make([]*adminv1.Project, 0)
+	for _, p := range resp.Projects {
+		if p.OrgName == org {
+			orgFiltered = append(orgFiltered, p)
+		}
+	}
+
+	if len(orgFiltered) == 1 {
+		return orgFiltered[0].Name, nil
 	}
 
 	var names []string
-	for _, p := range resp.Projects {
+	for _, p := range orgFiltered {
 		names = append(names, p.Name)
 	}
 	return SelectPrompt("Select project", names, "")

@@ -53,9 +53,9 @@ func (s *Server) GitStatus(ctx context.Context, r *connect.Request[localv1.GitSt
 		}), nil
 	}
 
-	name, err := s.resolveProjectName(ctx)
+	name, err := s.app.ch.InferProjectName(ctx, s.app.ch.Org, s.app.ProjectPath)
 	if err != nil {
-		if !strings.Contains(err.Error(), "no project with Git remote") {
+		if !strings.Contains(err.Error(), "no matching project found") {
 			return nil, err
 		}
 		// If the project is not found return the best effort status
@@ -120,9 +120,9 @@ func (s *Server) GitPull(ctx context.Context, r *connect.Request[localv1.GitPull
 		return nil, errors.New("must authenticate before performing this action")
 	}
 
-	name, err := s.resolveProjectName(ctx)
+	name, err := s.app.ch.InferProjectName(ctx, s.app.ch.Org, s.app.ProjectPath)
 	if err != nil {
-		if !strings.Contains(err.Error(), "no project with Git remote") {
+		if !strings.Contains(err.Error(), "no matching project found") {
 			return nil, err
 		}
 		return nil, errors.New("git credentials not set and repo is not connected to a project")
@@ -183,9 +183,9 @@ func (s *Server) GitPush(ctx context.Context, r *connect.Request[localv1.GitPush
 		return nil, errors.New("must authenticate before performing this action")
 	}
 
-	name, err := s.resolveProjectName(ctx)
+	name, err := s.app.ch.InferProjectName(ctx, s.app.ch.Org, s.app.ProjectPath)
 	if err != nil {
-		if !strings.Contains(err.Error(), "no project with Git remote") {
+		if !strings.Contains(err.Error(), "no matching project found") {
 			return nil, err
 		}
 		return nil, errors.New("git credentials not set and repo is not connected to a project")
