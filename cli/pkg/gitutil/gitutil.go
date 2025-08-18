@@ -258,17 +258,18 @@ func CommitAndForcePush(ctx context.Context, projectPath string, config *Config,
 		return nil
 	}
 
+	// set remote and push the changes
+	err = SetRemote(projectPath, config)
+	if err != nil {
+		return err
+	}
+
 	if config.Username == "" {
 		// If no credentials are provided we assume that is user's self managed repo and auth is already set in git
 		// go-git does not support pushing to a private repo without auth so we will trigger the git command directly
 		return RunGitPush(ctx, projectPath, config.RemoteName(), config.DefaultBranch)
 	}
 
-	// set remote and push the changes
-	err = SetRemote(projectPath, config)
-	if err != nil {
-		return err
-	}
 	pushOpts := &git.PushOptions{
 		RemoteName: config.RemoteName(),
 		RemoteURL:  config.Remote,
