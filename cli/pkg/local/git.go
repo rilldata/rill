@@ -3,7 +3,6 @@ package local
 import (
 	"context"
 	"errors"
-	"fmt"
 	"strings"
 
 	"connectrpc.com/connect"
@@ -220,37 +219,4 @@ func (s *Server) GitPush(ctx context.Context, r *connect.Request[localv1.GitPush
 	}
 
 	return connect.NewResponse(&localv1.GitPushResponse{}), nil
-}
-
-func (s *Server) resolveProjectName(ctx context.Context) (string, error) {
-	// Try loading the project from the .rillcloud directory
-	proj, err := s.app.ch.LoadProject(ctx, s.app.ProjectPath)
-	if err != nil {
-		return "", err
-	}
-	if proj != nil {
-		return proj.Name, nil
-	}
-
-	// Verify projectPath is a Git repo with remote on Github
-	remote, err := gitutil.ExtractGitRemote(s.app.ProjectPath, "__rill_remote", true)
-	if err != nil {
-		return "", err
-	}
-	githubRemote, err := remote.Github()
-	if err != nil {
-		return "", err
-	}
-
-	// Fetch project names matching the Github URL
-	names, err := s.app.ch.ProjectNamesByGitRemote(ctx, s.app.ch.Org, githubRemote, "")
-	if err != nil {
-		return "", err
-	}
-
-	if len(names) == 1 {
-		return names[0], nil
-	}
-	// more than one project found
-	return "", fmt.Errorf("multiple projects found with Git remote %q in org %q: %v", githubRemote, s.app.ch.Org, names)
 }
