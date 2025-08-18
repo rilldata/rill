@@ -114,6 +114,17 @@ security:
 
 This is useful if you want to apply specific rules to the metrics view for metrics SQL API access, but want different rules for the visual dashboard in Rill.
 
+:::tip complicated set-ups
+
+Access Policies can get quite complicated as your use case grows and having to navigate mulitple files to figure out why a user is able to or unable to access certain dashboards. 
+
+A few recommendations:
+1. Only change project level access if absolutely necessary. (They get overwritten by object level security)
+2. Dashboard access is controlled in the metrics view, only add extra policies on the dashboard if absolutely necessary as this gets logically ANDed with the metrics view anyway.
+3. Solve project access issues higher up in the [user](/manage/user-management) / [usergroup](/manage/usergroup-management) settings, and keep default project security rules.
+
+:::
+
 ## User Attributes
 - `.user.email` – the current user's email address, for example john.doe@example.com (string)
 - `.user.domain` – the domain of the current user's email address, for example example.com (string)

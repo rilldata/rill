@@ -113,7 +113,7 @@ flowchart TD
 
 For a full table of possible combinations, see [tables of examples](/build/debugging/dashboard-access#table-of-examples).
 
-## Troubleshooting General Access Issues
+## Troubleshooting General _Access_ Issues
 
 **How it's surfaced**: The dashboard doesn't appear in the project view, or a component isn't showing in the metrics view.
 
@@ -162,14 +162,14 @@ Canvas dashboards reference multiple metrics views. If you're missing components
 <img src="/img/build/debugging/canvas-metrics-false.png" class="rounded-gif" alt="Canvas metrics access example" /> <br/>
 
 
-## Troubleshooting Row Access Filters 
+## Troubleshooting _Row Filters_ Issues
 
 **How it's surfaced**: The data displayed in the dashboard is not being filtered properly.
 
 Don't forget the behavior for security policies:
 
 ```bash
-Project Defaults < Metrics View YAML
+Project Defaults < (Metrics View YAML)
 ```
 
 **Check these levels in order:**
@@ -207,5 +207,5 @@ Even if you have no policies defined in the metrics view, any policies defined i
 | `access: false`                               | `access: false`                                   | _not defined_                                                                      | _not defined_                                                                     | No Dashboards are accessible _(From Project Default)_                                                                      |
 | `access: false`                               | ~~`access: false`~~                               | _not defined_                                                                      | `access: "'{{ .user.domain }}' == 'example.com'"` (**overwrite** project default) | No Dashboards are accessible _(From Project Default)_                                                                      |
 | ~~`access: false`~~                           | `access: true`                                    | `access: "'{{ .user.domain }}' == 'example.com'"` (**overwrites** project default) | _not defined_                                                                     | Dashboard accessible to user **domain** ending in "example.com"                                                            |
-| ~~`access: false`~~                           | ~~`access: private`~~                             | `access: "'{{ .user.domain }}' == 'example.com'"` (**overwrites** project default) | `access: '{{ has "partners" .user.groups }}'`(**overwrites** project default)     | Dashboard accessible to users in **usergroup**, "partners" AND **domain** ending in "example.com"                          |
+| ~~`access: false`~~                           | ~~`access: false`~~                               | `access: "'{{ .user.domain }}' == 'example.com'"` (**overwrites** project default) | `access: '{{ has "partners" .user.groups }}'`(**overwrites** project default)     | Dashboard accessible to users in **usergroup**, "partners" AND **domain** ending in "example.com"                          |
 </div>
