@@ -1978,6 +1978,8 @@ export type AdminServiceGetReportMetaBody = {
   anonRecipients?: boolean;
   resources?: V1ResourceName[];
   webOpenMode?: string;
+  whereFilterJson?: string;
+  accessibleFields?: string[];
 };
 
 export type AdminServiceSearchProjectNamesParams = {

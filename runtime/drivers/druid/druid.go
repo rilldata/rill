@@ -107,6 +107,8 @@ type configProperties struct {
 	MaxOpenConns int `mapstructure:"max_open_conns"`
 	// SkipVersionCheck skips the version check.
 	SkipVersionCheck bool `mapstructure:"skip_version_check"`
+	// SkipQueryPriority indicates whether to skip passing query priority to Druid.
+	SkipQueryPriority bool `mapstructure:"skip_query_priority"`
 }
 
 // Opens a connection to Apache Druid using HTTP API.
