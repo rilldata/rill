@@ -393,18 +393,30 @@ func (h *Helper) ProjectNamesByGitRemote(ctx context.Context, org, remote, subPa
 // InferProjectName infers the project name from the given path.
 // If multiple projects are found, it prompts the user to select one.
 func (h *Helper) InferProjectName(ctx context.Context, org, pathToProject string) (string, error) {
-	return h.InferProjectNameWithPrompt(ctx, org, pathToProject, true)
+	projects, err := h.InferProjects(ctx, org, pathToProject)
+	if err != nil {
+		return "", err
+	}
+	if len(projects) == 1 {
+		return projects[0].Name, nil
+	}
+
+	var names []string
+	for _, p := range projects {
+		names = append(names, p.Name)
+	}
+	return SelectPrompt("Select project", names, "")
 }
 
-func (h *Helper) InferProjectNameWithPrompt(ctx context.Context, org, pathToProject string, prompt bool) (string, error) {
+func (h *Helper) InferProjects(ctx context.Context, org, pathToProject string) ([]*adminv1.Project, error) {
 	// Try loading the project from the .rillcloud directory
 	// Newer projects will not have a .rillcloud directory.
 	proj, err := h.LoadProject(ctx, pathToProject)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	if proj != nil {
-		return proj.Name, nil
+		return []*adminv1.Project{proj}, nil
 	}
 
 	directoryName := filepath.Base(pathToProject)
@@ -413,17 +425,17 @@ func (h *Helper) InferProjectNameWithPrompt(ctx context.Context, org, pathToProj
 
 	c, err := h.Client()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	resp, err := c.ListProjectsForFingerprint(ctx, &adminv1.ListProjectsForFingerprintRequest{
 		DirectoryName: directoryName,
 		GitRemote:     githubRemote,
 	})
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	if len(resp.Projects) == 0 {
-		return "", fmt.Errorf("no matching project found")
+		return nil, fmt.Errorf("no matching project found")
 	}
 
 	orgFiltered := make([]*adminv1.Project, 0)
@@ -432,29 +444,10 @@ func (h *Helper) InferProjectNameWithPrompt(ctx context.Context, org, pathToProj
 			orgFiltered = append(orgFiltered, p)
 		}
 	}
-
-	if len(orgFiltered) == 1 {
-		return orgFiltered[0].Name, nil
+	if len(orgFiltered) == 0 {
+		return nil, fmt.Errorf("no matching project found")
 	}
-
-	if !prompt {
-		// return the last updated project
-		var name string
-		var lastUpdated time.Time
-		for _, p := range orgFiltered {
-			t := p.UpdatedOn.AsTime()
-			if t.After(lastUpdated) {
-				lastUpdated = t
-				name = p.Name
-			}
-		}
-		return name, nil
-	}
-	var names []string
-	for _, p := range orgFiltered {
-		names = append(names, p.Name)
-	}
-	return SelectPrompt("Select project", names, "")
+	return orgFiltered, nil
 }
 
 // OpenRuntimeClient opens a client for the production deployment for the given project.
