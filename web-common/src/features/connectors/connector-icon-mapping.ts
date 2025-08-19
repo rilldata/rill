@@ -5,9 +5,10 @@ import ApachePinotIcon from "../../components/icons/connectors/ApachePinotIcon.s
 import ClickHouseIcon from "../../components/icons/connectors/ClickHouseIcon.svelte";
 import DuckDbIcon from "../../components/icons/connectors/DuckDBIcon.svelte";
 import GoogleBigQueryIcon from "../../components/icons/connectors/GoogleBigQueryIcon.svelte";
+import AthenaIcon from "../../components/icons/connectors/AthenaIcon.svelte";
 
 export const connectorIconMapping = {
-  // TODO: athena
+  athena: AthenaIcon,
   // TODO: azure
   bigquery: GoogleBigQueryIcon,
   clickhouse: ClickHouseIcon,
