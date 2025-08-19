@@ -37,6 +37,10 @@ We recommend materializing the model that powers your [metrics view](/build/metr
 
 ## Model Materialization
 
+
+
+Model materialization is something to consider when creating intermediate models. Other than [source models](/build/models/source-models), intermediate models are not, by default, materialized and are views in your underlying database engine. There are some pros and cons to enabling it during the development process.
+
 ```sql
 -- model.sql
 -- @materialize: true
@@ -46,8 +50,6 @@ We recommend materializing the model that powers your [metrics view](/build/metr
 # model.yaml
 materialize: true
 ```
-
-Model materialization is something to consider when creating intermediate models. Other than [source models](/build/models/source-models), intermediate models are not, by default, materialized and are views in your underlying database engine. There are some pros and cons to enabling it during the development process.
 
 The pros include improved performance for downstream models and dashboards, especially with complex logic and/or large data sizes. Some cons are certain edge cases like cross joins might have a degraded keystroke-by-keystroke experience, and materialized models are billable.
 
