@@ -8,15 +8,16 @@ import GoogleBigQueryIcon from "../../components/icons/connectors/GoogleBigQuery
 import AthenaIcon from "../../components/icons/connectors/AthenaIcon.svelte";
 import PostgresIcon from "../../components/icons/connectors/PostgresIcon.svelte";
 import MySqlIcon from "../../components/icons/connectors/MySqlIcon.svelte";
+import MotherDuckIcon from "../../components/icons/connectors/MotherDuckIcon.svelte";
 
 export const connectorIconMapping = {
   athena: AthenaIcon,
   // TODO: azure
   bigquery: GoogleBigQueryIcon,
   clickhouse: ClickHouseIcon,
+  motherduck: MotherDuckIcon,
   druid: ApacheDruidIcon,
   duckdb: DuckDbIcon,
-  // TODO: gcs
   mysql: MySqlIcon,
   pinot: ApachePinotIcon,
   postgres: PostgresIcon,
