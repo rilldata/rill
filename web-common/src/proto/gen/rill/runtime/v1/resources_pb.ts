@@ -4809,6 +4809,11 @@ export class CanvasDimensionFilter extends Message<CanvasDimensionFilter> {
    */
   removable?: boolean;
 
+  /**
+   * @generated from field: optional bool locked = 5;
+   */
+  locked?: boolean;
+
   constructor(data?: PartialMessage<CanvasDimensionFilter>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4821,6 +4826,7 @@ export class CanvasDimensionFilter extends Message<CanvasDimensionFilter> {
     { no: 2, name: "values", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 3, name: "limit", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
     { no: 4, name: "removable", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
+    { no: 5, name: "locked", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CanvasDimensionFilter {
@@ -4874,6 +4880,11 @@ export class CanvasMeasureFilter extends Message<CanvasMeasureFilter> {
    */
   operator?: string;
 
+  /**
+   * @generated from field: optional bool locked = 7;
+   */
+  locked?: boolean;
+
   constructor(data?: PartialMessage<CanvasMeasureFilter>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4888,6 +4899,7 @@ export class CanvasMeasureFilter extends Message<CanvasMeasureFilter> {
     { no: 4, name: "removable", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 5, name: "by_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 6, name: "operator", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 7, name: "locked", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CanvasMeasureFilter {

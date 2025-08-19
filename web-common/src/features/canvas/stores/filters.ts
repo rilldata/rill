@@ -46,9 +46,10 @@ import {
 import { ExploreStateURLParams } from "../../dashboards/url-state/url-params";
 import type { SearchParamsStore } from "./canvas-entity";
 import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
+import type { CanvasSpecResponseStore } from "../types";
 
 export class Filters {
-  private spec: CanvasResolvedSpec;
+  // private spec: CanvasResolvedSpec;
   // -------------------
   // STORES (writable)
   // -------------------
@@ -83,16 +84,18 @@ export class Filters {
   allDimensions: Readable<Map<string, MetricsViewSpecDimension>>;
   allMeasures: Readable<Map<string, MetricsViewSpecMeasure>>;
   temporaryFilters = writable<Set<string>>(new Set());
+  lockedFilters = writable<Set<string>>(new Set());
 
   constructor(
-    spec: CanvasResolvedSpec,
+    private spec: CanvasResolvedSpec,
     public searchParamsStore: SearchParamsStore,
+    private specStore?: CanvasSpecResponseStore,
     public componentName?: string,
   ) {
     // -----------------------------
     // Initialize writable stores
     // -----------------------------
-    this.spec = spec;
+    // this.spec = spec;
     this.dimensionFilterExcludeMode = writable(new Map<string, boolean>());
 
     this.whereFilter = writable({
@@ -321,6 +324,31 @@ export class Filters {
 
       this.setFiltersFromText(filterText ?? "");
     });
+
+    if (!this.componentName && this.specStore) {
+      console.log(this.specStore);
+      this.specStore.subscribe((spec) => {
+        if (!spec?.data) return;
+        const defaultPreset = spec.data?.canvas?.defaultPreset;
+        defaultPreset?.filters?.dimensions?.forEach((dim) => {
+          console.log({ dim });
+
+          if (dim.removable === false) {
+            this.lockedFilters.update((locked) => locked.add(dim.dimension));
+          }
+
+          if (!dim.values?.length) {
+            this.setTemporaryFilterName(dim.dimension);
+          } else {
+            this.toggleMultipleDimensionValueSelections(
+              dim.dimension,
+              dim.values,
+              true,
+            );
+          }
+        });
+      });
+    }
   }
 
   private getMeasureFilters = (

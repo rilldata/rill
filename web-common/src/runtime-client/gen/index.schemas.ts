@@ -399,6 +399,7 @@ export interface V1CanvasDimensionFilter {
   values?: string[];
   limit?: number;
   removable?: boolean;
+  locked?: boolean;
 }
 
 export interface V1CanvasItem {
@@ -419,6 +420,7 @@ export interface V1CanvasMeasureFilter {
   removable?: boolean;
   byDimension?: string;
   operator?: string;
+  locked?: boolean;
 }
 
 export interface V1CanvasPreset {
