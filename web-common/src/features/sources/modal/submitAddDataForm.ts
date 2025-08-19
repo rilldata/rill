@@ -56,74 +56,32 @@ export async function submitAddSourceForm(
     formValues,
   );
 
-  // Check if the connector was rewritten to DuckDB
-  const isRewrittenToDuckDb = rewrittenConnector.name === "duckdb";
+  // Make a new <source>.yaml file
+  const newSourceFilePath = getFileAPIPathFromNameAndType(
+    formValues.name as string,
+    EntityType.Table,
+  );
+  await runtimeServicePutFile(instanceId, {
+    path: newSourceFilePath,
+    blob: compileSourceYAML(rewrittenConnector, rewrittenFormValues),
+    create: true,
+    createOnly: false,
+  });
 
-  if (isRewrittenToDuckDb) {
-    // Connectors that get rewritten to DuckDB (GCS, S3, Azure, etc.) create source files
-    const newSourceName = getName(
-      formValues.name as string,
-      fileArtifacts.getNamesForKind(ResourceKind.Source),
-    );
+  // Create or update the `.env` file
+  await runtimeServicePutFile(instanceId, {
+    path: ".env",
+    blob: await updateDotEnvWithSecrets(
+      queryClient,
+      rewrittenConnector,
+      rewrittenFormValues,
+      "source",
+    ),
+    create: true,
+    createOnly: false,
+  });
 
-    const newSourceFilePath = getFileAPIPathFromNameAndType(
-      newSourceName,
-      EntityType.Table,
-    );
-    await runtimeServicePutFile(instanceId, {
-      path: newSourceFilePath,
-      blob: compileSourceYAML(rewrittenConnector, rewrittenFormValues),
-      create: true,
-      createOnly: false,
-    });
-
-    // Create or update the `.env` file
-    await runtimeServicePutFile(instanceId, {
-      path: ".env",
-      blob: await updateDotEnvWithSecrets(
-        queryClient,
-        rewrittenConnector,
-        rewrittenFormValues,
-        "source",
-      ),
-      create: true,
-      createOnly: false,
-    });
-
-    await goto(`/files/${newSourceFilePath}`);
-  } else {
-    // Connectors that don't get rewritten create connector files
-    const newConnectorName = getName(
-      connector.name as string,
-      fileArtifacts.getNamesForKind(ResourceKind.Connector),
-    );
-
-    const newConnectorFilePath = getFileAPIPathFromNameAndType(
-      newConnectorName,
-      EntityType.Connector,
-    );
-    await runtimeServicePutFile(instanceId, {
-      path: newConnectorFilePath,
-      blob: compileConnectorYAML(connector, formValues),
-      create: true,
-      createOnly: false,
-    });
-
-    // Create or update the `.env` file
-    await runtimeServicePutFile(instanceId, {
-      path: ".env",
-      blob: await updateDotEnvWithSecrets(
-        queryClient,
-        connector,
-        formValues,
-        "connector",
-      ),
-      create: true,
-      createOnly: false,
-    });
-
-    await goto(`/files/${newConnectorFilePath}`);
-  }
+  await goto(`/files/${newSourceFilePath}`);
 }
 
 /**
