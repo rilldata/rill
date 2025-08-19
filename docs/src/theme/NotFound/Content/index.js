@@ -1,17 +1,9 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import clsx from 'clsx';
 import Translate from '@docusaurus/Translate';
 import Heading from '@theme/Heading';
 
 export default function NotFoundContent({ className }) {
-  useEffect(() => {
-    // Auto-redirect to home page after 3 seconds
-    const timer = setTimeout(() => {
-      window.location.href = '/';
-    }, 5000);
-
-    return () => clearTimeout(timer);
-  }, []);
 
   return (
     <main className={clsx('container margin-vert--xl', className)}>
@@ -35,31 +27,66 @@ export default function NotFoundContent({ className }) {
               id="theme.NotFound.p1"
               description="The first paragraph of the 404 page">
               Don't worry! It looks like you've wandered off the beaten path.
-              We'll redirect you back to the home page in just a moment.
+              We're here to help you find what you're looking for. Either use the search bar or type Cmd+K to search the docs.
             </Translate>
           </p>
+
           <p>
             <Translate
               id="theme.NotFound.p2"
               description="The 2nd paragraph of the 404 page">
-              If you'd like to explore our documentation, you can start from the
+              You can also explore our documentation using the navigation menu above,
+              or search for what you're looking for.
             </Translate>
-            {' '}
-            <a href="/" style={{ color: 'var(--ifm-color-primary)', textDecoration: 'underline' }}>
-              home page
-            </a>
-            {' '}
+          </p>
+
+          <p style={{ marginTop: '2rem', fontSize: '0.9rem', opacity: '0.8' }}>
             <Translate
-              id="theme.NotFound.p2_continued"
-              description="The continuation of the 2nd paragraph of the 404 page">
-              or use the navigation menu above.
+              id="theme.NotFound.reportLink"
+              description="Text for reporting broken links">
+              Found a broken link?
             </Translate>
+            {' '}
+            <a
+              href="https://github.com/rilldata/rill/issues/new"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: 'var(--ifm-color-primary)', textDecoration: 'underline' }}
+            >
+              <Translate
+                id="theme.NotFound.reportLinkButton"
+                description="Button text for reporting broken links">
+                Report it here
+              </Translate>
+            </a>
           </p>
-          <p style={{ fontSize: '0.9em', color: 'var(--ifm-color-emphasis-600)', fontStyle: 'italic' }}>
-            Redirecting automatically in 5 seconds...
-          </p>
+          <div style={{ textAlign: 'center', margin: '2rem 0' }}>
+            <a
+              href="/"
+              style={{
+                display: 'inline-block',
+                padding: '0.4rem 0.8rem',
+                fontSize: '0.9rem',
+                fontWeight: '400',
+                textDecoration: 'none',
+                borderRadius: '3px',
+                transition: 'all 0.2s ease',
+                marginRight: '0.5rem',
+                border: '1px solid var(--ifm-color-primary)',
+                background: 'transparent',
+                color: 'var(--ifm-color-primary)',
+                cursor: 'pointer'
+              }}
+            >
+              <Translate
+                id="theme.NotFound.homeButton"
+                description="The home page button text">
+                Go to Home Page
+              </Translate>
+            </a>
+          </div>
         </div>
       </div>
-    </main>
+    </main >
   );
 }
