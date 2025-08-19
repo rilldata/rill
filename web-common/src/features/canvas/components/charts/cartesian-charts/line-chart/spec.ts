@@ -49,7 +49,7 @@ export function generateVLLineChartSpec(
     },
     buildHoverRuleLayer({
       xField,
-      yField,
+      domainValues: data.domainValues,
       defaultTooltip: defaultTooltipChannel,
       multiValueTooltipChannel,
       xSort: config.x?.sort,

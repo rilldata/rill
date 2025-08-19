@@ -100,7 +100,7 @@ export function generateVLStackedBarNormalizedSpec(
   const layers: Array<LayerSpec<Field> | UnitSpec<Field>> = [
     buildHoverRuleLayer({
       xField,
-      yField,
+      domainValues: data.domainValues,
       isBarMark: true,
       defaultTooltip: baseEncoding.tooltip as TooltipValue[],
       multiValueTooltipChannel,

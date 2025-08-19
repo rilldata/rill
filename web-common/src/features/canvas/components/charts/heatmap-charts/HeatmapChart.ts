@@ -252,7 +252,6 @@ export class HeatmapChartComponent extends BaseChart<HeatmapChartSpec> {
           } else if (yTopNData?.length) {
             const yField = config.y.field;
             includedYValues = yTopNData.map((d) => d[yField] as string);
-            console.log(yField, includedYValues);
           }
 
           if (includedYValues.length > 0) {

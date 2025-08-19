@@ -5,6 +5,7 @@ import {
 import type { ChartSpec } from "@rilldata/web-common/features/canvas/components/charts";
 import type { CartesianChartSpec } from "@rilldata/web-common/features/canvas/components/charts/cartesian-charts/CartesianChart";
 import type {
+  ChartDomainValues,
   ChartLegend,
   ChartSortDirection,
   FieldConfig,
@@ -325,7 +326,7 @@ export function buildHoverRuleLayer(args: {
   defaultTooltip: TooltipValue[];
   multiValueTooltipChannel?: TooltipValue[];
   pivot?: { field: string; value: string; groupby: string[] };
-  yField?: string;
+  domainValues?: ChartDomainValues;
   xSort?: ChartSortDirection;
   primaryColor: Color;
   xBand?: number;
@@ -336,7 +337,7 @@ export function buildHoverRuleLayer(args: {
     defaultTooltip,
     multiValueTooltipChannel,
     pivot,
-    yField,
+    domainValues,
     xSort,
     primaryColor,
     xBand,
@@ -364,21 +365,7 @@ export function buildHoverRuleLayer(args: {
       x: {
         field: xField,
         ...(xBand !== undefined ? { bandPosition: xBand } : {}),
-        ...(yField && xSort === "y"
-          ? {
-              sort: {
-                field: yField,
-                order: "ascending",
-              },
-            }
-          : yField && xSort === "-y"
-            ? {
-                sort: {
-                  field: yField,
-                  order: "descending",
-                },
-              }
-            : {}),
+        ...(xSort && xField ? { sort: domainValues?.[xField] } : {}),
       },
       color: {
         condition: [
