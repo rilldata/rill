@@ -7,6 +7,7 @@ import DuckDbIcon from "../../components/icons/connectors/DuckDBIcon.svelte";
 import GoogleBigQueryIcon from "../../components/icons/connectors/GoogleBigQueryIcon.svelte";
 import AthenaIcon from "../../components/icons/connectors/AthenaIcon.svelte";
 import PostgresIcon from "../../components/icons/connectors/PostgresIcon.svelte";
+import MySqlIcon from "../../components/icons/connectors/MySqlIcon.svelte";
 
 export const connectorIconMapping = {
   athena: AthenaIcon,
@@ -16,7 +17,7 @@ export const connectorIconMapping = {
   druid: ApacheDruidIcon,
   duckdb: DuckDbIcon,
   // TODO: gcs
-  // TODO: mysql
+  mysql: MySqlIcon,
   pinot: ApachePinotIcon,
   postgres: PostgresIcon,
   // TODO: redshift
