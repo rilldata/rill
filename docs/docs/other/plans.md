@@ -1,11 +1,9 @@
 ---
-title: "Billing"
+title: "Plans Explained"
 description: How Billing works for non-enterprise accounts
 sidebar_label: Plans Explained
 sidebar_position: 00
 ---
-
-## Overview
 
 Billing cycles begin on the first of the every month (12:00am UTC). If you start your plan mid-month, your first month will be pro-rated accordingly. You can subcribe to a Team Plan at any point via your Rill Cloud billing page. 
 
