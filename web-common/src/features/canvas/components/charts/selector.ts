@@ -68,8 +68,6 @@ export function getChartData(
         >,
       );
 
-      console.log(fieldSpecMap);
-
       let data = chartData?.data?.data;
 
       if (timeDimensions?.length && $timeAndFilterStore.timeGrain) {

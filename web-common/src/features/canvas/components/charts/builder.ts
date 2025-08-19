@@ -12,6 +12,7 @@ import type {
 } from "@rilldata/web-common/features/canvas/components/charts/types";
 import {
   getColorForValues,
+  isFieldConfig,
   mergedVlConfig,
 } from "@rilldata/web-common/features/canvas/components/charts/util";
 import type { Color } from "chroma-js";
@@ -64,7 +65,8 @@ export function createPositionEncoding(
     title: metaData?.displayName || field.field,
     type: field.type,
     ...(metaData && "timeUnit" in metaData && { timeUnit: metaData.timeUnit }),
-    ...(field.sort && field.type !== "temporal" && { sort: field.sort }),
+    ...(field.sort &&
+      field.type !== "temporal" && { sort: data.domainValues?.[field.field] }),
     ...(field.type === "quantitative" && {
       scale: {
         ...(field.zeroBasedOrigin !== true && { zero: false }),
@@ -88,8 +90,10 @@ export function createColorEncoding(
   data: ChartDataResult,
 ): ColorDef<Field> {
   if (!colorField) return {};
-  if (typeof colorField === "object") {
+  if (isFieldConfig(colorField)) {
     const metaData = data.fields[colorField.field];
+
+    const colorValues = data.domainValues?.[colorField.field];
 
     const baseEncoding: ColorDef<Field> = {
       field: sanitizeValueForVega(colorField.field),
@@ -97,16 +101,13 @@ export function createColorEncoding(
       type: colorField.type,
       ...(metaData &&
         "timeUnit" in metaData && { timeUnit: metaData.timeUnit }),
-      ...(data.domainValues?.colorValues?.length && {
-        sort: data.domainValues.colorValues,
-      }),
+      ...(colorValues?.length && { sort: colorValues }),
     };
 
     // Ideally we would want to use conditional statements to set the color
     // but it's not supported by Vega-Lite yet
     // https://github.com/vega/vega-lite/issues/9497
 
-    const colorValues = data.domainValues?.colorValues;
     const colorMapping = getColorForValues(
       colorValues,
       colorField.colorMapping,

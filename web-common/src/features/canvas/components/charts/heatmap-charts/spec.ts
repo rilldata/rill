@@ -13,61 +13,15 @@ import type { HeatmapChartSpec } from "./HeatmapChart";
 function createHeatmapSortEncoding(
   axisType: "x" | "y",
   config: HeatmapChartSpec,
+  data: ChartDataResult,
 ) {
   const axisConfig = config[axisType];
 
-  if (!axisConfig || axisConfig.type !== "nominal") {
+  if (!axisConfig?.field || axisConfig.type !== "nominal") {
     return undefined;
   }
-
-  const sort = axisConfig.sort;
-
-  if (Array.isArray(sort)) {
-    return sort;
-  }
-  if (!sort) {
-    return undefined;
-  }
-
-  let sortField: string | undefined;
-  let sortOrder: "ascending" | "descending" = "descending";
-
-  switch (sort) {
-    case "x":
-    case "-x":
-      sortField = config.x?.field;
-      sortOrder = sort === "-x" ? "descending" : "ascending";
-      break;
-    case "y":
-    case "-y":
-      sortField = config.y?.field;
-      sortOrder = sort === "-y" ? "descending" : "ascending";
-      break;
-    case "color":
-    case "-color":
-      sortField = config.color?.field;
-      sortOrder = sort === "-color" ? "descending" : "ascending";
-      break;
-    default:
-      return undefined;
-  }
-
-  if (!sortField) {
-    return undefined;
-  }
-
-  if (sort === "color" || sort === "-color") {
-    return {
-      op: "sum" as const,
-      field: sortField,
-      order: sortOrder,
-    };
-  }
-
-  return {
-    field: sortField,
-    order: sortOrder,
-  };
+  // Use the pre-computed domain values from the query
+  return data.domainValues?.[axisConfig.field];
 }
 
 export function generateVLHeatmapSpec(
@@ -98,12 +52,12 @@ export function generateVLHeatmapSpec(
   const xEncoding = createPositionEncoding(config.x, data);
   const yEncoding = createPositionEncoding(config.y, data);
 
-  const xSort = createHeatmapSortEncoding("x", config);
+  const xSort = createHeatmapSortEncoding("x", config, data);
   if (xSort !== undefined) {
     xEncoding.sort = xSort;
   }
 
-  const ySort = createHeatmapSortEncoding("y", config);
+  const ySort = createHeatmapSortEncoding("y", config, data);
   if (ySort !== undefined) {
     yEncoding.sort = ySort;
   }

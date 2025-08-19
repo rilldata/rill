@@ -21,7 +21,7 @@ import type {
 } from "../../../stores/canvas-entity";
 import { BaseChart, type BaseChartConfig } from "../BaseChart";
 import type { ChartDataQuery, ChartFieldsMap, FieldConfig } from "../types";
-import { vegaSortToAggregationSort } from "../util";
+import { isFieldConfig, vegaSortToAggregationSort } from "../util";
 
 export type CartesianChartSpec = BaseChartConfig & {
   x?: FieldConfig;
@@ -362,15 +362,23 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
   }
 
   getChartDomainValues() {
-    return {
-      xValues:
+    const config = get(this.specStore);
+    const result: Record<string, string[] | undefined> = {};
+
+    if (config.x?.field) {
+      result[config.x.field] =
         this.customSortXItems.length > 0
           ? [...this.customSortXItems]
-          : undefined,
-      colorValues:
+          : undefined;
+    }
+
+    if (isFieldConfig(config.color)) {
+      result[config.color.field] =
         this.customColorValues.length > 0
           ? [...this.customColorValues]
-          : undefined,
-    };
+          : undefined;
+    }
+
+    return result;
   }
 }

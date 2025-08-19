@@ -257,11 +257,16 @@ export class MultiMetricChartComponent extends BaseChart<MultiMetricChartSpec> {
   }
 
   getChartDomainValues() {
-    return {
-      xValues:
+    const config = get(this.specStore);
+    const result: Record<string, string[] | undefined> = {};
+
+    if (config.x?.field) {
+      result[config.x.field] =
         this.customSortXItems.length > 0
           ? [...this.customSortXItems]
-          : undefined,
-    };
+          : undefined;
+    }
+
+    return result;
   }
 }
