@@ -31,4 +31,4 @@ export const SOURCES = [
 
 export const OLAP_ENGINES = ["clickhouse", "druid", "pinot"];
 
-export const SORT_ORDER = [...SOURCES, ...OLAP_ENGINES];
+export const ALL_CONNECTORS = [...SOURCES, ...OLAP_ENGINES];

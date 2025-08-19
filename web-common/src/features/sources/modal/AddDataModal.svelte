@@ -39,7 +39,7 @@
   import DuplicateSource from "./DuplicateSource.svelte";
   import LocalSourceUpload from "./LocalSourceUpload.svelte";
   import RequestConnectorForm from "./RequestConnectorForm.svelte";
-  import { OLAP_ENGINES, SORT_ORDER, SOURCES } from "./constants";
+  import { OLAP_ENGINES, ALL_CONNECTORS, SOURCES } from "./constants";
 
   let step = 0;
   let selectedConnector: null | V1ConnectorDriver = null;
@@ -84,8 +84,8 @@
               // CAST SAFETY: we have filtered out any connectors that
               // don't have a `name` in the previous filter
               (a, b) =>
-                SORT_ORDER.indexOf(a.name as string) -
-                SORT_ORDER.indexOf(b.name as string),
+                ALL_CONNECTORS.indexOf(a.name as string) -
+                ALL_CONNECTORS.indexOf(b.name as string),
             );
         return data;
       },
