@@ -6,6 +6,7 @@ import ClickHouseIcon from "../../components/icons/connectors/ClickHouseIcon.sve
 import DuckDbIcon from "../../components/icons/connectors/DuckDBIcon.svelte";
 import GoogleBigQueryIcon from "../../components/icons/connectors/GoogleBigQueryIcon.svelte";
 import AthenaIcon from "../../components/icons/connectors/AthenaIcon.svelte";
+import PostgresIcon from "../../components/icons/connectors/PostgresIcon.svelte";
 
 export const connectorIconMapping = {
   athena: AthenaIcon,
@@ -17,7 +18,7 @@ export const connectorIconMapping = {
   // TODO: gcs
   // TODO: mysql
   pinot: ApachePinotIcon,
-  // TODO: postgres
+  postgres: PostgresIcon,
   // TODO: redshift
   s3: AmazonS3Icon,
   snowflake: SnowflakeIcon,
