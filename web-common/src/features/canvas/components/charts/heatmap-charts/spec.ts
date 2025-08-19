@@ -95,6 +95,10 @@ export function generateVLHeatmapSpec(
   spec.encoding = {
     x: xEncoding,
     y: yEncoding,
+    tooltip: createDefaultTooltipEncoding(
+      [config.x, config.y, config.color],
+      data,
+    ),
   };
 
   spec.layer = [
@@ -102,10 +106,6 @@ export function generateVLHeatmapSpec(
       mark: "rect",
       encoding: {
         color: createColorEncoding(config.color, data),
-        tooltip: createDefaultTooltipEncoding(
-          [config.x, config.y, config.color],
-          data,
-        ),
       },
     },
   ];
