@@ -19,7 +19,7 @@ curl https://rill.sh | sh
 
 :::
 
-The goal of this six-part tutorial is to get started with Rill and deploy your project to Rill Cloud. Upon deployment, your [30-day trial will start](/other/account-management/billing#trial-plan). Each course will build upon the previous one, allowing you to have a fully functioning project with many of our advanced features. This tutorial can be used in tandem with our documentation to ensure you have up-to-date information.
+The goal of this six-part tutorial is to get started with Rill and deploy your project to Rill Cloud. Upon deployment, your [30-day trial will start](/other/plans#trial-plan). Each course will build upon the previous one, allowing you to have a fully functioning project with many of our advanced features. This tutorial can be used in tandem with our documentation to ensure you have up-to-date information.
 
 
 ## Start Rill Developer

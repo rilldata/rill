@@ -79,7 +79,7 @@ post_exec: DETACH DATABASE IF EXISTS postgres_db # Note : this is not mandatory 
 
 ## Similar Considerations to Note
 
-1. As with normal SQL models, materialization will be disabled by default and depending on your use-case setting this parameter to true may improve performance. For more information, check out [our model materialization notes.](../../reference/project-files/models#model-materialization)
+1. As with normal SQL models, materialization will be disabled by default and depending on your use-case setting this parameter to true may improve performance. For more information, check out [our model materialization notes.](/reference/project-files/models#model-materialization)
 
 
 2. The `pre_exec` and `post_exec` statements are run for every model execution and thus should be made idempotent.
