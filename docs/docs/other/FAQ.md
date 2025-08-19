@@ -130,7 +130,7 @@ At Rill, we do not charge per seat! From subscription to a Rill Team Plan, you'l
 We charge you by the amount of data that you load into Rill when building your sources and models. Use the [pricing calculator](https://www.rilldata.com/pricing) on our pricing site for more insight into how much your data might cost! If you'd like a more detailed inspection of your objects, [contact us](../contact), and we'll set this up for you. 
 
 ### When am I billed? 
-You'll be billed on the first of each month via our partner at Stripe. You'll need to set up a valid credit card as explained in [our billing documentation](/other/account-management/billing#managing-payment-information). If there are any issues with the card, you'll be notified in the UI and be given a few days' grace period to update your information. If you start in the middle of the month, you'll be billed prorated for the number of days you have access to Rill Cloud.
+You'll be billed on the first of each month via our partner at Stripe. You'll need to set up a valid credit card as explained in [our billing documentation](/other/plans#managing-payment-information). If there are any issues with the card, you'll be notified in the UI and be given a few days' grace period to update your information. If you start in the middle of the month, you'll be billed prorated for the number of days you have access to Rill Cloud.
 
 ### Why was I billed $XXX? 
 You can check your data usage in your organization settings usage page. The graph will display the data that you have over 10GB. Use the [pricing calculator](https://www.rilldata.com/pricing) to see your cost of your current data usage. If you'd like a more detailed inspection of your objects, [contact us](../contact), and we'll set this up for you. 
