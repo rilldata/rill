@@ -52,7 +52,8 @@ func (s *Server) GitStatus(ctx context.Context, r *connect.Request[localv1.GitSt
 		}), nil
 	}
 
-	name, err := s.app.ch.InferProjectName(ctx, s.app.ch.Org, s.app.ProjectPath)
+	// to avoid asking user for inputs on UI simply used the last updated project for now
+	name, err := s.app.ch.InferProjectNameWithPrompt(ctx, s.app.ch.Org, s.app.ProjectPath, false)
 	if err != nil {
 		if !strings.Contains(err.Error(), "no matching project found") {
 			return nil, err
@@ -119,7 +120,7 @@ func (s *Server) GitPull(ctx context.Context, r *connect.Request[localv1.GitPull
 		return nil, errors.New("must authenticate before performing this action")
 	}
 
-	name, err := s.app.ch.InferProjectName(ctx, s.app.ch.Org, s.app.ProjectPath)
+	name, err := s.app.ch.InferProjectNameWithPrompt(ctx, s.app.ch.Org, s.app.ProjectPath, false)
 	if err != nil {
 		if !strings.Contains(err.Error(), "no matching project found") {
 			return nil, err
@@ -182,7 +183,7 @@ func (s *Server) GitPush(ctx context.Context, r *connect.Request[localv1.GitPush
 		return nil, errors.New("must authenticate before performing this action")
 	}
 
-	name, err := s.app.ch.InferProjectName(ctx, s.app.ch.Org, s.app.ProjectPath)
+	name, err := s.app.ch.InferProjectNameWithPrompt(ctx, s.app.ch.Org, s.app.ProjectPath, false)
 	if err != nil {
 		if !strings.Contains(err.Error(), "no matching project found") {
 			return nil, err

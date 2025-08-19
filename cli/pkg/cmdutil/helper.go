@@ -390,7 +390,13 @@ func (h *Helper) ProjectNamesByGitRemote(ctx context.Context, org, remote, subPa
 	return names, nil
 }
 
+// InferProjectName infers the project name from the given path.
+// If multiple projects are found, it prompts the user to select one.
 func (h *Helper) InferProjectName(ctx context.Context, org, pathToProject string) (string, error) {
+	return h.InferProjectNameWithPrompt(ctx, org, pathToProject, true)
+}
+
+func (h *Helper) InferProjectNameWithPrompt(ctx context.Context, org, pathToProject string, prompt bool) (string, error) {
 	// Try loading the project from the .rillcloud directory
 	// Newer projects will not have a .rillcloud directory.
 	proj, err := h.LoadProject(ctx, pathToProject)
@@ -431,6 +437,19 @@ func (h *Helper) InferProjectName(ctx context.Context, org, pathToProject string
 		return orgFiltered[0].Name, nil
 	}
 
+	if !prompt {
+		// return the last updated project
+		var name string
+		var lastUpdated time.Time
+		for _, p := range orgFiltered {
+			t := p.UpdatedOn.AsTime()
+			if t.After(lastUpdated) {
+				lastUpdated = t
+				name = p.Name
+			}
+		}
+		return name, nil
+	}
 	var names []string
 	for _, p := range orgFiltered {
 		names = append(names, p.Name)
