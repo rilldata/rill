@@ -21,9 +21,7 @@ DuckDB is a very useful analytical engine but can start to hit performance and s
 
 ### Multiple Engines 
 
-While not recommended, it is possible in Rill to use mulitple OLAP engines in a single project, For more information, see our page on [Using Multiple OLAP Engines](/connect/olap/multiple-olap).
-
-
+While not recommended, it is possible in Rill to use multiple OLAP engines in a single project. For more information, see our page on [Using Multiple OLAP Engines](/connect/olap/multiple-olap).
 
 ## Additional Notes
 

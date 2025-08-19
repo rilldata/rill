@@ -1,25 +1,34 @@
 ---
-title: "Connect to a OLAP Engine"
+title: "Bring Your Own  OLAP Engine (Live Connector)"
 description: Configure the OLAP engine used by Rill
 sidebar_label: "OLAP Engines"
-sidebar_position: 00
+sidebar_position: 0
 toc_max_heading_level: 3
 className: connect-connect
 ---
 
 import ConnectorIcon from '@site/src/components/ConnectorIcon';
 
-Along with supporting ingestion from your various [sources](/connect/data-source), we allow a "live connection" to your own OLAP analytics engine. You can either set the default OLAP engine for your entire project, or set it for specific dashboards. 
+Rill supports connecting directly to your own OLAP engine via a "live connector". In this mode, no data is ingested into Rill, and all compute is pushed down to the OLAP engine. Use this mode if you've already handled all of your modeling upstream and want to use Rill as your visual application layer.
 
-1. Set the [default OLAP engine](/reference/project-files/rill-yaml#configuring-the-default-olap-engine) via the rill.yaml file.
-2. Set the [OLAP engine](/reference/project-files/metrics-views) for a specific dashboard, on the metrics view
+:::tip Models on Live Connectors
 
-:::warning OLAP Engine Limitations
-**Important Considerations:**
+Rill also offers the ability to ingest and create tables directly from a [data source](/connect/data-source) to your OLAP engine via the live connector, however you'll need to consider a few topics.
+
 - **Use a test database** to avoid accidentally overwriting production data
-- **Perform modeling upstream** since this is a live connection to your existing data
 - **Incremental processing and related queries are not supported**
 - **Feature availability may vary** between different OLAP engines
+
+:::
+
+
+
+In order to connect Rill to your OLAP Engine:
+1. Create the connector via the UI 
+2. [Create the YAML](/reference/project-files/connectors#olap-engines) and set the [default OLAP engine](/reference/project-files/rill-yaml#configuring-the-default-olap-engine) via the rill.yaml file.
+
+:::note `olap_connector` in rill.yaml
+When setting the OLAP Engine via the UI, the `olap_connector` key will automatically update the rill.yaml.
 :::
 
 

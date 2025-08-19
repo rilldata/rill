@@ -263,6 +263,19 @@ func (d Dialect) RequiresCastForLike() bool {
 	return d == DialectClickHouse
 }
 
+func (d Dialect) SupportsRegexMatch() bool {
+	return d == DialectDruid
+}
+
+func (d Dialect) GetRegexMatchFunction() string {
+	switch d {
+	case DialectDruid:
+		return "REGEXP_LIKE"
+	default:
+		panic(fmt.Sprintf("unsupported dialect %q for regex match", d))
+	}
+}
+
 // EscapeTable returns an esacped fully qualified table name
 func (d Dialect) EscapeTable(db, schema, table string) string {
 	if d == DialectDuckDB {
