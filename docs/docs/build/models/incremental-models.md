@@ -1,8 +1,8 @@
 ---
-title: Incremental Models
+title: Incremental Models 
 description: Create Incremental Models
-sidebar_label: Incremental Models
-sidebar_position: 01
+sidebar_label: Incremental Models (YAML)
+sidebar_position: 15
 ---
 
 Incremental models help with the ingestion of large datasets by allowing a dataset to be broken down into smaller sections for ingestion, rather than reading the entire dataset at once. Unlike [standard SQL models](/build/models/sql-models) that are created via a .sql file, incremental models are defined in a YAML file and are used when a large dataset needs to be incrementally ingested to improve ingestion costs and time.
@@ -48,7 +48,7 @@ If you have late arriving data, you will need to keep this in mind when designin
 
 ### Incremental Models with State Defined (Optional)
 
-If your data is not [partitioned](./partitions.md), you can define the incremental model with a predefined `state` parameter. This is only useful for multi-connector incremental ingestion such as BigQuery to DuckDB.
+If your data is not [partitioned](/build/models/partitions), you can define the incremental model with a predefined `state` parameter. This is only useful for multi-connector incremental ingestion such as BigQuery to DuckDB.
 
 ```yaml
 type: model

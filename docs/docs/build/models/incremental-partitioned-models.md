@@ -1,8 +1,8 @@
 ---
 title: Incremental Partitioned Models
 description: create incremental partitioned models
-sidebar_label: Incremental Partitioned Models
-sidebar_position: 05
+sidebar_label: Incremental Partitioned Models (YAML)
+sidebar_position: 20
 ---
 
 
@@ -14,7 +14,7 @@ If you need any assistance with setting up an incremental partitioned model, [re
 
 :::tip Looking for an example?
 
-If you're looking for a working example, take a look at [my-rill-tutorial in our examples' repository](https://github.com/rilldata/rill-examples/tree/demo).
+If you're looking for a working example, take a look at [my-rill-tutorial in our examples' repository](https://github.com/rilldata/rill-examples).
 
 :::
 

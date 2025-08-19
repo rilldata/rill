@@ -16,7 +16,7 @@ For most of the examples here, DuckDB is being used. However, most if not all of
 
 :::tip
 
-Rill's modeling layer provides open-ended SQL compatibility for complex SQL queries. More details can be found in our [modeling section](/build/models/models.md).
+Rill's modeling layer provides open-ended SQL compatibility for complex SQL queries. More details can be found in our [modeling section](/build/models/models-sql).
 
 :::
 

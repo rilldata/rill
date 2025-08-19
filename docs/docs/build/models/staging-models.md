@@ -1,8 +1,8 @@
 ---
 title: Staging Models
-description: C
-sidebar_label: Staging Models
-sidebar_position: 10
+description: When the source ingestion is not directly supported, used staging models
+sidebar_label: Staging Models (YAML)
+sidebar_position: 30
 ---
 As the name suggests, a staging model is one that uses a staging platform to ingest data from one source to another output that is not directly supported. An example of this is ingesting from Snowflake to ClickHouse. In order to support our users' varying setups, we've devised staging models. 
 

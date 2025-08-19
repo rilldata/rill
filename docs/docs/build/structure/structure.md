@@ -5,7 +5,7 @@ sidebar_position: 00
 ---
 
 After creating your initial set of sources, models, and dashboards, you may have noticed the following _native_ folders that exist in your Rill project directory:
-- [Sources](/reference/project-files/sources)
+
 - [Models](/reference/project-files/models)
 - [Metrics Views](/reference/project-files/metrics-views)
 - [Dashboards](/reference/project-files/explore-dashboards)

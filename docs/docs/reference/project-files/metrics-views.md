@@ -30,7 +30,7 @@ In your Rill project directory, create a metrics view, `<metrics_view>.yaml`, fi
 
 **`connector`** — Refers to the OLAP engine, if you are not using DuckDB, IE: [ClickHouse OLAP engine](/connect/olap/multiple-olap). _(optional)_.
 
-**`model`** — Refers to the **model** powering the dashboard with no path specified; should only be used for [Rill models](/build/models/models.md) _(either **model** or **table** is required)_.
+**`model`** — Refers to the **model** powering the dashboard with no path specified; should only be used for [Rill models](/build/models/models-sql) _(either **model** or **table** is required)_.
 
 **`table`** — Refers to the **table** powering the dashboard with no path specified; should be used instead of `model` for dashboards create from [external OLAP tables](/connect/olap#external-olap-tables) _(either **table** or **model** is required)_. 
 

@@ -1,6 +1,6 @@
 ---
 title: Source Models
-sidebar_label: Source Models
+sidebar_label: Source Models (YAML)
 sidebar_position: 00
 ---
 
