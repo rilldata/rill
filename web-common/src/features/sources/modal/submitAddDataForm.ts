@@ -92,7 +92,7 @@ export async function submitAddSourceForm(
 
     await goto(`/files/${newSourceFilePath}`);
   } else {
-    // Connectors that don't get rewritten (BigQuery, Athena, etc.) create connector files
+    // Connectors that don't get rewritten create connector files
     const newConnectorName = getName(
       connector.name as string,
       fileArtifacts.getNamesForKind(ResourceKind.Connector),
@@ -127,10 +127,7 @@ export async function submitAddSourceForm(
 }
 
 /**
- * Handles submission for all connector types:
- * - OLAP engines (ClickHouse, Druid, Pinot)
- * - Data warehouses (BigQuery, Snowflake, Redshift, etc.)
- * - Databases (PostgreSQL, MySQL, SQLite, etc.)
+ * Handles submission for all connector types: ImplementsOLAP, ImplementsWarehouse, ImplementsSQLStore
  */
 export async function submitAddConnectorForm(
   queryClient: QueryClient,
@@ -246,7 +243,6 @@ export async function submitAddConnectorForm(
    */
 
   // Update the `rill.yaml` file only for actual OLAP connectors (ClickHouse, Druid, Pinot)
-  // Data warehouses like BigQuery, Snowflake, etc. should not be set as olap_connector
   if (OLAP_ENGINES.includes(connector.name as string)) {
     await runtimeServicePutFile(instanceId, {
       path: "rill.yaml",
