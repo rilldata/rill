@@ -97,6 +97,9 @@ export function createColorEncoding(
       type: colorField.type,
       ...(metaData &&
         "timeUnit" in metaData && { timeUnit: metaData.timeUnit }),
+      ...(data.domainValues?.colorValues?.length && {
+        sort: data.domainValues.colorValues,
+      }),
     };
 
     // Ideally we would want to use conditional statements to set the color

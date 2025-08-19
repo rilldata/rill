@@ -59,7 +59,6 @@ export function generateVLStackedBarChartSpec(
         y: createPositionEncoding(config.y, data),
         color: createColorEncoding(config.color, data),
         tooltip: defaultTooltipChannel,
-        order: { value: 1 },
       },
     },
   ];
