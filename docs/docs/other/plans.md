@@ -1,7 +1,7 @@
 ---
-title: "Plans Explained"
+title: "Billing Plans Explained"
 description: How Billing works for non-enterprise accounts
-sidebar_label: Plans Explained
+sidebar_label: Billing Plans Explained
 sidebar_position: 00
 ---
 
