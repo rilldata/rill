@@ -9,6 +9,7 @@ import AthenaIcon from "../../components/icons/connectors/AthenaIcon.svelte";
 import PostgresIcon from "../../components/icons/connectors/PostgresIcon.svelte";
 import MySqlIcon from "../../components/icons/connectors/MySqlIcon.svelte";
 import MotherDuckIcon from "../../components/icons/connectors/MotherDuckIcon.svelte";
+import RedshiftIcon from "../../components/icons/connectors/RedshiftIcon.svelte";
 
 export const connectorIconMapping = {
   athena: AthenaIcon,
@@ -21,7 +22,7 @@ export const connectorIconMapping = {
   mysql: MySqlIcon,
   pinot: ApachePinotIcon,
   postgres: PostgresIcon,
-  // TODO: redshift
+  redshift: RedshiftIcon,
   s3: AmazonS3Icon,
   snowflake: SnowflakeIcon,
 };
