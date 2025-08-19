@@ -285,13 +285,13 @@ func (c *connection) FindProjectsForUser(ctx context.Context, userID string) ([]
 // FindProjectsForUserAndFingerprint returns projects for the user based on fingerprint.
 // The fingerprint is simply directory_name for managed git repos and git_remote + subpath for user managed git repos.
 // For backward compatibility when directory_name was not set when creating projects we fallback to git_remote for rill managed git repos.
-func (c *connection) FindProjectsForUserAndFingerprint(ctx context.Context, userID, directory_name, gitRemote, subpath, afterID string, limit int) ([]*database.Project, error) {
+func (c *connection) FindProjectsForUserAndFingerprint(ctx context.Context, userID, directoryName, gitRemote, subpath, afterID string, limit int) ([]*database.Project, error) {
 	// Shouldn't happen, but just to be safe and not return all projects.
-	if directory_name == "" && gitRemote == "" {
+	if directoryName == "" && gitRemote == "" {
 		return nil, nil
 	}
 
-	args := []any{userID, directory_name, gitRemote, subpath}
+	args := []any{userID, directoryName, gitRemote, subpath}
 	qry := `
 		SELECT p.* FROM projects p
 		WHERE p.id IN (

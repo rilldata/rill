@@ -178,12 +178,6 @@ message GetCurrentProjectResponse {
   admin.v1.Project project = 2;
 }
 
-message ListCandidateProjectsRequest {}
-
-message ListCandidateProjectsResponse {
-  repeated admin.v1.Project projects = 1;
-}
-
 message ListOrganizationsAndBillingMetadataRequest {}
 
 message ListOrganizationsAndBillingMetadataResponse {
