@@ -164,7 +164,15 @@ func InferGitRepoRoot(path string) (string, error) {
 	cmd := exec.Command("git", "-C", path, "rev-parse", "--show-toplevel")
 	data, err := cmd.Output()
 	if err != nil {
-		return "", err
+		var execErr *exec.ExitError
+		if !errors.As(err, &execErr) {
+			return "", err
+		}
+		errStr := strings.TrimSpace(string(execErr.Stderr))
+		if strings.Contains(errStr, "not a git repository") {
+			return "", ErrNotAGitRepository
+		}
+		return "", errors.New(string(execErr.Stderr))
 	}
 	return strings.TrimSpace(string(data)), nil
 }

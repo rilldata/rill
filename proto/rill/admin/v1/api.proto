@@ -1152,8 +1152,9 @@ message ListProjectsForOrganizationAndUserResponse {
 message ListProjectsForFingerprintRequest {
   string directory_name = 1;
   string git_remote = 2;
-  uint32 page_size = 3 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
-  string page_token = 4;
+  string sub_path = 3;
+  uint32 page_size = 4 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
+  string page_token = 5;
 }
 
 message ListProjectsForFingerprintResponse {

@@ -77,7 +77,7 @@ type DB interface {
 	FindProjectPathsByPattern(ctx context.Context, namePattern, afterName string, limit int) ([]string, error)
 	FindProjectPathsByPatternAndAnnotations(ctx context.Context, namePattern, afterName string, annotationKeys []string, annotationPairs map[string]string, limit int) ([]string, error)
 	FindProjectsForUser(ctx context.Context, userID string) ([]*Project, error)
-	FindProjectsForUserAndFingerprint(ctx context.Context, userID, directoryName, gitRemote, afterID string, limit int) ([]*Project, error)
+	FindProjectsForUserAndFingerprint(ctx context.Context, userID, directoryName, gitRemote, subpath, afterID string, limit int) ([]*Project, error)
 	FindProjectsForOrganization(ctx context.Context, orgID, afterProjectName string, limit int) ([]*Project, error)
 	// FindProjectsForOrgAndUser lists the public projects in the org and the projects where user is added as an external user
 	FindProjectsForOrgAndUser(ctx context.Context, orgID, userID string, includePublic bool, afterProjectName string, limit int) ([]*Project, error)

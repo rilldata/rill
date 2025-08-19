@@ -1957,6 +1957,7 @@ export type AdminServiceListProjectsForUserByNameParams = {
 export type AdminServiceListProjectsForFingerprintParams = {
   directoryName?: string;
   gitRemote?: string;
+  subPath?: string;
   pageSize?: number;
   pageToken?: string;
 };

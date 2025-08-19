@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -19,7 +20,10 @@ import (
 	exec "golang.org/x/sys/execabs"
 )
 
-var ErrGitRemoteNotFound = errors.New("no git remotes found")
+var (
+	ErrGitRemoteNotFound = errors.New("no git remotes found")
+	ErrNotAGitRepository = errors.New("not a git repository")
+)
 
 type Config struct {
 	Remote            string
@@ -383,4 +387,23 @@ func SetRemote(path string, config *Config) error {
 func IsGitRepo(path string) bool {
 	_, err := git.PlainOpen(path)
 	return err == nil
+}
+
+func InferRepoRootAndSubpath(path string) (string, string, error) {
+	// check if is a git repository
+	repoRoot, err := InferGitRepoRoot(path)
+	if err != nil {
+		return "", "", err
+	}
+
+	// infer subpath if it exists
+	subPath, err := filepath.Rel(repoRoot, path)
+	if err != nil {
+		// should never happen because repoRoot is detected from path
+		return "", "", err
+	}
+	if subPath != "." {
+		return repoRoot, subPath, nil
+	}
+	return repoRoot, "", nil
 }

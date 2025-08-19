@@ -84,7 +84,7 @@ func (o *DeployOpts) ValidatePathAndSetupGit(ch *cmdutil.Helper) error {
 	}
 
 	remote, err := gitutil.ExtractGitRemote(repoRoot, o.RemoteName, false)
-	if err != nil {
+	if err != nil && !errors.Is(err, gitutil.ErrGitRemoteNotFound) {
 		return err
 	}
 	if remote.URL == "" {
@@ -111,7 +111,9 @@ func (o *DeployOpts) ValidatePathAndSetupGit(ch *cmdutil.Helper) error {
 			return err
 		}
 		if confirmed {
-			o.SubPath = subPath
+			if subPath != "." {
+				o.SubPath = subPath
+			}
 			o.GitPath = repoRoot
 			o.Github = true
 			return nil

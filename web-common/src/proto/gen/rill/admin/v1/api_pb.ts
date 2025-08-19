@@ -1517,12 +1517,17 @@ export class ListProjectsForFingerprintRequest extends Message<ListProjectsForFi
   gitRemote = "";
 
   /**
-   * @generated from field: uint32 page_size = 3;
+   * @generated from field: string sub_path = 3;
+   */
+  subPath = "";
+
+  /**
+   * @generated from field: uint32 page_size = 4;
    */
   pageSize = 0;
 
   /**
-   * @generated from field: string page_token = 4;
+   * @generated from field: string page_token = 5;
    */
   pageToken = "";
 
@@ -1536,8 +1541,9 @@ export class ListProjectsForFingerprintRequest extends Message<ListProjectsForFi
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "directory_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "git_remote", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "page_size", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
-    { no: 4, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "sub_path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "page_size", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 5, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListProjectsForFingerprintRequest {

@@ -3456,6 +3456,10 @@ paths:
           in: query
           required: false
           type: string
+        - name: subPath
+          in: query
+          required: false
+          type: string
         - name: pageSize
           in: query
           required: false

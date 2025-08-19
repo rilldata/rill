@@ -729,18 +729,38 @@ func (s *Server) ListMatchingProjects(ctx context.Context, r *connect.Request[lo
 		return nil, err
 	}
 
-	directoryName := filepath.Base(s.app.ProjectPath)
-	remote, _ := gitutil.ExtractGitRemote(s.app.ProjectPath, "", false)
-	githubURL, _ := remote.Github()
+	// Build request
+	req := &adminv1.ListProjectsForFingerprintRequest{
+		DirectoryName: filepath.Base(s.app.ProjectPath),
+	}
 
-	resp, err := c.ListProjectsForFingerprint(ctx, &adminv1.ListProjectsForFingerprintRequest{
-		DirectoryName: directoryName,
-		GitRemote:     githubURL,
-	})
+	// extract subpath
+	repoRoot, subpath, err := gitutil.InferRepoRootAndSubpath(s.app.ProjectPath)
+	if err == nil {
+		req.SubPath = subpath
+	}
+
+	// extract remotes
+	remote, err := gitutil.ExtractRemotes(repoRoot, false)
+	if err == nil {
+		for _, r := range remote {
+			if r.Name == "origin" {
+				// if origin is set, use it as the git remote
+				req.GitRemote = r.URL
+				break
+			}
+		}
+		// if no remote is set, use the first one
+		if req.GitRemote == "" && len(remote) > 0 {
+			req.GitRemote = remote[0].URL
+		}
+	}
+	resp, err := c.ListProjectsForFingerprint(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 
+	// TODO : filter projects that deploy from a different branch than the current one
 	return connect.NewResponse(&localv1.ListMatchingProjectsResponse{
 		Projects: resp.Projects,
 	}), nil

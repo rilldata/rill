@@ -146,6 +146,7 @@ func (s *Server) ListProjectsForFingerprint(ctx context.Context, req *adminv1.Li
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.directory_name", req.DirectoryName),
 		attribute.String("args.git_remote", req.GitRemote),
+		attribute.String("args.sub_path", req.SubPath),
 	)
 
 	claims := auth.GetClaims(ctx)
@@ -160,7 +161,7 @@ func (s *Server) ListProjectsForFingerprint(ctx context.Context, req *adminv1.Li
 	}
 	pageSize := validPageSize(req.PageSize)
 
-	projects, err := s.admin.DB.FindProjectsForUserAndFingerprint(ctx, userID, req.DirectoryName, req.GitRemote, pageToken.Val, pageSize)
+	projects, err := s.admin.DB.FindProjectsForUserAndFingerprint(ctx, userID, req.DirectoryName, req.GitRemote, req.SubPath, pageToken.Val, pageSize)
 	if err != nil {
 		return nil, err
 	}

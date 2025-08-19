@@ -3934,6 +3934,8 @@ func (m *ListProjectsForFingerprintRequest) validate(all bool) error {
 
 	// no validation rules for GitRemote
 
+	// no validation rules for SubPath
+
 	if m.GetPageSize() != 0 {
 
 		if m.GetPageSize() > 1000 {

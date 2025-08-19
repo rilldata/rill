@@ -282,13 +282,16 @@ func (c *connection) FindProjectsForUser(ctx context.Context, userID string) ([]
 	return c.projectsFromDTOs(res)
 }
 
-func (c *connection) FindProjectsForUserAndFingerprint(ctx context.Context, userID, directoryName, githubURL, afterID string, limit int) ([]*database.Project, error) {
+// FindProjectsForUserAndFingerprint returns projects for the user based on fingerprint.
+// The fingerprint is simply directory_name for managed git repos and git_remote + subpath for user managed git repos.
+// For backward compatibility when directory_name was not set when creating projects we fallback to git_remote for rill managed git repos.
+func (c *connection) FindProjectsForUserAndFingerprint(ctx context.Context, userID, directory_name, gitRemote, subpath, afterID string, limit int) ([]*database.Project, error) {
 	// Shouldn't happen, but just to be safe and not return all projects.
-	if directoryName == "" && githubURL == "" {
+	if directory_name == "" && gitRemote == "" {
 		return nil, nil
 	}
 
-	args := []any{userID, directoryName, githubURL}
+	args := []any{userID, directory_name, gitRemote, subpath}
 	qry := `
 		SELECT p.* FROM projects p
 		WHERE p.id IN (
@@ -297,16 +300,16 @@ func (c *connection) FindProjectsForUserAndFingerprint(ctx context.Context, user
 			SELECT ugpr.project_id FROM usergroups_projects_roles ugpr JOIN usergroups_users ugu ON ugpr.usergroup_id = ugu.usergroup_id WHERE ugu.user_id = $1
 		)
 		AND (
-			(p.directory_name != '' AND p.directory_name = $2)
+			(p.managed_git_repo_id IS NOT NULL AND ( (p.directory_name != '' AND p.directory_name = $2 ) OR (p.git_remote != '' AND p.git_remote = $3) ) )
 			OR
-			(p.git_remote != '' AND p.git_remote = $3)
+			(p.managed_git_repo_id IS NULL AND p.git_remote = $3 AND p.subpath = $4)
 		)
 	`
 	if afterID != "" {
-		qry += " AND p.id > $4 ORDER BY p.id LIMIT $5"
+		qry += " AND p.id > $5 ORDER BY p.id LIMIT $6"
 		args = append(args, afterID, limit)
 	} else {
-		qry += " ORDER BY p.id LIMIT $4"
+		qry += " ORDER BY p.id LIMIT $5"
 		args = append(args, limit)
 	}
 
