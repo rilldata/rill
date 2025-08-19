@@ -536,6 +536,7 @@ type: connector                                  # Must be `connector` (required
 driver: duckdb                                   # Must be `duckdb` _(required)_
 
 path: md:my_database                 # Path to your MD database _(required)_
+schema_name: main                    # Define your schema if not main, uses main by default
 init_sql: INSTALL 'motherduck';
 LOAD 'motherduck';
 SET motherduck_token= '{{ .env.motherduck_token }}'# SQL executed during database initialization. _(required)_
@@ -550,6 +551,10 @@ _[string]_ - Refers to the driver type and must be driver `duckdb` _(required)_
 ### `path`
 
 _[string]_ - Path to your MD database _(required)_
+
+### `schema_name`
+
+_[string]_ - Define your schema if not main, uses main by default 
 
 ### `init_sql`
 

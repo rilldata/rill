@@ -2185,12 +2185,18 @@ definitions:
         type: string
         description: Path to your MD database
         sample: "md:my_database"
+      schema_name: 
+        type: string
+        description: Define your schema if not main, uses main by default
+        sample: main
       init_sql:
         type: string
         description: SQL executed during database initialization.
         sample: "INSTALL 'motherduck';\nLOAD 'motherduck';\nSET motherduck_token= '{{ .env.motherduck_token }}'"
+
     required:
       - driver
+      
       - path
       - init_sql
   mysql:
