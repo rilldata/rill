@@ -1,4 +1,3 @@
-import { SnowflakeIcon } from "lucide-svelte";
 import AmazonS3Icon from "../../components/icons/connectors/AmazonS3Icon.svelte";
 import ApacheDruidIcon from "../../components/icons/connectors/ApacheDruidIcon.svelte";
 import ApachePinotIcon from "../../components/icons/connectors/ApachePinotIcon.svelte";
@@ -10,6 +9,7 @@ import PostgresIcon from "../../components/icons/connectors/PostgresIcon.svelte"
 import MySqlIcon from "../../components/icons/connectors/MySqlIcon.svelte";
 import MotherDuckIcon from "../../components/icons/connectors/MotherDuckIcon.svelte";
 import RedshiftIcon from "../../components/icons/connectors/RedshiftIcon.svelte";
+import SnowflakeIcon from "../../components/icons/connectors/SnowflakeIcon.svelte";
 
 export const connectorIconMapping = {
   athena: AthenaIcon,
