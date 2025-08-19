@@ -13,7 +13,6 @@ import RedshiftIcon from "../../components/icons/connectors/RedshiftIcon.svelte"
 
 export const connectorIconMapping = {
   athena: AthenaIcon,
-  // TODO: azure
   bigquery: GoogleBigQueryIcon,
   clickhouse: ClickHouseIcon,
   motherduck: MotherDuckIcon,
