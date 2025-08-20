@@ -230,8 +230,15 @@
       if (isRewrittenToDuckDb) {
         return compileSourceYAML(rewrittenConnector, rewrittenFormValues);
       } else {
-        return compileConnectorYAML(connector, values, {
-          fieldFilter: (property) => !property.noPrompt,
+        return compileConnectorYAML(connector, previewValues, {
+          fieldFilter: (property) => {
+            // When in DSN mode, don't filter out noPrompt properties
+            // because the DSN field itself might have noPrompt: true
+            if (hasOnlyDsn() || connectionTab === "dsn") {
+              return true; // Show all DSN properties
+            }
+            return !property.noPrompt;
+          },
           orderedProperties:
             hasOnlyDsn() || connectionTab === "dsn"
               ? filteredDsnProperties
