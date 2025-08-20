@@ -184,14 +184,8 @@
   // Emit the submitting state to the parent
   $: dispatch("submitting", { submitting });
 
-  // ClickHouse requires special handling because it supports both managed and self-managed modes:
-  // - When managed=true: uses sourceProperties and minimal configuration
-  // - When managed=false: uses configProperties and full connection details
-  // - The form state is managed by the child AddClickHouseForm component
-  // - Other connectors use a simpler single-form approach
   $: yamlPreview = (() => {
     if (connector.name === "clickhouse") {
-      // Use the value of the child form state for clickhouse
       const values =
         connectionTab === "dsn" ? $clickhouseDsnForm : $clickhouseParamsForm;
       return compileConnectorYAML(
@@ -234,10 +228,8 @@
       const isRewrittenToDuckDb = rewrittenConnector.name === "duckdb";
 
       if (isRewrittenToDuckDb) {
-        // Use compileSourceYAML for DuckDB-rewritten connectors
         return compileSourceYAML(rewrittenConnector, rewrittenFormValues);
       } else {
-        // Use compileConnectorYAML for regular connectors
         return compileConnectorYAML(connector, values, {
           fieldFilter: (property) => !property.noPrompt,
           orderedProperties:
