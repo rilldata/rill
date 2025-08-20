@@ -375,12 +375,12 @@
                 checkRight
                 role="menuitem"
                 checked={option === activeTimeGrain}
-                class="text-xs cursor-pointer capitalize"
+                class="text-xs cursor-pointer"
                 on:click={() => {
                   metricsExplorerStore.setTimeGrain(exploreName, option);
                 }}
               >
-                {TIME_GRAIN[option].label}
+                {V1TimeGrainToDateTimeUnit[option]}
               </DropdownMenu.CheckboxItem>
             {/each}
           </DropdownMenu.Content>

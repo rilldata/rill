@@ -57,19 +57,19 @@ export function getAllowedEndingGrains(
   return getSmallerGrainsFromOrders(order, getGrainOrder(smallestTimeGrain));
 }
 
-type Order = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | typeof Infinity;
+type Order = 0 | 1 | 2 | 3 | 4 | 5 | 6 | typeof Infinity;
 
 export const V1TimeGrainToOrder: Record<V1TimeGrain, Order> = {
   [V1TimeGrain.TIME_GRAIN_UNSPECIFIED]: 0,
   [V1TimeGrain.TIME_GRAIN_MILLISECOND]: 0,
   [V1TimeGrain.TIME_GRAIN_SECOND]: 0,
-  [V1TimeGrain.TIME_GRAIN_MINUTE]: 1,
-  [V1TimeGrain.TIME_GRAIN_HOUR]: 2,
-  [V1TimeGrain.TIME_GRAIN_DAY]: 3,
-  [V1TimeGrain.TIME_GRAIN_WEEK]: 4,
-  [V1TimeGrain.TIME_GRAIN_MONTH]: 5,
-  [V1TimeGrain.TIME_GRAIN_QUARTER]: 6,
-  [V1TimeGrain.TIME_GRAIN_YEAR]: 7,
+  [V1TimeGrain.TIME_GRAIN_MINUTE]: 0,
+  [V1TimeGrain.TIME_GRAIN_HOUR]: 1,
+  [V1TimeGrain.TIME_GRAIN_DAY]: 2,
+  [V1TimeGrain.TIME_GRAIN_WEEK]: 3,
+  [V1TimeGrain.TIME_GRAIN_MONTH]: 4,
+  [V1TimeGrain.TIME_GRAIN_QUARTER]: 5,
+  [V1TimeGrain.TIME_GRAIN_YEAR]: 6,
 };
 
 export const V1TimeGrainToAlias: Record<V1TimeGrain, TimeGrainAlias> = {
@@ -107,7 +107,7 @@ export function grainAliasToDateTimeUnit(alias: TimeGrainAlias): DateTimeUnit {
 }
 
 const allowedGrains = [
-  V1TimeGrain.TIME_GRAIN_SECOND,
+  // V1TimeGrain.TIME_GRAIN_SECOND,
   V1TimeGrain.TIME_GRAIN_MINUTE,
   V1TimeGrain.TIME_GRAIN_HOUR,
   V1TimeGrain.TIME_GRAIN_DAY,
