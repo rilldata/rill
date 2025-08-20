@@ -36,7 +36,7 @@ var spec = drivers.Spec{
 			Required:    false,
 			DocsURL:     "https://docs.rilldata.com/connect/data-source/snowflake",
 			Placeholder: "<username>@<account_identifier>/<database>/<schema>?warehouse=<warehouse>&role=<role>&authenticator=SNOWFLAKE_JWT&privateKey=<privateKey_base64_url_encoded>",
-			Hint:        "Can be configured here or by setting the 'connector.snowflake.dsn' environment variable (using '.env' or '--env'). Leave empty if using individual fields below.",
+			Hint:        "Can be configured here or by setting the 'connector.snowflake.dsn' environment variable (using '.env' or '--env').",
 			Secret:      true,
 		},
 		{
