@@ -6,7 +6,7 @@
   import Rill from "@rilldata/web-common/components/icons/Rill.svelte";
   import Breadcrumbs from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
   import type { PathOption } from "@rilldata/web-common/components/navigation/breadcrumbs/types";
-  import ChatToggle from "@rilldata/web-common/features/chat/ChatToggle.svelte";
+  import ChatToggle from "@rilldata/web-common/features/chat/layouts/sidebar/ChatToggle.svelte";
   import GlobalDimensionSearch from "@rilldata/web-common/features/dashboards/dimension-search/GlobalDimensionSearch.svelte";
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
   import { useExplore } from "@rilldata/web-common/features/explores/selectors";
@@ -29,6 +29,7 @@
   import PageTitle from "../public-urls/PageTitle.svelte";
   import { useReports } from "../scheduled-reports/selectors";
   import {
+    isCanvasDashboardPage,
     isMetricsExplorerPage,
     isOrganizationPage,
     isProjectPage,
@@ -44,7 +45,7 @@
   export let planDisplayName: string | undefined;
 
   const user = createAdminServiceGetCurrentUser();
-  const { alerts: alertsFlag, dimensionSearch, chat } = featureFlags;
+  const { alerts: alertsFlag, dimensionSearch, dashboardChat } = featureFlags;
 
   $: ({ instanceId } = $runtime);
 
@@ -57,6 +58,7 @@
   $: onAlertPage = !!alert;
   $: onReportPage = !!report;
   $: onMetricsExplorerPage = isMetricsExplorerPage($page);
+  $: onCanvasDashboardPage = isCanvasDashboardPage($page);
   $: onPublicURLPage = isPublicURLPage($page);
   $: onOrgPage = isOrganizationPage($page);
 
@@ -235,7 +237,7 @@
             {#if $dimensionSearch}
               <GlobalDimensionSearch />
             {/if}
-            {#if $chat}
+            {#if $dashboardChat}
               <ChatToggle />
             {/if}
             {#if $user.isSuccess && $user.data.user && !onPublicURLPage}
@@ -251,6 +253,9 @@
           </StateManagersProvider>
         {/key}
       {/if}
+    {/if}
+    {#if onCanvasDashboardPage}
+      <ShareDashboardPopover createMagicAuthTokens={false} />
     {/if}
     {#if $user.isSuccess}
       {#if $user.data && $user.data.user}

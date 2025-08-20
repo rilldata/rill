@@ -175,11 +175,37 @@ func (r *Runtime) processAppContext(ctx context.Context, instanceID string, appC
 	}
 
 	switch appContext.ContextType {
+	case runtimev1.AppContextType_APP_CONTEXT_TYPE_PROJECT_CHAT:
+		return r.processProjectChatContext(ctx, instanceID)
 	case runtimev1.AppContextType_APP_CONTEXT_TYPE_EXPLORE_DASHBOARD:
 		return r.processExploreDashboardContext(ctx, instanceID, appContext.ContextMetadata, toolService)
 	default:
 		return nil, nil // Unknown context type, no system message will be added
 	}
+}
+
+func (r *Runtime) processProjectChatContext(ctx context.Context, instanceID string) ([]*runtimev1.Message, error) {
+	// Find instance-wide AI context
+	var aiInstructions string
+	instance, err := r.Instance(ctx, instanceID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get instance %q: %w", instanceID, err)
+	}
+	if instance.AIInstructions != "" {
+		aiInstructions = instance.AIInstructions
+	}
+
+	// Build the system prompt
+	systemPrompt := buildProjectChatSystemPrompt(aiInstructions)
+
+	return []*runtimev1.Message{{
+		Role: "system",
+		Content: []*aiv1.ContentBlock{{
+			BlockType: &aiv1.ContentBlock_Text{
+				Text: systemPrompt,
+			},
+		}},
+	}}, nil
 }
 
 // processExploreDashboardContext provides specific dashboard context
@@ -619,6 +645,30 @@ func (r *Runtime) addMessage(ctx context.Context, instanceID, conversationID, ro
 	}
 
 	return catalog.InsertMessage(ctx, conversationID, role, catalogContent)
+}
+
+// buildProjectChatSystemPrompt constructs the system prompt for the project chat context
+func buildProjectChatSystemPrompt(aiInstructions string) string {
+	var prompt strings.Builder
+
+	prompt.WriteString("You are a helpful assistant designed to be helpful, insightful, and accurate. ")
+	prompt.WriteString("Your role is to assist users in understanding their data by answering questions, identifying trends, performing calculations, and providing actionable insights.\n\n")
+
+	prompt.WriteString("## Workflow Overview\n")
+	// TODO: call `list_metrics_views` and seed the result in the system prompt
+	prompt.WriteString("1. **List metrics views:** Use \"list_metrics_views\" to discover available metrics views in the project.\n")
+	prompt.WriteString("2. **Get metrics view spec:** Use \"get_metrics_view\" to fetch a metrics view's specification. This is important to understand all the dimensions and measures in a metrics view.\n")
+	prompt.WriteString("3. **Query the time range:** Use \"query_metrics_view_time_range\" to obtain the available time range for a metrics view. This is important to understand what time range the data spans.\n")
+	prompt.WriteString("4. **Query the metrics:** Use \"query_metrics_view\" to run queries to get aggregated results.\n")
+	prompt.WriteString("In the workflow, do not proceed with the next step until the previous step has been completed. If the information from the previous step is already known (let's say for subsequent queries), you can skip it.\n")
+	prompt.WriteString("If a response contains an \"ai_instructions\" field, you should interpret it as additional instructions for how to behave in subsequent responses that relate to that tool call.\n")
+
+	if aiInstructions != "" {
+		prompt.WriteString("## Additional Instructions (provided by the Rill project developer)\n")
+		prompt.WriteString(aiInstructions)
+	}
+
+	return prompt.String()
 }
 
 // buildExploreDashboardSystemPrompt constructs the system prompt for explore dashboard context

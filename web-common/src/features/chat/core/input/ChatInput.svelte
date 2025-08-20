@@ -1,14 +1,30 @@
 <script lang="ts">
   import { onMount, tick } from "svelte";
-  import IconButton from "../../../components/button/IconButton.svelte";
-  import SendIcon from "../../../components/icons/SendIcon.svelte";
+  import IconButton from "../../../../components/button/IconButton.svelte";
+  import SendIcon from "../../../../components/icons/SendIcon.svelte";
+  import type { Chat } from "../chat";
 
-  export let value = "";
-  export let disabled = false;
-  export let placeholder = "Ask about your data...";
-  export let onSend: (message: string) => void;
+  export let chat: Chat;
+  export let onSend: () => void;
 
   let textarea: HTMLTextAreaElement;
+  let placeholder = "Ask about your data...";
+
+  $: currentConversationStore = chat.getCurrentConversation();
+  $: currentConversation = $currentConversationStore;
+  $: getConversationQuery = currentConversation.getConversationQuery();
+  $: draftMessageStore = currentConversation.draftMessage;
+  $: isSendingMessageStore = currentConversation.isSendingMessage;
+
+  $: value = $draftMessageStore;
+  $: disabled = $getConversationQuery?.isLoading || $isSendingMessageStore;
+
+  function handleInput(e: Event) {
+    const target = e.target as HTMLTextAreaElement;
+    const value = target.value;
+    draftMessageStore.set(value);
+    autoResize();
+  }
 
   function handleKeydown(e: KeyboardEvent) {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -19,12 +35,19 @@
 
   async function sendMessage() {
     if (!value.trim() || disabled) return;
-    const message = value;
-    value = "";
+
+    // Message handling with input focus
+    try {
+      await currentConversation.sendMessage();
+      onSend();
+    } catch (error) {
+      console.error("Failed to send message:", error);
+    }
+
+    // Let the parent component manage the input value
     await tick();
     autoResize();
     textarea?.focus();
-    onSend(message);
   }
 
   function autoResize() {
@@ -36,7 +59,11 @@
 
   // Public method to focus input (can be called from parent)
   export function focusInput() {
-    textarea?.focus();
+    tick().then(() => {
+      setTimeout(() => {
+        textarea?.focus();
+      }, 100);
+    });
   }
 
   onMount(() => {
@@ -53,12 +80,12 @@
   <div class="chat-input-container">
     <textarea
       bind:this={textarea}
-      bind:value
+      {value}
       class="chat-input"
       {placeholder}
       rows="1"
       on:keydown={handleKeydown}
-      on:input={autoResize}
+      on:input={handleInput}
     />
     <IconButton
       ariaLabel="Send message"

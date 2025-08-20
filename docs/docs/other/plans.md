@@ -1,11 +1,9 @@
 ---
-title: "Billing"
+title: "Billing Plans Explained"
 description: How Billing works for non-enterprise accounts
-sidebar_label: "Billing Information"
+sidebar_label: Billing Plans Explained
 sidebar_position: 00
 ---
-
-## Overview
 
 Billing cycles begin on the first of the every month (12:00am UTC). If you start your plan mid-month, your first month will be pro-rated accordingly. You can subcribe to a Team Plan at any point via your Rill Cloud billing page. 
 
@@ -13,7 +11,6 @@ Billing cycles begin on the first of the every month (12:00am UTC). If you start
 ### How does it work? 
 Rill Data does not use a user-based license system. Instead, we calculate your data usage, after ingestion, and calculate the pricing based on this. For more information on pricing, see our [pricing page](https://www.rilldata.com/pricing). 
 
-## *Plan Details*
 
 ## Trial Plan
 

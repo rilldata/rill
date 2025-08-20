@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { V1Message } from "../../../runtime-client";
+  import type { V1Message } from "../../../../runtime-client";
   import ChatTextMessage from "./ChatTextMessage.svelte";
   import ChatToolCallBlock from "./ChatToolCallBlock.svelte";
 

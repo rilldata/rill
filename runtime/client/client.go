@@ -75,6 +75,16 @@ func (c *Client) Close() error {
 	return c.conn.Close()
 }
 
+// ConnectorServiceClient returns a ConnectorServiceClient using the same connection.
+func (c *Client) ConnectorServiceClient() runtimev1.ConnectorServiceClient {
+	return runtimev1.NewConnectorServiceClient(c.conn)
+}
+
+// QueryServiceClient returns a QueryServiceClient using the same connection.
+func (c *Client) QueryServiceClient() runtimev1.QueryServiceClient {
+	return runtimev1.NewQueryServiceClient(c.conn)
+}
+
 // bearerAuth implements credentials.PerRPCCredentials for adding a bearer authorization token in the metadata of a gRPC client's requests.
 type bearerAuth struct {
 	token  string
