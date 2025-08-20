@@ -35,7 +35,7 @@ curl https://rill.sh | sh
 rill start
 ```
 
-### **Programmatic Ads/OpenRTB**
+### Programmatic Ads/OpenRTB
 
 Bidstream data for programmatic advertisers to optimize pricing strategies, look for inventory opportunities, and improve campaign performance.
 
@@ -43,7 +43,7 @@ Bidstream data for programmatic advertisers to optimize pricing strategies, look
 - <a href="/guides/openrtb-analytics">Walkthrough →</a><br />
 - <a href="https://ui.rilldata.com/demo/rill-openrtb-prog-ads">Live Demo →</a> 
 
-### **Cost Monitoring**
+### Cost Monitoring
 
 Based on Rill's own internal dashboards, cloud infrastructure data (compute, storage, pipeline statistics, etc.) merged with customer data to analyze bottlenecks and look for efficiencies.
 
@@ -51,7 +51,7 @@ Based on Rill's own internal dashboards, cloud infrastructure data (compute, sto
 - <a href="/guides/cost-monitoring-analytics">Walkthrough →</a><br />
 - <a href="https://ui.rilldata.com/demo/rill-cost-monitoring">Live Demo →</a>
 
-### **GitHub Analytics**
+### GitHub Analytics
 
 Analyze GitHub activity to understand what parts of your codebase are most active, analyze contributor productivity, and evaluate the intersections between commits and files.
 
@@ -59,14 +59,14 @@ Analyze GitHub activity to understand what parts of your codebase are most activ
 - <a href="/guides/github-analytics">Walkthrough →</a><br />
 - <a href="https://ui.rilldata.com/demo/rill-github-analytics">Live Demo →</a>
 
-### **App Engagement**
+### App Engagement
 
 A conversion dataset used by marketers, mobile developers, or product teams to analyze funnel steps.
 
 - <a href="https://github.com/rilldata/rill-examples/tree/main/rill-app-engagement">GitHub →</a><br />
 - <a href="https://ui.rilldata.com/demo/rill-app-engagement">Live Demo →</a>
 
-### **Kitchen-sink example**
+### Kitchen-sink example
 
 A compilation of projects that deep dives into Rill's features using ClickHouse's GitHub commit information.
 
