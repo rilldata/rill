@@ -724,45 +724,19 @@ func (s *Server) ListMatchingProjects(ctx context.Context, r *connect.Request[lo
 	if !s.app.ch.IsAuthenticated() {
 		return nil, errors.New("must authenticate before performing this action")
 	}
-	c, err := s.app.ch.Client()
+
+	projects, err := s.app.ch.InferProjects(ctx, "", s.app.ProjectPath)
 	if err != nil {
-		return nil, err
-	}
-
-	// Build request
-	req := &adminv1.ListProjectsForFingerprintRequest{
-		DirectoryName: filepath.Base(s.app.ProjectPath),
-	}
-
-	// extract subpath
-	repoRoot, subpath, err := gitutil.InferRepoRootAndSubpath(s.app.ProjectPath)
-	if err == nil {
-		req.SubPath = subpath
-	}
-
-	// extract remotes
-	remote, err := gitutil.ExtractRemotes(repoRoot, false)
-	if err == nil {
-		for _, r := range remote {
-			if r.Name == "origin" {
-				// if origin is set, use it as the git remote
-				req.GitRemote = r.URL
-				break
-			}
+		if errors.Is(err, cmdutil.ErrNoMatchingProject) {
+			return connect.NewResponse(&localv1.ListMatchingProjectsResponse{
+				Projects: nil,
+			}), nil
 		}
-		// if no remote is set, use the first one
-		if req.GitRemote == "" && len(remote) > 0 {
-			req.GitRemote = remote[0].URL
-		}
-	}
-	resp, err := c.ListProjectsForFingerprint(ctx, req)
-	if err != nil {
-		return nil, err
 	}
 
 	// TODO : filter projects that deploy from a different branch than the current one
 	return connect.NewResponse(&localv1.ListMatchingProjectsResponse{
-		Projects: resp.Projects,
+		Projects: projects,
 	}), nil
 }
 

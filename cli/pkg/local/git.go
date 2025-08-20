@@ -56,7 +56,7 @@ func (s *Server) GitStatus(ctx context.Context, r *connect.Request[localv1.GitSt
 	// to avoid asking user for inputs on UI simply used the last updated project for now
 	name, err := inferRillManagedProjectName(ctx, s.app.ch, s.app.ch.Org, s.app.ProjectPath)
 	if err != nil {
-		if !strings.Contains(err.Error(), "no matching project found") {
+		if !errors.Is(err, cmdutil.ErrNoMatchingProject) {
 			return nil, err
 		}
 		// If the project is not found return the best effort status
@@ -123,7 +123,7 @@ func (s *Server) GitPull(ctx context.Context, r *connect.Request[localv1.GitPull
 
 	name, err := inferRillManagedProjectName(ctx, s.app.ch, s.app.ch.Org, s.app.ProjectPath)
 	if err != nil {
-		if !strings.Contains(err.Error(), "no matching project found") {
+		if !errors.Is(err, cmdutil.ErrNoMatchingProject) {
 			return nil, err
 		}
 		return nil, errors.New("git credentials not set and repo is not connected to a project")
@@ -186,7 +186,7 @@ func (s *Server) GitPush(ctx context.Context, r *connect.Request[localv1.GitPush
 
 	name, err := inferRillManagedProjectName(ctx, s.app.ch, s.app.ch.Org, s.app.ProjectPath)
 	if err != nil {
-		if !strings.Contains(err.Error(), "no matching project found") {
+		if !errors.Is(err, cmdutil.ErrNoMatchingProject) {
 			return nil, err
 		}
 		return nil, errors.New("git credentials not set and repo is not connected to a project")

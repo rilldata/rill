@@ -22,6 +22,7 @@ import (
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	runtimeclient "github.com/rilldata/rill/runtime/client"
 	"github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc/codes"
@@ -36,6 +37,8 @@ const (
 	telemetryIntakeUser     = "data-modeler"
 	telemetryIntakePassword = "lkh8T90ozWJP/KxWnQ81PexRzpdghPdzuB0ly2/86TeUU8q/bKiVug==" // nolint:gosec // secret is safe for public use
 )
+
+var ErrNoMatchingProject = fmt.Errorf("no matching project found")
 
 type Helper struct {
 	*printer.Printer
@@ -408,34 +411,60 @@ func (h *Helper) InferProjectName(ctx context.Context, org, pathToProject string
 	return SelectPrompt("Select project", names, "")
 }
 
-func (h *Helper) InferProjects(ctx context.Context, org, pathToProject string) ([]*adminv1.Project, error) {
-	// Try loading the project from the .rillcloud directory
-	// Newer projects will not have a .rillcloud directory.
-	proj, err := h.LoadProject(ctx, pathToProject)
+func (h *Helper) InferProjects(ctx context.Context, org, path string) ([]*adminv1.Project, error) {
+	path, err := fileutil.ExpandHome(path)
 	if err != nil {
 		return nil, err
 	}
-	if proj != nil {
-		return []*adminv1.Project{proj}, nil
+
+	path, err = filepath.Abs(path)
+	if err != nil {
+		return nil, err
 	}
 
-	directoryName := filepath.Base(pathToProject)
-	remote, _ := gitutil.ExtractGitRemote(pathToProject, "", true)
-	githubRemote, _ := remote.Github()
+	// Build request
+	req := &adminv1.ListProjectsForFingerprintRequest{
+		DirectoryName: filepath.Base(path),
+	}
 
+	// extract subpath
+	repoRoot, subpath, err := gitutil.InferRepoRootAndSubpath(path)
+	if err == nil {
+		req.SubPath = subpath
+	}
+
+	// extract remotes
+	remote, err := gitutil.ExtractRemotes(repoRoot, false)
+	if err == nil {
+		for _, r := range remote {
+			if r.Name == "origin" {
+				// if origin is set, use it as the git remote
+				// rill managed projects are detected using directory name so it is fine to ignore __rill_remote
+				// this leaves an edge case where older rill managed projects did not set `directory_name`
+				// so if the directory had both `origin` and `__rill_remote` set rill managed projects would not be detected
+				req.GitRemote = r.URL
+				break
+			}
+		}
+		// if no remote is set, use the first one
+		if req.GitRemote == "" && len(remote) > 0 {
+			req.GitRemote = remote[0].URL
+		}
+	}
 	c, err := h.Client()
 	if err != nil {
 		return nil, err
 	}
-	resp, err := c.ListProjectsForFingerprint(ctx, &adminv1.ListProjectsForFingerprintRequest{
-		DirectoryName: directoryName,
-		GitRemote:     githubRemote,
-	})
+	resp, err := c.ListProjectsForFingerprint(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 	if len(resp.Projects) == 0 {
-		return nil, fmt.Errorf("no matching project found")
+		return nil, ErrNoMatchingProject
+	}
+
+	if org == "" {
+		return resp.Projects, nil
 	}
 
 	orgFiltered := make([]*adminv1.Project, 0)
@@ -445,7 +474,7 @@ func (h *Helper) InferProjects(ctx context.Context, org, pathToProject string) (
 		}
 	}
 	if len(orgFiltered) == 0 {
-		return nil, fmt.Errorf("no matching project found")
+		return nil, ErrNoMatchingProject
 	}
 	return orgFiltered, nil
 }
