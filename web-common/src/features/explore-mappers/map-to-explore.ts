@@ -37,6 +37,7 @@ export function mapQueryToDashboard(
   queryArgsJson: string | undefined,
   executionTime: string | undefined,
   annotations: Record<string, string>,
+  alwaysOpenPivot = false,
 ): Readable<MapQueryResponse> {
   if (!queryName || !queryArgsJson || !executionTime)
     return readable({
@@ -55,6 +56,7 @@ export function mapQueryToDashboard(
     queryRequestProperties,
     executionTime,
     annotations,
+    alwaysOpenPivot,
   );
 }
 
@@ -64,6 +66,7 @@ export function mapObjectToExploreState(
   transformerProperties: TransformerProperties,
   executionTime: string,
   annotations: Record<string, string>,
+  alwaysOpenPivot = false,
 ): Readable<MapQueryResponse> {
   if (!executionTime)
     return readable({
@@ -197,6 +200,7 @@ export function mapObjectToExploreState(
         timeRangeSummary: timeRangeSummary.data.timeRangeSummary,
         executionTime,
         annotations,
+        alwaysOpenPivot,
       })
         .then((newExploreState) => {
           set({

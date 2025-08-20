@@ -30,6 +30,7 @@
     reportResource?.report?.spec?.queryArgsJson,
     executionTime,
     reportResource?.report?.spec?.annotations ?? {},
+    true,
   );
 
   $: if ($dashboardStateForReport?.data) {
