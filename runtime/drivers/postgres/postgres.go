@@ -33,7 +33,7 @@ var spec = drivers.Spec{
 			DisplayName: "Postgres Connection String",
 			DocsURL:     "https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING",
 			Placeholder: "postgresql://postgres:postgres@localhost:5432/postgres",
-			Hint:        "Can be configured here or by setting the 'connector.postgres.database_url' environment variable (using '.env' or '--env'). Leave empty if using individual fields below.",
+			Hint:        "Can be configured here or by setting the 'connector.postgres.database_url' environment variable (using '.env' or '--env').",
 			Secret:      true,
 		},
 		{
@@ -303,7 +303,7 @@ func (c *connection) AsNotifier(properties map[string]any) (drivers.Notifier, er
 func (c *connection) getDB() (*sqlx.DB, error) {
 	dsn := c.config.ResolveDSN()
 	if dsn == "" {
-		return nil, fmt.Errorf("postgres: missing required fields. When using individual fields, host, user, and dbname are required")
+		return nil, fmt.Errorf("missing required fields. When using individual fields, host, user, and dbname are required")
 	}
 
 	db, err := sqlx.Open("pgx", dsn)
