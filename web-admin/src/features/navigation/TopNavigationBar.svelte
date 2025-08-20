@@ -29,6 +29,7 @@
   import PageTitle from "../public-urls/PageTitle.svelte";
   import { useReports } from "../scheduled-reports/selectors";
   import {
+    isCanvasDashboardPage,
     isMetricsExplorerPage,
     isOrganizationPage,
     isProjectPage,
@@ -57,6 +58,7 @@
   $: onAlertPage = !!alert;
   $: onReportPage = !!report;
   $: onMetricsExplorerPage = isMetricsExplorerPage($page);
+  $: onCanvasDashboardPage = isCanvasDashboardPage($page);
   $: onPublicURLPage = isPublicURLPage($page);
   $: onOrgPage = isOrganizationPage($page);
 
@@ -251,6 +253,9 @@
           </StateManagersProvider>
         {/key}
       {/if}
+    {/if}
+    {#if onCanvasDashboardPage}
+      <ShareDashboardPopover createMagicAuthTokens={false} />
     {/if}
     {#if $user.isSuccess}
       {#if $user.data && $user.data.user}
