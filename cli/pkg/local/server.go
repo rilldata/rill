@@ -551,7 +551,19 @@ func (s *Server) RedeployProject(ctx context.Context, r *connect.Request[localv1
 				return nil, err
 			}
 		} else {
-			return nil, fmt.Errorf("to update this deployment, use GitHub")
+			author, err := s.app.ch.GitSignature(ctx, s.app.ProjectPath)
+			if err != nil {
+				return nil, err
+			}
+			// TODO : handle when project deploys from branch other than current branch
+			config := &gitutil.Config{
+				Remote:        projResp.Project.GitRemote,
+				DefaultBranch: projResp.Project.ProdBranch,
+			}
+			err = gitutil.CommitAndForcePush(ctx, s.app.ProjectPath, config, "", author)
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 
