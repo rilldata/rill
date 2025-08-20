@@ -285,6 +285,7 @@ func (c *connection) FindProjectsForUser(ctx context.Context, userID string) ([]
 // FindProjectsForUserAndFingerprint returns projects for the user based on fingerprint.
 // The fingerprint is simply directory_name for managed git repos and git_remote + subpath for user managed git repos.
 // For backward compatibility when directory_name was not set when creating projects we fallback to git_remote for rill managed git repos.
+// For archive projects, we use directory_name directly since they are only used for testing and backward compatibility is not required.
 func (c *connection) FindProjectsForUserAndFingerprint(ctx context.Context, userID, directoryName, gitRemote, subpath, afterID string, limit int) ([]*database.Project, error) {
 	// Shouldn't happen, but just to be safe and not return all projects.
 	if directoryName == "" && gitRemote == "" {
@@ -303,6 +304,8 @@ func (c *connection) FindProjectsForUserAndFingerprint(ctx context.Context, user
 			(p.managed_git_repo_id IS NOT NULL AND ( (p.directory_name != '' AND p.directory_name = $2 ) OR (p.git_remote != '' AND p.git_remote = $3) ) )
 			OR
 			(p.managed_git_repo_id IS NULL AND p.git_remote = $3 AND p.subpath = $4)
+			OR
+			(p.archive_asset_id IS NOT NULL AND p.directory_name = $2)
 		)
 	`
 	if afterID != "" {
