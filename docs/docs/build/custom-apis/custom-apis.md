@@ -11,7 +11,7 @@ To create a custom API, create a new YAML file under the `apis` directory in you
 
 ## SQL API
 
-You can write a SQL query and expose it as an API endpoint. This is useful when you want to directly write queries against a [model](/build/models/models.md) that you have created. It should have the following structure:
+You can write a SQL query and expose it as an API endpoint. This is useful when you want to directly write queries against a [model](/build/models) that you have created. It should have the following structure:
 
 ```yaml
 type: api

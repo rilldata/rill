@@ -2,7 +2,7 @@
 title: Who Can Access Your Data
 description: Control who can view your metrics and data
 sidebar_label: Data Access Control
-sidebar_position: 90
+sidebar_position: 00
 ---
 
 Rill supports **granular access policies** that let you control:
