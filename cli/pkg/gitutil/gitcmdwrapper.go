@@ -148,8 +148,13 @@ func RunGitPull(ctx context.Context, path string, discardLocal bool, remote, rem
 	return "", nil
 }
 
-func RunGitPush(ctx context.Context, path, remoteName, branchName string) error {
-	cmd := exec.CommandContext(ctx, "git", "-C", path, "push", remoteName, branchName)
+func RunGitPush(ctx context.Context, path, remoteName, branchName string, force bool) error {
+	var cmd *exec.Cmd
+	if force {
+		cmd = exec.CommandContext(ctx, "git", "-C", path, "push", "--force", remoteName, branchName)
+	} else {
+		cmd = exec.CommandContext(ctx, "git", "-C", path, "push", remoteName, branchName)
+	}
 	if err := cmd.Run(); err != nil {
 		var execErr *exec.ExitError
 		if errors.As(err, &execErr) {
