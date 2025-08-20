@@ -247,6 +247,8 @@ func (e *embedClickHouse) install(destDir string, logger *zap.Logger) (string, e
 			fileName = "clickhouse-macos"
 		case "arm64":
 			fileName = "clickhouse-macos-aarch64"
+		default:
+			return "", fmt.Errorf("unsupported architecture %q for embedded Clickhouse", goarch)
 		}
 		url := "https://github.com/ClickHouse/ClickHouse/releases/download/" + release + "/" + fileName
 		logger.Info("Downloading ClickHouse binary", zap.String("url", url), zap.String("dst", destPath))
@@ -257,9 +259,11 @@ func (e *embedClickHouse) install(destDir string, logger *zap.Logger) (string, e
 		fileName := ""
 		switch goarch {
 		case "amd64":
-			fileName = "clickhouse-common-static-24.7.4.51-amd64.tgz"
+			fileName = fmt.Sprintf("clickhouse-common-static-%s-amd64.tgz", embedVersion)
 		case "arm64":
-			fileName = "clickhouse-common-static-24.7.4.51-arm64.tgz"
+			fileName = fmt.Sprintf("clickhouse-common-static-%s-arm64.tgz", embedVersion)
+		default:
+			return "", fmt.Errorf("unsupported architecture %q for embedded Clickhouse", goarch)
 		}
 		url := "https://github.com/ClickHouse/ClickHouse/releases/download/" + release + "/" + fileName
 		destTgzPath := filepath.Join(destDir, release, fileName)
@@ -271,6 +275,8 @@ func (e *embedClickHouse) install(destDir string, logger *zap.Logger) (string, e
 		if err := extractFileFromTgz(destTgzPath, fileToExtract, destPath); err != nil {
 			return "", fmt.Errorf("error extracting ClickHouse: %w", err)
 		}
+	default:
+		return "", fmt.Errorf("unsupported OS %q for embedded Clickhouse", goos)
 	}
 
 	err := os.Chmod(destPath, 0x755)
