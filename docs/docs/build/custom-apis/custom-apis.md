@@ -1,6 +1,6 @@
 ---
 title: Create Custom APIs
-description: Create custom APIs to retreive aggregated data from Rill
+description: Create custom APIs to retrieve aggregated data from Rill
 sidebar_label: Custom APIs
 ---
 

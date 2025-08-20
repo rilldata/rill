@@ -24,7 +24,47 @@ In Rill, your metrics view is defined by _metric definitions_. Metric definition
 
 ## Creating a Metrics view
 
+When creating a metrics view in Rill, you can either use the visual metrics editor or YAML.
 
+### Using the Visual Metrics Editor
+
+<img src='/img/build/metrics-view/visual-metrics-editor.png' class='rounded-gif' />
+<br />
+
+When you add a metrics definition using the UI, a code definition will automatically be created as a YAML file in your Rill project within the metrics directory by default.
+
+### Using YAML
+
+You can also create metrics definitions directly by creating the artifact yourself.
+
+In your Rill project directory, after the `metrics-view.yaml` file is created in the `metrics` directory, its configuration or definition can be updated as needed by updating the YAML file directly, using the following template as an example:
+
+```yaml
+# Metrics View YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/metrics_views
+
+version: 1
+type: metrics_view
+
+model: example_model # Choose a table to underpin your metrics
+timeseries: timestamp_column # Choose a timestamp column (if any) from your table
+
+dimensions:
+  - column: category
+    label: "Category"
+    description: "Description of the dimension"
+
+measures:
+  - expression: "SUM(revenue)"
+    label: "Total Revenue"
+    description: "Total revenue generated"
+```
+
+:::info Check our reference documentation
+
+For more information about available metrics view properties, feel free to check our [reference YAML documentation](/reference/project-files/metrics-views).
+
+:::
 
 ### Creating a Metrics View with AI
 
@@ -71,77 +111,14 @@ You can also add labels, descriptions, and your choice of number formatting to c
 
 Dimensions are used for exploring segments and filtering. Valid dimensions can be any type and are selected using the drop-down menu. You can also add labels and descriptions to your dimensions to customize how they are displayed. See our dedicated examples and pages for more use cases.
 
+- **[Clickable Dimension Links](/build/metrics-view/dimension-uri)**
 - **[Unnest Dimensions](/build/metrics-view/unnesting)**
-  
-
-### Clickable Dimension Links 
-Adding an additional parameter to your dimension in the [metrics view](/build/metrics-view) can allow for clickable links directly from the dashboard.
-
-```yaml
-dimensions:
-  - label: Company Url
-    column: Company URL
-    uri: true #if already set to the URL, also accepts SQL expressions
-```
- <img src = '/img/build/dashboard/clickable-dimension.png' class='rounded-gif' />
-<br />
+- **[Lookups](/build/metrics-view/lookup)**
 
 ## Security
 
+Data access is an important part of Rill that allows you to create specified views of your dashboard depending on who's viewing the page. For a dedicated guide, see [Data Access](/build/metrics-view/security) for more information.
 
-## Druid Lookups
-
-For those looking to add ID to name mappings with Druid (as an OLAP engine), you can utilize expressions in your **Dimension** settings. Simply use the lookup function and provide the name of the lookup and ID, i.e. `lookup(city_id, 'cities')`. Be sure to include the lookup table name in single quotes.
-
- ```yaml
-  - label: "Cities"
-    expression: lookup(city_id, 'cities')
-    description: "Cities"
-```
-
-## Updating the Metrics View
-
-Whether you prefer the UI or YAML artifacts, Rill supports both methods for updating your metrics view.
-
-### Using the Visual Metrics Editor
-
-<img src='/img/build/metrics-view/visual-metrics-editor.png' class='rounded-gif' />
-<br />
-
-When you add a metrics definition using the UI, a code definition will automatically be created as a YAML file in your Rill project within the metrics directory by default.
-
-### Using YAML
-
-You can also create metrics definitions directly by creating the artifact yourself.
-
-In your Rill project directory, after the `metrics-view.yaml` file is created in the `metrics` directory, its configuration or definition can be updated as needed by updating the YAML file directly, using the following template as an example:
-
-```yaml
-# Metrics View YAML
-# Reference documentation: https://docs.rilldata.com/reference/project-files/metrics_views
-
-version: 1
-type: metrics_view
-
-model: example_model # Choose a table to underpin your metrics
-timeseries: timestamp_column # Choose a timestamp column (if any) from your table
-
-dimensions:
-  - column: category
-    label: "Category"
-    description: "Description of the dimension"
-
-measures:
-  - expression: "SUM(revenue)"
-    label: "Total Revenue"
-    description: "Total revenue generated"
-```
-
-:::info Check our reference documentation
-
-For more information about available metrics view properties, feel free to check our [reference YAML documentation](/reference/project-files/metrics-views).
-
-:::
 
 ## Multi-Editor and External IDE Support
 
