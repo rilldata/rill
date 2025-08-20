@@ -17,15 +17,14 @@
   export let interval: Interval<true>;
   export let zone: string;
   export let showDefaultItem: boolean;
-  export let grain: string;
   export let minDate: DateTime | undefined = undefined;
   export let maxDate: DateTime | undefined = undefined;
   export let showFullRange: boolean;
+  export let allowCustomTimeRange = true;
   export let defaultTimeRange: NamedRange | ISODurationString | undefined;
   export let side: "top" | "right" | "bottom" | "left" = "bottom";
   export let onSelectRange: (range: NamedRange | ISODurationString) => void;
   export let applyCustomRange: (range: Interval<true>) => void;
-  export let allowCustomTimeRange = true;
 
   let firstVisibleMonth: DateTime<true> = interval.start;
   let open = false;
@@ -52,8 +51,9 @@
       type="button"
     >
       <b class="mr-1 line-clamp-1 flex-none">{getRangeLabel(selected)}</b>
+
       {#if interval.isValid && showFullRange}
-        <RangeDisplay {interval} {grain} />
+        <RangeDisplay {interval} />
       {/if}
       <span class="flex-none transition-transform" class:-rotate-180={open}>
         <CaretDownIcon />
@@ -93,8 +93,3 @@
     </div>
   </DropdownMenu.Content>
 </DropdownMenu.Root>
-
-<style lang="postcss">
-  button {
-  }
-</style>

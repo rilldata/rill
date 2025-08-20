@@ -9,7 +9,7 @@
   export let href = "";
 </script>
 
-<div class="pt-3.5 flex flex-row items-center pl-1 gap-x-1">
+<div class="flex flex-row items-center gap-x-1">
   <div class="text-gray-500">
     {description}
   </div>

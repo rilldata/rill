@@ -19,7 +19,7 @@
     createRuntimeServicePutFile,
   } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
-  import { useIsModelingSupportedForDefaultOlapDriver } from "../connectors/olap/selectors";
+  import { useIsModelingSupportedForDefaultOlapDriverOLAP as useIsModelingSupportedForDefaultOlapDriver } from "../connectors/selectors";
   import { directoryState } from "../file-explorer/directory-store";
   import { createResourceFile } from "../file-explorer/new-files";
   import { addSourceModal } from "../sources/modal/add-source-visibility";
@@ -60,6 +60,7 @@
 
   $: isModelingSupportedForDefaultOlapDriver =
     useIsModelingSupportedForDefaultOlapDriver(instanceId);
+  $: isModelingSupported = $isModelingSupportedForDefaultOlapDriver.data;
 
   $: metricsViewQuery = useFilteredResources(
     instanceId,
@@ -172,7 +173,9 @@
   </DropdownMenu.Trigger>
   <DropdownMenu.Content
     align="start"
-    class={`w-[${metricsViews.length === 0 ? "280px" : "240px"}]`}
+    class={`w-[${
+      !isModelingSupported || metricsViews.length === 0 ? "280px" : "240px"
+    }]`}
   >
     <DropdownMenu.Item
       aria-label="Add Data"
@@ -182,20 +185,26 @@
       <svelte:component this={Database} color="#C026D3" size="16px" />
       Data
     </DropdownMenu.Item>
-    {#if $isModelingSupportedForDefaultOlapDriver}
-      <DropdownMenu.Item
-        aria-label="Add Model"
-        class="flex gap-x-2"
-        on:click={() => handleAddResource(ResourceKind.Model)}
-      >
-        <svelte:component
-          this={resourceIconMapping[ResourceKind.Model]}
-          color={resourceColorMapping[ResourceKind.Model]}
-          size="16px"
-        />
+    <DropdownMenu.Item
+      aria-label="Add Model"
+      class="flex gap-x-2"
+      disabled={!isModelingSupported}
+      on:click={() => handleAddResource(ResourceKind.Model)}
+    >
+      <svelte:component
+        this={resourceIconMapping[ResourceKind.Model]}
+        color={resourceColorMapping[ResourceKind.Model]}
+        size="16px"
+      />
+      <div class="flex flex-col items-start">
         Model
-      </DropdownMenu.Item>
-    {/if}
+        {#if !isModelingSupported}
+          <span class="text-gray-500 text-xs">
+            Requires a supported OLAP driver
+          </span>
+        {/if}
+      </div>
+    </DropdownMenu.Item>
     <DropdownMenu.Item
       aria-label="Add Metrics View"
       class="flex gap-x-2"

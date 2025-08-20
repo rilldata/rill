@@ -317,14 +317,20 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 		}
 	}
 
+	repo, release, err := s.app.Runtime.Repo(ctx, s.app.Instance.ID)
+	if err != nil {
+		return nil, err
+	}
+	defer release()
+
+	// Ensure .gitignore exists and contains necessary entries
+	err = cmdutil.SetupGitIgnore(ctx, repo)
+	if err != nil {
+		return nil, fmt.Errorf("failed to set up .gitignore: %w", err)
+	}
+
 	var projRequest *adminv1.CreateProjectRequest
 	if r.Msg.Archive { // old zip-and-ship, currently used only for testing until we figure out a good way to test using manged github repos
-		repo, release, err := s.app.Runtime.Repo(ctx, s.app.Instance.ID)
-		if err != nil {
-			return nil, err
-		}
-		defer release()
-
 		assetID, err := cmdutil.UploadRepo(ctx, repo, s.app.ch, r.Msg.Org, r.Msg.ProjectName)
 		if err != nil {
 			return nil, err
@@ -524,8 +530,14 @@ func (s *Server) RedeployProject(ctx context.Context, r *connect.Request[localv1
 			return nil, err
 		}
 	} else if r.Msg.Reupload {
-		if projResp.Project.ArchiveAssetId != "" {
-			// project was previously deployed using zip and ship
+		if projResp.Project.ManagedGitId != "" {
+			// If rill-managed project then push to the repo based on org/project passed in.
+			err = s.app.ch.GitHelper(projResp.Project.OrgName, projResp.Project.Name, s.app.ProjectPath).PushToManagedRepo(ctx)
+			if err != nil {
+				return nil, err
+			}
+		} else if projResp.Project.ArchiveAssetId != "" || r.Msg.CreateManagedRepo {
+			// project was previously deployed using zip and ship, or we are overwriting another project already connected to github
 			ghRepo, err := s.app.ch.GitHelper(projResp.Project.OrgName, projResp.Project.Name, s.app.ProjectPath).PushToNewManagedRepo(ctx)
 			if err != nil {
 				return nil, err
@@ -538,13 +550,20 @@ func (s *Server) RedeployProject(ctx context.Context, r *connect.Request[localv1
 			if err != nil {
 				return nil, err
 			}
-		} else if projResp.Project.ManagedGitId != "" {
-			err = s.app.ch.GitHelper(projResp.Project.OrgName, projResp.Project.Name, s.app.ProjectPath).PushToManagedRepo(ctx)
+		} else {
+			author, err := s.app.ch.GitSignature(ctx, s.app.ProjectPath)
 			if err != nil {
 				return nil, err
 			}
-		} else {
-			return nil, fmt.Errorf("to update this deployment, use GitHub")
+			// TODO : handle when project deploys from branch other than current branch
+			config := &gitutil.Config{
+				Remote:        projResp.Project.GitRemote,
+				DefaultBranch: projResp.Project.ProdBranch,
+			}
+			err = gitutil.CommitAndForcePush(ctx, s.app.ProjectPath, config, "", author)
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 

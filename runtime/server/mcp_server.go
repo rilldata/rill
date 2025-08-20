@@ -59,6 +59,7 @@ func (s *Server) newMCPServer() *server.MCPServer {
 		server.WithInstructions(mcpInstructions),
 	)
 
+	// Rill capabilities
 	mcpServer.AddTool(s.mcpListMetricsViews())
 	mcpServer.AddTool(s.mcpGetMetricsView())
 	mcpServer.AddTool(s.mcpQueryMetricsViewTimeRange())

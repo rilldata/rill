@@ -85,29 +85,31 @@
   }
 </script>
 
-<header>
-  <a href="/">
-    <Rill />
-  </a>
+<header class:border-b={!onDeployPage}>
+  {#if !onDeployPage}
+    <a href="/">
+      <Rill />
+    </a>
 
-  <span class="rounded-full px-2 border text-gray-800 bg-gray-50">
-    {mode}
-  </span>
+    <span class="rounded-full px-2 border text-gray-800 bg-gray-50">
+      {mode}
+    </span>
 
-  {#if mode === "Preview"}
-    {#if $exploresQuery?.data}
-      <Breadcrumbs {pathParts} {currentPath} />
+    {#if mode === "Preview"}
+      {#if $exploresQuery?.data}
+        <Breadcrumbs {pathParts} {currentPath} />
+      {/if}
+    {:else if mode === "Developer"}
+      <InputWithConfirm
+        size="md"
+        bumpDown
+        type="Project"
+        textClass="font-medium"
+        value={projectTitle}
+        onConfirm={submitTitleChange}
+        showIndicator={unsavedFileCount > 0}
+      />
     {/if}
-  {:else if mode === "Developer"}
-    <InputWithConfirm
-      size="md"
-      bumpDown
-      type="Project"
-      textClass="font-medium"
-      value={projectTitle}
-      onConfirm={submitTitleChange}
-      showIndicator={unsavedFileCount > 0}
-    />
   {/if}
 
   <div class="ml-auto flex gap-x-2 h-full w-fit items-center py-2">
@@ -126,7 +128,7 @@
 <style lang="postcss">
   header {
     @apply w-full bg-surface box-border;
-    @apply flex gap-x-2 items-center px-4 border-b flex-none;
+    @apply flex gap-x-2 items-center px-4 flex-none;
     @apply h-11;
   }
 </style>

@@ -38,13 +38,17 @@
   import { useTimeControlStore } from "../time-controls/time-control-store";
   import FilterButton from "./FilterButton.svelte";
   import DimensionFilter from "./dimension-filters/DimensionFilter.svelte";
-
+  import { createQueryServiceMetricsViewTimeRange } from "@rilldata/web-common/runtime-client";
+  import { featureFlags } from "../../feature-flags";
   import Timestamp from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/Timestamp.svelte";
   import { getDefaultTimeGrain } from "@rilldata/web-common/lib/time/grains";
   import { Tooltip } from "bits-ui";
   import Metadata from "../time-controls/super-pill/components/Metadata.svelte";
   import { getValidComparisonOption } from "../time-controls/time-range-store";
   import { getPinnedTimeZones } from "../url-state/getDefaultExplorePreset";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+
+  const { rillTime } = featureFlags;
 
   export let readOnly = false;
   export let timeRanges: V1ExploreTimeRange[];
@@ -60,7 +64,7 @@
     validSpecStore,
     actions: {
       dimensionsFilter: {
-        toggleDimensionValueSelection,
+        toggleMultipleDimensionValueSelections,
         applyDimensionInListMode,
         applyDimensionContainsMode,
         removeDimensionFilter,
@@ -77,7 +81,6 @@
         getAllDimensionFilterItems,
         isFilterExcludeMode,
       },
-
       measures: { allMeasures, filteredSimpleMeasures },
       measureFilters: {
         getMeasureFilterItems,
@@ -96,6 +99,18 @@
 
   let showDefaultItem = false;
 
+  $: ({ instanceId } = $runtime);
+
+  $: timeRangeQuery = createQueryServiceMetricsViewTimeRange(
+    instanceId,
+    metricsViewName,
+    {},
+  );
+
+  $: timeRangeSummary = $timeRangeQuery.data?.timeRangeSummary;
+
+  $: watermark = timeRangeSummary?.watermark;
+
   $: ({
     selectedTimeRange,
     allTimeRange,
@@ -113,7 +128,11 @@
   $: exploreState = useExploreState($exploreName);
   $: activeTimeZone = $exploreState?.selectedTimezone;
 
-  $: selectedRangeAlias = selectedTimeRange?.name;
+  $: selectedRangeAlias =
+    selectedTimeRange?.name === TimeRangePreset.CUSTOM
+      ? `${selectedTimeRange.start.toISOString()},${selectedTimeRange.end.toISOString()}`
+      : selectedTimeRange?.name;
+
   $: activeTimeGrain = selectedTimeRange?.interval;
   $: defaultTimeRange = exploreSpec.defaultPreset?.timeRange;
 
@@ -155,7 +174,9 @@
         DateTime.fromJSDate(selectedTimeRange.start).setZone(activeTimeZone),
         DateTime.fromJSDate(selectedTimeRange.end).setZone(activeTimeZone),
       )
-    : allTimeRangeInterval;
+    : allTimeRange
+      ? Interval.fromDateTimes(allTimeRange.start, allTimeRange.end)
+      : Interval.invalid("Invalid interval");
 
   $: baseTimeRange = selectedTimeRange?.start &&
     selectedTimeRange?.end && {
@@ -201,12 +222,11 @@
     );
   }
 
-  function onSelectRange(name: string) {
-    if (!allTimeRange?.end) {
-      return;
-    }
+  async function onSelectRange(alias: string) {
+    // If we don't have a valid time range, early return
+    if (!allTimeRange?.end) return;
 
-    if (name === ALL_TIME_RANGE_ALIAS) {
+    if (alias === ALL_TIME_RANGE_ALIAS) {
       makeTimeSeriesTimeRangeAndUpdateAppState(
         allTimeRange,
         "TIME_GRAIN_DAY",
@@ -215,29 +235,33 @@
       return;
     }
 
-    const includesTimeZoneOffset = name.includes("@");
+    const includesTimeZoneOffset = alias.includes("tz");
 
     if (includesTimeZoneOffset) {
-      const timeZone = name.match(/@ {(.*)}/)?.[1];
+      const timeZone = alias.match(/tz (.*)/)?.[1];
 
       if (timeZone) metricsExplorerStore.setTimeZone($exploreName, timeZone);
     }
 
-    const interval = deriveInterval(
-      name,
-      DateTime.fromJSDate(allTimeRange.end),
+    const { interval, grain } = await deriveInterval(
+      alias,
+      Interval.fromDateTimes(
+        DateTime.fromJSDate(allTimeRange.start),
+        DateTime.fromJSDate(allTimeRange.end),
+      ),
+      metricsViewName,
+      activeTimeZone,
     );
 
-    if (interval?.isValid) {
+    if (interval.isValid) {
       const validInterval = interval as Interval<true>;
       const baseTimeRange: TimeRange = {
-        // Temporary fix for custom syntax
-        name: name as TimeRangePreset,
+        name: alias,
         start: validInterval.start.toJSDate(),
         end: validInterval.end.toJSDate(),
       };
 
-      selectRange(baseTimeRange);
+      selectRange(baseTimeRange, grain);
     }
   }
 
@@ -259,8 +283,9 @@
     );
   }
 
-  function selectRange(range: TimeRange) {
-    const defaultTimeGrain = getDefaultTimeGrain(range.start, range.end).grain;
+  function selectRange(range: TimeRange, grain?: V1TimeGrain) {
+    const timeGrain =
+      grain ?? getDefaultTimeGrain(range.start, range.end).grain;
 
     // Get valid option for the new time range
     const validComparison =
@@ -274,7 +299,7 @@
         allTimeRange,
       );
 
-    makeTimeSeriesTimeRangeAndUpdateAppState(range, defaultTimeGrain, {
+    makeTimeSeriesTimeRangeAndUpdateAppState(range, timeGrain, {
       name: validComparison,
     } as DashboardTimeControls);
   }
@@ -297,8 +322,14 @@
     metricsExplorerStore.setTimeZone($exploreName, timeZone);
   }
 
+  $: usingRillTime =
+    !selectedRangeAlias?.startsWith("P") &&
+    !selectedRangeAlias?.startsWith("rill-");
+
   function onTimeGrainSelect(timeGrain: V1TimeGrain) {
-    if (baseTimeRange) {
+    if (usingRillTime && selectedRangeAlias) {
+      metricsExplorerStore.setTimeGrain($exploreName, timeGrain);
+    } else if (baseTimeRange) {
       makeTimeSeriesTimeRangeAndUpdateAppState(
         baseTimeRange,
         timeGrain,
@@ -341,15 +372,16 @@
           {interval}
           context={$exploreName}
           {timeStart}
+          {timeEnd}
           lockTimeZone={exploreSpec.lockTimeZone}
           allowCustomTimeRange={exploreSpec.allowCustomTimeRange}
-          {timeEnd}
           {activeTimeGrain}
           {activeTimeZone}
           canPanLeft={$canPanLeft}
           canPanRight={$canPanRight}
           showPan
           {showDefaultItem}
+          watermark={watermark ? DateTime.fromISO(watermark) : undefined}
           applyRange={selectRange}
           {onSelectRange}
           {onTimeGrainSelect}
@@ -364,11 +396,11 @@
         />
       {/if}
 
-      {#if allTimeRangeInterval?.end?.isValid}
+      {#if !$rillTime && allTimeRangeInterval?.end?.isValid}
         <Tooltip.Root openDelay={0}>
           <Tooltip.Trigger>
             <span class="text-gray-600 italic">
-              as of latest <Timestamp
+              as of <Timestamp
                 italic
                 suppress
                 showDate={false}
@@ -428,7 +460,9 @@
                 onRemove={() => removeDimensionFilter(name)}
                 onToggleFilterMode={() => toggleDimensionFilterMode(name)}
                 onSelect={(value) =>
-                  toggleDimensionValueSelection(name, value, true)}
+                  toggleMultipleDimensionValueSelections(name, [value], true)}
+                onMultiSelect={(values) =>
+                  toggleMultipleDimensionValueSelections(name, values, true)}
                 onApplyInList={(values) =>
                   applyDimensionInListMode(name, values)}
                 onApplyContainsMode={(searchText) =>

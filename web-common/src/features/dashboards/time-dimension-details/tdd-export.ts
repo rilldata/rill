@@ -24,38 +24,46 @@ export function getTDDExportQuery(
   isScheduled: boolean,
 ): V1Query {
   const metricsViewName = get(ctx.metricsViewName);
-  const dashboardState = get(ctx.dashboardStore);
+  const exploreState = get(ctx.dashboardStore);
   const timeControlState = get(useTimeControlStore(ctx));
   const validSpec = get(ctx.validSpecStore);
   const dimensionSearchText = get(dimensionSearchTextStore);
 
   const query: V1Query = {
-    metricsViewAggregationRequest: getTDDAggregationRequest(
+    metricsViewAggregationRequest: getTDDAggregationRequest({
       metricsViewName,
-      dashboardState,
+      exploreState,
       timeControlState,
-      validSpec.data?.metricsView,
-      validSpec.data?.explore,
+      metricsViewSpec: validSpec.data?.metricsView,
+      exploreSpec: validSpec.data?.explore,
       dimensionSearchText,
       isScheduled,
-    ),
+    }),
   };
 
   return query;
 }
 
-function getTDDAggregationRequest(
-  metricsViewName: string,
-  exploreState: ExploreState,
-  timeControlState: TimeControlState,
-  metricsView: V1MetricsViewSpec | undefined,
-  explore: V1ExploreSpec | undefined,
-  dimensionSearchText: string,
-  isScheduled: boolean,
-): undefined | V1MetricsViewAggregationRequest {
+export function getTDDAggregationRequest({
+  metricsViewName,
+  exploreState,
+  timeControlState,
+  metricsViewSpec,
+  exploreSpec,
+  dimensionSearchText,
+  isScheduled,
+}: {
+  metricsViewName: string;
+  exploreState: ExploreState;
+  timeControlState: TimeControlState;
+  metricsViewSpec: V1MetricsViewSpec | undefined;
+  exploreSpec: V1ExploreSpec | undefined;
+  dimensionSearchText: string;
+  isScheduled: boolean;
+}): undefined | V1MetricsViewAggregationRequest {
   if (
-    !metricsView ||
-    !explore ||
+    !metricsViewSpec ||
+    !exploreSpec ||
     !timeControlState.ready ||
     !exploreState.tdd.expandedMeasureName
   )
@@ -66,7 +74,7 @@ function getTDDAggregationRequest(
     timeRange = mapSelectedTimeRangeToV1TimeRange(
       timeControlState.selectedTimeRange,
       exploreState.selectedTimezone,
-      explore,
+      exploreSpec,
     );
   } else {
     timeRange = {
@@ -82,7 +90,7 @@ function getTDDAggregationRequest(
 
   // CAST SAFETY: exports are only available in TDD when a comparison dimension is selected
   const dimensionName = exploreState.selectedComparisonDimension as string;
-  const timeDimension = metricsView.timeDimension ?? "";
+  const timeDimension = metricsViewSpec.timeDimension ?? "";
 
   return {
     instanceId: get(runtime).instanceId,
@@ -90,7 +98,7 @@ function getTDDAggregationRequest(
     dimensions: [
       { name: dimensionName },
       {
-        name: metricsView.timeDimension ?? "",
+        name: metricsViewSpec.timeDimension ?? "",
         timeGrain: exploreState.selectedTimeRange?.interval,
         timeZone: exploreState.selectedTimezone,
       },

@@ -33,16 +33,21 @@ export function mergeDimensionSearchValues(values: string[]) {
 }
 
 export function getFiltersFromText(filterText: string) {
-  const { expr, dimensionsWithInlistFilter } =
-    convertFilterParamToExpression(filterText);
-  let sanitisedExpr = expr;
-  if (!sanitisedExpr) {
-    sanitisedExpr = createAndExpression([]);
-  } else if (
-    sanitisedExpr.cond?.op !== V1Operation.OPERATION_AND &&
-    sanitisedExpr.cond?.op !== V1Operation.OPERATION_OR
-  ) {
-    sanitisedExpr = createAndExpression([sanitisedExpr]);
+  try {
+    const { expr, dimensionsWithInlistFilter } =
+      convertFilterParamToExpression(filterText);
+    let sanitisedExpr = expr;
+    if (!sanitisedExpr) {
+      sanitisedExpr = createAndExpression([]);
+    } else if (
+      sanitisedExpr.cond?.op !== V1Operation.OPERATION_AND &&
+      sanitisedExpr.cond?.op !== V1Operation.OPERATION_OR
+    ) {
+      sanitisedExpr = createAndExpression([sanitisedExpr]);
+    }
+    return { expr: sanitisedExpr, dimensionsWithInlistFilter };
+  } catch (e) {
+    console.error("Error parsing filter text:", e);
+    return { expr: createAndExpression([]), dimensionsWithInlistFilter: [] };
   }
-  return { expr: sanitisedExpr, dimensionsWithInlistFilter };
 }

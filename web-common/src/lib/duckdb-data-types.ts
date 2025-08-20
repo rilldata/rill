@@ -4,7 +4,7 @@
  */
 
 export const INTEGERS = new Set([
-  // Go Types
+  // Rill runtime types
   "CODE_INT8",
   "CODE_INT16",
   "CODE_INT32",
@@ -16,7 +16,7 @@ export const INTEGERS = new Set([
   "CODE_UINT64",
   "CODE_UINT128",
 
-  // Node Types
+  // DuckDB native types
   "BIGINT",
   "HUGEINT",
   "SMALLINT",
@@ -33,11 +33,11 @@ export const INTEGERS = new Set([
 ]);
 
 export const FLOATS = new Set([
-  // Go Types
+  // Rill runtime types
   "CODE_FLOAT32",
   "CODE_FLOAT64",
 
-  // Node Types
+  // DuckDB native types
   "DOUBLE",
   "DECIMAL",
   "FLOAT8",
@@ -48,16 +48,19 @@ export const DATES = new Set(["CODE_DATE", "DATE"]);
 export const NUMERICS = new Set([...INTEGERS, ...FLOATS]);
 export const BOOLEANS = new Set(["CODE_BOOL", "BOOLEAN", "BOOL", "LOGICAL"]);
 export const TIMESTAMPS = new Set([
-  // Go Types
+  // Rill runtime types
   "CODE_TIMESTAMP",
   "CODE_TIME",
 
-  // Node Types
+  // DuckDB native types
   "TIMESTAMP",
   "TIME",
   "DATETIME",
   "TIMESTAMPTZ",
   "TIMESTAMP WITH TIME ZONE",
+  "TIMESTAMP_S",
+  "TIMESTAMP_MS",
+  "TIMESTAMP_NS",
 
   ...DATES,
 ]);
@@ -88,12 +91,12 @@ export function isNested(type: string) {
 }
 
 export const STRING_LIKES = new Set([
-  // Go Types
+  // Rill runtime types
   "CODE_STRING",
   "CODE_BYTES",
   "CODE_UUID",
 
-  // Node Types
+  // DuckDB native types
   "UUID",
   "BYTE_ARRAY",
   "VARCHAR",

@@ -19,6 +19,12 @@
     createAdminServiceGetCurrentUser,
   } from "@rilldata/web-admin/client";
   import * as Dialog from "@rilldata/web-common/components/dialog";
+  import {
+    aggregationRequestWithFilters,
+    aggregationRequestWithRowsAndColumns,
+    aggregationRequestWithTimeRange,
+    buildAggregationRequest,
+  } from "@rilldata/web-common/features/dashboards/aggregation-request-builder.ts";
   import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors.ts";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors.ts";
   import {
@@ -27,7 +33,6 @@
     getFiltersAndTimeControlsFromAggregationRequest,
     getNewReportInitialFormValues,
     getQueryNameFromQuery,
-    getUpdatedAggregationRequest,
     type ReportValues,
   } from "@rilldata/web-common/features/scheduled-reports/utils";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
@@ -35,7 +40,7 @@
   import { get } from "svelte/store";
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup, type ValidationAdapter } from "sveltekit-superforms/adapters";
-  import { array, object, string } from "yup";
+  import { array, object, string, boolean } from "yup";
   import { Button } from "../../components/button";
   import {
     getRuntimeServiceGetResourceQueryKey,
@@ -55,6 +60,7 @@
   export let props: CreateReportProps | EditReportProps;
 
   const user = createAdminServiceGetCurrentUser();
+  const FORM_ID = "scheduled-report-form";
 
   $: ({ organization, project, report: reportName } = $page.params);
   $: ({ instanceId } = $runtime);
@@ -110,22 +116,48 @@
     object({
       title: string().required("Required"),
       emailRecipients: array().of(string().email("Invalid email")),
+      enableSlackNotification: boolean(), // Needed to get the type for validation
       slackChannels: array().of(string()),
       slackUsers: array().of(string().email("Invalid email")),
-    }),
+      columns: array().of(string()).min(1),
+    }).test(
+      "at-least-one-recipient",
+      "At least one email recipient, slack user, or slack channel is required",
+      function (value) {
+        // Check if at least one array has non-empty values
+        const hasEmailRecipients = value.emailRecipients
+          ? value.emailRecipients.filter(Boolean).length > 0
+          : false;
+        if (!value.enableSlackNotification) return hasEmailRecipients;
+
+        const hasSlackUsers = value.slackUsers
+          ? value.slackUsers.filter(Boolean).length > 0
+          : false;
+        const hasSlackChannels = value.slackChannels
+          ? value.slackChannels.filter(Boolean).length > 0
+          : false;
+
+        return hasEmailRecipients || hasSlackUsers || hasSlackChannels;
+      },
+    ),
   ) as ValidationAdapter<ReportValues>;
 
   $: initialValues =
     props.mode === "create"
-      ? getNewReportInitialFormValues($user.data?.user?.email)
+      ? getNewReportInitialFormValues(
+          $user.data?.user?.email,
+          aggregationRequest,
+        )
       : getExistingReportInitialFormValues(
           props.reportSpec,
           $user.data?.user?.email,
+          aggregationRequest,
         );
 
   $: ({ form, errors, enhance, submit, submitting } = superForm(
     defaults(initialValues, schema),
     {
+      id: FORM_ID,
       SPA: true,
       validators: schema,
       async onUpdate({ form }) {
@@ -133,10 +165,15 @@
         const values = form.data;
         return handleSubmit(values);
       },
-      validationMethod: "oninput",
+      // We need to run the 1st validation only after a submit.
+      // But successive validations should be on input.
+      // Here, "auto" achieves this.
+      validationMethod: "auto",
       invalidateAll: false,
     },
   ));
+
+  $: generalErrors = $errors._errors?.[0] ?? $mutation.error?.message;
 
   async function handleSubmit(values: ReportValues) {
     const refreshCron = convertFormValuesToCronExpression(
@@ -144,6 +181,22 @@
       values.dayOfWeek,
       values.timeOfDay,
       values.dayOfMonth,
+    );
+    const filtersState = filters.toState();
+    const timeControlsState = timeControls.toState();
+    const updatedAggregationRequest = buildAggregationRequest(
+      aggregationRequest,
+      [
+        aggregationRequestWithTimeRange(exploreSpec, timeControlsState),
+        aggregationRequestWithFilters(filtersState),
+        aggregationRequestWithRowsAndColumns({
+          exploreSpec,
+          rows: values.rows,
+          columns: values.columns,
+          showTimeComparison: timeControlsState.showTimeComparison,
+          selectedTimezone: timeControlsState.selectedTimezone,
+        }),
+      ],
     );
 
     try {
@@ -158,14 +211,7 @@
             refreshTimeZone: values.timeZone,
             explore: exploreName,
             queryName: queryName,
-            queryArgsJson: JSON.stringify(
-              getUpdatedAggregationRequest(
-                aggregationRequest,
-                filters.toState(),
-                timeControls.toState(),
-                exploreSpec,
-              ),
-            ),
+            queryArgsJson: JSON.stringify(updatedAggregationRequest),
             exportLimit: values.exportLimit || undefined,
             exportIncludeHeader: values.exportIncludeHeader || false,
             exportFormat: values.exportFormat,
@@ -224,12 +270,12 @@
   }
 </script>
 
-<Dialog.Root bind:open>
+<Dialog.Root bind:open closeOnEscape={false}>
   <Dialog.Content class="min-w-[802px]">
     <Dialog.Title>Schedule report</Dialog.Title>
 
     <BaseScheduledReportForm
-      formId="scheduled-report-form"
+      formId={FORM_ID}
       data={form}
       {errors}
       {submit}
@@ -239,15 +285,15 @@
       {timeControls}
     />
 
+    {#if generalErrors}
+      <div class="text-red-500">{generalErrors}</div>
+    {/if}
     <div class="flex items-center gap-x-2 mt-5">
-      {#if $mutation.isError}
-        <div class="text-red-500">{$mutation.error.message}</div>
-      {/if}
       <div class="grow" />
       <Button onClick={() => (open = false)} type="secondary">Cancel</Button>
       <Button
-        disabled={$submitting || $form["emailRecipients"]?.length === 0}
-        form="scheduled-report-form"
+        disabled={$submitting}
+        form={FORM_ID}
         submitForm
         type="primary"
         label={props.mode === "create" ? "Create report" : "Save report"}

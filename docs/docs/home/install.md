@@ -1,6 +1,6 @@
 ---
-title: How to install Rill Developer
-sidebar_label: Install Rill
+title: How to Install Rill Developer
+sidebar_label: Install Rill Developer
 sidebar_position: 01
 ---
 
@@ -21,7 +21,7 @@ rill --help
 
 If you plan to share your dashboards, it is helpful to start by creating a repo in Git. Go to https://github.com/new to create a new repo. Then, run the [Rill install script](/home/install#quick-install) in your cloned location locally to make deployment easier.
 
-More details on deploying Rill via Git are in our [Deploy section](../deploy/deploy-dashboard/).
+More details on deploying Rill via Git are in our [Deploy section](../deploy/deploy-dashboard).
 :::
 
 :::warning macOS users
@@ -99,3 +99,22 @@ If you are seeing strange behavior in Rill Developer, run the following command 
 
 With `unzip` installed, you're ready to install Rill Developer by running the following command:
 ```
+curl https://rill.sh | sh
+```
+
+## Manual Install
+
+You can download platform-specific binaries from our [releases page on GitHub](https://github.com/rilldata/rill/releases). A manual download will not make Rill Developer globally accessible, so you'll need to reference the full path of the binary when executing CLI commands.
+
+## Brew Install
+
+On macOS, you can also install Rill using Homebrew. To avoid conflicts, don't mix it with other installation options and always upgrade Rill via `brew`.
+```bash
+brew install rilldata/tap/rill 
+```
+
+## Uninstall Rill
+
+To uninstall Rill, you can use the following command:
+```bash
+rill uninstall

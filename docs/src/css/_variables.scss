@@ -56,6 +56,7 @@
   --color-stroke: var(--palette_slate_100);
   --doc-menu-caret-right-padding: 1.25rem; /* Standardized to rem */
   --sidebar-scroll-padding: 4.5rem; /* For sticky release notes */
+  --ifm-menu-sidebar-color: #ccc;
 
   /* Footer */
   --ifm-footer-padding-vertical: 1rem;
@@ -64,6 +65,7 @@
   --default-font: 0.875rem; /* 14px */
   --default-line-height: 1.5;
   --ifm-font-family-base: Inter, sans-serif;
+  --ifm-h4-font-size: 0.95rem !important;
   --ifm-h3-font-size: 1rem !important;
   --ifm-h2-font-size: 1.25rem !important;
   --ifm-h1-font-size: 1.75rem !important;

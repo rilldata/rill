@@ -14,12 +14,60 @@ import (
 type openAI struct {
 	client *openai.Client
 	apiKey string
+
+	opts *Options
 }
 
 var _ Client = (*openAI)(nil)
 
-func NewOpenAI(apiKey string) (Client, error) {
-	c := openai.NewClient(apiKey)
+type Options struct {
+	BaseURL    string
+	APIType    openai.APIType
+	APIVersion string
+
+	Model       string
+	Temperature float32
+}
+
+func (o *Options) getModel() string {
+	if o.Model != "" {
+		return o.Model
+	}
+	return openai.GPT4o // Default model if not specified
+}
+
+func (o *Options) getTemperature() float32 {
+	if o.Temperature > 0 {
+		return o.Temperature
+	}
+	return 0.2 // Default temperature if not specified
+}
+
+func NewOpenAI(apiKey string, opts *Options) (Client, error) {
+	if opts == nil {
+		return &openAI{
+			client: openai.NewClient(apiKey),
+			apiKey: apiKey,
+			opts:   &Options{},
+		}, nil
+	}
+
+	var def openai.ClientConfig
+	if opts.APIType == openai.APITypeAzure || opts.APIType == openai.APITypeAzureAD {
+		def = openai.DefaultAzureConfig(apiKey, opts.BaseURL)
+	} else {
+		def = openai.DefaultConfig(apiKey)
+	}
+	if opts.BaseURL != "" {
+		def.BaseURL = opts.BaseURL
+	}
+	if opts.APIVersion != "" {
+		def.APIVersion = opts.APIVersion
+	}
+	if opts.APIType != "" {
+		def.APIType = opts.APIType
+	}
+	c := openai.NewClientWithConfig(def)
 
 	return &openAI{
 		client: c,
@@ -55,9 +103,9 @@ func (c *openAI) Complete(ctx context.Context, msgs []*aiv1.CompletionMessage, t
 
 	// Prepare request parameters
 	params := openai.ChatCompletionRequest{
-		Model:       openai.GPT4o,
+		Model:       c.opts.getModel(),
 		Messages:    reqMsgs,
-		Temperature: 0.2,
+		Temperature: c.opts.getTemperature(),
 	}
 	if len(openaiTools) > 0 {
 		params.Tools = openaiTools
