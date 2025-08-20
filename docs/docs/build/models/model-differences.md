@@ -1,7 +1,7 @@
 ---
-title: Creating Models in Rill
+title: When to use SQL vs YAML
 description: Create models from source data and apply SQL transformations
-sidebar_label: SQL Models vs. YAML Models
+sidebar_label: When to use SQL vs YAML
 sidebar_position: 00
 ---
 
@@ -10,9 +10,9 @@ In Rill, there are two types of data models:
 - [SQL models](/build/models/model-differences#sql-models)
 - [YAML models](/build/models/model-differences#yaml-models)
 
-For most use cases, SQL models, _the default_, are sufficient to transform your data to prepare for visualization. SQL models are built using SQL `SELECT` statements applied to your source data. Under the hood, SQL models are created as views in DuckDB and can be [materialized](/build/models/sql-models#sql-model-materialization) as tables when needed.
+For most use cases, SQL models, _the default_, are sufficient to transform your data to prepare for visualization. SQL models are built using SQL `SELECT` statements applied to your source data. Under the hood, SQL models are created as views in DuckDB and can be [materialized](/build/models/model-differences#model-materialization) as tables when needed.
 
-For more complex modeling and [data ingestion](/build/models/yaml-models/source-models), YAML models are used. By using a YAML approach, we are able to fine-tune the model's settings to enable partitions, incremental modeling, refreshes, and more.
+For more complex modeling and [data ingestion](/build/models/source-models), YAML models are used. By using a YAML approach, we are able to fine-tune the model's settings to enable partitions, incremental modeling, refreshes, and more.
 
 :::tip Avoid Pre-aggregated Metrics
 
@@ -108,8 +108,8 @@ Another use case is when using multiple OLAP engines. This allows you to specify
 
 1. [Source Models](/build/models/source-models)
 2. [Incremental Models](/build/models/incremental-models)
-3. [Partitioned Models](/build/models/partitions)
-4. [Staging Models](/build/models/staging)
+3. [Partitioned Models](/build/models/partitioned-models)
+4. [Staging Models](/build/models/staging-models)
 5. [DuckDB `pre_exec`/`post_exec` Models](/build/models/model-differences#duckdb-models-pre-exec-post-exec-sql)
 
 ### Creating a YAML Model

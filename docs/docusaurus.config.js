@@ -409,7 +409,6 @@ const config = {
             from: '/manage/granting/',
             to: '/other/granting/'
           },
-
           {
             from: '/home/FAQ',
             to: '/other/FAQ'
@@ -446,6 +445,22 @@ const config = {
             from: '/home/concepts/OLAP',
             to: '/connect/olap#what-is-olap'
           },
+          {
+            from: '/build/advanced-models/',
+            to: '/build/models/'
+          },
+          {
+            from: '/build/advanced-models/incremental-models',
+            to: '/build/models/incremental-models'
+          },
+          {
+            from: '/build/advanced-models/partitions',
+            to: '/build/models/partitioned-models'
+          },
+          {
+            from: '/build/advanced-models/staging',
+            to: '/build/models/staging-models'
+          }
           // {
           //   from: '/old-page',
           //   to: '/new-page',

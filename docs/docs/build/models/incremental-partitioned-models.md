@@ -1,8 +1,8 @@
 ---
 title: Incremental Partitioned Models
 description: create incremental partitioned models
-sidebar_label: Incremental Partitioned Models (YAML)
-sidebar_position: 20
+sidebar_label: Incremental + Partitioned Models
+sidebar_position: 30
 ---
 
 

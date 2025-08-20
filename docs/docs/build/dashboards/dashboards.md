@@ -12,7 +12,7 @@ In Rill, Explore dashboards are used to visually understand your data with real-
 
 :::tip
 
-Starting in version 0.50, metrics views have been separated from Explore dashboards. This allows for a cleaner, more accessible metrics layer and the ability to build various dashboards and components on top of a single metrics view. For more information on what a metrics view is, please see: [What is a Metrics View?](/build/metrics-view#what-is-a-metrics-view)
+Starting in version 0.50, metrics views have been separated from Explore dashboards. This allows for a cleaner, more accessible metrics layer and the ability to build various dashboards and components on top of a single metrics view. For more information on what a metrics view is, please see: [What is a Metrics View?](/build/metrics-view)
 
 For migration steps, see [Migrations](/other/v50-dashboard-changes#how-to-migrate-your-current-dashboards).
 

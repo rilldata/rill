@@ -1,8 +1,8 @@
 ---
 title: Partitioned Models
 description: Create Partitioned Models
-sidebar_label: Partitioned Models (YAML)
-sidebar_position: 10
+sidebar_label: Partitioned Models
+sidebar_position: 25
 ---
 
 ## What are Partitions?

@@ -6,12 +6,20 @@ sidebar_position: 0
 
 Rill provides the user the option to build various types of models based on different use cases.nTake a look through the list of available types of models!
 
+
+### Fundamentals 
 - [**Differences between SQL and YAML Models**](/build/models/model-differences) - Compare SQL and YAML models and learn when to use 
-- [**Source Models (YAML)**](/build/models/source-models) - Ingest data from various sources
-- [**Models (SQL)**](/build/models/models-sql) - Transform and prepare your data with a basic SQL file
-- [**Incremental Modelings (YAML)**](/build/models/incremental-models) - Increment your model to avoid large ingestion times
-- [**Partitioned Modelings (YAML)**](/build/models/partitioned-models) - Split your large data into smaller sizes
-- [**Incremental Partitioned Modelings (YAML)**](/build/models/incremental-partitioned-models) - Combine the concepts in Incremental Model and Paritioned Model into a single file
-- [**Staging Modelings (YAML)**](/build/models/staging-models) - When data is not directly available to ingest
-- [**Data Refresh**](/build/models/data-refresh) - Schedule your data refresh  
-- [**Additional Model Templating**](/build/models/templating) - Separate your production and development settings 
+- [**SQL Models**](/build/models/sql-models) - Transform and prepare your data with a basic SQL file
+  
+### Data Ingestion
+- [**Source Models**](/build/models/source-models) - Ingest data from various sources
+- [**Scheduled Refreshes**](/build/models/data-refresh) - Schedule your data refresh  
+
+### Advanced YAML Features
+- [**Incremental Models**](/build/models/incremental-models) - Increment your model to avoid large ingestion times
+- [**Partitioned Models**](/build/models/partitioned-models) - Split your large data into smaller sizes
+- [**Incremental + Partitioned Models**](/build/models/incremental-partitioned-models) - Combine the concepts in Incremental Model and Paritioned Model into a single file
+- [**Staging Models**](/build/models/staging-models) - When data is not directly available to ingest
+
+### Environment Management
+- [**Environment Templating**](/build/models/templating) - Separate your production and development settings 

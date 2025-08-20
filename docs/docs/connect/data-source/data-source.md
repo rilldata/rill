@@ -224,9 +224,9 @@ When deciding on which managed OLAP engine to use with Rill, you'll need to deci
 
 In the case of **sub 100GB of data**, we recommend keeping the default engine, DuckDB, in order to minimize the integration complexity. The reason for this is that [DuckDB has built-in functions](https://duckdb.org/docs/stable/data/data_sources) to support the connectors listed on this page. 
 
-On the other hand, if you need to analyze **100s of GB of data**, we would recommend using Managed ClickHouse. This will add some complexity ([staging tables](/build/models/yaml-models/staging)), but will in turn provide better dashboard performance. 
+On the other hand, if you need to analyze **100s of GB of data**, we would recommend using Managed ClickHouse. This will add some complexity ([staging tables](/build/models/staging-models)), but will in turn provide better dashboard performance. 
 
-If data leans either way, a good deciding factor for which OLAP engine to use is your **familiarity with their SQL syntax**. Whether you're [creating models](/build/models#intermediate-processing) or using [arithmetic functions](/build/metrics-view/advanced-expressions) in the metrics view, you'll need to utilize the engine's built-in functions.
+If data leans either way, a good deciding factor for which OLAP engine to use is your **familiarity with their SQL syntax**. Whether you're [creating models](/build/models/model-differences#intermediate-processing) or using [arithmetic functions](/build/metrics-view/advanced-expressions) in the metrics view, you'll need to utilize the engine's built-in functions.
 
 
 :::note Supported Connectors

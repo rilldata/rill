@@ -22,7 +22,7 @@ This guide assumes you have already set up and understand [dashboard and data ac
 There are three main types of data access issues you might encounter in Rill:
 
 1. [**403 Permission Denied**](#troubleshooting-general-access-issues): Dashboard not shown in the project
-2. [**Failed to Load Dashboard**](/build/debugging/dashboard-access#troubleshooting-row-access-filters): "This dashboard currently has no data to display. This may be due to access permissions."
+2. [**Failed to Load Dashboard**](/build/debugging/dashboard-access#troubleshooting-row-filters-issues): "This dashboard currently has no data to display. This may be due to access permissions."
 3. [**Canvas Dashboard Component Failed to Load**](#canvas-dashboards)
 
 The troubleshooting approach depends on which type of error you're experiencing.

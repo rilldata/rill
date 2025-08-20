@@ -15,7 +15,7 @@ See comprehensive documentation on how to define and use [custom APIs](/integrat
 
 Either one of the following:
 
-- **`sql`** — General SQL query referring a [model](/build/models/models-sql) _(required)_.
+- **`sql`** — General SQL query referring a [model](/build/models/sql-models) _(required)_.
 
 - **`metrics_sql`** — SQL query referring metrics definition and dimensions defined in the [metrics view](/build/dashboards/dashboards.md) _(required)_.
 

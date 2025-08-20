@@ -1,7 +1,7 @@
 ---
 title: SQL Models
 description: Create models from source data and apply SQL transformations
-sidebar_label: Models (SQL)
+sidebar_label: SQL Models
 sidebar_position: 05
 ---
 

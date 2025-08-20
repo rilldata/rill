@@ -1,8 +1,8 @@
 ---
-title: Dev/Prod Model Environments
+title: Environment Templating
 description: Dev/Prod Setup
-sidebar_label: Dev/Prod Environments
-sidebar_position: 55
+sidebar_label: Environment Templating
+sidebar_position: 40
 ---
 
 ## Overview

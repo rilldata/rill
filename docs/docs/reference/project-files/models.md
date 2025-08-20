@@ -5,7 +5,7 @@ sidebar_position: 15
 hide_table_of_contents: true
 ---
 
-When using Rill Developer, data transformations are powered by DuckDB and their dialect of SQL. Under the hood, _by default_, data models are created as views in DuckDB. Please check our [modeling](/build/models/models-sql) page and [DuckDB documentation](https://duckdb.org/docs/sql/introduction) for more details about how to construct and write your model SQL syntax.
+When using Rill Developer, data transformations are powered by DuckDB and their dialect of SQL. Under the hood, _by default_, data models are created as views in DuckDB. Please check our [modeling](/build/models/sql-models) page and [DuckDB documentation](https://duckdb.org/docs/sql/introduction) for more details about how to construct and write your model SQL syntax.
 
 In your Rill project directory, you can also create a `<model_name>.sql` file containing an appropriate DuckDB `SELECT` statement, most commonly within the default `models` directory, to represent a model (or set of SQL transformations). Rill will automatically detect and parse the model next time you run `rill start`.
 

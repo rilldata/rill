@@ -16,7 +16,7 @@ For most of the examples here, DuckDB is being used. However, most if not all of
 
 :::tip
 
-Rill's modeling layer provides open-ended SQL compatibility for complex SQL queries. More details can be found in our [modeling section](/build/models/models-sql).
+Rill's modeling layer provides open-ended SQL compatibility for complex SQL queries. More details can be found in our [modeling section](/build/models/sql-models).
 
 :::
 
@@ -52,7 +52,6 @@ To utilize an expression, replace the `column` property with `expression` and ap
 See our dedicated examples and pages for more use cases.
 
 - **[Unnest Dimensions](/build/metrics-view/advanced-expressions/unnesting)**
-- **[Time Functions](/build/metrics-view/advanced-expressions/time-functions)**
 
 ### Clickable Dimension Links 
 Adding an additional parameter to your dimension in the [metrics view](/build/metrics-view) can allow for clickable links directly from the dashboard.

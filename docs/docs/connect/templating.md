@@ -13,7 +13,7 @@ Templating can be a powerful tool to help introduce dynamic conditional statemen
 
 :::info Where can you template in Rill?
 
-For the most part, templating should be used in [SQL models](../build/models/models-sql) and when defining [connector properties](/connect). If you have further questions about templating, please don't hesitate to [reach out](/contact) and we'd love to assist you further!
+For the most part, templating should be used in [SQL models](../build/models/sql-models) and when defining [connector properties](/connect). If you have further questions about templating, please don't hesitate to [reach out](/contact) and we'd love to assist you further!
 
 :::
 
