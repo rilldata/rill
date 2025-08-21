@@ -409,7 +409,7 @@ func (s *Server) generateOpenURL(ctx context.Context, instanceID string, metrics
 	}
 
 	values := make(url.Values)
-	values.Set("mcp_query", string(jsonBytes))
+	values.Set("query", string(jsonBytes))
 
 	return fmt.Sprintf("%s/-/open-query?%s", instance.FrontendURL, values.Encode()), nil
 }
