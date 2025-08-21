@@ -238,6 +238,10 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 		}
 	}
 
+	var dirName string
+	if localProjectPath != "" {
+		dirName = filepath.Base(localProjectPath)
+	}
 	// Create the project (automatically deploys prod branch)
 	res, err := createProjectFlow(ctx, ch, &adminv1.CreateProjectRequest{
 		OrganizationName: ch.Org,
@@ -249,6 +253,7 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 		Subpath:          opts.SubPath,
 		ProdBranch:       opts.ProdBranch,
 		Public:           opts.Public,
+		DirectoryName:    dirName,
 		GitRemote:        gitRemote,
 	})
 	if err != nil {

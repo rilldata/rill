@@ -125,7 +125,7 @@ func TestInferGitRepoRoot_NotRepo(t *testing.T) {
 	dir := t.TempDir()
 
 	root, err := InferGitRepoRoot(dir)
-	require.Error(t, err, "expected error for non-repo directory")
+	require.Error(t, err, ErrNotAGitRepository)
 	require.Equal(t, "", root, "expected empty root for error case")
 }
 
