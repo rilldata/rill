@@ -101,24 +101,7 @@ var motherduckSpec = drivers.Spec{
 			Placeholder: "md:motherduck.db",
 		},
 	},
-	SourceProperties: []*drivers.PropertySpec{
-		{
-			Key:         "token",
-			Type:        drivers.StringPropertyType,
-			Required:    true,
-			DisplayName: "Access token",
-			Description: "MotherDuck access token",
-			Placeholder: "your_access_token",
-			Secret:      true,
-		},
-		{
-			Key:         "path",
-			Type:        drivers.StringPropertyType,
-			Required:    true,
-			DisplayName: "MotherDuck Connection String",
-			Placeholder: "md:motherduck.db",
-		},
-	},
+	ImplementsOLAP: true,
 }
 
 type Driver struct {
