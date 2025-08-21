@@ -626,7 +626,7 @@ func (s *Server) GetCurrentUser(ctx context.Context, r *connect.Request[localv1.
 }
 
 // GetCurrentProject implements localv1connect.LocalServiceHandler.
-// Remove this endpoint once UI cleans up code refering to it.
+// Remove this endpoint once UI cleans up code referring to it.
 func (s *Server) GetCurrentProject(ctx context.Context, r *connect.Request[localv1.GetCurrentProjectRequest]) (*connect.Response[localv1.GetCurrentProjectResponse], error) {
 	localProjectName := filepath.Base(s.app.ProjectPath)
 
