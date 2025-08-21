@@ -427,65 +427,11 @@ func generateDoc(sidebarPosition, level int, node *yaml.Node, indent string, req
 
 	// OneOf
 	if oneOf := getNodeForKey(node, "oneOf"); oneOf != nil && oneOf.Kind == yaml.SequenceNode {
-		// Special handling for connectors - generate copiable text for each connector type
-		if id == "connectors" {
-			doc.WriteString("\n\n## Available Connector Types\n\n")
-			for _, item := range oneOf.Content {
-				// Since $ref values are already resolved, look for connector definitions directly
-				title := getScalarValue(item, "title")
-				exampleOutput := generateConnectorExample(title, item)
-
-				if title != "" {
-					doc.WriteString(fmt.Sprintf("\n\n### %s\n\n", title))
-					// Generate copiable example for this connector
-					doc.WriteString(fmt.Sprintf("\n\n\n%s", exampleOutput))
-					// Add description first
-					description := getPrintableDescription(item, indent, "")
-					if description != "" {
-						doc.WriteString(fmt.Sprintf("%s\n\n", description))
-					}
-				}
-
-				// Generate the connector definition documentation (properties, etc.)
-				if properties := getNodeForKey(item, "properties"); properties != nil && properties.Kind == yaml.MappingNode {
-					for j := 0; j < len(properties.Content); j += 2 {
-						propName := properties.Content[j].Value
-						propValue := properties.Content[j+1]
-						required := ""
-						if requiredFields := getRequiredMapFromNode(item); requiredFields[propName] {
-							required = "_(required)_"
-						}
-
-						doc.WriteString(fmt.Sprintf("\n\n### `%s`\n\n", propName))
-						doc.WriteString(fmt.Sprintf("%s - %s %s",
-							getPrintableType(propValue),
-							getPrintableDescription(propValue, indent, "(no description)"),
-							required))
-
-						// Display examples inline with the property
-						if examples := getNodeForKey(propValue, "examples"); examples != nil {
-							if examples.Kind == yaml.SequenceNode {
-								// Handle array of YAML examples
-								for _, example := range examples.Content {
-									b, err := yaml.Marshal(example)
-									if err != nil {
-										panic(err)
-									}
-									doc.WriteString(fmt.Sprintf("\n\n```yaml\n%s```", string(b)))
-								}
-							} else if examples.Kind == yaml.ScalarNode {
-								// Handle string examples (like markdown code blocks)
-								doc.WriteString(fmt.Sprintf("\n\n%s", examples.Value))
-							}
-						}
-					}
-				}
-			}
+		if len(oneOf.Content) == 1 {
+			doc.WriteString(generateDoc(sidebarPosition, level, oneOf.Content[0], indent, getRequiredMapFromNode(oneOf.Content[0]), id))
 		} else {
-			if len(oneOf.Content) == 1 {
-				doc.WriteString(generateDoc(sidebarPosition, level, oneOf.Content[0], indent, getRequiredMapFromNode(oneOf.Content[0]), id))
-			} else {
-				if level == 1 {
+			if level == 1 {
+				if id != "connectors" {
 					doc.WriteString("\n\n## One of Properties Options")
 					for _, item := range oneOf.Content {
 						title := getScalarValue(item, "title")
@@ -494,23 +440,23 @@ func generateDoc(sidebarPosition, level int, node *yaml.Node, indent string, req
 							doc.WriteString(fmt.Sprintf("\n- [%s](#%s)", title, anchor))
 						}
 					}
-					for _, item := range oneOf.Content {
-						doc.WriteString(generateDoc(sidebarPosition, level, item, indent, getRequiredMapFromNode(item), id))
+				}
+				for _, item := range oneOf.Content {
+					doc.WriteString(generateDoc(sidebarPosition, level, item, indent, getRequiredMapFromNode(item), id))
 
-						// Display examples for each oneOf item (examples are defined at item level, not property level)
-						if examples := getNodeForKey(item, "examples"); examples != nil {
-							if examples.Kind == yaml.ScalarNode {
-								// Handle string examples (like markdown code blocks)
-								doc.WriteString(fmt.Sprintf("\n\n%s", examples.Value))
-							}
+					// Display examples for each oneOf item (examples are defined at item level, not property level)
+					if examples := getNodeForKey(item, "examples"); examples != nil {
+						if examples.Kind == yaml.ScalarNode {
+							// Handle string examples (like markdown code blocks)
+							doc.WriteString(fmt.Sprintf("\n\n%s", examples.Value))
 						}
 					}
-				} else {
-					for i, item := range oneOf.Content {
-						if hasType(item) || hasProperties(item) || hasCombinators(item) {
-							doc.WriteString(fmt.Sprintf("\n\n%s- **option %d** - %s - %s", indent, i+1, getPrintableType(item), getPrintableDescription(item, indent, "(no description)")))
-							doc.WriteString(generateDoc(sidebarPosition, level, item, indent+"  ", getRequiredMapFromNode(item), id))
-						}
+				}
+			} else {
+				for i, item := range oneOf.Content {
+					if hasType(item) || hasProperties(item) || hasCombinators(item) {
+						doc.WriteString(fmt.Sprintf("\n\n%s- **option %d** - %s - %s", indent, i+1, getPrintableType(item), getPrintableDescription(item, indent, "(no description)")))
+						doc.WriteString(generateDoc(sidebarPosition, level, item, indent+"  ", getRequiredMapFromNode(item), id))
 					}
 				}
 			}
@@ -566,8 +512,8 @@ func generateDoc(sidebarPosition, level int, node *yaml.Node, indent string, req
 					doc.WriteString(fmt.Sprintf("%s\n\n", description))
 				}
 			}
-			exampleOutput := generateConnectorExample(title, connectorDef)
-			doc.WriteString(fmt.Sprintf("\n\n#### Example\n\n%s", exampleOutput))
+			// exampleOutput := generateConnectorExample(title, connectorDef)
+			// doc.WriteString(fmt.Sprintf("\n\n#### Example\n\n%s", exampleOutput))
 
 			// Generate the connector definition documentation (properties, etc.) but skip the header
 			// We need to process properties manually to avoid duplicate headers
@@ -626,81 +572,81 @@ func hasCombinators(node *yaml.Node) bool {
 	return getNodeForKey(node, "anyOf") != nil || getNodeForKey(node, "oneOf") != nil || getNodeForKey(node, "allOf") != nil
 }
 
-func generateConnectorExample(connectorType string, connectorDef *yaml.Node) string {
-	if connectorDef == nil {
-		return ""
-	}
+// func generateConnectorExample(connectorType string, connectorDef *yaml.Node) string {
+// 	if connectorDef == nil {
+// 		return ""
+// 	}
 
-	var example strings.Builder
-	example.WriteString("```yaml\n")
-	example.WriteString("type: connector                                  # Must be `connector` (required)\n")
+// 	var example strings.Builder
+// 	example.WriteString("```yaml\n")
+// 	example.WriteString("type: connector                                  # Must be `connector` (required)\n")
 
-	// Get the driver from the schema and add it first
-	driverAdded := false
-	if driver := getNodeForKey(connectorDef, "driver"); driver != nil {
-		if constVal := getScalarValue(driver, "const"); constVal != "" {
-			example.WriteString(fmt.Sprintf("driver: %s                                   # Must be `%s` _(required)_\n\n", constVal, constVal))
-			driverAdded = true
-		}
-	}
+// 	// Get the driver from the schema and add it first
+// 	driverAdded := false
+// 	if driver := getNodeForKey(connectorDef, "driver"); driver != nil {
+// 		if constVal := getScalarValue(driver, "const"); constVal != "" {
+// 			example.WriteString(fmt.Sprintf("driver: %s                                   # Must be `%s` _(required)_\n\n", constVal, constVal))
+// 			driverAdded = true
+// 		}
+// 	}
 
-	// Fallback: if driver wasn't found, use the connector type name
-	if !driverAdded {
-		// Special case for MotherDuck which uses duckdb driver
-		if connectorType == "MotherDuck" {
-			example.WriteString("driver: duckdb                                   # Must be `duckdb` _(required)_\n\n")
-		} else {
-			example.WriteString(fmt.Sprintf("driver: %s                                   # Must be `%s` _(required)_\n\n", strings.ToLower(connectorType), strings.ToLower(connectorType)))
-		}
-	}
+// 	// Fallback: if driver wasn't found, use the connector type name
+// 	if !driverAdded {
+// 		// Special case for MotherDuck which uses duckdb driver
+// 		if connectorType == "MotherDuck" {
+// 			example.WriteString("driver: duckdb                                   # Must be `duckdb` _(required)_\n\n")
+// 		} else {
+// 			example.WriteString(fmt.Sprintf("driver: %s                                   # Must be `%s` _(required)_\n\n", strings.ToLower(connectorType), strings.ToLower(connectorType)))
+// 		}
+// 	}
 
-	// Get all properties from the schema
-	if properties := getNodeForKey(connectorDef, "properties"); properties != nil && properties.Kind == yaml.MappingNode {
-		for i := 0; i < len(properties.Content); i += 2 {
-			propName := properties.Content[i].Value
-			propValue := properties.Content[i+1]
+// 	// Get all properties from the schema
+// 	if properties := getNodeForKey(connectorDef, "properties"); properties != nil && properties.Kind == yaml.MappingNode {
+// 		for i := 0; i < len(properties.Content); i += 2 {
+// 			propName := properties.Content[i].Value
+// 			propValue := properties.Content[i+1]
 
-			// Skip the driver property since we already added it
-			if propName == "driver" {
-				continue
-			}
+// 			// Skip the driver property since we already added it
+// 			if propName == "driver" {
+// 				continue
+// 			}
 
-			// Get property description
-			description := getPrintableDescription(propValue, "", "")
-			if description == "" {
-				description = "Property description"
-			}
+// 			// Get property description
+// 			description := getPrintableDescription(propValue, "", "")
+// 			if description == "" {
+// 				description = "Property description"
+// 			}
 
-			// Get sample value from the schema
-			sampleValue := getScalarValue(propValue, "sample")
-			if sampleValue == "" {
-				// Fallback to const value if no sample
-				sampleValue = getScalarValue(propValue, "const")
-			}
-			if sampleValue == "" {
-				// Final fallback
-				sampleValue = "example_value"
-			}
+// 			// Get sample value from the schema
+// 			sampleValue := getScalarValue(propValue, "sample")
+// 			if sampleValue == "" {
+// 				// Fallback to const value if no sample
+// 				sampleValue = getScalarValue(propValue, "const")
+// 			}
+// 			if sampleValue == "" {
+// 				// Final fallback
+// 				sampleValue = "example_value"
+// 			}
 
-			// Check if it's required
-			required := ""
-			if requiredFields := getRequiredMapFromNode(connectorDef); requiredFields[propName] {
-				required = " _(required)_"
-			}
+// 			// Check if it's required
+// 			required := ""
+// 			if requiredFields := getRequiredMapFromNode(connectorDef); requiredFields[propName] {
+// 				required = " _(required)_"
+// 			}
 
-			// Format the line with proper alignment
-			example.WriteString(fmt.Sprintf("%s: %s", propName, sampleValue))
+// 			// Format the line with proper alignment
+// 			example.WriteString(fmt.Sprintf("%s: %s", propName, sampleValue))
 
-			// Add padding for alignment
-			padding := 35 - len(propName) - len(sampleValue)
-			if padding > 0 {
-				example.WriteString(strings.Repeat(" ", padding))
-			}
+// 			// Add padding for alignment
+// 			padding := 35 - len(propName) - len(sampleValue)
+// 			if padding > 0 {
+// 				example.WriteString(strings.Repeat(" ", padding))
+// 			}
 
-			example.WriteString(fmt.Sprintf("# %s%s\n", description, required))
-		}
-	}
+// 			example.WriteString(fmt.Sprintf("# %s%s\n", description, required))
+// 		}
+// 	}
 
-	example.WriteString("```\n\n")
-	return example.String()
-}
+// 	example.WriteString("```\n\n")
+// 	return example.String()
+// }

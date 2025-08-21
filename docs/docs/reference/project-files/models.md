@@ -263,10 +263,281 @@ _[object]_ - Overrides any properties in development environment.
 
 _[object]_ - Overrides any properties in production environment. 
 
-## Depending on the connector, additional properties may be required
+## Additional properties for `output` when `connector` is `clickhouse`
 
-Depending on the connector, additional properties may be required, for more information see the [connectors](./connectors.md) documentation
+### `type`
 
+_[string]_ - Type to materialize the model into. Can be 'TABLE', 'VIEW' or 'DICTIONARY' 
+
+### `columns`
+
+_[string]_ - Column names and types. Can also include indexes. If unspecified, detected from the query. 
+
+### `engine_full`
+
+_[string]_ - Full engine definition in SQL format. Can include partition keys, order, TTL, etc. 
+
+### `engine`
+
+_[string]_ - Table engine to use. Default is MergeTree 
+
+### `order_by`
+
+_[string]_ - ORDER BY clause. 
+
+### `partition_by`
+
+_[string]_ - Partition BY clause. 
+
+### `primary_key`
+
+_[string]_ - PRIMARY KEY clause. 
+
+### `sample_by`
+
+_[string]_ - SAMPLE BY clause. 
+
+### `ttl`
+
+_[string]_ - TTL settings for the table or columns. 
+
+### `table_settings`
+
+_[string]_ - Table-specific settings. 
+
+### `query_settings`
+
+_[string]_ - Settings used in insert/create table as select queries. 
+
+### `distributed_settings`
+
+_[string]_ - Settings for distributed table. 
+
+### `distributed_sharding_key`
+
+_[string]_ - Sharding key for distributed table. 
+
+### `dictionary_source_user`
+
+_[string]_ - User for accessing the source dictionary table (used if type is DICTIONARY). 
+
+### `dictionary_source_password`
+
+_[string]_ - Password for the dictionary source user. 
+
+## Common Properties
+
+### `name`
+
+_[string]_ - Name is usually inferred from the filename, but can be specified manually. 
+
+### `refs`
+
+_[array of string]_ - List of resource references 
+
+### `dev`
+
+_[object]_ - Overrides any properties in development environment. 
+
+### `prod`
+
+_[object]_ - Overrides any properties in production environment. 
+
+## Additional properties when `connector` is `athena` or [named connector](./connectors.md#name) for athena
+
+### `output_location`
+
+_[string]_ - Output location for query results in S3. 
+
+### `workgroup`
+
+_[string]_ - AWS Athena workgroup to use for queries. 
+
+### `region`
+
+_[string]_ - AWS region to connect to Athena and the output location. 
+
+## Additional properties when `connector` is `azure` or [named connector](./connectors.md#name) of azure
+
+### `path`
+
+_[string]_ - Path to the source 
+
+### `account`
+
+_[string]_ - Account identifier 
+
+### `uri`
+
+_[string]_ - Source URI 
+
+### `extract`
+
+_[object]_ - Arbitrary key-value pairs for extraction settings 
+
+### `glob`
+
+_[object]_ - Settings related to glob file matching. 
+
+  - **`max_total_size`** - _[integer]_ - Maximum total size (in bytes) matched by glob 
+
+  - **`max_objects_matched`** - _[integer]_ - Maximum number of objects matched by glob 
+
+  - **`max_objects_listed`** - _[integer]_ - Maximum number of objects listed in glob 
+
+  - **`page_size`** - _[integer]_ - Page size for glob listing 
+
+### `batch_size`
+
+_[string]_ - Size of a batch (e.g., '100MB') 
+
+## Additional properties when `connector` is `bigquery` or [named connector](./connectors.md#name) of bigquery
+
+### `project_id`
+
+_[string]_ - ID of the BigQuery project. 
+
+## Additional properties when `connector` is `duckdb` or [named connector](./connectors.md#name) of duckdb
+
+### `path`
+
+_[string]_ - Path to the data source. 
+
+### `format`
+
+_[string]_ - Format of the data source (e.g., csv, json, parquet). 
+
+### `pre_exec`
+
+_[string]_ - refers to SQL queries to run before the main query, available for DuckDB-based models. _(optional)_. Ensure `pre_exec` queries are idempotent. Use `IF NOT EXISTS` statements when applicable. 
+
+### `post_exec`
+
+_[string]_ - refers to a SQL query that is run after the main query, available for DuckDB-based models. _(optional)_. Ensure `post_exec` queries are idempotent. Use `IF EXISTS` statements when applicable. 
+
+```yaml
+pre_exec: ATTACH IF NOT EXISTS 'dbname=postgres host=localhost port=5432 user=postgres password=postgres' AS postgres_db (TYPE POSTGRES);
+sql: SELECT * FROM postgres_query('postgres_db', 'SELECT * FROM USERS')
+post_exec: DETACH DATABASE IF EXISTS postgres_db
+```
+
+## Additional properties when `connector` is `gcs` or [named connector](./connectors.md#name) of gcs
+
+### `path`
+
+_[string]_ - Path to the source 
+
+### `uri`
+
+_[string]_ - Source URI 
+
+### `extract`
+
+_[object]_ - key-value pairs for extraction settings 
+
+### `glob`
+
+_[object]_ - Settings related to glob file matching. 
+
+  - **`max_total_size`** - _[integer]_ - Maximum total size (in bytes) matched by glob 
+
+  - **`max_objects_matched`** - _[integer]_ - Maximum number of objects matched by glob 
+
+  - **`max_objects_listed`** - _[integer]_ - Maximum number of objects listed in glob 
+
+  - **`page_size`** - _[integer]_ - Page size for glob listing 
+
+### `batch_size`
+
+_[string]_ - Size of a batch (e.g., '100MB') 
+
+## Additional properties when `connector` is `local_file` or [named connector](./connectors.md#name) of local_file
+
+### `path`
+
+_[string]_ - Path to the data source. 
+
+### `format`
+
+_[string]_ - Format of the data source (e.g., csv, json, parquet). 
+
+## Additional properties when `connector` is `redshift` or [named connector](./connectors.md#name) of redshift
+
+### `output_location`
+
+_[string]_ - S3 location where query results are stored. 
+
+### `workgroup`
+
+_[string]_ - Redshift Serverless workgroup to use. 
+
+### `database`
+
+_[string]_ - Name of the Redshift database. 
+
+### `cluster_identifier`
+
+_[string]_ - Identifier of the Redshift cluster. 
+
+### `role_arn`
+
+_[string]_ - ARN of the IAM role to assume for Redshift access. 
+
+### `region`
+
+_[string]_ - AWS region of the Redshift deployment. 
+
+## Additional properties when `connector` is `s3` or [named connector](./connectors.md#name) of s3
+
+### `region`
+
+_[string]_ - AWS region 
+
+### `endpoint`
+
+_[string]_ - AWS Endpoint 
+
+### `path`
+
+_[string]_ - Path to the source 
+
+### `uri`
+
+_[string]_ - Source URI 
+
+### `extract`
+
+_[object]_ - key-value pairs for extraction settings 
+
+### `glob`
+
+_[object]_ - Settings related to glob file matching. 
+
+  - **`max_total_size`** - _[integer]_ - Maximum total size (in bytes) matched by glob 
+
+  - **`max_objects_matched`** - _[integer]_ - Maximum number of objects matched by glob 
+
+  - **`max_objects_listed`** - _[integer]_ - Maximum number of objects listed in glob 
+
+  - **`page_size`** - _[integer]_ - Page size for glob listing 
+
+### `batch_size`
+
+_[string]_ - Size of a batch (e.g., '100MB') 
+
+## Additional properties when `connector` is `salesforce` or [named connector](./connectors.md#name) of salesforce
+
+### `soql`
+
+_[string]_ - SOQL query to execute against the Salesforce instance. 
+
+### `sobject`
+
+_[string]_ - Salesforce object (e.g., Account, Contact) targeted by the query. 
+
+### `queryAll`
+
+_[boolean]_ - Whether to include deleted and archived records in the query (uses queryAll API). 
 
 ## Examples
 
