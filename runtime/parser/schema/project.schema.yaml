@@ -482,7 +482,7 @@ definitions:
       - type: object
         allOf:
           - if:
-              title: Additional properties when `connector` is `athena` or [named connector](./connectors.md#name) for athena
+              title: Additional properties when `connector` is `athena` or [named connector](./connectors.md#athena) for athena
               properties:
                 connector:
                   const: athena
@@ -491,7 +491,7 @@ definitions:
             then:
               $ref: '#/definitions/models/definitions/athena'
           - if:
-              title: Additional properties when `connector` is `azure` or [named connector](./connectors.md#name) of azure
+              title: Additional properties when `connector` is `azure` or [named connector](./connectors.md#azure) of azure
               properties:
                 connector:
                   const: azure
@@ -500,7 +500,7 @@ definitions:
             then:
               $ref: '#/definitions/models/definitions/azure'
           - if:
-              title: Additional properties when `connector` is `bigquery` or [named connector](./connectors.md#name) of bigquery
+              title: Additional properties when `connector` is `bigquery` or [named connector](./connectors.md#bigquery) of bigquery
               properties:
                 connector:
                   const: bigquery
@@ -509,7 +509,7 @@ definitions:
             then:
               $ref: '#/definitions/models/definitions/bigquery'
           - if:
-              title: Additional properties when `connector` is `duckdb` or [named connector](./connectors.md#name) of duckdb
+              title: Additional properties when `connector` is `duckdb` or [named connector](./connectors.md#duckdb) of duckdb
               properties:
                 connector:
                   const: duckdb
@@ -518,7 +518,7 @@ definitions:
             then:
               $ref: '#/definitions/models/definitions/duckdb'
           - if:
-              title: Additional properties when `connector` is `gcs` or [named connector](./connectors.md#name) of gcs
+              title: Additional properties when `connector` is `gcs` or [named connector](./connectors.md#gcs) of gcs
               properties:
                 connector:
                   const: gcs
@@ -527,7 +527,7 @@ definitions:
             then:
               $ref: '#/definitions/models/definitions/gcs'
           - if:
-              title: Additional properties when `connector` is `local_file` or [named connector](./connectors.md#name) of local_file
+              title: Additional properties when `connector` is `local_file` or [named connector](/connect/data-source/local-file) of local_file
               properties:
                 connector:
                   const: local_file
@@ -536,7 +536,7 @@ definitions:
             then:
               $ref: '#/definitions/models/definitions/local_file'
           - if:
-              title: Additional properties when `connector` is `redshift` or [named connector](./connectors.md#name) of redshift
+              title: Additional properties when `connector` is `redshift` or [named connector](./connectors.md#redshift) of redshift
               properties:
                 connector:
                   const: redshift
@@ -545,7 +545,7 @@ definitions:
             then:
               $ref: '#/definitions/models/definitions/redshift'
           - if:
-              title: Additional properties when `connector` is `s3` or [named connector](./connectors.md#name) of s3
+              title: Additional properties when `connector` is `s3` or [named connector](./connectors.md#s3) of s3
               properties:
                 connector:
                   const: s3
@@ -554,7 +554,7 @@ definitions:
             then:
               $ref: '#/definitions/models/definitions/s3'
           - if:
-              title: Additional properties when `connector` is `salesforce` or [named connector](./connectors.md#name) of salesforce
+              title: Additional properties when `connector` is `salesforce` or [named connector](./connectors.md#salesforce) of salesforce
               properties:
                 connector:
                   const: salesforce
