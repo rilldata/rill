@@ -209,7 +209,7 @@ export function prepareSourceFormData(
   formValues: Record<string, unknown>,
 ): [V1ConnectorDriver, Record<string, unknown>] {
   // Create a copy of form values to avoid mutating the original
-  let processedValues = { ...formValues };
+  const processedValues = { ...formValues };
 
   // Handle placeholder values for required source properties
   if (connector.sourceProperties) {
