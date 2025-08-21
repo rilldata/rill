@@ -184,14 +184,15 @@
   // Emit the submitting state to the parent
   $: dispatch("submitting", { submitting });
 
-  function getClickHouseYamlPreview() {
-    const values =
-      connectionTab === "dsn" ? $clickhouseDsnForm : $clickhouseParamsForm;
+  function getClickHouseYamlPreview(
+    values: Record<string, unknown>,
+    managed: boolean,
+  ) {
     return compileConnectorYAML(
       connector,
       {
         ...values,
-        managed: clickhouseManaged,
+        managed,
       },
       {
         fieldFilter: (property) => !property.noPrompt,
@@ -239,7 +240,10 @@
   $: yamlPreview = (() => {
     // ClickHouse special case
     if (connector.name === "clickhouse") {
-      return getClickHouseYamlPreview();
+      // Reactive form values
+      const values =
+        connectionTab === "dsn" ? $clickhouseDsnForm : $clickhouseParamsForm;
+      return getClickHouseYamlPreview(values, clickhouseManaged);
     }
 
     const values =
