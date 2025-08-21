@@ -18,7 +18,7 @@
   import { yup } from "sveltekit-superforms/adapters";
   import {
     inferSourceName,
-    maybeRewriteToDuckDb,
+    prepareSourceFormData,
     compileSourceYAML,
   } from "../sourceUtils";
   import { humanReadableErrorMessage } from "../errors/errors";
@@ -206,22 +206,10 @@
       const values =
         hasOnlyDsn() || connectionTab === "dsn" ? $dsnForm : $paramsForm;
 
-      let previewValues = { ...values };
-
-      if (connector.sourceProperties) {
-        for (const prop of connector.sourceProperties) {
-          if (prop.key && prop.required && !(prop.key in previewValues)) {
-            if (prop.placeholder) {
-              previewValues[prop.key] = prop.placeholder;
-            }
-          }
-        }
-      }
-
-      // Apply DuckDB rewrite logic for preview
-      const [rewrittenConnector, rewrittenFormValues] = maybeRewriteToDuckDb(
+      // Process form data using the consolidated logic
+      const [rewrittenConnector, rewrittenFormValues] = prepareSourceFormData(
         connector,
-        previewValues,
+        values,
       );
 
       // Check if the connector was rewritten to DuckDB
@@ -230,7 +218,7 @@
       if (isRewrittenToDuckDb) {
         return compileSourceYAML(rewrittenConnector, rewrittenFormValues);
       } else {
-        return compileConnectorYAML(connector, previewValues, {
+        return compileConnectorYAML(connector, rewrittenFormValues, {
           fieldFilter: (property) => {
             // When in DSN mode, don't filter out noPrompt properties
             // because the DSN field itself might have noPrompt: true

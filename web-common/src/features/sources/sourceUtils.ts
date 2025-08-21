@@ -200,6 +200,37 @@ export function maybeRewriteToDuckDb(
   return [connectorCopy, formValues];
 }
 
+/**
+ * Process form data for sources, including DuckDB rewrite logic and placeholder handling.
+ * This serves as a single source of truth for both preview and submission.
+ */
+export function prepareSourceFormData(
+  connector: V1ConnectorDriver,
+  formValues: Record<string, unknown>,
+): [V1ConnectorDriver, Record<string, unknown>] {
+  // Create a copy of form values to avoid mutating the original
+  let processedValues = { ...formValues };
+
+  // Handle placeholder values for required source properties
+  if (connector.sourceProperties) {
+    for (const prop of connector.sourceProperties) {
+      if (prop.key && prop.required && !(prop.key in processedValues)) {
+        if (prop.placeholder) {
+          processedValues[prop.key] = prop.placeholder;
+        }
+      }
+    }
+  }
+
+  // Apply DuckDB rewrite logic
+  const [rewrittenConnector, rewrittenFormValues] = maybeRewriteToDuckDb(
+    connector,
+    processedValues,
+  );
+
+  return [rewrittenConnector, rewrittenFormValues];
+}
+
 export function getFileExtension(source: V1Source): string {
   const path = String(source?.spec?.properties?.path).toLowerCase();
   if (path?.includes(".csv")) return "CSV";
