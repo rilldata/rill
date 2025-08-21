@@ -22,7 +22,7 @@
 
 <div class="text-xl flex flex-col gap-y-4 items-center">
   <Github className="w-10 h-10" />
-  <div>Connect to github</div>
+  <div>Connect to GitHub</div>
 </div>
 <div class="text-base text-gray-500">
   We’ve detected a self-managed GitHub repo associated with this project:

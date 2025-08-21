@@ -46,6 +46,11 @@ export function getSelectOrganizationRoute() {
   return `/deploy/organization/select`;
 }
 
+/**
+ * Returns a readable for a route getter based on org name.
+ * 1. If the project is not a github repo then returns {@link getCreateProjectRoute} that starts the deploy.
+ * 2. If the project is a github repo then returns {@link getDeployUsingGithubRoute} that prompts the user for using either github/deploy.
+ */
 export function getDeployOrGithubRouteGetter() {
   return derived(createLocalServiceGitStatus(), ($gitStatus) => {
     const hasLocalGitRepo = Boolean(
@@ -66,13 +71,11 @@ export function getDeployOrGithubRouteGetter() {
  *    Right now this is just a safeguard. We check upfront for git repo
  * 2. If the project is a github repo and we already have access to the repo then,
  *    it returns the create project route with github option (/deploy/project/create?use_git=true).
- * 3. If the project is a github repo and we do not have access to the repo then it returns github access route (/deploy/project/github)
+ * 3. If the project is a github repo and we do not have access to the repo then it returns github access route (<admin_server>/github/connect)
  */
 export function getDeployRouteForProject(orgName: string) {
-  const localGitRepoStatusQuery = getLocalGitRepoStatus();
-
   return derived(
-    [createLocalServiceGitStatus(), localGitRepoStatusQuery, page],
+    [createLocalServiceGitStatus(), getLocalGitRepoStatus(), page],
     ([$gitStatus, $localGitRepoStatus, $page]) => {
       const hasLocalGitRepo = Boolean(
         $gitStatus.data?.githubUrl && !$gitStatus.data?.managedGit,
