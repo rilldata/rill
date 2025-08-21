@@ -3,10 +3,10 @@ package local
 import (
 	"context"
 	"errors"
-	"fmt"
 	"strings"
 
 	"connectrpc.com/connect"
+	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	localv1 "github.com/rilldata/rill/proto/gen/rill/local/v1"
@@ -61,9 +61,10 @@ func (s *Server) GitStatus(ctx context.Context, r *connect.Request[localv1.GitSt
 		}), nil
 	}
 
-	name, err := s.resolveProjectName(ctx)
+	// to avoid asking user for inputs on UI simply used the last updated project for now
+	name, err := inferRillManagedProjectName(ctx, s.app.ch, s.app.ch.Org, s.app.ProjectPath)
 	if err != nil {
-		if !strings.Contains(err.Error(), "no project with Git remote") {
+		if !errors.Is(err, cmdutil.ErrNoMatchingProject) {
 			return nil, err
 		}
 		// If the project is not found return the best effort status
@@ -155,9 +156,9 @@ func (s *Server) GitPull(ctx context.Context, r *connect.Request[localv1.GitPull
 		return nil, errors.New("must authenticate before performing this action")
 	}
 
-	name, err := s.resolveProjectName(ctx)
+	name, err := inferRillManagedProjectName(ctx, s.app.ch, s.app.ch.Org, s.app.ProjectPath)
 	if err != nil {
-		if !strings.Contains(err.Error(), "no project with Git remote") {
+		if !errors.Is(err, cmdutil.ErrNoMatchingProject) {
 			return nil, err
 		}
 		return nil, errors.New("git credentials not set and repo is not connected to a project")
@@ -218,9 +219,9 @@ func (s *Server) GitPush(ctx context.Context, r *connect.Request[localv1.GitPush
 		return nil, errors.New("must authenticate before performing this action")
 	}
 
-	name, err := s.resolveProjectName(ctx)
+	name, err := inferRillManagedProjectName(ctx, s.app.ch, s.app.ch.Org, s.app.ProjectPath)
 	if err != nil {
-		if !strings.Contains(err.Error(), "no project with Git remote") {
+		if !errors.Is(err, cmdutil.ErrNoMatchingProject) {
 			return nil, err
 		}
 		return nil, errors.New("git credentials not set and repo is not connected to a project")
@@ -257,35 +258,30 @@ func (s *Server) GitPush(ctx context.Context, r *connect.Request[localv1.GitPush
 	return connect.NewResponse(&localv1.GitPushResponse{}), nil
 }
 
-func (s *Server) resolveProjectName(ctx context.Context) (string, error) {
-	// Try loading the project from the .rillcloud directory
-	proj, err := s.app.ch.LoadProject(ctx, s.app.ProjectPath)
-	if err != nil {
-		return "", err
-	}
-	if proj != nil {
-		return proj.Name, nil
-	}
-
-	// Verify projectPath is a Git repo with remote on Github
-	remote, err := gitutil.ExtractGitRemote(s.app.ProjectPath, "__rill_remote", true)
-	if err != nil {
-		return "", err
-	}
-	githubRemote, err := remote.Github()
+func inferRillManagedProjectName(ctx context.Context, h *cmdutil.Helper, org, pathToProject string) (string, error) {
+	// Get the project name from the path
+	projects, err := h.InferProjects(ctx, org, pathToProject)
 	if err != nil {
 		return "", err
 	}
 
-	// Fetch project names matching the Github URL
-	names, err := s.app.ch.ProjectNamesByGitRemote(ctx, s.app.ch.Org, githubRemote, "")
-	if err != nil {
-		return "", err
+	if len(projects) == 1 {
+		return projects[0].Name, nil
 	}
 
-	if len(names) == 1 {
-		return names[0], nil
+	// in case of multiple projects, use the remote set in the current repo which will be set to the last used remote
+	// this is to avoid asking the user for input on UI
+	c := gitutil.Config{ManagedRepo: true}
+	remote, _ := gitutil.ExtractGitRemote(pathToProject, c.RemoteName(), false)
+	if remote.URL == "" {
+		return projects[0].Name, nil
 	}
-	// more than one project found
-	return "", fmt.Errorf("multiple projects found with Git remote %q in org %q: %v", githubRemote, s.app.ch.Org, names)
+	// filter projects by remote URL
+	for _, p := range projects {
+		if p.GitRemote == remote.URL {
+			return p.Name, nil
+		}
+	}
+	// if no project matches the remote URL, return the first project
+	return projects[0].Name, nil
 }

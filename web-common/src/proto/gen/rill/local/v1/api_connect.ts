@@ -139,6 +139,7 @@ export const LocalService = {
     },
     /**
      * GetCurrentProject returns the rill cloud project connected to the local project
+     * Deprecated: Use ListMatchingProjects instead.
      *
      * @generated from rpc rill.local.v1.LocalService.GetCurrentProject
      */

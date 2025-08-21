@@ -282,6 +282,48 @@ func (c *connection) FindProjectsForUser(ctx context.Context, userID string) ([]
 	return c.projectsFromDTOs(res)
 }
 
+// FindProjectsForUserAndFingerprint returns projects for the user based on fingerprint.
+// The fingerprint is simply directory_name for managed git repos and git_remote + subpath for user managed git repos.
+// For backward compatibility when directory_name was not set when creating projects we fallback to git_remote for rill managed git repos.
+// For archive projects, we use directory_name directly since they are only used for testing and backward compatibility is not required.
+func (c *connection) FindProjectsForUserAndFingerprint(ctx context.Context, userID, directoryName, gitRemote, subpath, afterID string, limit int) ([]*database.Project, error) {
+	// Shouldn't happen, but just to be safe and not return all projects.
+	if directoryName == "" && gitRemote == "" {
+		return nil, nil
+	}
+
+	args := []any{userID, directoryName, gitRemote, subpath}
+	qry := `
+		SELECT p.* FROM projects p
+		WHERE p.id IN (
+			SELECT upr.project_id FROM users_projects_roles upr WHERE upr.user_id = $1
+			UNION
+			SELECT ugpr.project_id FROM usergroups_projects_roles ugpr JOIN usergroups_users ugu ON ugpr.usergroup_id = ugu.usergroup_id WHERE ugu.user_id = $1
+		)
+		AND (
+			(p.managed_git_repo_id IS NOT NULL AND ( (p.directory_name != '' AND p.directory_name = $2 ) OR (p.git_remote != '' AND p.git_remote = $3) ) )
+			OR
+			(p.managed_git_repo_id IS NULL AND p.git_remote = $3 AND p.subpath = $4)
+			OR
+			(p.archive_asset_id IS NOT NULL AND p.directory_name = $2)
+		)
+	`
+	if afterID != "" {
+		qry += " AND p.id > $5 ORDER BY p.id LIMIT $6"
+		args = append(args, afterID, limit)
+	} else {
+		qry += " ORDER BY p.id LIMIT $5"
+		args = append(args, limit)
+	}
+
+	var res []*projectDTO
+	err := c.getDB(ctx).SelectContext(ctx, &res, qry, args...)
+	if err != nil {
+		return nil, parseErr("projects", err)
+	}
+	return c.projectsFromDTOs(res)
+}
+
 func (c *connection) FindProjectsForOrganization(ctx context.Context, orgID, afterProjectName string, limit int) ([]*database.Project, error) {
 	var res []*projectDTO
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
@@ -388,9 +430,47 @@ func (c *connection) InsertProject(ctx context.Context, opts *database.InsertPro
 
 	res := &projectDTO{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		INSERT INTO projects (org_id, name, description, public, created_by_user_id, provisioner, prod_slots, subpath, prod_branch, archive_asset_id, git_remote, github_installation_id, github_repo_id, managed_git_repo_id, prod_ttl_seconds, prod_version, dev_slots, dev_ttl_seconds)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18) RETURNING *`,
-		opts.OrganizationID, opts.Name, opts.Description, opts.Public, opts.CreatedByUserID, opts.Provisioner, opts.ProdSlots, opts.Subpath, opts.ProdBranch, opts.ArchiveAssetID, opts.GitRemote, opts.GithubInstallationID, opts.GithubRepoID, opts.ManagedGitRepoID, opts.ProdTTLSeconds, opts.ProdVersion, opts.DevSlots, opts.DevTTLSeconds,
+		INSERT INTO projects (
+			org_id,
+			name,
+			description,
+			public,
+			created_by_user_id,
+			directory_name,
+			provisioner,
+			prod_slots,
+			subpath,
+			prod_branch,
+			archive_asset_id,
+			git_remote,
+			github_installation_id,
+			github_repo_id,
+			managed_git_repo_id,
+			prod_ttl_seconds,
+			prod_version,
+			dev_slots,
+			dev_ttl_seconds
+		)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19) RETURNING *`,
+		opts.OrganizationID,
+		opts.Name,
+		opts.Description,
+		opts.Public,
+		opts.CreatedByUserID,
+		opts.DirectoryName,
+		opts.Provisioner,
+		opts.ProdSlots,
+		opts.Subpath,
+		opts.ProdBranch,
+		opts.ArchiveAssetID,
+		opts.GitRemote,
+		opts.GithubInstallationID,
+		opts.GithubRepoID,
+		opts.ManagedGitRepoID,
+		opts.ProdTTLSeconds,
+		opts.ProdVersion,
+		opts.DevSlots,
+		opts.DevTTLSeconds,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("project", err)
@@ -412,10 +492,54 @@ func (c *connection) UpdateProject(ctx context.Context, id string, opts *databas
 	}
 
 	res := &projectDTO{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		UPDATE projects SET name=$1, description=$2, public=$3, prod_branch=$4, git_remote=$5, github_installation_id=$6, github_repo_id=$7, managed_git_repo_id=$8, archive_asset_id=$9, prod_deployment_id=$10, provisioner=$11, prod_slots=$12, subpath=$13, prod_ttl_seconds=$14, annotations=$15, prod_version=$16, dev_slots=$17, dev_ttl_seconds=$18, updated_on=now()
-		WHERE id=$19 RETURNING *`,
-		opts.Name, opts.Description, opts.Public, opts.ProdBranch, opts.GitRemote, opts.GithubInstallationID, opts.GithubRepoID, opts.ManagedGitRepoID, opts.ArchiveAssetID, opts.ProdDeploymentID, opts.Provisioner, opts.ProdSlots, opts.Subpath, opts.ProdTTLSeconds, opts.Annotations, opts.ProdVersion, opts.DevSlots, opts.DevTTLSeconds, id,
+	err := c.getDB(ctx).QueryRowxContext(
+		ctx,
+		`
+		UPDATE projects
+		SET
+			name = $1,
+			description = $2,
+			public = $3,
+			directory_name = $4,
+			prod_branch = $5,
+			git_remote = $6,
+			github_installation_id = $7,
+			github_repo_id = $8,
+			managed_git_repo_id = $9,
+			archive_asset_id = $10,
+			prod_deployment_id = $11,
+			provisioner = $12,
+			prod_slots = $13,
+			subpath = $14,
+			prod_ttl_seconds = $15,
+			annotations = $16,
+			prod_version = $17,
+			dev_slots = $18,
+			dev_ttl_seconds = $19,
+			updated_on = now()
+		WHERE id = $20
+		RETURNING *
+		`,
+		opts.Name,
+		opts.Description,
+		opts.Public,
+		opts.DirectoryName,
+		opts.ProdBranch,
+		opts.GitRemote,
+		opts.GithubInstallationID,
+		opts.GithubRepoID,
+		opts.ManagedGitRepoID,
+		opts.ArchiveAssetID,
+		opts.ProdDeploymentID,
+		opts.Provisioner,
+		opts.ProdSlots,
+		opts.Subpath,
+		opts.ProdTTLSeconds,
+		opts.Annotations,
+		opts.ProdVersion,
+		opts.DevSlots,
+		opts.DevTTLSeconds,
+		id,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("project", err)
