@@ -36,6 +36,9 @@ func (p *Parser) parseRetryYAML(raw *RetryYAML) (*runtimev1.Retry, error) {
 		Attempts:           3,    // Default 3 attempts
 		Delay:              5,    // Default 5 second delay
 		ExponentialBackoff: true, // Default enable exponential backoff
+		IfErrorMatches: []string{
+			".*", // Match any error by default
+		},
 	}
 
 	// Set attempts if provided, otherwise keep default
@@ -69,6 +72,7 @@ func (p *Parser) parseRetryYAML(raw *RetryYAML) (*runtimev1.Retry, error) {
 		}
 		r.IfErrorMatches = raw.IfErrorMatches
 	}
+	// If not provided, keep the default IfErrorMatches values
 
 	return r, nil
 }

@@ -46,8 +46,7 @@ func TestParseRetryYAML(t *testing.T) {
 				Delay:              5,    // default
 				ExponentialBackoff: true, // default
 				IfErrorMatches: []string{
-					".*OvercommitTracker.*", // ClickHouse memory pressure
-					".*Bad Gateway.*",       // HTTP 502 errors
+					".*", // Match any error by default
 				},
 			},
 			wantErr: false,
@@ -70,8 +69,7 @@ func TestParseRetryYAML(t *testing.T) {
 				Delay:              0,
 				ExponentialBackoff: true, // default
 				IfErrorMatches: []string{
-					".*OvercommitTracker.*", // ClickHouse memory pressure
-					".*Bad Gateway.*",       // HTTP 502 errors
+					".*", // Match any error by default
 				},
 			},
 			wantErr: false,
@@ -92,8 +90,7 @@ func TestParseRetryYAML(t *testing.T) {
 				Delay:              5,    // default
 				ExponentialBackoff: true, // default
 				IfErrorMatches: []string{
-					".*OvercommitTracker.*", // ClickHouse memory pressure
-					".*Bad Gateway.*",       // HTTP 502 errors
+					".*", // Match any error by default
 				},
 			},
 			wantErr: false,
