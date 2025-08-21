@@ -12,6 +12,9 @@ on:
       - "main"
       - "release**"
   workflow_dispatch:
+  pull_request:
+    branches:
+      - arm-headless
 
 env:
   RELEASE: ${{ startsWith(github.ref, 'refs/tags/v') }}
