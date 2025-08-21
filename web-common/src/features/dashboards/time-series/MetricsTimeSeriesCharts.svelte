@@ -437,7 +437,6 @@
       <!-- FIXME: this is pending the remaining state work for show/hide measures and dimensions -->
       {#each renderedMeasures as measure, i (measure.name)}
         <!-- FIXME: I can't select the big number by the measure id. -->
-
         {@const bigNum = measure.name ? totals?.[measure.name] : null}
         {@const comparisonValue = measure.name
           ? totalsComparisons?.[measure.name]
