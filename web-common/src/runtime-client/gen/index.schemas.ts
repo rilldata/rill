@@ -1708,6 +1708,7 @@ export interface V1ModelSpec {
   stageProperties?: V1ModelSpecStageProperties;
   outputConnector?: string;
   outputProperties?: V1ModelSpecOutputProperties;
+  retry?: V1Retry;
   changeMode?: V1ModelChangeMode;
   tests?: V1ModelTest[];
   trigger?: boolean;
@@ -2119,6 +2120,13 @@ export interface V1ResourceMeta {
 export interface V1ResourceName {
   kind?: string;
   name?: string;
+}
+
+export interface V1Retry {
+  attempts?: number;
+  delay?: number;
+  exponentialBackoff?: boolean;
+  ifErrorMatches?: string[];
 }
 
 export interface V1S3GetBucketMetadataResponse {

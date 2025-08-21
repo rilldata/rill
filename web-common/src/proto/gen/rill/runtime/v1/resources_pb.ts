@@ -966,6 +966,13 @@ export class ModelSpec extends Message<ModelSpec> {
   outputProperties?: Struct;
 
   /**
+   * retry is optional.
+   *
+   * @generated from field: rill.runtime.v1.Retry retry = 26;
+   */
+  retry?: Retry;
+
+  /**
    * change_mode is the mode of change detection to use for the model.
    *
    * @generated from field: rill.runtime.v1.ModelChangeMode change_mode = 24;
@@ -1017,6 +1024,7 @@ export class ModelSpec extends Message<ModelSpec> {
     { no: 17, name: "stage_properties", kind: "message", T: Struct },
     { no: 1, name: "output_connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 12, name: "output_properties", kind: "message", T: Struct },
+    { no: 26, name: "retry", kind: "message", T: Retry },
     { no: 24, name: "change_mode", kind: "enum", T: proto3.getEnumType(ModelChangeMode) },
     { no: 25, name: "tests", kind: "message", T: ModelTest, repeated: true },
     { no: 9, name: "trigger", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
@@ -4998,6 +5006,61 @@ export class Schedule extends Message<Schedule> {
 
   static equals(a: Schedule | PlainMessage<Schedule> | undefined, b: Schedule | PlainMessage<Schedule> | undefined): boolean {
     return proto3.util.equals(Schedule, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.Retry
+ */
+export class Retry extends Message<Retry> {
+  /**
+   * @generated from field: uint32 attempts = 1;
+   */
+  attempts = 0;
+
+  /**
+   * @generated from field: uint32 delay = 2;
+   */
+  delay = 0;
+
+  /**
+   * @generated from field: bool exponential_backoff = 3;
+   */
+  exponentialBackoff = false;
+
+  /**
+   * @generated from field: repeated string if_error_matches = 4;
+   */
+  ifErrorMatches: string[] = [];
+
+  constructor(data?: PartialMessage<Retry>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.Retry";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "attempts", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 2, name: "delay", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 3, name: "exponential_backoff", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 4, name: "if_error_matches", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Retry {
+    return new Retry().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): Retry {
+    return new Retry().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): Retry {
+    return new Retry().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: Retry | PlainMessage<Retry> | undefined, b: Retry | PlainMessage<Retry> | undefined): boolean {
+    return proto3.util.equals(Retry, a, b);
   }
 }
 

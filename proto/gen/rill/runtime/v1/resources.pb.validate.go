@@ -2492,6 +2492,35 @@ func (m *ModelSpec) validate(all bool) error {
 		}
 	}
 
+	if all {
+		switch v := interface{}(m.GetRetry()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ModelSpecValidationError{
+					field:  "Retry",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ModelSpecValidationError{
+					field:  "Retry",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetRetry()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ModelSpecValidationError{
+				field:  "Retry",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
 	// no validation rules for ChangeMode
 
 	for idx, item := range m.GetTests() {
@@ -10990,6 +11019,110 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = ScheduleValidationError{}
+
+// Validate checks the field values on Retry with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *Retry) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on Retry with the rules defined in the
+// proto definition for this message. If any rules are violated, the result is
+// a list of violation errors wrapped in RetryMultiError, or nil if none found.
+func (m *Retry) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *Retry) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Attempts
+
+	// no validation rules for Delay
+
+	// no validation rules for ExponentialBackoff
+
+	if len(errors) > 0 {
+		return RetryMultiError(errors)
+	}
+
+	return nil
+}
+
+// RetryMultiError is an error wrapping multiple validation errors returned by
+// Retry.ValidateAll() if the designated constraints aren't met.
+type RetryMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m RetryMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m RetryMultiError) AllErrors() []error { return m }
+
+// RetryValidationError is the validation error returned by Retry.Validate if
+// the designated constraints aren't met.
+type RetryValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e RetryValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e RetryValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e RetryValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e RetryValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e RetryValidationError) ErrorName() string { return "RetryValidationError" }
+
+// Error satisfies the builtin error interface
+func (e RetryValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sRetry.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = RetryValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = RetryValidationError{}
 
 // Validate checks the field values on ParseError with the rules defined in the
 // proto definition for this message. If any rules are violated, the first
