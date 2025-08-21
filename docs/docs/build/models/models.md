@@ -23,7 +23,7 @@ By default, data transformations in Rill Developer are powered by DuckDB and its
 
 It is possible to change the default [OLAP engine](https://docs.rilldata.com/connect/olap) for [the entire project](https://docs.rilldata.com/reference/project-files/rill-yaml#configuring-the-default-olap-engine) or [a specific metrics view](https://docs.rilldata.com/reference/project-files/metrics-views). You will need to define the connector credentials within your Rill project or via environment variables.
 
-For additional tips on commonly used expressions (either in models or dashboard definitions), visit our [common expressions page](../metrics-view/advanced-expressions/advanced-expressions.md).
+For additional tips on commonly used expressions (either in models or dashboard definitions), visit our [common expressions page](/build/metrics-view).
 
 
 ## Adding a data model

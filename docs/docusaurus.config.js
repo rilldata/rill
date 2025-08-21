@@ -434,6 +434,38 @@ const config = {
             from: '/concepts/bi-as-code',
             to: '/home/concepts/bi-as-code'
           },
+          {
+            from: '/integrate/custom-apis',
+            to: '/build/custom-apis'
+          },
+          {
+            from: '/build/metrics-view/advanced-expressions/case-statements',
+            to: '/build/metrics-view/case-statements'
+          },
+          {
+            from: '/build/metrics-view/advanced-expressions/fixed-metrics',
+            to: '/build/metrics-view/fixed-metrics'
+          },
+          {
+            from: '/build/metrics-view/advanced-expressions/metric-formatting',
+            to: '/build/metrics-view/metric-formatting'
+          },
+          {
+            from: '/build/metrics-view/advanced-expressions/quantiles',
+            to: '/build/metrics-view/quantiles'
+          },
+          {
+            from: '/build/metrics-view/advanced-expressions/referencing',
+            to: '/build/metrics-view/referencing'
+          },
+          {
+            from: '/build/metrics-view/advanced-expressions/unnesting',
+            to: '/build/metrics-view/unnesting'
+          },
+          {
+            from: '/build/metrics-view/advanced-expressions/windows',
+            to: '/build/metrics-view/windows'
+          }
           // {
           //   from: '/old-page',
           //   to: '/new-page',
