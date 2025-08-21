@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"time"
 
 	_ "github.com/marcboeker/go-duckdb/v2"
 )
@@ -54,7 +55,7 @@ func main() {
 
 		for _, extension := range extensions {
 			// Make sure an embedded extension is compressed (gzipped) to save space
-			url := fmt.Sprintf("http://extensions.duckdb.org/%s/%s/%s.duckdb_extension.gz", duckdbVersion, platform, extension)
+			url := fmt.Sprintf("https://extensions.duckdb.org/%s/%s/%s.duckdb_extension.gz", duckdbVersion, platform, extension)
 			destPath := filepath.Join(destDir, fmt.Sprintf("%s.duckdb_extension.gz", extension))
 
 			// Check if the extension already exists and skip downloading
@@ -78,7 +79,8 @@ func main() {
 
 // downloadFile downloads a file from a URL and saves it to a destination path
 func downloadFile(url, dest string) error {
-	resp, err := http.Get(url)
+	client := &http.Client{Timeout: 30 * time.Second}
+	resp, err := client.Get(url)
 	if err != nil {
 		return fmt.Errorf("failed to perform HTTP GET request: %w", err)
 	}
