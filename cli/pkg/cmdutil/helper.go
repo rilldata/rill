@@ -15,7 +15,6 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
-	"github.com/rilldata/rill/cli/pkg/dotrillcloud"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/printer"
 	"github.com/rilldata/rill/cli/pkg/version"
@@ -25,8 +24,6 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 const (
@@ -324,46 +321,6 @@ func (h *Helper) CurrentUserID(ctx context.Context) (string, error) {
 	}
 
 	return userID, nil
-}
-
-// LoadProject loads the cloud project identified by the .rillcloud directory at the given path.
-// It returns an error if the caller is not authenticated.
-// If there is no .rillcloud directory, it returns a nil project an no error.
-func (h *Helper) LoadProject(ctx context.Context, path string) (*adminv1.Project, error) {
-	if !h.IsAuthenticated() {
-		return nil, fmt.Errorf("can't load project because you are not authenticated")
-	}
-
-	rc, err := dotrillcloud.GetAll(path, h.AdminURL())
-	if err != nil {
-		return nil, fmt.Errorf("failed to load .rillcloud: %w", err)
-	}
-	if rc == nil {
-		return nil, nil
-	}
-
-	c, err := h.Client()
-	if err != nil {
-		return nil, err
-	}
-
-	res, err := c.GetProjectByID(ctx, &adminv1.GetProjectByIDRequest{
-		Id: rc.ProjectID,
-	})
-	if err != nil {
-		// If the project doesn't exist, delete the local project metadata.
-		if s, ok := status.FromError(err); ok && s.Code() == codes.NotFound {
-			err = dotrillcloud.Delete(path, h.AdminURL())
-			if err != nil {
-				return nil, err
-			}
-		}
-
-		// We'll ignore the error, pretending no .rillcloud metadata was found
-		return nil, nil
-	}
-
-	return res.Project, nil
 }
 
 func (h *Helper) ProjectNamesByGitRemote(ctx context.Context, org, remote, subPath string) ([]string, error) {

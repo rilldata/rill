@@ -14,7 +14,6 @@ import (
 	"github.com/rilldata/rill/cli/cmd/org"
 	"github.com/rilldata/rill/cli/pkg/browser"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/dotrillcloud"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/local"
 	"github.com/rilldata/rill/cli/pkg/printer"
@@ -285,20 +284,6 @@ func DeployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployO
 			return nil
 		}
 		return fmt.Errorf("create project failed with error %w", err)
-	}
-
-	err = dotrillcloud.SetAll(localProjectPath, ch.AdminURL(), &dotrillcloud.Config{
-		ProjectID: res.Project.Id,
-	})
-	if err != nil {
-		return err
-	}
-	if req.GitRemote != "" {
-		// also commit dotrillcloud to the repo
-		err = ch.GitHelper(ch.Org, opts.Name, localProjectPath).PushToManagedRepo(ctx)
-		if err != nil {
-			return err
-		}
 	}
 
 	// Success!
