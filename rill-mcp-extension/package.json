@@ -1,0 +1,20 @@
+{
+  "name": "rill-mcp-extension",
+  "version": "1.0.0",
+  "description": "Rill Data MCP Server Desktop Extension",
+  "dependencies": {
+    "mcp-remote": "^0.1.18"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rilldata/rill"
+  },
+  "author": {
+    "name": "Rill Data",
+    "email": "support@rilldata.com"
+  }
+}

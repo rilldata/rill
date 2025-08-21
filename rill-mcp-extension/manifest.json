@@ -1,0 +1,45 @@
+{
+  "dxt_version": "0.1",
+  "name": "rill-dxt",
+  "display_name": "Rill Data",
+  "version": "0.1.0",
+  "description": "Rill Data Analytics Assistant",
+  "author": {
+    "name": "Eric Green"
+  },
+  "server": {
+    "type": "node",
+    "entry_point": "node_modules/mcp-remote/dist/proxy.js",
+    "mcp_config": {
+      "command": "node",
+      "args": [
+        "${__dirname}/node_modules/mcp-remote/dist/proxy.js",
+        "${user_config.rill_project_url}",
+        "--header",
+        "Authorization:Bearer ${user_config.personal_access_token}"
+      ]
+    }
+  },
+  "tools": [
+    {
+      "name": "List Metrics Views",
+      "description": "list metrics views in a Rill project"
+    }
+  ],
+  "user_config": {
+    "rill_project_url": {
+      "type": "string",
+      "title": "Rill Project URL",
+      "description": "The MCP endpoint URL for your Rill project (e.g., https://api.rilldata.com/v1/organizations/my-org/projects/my-project/runtime/mcp)",
+      "required": true
+    },
+    "personal_access_token": {
+      "type": "string",
+      "title": "Personal Access Token",
+      "description": "Your Rill personal access token (leave empty for public projects)",
+      "required": false,
+      "sensitive": true
+    }
+  },
+  "license": "MIT"
+}
