@@ -25,7 +25,6 @@ import (
 	"github.com/rilldata/rill/admin/pkg/urlutil"
 	"github.com/rilldata/rill/cli/cmd/auth"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/dotrillcloud"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/pkce"
 	"github.com/rilldata/rill/cli/pkg/web"
@@ -444,30 +443,6 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 		return nil, err
 	}
 
-	err = dotrillcloud.SetAll(s.app.ProjectPath, s.app.ch.AdminURL(), &dotrillcloud.Config{
-		ProjectID: projResp.Project.Id,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	// if the project is backed by git repo, we need to push the .rillcloud directory to the remote
-	if r.Msg.Upload {
-		err = s.app.ch.GitHelper(r.Msg.Org, r.Msg.ProjectName, s.app.ProjectPath).PushToManagedRepo(ctx)
-		if err != nil {
-			return nil, fmt.Errorf("failed to push .rillcloud directory to remote: %w", err)
-		}
-	} else if !r.Msg.Archive {
-		author, err := s.app.ch.GitSignature(ctx, s.app.ProjectPath)
-		if err != nil {
-			return nil, fmt.Errorf("failed to generate git commit signature: %w", err)
-		}
-		err = gitutil.CommitAndForcePush(ctx, s.app.ProjectPath, &gitutil.Config{Remote: projResp.Project.GitRemote, DefaultBranch: projResp.Project.ProdBranch}, "Autocommit .rillcloud dir", author)
-		if err != nil {
-			return nil, fmt.Errorf("failed to push .rillcloud directory to remote: %w", err)
-		}
-	}
-
 	// Parse .env and push it as variables
 	dotenv, err := ParseDotenv(ctx, s.app.ProjectPath)
 	if err != nil {
@@ -651,6 +626,7 @@ func (s *Server) GetCurrentUser(ctx context.Context, r *connect.Request[localv1.
 }
 
 // GetCurrentProject implements localv1connect.LocalServiceHandler.
+// Remove this endpoint once UI cleans up code referring to it.
 func (s *Server) GetCurrentProject(ctx context.Context, r *connect.Request[localv1.GetCurrentProjectRequest]) (*connect.Response[localv1.GetCurrentProjectResponse], error) {
 	localProjectName := filepath.Base(s.app.ProjectPath)
 
@@ -661,14 +637,19 @@ func (s *Server) GetCurrentProject(ctx context.Context, r *connect.Request[local
 		}), nil
 	}
 
-	project, err := s.app.ch.LoadProject(ctx, s.app.ProjectPath)
+	projects, err := s.app.ch.InferProjects(ctx, s.app.ch.Org, s.app.ProjectPath)
 	if err != nil {
+		if errors.Is(err, cmdutil.ErrNoMatchingProject) {
+			return connect.NewResponse(&localv1.GetCurrentProjectResponse{
+				LocalProjectName: localProjectName,
+			}), nil
+		}
 		return nil, err
 	}
 
 	return connect.NewResponse(&localv1.GetCurrentProjectResponse{
 		LocalProjectName: localProjectName,
-		Project:          project,
+		Project:          projects[0],
 	}), nil
 }
 
