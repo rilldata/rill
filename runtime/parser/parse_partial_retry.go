@@ -36,10 +36,6 @@ func (p *Parser) parseRetryYAML(raw *RetryYAML) (*runtimev1.Retry, error) {
 		Attempts:           3,    // Default 3 attempts
 		Delay:              5,    // Default 5 second delay
 		ExponentialBackoff: true, // Default enable exponential backoff
-		IfErrorMatches: []string{
-			".*OvercommitTracker.*", // ClickHouse memory pressure
-			".*Bad Gateway.*",       // HTTP 502 errors
-		},
 	}
 
 	// Set attempts if provided, otherwise keep default
