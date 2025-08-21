@@ -487,8 +487,9 @@ func (s cloud) awaitAdmin(ctx context.Context) error {
 		return fmt.Errorf("failed to parse admin url: %w", err)
 	}
 
+	client := &http.Client{Timeout: 5 * time.Second}
 	for {
-		resp, err := http.Get(pingURL)
+		resp, err := client.Get(pingURL)
 		if err == nil {
 			resp.Body.Close()
 			if resp.StatusCode == http.StatusOK {
@@ -525,8 +526,9 @@ func (s cloud) awaitRuntime(ctx context.Context) error {
 		return fmt.Errorf("failed to parse admin url: %w", err)
 	}
 
+	client := &http.Client{Timeout: 5 * time.Second}
 	for {
-		resp, err := http.Get(pingURL)
+		resp, err := client.Get(pingURL)
 		if err == nil {
 			resp.Body.Close()
 			if resp.StatusCode == http.StatusOK {
@@ -569,8 +571,9 @@ func (s cloud) runUI(ctx context.Context) (err error) {
 func (s cloud) awaitUI(ctx context.Context) error {
 	uiURL := lookupDotenv("RILL_ADMIN_FRONTEND_URL") // TODO: This is a proxy for the frontend's external URL. Should be less implicit.
 
+	client := &http.Client{Timeout: 5 * time.Second}
 	for {
-		resp, err := http.Get(uiURL)
+		resp, err := client.Get(uiURL)
 		if err == nil {
 			resp.Body.Close()
 			if resp.StatusCode == http.StatusOK {
@@ -671,8 +674,9 @@ func (s local) runRuntime(ctx context.Context, verbose, reset bool) error {
 
 func (s local) awaitRuntime(ctx context.Context) error {
 	pingURL := "http://localhost:9009/v1/ping"
+	client := &http.Client{Timeout: 5 * time.Second}
 	for {
-		resp, err := http.Get(pingURL)
+		resp, err := client.Get(pingURL)
 		if err == nil {
 			resp.Body.Close()
 			if resp.StatusCode == http.StatusOK {
@@ -714,8 +718,9 @@ func (s local) runUI(ctx context.Context) (err error) {
 
 func (s local) awaitUI(ctx context.Context) error {
 	uiURL := "http://localhost:3001"
+	client := &http.Client{Timeout: 5 * time.Second}
 	for {
-		resp, err := http.Get(uiURL)
+		resp, err := client.Get(uiURL)
 		if err == nil {
 			resp.Body.Close()
 			if resp.StatusCode == http.StatusOK {
