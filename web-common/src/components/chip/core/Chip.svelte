@@ -7,6 +7,8 @@
   import CaretDownIcon from "../../icons/CaretDownIcon.svelte";
   import Tooltip from "../../tooltip/Tooltip.svelte";
   import TooltipContent from "../../tooltip/TooltipContent.svelte";
+  import Lock from "../../icons/Lock.svelte";
+  import { LockIcon } from "lucide-svelte";
 
   export let removable = false;
   export let active = false;
@@ -20,6 +22,7 @@
   export let builders: Builder[] = [];
   export let caret = builders.length > 0;
   export let slideDuration = 150;
+  export let locked = false;
   export let supressTooltip = false;
   export let label: string | undefined = undefined;
   export let removeTooltipText: string | undefined = undefined;
@@ -54,7 +57,7 @@
     use:builderActions={{ builders }}
     aria-label={label}
   >
-    {#if removable && !readOnly}
+    {#if removable && !readOnly && !locked}
       <Tooltip
         alignment="start"
         distance={12}
@@ -77,19 +80,23 @@
           {removeTooltipText}
         </TooltipContent>
       </Tooltip>
+    {:else if locked}
+      <LockIcon size="16px" class="text-theme-800 ml-0.5" />
     {/if}
 
     {#if $$slots.body}
       <button
+        disabled={locked}
         on:click
         on:mousedown
+        class:cursor-not-allowed={locked}
         aria-label={`Open ${label}`}
         class="text-inherit w-full select-none flex items-center justify-between gap-x-1 px-0.5"
         type="button"
       >
         <slot name="body" />
 
-        {#if caret}
+        {#if caret && !locked}
           <span class="transition-transform -mr-0.5" class:-rotate-180={active}>
             <CaretDownIcon size="10px" />
           </span>
