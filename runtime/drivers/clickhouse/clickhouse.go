@@ -220,14 +220,24 @@ func (c *configProperties) validate() error {
 			return fmt.Errorf("only one of 'dsn' or [%s] can be set", strings.Join(set, ", "))
 		}
 	}
+
 	if c.Managed {
 		if c.DSN != "" {
 			set = append(set, "dsn")
 		}
 		if len(set) > 0 {
-			return fmt.Errorf("managed ClickHouse does not support setting [%s] properties", strings.Join(set, ", "))
+			// In managed mode, clear conflicting properties instead of returning an error
+			// This ensures managed mode takes precedence over environment variables
+			c.Host = ""
+			c.Port = 0
+			c.Username = ""
+			c.Password = ""
+			c.Database = ""
+			c.SSL = false
+			c.DSN = ""
 		}
 	}
+
 	return nil
 }
 
