@@ -44,9 +44,9 @@ jobs:
       matrix:
         include:
           - os: ubuntu-22.04
-            platform: linux_amd64
+            platform: amd64
           - os: ubuntu-22.04-arm
-            platform: linux_arm64
+            platform: arm64
       fail-fast: false
 
     steps:
@@ -86,11 +86,25 @@ jobs:
             go build -o rill -mod=readonly -ldflags="-s -w -X main.Commit=${GITHUB_SHA} -X main.BuildDate=$(date +%FT%T)" cli/main.go
           fi
 
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build & Publish Rill docker image
+        run: |-
           gcloud auth configure-docker
-
-          docker build -t gcr.io/rilldata/rill-headless:${GITHUB_SHA} .
-          docker push gcr.io/rilldata/rill-headless:${GITHUB_SHA}
-
+          docker buildx build \
+            --platform linux/${{ matrix.platform }} \
+            -t gcr.io/rilldata/rill-headless:${GITHUB_SHA}-${{ matrix.platform }} . \
+            --push
+          
+          docker manifest create gcr.io/rilldata/rill-headless:${GITHUB_SHA} \
+              gcr.io/rilldata/rill-headless:${GITHUB_SHA}-arm64 \
+              gcr.io/rilldata/rill-headless:${GITHUB_SHA}-amd64
+          
+          # Push the manifest list
+          docker manifest push gcr.io/rilldata/rill-headless:${GITHUB_SHA}
+          
           if [ ${RELEASE} == "true" ]; then
             docker tag gcr.io/rilldata/rill-headless:${GITHUB_SHA} gcr.io/rilldata/rill-headless:${GITHUB_REF_NAME}
             docker push gcr.io/rilldata/rill-headless:${GITHUB_REF_NAME}
