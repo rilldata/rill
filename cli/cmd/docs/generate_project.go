@@ -512,8 +512,6 @@ func generateDoc(sidebarPosition, level int, node *yaml.Node, indent string, req
 					doc.WriteString(fmt.Sprintf("%s\n\n", description))
 				}
 			}
-			// exampleOutput := generateConnectorExample(title, connectorDef)
-			// doc.WriteString(fmt.Sprintf("\n\n#### Example\n\n%s", exampleOutput))
 
 			// Generate the connector definition documentation (properties, etc.) but skip the header
 			// We need to process properties manually to avoid duplicate headers
