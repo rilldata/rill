@@ -40,13 +40,8 @@ export const getYupSchema = {
   }),
 
   motherduck: yup.object().shape({
-    dsn: yup.string().required("Connection string is required"),
-    // sql: yup.string().required("SQL is required"),
-    token: yup.string().required("Access token is required"),
-    // name: yup
-    //   .string()
-    //   .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
-    //   .required("Source name is required"),
+    token: yup.string().required("Token is required"),
+    path: yup.string().required("Path is required"),
   }),
 
   sqlite: yup.object().shape({
