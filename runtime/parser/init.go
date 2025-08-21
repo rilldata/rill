@@ -57,14 +57,18 @@ mock_users:
 		return err
 	}
 
-	connector := "type: connector\ndriver: duckdb"
-	if olap == "clickhouse" {
-		connector = "type: connector\ndriver: clickhouse\nmanaged: true"
-	}
+	// Only create connector files for non-DuckDB OLAP engines or when explicitly requested
+	// This allows DuckDB-based projects to go through the welcome page for user-guided initialization
+	if olap != "duckdb" {
+		connector := "type: connector\ndriver: duckdb"
+		if olap == "clickhouse" {
+			connector = "type: connector\ndriver: clickhouse\nmanaged: true"
+		}
 
-	err = repo.Put(ctx, fmt.Sprintf("connectors/%s.yaml", olap), strings.NewReader(connector))
-	if err != nil {
-		return err
+		err = repo.Put(ctx, fmt.Sprintf("connectors/%s.yaml", olap), strings.NewReader(connector))
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }

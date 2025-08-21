@@ -28,11 +28,9 @@ func TestInitEmptyDefault(t *testing.T) {
 	require.Contains(gitignore, ".env")
 	require.Contains(gitignore, "tmp")
 
-	// Verify the contents of the connector file
-	connector, err := repo.Get(t.Context(), "connectors/duckdb.yaml")
-	require.NoError(err)
-	require.Contains(connector, "type: connector")
-	require.Contains(connector, "driver: duckdb")
+	// Verify that NO connector file is created for default (DuckDB) to allow user-guided initialization
+	_, err = repo.Get(t.Context(), "connectors/duckdb.yaml")
+	require.Error(err) // Should error because file doesn't exist
 }
 
 func TestInitEmptyDuckDB(t *testing.T) {
@@ -57,11 +55,9 @@ func TestInitEmptyDuckDB(t *testing.T) {
 	require.Contains(gitignore, ".env")
 	require.Contains(gitignore, "tmp")
 
-	// Verify the contents of the connector file
-	connector, err := repo.Get(t.Context(), "connectors/duckdb.yaml")
-	require.NoError(err)
-	require.Contains(connector, "type: connector")
-	require.Contains(connector, "driver: duckdb")
+	// Verify that NO connector file is created for DuckDB to allow user-guided initialization
+	_, err = repo.Get(t.Context(), "connectors/duckdb.yaml")
+	require.Error(err) // Should error because file doesn't exist
 }
 
 func TestInitEmptyCH(t *testing.T) {
