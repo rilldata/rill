@@ -85,31 +85,38 @@ var motherduckSpec = drivers.Spec{
 	DocsURL:     "https://docs.rilldata.com/connect/olap/motherduck",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
-			Key:    "token",
-			Type:   drivers.StringPropertyType,
-			Secret: true,
+			Key:         "token",
+			Type:        drivers.StringPropertyType,
+			Required:    true,
+			DisplayName: "Access token",
+			Description: "MotherDuck access token",
+			Placeholder: "your_access_token",
+			Secret:      true,
 		},
 		{
-			Key:  "db",
-			Type: drivers.StringPropertyType,
-		},
-	},
-	SourceProperties: []*drivers.PropertySpec{
-		{
-			Key:         "dsn",
+			Key:         "path",
 			Type:        drivers.StringPropertyType,
 			Required:    true,
 			DisplayName: "MotherDuck Connection String",
 			Placeholder: "md:motherduck.db",
 		},
+	},
+	SourceProperties: []*drivers.PropertySpec{
 		{
 			Key:         "token",
 			Type:        drivers.StringPropertyType,
 			Required:    true,
 			DisplayName: "Access token",
 			Description: "MotherDuck access token",
-			Placeholder: "your.access_token.here",
+			Placeholder: "your_access_token",
 			Secret:      true,
+		},
+		{
+			Key:         "path",
+			Type:        drivers.StringPropertyType,
+			Required:    true,
+			DisplayName: "MotherDuck Connection String",
+			Placeholder: "md:motherduck.db",
 		},
 	},
 }
