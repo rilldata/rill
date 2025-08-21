@@ -184,55 +184,73 @@
   // Emit the submitting state to the parent
   $: dispatch("submitting", { submitting });
 
-  $: yamlPreview = (() => {
-    if (connector.name === "clickhouse") {
-      const values =
-        connectionTab === "dsn" ? $clickhouseDsnForm : $clickhouseParamsForm;
-      return compileConnectorYAML(
-        connector,
-        {
-          ...values,
-          managed: clickhouseManaged,
-        },
-        {
-          fieldFilter: (property) => !property.noPrompt,
-          orderedProperties:
-            connectionTab === "dsn"
-              ? filteredDsnProperties
-              : filteredParamsProperties,
-        },
-      );
+  function getClickHouseYamlPreview() {
+    const values =
+      connectionTab === "dsn" ? $clickhouseDsnForm : $clickhouseParamsForm;
+    return compileConnectorYAML(
+      connector,
+      {
+        ...values,
+        managed: clickhouseManaged,
+      },
+      {
+        fieldFilter: (property) => !property.noPrompt,
+        orderedProperties:
+          connectionTab === "dsn"
+            ? filteredDsnProperties
+            : filteredParamsProperties,
+      },
+    );
+  }
+
+  function getConnectorYamlPreview(values: Record<string, unknown>) {
+    return compileConnectorYAML(connector, values, {
+      fieldFilter: (property) => {
+        // When in DSN mode, don't filter out noPrompt properties
+        // because the DSN field itself might have noPrompt: true
+        if (hasOnlyDsn() || connectionTab === "dsn") {
+          return true; // Show all DSN properties
+        }
+        return !property.noPrompt;
+      },
+      orderedProperties:
+        hasOnlyDsn() || connectionTab === "dsn"
+          ? filteredDsnProperties
+          : filteredParamsProperties,
+    });
+  }
+
+  function getSourceYamlPreview(values: Record<string, unknown>) {
+    const [rewrittenConnector, rewrittenFormValues] = prepareSourceFormData(
+      connector,
+      values,
+    );
+
+    // Check if the connector was rewritten to DuckDB
+    const isRewrittenToDuckDb = rewrittenConnector.name === "duckdb";
+
+    if (isRewrittenToDuckDb) {
+      return compileSourceYAML(rewrittenConnector, rewrittenFormValues);
     } else {
-      const values =
-        hasOnlyDsn() || connectionTab === "dsn" ? $dsnForm : $paramsForm;
+      return getConnectorYamlPreview(rewrittenFormValues);
+    }
+  }
 
-      // Process form data using the consolidated logic
-      const [rewrittenConnector, rewrittenFormValues] = prepareSourceFormData(
-        connector,
-        values,
-      );
+  $: yamlPreview = (() => {
+    // ClickHouse special case
+    if (connector.name === "clickhouse") {
+      return getClickHouseYamlPreview();
+    }
 
-      // Check if the connector was rewritten to DuckDB
-      const isRewrittenToDuckDb = rewrittenConnector.name === "duckdb";
+    const values =
+      hasOnlyDsn() || connectionTab === "dsn" ? $dsnForm : $paramsForm;
 
-      if (isRewrittenToDuckDb) {
-        return compileSourceYAML(rewrittenConnector, rewrittenFormValues);
-      } else {
-        return compileConnectorYAML(connector, rewrittenFormValues, {
-          fieldFilter: (property) => {
-            // When in DSN mode, don't filter out noPrompt properties
-            // because the DSN field itself might have noPrompt: true
-            if (hasOnlyDsn() || connectionTab === "dsn") {
-              return true; // Show all DSN properties
-            }
-            return !property.noPrompt;
-          },
-          orderedProperties:
-            hasOnlyDsn() || connectionTab === "dsn"
-              ? filteredDsnProperties
-              : filteredParamsProperties,
-        });
-      }
+    if (isConnectorForm) {
+      // Connector form
+      return getConnectorYamlPreview(values);
+    } else {
+      // Source form
+      return getSourceYamlPreview(values);
     }
   })();
 
