@@ -57,12 +57,20 @@ dimensions:
 
 ## DuckDB/MotherDuck Lookups
 
-Unfortunately, DuckDB does not have a dimension lookup function and instead relies on upstream modeling to join the lookup table and create a [one big table](/build/models/#one-big-table-and-dashboarding) for dashboarding. Take a look through [DuckDB docs](https://duckdb.org/docs/stable/sql/introduction) for further information!
+Unfortunately, DuckDB does not have a dimension lookup **function** and instead relies on upstream modeling to join the lookup table and create a [one big table](/build/models/#one-big-table-and-dashboarding) for dashboarding. Take a look through [DuckDB docs](https://duckdb.org/docs/stable/sql/introduction) for further information!
 
 ```sql
 SELECT 
-    main.id,
-    dict.attribute_value
-FROM main_table main
-LEFT JOIN dictionary_table dict ON main.key = dict.key;
+    o.*,
+    u.user_name
+FROM orders o
+LEFT JOIN users u ON u.email = o.email;
+```
+
+
+Alternatively, you can use DuckDB's `map` function to create a lookup table by mapping values from one column to another. This approach creates an in-memory mapping that can be referenced without using a joining SQL:
+
+```yaml
+ - expression: (SELECT map(list(email), list(user_name)) FROM users_dataset)[email]
+    name: user_name
 ```

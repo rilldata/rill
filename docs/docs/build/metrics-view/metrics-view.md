@@ -1,129 +1,30 @@
 ---
 title: Create Metrics Views
-description: Create metrics view using source data and models with time, dimensions, and measures
+description: Create metrics views using source data and models with time, dimensions, and measures
 sidebar_label: Create Metrics Views
 sidebar_position: 00
 ---
 
+Metrics Views are a key part of defining your measures and dimensions. 
 
-A metrics view is a `centralized framework` used to define and organize **key metrics** for your organization. Having a centralized layer allows an organization to easily manage and reuse calculations across various reports, dashboards, and data tools.
+### Metrics 101
+- [**What are Metrics Views?**](/build/metrics-view/what-are-metrics-views) - Define your time series, measures, and dimensions using your OLAP engine aggregate functions
 
-<!-- <img src='/img/build/metrics-view/visual-metrics-editor.gif' class='rounded-gif' />
-<br /> -->
-
-<div style={{ textAlign: 'center' }}>
-  <img src="/img/concepts/metrics-view/metrics-view-components.png" width="100%" style={{ borderRadius: '15px', padding: '20px' }} />
-</div>
-
-
-In Rill, your metrics view is defined by _metric definitions_. Metric definitions are composed of:
-* _**model**_ - A data model creating a One Big Table that will power the metrics view.
-* _**timeseries**_ - A column from your model that will underlie x-axis data in the line charts. Time will be truncated into different time periods.
-* _**measures**_ - Numerical aggregates of columns from your data model shown on the y-axis of the line charts and the "big number" summaries.
-* _**dimensions**_ - Categorical columns from your data model whose values are shown in _leaderboards_ and allow you to look at segments or attributes of your data (and filter/slice accordingly).
-
-## Creating a Metrics view
-
-When creating a metrics view in Rill, you can either use the visual metrics editor or YAML.
-
-### Using the Visual Metrics Editor
-
-<img src='/img/build/metrics-view/visual-metrics-editor.png' class='rounded-gif' />
-<br />
-
-When you add a metrics definition using the UI, a code definition will automatically be created as a YAML file in your Rill project within the metrics directory by default.
-
-### Using YAML
-
-You can also create metrics definitions directly by creating the artifact yourself.
-
-In your Rill project directory, after the `metrics-view.yaml` file is created in the `metrics` directory, its configuration or definition can be updated as needed by updating the YAML file directly, using the following template as an example:
-
-```yaml
-# Metrics View YAML
-# Reference documentation: https://docs.rilldata.com/reference/project-files/metrics_views
-
-version: 1
-type: metrics_view
-
-model: example_model # Choose a table to underpin your metrics
-timeseries: timestamp_column # Choose a timestamp column (if any) from your table
-
-dimensions:
-  - column: category
-    label: "Category"
-    description: "Description of the dimension"
-
-measures:
-  - expression: "SUM(revenue)"
-    label: "Total Revenue"
-    description: "Total revenue generated"
-```
-
-:::info Check our reference documentation
-
-For more information about available metrics view properties, feel free to check our [reference YAML documentation](/reference/project-files/metrics-views).
-
-:::
-
-### Creating a Metrics View with AI
-
-In order to streamline the process and get to a dashboard as quickly as possible, we've added the "Create Metrics with AI" and "Create Dashboard with AI" options! This will pass your schema to OpenAI to suggest measures and dimensions to get started with Rill. You can define your own OpenAI key by creating a [connector file](/reference/project-files/connectors#ai). If you want to disable AI from your environment, please set the following in the `rill.yaml`:
-
-```yaml
-features:
-  ai: false
-```
-
-## Creating Valid Metrics
-
-### Time series
-
-Your time series must be a column from your data model of [type](https://duckdb.org/docs/sql/data_types/timestamp) `TIMESTAMP`, `TIME`, or `DATE`. If your source has a date in a different format, you can apply [time functions](https://duckdb.org/docs/sql/functions/timestamp) to transform these fields into valid time series types.
-
-[Customizing](/build/metrics-view/customize) your time series...
+### Security 
+- [**Data Access Policies**](/build/metrics-view/security) - Control access to your metrics data with role-based permissions
 
 ### Measures
-
-Measures are numeric aggregates of columns from your data model. A measure must be defined with [DuckDB SQL](https://duckdb.org/docs/sql/introduction.html) aggregation functions and expressions on columns from your data model. The following operators and functions are allowed in measure expressions:
-
-* Any DuckDB SQL [numeric](https://duckdb.org/docs/sql/functions/numeric) operators and functions
-* This set of DuckDB SQL [aggregates](https://duckdb.org/docs/sql/aggregates): `AVG`, `COUNT`, `FAVG`, `FIRST`, `FSUM`, `LAST`, `MAX`, `MIN`, `PRODUCT`, `SUM`, `APPROX_COUNT_DISTINCT`, `APPROX_QUANTILE`, `STDDEV_POP`, `STDDEV_SAMP`, `VAR_POP`, `VAR_SAMP`.
-* [Filtered aggregates](https://duckdb.org/docs/sql/query_syntax/filter.html) can be used to filter the set of rows fed to the aggregate functions.
-
-As an example, if you have a table of sales events with the sales price and customer ID, you could calculate the following metrics with these aggregates and expressions:
-* Number of sales: `COUNT(*)`
-* Total revenue: `SUM(sales_price)` 
-* Revenue per customer: `CAST(SUM(sales_price) AS FLOAT)/CAST(COUNT(DISTINCT customer_id) AS FLOAT)`
-* Number of orders with order value more than $100: `count(*) FILTER (WHERE order_val > 100)`
-
-You can also add labels, descriptions, and your choice of number formatting to customize how they are shown. See our dedicated examples and pages for the following advanced measures!
-- **[Metric Formatting](/build/metrics-view/metric-formatting)**
-- **[Case Statements and Filters](/build/metrics-view/case-statements)**
-- **[Referencing Measures](/build/metrics-view/referencing)**
-- **[Quantiles](/build/metrics-view/quantiles)**
-- **[Fixed Metrics](/build/metrics-view/fixed-metrics)**
-- **[Window Functions](/build/metrics-view/windows)**
-
-  
+- [**Format Metrics**](/build/metrics-view/metric-formatting) - Learn how to format and display your metrics effectively
+- [**Case Statements and Filters**](/build/metrics-view/case-statements) - Use conditional logic and filtering in your measures
+- [**Referencing Measures**](/build/metrics-view/referencing) - Reference and combine existing measures in your calculations
+- [**Quantiles**](/build/metrics-view/quantiles) - Calculate percentiles and quantiles for statistical analysis
+- [**Fixed Measures**](/build/metrics-view/fixed-metrics) - Create measures with fixed values and constants
+- [**Window Functions**](/build/metrics-view/windows) - Apply window functions for advanced analytical operations
 
 ### Dimensions
+- [**Dimension URI**](/build/metrics-view/dimension-uri) - Generate unique identifiers for your dimension values
+- [**Unnesting Arrays**](/build/metrics-view/unnesting) - Work with array data by expanding nested structures
+- [**Lookup Dimensions**](/build/metrics-view/lookup) - Create dimensions that reference data from other sources
 
-Dimensions are used for exploring segments and filtering. Valid dimensions can be any type and are selected using the drop-down menu. You can also add labels and descriptions to your dimensions to customize how they are displayed. See our dedicated examples and pages for more use cases.
-
-- **[Clickable Dimension Links](/build/metrics-view/dimension-uri)**
-- **[Unnest Dimensions](/build/metrics-view/unnesting)**
-- **[Lookups](/build/metrics-view/lookup)**
-
-## Security
-
-Data access is an important part of Rill that allows you to create specified views of your dashboard depending on who's viewing the page. For a dedicated guide, see [Data Access](/build/metrics-view/security) for more information.
-
-
-## Multi-Editor and External IDE Support
-
-Rill Developer is meant to be developer-friendly and has been built around the idea of real-time feedback when modeling your data, allowing live interactivity and a real-time feedback loop to iterate quickly (or make adjustments as necessary) with your models and dashboards. Additionally, Rill Developer supports "hot reloading", which means that you can keep two windows of Rill open at the same time and/or use a preferred editor, such as VS Code, side-by-side with the dashboard that you're actively developing!
-
-<img src='https://cdn.rilldata.com/docs/release-notes/36_hot_reload.gif' class='rounded-gif' />
-<br />
-
+### Customization
+- [**Customization**](/build/metrics-view/customize) - Customize the appearance and behavior of your metrics views (define when a week starts, month starts, etc.)
