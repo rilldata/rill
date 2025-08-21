@@ -9,6 +9,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
+	"regexp"
 	"sort"
 	"strings"
 	"sync/atomic"
@@ -1233,20 +1235,72 @@ func (r *ModelReconciler) executeSingle(ctx context.Context, executor *wrappedMo
 		return nil, err
 	}
 
-	// Execute the stage step if configured
+	// Execute with retry logic
+	maxAttempts := uint32(1) // Default: no retries
+	if mdl.Spec.Retry != nil && mdl.Spec.Retry.Attempts > 0 {
+		maxAttempts = mdl.Spec.Retry.Attempts
+	}
+
+	var lastErr error
+	var stageResult *drivers.ModelResult
 	var stageDuration time.Duration
-	if executor.stage != nil {
-		// Also resolve templating in the stage props
-		stageProps, err := r.resolveTemplatedProps(ctx, self, incrementalState, partitionData, mdl.Spec.StageConnector, mdl.Spec.StageProperties.AsMap())
-		if err != nil {
-			return nil, err
+	var stageResultNeedsCleanup bool
+
+	for attempt := uint32(0); attempt < maxAttempts; attempt++ {
+		// Execute the stage step if configured
+		stageDuration = 0
+		stageResult = nil
+		stageResultNeedsCleanup = false
+
+		if executor.stage != nil {
+			// Also resolve templating in the stage props
+			stageProps, err := r.resolveTemplatedProps(ctx, self, incrementalState, partitionData, mdl.Spec.StageConnector, mdl.Spec.StageProperties.AsMap())
+			if err != nil {
+				lastErr = err
+				if !r.shouldRetryOnError(err, mdl.Spec.Retry) || attempt == maxAttempts-1 {
+					return nil, err
+				}
+
+				time.Sleep(r.calculateRetryDelay(attempt, mdl.Spec.Retry))
+				continue
+			}
+
+			// Execute the stage step
+			stageResult, err = executor.stage.Execute(ctx, &drivers.ModelExecuteOptions{
+				ModelExecutorOptions: executor.stageOpts,
+				InputProperties:      inputProps,
+				OutputProperties:     stageProps,
+				Priority:             0,
+				Incremental:          mdl.Spec.Incremental,
+				IncrementalRun:       incrementalRun,
+				PartitionRun:         partitionKey != "",
+				PartitionKey:         partitionKey,
+				PreviousResult:       prevResult,
+				TempDir:              tempDir,
+			})
+			if err != nil {
+				lastErr = err
+				if !r.shouldRetryOnError(err, mdl.Spec.Retry) || attempt == maxAttempts-1 {
+					return nil, err
+				}
+
+				time.Sleep(r.calculateRetryDelay(attempt, mdl.Spec.Retry))
+				continue
+			}
+			stageDuration = stageResult.ExecDuration
+
+			// We change the inputProps to be the result properties of the stage step
+			inputProps = stageResult.Properties
+
+			// Mark that we need to clean up the stage result after the final step has executed.
+			stageResultNeedsCleanup = true
 		}
 
-		// Execute the stage step
-		stageResult, err := executor.stage.Execute(ctx, &drivers.ModelExecuteOptions{
-			ModelExecutorOptions: executor.stageOpts,
+		// Execute the final step
+		finalResult, err := executor.final.Execute(ctx, &drivers.ModelExecuteOptions{
+			ModelExecutorOptions: executor.finalOpts,
 			InputProperties:      inputProps,
-			OutputProperties:     stageProps,
+			OutputProperties:     outputProps,
 			Priority:             0,
 			Incremental:          mdl.Spec.Incremental,
 			IncrementalRun:       incrementalRun,
@@ -1256,42 +1310,55 @@ func (r *ModelReconciler) executeSingle(ctx context.Context, executor *wrappedMo
 			TempDir:              tempDir,
 		})
 		if err != nil {
-			return nil, err
+			lastErr = err
+			if !r.shouldRetryOnError(err, mdl.Spec.Retry) || attempt == maxAttempts-1 {
+				// Clean up stage result if this was the final attempt and it failed
+				if stageResult != nil {
+					cleanupErr := executor.stageResultManager.Delete(ctx, stageResult)
+					if cleanupErr != nil {
+						r.C.Logger.Warn("Failed to clean up staged model output after final failure",
+							zap.String("model", self.Meta.Name.Name),
+							zap.Error(cleanupErr),
+							observability.ZapCtx(ctx))
+					}
+				}
+				return nil, err
+			}
+
+			// Clean up stage result before retrying
+			if stageResult != nil {
+				cleanupErr := executor.stageResultManager.Delete(ctx, stageResult)
+				if cleanupErr != nil {
+					r.C.Logger.Warn("Failed to clean up staged model output before retry",
+						zap.String("model", self.Meta.Name.Name),
+						zap.Error(cleanupErr),
+						observability.ZapCtx(ctx))
+				}
+			}
+
+			time.Sleep(r.calculateRetryDelay(attempt, mdl.Spec.Retry))
+			continue
 		}
-		stageDuration = stageResult.ExecDuration
 
-		// We change the inputProps to be the result properties of the stage step
-		inputProps = stageResult.Properties
-
-		// Drop the stage result after the final step has executed.
-		// We do this using the same ctx, which means we may leak data in the staging connector in case of context cancellations.
-		// This is acceptable since the staging connector is assumed to be configured for temporary data.
-		defer func() {
+		finalResult.ExecDuration += stageDuration
+		if stageResultNeedsCleanup && stageResult != nil {
 			err := executor.stageResultManager.Delete(ctx, stageResult)
 			if err != nil {
 				r.C.Logger.Warn("Failed to clean up staged model output", zap.String("model", self.Meta.Name.Name), zap.Error(err), observability.ZapCtx(ctx))
 			}
-		}()
+		}
+		return finalResult, nil
 	}
 
-	// Execute the final step
-	finalResult, err := executor.final.Execute(ctx, &drivers.ModelExecuteOptions{
-		ModelExecutorOptions: executor.finalOpts,
-		InputProperties:      inputProps,
-		OutputProperties:     outputProps,
-		Priority:             0,
-		Incremental:          mdl.Spec.Incremental,
-		IncrementalRun:       incrementalRun,
-		PartitionRun:         partitionKey != "",
-		PartitionKey:         partitionKey,
-		PreviousResult:       prevResult,
-		TempDir:              tempDir,
-	})
-	if err != nil {
-		return nil, err
+	// All attempts failed
+	if stageResultNeedsCleanup && stageResult != nil {
+		err := executor.stageResultManager.Delete(ctx, stageResult)
+		if err != nil {
+			r.C.Logger.Warn("Failed to clean up staged model output after failure", zap.String("model", self.Meta.Name.Name), zap.Error(err), observability.ZapCtx(ctx))
+		}
 	}
-	finalResult.ExecDuration += stageDuration
-	return finalResult, nil
+
+	return nil, lastErr
 }
 
 // wrappedModelExecutor is a ModelExecutor wraps one or two ModelExecutors. It is used to execute a model with a staging connector.
@@ -1679,6 +1746,34 @@ func (r *ModelReconciler) execModelTest(ctx context.Context, test *runtimev1.Mod
 	}
 
 	return fmt.Sprintf("%s: test did not pass", test.Name), nil
+}
+
+// shouldRetryOnError checks if the error matches any of the provided patterns.
+func (r *ModelReconciler) shouldRetryOnError(err error, retry *runtimev1.Retry) bool {
+	if retry == nil || len(retry.IfErrorMatches) == 0 {
+		return false
+	}
+
+	errStr := err.Error()
+	for _, pattern := range retry.IfErrorMatches {
+		if matched, _ := regexp.MatchString(pattern, errStr); matched {
+			return true
+		}
+	}
+
+	return false
+}
+
+// calculateRetryDelay calculates the delay before the next retry attempt.
+func (r *ModelReconciler) calculateRetryDelay(attempt uint32, retry *runtimev1.Retry) time.Duration {
+	delay := time.Duration(retry.Delay) * time.Second
+
+	if retry.ExponentialBackoff {
+		multiplier := math.Pow(2, float64(attempt))
+		return time.Duration(float64(delay) * multiplier)
+	}
+
+	return delay
 }
 
 // newTestsError creates a new error that summarizes the messages returned from runModelTests.
