@@ -506,7 +506,6 @@ func generateDoc(sidebarPosition, level int, node *yaml.Node, indent string, req
 		}
 	}
 
-
 	// Examples
 	if examples := getNodeForKey(node, "examples"); examples != nil && currentLevel == 0 {
 		doc.WriteString("\n\n## Examples")
