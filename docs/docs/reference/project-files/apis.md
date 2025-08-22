@@ -98,7 +98,6 @@ type: api
 sql: "SELECT * FROM table_name WHERE date >= '2024-01-01'"
 ```
 
-
 ## Metrics View Query
 
 Executes a SQL query that targets a defined metrics view.
@@ -109,10 +108,8 @@ _[string]_ - SQL query that targets a metrics view in the project _(required)_
 
 ```yaml
 type: api
-
 metrics_sql: "SELECT * FROM user_metrics WHERE date >= '2024-01-01'"
 ```
-
 
 ## Custom API Call
 
@@ -130,10 +127,9 @@ _[object]_ - Arguments to pass to the custom API.
 type: api
 api: "user_analytics_api"
 args:
-  start_date: "2024-01-01"
-  limit: 10
+    start_date: "2024-01-01"
+    limit: 10
 ```
-
 
 ## File Glob Query
 
@@ -153,10 +149,8 @@ _[string]_ - Specifies the connector to use with the glob input.
 
 ```yaml
 type: api
-
 glob: "data/*.csv"
 ```
-
 
 ## Resource Status Check
 
@@ -171,5 +165,5 @@ _[object]_ - Based on resource status _(required)_
 ```yaml
 type: api
 resource_status:
-  where_error: true
+    where_error: true
 ```

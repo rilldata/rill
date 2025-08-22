@@ -113,21 +113,20 @@ _[string]_ - AWS region where Athena and the result S3 bucket are located (e.g.,
 _[boolean]_ - Allow the Athena client to access host environment configurations such as environment variables or local AWS credential files. Defaults to true, enabling use of credentials and settings from the host environment unless explicitly disabled. 
 
 ```yaml
- type: connector                                  # Must be `connector` (required)
- driver: athena                                   # Must be `athena` _(required)_
-
- aws_access_key_id: "myawsaccesskey"              # AWS Access Key ID for authentication  
- aws_secret_access_key: "myawssecretkey"          # AWS Secret Access Key for authentication  
- aws_access_token: "mytemporarytoken"             # AWS session token for temporary credentials  
- role_arn: "arn:aws:iam::123456789012:role/MyRole" # ARN of the IAM role to assume  
- role_session_name: "MySession"                   # Session name for STS AssumeRole  
- external_id: "MyExternalID"                      # External ID for cross-account access  
- workgroup: "primary"                             # Athena workgroup (defaults to 'primary')  
- output_location: "s3://my-bucket/athena-output/" # S3 URI for query results  
- aws_region: "us-east-1"                          # AWS region (defaults to 'us-east-1')  
- allow_host_access: true                          # Allow host environment access _(default: true)_
+# Example: Athena connector configuration
+type: connector # Must be `connector` (required)
+driver: athena # Must be `athena` _(required)_
+aws_access_key_id: "myawsaccesskey" # AWS Access Key ID for authentication  
+aws_secret_access_key: "myawssecretkey" # AWS Secret Access Key for authentication  
+aws_access_token: "mytemporarytoken" # AWS session token for temporary credentials  
+role_arn: "arn:aws:iam::123456789012:role/MyRole" # ARN of the IAM role to assume  
+role_session_name: "MySession" # Session name for STS AssumeRole  
+external_id: "MyExternalID" # External ID for cross-account access  
+workgroup: "primary" # Athena workgroup (defaults to 'primary')  
+output_location: "s3://my-bucket/athena-output/" # S3 URI for query results  
+aws_region: "us-east-1" # AWS region (defaults to 'us-east-1')  
+allow_host_access: true # Allow host environment access _(default: true)_
 ```
-
 
 ## Azure
 
@@ -160,17 +159,16 @@ _[string]_ - Optional azure connection string for storage account
 _[boolean]_ - Allow access to host environment configuration 
 
 ```yaml
-type: connector                                  # Must be `connector` (required)
-driver: azure                                    # Must be `azure` _(required)_
-
-azure_storage_account: "mystorageaccount"        # Azure storage account name  
-azure_storage_key: "credentialjsonstring"        # Azure storage access key  
-azure_storage_sas_token: "optionaltoken"         # Optional SAS token for authentication  
+# Example: Azure connector configuration
+type: connector # Must be `connector` (required)
+driver: azure # Must be `azure` _(required)_
+azure_storage_account: "mystorageaccount" # Azure storage account name  
+azure_storage_key: "credentialjsonstring" # Azure storage access key  
+azure_storage_sas_token: "optionaltoken" # Optional SAS token for authentication  
 azure_storage_connection_string: "optionalconnectionstring" # Optional connection string  
-azure_storage_bucket: "mycontainer"              # Azure Blob Storage container name _(required)_  
-allow_host_access: true                          # Allow host environment access
+azure_storage_bucket: "mycontainer" # Azure Blob Storage container name _(required)_  
+allow_host_access: true # Allow host environment access
 ```
-
 
 ## BigQuery
 
@@ -199,14 +197,13 @@ _[string]_ - BigQuery dataset location
 _[boolean]_ - Enable the BigQuery client to use credentials from the host environment when no service account JSON is provided. This includes Application Default Credentials from environment variables, local credential files, or the Google Compute Engine metadata server. Defaults to true, allowing seamless authentication in GCP environments. 
 
 ```yaml
-type: connector                                  # Must be `connector` (required)
-driver: bigquery                                 # Must be `bigquery` _(required)_
-
-google_application_credentials: "credentialjsonstring"     # Google Cloud service account JSON  
-project_id: "my-project-id"                      # Google Cloud project ID  
-allow_host_access: true                          # Allow host environment access _(default: true)_
+# Example: BigQuery connector configuration
+type: connector # Must be `connector` (required)
+driver: bigquery # Must be `bigquery` _(required)_
+google_application_credentials: "credentialjsonstring" # Google Cloud service account JSON  
+project_id: "my-project-id" # Google Cloud project ID  
+allow_host_access: true # Allow host environment access _(default: true)_
 ```
-
 
 ## ClickHouse
 
@@ -291,30 +288,19 @@ _[string]_ - Maximum time a connection may be reused
 _[string]_ - Maximum time for a connection to read data 
 
 ```yaml
-type: connector                                  # Must be `connector` (required)
-driver: clickhouse                               # Must be `clickhouse` _(required)_
-
-managed: true                                    # Provision the connector using the default provisioner  
-mode: "readwrite"                                # Enable model creation and table mutations  
-dsn: "tcp://localhost:9000"                     # DSN for the ClickHouse connection  
-username: "myusername"                          # Username for authentication  
-password: "mypassword"                          # Password for authentication  
-host: "localhost"                              # Hostname of the ClickHouse server  
-port: 9000                                     # Port number of the ClickHouse server  
-database: "mydatabase"                         # Name of the ClickHouse database  
-ssl: true                                      # Enable SSL for secure connection  
-cluster: "mycluster"                           # Cluster name  
-log_queries: true                               # Log raw SQL queries  
-settings_override: "readonly = 1, session_timezone = 'UTC'" # Override the default settings used in queries  
-embed_port: 0                                   # Port to run ClickHouse locally (0 for random port)  
-can_scale_to_zero: true                         # Indicates if the database can scale to zero  
-max_open_conns: 100                             # Maximum number of open connections to the database  
-max_idle_conns: 10                              # Maximum number of idle connections in the pool  
-dial_timeout: "10s"                            # Timeout for dialing the ClickHouse server  
-conn_max_lifetime: "1h"                        # Maximum time a connection may be reused  
-read_timeout: "10s"                            # Maximum time for a connection to read data  
+# Example: ClickHouse connector configuration
+type: connector # Must be `connector` (required)
+driver: clickhouse # Must be `clickhouse` _(required)_
+managed: false # Provision the connector using the default provisioner  
+mode: "readwrite" # Enable model creation and table mutations  
+username: "myusername" # Username for authentication  
+password: "mypassword" # Password for authentication  
+host: "localhost" # Hostname of the ClickHouse server  
+port: 9000 # Port number of the ClickHouse server  
+database: "mydatabase" # Name of the ClickHouse database  
+ssl: true # Enable SSL for secure connection  
+cluster: "mycluster" # Cluster name  
 ```
-
 
 ## Druid
 
@@ -359,20 +345,15 @@ _[integer]_ - Maximum number of open database connections (0 = default, -1 = unl
 _[boolean]_ - Skip checking Druid version compatibility 
 
 ```yaml
-type: connector                                  # Must be `connector` (required)
-driver: druid                                    # Must be `druid` _(required)_
-
-dsn: "tcp://localhost:8082"                     # DSN for the Druid connection  
-username: "myusername"                          # Username for authentication  
-password: "mypassword"                          # Password for authentication  
-host: "localhost"                              # Hostname of the Druid coordinator or broker  
-port: 8082                                     # Port number of the Druid service  
-ssl: true                                      # Enable SSL for secure connection  
-log_queries: true                               # Log raw SQL queries  
-max_open_conns: 100                             # Maximum number of open connections to the database  
-skip_version_check: true                        # Skip checking Druid version compatibility  
+# Example: Druid connector configuration
+type: connector # Must be `connector` (required)
+driver: druid # Must be `druid` _(required)_
+username: "myusername" # Username for authentication  
+password: "mypassword" # Password for authentication  
+host: "localhost" # Hostname of the Druid coordinator or broker  
+port: 8082 # Port number of the Druid service  
+ssl: true # Enable SSL for secure connection  
 ```
-
 
 ## DuckDB
 
@@ -413,19 +394,13 @@ _[string]_ - Comma-separated list of other connector names to create temporary s
 _[boolean]_ - Whether to log raw SQL queries executed through OLAP 
 
 ```yaml
-type: connector                                  # Must be `connector` (required)
-driver: duckdb                                   # Must be `duckdb` _(required)_
-
-pool_size: 100                                    # Number of concurrent connections and queries allowed  
-allow_host_access: true                          # Whether access to the local environment and file system is allowed  
-cpu: 4                                          # Number of CPU cores available to the database  
-memory_limit_gb: 16                              # Amount of memory in GB available to the database  
-read_write_ratio: 0.5                            # Ratio of resources allocated to the read database; used to divide CPU and memory  
-init_sql: "CREATE TABLE my_table (id INT, name STRING);" # SQL executed during database initialization  
-secrets: "my_other_connector"                    # Comma-separated list of other connector names to create temporary secrets for in DuckDB before executing a model  
-log_queries: true                                 # Whether to log raw SQL queries executed through OLAP  
+# Example: DuckDB connector configuration
+type: connector # Must be `connector` (required)
+driver: duckdb # Must be `duckdb` _(required)_
+allow_host_access: true # Whether access to the local environment and file system is allowed  
+cpu: 4 # Number of CPU cores available to the database  
+memory_limit_gb: 16 # Amount of memory in GB available to the database
 ```
-
 
 ## GCS
 
@@ -454,16 +429,12 @@ _[string]_ - Optional S3-compatible Key ID when used in compatibility mode
 _[string]_ - Optional S3-compatible Secret when used in compatibility mode 
 
 ```yaml
-type: connector                                  # Must be `connector` (required)
-driver: gcs                                      # Must be `gcs` _(required)_
-
-google_application_credentials: "credentialjsonstring"     # Google Cloud credentials JSON string  
-bucket: "my-gcs-bucket"                            # Name of gcs bucket  
-allow_host_access: true                          # Allow access to host environment configuration  
-key_id: "AKIAIOSFODNN7EXAMPLE"                    # Optional S3-compatible Key ID when used in compatibility mode  
-secret: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY" # Optional S3-compatible Secret when used in compatibility mode  
+# Example: GCS connector configuration
+type: connector # Must be `connector` (required)
+driver: gcs # Must be `gcs` _(required)_
+google_application_credentials: "credentialjsonstring" # Google Cloud credentials JSON string  
+bucket: "my-gcs-bucket" # Name of gcs bucket  
 ```
-
 
 ## HTTPS
 
@@ -480,14 +451,13 @@ _[string]_ - The full HTTPS URI to fetch data from _(required)_
 _[object]_ - HTTP headers to include in the request 
 
 ```yaml
-type: connector                                  # Must be `connector` (required)
-driver: https                                    # Must be `https` _(required)_
-
-path: "https://api.example.com/data.csv"         # The full HTTPS URI to fetch data from  
+# Example: HTTPS connector configuration
+type: connector # Must be `connector` (required)
+driver: https # Must be `https` _(required)_
+path: "https://api.example.com/data.csv" # The full HTTPS URI to fetch data from  
 headers:
-  "Authorization": "Bearer my-token"            # HTTP headers to include in the request  
+    "Authorization": "Bearer my-token" # HTTP headers to include in the request
 ```
-
 
 ## MotherDuck
 
@@ -508,14 +478,13 @@ _[string]_ - Define your schema if not main, uses main by default
 _[string]_ - SQL executed during database initialization. _(required)_
 
 ```yaml
-type: connector                                  # Must be `connector` (required)
-driver: motherduck                               # Must be `motherduck` _(required)_
-
-path: "md:my_database"                           # Path to your MD database  
-schema_name: "my_schema"                        # Define your schema if not main, uses main by default  
-init_sql: "CREATE TABLE my_table (id INT, name STRING);" # SQL executed during database initialization  
+# Example: MotherDuck connector configuration
+type: connector # Must be `connector` (required)
+driver: duckdb # Must be `motherduck` _(required)_
+path: "md:my_database" # Path to your MD database  
+schema_name: "my_schema" # Define your schema if not main, uses main by default  
+init_sql: "INSTALL 'motherduck';                           LOAD 'motherduck';                              SET motherduck_token='{{ .env.motherduck_token }}';  \n" # Install and load the MotherDuck extension
 ```
-
 
 ## MySQL
 
@@ -552,18 +521,16 @@ _[string]_ - Password for authentication
 _[string]_ - SSL mode can be DISABLED, PREFERRED or REQUIRED 
 
 ```yaml
-type: connector                                  # Must be `connector` (required)
-driver: mysql                                    # Must be `mysql` _(required)_
-
-dsn: "tcp://localhost:3306"                     # DSN for the mysql connection  
-host: "localhost"                              # Hostname of the MySQL server  
-port: 3306                                     # Port number for the MySQL server  
-database: "mydatabase"                         # Name of the MySQL database  
-user: "myusername"                             # Username for authentication  
-password: "mypassword"                         # Password for authentication  
-ssl_mode: "DISABLED"                           # SSL mode can be DISABLED, PREFERRED or REQUIRED  
+# Example: MySQL connector configuration
+type: connector # Must be `connector` (required)
+driver: mysql # Must be `mysql` _(required)_
+host: "localhost" # Hostname of the MySQL server  
+port: 3306 # Port number for the MySQL server  
+database: "mydatabase" # Name of the MySQL database  
+user: "myusername" # Username for authentication  
+password: "mypassword" # Password for authentication  
+ssl_mode: "DISABLED" # SSL mode can be DISABLED, PREFERRED or REQUIRED
 ```
-
 
 ## Pinot
 
@@ -612,21 +579,19 @@ _[boolean]_ - Log raw SQL queries executed through Pinot
 _[integer]_ - Maximum number of open connections to the Pinot database 
 
 ```yaml
-type: connector                                  # Must be `connector` (required)
-driver: pinot                                    # Must be `pinot` _(required)_
-
-dsn: "tcp://localhost:9000"                     # DSN for the Pinot connection  
-username: "myusername"                          # Username for authentication  
-password: "mypassword"                          # Password for authentication  
-broker_host: "localhost"                        # Hostname of the Pinot broker  
-broker_port: 9000                               # Port number for the Pinot broker  
-controller_host: "localhost"                    # Hostname of the Pinot controller  
-controller_port: 9000                           # Port number for the Pinot controller  
-ssl: true                                      # Enable SSL connection to Pinot  
-log_queries: true                               # Log raw SQL queries executed through Pinot  
-max_open_conns: 100                             # Maximum number of open connections to the Pinot database  
+# Example: Pinot connector configuration
+type: connector # Must be `connector` (required)
+driver: pinot # Must be `pinot` _(required)_
+username: "myusername" # Username for authentication  
+password: "mypassword" # Password for authentication  
+broker_host: "localhost" # Hostname of the Pinot broker  
+broker_port: 9000 # Port number for the Pinot broker  
+controller_host: "localhost" # Hostname of the Pinot controller  
+controller_port: 9000 # Port number for the Pinot controller  
+ssl: true # Enable SSL connection to Pinot  
+log_queries: true # Log raw SQL queries executed through Pinot  
+max_open_conns: 100 # Maximum number of open connections to the Pinot database
 ```
-
 
 ## Postgres
 
@@ -663,18 +628,16 @@ _[string]_ - Password for authentication
 _[string]_ - SSL mode can be disable, allow, prefer or require 
 
 ```yaml
-type: connector                                  # Must be `connector` (required)
-driver: postgres                                 # Must be `postgres` _(required)_
-
-dsn: "tcp://localhost:5432"                     # DSN for the postgres connection  
-host: "localhost"                              # Hostname of the Postgres server  
-port: 5432                                     # Port number for the Postgres server  
-dbname: "mydatabase"                           # Name of the Postgres database  
-user: "myusername"                             # Username for authentication  
-password: "mypassword"                         # Password for authentication  
-sslmode: "disable"                             # SSL mode can be disable, allow, prefer or require  
+# Example: Postgres connector configuration
+type: connector # Must be `connector` (required)
+driver: postgres # Must be `postgres` _(required)_
+host: "localhost" # Hostname of the Postgres server  
+port: 5432 # Port number for the Postgres server  
+dbname: "mydatabase" # Name of the Postgres database  
+user: "myusername" # Username for authentication  
+password: "mypassword" # Password for authentication  
+sslmode: "disable" # SSL mode can be disable, allow, prefer or require
 ```
-
 
 ## Redshift
 
@@ -711,18 +674,17 @@ _[string]_ - Workgroup name for Redshift Serverless, in case of provisioned Reds
 _[string]_ - Cluster identifier for provisioned Redshift clusters, in case of Redshift Serverless use 'workgroup' . 
 
 ```yaml
-type: connector                                  # Must be `connector` (required)
-driver: redshift                                 # Must be `redshift` _(required)_
-
-aws_access_key_id: "my-access-key-id"            # AWS Access Key ID used for authenticating with Redshift.  
-aws_secret_access_key: "my-secret-access-key"    # AWS Secret Access Key used for authenticating with Redshift.  
-aws_access_token: "my-access-token"              # AWS Session Token for temporary credentials (optional).  
-region: "us-east-1"                              # AWS region where the Redshift cluster or workgroup is hosted (e.g., 'us-east-1').  
-database: "mydatabase"                           # Name of the Redshift database to query.  
-workgroup: "my-workgroup"                       # Workgroup name for Redshift Serverless, in case of provisioned Redshift clusters use 'cluster_identifier'.  
-cluster_identifier: "my-cluster-identifier"      # Cluster identifier for provisioned Redshift clusters, in case of Redshift Serverless use 'workgroup' .  
+# Example: Redshift connector configuration
+type: connector # Must be `connector` (required)
+driver: redshift # Must be `redshift` _(required)_
+aws_access_key_id: "my-access-key-id" # AWS Access Key ID used for authenticating with Redshift.  
+aws_secret_access_key: "my-secret-access-key" # AWS Secret Access Key used for authenticating with Redshift.  
+aws_access_token: "my-access-token" # AWS Session Token for temporary credentials (optional).  
+region: "us-east-1" # AWS region where the Redshift cluster or workgroup is hosted (e.g., 'us-east-1').  
+database: "mydatabase" # Name of the Redshift database to query.  
+workgroup: "my-workgroup" # Workgroup name for Redshift Serverless, in case of provisioned Redshift clusters use 'cluster_identifier'.  
+cluster_identifier: "my-cluster-identifier" # Cluster identifier for provisioned Redshift clusters, in case of Redshift Serverless use 'workgroup' .
 ```
-
 
 ## S3
 
@@ -763,19 +725,16 @@ _[boolean]_ - Allow access to host environment configuration
 _[boolean]_ - Whether to retain intermediate files after processing 
 
 ```yaml
-type: connector                                  # Must be `connector` (required)
-driver: s3                                       # Must be `s3` _(required)_
-
-aws_access_key_id: "my-access-key-id"            # AWS Access Key ID used for authentication  
-aws_secret_access_key: "my-secret-access-key"    # AWS Secret Access Key used for authentication  
-aws_access_token: "my-access-token"              # Optional AWS session token for temporary credentials  
-bucket: "my-s3-bucket"                           # Name of s3 bucket  
-endpoint: "https://my-s3-endpoint.com"           # Optional custom endpoint URL for S3-compatible storage  
-region: "us-east-1"                              # AWS region of the S3 bucket  
-allow_host_access: true                          # Allow access to host environment configuration  
-retain_files: true                               # Whether to retain intermediate files after processing  
+# Example: S3 connector configuration
+type: connector # Must be `connector` (required)
+driver: s3 # Must be `s3` _(required)_
+aws_access_key_id: "my-access-key-id" # AWS Access Key ID used for authentication  
+aws_secret_access_key: "my-secret-access-key" # AWS Secret Access Key used for authentication  
+aws_access_token: "my-access-token" # Optional AWS session token for temporary credentials  
+bucket: "my-s3-bucket" # Name of s3 bucket  
+endpoint: "https://my-s3-endpoint.com" # Optional custom endpoint URL for S3-compatible storage  
+region: "us-east-1" # AWS region of the S3 bucket  
 ```
-
 
 ## Salesforce
 
@@ -804,15 +763,14 @@ _[string]_ - Salesforce API endpoint URL _(required)_
 _[string]_ - Client ID used for Salesforce OAuth authentication _(required)_
 
 ```yaml
-type: connector                                  # Must be `connector` (required)
-driver: salesforce                               # Must be `salesforce` _(required)_
-
-username: "myusername"                          # Salesforce account username  
-password: "mypassword"                          # Salesforce account password (secret)  
-endpoint: "https://login.salesforce.com"        # Salesforce API endpoint URL  
-client_id: "my-client-id"                       # Client ID used for Salesforce OAuth authentication  
+# Example: Salesforce connector configuration
+type: connector # Must be `connector` (required)
+driver: salesforce # Must be `salesforce` _(required)_
+username: "myusername" # Salesforce account username  
+password: "mypassword" # Salesforce account password (secret)  
+endpoint: "https://login.salesforce.com" # Salesforce API endpoint URL  
+client_id: "my-client-id" # Client ID used for Salesforce OAuth authentication
 ```
-
 
 ## Slack
 
@@ -825,12 +783,11 @@ _[string]_ - Refers to the driver type and must be driver `slack` _(required)_
 _[string]_ - Bot token used for authenticating Slack API requests _(required)_
 
 ```yaml
-type: connector                                  # Must be `connector` (required)
-driver: slack                                    # Must be `slack` _(required)_
-
-bot_token: "xoxb-my-bot-token"                  # Bot token used for authenticating Slack API requests  
+# Example: Slack connector configuration
+type: connector # Must be `connector` (required)
+driver: slack # Must be `slack` _(required)_
+bot_token: "xoxb-my-bot-token" # Bot token used for authenticating Slack API requests
 ```
-
 
 ## Snowflake
 
@@ -847,13 +804,12 @@ _[string]_ - DSN (Data Source Name) for the Snowflake connection _(required)_
 _[integer]_ - Maximum number of concurrent fetches during query execution 
 
 ```yaml
-type: connector                                  # Must be `connector` (required)
-driver: snowflake                                # Must be `snowflake` _(required)_
-
-dsn: "tcp://localhost:9000"                     # DSN for the Snowflake connection  
-parallel_fetch_limit: 100                        # Maximum number of concurrent fetches during query execution  
+# Example: Snowflake connector configuration
+type: connector # Must be `connector` (required)
+driver: snowflake # Must be `snowflake` _(required)_
+dsn: "tcp://localhost:9000" # DSN for the Snowflake connection  
+parallel_fetch_limit: 100 # Maximum number of concurrent fetches during query execution
 ```
-
 
 ## SQLite
 
@@ -866,12 +822,11 @@ _[string]_ - Refers to the driver type and must be driver `sqlite` _(required)_
 _[string]_ - DSN(Data Source Name) for the sqlite connection _(required)_
 
 ```yaml
-type: connector                                  # Must be `connector` (required)
-driver: sqlite                                   # Must be `sqlite` _(required)_
-
-dsn: "file:mydatabase.db"                        # DSN for the sqlite connection  
+# Example: SQLite connector configuration
+type: connector # Must be `connector` (required)
+driver: sqlite # Must be `sqlite` _(required)_
+dsn: "file:mydatabase.db" # DSN for the sqlite connection
 ```
-
 
 ## OpenAPI
 
@@ -900,12 +855,12 @@ _[string]_ - The type of OpenAI API to use
 _[string]_ - The version of the OpenAI API to use (e.g., '2023-05-15'). Required when API Type is AZURE or AZURE_AD 
 
 ```yaml
-type: connector                                  # Must be `connector` (required)
-driver: openapi                                  # Must be `openapi` _(required)_
-
-api_key: "my-api-key"                            # API key for connecting to OpenAI  
-model: "gpt-4o"                                  # The OpenAI model to use (e.g., 'gpt-4o')  
-base_url: "https://api.openai.com/v1"            # The base URL for the OpenAI API (e.g., 'https://api.openai.com/v1')  
-api_type: "openai"                               # The type of OpenAI API to use  
-api_version: "2023-05-15"                        # The version of the OpenAI API to use (e.g., '2023-05-15'). Required when API Type is AZURE or AZURE_AD  
+# Example: OpenAPI connector configuration
+type: connector # Must be `connector` (required)
+driver: openapi # Must be `openapi` _(required)_
+api_key: "my-api-key" # API key for connecting to OpenAI  
+model: "gpt-4o" # The OpenAI model to use (e.g., 'gpt-4o')  
+base_url: "https://api.openai.com/v1" # The base URL for the OpenAI API (e.g., 'https://api.openai.com/v1')  
+api_type: "openai" # The type of OpenAI API to use  
+api_version: "2023-05-15" # The version of the OpenAI API to use (e.g., '2023-05-15'). Required when API Type is AZURE or AZURE_AD  
 ```

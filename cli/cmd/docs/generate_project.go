@@ -444,9 +444,17 @@ func generateDoc(sidebarPosition, level int, node *yaml.Node, indent string, req
 				for _, item := range oneOf.Content {
 					doc.WriteString(generateDoc(sidebarPosition, level, item, indent, getRequiredMapFromNode(item), id))
 
-					// Display examples for each oneOf item (examples are defined at item level, not property level)
 					if examples := getNodeForKey(item, "examples"); examples != nil {
-						if examples.Kind == yaml.ScalarNode {
+						if examples.Kind == yaml.SequenceNode {
+							// Handle array of YAML examples
+							for _, example := range examples.Content {
+								b, err := yaml.Marshal(example)
+								if err != nil {
+									panic(err)
+								}
+								doc.WriteString(fmt.Sprintf("\n\n```yaml\n%s```", string(b)))
+							}
+						} else if examples.Kind == yaml.ScalarNode {
 							// Handle string examples (like markdown code blocks)
 							doc.WriteString(fmt.Sprintf("\n\n%s", examples.Value))
 						}
