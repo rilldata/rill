@@ -5,7 +5,7 @@ sidebar_position: 50
 ---
 
 In your Rill project directory, create a new file name `<api-name>.yaml` in the `apis` directory containing a custom API definition.
-See comprehensive documentation on how to define and use [custom APIs](/integrate/custom-apis/index.md)
+See comprehensive documentation on how to define and use [custom APIs](/build/custom-apis)
 
 ## Properties
 

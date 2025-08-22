@@ -125,6 +125,7 @@ type LocalServiceClient interface {
 	// GetCurrentUser returns the locally logged in user
 	GetCurrentUser(context.Context, *connect.Request[v1.GetCurrentUserRequest]) (*connect.Response[v1.GetCurrentUserResponse], error)
 	// GetCurrentProject returns the rill cloud project connected to the local project
+	// Deprecated: Use ListMatchingProjects instead.
 	GetCurrentProject(context.Context, *connect.Request[v1.GetCurrentProjectRequest]) (*connect.Response[v1.GetCurrentProjectResponse], error)
 	// ListOrganizationsAndBillingMetadata returns metadata about the current user's orgs.
 	ListOrganizationsAndBillingMetadata(context.Context, *connect.Request[v1.ListOrganizationsAndBillingMetadataRequest]) (*connect.Response[v1.ListOrganizationsAndBillingMetadataResponse], error)
@@ -375,6 +376,7 @@ type LocalServiceHandler interface {
 	// GetCurrentUser returns the locally logged in user
 	GetCurrentUser(context.Context, *connect.Request[v1.GetCurrentUserRequest]) (*connect.Response[v1.GetCurrentUserResponse], error)
 	// GetCurrentProject returns the rill cloud project connected to the local project
+	// Deprecated: Use ListMatchingProjects instead.
 	GetCurrentProject(context.Context, *connect.Request[v1.GetCurrentProjectRequest]) (*connect.Response[v1.GetCurrentProjectResponse], error)
 	// ListOrganizationsAndBillingMetadata returns metadata about the current user's orgs.
 	ListOrganizationsAndBillingMetadata(context.Context, *connect.Request[v1.ListOrganizationsAndBillingMetadataRequest]) (*connect.Response[v1.ListOrganizationsAndBillingMetadataResponse], error)

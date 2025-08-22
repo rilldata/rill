@@ -66,6 +66,7 @@ type LocalServiceClient interface {
 	// GetCurrentUser returns the locally logged in user
 	GetCurrentUser(ctx context.Context, in *GetCurrentUserRequest, opts ...grpc.CallOption) (*GetCurrentUserResponse, error)
 	// GetCurrentProject returns the rill cloud project connected to the local project
+	// Deprecated: Use ListMatchingProjects instead.
 	GetCurrentProject(ctx context.Context, in *GetCurrentProjectRequest, opts ...grpc.CallOption) (*GetCurrentProjectResponse, error)
 	// ListOrganizationsAndBillingMetadata returns metadata about the current user's orgs.
 	ListOrganizationsAndBillingMetadata(ctx context.Context, in *ListOrganizationsAndBillingMetadataRequest, opts ...grpc.CallOption) (*ListOrganizationsAndBillingMetadataResponse, error)
@@ -276,6 +277,7 @@ type LocalServiceServer interface {
 	// GetCurrentUser returns the locally logged in user
 	GetCurrentUser(context.Context, *GetCurrentUserRequest) (*GetCurrentUserResponse, error)
 	// GetCurrentProject returns the rill cloud project connected to the local project
+	// Deprecated: Use ListMatchingProjects instead.
 	GetCurrentProject(context.Context, *GetCurrentProjectRequest) (*GetCurrentProjectResponse, error)
 	// ListOrganizationsAndBillingMetadata returns metadata about the current user's orgs.
 	ListOrganizationsAndBillingMetadata(context.Context, *ListOrganizationsAndBillingMetadataRequest) (*ListOrganizationsAndBillingMetadataResponse, error)

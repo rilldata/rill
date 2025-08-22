@@ -460,7 +460,11 @@ const config = {
           {
             from: '/build/advanced-models/staging',
             to: '/build/models/staging-models'
-          }
+          },
+          {
+            from: '/integrate/custom-apis',
+            to: '/build/custom-apis'
+          },
           // {
           //   from: '/old-page',
           //   to: '/new-page',
