@@ -30,7 +30,7 @@ export type TransformerArgs<R extends TransformerProperties> = {
   timeRangeSummary: V1TimeRangeSummary;
   executionTime: string;
   annotations: Record<string, string>;
-  alwaysOpenPivot: boolean;
+  forceOpenPivot: boolean;
 };
 
 export interface ExploreAvailabilityResult {

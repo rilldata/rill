@@ -1,7 +1,4 @@
-import {
-  getAggregationDimensionFromFieldName,
-  getDimensionNameFromAggregationDimension,
-} from "@rilldata/web-common/features/dashboards/aggregation-request/dimension-utils.ts";
+import { getAggregationDimensionFromFieldName } from "@rilldata/web-common/features/dashboards/aggregation-request/dimension-utils.ts";
 import { getComparisonRequestMeasures } from "@rilldata/web-common/features/dashboards/dashboard-utils.ts";
 import { MeasureModifierSuffixRegex } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry.ts";
 import { mergeDimensionAndMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils.ts";

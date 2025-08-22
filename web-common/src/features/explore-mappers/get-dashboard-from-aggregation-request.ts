@@ -45,6 +45,7 @@ import {
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
 import type { QueryClient } from "@tanstack/svelte-query";
+import type { SortingState } from "@tanstack/svelte-table";
 
 export async function getDashboardFromAggregationRequest({
   queryClient,
@@ -56,7 +57,7 @@ export async function getDashboardFromAggregationRequest({
   metricsView,
   explore,
   annotations,
-  alwaysOpenPivot,
+  forceOpenPivot,
 }: TransformerArgs<V1MetricsViewAggregationRequest>) {
   let loadedFromState = false;
   if (annotations["web_open_state"]) {
@@ -142,12 +143,19 @@ export async function getDashboardFromAggregationRequest({
     dashboard.selectedTimezone = req.timeRange?.timeZone || "UTC";
   }
 
-  dashboard.visibleMeasures =
-    req.measures
-      ?.map((m) => m.name ?? "")
-      .filter((m) => !measureHasSuffix(m)) ?? [];
-  dashboard.allMeasuresVisible =
-    dashboard.visibleMeasures.length === explore.measures?.length;
+  if (forceOpenPivot) {
+    dashboard.activePage = DashboardState_ActivePage.PIVOT;
+    dashboard.pivot = getPivotStateFromRequest(req);
+    return dashboard;
+  }
+
+  if (req.measures?.length) {
+    dashboard.visibleMeasures = req.measures
+      .map((m) => m.name ?? "")
+      .filter((m) => !measureHasSuffix(m));
+    dashboard.allMeasuresVisible =
+      dashboard.visibleMeasures.length === explore.measures?.length;
+  }
 
   // if the selected sort is a measure set it to leaderboardSortByMeasureName
   if (
@@ -162,10 +170,7 @@ export async function getDashboardFromAggregationRequest({
     dashboard.dashboardSortType = SortType.VALUE;
   }
 
-  if (alwaysOpenPivot) {
-    dashboard.activePage = DashboardState_ActivePage.PIVOT;
-    dashboard.pivot = getPivotStateFromRequest(req);
-  } else if (req.dimensions?.length) {
+  if (req.dimensions?.length) {
     dashboard.selectedDimensionName = req.dimensions[0].name;
     dashboard.activePage = DashboardState_ActivePage.DIMENSION_TABLE;
   } else {
@@ -241,7 +246,7 @@ function getPivotStateFromRequest(
 
     return {
       id: dim.name!,
-      title: dim.alias!,
+      title: dim.alias ?? dim.name ?? "",
       type: PivotChipType.Dimension,
     };
   };
@@ -260,16 +265,21 @@ function getPivotStateFromRequest(
     ...measureColumns.map(mapMeasure),
   ];
 
-  const tableMode = req.pivotOn?.length ? "nest" : "flat";
+  const isFlat = !req.pivotOn?.length;
+
+  const tableMode = isFlat ? "flat" : "nest";
+
+  const sorting: SortingState =
+    req.sort?.map((s) => ({ id: s.name!, desc: !!s.desc })) ?? [];
 
   return {
     rows: rowChips,
     columns: colChips,
-    sorting: [],
+    sorting,
     expanded: {},
     columnPage: 1,
     rowPage: 1,
-    enableComparison: true,
+    enableComparison: true, // This is not really used. So setting it true, we should remove it.
     activeCell: null,
     tableMode,
   };
