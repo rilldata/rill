@@ -40,7 +40,7 @@ export function generateVLFunnelChartSpec(
 
   const yEncoding = createPositionEncoding(config.stage, data);
   const tooltip = createDefaultTooltipEncoding(
-    [config.measure, config.stage],
+    [config.stage, config.measure],
     data,
   );
 

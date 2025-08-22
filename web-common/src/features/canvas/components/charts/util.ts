@@ -14,6 +14,7 @@ import type { Config } from "vega-lite";
 import { CHART_CONFIG, type ChartSpec } from "./";
 import type {
   ChartDataResult,
+  ChartDomainValues,
   ChartSortDirection,
   ChartType,
   FieldConfig,
@@ -34,10 +35,6 @@ export function generateSpec(
 ) {
   if (data.isFetching || data.error) return {};
   return CHART_CONFIG[chartType]?.generateSpec(rillChartSpec, data);
-}
-
-export function isChartLineLike(chartType: ChartType) {
-  return chartType === "line_chart" || chartType === "area_chart";
 }
 
 export function mergedVlConfig(
@@ -73,7 +70,7 @@ export interface FieldsByType {
 }
 
 export function getFieldsByType(spec: ChartSpec): FieldsByType {
-  const measures: string[] = [];
+  let measures: string[] = [];
   const dimensions: string[] = [];
   const timeDimensions: string[] = [];
 
@@ -110,6 +107,10 @@ export function getFieldsByType(spec: ChartSpec): FieldsByType {
   };
 
   checkFields(spec);
+
+  if ("measures" in spec && Array.isArray(spec.measures)) {
+    measures = spec.measures;
+  }
   return {
     measures,
     dimensions,
@@ -220,7 +221,8 @@ export function getLinkStateForTimeDimensionDetail(
     };
 
   const hasXAxis = "x" in spec;
-  if (!hasXAxis)
+  const hasYAxis = "y" in spec;
+  if (!hasXAxis || !hasYAxis)
     return {
       canLink: false,
     };
@@ -266,6 +268,24 @@ export function getColorForValues(
         COMPARIONS_COLORS[index % COMPARIONS_COLORS.length],
     };
   });
+
+  return colorMapping;
+}
+
+export function getColorMappingForChart(
+  chartSpec: ChartSpec,
+  domainValues: ChartDomainValues | undefined,
+): { value: string; color: string }[] | undefined {
+  if (!("color" in chartSpec) || !domainValues) return undefined;
+  const colorField = chartSpec.color;
+
+  let colorMapping: { value: string; color: string }[] | undefined;
+  if (isFieldConfig(colorField)) {
+    colorMapping = getColorForValues(
+      domainValues[colorField.field],
+      colorField.colorMapping,
+    );
+  }
 
   return colorMapping;
 }

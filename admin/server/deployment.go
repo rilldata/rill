@@ -377,6 +377,7 @@ func (s *Server) CreateDeployment(ctx context.Context, req *adminv1.CreateDeploy
 			Name:                 proj.Name,
 			Description:          proj.Description,
 			Public:               proj.Public,
+			DirectoryName:        proj.DirectoryName,
 			Provisioner:          proj.Provisioner,
 			ArchiveAssetID:       proj.ArchiveAssetID,
 			GitRemote:            proj.GitRemote,
