@@ -483,7 +483,7 @@ type: connector # Must be `connector` (required)
 driver: duckdb # Must be `motherduck` _(required)_
 path: "md:my_database" # Path to your MD database  
 schema_name: "my_schema" # Define your schema if not main, uses main by default  
-init_sql: "INSTALL 'motherduck';                           LOAD 'motherduck';                              SET motherduck_token='{{ .env.motherduck_token }}';  \n" # Install and load the MotherDuck extension
+init_sql: "INSTALL 'motherduck'; LOAD 'motherduck'; SET motherduck_token='{{ .env.motherduck_token }}';" # Install and load the MotherDuck extension                                 
 ```
 
 ## MySQL
@@ -530,6 +530,43 @@ database: "mydatabase" # Name of the MySQL database
 user: "myusername" # Username for authentication  
 password: "mypassword" # Password for authentication  
 ssl_mode: "DISABLED" # SSL mode can be DISABLED, PREFERRED or REQUIRED
+```
+
+## OpenAPI
+
+### `driver`
+
+_[string]_ - The driver type, must be set to "openapi" 
+
+### `api_key`
+
+_[string]_ - API key for connecting to OpenAI _(required)_
+
+### `model`
+
+_[string]_ - The OpenAI model to use (e.g., 'gpt-4o') 
+
+### `base_url`
+
+_[string]_ - The base URL for the OpenAI API (e.g., 'https://api.openai.com/v1') 
+
+### `api_type`
+
+_[string]_ - The type of OpenAI API to use 
+
+### `api_version`
+
+_[string]_ - The version of the OpenAI API to use (e.g., '2023-05-15'). Required when API Type is AZURE or AZURE_AD 
+
+```yaml
+# Example: OpenAPI connector configuration
+type: connector # Must be `connector` (required)
+driver: openapi # Must be `openapi` _(required)_
+api_key: "my-api-key" # API key for connecting to OpenAI  
+model: "gpt-4o" # The OpenAI model to use (e.g., 'gpt-4o')  
+base_url: "https://api.openai.com/v1" # The base URL for the OpenAI API (e.g., 'https://api.openai.com/v1')  
+api_type: "openai" # The type of OpenAI API to use  
+api_version: "2023-05-15" # The version of the OpenAI API to use (e.g., '2023-05-15'). Required when API Type is AZURE or AZURE_AD  
 ```
 
 ## Pinot
@@ -826,41 +863,4 @@ _[string]_ - DSN(Data Source Name) for the sqlite connection _(required)_
 type: connector # Must be `connector` (required)
 driver: sqlite # Must be `sqlite` _(required)_
 dsn: "file:mydatabase.db" # DSN for the sqlite connection
-```
-
-## OpenAPI
-
-### `driver`
-
-_[string]_ - The driver type, must be set to "openapi" 
-
-### `api_key`
-
-_[string]_ - API key for connecting to OpenAI _(required)_
-
-### `model`
-
-_[string]_ - The OpenAI model to use (e.g., 'gpt-4o') 
-
-### `base_url`
-
-_[string]_ - The base URL for the OpenAI API (e.g., 'https://api.openai.com/v1') 
-
-### `api_type`
-
-_[string]_ - The type of OpenAI API to use 
-
-### `api_version`
-
-_[string]_ - The version of the OpenAI API to use (e.g., '2023-05-15'). Required when API Type is AZURE or AZURE_AD 
-
-```yaml
-# Example: OpenAPI connector configuration
-type: connector # Must be `connector` (required)
-driver: openapi # Must be `openapi` _(required)_
-api_key: "my-api-key" # API key for connecting to OpenAI  
-model: "gpt-4o" # The OpenAI model to use (e.g., 'gpt-4o')  
-base_url: "https://api.openai.com/v1" # The base URL for the OpenAI API (e.g., 'https://api.openai.com/v1')  
-api_type: "openai" # The type of OpenAI API to use  
-api_version: "2023-05-15" # The version of the OpenAI API to use (e.g., '2023-05-15'). Required when API Type is AZURE or AZURE_AD  
 ```

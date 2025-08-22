@@ -506,41 +506,7 @@ func generateDoc(sidebarPosition, level int, node *yaml.Node, indent string, req
 		}
 	}
 
-	// Definitions (for connectors)
-	if definitions := getNodeForKey(node, "definitions"); definitions != nil && definitions.Kind == yaml.MappingNode && id == "connectors" && level == 1 {
-		for i := 0; i < len(definitions.Content); i += 2 {
-			connectorDef := definitions.Content[i+1]
 
-			title := getScalarValue(connectorDef, "title")
-			if title != "" {
-				doc.WriteString(fmt.Sprintf("\n\n## %s\n\n", title))
-				// Add description first
-				description := getPrintableDescription(connectorDef, indent, "")
-				if description != "" {
-					doc.WriteString(fmt.Sprintf("%s\n\n", description))
-				}
-			}
-
-			// Generate the connector definition documentation (properties, etc.) but skip the header
-			// We need to process properties manually to avoid duplicate headers
-			if properties := getNodeForKey(connectorDef, "properties"); properties != nil && properties.Kind == yaml.MappingNode {
-				for j := 0; j < len(properties.Content); j += 2 {
-					propName := properties.Content[j].Value
-					propValue := properties.Content[j+1]
-					required := ""
-					if requiredFields := getRequiredMapFromNode(connectorDef); requiredFields[propName] {
-						required = "_(required)_"
-					}
-					// changed to #### so its not in the sidebar, and more compact
-					doc.WriteString(fmt.Sprintf("\n\n#### `%s`\n\n", propName))
-					doc.WriteString(fmt.Sprintf("%s - %s %s",
-						getPrintableType(propValue),
-						getPrintableDescription(propValue, indent, "(no description)"),
-						required))
-				}
-			}
-		}
-	}
 	// Examples
 	if examples := getNodeForKey(node, "examples"); examples != nil && currentLevel == 0 {
 		doc.WriteString("\n\n## Examples")
