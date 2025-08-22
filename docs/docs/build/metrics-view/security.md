@@ -99,20 +99,20 @@ security:
 
 When combining access policies from project defaults and object-specific policies, remember that the object level policies will overwrite the project level ones. Dashboard and metrics ciew policies are binary logically ANDed.
  
-Not behaving as you're expecting? See our [troubleshooting guide.](/build/debugging/dashboard-access)
+<!-- Not behaving as you're expecting? See our [troubleshooting guide.](/build/debugging/dashboard-access) -->
 
 :::
 
 ## Dashboard Access
 
-Dashboards also have an `access` key that can override the metrics view access rules. Both [explore](/build/dashboards/#define-dashboard-access) and [canvas](/build/canvas/#define-dashboard-access) dashboards can set the following:
+Dashboards also have an `access` key that can add additional security to the metrics view. Both [explore](/build/dashboards/#define-dashboard-access) and [canvas](/build/canvas/#define-dashboard-access) dashboards can set the following:
 
 ```yaml
 security:
   access: true
 ```
 
-This is useful if you want to apply specific rules to the metrics view for metrics SQL API access, but want different rules for the visual dashboard in Rill.
+This will logically AND with your metrics view's access so ensure that a user who needs access to the dashboard passes **both** conditions.
 
 :::tip complicated set-ups
 

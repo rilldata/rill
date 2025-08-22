@@ -4,7 +4,7 @@ sidebar_label: Build
 sidebar_position: 0
 ---
 
-Rill provides the user the option to build various types of models based on different use cases.nTake a look through the list of available types of models!
+Rill provides the user the option to build various types of models based on different use cases. Take a look through the list of available types of models!
 
 
 ### Fundamentals 

@@ -43,14 +43,7 @@ defaults: # define all the defaults within here, was default_* in previous dashb
 
 ## Define Dashboard Access
 
-Along with [metrics views security policies](/build/metrics-view/security), you can set access on the dashboard level. Access on dashboards will override the access rules in metrics views. This might be useful if there are a few dashboards that you want to limit to a set of users with a specific set of dimensions.
-
-Or, the dashboard needs some QA by the team with [full data](/connect/templating) before sharing with the rest of the team.
-
-```yaml
-security:
-  access: '{{ has "partners" .user.groups }}' # only dashboard access can be defined here, other security policies must be set on the metrics view
-```
+Along with [metrics views security policies](/build/metrics-view/security), you can set access on the dashboard level. Access policies will be logically ANDed with metrics view so if a user doesn't pass both, they wont get access to the dashboard. For more information, see [Data Access](/build/metrics-view/security#dashboard-access) for more information.
 
 :::note Dashboard Properties
 

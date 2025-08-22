@@ -4,14 +4,28 @@ sidebar_label: Source Models
 sidebar_position: 10
 ---
 
-After creating a connector to your data source, you'll need to create a model to bring that data into Rill. This can be implemented as either a SQL model with [defined connector parameters](/build/models/sql-models#setting-the-connector--olap-engine) or as a YAML configuration file. This guide focuses on YAML-based source models.
+After creating a connector to your data source, you'll need to create a model to bring that data into Rill. This can be implemented as either a SQL model with [defined connector parameters](/build/models/sql-models#setting-the-connector) or as a YAML configuration file. This guide focuses on YAML-based source models.
 
 ## Overview
 
-Once you can see your tables through the connector, you can directly create a Rill model and ingest the source data. Rill includes built-in safeguards to prevent excessive costs and time consumption during the initial data read. These safeguards are configured through the `dev:` partition settings. For more information on dev/prod configurations in models, see [Dev/Prod Environments](/build/models/templating).
+Once you can see your tables through the connector, you can directly create a Rill model and ingest the source data. Rill includes built-in safeguards to prevent excessive costs and time consumption during the initial data read. These safeguards are configured through the `dev:` parameter settings. For more information on dev/prod configurations in models, see [Dev/Prod Environments](/build/models/templating).
 
-<img src="/img/deploy/templating/gcs-env-example.png" class="rounded-gif" alt="GCS Environment Configuration Example" />
-<br />
+```yaml
+# Model YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/models
+
+type: model
+materialize: true
+
+connector: "duckdb"
+
+dev:
+  sql: |
+    select * from read_csv('gs://my-bucket/path/to/file.csv', auto_detect=true, ignore_errors=1, header=true) limit 10000
+
+sql: |
+  select * from read_csv('gs://my-bucket/path/to/file.csv', auto_detect=true, ignore_errors=1, header=true)
+```
 
 ## Source Model Configuration
 
@@ -36,25 +50,63 @@ refresh:
 
 For more information, see [Scheduled Refreshes](/build/models/data-refresh).
 
-## Data Preview and Validation
 
-### Table Preview
+## Examples
 
-Rill automatically generates a preview of your data (first 150 rows) to help verify that the output table structure is correct and identify any potential issues that need to be addressed in the SQL configuration, such as data type detection problems.
+### Big Query Model
+```yaml
+# Model YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/models
 
-### Schema Details
+type: model
+materialize: true
 
-The left panel displays comprehensive information about your dataset and column contents:
+connector: bigquery
 
-- **Dataset Overview**: Total row and column counts
-- **Data Quality Metrics**: Number of dropped rows and columns
-- **Column Analysis**: 
-  - Column names and data types
-  - Distinct value counts for string columns
-  - Basic numeric statistics (minimum, maximum, median, etc.)
+dev:
+  sql: select * from project_id.dataset_name.table_name limit 10000
 
-This information helps you validate your model configuration and ensure data quality before proceeding with the full data ingestion.
+sql: select * from project_id.dataset_name.table_name
 
+```
+
+### Snowflake Model
+```yaml
+# Model YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/models
+
+type: model
+materialize: true
+
+connector: "snowflake"
+
+dev:
+  sql: select * from database_name.schema_name.table_namelimit 10000
+
+sql: select * from database_name.schema_name.table_name
+
+```
+
+
+### S3 Model
+```yaml
+# Model YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/models
+
+type: model
+materialize: true
+
+connector: "duckdb"
+
+dev:
+  sql: |
+    select * from read_csv('s3://my-bucket/path/to/file.csv', auto_detect=true, ignore_errors=1, header=true) limit 10000
+
+sql: |
+  select * from read_csv('s3://my-bucket/path/to/file.csv', auto_detect=true, ignore_errors=1, header=true)
+```
+
+For more information, see our [model reference documentation](/reference/project-files/models)!
 
 ## Next Steps
 

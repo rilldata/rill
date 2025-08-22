@@ -80,6 +80,27 @@ If unsure, we would generally recommend leaving the defaults and/or [reaching ou
 
 :::
 
+
+## Data Preview and Validation
+
+### Table Preview
+
+Rill automatically generates a preview of your data (first 150 rows) to help verify that the output table structure is correct and identify any potential issues that need to be addressed in the SQL configuration, such as data type detection problems.
+
+### Schema Details
+
+The right panel displays comprehensive information about your dataset and column contents:
+
+- **Dataset Overview**: Total row and column counts
+- **Data Quality Metrics**: Number of dropped rows and columns
+- **Column Analysis**: 
+  - Column names and data types
+  - Distinct value counts for string columns
+  - Basic numeric statistics (minimum, maximum, median, etc.)
+
+This information helps you validate your model configuration and ensure data quality before proceeding with the full data ingestion.
+
+
 ## SQL Models
 
 ### When to use SQL Models?

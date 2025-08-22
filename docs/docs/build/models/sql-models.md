@@ -18,6 +18,7 @@ In most cases, objects are represented in Rill as YAML files. Models are unique 
 
 ```sql
 -- @property: value
+select * from users
 ```
 
 We will cover different available configurable properties in the below sections.
@@ -29,11 +30,28 @@ By default, any new model that is created in a Rill project will populate a corr
 For consistency or documentation purposes, if you'd like to annotate your model resource as well with the `type` property, you can do so by adding the following to the top of your `<model_name>.sql`:
 ```sql
 -- @type: model
+select * from orders
 ```
 
-### Setting the Connector / OLAP Engine
+### Setting the Connector
 
-Another parameter that you can define is the connector parameter. This will indicate which connection credentials to use. This allows you to define multiple connectors to different sources that require unique credentials.
+Another parameter that you can define is the connector parameter. This will indicate which connection credentials to use. This allows you to define multiple connectors to different sources that require unique credentials. By default, the output of the table will be written to the default [OLAP engine](/connect/olap#olap-engines).
 ```sql
 -- @connector: bigquery
+select * from project_id.dataset_name.table_name
+```
+
+```sql
+-- @connector: postgres
+SELECT * FROM mydb.public.users
+
+```
+
+```
+-- Model SQL
+-- Reference documentation: https://docs.rilldata.com/reference/project-files/models
+-- @connector: clickhouse
+-- @materialize: true
+-- @output: { connector: "clickhouse" }
+
 ```
