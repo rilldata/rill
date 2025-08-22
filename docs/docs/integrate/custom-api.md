@@ -5,7 +5,7 @@ sidebar_label: "Custom API Integration"
 sidebar_position: 20
 ---
 
-Rill exposes [custom APIs](/integrate/custom-apis/index.md) you have created with `type: api` as HTTP endpoints 
+Rill exposes [custom APIs](/build/custom-apis) you have created with `type: api` as HTTP endpoints 
 at `https://api.rilldata.com/v1/organizations/<org-name>/projects/<project-name>/runtime/api/<name of api>`.
 
 ## Accessing custom APIs
