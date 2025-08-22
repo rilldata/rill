@@ -32,7 +32,8 @@ import (
 
 const (
 	// If changing this value also update maxAcquiredConnDuration in runtime/drivers/duckdb/duckdb.go
-	_modelDefaultTimeout = 3 * time.Hour
+	_modelDefaultTimeout  = 3 * time.Hour
+	_modelDefaultMaxDelay = 5 * time.Minute
 
 	_modelSyncPartitionsBatchSize    = 1000
 	_modelPendingPartitionsBatchSize = 1000
@@ -1772,9 +1773,8 @@ func (r *ModelReconciler) calculateRetryDelay(attempt uint32, retry *runtimev1.R
 		multiplier := math.Pow(2, float64(attempt))
 		exponentialDelay := time.Duration(float64(delay) * multiplier)
 
-		maxDelay := 5 * time.Minute // 5 minutes
-		if exponentialDelay > maxDelay {
-			exponentialDelay = maxDelay
+		if exponentialDelay > _modelDefaultMaxDelay {
+			exponentialDelay = _modelDefaultMaxDelay
 		}
 
 		return exponentialDelay
