@@ -4,8 +4,7 @@ title: API YAML
 sidebar_position: 38
 ---
 
-In your Rill project directory, create a new file name `<api-name>.yaml` in the `apis` directory containing a custom API definition.
-See comprehensive documentation on how to define and use [custom APIs](/build/custom-apis)
+Custom APIs allow you to create endpoints that can be called to retrieve or manipulate data.
 
 ## Properties
 
@@ -76,25 +75,11 @@ _[object]_ - Defines [security rules and access control policies](/manage/securi
 _[boolean]_ - Flag to control security inheritance 
 
 ## One of Properties Options
-- [Properties](#properties)
-  - [`type`](#type)
-  - [`openapi`](#openapi)
-  - [`security`](#security)
-  - [`skip_nested_security`](#skip_nested_security)
-- [One of Properties Options](#one-of-properties-options)
 - [SQL Query](#sql-query)
-  - [`sql`](#sql)
-  - [`connector`](#connector)
 - [Metrics View Query](#metrics-view-query)
-  - [`metrics_sql`](#metrics_sql)
 - [Custom API Call](#custom-api-call)
-  - [`api`](#api)
-  - [`args`](#args)
 - [File Glob Query](#file-glob-query)
-  - [`glob`](#glob)
-  - [`connector`](#connector-1)
 - [Resource Status Check](#resource-status-check)
-  - [`resource_status`](#resource_status)
 
 ## SQL Query
 
