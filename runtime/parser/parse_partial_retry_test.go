@@ -24,7 +24,7 @@ func TestParseRetryYAML(t *testing.T) {
 			name: "valid custom input",
 			input: &RetryYAML{
 				Attempts:           uint32Ptr(5),
-				Delay:              uint32Ptr(10),
+				Delay:              stringPtr("10s"),
 				ExponentialBackoff: boolPtr(false),
 				IfErrorMatches:     []string{".*Timeout.*"},
 			},
@@ -46,7 +46,8 @@ func TestParseRetryYAML(t *testing.T) {
 				Delay:              5,    // default
 				ExponentialBackoff: true, // default
 				IfErrorMatches: []string{
-					".*", // Match any error by default
+					".*OvercommitTracker.*", // Memory pressure
+					".*Bad Gateway.*",       // 502 Bad Gateway
 				},
 			},
 			wantErr: false,
@@ -54,7 +55,7 @@ func TestParseRetryYAML(t *testing.T) {
 		{
 			name: "exceeding max attempts returns error",
 			input: &RetryYAML{
-				Attempts: uint32Ptr(maxRetryAttempts + 1),
+				Attempts: uint32Ptr(11), // Max is 10, so 11 should fail
 			},
 			want:    nil,
 			wantErr: true,
@@ -62,22 +63,23 @@ func TestParseRetryYAML(t *testing.T) {
 		{
 			name: "zero delay is valid (immediate retry)",
 			input: &RetryYAML{
-				Delay: uint32Ptr(0),
+				Delay: stringPtr("0s"),
 			},
 			want: &runtimev1.Retry{
 				Attempts:           3, // default
 				Delay:              0,
 				ExponentialBackoff: true, // default
 				IfErrorMatches: []string{
-					".*", // Match any error by default
+					".*OvercommitTracker.*", // Memory pressure
+					".*Bad Gateway.*",       // 502 Bad Gateway
 				},
 			},
 			wantErr: false,
 		},
 		{
-			name: "exceeding max delay returns error",
+			name: "invalid delay format returns error",
 			input: &RetryYAML{
-				Delay: uint32Ptr(maxRetryDelay + 1),
+				Delay: stringPtr("invalid"),
 			},
 			want:    nil,
 			wantErr: true,
@@ -90,7 +92,8 @@ func TestParseRetryYAML(t *testing.T) {
 				Delay:              5,    // default
 				ExponentialBackoff: true, // default
 				IfErrorMatches: []string{
-					".*", // Match any error by default
+					".*OvercommitTracker.*", // Memory pressure
+					".*Bad Gateway.*",       // 502 Bad Gateway
 				},
 			},
 			wantErr: false,
@@ -102,6 +105,27 @@ func TestParseRetryYAML(t *testing.T) {
 			},
 			want:    nil,
 			wantErr: true,
+		},
+		{
+			name: "partial retry on specific errors",
+			input: &RetryYAML{
+				Attempts: uint32Ptr(3),
+				Delay:    stringPtr("5s"),
+				IfErrorMatches: []string{
+					".*OvercommitTracker.*", // Memory pressure (fixed typo)
+					".*Bad Gateway.*",       // 502 Bad Gateway
+				},
+			},
+			want: &runtimev1.Retry{
+				Attempts:           3,
+				Delay:              5,
+				ExponentialBackoff: true,
+				IfErrorMatches: []string{
+					".*OvercommitTracker.*", // Memory pressure
+					".*Bad Gateway.*",       // 502 Bad Gateway
+				},
+			},
+			wantErr: false,
 		},
 	}
 
@@ -127,5 +151,10 @@ func uint32Ptr(v uint32) *uint32 {
 
 // Helper function to create a pointer to bool
 func boolPtr(v bool) *bool {
+	return &v
+}
+
+// Helper function to create a pointer to string
+func stringPtr(v string) *string {
 	return &v
 }

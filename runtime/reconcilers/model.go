@@ -1236,9 +1236,9 @@ func (r *ModelReconciler) executeSingle(ctx context.Context, executor *wrappedMo
 	}
 
 	// Execute with retry logic
-	maxAttempts := uint32(1) // Default: no retries
-	if mdl.Spec.Retry != nil && mdl.Spec.Retry.Attempts > 0 {
-		maxAttempts = mdl.Spec.Retry.Attempts
+	maxAttempts := uint32(1)
+	if mdl.Spec.Retry != nil {
+		maxAttempts = mdl.Spec.Retry.Attempts + 1
 	}
 
 	var lastErr error
@@ -1770,7 +1770,14 @@ func (r *ModelReconciler) calculateRetryDelay(attempt uint32, retry *runtimev1.R
 
 	if retry.ExponentialBackoff {
 		multiplier := math.Pow(2, float64(attempt))
-		return time.Duration(float64(delay) * multiplier)
+		exponentialDelay := time.Duration(float64(delay) * multiplier)
+
+		maxDelay := 5 * time.Minute // 5 minutes
+		if exponentialDelay > maxDelay {
+			exponentialDelay = maxDelay
+		}
+
+		return exponentialDelay
 	}
 
 	return delay

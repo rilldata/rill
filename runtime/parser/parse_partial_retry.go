@@ -3,13 +3,9 @@ package parser
 import (
 	"fmt"
 	"regexp"
+	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-)
-
-const (
-	maxRetryAttempts = 10
-	maxRetryDelay    = 300 // 5 minutes
 )
 
 // RetryYAML defines the YAML structure for retry configuration.
@@ -17,7 +13,7 @@ type RetryYAML struct {
 	// Retry attempts
 	Attempts *uint32 `yaml:"attempts" mapstructure:"attempts"`
 	// Delay between retries
-	Delay *uint32 `yaml:"delay" mapstructure:"delay"`
+	Delay *string `yaml:"delay"`
 	// Enable exponential backoff
 	ExponentialBackoff *bool `yaml:"exponential_backoff" mapstructure:"exponential_backoff"`
 	// Errors to match
@@ -37,24 +33,26 @@ func (p *Parser) parseRetryYAML(raw *RetryYAML) (*runtimev1.Retry, error) {
 		Delay:              5,    // Default 5 second delay
 		ExponentialBackoff: true, // Default enable exponential backoff
 		IfErrorMatches: []string{
-			".*", // Match any error by default
+			".*OvercommitTracker.*", // Memory pressure
+			".*Bad Gateway.*",       // 502 Bad Gateway
 		},
 	}
 
 	// Set attempts if provided, otherwise keep default
 	if raw.Attempts != nil {
-		if *raw.Attempts > maxRetryAttempts {
-			return nil, fmt.Errorf("retry attempts cannot exceed the maximum of %d", maxRetryAttempts)
+		if *raw.Attempts > 10 {
+			return nil, fmt.Errorf("retry attempts cannot exceed the maximum of %d", 10)
 		}
-		r.Attempts = *raw.Attempts // This allows 0
+		r.Attempts = *raw.Attempts
 	}
 
 	// Set delay if provided, otherwise keep default
 	if raw.Delay != nil {
-		if *raw.Delay > maxRetryDelay {
-			return nil, fmt.Errorf("retry delay cannot exceed the maximum of %d seconds", maxRetryDelay)
+		duration, err := time.ParseDuration(*raw.Delay)
+		if err != nil {
+			return nil, fmt.Errorf("invalid retry delay format: %w", err)
 		}
-		r.Delay = *raw.Delay
+		r.Delay = uint32(duration.Seconds())
 	}
 
 	// Always set ExponentialBackoff from raw (allows explicit false)
@@ -72,7 +70,6 @@ func (p *Parser) parseRetryYAML(raw *RetryYAML) (*runtimev1.Retry, error) {
 		}
 		r.IfErrorMatches = raw.IfErrorMatches
 	}
-	// If not provided, keep the default IfErrorMatches values
 
 	return r, nil
 }
