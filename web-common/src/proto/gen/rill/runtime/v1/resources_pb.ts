@@ -2017,6 +2017,12 @@ export class SecurityRule extends Message<SecurityRule> {
      */
     value: SecurityRuleRowFilter;
     case: "rowFilter";
+  } | {
+    /**
+     * @generated from field: rill.runtime.v1.SecurityRuleTransitiveAccess transitive_access = 4;
+     */
+    value: SecurityRuleTransitiveAccess;
+    case: "transitiveAccess";
   } | { case: undefined; value?: undefined } = { case: undefined };
 
   constructor(data?: PartialMessage<SecurityRule>) {
@@ -2030,6 +2036,7 @@ export class SecurityRule extends Message<SecurityRule> {
     { no: 1, name: "access", kind: "message", T: SecurityRuleAccess, oneof: "rule" },
     { no: 2, name: "field_access", kind: "message", T: SecurityRuleFieldAccess, oneof: "rule" },
     { no: 3, name: "row_filter", kind: "message", T: SecurityRuleRowFilter, oneof: "rule" },
+    { no: 4, name: "transitive_access", kind: "message", T: SecurityRuleTransitiveAccess, oneof: "rule" },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SecurityRule {
@@ -2197,6 +2204,45 @@ export class SecurityRuleRowFilter extends Message<SecurityRuleRowFilter> {
 
   static equals(a: SecurityRuleRowFilter | PlainMessage<SecurityRuleRowFilter> | undefined, b: SecurityRuleRowFilter | PlainMessage<SecurityRuleRowFilter> | undefined): boolean {
     return proto3.util.equals(SecurityRuleRowFilter, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.SecurityRuleTransitiveAccess
+ */
+export class SecurityRuleTransitiveAccess extends Message<SecurityRuleTransitiveAccess> {
+  /**
+   * this rules resolves to rules that provides access to whatever is needed to access this resource. Currently only used for reports and alerts.
+   *
+   * @generated from field: rill.runtime.v1.ResourceName resource = 1;
+   */
+  resource?: ResourceName;
+
+  constructor(data?: PartialMessage<SecurityRuleTransitiveAccess>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.SecurityRuleTransitiveAccess";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "resource", kind: "message", T: ResourceName },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SecurityRuleTransitiveAccess {
+    return new SecurityRuleTransitiveAccess().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SecurityRuleTransitiveAccess {
+    return new SecurityRuleTransitiveAccess().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SecurityRuleTransitiveAccess {
+    return new SecurityRuleTransitiveAccess().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SecurityRuleTransitiveAccess | PlainMessage<SecurityRuleTransitiveAccess> | undefined, b: SecurityRuleTransitiveAccess | PlainMessage<SecurityRuleTransitiveAccess> | undefined): boolean {
+    return proto3.util.equals(SecurityRuleTransitiveAccess, a, b);
   }
 }
 

@@ -125,6 +125,40 @@ func (r *metricsResolver) Validate(ctx context.Context) error {
 	return r.executor.ValidateQuery(r.query)
 }
 
+// MetricsViewSecurityFields returns the list of accessible fields for security rule expansion.
+func (r *metricsResolver) MetricsViewSecurityFields() []string {
+	// Extract accessible fields from the query
+	var fields []string
+
+	// Add dimensions
+	for _, dim := range r.query.Dimensions {
+		fields = append(fields, dim.Name)
+	}
+
+	// Add measures
+	for _, meas := range r.query.Measures {
+		fields = append(fields, meas.Name)
+	}
+
+	// Add time dimension if present
+	if r.query.TimeRange != nil && r.query.TimeRange.TimeDimension != "" {
+		fields = append(fields, r.query.TimeRange.TimeDimension)
+	}
+
+	return fields
+}
+
+// SecuredRowFilter returns the row filter for security rule expansion.
+func (r *metricsResolver) SecuredRowFilter() string {
+	// Convert the where expression to SQL if present
+	if r.query.Where != nil {
+		// For now, return empty string as converting Expression to SQL is complex
+		// This can be enhanced later to convert the expression to SQL
+		return ""
+	}
+	return ""
+}
+
 func (r *metricsResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverResult, error) {
 	if r.mv.TimeDimension != "" || (r.query.TimeRange != nil && r.query.TimeRange.TimeDimension != "") {
 		timeDim := ""

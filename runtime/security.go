@@ -1,20 +1,25 @@
 package runtime
 
 import (
+	"context"
 	"crypto/md5"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/hashicorp/golang-lru/simplelru"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers/slack"
 	"github.com/rilldata/rill/runtime/parser"
+	"github.com/rilldata/rill/runtime/pkg/duckdbsql"
 	"github.com/rilldata/rill/runtime/pkg/expressionpb"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"go.uber.org/zap"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 )
 
@@ -179,15 +184,16 @@ type securityEngine struct {
 	cache  *simplelru.LRU
 	lock   sync.Mutex
 	logger *zap.Logger
+	rt     *Runtime
 }
 
 // newSecurityEngine creates a new security engine with a given cache size.
-func newSecurityEngine(cacheSize int, logger *zap.Logger) *securityEngine {
+func newSecurityEngine(cacheSize int, logger *zap.Logger, rt *Runtime) *securityEngine {
 	cache, err := simplelru.NewLRU(cacheSize, nil)
 	if err != nil {
 		panic(err)
 	}
-	return &securityEngine{cache: cache, logger: logger}
+	return &securityEngine{cache: cache, logger: logger, rt: rt}
 }
 
 // resolveSecurity resolves the security rules for a given resource and user context.
@@ -197,8 +203,14 @@ func (p *securityEngine) resolveSecurity(instanceID, environment string, vars ma
 		return ResolvedSecurityOpen, nil
 	}
 
+	rules, err := p.expandRules(context.Background(), instanceID, claims)
+	if err != nil {
+		return nil, fmt.Errorf("failed to expand security rules: %w", err)
+	}
+	claims.AdditionalRules = rules
+
 	// Combine rules with any contained in the resource itself
-	rules := p.resolveRules(claims, r)
+	rules = p.resolveRules(claims, r)
 
 	// Exit early if all rules are nil
 	var validRule bool
@@ -607,6 +619,175 @@ func (p *securityEngine) applySecurityRuleRowFilter(res *ResolvedSecurity, _ *ru
 	}
 
 	return nil
+}
+
+func (p *securityEngine) expandRules(ctx context.Context, instanceID string, claims *SecurityClaims) ([]*runtimev1.SecurityRule, error) {
+	var rules []*runtimev1.SecurityRule
+	for _, rule := range claims.AdditionalRules {
+		if rule.GetTransitiveAccess() == nil {
+			rules = append(rules, rule)
+			continue
+		}
+		// If the rule is a transitive access rule, we need to resolve it
+		resName := rule.GetTransitiveAccess().GetResource()
+		if resName == nil {
+			return nil, fmt.Errorf("transitive access rule has no resource")
+		}
+		ctr, err := p.rt.Controller(ctx, instanceID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get controller: %w", err)
+		}
+		res, err := ctr.Get(ctx, resName, false)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get resource %q of kind %q: %w", resName.Name, resName.Kind, err)
+		}
+		switch res.GetResource().(type) {
+		case *runtimev1.Resource_Report:
+			resolvedRules, err := p.resolveTransitiveAccessRuleForReport(ctx, instanceID, claims, res)
+			if err != nil {
+				return nil, fmt.Errorf("failed to resolve transitive access rule for report: %w", err)
+			}
+			rules = append(rules, resolvedRules...)
+		default:
+			return nil, fmt.Errorf("transitive access rule for resource kind %q is not supported", res.Meta.Name.Kind)
+		}
+	}
+	return rules, nil
+}
+
+// resolveTransitiveAccessRuleForReport resolves transitive access rules for a report resource.
+// This determines all the resources needed to access the report like the underlying metrics view, explore, etc. and adds the corresponding security rules to the list of rules to be applied.
+// Also use the underlying query to determine the fields that are accessible in the report and where clause that needs to be applied.
+// Restricts access to these fields and rows by adding corresponding field access and row filter rules to the resolved security rules.
+func (p *securityEngine) resolveTransitiveAccessRuleForReport(ctx context.Context, instanceID string, claims *SecurityClaims, res *runtimev1.Resource) ([]*runtimev1.SecurityRule, error) {
+	var rules []*runtimev1.SecurityRule
+
+	report := res.GetReport()
+	if report == nil {
+		return nil, fmt.Errorf("resource is not a report")
+	}
+
+	spec := report.GetSpec()
+	if spec == nil {
+		return nil, fmt.Errorf("report spec is nil")
+	}
+	if spec.QueryName != "" {
+		initializer, ok := ResolverInitializers["legacy_metrics"]
+		if !ok {
+			return nil, fmt.Errorf("no resolver found for name 'legacy_metrics'")
+		}
+		resolver, err := initializer(ctx, &ResolverOptions{
+			Runtime:    p.rt,
+			InstanceID: instanceID,
+			Properties: map[string]any{
+				"query_name":      spec.QueryName,
+				"query_args_json": spec.QueryArgsJson,
+			},
+			Claims:    claims,
+			ForExport: false,
+		})
+		if err != nil {
+			return nil, err
+		}
+		defer resolver.Close()
+
+		// explicitly allow access to the report itself
+		rules = append(rules, &runtimev1.SecurityRule{
+			Rule: &runtimev1.SecurityRule_Access{
+				Access: &runtimev1.SecurityRuleAccess{
+					Condition: fmt.Sprintf("'{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s", ResourceKindReport, duckdbsql.EscapeStringValue(strings.ToLower(res.Meta.Name.Name))),
+					Allow:     true,
+				},
+			},
+		})
+
+		// deny everything except the report itself, themes, explore, canvas and metrics view
+		var condition strings.Builder
+		// self report
+		condition.WriteString(fmt.Sprintf("('{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s)", ResourceKindReport, duckdbsql.EscapeStringValue(strings.ToLower(res.Meta.Name.Name))))
+		// all themes
+		condition.WriteString(fmt.Sprintf(" OR '{{.self.kind}}'='%s'", ResourceKindTheme))
+
+		// add refs to the security rules
+		mvName := ""
+		refs := resolver.Refs()
+		for _, ref := range refs {
+			condition.WriteString(fmt.Sprintf(" OR ('{{.self.kind}}'=%s AND '{{lower .self.name}}'=%s)", duckdbsql.EscapeStringValue(ref.Kind), duckdbsql.EscapeStringValue(strings.ToLower(ref.Name))))
+			if ref.Kind == ResourceKindMetricsView {
+				mvName = ref.Name
+			}
+		}
+
+		// figure out explore or canvas for the report
+		var explore, canvas string
+		if e, ok := spec.Annotations["explore"]; ok {
+			explore = e
+		}
+		if c, ok := spec.Annotations["canvas"]; ok {
+			canvas = c
+		}
+
+		if explore == "" { // backwards compatibility, try to find explore
+			if path, ok := spec.Annotations["web_open_path"]; ok {
+				// parse path, extract explore name, it will be like /explore/{explore}
+				if strings.HasPrefix(path, "/explore/") {
+					explore = path[9:]
+					if explore[len(explore)-1] == '/' {
+						explore = explore[:len(explore)-1]
+					}
+				}
+			}
+			// still not found, use mv name as explore name
+			if explore == "" {
+				explore = mvName
+			}
+		}
+
+		if explore != "" {
+			condition.WriteString(fmt.Sprintf(" OR ('{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s)", ResourceKindExplore, duckdbsql.EscapeStringValue(strings.ToLower(explore))))
+		}
+		if canvas != "" {
+			condition.WriteString(fmt.Sprintf(" OR ('{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s)", ResourceKindCanvas, duckdbsql.EscapeStringValue(strings.ToLower(canvas))))
+		}
+
+		rules = append(rules, &runtimev1.SecurityRule{
+			Rule: &runtimev1.SecurityRule_Access{
+				Access: &runtimev1.SecurityRuleAccess{
+					Condition: fmt.Sprintf("NOT (%s)", condition.String()),
+					Allow:     false,
+				},
+			},
+		})
+
+		if resolver.SecuredRowFilter() != "" {
+			expr := &runtimev1.Expression{}
+			err := protojson.Unmarshal([]byte(resolver.SecuredRowFilter()), expr)
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "could not unmarshal metrics view filter: %s", err.Error())
+			}
+
+			rules = append(rules, &runtimev1.SecurityRule{
+				Rule: &runtimev1.SecurityRule_RowFilter{
+					RowFilter: &runtimev1.SecurityRuleRowFilter{
+						Expression: expr,
+					},
+				},
+			})
+		}
+
+		if len(resolver.MetricsViewSecurityFields()) > 0 {
+			rules = append(rules, &runtimev1.SecurityRule{
+				Rule: &runtimev1.SecurityRule_FieldAccess{
+					FieldAccess: &runtimev1.SecurityRuleFieldAccess{
+						Fields: resolver.MetricsViewSecurityFields(),
+						Allow:  true,
+					},
+				},
+			})
+		}
+	}
+
+	return rules, nil
 }
 
 // computeCacheKey computes a cache key for a resolved security policy.

@@ -6820,6 +6820,8 @@ definitions:
         $ref: '#/definitions/v1SecurityRuleFieldAccess'
       rowFilter:
         $ref: '#/definitions/v1SecurityRuleRowFilter'
+      transitiveAccess:
+        $ref: '#/definitions/v1SecurityRuleTransitiveAccess'
   v1SecurityRuleAccess:
     type: object
     properties:
@@ -6851,6 +6853,12 @@ definitions:
       expression:
         $ref: '#/definitions/v1Expression'
         title: Regular query expression referencing dimension names
+  v1SecurityRuleTransitiveAccess:
+    type: object
+    properties:
+      resource:
+        $ref: '#/definitions/v1ResourceName'
+        description: this rules resolves to rules that provides access to whatever is needed to access this resource. Currently only used for reports and alerts.
   v1Source:
     type: object
     properties:

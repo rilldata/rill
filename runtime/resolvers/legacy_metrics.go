@@ -28,6 +28,8 @@ type legacyMetricsResolver struct {
 	query           runtime.Query
 	args            *legacyMetricsResolverArgs
 	metricsViewName string
+	fields          []string
+	rowFilter       string
 	logger          *zap.Logger
 }
 
@@ -75,12 +77,20 @@ func newLegacyMetrics(ctx context.Context, opts *runtime.ResolverOptions) (runti
 		return nil, fmt.Errorf("failed to build query: %w", err)
 	}
 
+	// Extract fields and row filter from the query using the queries.SecurityFromQuery helper
+	rowFilter, fields, err := queries.SecurityFromQuery(props.QueryName, props.QueryArgsJSON)
+	if err != nil {
+		return nil, fmt.Errorf("failed to extract accessible fields: %w", err)
+	}
+
 	return &legacyMetricsResolver{
 		runtime:         opts.Runtime,
 		instanceID:      opts.InstanceID,
 		query:           q,
 		args:            args,
 		metricsViewName: metricsViewName,
+		fields:          fields,
+		rowFilter:       rowFilter,
 		logger:          opts.Runtime.Logger,
 	}, nil
 }
@@ -99,6 +109,14 @@ func (r *legacyMetricsResolver) Refs() []*runtimev1.ResourceName {
 
 func (r *legacyMetricsResolver) Validate(ctx context.Context) error {
 	return nil
+}
+
+func (r *legacyMetricsResolver) MetricsViewSecurityFields() []string {
+	return r.fields
+}
+
+func (r *legacyMetricsResolver) SecuredRowFilter() string {
+	return r.rowFilter
 }
 
 func (r *legacyMetricsResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverResult, error) {

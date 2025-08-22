@@ -320,6 +320,7 @@ message SecurityRule {
     SecurityRuleAccess access = 1;
     SecurityRuleFieldAccess field_access = 2;
     SecurityRuleRowFilter row_filter = 3;
+    SecurityRuleTransitiveAccess transitive_access = 4;
   }
 }
   
@@ -339,6 +340,10 @@ message SecurityRuleRowFilter {
   string condition = 1;
   string sql = 2; // Raw SQL expression to apply to the underlying table
   Expression expression = 3; // Regular query expression referencing dimension names
+}
+
+message SecurityRuleTransitiveAccess {
+  ResourceName resource = 1; // this rules resolves to rules that provides access to whatever is needed to access this resource. Currently only used for reports and alerts.
 }
 
 message MetricsViewState {

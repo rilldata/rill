@@ -116,6 +116,18 @@ func (r *metricsViewTimeRangeResolver) Validate(ctx context.Context) error {
 	return nil
 }
 
+// MetricsViewSecurityFields returns the list of accessible fields for security rule expansion.
+func (r *metricsViewTimeRangeResolver) MetricsViewSecurityFields() []string {
+	// For time range resolvers, return empty slice as they don't have field-level security
+	return []string{}
+}
+
+// SecuredRowFilter returns the row filter for security rule expansion.
+func (r *metricsViewTimeRangeResolver) SecuredRowFilter() string {
+	// For time range resolvers, return empty string as they don't have row-level security
+	return ""
+}
+
 func (r *metricsViewTimeRangeResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverResult, error) {
 	ts, err := r.executor.Timestamps(ctx, r.args.TimeDimension)
 	if err != nil {

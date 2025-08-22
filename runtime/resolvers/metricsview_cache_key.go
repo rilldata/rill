@@ -123,6 +123,18 @@ func (r *metricsViewCacheKeyResolver) Validate(ctx context.Context) error {
 	return nil
 }
 
+// MetricsViewSecurityFields returns the list of accessible fields for security rule expansion.
+func (r *metricsViewCacheKeyResolver) MetricsViewSecurityFields() []string {
+	// For cache key resolvers, return empty slice as they don't have field-level security
+	return []string{}
+}
+
+// SecuredRowFilter returns the row filter for security rule expansion.
+func (r *metricsViewCacheKeyResolver) SecuredRowFilter() string {
+	// For cache key resolvers, return empty string as they don't have row-level security
+	return ""
+}
+
 func (r *metricsViewCacheKeyResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverResult, error) {
 	key, ok, err := r.executor.CacheKey(ctx)
 	if err != nil {

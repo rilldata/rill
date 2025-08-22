@@ -172,6 +172,20 @@ func (r *globResolver) Validate(ctx context.Context) error {
 	return nil
 }
 
+// MetricsViewSecurityFields returns the list of accessible fields for security rule expansion.
+func (r *globResolver) MetricsViewSecurityFields() []string {
+	// For glob resolvers, we can't easily determine accessible fields without parsing the SQL
+	// Return empty slice for now - this can be enhanced later with SQL parsing
+	return []string{}
+}
+
+// SecuredRowFilter returns the row filter for security rule expansion.
+func (r *globResolver) SecuredRowFilter() string {
+	// For glob resolvers, we can't easily extract row filters without parsing the SQL
+	// Return empty string for now - this can be enhanced later with SQL parsing
+	return ""
+}
+
 func (r *globResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverResult, error) {
 	h, release, err := r.runtime.AcquireHandle(ctx, r.instanceID, r.props.Connector)
 	if err != nil {

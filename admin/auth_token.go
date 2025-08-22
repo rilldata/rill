@@ -175,20 +175,27 @@ func (t *magicAuthToken) OwnerID() string {
 
 // IssueMagicAuthTokenOptions provides options for IssueMagicAuthToken.
 type IssueMagicAuthTokenOptions struct {
-	ProjectID       string
-	TTL             *time.Duration
-	CreatedByUserID *string
-	Attributes      map[string]any
-	FilterJSON      string
-	Fields          []string
-	State           string
-	DisplayName     string
-	Internal        bool
-	Resources       []database.ResourceName
+	ProjectID                string
+	TTL                      *time.Duration
+	CreatedByUserID          *string
+	Attributes               map[string]any
+	FilterJSON               string
+	Fields                   []string
+	State                    string
+	DisplayName              string
+	Internal                 bool
+	Resources                []database.ResourceName
+	TransitiveAccessResource *database.ResourceName // Optional, used for transitive access
 }
 
 // IssueMagicAuthToken generates and persists a new magic auth token for a project.
 func (s *Service) IssueMagicAuthToken(ctx context.Context, opts *IssueMagicAuthTokenOptions) (AuthToken, error) {
+	if opts.TransitiveAccessResource != nil {
+		if len(opts.Resources) > 0 || opts.FilterJSON != "" || len(opts.Fields) > 0 {
+			return nil, fmt.Errorf("transitive access resource cannot be used with other resources, filter JSON, or fields")
+		}
+	}
+
 	tkn := authtoken.NewRandom(authtoken.TypeMagic)
 
 	var expiresOn *time.Time
@@ -198,19 +205,20 @@ func (s *Service) IssueMagicAuthToken(ctx context.Context, opts *IssueMagicAuthT
 	}
 
 	dat, err := s.DB.InsertMagicAuthToken(ctx, &database.InsertMagicAuthTokenOptions{
-		ID:              tkn.ID.String(),
-		SecretHash:      tkn.SecretHash(),
-		Secret:          tkn.Secret[:],
-		ProjectID:       opts.ProjectID,
-		ExpiresOn:       expiresOn,
-		CreatedByUserID: opts.CreatedByUserID,
-		Attributes:      opts.Attributes,
-		FilterJSON:      opts.FilterJSON,
-		Fields:          opts.Fields,
-		State:           opts.State,
-		DisplayName:     opts.DisplayName,
-		Internal:        opts.Internal,
-		Resources:       opts.Resources,
+		ID:                       tkn.ID.String(),
+		SecretHash:               tkn.SecretHash(),
+		Secret:                   tkn.Secret[:],
+		ProjectID:                opts.ProjectID,
+		ExpiresOn:                expiresOn,
+		CreatedByUserID:          opts.CreatedByUserID,
+		Attributes:               opts.Attributes,
+		FilterJSON:               opts.FilterJSON,
+		Fields:                   opts.Fields,
+		State:                    opts.State,
+		DisplayName:              opts.DisplayName,
+		Internal:                 opts.Internal,
+		Resources:                opts.Resources,
+		TransitiveAccessResource: opts.TransitiveAccessResource,
 	})
 	if err != nil {
 		return nil, err

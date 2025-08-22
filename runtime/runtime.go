@@ -52,14 +52,14 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, st *storage.Cli
 	}
 
 	rt := &Runtime{
-		Email:          emailClient,
-		opts:           opts,
-		Logger:         logger,
-		storage:        st,
-		activity:       ac,
-		queryCache:     newQueryCache(opts.QueryCacheSizeBytes),
-		securityEngine: newSecurityEngine(opts.SecurityEngineCacheSize, logger),
+		Email:      emailClient,
+		opts:       opts,
+		Logger:     logger,
+		storage:    st,
+		activity:   ac,
+		queryCache: newQueryCache(opts.QueryCacheSizeBytes),
 	}
+	rt.securityEngine = newSecurityEngine(opts.SecurityEngineCacheSize, logger, rt)
 
 	rt.connCache = rt.newConnectionCache()
 

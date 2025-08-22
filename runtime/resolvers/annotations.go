@@ -103,6 +103,18 @@ func (r *annotationsResolver) Validate(ctx context.Context) error {
 	return nil
 }
 
+// MetricsViewSecurityFields returns the list of accessible fields for security rule expansion.
+func (r *annotationsResolver) MetricsViewSecurityFields() []string {
+	// For annotations resolvers, return empty slice as they don't have field-level security
+	return []string{}
+}
+
+// SecuredRowFilter returns the row filter for security rule expansion.
+func (r *annotationsResolver) SecuredRowFilter() string {
+	// For annotations resolvers, return empty string as they don't have row-level security
+	return ""
+}
+
 func (r *annotationsResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverResult, error) {
 	// Only resolve time stamps if an absolute time range is not specified.
 	if r.query.TimeRange == nil || r.query.TimeRange.Start.IsZero() || r.query.TimeRange.End.IsZero() {
