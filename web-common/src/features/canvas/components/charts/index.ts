@@ -148,6 +148,7 @@ export const CHART_CONFIG: Record<ChartType, ChartMetadataConfig> = {
     icon: MultiChart,
     component: MultiMetricChartComponent,
     generateSpec: generateVLMultiMetricChartSpec,
+    hideFromSelector: true,
   },
 };
 
