@@ -14,6 +14,7 @@ import type { Config } from "vega-lite";
 import { CHART_CONFIG, type ChartSpec } from "./";
 import type {
   ChartDataResult,
+  ChartDomainValues,
   ChartSortDirection,
   ChartType,
   FieldConfig,
@@ -267,6 +268,24 @@ export function getColorForValues(
         COMPARIONS_COLORS[index % COMPARIONS_COLORS.length],
     };
   });
+
+  return colorMapping;
+}
+
+export function getColorMappingForChart(
+  chartSpec: ChartSpec,
+  domainValues: ChartDomainValues | undefined,
+): { value: string; color: string }[] | undefined {
+  if (!("color" in chartSpec) || !domainValues) return undefined;
+  const colorField = chartSpec.color;
+
+  let colorMapping: { value: string; color: string }[] | undefined;
+  if (isFieldConfig(colorField)) {
+    colorMapping = getColorForValues(
+      domainValues[colorField.field],
+      colorField.colorMapping,
+    );
+  }
 
   return colorMapping;
 }

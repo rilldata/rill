@@ -24,6 +24,7 @@
   }
 
   & table tr td.key {
+    @apply flex items-center gap-x-1;
     @apply text-left px-1 font-normal truncate text-slate-600 text-xs;
     max-width: 250px;
   }
@@ -32,10 +33,18 @@
     @apply text-left truncate font-semibold text-xs;
     max-width: 250px;
   }
+
+  & table tr .key-color {
+    @apply w-3 h-3 min-w-3 min-h-3 rounded-full inline-block;
+  }
 }
 
 #vg-tooltip-element table tr:first-child td:first-child {
   display: none;
+}
+
+#vg-tooltip-element table tr {
+  @apply flex justify-between gap-x-3;
 }
 
 #vg-tooltip-element table tr:first-child td {
