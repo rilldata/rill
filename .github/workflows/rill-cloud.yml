@@ -12,6 +12,7 @@ on:
       - "main"
       - "release**"
   workflow_dispatch:
+  pull_request:
 
 env:
   RELEASE: ${{ startsWith(github.ref, 'refs/tags/v') }}
@@ -19,7 +20,7 @@ env:
 
 jobs:
   validate-sequential:
-    if: github.event_name == 'workflow_dispatch' || github.event_name == 'push' || ( github.event_name == 'create' && startsWith(github.ref_name, 'release') )
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'push' || github.event_name == 'pull_request' || ( github.event_name == 'create' && startsWith(github.ref_name, 'release') )
     runs-on: ubuntu-latest
     steps:
     - name: Checkout code
@@ -35,10 +36,19 @@ jobs:
 
   release:
     # https://github.com/orgs/community/discussions/54860
-    if: github.event_name == 'workflow_dispatch' || github.event_name == 'push' || ( github.event_name == 'create' && startsWith(github.ref_name, 'release') )
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'push' || github.event_name == 'pull_request' || ( github.event_name == 'create' && startsWith(github.ref_name, 'release') )
     needs: validate-sequential
     name: Deploy to Rill Cloud
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            platform: amd64
+          - os: ubuntu-22.04-arm
+            platform: arm64
+      fail-fast: false
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -76,33 +86,40 @@ jobs:
             go build -o rill -mod=readonly -ldflags="-s -w -X main.Commit=${GITHUB_SHA} -X main.BuildDate=$(date +%FT%T)" cli/main.go
           fi
 
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build & Publish Rill docker image
+        run: |-
           gcloud auth configure-docker
-
-          docker build -t gcr.io/rilldata/rill-headless:${GITHUB_SHA} .
-          docker push gcr.io/rilldata/rill-headless:${GITHUB_SHA}
-
+          docker buildx build \
+            --platform linux/${{ matrix.platform }} \
+            -t gcr.io/rilldata/rill-headless:${GITHUB_SHA} . \
+            --push
+                    
           if [ ${RELEASE} == "true" ]; then
             docker tag gcr.io/rilldata/rill-headless:${GITHUB_SHA} gcr.io/rilldata/rill-headless:${GITHUB_REF_NAME}
             docker push gcr.io/rilldata/rill-headless:${GITHUB_REF_NAME}
           fi
 
-      - name: Trigger Rill Cloud deployment
-        if: env.DEPLOY_CLOUD == '1'
-        run: |-
-          set -e
-          curl -X POST https://api.github.com/repos/rilldata/rill-helm-charts/dispatches \
-          -H "Accept: application/vnd.github.everest-preview+json" \
-          -H "Authorization: token ${{ secrets.GORELEASER_ACCESS_TOKEN }}" \
-          --data '{"event_type": "Deploying Tag: '"${GITHUB_REF_NAME}"'", "client_payload": { "github_sha": "'"${GITHUB_SHA}"'", "tag": "'"${GITHUB_REF_NAME}"'", "release": "${{ env.RELEASE }}"}}'
-
-      - name: Notify Slack
-        uses: ravsamhq/notify-slack-action@v2
-        if: always()
-        with:
-          status: ${{ job.status }}
-          notification_title: "{workflow} has {status_message}"
-          message_format: "{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}>"
-          footer: "Linked Repo <{repo_url}|{repo}>"
-          notify_when: "failure"
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_ANNOUNCE_DD }}
+#      - name: Trigger Rill Cloud deployment
+#        if: env.DEPLOY_CLOUD == '1'
+#        run: |-
+#          set -e
+#          curl -X POST https://api.github.com/repos/rilldata/rill-helm-charts/dispatches \
+#          -H "Accept: application/vnd.github.everest-preview+json" \
+#          -H "Authorization: token ${{ secrets.GORELEASER_ACCESS_TOKEN }}" \
+#          --data '{"event_type": "Deploying Tag: '"${GITHUB_REF_NAME}"'", "client_payload": { "github_sha": "'"${GITHUB_SHA}"'", "tag": "'"${GITHUB_REF_NAME}"'", "release": "${{ env.RELEASE }}"}}'
+#
+#      - name: Notify Slack
+#        uses: ravsamhq/notify-slack-action@v2
+#        if: always()
+#        with:
+#          status: ${{ job.status }}
+#          notification_title: "{workflow} has {status_message}"
+#          message_format: "{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}>"
+#          footer: "Linked Repo <{repo_url}|{repo}>"
+#          notify_when: "failure"
+#        env:
+#          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_ANNOUNCE_DD }}
