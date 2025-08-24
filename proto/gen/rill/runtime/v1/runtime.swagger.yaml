@@ -948,6 +948,8 @@ paths:
             properties:
               displayName:
                 type: string
+              olap:
+                type: string
               force:
                 type: boolean
             title: Request message for RuntimeService.UnpackEmpty

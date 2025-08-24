@@ -546,6 +546,7 @@ message UnpackExampleResponse {}
 message UnpackEmptyRequest {
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
   string display_name = 2;
+  string olap = 4;
   bool force = 3;
 }
 
