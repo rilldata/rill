@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/rilldata/rill/runtime/drivers"
 )
@@ -17,6 +18,17 @@ func (e *Executor) rewriteTwoPhaseComparisons(ctx context.Context, qry *Query, a
 	// Skip if the criteria for a two-phase comparison are not met.
 	if qry.ComparisonTimeRange == nil || len(qry.Sort) != 1 || len(qry.Dimensions) == 0 || len(qry.Dimensions) > 1 || len(qry.PivotOn) > 0 {
 		return false, nil
+	}
+
+	if e.olap.Dialect() == drivers.DialectDruid {
+		dim, err := ast.lookupDimension(qry.Dimensions[0].Name, false)
+		if err != nil {
+			return false, err
+		}
+		if dim.Unnest && strings.Contains(strings.ToLower(dim.Expression), strings.ToLower("lookup")) {
+			// in filter on a multi valued column with lookup is not performant in druid, skip optimization
+			return false, nil
+		}
 	}
 
 	// Find out what we're sorting by and also accumulate the underlying base measures
