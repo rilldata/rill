@@ -156,11 +156,11 @@ func (u *URLs) AuthLogoutCallback() string {
 	return urlutil.MustJoinURL(u.external, "/auth/logout/callback") // NOTE: Always using the primary external URL.
 }
 
-// AuthWithToken returns a URL that sets the auth cookie to the provided token.
+// AuthWithToken returns a URL that sets the auth cookie to the provided nonce token.
 // Providing a redirect URL is optional.
 func (u *URLs) AuthWithToken(tokenStr, redirect string) string {
 	res := urlutil.MustJoinURL(u.External(), "/auth/with-token") // NOTE: Uses custom domain if set.
-	res = urlutil.MustWithQuery(res, map[string]string{"token": tokenStr})
+	res = urlutil.MustWithQuery(res, map[string]string{"nonce_token": tokenStr})
 	if redirect != "" {
 		res = urlutil.MustWithQuery(res, map[string]string{"redirect": redirect})
 	}
