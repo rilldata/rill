@@ -125,7 +125,6 @@ func (r *metricsResolver) Validate(ctx context.Context) error {
 	return r.executor.ValidateQuery(r.query)
 }
 
-// MetricsViewSecurityFields returns the list of accessible fields for security rule expansion.
 func (r *metricsResolver) MetricsViewSecurityFields() []string {
 	// Extract accessible fields from the query
 	var fields []string
@@ -148,7 +147,6 @@ func (r *metricsResolver) MetricsViewSecurityFields() []string {
 	return fields
 }
 
-// SecuredRowFilter returns the row filter for security rule expansion.
 func (r *metricsResolver) SecuredRowFilter() string {
 	// Convert the where expression to SQL if present
 	if r.query.Where != nil {

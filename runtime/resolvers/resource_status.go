@@ -65,16 +65,12 @@ func (r *resourceStatusResolver) Validate(ctx context.Context) error {
 	return nil
 }
 
-// MetricsViewSecurityFields returns the list of accessible fields for security rule expansion.
 func (r *resourceStatusResolver) MetricsViewSecurityFields() []string {
-	// For resource status resolvers, return empty slice as they don't have field-level security
-	return []string{}
+	panic("not implemented")
 }
 
-// SecuredRowFilter returns the row filter for security rule expansion.
 func (r *resourceStatusResolver) SecuredRowFilter() string {
-	// For resource status resolvers, return empty string as they don't have row-level security
-	return ""
+	panic("not implemented")
 }
 
 func (r *resourceStatusResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverResult, error) {

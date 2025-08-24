@@ -125,18 +125,14 @@ func (r *sqlResolver) Validate(ctx context.Context) error {
 	return err
 }
 
-// MetricsViewSecurityFields returns the list of accessible fields for security rule expansion.
 func (r *sqlResolver) MetricsViewSecurityFields() []string {
 	// For SQL resolvers, we can't easily determine accessible fields without parsing the SQL
-	// Return empty slice for now - this can be enhanced later with SQL parsing
-	return []string{}
+	panic("not implemented")
 }
 
-// SecuredRowFilter returns the row filter for security rule expansion.
 func (r *sqlResolver) SecuredRowFilter() string {
 	// For SQL resolvers, we can't easily extract row filters without parsing the SQL
-	// Return empty string for now - this can be enhanced later with SQL parsing
-	return ""
+	panic("not implemented")
 }
 
 func (r *sqlResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverResult, error) {

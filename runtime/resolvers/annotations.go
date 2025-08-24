@@ -103,16 +103,12 @@ func (r *annotationsResolver) Validate(ctx context.Context) error {
 	return nil
 }
 
-// MetricsViewSecurityFields returns the list of accessible fields for security rule expansion.
 func (r *annotationsResolver) MetricsViewSecurityFields() []string {
-	// For annotations resolvers, return empty slice as they don't have field-level security
-	return []string{}
+	panic("not implemented")
 }
 
-// SecuredRowFilter returns the row filter for security rule expansion.
 func (r *annotationsResolver) SecuredRowFilter() string {
-	// For annotations resolvers, return empty string as they don't have row-level security
-	return ""
+	panic("not implemented")
 }
 
 func (r *annotationsResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverResult, error) {
