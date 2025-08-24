@@ -232,7 +232,7 @@ func (b *sqlExprBuilder) writeBinaryCondition(exprs []*Expression, op Operator) 
 
 		// Generate unnest join
 		unnestTableAlias := b.ast.generateIdentifier()
-		unnestFrom, auto, err := b.ast.dialect.LateralUnnest(leftExpr, unnestTableAlias, left.Name, "", true)
+		unnestFrom, auto, err := b.ast.dialect.LateralUnnest(leftExpr, unnestTableAlias, left.Name, "", "", true)
 		if err != nil {
 			return err
 		}
@@ -598,9 +598,9 @@ func (b *sqlExprBuilder) sqlForName(name string) (expr string, unnest bool, look
 			return "", false, nil, fmt.Errorf("invalid dimension reference %q: %w", name, err)
 		}
 
-		if dim.Unnest && dim.LookupTable != "" {
+		/*if dim.Unnest && dim.LookupTable != "" {
 			return "", false, nil, fmt.Errorf("dimension %q is unnested and also has a lookup. This is not supported", name)
-		}
+		}*/
 
 		var lm *lookupMeta
 		if dim.LookupTable != "" {

@@ -325,15 +325,15 @@ func (d Dialect) DimensionSelectPair(db, dbSchema, table string, dim *runtimev1.
 	return unnestColName, colName, fmt.Sprintf(`, LATERAL UNNEST(%s) %s(%s)`, dim.Expression, unnestTableName, unnestColName), nil
 }
 
-func (d Dialect) LateralUnnest(expr, tableAlias, colName string, baseTable string, forBinaryCondition bool) (tbl string, auto bool, err error) {
+func (d Dialect) LateralUnnest(expr, tableAlias, colName, lookupKeyColName, baseTable string, forBinaryCondition bool) (tbl string, auto bool, err error) {
 	// druid does not support EXISTS which we use in binary conditions with UNNEST, auto unnest should be sufficient as we don't need values we just need to check existence
 	if d == DialectPinot || d == DialectClickHouse || (d == DialectDruid && forBinaryCondition) {
 		return "", true, nil
 	}
 
 	if d == DialectDruid {
-		if baseTable == "" {
-			return fmt.Sprintf(`LATERAL UNNEST(%s) %s(%s)`, expr, tableAlias, d.EscapeIdentifier(colName)), false, nil
+		if lookupKeyColName != "" {
+			return fmt.Sprintf(`UNNEST(MV_TO_ARRAY(%s.%s)) %s(%s)`, baseTable, d.EscapeIdentifier(lookupKeyColName), tableAlias, d.EscapeIdentifier(colName)), false, nil
 		}
 		return fmt.Sprintf(`UNNEST(MV_TO_ARRAY(%s.%s)) %s(%s)`, baseTable, expr, tableAlias, d.EscapeIdentifier(colName)), false, nil
 	}
@@ -783,8 +783,12 @@ func (d Dialect) LookupExpr(lookupTable, lookupValueColumn, lookupKeyExpr, looku
 			return fmt.Sprintf("dictGetOrDefault('%s', '%s', %s, %s)", lookupTable, lookupValueColumn, lookupKeyExpr, lookupDefaultExpression), nil
 		}
 		return fmt.Sprintf("dictGet('%s', '%s', %s)", lookupTable, lookupValueColumn, lookupKeyExpr), nil
+	case DialectDruid:
+		if lookupDefaultExpression != "" {
+			return fmt.Sprintf("LOOKUP(%s, '%s', %s)", lookupKeyExpr, lookupTable, lookupDefaultExpression), nil
+		}
+		return fmt.Sprintf("LOOKUP(%s, '%s')", lookupKeyExpr, lookupTable), nil
 	default:
-		// Druid already does reverse lookup inherently so defining lookup expression directly as dimension expression should be ok.
 		// For Duckdb I think we should just avoid going into this complexity as it should not matter much at that scale.
 		return "", fmt.Errorf("lookup tables are not supported for dialect %q", d)
 	}
