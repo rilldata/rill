@@ -83,7 +83,14 @@ export const getYupSchema = {
   }),
 
   snowflake: yup.object().shape({
-    dsn: yup.string().required("DSN is required"),
+    dsn: yup.string().optional(),
+    account: yup.string().required("Account is required"),
+    user: yup.string().required("Username is required"),
+    password: yup.string().required("Password is required"),
+    database: yup.string().required("Database is required"),
+    schema: yup.string().optional(),
+    warehouse: yup.string().optional(),
+    role: yup.string().optional(),
   }),
 
   salesforce: yup.object().shape({
