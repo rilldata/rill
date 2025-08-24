@@ -6117,6 +6117,9 @@ definitions:
         type: string
       outputProperties:
         type: object
+      retry:
+        $ref: '#/definitions/v1Retry'
+        description: retry is optional.
       changeMode:
         $ref: '#/definitions/v1ModelChangeMode'
         description: change_mode is the mode of change detection to use for the model.
@@ -6753,6 +6756,21 @@ definitions:
         type: string
       name:
         type: string
+  v1Retry:
+    type: object
+    properties:
+      attempts:
+        type: integer
+        format: int64
+      delay:
+        type: integer
+        format: int64
+      exponentialBackoff:
+        type: boolean
+      ifErrorMatches:
+        type: array
+        items:
+          type: string
   v1S3GetBucketMetadataResponse:
     type: object
     properties:

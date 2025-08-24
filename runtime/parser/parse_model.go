@@ -19,6 +19,7 @@ import (
 type ModelYAML struct {
 	commonYAML            `yaml:",inline" mapstructure:",squash"` // Only to avoid loading common fields into InputProperties
 	Refresh               *ScheduleYAML                           `yaml:"refresh"`
+	Retry                 *RetryYAML                              `yaml:"retry"`
 	Timeout               string                                  `yaml:"timeout"`
 	Incremental           bool                                    `yaml:"incremental"`
 	ChangeMode            string                                  `yaml:"change_mode"`
@@ -90,6 +91,12 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 
 	// Parse refresh schedule
 	schedule, err := p.parseScheduleYAML(tmp.Refresh)
+	if err != nil {
+		return err
+	}
+
+	// Parse retry configuration
+	retry, err := p.parseRetryYAML(tmp.Retry)
 	if err != nil {
 		return err
 	}
@@ -225,6 +232,10 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 
 	if schedule != nil {
 		r.ModelSpec.RefreshSchedule = schedule
+	}
+
+	if retry != nil {
+		r.ModelSpec.Retry = retry
 	}
 
 	if timeout > 0 {
