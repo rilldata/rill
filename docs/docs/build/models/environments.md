@@ -38,17 +38,7 @@ rill start --environment prod
 
 ## Specifying environment specific YAML overrides
 
-Environment overrides can be applied to source properties in the [YAML configuration](/reference/project-files/sources.md) of a source. For example, let's say that you have a [S3](/connect/data-source/s3.md) source defined but you only wanted to read from a particular month partition during local development. Then, in your `source.yaml` file, you can define it as:
-
-```yaml
-type: source
-connector: s3
-path: s3://path/to/bucket/*.parquet
-dev:
-  path: s3://path/to/bucket/Y=2024/M=01/*.parquet
-```
-
-Similarly, if you wanted to set a project-wide default in `rill.yaml` where models are [materialized](/reference/project-files/models.md#model-materialization) only on Rill Cloud (i.e., `prod`) and dashboards use a different default [theme](../dashboards/customize.md#changing-themes--colors) in production compared to locally, you could do this by:
+If you wanted to set a project-wide default in `rill.yaml` where models are [materialized](/build/models/#model-materialization) only on Rill Cloud (i.e., `prod`) and dashboards use a different default [theme](../dashboards/customize.md#changing-themes--colors) in production compared to locally, you could do this by:
 
 ```yaml
 prod:
@@ -61,7 +51,7 @@ prod:
 :::info Hierarchy of inheritance and property overrides
 
 As a general rule of thumb, properties that have been specified at a more _granular_ level will supersede or override higher-level properties that have been inherited. Therefore, in order of inheritance, Rill will prioritize properties in the following order:
-1. Individual [source](/reference/project-files/sources.md)/[model](/reference/project-files/models.md)/[dashboard](/reference/project-files/explore-dashboards.md) object level properties (e.g. `source.yaml` or `dashboard.yaml`)
+1. Individual [model](/build/models)/[dashboard](/reference/project-files/explore-dashboards.md) object level properties (e.g. `model.yaml` or `dashboard.yaml`)
 2. [Environment](/docs/build/models/environments.md) level properties (e.g., a specific property that has been set for `dev`)
 3. [Project-wide defaults](/reference/project-files/rill-yaml.md#project-wide-defaults) for a specific property and resource type
 
@@ -88,7 +78,7 @@ Environments are also useful when you wish to apply environment-specific SQL log
 
 Similar to the example in the previous section, let's say we had a S3 source defined but this time we did not have a partitioned bucket. However, it contains an `updated_at` timestamp column that allows us to leverage DuckDB's ability to read from the S3 file directly and then apply a filter post-download (but we only want to do this locally). In production, we still want to make sure that our models and dashboards are using the full data present in the S3 source.
 
-Now, for your `source.yaml` file (and combined with templating), you could do something like:
+Now, for your `model.yaml` file (and combined with templating), you could do something like:
 
 ```yaml
 type: model

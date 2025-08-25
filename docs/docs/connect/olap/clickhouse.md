@@ -136,7 +136,7 @@ driver: clickhouse
 managed: true
 ```
 
-Data ingestion features are not yet available in the UI, please refer to our [model documentation](/reference/project-files/advanced-models) on how to ingest data into ClickHouse. For a guide, see [ingesting data directly into ClickHouse](/guides/rill-clickhouse/r_ch_ingest).
+Data ingestion features are not yet available in the UI, please refer to our [model documentation](/reference/project-files/models) on how to ingest data into ClickHouse. For a guide, see [ingesting data directly into ClickHouse](/guides/rill-clickhouse/r_ch_ingest).
 
 
 ## Read Only Connector
