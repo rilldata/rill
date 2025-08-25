@@ -7,6 +7,7 @@ export function extractGithubConnectError(err: AxiosError<RpcStatus>) {
       message: "",
     };
   }
+  console.log(err);
 
   if (!err.response?.data?.message) {
     return {
