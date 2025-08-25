@@ -6,7 +6,10 @@
 #vg-tooltip-element,
 #rill-vg-tooltip {
   @apply absolute border border-slate-300 p-3 rounded-lg pointer-events-none;
+  @apply ui-copy-number;
   background: rgba(255, 255, 255, 0.9);
+  font-family: "Inter";
+  border-radius: 5px;
 
   & h2 {
     @apply text-slate-500 text-sm font-semibold mb-2;
@@ -16,17 +19,36 @@
     @apply border-spacing-0;
   }
 
-  & td {
+  & table tr td {
     @apply truncate py-0.5;
   }
 
-  & td.key {
-    @apply text-left px-1 font-normal truncate;
+  & table tr td.key {
+    @apply flex items-center gap-x-1;
+    @apply text-left px-1 font-normal truncate text-slate-600 text-xs;
     max-width: 250px;
   }
 
-  & td.value {
-    @apply text-left truncate font-semibold;
+  & table tr td.value {
+    @apply text-left truncate font-semibold text-xs;
     max-width: 250px;
   }
+
+  & table tr .key-color {
+    @apply w-3 h-3 min-w-3 min-h-3 rounded-full inline-block;
+  }
+}
+
+#vg-tooltip-element table tr:first-child td:first-child {
+  display: none;
+}
+
+#vg-tooltip-element table tr {
+  @apply flex justify-between gap-x-3;
+}
+
+#vg-tooltip-element table tr:first-child td {
+  font-size: 14px;
+  margin-left: 2px;
+  margin-bottom: 4px;
 }

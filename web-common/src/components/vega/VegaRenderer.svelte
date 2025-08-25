@@ -19,6 +19,7 @@
   export let error: string | null = null;
   export let canvasDashboard = false;
   export let renderer: "canvas" | "svg" = "canvas";
+  export let theme: "light" | "dark" = "light";
   export let tooltipFormatter: VLTooltipFormatter | undefined = undefined;
   export let view: View;
   export let isScrubbing: boolean;
@@ -69,6 +70,8 @@
     width,
     height,
     renderer,
+    theme,
+    colorMapping: [],
     expressionFunctions,
     useExpressionInterpreter: false,
   });

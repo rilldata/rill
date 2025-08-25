@@ -38,7 +38,7 @@ You can also create a model outside of the application and add it to Rill by pla
 
 :::tip
 
-See also our [Model YAML](../../reference/project-files/models) reference page.
+See also our [Model YAML](/reference/project-files/models) reference page.
 
 :::
 

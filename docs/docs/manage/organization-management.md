@@ -43,7 +43,7 @@ From the User page, you can view and manage your users with organizational. Note
 
 ### Org Settings via Rill Cloud
 
-In the organization setting page, depending on your plan type, you can view the general information, billing and current usage. The Billing tab is only available for those on a `Team Plan`. You can use this page to add, or modify your current payment type. For more information, please review our [Billing Information documentation](/other/account-management/billing.md).
+In the organization setting page, depending on your plan type, you can view the general information, billing and current usage. The Billing tab is only available for those on a `Team Plan`. You can use this page to add, or modify your current payment type. For more information, please review our [Billing Information documentation](/other/plans).
 
 <img src = '/img/manage/project-management/rill-org-settings.png' class='rounded-gif' />
 <br />
