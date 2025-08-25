@@ -1,4 +1,9 @@
-import type { V1Resource } from "@rilldata/web-common/runtime-client";
+import type {
+  V1ListResourcesResponse,
+  V1Resource,
+} from "@rilldata/web-common/runtime-client";
+import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
+import type { Query } from "@tanstack/svelte-query";
 
 export const INITIAL_REFETCH_INTERVAL = 200; // Start at 200ms for immediate feedback
 export const MAX_REFETCH_INTERVAL = 2_000; // Cap at 2s
@@ -65,7 +70,14 @@ const queryRefetchStateMap = new WeakMap<
  * @param query The TanStack query object
  * @returns The refetch interval (number in ms or false to disable)
  */
-export function createSmartRefetchInterval(query: any): number | false {
+export function createSmartRefetchInterval(
+  query: Query<
+    V1ListResourcesResponse,
+    HTTPError,
+    V1ListResourcesResponse,
+    readonly unknown[]
+  >,
+): number | false {
   if (!query.state.data?.resources) {
     return false;
   }
