@@ -31,15 +31,18 @@
     V1DeploymentStatus,
     createAdminServiceGetCurrentUser,
     createAdminServiceGetDeploymentCredentials,
+    createAdminServiceGetOrganization,
     createAdminServiceGetProject,
     type RpcStatus,
     type V1GetProjectResponse,
   } from "@rilldata/web-admin/client";
+  import { BillingCTAHandler } from "@rilldata/web-admin/features/billing/BillingCTAHandler";
   import {
     isProjectPage,
     isPublicReportPage,
     isPublicURLPage,
   } from "@rilldata/web-admin/features/navigation/nav-utils";
+  import OrganizationHibernating from "@rilldata/web-admin/features/organizations/hibernating/OrganizationHibernating.svelte";
   import ProjectBuilding from "@rilldata/web-admin/features/projects/ProjectBuilding.svelte";
   import ProjectTabs from "@rilldata/web-admin/features/projects/ProjectTabs.svelte";
   import RedeployProjectCta from "@rilldata/web-admin/features/projects/RedeployProjectCTA.svelte";
@@ -60,6 +63,21 @@
     url: { pathname },
     params: { organization, project, token },
   } = $page);
+
+  // Check if organization is waking projects
+  $: billingCTAHandler = BillingCTAHandler.get(organization);
+  $: ({ wakingProjects } = billingCTAHandler);
+
+  // Get organization permissions for hibernation component
+  $: orgPermissions = createAdminServiceGetOrganization(
+    organization,
+    undefined,
+    {
+      query: {
+        select: (data) => data.permissions,
+      },
+    },
+  );
 
   $: onProjectPage = isProjectPage($page);
   $: onPublicURLPage = isPublicURLPage($page);
@@ -158,7 +176,12 @@
 {:else if projectData}
   {#if !projectData.prodDeployment}
     <!-- No deployment = the project is "hibernating" -->
-    <RedeployProjectCta {organization} {project} />
+    {#if $wakingProjects && $orgPermissions.data}
+      <!-- Show organization-level wake state instead of project-specific hibernation CTA -->
+      <OrganizationHibernating {organization} organizationPermissions={$orgPermissions.data} />
+    {:else}
+      <RedeployProjectCta {organization} {project} />
+    {/if}
   {:else if projectData.prodDeployment.status === V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING}
     <ProjectBuilding />
   {:else if projectData.prodDeployment.status === V1DeploymentStatus.DEPLOYMENT_STATUS_ERROR}

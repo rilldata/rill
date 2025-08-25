@@ -14,7 +14,7 @@
   export let organization: string;
 
   $: billingIssueMessage = useBillingIssueMessage(organization);
-  $: billingCTAHandler = new BillingCTAHandler(organization);
+  $: billingCTAHandler = BillingCTAHandler.get(organization);
   $: ({ showStartTeamPlanDialog, startTeamPlanType, teamPlanEndDate } =
     billingCTAHandler);
 
