@@ -1,3 +1,4 @@
+import { splitDimensionsAndMeasuresAsRowsAndColumns } from "@rilldata/web-common/features/dashboards/aggregation-request-utils.ts";
 import {
   ComparisonDeltaAbsoluteSuffix,
   ComparisonDeltaRelativeSuffix,
@@ -7,6 +8,11 @@ import {
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters";
+import {
+  type PivotChipData,
+  PivotChipType,
+  type PivotState,
+} from "@rilldata/web-common/features/dashboards/pivot/types.ts";
 import {
   SortDirection,
   SortType,
@@ -25,16 +31,21 @@ import {
   convertQueryFilterToToplistQuery,
   fillTimeRange,
 } from "@rilldata/web-common/features/explore-mappers/utils";
+import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config.ts";
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
   getQueryServiceMetricsViewSchemaQueryKey,
   queryServiceMetricsViewSchema,
   type V1ExploreSpec,
   type V1Expression,
+  type V1MetricsViewAggregationDimension,
+  type V1MetricsViewAggregationMeasure,
   type V1MetricsViewAggregationRequest,
   type V1MetricsViewSpec,
+  V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
 import type { QueryClient } from "@tanstack/svelte-query";
+import type { SortingState } from "@tanstack/svelte-table";
 
 export async function getDashboardFromAggregationRequest({
   queryClient,
@@ -46,6 +57,7 @@ export async function getDashboardFromAggregationRequest({
   metricsView,
   explore,
   annotations,
+  forceOpenPivot,
 }: TransformerArgs<V1MetricsViewAggregationRequest>) {
   let loadedFromState = false;
   if (annotations["web_open_state"]) {
@@ -78,6 +90,8 @@ export async function getDashboardFromAggregationRequest({
   if (req.having?.cond?.exprs?.length && req.dimensions?.[0]?.name) {
     const dimension = req.dimensions[0].name;
     if (exprHasComparison(req.having)) {
+      // We do not support comparison based dimension threshold filter in dashboards right now.
+      // So convert it to a toplist and add `in` filter.
       const expr = await convertQueryFilterToToplistQuery(
         instanceId,
         explore.metricsView ?? "",
@@ -93,6 +107,9 @@ export async function getDashboardFromAggregationRequest({
       req.having.cond.exprs.length > 1 ||
       dashboard.dimensionThresholdFilters.length > 0
     ) {
+      // If there are dimension threshold and having filter we just add a subquery in where filter.
+      // This will be marked as "advanced filter" that is not editable.
+      // TODO: find a way to merge having filter into dimension threshold
       const extraFilter = createSubQueryExpression(
         dimension,
         getAllIdentifiers(req.having),
@@ -126,12 +143,19 @@ export async function getDashboardFromAggregationRequest({
     dashboard.selectedTimezone = req.timeRange?.timeZone || "UTC";
   }
 
-  dashboard.visibleMeasures =
-    req.measures
-      ?.map((m) => m.name ?? "")
-      .filter((m) => !measureHasSuffix(m)) ?? [];
-  dashboard.allMeasuresVisible =
-    dashboard.visibleMeasures.length === explore.measures?.length;
+  if (forceOpenPivot) {
+    dashboard.activePage = DashboardState_ActivePage.PIVOT;
+    dashboard.pivot = getPivotStateFromRequest(req);
+    return dashboard;
+  }
+
+  if (req.measures?.length) {
+    dashboard.visibleMeasures = req.measures
+      .map((m) => m.name ?? "")
+      .filter((m) => !measureHasSuffix(m));
+    dashboard.allMeasuresVisible =
+      dashboard.visibleMeasures.length === explore.measures?.length;
+  }
 
   // if the selected sort is a measure set it to leaderboardSortByMeasureName
   if (
@@ -201,4 +225,62 @@ async function mergeDashboardFromUrlState(
   for (const k in parsedDashboard) {
     exploreState[k] = parsedDashboard[k];
   }
+}
+
+function getPivotStateFromRequest(
+  req: V1MetricsViewAggregationRequest,
+): PivotState {
+  const { rows, dimensionColumns, measureColumns } =
+    splitDimensionsAndMeasuresAsRowsAndColumns(req);
+
+  const mapDimension = (
+    dim: V1MetricsViewAggregationDimension,
+  ): PivotChipData => {
+    if (dim.timeGrain && dim.timeGrain !== V1TimeGrain.TIME_GRAIN_UNSPECIFIED) {
+      return {
+        id: dim.timeGrain,
+        title: TIME_GRAIN[dim.timeGrain]?.label,
+        type: PivotChipType.Time,
+      };
+    }
+
+    return {
+      id: dim.name!,
+      title: dim.alias ?? dim.name ?? "",
+      type: PivotChipType.Dimension,
+    };
+  };
+  const mapMeasure = (mes: V1MetricsViewAggregationMeasure): PivotChipData => {
+    return {
+      id: mes.name!,
+      title: mes.name!,
+      type: PivotChipType.Measure,
+    };
+  };
+
+  const rowChips: PivotChipData[] = rows.map(mapDimension);
+
+  const colChips: PivotChipData[] = [
+    ...dimensionColumns.map(mapDimension),
+    ...measureColumns.map(mapMeasure),
+  ];
+
+  const isFlat = !req.pivotOn?.length;
+
+  const tableMode = isFlat ? "flat" : "nest";
+
+  const sorting: SortingState =
+    req.sort?.map((s) => ({ id: s.name!, desc: !!s.desc })) ?? [];
+
+  return {
+    rows: rowChips,
+    columns: colChips,
+    sorting,
+    expanded: {},
+    columnPage: 1,
+    rowPage: 1,
+    enableComparison: true, // This is not really used. So setting it true, we should remove it.
+    activeCell: null,
+    tableMode,
+  };
 }
