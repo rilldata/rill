@@ -23,12 +23,6 @@
   let searchText = "";
   let active = false;
 
-  // Variables for tracking click timing for show/hide vs drag detection
-  let mouseDownTime = 0;
-  let mouseDownTarget: EventTarget | null = null;
-  let isDragging = false;
-  const CLICK_THRESHOLD = 150; // ms - short clicks vs long clicks
-
   $: allItemsMap = new Map(allItems.map((item) => [item.name, item]));
   $: numAvailable = allItems?.length ?? 0;
   $: numShown = selectedItems?.filter((x) => x).length ?? 0;
@@ -83,86 +77,30 @@
     onSelectedChange(newSelectedItems);
   }
 
-  // Enhanced event handlers for click vs drag detection
-  function handleSpanMouseDown(event: MouseEvent, itemId: string, isShown: boolean) {
-    mouseDownTime = Date.now();
-    mouseDownTarget = event.target;
-    isDragging = false;
-    
-    if (isShown) {
-      // For shown items, we might start a drag operation after the threshold
-      setTimeout(() => {
-        const elapsed = Date.now() - mouseDownTime;
-        if (elapsed >= CLICK_THRESHOLD && mouseDownTarget === event.target && !isDragging) {
-          // This was a long press, let the drag system handle it
-          // We don't need to do anything special here since DraggableList will handle the drag
-          isDragging = true;
-        }
-      }, CLICK_THRESHOLD);
-    }
-  }
-
-  function handleSpanMouseUp(event: MouseEvent, itemId: string, isShown: boolean) {
-    const clickDuration = Date.now() - mouseDownTime;
-    
-    // Only process short clicks for show/hide toggle
-    if (clickDuration < CLICK_THRESHOLD && event.target === mouseDownTarget && !isDragging) {
-      event.preventDefault();
-      event.stopPropagation();
-      
-      // Toggle the item's visibility
-      if (isShown) {
-        // Hide the item (move from shown to hidden)
-        const itemIndex = selectedItems.indexOf(itemId);
-        if (itemIndex !== -1 && selectedItems.length > 1) {
-          removeSelectedItem(itemIndex);
-        }
-      } else {
-        // Show the item (move from hidden to shown)
-        const newSelectedItems = [...selectedItems, itemId];
-        onSelectedChange(newSelectedItems);
-      }
-    }
-    
-    // Reset tracking variables
-    mouseDownTime = 0;
-    mouseDownTarget = null;
-    // Don't reset isDragging here - let it be reset by drag end
-  }
-
-  // Fallback click handler for simple clicks (for hidden items)
+  // Simple click handler that works around DraggableList interference
   function handleSpanClick(event: MouseEvent, itemId: string, isShown: boolean) {
-    // This is mainly for hidden items where we don't need drag functionality
-    if (!isShown) {
-      event.preventDefault();
-      event.stopPropagation();
-      
+    // Always prevent event bubbling to avoid conflicts with DraggableList
+    event.preventDefault();
+    event.stopPropagation();
+    
+    // Toggle the item's visibility
+    if (isShown) {
+      // Hide the item (move from shown to hidden)
+      const itemIndex = selectedItems.indexOf(itemId);
+      if (itemIndex !== -1 && selectedItems.length > 1) {
+        removeSelectedItem(itemIndex);
+      }
+    } else {
       // Show the item (move from hidden to shown)
       const newSelectedItems = [...selectedItems, itemId];
       onSelectedChange(newSelectedItems);
     }
   }
 
-  // Function to handle clicks on the draggable item container
+  // Function to handle clicks on the draggable item container (shown items only)
   function handleDraggableItemClick(event: MouseEvent, item: { id: string }, index: number) {
-    // Prevent default DraggableList click if we're handling it with our custom handlers
-    if (isDragging) {
-      event.preventDefault();
-      event.stopPropagation();
-      return;
-    }
-    
-    // For hidden items clicked through DraggableList (fallback)
-    if (!selectedItems.includes(item.id)) {
-      handleHiddenItemClick({ item, index });
-    }
-  }
-
-  // Reset drag state when drag operations complete
-  function handleDragComplete() {
-    isDragging = false;
-    mouseDownTime = 0;
-    mouseDownTarget = null;
+    // This is mainly a fallback - our span click handlers should take precedence
+    // Don't do anything here for shown items since spans handle the clicks
   }
 </script>
 
@@ -204,10 +142,7 @@
           bind:searchValue={searchText}
           minHeight="auto"
           maxHeight="300px"
-          onReorder={(data) => {
-            handleSelectedReorder(data);
-            handleDragComplete();
-          }}
+          onReorder={handleSelectedReorder}
           onItemClick={handleDraggableItemClick}
         >
           <div
@@ -249,11 +184,10 @@
                   />
                   <span 
                     class="truncate flex-1 text-left cursor-pointer"
-                    on:mousedown={(event) => handleSpanMouseDown(event, item.id, true)}
-                    on:mouseup={(event) => handleSpanMouseUp(event, item.id, true)}
+                    on:click={(event) => handleSpanClick(event, item.id, true)}
                     role="button"
                     tabindex="0"
-                    aria-label="Short click to hide, long click to drag {itemData?.displayName ?? item.id}"
+                    aria-label="Click to hide {itemData?.displayName ?? item.id}"
                   >
                     {itemData?.displayName ??
                       `Unknown ${type === "measure" ? "measure" : "dimension"}`}
@@ -294,11 +228,10 @@
               />
               <span 
                 class="truncate flex-1 text-left cursor-pointer"
-                on:mousedown={(event) => handleSpanMouseDown(event, item.id, true)}
-                on:mouseup={(event) => handleSpanMouseUp(event, item.id, true)}
+                on:click={(event) => handleSpanClick(event, item.id, true)}
                 role="button"
                 tabindex="0"
-                aria-label="Short click to hide, long click to drag {itemData?.displayName ?? item.id}"
+                aria-label="Click to hide {itemData?.displayName ?? item.id}"
               >
                 {itemData?.displayName ??
                   `Unknown ${type === "measure" ? "measure" : "dimension"}`}
