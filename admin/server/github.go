@@ -8,9 +8,11 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"maps"
 	"net/http"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 
@@ -98,65 +100,11 @@ func (s *Server) GetGithubUserStatus(ctx context.Context, req *adminv1.GetGithub
 		return nil, fmt.Errorf("failed to update user: %w", err)
 	}
 
-	userInstallationPermission := adminv1.GithubPermission_GITHUB_PERMISSION_UNSPECIFIED
-	installation, _, err := s.admin.Github.AppClient().Apps.FindUserInstallation(ctx, user.GithubUsername)
-	if err != nil {
-		if !strings.Contains(err.Error(), "404") {
-			return nil, fmt.Errorf("failed to get user installation: %w", err)
-		}
-	} else {
-		// older git app would ask for Contents=read permission whereas new one asks for Contents=write and && Administration=write
-		if installation.Permissions != nil && installation.Permissions.Contents != nil && strings.EqualFold(*installation.Permissions.Contents, "read") {
-			userInstallationPermission = adminv1.GithubPermission_GITHUB_PERMISSION_READ
-		}
-
-		if installation.Permissions != nil && installation.Permissions.Contents != nil && installation.Permissions.Administration != nil && strings.EqualFold(*installation.Permissions.Administration, "write") && strings.EqualFold(*installation.Permissions.Contents, "write") {
-			userInstallationPermission = adminv1.GithubPermission_GITHUB_PERMISSION_WRITE
-		}
-	}
-
 	client := github.NewTokenClient(ctx, token)
-	// List all the private organizations for the authenticated user
-	orgs, _, err := client.Organizations.List(ctx, "", nil)
+
+	userInstallationPermission, orgInstallationPermission, err := s.getUserInstallations(ctx, user.GithubUsername, client)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get user organizations: %w", err)
-	}
-	// List all the public organizations for the authenticated user
-	publicOrgs, _, err := client.Organizations.List(ctx, user.GithubUsername, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get user organizations: %w", err)
-	}
-
-	orgs = append(orgs, publicOrgs...)
-	allOrgs := make([]string, 0)
-
-	orgInstallationPermission := make(map[string]adminv1.GithubPermission)
-	for _, org := range orgs {
-		// dedupe orgs
-		if _, ok := orgInstallationPermission[org.GetLogin()]; ok {
-			continue
-		}
-		allOrgs = append(allOrgs, org.GetLogin())
-
-		i, _, err := s.admin.Github.AppClient().Apps.FindOrganizationInstallation(ctx, org.GetLogin())
-		if err != nil {
-			if strings.Contains(err.Error(), "404") {
-				orgInstallationPermission[org.GetLogin()] = adminv1.GithubPermission_GITHUB_PERMISSION_UNSPECIFIED
-				continue
-			}
-			return nil, fmt.Errorf("failed to get organization installation: %w", err)
-		}
-		permission := adminv1.GithubPermission_GITHUB_PERMISSION_UNSPECIFIED
-		// older git app would ask for Contents=read permission whereas new one asks for Contents=write and && Administration=write
-		if i.Permissions != nil && i.Permissions.Contents != nil && strings.EqualFold(*i.Permissions.Contents, "read") {
-			permission = adminv1.GithubPermission_GITHUB_PERMISSION_READ
-		}
-
-		if i.Permissions != nil && i.Permissions.Contents != nil && i.Permissions.Administration != nil && strings.EqualFold(*i.Permissions.Administration, "write") && strings.EqualFold(*i.Permissions.Contents, "write") {
-			permission = adminv1.GithubPermission_GITHUB_PERMISSION_WRITE
-		}
-
-		orgInstallationPermission[org.GetLogin()] = permission
+		return nil, err
 	}
 
 	return &adminv1.GetGithubUserStatusResponse{
@@ -164,7 +112,7 @@ func (s *Server) GetGithubUserStatus(ctx context.Context, req *adminv1.GetGithub
 		GrantAccessUrl:                      s.admin.URLs.GithubConnect(""),
 		AccessToken:                         token,
 		Account:                             user.GithubUsername,
-		Organizations:                       allOrgs,
+		Organizations:                       slices.Sorted(maps.Keys(orgInstallationPermission)),
 		UserInstallationPermission:          userInstallationPermission,
 		OrganizationInstallationPermissions: orgInstallationPermission,
 	}, nil
@@ -236,6 +184,56 @@ func (s *Server) GetGithubRepoStatus(ctx context.Context, req *adminv1.GetGithub
 		DefaultBranch: *repository.DefaultBranch,
 	}
 	return res, nil
+}
+
+func (s *Server) ListGithubUserOrgs(ctx context.Context, req *adminv1.ListGithubUserOrgsRequest) (*adminv1.ListGithubUserOrgsResponse, error) {
+	claims := auth.GetClaims(ctx)
+	if claims.OwnerType() != auth.OwnerTypeUser {
+		return nil, status.Error(codes.Unauthenticated, "not authenticated")
+	}
+
+	userID := claims.OwnerID()
+	user, err := s.admin.DB.FindUser(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	// user has not authorized github app
+	if user.GithubUsername == "" {
+		return nil, status.Error(codes.Unauthenticated, "not authenticated")
+	}
+
+	token, refreshToken, err := s.userAccessToken(ctx, user.GithubRefreshToken)
+	if err != nil {
+		return nil, err
+	}
+
+	// refresh token changes after using it for getting a new token
+	// so saving the updated refresh token
+	_, err = s.admin.DB.UpdateUser(ctx, claims.OwnerID(), &database.UpdateUserOptions{
+		DisplayName:         user.DisplayName,
+		PhotoURL:            user.PhotoURL,
+		GithubUsername:      user.GithubUsername,
+		GithubRefreshToken:  refreshToken,
+		QuotaSingleuserOrgs: user.QuotaSingleuserOrgs,
+		QuotaTrialOrgs:      user.QuotaTrialOrgs,
+		PreferenceTimeZone:  user.PreferenceTimeZone,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to update user: %w", err)
+	}
+
+	client := github.NewTokenClient(ctx, token)
+
+	userInstallationPermission, orgInstallationPermission, err := s.getUserInstallations(ctx, user.GithubUsername, client)
+	if err != nil {
+		return nil, err
+	}
+
+	return &adminv1.ListGithubUserOrgsResponse{
+		UserInstallationPermission:          userInstallationPermission,
+		OrganizationInstallationPermissions: orgInstallationPermission,
+	}, nil
 }
 
 func (s *Server) ListGithubUserRepos(ctx context.Context, req *adminv1.ListGithubUserReposRequest) (*adminv1.ListGithubUserReposResponse, error) {
@@ -1048,6 +1046,8 @@ func (s *Server) fetchReposForUser(ctx context.Context, client *github.Client) (
 			return nil, err
 		}
 
+		// TODO: fill in permission
+
 		for _, installation := range installations {
 			reposForInst, err := s.fetchReposForInstallation(ctx, client, *installation.ID)
 			if err != nil {
@@ -1289,6 +1289,70 @@ func (s *Server) gitSignFromClaims(ctx context.Context, claims auth.Claims) (*ob
 	default:
 		return nil, status.Errorf(codes.InvalidArgument, "can not generate signature for owner type %q", claims.OwnerType())
 	}
+}
+
+func (s *Server) getUserInstallations(ctx context.Context, githubUsername string, client *github.Client) (adminv1.GithubPermission, map[string]adminv1.GithubPermission, error) {
+	userInstallationPermission := adminv1.GithubPermission_GITHUB_PERMISSION_UNSPECIFIED
+	installation, _, err := s.admin.Github.AppClient().Apps.FindUserInstallation(ctx, githubUsername)
+	if err != nil {
+		if !strings.Contains(err.Error(), "404") {
+			return userInstallationPermission, nil, fmt.Errorf("failed to get user installation: %w", err)
+		}
+	} else {
+		// older git app would ask for Contents=read permission whereas new one asks for Contents=write and && Administration=write
+		if installation.Permissions != nil && installation.Permissions.Contents != nil && strings.EqualFold(*installation.Permissions.Contents, "read") {
+			userInstallationPermission = adminv1.GithubPermission_GITHUB_PERMISSION_READ
+		}
+
+		if installation.Permissions != nil && installation.Permissions.Contents != nil && installation.Permissions.Administration != nil && strings.EqualFold(*installation.Permissions.Administration, "write") && strings.EqualFold(*installation.Permissions.Contents, "write") {
+			userInstallationPermission = adminv1.GithubPermission_GITHUB_PERMISSION_WRITE
+		}
+	}
+
+	// List all the private organizations for the authenticated user
+	orgs, _, err := client.Organizations.List(ctx, "", nil)
+	if err != nil {
+		return userInstallationPermission, nil, fmt.Errorf("failed to get user organizations: %w", err)
+	}
+	// List all the public organizations for the authenticated user
+	publicOrgs, _, err := client.Organizations.List(ctx, githubUsername, nil)
+	if err != nil {
+		return userInstallationPermission, nil, fmt.Errorf("failed to get user organizations: %w", err)
+	}
+
+	orgs = append(orgs, publicOrgs...)
+	allOrgs := make([]string, 0)
+
+	orgInstallationPermission := make(map[string]adminv1.GithubPermission)
+	for _, org := range orgs {
+		// dedupe orgs
+		if _, ok := orgInstallationPermission[org.GetLogin()]; ok {
+			continue
+		}
+		allOrgs = append(allOrgs, org.GetLogin())
+
+		i, _, err := s.admin.Github.AppClient().Apps.FindOrganizationInstallation(ctx, org.GetLogin())
+		if err != nil {
+			if strings.Contains(err.Error(), "404") {
+				orgInstallationPermission[org.GetLogin()] = adminv1.GithubPermission_GITHUB_PERMISSION_UNSPECIFIED
+				continue
+			}
+			return userInstallationPermission, nil, fmt.Errorf("failed to get organization installation: %w", err)
+		}
+		permission := adminv1.GithubPermission_GITHUB_PERMISSION_UNSPECIFIED
+		// older git app would ask for Contents=read permission whereas new one asks for Contents=write and && Administration=write
+		if i.Permissions != nil && i.Permissions.Contents != nil && strings.EqualFold(*i.Permissions.Contents, "read") {
+			permission = adminv1.GithubPermission_GITHUB_PERMISSION_READ
+		}
+
+		if i.Permissions != nil && i.Permissions.Contents != nil && i.Permissions.Administration != nil && strings.EqualFold(*i.Permissions.Administration, "write") && strings.EqualFold(*i.Permissions.Contents, "write") {
+			permission = adminv1.GithubPermission_GITHUB_PERMISSION_WRITE
+		}
+
+		orgInstallationPermission[org.GetLogin()] = permission
+	}
+
+	return userInstallationPermission, orgInstallationPermission, nil
 }
 
 func fromStringPtr(s *string) string {

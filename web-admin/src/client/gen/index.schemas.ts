@@ -668,6 +668,15 @@ export interface V1ListDeploymentsResponse {
   deployments?: V1Deployment[];
 }
 
+export type V1ListGithubUserOrgsResponseOrganizationInstallationPermissions = {
+  [key: string]: V1GithubPermission;
+};
+
+export interface V1ListGithubUserOrgsResponse {
+  userInstallationPermission?: V1GithubPermission;
+  organizationInstallationPermissions?: V1ListGithubUserOrgsResponseOrganizationInstallationPermissions;
+}
+
 export interface V1ListGithubUserReposResponse {
   repos?: ListGithubUserReposResponseRepo[];
 }

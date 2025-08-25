@@ -1,13 +1,7 @@
 <script lang="ts">
   import { createAdminServiceGetProject } from "@rilldata/web-admin/client";
   import { useDashboardsLastUpdated } from "@rilldata/web-admin/features/dashboards/listing/selectors";
-  import ConnectToGithubButton from "@rilldata/web-admin/features/projects/github/ConnectToGithubButton.svelte";
   import DisconnectProjectConfirmDialog from "@rilldata/web-admin/features/projects/github/DisconnectProjectConfirmDialog.svelte";
-  import {
-    GithubData,
-    setGithubData,
-  } from "@rilldata/web-admin/features/projects/github/GithubData";
-  import GithubRepoSelectionDialog from "@rilldata/web-admin/features/projects/github/GithubRepoSelectionDialog.svelte";
   import NewGithubConnectionDialog from "@rilldata/web-admin/features/projects/github/NewGithubConnectionDialog.svelte";
   import { useGithubLastSynced } from "@rilldata/web-admin/features/projects/selectors";
   import { Button, IconButton } from "@rilldata/web-common/components/button";
@@ -19,8 +13,6 @@
     getRepoNameFromGitRemote,
     getGitUrlFromRemote,
   } from "@rilldata/web-common/features/project/deploy/github-utils";
-  import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
-  import { BehaviourEventAction } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
   export let organization: string;
@@ -43,30 +35,12 @@
     project,
   );
   // Github last synced might not always be available for projects not updated since we added commitedOn
-  // So fallback to old way of aproximating the last updated.
+  // So fallback to old way of approximating the last updated.
   $: lastUpdated = $githubLastSynced.data ?? $dashboardsLastUpdated;
 
   let hovered = false;
   let editDropdownOpen = false;
-
-  const githubData = new GithubData();
-  setGithubData(githubData);
-  const userStatus = githubData.userStatus;
-  const repoSelectionOpen = githubData.repoSelectionOpen;
-
   let disconnectConfirmOpen = false;
-
-  function confirmConnectToGithub() {
-    // prompt reselection repos since a new repo might be created here.
-    repoSelectionOpen.set(true);
-    void githubData.reselectRepos();
-    behaviourEvent?.fireGithubIntentEvent(
-      BehaviourEventAction.GithubConnectStart,
-      {
-        is_fresh_connection: isGithubConnected,
-      },
-    );
-  }
 
   function disconnectGithubConnect() {
     disconnectConfirmOpen = true;
@@ -106,7 +80,7 @@
               </IconButton>
             </DropdownMenu.Trigger>
             <DropdownMenu.Content align="start">
-              <!-- Disabling for now, until we figure out how to do this  -->
+              <!-- Disabling for now, until we figure out how to do this right -->
               <!--              <DropdownMenu.Item class="px-1 py-1">-->
               <!--                <Button onClick={editGithubConnection} type="text" compact>-->
               <!--                  <div class="flex flex-row items-center gap-x-2">-->

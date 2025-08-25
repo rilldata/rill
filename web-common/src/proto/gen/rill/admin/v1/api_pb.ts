@@ -10334,6 +10334,80 @@ export class GetGithubUserStatusResponse extends Message<GetGithubUserStatusResp
 }
 
 /**
+ * @generated from message rill.admin.v1.ListGithubUserOrgsRequest
+ */
+export class ListGithubUserOrgsRequest extends Message<ListGithubUserOrgsRequest> {
+  constructor(data?: PartialMessage<ListGithubUserOrgsRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.ListGithubUserOrgsRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListGithubUserOrgsRequest {
+    return new ListGithubUserOrgsRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListGithubUserOrgsRequest {
+    return new ListGithubUserOrgsRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListGithubUserOrgsRequest {
+    return new ListGithubUserOrgsRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListGithubUserOrgsRequest | PlainMessage<ListGithubUserOrgsRequest> | undefined, b: ListGithubUserOrgsRequest | PlainMessage<ListGithubUserOrgsRequest> | undefined): boolean {
+    return proto3.util.equals(ListGithubUserOrgsRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.ListGithubUserOrgsResponse
+ */
+export class ListGithubUserOrgsResponse extends Message<ListGithubUserOrgsResponse> {
+  /**
+   * @generated from field: rill.admin.v1.GithubPermission user_installation_permission = 1;
+   */
+  userInstallationPermission = GithubPermission.UNSPECIFIED;
+
+  /**
+   * @generated from field: map<string, rill.admin.v1.GithubPermission> organization_installation_permissions = 2;
+   */
+  organizationInstallationPermissions: { [key: string]: GithubPermission } = {};
+
+  constructor(data?: PartialMessage<ListGithubUserOrgsResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.ListGithubUserOrgsResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "user_installation_permission", kind: "enum", T: proto3.getEnumType(GithubPermission) },
+    { no: 2, name: "organization_installation_permissions", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "enum", T: proto3.getEnumType(GithubPermission)} },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListGithubUserOrgsResponse {
+    return new ListGithubUserOrgsResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListGithubUserOrgsResponse {
+    return new ListGithubUserOrgsResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListGithubUserOrgsResponse {
+    return new ListGithubUserOrgsResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListGithubUserOrgsResponse | PlainMessage<ListGithubUserOrgsResponse> | undefined, b: ListGithubUserOrgsResponse | PlainMessage<ListGithubUserOrgsResponse> | undefined): boolean {
+    return proto3.util.equals(ListGithubUserOrgsResponse, a, b);
+  }
+}
+
+/**
  * @generated from message rill.admin.v1.ListGithubUserReposRequest
  */
 export class ListGithubUserReposRequest extends Message<ListGithubUserReposRequest> {

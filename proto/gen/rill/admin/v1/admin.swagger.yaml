@@ -313,6 +313,20 @@ paths:
             $ref: '#/definitions/rpcStatus'
       tags:
         - AdminService
+  /v1/github/user/orgs:
+    get:
+      operationId: AdminService_ListGithubUserOrgs
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListGithubUserOrgsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      tags:
+        - AdminService
   /v1/github/user/repositories:
     get:
       operationId: AdminService_ListGithubUserRepos
@@ -5282,6 +5296,15 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1Deployment'
+  v1ListGithubUserOrgsResponse:
+    type: object
+    properties:
+      userInstallationPermission:
+        $ref: '#/definitions/v1GithubPermission'
+      organizationInstallationPermissions:
+        type: object
+        additionalProperties:
+          $ref: '#/definitions/v1GithubPermission'
   v1ListGithubUserReposResponse:
     type: object
     properties:

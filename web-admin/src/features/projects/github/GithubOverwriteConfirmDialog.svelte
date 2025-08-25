@@ -66,21 +66,19 @@
       <AlertDialogDescription class="flex flex-col gap-y-1.5">
         <div>
           {#if type === "push"}
-            It appears that <b>{path}</b> is not empty. Rill will overwrite this
-            repo's contents with this project.
+            Rill will overwrite the contents of <b>{path}</b> with this project.
           {:else}
             Current project contents will be overwritten with the contents of
-            the repository.
+            the repository. There is no way to retrieve this current project.
+            Are you sure?
           {/if}
         </div>
         <div class="mt-1">
           Type <b>{ConfirmationText}</b> in the box below to confirm:
         </div>
         <Input bind:value={confirmInput} id="confirmation" label="" />
-        {#if error?.message}
-          <div class="text-red-500 text-sm py-px">
-            {error.message}
-          </div>
+        {#if error}
+          <div class="text-red-500 text-sm py-px">{error}</div>
         {/if}
       </AlertDialogDescription>
     </AlertDialogHeader>
