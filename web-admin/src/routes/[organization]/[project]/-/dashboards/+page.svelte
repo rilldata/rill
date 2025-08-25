@@ -1,17 +1,32 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import ContentContainer from "@rilldata/web-admin/components/layout/ContentContainer.svelte";
   import DashboardsTable from "@rilldata/web-admin/features/dashboards/listing/DashboardsTable.svelte";
-  import { useDashboards } from "@rilldata/web-admin/features/dashboards/listing/selectors";
+  import {
+    getDashboardToRedirect,
+    useRefetchingDashboards,
+  } from "@rilldata/web-admin/features/dashboards/listing/refetching-dashboards.ts";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import type { PageData } from "./$types";
+
+  export let pageData: PageData;
+  const { deploying, deployingName } = pageData;
 
   $: ({
-    params: { project },
+    params: { organization, project },
   } = $page);
   $: ({ instanceId } = $runtime);
 
-  $: query = useDashboards(instanceId);
+  $: query = useRefetchingDashboards(instanceId, deployingName);
   $: ({ data } = $query);
+
+  $: dashboardToRedirect = deploying
+    ? getDashboardToRedirect(organization, project, data, deployingName)
+    : undefined;
+  $: if (dashboardToRedirect) {
+    void goto(dashboardToRedirect);
+  }
 </script>
 
 <svelte:head>
