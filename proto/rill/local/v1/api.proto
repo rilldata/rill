@@ -41,6 +41,7 @@ service LocalService {
   rpc GetCurrentUser(GetCurrentUserRequest) returns (GetCurrentUserResponse) {}
 
   // GetCurrentProject returns the rill cloud project connected to the local project
+  // Deprecated: Use ListMatchingProjects instead.
   rpc GetCurrentProject(GetCurrentProjectRequest) returns (GetCurrentProjectResponse) {}
 
   // ListOrganizationsAndBillingMetadata returns metadata about the current user's orgs.

@@ -64,7 +64,10 @@ export const getRillTheme: (
         ],
       },
     },
-    bar: { fill: BarFill, ...(!isCanvasDashboard && { opacity: 0.8 }) },
+    bar: {
+      fill: BarFill,
+      ...(!isCanvasDashboard && { opacity: 0.8 }),
+    },
     line: { stroke: defaultMarkColor, strokeWidth: 1.5, strokeOpacity: 1 },
     path: { stroke: defaultMarkColor },
     rect: { fill: defaultMarkColor },

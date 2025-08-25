@@ -68,14 +68,14 @@
   });
 
   async function onDeploy(resumingDeploy = false) {
-    if (hasRemoteChanges) {
+    await waitUntil(() => !get(deploymentState).loading);
+    if (get(deploymentState).hasRemoteChanges) {
       remoteChangeDialog = true;
       return;
     }
 
     // Check user login
 
-    await waitUntil(() => !get(userQuery).isLoading);
     const userResp = get(userQuery).data;
     if (!userResp?.user) {
       if (resumingDeploy) {
@@ -146,7 +146,7 @@
   });
 </script>
 
-{#if isDeployed}
+{#if isDeployed && !hasRemoteChanges}
   <UpdateProjectPopup
     bind:open={updateProjectDropdownOpen}
     matchingProjects={$matchingProjectsQuery.data?.projects ?? []}
@@ -155,7 +155,8 @@
   <Tooltip distance={8}>
     <Button
       {loading}
-      onClick={() => onDeploy()}
+      onClick={() =>
+        hasRemoteChanges ? (remoteChangeDialog = true) : onDeploy()}
       type={hasValidDashboard ? "primary" : "secondary"}
     >
       <Rocket size="16px" />

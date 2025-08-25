@@ -14,7 +14,6 @@ import (
 	"github.com/rilldata/rill/cli/cmd/org"
 	"github.com/rilldata/rill/cli/pkg/browser"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/dotrillcloud"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/local"
 	"github.com/rilldata/rill/cli/pkg/printer"
@@ -77,14 +76,14 @@ func (o *DeployOpts) ValidatePathAndSetupGit(ch *cmdutil.Helper) error {
 	}
 
 	// detect subpath
-	repoRoot, err := gitutil.InferGitRepoRoot(o.GitPath)
+	repoRoot, subpath, err := gitutil.InferRepoRootAndSubpath(o.GitPath)
 	if err != nil {
 		// Not a git repository, no need to connect to GitHub
 		return nil
 	}
 
 	remote, err := gitutil.ExtractGitRemote(repoRoot, o.RemoteName, false)
-	if err != nil {
+	if err != nil && !errors.Is(err, gitutil.ErrGitRemoteNotFound) {
 		return err
 	}
 	if remote.URL == "" {
@@ -96,31 +95,26 @@ func (o *DeployOpts) ValidatePathAndSetupGit(ch *cmdutil.Helper) error {
 		return nil
 	}
 
-	subPath, err := filepath.Rel(repoRoot, o.GitPath)
-	if err == nil {
-		ch.PrintfBold("Detected git repository at: ")
-		ch.Printf("%s\n", repoRoot)
-		ch.PrintfBold("Connected to Github repository: ")
-		ch.Printf("%s\n", remote.URL)
-		if subPath != "." {
-			ch.PrintfBold("Project location within repo: ")
-			ch.Printf("%s\n", subPath)
-		}
-		confirmed, err := cmdutil.ConfirmPrompt("Enable automatic deploys to Rill Cloud from GitHub?", "", true)
-		if err != nil {
-			return err
-		}
-		if confirmed {
-			o.SubPath = subPath
-			o.GitPath = repoRoot
-			o.Github = true
-			return nil
-		}
-		if !o.Github {
-			ch.Printf("Skipping GitHub connection. You can connect later using `rill project connect-github`.\n")
-			o.Managed = true
-		}
+	ch.PrintfBold("Detected git repository at: ")
+	ch.Printf("%s\n", repoRoot)
+	ch.PrintfBold("Connected to Github repository: ")
+	ch.Printf("%s\n", remote.URL)
+	if subpath != "" {
+		ch.PrintfBold("Project location within repo: ")
+		ch.Printf("%s\n", subpath)
 	}
+	confirmed, err := cmdutil.ConfirmPrompt("Enable automatic deploys to Rill Cloud from GitHub?", "", true)
+	if err != nil {
+		return err
+	}
+	if confirmed {
+		o.SubPath = subpath
+		o.GitPath = repoRoot
+		o.Github = true
+		return nil
+	}
+	ch.Printf("Skipping GitHub connection. You can connect later using `rill project connect-github`.\n")
+	o.Managed = true
 	return nil
 }
 
@@ -262,6 +256,7 @@ func DeployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployO
 		ProdVersion:      opts.ProdVersion,
 		ProdSlots:        int64(opts.Slots),
 		Public:           opts.Public,
+		DirectoryName:    filepath.Base(localProjectPath),
 	}
 
 	ch.Printer.Println("Starting upload.")
@@ -289,20 +284,6 @@ func DeployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployO
 			return nil
 		}
 		return fmt.Errorf("create project failed with error %w", err)
-	}
-
-	err = dotrillcloud.SetAll(localProjectPath, ch.AdminURL(), &dotrillcloud.Config{
-		ProjectID: res.Project.Id,
-	})
-	if err != nil {
-		return err
-	}
-	if req.GitRemote != "" {
-		// also commit dotrillcloud to the repo
-		err = ch.GitHelper(ch.Org, opts.Name, localProjectPath).PushToManagedRepo(ctx)
-		if err != nil {
-			return err
-		}
 	}
 
 	// Success!

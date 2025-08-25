@@ -19,7 +19,7 @@ rill start my-rill-project
   <span> · </span>
   <a href="https://docs.rilldata.com/home/get-started#example-projects">Example Projects</a>
   <span> · </span>
-  <a href="https://discord.gg/DJ5qcsxE2m">Community</a>
+  <a href="https://discord.gg/TatjVY32">Community</a>
   <span> · </span>
   <a href="https://gurubase.io/g/rill">Ask Rill Guru</a>
 </h3>
@@ -40,7 +40,7 @@ Rill's design principles:
 We always appreciate hearing from our users and welcome any questions, comments, or concerns you may have. To get in touch with us, there are two options available:
 
 1. _**File an Issue**_: If you have encountered a bug or have a feature request, please [file an issue](https://github.com/rilldata/rill/issues/new/choose) here (this GitHub page).
-2. _**Join our Discord Channel**_: For general inquiries or if you need help getting started with Rill, we encourage you to join our [Discord Community](https://bit.ly/3unvA05). Please abide by the [community policy](https://github.com/rilldata/rill/blob/main/COMMUNITY-POLICY.md).
+2. _**Join our Discord Channel**_: For general inquiries or if you need help getting started with Rill, we encourage you to join our [Discord Community](https://discord.gg/TatjVY32). Please abide by the [community policy](https://github.com/rilldata/rill/blob/main/COMMUNITY-POLICY.md).
 
 ## Legal
 
