@@ -161,7 +161,7 @@ definitions:
   api:
     type: object
     title: API YAML
-    description: In your Rill project directory, create a new file name `<api-name>.yaml` in the `apis` directory containing a custom API definition. See comprehensive documentation on how to define and use [custom APIs](/integrate/custom-apis/index.md)
+    description: In your Rill project directory, create a new file name `<api-name>.yaml` in the `apis` directory containing a custom API definition. See comprehensive documentation on how to define and use [custom APIs](/build/custom-apis)
     examples:
       - # Example: This api returns the top 10 authors by net line changes since the specified date provided in the arguments.
         type: api

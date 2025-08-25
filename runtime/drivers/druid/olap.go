@@ -77,6 +77,12 @@ func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (*drive
 		}
 		queryCfg.PopulateCache = stmt.PopulateCache
 	}
+	if !c.config.SkipQueryPriority && stmt.Priority != 0 {
+		if queryCfg == nil {
+			queryCfg = &druidsqldriver.QueryConfig{}
+		}
+		queryCfg.Priority = stmt.Priority
+	}
 
 	if queryCfg != nil {
 		ctx = druidsqldriver.WithQueryConfig(ctx, queryCfg)

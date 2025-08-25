@@ -24,7 +24,8 @@ export type ChartType =
   | "donut_chart"
   | "pie_chart"
   | "heatmap"
-  | "funnel_chart";
+  | "funnel_chart"
+  | "multi_metric_chart";
 
 export type ChartDataQuery = CreateQueryResult<
   V1MetricsViewAggregationResponse,
@@ -48,9 +49,8 @@ export type ChartDataResult = {
 };
 
 export interface ChartDomainValues {
-  xValues?: string[];
-  colorValues?: string[];
-  yValues?: string[];
+  // key is the field name, value is the domain values
+  [key: string]: string[] | undefined;
 }
 
 export interface TimeDimensionDefinition {

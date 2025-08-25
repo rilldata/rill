@@ -58,7 +58,7 @@ export function generateVLPieChartSpec(
   const order = createOrderEncoding(config.measure);
 
   const tooltip = createDefaultTooltipEncoding(
-    [config.measure, config.color],
+    [config.color, config.measure],
     data,
   );
 
