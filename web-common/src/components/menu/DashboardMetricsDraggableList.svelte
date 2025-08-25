@@ -23,11 +23,6 @@
   let searchText = "";
   let active = false;
 
-  // Variables for tracking short vs long clicks
-  let mouseDownTime = 0;
-  let mouseDownTarget: EventTarget | null = null;
-  const CLICK_THRESHOLD = 150; // ms - if click is shorter than this, it's a "short click"
-
   $: allItemsMap = new Map(allItems.map((item) => [item.name, item]));
   $: numAvailable = allItems?.length ?? 0;
   $: numShown = selectedItems?.filter((x) => x).length ?? 0;
@@ -77,57 +72,29 @@
     onSelectedChange(newSelectedItems);
   }
 
-  // Mouse event handlers for short vs long click detection
-  function handleMouseDown(event: MouseEvent) {
-    mouseDownTime = Date.now();
-    mouseDownTarget = event.target;
-  }
-
-  function handleMouseUp(event: MouseEvent, itemId: string, isShown: boolean) {
-    const clickDuration = Date.now() - mouseDownTime;
+  // Event handlers for custom click functionality
+  function handleSpanClick(event: MouseEvent, itemId: string, isShown: boolean) {
+    event.preventDefault();
+    event.stopPropagation();
     
-    // Only process short clicks (long clicks are handled by the drag system)
-    if (clickDuration < CLICK_THRESHOLD && event.target === mouseDownTarget) {
-      event.preventDefault();
-      event.stopPropagation();
-      
-      // Toggle the item's visibility
-      if (isShown) {
-        // Hide the item (move from shown to hidden)
-        const itemIndex = selectedItems.indexOf(itemId);
-        if (itemIndex !== -1 && selectedItems.length > 1) {
-          removeSelectedItem(itemIndex);
-        }
-      } else {
-        // Show the item (move from hidden to shown)
-        const newSelectedItems = [...selectedItems, itemId];
-        onSelectedChange(newSelectedItems);
+    // Toggle the item's visibility
+    if (isShown) {
+      // Hide the item (move from shown to hidden)
+      const itemIndex = selectedItems.indexOf(itemId);
+      if (itemIndex !== -1 && selectedItems.length > 1) {
+        removeSelectedItem(itemIndex);
       }
+    } else {
+      // Show the item (move from hidden to shown)
+      const newSelectedItems = [...selectedItems, itemId];
+      onSelectedChange(newSelectedItems);
     }
-    
-    // Reset tracking variables
-    mouseDownTime = 0;
-    mouseDownTarget = null;
   }
 
-  // Function to handle clicks on the draggable item container
-  // We need to prevent default click behavior when we handle short clicks
+  // Function to handle clicks on the draggable item container (shown items only)
   function handleDraggableItemClick(event: MouseEvent, item: { id: string }, index: number) {
-    const clickDuration = Date.now() - mouseDownTime;
-    
-    // If this was a short click and we handled it with our mouse handlers, 
-    // prevent the default DraggableList click behavior
-    if (clickDuration < CLICK_THRESHOLD && mouseDownTarget) {
-      event.preventDefault();
-      event.stopPropagation();
-      return;
-    }
-    
-    // For longer clicks or clicks not handled by our handlers,
-    // let the default DraggableList behavior handle it (for hidden items)
-    if (!selectedItems.includes(item.id)) {
-      handleHiddenItemClick({ item, index });
-    }
+    // For shown items, this should not be triggered if we handled the span click
+    // This is mainly a fallback
   }
 </script>
 
@@ -211,8 +178,7 @@
                   />
                   <span 
                     class="truncate flex-1 text-left cursor-pointer"
-                    on:mousedown={handleMouseDown}
-                    on:mouseup={(event) => handleMouseUp(event, item.id, true)}
+                    on:click={(event) => handleSpanClick(event, item.id, true)}
                     role="button"
                     tabindex="0"
                     aria-label="Click to hide {itemData?.displayName ?? item.id}"
@@ -256,8 +222,7 @@
               />
               <span 
                 class="truncate flex-1 text-left cursor-pointer"
-                on:mousedown={handleMouseDown}
-                on:mouseup={(event) => handleMouseUp(event, item.id, true)}
+                on:click={(event) => handleSpanClick(event, item.id, true)}
                 role="button"
                 tabindex="0"
                 aria-label="Click to hide {itemData?.displayName ?? item.id}"
@@ -286,103 +251,88 @@
       {#if selectedItems.length < allItems.length}
         <span class="flex-none h-px bg-slate-200 w-full" />
         <div class="hidden-section flex flex-col flex-1 min-h-0 p-1.5 pt-0">
-          <DraggableList
-            items={hiddenDraggableItems}
-            bind:searchValue={searchText}
-            minHeight="auto"
-            maxHeight="200px"
-            onItemClick={handleDraggableItemClick}
-          >
-            <div
-              slot="header"
-              class="flex-none flex py-1.5 justify-between px-2 sticky top-0 from-popover from-80% to-transparent bg-gradient-to-b"
+          <!-- Hidden items header -->
+          <div class="flex-none flex py-1.5 justify-between px-2 sticky top-0 from-popover from-80% to-transparent bg-gradient-to-b">
+            <h3 class="uppercase text-xs text-gray-500 font-semibold from-popover from-80% to-transparent bg-gradient-to-b">
+              Hidden {type === "measure" ? "Measures" : "Dimensions"}
+            </h3>
+            <button
+              class="pointer-events-auto text-theme-500 text-[11px] font-medium"
+              on:click={showAllItems}
             >
-              <h3
-                class="uppercase text-xs text-gray-500 font-semibold from-popover from-80% to-transparent bg-gradient-to-b"
-              >
-                Hidden {type === "measure" ? "Measures" : "Dimensions"}
-              </h3>
-              <button
-                class="pointer-events-auto text-theme-500 text-[11px] font-medium"
-                on:click={showAllItems}
-              >
-                Show all
-              </button>
-            </div>
+              Show all
+            </button>
+          </div>
 
-            <div slot="empty" class="px-2 py-2 text-xs text-gray-500">
-              {searchText
-                ? `No matching hidden ${type === "measure" ? "measures" : "dimensions"}`
-                : `No hidden ${type === "measure" ? "measures" : "dimensions"}`}
-            </div>
-
-            <div
-              slot="item"
-              let:item
-              let:index
-              class="w-full flex gap-x-1 justify-between items-center cursor-pointer"
-            >
-              {@const itemData = allItemsMap.get(item.id)}
-              {#if itemData?.description}
-                <Tooltip.Root openDelay={200} portal="body">
-                  <Tooltip.Trigger
-                    class="w-full flex gap-x-1 justify-between items-center"
-                  >
+          <!-- Hidden items list - no dragging needed, just click to show -->
+          <div class="flex flex-col overflow-y-auto p-1.5" style:min-height="auto" style:max-height="200px">
+            {@const filteredHiddenItems = hiddenDraggableItems.filter(item => 
+              searchText === "" || item.id.toLowerCase().includes(searchText.toLowerCase())
+            )}
+            
+            {#if filteredHiddenItems.length === 0}
+              <div class="px-2 py-2 text-xs text-gray-500">
+                {searchText
+                  ? `No matching hidden ${type === "measure" ? "measures" : "dimensions"}`
+                  : `No hidden ${type === "measure" ? "measures" : "dimensions"}`}
+              </div>
+            {:else}
+              {#each filteredHiddenItems as item, index (item.id)}
+                {@const itemData = allItemsMap.get(item.id)}
+                <div 
+                  class="w-full flex gap-x-1 justify-between items-center py-1 hover:bg-slate-50 rounded-sm min-h-7"
+                  style:height="28px"
+                >
+                  {#if itemData?.description}
+                    <Tooltip.Root openDelay={200} portal="body">
+                      <Tooltip.Trigger class="w-full flex gap-x-1 justify-between items-center">
+                        <span 
+                          class="truncate flex-1 text-left cursor-pointer"
+                          on:click={(event) => handleSpanClick(event, item.id, false)}
+                          role="button"
+                          tabindex="0"
+                          aria-label="Click to show {itemData.displayName}"
+                        >
+                          {itemData.displayName}
+                        </span>
+                        <button
+                          class="hover:bg-slate-200 p-1 rounded-sm active:bg-slate-300"
+                          on:click|stopPropagation={() => handleHiddenItemClick({ item, index })}
+                          aria-label="Toggle visibility"
+                          data-testid="toggle-visibility-button"
+                        >
+                          <EyeOffIcon size="14px" color="#9ca3af" />
+                        </button>
+                      </Tooltip.Trigger>
+                      <Tooltip.Content side="right" sideOffset={12} class="z-popover">
+                        <div class="bg-gray-800 text-gray-50 rounded p-2 pt-1 pb-1 shadow-md pointer-events-none z-50">
+                          {itemData.description}
+                        </div>
+                      </Tooltip.Content>
+                    </Tooltip.Root>
+                  {:else}
                     <span 
                       class="truncate flex-1 text-left cursor-pointer"
-                      on:mousedown={handleMouseDown}
-                      on:mouseup={(event) => handleMouseUp(event, item.id, false)}
+                      on:click={(event) => handleSpanClick(event, item.id, false)}
                       role="button"
                       tabindex="0"
-                      aria-label="Click to show {itemData.displayName}"
+                      aria-label="Click to show {itemData?.displayName ?? item.id}"
                     >
-                      {itemData.displayName}
+                      {itemData?.displayName}
                     </span>
                     <button
                       class="hover:bg-slate-200 p-1 rounded-sm active:bg-slate-300"
-                      on:click|stopPropagation={() =>
-                        handleHiddenItemClick({ item, index })}
+                      on:click|stopPropagation={() => handleHiddenItemClick({ item, index })}
                       aria-label="Toggle visibility"
                       data-testid="toggle-visibility-button"
                     >
                       <EyeOffIcon size="14px" color="#9ca3af" />
                     </button>
-                  </Tooltip.Trigger>
-                  <Tooltip.Content
-                    side="right"
-                    sideOffset={12}
-                    class="z-popover"
-                  >
-                    <div
-                      class="bg-gray-800 text-gray-50 rounded p-2 pt-1 pb-1 shadow-md pointer-events-none z-50"
-                    >
-                      {itemData.description}
-                    </div>
-                  </Tooltip.Content>
-                </Tooltip.Root>
-              {:else}
-                <span 
-                  class="truncate flex-1 text-left cursor-pointer"
-                  on:mousedown={handleMouseDown}
-                  on:mouseup={(event) => handleMouseUp(event, item.id, false)}
-                  role="button"
-                  tabindex="0"
-                  aria-label="Click to show {itemData?.displayName ?? item.id}"
-                >
-                  {itemData?.displayName}
-                </span>
-                <button
-                  class="hover:bg-slate-200 p-1 rounded-sm active:bg-slate-300"
-                  on:click|stopPropagation={() =>
-                    handleHiddenItemClick({ item, index })}
-                  aria-label="Toggle visibility"
-                  data-testid="toggle-visibility-button"
-                >
-                  <EyeOffIcon size="14px" color="#9ca3af" />
-                </button>
-              {/if}
-            </div>
-          </DraggableList>
+                  {/if}
+                </div>
+              {/each}
+            {/if}
+          </div>
         </div>
       {/if}
     </div>
