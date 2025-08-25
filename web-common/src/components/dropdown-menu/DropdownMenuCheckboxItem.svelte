@@ -49,13 +49,16 @@
     on:pointerleave
     on:pointermove
   >
-    <span class="flex flex-none h-3.5 w-3.5 items-center justify-center">
+    <span class="flex flex-none h-6 w-6 items-center justify-center rounded-sm hover:bg-gray-100 transition-colors">
       {#if checked}
         <svelte:component
           this={showXForSelected ? X : Check}
           class={checkSize}
           color={iconColor}
         />
+      {:else}
+        <!-- Invisible placeholder to maintain consistent spacing and clickable area -->
+        <span class="h-4 w-4 opacity-0" aria-hidden="true"></span>
       {/if}
     </span>
     <slot />
