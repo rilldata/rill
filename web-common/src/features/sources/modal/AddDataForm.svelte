@@ -93,7 +93,6 @@
     connector.configProperties?.filter((property) => property.key === "dsn") ??
     [];
 
-  // FIXME: APP-209
   const filteredDsnProperties = dsnProperties;
   const dsnYupSchema = yup(dsnSchema);
   const {
@@ -195,7 +194,14 @@
         managed,
       },
       {
-        fieldFilter: (property) => !property.noPrompt,
+        fieldFilter: (property) => {
+          // When in DSN mode, don't filter out noPrompt properties
+          // because the DSN field itself might have noPrompt: true
+          if (hasOnlyDsn() || connectionTab === "dsn") {
+            return true; // Show all DSN properties
+          }
+          return !property.noPrompt;
+        },
         orderedProperties:
           connectionTab === "dsn"
             ? filteredDsnProperties
