@@ -2,7 +2,7 @@
 title: Partitioned Models
 description: Create Partitioned Models
 sidebar_label: Partitioned Models
-sidebar_position: 03
+sidebar_position: 25
 ---
 
 ## What are Partitions?
@@ -126,4 +126,4 @@ Error: can't refresh partitions on model "model_name" because it is not incremen
 ```
 :::
 
-You will need to enable [incremental modeling](incremental-partitioned-models.md) in order to individually refresh a partition. 
+You will need to enable [incremental modeling](/build/models/incremental-partitioned-models) in order to individually refresh a partition. 

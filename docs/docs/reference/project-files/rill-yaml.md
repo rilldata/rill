@@ -19,7 +19,7 @@ The `rill.yaml` file contains metadata about your project.
 
 **`olap_connector`** - the default OLAP engine to use in your project
 
-**`mock_users`** — a list of mock users to test against dashboard [security policies](/manage/security). For each mock user, possible attributes include:
+**`mock_users`** — a list of mock users to test against dashboard [security policies](/build/metrics-view/security). For each mock user, possible attributes include:
 
   - **`email`** — the mock user's email _(required)_
   - **`name`** — the mock user's name
@@ -65,7 +65,7 @@ In your `rill.yaml`, the top level property for the resource type needs to be **
 :::
 
 For example, the following YAML configuration below will set a project-wide default for:
-- **Sources** - Configure a [source refresh](/build/models/source-refresh).
+- **Sources** - Configure a [source refresh](/build/models/data-refresh).
 - **Models** - Automatically materialize the models as tables instead of views (the default behavior if unspecified).
 - **Metrics View** - Set the [first day of the week](metrics-views.md) for timeseries aggregations to be Sunday along with setting the smallest_time_grain.
 - **Explore Dashboards** - Set the [default](explore-dashboards.md) values when a user opens a dashboard, and available time zones and/or time ranges.
@@ -120,7 +120,7 @@ explores:
 
 As a general rule of thumb, properties that have been specified at a more _granular_ level will supercede or override higher level properties that have been inherited. Therefore, in order of inheritance, Rill will prioritize properties in the following order:
 1. Individual [source](/reference/project-files/sources.md)/[model](/reference/project-files/models.md)/[dashboard](/reference/project-files/explore-dashboards.md) object level properties (e.g. `source.yaml` or `dashboard.yaml`)
-2. [Environment](/docs/build/models/environments.md) level properties (e.g. a specific property that have been set for `dev`)
+2. [Environment](/docs/build/models/templating.md) level properties (e.g. a specific property that have been set for `dev`)
 3. [Project-wide defaults](/reference/project-files/rill-yaml.md#project-wide-defaults) for a specific property and resource type
 
 :::
@@ -175,7 +175,7 @@ Don't forget the leading `/` when specifying the path for `ignore_paths` and thi
 
 ## Testing access policies 
 
-During development, it is always a good idea to check if your [access policies](/manage/security.md) are behaving the way you designed them to before pushing these changes into production. You can set mock users which enables a drop down in the dashboard preview to view as a specific user. 
+During development, it is always a good idea to check if your [access policies](/build/metrics-view/security.md) are behaving the way you designed them to before pushing these changes into production. You can set mock users which enables a drop down in the dashboard preview to view as a specific user. 
 
 ```yaml
 mock_users:
