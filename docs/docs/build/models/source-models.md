@@ -4,7 +4,7 @@ sidebar_label: Source Models
 sidebar_position: 10
 ---
 
-After creating a connector to your data source, you'll need to create a model to bring that data into Rill. This can be implemented as either a SQL model with [defined connector parameters](/build/models/sql-models#setting-the-connector) or as a YAML configuration file. This guide focuses on YAML-based source models.
+After creating a connector to your data source, you'll need to create a model to bring that data into Rill. This can be implemented as either a SQL model with [defined connector parameters](/build/models/sql-models#specifying-the-data-source-connector) or as a YAML configuration file. This guide focuses on YAML-based source models.
 
 ## Overview
 
