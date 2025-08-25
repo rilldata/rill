@@ -48,7 +48,7 @@
   export let whereFilter: V1Expression;
   export let side: "top" | "right" | "bottom" | "left" = "bottom";
   export let removable = true;
-  export let locked = true;
+  export let locked = false;
   export let onRemove: () => void;
   export let onApplyInList: (values: string[]) => void;
   export let onSelect: (value: string) => void;

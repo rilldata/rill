@@ -274,6 +274,7 @@ export function toggleDimensionFilterValue(
   expr: V1Expression,
   dimensionValue: string,
   isExclusiveFilter: boolean,
+  skipToggling = false,
 ) {
   if (!expr.cond?.exprs) return -1;
 
@@ -287,7 +288,7 @@ export function toggleDimensionFilterValue(
       expr.cond.exprs.push({ val: dimensionValue });
     }
     return -1;
-  } else {
+  } else if (!skipToggling) {
     expr.cond.exprs.splice(inIdx, 1);
     return inIdx;
   }

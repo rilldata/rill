@@ -40,6 +40,7 @@ type CanvasYAML struct {
 				Values    *[]string `yaml:"values"`
 				Limit     *int      `yaml:"limit"`     // Limit for the number of values
 				Removable *bool     `yaml:"removable"` // Flag to indicate if the filter can be removed
+				Locked    *bool     `yaml:"locked"`    
 			} `yaml:"dimensions"`
 			Measures []struct {
 				Measure     string    `yaml:"measure"`
@@ -48,6 +49,7 @@ type CanvasYAML struct {
 				Values      *[]string `yaml:"values"`
 				Limit       *int      `yaml:"limit"`     // Limit for the number of values
 				Removable   *bool     `yaml:"removable"` // Flag to indicate if the filter can be removed
+				Locked      *bool     `yaml:"locked"`
 			} `yaml:"measures"`
 		} `yaml:"filters"`
 	} `yaml:"defaults"`
@@ -260,6 +262,9 @@ func (p *Parser) parseCanvas(node *Node) error {
 				}
 				if dimFilter.Removable != nil {
 					filter.Removable = dimFilter.Removable
+				}
+				if dimFilter.Locked != nil {
+					filter.Locked = dimFilter.Locked
 				}
 				dimensionFilters[i] = filter
 			}

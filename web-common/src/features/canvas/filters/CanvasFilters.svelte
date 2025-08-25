@@ -48,6 +48,7 @@
         allMeasureFilterItems,
         measureHasFilter,
         lockedFilters,
+        unremovableFilters,
       },
       spec: { canvasSpec, allDimensions, allSimpleMeasures },
       timeControls: {
@@ -87,6 +88,8 @@
 
   $: allMeasureFilters = $allMeasureFilterItems;
 
+  $: console.log({ allDimensionFilters, temporaryFilters: $temporaryFilters });
+
   // hasFilter only checks for complete filters and excludes temporary ones
   $: hasFilters =
     allDimensionFilters.size + allMeasureFilters.length >
@@ -120,6 +123,8 @@
     set.range(`${start.toISOString()},${end.toISOString()}`);
     set.comparison(TimeComparisonOption.CONTIGUOUS);
   }
+
+  $: console.log({ unremove: $unremovableFilters });
 </script>
 
 <div
@@ -205,7 +210,8 @@
             {#if dimensionName && metricsViewNames?.length}
               <DimensionFilter
                 {readOnly}
-                removable={!$lockedFilters.has(name)}
+                locked={$lockedFilters.has(name)}
+                removable={!$unremovableFilters.has(name)}
                 {metricsViewNames}
                 {name}
                 {label}
@@ -256,7 +262,7 @@
           measureHasFilter={$measureHasFilter}
           setTemporaryFilterName={(n) => {
             justAdded = true;
-            setTemporaryFilterName(n);
+            setTemporaryFilterName(n, true);
           }}
         />
         <!-- if filters are present, place a chip at the end of the flex container 
