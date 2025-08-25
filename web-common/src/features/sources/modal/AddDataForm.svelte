@@ -16,7 +16,11 @@
     type SuperValidated,
   } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
-  import { inferSourceName } from "../sourceUtils";
+  import {
+    inferSourceName,
+    prepareSourceFormData,
+    compileSourceYAML,
+  } from "../sourceUtils";
   import { humanReadableErrorMessage } from "../errors/errors";
   import {
     submitAddConnectorForm,
@@ -127,7 +131,6 @@
     );
   }
 
-  // TODO: move to utils.ts
   // Compute disabled state for the submit button
   $: isSubmitDisabled = (() => {
     if (hasOnlyDsn() || connectionTab === "dsn") {
@@ -181,40 +184,77 @@
   // Emit the submitting state to the parent
   $: dispatch("submitting", { submitting });
 
-  // ClickHouse requires special handling because it supports both managed and self-managed modes:
-  // - When managed=true: uses sourceProperties and minimal configuration
-  // - When managed=false: uses configProperties and full connection details
-  // - The form state is managed by the child AddClickHouseForm component
-  // - Other connectors use a simpler single-form approach
-  $: yamlPreview = (() => {
-    if (connector.name === "clickhouse") {
-      // Use the value of the child form state for clickhouse
-      const values =
-        connectionTab === "dsn" ? $clickhouseDsnForm : $clickhouseParamsForm;
-      return compileConnectorYAML(
-        connector,
-        {
-          ...values,
-          managed: clickhouseManaged,
-        },
-        {
-          fieldFilter: (property) => !property.noPrompt,
-          orderedProperties:
-            connectionTab === "dsn"
-              ? filteredDsnProperties
-              : filteredParamsProperties,
-        },
-      );
-    } else {
-      const values =
-        hasOnlyDsn() || connectionTab === "dsn" ? $dsnForm : $paramsForm;
-      return compileConnectorYAML(connector, values, {
+  function getClickHouseYamlPreview(
+    values: Record<string, unknown>,
+    managed: boolean,
+  ) {
+    return compileConnectorYAML(
+      connector,
+      {
+        ...values,
+        managed,
+      },
+      {
         fieldFilter: (property) => !property.noPrompt,
         orderedProperties:
-          hasOnlyDsn() || connectionTab === "dsn"
+          connectionTab === "dsn"
             ? filteredDsnProperties
             : filteredParamsProperties,
-      });
+      },
+    );
+  }
+
+  function getConnectorYamlPreview(values: Record<string, unknown>) {
+    return compileConnectorYAML(connector, values, {
+      fieldFilter: (property) => {
+        // When in DSN mode, don't filter out noPrompt properties
+        // because the DSN field itself might have noPrompt: true
+        if (hasOnlyDsn() || connectionTab === "dsn") {
+          return true; // Show all DSN properties
+        }
+        return !property.noPrompt;
+      },
+      orderedProperties:
+        hasOnlyDsn() || connectionTab === "dsn"
+          ? filteredDsnProperties
+          : filteredParamsProperties,
+    });
+  }
+
+  function getSourceYamlPreview(values: Record<string, unknown>) {
+    const [rewrittenConnector, rewrittenFormValues] = prepareSourceFormData(
+      connector,
+      values,
+    );
+
+    // Check if the connector was rewritten to DuckDB
+    const isRewrittenToDuckDb = rewrittenConnector.name === "duckdb";
+
+    if (isRewrittenToDuckDb) {
+      return compileSourceYAML(rewrittenConnector, rewrittenFormValues);
+    } else {
+      return getConnectorYamlPreview(rewrittenFormValues);
+    }
+  }
+
+  $: yamlPreview = (() => {
+    // ClickHouse special case
+    if (connector.name === "clickhouse") {
+      // Reactive form values
+      const values =
+        connectionTab === "dsn" ? $clickhouseDsnForm : $clickhouseParamsForm;
+      return getClickHouseYamlPreview(values, clickhouseManaged);
+    }
+
+    const values =
+      hasOnlyDsn() || connectionTab === "dsn" ? $dsnForm : $paramsForm;
+
+    if (isConnectorForm) {
+      // Connector form
+      return getConnectorYamlPreview(values);
+    } else {
+      // Source form
+      return getSourceYamlPreview(values);
     }
   })();
 
