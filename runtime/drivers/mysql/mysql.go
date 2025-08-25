@@ -55,7 +55,7 @@ var spec = drivers.Spec{
 		{
 			Key:         "host",
 			Type:        drivers.StringPropertyType,
-			DisplayName: "Host/Socket",
+			DisplayName: "Host",
 			Placeholder: "localhost",
 			Hint:        "MySQL server hostname or IP address",
 		},
