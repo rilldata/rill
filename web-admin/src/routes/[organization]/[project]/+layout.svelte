@@ -178,7 +178,10 @@
     <!-- No deployment = the project is "hibernating" -->
     {#if $wakingProjects && $orgPermissions.data}
       <!-- Show organization-level wake state instead of project-specific hibernation CTA -->
-      <OrganizationHibernating {organization} organizationPermissions={$orgPermissions.data} />
+      <OrganizationHibernating
+        {organization}
+        organizationPermissions={$orgPermissions.data}
+      />
     {:else}
       <RedeployProjectCta {organization} {project} />
     {/if}
