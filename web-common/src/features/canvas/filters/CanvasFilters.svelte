@@ -47,6 +47,7 @@
         allDimensionFilterItems,
         allMeasureFilterItems,
         measureHasFilter,
+        lockedFilters,
       },
       spec: { canvasSpec, allDimensions, allSimpleMeasures },
       timeControls: {
@@ -59,6 +60,8 @@
       },
     },
   } = getCanvasStore(canvasName, instanceId));
+
+  $: console.log({ spec: $canvasSpec });
 
   $: ({ selectedTimeRange, timeStart, timeEnd } = $timeRangeStateStore || {});
 
@@ -201,8 +204,9 @@
           <div animate:flip={{ duration: 200 }}>
             {#if dimensionName && metricsViewNames?.length}
               <DimensionFilter
-                {metricsViewNames}
                 {readOnly}
+                removable={!$lockedFilters.has(name)}
+                {metricsViewNames}
                 {name}
                 {label}
                 {mode}
