@@ -41,6 +41,7 @@ var spec = drivers.Spec{
 			Type:        drivers.StringPropertyType,
 			DisplayName: "Host/Socket",
 			Placeholder: "localhost",
+			Required:    true,
 			Hint:        "Postgres server hostname or IP address",
 		},
 		{
@@ -56,6 +57,7 @@ var spec = drivers.Spec{
 			Type:        drivers.StringPropertyType,
 			DisplayName: "Username",
 			Placeholder: "postgres",
+			Required:    true,
 			Hint:        "Postgres username for authentication",
 		},
 		{
@@ -71,6 +73,7 @@ var spec = drivers.Spec{
 			Type:        drivers.StringPropertyType,
 			DisplayName: "Database",
 			Placeholder: "postgres",
+			Required:    true,
 			Hint:        "Name of the Postgres database to connect to",
 		},
 		{
