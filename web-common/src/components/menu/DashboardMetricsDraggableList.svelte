@@ -40,6 +40,11 @@
     .filter(([id]) => id && !selectedItems.includes(id))
     .map(([id]) => ({ id: id! }));
 
+  // Filter hidden items based on search
+  $: filteredHiddenItems = hiddenDraggableItems.filter(item => 
+    searchText === "" || item.id.toLowerCase().includes(searchText.toLowerCase())
+  );
+
   function handleSelectedReorder(data: {
     items: Array<{ id: string }>;
     fromIndex: number;
@@ -266,10 +271,6 @@
 
           <!-- Hidden items list - no dragging needed, just click to show -->
           <div class="flex flex-col overflow-y-auto p-1.5" style:min-height="auto" style:max-height="200px">
-            {@const filteredHiddenItems = hiddenDraggableItems.filter(item => 
-              searchText === "" || item.id.toLowerCase().includes(searchText.toLowerCase())
-            )}
-            
             {#if filteredHiddenItems.length === 0}
               <div class="px-2 py-2 text-xs text-gray-500">
                 {searchText
