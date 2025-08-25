@@ -33,25 +33,24 @@ For consistency or documentation purposes, if you'd like to annotate your model 
 select * from orders
 ```
 
-### Setting the Connector
+### Specifying the Data Source Connector
 
-Another parameter that you can define is the connector parameter. This will indicate which connection credentials to use. This allows you to define multiple connectors to different sources that require unique credentials. By default, the output of the table will be written to the default [OLAP engine](/connect/olap#olap-engines).
+The `@connector` annotation explicitly defines which data source connector to use when executing the SQL query. This parameter is essential when working with multiple connectors of the same type, as it determines which connection credentials and source path to utilize. By default, query results are written to the project's default [OLAP engine](/connect/olap#olap-engines).
+
 ```sql
 -- @connector: bigquery
-select * from project_id.dataset_name.table_name
+SELECT * FROM project_id.dataset_name.table_name
 ```
 
 ```sql
 -- @connector: postgres
 SELECT * FROM mydb.public.users
-
 ```
 
-```
--- Model SQL
--- Reference documentation: https://docs.rilldata.com/reference/project-files/models
+For projects configured with [multiple OLAP engines](/connect/olap/multiple-olap), you can specify both input and output connectors for a SQL model. Nested parameter syntax uses dot notation (e.g., `output.connector`).
+
+```sql
 -- @connector: clickhouse
--- @materialize: true
--- @output: { connector: "clickhouse" }
-
+-- @output.connector: clickhouse
+select from clickhouse_table
 ```
