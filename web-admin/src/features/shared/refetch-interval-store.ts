@@ -49,7 +49,7 @@ function updateSmartRefetchMeta(
       : INITIAL_REFETCH_INTERVAL;
   const next = Math.min(current * BACKOFF_FACTOR, MAX_REFETCH_INTERVAL);
 
-  return { refetchInterval: next, wasReconciling: hasReconciling };
+  return { refetchInterval: next, wasReconciling: true };
 }
 
 // WeakMap to store refetch state associated with each query
