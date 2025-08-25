@@ -42,6 +42,7 @@ export const getYupSchema = {
   motherduck: yup.object().shape({
     token: yup.string().required("Token is required"),
     path: yup.string().required("Path is required"),
+    schema_name: yup.string().required("Schema name is required"),
   }),
 
   sqlite: yup.object().shape({
