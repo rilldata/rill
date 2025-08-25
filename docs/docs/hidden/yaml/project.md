@@ -55,7 +55,7 @@ In your `rill.yaml`, the top level property for the resource type needs to be **
 :::info Hierarchy of inheritance and property overrides
 As a general rule of thumb, properties that have been specified at a more _granular_ level will supercede or override higher level properties that have been inherited. Therefore, in order of inheritance, Rill will prioritize properties in the following order:
 1. Individual [models](model.md)/[metrics_views](metrics-view.md)/[explore](explore.md) object level properties (e.g. `model.yaml` or `explore.yaml`)
-2. [Environment](/docs/build/models/environments.md) level properties (e.g. a specific property that have been set for `dev`)
+2. [Environment](/build/models/environments.md) level properties (e.g. a specific property that have been set for `dev`)
 3. [Project-wide defaults](#project-wide-defaults) for a specific property and resource type
 :::
 

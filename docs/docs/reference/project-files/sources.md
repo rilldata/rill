@@ -11,7 +11,7 @@ hide_table_of_contents: true
 **Next steps:**
 - Continue using sources if needed (backward compatible)
 - Migrate to source models via the `type:model` parameter for existing projects
-- See our [model YAML reference](advanced-models) for current documentation and best practices
+- See our [model YAML reference](/reference/project-files/models) for current documentation and best practices
 :::
 
 
