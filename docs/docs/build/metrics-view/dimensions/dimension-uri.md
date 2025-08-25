@@ -12,7 +12,7 @@ Adding an additional parmater to the dimension allows you to click directly on a
 
 ```yaml
 dimensions:
-  - label: Company Url
+  - display_name: Company Url
     column: Company URL
     uri: true #if already set to the URL, also accepts SQL expressions
 ```
@@ -21,7 +21,7 @@ A bit more complex example is using an `expression` and create the URL dynamical
 
 ```yaml
 dimensions:
-  - label: Company Url
-    expression: Company URL
-    uri: true #if already set to the URL, also accepts SQL expressions
+  - display_name: Bluesky Profile Link
+    expression: profile_id
+    uri: CONCAT('https://bsky.app/profile/',profile_id)
 ```

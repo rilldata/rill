@@ -1,12 +1,12 @@
 ---
 title: Get Started with Metrics Views
 description: Create metrics view using source data and models with time, dimensions, and measures
-sidebar_label: Get Started with Metrics Views
+sidebar_label: What are Metrics Views?
 sidebar_position: 00
 ---
 
 
-A metrics view is a `centralized framework` used to define and organize **key metrics** for your organization. Having a centralized layer allows an organization to easily manage and reuse calculations across various reports, dashboards, and data tools.
+A metrics view is a `centralized framework` used to define and organize **key metrics and dimnesions** for your organization. Having a centralized layer allows an organization to easily manage and reuse calculations across various reports, dashboards, and data tools.
 
 <!-- <img src='/img/build/metrics-view/visual-metrics-editor.gif' class='rounded-gif' />
 <br /> -->
@@ -75,13 +75,21 @@ features:
   ai: false
 ```
 
-## Creating Valid Metrics
+## Creating Valid Metrics View
 
-### Time series
+### Time Series
 
-Your time series must be a column from your data model of [type](https://duckdb.org/docs/sql/data_types/timestamp) `TIMESTAMP`, `TIME`, or `DATE`. If your source has a date in a different format, you can apply [time functions](https://duckdb.org/docs/sql/functions/timestamp) to transform these fields into valid time series types.
+Time is the most critical dimension in analytics and powers our dashboards. Understanding not just the "what," but how metrics evolve over hours, days, and months provides the narrative arc for decision-making. For a full walkthrough, see our [Time Series](/build/metrics-view/time-series) doc.
 
-[Customizing](/build/metrics-view/customize) your time series...
+
+### Dimensions
+
+Dimensions are used for exploring segments and filtering. Valid dimensions can be any type and are selected using the drop-down menu. You can also add labels and descriptions to your dimensions to customize how they are displayed. See our dedicated examples and pages for more use cases.
+
+- **[Clickable Dimension Links](/build/metrics-view/dimensions/dimension-uri)**
+- **[Unnest Dimensions](/build/metrics-view/dimensions/unnesting)**
+- **[Lookups](/build/metrics-view/dimensions/lookup)**
+
 
 ### Measures
 
@@ -98,32 +106,15 @@ As an example, if you have a table of sales events with the sales price and cust
 * Number of orders with order value more than $100: `count(*) FILTER (WHERE order_val > 100)`
 
 You can also add labels, descriptions, and your choice of number formatting to customize how they are shown. See our dedicated examples and pages for the following advanced measures!
-- **[Metric Formatting](/build/metrics-view/metric-formatting)**
-- **[Case Statements and Filters](/build/metrics-view/case-statements)**
-- **[Referencing Measures](/build/metrics-view/referencing)**
-- **[Quantiles](/build/metrics-view/quantiles)**
-- **[Fixed Metrics](/build/metrics-view/fixed-metrics)**
-- **[Window Functions](/build/metrics-view/windows)**
+- **[Metric Formatting](/build/metrics-view/measures/metric-formatting)**
+- **[Case Statements and Filters](/build/metrics-view/measures/case-statements)**
+- **[Referencing Measures](/build/metrics-view/measures/referencing)**
+- **[Quantiles](/build/metrics-view/measures/quantiles)**
+- **[Fixed Metrics](/build/metrics-view/measures/fixed-metrics)**
+- **[Window Functions](/build/metrics-view/measures/windows)**
 
   
-
-### Dimensions
-
-Dimensions are used for exploring segments and filtering. Valid dimensions can be any type and are selected using the drop-down menu. You can also add labels and descriptions to your dimensions to customize how they are displayed. See our dedicated examples and pages for more use cases.
-
-- **[Clickable Dimension Links](/build/metrics-view/dimension-uri)**
-- **[Unnest Dimensions](/build/metrics-view/unnesting)**
-- **[Lookups](/build/metrics-view/lookup)**
 
 ## Security
 
 Data access is an important part of Rill that allows you to create specified views of your dashboard depending on who's viewing the page. For a dedicated guide, see [Data Access](/build/metrics-view/security) for more information.
-
-
-## Multi-Editor and External IDE Support
-
-Rill Developer is meant to be developer-friendly and has been built around the idea of real-time feedback when modeling your data, allowing live interactivity and a real-time feedback loop to iterate quickly (or make adjustments as necessary) with your models and dashboards. Additionally, Rill Developer supports "hot reloading", which means that you can keep two windows of Rill open at the same time and/or use a preferred editor, such as VS Code, side-by-side with the dashboard that you're actively developing!
-
-<img src='https://cdn.rilldata.com/docs/release-notes/36_hot_reload.gif' class='rounded-gif' />
-<br />
-

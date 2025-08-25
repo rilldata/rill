@@ -2,7 +2,7 @@
 title: Who Can Access Your Data
 description: Control who can view your metrics and data
 sidebar_label: Data Access Control
-sidebar_position: 01
+sidebar_position: 20
 ---
 
 Rill supports **granular access policies** that let you control:
@@ -99,7 +99,7 @@ security:
 
 When combining access policies from project defaults and object-specific policies, remember that the object level policies will overwrite the project level ones. Dashboard and metrics ciew policies are binary logically ANDed.
  
-Not behaving as you're expecting? See our [troubleshooting guide.](/build/debugging/dashboard-access)
+<!-- Not behaving as you're expecting? See our [troubleshooting guide.](/build/debugging/dashboard-access) -->
 
 :::
 

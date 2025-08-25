@@ -440,31 +440,31 @@ const config = {
           },
           {
             from: '/build/metrics-view/advanced-expressions/case-statements',
-            to: '/build/metrics-view/case-statements'
+            to: '/build/metrics-view/measures/case-statements'
           },
           {
             from: '/build/metrics-view/advanced-expressions/fixed-metrics',
-            to: '/build/metrics-view/fixed-metrics'
+            to: '/build/metrics-view/measures/fixed-metrics'
           },
           {
             from: '/build/metrics-view/advanced-expressions/metric-formatting',
-            to: '/build/metrics-view/metric-formatting'
+            to: '/build/metrics-view/measures/metric-formatting'
           },
           {
             from: '/build/metrics-view/advanced-expressions/quantiles',
-            to: '/build/metrics-view/quantiles'
+            to: '/build/metrics-view/measures/quantiles'
           },
           {
             from: '/build/metrics-view/advanced-expressions/referencing',
-            to: '/build/metrics-view/referencing'
+            to: '/build/metrics-view/measures/referencing'
           },
           {
             from: '/build/metrics-view/advanced-expressions/unnesting',
-            to: '/build/metrics-view/unnesting'
+            to: '/build/metrics-view/dimensions/unnesting'
           },
           {
             from: '/build/metrics-view/advanced-expressions/windows',
-            to: '/build/metrics-view/windows'
+            to: '/build/metrics-view/measures/windows'
           }
           // {
           //   from: '/old-page',

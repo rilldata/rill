@@ -1,11 +1,11 @@
 ---
-title: "Lookup Dimensions"
+title: "Query-Time Dimension Joins"
 description: "Use lookup dimensions to enrich your metrics view data with reference information at query time"
-sidebar_label: "Lookup Dimensions"
+sidebar_label: "Query-Time Joins"
 sidebar_position: 55
 ---
 
-Lookup dimensions provide a powerful way to incorporate reference tables into your dashboard without requiring upstream SQL transformations. This feature enables data enrichment with reference information at query time, eliminating the need for complex ETL processes.
+Query-time joins or more simply, lookup dimensions, provide a powerful way to incorporate reference tables into your dashboard without requiring upstream SQL transformations. This feature enables data enrichment with reference information at query time, eliminating the need for complex ETL processes.
 
 :::note
 
