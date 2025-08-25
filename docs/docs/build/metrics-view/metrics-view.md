@@ -10,8 +10,10 @@ Metrics Views are a key part of defining your measures and dimensions.
 ### Metrics 101
 - [**What are Metrics Views?**](/build/metrics-view/what-are-metrics-views) - Define your time series, measures, and dimensions using your OLAP engine aggregate functions
 
-### Security 
-- [**Data Access Policies**](/build/metrics-view/security) - Control access to your metrics data with role-based permissions
+### Dimensions
+- [**Dimension URI**](/build/metrics-view/dimensions/dimension-uri) - Generate unique identifiers for your dimension values
+- [**Unnesting Arrays**](/build/metrics-view/dimensions/unnesting) - Work with array data by expanding nested structures
+- [**Lookup Dimensions**](/build/metrics-view/dimensions/lookup) - Create dimensions that reference data from other sources
 
 ### Measures
 - [**Format Measures**](/build/metrics-view/measures/metric-formatting) - Learn how to format and display your metrics effectively
@@ -21,7 +23,5 @@ Metrics Views are a key part of defining your measures and dimensions.
 - [**Fixed Measures**](/build/metrics-view/measures/fixed-metrics) - Create measures with fixed values and constants
 - [**Window Functions**](/build/metrics-view/measures/windows) - Apply window functions for advanced analytical operations
 
-### Dimensions
-- [**Dimension URI**](/build/metrics-view/dimensions/dimension-uri) - Generate unique identifiers for your dimension values
-- [**Unnesting Arrays**](/build/metrics-view/dimensions/unnesting) - Work with array data by expanding nested structures
-- [**Lookup Dimensions**](/build/metrics-view/dimensions/lookup) - Create dimensions that reference data from other sources
+### Security 
+- [**Data Access Policies**](/build/metrics-view/security) - Control access to your metrics data with role-based permissions

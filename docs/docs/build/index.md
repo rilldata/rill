@@ -28,5 +28,5 @@ Rill provides a comprehensive platform for building end-to-end data analytics so
 ### Project Settings
 - [**rill.yaml**](/build/rill-project-file) - Configure your Rill project defaults
 - [**Structure your Project**](/build/structure) - Structure folder architecture in Rill
-- [**Use your favorite IDE**] - Utilize your favorite IDE to build Rill projects
+- [**Use your favorite IDE**](/build/ide) - Utilize your favorite IDE to build Rill projects
 - [**Debugging Rill Developer**](/build/debugging/trace-viewer) - Troubleshoot dashboard access, trace your reconciled resources, and understand project logs  
