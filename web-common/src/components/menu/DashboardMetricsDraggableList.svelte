@@ -294,10 +294,11 @@
               />
               <span 
                 class="truncate flex-1 text-left cursor-pointer"
-                on:click={(event) => handleSpanClick(event, item.id, true)}
+                on:mousedown={(event) => handleSpanMouseDown(event, item.id, true)}
+                on:mouseup={(event) => handleSpanMouseUp(event, item.id, true)}
                 role="button"
                 tabindex="0"
-                aria-label="Click to hide {itemData?.displayName ?? item.id}"
+                aria-label="Short click to hide, long click to drag {itemData?.displayName ?? item.id}"
               >
                 {itemData?.displayName ??
                   `Unknown ${type === "measure" ? "measure" : "dimension"}`}
