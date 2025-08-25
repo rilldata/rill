@@ -23,6 +23,12 @@
   let searchText = "";
   let active = false;
 
+  // Variables for tracking click timing for show/hide vs drag detection
+  let mouseDownTime = 0;
+  let mouseDownTarget: EventTarget | null = null;
+  let isDragging = false;
+  const CLICK_THRESHOLD = 150; // ms - short clicks vs long clicks
+
   $: allItemsMap = new Map(allItems.map((item) => [item.name, item]));
   $: numAvailable = allItems?.length ?? 0;
   $: numShown = selectedItems?.filter((x) => x).length ?? 0;
@@ -77,29 +83,86 @@
     onSelectedChange(newSelectedItems);
   }
 
-  // Event handlers for custom click functionality
-  function handleSpanClick(event: MouseEvent, itemId: string, isShown: boolean) {
-    event.preventDefault();
-    event.stopPropagation();
+  // Enhanced event handlers for click vs drag detection
+  function handleSpanMouseDown(event: MouseEvent, itemId: string, isShown: boolean) {
+    mouseDownTime = Date.now();
+    mouseDownTarget = event.target;
+    isDragging = false;
     
-    // Toggle the item's visibility
     if (isShown) {
-      // Hide the item (move from shown to hidden)
-      const itemIndex = selectedItems.indexOf(itemId);
-      if (itemIndex !== -1 && selectedItems.length > 1) {
-        removeSelectedItem(itemIndex);
+      // For shown items, we might start a drag operation after the threshold
+      setTimeout(() => {
+        const elapsed = Date.now() - mouseDownTime;
+        if (elapsed >= CLICK_THRESHOLD && mouseDownTarget === event.target && !isDragging) {
+          // This was a long press, let the drag system handle it
+          // We don't need to do anything special here since DraggableList will handle the drag
+          isDragging = true;
+        }
+      }, CLICK_THRESHOLD);
+    }
+  }
+
+  function handleSpanMouseUp(event: MouseEvent, itemId: string, isShown: boolean) {
+    const clickDuration = Date.now() - mouseDownTime;
+    
+    // Only process short clicks for show/hide toggle
+    if (clickDuration < CLICK_THRESHOLD && event.target === mouseDownTarget && !isDragging) {
+      event.preventDefault();
+      event.stopPropagation();
+      
+      // Toggle the item's visibility
+      if (isShown) {
+        // Hide the item (move from shown to hidden)
+        const itemIndex = selectedItems.indexOf(itemId);
+        if (itemIndex !== -1 && selectedItems.length > 1) {
+          removeSelectedItem(itemIndex);
+        }
+      } else {
+        // Show the item (move from hidden to shown)
+        const newSelectedItems = [...selectedItems, itemId];
+        onSelectedChange(newSelectedItems);
       }
-    } else {
+    }
+    
+    // Reset tracking variables
+    mouseDownTime = 0;
+    mouseDownTarget = null;
+    // Don't reset isDragging here - let it be reset by drag end
+  }
+
+  // Fallback click handler for simple clicks (for hidden items)
+  function handleSpanClick(event: MouseEvent, itemId: string, isShown: boolean) {
+    // This is mainly for hidden items where we don't need drag functionality
+    if (!isShown) {
+      event.preventDefault();
+      event.stopPropagation();
+      
       // Show the item (move from hidden to shown)
       const newSelectedItems = [...selectedItems, itemId];
       onSelectedChange(newSelectedItems);
     }
   }
 
-  // Function to handle clicks on the draggable item container (shown items only)
+  // Function to handle clicks on the draggable item container
   function handleDraggableItemClick(event: MouseEvent, item: { id: string }, index: number) {
-    // For shown items, this should not be triggered if we handled the span click
-    // This is mainly a fallback
+    // Prevent default DraggableList click if we're handling it with our custom handlers
+    if (isDragging) {
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
+    
+    // For hidden items clicked through DraggableList (fallback)
+    if (!selectedItems.includes(item.id)) {
+      handleHiddenItemClick({ item, index });
+    }
+  }
+
+  // Reset drag state when drag operations complete
+  function handleDragComplete() {
+    isDragging = false;
+    mouseDownTime = 0;
+    mouseDownTarget = null;
   }
 </script>
 
