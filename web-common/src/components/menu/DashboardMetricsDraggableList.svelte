@@ -23,6 +23,11 @@
   let searchText = "";
   let active = false;
 
+  // Variables for tracking short vs long clicks
+  let mouseDownTime = 0;
+  let mouseDownTarget: EventTarget | null = null;
+  const CLICK_THRESHOLD = 150; // ms - if click is shorter than this, it's a "short click"
+
   $: allItemsMap = new Map(allItems.map((item) => [item.name, item]));
   $: numAvailable = allItems?.length ?? 0;
   $: numShown = selectedItems?.filter((x) => x).length ?? 0;
@@ -71,6 +76,59 @@
     const newSelectedItems = [selectedItems[0]];
     onSelectedChange(newSelectedItems);
   }
+
+  // Mouse event handlers for short vs long click detection
+  function handleMouseDown(event: MouseEvent) {
+    mouseDownTime = Date.now();
+    mouseDownTarget = event.target;
+  }
+
+  function handleMouseUp(event: MouseEvent, itemId: string, isShown: boolean) {
+    const clickDuration = Date.now() - mouseDownTime;
+    
+    // Only process short clicks (long clicks are handled by the drag system)
+    if (clickDuration < CLICK_THRESHOLD && event.target === mouseDownTarget) {
+      event.preventDefault();
+      event.stopPropagation();
+      
+      // Toggle the item's visibility
+      if (isShown) {
+        // Hide the item (move from shown to hidden)
+        const itemIndex = selectedItems.indexOf(itemId);
+        if (itemIndex !== -1 && selectedItems.length > 1) {
+          removeSelectedItem(itemIndex);
+        }
+      } else {
+        // Show the item (move from hidden to shown)
+        const newSelectedItems = [...selectedItems, itemId];
+        onSelectedChange(newSelectedItems);
+      }
+    }
+    
+    // Reset tracking variables
+    mouseDownTime = 0;
+    mouseDownTarget = null;
+  }
+
+  // Function to handle clicks on the draggable item container
+  // We need to prevent default click behavior when we handle short clicks
+  function handleDraggableItemClick(event: MouseEvent, item: { id: string }, index: number) {
+    const clickDuration = Date.now() - mouseDownTime;
+    
+    // If this was a short click and we handled it with our mouse handlers, 
+    // prevent the default DraggableList click behavior
+    if (clickDuration < CLICK_THRESHOLD && mouseDownTarget) {
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
+    
+    // For longer clicks or clicks not handled by our handlers,
+    // let the default DraggableList behavior handle it (for hidden items)
+    if (!selectedItems.includes(item.id)) {
+      handleHiddenItemClick({ item, index });
+    }
+  }
 </script>
 
 <Popover.Root bind:open={active}>
@@ -112,6 +170,7 @@
           minHeight="auto"
           maxHeight="300px"
           onReorder={handleSelectedReorder}
+          onItemClick={handleDraggableItemClick}
         >
           <div
             slot="header"
@@ -150,7 +209,14 @@
                     size="16px"
                     className="text-gray-400 pointer-events-none"
                   />
-                  <span class="truncate flex-1 text-left pointer-events-none">
+                  <span 
+                    class="truncate flex-1 text-left cursor-pointer"
+                    on:mousedown={handleMouseDown}
+                    on:mouseup={(event) => handleMouseUp(event, item.id, true)}
+                    role="button"
+                    tabindex="0"
+                    aria-label="Click to hide {itemData?.displayName ?? item.id}"
+                  >
                     {itemData?.displayName ??
                       `Unknown ${type === "measure" ? "measure" : "dimension"}`}
                   </span>
@@ -188,7 +254,14 @@
                 size="16px"
                 className="text-gray-400 pointer-events-none"
               />
-              <span class="truncate flex-1 text-left pointer-events-none">
+              <span 
+                class="truncate flex-1 text-left cursor-pointer"
+                on:mousedown={handleMouseDown}
+                on:mouseup={(event) => handleMouseUp(event, item.id, true)}
+                role="button"
+                tabindex="0"
+                aria-label="Click to hide {itemData?.displayName ?? item.id}"
+              >
                 {itemData?.displayName ??
                   `Unknown ${type === "measure" ? "measure" : "dimension"}`}
               </span>
@@ -218,7 +291,7 @@
             bind:searchValue={searchText}
             minHeight="auto"
             maxHeight="200px"
-            onItemClick={handleHiddenItemClick}
+            onItemClick={handleDraggableItemClick}
           >
             <div
               slot="header"
@@ -255,7 +328,14 @@
                   <Tooltip.Trigger
                     class="w-full flex gap-x-1 justify-between items-center"
                   >
-                    <span class="truncate flex-1 text-left pointer-events-none">
+                    <span 
+                      class="truncate flex-1 text-left cursor-pointer"
+                      on:mousedown={handleMouseDown}
+                      on:mouseup={(event) => handleMouseUp(event, item.id, false)}
+                      role="button"
+                      tabindex="0"
+                      aria-label="Click to show {itemData.displayName}"
+                    >
                       {itemData.displayName}
                     </span>
                     <button
@@ -281,7 +361,14 @@
                   </Tooltip.Content>
                 </Tooltip.Root>
               {:else}
-                <span class="truncate flex-1 text-left pointer-events-none">
+                <span 
+                  class="truncate flex-1 text-left cursor-pointer"
+                  on:mousedown={handleMouseDown}
+                  on:mouseup={(event) => handleMouseUp(event, item.id, false)}
+                  role="button"
+                  tabindex="0"
+                  aria-label="Click to show {itemData?.displayName ?? item.id}"
+                >
                   {itemData?.displayName}
                 </span>
                 <button
