@@ -72,6 +72,9 @@
             on:click={() => {
               onSelect(item);
             }}
+            on:toggle={() => {
+              onSelect(item);
+            }}
           >
             <slot {item} selected={selectedItems.has(item)}>
               {item}
@@ -89,6 +92,9 @@
           showXForSelected={excludeMode}
           checked={selectedItems.has(item)}
           on:click={() => {
+            onSelect(item);
+          }}
+          on:toggle={() => {
             onSelect(item);
           }}
         >

@@ -2,6 +2,7 @@
   import { cn } from "@rilldata/web-common/lib/shadcn";
   import { DropdownMenu as DropdownMenuPrimitive } from "bits-ui";
   import { Check, X } from "lucide-svelte";
+  import { createEventDispatcher } from "svelte";
 
   type $$Props = DropdownMenuPrimitive.CheckboxItemProps & {
     checkSize?: string;
@@ -24,6 +25,52 @@
   export { className as class };
 
   const iconColor = "var(--color-gray-800)";
+  const dispatch = createEventDispatcher();
+
+  let mouseDownTime = 0;
+  let dragTimeout: NodeJS.Timeout | null = null;
+  let isDragging = false;
+
+  function handleMouseDown(event: MouseEvent) {
+    if (event.button !== 0) return; // Only handle left clicks
+    
+    mouseDownTime = Date.now();
+    isDragging = false;
+
+    // Set a timeout to determine if this is a drag operation
+    dragTimeout = setTimeout(() => {
+      isDragging = true;
+    }, 150); // 150ms threshold, same as used in CanvasBuilder
+  }
+
+  function handleMouseUp(event: MouseEvent) {
+    if (dragTimeout) {
+      clearTimeout(dragTimeout);
+      dragTimeout = null;
+    }
+
+    const clickDuration = Date.now() - mouseDownTime;
+    
+    // If it's a short click (< 150ms) and not a drag operation, toggle the state
+    if (clickDuration < 150 && !isDragging) {
+      event.preventDefault();
+      event.stopPropagation();
+      // Dispatch a click event that the parent can handle
+      dispatch('toggle');
+      return;
+    }
+    
+    // Reset state for next interaction
+    isDragging = false;
+  }
+
+  function handleMouseLeave() {
+    // Clear timeout if mouse leaves before drag threshold
+    if (dragTimeout) {
+      clearTimeout(dragTimeout);
+      dragTimeout = null;
+    }
+  }
 </script>
 
 <svelte:element
@@ -48,6 +95,9 @@
     on:pointerdown
     on:pointerleave
     on:pointermove
+    on:mousedown={handleMouseDown}
+    on:mouseup={handleMouseUp}
+    on:mouseleave={handleMouseLeave}
   >
     <span class="flex flex-none h-6 w-6 items-center justify-center rounded-sm hover:bg-gray-100 transition-colors">
       {#if checked}
