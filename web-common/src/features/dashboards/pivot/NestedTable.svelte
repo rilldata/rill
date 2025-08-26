@@ -452,11 +452,17 @@
   }
 
   /* The totals row header - only apply when there are actual measures and totals */
-  .with-row-dimension.with-totals-row.with-measures tbody > tr:nth-of-type(2) > td:first-of-type {
+  .with-row-dimension.with-totals-row.with-measures
+    tbody
+    > tr:nth-of-type(2)
+    > td:first-of-type {
     @apply font-semibold;
   }
 
-  .with-expandable-rows.with-totals-row tbody > tr:nth-of-type(2) > td:first-of-type {
+  .with-expandable-rows.with-totals-row
+    tbody
+    > tr:nth-of-type(2)
+    > td:first-of-type {
     @apply pl-5;
   }
 
