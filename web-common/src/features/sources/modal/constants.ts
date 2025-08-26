@@ -1,9 +1,15 @@
+export type ClickHouseConnectorType =
+  | "rill-managed"
+  | "self-managed"
+  | "clickhouse-cloud";
+
 export const CONNECTOR_TYPE_OPTIONS: {
-  value: boolean;
+  value: ClickHouseConnectorType;
   label: string;
 }[] = [
-  { value: true, label: "Rill-managed ClickHouse" },
-  { value: false, label: "Self-hosted ClickHouse" },
+  { value: "rill-managed", label: "Rill-managed ClickHouse" },
+  { value: "self-managed", label: "Self-hosted ClickHouse" },
+  { value: "clickhouse-cloud", label: "ClickHouse Cloud" },
 ];
 
 export const CONNECTION_TAB_OPTIONS: { value: string; label: string }[] = [
