@@ -317,9 +317,15 @@
       options={CONNECTOR_TYPE_OPTIONS}
     />
     {#if connectorType === "rill-managed"}
-      <div class="mt-2">
+      <div class="mt-4">
         <InformationalField
           description="This option uses ClickHouse as an OLAP engine with Rill-managed infrastructure. No additional configuration is required - Rill will handle the setup and management of your ClickHouse instance."
+        />
+      </div>
+    {:else if connectorType === "clickhouse-cloud"}
+      <div class="my-4">
+        <InformationalField
+          description="Connect to your ClickHouse Cloud instance. SSL is automatically enabled and port is set to 8443 (HTTPS). You'll need your host, username, password, and database from the ClickHouse Cloud console."
         />
       </div>
     {/if}
