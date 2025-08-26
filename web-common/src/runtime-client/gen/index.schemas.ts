@@ -22,6 +22,13 @@ export interface ConnectorDriverProperty {
   placeholder?: string;
   secret?: boolean;
   noPrompt?: boolean;
+  options?: ConnectorDriverPropertyOption[];
+}
+
+export interface ConnectorDriverPropertyOption {
+  value?: string;
+  label?: string;
+  description?: string;
 }
 
 export type ConnectorDriverPropertyType =
@@ -35,6 +42,7 @@ export const ConnectorDriverPropertyType = {
   TYPE_STRING: "TYPE_STRING",
   TYPE_FILE: "TYPE_FILE",
   TYPE_INFORMATIONAL: "TYPE_INFORMATIONAL",
+  TYPE_SELECT: "TYPE_SELECT",
 } as const;
 
 export interface MetricsViewFilterCond {

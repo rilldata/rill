@@ -780,6 +780,7 @@ message ConnectorDriver {
       TYPE_STRING = 3;
       TYPE_FILE = 4;
       TYPE_INFORMATIONAL = 5;
+      TYPE_SELECT = 6;
     }
     // The property key
     string key = 1;

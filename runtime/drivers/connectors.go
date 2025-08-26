@@ -48,6 +48,14 @@ type PropertySpec struct {
 	Placeholder string
 	Secret      bool
 	NoPrompt    bool
+	Options     []PropertyOption
+}
+
+// PropertyOption represents a selectable option for a property
+type PropertyOption struct {
+	Value       string
+	Label       string
+	Description string
 }
 
 // PropertyType is an enum of types supported for connector properties.
@@ -60,4 +68,5 @@ const (
 	StringPropertyType
 	FilePropertyType
 	InformationalPropertyType
+	SelectPropertyType
 )

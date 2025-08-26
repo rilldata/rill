@@ -3783,6 +3783,11 @@ export enum ConnectorDriver_Property_Type {
    * @generated from enum value: TYPE_INFORMATIONAL = 5;
    */
   INFORMATIONAL = 5,
+
+  /**
+   * @generated from enum value: TYPE_SELECT = 6;
+   */
+  SELECT = 6,
 }
 // Retrieve enum metadata with: proto3.getEnumType(ConnectorDriver_Property_Type)
 proto3.util.setEnumType(ConnectorDriver_Property_Type, "rill.runtime.v1.ConnectorDriver.Property.Type", [
@@ -3792,6 +3797,7 @@ proto3.util.setEnumType(ConnectorDriver_Property_Type, "rill.runtime.v1.Connecto
   { no: 3, name: "TYPE_STRING" },
   { no: 4, name: "TYPE_FILE" },
   { no: 5, name: "TYPE_INFORMATIONAL" },
+  { no: 6, name: "TYPE_SELECT" },
 ]);
 
 /**

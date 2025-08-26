@@ -200,6 +200,8 @@ func driverPropertySpecToPB(spec *drivers.PropertySpec) *runtimev1.ConnectorDriv
 		t = runtimev1.ConnectorDriver_Property_TYPE_FILE
 	case drivers.InformationalPropertyType:
 		t = runtimev1.ConnectorDriver_Property_TYPE_INFORMATIONAL
+	case drivers.SelectPropertyType:
+		t = runtimev1.ConnectorDriver_Property_TYPE_SELECT
 	}
 
 	return &runtimev1.ConnectorDriver_Property{

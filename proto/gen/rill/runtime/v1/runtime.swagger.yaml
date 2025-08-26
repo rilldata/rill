@@ -3275,6 +3275,7 @@ definitions:
       - TYPE_STRING
       - TYPE_FILE
       - TYPE_INFORMATIONAL
+      - TYPE_SELECT
     default: TYPE_UNSPECIFIED
     title: Type of the property
   MetricsViewFilterCond:
