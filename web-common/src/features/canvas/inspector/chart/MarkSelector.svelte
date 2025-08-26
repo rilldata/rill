@@ -28,6 +28,10 @@
   $: chartFieldInput = config.meta?.chartFieldInput;
   $: colorMapConfig = chartFieldInput?.colorMappingSelector;
 
+  $: isValue = chartFieldInput?.type === "value";
+
+  $: console.log(chartFieldInput, isValue);
+
   function updateFieldConfig(property: keyof FieldConfig, value: any) {
     if (typeof markConfig !== "string") {
       if (markConfig[property] === value) {
@@ -70,21 +74,34 @@
     {/if}
   </div>
 
-  <FieldSwitcher
-    small
-    fields={["One color", "Split by"]}
-    {selected}
-    onClick={(_, field) => {
-      if (field === "One color") {
-        selected = 0;
-        onChange(typeof markConfig === "string" ? markConfig : "primary");
-      } else if (field === "Split by") {
-        selected = 1;
-      }
-    }}
-  />
+  {#if !isValue}
+    <FieldSwitcher
+      small
+      fields={["One color", "Split by"]}
+      {selected}
+      onClick={(_, field) => {
+        if (field === "One color") {
+          selected = 0;
+          onChange(typeof markConfig === "string" ? markConfig : "primary");
+        } else if (field === "Split by") {
+          selected = 1;
+        }
+      }}
+    />
+  {/if}
 </div>
 
+<!-- {#if isValue}
+  <ValueColorSelector
+    label={config.label ?? key}
+    colorValues={colorMapConfig?.values || []}
+    colorMapping={markConfig}
+    {colorMapConfig}
+    onChange={(updatedMapping) => {
+      onChange(updatedMapping);
+    }}
+  />
+{/if} -->
 {#if selected === 0}
   <div class="pt-2">
     <SingleColorSelector

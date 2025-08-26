@@ -19,7 +19,7 @@ export type InputType =
 
 export type FilterInputTypes = "time_filters" | "dimension_filters";
 
-export type FieldType = "measure" | "dimension" | "time";
+export type FieldType = "measure" | "dimension" | "time" | "value";
 
 export type SortSelectorConfig = {
   enable: boolean;
@@ -39,6 +39,10 @@ export type ChartFieldInput = {
   nullSelector?: boolean;
   labelAngleSelector?: boolean;
   axisRangeSelector?: boolean;
+  /**
+   * For combo charts individual field can be a bar or line chart.
+   */
+  markTypeSelector?: boolean;
   /**
    * The default legend position for the chart.
    * If this key is not specified, legend selector will not be shown.

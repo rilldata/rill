@@ -25,7 +25,8 @@ export type ChartType =
   | "pie_chart"
   | "heatmap"
   | "funnel_chart"
-  | "multi_metric_chart";
+  | "multi_metric_chart"
+  | "combo_chart";
 
 export type ChartDataQuery = CreateQueryResult<
   V1MetricsViewAggregationResponse,
@@ -84,6 +85,10 @@ interface NominalFieldConfig {
   colorMapping?: { value: string; color: string }[];
 }
 
+interface MarkFieldConfig {
+  mark?: "bar" | "line";
+}
+
 interface QuantitativeFieldConfig {
   zeroBasedOrigin?: boolean; // Default is false
   min?: number;
@@ -92,7 +97,8 @@ interface QuantitativeFieldConfig {
 
 export interface FieldConfig
   extends NominalFieldConfig,
-    QuantitativeFieldConfig {
+    QuantitativeFieldConfig,
+    MarkFieldConfig {
   field: string;
   type: "quantitative" | "ordinal" | "nominal" | "temporal";
   showAxisTitle?: boolean; // Default is false

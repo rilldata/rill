@@ -1,6 +1,7 @@
 <script lang="ts">
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import type { FieldConfig } from "@rilldata/web-common/features/canvas/components/charts/types";
+  import MarkTypeToggle from "@rilldata/web-common/features/canvas/inspector/chart/field-config/MarkTypeToggle.svelte";
   import SingleFieldInput from "@rilldata/web-common/features/canvas/inspector/SingleFieldInput.svelte";
   import type { ComponentInputParam } from "@rilldata/web-common/features/canvas/inspector/types";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
@@ -98,4 +99,13 @@
       updateFieldConfig(field);
     }}
   />
+
+  {#if chartFieldInput?.markTypeSelector}
+    <MarkTypeToggle
+      selectedMark={fieldConfig.mark}
+      onClick={(mark) => {
+        updateFieldProperty("mark", mark);
+      }}
+    />
+  {/if}
 </div>
