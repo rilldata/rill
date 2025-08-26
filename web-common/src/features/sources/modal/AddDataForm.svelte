@@ -120,7 +120,7 @@
   let clickhouseFormId: string = "";
   let clickhouseSubmitting: boolean;
   let clickhouseIsSubmitDisabled: boolean;
-  let clickhouseConnectorType: ClickHouseConnectorType = "rill-managed";
+  let clickhouseConnectorType: ClickHouseConnectorType = "self-managed";
   let clickhouseParamsForm;
   let clickhouseDsnForm;
 
