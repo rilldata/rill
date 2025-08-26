@@ -30,6 +30,7 @@ import {
 import { convertExpressionToFilterParam } from "@rilldata/web-common/features/dashboards/url-state/filters/converters";
 import type {
   MetricsViewSpecDimension,
+  V1CanvasPreset,
   V1Expression,
 } from "@rilldata/web-common/runtime-client";
 import {
@@ -56,6 +57,7 @@ type FilterProperties = {
   hidden: boolean;
   locked: boolean;
   unremovable: boolean;
+  limit?: number;
 };
 
 export class Filters {
@@ -338,75 +340,82 @@ export class Filters {
         if (!spec?.data) return;
         const defaultPreset = spec.data?.canvas?.defaultPreset;
 
-        const defaultFilterProperties = new Map();
+        if (!defaultPreset) return;
 
-        defaultPreset?.filters?.dimensions?.forEach(
-          ({ dimension, hidden, removable, locked, values }) => {
-            if (!dimension) return;
-
-            const properties = {
-              hidden,
-              locked,
-              unremovable: removable === false,
-            };
-
-            defaultFilterProperties.set(dimension, properties);
-
-            if (!values?.length) {
-              this.setTemporaryFilterName(dimension);
-            } else {
-              this.toggleMultipleDimensionValueSelections(
-                dimension,
-                values,
-                true,
-                false,
-                true,
-              );
-            }
-          },
-        );
-
-        defaultPreset?.filters?.measures?.forEach(
-          ({
-            measure,
-            hidden,
-            locked,
-            removable,
-            byDimension,
-            operator,
-
-            values,
-          }) => {
-            if (!measure) return;
-
-            const properties = {
-              hidden,
-              locked,
-              unremovable: removable === false,
-            };
-
-            defaultFilterProperties.set(measure, properties);
-
-            const operation = OperationShortHandMap.get(operator ?? "");
-
-            if (!byDimension || !operation) {
-              this.setTemporaryFilterName(measure);
-              return;
-            }
-
-            this.setMeasureFilter(byDimension, {
-              measure,
-              operation: operation,
-              type: MeasureFilterType.Value,
-              value1: values?.[0]?.toString() ?? "",
-              value2: values?.[1]?.toString() ?? "",
-            });
-          },
-        );
-
-        this.defaultFilterProperties.set(defaultFilterProperties);
+        this.processDefaults(defaultPreset);
       });
     }
+  }
+
+  private processDefaults(defaultPreset: V1CanvasPreset | undefined) {
+    if (!defaultPreset) return;
+    const defaultFilterProperties = new Map();
+
+    defaultPreset?.filters?.dimensions?.forEach(
+      ({ dimension, hidden, removable, locked, values, limit }) => {
+        if (!dimension) return;
+
+        const properties = {
+          hidden,
+          locked,
+          unremovable: removable === false,
+          limit,
+        };
+
+        defaultFilterProperties.set(dimension, properties);
+
+        if (!values?.length) {
+          this.setTemporaryFilterName(dimension);
+        } else {
+          this.toggleMultipleDimensionValueSelections(
+            dimension,
+            values,
+            true,
+            false,
+            true,
+          );
+        }
+      },
+    );
+
+    defaultPreset?.filters?.measures?.forEach(
+      ({
+        measure,
+        hidden,
+        locked,
+        removable,
+        byDimension,
+        operator,
+        values,
+      }) => {
+        if (!measure) return;
+
+        const properties = {
+          hidden,
+          locked,
+          unremovable: removable === false,
+        };
+
+        defaultFilterProperties.set(measure, properties);
+
+        const operation = OperationShortHandMap.get(operator ?? "");
+
+        if (!byDimension || !operation) {
+          this.setTemporaryFilterName(measure);
+          return;
+        }
+
+        this.setMeasureFilter(byDimension, {
+          measure,
+          operation: operation,
+          type: MeasureFilterType.Value,
+          value1: values?.[0]?.toString() ?? "",
+          value2: values?.[1]?.toString() ?? "",
+        });
+      },
+    );
+
+    this.defaultFilterProperties.set(defaultFilterProperties);
   }
 
   private getMeasureFilters = (
@@ -770,12 +779,14 @@ export class Filters {
   };
 
   clearAllFilters = () => {
-    const unremovableFilters = new Set(get(this.unremovableFilters));
-    this.temporaryFilters.set(unremovableFilters);
+    this.temporaryFilters.set(new Set());
     this.searchParamsStore.set(ExploreStateURLParams.Filters, undefined);
+    this.processDefaults(get(this.spec.canvasSpec)?.defaultPreset);
   };
 
   setTemporaryFilterName = (name: string, overwrite = false) => {
+    const tempFilters = get(this.temporaryFilters);
+
     if (this.componentName) {
       this.temporaryFilters.update((tempFilters) => {
         if (tempFilters.has(name)) {
@@ -785,17 +796,19 @@ export class Filters {
       });
     } else {
       if (overwrite) {
-        const unremovableFilters = new Set(get(this.unremovableFilters));
+        const defaultFilterProperties = get(this.defaultFilterProperties);
 
-        unremovableFilters.add(name);
+        const filtered = Array.from(tempFilters).filter((t) => {
+          return defaultFilterProperties.get(t)?.unremovable;
+        });
+
+        filtered.push(name);
 
         this.searchParamsStore.set(
           ExploreStateURLParams.TemporaryFilters,
-          Array.from(unremovableFilters).join(","),
+          filtered.join(","),
         );
       } else {
-        const tempFilters = get(this.temporaryFilters);
-
         tempFilters.add(name);
 
         this.searchParamsStore.set(

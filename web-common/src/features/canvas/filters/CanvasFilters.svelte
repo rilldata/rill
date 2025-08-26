@@ -209,6 +209,7 @@
               {metricsViewNames}
               {name}
               {label}
+              limit={properties?.limit}
               {mode}
               {selectedValues}
               {inputText}

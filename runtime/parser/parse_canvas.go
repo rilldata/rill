@@ -260,6 +260,10 @@ func (p *Parser) parseCanvas(node *Node) error {
 				if dimFilter.Limit != nil {
 					limit := uint32(*dimFilter.Limit)
 					filter.Limit = &limit
+			
+					if filter.Values != nil && uint32(len(filter.Values)) > limit {
+						return fmt.Errorf("dimension filter %q has too many values (max: %d)", dimFilter.Dimension, limit)
+					}
 				}
 				if dimFilter.Removable != nil {
 					filter.Removable = dimFilter.Removable

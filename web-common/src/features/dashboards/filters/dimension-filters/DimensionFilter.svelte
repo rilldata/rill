@@ -41,6 +41,7 @@
   export let excludeMode: boolean;
   export let openOnMount: boolean = true;
   export let readOnly: boolean = false;
+  export let limit: number | undefined = undefined;
   export let timeStart: string | undefined;
   export let timeEnd: string | undefined;
   export let timeControlsReady: boolean | undefined;
@@ -185,6 +186,8 @@
     selectedValues,
     curSearchText,
   ));
+
+  $: atLimit = Boolean(limit && effectiveSelectedValues.length >= limit);
 
   /**
    * Reset filter settings based on params to the component.
@@ -495,6 +498,7 @@
                 role="menuitem"
                 checked={selected}
                 showXForSelected={curExcludeMode}
+                disabled={!selected && atLimit}
                 on:click={() => handleItemClick(name)}
               >
                 <span>
@@ -529,7 +533,8 @@
               role="menuitem"
               checked={curMode === DimensionFilterMode.Select && selected}
               showXForSelected={curExcludeMode}
-              disabled={curMode !== DimensionFilterMode.Select}
+              disabled={curMode !== DimensionFilterMode.Select ||
+                (!selected && atLimit)}
               on:click={() => handleItemClick(name)}
             >
               <span>
