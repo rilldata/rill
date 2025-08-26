@@ -34,7 +34,10 @@
   import Tabs from "@rilldata/web-common/components/forms/Tabs.svelte";
   import { TabsContent } from "@rilldata/web-common/components/tabs";
   import { isEmpty, normalizeErrors } from "./utils";
-  import { CONNECTION_TAB_OPTIONS } from "./constants";
+  import {
+    CONNECTION_TAB_OPTIONS,
+    type ClickHouseConnectorType,
+  } from "./constants";
   import { getInitialFormValuesFromProperties } from "../sourceUtils";
   import { compileConnectorYAML } from "../../connectors/code-utils";
   import CopyIcon from "@rilldata/web-common/components/icons/CopyIcon.svelte";
@@ -117,7 +120,7 @@
   let clickhouseFormId: string = "";
   let clickhouseSubmitting: boolean;
   let clickhouseIsSubmitDisabled: boolean;
-  let clickhouseManaged: boolean;
+  let clickhouseConnectorType: ClickHouseConnectorType = "rill-managed";
   let clickhouseParamsForm;
   let clickhouseDsnForm;
 
@@ -185,8 +188,10 @@
 
   function getClickHouseYamlPreview(
     values: Record<string, unknown>,
-    managed: boolean,
+    connectorType: ClickHouseConnectorType,
   ) {
+    // Convert connectorType to managed boolean for YAML compatibility
+    const managed = connectorType === "rill-managed";
     return compileConnectorYAML(
       connector,
       {
@@ -249,7 +254,7 @@
       // Reactive form values
       const values =
         connectionTab === "dsn" ? $clickhouseDsnForm : $clickhouseParamsForm;
-      return getClickHouseYamlPreview(values, clickhouseManaged);
+      return getClickHouseYamlPreview(values, clickhouseConnectorType);
     }
 
     const values =
@@ -369,7 +374,7 @@
           bind:formId={clickhouseFormId}
           bind:submitting={clickhouseSubmitting}
           bind:isSubmitDisabled={clickhouseIsSubmitDisabled}
-          bind:managed={clickhouseManaged}
+          bind:connectorType={clickhouseConnectorType}
           bind:connectionTab
           bind:paramsForm={clickhouseParamsForm}
           bind:dsnForm={clickhouseDsnForm}
@@ -534,7 +539,7 @@
         type="primary"
       >
         {#if connector.name === "clickhouse"}
-          {#if clickhouseManaged}
+          {#if clickhouseConnectorType === "rill-managed"}
             {#if clickhouseSubmitting}
               Connecting...
             {:else}

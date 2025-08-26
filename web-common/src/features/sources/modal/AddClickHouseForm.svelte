@@ -22,7 +22,11 @@
   import { dsnSchema, getYupSchema } from "./yupSchemas";
   import Checkbox from "@rilldata/web-common/components/forms/Checkbox.svelte";
   import { isEmpty, normalizeErrors } from "./utils";
-  import { CONNECTOR_TYPE_OPTIONS, CONNECTION_TAB_OPTIONS } from "./constants";
+  import {
+    CONNECTOR_TYPE_OPTIONS,
+    CONNECTION_TAB_OPTIONS,
+    type ClickHouseConnectorType,
+  } from "./constants";
   import ConnectorTypeSelector from "@rilldata/web-common/components/forms/ConnectorTypeSelector.svelte";
   import { getInitialFormValuesFromProperties } from "../sourceUtils";
 
@@ -30,7 +34,7 @@
   export let formId: string;
   export let submitting: boolean;
   export let isSubmitDisabled: boolean;
-  export let managed: boolean;
+  export let connectorType: ClickHouseConnectorType = "rill-managed";
   export let onClose: () => void;
   export let setError: (
     error: string | null,
@@ -41,7 +45,7 @@
 
   const dispatch = createEventDispatcher();
 
-  // Always include 'managed' in the schema for ClickHouse
+  // ClickHouse schema includes the 'managed' property for backend compatibility
   const clickhouseSchema = yup(getYupSchema["clickhouse"]);
   const initialFormValues = getInitialFormValuesFromProperties(
     connector.configProperties ?? [],
@@ -84,12 +88,11 @@
   let dsnError: string | null = null;
   let dsnErrorDetails: string | undefined = undefined;
 
-  $: managed = $paramsForm.managed;
   $: submitting = connectionTab === "dsn" ? $dsnSubmitting : $paramsSubmitting;
   $: formId = connectionTab === "dsn" ? dsnFormId : paramsFormId;
 
   // Reset connectionTab if switching to Rill-managed
-  $: if ($paramsForm.managed) {
+  $: if (connectorType === "rill-managed") {
     connectionTab = "parameters";
   }
 
@@ -103,20 +106,26 @@
   // Emit the submitting state to the parent
   $: dispatch("submitting", { submitting });
 
-  let prevManaged = $paramsForm.managed;
+  let prevConnectorType = connectorType;
   $: {
-    // Switching to managed: strip all but managed
-    if ($paramsForm.managed && Object.keys($paramsForm).length > 1) {
+    // Switching to Rill-managed: set managed=true and clear other properties
+    if (
+      connectorType === "rill-managed" &&
+      Object.keys($paramsForm).length > 1
+    ) {
       paramsForm.update(() => ({ managed: true }), { taint: false });
       resetError();
     }
-    // Switching to self-managed: restore defaults
-    else if (prevManaged && !$paramsForm.managed) {
+    // Switching to self-managed or cloud: restore defaults and set managed=false
+    else if (
+      prevConnectorType === "rill-managed" &&
+      connectorType !== "rill-managed"
+    ) {
       paramsForm.update(() => ({ ...initialFormValues, managed: false }), {
         taint: false,
       });
     }
-    prevManaged = $paramsForm.managed;
+    prevConnectorType = connectorType;
   }
 
   function onStringInputChange(event: Event) {
@@ -189,27 +198,24 @@
     }
   }
 
-  $: properties = $paramsForm.managed
-    ? (connector.sourceProperties ?? [])
-    : (connector.configProperties?.filter((p) =>
-        connectionTab !== "dsn" ? p.key !== "dsn" : true,
-      ) ?? []);
+  $: properties =
+    connectorType === "rill-managed"
+      ? (connector.sourceProperties ?? [])
+      : (connector.configProperties?.filter((p) =>
+          connectionTab !== "dsn" ? p.key !== "dsn" : true,
+        ) ?? []);
   $: filteredProperties = properties.filter(
     (property) => !property.noPrompt && property.key !== "managed",
   );
 
   // TODO: move to utils.ts
   // Compute disabled state for the submit button
-  // Refer to `runtime/drivers/clickhouse/clickhouse.go` for the required
-  // Account for the managed property and the dsn property can be either true or false
+  // Refer to `runtime/drivers/clickhouse/clickhouse.go` for the required properties
   $: isSubmitDisabled = (() => {
-    if ($paramsForm.managed) {
-      // Managed form: only check required properties where property.key === 'managed' or property.key is not 'managed'
+    if (connectorType === "rill-managed") {
+      // Rill-managed form: check all required properties including 'managed'
       for (const property of filteredProperties) {
-        if (
-          property.required &&
-          (property.key === "managed" || property.key !== "managed")
-        ) {
+        if (property.required) {
           const key = String(property.key);
           const value = $paramsForm[key];
           if (isEmpty(value) || $paramsErrors[key]?.length) return true;
@@ -217,7 +223,7 @@
       }
       return false;
     } else if (connectionTab === "dsn") {
-      // Self-managed DSN form
+      // Self-managed or Cloud DSN form
       for (const property of dsnProperties) {
         if (property.required) {
           const key = String(property.key);
@@ -227,7 +233,7 @@
       }
       return false;
     } else {
-      // Self-managed parameters form: only check required properties where property.key !== 'managed'
+      // Self-managed or Cloud parameters form: check required properties (excluding 'managed')
       for (const property of filteredProperties) {
         if (property.required && property.key !== "managed") {
           const key = String(property.key);
@@ -251,19 +257,25 @@
 <div class="h-full w-full flex flex-col">
   <div>
     <ConnectorTypeSelector
-      bind:value={$paramsForm.managed}
+      bind:value={connectorType}
       options={CONNECTOR_TYPE_OPTIONS}
     />
-    {#if $paramsForm.managed}
+    {#if connectorType === "rill-managed"}
       <div class="mt-2">
         <InformationalField
           description="This option uses ClickHouse as an OLAP engine with Rill-managed infrastructure. No additional configuration is required - Rill will handle the setup and management of your ClickHouse instance."
         />
       </div>
+    {:else if connectorType === "clickhouse-cloud"}
+      <div class="mt-2">
+        <InformationalField
+          description="Connect to your ClickHouse Cloud instance. You'll need to provide your connection details from the ClickHouse Cloud console."
+        />
+      </div>
     {/if}
   </div>
 
-  {#if !$paramsForm.managed}
+  {#if connectorType !== "rill-managed"}
     <Tabs bind:value={connectionTab} options={CONNECTION_TAB_OPTIONS}>
       <TabsContent value="parameters">
         <form
