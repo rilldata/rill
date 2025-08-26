@@ -43,10 +43,7 @@ export function generateVLComboChartSpec(
   const valueField = "value";
 
   const spec = createMultiLayerBaseSpec();
-  const vegaConfig = createConfigWithLegend(config, {
-    field: measureField,
-    type: "nominal",
-  });
+  const vegaConfig = createConfigWithLegend(config, config.color);
   const xField = sanitizeValueForVega(config.x?.field);
 
   const y1MarkType = config.y1?.mark || "bar";
