@@ -4814,6 +4814,11 @@ export class CanvasDimensionFilter extends Message<CanvasDimensionFilter> {
    */
   locked?: boolean;
 
+  /**
+   * @generated from field: optional bool hidden = 6;
+   */
+  hidden?: boolean;
+
   constructor(data?: PartialMessage<CanvasDimensionFilter>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4827,6 +4832,7 @@ export class CanvasDimensionFilter extends Message<CanvasDimensionFilter> {
     { no: 3, name: "limit", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
     { no: 4, name: "removable", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 5, name: "locked", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
+    { no: 6, name: "hidden", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CanvasDimensionFilter {
@@ -4861,29 +4867,29 @@ export class CanvasMeasureFilter extends Message<CanvasMeasureFilter> {
   values: number[] = [];
 
   /**
-   * @generated from field: optional uint32 limit = 3;
-   */
-  limit?: number;
-
-  /**
-   * @generated from field: optional bool removable = 4;
+   * @generated from field: optional bool removable = 3;
    */
   removable?: boolean;
 
   /**
-   * @generated from field: optional string by_dimension = 5;
+   * @generated from field: optional string by_dimension = 4;
    */
   byDimension?: string;
 
   /**
-   * @generated from field: optional string operator = 6;
+   * @generated from field: optional string operator = 5;
    */
   operator?: string;
 
   /**
-   * @generated from field: optional bool locked = 7;
+   * @generated from field: optional bool locked = 6;
    */
   locked?: boolean;
+
+  /**
+   * @generated from field: optional bool hidden = 7;
+   */
+  hidden?: boolean;
 
   constructor(data?: PartialMessage<CanvasMeasureFilter>) {
     super();
@@ -4895,11 +4901,11 @@ export class CanvasMeasureFilter extends Message<CanvasMeasureFilter> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "measure", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "values", kind: "scalar", T: 13 /* ScalarType.UINT32 */, repeated: true },
-    { no: 3, name: "limit", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
-    { no: 4, name: "removable", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
-    { no: 5, name: "by_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
-    { no: 6, name: "operator", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
-    { no: 7, name: "locked", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
+    { no: 3, name: "removable", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
+    { no: 4, name: "by_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 5, name: "operator", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 6, name: "locked", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
+    { no: 7, name: "hidden", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CanvasMeasureFilter {

@@ -47,6 +47,16 @@ import { ExploreStateURLParams } from "../../dashboards/url-state/url-params";
 import type { SearchParamsStore } from "./canvas-entity";
 import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
 import type { CanvasSpecResponseStore } from "../types";
+import {
+  OperationShortHandMap,
+  MeasureFilterType,
+} from "../../dashboards/filters/measure-filters/measure-filter-options";
+
+type FilterProperties = {
+  hidden: boolean;
+  locked: boolean;
+  unremovable: boolean;
+};
 
 export class Filters {
   // private spec: CanvasResolvedSpec;
@@ -84,8 +94,7 @@ export class Filters {
   allDimensions: Readable<Map<string, MetricsViewSpecDimension>>;
   allMeasures: Readable<Map<string, MetricsViewSpecMeasure>>;
   temporaryFilters = writable<Set<string>>(new Set());
-  lockedFilters = writable<Set<string>>(new Set());
-  unremovableFilters = writable<Set<string>>(new Set());
+  defaultFilterProperties = writable<Map<string, FilterProperties>>(new Map());
 
   constructor(
     private spec: CanvasResolvedSpec,
@@ -331,36 +340,73 @@ export class Filters {
         if (!spec?.data) return;
         const defaultPreset = spec.data?.canvas?.defaultPreset;
 
-        defaultPreset?.filters?.dimensions?.forEach((dim) => {
-          const name = dim.dimension;
-          if (!name) return;
+        const defaultFilterProperties = new Map();
 
-          console.log({ dim });
+        defaultPreset?.filters?.dimensions?.forEach(
+          ({ dimension, hidden, removable, locked, values }) => {
+            if (!dimension) return;
 
-          if (dim.removable === false) {
-            console.log("adding to unremove list", name);
-            this.unremovableFilters.update((unremovableFilters) =>
-              unremovableFilters.add(name),
-            );
-          }
+            const properties = {
+              hidden,
+              locked,
+              unremovable: removable === false,
+            };
 
-          if (dim.locked) {
-            this.lockedFilters.update((locked) => locked.add(name));
-          }
+            defaultFilterProperties.set(dimension, properties);
 
-          if (!dim.values?.length) {
-            console.log("setting temporary filter");
-            this.setTemporaryFilterName(name);
-          } else {
-            this.toggleMultipleDimensionValueSelections(
-              name,
-              dim.values,
-              true,
-              false,
-              true,
-            );
-          }
-        });
+            if (!values?.length) {
+              this.setTemporaryFilterName(dimension);
+            } else {
+              this.toggleMultipleDimensionValueSelections(
+                dimension,
+                values,
+                true,
+                false,
+                true,
+              );
+            }
+          },
+        );
+
+        defaultPreset?.filters?.measures?.forEach(
+          ({
+            measure,
+            hidden,
+            locked,
+            removable,
+            byDimension,
+            operator,
+
+            values,
+          }) => {
+            if (!measure) return;
+
+            const properties = {
+              hidden,
+              locked,
+              unremovable: removable === false,
+            };
+
+            defaultFilterProperties.set(measure, properties);
+
+            const operation = OperationShortHandMap.get(operator ?? "");
+
+            if (!byDimension || !operation) {
+              this.setTemporaryFilterName(measure);
+              return;
+            }
+
+            this.setMeasureFilter(byDimension, {
+              measure,
+              operation: operation,
+              type: MeasureFilterType.Value,
+              value1: values?.[0]?.toString() ?? "",
+              value2: values?.[1]?.toString() ?? "",
+            });
+          },
+        );
+
+        this.defaultFilterProperties.set(defaultFilterProperties);
       });
     }
   }
@@ -726,7 +772,8 @@ export class Filters {
   };
 
   clearAllFilters = () => {
-    this.temporaryFilters.set(new Set());
+    const unremovableFilters = new Set(get(this.unremovableFilters));
+    this.temporaryFilters.set(unremovableFilters);
     this.searchParamsStore.set(ExploreStateURLParams.Filters, undefined);
   };
 

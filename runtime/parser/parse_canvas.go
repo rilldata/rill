@@ -40,16 +40,17 @@ type CanvasYAML struct {
 				Values    *[]string `yaml:"values"`
 				Limit     *int      `yaml:"limit"`     // Limit for the number of values
 				Removable *bool     `yaml:"removable"` // Flag to indicate if the filter can be removed
-				Locked    *bool     `yaml:"locked"`    
+				Locked    *bool     `yaml:"locked"`
+				Hidden    *bool     `yaml:"hidden"`
 			} `yaml:"dimensions"`
 			Measures []struct {
 				Measure     string    `yaml:"measure"`
 				ByDimension *string   `yaml:"by_dimension"`
 				Operator    *string   `yaml:"operator"` // Optional operator for the measure filter (e.g., "equals", "greater_than")
 				Values      *[]string `yaml:"values"`
-				Limit       *int      `yaml:"limit"`     // Limit for the number of values
 				Removable   *bool     `yaml:"removable"` // Flag to indicate if the filter can be removed
 				Locked      *bool     `yaml:"locked"`
+				Hidden      *bool     `yaml:"hidden"`
 			} `yaml:"measures"`
 		} `yaml:"filters"`
 	} `yaml:"defaults"`
@@ -266,6 +267,9 @@ func (p *Parser) parseCanvas(node *Node) error {
 				if dimFilter.Locked != nil {
 					filter.Locked = dimFilter.Locked
 				}
+				if dimFilter.Hidden != nil {
+					filter.Hidden = dimFilter.Hidden
+				}
 				dimensionFilters[i] = filter
 			}
 
@@ -288,10 +292,6 @@ func (p *Parser) parseCanvas(node *Node) error {
 					}
 					filter.Values = values
 				}
-				if measureFilter.Limit != nil {
-					limit := uint32(*measureFilter.Limit)
-					filter.Limit = &limit
-				}
 				if measureFilter.Removable != nil {
 					filter.Removable = measureFilter.Removable
 				}
@@ -299,7 +299,18 @@ func (p *Parser) parseCanvas(node *Node) error {
 					filter.ByDimension = measureFilter.ByDimension
 				}
 				if measureFilter.Operator != nil {
+
+					if !isValidMeasureFilterOperator(measureFilter.Operator) {
+						return fmt.Errorf("invalid operator %q for measure filter %q", *measureFilter.Operator, measureFilter.Measure)
+					}
+
 					filter.Operator = measureFilter.Operator
+				}
+				if measureFilter.Locked != nil {
+					filter.Locked = measureFilter.Locked
+				}
+				if measureFilter.Hidden != nil {
+					filter.Hidden = measureFilter.Hidden
 				}
 				measureFilters[i] = filter
 			}
@@ -448,4 +459,16 @@ func pointerIfNotEmpty(v string) *string {
 		return nil
 	}
 	return &v
+}
+
+func isValidMeasureFilterOperator(op *string) bool {
+	if op == nil {
+		return false
+	}
+	switch *op {
+	case "eq", "neq", "gt", "gte", "lt", "lte", "bt", "nbt":
+		return true
+	default:
+		return false
+	}
 }

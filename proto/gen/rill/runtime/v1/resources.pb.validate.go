@@ -10521,6 +10521,10 @@ func (m *CanvasDimensionFilter) validate(all bool) error {
 		// no validation rules for Locked
 	}
 
+	if m.Hidden != nil {
+		// no validation rules for Hidden
+	}
+
 	if len(errors) > 0 {
 		return CanvasDimensionFilterMultiError(errors)
 	}
@@ -10625,10 +10629,6 @@ func (m *CanvasMeasureFilter) validate(all bool) error {
 
 	// no validation rules for Measure
 
-	if m.Limit != nil {
-		// no validation rules for Limit
-	}
-
 	if m.Removable != nil {
 		// no validation rules for Removable
 	}
@@ -10643,6 +10643,10 @@ func (m *CanvasMeasureFilter) validate(all bool) error {
 
 	if m.Locked != nil {
 		// no validation rules for Locked
+	}
+
+	if m.Hidden != nil {
+		// no validation rules for Hidden
 	}
 
 	if len(errors) > 0 {

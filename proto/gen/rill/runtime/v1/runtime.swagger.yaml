@@ -3855,6 +3855,8 @@ definitions:
         type: boolean
       locked:
         type: boolean
+      hidden:
+        type: boolean
   v1CanvasItem:
     type: object
     properties:
@@ -3881,9 +3883,6 @@ definitions:
         items:
           type: integer
           format: int64
-      limit:
-        type: integer
-        format: int64
       removable:
         type: boolean
       byDimension:
@@ -3891,6 +3890,8 @@ definitions:
       operator:
         type: string
       locked:
+        type: boolean
+      hidden:
         type: boolean
   v1CanvasPreset:
     type: object

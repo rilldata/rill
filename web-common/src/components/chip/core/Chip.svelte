@@ -7,7 +7,6 @@
   import CaretDownIcon from "../../icons/CaretDownIcon.svelte";
   import Tooltip from "../../tooltip/Tooltip.svelte";
   import TooltipContent from "../../tooltip/TooltipContent.svelte";
-  import Lock from "../../icons/Lock.svelte";
   import { LockIcon } from "lucide-svelte";
 
   export let removable = false;
@@ -60,6 +59,7 @@
     {#if removable && !readOnly && !locked}
       <Tooltip
         alignment="start"
+        location="top"
         distance={12}
         suppress={supressTooltip || !removeTooltipText}
       >
