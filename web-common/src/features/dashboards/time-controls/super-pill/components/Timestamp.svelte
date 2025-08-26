@@ -49,7 +49,7 @@
   </Tooltip.Trigger>
   <Tooltip.Content
     hidden={suppress}
-    class="w-fit min-w-fit flex"
+    class="w-fit flex"
     side="right"
     sideOffset={16}
   >
@@ -61,10 +61,10 @@
           <span>{humanReadableTimeOffset} ago</span>
         {/if}
       {:else}
-        <span>{formattedString} </span>
+        <span>{formattedString}</span>
       {/if}
 
-      <span class="w-fit flex-none">
+      <span>
         {isoString}
       </span>
     </div>
