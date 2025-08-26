@@ -147,6 +147,10 @@ export function generateVLComboChartSpec(
         y: {
           ...createPositionEncoding(config.y1, data),
           field: valueField,
+          axis: {
+            ...createPositionEncoding(config.y1, data).axis,
+            orient: "left",
+          },
         },
         color: baseColorEncoding,
       },
@@ -175,6 +179,10 @@ export function generateVLComboChartSpec(
         y: {
           ...createPositionEncoding(config.y2, data),
           field: valueField,
+          axis: {
+            ...createPositionEncoding(config.y2, data).axis,
+            orient: "right",
+          },
         },
         color: baseColorEncoding,
       },
