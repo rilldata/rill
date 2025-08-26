@@ -48,22 +48,11 @@
   ariaLabel="Select organization"
   placeholder="Select organization"
   options={orgOptions}
+  addOptionLabel="+ Create organization"
+  onAddOption={() => (isNewOrgDialogOpen = true)}
   width={400}
   sameWidth
->
-  <div slot="additional-dropdown-content" let:close>
-    <SelectSeparator />
-    <button
-      on:click={() => {
-        isNewOrgDialogOpen = true;
-        close();
-      }}
-      class="w-full cursor-pointer select-none rounded-sm py-1.5 px-2 text-left hover:bg-accent"
-    >
-      + Create organization
-    </button>
-  </div>
-</Select>
+/>
 
 <Button wide type="primary" href={createProjectUrl} disabled={!selectedOrg}>
   Deploy as a new project

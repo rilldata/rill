@@ -1,6 +1,9 @@
 <script lang="ts">
+  import { SelectSeparator } from "@rilldata/web-common/components/select";
   import * as Select from "@rilldata/web-common/components/select";
   import * as Tooltip from "@rilldata/web-common/components/tooltip-v2";
+  import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
+  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types.ts";
   import { InfoIcon } from "lucide-svelte";
   import { createEventDispatcher } from "svelte";
   import DataTypeIcon from "../data-types/DataTypeIcon.svelte";
@@ -22,6 +25,9 @@
     disabled?: boolean;
     tooltip?: string;
   }[];
+  export let optionsLoading: boolean = false;
+  export let onAddOption: () => void | null = null;
+  export let addOptionLabel: string | null = null;
   export let placeholder: string = "";
   export let optional: boolean = false;
   export let tooltip: string = "";
@@ -54,14 +60,7 @@
       )
     : options;
 
-  // Needed to pass a close method to slots
-  // In certain cases, the "additional-dropdown-content" slot might need to close the dropdown without selecting a value.
-  // So we need an explicit close method and not use Select.Item
   let open = false;
-
-  function close() {
-    open = false;
-  }
 </script>
 
 <div class="flex flex-col gap-y-2 max-w-full" class:w-full={full}>
@@ -138,37 +137,59 @@
           <Search bind:value={searchText} showBorderOnFocus={false} />
         </div>
       {/if}
-      {#each filteredOptions as { type, value, label, description, disabled, tooltip } (value)}
-        <Select.Item
-          {value}
-          {label}
-          {description}
-          {disabled}
-          class="text-[{fontSize}px] gap-x-2 items-start"
-        >
-          {#if tooltip}
-            <Tooltip.Root portal="body">
-              <Tooltip.Trigger class="select-tooltip cursor-default">
-                {#if type}
-                  <DataTypeIcon {type} />
-                {/if}
-                {label ?? value}
-              </Tooltip.Trigger>
-              <Tooltip.Content side="right" sideOffset={8}>
-                {tooltip}
-              </Tooltip.Content>
-            </Tooltip.Root>
-          {:else}
-            {#if type}
-              <DataTypeIcon {type} />
-            {/if}
-            {label ?? value}
-          {/if}
-        </Select.Item>
+      {#if optionsLoading}
+        <div class="flex flex-row items-center ml-5 h-10 w-full">
+          <div class="m-auto w-10">
+            <Spinner size="18px" status={EntityStatus.Running} />
+          </div>
+        </div>
       {:else}
-        <div class="px-2.5 py-1.5 text-gray-600">No results found</div>
-      {/each}
-      <slot name="additional-dropdown-content" {close} />
+        {#each filteredOptions as { type, value, label, description, disabled, tooltip } (value)}
+          <Select.Item
+            {value}
+            {label}
+            {description}
+            {disabled}
+            class="text-[{fontSize}px] gap-x-2 items-start"
+          >
+            {#if tooltip}
+              <Tooltip.Root portal="body">
+                <Tooltip.Trigger class="select-tooltip cursor-default">
+                  {#if type}
+                    <DataTypeIcon {type} />
+                  {/if}
+                  {label ?? value}
+                </Tooltip.Trigger>
+                <Tooltip.Content side="right" sideOffset={8}>
+                  {tooltip}
+                </Tooltip.Content>
+              </Tooltip.Root>
+            {:else}
+              {#if type}
+                <DataTypeIcon {type} />
+              {/if}
+              {label ?? value}
+            {/if}
+          </Select.Item>
+        {:else}
+          <div class="px-2.5 py-1.5 text-gray-600">No results found</div>
+        {/each}
+        {#if onAddOption}
+          <SelectSeparator />
+          <Select.Item
+            value="__rill_add_option__"
+            on:click={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              open = false;
+              onAddOption();
+            }}
+            class="text-[{fontSize}px]"
+          >
+            {addOptionLabel ?? "+ Add"}
+          </Select.Item>
+        {/if}
+      {/if}
     </Select.Content>
   </Select.Root>
 </div>
