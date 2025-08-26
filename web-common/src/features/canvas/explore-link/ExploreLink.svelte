@@ -109,7 +109,7 @@
       size={28}
       disabled={!canNavigate}
       ariaLabel="Go to Explore Dashboard"
-      disableHover={canNavigate}
+      disableHover={!canNavigate}
     >
       {#if isNavigating}
         <Spinner status={EntityStatus.Running} size="18px" />
