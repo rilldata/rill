@@ -34,7 +34,7 @@
   export let formId: string;
   export let submitting: boolean;
   export let isSubmitDisabled: boolean;
-  export let connectorType: ClickHouseConnectorType = "rill-managed";
+  export let connectorType: ClickHouseConnectorType = "self-managed";
   export let onClose: () => void;
   export let setError: (
     error: string | null,
