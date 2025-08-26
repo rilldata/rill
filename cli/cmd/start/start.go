@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/joho/godotenv"
+	"github.com/rilldata/rill/cli/cmd/env"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/local"
@@ -47,6 +48,15 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 					}
 
 					projectPath = repoName
+
+					if ch.IsAuthenticated() {
+						if _, err := os.Stat(filepath.Join(projectPath, "rill.yaml")); err == nil {
+							err := env.PullVars(cmd.Context(), ch, projectPath, "", environment, true)
+							if err != nil {
+								ch.PrintfWarn("Warning: failed to pull environment credentials: %v\n", err)
+							}
+						}
+					}
 				}
 			} else if !cmdutil.HasRillProject(".") {
 				if !ch.Interactive {
