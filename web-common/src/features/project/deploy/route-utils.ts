@@ -1,3 +1,5 @@
+import { addPosthogSessionIdToUrl } from "@rilldata/web-common/lib/analytics/posthog.ts";
+
 export function getDeployRoute(pageUrl: URL) {
   const deployUrl = new URL(pageUrl);
   deployUrl.pathname = "/deploy";
@@ -34,4 +36,20 @@ export function getCreateOrganizationRoute() {
 
 export function getSelectOrganizationRoute() {
   return `/deploy/organization/select`;
+}
+
+export function getDeployLandingPage(
+  frontendUrl: string,
+  dashboardName: string | null,
+) {
+  const url = new URL(frontendUrl);
+  url.searchParams.set("deploying", "true");
+  if (dashboardName) {
+    url.searchParams.set("deploying_name", dashboardName);
+  }
+  url.pathname += "/-/invite";
+  const projectInviteUrlWithSessionId = addPosthogSessionIdToUrl(
+    url.toString(),
+  );
+  return projectInviteUrlWithSessionId;
 }

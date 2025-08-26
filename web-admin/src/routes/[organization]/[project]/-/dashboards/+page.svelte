@@ -10,8 +10,8 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import type { PageData } from "./$types";
 
-  export let pageData: PageData;
-  const { deploying, deployingName } = pageData;
+  export let data: PageData;
+  const { deploying, deployingName } = data;
 
   $: ({
     params: { organization, project },
@@ -19,11 +19,12 @@
   $: ({ instanceId } = $runtime);
 
   $: query = useRefetchingDashboards(instanceId, deployingName);
-  $: ({ data } = $query);
+  $: ({ data: dashboards } = $query);
 
-  $: dashboardToRedirect = deploying
-    ? getDashboardToRedirect(organization, project, data, deployingName)
-    : undefined;
+  $: dashboardToRedirect =
+    deploying && dashboards
+      ? getDashboardToRedirect(organization, project, dashboards, deployingName)
+      : undefined;
   $: if (dashboardToRedirect) {
     void goto(dashboardToRedirect);
   }
@@ -36,7 +37,7 @@
 <ContentContainer
   maxWidth={800}
   title="Project dashboards"
-  showTitle={data?.length > 0}
+  showTitle={dashboards?.length > 0}
 >
   <div class="flex flex-col items-center gap-y-4">
     <DashboardsTable />
