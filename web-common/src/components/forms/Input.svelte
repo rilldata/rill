@@ -46,7 +46,7 @@
     | { value: string; label: string; type?: string }[]
     | undefined = undefined;
   export let optionsLoading: boolean = false;
-  export let onAddOption: () => void | null = null;
+  export let onAddOption: (() => void) | null = null;
   export let addOptionLabel: string | null = null;
   export let additionalClass = "";
   export let onInput: (

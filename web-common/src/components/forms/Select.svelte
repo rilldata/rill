@@ -26,7 +26,7 @@
     tooltip?: string;
   }[];
   export let optionsLoading: boolean = false;
-  export let onAddOption: () => void | null = null;
+  export let onAddOption: (() => void) | null = null;
   export let addOptionLabel: string | null = null;
   export let placeholder: string = "";
   export let optional: boolean = false;
