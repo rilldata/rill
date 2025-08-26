@@ -59,7 +59,6 @@ type FilterProperties = {
 };
 
 export class Filters {
-  // private spec: CanvasResolvedSpec;
   // -------------------
   // STORES (writable)
   // -------------------
@@ -105,7 +104,6 @@ export class Filters {
     // -----------------------------
     // Initialize writable stores
     // -----------------------------
-    // this.spec = spec;
     this.dimensionFilterExcludeMode = writable(new Map<string, boolean>());
 
     this.whereFilter = writable({
