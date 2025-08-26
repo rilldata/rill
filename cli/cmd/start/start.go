@@ -48,13 +48,13 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 					}
 
 					projectPath = repoName
+				}
 
-					if ch.IsAuthenticated() {
-						if _, err := os.Stat(filepath.Join(projectPath, "rill.yaml")); err == nil {
-							err := env.PullVars(cmd.Context(), ch, projectPath, "", environment, true)
-							if err != nil {
-								ch.PrintfWarn("Warning: failed to pull environment credentials: %v\n", err)
-							}
+				if ch.IsAuthenticated() {
+					if _, err := os.Stat(filepath.Join(projectPath, "rill.yaml")); err == nil {
+						err := env.PullVars(cmd.Context(), ch, projectPath, "", environment, true)
+						if err != nil {
+							ch.PrintfWarn("Warning: failed to pull environment credentials: %v\n", err)
 						}
 					}
 				}
