@@ -136,9 +136,27 @@ export class ComboChartComponent extends BaseChart<ComboChartSpec> {
     super.updateProperty(key, value);
   }
 
+  getMeasureLabels(): string[] | undefined {
+    const config = get(this.specStore);
+    const metricsViewName = config.metrics_view;
+    const measuresStore =
+      this.parent.spec.getMeasuresForMetricView(metricsViewName);
+    const measures = get(measuresStore);
+
+    let measureDisplayNames: string[] | undefined;
+    if (config.y1?.field && config.y2?.field) {
+      measureDisplayNames = [config.y1.field, config.y2.field].map(
+        (fieldName) => {
+          const measure = measures.find((m) => m.name === fieldName);
+          return measure?.displayName || fieldName;
+        },
+      );
+      return measureDisplayNames;
+    }
+  }
+
   getChartSpecificOptions(): Record<string, ComponentInputParam> {
     const inputParams = { ...ComboChartComponent.chartInputParams };
-    const config = get(this.specStore);
 
     const sortSelector = inputParams.x.meta?.chartFieldInput?.sortSelector;
     if (sortSelector) {
@@ -147,8 +165,8 @@ export class ComboChartComponent extends BaseChart<ComboChartSpec> {
 
     const colorMappingSelector =
       inputParams.color.meta?.chartFieldInput?.colorMappingSelector;
-    if (colorMappingSelector && config.y1?.field && config.y2?.field) {
-      colorMappingSelector.values = [config.y1.field, config.y2.field];
+    if (colorMappingSelector) {
+      colorMappingSelector.values = this.getMeasureLabels();
     }
     return inputParams;
   }
@@ -368,7 +386,7 @@ export class ComboChartComponent extends BaseChart<ComboChartSpec> {
           ? [...this.customSortXItems]
           : undefined;
     }
-
+    result["measures"] = this.getMeasureLabels();
     return result;
   }
 }

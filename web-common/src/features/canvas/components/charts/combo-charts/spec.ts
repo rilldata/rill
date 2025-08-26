@@ -17,13 +17,13 @@ import type { ComboChartSpec } from "./ComboChart";
 
 function getColorForField(
   encoding: "y1" | "y2",
+  label: string,
   config: ComboChartSpec,
 ): string {
   const colorMapping = config.color?.colorMapping;
 
   if (colorMapping) {
-    const fieldName = config[encoding]?.field;
-    const mapping = colorMapping?.find?.((m) => m.value === fieldName);
+    const mapping = colorMapping?.find?.((m) => m.value === label);
     if (mapping) {
       return mapping.color;
     }
@@ -67,7 +67,11 @@ export function generateVLComboChartSpec(
       data.fields[config.y1.field]?.displayName || config.y1.field;
     colorMapping.push({
       value: config.y1.field,
-      color: getColorForField("y1", config),
+      color: getColorForField(
+        "y1",
+        measureDisplayNames[config.y1.field],
+        config,
+      ),
     });
   }
   if (config.y2?.field) {
@@ -76,7 +80,11 @@ export function generateVLComboChartSpec(
       data.fields[config.y2.field]?.displayName || config.y2.field;
     colorMapping.push({
       value: config.y2.field,
-      color: getColorForField("y2", config),
+      color: getColorForField(
+        "y2",
+        measureDisplayNames[config.y2.field],
+        config,
+      ),
     });
   }
 

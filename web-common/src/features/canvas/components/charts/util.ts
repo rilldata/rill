@@ -286,9 +286,10 @@ export function getColorMappingForChart(
   const colorField = chartSpec.color;
 
   let colorMapping: ColorMapping | undefined;
-  if (isFieldConfig(colorField)) {
+  if (typeof colorField === "object") {
+    const fieldKey = colorField.field || "measures";
     colorMapping = getColorForValues(
-      domainValues[colorField.field],
+      domainValues[fieldKey],
       colorField.colorMapping,
     );
   }

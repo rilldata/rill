@@ -70,7 +70,7 @@ export function getTooltipFormatter(colorMapping: ColorMapping) {
     const rows = Object.entries(items)
       .map(([key, val]) => {
         if (val === undefined) return "";
-        const colorEntry = colorMapping.find(
+        const colorEntry = colorMapping?.find(
           (mapping) => mapping.value === key,
         );
         const keyColor = colorEntry
