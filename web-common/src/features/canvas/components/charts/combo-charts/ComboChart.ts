@@ -157,6 +157,7 @@ export class ComboChartComponent extends BaseChart<ComboChartSpec> {
 
   getChartSpecificOptions(): Record<string, ComponentInputParam> {
     const inputParams = { ...ComboChartComponent.chartInputParams };
+    const config = get(this.specStore);
 
     const sortSelector = inputParams.x.meta?.chartFieldInput?.sortSelector;
     if (sortSelector) {
@@ -168,6 +169,15 @@ export class ComboChartComponent extends BaseChart<ComboChartSpec> {
     if (colorMappingSelector) {
       colorMappingSelector.values = this.getMeasureLabels();
     }
+
+    if (inputParams.y1.meta?.chartFieldInput && config.y2?.field) {
+      inputParams.y1.meta.chartFieldInput.excludedValues = [config.y2.field];
+    }
+
+    if (inputParams.y2.meta?.chartFieldInput && config.y1?.field) {
+      inputParams.y2.meta.chartFieldInput.excludedValues = [config.y1.field];
+    }
+
     return inputParams;
   }
 

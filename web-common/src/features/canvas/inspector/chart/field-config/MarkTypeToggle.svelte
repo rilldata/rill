@@ -19,8 +19,13 @@
   ];
 </script>
 
-<div class="flex items-center gap-2 justify-between mt-1">
-  <InputLabel small label="Mark type" id="mark-type-toggle" />
+<div class="flex items-center gap-2 justify-between mt-2 px-2">
+  <InputLabel
+    small
+    capitalize={false}
+    label="Mark type"
+    id="mark-type-toggle"
+  />
   <div class="radio relative">
     {#each markOptions as { mark, icon: Icon } (mark)}
       <Tooltip activeDelay={700} distance={8}>

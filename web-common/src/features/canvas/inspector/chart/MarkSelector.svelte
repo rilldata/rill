@@ -89,17 +89,6 @@
   {/if}
 </div>
 
-<!-- {#if isValue}
-  <ValueColorSelector
-    label={config.label ?? key}
-    colorValues={colorMapConfig?.values || []}
-    colorMapping={markConfig}
-    {colorMapConfig}
-    onChange={(updatedMapping) => {
-      onChange(updatedMapping);
-    }}
-  />
-{/if} -->
 {#if isValue && colorMapConfig?.enable && typeof markConfig === "object"}
   <div class="pt-2">
     <ColorPaletteSelector
@@ -125,6 +114,7 @@
     metricName={metricsView}
     id={`${key}-field`}
     type="dimension"
+    excludedValues={chartFieldInput?.excludedValues}
     selectedItem={typeof markConfig === "string"
       ? undefined
       : markConfig?.field}

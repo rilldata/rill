@@ -30,6 +30,7 @@ export type SortSelectorConfig = {
 
 export type ChartFieldInput = {
   type: FieldType;
+  excludedValues?: string[];
   axisTitleSelector?: boolean;
   hideTimeDimension?: boolean;
   originSelector?: boolean;

@@ -95,6 +95,7 @@
     type={isDimension ? "dimension" : "measure"}
     includeTime={!chartFieldInput?.hideTimeDimension}
     selectedItem={fieldConfig?.field}
+    excludedValues={chartFieldInput?.excludedValues}
     onSelect={async (field) => {
       updateFieldConfig(field);
     }}
