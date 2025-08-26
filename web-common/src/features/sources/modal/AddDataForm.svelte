@@ -192,27 +192,28 @@
   ) {
     // Convert connectorType to managed boolean for YAML compatibility
     const managed = connectorType === "rill-managed";
-    return compileConnectorYAML(
-      connector,
-      {
-        ...values,
-        managed,
+
+    // Ensure ClickHouse Cloud specific requirements are met in preview
+    const previewValues = { ...values, managed } as Record<string, unknown>;
+    if (connectorType === "clickhouse-cloud") {
+      previewValues.ssl = true;
+      previewValues.port = "8443";
+    }
+
+    return compileConnectorYAML(connector, previewValues, {
+      fieldFilter: (property) => {
+        // When in DSN mode, don't filter out noPrompt properties
+        // because the DSN field itself might have noPrompt: true
+        if (hasOnlyDsn() || connectionTab === "dsn") {
+          return true; // Show all DSN properties
+        }
+        return !property.noPrompt;
       },
-      {
-        fieldFilter: (property) => {
-          // When in DSN mode, don't filter out noPrompt properties
-          // because the DSN field itself might have noPrompt: true
-          if (hasOnlyDsn() || connectionTab === "dsn") {
-            return true; // Show all DSN properties
-          }
-          return !property.noPrompt;
-        },
-        orderedProperties:
-          connectionTab === "dsn"
-            ? filteredDsnProperties
-            : filteredParamsProperties,
-      },
-    );
+      orderedProperties:
+        connectionTab === "dsn"
+          ? filteredDsnProperties
+          : filteredParamsProperties,
+    });
   }
 
   function getConnectorYamlPreview(values: Record<string, unknown>) {
