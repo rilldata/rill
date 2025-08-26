@@ -116,14 +116,31 @@
       paramsForm.update(() => ({ managed: true }), { taint: false });
       resetError();
     }
-    // Switching to self-managed or cloud: restore defaults and set managed=false
+    // Switching to self-managed: restore defaults and set managed=false
     else if (
       prevConnectorType === "rill-managed" &&
-      connectorType !== "rill-managed"
+      connectorType === "self-managed"
     ) {
       paramsForm.update(() => ({ ...initialFormValues, managed: false }), {
         taint: false,
       });
+    }
+    // Switching to ClickHouse Cloud: set specific defaults
+    else if (
+      prevConnectorType !== "clickhouse-cloud" &&
+      connectorType === "clickhouse-cloud"
+    ) {
+      paramsForm.update(
+        () => ({
+          ...initialFormValues,
+          managed: false,
+          port: "8443",
+          ssl: true,
+        }),
+        {
+          taint: false,
+        },
+      );
     }
     prevConnectorType = connectorType;
   }
@@ -151,7 +168,6 @@
     In extends Record<string, unknown> = T,
   >(event: {
     form: SuperValidated<T, M, In>;
-    formEl: HTMLFormElement;
     cancel: () => void;
     result: Extract<
       import("@sveltejs/kit").ActionResult,
@@ -159,7 +175,14 @@
     >;
   }) {
     if (!event.form.valid) return;
-    const values = event.form.data;
+    const values = { ...event.form.data };
+
+    // Ensure ClickHouse Cloud specific requirements are met
+    if (connectorType === "clickhouse-cloud") {
+      (values as any).ssl = true;
+      (values as any).port = "8443";
+    }
+
     try {
       await submitAddConnectorForm(queryClient, connector, values);
       onClose();
@@ -198,12 +221,24 @@
     }
   }
 
-  $: properties =
-    connectorType === "rill-managed"
-      ? (connector.sourceProperties ?? [])
-      : (connector.configProperties?.filter((p) =>
-          connectionTab !== "dsn" ? p.key !== "dsn" : true,
-        ) ?? []);
+  $: properties = (() => {
+    if (connectorType === "rill-managed") {
+      return connector.sourceProperties ?? [];
+    } else if (connectorType === "clickhouse-cloud") {
+      // ClickHouse Cloud: only show specific properties
+      return (connector.configProperties ?? []).filter((p) =>
+        ["host", "port", "username", "password", "database"].includes(
+          p.key ?? "",
+        ),
+      );
+    } else {
+      // Self-managed: show all config properties except dsn
+      return (connector.configProperties ?? []).filter((p) =>
+        connectionTab !== "dsn" ? p.key !== "dsn" : true,
+      );
+    }
+  })();
+
   $: filteredProperties = properties.filter(
     (property) => !property.noPrompt && property.key !== "managed",
   );
@@ -233,7 +268,7 @@
       }
       return false;
     } else {
-      // Self-managed or Cloud parameters form: check required properties (excluding 'managed')
+      // Parameters form: check required properties based on connector type
       for (const property of filteredProperties) {
         if (property.required && property.key !== "managed") {
           const key = String(property.key);
@@ -241,6 +276,12 @@
           if (isEmpty(value) || $paramsErrors[key]?.length) return true;
         }
       }
+
+      // For ClickHouse Cloud, ensure SSL is enabled
+      if (connectorType === "clickhouse-cloud") {
+        if (!$paramsForm.ssl) return true;
+      }
+
       return false;
     }
   })();
@@ -269,7 +310,7 @@
     {:else if connectorType === "clickhouse-cloud"}
       <div class="mt-2">
         <InformationalField
-          description="Connect to your ClickHouse Cloud instance. You'll need to provide your connection details from the ClickHouse Cloud console."
+          description="Connect to your ClickHouse Cloud instance. SSL is automatically enabled and port is set to 8443 (HTTPS). You'll need your host, username, password, and database from the ClickHouse Cloud console."
         />
       </div>
     {/if}
@@ -286,36 +327,51 @@
         >
           {#each filteredProperties as property (property.key)}
             {@const propertyKey = property.key ?? ""}
-            <div class="py-1.5 first:pt-0 last:pb-0">
-              {#if property.type === ConnectorDriverPropertyType.TYPE_STRING || property.type === ConnectorDriverPropertyType.TYPE_NUMBER}
-                <Input
-                  id={propertyKey}
-                  label={property.displayName}
-                  placeholder={property.placeholder}
-                  optional={!property.required}
-                  secret={property.secret}
-                  hint={property.hint}
-                  errors={normalizeErrors($paramsErrors[propertyKey])}
-                  bind:value={$paramsForm[propertyKey]}
-                  onInput={(_, e) => onStringInputChange(e)}
-                  alwaysShowError
-                />
-              {:else if property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN}
-                <Checkbox
-                  id={propertyKey}
-                  bind:checked={$paramsForm[propertyKey]}
-                  label={property.displayName}
-                  hint={property.hint}
-                  optional={!property.required}
-                />
-              {:else if property.type === ConnectorDriverPropertyType.TYPE_INFORMATIONAL}
-                <InformationalField
-                  description={property.description}
-                  hint={property.hint}
-                  href={property.docsUrl}
-                />
-              {/if}
-            </div>
+            {@const isClickHouseCloud = connectorType === "clickhouse-cloud"}
+            {@const isPortField = propertyKey === "port"}
+            {@const isSSLField = propertyKey === "ssl"}
+
+            <!-- Skip SSL field for ClickHouse Cloud since it's always enabled -->
+            {#if !(isClickHouseCloud && isSSLField)}
+              <div class="py-1.5 first:pt-0 last:pb-0">
+                {#if property.type === ConnectorDriverPropertyType.TYPE_STRING || property.type === ConnectorDriverPropertyType.TYPE_NUMBER}
+                  <Input
+                    id={propertyKey}
+                    label={property.displayName}
+                    placeholder={property.placeholder}
+                    optional={!property.required}
+                    secret={property.secret}
+                    hint={property.hint}
+                    errors={normalizeErrors($paramsErrors[propertyKey])}
+                    bind:value={$paramsForm[propertyKey]}
+                    onInput={(_, e) => onStringInputChange(e)}
+                    alwaysShowError
+                    disabled={isClickHouseCloud && isPortField}
+                  />
+                {:else if property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN}
+                  <Checkbox
+                    id={propertyKey}
+                    bind:checked={$paramsForm[propertyKey]}
+                    label={property.displayName}
+                    hint={property.hint}
+                    optional={!property.required}
+                  />
+                {:else if property.type === ConnectorDriverPropertyType.TYPE_INFORMATIONAL}
+                  <InformationalField
+                    description={property.description}
+                    hint={property.hint}
+                    href={property.docsUrl}
+                  />
+                {/if}
+
+                <!-- Show info about fixed values for ClickHouse Cloud -->
+                {#if isClickHouseCloud && isPortField}
+                  <div class="mt-1 text-xs text-gray-600">
+                    Port is fixed to 8443 for ClickHouse Cloud (HTTPS)
+                  </div>
+                {/if}
+              </div>
+            {/if}
           {/each}
         </form>
       </TabsContent>
