@@ -8,10 +8,14 @@ Rill provides a comprehensive platform for building end-to-end data analytics so
 
 ### Modeling and Last Mile ETL
 - [**Models Overview**](/build/models) - Overview of models available in Rill
+- [**Getting Started with Models**](/build/models/models-101) - What are models and important topics to remember as you create your own.
+- [**Differences between SQL and YAML Models**](/build/models/model-differences) - Compare SQL and YAML models and learn when to use 
 - [**SQL Models**](/build/models/sql-models) - Transform and prepare your data
 - [**Data Refresh**](/build/models/data-refresh) - Schedule your data refresh  
 - [**Additional Model Templating**](/build/models/templating) - Separate your production and development settings 
-- [**Advanced Modeling**](/build/models/model-differences#yaml-models) - Incremental ingestion, data partitions, and more
+- [**YAML Models**](/build/models/model-differences#yaml-models) - Incremental ingestion, data partitions, and more
+- [**Performance**](/build/models/performance) - Optimize model performance and data refresh strategies
+- [**Environment Templating**](/build/models/templating) - Separate your production and development settings 
 
 ### Define Measures and Dimensions
 
