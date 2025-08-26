@@ -1,3 +1,4 @@
+import type { ColorMapping } from "@rilldata/web-common/features/canvas/inspector/types";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import type { EmbedOptions } from "svelte-vega";
 import { get } from "svelte/store";
@@ -15,7 +16,7 @@ export interface CreateEmbedOptionsParams {
   theme?: "light" | "dark";
   expressionFunctions?: ExpressionFunction;
   useExpressionInterpreter?: boolean;
-  colorMapping: { value: string; color: string }[];
+  colorMapping: ColorMapping;
 }
 
 export function createEmbedOptions({
@@ -64,9 +65,7 @@ export function createEmbedOptions({
   };
 }
 
-export function getTooltipFormatter(
-  colorMapping: { value: string; color: string }[],
-) {
+export function getTooltipFormatter(colorMapping: ColorMapping) {
   return (items: any, sanitize: (value: any) => string) => {
     const rows = Object.entries(items)
       .map(([key, val]) => {

@@ -1,3 +1,4 @@
+import type { ColorMapping } from "@rilldata/web-common/features/canvas/inspector/types";
 import type {
   V1Expression,
   V1MetricsViewAggregationDimension,
@@ -82,7 +83,7 @@ interface NominalFieldConfig {
   showNull?: boolean;
   labelAngle?: number;
   legendOrientation?: ChartLegend;
-  colorMapping?: { value: string; color: string }[];
+  colorMapping?: ColorMapping;
 }
 
 interface MarkFieldConfig {

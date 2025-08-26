@@ -30,8 +30,6 @@
 
   $: isValue = chartFieldInput?.type === "value";
 
-  $: console.log(chartFieldInput, isValue);
-
   function updateFieldConfig(property: keyof FieldConfig, value: any) {
     if (typeof markConfig !== "string") {
       if (markConfig[property] === value) {
@@ -102,7 +100,15 @@
     }}
   />
 {/if} -->
-{#if selected === 0}
+{#if isValue && colorMapConfig?.enable && typeof markConfig === "object"}
+  <div class="pt-2">
+    <ColorPaletteSelector
+      colorMapping={markConfig?.colorMapping}
+      onChange={updateFieldConfig}
+      {colorMapConfig}
+    />
+  </div>
+{:else if selected === 0}
   <div class="pt-2">
     <SingleColorSelector
       small
@@ -130,7 +136,7 @@
   {#if isFieldConfig(markConfig) && colorMapConfig?.enable}
     <div class="pt-2">
       <ColorPaletteSelector
-        fieldConfig={markConfig}
+        colorMapping={markConfig?.colorMapping}
         onChange={updateFieldConfig}
         {colorMapConfig}
       />

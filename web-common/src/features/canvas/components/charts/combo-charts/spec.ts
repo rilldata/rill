@@ -1,6 +1,8 @@
 import { sanitizeValueForVega } from "@rilldata/web-common/components/vega/util";
+import type { ColorMapping } from "@rilldata/web-common/features/canvas/inspector/types";
+import { COMPARIONS_COLORS } from "@rilldata/web-common/features/dashboards/config";
 import type { VisualizationSpec } from "svelte-vega";
-import type { Field } from "vega-lite/build/src/channeldef";
+import type { ColorDef, Field } from "vega-lite/build/src/channeldef";
 import type { LayerSpec } from "vega-lite/build/src/spec/layer";
 import type { UnitSpec } from "vega-lite/build/src/spec/unit";
 import {
@@ -13,25 +15,38 @@ import {
 import type { ChartDataResult } from "../types";
 import type { ComboChartSpec } from "./ComboChart";
 
-function getColorForField(fieldName: string, config: ComboChartSpec): string {
+function getColorForField(
+  encoding: "y1" | "y2",
+  config: ComboChartSpec,
+): string {
   const colorMapping = config.color?.colorMapping;
 
   if (colorMapping) {
+    const fieldName = config[encoding]?.field;
     const mapping = colorMapping?.find?.((m) => m.value === fieldName);
     if (mapping) {
       return mapping.color;
     }
   }
 
-  return "#3524C7"; // fallback
+  if (encoding === "y1") return COMPARIONS_COLORS[0];
+  if (encoding === "y2") return COMPARIONS_COLORS[1];
+
+  return "#3524C7";
 }
 
 export function generateVLComboChartSpec(
   config: ComboChartSpec,
   data: ChartDataResult,
 ): VisualizationSpec {
+  const measureField = "Measure";
+  const valueField = "value";
+
   const spec = createMultiLayerBaseSpec();
-  const vegaConfig = createConfigWithLegend(config, undefined);
+  const vegaConfig = createConfigWithLegend(config, {
+    field: measureField,
+    type: "nominal",
+  });
   const xField = sanitizeValueForVega(config.x?.field);
 
   const y1MarkType = config.y1?.mark || "bar";
@@ -41,6 +56,37 @@ export function generateVLComboChartSpec(
     [config.x, config.y1, config.y2],
     data,
   );
+
+  const measures: string[] = [];
+  const measureDisplayNames: Record<string, string> = {};
+  const colorMapping: ColorMapping = [];
+
+  if (config.y1?.field) {
+    measures.push(config.y1.field);
+    measureDisplayNames[config.y1.field] =
+      data.fields[config.y1.field]?.displayName || config.y1.field;
+    colorMapping.push({
+      value: config.y1.field,
+      color: getColorForField("y1", config),
+    });
+  }
+  if (config.y2?.field) {
+    measures.push(config.y2.field);
+    measureDisplayNames[config.y2.field] =
+      data.fields[config.y2.field]?.displayName || config.y2.field;
+    colorMapping.push({
+      value: config.y2.field,
+      color: getColorForField("y2", config),
+    });
+  }
+
+  // Transform data to long format for legend
+  spec.transform = [
+    {
+      fold: measures,
+      as: [measureField, valueField],
+    },
+  ];
 
   spec.height = "container";
   spec.encoding = { x: createPositionEncoding(config.x, data) };
@@ -60,13 +106,33 @@ export function generateVLComboChartSpec(
     }),
   );
 
-  // Collect all data layers first
+  const legend = {
+    labelExpr:
+      Object.entries(measureDisplayNames)
+        .map(([key, value]) => `datum.value === '${key}' ? '${value}' : `)
+        .join("") + "datum.value",
+  };
+
+  const baseColorEncoding: ColorDef<Field> = {
+    field: measureField,
+    type: "nominal",
+    legend,
+    scale: {
+      domain: colorMapping.map((m) => m.value),
+      range: colorMapping.map((m) => m.color),
+      type: "ordinal",
+    },
+  };
+
   const dataLayers: Array<UnitSpec<Field>> = [];
 
-  // Add Y1 layer
   if (config.y1?.field) {
-    const y1Color = getColorForField(config.y1.field, config);
     const y1Layer: UnitSpec<Field> = {
+      transform: [
+        {
+          filter: `datum['${measureField}'] === '${config.y1.field}'`,
+        },
+      ],
       mark: {
         type: y1MarkType,
         clip: true,
@@ -80,17 +146,21 @@ export function generateVLComboChartSpec(
       encoding: {
         y: {
           ...createPositionEncoding(config.y1, data),
+          field: valueField,
         },
-        color: { value: y1Color },
+        color: baseColorEncoding,
       },
     };
     dataLayers.push(y1Layer);
   }
 
-  // Add Y2 layer
   if (config.y2?.field) {
-    const y2Color = getColorForField(config.y2.field, config);
     const y2Layer: UnitSpec<Field> = {
+      transform: [
+        {
+          filter: `datum['${measureField}'] === '${config.y2.field}'`,
+        },
+      ],
       mark: {
         type: y2MarkType,
         clip: true,
@@ -104,12 +174,9 @@ export function generateVLComboChartSpec(
       encoding: {
         y: {
           ...createPositionEncoding(config.y2, data),
-          axis: {
-            ...createPositionEncoding(config.y2, data).axis,
-            orient: "right",
-          },
+          field: valueField,
         },
-        color: { value: y2Color },
+        color: baseColorEncoding,
       },
     };
     dataLayers.push(y2Layer);

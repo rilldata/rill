@@ -92,7 +92,7 @@ export class ComboChartComponent extends BaseChart<ComboChartSpec> {
         type: "color",
         chartFieldInput: {
           type: "value",
-          defaultLegendOrientation: "none",
+          defaultLegendOrientation: "top",
           colorMappingSelector: { enable: true },
           nullSelector: true,
         },
@@ -123,7 +123,6 @@ export class ComboChartComponent extends BaseChart<ComboChartSpec> {
           const oppositeMarkType = updatedField.mark === "bar" ? "line" : "bar";
           const updatedOtherField = { ...otherField, mark: oppositeMarkType };
 
-          // Update both fields at once
           const newSpec = {
             ...currentSpec,
             [key]: updatedField,
@@ -135,8 +134,6 @@ export class ComboChartComponent extends BaseChart<ComboChartSpec> {
         }
       }
     }
-
-    // For all other cases, use the parent implementation
     super.updateProperty(key, value);
   }
 
@@ -295,6 +292,11 @@ export class ComboChartComponent extends BaseChart<ComboChartSpec> {
         field: randomMeasure2,
         zeroBasedOrigin: true,
         mark: "line",
+      },
+      color: {
+        type: "nominal",
+        field: "measures", // This will be used for legend
+        legendOrientation: "top",
       },
     };
   }

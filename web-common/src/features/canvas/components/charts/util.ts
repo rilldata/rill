@@ -1,5 +1,6 @@
 import type { CartesianChartSpec } from "@rilldata/web-common/features/canvas/components/charts/cartesian-charts/CartesianChart";
 import type { HeatmapChartSpec } from "@rilldata/web-common/features/canvas/components/charts/heatmap-charts/HeatmapChart";
+import type { ColorMapping } from "@rilldata/web-common/features/canvas/inspector/types";
 import { COMPARIONS_COLORS } from "@rilldata/web-common/features/dashboards/config";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
 import { adjustOffsetForZone } from "@rilldata/web-common/lib/convertTimestampPreview";
@@ -253,8 +254,8 @@ export function getLinkStateForTimeDimensionDetail(
 export function getColorForValues(
   colorValues: string[] | undefined,
   // if provided, use the colors for mentioned values
-  overrideColorMapping: { value: string; color: string }[] | undefined,
-): { value: string; color: string }[] | undefined {
+  overrideColorMapping: ColorMapping | undefined,
+): ColorMapping | undefined {
   if (!colorValues || colorValues.length === 0) return undefined;
 
   const colorMapping = colorValues.map((value, index) => {
@@ -275,11 +276,11 @@ export function getColorForValues(
 export function getColorMappingForChart(
   chartSpec: ChartSpec,
   domainValues: ChartDomainValues | undefined,
-): { value: string; color: string }[] | undefined {
+): ColorMapping | undefined {
   if (!("color" in chartSpec) || !domainValues) return undefined;
   const colorField = chartSpec.color;
 
-  let colorMapping: { value: string; color: string }[] | undefined;
+  let colorMapping: ColorMapping | undefined;
   if (isFieldConfig(colorField)) {
     colorMapping = getColorForValues(
       domainValues[colorField.field],

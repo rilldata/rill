@@ -64,6 +64,8 @@ export interface ComponentInputParam {
   };
 }
 
+export type ColorMapping = { value: string; color: string }[];
+
 export interface FilterInputParam {
   type: FilterInputTypes;
   meta?: Record<string, any>;
