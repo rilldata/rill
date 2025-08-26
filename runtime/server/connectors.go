@@ -204,7 +204,7 @@ func driverPropertySpecToPB(spec *drivers.PropertySpec) *runtimev1.ConnectorDriv
 		t = runtimev1.ConnectorDriver_Property_TYPE_SELECT
 	}
 
-	return &runtimev1.ConnectorDriver_Property{
+	pb := &runtimev1.ConnectorDriver_Property{
 		Key:         spec.Key,
 		Type:        t,
 		Required:    spec.Required,
@@ -217,6 +217,19 @@ func driverPropertySpecToPB(spec *drivers.PropertySpec) *runtimev1.ConnectorDriv
 		Secret:      spec.Secret,
 		NoPrompt:    spec.NoPrompt,
 	}
+
+	// Convert options if present
+	if spec.Options != nil {
+		for _, opt := range spec.Options {
+			pb.Options = append(pb.Options, &runtimev1.ConnectorDriver_PropertyOption{
+				Value:       opt.Value,
+				Label:       opt.Label,
+				Description: opt.Description,
+			})
+		}
+	}
+
+	return pb
 }
 
 func driverIsNotifier(driver string) bool {

@@ -3710,6 +3710,13 @@ export class ConnectorDriver_Property extends Message$1<ConnectorDriver_Property
    */
   noPrompt = false;
 
+  /**
+   * Options for select properties
+   *
+   * @generated from field: repeated rill.runtime.v1.ConnectorDriver.PropertyOption options = 12;
+   */
+  options: ConnectorDriver_PropertyOption[] = [];
+
   constructor(data?: PartialMessage<ConnectorDriver_Property>) {
     super();
     proto3.util.initPartial(data, this);
@@ -3729,6 +3736,7 @@ export class ConnectorDriver_Property extends Message$1<ConnectorDriver_Property
     { no: 9, name: "placeholder", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "secret", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 11, name: "no_prompt", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 12, name: "options", kind: "message", T: ConnectorDriver_PropertyOption, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ConnectorDriver_Property {
@@ -3799,6 +3807,63 @@ proto3.util.setEnumType(ConnectorDriver_Property_Type, "rill.runtime.v1.Connecto
   { no: 5, name: "TYPE_INFORMATIONAL" },
   { no: 6, name: "TYPE_SELECT" },
 ]);
+
+/**
+ * PropertyOption represents a selectable option for a property
+ *
+ * @generated from message rill.runtime.v1.ConnectorDriver.PropertyOption
+ */
+export class ConnectorDriver_PropertyOption extends Message$1<ConnectorDriver_PropertyOption> {
+  /**
+   * The value of the option
+   *
+   * @generated from field: string value = 1;
+   */
+  value = "";
+
+  /**
+   * The display label for the option
+   *
+   * @generated from field: string label = 2;
+   */
+  label = "";
+
+  /**
+   * Optional description of the option
+   *
+   * @generated from field: string description = 3;
+   */
+  description = "";
+
+  constructor(data?: PartialMessage<ConnectorDriver_PropertyOption>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ConnectorDriver.PropertyOption";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "value", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "label", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ConnectorDriver_PropertyOption {
+    return new ConnectorDriver_PropertyOption().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ConnectorDriver_PropertyOption {
+    return new ConnectorDriver_PropertyOption().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ConnectorDriver_PropertyOption {
+    return new ConnectorDriver_PropertyOption().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ConnectorDriver_PropertyOption | PlainMessage<ConnectorDriver_PropertyOption> | undefined, b: ConnectorDriver_PropertyOption | PlainMessage<ConnectorDriver_PropertyOption> | undefined): boolean {
+    return proto3.util.equals(ConnectorDriver_PropertyOption, a, b);
+  }
+}
 
 /**
  * AnalyzedConnector contains information about a connector that is referenced in the project files.

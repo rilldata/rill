@@ -804,6 +804,18 @@ message ConnectorDriver {
     bool secret = 10;
     // If true, the property should not be prompted. The expectation is that only advanced users will use it and can set directly in the connector.yaml
     bool no_prompt = 11;
+    // Options for select properties
+    repeated PropertyOption options = 12;
+  }
+
+  // PropertyOption represents a selectable option for a property
+  message PropertyOption {
+    // The value of the option
+    string value = 1;
+    // The display label for the option
+    string label = 2;
+    // Optional description of the option
+    string description = 3;
   }
   // Name is the name of the connector
   string name = 1;

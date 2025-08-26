@@ -3265,7 +3265,26 @@ definitions:
       noPrompt:
         type: boolean
         title: If true, the property should not be prompted. The expectation is that only advanced users will use it and can set directly in the connector.yaml
+      options:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/ConnectorDriverPropertyOption'
+        title: Options for select properties
     title: Property represents the spec of one of the driver's config properties
+  ConnectorDriverPropertyOption:
+    type: object
+    properties:
+      value:
+        type: string
+        title: The value of the option
+      label:
+        type: string
+        title: The display label for the option
+      description:
+        type: string
+        title: Optional description of the option
+    title: PropertyOption represents a selectable option for a property
   ConnectorDriverPropertyType:
     type: string
     enum:
