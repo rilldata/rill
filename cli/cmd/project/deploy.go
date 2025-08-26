@@ -48,6 +48,9 @@ type DeployOpts struct {
 	Managed bool
 	// Github indicates if the project should be connected to GitHub for automatic deploys.
 	Github bool
+
+	// SkipDeploy skips the runtime deployment step. Used for testing.
+	SkipDeploy bool
 }
 
 func (o *DeployOpts) ValidatePathAndSetupGit(ch *cmdutil.Helper) error {
@@ -148,6 +151,13 @@ func DeployCmd(ch *cmdutil.Helper) *cobra.Command {
 	deployCmd.Flags().StringVar(&opts.ProdVersion, "prod-version", "latest", "Rill version (default: the latest release version)")
 	deployCmd.Flags().StringVar(&opts.ProdBranch, "prod-branch", "", "Git branch to deploy from (default: the default Git branch)")
 	deployCmd.Flags().IntVar(&opts.Slots, "prod-slots", local.DefaultProdSlots(ch), "Slots to allocate for production deployments")
+
+	deployCmd.Flags().BoolVar(&opts.SkipDeploy, "skip-deploy", false, "Skip the runtime deployment step (for testing only)")
+	err := deployCmd.Flags().MarkHidden("skip-deploy")
+	if err != nil {
+		panic(err)
+	}
+
 	if !ch.IsDev() {
 		if err := deployCmd.Flags().MarkHidden("prod-slots"); err != nil {
 			panic(err)
@@ -257,6 +267,7 @@ func DeployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployO
 		ProdSlots:        int64(opts.Slots),
 		Public:           opts.Public,
 		DirectoryName:    filepath.Base(localProjectPath),
+		SkipDeploy:       opts.SkipDeploy,
 	}
 
 	ch.Printer.Println("Starting upload.")
