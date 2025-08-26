@@ -35,6 +35,7 @@
   import { compileConnectorYAML } from "../../connectors/code-utils";
   import CopyIcon from "@rilldata/web-common/components/icons/CopyIcon.svelte";
   import Check from "@rilldata/web-common/components/icons/Check.svelte";
+  import Select from "@rilldata/web-common/components/forms/Select.svelte";
 
   const dispatch = createEventDispatcher();
 
@@ -372,6 +373,13 @@
                       description={property.description}
                       hint={property.hint}
                       href={property.docsUrl}
+                    />
+                  {:else if property.type === ConnectorDriverPropertyType.TYPE_SELECT}
+                    <Select
+                      bind:value={$paramsForm[propertyKey]}
+                      id={propertyKey}
+                      label={property.displayName}
+                      options={property.options ?? []}
                     />
                   {/if}
                 </div>

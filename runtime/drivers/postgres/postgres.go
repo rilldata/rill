@@ -80,8 +80,6 @@ var spec = drivers.Spec{
 			Key:         "sslmode",
 			Type:        drivers.SelectPropertyType,
 			DisplayName: "SSL Mode",
-			Placeholder: "require",
-			Default:     "require",
 			Hint:        "SSL connection mode for secure connections",
 			Options: []drivers.PropertyOption{
 				{Value: "disable", Label: "Disable", Description: "No SSL"},
