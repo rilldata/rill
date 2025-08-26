@@ -4,7 +4,7 @@ sidebar_label: Source Models
 sidebar_position: 10
 ---
 
-After creating a connector to your data source, you'll need to create a model to bring that data into Rill. This can be implemented as either a SQL model with [defined connector parameters](/build/models/sql-models#specifying-the-data-source-connector) or as a YAML configuration file. This guide focuses on YAML-based source models.
+After [creating a connector to your data source](/connect/data-source), you'll need to create a model to bring that data into Rill. This can be implemented as either a SQL model with [defined connector parameters](/build/models/sql-models#specifying-the-data-source-connector) or as a YAML configuration file. This guide focuses on YAML-based source models.
 
 ## Overview
 
@@ -34,9 +34,9 @@ sql: |
 The YAML configuration file contains several key parameters:
 
 - **`type: model`**: Explicitly defines the file type. While Rill automatically detects the file type based on the parent folder, this parameter provides explicit definition.
-- **`connector`**: Automatically populated based on the connector type used to create the model (e.g., `bigquery`, `athena`, `snowflake`, etc.).
-- **`dev`**: Configuration for development mode. Rill Developer runs in dev mode by default, but when deployed to Rill Cloud, the root-level SQL configuration executes.
+- **`connector`**: Defines the connector type used to create the model (e.g., `bigquery`, `athena`, `snowflake`, etc.).
 - **`sql`**: The actual SQL query to be executed. When nested under `dev:`, the query runs in Rill Developer environment.
+- **`dev`**: Configuration for development mode. Rill Developer runs in dev mode by default, but when deployed to Rill Cloud, the root-level SQL configuration executes.
 
 ### Automatic Refresh Schedule
 

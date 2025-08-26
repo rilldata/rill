@@ -8,6 +8,7 @@ Rill provides the user the option to build various types of models based on diff
 
 
 ### Fundamentals 
+- [**Getting Started with Models**](/build/models/models-101) - What are models and important topics to remember as you create your own.
 - [**Differences between SQL and YAML Models**](/build/models/model-differences) - Compare SQL and YAML models and learn when to use 
 - [**SQL Models**](/build/models/sql-models) - Transform and prepare your data with a basic SQL file
   
@@ -20,6 +21,9 @@ Rill provides the user the option to build various types of models based on diff
 - [**Partitioned Models**](/build/models/partitioned-models) - Split your large data into smaller sizes
 - [**Incremental + Partitioned Models**](/build/models/incremental-partitioned-models) - Combine the concepts in Incremental Model and Paritioned Model into a single file
 - [**Staging Models**](/build/models/staging-models) - When data is not directly available to ingest
+
+### Performance
+- [**Performance**](/build/models/performance) - Optimize model performance and data refresh strategies
 
 ### Environment Management
 - [**Environment Templating**](/build/models/templating) - Separate your production and development settings 

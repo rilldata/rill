@@ -49,7 +49,7 @@ rill start --environment prod
 
 ## Specifying environment specific YAML overrides
 
-If you wanted to set a project-wide default in `rill.yaml` where models are [materialized](/build/models/model-differences#model-materialization) only on Rill Cloud (i.e., `prod`) and dashboards use a different default [theme](/build/dashboards/customize.md#changing-themes--colors) in production compared to locally, you could do this by:
+If you wanted to set a project-wide default in `rill.yaml` where models are [materialized](/build/models/performance#materialization) only on Rill Cloud (i.e., `prod`) and dashboards use a different default [theme](/build/dashboards/customize.md#changing-themes--colors) in production compared to locally, you could do this by:
 
 ```yaml
 prod:
