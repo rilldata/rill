@@ -1,4 +1,5 @@
 import type { CartesianChartSpec } from "@rilldata/web-common/features/canvas/components/charts/cartesian-charts/CartesianChart";
+import type { ComboChartSpec } from "@rilldata/web-common/features/canvas/components/charts/combo-charts/ComboChart";
 import type { HeatmapChartSpec } from "@rilldata/web-common/features/canvas/components/charts/heatmap-charts/HeatmapChart";
 import type { ColorMapping } from "@rilldata/web-common/features/canvas/inspector/types";
 import { COMPARIONS_COLORS } from "@rilldata/web-common/features/dashboards/config";
@@ -146,7 +147,7 @@ export function adjustDataForTimeZone(
  */
 export function vegaSortToAggregationSort(
   encoder: "x" | "y",
-  config: CartesianChartSpec | HeatmapChartSpec,
+  config: CartesianChartSpec | HeatmapChartSpec | ComboChartSpec,
   defaultSort: ChartSortDirection,
 ): V1MetricsViewAggregationSort | undefined {
   const encoderConfig = config[encoder];
@@ -172,7 +173,11 @@ export function vegaSortToAggregationSort(
       break;
     case "y":
     case "-y":
-      field = config.y?.field;
+      if ("y" in config) {
+        field = config.y?.field;
+      } else if ("y1" in config) {
+        field = config.y1?.field;
+      }
       desc = sort === "-y";
       break;
     case "color":

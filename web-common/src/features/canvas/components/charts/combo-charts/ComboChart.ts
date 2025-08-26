@@ -9,7 +9,6 @@ import {
   type V1Expression,
   type V1MetricsViewAggregationDimension,
   type V1MetricsViewAggregationMeasure,
-  type V1MetricsViewAggregationSort,
   type V1MetricsViewSpec,
   type V1Resource,
 } from "@rilldata/web-common/runtime-client";
@@ -171,33 +170,68 @@ export class ComboChartComponent extends BaseChart<ComboChartSpec> {
       measures.push({ name: config.y2.field });
     }
 
-    let xAxisSort: V1MetricsViewAggregationSort | undefined;
-    let limit: number | undefined;
-
     const dimensionName = config.x?.field;
 
-    if (config.x?.type === "nominal" && dimensionName) {
-      limit = config.x.limit ?? 100;
-      // TODO: Use better sort config logic
-      const cartesianConfig = {
-        ...config,
-        y: config.y1, // Use y1 as the primary y for sorting
-      } as any;
-      xAxisSort = vegaSortToAggregationSort("x", cartesianConfig, DEFAULT_SORT);
-      dimensions = [{ name: dimensionName }];
-    } else if (config.x?.type === "temporal" && dimensionName) {
-      dimensions = [{ name: dimensionName }];
-    }
-
-    const queryOptionsStore = derived(
+    const xAxisQueryOptionsStore = derived(
       [ctx.runtime, timeAndFilterStore],
       ([runtime, $timeAndFilterStore]) => {
+        const { timeRange, where } = $timeAndFilterStore;
+        const enabled =
+          !!timeRange?.start &&
+          !!timeRange?.end &&
+          !!dimensionName &&
+          config?.x?.type === "nominal" &&
+          !Array.isArray(config.x?.sort) &&
+          !!config.y1?.field;
+
+        const xWhere = getFilterWithNullHandling(where, config.x);
+
+        let limit = DEFAULT_NOMINAL_LIMIT.toString();
+        if (config.x?.limit) {
+          limit = config.x.limit.toString();
+        }
+
+        const xAxisMeasures = config.y1?.field
+          ? [{ name: config.y1.field }]
+          : [];
+
+        const xAxisSort = vegaSortToAggregationSort("x", config, DEFAULT_SORT);
+
+        return getQueryServiceMetricsViewAggregationQueryOptions(
+          runtime.instanceId,
+          config.metrics_view,
+          {
+            measures: xAxisMeasures,
+            dimensions: [{ name: dimensionName }],
+            sort: xAxisSort ? [xAxisSort] : undefined,
+            where: xWhere,
+            timeRange,
+            limit,
+          },
+          {
+            query: {
+              enabled,
+            },
+          },
+        );
+      },
+    );
+
+    const xAxisQuery = createQuery(xAxisQueryOptionsStore);
+
+    const queryOptionsStore = derived(
+      [ctx.runtime, timeAndFilterStore, xAxisQuery],
+      ([runtime, $timeAndFilterStore, $xAxisQuery]) => {
         const { timeRange, where, timeGrain } = $timeAndFilterStore;
+        const xTopNData = $xAxisQuery?.data?.data;
+
         const enabled =
           !!timeRange?.start &&
           !!timeRange?.end &&
           !!measures?.length &&
-          !!dimensions?.length;
+          (config.x?.type === "nominal" && !Array.isArray(config.x?.sort)
+            ? xTopNData !== undefined
+            : !!dimensionName);
 
         let combinedWhere: V1Expression | undefined = getFilterWithNullHandling(
           where,
@@ -206,10 +240,15 @@ export class ComboChartComponent extends BaseChart<ComboChartSpec> {
 
         let includedXValues: string[] = [];
 
-        // Apply custom sort for x dimension
-        if (Array.isArray(config.x?.sort)) {
-          includedXValues = config.x.sort;
-          if (dimensionName) {
+        // Handle X axis values
+        if (dimensionName) {
+          if (Array.isArray(config.x?.sort)) {
+            includedXValues = config.x.sort;
+          } else if (xTopNData?.length && config.x?.type === "nominal") {
+            includedXValues = xTopNData.map((d) => d[dimensionName] as string);
+          }
+
+          if (includedXValues.length > 0) {
             this.customSortXItems = includedXValues;
             const filterForTopXValues = createInExpression(
               dimensionName,
@@ -219,7 +258,12 @@ export class ComboChartComponent extends BaseChart<ComboChartSpec> {
           }
         }
 
+        if (dimensionName) {
+          dimensions = [{ name: dimensionName }];
+        }
+
         this.combinedWhere = combinedWhere;
+
         // Update dimensions with timeGrain if temporal
         if (config.x?.type === "temporal" && timeGrain) {
           dimensions = dimensions.map((d) =>
@@ -233,10 +277,9 @@ export class ComboChartComponent extends BaseChart<ComboChartSpec> {
           {
             measures,
             dimensions,
-            sort: xAxisSort ? [xAxisSort] : undefined,
             where: combinedWhere,
             timeRange,
-            limit: limit?.toString(),
+            limit: config.x?.limit?.toString(),
           },
           {
             query: {
