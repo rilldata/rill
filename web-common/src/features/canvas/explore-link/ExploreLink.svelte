@@ -93,7 +93,7 @@
     !isEmbedded;
 </script>
 
-{#if $exploreAvailability.isAvailable && !isEmbedded}
+{#if $exploreAvailability.isAvailable}
   {#if mode === "dropdown-item"}
     <DropdownMenu.Item on:click={gotoExplorePage}>
       {#if isNavigating}
