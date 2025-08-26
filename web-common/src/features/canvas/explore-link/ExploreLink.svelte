@@ -93,7 +93,7 @@
     !isEmbedded;
 </script>
 
-{#if $exploreAvailability.isAvailable}
+{#if $exploreAvailability.isAvailable && !isEmbedded}
   {#if mode === "dropdown-item"}
     <DropdownMenu.Item on:click={gotoExplorePage}>
       {#if isNavigating}
@@ -109,7 +109,7 @@
       size={28}
       disabled={!canNavigate}
       ariaLabel="Go to Explore Dashboard"
-      disableHover={!canNavigate}
+      disableHover={canNavigate}
     >
       {#if isNavigating}
         <Spinner status={EntityStatus.Running} size="18px" />
