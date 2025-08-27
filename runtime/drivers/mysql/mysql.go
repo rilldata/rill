@@ -64,6 +64,7 @@ var spec = drivers.Spec{
 			Type:        drivers.StringPropertyType,
 			DisplayName: "Port",
 			Placeholder: "3306",
+			Default:     "3306",
 			Hint:        "MySQL server port (default is 3306)",
 		},
 
@@ -71,7 +72,7 @@ var spec = drivers.Spec{
 			Key:         "database",
 			Type:        drivers.StringPropertyType,
 			DisplayName: "Database",
-			Placeholder: "mysql",
+			Placeholder: "my_database",
 			Hint:        "Name of the MySQL database to connect to",
 		},
 		{
@@ -80,7 +81,7 @@ var spec = drivers.Spec{
 			DisplayName: "SSL Mode",
 			Placeholder: "require",
 			Default:     "require",
-			Hint:        "SSL mode (disable, require, verify-ca, verify-full). Default is 'require' for security.",
+			Hint:        "Options include disable, require, verify-ca, and verify-full",
 		},
 	},
 	ImplementsSQLStore: true,
