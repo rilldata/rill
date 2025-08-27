@@ -10,7 +10,7 @@
   import ProjectResourcesTable from "./ProjectResourcesTable.svelte";
   import RefreshAllSourcesAndModelsConfirmDialog from "./RefreshAllSourcesAndModelsConfirmDialog.svelte";
   import { useResources } from "./selectors";
-  import { isResourceReconciling } from "web-admin/lib/refetch-interval-store";
+  import { isResourceReconciling } from "@rilldata/web-admin/lib/refetch-interval-store";
 
   const queryClient = useQueryClient();
   const createTrigger = createRuntimeServiceCreateTrigger();
