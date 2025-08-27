@@ -74,7 +74,7 @@ var spec = drivers.Spec{
 			Key:         "database",
 			Type:        drivers.StringPropertyType,
 			DisplayName: "Database",
-			Placeholder: "my_database",
+			Placeholder: "your_database",
 			Required:    true,
 			Hint:        "Name of the MySQL database to connect to",
 		},
