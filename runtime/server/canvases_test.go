@@ -8,6 +8,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	"github.com/rilldata/rill/runtime/server"
+	"github.com/rilldata/rill/runtime/server/auth"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
@@ -369,6 +370,97 @@ rows:
 	comp0Props := res.ResolvedComponents["c_custom_chart--component-0-0"].GetComponent().State.ValidSpec.RendererProperties.AsMap()
 	require.Equal(t, "hsl(246, 66%, 50%)", comp0Props["color"])
 	require.Contains(t, comp0Props, "metrics_sql")
+}
+
+func TestResolveCanvasWithSecurity(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: map[string]string{
+			"rill.yaml": "",
+			// Model
+			"m1.sql": `SELECT 'US' AS country, 1 AS value`,
+			// Metrics view
+			"mv1.yaml": `
+type: metrics_view
+version: 1
+model: m1
+dimensions:
+- column: country
+measures:
+- name: count
+  expression: COUNT(*)
+- name: sum
+  expression: SUM(value)
+
+security:
+  access: "'{{ .user.domain }}' = 'rilldata.com'"
+  exclude:
+  - if: true
+    names: [sum]
+`,
+			// Canvas
+			"c1.yaml": `
+type: canvas
+rows:
+- items:
+  - kpi:
+      metrics_view: mv1
+
+security:
+  access: '{{ .user.admin }}'
+`,
+		},
+	})
+	testruntime.RequireReconcileState(t, rt, instanceID, 5, 0, 0)
+
+	server, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
+	require.NoError(t, err)
+
+	// Check with open access.
+	ctx := auth.WithClaims(context.Background(), auth.NewOpenClaims())
+	res, err := server.ResolveCanvas(ctx, &runtimev1.ResolveCanvasRequest{
+		InstanceId: instanceID,
+		Canvas:     "c1",
+	})
+	require.NoError(t, err)
+	require.NotNil(t, res.Canvas)
+	require.Len(t, res.ResolvedComponents, 1)
+	require.Len(t, res.ReferencedMetricsViews, 1)
+	require.Len(t, res.ReferencedMetricsViews["mv1"].GetMetricsView().State.ValidSpec.Measures, 2)
+
+	// Check when doesn't have access to the canvas.
+	ctx = auth.WithClaims(context.Background(), auth.NewDevClaims(map[string]any{"admin": false, "domain": "rilldata.com"}))
+	res, err = server.ResolveCanvas(ctx, &runtimev1.ResolveCanvasRequest{
+		InstanceId: instanceID,
+		Canvas:     "c1",
+	})
+	require.Error(t, err)
+	require.ErrorContains(t, err, "does not have access")
+
+	// Check metrics view column-level security.
+	// The 'sum' measure should be excluded.
+	ctx = auth.WithClaims(context.Background(), auth.NewDevClaims(map[string]any{"admin": true, "domain": "rilldata.com"}))
+	res, err = server.ResolveCanvas(ctx, &runtimev1.ResolveCanvasRequest{
+		InstanceId: instanceID,
+		Canvas:     "c1",
+	})
+	require.NoError(t, err)
+	require.NotNil(t, res.Canvas)
+	require.Len(t, res.ResolvedComponents, 1)
+	require.Len(t, res.ReferencedMetricsViews, 1)
+	require.Len(t, res.ReferencedMetricsViews["mv1"].GetMetricsView().State.ValidSpec.Measures, 1)
+	require.Equal(t, res.ReferencedMetricsViews["mv1"].GetMetricsView().State.ValidSpec.Measures[0].Name, "count")
+
+	// Check metrics view access security.
+	// Should have access to the canvas, but not the metrics view.
+	ctx = auth.WithClaims(context.Background(), auth.NewDevClaims(map[string]any{"admin": true, "domain": "notrilldata.com"}))
+	res, err = server.ResolveCanvas(ctx, &runtimev1.ResolveCanvasRequest{
+		InstanceId: instanceID,
+		Canvas:     "c1",
+	})
+	require.NoError(t, err)
+	require.NotNil(t, res.Canvas)
+	require.Len(t, res.ResolvedComponents, 1)
+	require.Len(t, res.ReferencedMetricsViews, 0)
 }
 
 func must[T any](v T, err error) T {

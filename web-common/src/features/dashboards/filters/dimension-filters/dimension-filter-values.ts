@@ -1,5 +1,5 @@
 import { getCompoundQuery } from "@rilldata/web-common/features/compound-query-result";
-import { DimensionFilterMode } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/dimension-filter-mode";
+import { DimensionFilterMode } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/constants";
 import {
   createInExpression,
   createLikeExpression,

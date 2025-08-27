@@ -88,7 +88,7 @@ test.describe("Metrics editor", () => {
     // the editor should show a validation error
     await expect(
       page.getByText(
-        'must set a value for either the "model" field or the "table" field',
+        'must set a value for either the "model", "table" or "parent" field',
       ),
     ).toBeVisible();
 

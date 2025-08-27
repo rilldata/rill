@@ -73,7 +73,9 @@
         </div>
       </TabsContent>
       <TabsContent value="tab2" class="mt-0 p-4">
-        <CreatePublicURLForm />
+        {#if createMagicAuthTokens && !$hidePublicUrl}
+          <CreatePublicURLForm />
+        {/if}
       </TabsContent>
     </Tabs>
   </PopoverContent>

@@ -1,5 +1,6 @@
 import type { CartesianChartSpec } from "@rilldata/web-common/features/canvas/components/charts/cartesian-charts/CartesianChart";
 import type { HeatmapChartSpec } from "@rilldata/web-common/features/canvas/components/charts/heatmap-charts/HeatmapChart";
+import { COMPARIONS_COLORS } from "@rilldata/web-common/features/dashboards/config";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
 import { adjustOffsetForZone } from "@rilldata/web-common/lib/convertTimestampPreview";
 import { timeGrainToDuration } from "@rilldata/web-common/lib/time/grains";
@@ -13,6 +14,7 @@ import type { Config } from "vega-lite";
 import { CHART_CONFIG, type ChartSpec } from "./";
 import type {
   ChartDataResult,
+  ChartDomainValues,
   ChartSortDirection,
   ChartType,
   FieldConfig,
@@ -33,10 +35,6 @@ export function generateSpec(
 ) {
   if (data.isFetching || data.error) return {};
   return CHART_CONFIG[chartType]?.generateSpec(rillChartSpec, data);
-}
-
-export function isChartLineLike(chartType: ChartType) {
-  return chartType === "line_chart" || chartType === "area_chart";
 }
 
 export function mergedVlConfig(
@@ -72,7 +70,7 @@ export interface FieldsByType {
 }
 
 export function getFieldsByType(spec: ChartSpec): FieldsByType {
-  const measures: string[] = [];
+  let measures: string[] = [];
   const dimensions: string[] = [];
   const timeDimensions: string[] = [];
 
@@ -109,6 +107,10 @@ export function getFieldsByType(spec: ChartSpec): FieldsByType {
   };
 
   checkFields(spec);
+
+  if ("measures" in spec && Array.isArray(spec.measures)) {
+    measures = spec.measures;
+  }
   return {
     measures,
     dimensions,
@@ -125,14 +127,16 @@ export function adjustDataForTimeZone(
   if (!data) return data;
 
   return data.map((datum) => {
+    // Create a shallow copy of the datum to avoid mutating the original
+    const adjustedDatum = { ...datum };
     timeFields.forEach((timeField) => {
-      datum[timeField] = adjustOffsetForZone(
+      adjustedDatum[timeField] = adjustOffsetForZone(
         datum[timeField] as string,
         selectedTimezone,
         timeGrainToDuration(timeGrain),
       );
     });
-    return datum;
+    return adjustedDatum;
   });
 }
 
@@ -217,7 +221,8 @@ export function getLinkStateForTimeDimensionDetail(
     };
 
   const hasXAxis = "x" in spec;
-  if (!hasXAxis)
+  const hasYAxis = "y" in spec;
+  if (!hasXAxis || !hasYAxis)
     return {
       canLink: false,
     };
@@ -243,4 +248,44 @@ export function getLinkStateForTimeDimensionDetail(
   return {
     canLink: false,
   };
+}
+
+export function getColorForValues(
+  colorValues: string[] | undefined,
+  // if provided, use the colors for mentioned values
+  overrideColorMapping: { value: string; color: string }[] | undefined,
+): { value: string; color: string }[] | undefined {
+  if (!colorValues || colorValues.length === 0) return undefined;
+
+  const colorMapping = colorValues.map((value, index) => {
+    const overrideColor = overrideColorMapping?.find(
+      (mapping) => mapping.value === value,
+    );
+    return {
+      value,
+      color:
+        overrideColor?.color ||
+        COMPARIONS_COLORS[index % COMPARIONS_COLORS.length],
+    };
+  });
+
+  return colorMapping;
+}
+
+export function getColorMappingForChart(
+  chartSpec: ChartSpec,
+  domainValues: ChartDomainValues | undefined,
+): { value: string; color: string }[] | undefined {
+  if (!("color" in chartSpec) || !domainValues) return undefined;
+  const colorField = chartSpec.color;
+
+  let colorMapping: { value: string; color: string }[] | undefined;
+  if (isFieldConfig(colorField)) {
+    colorMapping = getColorForValues(
+      domainValues[colorField.field],
+      colorField.colorMapping,
+    );
+  }
+
+  return colorMapping;
 }

@@ -25,42 +25,17 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "MySQL",
 	Description: "Connect to MySQL.",
-	DocsURL:     "https://docs.rilldata.com/reference/connectors/mysql",
+	DocsURL:     "https://docs.rilldata.com/connect/data-source/mysql",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:         "dsn",
 			Type:        drivers.StringPropertyType,
-			Placeholder: "mysql://user:password@host:3306/my-db",
-			Secret:      true,
-		},
-	},
-	// Important: Any edits to the below properties must be accompanied by changes to the client-side form validation schemas.
-	SourceProperties: []*drivers.PropertySpec{
-		{
-			Key:         "sql",
-			Type:        drivers.StringPropertyType,
-			Required:    true,
-			DisplayName: "SQL",
-			Description: "Query to extract data from MySQL.",
-			Placeholder: "select * from table;",
-		},
-		{
-			Key:         "dsn",
-			Type:        drivers.StringPropertyType,
 			DisplayName: "MySQL Connection String",
-			Required:    false,
+			Required:    true,
 			DocsURL:     "https://dev.mysql.com/doc/refman/8.4/en/connecting-using-uri-or-key-value-pairs.html#connecting-using-uri",
 			Placeholder: "mysql://user:password@host:3306/my-db",
 			Hint:        "Can be configured here or by setting the 'connector.mysql.dsn' environment variable (using '.env' or '--env')",
 			Secret:      true,
-		},
-		{
-			Key:         "name",
-			Type:        drivers.StringPropertyType,
-			DisplayName: "Source name",
-			Description: "The name of the source",
-			Placeholder: "my_new_source",
-			Required:    true,
 		},
 	},
 	ImplementsSQLStore: true,

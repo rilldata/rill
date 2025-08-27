@@ -362,4 +362,24 @@ export class HeatmapChartComponent extends BaseChart<HeatmapChartSpec> {
 
     return `${colorLabel} by ${xLabel} and ${yLabel}`;
   }
+
+  getChartDomainValues() {
+    const config = get(this.specStore);
+    const result: Record<string, string[] | undefined> = {};
+
+    if (config.x?.field) {
+      result[config.x.field] =
+        this.customSortXItems.length > 0
+          ? [...this.customSortXItems]
+          : undefined;
+    }
+
+    if (config.y?.field) {
+      result[config.y.field] =
+        this.customSortYItems.length > 0
+          ? [...this.customSortYItems]
+          : undefined;
+    }
+    return result;
+  }
 }

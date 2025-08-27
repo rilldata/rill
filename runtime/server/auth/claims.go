@@ -93,6 +93,10 @@ type openClaims struct{}
 
 var _ Claims = (*openClaims)(nil)
 
+func NewOpenClaims() Claims {
+	return openClaims{}
+}
+
 func (c openClaims) Subject() string {
 	return ""
 }
@@ -154,6 +158,10 @@ type devJWTClaims struct {
 }
 
 var _ Claims = (*devJWTClaims)(nil)
+
+func NewDevClaims(attrs map[string]any) Claims {
+	return &devJWTClaims{Attrs: attrs}
+}
 
 func (c devJWTClaims) Subject() string {
 	return ""

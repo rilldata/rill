@@ -15,21 +15,18 @@ curl https://rill.sh | sh
 rill start my-rill-project
 ```
 
-
 ## Quickstart
 
-Take a look at our [Quick start](get-started/get-started.md) for a quick guide to get started with your own data! We use a public GCS dataset but you can follow along with your own data. Take a look at our [connectors docs](/reference/connectors) for the exact steps to connect to your data.
+Take a look at our [Quick start](get-started/get-started.md) for a quick guide to get started with your own data! We use a public GCS dataset but you can follow along with your own data. Take a look at our [connectors docs](/connect) for the exact steps to connect to your data.
 
 Or, if you're looking for more guides, check out our [Guides](/guides) section!
-
-
 
 <!-- <img src = 'https://storage.googleapis.com/prod-cdn.rilldata.com/docs/rill_hero.gif' class='rounded-gif' />
 <br /> -->
 
-##  Examples
+## Examples
 
-Browse our [repository of examples](https://github.com/rilldata/rill-examples) to find a project that suites your needs or see them in action in our demo project by hitting [Live Demo →](https://ui.rilldata.com/demo). Some projects have a walkthrough, too! 
+Browse our [repository of examples](https://github.com/rilldata/rill-examples) to find a project that suits your needs or see them in action in our demo project by hitting [Live Demo →](https://ui.rilldata.com/demo). Some projects have a walkthrough, too! 
 
 ```bash
 git clone https://github.com/rilldata/rill-examples.git
@@ -38,7 +35,7 @@ curl https://rill.sh | sh
 rill start
 ```
 
-### **Programmatic Ads/OpenRTB**
+### Programmatic Ads/OpenRTB
 
 Bidstream data for programmatic advertisers to optimize pricing strategies, look for inventory opportunities, and improve campaign performance.
 
@@ -46,8 +43,7 @@ Bidstream data for programmatic advertisers to optimize pricing strategies, look
 - <a href="/guides/openrtb-analytics">Walkthrough →</a><br />
 - <a href="https://ui.rilldata.com/demo/rill-openrtb-prog-ads">Live Demo →</a> 
 
-
-### **Cost Monitoring**
+### Cost Monitoring
 
 Based on Rill's own internal dashboards, cloud infrastructure data (compute, storage, pipeline statistics, etc.) merged with customer data to analyze bottlenecks and look for efficiencies.
 
@@ -55,8 +51,7 @@ Based on Rill's own internal dashboards, cloud infrastructure data (compute, sto
 - <a href="/guides/cost-monitoring-analytics">Walkthrough →</a><br />
 - <a href="https://ui.rilldata.com/demo/rill-cost-monitoring">Live Demo →</a>
 
-
-### **GitHub Analytics**
+### GitHub Analytics
 
 Analyze GitHub activity to understand what parts of your codebase are most active, analyze contributor productivity, and evaluate the intersections between commits and files.
 
@@ -64,21 +59,20 @@ Analyze GitHub activity to understand what parts of your codebase are most activ
 - <a href="/guides/github-analytics">Walkthrough →</a><br />
 - <a href="https://ui.rilldata.com/demo/rill-github-analytics">Live Demo →</a>
 
-### **App Engagement**
+### App Engagement
 
 A conversion dataset used by marketers, mobile developers, or product teams to analyze funnel steps.
 
 - <a href="https://github.com/rilldata/rill-examples/tree/main/rill-app-engagement">GitHub →</a><br />
 - <a href="https://ui.rilldata.com/demo/rill-app-engagement">Live Demo →</a>
 
-### **Kitchen-sink example**
+### Kitchen-sink example
 
-A compilation of projects that deep dives in Rill's features using  ClickHouse's GitHub commit information.
+A compilation of projects that deep dives into Rill's features using ClickHouse's GitHub commit information.
 
 - <a href="https://github.com/rilldata/rill-examples/tree/main/my-rill-tutorial">GitHub →</a><br />
 - <a href="/guides/rill-basics/launch">Walkthrough →</a><br />
 - <a href="https://ui.rilldata.com/demo/my-rill-tutorial">Live Demo →</a>
-
 
 ## Explore Rill's Capabilities
 
@@ -86,7 +80,7 @@ A compilation of projects that deep dives in Rill's features using  ClickHouse's
 <TileIcon
   header="Connect Data Sources"
   content="Connect to your data sources and start ingesting data into Rill for analysis."
-  link="/reference/connectors"
+  link="/connect"
   icon={<img src="/img/home/connect.svg" alt="Connect" style={{ width: 24, height: 24 }} />}
 />
 <TileIcon
@@ -117,7 +111,7 @@ A compilation of projects that deep dives in Rill's features using  ClickHouse's
   header="Release Notes"
   content="Curious about what's new?"
   link="/notes"
-  icon={<img src="/img/home/notification.svg" alt="Embed" style={{ width: 24, height: 24 }} />}
+  icon={<img src="/img/home/notification.svg" alt="Notification" style={{ width: 24, height: 24 }} />}
 />
 
 </div>

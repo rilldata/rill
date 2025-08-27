@@ -76,7 +76,7 @@ func (e *mdToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExecu
 		token = os.Getenv("motherduck_token")
 	}
 	if token == "" {
-		return nil, fmt.Errorf("no motherduck token found. Refer to this documentation for instructions: https://docs.rilldata.com/reference/connectors/motherduck")
+		return nil, fmt.Errorf("no motherduck token found. Refer to this documentation for instructions: https://docs.rilldata.com/connect/olap/motherduck")
 	}
 
 	clone := *opts

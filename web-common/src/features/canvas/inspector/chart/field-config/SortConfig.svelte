@@ -38,9 +38,15 @@
     : (sortConfig?.defaultSort ?? "x");
 
   $: customSortDraggableItems = sortConfig?.customSortItems?.map((item) => ({
-    id: item,
+    id: sanitizeItemId(item),
     value: item,
   }));
+
+  function sanitizeItemId(item: string | null) {
+    if (item === null) return "null-item";
+    if (item === "") return "<empty-string>";
+    return item;
+  }
 
   function handleReorder(data: {
     items: { id: string; value: string }[];

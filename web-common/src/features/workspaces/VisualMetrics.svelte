@@ -28,9 +28,9 @@
   import { tick } from "svelte";
   import { slide } from "svelte/transition";
   import { parseDocument, Scalar, YAMLMap, YAMLSeq } from "yaml";
-  import ConnectorExplorer from "../connectors/ConnectorExplorer.svelte";
-  import { connectorExplorerStore } from "../connectors/connector-explorer-store";
-  import { useIsModelingSupportedForConnector } from "../connectors/olap/selectors";
+  import ConnectorExplorer from "../connectors/explorer/ConnectorExplorer.svelte";
+  import { connectorExplorerStore } from "../connectors/explorer/connector-explorer-store";
+  import { useIsModelingSupportedForConnectorOLAP as useIsModelingSupportedForConnector } from "../connectors/selectors";
   import { FileArtifact } from "../entity-management/file-artifact";
   import {
     ResourceKind,
@@ -143,28 +143,35 @@
 
   $: hasValidModelOrSourceSelection = hasSourceSelected || hasModelSelected;
 
-  $: connectorsQuery = createRuntimeServiceAnalyzeConnectors(instanceId, {
-    query: {
-      select: (data) => {
-        if (!data?.connectors) return [];
+  $: hasNonDuckDBOLAPConnectorQuery = createRuntimeServiceAnalyzeConnectors(
+    instanceId,
+    {
+      query: {
+        select: (data) => {
+          if (!data?.connectors) return false;
 
-        const connectors = data.connectors.filter(
-          (connector) =>
-            connector.driver?.implementsOlap &&
-            connector.driver.name !== "duckdb",
-        );
-        return connectors;
+          const hasNonDuckDBOLAPConnector = data.connectors
+            .filter((connector) => !!connector.driver)
+            .filter((connector) => connector.driver!.implementsOlap)
+            .some((connector) => {
+              const isDuckDB = connector.driver!.name === "duckdb";
+              const isMotherDuck = isDuckDB && !!connector.config?.access_token;
+              const isDuckDBButNotMotherDuck = isDuckDB && !isMotherDuck;
+              return !isDuckDBButNotMotherDuck;
+            });
+
+          return hasNonDuckDBOLAPConnector;
+        },
       },
     },
-  });
+  );
+  $: hasNonDuckDBOLAPConnector = $hasNonDuckDBOLAPConnectorQuery.data;
 
   $: resourceKind = hasSourceSelected
     ? ResourceKind.Source
     : hasModelSelected
       ? ResourceKind.Model
       : undefined;
-
-  $: hasNonDuckDBOLAPConnector = Boolean($connectorsQuery.data?.length);
 
   $: resourceQuery =
     resourceKind &&

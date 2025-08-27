@@ -1,4 +1,8 @@
-import { validateRillTime } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser.ts";
+import {
+  overrideRillTimeRef,
+  parseRillTime,
+  validateRillTime,
+} from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser.ts";
 import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config.ts";
 import { isoDurationToFullTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import {
@@ -46,7 +50,7 @@ const PreviousCompleteRangeReverseMap: Record<string, TimeRangePreset> = {};
 for (const preset in PreviousCompleteRangeMap) {
   const range: V1TimeRange = PreviousCompleteRangeMap[preset];
   PreviousCompleteRangeReverseMap[
-    `${range.isoDuration}_${range.isoOffset}_${range.roundToGrain}`
+    `${range.isoDuration}_${range.isoOffset ?? ""}_${range.roundToGrain}`
   ] = preset as TimeRangePreset;
 }
 
@@ -98,7 +102,12 @@ export function mapSelectedComparisonTimeRangeToV1TimeRange(
   showTimeComparison: boolean,
   timeRange: V1TimeRange | undefined,
 ) {
-  if (!timeRange || !showTimeComparison || !selectedComparisonTimeRange?.name) {
+  if (
+    !timeRange ||
+    !showTimeComparison ||
+    !selectedComparisonTimeRange?.name ||
+    timeRange.expression
+  ) {
     return undefined;
   }
 
@@ -141,6 +150,16 @@ export function mapV1TimeRangeToSelectedTimeRange(
       start: new Date(timeRange.start),
       end: new Date(timeRange.end),
     };
+  } else if (timeRange.expression) {
+    try {
+      const rt = parseRillTime(timeRange.expression);
+      overrideRillTimeRef(rt, end);
+      selectedTimeRange = {
+        name: rt.toString(),
+      } as DashboardTimeControls;
+    } catch {
+      return undefined;
+    }
   } else if (duration && timeRangeSummary.min) {
     selectedTimeRange = isoDurationToFullTimeRange(
       duration,

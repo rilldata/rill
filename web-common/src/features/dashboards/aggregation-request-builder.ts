@@ -1,9 +1,6 @@
 import { getAggregationDimensionFromFieldName } from "@rilldata/web-common/features/dashboards/aggregation-request/dimension-utils.ts";
+import { getComparisonRequestMeasures } from "@rilldata/web-common/features/dashboards/dashboard-utils.ts";
 import { mergeDimensionAndMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils.ts";
-import {
-  COMPARISON_DELTA,
-  COMPARISON_PERCENT,
-} from "@rilldata/web-common/features/dashboards/pivot/types.ts";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
 import type { FiltersState } from "@rilldata/web-common/features/dashboards/stores/Filters.ts";
 import type { TimeControlState } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
@@ -87,20 +84,18 @@ export const aggregationRequestWithRowsAndColumns = ({
   selectedTimezone: string;
 }) => {
   return (aggregationRequest: V1MetricsViewAggregationRequest) => {
-    const allFields = new Set<string>([...rows, ...columns]);
     const isFlat = rows.length === 0;
 
     // Get measures defined as columns. We do allow adding measures as rows so need to check it.
     const measures = columns
       .filter((col) => exploreSpec.measures?.includes(col))
       .flatMap((measureName) => {
-        const group = [{ name: measureName }];
+        const group: V1MetricsViewAggregationMeasure[] = [
+          { name: measureName },
+        ];
 
-        if (showTimeComparison) {
-          group.push(
-            { name: `${measureName}${COMPARISON_DELTA}` },
-            { name: `${measureName}${COMPARISON_PERCENT}` },
-          );
+        if (showTimeComparison && aggregationRequest.comparisonTimeRange) {
+          group.push(...getComparisonRequestMeasures(measureName));
         }
 
         return group;
@@ -127,13 +122,13 @@ export const aggregationRequestWithRowsAndColumns = ({
     const dimensions = [...dimensionsFromRows, ...dimensionsFromColumns];
 
     // Get the updated sort based on the new measures and dimensions
-    const updatedAggregationSort = getUpdatedAggregationSort(
+    const updatedAggregationSort = getUpdatedAggregationSort({
       aggregationRequest,
       measures,
       dimensions,
       pivotOn,
-      allFields,
-    );
+      selectedTimezone,
+    });
 
     return {
       ...aggregationRequest,
@@ -145,23 +140,43 @@ export const aggregationRequestWithRowsAndColumns = ({
   };
 };
 
-function getUpdatedAggregationSort(
-  aggregationRequest: V1MetricsViewAggregationRequest,
-  measures: V1MetricsViewAggregationMeasure[],
-  dimensions: V1MetricsViewAggregationDimension[],
-  pivotOn: string[],
-  allFields: Set<string>,
-) {
+function getUpdatedAggregationSort({
+  aggregationRequest,
+  measures,
+  dimensions,
+  pivotOn,
+  selectedTimezone,
+}: {
+  aggregationRequest: V1MetricsViewAggregationRequest;
+  measures: V1MetricsViewAggregationMeasure[];
+  dimensions: V1MetricsViewAggregationDimension[];
+  pivotOn: string[];
+  selectedTimezone: string;
+}) {
   const hasPivot = pivotOn.length > 0;
   const sort: V1MetricsViewAggregationSort[] =
-    aggregationRequest.sort?.filter((s) => {
-      if (!allFields.has(s.name!)) return false;
-      if (!hasPivot) return true;
-      // When there is a pivot we cannot sort by measure or the pivoted dimension
-      return (
-        !measures.find((m) => m.name === s.name) && !pivotOn.includes(s.name!)
-      );
-    }) ?? [];
+    (aggregationRequest.sort
+      ?.map((s) => {
+        const isMeasure = measures.find((m) => m.name === s.name);
+        // We cannot sort by measure when pivoting.
+        if (isMeasure) return hasPivot ? undefined : s;
+
+        const dim = getAggregationDimensionFromFieldName(
+          s.name!,
+          selectedTimezone,
+        );
+        const field = dim.alias ?? dim.name!;
+        const isDimension = dimensions.find(
+          (d) => (!!d.alias && d.alias === dim.alias) || d.name === dim.name,
+        );
+        return isDimension && !pivotOn.includes(field)
+          ? {
+              ...s,
+              name: field,
+            }
+          : undefined;
+      })
+      .filter(Boolean) as V1MetricsViewAggregationSort[]) ?? [];
 
   // Old sort is still valid. So retain it
   if (sort.length > 0) {

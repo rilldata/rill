@@ -1,5 +1,4 @@
 import { COMPARIONS_COLORS } from "@rilldata/web-common/features/dashboards/config";
-import { ComparisonDeltaPreviousSuffix } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import {
   MainAreaColorGradientDark,
   MainLineColor,
@@ -60,7 +59,7 @@ function generateStackedAreaContent(
     let keyColor = colorMap[String(key)] || "#000";
 
     if (isTimeComparison) {
-      if (key.endsWith(ComparisonDeltaPreviousSuffix)) {
+      if (key.startsWith("comparison.")) {
         keyColor = colorMap["comparison_period"];
         label = "Previous Period";
       } else {

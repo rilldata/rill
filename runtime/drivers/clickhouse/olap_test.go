@@ -565,52 +565,229 @@ func TestClickhouseReadWriteMode(t *testing.T) {
 		require.True(t, ok, "Model manager should be available in readwrite mode")
 		require.NotNil(t, manager)
 	})
+}
 
-	t.Run("ManagedMode_EnablesModelExecution", func(t *testing.T) {
-		// Test that managed mode automatically enables readwrite
+func TestClickhouseDualDSN(t *testing.T) {
+	dsn := testclickhouse.Start(t)
+
+	t.Run("SeparateReadWriteDSNs", func(t *testing.T) {
+		// Test with both dsn and write_dsn specified
 		conn, err := driver{}.Open("default", map[string]any{
-			"dsn":     dsn,
-			"managed": true,
+			"dsn":       dsn,
+			"write_dsn": dsn,
+			"mode":      "readwrite",
 		}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 		require.NoError(t, err)
 		defer conn.Close()
 
-		// Should be able to get model executor when managed=true
-		opts := &drivers.ModelExecutorOptions{
-			InputHandle:     conn,
-			InputConnector:  "clickhouse",
-			OutputHandle:    conn,
-			OutputConnector: "clickhouse",
-		}
-		executor, ok := conn.AsModelExecutor("default", opts)
-		require.True(t, ok, "Model executor should be available when managed=true")
-		require.NotNil(t, executor)
+		c := conn.(*Connection)
+		require.NotNil(t, c.readDB)
+		require.NotNil(t, c.writeDB)
 
-		// Should be able to get model manager when managed=true
-		manager, ok := conn.AsModelManager("default")
-		require.True(t, ok, "Model manager should be available when managed=true")
-		require.NotNil(t, manager)
+		// Verify that separate connections were created
+		require.NotEqual(t, c.readDB, c.writeDB, "Read and write connections should be separate when using dual DSNs")
+
+		// Test that both connections work
+		olap, ok := conn.AsOLAP("default")
+		require.True(t, ok)
+
+		// Test read operation
+		res, err := olap.Query(context.Background(), &drivers.Statement{Query: "SELECT 1 AS test"})
+		require.NoError(t, err)
+		require.True(t, res.Next())
+		var testVal int
+		require.NoError(t, res.Scan(&testVal))
+		require.Equal(t, 1, testVal)
+		require.NoError(t, res.Close())
+
+		// Test write operation
+		err = olap.Exec(context.Background(), &drivers.Statement{
+			Query: "CREATE TABLE dual_dsn_test (id INT) ENGINE=Memory",
+		})
+		require.NoError(t, err)
 	})
 
-	t.Run("ManagedOverridesMode", func(t *testing.T) {
-		// Test that managed=true overrides mode setting
+	t.Run("OnlyWriteDSN_ShouldFail", func(t *testing.T) {
+		// Test that providing only write_dsn fails
+		_, err := driver{}.Open("default", map[string]any{
+			"write_dsn": dsn,
+			"mode":      "readwrite",
+		}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "no clickhouse connection configured")
+	})
+
+	t.Run("DualDSNWithRegularDSN_UsesDualDSN", func(t *testing.T) {
+		// Test that dsn and write_dsn configuration works correctly
 		conn, err := driver{}.Open("default", map[string]any{
-			"dsn":     dsn,
-			"managed": true,
-			"mode":    "read", // This should be overridden
+			"dsn":       dsn,
+			"write_dsn": dsn,
+			"mode":      "readwrite",
 		}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 		require.NoError(t, err)
 		defer conn.Close()
 
-		// Should still be able to get model executor because managed=true overrides mode
-		opts := &drivers.ModelExecutorOptions{
-			InputHandle:     conn,
-			InputConnector:  "clickhouse",
-			OutputHandle:    conn,
-			OutputConnector: "clickhouse",
-		}
-		executor, ok := conn.AsModelExecutor("default", opts)
-		require.True(t, ok, "Model executor should be available when managed=true overrides read mode")
-		require.NotNil(t, executor)
+		c := conn.(*Connection)
+		require.NotEqual(t, c.readDB, c.writeDB, "Should use separate connections when dual DSNs are provided")
+
+		// Verify connection works (would fail if using invalid DSN)
+		olap, ok := conn.AsOLAP("default")
+		require.True(t, ok)
+
+		res, err := olap.Query(context.Background(), &drivers.Statement{Query: "SELECT 1"})
+		require.NoError(t, err)
+		require.NoError(t, res.Close())
 	})
+
+	t.Run("InvalidDSN_ShouldFail", func(t *testing.T) {
+		// Test that invalid dsn causes failure
+		_, err := driver{}.Open("default", map[string]any{
+			"dsn":       "invalid-dsn",
+			"write_dsn": dsn,
+			"mode":      "readwrite",
+		}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "failed to parse DSN")
+	})
+
+	t.Run("InvalidWriteDSN_ShouldFail", func(t *testing.T) {
+		// Test that invalid write_dsn causes failure
+		_, err := driver{}.Open("default", map[string]any{
+			"dsn":       dsn,
+			"write_dsn": "invalid-dsn",
+			"mode":      "readwrite",
+		}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "failed to parse write DSN")
+	})
+
+	t.Run("SingleDSN_SharedConnection", func(t *testing.T) {
+		// Test that single DSN still uses shared connection (backward compatibility)
+		conn, err := driver{}.Open("default", map[string]any{
+			"dsn":  dsn,
+			"mode": "readwrite",
+		}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+		require.NoError(t, err)
+		defer conn.Close()
+
+		c := conn.(*Connection)
+		require.NotNil(t, c.readDB)
+		require.NotNil(t, c.writeDB)
+
+		// Should use the same connection for both read and write when using single DSN
+		require.Equal(t, c.readDB, c.writeDB, "Read and write should share connection when using single DSN")
+	})
+
+	t.Run("NoConfiguration_ShouldFail", func(t *testing.T) {
+		// Test that providing no valid configuration fails with appropriate error
+		_, err := driver{}.Open("default", map[string]any{
+			"mode": "readwrite",
+		}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "no clickhouse connection configured")
+	})
+}
+
+func TestClickhouseDualDSNFunctionality(t *testing.T) {
+	dsn := testclickhouse.Start(t)
+
+	t.Run("ReadWriteOperationsWithDualDSN", func(t *testing.T) {
+		// Test that both read and write operations work with dual DSN setup
+		conn, err := driver{}.Open("default", map[string]any{
+			"dsn":       dsn,
+			"write_dsn": dsn,
+			"mode":      "readwrite",
+		}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+		require.NoError(t, err)
+		defer conn.Close()
+
+		c := conn.(*Connection)
+		olap, ok := conn.AsOLAP("default")
+		require.True(t, ok)
+
+		// Create a test table using write connection
+		err = olap.Exec(context.Background(), &drivers.Statement{
+			Query: "CREATE TABLE dual_test (id INT, name VARCHAR) ENGINE=Memory",
+		})
+		require.NoError(t, err)
+
+		// Insert data using write connection
+		err = olap.Exec(context.Background(), &drivers.Statement{
+			Query: "INSERT INTO dual_test VALUES (1, 'test1'), (2, 'test2')",
+		})
+		require.NoError(t, err)
+
+		// Read data using read connection
+		res, err := olap.Query(context.Background(), &drivers.Statement{
+			Query: "SELECT id, name FROM dual_test ORDER BY id",
+		})
+		require.NoError(t, err)
+
+		var results []struct {
+			ID   int
+			Name string
+		}
+		for res.Next() {
+			var r struct {
+				ID   int
+				Name string
+			}
+			require.NoError(t, res.Scan(&r.ID, &r.Name))
+			results = append(results, r)
+		}
+		require.NoError(t, res.Close())
+
+		require.Len(t, results, 2)
+		require.Equal(t, 1, results[0].ID)
+		require.Equal(t, "test1", results[0].Name)
+		require.Equal(t, 2, results[1].ID)
+		require.Equal(t, "test2", results[1].Name)
+
+		// Test model operations with dual DSN
+		testDualDSNModelOperations(t, c, olap)
+	})
+}
+
+func testDualDSNModelOperations(t *testing.T, c *Connection, olap drivers.OLAPStore) {
+	// Test that model operations work correctly with dual DSN setup
+	props := &ModelOutputProperties{
+		Engine:              "Memory",
+		Table:               "dual_dsn_model_test",
+		IncrementalStrategy: drivers.IncrementalStrategyAppend,
+	}
+
+	// Create table using model operations (should use write connection)
+	_, err := c.createTableAsSelect(context.Background(), "dual_dsn_model_test", "SELECT 1 AS id, 'initial' AS status", props)
+	require.NoError(t, err)
+
+	// Insert more data using model operations (should use write connection)
+	insertOpts := &InsertTableOptions{Strategy: drivers.IncrementalStrategyAppend}
+	_, err = c.insertTableAsSelect(context.Background(), "dual_dsn_model_test", "SELECT 2 AS id, 'added' AS status", insertOpts, props)
+	require.NoError(t, err)
+
+	// Query the results (should use read connection)
+	res, err := olap.Query(context.Background(), &drivers.Statement{
+		Query: "SELECT id, status FROM dual_dsn_model_test ORDER BY id",
+	})
+	require.NoError(t, err)
+
+	var results []struct {
+		ID     int
+		Status string
+	}
+	for res.Next() {
+		var r struct {
+			ID     int
+			Status string
+		}
+		require.NoError(t, res.Scan(&r.ID, &r.Status))
+		results = append(results, r)
+	}
+	require.NoError(t, res.Close())
+
+	require.Len(t, results, 2)
+	require.Equal(t, 1, results[0].ID)
+	require.Equal(t, "initial", results[0].Status)
+	require.Equal(t, 2, results[1].ID)
+	require.Equal(t, "added", results[1].Status)
 }

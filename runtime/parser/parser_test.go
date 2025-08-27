@@ -1061,6 +1061,30 @@ dev:
     cron: "0 0 * * *"
     run_in_dev: true
 `,
+		// model m1
+		`m1.yaml`: `
+type: model
+sql: SELECT 1
+# Test that an empty property doesn't break it
+dev:
+`,
+		// model m2
+		`m2.yaml`: `
+type: model
+sql: SELECT 1
+# Test empty property in environment_overrides doesn't break it
+environment_overrides:
+  dev:
+`,
+		// model m3
+		`m3.yaml`: `
+type: model
+sql: SELECT 1
+# Test environment_overrides
+environment_overrides:
+  dev:
+    sql: SELECT 2
+`,
 	})
 
 	s1Base := &Resource{
@@ -1091,15 +1115,63 @@ dev:
 		},
 	}
 
+	m1Base := &Resource{
+		Name:  ResourceName{Kind: ResourceKindModel, Name: "m1"},
+		Paths: []string{"/m1.yaml"},
+		ModelSpec: &runtimev1.ModelSpec{
+			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
+			InputConnector:  "duckdb",
+			InputProperties: must(structpb.NewStruct(map[string]any{"sql": "SELECT 1"})),
+			OutputConnector: "duckdb",
+			ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+		},
+	}
+
+	m2Base := &Resource{
+		Name:  ResourceName{Kind: ResourceKindModel, Name: "m2"},
+		Paths: []string{"/m2.yaml"},
+		ModelSpec: &runtimev1.ModelSpec{
+			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
+			InputConnector:  "duckdb",
+			InputProperties: must(structpb.NewStruct(map[string]any{"sql": "SELECT 1"})),
+			OutputConnector: "duckdb",
+			ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+		},
+	}
+
+	m3Base := &Resource{
+		Name:  ResourceName{Kind: ResourceKindModel, Name: "m3"},
+		Paths: []string{"/m3.yaml"},
+		ModelSpec: &runtimev1.ModelSpec{
+			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
+			InputConnector:  "duckdb",
+			InputProperties: must(structpb.NewStruct(map[string]any{"sql": "SELECT 1"})),
+			OutputConnector: "duckdb",
+			ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+		},
+	}
+
+	m3Test := &Resource{
+		Name:  ResourceName{Kind: ResourceKindModel, Name: "m3"},
+		Paths: []string{"/m3.yaml"},
+		ModelSpec: &runtimev1.ModelSpec{
+			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
+			InputConnector:  "duckdb",
+			InputProperties: must(structpb.NewStruct(map[string]any{"sql": "SELECT 2"})),
+			OutputConnector: "duckdb",
+			ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+		},
+	}
+
 	// Parse without environment
 	p, err := Parse(ctx, repo, "", "", "duckdb")
 	require.NoError(t, err)
-	requireResourcesAndErrors(t, p, []*Resource{s1Base}, nil)
+	requireResourcesAndErrors(t, p, []*Resource{s1Base, m1Base, m2Base, m3Base}, nil)
 
 	// Parse in environment "dev"
 	p, err = Parse(ctx, repo, "", "dev", "duckdb")
 	require.NoError(t, err)
-	requireResourcesAndErrors(t, p, []*Resource{s1Test}, nil)
+	requireResourcesAndErrors(t, p, []*Resource{s1Test, m1Base, m2Base, m3Test}, nil)
 }
 
 func TestMetricsViewSecurity(t *testing.T) {

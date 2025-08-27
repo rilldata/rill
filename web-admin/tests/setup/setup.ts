@@ -1,20 +1,21 @@
 import { expect } from "@playwright/test";
+import { cliLogin } from "@rilldata/web-common/tests/fixtures/cli";
+import { writeFileEnsuringDir } from "@rilldata/web-common/tests/utils/fs";
 import { isServiceReady } from "@rilldata/web-common/tests/utils/is-service-ready.ts";
-import {
-  RILL_DEVTOOL_BACKGROUND_PROCESS_PID_FILE,
-  RILL_EMBED_SERVICE_TOKEN_FILE,
-} from "@rilldata/web-integration/tests/constants";
 import {
   execAsync,
   spawnAndMatch,
 } from "@rilldata/web-common/tests/utils/spawn";
+import {
+  RILL_DEVTOOL_BACKGROUND_PROCESS_PID_FILE,
+  RILL_EMBED_SERVICE_TOKEN_FILE,
+} from "@rilldata/web-integration/tests/constants";
 import { spawn } from "child_process";
 import dotenv from "dotenv";
 import { openSync } from "fs";
 import { mkdir } from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
-import { writeFileEnsuringDir } from "@rilldata/web-common/tests/utils/fs";
 import { test as setup } from "./base";
 import {
   ADMIN_STORAGE_STATE,
@@ -22,7 +23,6 @@ import {
   RILL_PROJECT_NAME,
   RILL_SERVICE_NAME,
 } from "./constants";
-import { cliLogin } from "@rilldata/web-common/tests/fixtures/cli";
 
 setup.describe("global setup", () => {
   setup.describe.configure({
@@ -204,6 +204,16 @@ setup.describe("global setup", () => {
     await adminPage.goto(url);
     await expect(adminPage.getByText(RILL_ORG_NAME)).toBeVisible(); // Organization breadcrumb
     await expect(adminPage.getByText(RILL_PROJECT_NAME)).toBeVisible(); // Project breadcrumb
+
+    // Expect to land on the chat page
+    await adminPage.waitForURL("**/-/chat");
+    await expect(
+      adminPage.getByText("How can I help you today?"),
+    ).toBeVisible();
+
+    // Navigate to the dashboards page to validate the deployment
+    await adminPage.getByRole("link", { name: "Dashboards" }).click();
+    await adminPage.waitForURL("**/-/dashboards");
 
     // Trial is started in an async job after the 1st deploy. It is not worth the effort to re-fetch the issues list right now.
     // So disabling this for now, we could add a re-fetch to the issues list if users start facing issues.

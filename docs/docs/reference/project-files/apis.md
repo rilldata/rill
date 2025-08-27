@@ -5,13 +5,13 @@ sidebar_position: 50
 ---
 
 In your Rill project directory, create a new file name `<api-name>.yaml` in the `apis` directory containing a custom API definition.
-See comprehensive documentation on how to define and use [custom APIs](/integrate/custom-apis/index.md)
+See comprehensive documentation on how to define and use [custom APIs](/build/custom-apis)
 
 ## Properties
 
 **`type`** — Refers to the resource type and must be `api` _(required)_.
 
-**`connector`** — Refers to the OLAP engine if not already set in rill.yaml or if using [multiple OLAP connectors](../olap-engines/multiple-olap.md) in a single project. Only applies when using `sql` _(optional)_.
+**`connector`** — Refers to the OLAP engine if not already set in rill.yaml or if using [multiple OLAP connectors](/connect/olap/multiple-olap) in a single project. Only applies when using `sql` _(optional)_.
 
 Either one of the following:
 

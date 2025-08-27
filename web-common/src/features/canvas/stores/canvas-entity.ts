@@ -1,15 +1,24 @@
+import { goto } from "$app/navigation";
+import { page } from "$app/stores";
 import {
   useCanvas,
   type CanvasResponse,
 } from "@rilldata/web-common/features/canvas/selector";
 import type { CanvasSpecResponseStore } from "@rilldata/web-common/features/canvas/types";
+import {
+  defaultPrimaryColors,
+  defaultSecondaryColors,
+} from "@rilldata/web-common/features/themes/color-config";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
+  getRuntimeServiceGetResourceQueryKey,
+  runtimeServiceGetResource,
   type V1ComponentSpecRendererProperties,
   type V1MetricsViewSpec,
   type V1Resource,
   type V1ThemeSpec,
 } from "@rilldata/web-common/runtime-client";
+import chroma, { type Color } from "chroma-js";
 import {
   derived,
   get,
@@ -22,6 +31,7 @@ import { parseDocument } from "yaml";
 import type { FileArtifact } from "../../entity-management/file-artifact";
 import { fileArtifacts } from "../../entity-management/file-artifacts";
 import { ResourceKind } from "../../entity-management/resource-selectors";
+import { updateThemeVariables } from "../../themes/actions";
 import type { BaseCanvasComponent } from "../components/BaseCanvasComponent";
 import type { CanvasComponentType, ComponentSpec } from "../components/types";
 import {
@@ -32,12 +42,8 @@ import {
 } from "../components/util";
 import { Filters } from "./filters";
 import { Grid } from "./grid";
-import { TailwindColorSpacing } from "../../themes/color-config";
-import { updateThemeVariables } from "../../themes/actions";
 import { CanvasResolvedSpec } from "./spec";
 import { TimeControls } from "./time-control";
-import { page } from "$app/stores";
-import { goto } from "$app/navigation";
 
 // Store for managing URL search parameters
 // Which may be in the URL or in the Canvas YAML
@@ -70,12 +76,14 @@ export class CanvasEntity {
   specStore: CanvasSpecResponseStore;
   // Tracks whether the canvas been loaded (and rows processed) for the first time
   firstLoad = true;
+  theme: Writable<{ primary?: Color; secondary?: Color }> = writable({});
   unsubscriber: Unsubscriber;
   lastVisitedState: Writable<string | null> = writable(null);
 
-  theme: Record<(typeof TailwindColorSpacing)[number], string>;
-
-  constructor(name: string, instanceId: string) {
+  constructor(
+    name: string,
+    private instanceId: string,
+  ) {
     this.specStore = useCanvas(
       instanceId,
       name,
@@ -126,8 +134,19 @@ export class CanvasEntity {
     );
     this.filters = new Filters(this.spec, searchParamsStore);
 
+    searchParamsStore.subscribe((searchParams) => {
+      const themeFromUrl = searchParams.get("theme");
+      if (themeFromUrl) {
+        this.processAndSetTheme(themeFromUrl, undefined).catch(console.error);
+      }
+    });
+
     this.unsubscriber = this.specStore.subscribe((spec) => {
       const filePath = spec.data?.filePath;
+      const theme = spec.data?.canvas?.theme;
+      const embeddedTheme = spec.data?.canvas?.embeddedTheme;
+
+      this.processAndSetTheme(theme, embeddedTheme).catch(console.error);
 
       if (!filePath) {
         return;
@@ -162,10 +181,6 @@ export class CanvasEntity {
   // Not currently being used
   unsubscribe = () => {
     // this.unsubscriber();
-  };
-
-  setTheme = (theme: V1ThemeSpec | undefined) => {
-    updateThemeVariables(theme);
   };
 
   saveSnapshot = (filterState: string) => {
@@ -275,6 +290,42 @@ export class CanvasEntity {
       this._rows.refresh();
     }
     this.firstLoad = false;
+  };
+
+  processAndSetTheme = async (
+    themeName: string | undefined,
+    embeddedTheme: V1ThemeSpec | undefined,
+  ) => {
+    let themeSpec: V1ThemeSpec | undefined;
+
+    if (themeName) {
+      const response = await queryClient.fetchQuery({
+        queryKey: getRuntimeServiceGetResourceQueryKey(this.instanceId, {
+          "name.kind": ResourceKind.Theme,
+          "name.name": themeName,
+        }),
+        queryFn: () =>
+          runtimeServiceGetResource(this.instanceId, {
+            "name.kind": ResourceKind.Theme,
+            "name.name": themeName,
+          }),
+      });
+
+      themeSpec = response.resource?.theme?.spec;
+    } else if (embeddedTheme) {
+      themeSpec = embeddedTheme;
+    }
+
+    this.theme.set({
+      primary: themeSpec?.primaryColorRaw
+        ? chroma(themeSpec.primaryColorRaw)
+        : chroma(`hsl(${defaultPrimaryColors[500]})`),
+      secondary: themeSpec?.secondaryColorRaw
+        ? chroma(themeSpec.secondaryColorRaw)
+        : chroma(`hsl(${defaultSecondaryColors[500]})`),
+    });
+
+    updateThemeVariables(themeSpec);
   };
 
   generateId = (row: number | undefined, column: number | undefined) => {

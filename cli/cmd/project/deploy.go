@@ -14,7 +14,7 @@ import (
 	"github.com/rilldata/rill/cli/cmd/org"
 	"github.com/rilldata/rill/cli/pkg/browser"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/dotrillcloud"
+	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/local"
 	"github.com/rilldata/rill/cli/pkg/printer"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
@@ -32,17 +32,90 @@ var (
 )
 
 type DeployOpts struct {
-	GitPath       string
-	SubPath       string
-	RemoteName    string
-	Name          string
-	Description   string
-	Public        bool
-	Provisioner   string
-	ProdVersion   string
-	ProdBranch    string
-	Slots         int
+	GitPath     string
+	SubPath     string
+	RemoteName  string
+	Name        string
+	Description string
+	Public      bool
+	Provisioner string
+	ProdVersion string
+	ProdBranch  string
+	Slots       int
+
 	ArchiveUpload bool
+	// Managed indicates if the project should be deployed using Rill Managed Git.
+	Managed bool
+	// Github indicates if the project should be connected to GitHub for automatic deploys.
+	Github bool
+}
+
+func (o *DeployOpts) ValidatePathAndSetupGit(ch *cmdutil.Helper) error {
+	if o.SubPath != "" && (o.ArchiveUpload || o.Managed) {
+		return fmt.Errorf("`subpath` flag cannot be used with `archive` or `managed` deploys")
+	}
+
+	// expand project directory and get absolute path
+	var err error
+	o.GitPath, err = fileutil.ExpandHome(o.GitPath)
+	if err != nil {
+		return err
+	}
+	o.GitPath, err = filepath.Abs(o.GitPath)
+	if err != nil {
+		return err
+	}
+
+	if o.Managed || o.ArchiveUpload {
+		return nil
+	}
+	if o.SubPath != "" {
+		// subpath is already set
+		o.Github = true
+		return nil
+	}
+
+	// detect subpath
+	repoRoot, subpath, err := gitutil.InferRepoRootAndSubpath(o.GitPath)
+	if err != nil {
+		// Not a git repository, no need to connect to GitHub
+		return nil
+	}
+
+	remote, err := gitutil.ExtractGitRemote(repoRoot, o.RemoteName, false)
+	if err != nil && !errors.Is(err, gitutil.ErrGitRemoteNotFound) {
+		return err
+	}
+	if remote.URL == "" {
+		// no remote configured
+		return nil
+	}
+	if !strings.HasPrefix(remote.URL, "https://github.com") {
+		// not a GitHub repo should not prompt for GitHub connection
+		return nil
+	}
+
+	ch.PrintfBold("Detected git repository at: ")
+	ch.Printf("%s\n", repoRoot)
+	ch.PrintfBold("Connected to Github repository: ")
+	ch.Printf("%s\n", remote.URL)
+	if subpath != "" {
+		ch.PrintfBold("Project location within repo: ")
+		ch.Printf("%s\n", subpath)
+	}
+	confirmed, err := cmdutil.ConfirmPrompt("Enable automatic deploys to Rill Cloud from GitHub?", "", true)
+	if err != nil {
+		return err
+	}
+	if confirmed {
+		o.SubPath = subpath
+		o.GitPath = repoRoot
+		o.Github = true
+		return nil
+	}
+	ch.Printf("Skipping GitHub connection. You can connect later using `rill project connect-github`.\n")
+	o.Managed = true
+	return nil
 }
 
 func DeployCmd(ch *cmdutil.Helper) *cobra.Command {
@@ -54,6 +127,11 @@ func DeployCmd(ch *cmdutil.Helper) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) > 0 {
 				opts.GitPath = args[0]
+			}
+			opts.Managed = true
+			err := opts.ValidatePathAndSetupGit(ch)
+			if err != nil {
+				return err
 			}
 			return DeployWithUploadFlow(cmd.Context(), ch, opts)
 		},
@@ -79,20 +157,7 @@ func DeployCmd(ch *cmdutil.Helper) *cobra.Command {
 	return deployCmd
 }
 
-func ValidateLocalProject(ch *cmdutil.Helper, gitPath, subPath string) (string, string, error) {
-	var localGitPath string
-	var err error
-	if gitPath != "" {
-		localGitPath, err = fileutil.ExpandHome(gitPath)
-		if err != nil {
-			return "", "", err
-		}
-	}
-	localGitPath, err = filepath.Abs(localGitPath)
-	if err != nil {
-		return "", "", err
-	}
-
+func ValidateLocalProject(ch *cmdutil.Helper, localGitPath, subPath string) (string, string, error) {
 	var localProjectPath string
 	if subPath == "" {
 		localProjectPath = localGitPath
@@ -157,6 +222,11 @@ func DeployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployO
 	if err != nil {
 		return err
 	}
+	// Ensure gitignore is set up so that we don't upload files that should not be tracked by Git.
+	err = cmdutil.SetupGitIgnore(ctx, repo)
+	if err != nil {
+		return fmt.Errorf("failed to set up .gitignore: %w", err)
+	}
 
 	projResp, err := adminClient.GetProject(ctx, &adminv1.GetProjectRequest{OrganizationName: ch.Org, Name: opts.Name})
 	if err != nil {
@@ -186,6 +256,7 @@ func DeployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployO
 		ProdVersion:      opts.ProdVersion,
 		ProdSlots:        int64(opts.Slots),
 		Public:           opts.Public,
+		DirectoryName:    filepath.Base(localProjectPath),
 	}
 
 	ch.Printer.Println("Starting upload.")
@@ -213,20 +284,6 @@ func DeployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployO
 			return nil
 		}
 		return fmt.Errorf("create project failed with error %w", err)
-	}
-
-	err = dotrillcloud.SetAll(localProjectPath, ch.AdminURL(), &dotrillcloud.Config{
-		ProjectID: res.Project.Id,
-	})
-	if err != nil {
-		return err
-	}
-	if req.GitRemote != "" {
-		// also commit dotrillcloud to the repo
-		err = ch.GitHelper(ch.Org, opts.Name, localProjectPath).PushToManagedRepo(ctx)
-		if err != nil {
-			return err
-		}
 	}
 
 	// Success!
