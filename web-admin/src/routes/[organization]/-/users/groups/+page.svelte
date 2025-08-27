@@ -67,6 +67,25 @@
       (page) => page.members ?? [],
     ) ?? [];
 
+  // Function to load all users when dialogs open
+  async function ensureAllUsersLoaded() {
+    if (
+      $listOrganizationMemberUsersInfinite.hasNextPage &&
+      !$listOrganizationMemberUsersInfinite.isFetchingNextPage
+    ) {
+      await $listOrganizationMemberUsersInfinite.fetchNextPage();
+      // Recursively call until all pages are loaded
+      if ($listOrganizationMemberUsersInfinite.hasNextPage) {
+        await ensureAllUsersLoaded();
+      }
+    }
+  }
+
+  // Load all users when dialogs open
+  $: if (isCreateUserGroupDialogOpen || isEditUserGroupDialogOpen) {
+    ensureAllUsersLoaded();
+  }
+
   function handleLoadMore() {
     if (hasNextPage) {
       pageToken = $listOrganizationMemberUsergroups.data?.nextPageToken ?? "";
@@ -145,6 +164,7 @@
   groupName={userGroupName}
   organizationUsers={allOrganizationUsers}
   currentUserEmail={$currentUser.data?.user.email}
+  isLoadingUsers={isLoadingAllUsers}
 />
 
 <EditUserGroupDialog
@@ -152,4 +172,5 @@
   groupName={userGroupName}
   organizationUsers={allOrganizationUsers}
   currentUserEmail={$currentUser.data?.user.email}
+  isLoadingUsers={isLoadingAllUsers}
 />
