@@ -13,7 +13,7 @@
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import { Plus } from "lucide-svelte";
 
-  const PAGE_SIZE = 20;
+  const PAGE_SIZE = 50;
 
   let userGroupName = "";
   let isCreateUserGroupDialogOpen = false;
@@ -164,7 +164,6 @@
   groupName={userGroupName}
   organizationUsers={allOrganizationUsers}
   currentUserEmail={$currentUser.data?.user.email}
-  isLoadingUsers={isLoadingAllUsers}
 />
 
 <EditUserGroupDialog
@@ -172,5 +171,4 @@
   groupName={userGroupName}
   organizationUsers={allOrganizationUsers}
   currentUserEmail={$currentUser.data?.user.email}
-  isLoadingUsers={isLoadingAllUsers}
 />
