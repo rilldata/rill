@@ -67,7 +67,8 @@
       (page) => page.members ?? [],
     ) ?? [];
 
-  // Function to load all users when dialogs open
+  // FIXME: Workaround to load users when dialogs open
+  // FIXME: PLAT-181 - server-side org users search
   async function ensureAllUsersLoaded() {
     if (
       $listOrganizationMemberUsersInfinite.hasNextPage &&
