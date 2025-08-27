@@ -112,6 +112,7 @@ export function generateVLPieChartSpec(
     };
 
     spec.layer = [arcLayer, totalLayer];
+    spec.description = "A arc chart with embedded data";
 
     return {
       ...spec,
