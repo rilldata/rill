@@ -5,7 +5,6 @@ import { createRuntimeServiceListResources } from "@rilldata/web-common/runtime-
 import type { CreateQueryResult } from "@tanstack/svelte-query";
 import { derived } from "svelte/store";
 import { createSmartRefetchInterval } from "../../../../lib/refetch-interval-store";
-import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 
 export function useDashboardsLastUpdated(
   instanceId: string,
