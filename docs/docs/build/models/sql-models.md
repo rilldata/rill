@@ -54,3 +54,25 @@ For projects configured with [multiple OLAP engines](/connect/olap/multiple-olap
 -- @output.connector: clickhouse
 select from clickhouse_table
 ```
+
+### Working with Pivots
+
+Pivots deserve their own section, as using the [Pivot](https://duckdb.org/docs/sql/statements/pivot) statement while modeling requires special consideration. Notably, there are a few existing DuckDB limitations to consider:
+- DuckDB's [SQL to JSON serializer](https://duckdb.org/docs/extensions/json.html#serializing-and-deserializing-sql-to-json-and-vice-versa) doesn't support `PIVOT` without the `IN` [filter](https://duckdb.org/docs/sql/statements/pivot#in-filter-for-on-clause)
+- DuckDB doesn't support creating views based on `PIVOT` without an `IN` filter (and all models are materialized as views by default in Rill)
+
+Fortunately, there are workarounds available to address these limitations.
+
+#### Passing the `IN` Filter with Your `PIVOT` Statement
+
+If you know the exact values you want to pivot on, you can specify them using an `IN` filter with your `ON` clause. For example, instead of:
+
+```sql
+PIVOT table_name ON column_name USING SUM(measure)
+```
+
+You can use the following `PIVOT` statement:
+
+```sql
+PIVOT table_name ON column_name IN (value_a, value_b, value_c) USING SUM(measure)
+```

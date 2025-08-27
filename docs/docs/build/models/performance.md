@@ -1,7 +1,7 @@
 ---
 title: Optimize Your Models
-sidebar_label: Performance
-sidebar_position: 38
+sidebar_label: Performance Optimization
+sidebar_position: 45
 ---
 
 Model performance is critical for maintaining responsive dashboards and ensuring users have access to the most current data. This guide covers strategies for optimizing your Rill models to deliver fast query results while keeping data fresh and up-to-date.

@@ -38,22 +38,10 @@ The YAML configuration file contains several key parameters:
 - **`sql`**: The actual SQL query to be executed. When nested under `dev:`, the query runs in Rill Developer environment.
 - **`dev`**: Configuration for development mode. Rill Developer runs in dev mode by default, but when deployed to Rill Cloud, the root-level SQL configuration executes.
 
-### Automatic Refresh Schedule
-
-Rill can automatically refresh your source models at specified intervals to ensure your data stays current. This feature allows you to set up scheduled data ingestion without manual intervention, keeping your analytics dashboards up-to-date with the latest information from your data sources.
-
-
-```yaml
-refresh:
-  every: 24h
-```
-
-For more information, see [Scheduled Refreshes](/build/models/data-refresh).
-
 
 ## Examples
 
-### Big Query Model
+### BigQuery Model
 ```yaml
 # Model YAML
 # Reference documentation: https://docs.rilldata.com/reference/project-files/models
@@ -110,4 +98,6 @@ For more information, see our [model reference documentation](/reference/project
 
 ## Next Steps
 
-Once you've validated your source model configuration and confirmed the data preview looks correct, you can proceed to create your first metrics view. If no additional data transformations are required, you can select [**Generate Metrics View with AI**](/build/metrics-view) from the top-right corner of the interface. This will launch Rill's AI-powered dashboard generation to help you get started with your analytics journey.
+Rill provides automatic refresh capabilities for your source models at specified intervals to maintain data currency. This functionality enables you to establish scheduled data ingestion without manual intervention, ensuring your analytics dashboards remain current with the latest information from your data sources. For additional details, see [Scheduled Refreshes](/build/models/data-refresh).
+
+After validating your source model configuration and confirming the data preview appears correct, you can move forward to create your first metrics view. If no additional data transformations are needed, you can choose [**Generate Metrics View with AI**](/build/metrics-view) from the top-right corner of the interface to initiate Rill's AI-powered dashboard generation.
