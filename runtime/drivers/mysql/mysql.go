@@ -42,6 +42,7 @@ var spec = drivers.Spec{
 			Type:        drivers.StringPropertyType,
 			DisplayName: "Username",
 			Placeholder: "mysql",
+			Required:    true,
 			Hint:        "MySQL username for authentication",
 		},
 		{
@@ -57,6 +58,7 @@ var spec = drivers.Spec{
 			Type:        drivers.StringPropertyType,
 			DisplayName: "Host",
 			Placeholder: "localhost",
+			Required:    true,
 			Hint:        "MySQL server hostname or IP address",
 		},
 		{
@@ -73,6 +75,7 @@ var spec = drivers.Spec{
 			Type:        drivers.StringPropertyType,
 			DisplayName: "Database",
 			Placeholder: "my_database",
+			Required:    true,
 			Hint:        "Name of the MySQL database to connect to",
 		},
 		{
