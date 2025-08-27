@@ -83,7 +83,6 @@ var spec = drivers.Spec{
 			Type:        drivers.StringPropertyType,
 			DisplayName: "SSL Mode",
 			Placeholder: "require",
-			Default:     "require",
 			Hint:        "Options include disable, require, verify-ca, and verify-full",
 		},
 	},
