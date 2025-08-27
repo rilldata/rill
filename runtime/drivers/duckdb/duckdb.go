@@ -106,7 +106,7 @@ var motherduckSpec = drivers.Spec{
 			Required:    true,
 			DisplayName: "Schema name",
 			Placeholder: "your_schema_name",
-			Hint:        "Set the default schema used by the DuckDB database",
+			Hint:        "Set the default schema used by the MotherDuck database",
 		},
 	},
 	ImplementsOLAP: true,
