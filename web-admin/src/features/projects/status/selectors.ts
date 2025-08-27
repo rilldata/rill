@@ -7,7 +7,7 @@ import {
   type V1ListResourcesResponse,
 } from "@rilldata/web-common/runtime-client";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
-import { createSmartRefetchInterval } from "../../shared/refetch-interval-store";
+import { createSmartRefetchInterval } from "../../../../lib/refetch-interval-store";
 
 export function useProjectDeployment(orgName: string, projName: string) {
   return createAdminServiceGetProject<V1Deployment | undefined>(
