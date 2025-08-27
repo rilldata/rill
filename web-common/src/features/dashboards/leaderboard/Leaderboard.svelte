@@ -289,6 +289,26 @@
       measureName === leaderboardSortByMeasureName
     );
   }
+
+  // Calculate maximum values for relative magnitude bar sizing
+  // This includes both above-the-fold and below-the-fold data for accurate scaling
+  $: maxValues = (() => {
+    const allData = [...aboveTheFold, ...belowTheFoldRows];
+    const maxVals: Record<string, number> = {};
+    
+    for (const measureName of leaderboardMeasureNames) {
+      let maxVal = 0;
+      for (const item of allData) {
+        const value = item.values[measureName];
+        if (typeof value === 'number' && isFinite(value)) {
+          maxVal = Math.max(maxVal, Math.abs(value));
+        }
+      }
+      maxVals[measureName] = maxVal;
+    }
+    
+    return maxVals;
+  })();
 </script>
 
 <div
@@ -370,6 +390,7 @@
             {leaderboardSortByMeasureName}
             {formatters}
             {dimensionColumnWidth}
+            {maxValues}
           />
         {/each}
       </DelayedLoadingRows>
@@ -392,6 +413,7 @@
           {leaderboardSortByMeasureName}
           {formatters}
           {dimensionColumnWidth}
+          {maxValues}
         />
       {/each}
     </tbody>
