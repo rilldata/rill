@@ -37,7 +37,7 @@ export function createEmbedOptions({
     renderer,
     tooltip: {
       theme: theme,
-      ...(colorMapping.length
+      ...(colorMapping?.length
         ? { formatTooltip: getTooltipFormatter(colorMapping) }
         : {}),
     },

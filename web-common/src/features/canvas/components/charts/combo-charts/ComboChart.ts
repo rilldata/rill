@@ -19,7 +19,12 @@ import type {
   ComponentPath,
 } from "../../../stores/canvas-entity";
 import { BaseChart, type BaseChartConfig } from "../BaseChart";
-import type { ChartDataQuery, ChartFieldsMap, FieldConfig } from "../types";
+import {
+  RILL_INTERNAL_FIELD,
+  type ChartDataQuery,
+  type ChartFieldsMap,
+  type FieldConfig,
+} from "../types";
 import { vegaSortToAggregationSort } from "../util";
 
 export type MarkType = "bar" | "line";
@@ -334,8 +339,17 @@ export class ComboChartComponent extends BaseChart<ComboChartSpec> {
 
     const randomMeasure1 = measures[Math.floor(Math.random() * measures.length)]
       ?.name as string;
-    const randomMeasure2 = measures[Math.floor(Math.random() * measures.length)]
-      ?.name as string;
+
+    // Ensure randomMeasure2 is different from randomMeasure1
+    let randomMeasure2: string;
+    if (measures.length > 1) {
+      do {
+        randomMeasure2 = measures[Math.floor(Math.random() * measures.length)]
+          ?.name as string;
+      } while (randomMeasure2 === randomMeasure1);
+    } else {
+      randomMeasure2 = "Other_measure";
+    }
 
     let randomDimension = "";
     if (!timeDimension) {
@@ -366,7 +380,7 @@ export class ComboChartComponent extends BaseChart<ComboChartSpec> {
       },
       color: {
         type: "nominal",
-        field: "measures", // This will be used for legend
+        field: `${RILL_INTERNAL_FIELD}_measures`, // This will be used for legend
         legendOrientation: "top",
       },
     };
@@ -396,7 +410,7 @@ export class ComboChartComponent extends BaseChart<ComboChartSpec> {
           ? [...this.customSortXItems]
           : undefined;
     }
-    result["measures"] = this.getMeasureLabels();
+    result[`${RILL_INTERNAL_FIELD}_measures`] = this.getMeasureLabels();
     return result;
   }
 }

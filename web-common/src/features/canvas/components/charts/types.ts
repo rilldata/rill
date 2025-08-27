@@ -16,6 +16,8 @@ import type { CreateQueryResult } from "@tanstack/svelte-query";
 import type { Color } from "chroma-js";
 import type { TimeUnit } from "vega-lite/build/src/timeunit";
 
+export const RILL_INTERNAL_FIELD = "_rill_internal_field";
+
 export type ChartType =
   | "bar_chart"
   | "line_chart"

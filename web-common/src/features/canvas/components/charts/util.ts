@@ -14,12 +14,13 @@ import {
 import merge from "deepmerge";
 import type { Config } from "vega-lite";
 import { CHART_CONFIG, type ChartSpec } from "./";
-import type {
-  ChartDataResult,
-  ChartDomainValues,
-  ChartSortDirection,
-  ChartType,
-  FieldConfig,
+import {
+  RILL_INTERNAL_FIELD,
+  type ChartDataResult,
+  type ChartDomainValues,
+  type ChartSortDirection,
+  type ChartType,
+  type FieldConfig,
 } from "./types";
 
 export function isFieldConfig(field: unknown): field is FieldConfig {
@@ -86,6 +87,10 @@ export function getFieldsByType(spec: ChartSpec): FieldsByType {
     if (isFieldConfig(obj)) {
       const type = obj.type as string;
       const field = obj.field;
+
+      if (field.startsWith(RILL_INTERNAL_FIELD)) {
+        return;
+      }
 
       switch (type) {
         case "quantitative":
@@ -287,7 +292,7 @@ export function getColorMappingForChart(
 
   let colorMapping: ColorMapping | undefined;
   if (typeof colorField === "object") {
-    const fieldKey = colorField.field || "measures";
+    const fieldKey = colorField.field;
     colorMapping = getColorForValues(
       domainValues[fieldKey],
       colorField.colorMapping,
