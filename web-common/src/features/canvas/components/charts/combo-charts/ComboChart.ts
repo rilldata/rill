@@ -95,7 +95,7 @@ export class ComboChartComponent extends BaseChart<ComboChartSpec> {
       meta: {
         type: "color",
         chartFieldInput: {
-          type: "value",
+          type: "measure",
           defaultLegendOrientation: "top",
           colorMappingSelector: { enable: true },
           nullSelector: true,

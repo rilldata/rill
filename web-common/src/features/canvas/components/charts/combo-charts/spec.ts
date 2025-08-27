@@ -121,7 +121,8 @@ export function generateVLComboChartSpec(
   const baseColorEncoding: ColorDef<Field> = {
     field: measureField,
     type: "nominal",
-    legend,
+    // Only apply legend if orientation is not "none"
+    ...(config.color?.legendOrientation !== "none" && { legend }),
     scale: {
       domain: colorMapping.map((m) => m.value),
       range: colorMapping.map((m) => m.color),
@@ -149,6 +150,13 @@ export function generateVLComboChartSpec(
         }),
       },
       encoding: {
+        ...(y1MarkType === "line" &&
+          config.x?.type === "temporal" && {
+            x: {
+              ...createPositionEncoding(config.x, data),
+              bandPosition: 0.5,
+            },
+          }),
         y: {
           ...createPositionEncoding(config.y1, data),
           field: valueField,
@@ -181,6 +189,13 @@ export function generateVLComboChartSpec(
         }),
       },
       encoding: {
+        ...(y2MarkType === "line" &&
+          config.x?.type === "temporal" && {
+            x: {
+              ...createPositionEncoding(config.x, data),
+              bandPosition: 0.5,
+            },
+          }),
         y: {
           ...createPositionEncoding(config.y2, data),
           field: valueField,

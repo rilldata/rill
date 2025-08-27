@@ -19,7 +19,7 @@ export type InputType =
 
 export type FilterInputTypes = "time_filters" | "dimension_filters";
 
-export type FieldType = "measure" | "dimension" | "time" | "value";
+export type FieldType = "measure" | "dimension" | "time";
 
 export type SortSelectorConfig = {
   enable: boolean;
