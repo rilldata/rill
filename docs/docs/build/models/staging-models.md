@@ -9,7 +9,7 @@ As the name suggests, a staging model is one that uses a staging platform to ing
 
 ## When to use a Staging Model?
 
-Staging models are required for situations where the input and output types are not directly supported. However, by using a staging platform that is supported by both platforms, it allows a user to temporarily write data to the staging platform and ingest directly to the output platform.
+Staging models are required for situations where the input and output types are not directly supported. However, by using a staging platform that is supported by both platforms, it allows users to temporarily write data to the staging platform and ingest directly to the output platform.
 
 :::note Supported Paths
 Staging Models are in ongoing development. While we do have support for the following, please [reach out to us](/contact) if you have any specific requirements.

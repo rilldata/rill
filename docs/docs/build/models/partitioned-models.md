@@ -13,7 +13,7 @@ In Rill, partitions are a special type of state that allows you to explicitly pa
 Under the `partitions:` parameter, you will define the pattern in which your data is stored. Both SQL and glob patterns support [templating](/connect/templating) and can be used to separate `dev` and `prod` instances.
 
 ### SQL
-When defining your SQL, it is important to understand the data that you are querying and creating a partition that makes sense. For example, possibly selecting a distinct customer_name per partition, or possibly partitioning the SQL by a chronological partition, such as month.
+When defining your SQL, it is important to understand the data that you are querying and creating a partition that makes sense. For example, you might select a distinct customer_name per partition, or partition the SQL by a chronological partition, such as month.
 
 ```yaml
 partitions:
@@ -44,7 +44,7 @@ partitions:
   #glob: gs://my-bucket/{{if dev}}y=2025/m=03/d=15{{else}}**{{end}}/*data.csv
 ```
 
-Or, you can define each glob separate from each other.
+Or, you can define each glob separately.
 ```yaml
 partitions:
     glob:
@@ -76,7 +76,7 @@ sql: SELECT * FROM read_parquet('{{ .partition.uri }}')
 
 ### Viewing Partitions in Rill Developer
 
-Once `partitions:` is defined in your model, a new button will appear in the right-hand panel: `View Partitions`. When selecting this, a new UI will appear with all of your partitions and more information on each. Note that these can be sorted on all, pending, and errors.
+Once `partitions:` is defined in your model, a new button will appear in the right-hand panel: `View Partitions`. When selecting this, a new UI will appear with all of your partitions and more information on each. Note that these can be sorted by all, pending, and errors.
 
 <img src='/img/build/advanced-models/partitions-developer.png' class='rounded-gif' />
 <br />

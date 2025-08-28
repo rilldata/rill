@@ -12,7 +12,7 @@ Along with [connector templating](/connect/templating), you can also optimize yo
 Templating serves several important purposes in your data workflow:
 
 - **Cost Management**: Avoid running expensive queries on production data during development
-- [**Performance in dev**](/build/models/performance): Optimize development environment performance by limiting data volume
+- **Performance in dev**: Optimize development environment performance by limiting data volume
 - **Testing Safety**: Test your models and transformations without affecting production data
 
 :::note Rill Developer is a dev environment
@@ -100,7 +100,7 @@ In this example:
 
 ### Applying a One-Week Sample to the Source Bucket for Local Development
 
-In another example, let's say we had an [S3](/connect/data-source/s3.md) source defined that happens to be reading a very large amount of parquet data. Following [best practices](/build/models/performance#work-with-a-subset-of-your-source-data-for-local-development-and-modeling), we'll want to read in a subset of this source data for local modeling in Rill Developer rather than using the full dataset for development purposes. Furthermore, we'll make the assumption that the upstream data is not partitioned and thus the S3 bucket is not partitioned (where we could then simply filter the `path` by using a glob pattern potentially in conjunction with [environment-specific logic](/build/models/templating.md)). So what can we do?
+In another example, let's say we had an [S3](/connect/data-source/s3.md) source defined that happens to be reading a very large amount of parquet data. Following best practices, we'll want to read in a subset of this source data for local modeling in Rill Developer rather than using the full dataset for development purposes. Furthermore, we'll make the assumption that the upstream data is not partitioned and thus the S3 bucket is not partitioned (where we could then simply filter the `path` by using a glob pattern potentially in conjunction with [environment-specific logic](/build/models/templating.md)). So what can we do?
 
 Fortunately, we can leverage DuckDB's ability to read from S3 files directly and _apply a filter post-download_ using templating logic in the SQL. In this case, because there is an existing `updated_at` timestamp column, we can use it to filter and retrieve only one week's worth of data. For example, our `source.yaml` file may end up looking something like this:
 

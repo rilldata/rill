@@ -8,6 +8,10 @@ sidebar_position: 10
 
 On this page, we've gathered a running list of recommendations and general guidelines to ensure your experience of using Rill remains performant and optimized. These best practices will help to ensure your dashboards remain performant, and that things continue to "just work" (for both Rill Developer and Rill Cloud), even as the size of your underlying data and deployment continues to grow. These best practices and guidelines will also continue to evolve but please don't hesitate to [reach out](/contact) if you start facing any bottlenecks or have further questions about ways to improve the Rill experience!
 
+If you're looking for connector specific optimization see, [Dev/Prod Connector Environments](/connect/templating).
+
+If you're looking for model specific optimization see, [Performance Optimization](/build/models/performance).
+
 :::info Working with very large data from the get go?
 
 Generally speaking, Rill's [embedded DuckDB OLAP engine](/connect/olap/duckdb) works very well out-of-the-box for datasets _up to around 50GB in size_. If you plan to be working with and ingesting volumes of data larger than 50GB, please [**get in touch**](/contact) and we can explore using one of our other enterprise-grade [OLAP engine](/connect/olap) options. 
@@ -31,6 +35,49 @@ In such scenarios, we recommend [materializing these models as tables.](/build/m
 We strongly recommend materializing final models that are being used directly in dashboards to ensure this data is served more quickly. 
 
 :::
+
+
+## Refreshing Source Models
+
+Another area to review when your data source starts getting larger is the ingestion performance. By default, when refreshing a [source model](/build/models/source-models) in Rill, it drops and re-ingests the entire table/file. When your data is small, this isn't an issue, but it's not appropriate for larger datasets. In these cases, we recommend using [partitions and incremental models](/build/models/incremental-partitioned-models).
+
+### Partitioned Models
+
+Partitioned models divide your data into logical segments based on specific criteria, typically time-based columns like dates. This approach allows you to selectively refresh a partition where you know data has been altered.
+
+
+Example partition configuration:
+```yaml
+partitions:
+    glob:
+      path: 'gs://my-bucket/**/*.parquet'
+```
+
+### Incremental Models
+
+Incremental models only process new or changed data since the last refresh, rather than reprocessing the entire dataset. This dramatically improves performance for large datasets:
+
+- **Faster Refresh Times**: Process only delta changes instead of full datasets
+- **Reduced Resource Usage**: Lower CPU, memory, and storage requirements
+- **Frequent Updates**: Enable near real-time data updates without performance degradation
+- **Cost Efficiency**: Minimize compute costs for large-scale data processing
+
+```yaml
+type: model
+incremental: true
+
+partitions:
+  glob:
+    path: gs://rilldata-public/github-analytics/Clickhouse/2024/*/*
+    partition: directory
+  
+sql: |
+  SELECT * 
+     FROM read_parquet('{{ .partition.uri }}/commits_*.parquet') 
+    WHERE '{{ .partition.uri }}' IS NOT NULL
+```
+
+By combining partitioning and incremental processing, you'll significantly reduce model refresh times and ensure your dashboards display the most current information.
 
 ## Local Development / Rill Developer
 
