@@ -311,6 +311,7 @@
 
     try {
       if (formType === "source") {
+        // TODO: add test connection here
         await submitAddSourceForm(queryClient, connector, values);
       } else {
         await submitAddConnectorForm(queryClient, connector, values);
