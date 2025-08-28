@@ -3,7 +3,7 @@ export const CONNECTOR_TYPE_OPTIONS: {
   label: string;
 }[] = [
   { value: true, label: "Rill-managed ClickHouse" },
-  { value: false, label: "Self-managed ClickHouse" },
+  { value: false, label: "Self-hosted ClickHouse" },
 ];
 
 export const CONNECTION_TAB_OPTIONS: { value: string; label: string }[] = [

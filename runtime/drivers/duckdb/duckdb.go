@@ -465,6 +465,18 @@ func (c *connection) reopenDB(ctx context.Context) error {
 		connInitQueries []string
 	)
 
+	if c.driverName == "motherduck" {
+		dbInitQueries = append(dbInitQueries,
+			"INSTALL 'motherduck'",
+			"LOAD 'motherduck'",
+		)
+		if c.config.Token != "" {
+			dbInitQueries = append(dbInitQueries,
+				fmt.Sprintf("SET motherduck_token = '%s'", c.config.Token),
+			)
+		}
+	}
+
 	// Add custom InitSQL queries before any other (e.g. to override the extensions repository)
 	// BootQueries is deprecated. Use InitSQL instead. Retained for backward compatibility.
 	if c.config.BootQueries != "" {
