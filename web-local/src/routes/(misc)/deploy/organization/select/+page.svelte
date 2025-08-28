@@ -47,8 +47,8 @@
   ariaLabel="Select organization"
   placeholder="Select organization"
   options={orgOptions}
-  addOptionLabel="+ Create organization"
-  onAddOption={() => (isNewOrgDialogOpen = true)}
+  onAddNew={() => (isNewOrgDialogOpen = true)}
+  addNewLabel="+ Create organization"
   width={400}
   sameWidth
 />

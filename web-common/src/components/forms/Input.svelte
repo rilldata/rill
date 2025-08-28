@@ -45,9 +45,6 @@
   export let options:
     | { value: string; label: string; type?: string }[]
     | undefined = undefined;
-  export let optionsLoading: boolean = false;
-  export let onAddOption: (() => void) | null = null;
-  export let addOptionLabel: string | null = null;
   export let additionalClass = "";
   export let onInput: (
     newValue: string,
@@ -237,9 +234,6 @@
       bind:selectElement
       bind:value
       {options}
-      {optionsLoading}
-      {onAddOption}
-      {addOptionLabel}
       {onChange}
       {size}
       fontSize={size === "sm" ? 12 : 14}

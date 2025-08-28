@@ -26,8 +26,8 @@
     tooltip?: string;
   }[];
   export let optionsLoading: boolean = false;
-  export let onAddOption: (() => void) | null = null;
-  export let addOptionLabel: string | null = null;
+  export let onAddNew: (() => void) | null = null;
+  export let addNewLabel: string | null = null;
   export let placeholder: string = "";
   export let optional: boolean = false;
   export let tooltip: string = "";
@@ -174,7 +174,7 @@
         {:else}
           <div class="px-2.5 py-1.5 text-gray-600">No results found</div>
         {/each}
-        {#if onAddOption}
+        {#if onAddNew}
           <SelectSeparator />
           <Select.Item
             value="__rill_add_option__"
@@ -182,11 +182,11 @@
               e.stopPropagation();
               e.preventDefault();
               open = false;
-              onAddOption();
+              onAddNew();
             }}
             class="text-[{fontSize}px]"
           >
-            {addOptionLabel ?? "+ Add"}
+            {addNewLabel ?? "+ Add"}
           </Select.Item>
         {/if}
       {/if}
