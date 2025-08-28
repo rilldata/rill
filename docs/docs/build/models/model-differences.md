@@ -30,9 +30,8 @@ For most users working with DuckDB-backed Rill projects, SQL models provide ever
 
 When using the UI to create a new model, you'll see something similar to the below screenshot. You can also create a model directly from the connector UI in the bottom left by selecting the "...". This will create a `select * from underlying_table` as SQL model file.
 
-<img src = '/img/build/model/model.png' class='rounded-gif' />
+<img src='/img/build/model/model.png' class='rounded-gif' />
 <br />
-
 
 ## YAML Models
 
@@ -49,7 +48,7 @@ Another use case is when using multiple OLAP engines. This allows you to specify
 1. [Source Models](/build/models/source-models)
 2. [Incremental Models](/build/models/incremental-models)
 3. [Partitioned Models](/build/models/partitioned-models)
-4. [Incremental + Partitioned Models](/build/models/partitioned-models)
+4. [Incremental + Partitioned Models](/build/models/incremental-partitioned-models)
 5. [Staging Models](/build/models/staging-models)
 
 ### Creating a YAML Model

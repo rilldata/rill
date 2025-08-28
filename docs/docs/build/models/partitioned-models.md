@@ -7,14 +7,13 @@ sidebar_position: 25
 
 ## What are Partitions?
 
-In Rill, partitions are a special type of state that allows you to explicitly partition the model into parts. Depending on whether your data is in cloud storage or a data warehouse, you can use the `glob` or `sql` parameters. This is useful when a specific partition is failing to ingest, you can specify to reload only that specific partition.
-
+In Rill, partitions are a special type of state that allows you to explicitly partition the model into parts. Depending on whether your data is in cloud storage or a data warehouse, you can use the `glob` or `sql` parameters. This is useful when a specific partition is failing to ingest; you can specify to reload only that specific partition.
 
 ### Defining a Partition in a Model
-Under the `partitions:` parameter, you will define the pattern in which your data is stored. Both SQL and glob patterns support [templating](/connect/templating) and can be used to separate `dev` and `prod` instances. 
+Under the `partitions:` parameter, you will define the pattern in which your data is stored. Both SQL and glob patterns support [templating](/connect/templating) and can be used to separate `dev` and `prod` instances.
 
 ### SQL
-When defining your SQL, it is important to understand the data that you are querying and creating a partition that makes sense. For example, possibly selecting a distinct customer_name per partition, or possibly partition the SQL by a chronological partition, such as month.
+When defining your SQL, it is important to understand the data that you are querying and creating a partition that makes sense. For example, possibly selecting a distinct customer_name per partition, or possibly partitioning the SQL by a chronological partition, such as month.
 
 ```yaml
 partitions:
@@ -24,11 +23,11 @@ dev:
   partitions:
     sql: SELECT range AS num FROM range(0,10)
 sql: SELECT * from table where column = {{partition.num}}
-  ```
+```
 
 :::tip Using the SQL partition in the YAML
-Depending on the column name of the partition, you can reference the partition using ` {{ .partition.<column_name> }}` in the model's SQL query.
-```YAML
+Depending on the column name of the partition, you can reference the partition using `{{ .partition.<column_name> }}` in the model's SQL query.
+```yaml
 partitions:
   sql: SELECT range AS num FROM range(0,10)
 sql: SELECT {{ .partition.num }} AS num, now() AS inserted_on {{if dev}} limit 1000 {{end}}
@@ -43,7 +42,8 @@ In the first example, we are partitioning by each file with the suffix data.csv.
 partitions:
   glob: gs://my-bucket/y=2025/m=03/d=15/*data.csv
   #glob: gs://my-bucket/{{if dev}}y=2025/m=03/d=15{{else}}**{{end}}/*data.csv
-  ```
+```
+
 Or, you can define each glob separate from each other.
 ```yaml
 partitions:
@@ -54,7 +54,6 @@ dev:
   partitions:
     glob:
      path: 'gs://my-bucket/y=2025/m=03/d=15/*.parquet'
-  
 ```
 
 If you'd prefer to partition it by folder, you can add the partition parameter and define it as `directory`.
@@ -63,9 +62,10 @@ glob:
   path: gs://rendo-test/**/*data.csv
   partition: directory #hive
 ```
+
 :::tip Using the glob partition in the YAML
 The glob partition has a predefined `{{ .partition.uri }}` reference to use in the model's SQL query.
-```YAML
+```yaml
 partitions:
   glob:
     connector: gcs
@@ -78,14 +78,13 @@ sql: SELECT * FROM read_parquet('{{ .partition.uri }}')
 
 Once `partitions:` is defined in your model, a new button will appear in the right-hand panel: `View Partitions`. When selecting this, a new UI will appear with all of your partitions and more information on each. Note that these can be sorted on all, pending, and errors.
 
-<img src = '/img/build/advanced-models/partitions-developer.png' class='rounded-gif' />
+<img src='/img/build/advanced-models/partitions-developer.png' class='rounded-gif' />
 <br />
 
-You can sort the view by `all partitions`, `pending partitions`, and `error partitions`. 
+You can sort the view by `all partitions`, `pending partitions`, and `error partitions`.
 - **all partitions**: shows all the available partitions in the model.
 - **pending partitions**: shows the partitions that are waiting to be processed.
-- **error partitions**: displays any partitions that errored during ingestion. 
-
+- **error partitions**: displays any partitions that errored during ingestion.
 
 ### Viewing Partitions in the CLI
 Likewise to the UI, you can view the partitions of a model within the CLI. 

@@ -4,12 +4,11 @@ sidebar_label: Build
 sidebar_position: 0
 ---
 
-Rill provides the user the option to build various types of models based on different use cases. Take a look through the list of available types of models!
-
+Rill provides users the option to build various types of models based on different use cases. Take a look through the list of available types of models!
 
 ### Fundamentals 
 - [**Getting Started with Models**](/build/models/models-101) - What are models and important topics to remember as you create your own.
-- [**Differences between SQL and YAML Models**](/build/models/model-differences) - Compare SQL and YAML models and learn when to use 
+- [**Differences between SQL and YAML Models**](/build/models/model-differences) - Compare SQL and YAML models and learn when to use each.
 - [**SQL Models**](/build/models/sql-models) - Transform and prepare your data with a basic SQL file
   
 ### Data Ingestion
@@ -19,7 +18,7 @@ Rill provides the user the option to build various types of models based on diff
 ### Advanced YAML Features
 - [**Incremental Models**](/build/models/incremental-models) - Increment your model to avoid large ingestion times
 - [**Partitioned Models**](/build/models/partitioned-models) - Split your large data into smaller sizes
-- [**Incremental + Partitioned Models**](/build/models/incremental-partitioned-models) - Combine the concepts in Incremental Model and Paritioned Model into a single file
+- [**Incremental + Partitioned Models**](/build/models/incremental-partitioned-models) - Combine the concepts of Incremental Models and Partitioned Models into a single file
 - [**Staging Models**](/build/models/staging-models) - When data is not directly available to ingest
 
 ### Environment Management

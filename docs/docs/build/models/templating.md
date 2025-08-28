@@ -25,7 +25,7 @@ Unless explicitly defined, Rill Developer will use a `dev` environment. If you w
 
 Another common templating pattern is using the `dev:` partition in your model definitions. This tells Rill to use a different data source or query when running in development mode, typically with a smaller dataset or different data location.
 
-### Example: Ingest Data from specific folder path in dev
+### Example: Ingest Data from Specific Folder Path in Dev
 
 ```yaml
 # Model YAML
@@ -51,7 +51,7 @@ In this case, we are using the [embedded DuckDB engine](/connect/olap/duckdb) to
 
 In this example:
 - **Development**: Reads from a single file (`2025/06/commits_2025_06.parquet`) for faster processing
-- **Production**: Reads from all files in the folder using the `/*/*/` wildcard pattern, can also use `/**/` if unsure of the number of directories
+- **Production**: Reads from all files in the folder using the `/*/*/` wildcard pattern; you can also use `/**/` if you're unsure of the number of directories
 
 ## Inline SQL Templating
 
@@ -102,7 +102,7 @@ In this example:
 
 In another example, let's say we had an [S3](/connect/data-source/s3.md) source defined that happens to be reading a very large amount of parquet data. Following [best practices](/build/models/performance#work-with-a-subset-of-your-source-data-for-local-development-and-modeling), we'll want to read in a subset of this source data for local modeling in Rill Developer rather than using the full dataset for development purposes. Furthermore, we'll make the assumption that the upstream data is not partitioned and thus the S3 bucket is not partitioned (where we could then simply filter the `path` by using a glob pattern potentially in conjunction with [environment-specific logic](/build/models/templating.md)). So what can we do?
 
-Fortunately, we can leverage DuckDB's ability to read from S3 files directly and _apply a filter post-download_ using templating logic in the SQL. In this case, because there is an existing `updated_at` timestamp column, we can use it to filter and retrieve only one week's worth of data. For example, our `source.yaml` file may end up looking something like:
+Fortunately, we can leverage DuckDB's ability to read from S3 files directly and _apply a filter post-download_ using templating logic in the SQL. In this case, because there is an existing `updated_at` timestamp column, we can use it to filter and retrieve only one week's worth of data. For example, our `source.yaml` file may end up looking something like this:
 
 ```yaml
 type: model

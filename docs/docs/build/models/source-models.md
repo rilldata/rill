@@ -25,8 +25,8 @@ The YAML configuration file contains several key parameters:
 
 - **`type: model`**: Explicitly defines the file type. While Rill automatically detects the file type based on the parent folder, this parameter provides explicit definition.
 - **`connector`**: Defines the connector type used to create the model (e.g., `bigquery`, `athena`, `snowflake`, etc.).
-- **`sql`**: The actual SQL query to be executed. When nested under `dev:`, the query runs in Rill Developer environment.
-- **`dev`**: Configuration for development mode. Rill Developer runs in dev mode by default, but when deployed to Rill Cloud, the root-level SQL configuration executes. See [ Environment Templating](/build/models/templating) for more information.
+- **`sql`**: The actual SQL query to be executed. When nested under `dev:`, the query runs in the Rill Developer environment.
+- **`dev`**: Configuration for development mode. Rill Developer runs in dev mode by default, but when deployed to Rill Cloud, the root-level SQL configuration executes. See [Environment Templating](/build/models/templating) for more information.
 
 ## Examples
 

@@ -5,9 +5,10 @@ sidebar_label: Models 101
 sidebar_position: 00
 ---
  
-Models in Rill enable data transformation, preparation, and enrichment through SQL queries and YAML configurations. They serve as the foundation for creating clean, structured datasets that power your metrics views and dashboards. 
+Models in Rill enable data transformation, preparation, and enrichment through SQL queries and YAML configurations. They serve as the foundation for creating clean, structured datasets that power your metrics views and dashboards.
 
 Data models are built using SQL SELECT statements applied to your source data. They allow you to join, transform, and clean data.
+
 ### SQL Transformations
 
 By default, data transformations in Rill Developer are powered by DuckDB and its dialect of SQL (DuckDB SQL). Please visit the [DuckDB SQL documentation](https://duckdb.org/docs/sql/introduction) to learn how to write your queries.
@@ -31,8 +32,6 @@ Models can also be cross-referenced with each other to produce the final output 
 - Lookups for id/name joins
 - Unnesting and merging complex data types
 - Combining multiple sources with data cleansing or transformation requirements
-
-
 
 ## Data Preview and Validation
 
