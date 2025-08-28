@@ -164,6 +164,7 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
             where: topNWhere,
             timeRange,
             limit: limit?.toString(),
+            fillMissing: true,
           },
           {
             query: {
@@ -205,6 +206,7 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
             where: topNWhere,
             timeRange,
             limit: colorLimit?.toString(),
+            fillMissing: true,
           },
           {
             query: {
@@ -291,6 +293,7 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
             sort: xAxisSort ? [xAxisSort] : undefined,
             where: combinedWhere,
             timeRange,
+            fillMissing: true,
             limit: hasColorDimension || !limit ? "5000" : limit?.toString(),
           },
           {
