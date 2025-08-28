@@ -412,6 +412,7 @@
           <Tooltip.Trigger>
             <span class="text-gray-600 italic">
               as of <Timestamp
+                id="filter-bar-as-of"
                 italic
                 suppress
                 showDate={false}
