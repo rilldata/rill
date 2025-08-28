@@ -268,9 +268,15 @@ func (p *Parser) parseCanvas(node *Node) error {
 				if dimFilter.Removable != nil {
 					filter.Removable = dimFilter.Removable
 				}
+
 				if dimFilter.Locked != nil {
+					if *dimFilter.Locked && (filter.Values == nil || uint32(len(filter.Values)) == 0) {
+						return fmt.Errorf("dimension filter %q must have at least one value when locked", dimFilter.Dimension)
+					}
+
 					filter.Locked = dimFilter.Locked
 				}
+
 				if dimFilter.Hidden != nil {
 					filter.Hidden = dimFilter.Hidden
 				}
@@ -296,12 +302,15 @@ func (p *Parser) parseCanvas(node *Node) error {
 					}
 					filter.Values = values
 				}
+
 				if measureFilter.Removable != nil {
 					filter.Removable = measureFilter.Removable
 				}
+
 				if measureFilter.ByDimension != nil {
 					filter.ByDimension = measureFilter.ByDimension
 				}
+
 				if measureFilter.Operator != nil {
 
 					if !isValidMeasureFilterOperator(measureFilter.Operator) {
@@ -310,9 +319,16 @@ func (p *Parser) parseCanvas(node *Node) error {
 
 					filter.Operator = measureFilter.Operator
 				}
+
 				if measureFilter.Locked != nil {
+
+					if *measureFilter.Locked && (measureFilter.Operator == nil || filter.Values == nil || len(filter.Values) == 0 || measureFilter.ByDimension == nil) {
+						return fmt.Errorf("measure filter %q must have all fields set when locked", measureFilter.Measure)
+					}
+
 					filter.Locked = measureFilter.Locked
 				}
+
 				if measureFilter.Hidden != nil {
 					filter.Hidden = measureFilter.Hidden
 				}
