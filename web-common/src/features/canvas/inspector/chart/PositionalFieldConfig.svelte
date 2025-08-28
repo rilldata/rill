@@ -1,6 +1,8 @@
 <script lang="ts">
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import type { FieldConfig } from "@rilldata/web-common/features/canvas/components/charts/types";
+  import { isFieldConfig } from "@rilldata/web-common/features/canvas/components/charts/util";
+  import ColorPaletteSelector from "@rilldata/web-common/features/canvas/inspector/chart/field-config/ColorPaletteSelector.svelte";
   import SingleFieldInput from "@rilldata/web-common/features/canvas/inspector/SingleFieldInput.svelte";
   import type { ComponentInputParam } from "@rilldata/web-common/features/canvas/inspector/types";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
@@ -24,6 +26,7 @@
   } = getCanvasStore(canvasName, instanceId));
 
   $: chartFieldInput = config.meta?.chartFieldInput;
+  $: colorMapConfig = chartFieldInput?.colorMappingSelector;
 
   $: isDimension = chartFieldInput?.type === "dimension";
 
@@ -98,4 +101,14 @@
       updateFieldConfig(field);
     }}
   />
+
+  {#if isFieldConfig(fieldConfig) && colorMapConfig?.enable}
+    <div class="pt-2">
+      <ColorPaletteSelector
+        {fieldConfig}
+        onChange={updateFieldProperty}
+        {colorMapConfig}
+      />
+    </div>
+  {/if}
 </div>
