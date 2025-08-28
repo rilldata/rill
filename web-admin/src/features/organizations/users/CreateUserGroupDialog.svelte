@@ -241,7 +241,7 @@
           <Combobox
             searchValue={searchText}
             options={coercedUsersToOptions}
-            placeholder="Search for users"
+            placeholder="Search to add/remove users"
             {getMetadata}
             selectedValues={[
               ...new Set(
