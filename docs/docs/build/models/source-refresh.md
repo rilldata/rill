@@ -7,7 +7,7 @@ sidebar_position: 16
 
 <!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->
 
-When creating or updating a model in Rill Cloud, you also have the option to configure how often the underlying model is refreshed (and thus ingested into the underlying OLAP layer powering Rill models and dashboards). By default, models are refreshed manually, but this can also be automated to a predefined schedule. This is handled through the underlying [model settings](/reference/project-files/advanced-models) and/or [project YAML](/reference/project-files/rill-yaml#project-wide-defaults) using standard cron or Go duration syntax.
+When creating or updating a model in Rill Cloud, you also have the option to configure how often the underlying model is refreshed (and thus ingested into the underlying OLAP layer powering Rill models and dashboards). By default, models are refreshed manually, but this can also be automated to a predefined schedule. This is handled through the underlying [model settings](/reference/project-files/models) and/or [project YAML](/reference/project-files/rill-yaml#project-wide-defaults) using standard cron or Go duration syntax.
 
 :::tip Configuring model refreshes for Cloud deployments
 
@@ -32,7 +32,7 @@ refresh:
 
 :::note model settings
 
-For more details about available model configurations and properties, check our [model YAML](/reference/project-files/advanced-models) reference page.
+For more details about available model configurations and properties, check our [model YAML](/reference/project-files/models) reference page.
 
 :::
 
