@@ -1,8 +1,5 @@
 <script lang="ts">
   import * as Dialog from "@rilldata/web-common/components/dialog";
-  import AmazonAthena from "@rilldata/web-common/components/icons/connectors/AmazonAthena.svelte";
-  import AmazonRedshift from "@rilldata/web-common/components/icons/connectors/AmazonRedshift.svelte";
-  import MySQL from "@rilldata/web-common/components/icons/connectors/MySQL.svelte";
   import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
   import { cn } from "@rilldata/web-common/lib/shadcn";
   import {
@@ -10,21 +7,6 @@
     type V1ConnectorDriver,
   } from "@rilldata/web-common/runtime-client";
   import { onMount } from "svelte";
-  import AmazonS3 from "../../../components/icons/connectors/AmazonS3.svelte";
-  import ApacheDruid from "../../../components/icons/connectors/ApacheDruid.svelte";
-  import ApachePinot from "../../../components/icons/connectors/ApachePinot.svelte";
-  import ClickHouse from "../../../components/icons/connectors/ClickHouse.svelte";
-  import DuckDB from "../../../components/icons/connectors/DuckDB.svelte";
-  import GoogleBigQuery from "../../../components/icons/connectors/GoogleBigQuery.svelte";
-  import GoogleCloudStorage from "../../../components/icons/connectors/GoogleCloudStorage.svelte";
-  import Https from "../../../components/icons/connectors/HTTPS.svelte";
-  import LocalFile from "../../../components/icons/connectors/LocalFile.svelte";
-  import MicrosoftAzureBlobStorage from "../../../components/icons/connectors/MicrosoftAzureBlobStorage.svelte";
-  import MotherDuck from "../../../components/icons/connectors/MotherDuck.svelte";
-  import Postgres from "../../../components/icons/connectors/Postgres.svelte";
-  import Salesforce from "../../../components/icons/connectors/Salesforce.svelte";
-  import Snowflake from "../../../components/icons/connectors/Snowflake.svelte";
-  import SQLite from "../../../components/icons/connectors/SQLite.svelte";
   import { behaviourEvent } from "../../../metrics/initMetrics";
   import {
     BehaviourEventAction,
@@ -39,33 +21,13 @@
   import DuplicateSource from "./DuplicateSource.svelte";
   import LocalSourceUpload from "./LocalSourceUpload.svelte";
   import RequestConnectorForm from "./RequestConnectorForm.svelte";
-  import { OLAP_ENGINES, ALL_CONNECTORS, SOURCES } from "./constants";
+  import { OLAP_ENGINES, ALL_CONNECTORS, CONNECTORS } from "./constants";
+  import { ICONS } from "./icons";
 
   let step = 0;
   let selectedConnector: null | V1ConnectorDriver = null;
   let requestConnector = false;
   let isSubmittingForm = false;
-
-  const ICONS = {
-    gcs: GoogleCloudStorage,
-    s3: AmazonS3,
-    azure: MicrosoftAzureBlobStorage,
-    bigquery: GoogleBigQuery,
-    athena: AmazonAthena,
-    redshift: AmazonRedshift,
-    duckdb: DuckDB,
-    motherduck: MotherDuck,
-    postgres: Postgres,
-    mysql: MySQL,
-    sqlite: SQLite,
-    snowflake: Snowflake,
-    salesforce: Salesforce,
-    local_file: LocalFile,
-    https: Https,
-    clickhouse: ClickHouse,
-    druid: ApacheDruid,
-    pinot: ApachePinot,
-  };
 
   const connectorsQuery = createRuntimeServiceListConnectorDrivers({
     query: {
@@ -78,7 +40,7 @@
               // Only show connectors in SOURCES or OLAP_ENGINES
               (a) =>
                 a.name &&
-                (SOURCES.includes(a.name) || OLAP_ENGINES.includes(a.name)),
+                (CONNECTORS.includes(a.name) || OLAP_ENGINES.includes(a.name)),
             )
             .sort(
               // CAST SAFETY: we have filtered out any connectors that
@@ -186,7 +148,7 @@
           <Dialog.Title>Add a source</Dialog.Title>
           <section class="mb-1">
             <div class="connector-grid">
-              {#each connectors.filter((c) => c.name && SOURCES.includes(c.name)) as connector (connector.name)}
+              {#each connectors.filter((c) => c.name && CONNECTORS.includes(c.name)) as connector (connector.name)}
                 {#if connector.name}
                   <button
                     id={connector.name}
