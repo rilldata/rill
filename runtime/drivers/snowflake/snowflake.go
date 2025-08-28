@@ -45,7 +45,7 @@ var spec = drivers.Spec{
 			DisplayName: "Account Identifier",
 			Required:    true,
 			Placeholder: "your_account_identifier",
-			Hint:        "To find your Snowflake account identifier, look at your Snowflake account URL. The account identifier is everything before .snowflakecomputing.com [Learn more](https://docs.snowflake.com/en/user-guide/admin-account-identifier)",
+			Hint:        "To find your Snowflake account identifier, look at your Snowflake account URL. The account identifier is everything before .snowflakecomputing.com",
 		},
 		{
 			Key:         "user",
