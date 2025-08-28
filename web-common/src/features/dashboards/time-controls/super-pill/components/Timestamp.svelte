@@ -1,11 +1,11 @@
 <script lang="ts">
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
   import { DateTime, Duration } from "luxon";
+  import { Tooltip } from "bits-ui";
 
   export let date: DateTime = DateTime.now();
   export let zone: string;
+  export let id: string;
   export let showDate = true;
   export let suppress = false;
   export let italic = false;
@@ -20,7 +20,7 @@
   $: humanReadableTimeOffset = Duration.fromObject(
     Object.fromEntries(
       Object.entries(DateTime.now().diff(date).rescale().toObject())
-        .filter(([, value]) => value !== 0)
+        .filter(([label, value]) => value !== 0 && label !== "milliseconds")
         .slice(0, 2),
     ),
   ).toHuman({
@@ -29,36 +29,44 @@
   });
 </script>
 
-<Tooltip {suppress}>
-  <button
-    class:italic
-    class="text-xs text-inherit"
-    on:click={() => {
-      if (isoString) copyToClipboard(isoString);
-    }}
+<Tooltip.Root disableHoverableContent={true}>
+  <Tooltip.Trigger asChild let:builder id="{id}-timestamp-trigger">
+    <button
+      use:builder.action
+      {...builder}
+      class:italic
+      class="text-xs text-inherit"
+      on:click={() => {
+        if (isoString) copyToClipboard(isoString);
+      }}
+    >
+      {#if showDate}
+        {formattedString}
+      {:else}
+        {humanReadableTimeOffset} ago
+      {/if}
+    </button>
+  </Tooltip.Trigger>
+  <Tooltip.Content
+    hidden={suppress}
+    class="w-fit flex"
+    side="right"
+    sideOffset={16}
   >
-    {#if showDate}
-      {formattedString}
-    {:else}
-      {humanReadableTimeOffset} ago
-    {/if}
-  </button>
-
-  <TooltipContent slot="tooltip-content">
-    <div class="flex flex-col gap-y-1 items-center">
-      <span>
-        {#if showDate}
-          {#if humanReadableTimeOffset.length}
-            {humanReadableTimeOffset} ago
-          {/if}
-        {:else}
-          {formattedString}
+    <div
+      class="flex flex-col gap-y-1 items-center flex-none bg-gray-700 dark:bg-gray-900 shadow-md text-surface rounded p-2 pt-1 pb-1"
+    >
+      {#if showDate}
+        {#if humanReadableTimeOffset.length}
+          <span>{humanReadableTimeOffset} ago</span>
         {/if}
-      </span>
+      {:else}
+        <span>{formattedString}</span>
+      {/if}
 
       <span>
         {isoString}
       </span>
     </div>
-  </TooltipContent>
-</Tooltip>
+  </Tooltip.Content>
+</Tooltip.Root>
