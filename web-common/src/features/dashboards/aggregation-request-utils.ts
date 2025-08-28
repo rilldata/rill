@@ -1,6 +1,8 @@
 import { getAggregationDimensionFromFieldName } from "@rilldata/web-common/features/dashboards/aggregation-request/dimension-utils.ts";
 import { getComparisonRequestMeasures } from "@rilldata/web-common/features/dashboards/dashboard-utils.ts";
+import { MeasureModifierSuffixRegex } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry.ts";
 import { mergeDimensionAndMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils.ts";
+import { ComparisonModifierSuffixRegex } from "@rilldata/web-common/features/dashboards/pivot/types.ts";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
 import type { FiltersState } from "@rilldata/web-common/features/dashboards/stores/Filters.ts";
 import type { TimeControlState } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
@@ -139,6 +141,51 @@ export const aggregationRequestWithRowsAndColumns = ({
     };
   };
 };
+
+/**
+ * Splits dimensions and measures from a {@link V1MetricsViewAggregationRequest} into
+ * logical rows and columns based on the request's pivot configuration.
+ *
+ * @returns An object containing three arrays:
+ *   - `rows`: Dimensions that are not part of the pivot (specified by `pivotedOn` field in the request)
+ *   - `dimensionColumns`: Dimensions that are part of the pivot (specified by `pivotedOn` field in the request)
+ *   - `measureColumns`: Measure fields that represent the values in the table, includes just the base measures.
+ */
+export function splitDimensionsAndMeasuresAsRowsAndColumns(
+  aggregationRequest: V1MetricsViewAggregationRequest,
+) {
+  const pivotedOn = new Set<string>(aggregationRequest.pivotOn ?? []);
+  const isFlat = aggregationRequest.pivotOn === undefined;
+
+  const rows =
+    aggregationRequest.dimensions?.filter(
+      (dimension) =>
+        !isFlat &&
+        !pivotedOn.has(dimension.alias!) &&
+        !pivotedOn.has(dimension.name!),
+    ) ?? [];
+
+  const dimensionColumns =
+    aggregationRequest.dimensions?.filter(
+      (dimension) =>
+        isFlat ||
+        pivotedOn.has(dimension.alias!) ||
+        pivotedOn.has(dimension.name!),
+    ) ?? [];
+
+  const measureColumns =
+    aggregationRequest.measures?.filter(
+      (measure) =>
+        !MeasureModifierSuffixRegex.test(measure.name!) &&
+        !ComparisonModifierSuffixRegex.test(measure.name!),
+    ) ?? [];
+
+  return {
+    rows,
+    dimensionColumns,
+    measureColumns,
+  };
+}
 
 function getUpdatedAggregationSort({
   aggregationRequest,

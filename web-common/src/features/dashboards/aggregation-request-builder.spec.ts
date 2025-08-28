@@ -1,7 +1,7 @@
 import {
   aggregationRequestWithRowsAndColumns,
   buildAggregationRequest,
-} from "@rilldata/web-common/features/dashboards/aggregation-request-builder.ts";
+} from "@rilldata/web-common/features/dashboards/aggregation-request-utils.ts";
 import { getDimensionTableAggregationRequestForTime } from "@rilldata/web-common/features/dashboards/dimension-table/dimension-table-export.ts";
 import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column.ts";
 import { splitPivotChips } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils.ts";
