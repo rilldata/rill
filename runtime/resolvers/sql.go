@@ -125,16 +125,6 @@ func (r *sqlResolver) Validate(ctx context.Context) error {
 	return err
 }
 
-func (r *sqlResolver) MetricsViewSecurityFields() []string {
-	// For SQL resolvers, we can't easily determine accessible fields without parsing the SQL
-	panic("not implemented")
-}
-
-func (r *sqlResolver) SecuredRowFilter() string {
-	// For SQL resolvers, we can't easily extract row filters without parsing the SQL
-	panic("not implemented")
-}
-
 func (r *sqlResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverResult, error) {
 	// Wrap the SQL with an outer SELECT to limit the number of rows returned in interactive mode.
 	// Adding +1 to the limit so we can return a nice error message if the limit is exceeded.
@@ -180,6 +170,10 @@ func (r *sqlResolver) ResolveExport(ctx context.Context, w io.Writer, opts *runt
 	default:
 		return fmt.Errorf("export not available for dialect %q", r.olap.Dialect().String())
 	}
+}
+
+func (r *sqlResolver) InferRequiredSecurityRules() []*runtimev1.SecurityRule {
+	panic("not implemented")
 }
 
 func (r *sqlResolver) generalExport(ctx context.Context, w io.Writer, filename string, opts *runtime.ExportOptions) error {

@@ -15,9 +15,6 @@ import (
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	"github.com/rilldata/rill/runtime"
-	"github.com/rilldata/rill/runtime/client"
-	"github.com/rilldata/rill/runtime/pkg/duckdbsql"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/pkg/env"
 	"github.com/rilldata/rill/runtime/pkg/observability"
@@ -247,112 +244,45 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 			return nil, status.Errorf(codes.Internal, "unexpected type %T for magic auth token model", claims.AuthTokenModel())
 		}
 
-		var c *client.Client
-		if mdl.TransitiveAccessResource != nil {
-			c, err = s.admin.OpenRuntimeClient(depl)
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, "could not open runtime client: %s", err.Error())
-			}
-			defer c.Close() // nolint:gocritic // client is created only once
-
+		for _, r := range mdl.Resources {
 			rules = append(rules, &runtimev1.SecurityRule{
 				Rule: &runtimev1.SecurityRule_TransitiveAccess{
 					TransitiveAccess: &runtimev1.SecurityRuleTransitiveAccess{
 						Resource: &runtimev1.ResourceName{
-							Kind: mdl.TransitiveAccessResource.Type,
-							Name: mdl.TransitiveAccessResource.Name,
-						},
-					},
-				},
-			})
-		} else {
-			// Build condition for what the magic auth token can access
-			var condition strings.Builder
-			// All themes
-			condition.WriteString(fmt.Sprintf("'{{.self.kind}}'='%s'", runtime.ResourceKindTheme))
-
-			for _, r := range mdl.Resources {
-				condition.WriteString(fmt.Sprintf(" OR ('{{.self.kind}}'=%s AND '{{lower .self.name}}'=%s)", duckdbsql.EscapeStringValue(r.Type), duckdbsql.EscapeStringValue(strings.ToLower(r.Name))))
-
-				// If the magic token's resource is an Explore, we also need to include its underlying metrics view
-				if r.Type == runtime.ResourceKindExplore {
-					if c == nil {
-						c, err = s.admin.OpenRuntimeClient(depl)
-						if err != nil {
-							return nil, status.Errorf(codes.Internal, "could not open runtime client: %s", err.Error())
-						}
-						defer c.Close() // nolint:gocritic // client is created only once
-					}
-
-					resp, err := c.GetResource(ctx, &runtimev1.GetResourceRequest{
-						InstanceId: depl.RuntimeInstanceID,
-						Name: &runtimev1.ResourceName{
 							Kind: r.Type,
 							Name: r.Name,
 						},
-					})
-					if err != nil {
-						if status.Code(err) == codes.NotFound {
-							return nil, status.Errorf(codes.NotFound, "resource for magic token not found (name=%q, type=%q)", r.Name, r.Type)
-						}
-						return nil, fmt.Errorf("could not get resource for magic token: %w", err)
-					}
-
-					spec := resp.Resource.GetExplore().State.ValidSpec
-					if spec != nil {
-						condition.WriteString(fmt.Sprintf(" OR ('{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s)", runtime.ResourceKindMetricsView, duckdbsql.EscapeStringValue(strings.ToLower(spec.MetricsView))))
-					}
-				} else if r.Type == runtime.ResourceKindReport {
-					// adding this rule to allow report resource accessible by non admin users
-					rules = append(rules, &runtimev1.SecurityRule{
-						Rule: &runtimev1.SecurityRule_Access{
-							Access: &runtimev1.SecurityRuleAccess{
-								Condition: fmt.Sprintf("'{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s", runtime.ResourceKindReport, duckdbsql.EscapeStringValue(strings.ToLower(r.Name))),
-								Allow:     true,
-							},
-						},
-					})
-				}
-			}
-
-			attr = mdl.Attributes
-
-			// Add a rule that denies access to anything that doesn't match the condition.
-			rules = append(rules, &runtimev1.SecurityRule{
-				Rule: &runtimev1.SecurityRule_Access{
-					Access: &runtimev1.SecurityRuleAccess{
-						Condition: fmt.Sprintf("NOT (%s)", condition.String()),
-						Allow:     false,
 					},
 				},
 			})
+		}
 
-			if mdl.FilterJSON != "" {
-				expr := &runtimev1.Expression{}
-				err := protojson.Unmarshal([]byte(mdl.FilterJSON), expr)
-				if err != nil {
-					return nil, status.Errorf(codes.Internal, "could not unmarshal metrics view filter: %s", err.Error())
-				}
-
-				rules = append(rules, &runtimev1.SecurityRule{
-					Rule: &runtimev1.SecurityRule_RowFilter{
-						RowFilter: &runtimev1.SecurityRuleRowFilter{
-							Expression: expr,
-						},
-					},
-				})
+		attr = mdl.Attributes
+		if mdl.FilterJSON != "" {
+			expr := &runtimev1.Expression{}
+			err := protojson.Unmarshal([]byte(mdl.FilterJSON), expr)
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "could not unmarshal metrics view filter: %s", err.Error())
 			}
 
-			if len(mdl.Fields) > 0 {
-				rules = append(rules, &runtimev1.SecurityRule{
-					Rule: &runtimev1.SecurityRule_FieldAccess{
-						FieldAccess: &runtimev1.SecurityRuleFieldAccess{
-							Fields: mdl.Fields,
-							Allow:  true,
-						},
+			rules = append(rules, &runtimev1.SecurityRule{
+				Rule: &runtimev1.SecurityRule_RowFilter{
+					RowFilter: &runtimev1.SecurityRuleRowFilter{
+						Expression: expr,
 					},
-				})
-			}
+				},
+			})
+		}
+
+		if len(mdl.Fields) > 0 {
+			rules = append(rules, &runtimev1.SecurityRule{
+				Rule: &runtimev1.SecurityRule_FieldAccess{
+					FieldAccess: &runtimev1.SecurityRuleFieldAccess{
+						Fields: mdl.Fields,
+						Allow:  true,
+					},
+				},
+			})
 		}
 	}
 

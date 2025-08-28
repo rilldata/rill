@@ -46,10 +46,8 @@ type Resolver interface {
 	ResolveInteractive(ctx context.Context) (ResolverResult, error)
 	// ResolveExport resolve data for export (e.g. downloads or reports).
 	ResolveExport(ctx context.Context, w io.Writer, opts *ResolverExportOptions) error
-	// MetricsViewSecurityFields returns the list of mv fields that will be used in the resolver, these can be used by the security engine to enforce field-level security.
-	MetricsViewSecurityFields() []string
-	// SecuredRowFilter returns the row filter for the resolver, which can be used by the security engine to enforce row-level security.
-	SecuredRowFilter() string
+	// InferRequiredSecurityRules attempts to infer the security rules that are required to be able to execute the resolver for the currently configured properties.
+	InferRequiredSecurityRules() []*runtimev1.SecurityRule
 }
 
 // ResolverResult is the result of a resolver's execution.

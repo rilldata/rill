@@ -65,14 +65,6 @@ func (r *resourceStatusResolver) Validate(ctx context.Context) error {
 	return nil
 }
 
-func (r *resourceStatusResolver) MetricsViewSecurityFields() []string {
-	panic("not implemented")
-}
-
-func (r *resourceStatusResolver) SecuredRowFilter() string {
-	panic("not implemented")
-}
-
 func (r *resourceStatusResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverResult, error) {
 	ctrl, err := r.runtime.Controller(ctx, r.instanceID)
 	if err != nil {
@@ -135,4 +127,8 @@ func (r *resourceStatusResolver) ResolveInteractive(ctx context.Context) (runtim
 
 func (r *resourceStatusResolver) ResolveExport(ctx context.Context, w io.Writer, opts *runtime.ResolverExportOptions) error {
 	return errors.New("not implemented")
+}
+
+func (r *resourceStatusResolver) InferRequiredSecurityRules() []*runtimev1.SecurityRule {
+	panic("not implemented")
 }

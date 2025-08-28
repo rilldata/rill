@@ -123,14 +123,6 @@ func (r *metricsViewCacheKeyResolver) Validate(ctx context.Context) error {
 	return nil
 }
 
-func (r *metricsViewCacheKeyResolver) MetricsViewSecurityFields() []string {
-	panic("not implemented")
-}
-
-func (r *metricsViewCacheKeyResolver) SecuredRowFilter() string {
-	panic("not implemented")
-}
-
 func (r *metricsViewCacheKeyResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverResult, error) {
 	key, ok, err := r.executor.CacheKey(ctx)
 	if err != nil {
@@ -149,4 +141,8 @@ func (r *metricsViewCacheKeyResolver) ResolveInteractive(ctx context.Context) (r
 
 func (r *metricsViewCacheKeyResolver) ResolveExport(ctx context.Context, w io.Writer, opts *runtime.ResolverExportOptions) error {
 	return errors.New("not implemented")
+}
+
+func (r *metricsViewCacheKeyResolver) InferRequiredSecurityRules() []*runtimev1.SecurityRule {
+	panic("not implemented")
 }

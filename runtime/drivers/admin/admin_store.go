@@ -5,12 +5,18 @@ import (
 	"time"
 
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
+	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func (h *Handle) GetReportMetadata(ctx context.Context, reportName, ownerID, webOpenMode string, emailRecipients []string, anonRecipients bool, executionTime time.Time) (*drivers.ReportMetadata, error) {
+	var resources []*adminv1.ResourceName
+	resources = append(resources, &adminv1.ResourceName{
+		Type: runtime.ResourceKindReport,
+		Name: reportName,
+	})
 	res, err := h.admin.GetReportMeta(ctx, &adminv1.GetReportMetaRequest{
 		ProjectId:        h.config.ProjectID,
 		Report:           reportName,
@@ -18,7 +24,7 @@ func (h *Handle) GetReportMetadata(ctx context.Context, reportName, ownerID, web
 		EmailRecipients:  emailRecipients,
 		AnonRecipients:   anonRecipients,
 		ExecutionTime:    timestamppb.New(executionTime),
-		Resources:        nil,
+		Resources:        resources,
 		WebOpenMode:      webOpenMode,
 		WhereFilterJson:  "",
 		AccessibleFields: nil,

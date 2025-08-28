@@ -116,14 +116,6 @@ func (r *metricsViewTimeRangeResolver) Validate(ctx context.Context) error {
 	return nil
 }
 
-func (r *metricsViewTimeRangeResolver) MetricsViewSecurityFields() []string {
-	panic("not implemented")
-}
-
-func (r *metricsViewTimeRangeResolver) SecuredRowFilter() string {
-	panic("not implemented")
-}
-
 func (r *metricsViewTimeRangeResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverResult, error) {
 	ts, err := r.executor.Timestamps(ctx, r.args.TimeDimension)
 	if err != nil {
@@ -152,6 +144,10 @@ func (r *metricsViewTimeRangeResolver) ResolveInteractive(ctx context.Context) (
 
 func (r *metricsViewTimeRangeResolver) ResolveExport(ctx context.Context, w io.Writer, opts *runtime.ResolverExportOptions) error {
 	return errors.New("not implemented")
+}
+
+func (r *metricsViewTimeRangeResolver) InferRequiredSecurityRules() []*runtimev1.SecurityRule {
+	panic("not implemented")
 }
 
 func resolveTimestampResult(ctx context.Context, rt *runtime.Runtime, instanceID, metricsViewName, timeDimension string, security *runtime.SecurityClaims, priority int) (metricsview.TimestampsResult, error) {

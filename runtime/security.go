@@ -18,8 +18,6 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/expressionpb"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"go.uber.org/zap"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 )
 
@@ -648,6 +646,12 @@ func (p *securityEngine) expandRules(ctx context.Context, instanceID string, cla
 				return nil, fmt.Errorf("failed to resolve transitive access rule for report: %w", err)
 			}
 			rules = append(rules, resolvedRules...)
+		case *runtimev1.Resource_Explore:
+			resolvedRules, err := p.resolveTransitiveAccessRuleForExplore(res)
+			if err != nil {
+				return nil, fmt.Errorf("failed to resolve transitive access rule for explore: %w", err)
+			}
+			rules = append(rules, resolvedRules...)
 		default:
 			return nil, fmt.Errorf("transitive access rule for resource kind %q is not supported", res.Meta.Name.Kind)
 		}
@@ -759,33 +763,68 @@ func (p *securityEngine) resolveTransitiveAccessRuleForReport(ctx context.Contex
 			},
 		})
 
-		if resolver.SecuredRowFilter() != "" {
-			expr := &runtimev1.Expression{}
-			err := protojson.Unmarshal([]byte(resolver.SecuredRowFilter()), expr)
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, "could not unmarshal metrics view filter: %s", err.Error())
-			}
-
-			rules = append(rules, &runtimev1.SecurityRule{
-				Rule: &runtimev1.SecurityRule_RowFilter{
-					RowFilter: &runtimev1.SecurityRuleRowFilter{
-						Expression: expr,
-					},
-				},
-			})
-		}
-
-		if len(resolver.MetricsViewSecurityFields()) > 0 {
-			rules = append(rules, &runtimev1.SecurityRule{
-				Rule: &runtimev1.SecurityRule_FieldAccess{
-					FieldAccess: &runtimev1.SecurityRuleFieldAccess{
-						Fields: resolver.MetricsViewSecurityFields(),
-						Allow:  true,
-					},
-				},
-			})
-		}
+		rules = append(rules, resolver.InferRequiredSecurityRules()...)
 	}
+
+	return rules, nil
+}
+
+func (p *securityEngine) resolveTransitiveAccessRuleForExplore(res *runtimev1.Resource) ([]*runtimev1.SecurityRule, error) {
+	var rules []*runtimev1.SecurityRule
+
+	explore := res.GetExplore()
+	if explore == nil {
+		return nil, fmt.Errorf("resource is not an explore")
+	}
+
+	spec := explore.GetState().GetValidSpec()
+	if spec == nil {
+		return nil, fmt.Errorf("explore valid spec is nil")
+	}
+
+	if spec.MetricsView == "" {
+		return nil, fmt.Errorf("explore does not reference a metrics view")
+	}
+
+	// explicitly allow access to the explore itself
+	rules = append(rules, &runtimev1.SecurityRule{
+		Rule: &runtimev1.SecurityRule_Access{
+			Access: &runtimev1.SecurityRuleAccess{
+				Condition: fmt.Sprintf("'{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s", ResourceKindExplore, duckdbsql.EscapeStringValue(strings.ToLower(res.Meta.Name.Name))),
+				Allow:     true,
+			},
+		},
+	})
+
+	// give access to the underlying metrics view
+	if spec.MetricsView != "" {
+		rules = append(rules, &runtimev1.SecurityRule{
+			Rule: &runtimev1.SecurityRule_Access{
+				Access: &runtimev1.SecurityRuleAccess{
+					Condition: fmt.Sprintf("'{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s", ResourceKindMetricsView, duckdbsql.EscapeStringValue(strings.ToLower(spec.MetricsView))),
+					Allow:     true,
+				},
+			},
+		})
+	}
+
+	// deny everything except the explore, mv and themes
+	var condition strings.Builder
+	// self canvas
+	condition.WriteString(fmt.Sprintf("('{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s)", ResourceKindExplore, duckdbsql.EscapeStringValue(strings.ToLower(res.Meta.Name.Name))))
+	// underlying mv
+	condition.WriteString(fmt.Sprintf(" OR ('{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s)", ResourceKindMetricsView, duckdbsql.EscapeStringValue(strings.ToLower(spec.MetricsView))))
+	// all themes
+	condition.WriteString(fmt.Sprintf(" OR '{{.self.kind}}'='%s'", ResourceKindTheme))
+
+	rules = append(rules, &runtimev1.SecurityRule{
+		Rule: &runtimev1.SecurityRule_Access{
+			Access: &runtimev1.SecurityRuleAccess{
+				Condition: fmt.Sprintf("NOT (%s)", condition.String()),
+				Allow:     false,
+			},
+		},
+	})
 
 	return rules, nil
 }

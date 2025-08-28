@@ -623,28 +623,21 @@ func (s *Server) createMagicTokens(ctx context.Context, orgID, projectID, report
 	mgcOpts := &admin.IssueMagicAuthTokenOptions{
 		ProjectID:       projectID,
 		CreatedByUserID: createdByUserID,
+		FilterJSON:      whereFilterJSON,
+		Fields:          accessibleFields,
 		Internal:        true,
 		TTL:             &ttl,
 	}
 
-	if len(resources) > 0 { // backwards compatibility during rollout or if we can accept that some new reports sent will not open util runtimes are updated, then we can clean up the GetReportMeta RPC
-		mgcOpts.FilterJSON = whereFilterJSON
-		mgcOpts.Fields = accessibleFields
-		var res []database.ResourceName
-		for _, r := range resources {
-			res = append(res, database.ResourceName{
-				Type: r.Type,
-				Name: r.Name,
-			})
-		}
-		mgcOpts.Resources = res
-	} else {
-		// if transitive access resource is added, other resources are ignored
-		mgcOpts.TransitiveAccessResource = &database.ResourceName{
-			Type: runtime.ResourceKindReport,
-			Name: reportName,
-		}
+	var res []database.ResourceName
+	for _, r := range resources {
+		res = append(res, database.ResourceName{
+			Type: r.Type,
+			Name: r.Name,
+		})
 	}
+
+	mgcOpts.Resources = res
 
 	ownerEmail := ""
 	if ownerID != "" {

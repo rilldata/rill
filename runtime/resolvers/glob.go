@@ -172,14 +172,6 @@ func (r *globResolver) Validate(ctx context.Context) error {
 	return nil
 }
 
-func (r *globResolver) MetricsViewSecurityFields() []string {
-	panic("not implemented")
-}
-
-func (r *globResolver) SecuredRowFilter() string {
-	panic("not implemented")
-}
-
 func (r *globResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverResult, error) {
 	h, release, err := r.runtime.AcquireHandle(ctx, r.instanceID, r.props.Connector)
 	if err != nil {
@@ -221,6 +213,10 @@ func (r *globResolver) ResolveInteractive(ctx context.Context) (runtime.Resolver
 
 func (r *globResolver) ResolveExport(ctx context.Context, w io.Writer, opts *runtime.ResolverExportOptions) error {
 	return errors.New("not implemented")
+}
+
+func (r *globResolver) InferRequiredSecurityRules() []*runtimev1.SecurityRule {
+	panic("not implemented")
 }
 
 // buildUnpartitioned builds a result consisting of one row per file.

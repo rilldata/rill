@@ -103,14 +103,6 @@ func (r *annotationsResolver) Validate(ctx context.Context) error {
 	return nil
 }
 
-func (r *annotationsResolver) MetricsViewSecurityFields() []string {
-	panic("not implemented")
-}
-
-func (r *annotationsResolver) SecuredRowFilter() string {
-	panic("not implemented")
-}
-
 func (r *annotationsResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverResult, error) {
 	// Only resolve time stamps if an absolute time range is not specified.
 	if r.query.TimeRange == nil || r.query.TimeRange.Start.IsZero() || r.query.TimeRange.End.IsZero() {
@@ -142,4 +134,8 @@ func (r *annotationsResolver) ResolveInteractive(ctx context.Context) (runtime.R
 
 func (r *annotationsResolver) ResolveExport(ctx context.Context, w io.Writer, opts *runtime.ResolverExportOptions) error {
 	return errors.New("not implemented")
+}
+
+func (r *annotationsResolver) InferRequiredSecurityRules() []*runtimev1.SecurityRule {
+	panic("not implemented")
 }
