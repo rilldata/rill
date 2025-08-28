@@ -216,7 +216,7 @@ _[array of object]_ - Used to define annotations that can be displayed on charts
 
 ### `security`
 
-_[object]_ - Defines [security rules and access control policies](/manage/security) for resources 
+_[object]_ - Defines [security rules and access control policies](/build/metrics-view/security) for resources 
 
   - **`access`** - _[oneOf]_ - Expression indicating if the user should be granted access to the dashboard. If not defined, it will resolve to false and the dashboard won't be accessible to anyone. Needs to be a valid SQL expression that evaluates to a boolean. 
 

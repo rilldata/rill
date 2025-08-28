@@ -14,6 +14,5 @@ Rill Developer is a great tool for building, testing, and viewing your data loca
 - [**GitHub Basics**](/deploy/deploy-dashboard/github-101) - GitHub basics to get you started
 
 ### Post-Deployment Steps
-- [**Performance Optimization**](/deploy/performance) - Get better performance out of your dashboards
 - [**Managing Project Errors**](/deploy/project-errors) - Troubleshooting errors in Rill Cloud
 

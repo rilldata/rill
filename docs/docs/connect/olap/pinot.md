@@ -5,11 +5,9 @@ sidebar_label: Pinot
 sidebar_position: 20
 ---
 
-## Overview
-
 [Apache Pinot](https://docs.pinot.apache.org/) is a real-time distributed OLAP datastore purpose-built for low-latency, high-throughput analytics, and is perfect for user-facing analytical workloads.
 
-Rill supports connecting to an existing Pinot cluster and using it as an OLAP engine to power Rill dashboards built against [external tables](/home/concepts/OLAP#external-olap-tables).
+Rill supports connecting to an existing Pinot cluster instance via a "live connector" and using it as an OLAP engine to power Rill dashboards.
 
 ## Configuring Rill Developer with Pinot
 
@@ -18,11 +16,10 @@ When using Rill for local development, there are a few options to configure Rill
 
 For more information on supported parameters, see our [Pinot connector YAML reference docs](/reference/project-files/connectors#pinot).
 
-
 <img src='/img/reference/olap-engines/pinot/pinot-parameters.png' class='rounded-gif' />
 <br />
 
-1. You can set `connector.pinot.dsn` in your project's `.env` file or try pulling existing credentials locally using `rill env pull` if the project has already been deployed to Rill Cloud.
+2. You can set `connector.pinot.dsn` in your project's `.env` file or try pulling existing credentials locally using `rill env pull` if the project has already been deployed to Rill Cloud.
 
 :::tip Getting DSN errors in dashboards after setting `.env`?
 
@@ -30,7 +27,7 @@ If you are facing issues related to DSN connection errors in your dashboards eve
 
 :::
 
-## Connection string (DSN)
+## Connection String (DSN)
 
 Rill connects to Pinot using the [Pinot Golang Client](https://docs.pinot.apache.org/users/clients/golang) and requires a connection string of the following format: `http://<user>:<password>@<broker_host>:<port>?controller=<controller_host>:<port>`. If `user` or `password` contain special characters, they should be URL encoded (i.e., `p@ssword` -> `p%40ssword`). This should be set in the `connector.pinot.dsn` property in Rill.
 
@@ -49,14 +46,13 @@ If you would like to connect Rill to an existing Pinot instance, please don't he
 
 :::
 
-## Setting the default OLAP connection
+## Setting the Default OLAP Connection
 
 You'll also need to update the `olap_connector` property in your project's `rill.yaml` to change the default OLAP engine to Pinot:
 
 ```yaml
 olap_connector: pinot
 ```
-
 
 :::info Interested in using multiple OLAP engines in the same project?
 
@@ -71,8 +67,7 @@ When deploying a Pinot-backed project to Rill Cloud, you have the following opti
 2. Use the `rill env configure` command to set `connector.pinot.dsn` after deploying the project.
 3. If `connector.pinot.dsn` has already been set in your project `.env`, you can push and update these variables directly in your cloud deployment by using the `rill env push` command.
 
-
-## Support for Multi-Valued dimensions
+## Support for Multi-Valued Dimensions
 
 Multi-valued dimensions need to be defined in the dashboard YAML as expressions using the `arrayToMv` function. For example, if `RandomAirports` is a multi-valued column in a Pinot table, then the dimension definition will look like:
 
@@ -82,6 +77,7 @@ Multi-valued dimensions need to be defined in the dashboard YAML as expressions 
   name: RandomAirports
   description: "Random Airports"
 ```
+
 Refer to the [Dashboard YAML](/reference/project-files/explore-dashboards) reference page for all dimension properties in detail.
 
 :::note
