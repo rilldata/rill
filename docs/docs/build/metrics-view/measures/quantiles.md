@@ -2,7 +2,7 @@
 title: "Quantiles"
 description: Tips & Tricks for Metric Formatting
 sidebar_label: "Quantiles"
-sidebar_position: 03
+sidebar_position: 30
 ---
 
 ### Quantiles

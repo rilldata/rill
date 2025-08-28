@@ -2,7 +2,7 @@
 title: "Unnest Dimensions"
 description: Tips & Tricks for Metric Formatting
 sidebar_label: "Unnest Dimensions"
-sidebar_position: 06
+sidebar_position: 50
 ---
  For multi-value fields, you can set the unnest property within a dimension. If true, this property allows a multi-valued dimension to be unnested (such as lists), and filters will automatically switch to "contains" instead of exact match.
 

@@ -23,6 +23,8 @@ Add a new data model by either clicking 'model' in the 'Add' menu or select the 
 
 You can also create a model outside of the application and add it to Rill by placing a `<model_name>.sql` file in the `models` directory containing a DuckDB SQL `SELECT` statement. Rill will automatically detect and parse the model the next time you run `rill start`.
 
+For additional tips on commonly used expressions (either in models or dashboard definitions), visit our [common expressions page](/build/metrics-view).
+
 
 ## Annotating your models with properties
 
@@ -102,7 +104,7 @@ We support modeling on [ClickHouse\*](/connect/olap/clickhouse), [DuckDB](/conne
 \* indicates some caveats with modeling and encourage you to read the documentation before getting started.
 ::: 
 
-For additional tips on advanced expressions (either in models or measures definitions), visit our [advanced expressions page](../metrics-view/advanced-expressions/advanced-expressions.md).
+For additional tips on advanced expressions (either in models or measures definitions), visit our [advanced expressions page](/build/metrics-view/what-are-metrics-views#creating-valid-metrics-views).
 
 
 
