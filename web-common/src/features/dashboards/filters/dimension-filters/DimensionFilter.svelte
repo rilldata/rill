@@ -434,11 +434,13 @@
   >
     <div class="flex flex-col px-3 pt-3">
       <div class="flex flex-row">
-        <DimensionFilterModeSelector
-          bind:mode={curMode}
-          onModeChange={handleModeChange}
-          size="md"
-        />
+        {#if limit !== 1}
+          <DimensionFilterModeSelector
+            bind:mode={curMode}
+            onModeChange={handleModeChange}
+            size="md"
+          />
+        {/if}
         <Search
           bind:value={curSearchText}
           label={`${name} search list`}
@@ -562,6 +564,7 @@
       excludeMode={curExcludeMode}
       {allSelected}
       {disableApplyButton}
+      hideSelectAll={limit === 1}
       onToggleExcludeMode={handleToggleExcludeMode}
       {onToggleSelectAll}
       {onApply}

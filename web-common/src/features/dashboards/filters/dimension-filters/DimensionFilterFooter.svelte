@@ -8,6 +8,7 @@
   export let excludeMode: boolean;
   export let allSelected: boolean;
   export let disableApplyButton: boolean;
+  export let hideSelectAll = false;
   export let onToggleExcludeMode: () => void;
   export let onToggleSelectAll: () => void;
   export let onApply: () => void;
@@ -26,13 +27,15 @@
   </div>
   <div class="flex gap-2">
     {#if mode === DimensionFilterMode.Select}
-      <Button onClick={onToggleSelectAll} type="plain">
-        {#if allSelected}
-          Deselect all
-        {:else}
-          Select all
-        {/if}
-      </Button>
+      {#if !hideSelectAll}
+        <Button onClick={onToggleSelectAll} type="plain">
+          {#if allSelected}
+            Deselect all
+          {:else}
+            Select all
+          {/if}
+        </Button>
+      {/if}
     {:else}
       <Button
         onClick={onApply}
