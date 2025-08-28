@@ -24,9 +24,6 @@ Rill provides a comprehensive platform for building end-to-end data analytics so
 - [**Time Series**](/build/metrics-view/time-series) - The backbone of Rill Dashboards, time
 - [**Dimensions**](/build/metrics-view/dimensions) - Aggregate your dimensions further in your metrics view
 - [**Measures**](/build/metrics-view/measures) - Aggregate your measures further in your metrics view
-- [**Define Measures and Dimensions**](/build/metrics-view) - Define measures and dimensions 
-- [**Advanced Measures**](/build/metrics-view/advanced-expressions) - Aggregate further in your metrics view
-- [**Customize Metrics View Settings**](/build/metrics-view/customize) - Set the smallest selectable grain, day_of_week, month_of_year, etc.
 - [**Define Data Access**](/build/metrics-view/security) - Define access and row access policies
 
 

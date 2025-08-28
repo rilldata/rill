@@ -23,7 +23,7 @@ We support modeling on [ClickHouse\*](/connect/olap/clickhouse), [DuckDB](/conne
 
 :::
 
-For additional tips on advanced expressions (either in models or measure definitions), visit our [advanced expressions page](/build/metrics-view/advanced-expressions/advanced-expressions.md).
+For additional tips on advanced expressions (either in models or measure definitions), visit our [advanced expressions page](/build/metrics-view).
 
 ### Intermediate Processing
 

@@ -10,12 +10,26 @@ sidebar_position: 00
 
 Rill projects are just files and folders that you can edit with any code editor or IDE. Whether you prefer VS Code, IntelliJ, Vim, or any other editor, you can create and modify Rill projects directly from your favorite development environment.
 
-### How It Works
+## How It Works
 
-Rill projects consist of:
-- **SQL files** (`.sql`) for models and metrics views
-- **YAML files** (`.yml`) for project configuration
-- **Data files** in various formats
+BI-as-code is a modern approach to business intelligence that treats analytics assets as code, bringing the same benefits of version control, collaboration, and automation that software development teams have enjoyed for years. With Rill, you can define your entire analytics stack—from data models to dashboards—using code, while still maintaining the flexibility to make UI-based adjustments when needed.
+
+### How It Works in Rill
+
+Rill implements BI-as-code through a combination of:
+
+1. **SQL-based Definitions**: Define your models via SQL to connect to your various sources
+2. **YAML Configuration**: Configure your metrics views, dashboards, and project settings via YAML
+3. **Git Integration**: Version control your analytics assets
+4. **CLI Tools**: Deploy and manage your analytics stack from the command line
+   
+<div style={{ textAlign: 'center' }}>
+  <img src="/img/concepts/metrics-view/metrics-view-components.png" style={{ width: '100%', borderRadius: '15px', padding: '20px' }} />
+</div>
+
+
+For a deeper dive into BI-as-code and its benefits, check out our blog post: [What is BI-as-code?](https://www.rilldata.com/blog/bi-as-code-and-the-new-era-of-genbi)
+
 
 You can edit these files in any IDE, and Rill will automatically detect changes and provide real-time feedback.
 

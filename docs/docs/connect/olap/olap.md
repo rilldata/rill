@@ -152,30 +152,3 @@ Dimension stripping is another tool to reduce data size by removing high cardina
 There are times when you may look at sampling data feeds to trade data accuracy for lower costs and faster query speeds. Sampling involves sending only a percentage of your data, then extrapolating the values to get an estimate. Rill does not recommend sampling your primary KPIs, any records that require a join, or are tied to revenue. This filtered data should be decided in random fashion to not skew or bias the results. Please note, tracking uniques is not recommended if you choose to sample.
 
 If looking to track uniques, but with smaller datasets and significantly improved performance, you can load unique values (IP addresses, user IDs, URLs, etc.) with [datasketches](https://datasketches.apache.org). There are multiple types of datasketches supported depending on your engine. At a high level, datasketches use algorithms to approximate unique values. Common use cases for datasketches include count distincts (campaign reach, unique visitors) and quantiles (time spent, frequency). Check out the [Apache Datasketches](https://datasketches.apache.org/docs/Architecture/MajorSketchFamilies.html) site for more details on methodology and use cases.
-
-### Lookups
-
-While joins can kill the performance of [OLAP engines](/connect/olap), lookups (key-value pairs) are common to reduce data size and improve query speeds. Lookups can be done during ingestion time (a static lookup to enrich the source data) or at query time (dynamic lookups).
-
-**Static Lookups** 
-
-Static lookups are lookups that are ingested at processing time. When a record is being processed, if a match is found between the record and lookup's key, the lookup's corresponding value at that moment in time is extracted and carbon-copied into Druid for the records it processed.
-
-Static lookups are best suited for:
-
-- Dimensions with values that require a historical record for how they have changed over time
-- Values that are never expected to change (leverage Dynamic Lookups if the values are expected to change)
-- Extremely large lookups (hundreds of thousands of records or >50MB lookup file) to improve query performance
-
-Customers typically store lookup values in S3 or GCS, and the lookup file is then updated by customers as needed and consumed by ETL logic.
-
-**Dynamic Lookups**
-
-Since static lookups transform and store the data permanently, any changes to the mapping would require reprocessing the entire dataset to ensure consistency. To address the case when values in a lookup are expected to change with time, we developed dynamic lookups. Dynamic lookups, also known as Query Time Lookups, are lookups that are retrieved at query time, as opposed to being used at ingestion time.
-
-Benefits of dynamic lookups include:
-
-- Historical continuity for dimensions that change frequently without reprocessing the entire dataset
-- Time savings, because there is no dataset reprocessing required to complete the update
-- Dynamic lookups are kept separate from the dataset. Thus, any human errors introduced in the lookup do not impact the underlying dataset
-- Ability for users to create new dimension tables from metadata associated with a dimension table. For example, account ownership can change during the course of a quarter. In such cases, a dynamic lookup can be updated on the fly to reflect the most current changes

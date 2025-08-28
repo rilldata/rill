@@ -57,7 +57,7 @@ dimensions:
 
 ## DuckDB/MotherDuck Lookups
 
-Unfortunately, DuckDB does not have a dimension lookup **function** and instead relies on upstream modeling to join the lookup table and create a [one big table](/build/models/#one-big-table-and-dashboarding) for dashboarding. Take a look through [DuckDB docs](https://duckdb.org/docs/stable/sql/introduction) for further information!
+Unfortunately, DuckDB does not have a dimension lookup **function** and instead relies on upstream modeling to join the lookup table and create a [one big table](/build/models/models-101#one-big-table-and-dashboarding) for dashboarding. Take a look through [DuckDB docs](https://duckdb.org/docs/stable/sql/introduction) for further information!
 
 ```sql
 SELECT 

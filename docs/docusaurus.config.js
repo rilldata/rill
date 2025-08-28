@@ -411,7 +411,7 @@ const config = {
           },
           {
             from: '/concepts/developerVsCloud',
-            to: '/home/concepts/cloud-vs-developer'
+            to: '/deploy/cloud-vs-developer'
           },
           {
             from: '/concepts/OLAP',
@@ -431,7 +431,7 @@ const config = {
           },
           {
             from: '/concepts/bi-as-code',
-            to: '/home/concepts/bi-as-code'
+            to: '/build/ide#how-it-works'
           },
           {
             from: '/home/concepts/metrics-layer',

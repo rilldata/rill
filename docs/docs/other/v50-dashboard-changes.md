@@ -36,7 +36,7 @@ With the split of metrics view, dashboard configurations experienced an overhaul
 
 ### Version 0.49 → Version 0.5X
 
-Due to the [separation of dashboards to metrics layer and dashboards](/build/metrics-view#what-is-a-metrics-view), you will need to review your current dashboards and make the following changes (note: Legacy dashboards will continue to function.):
+Due to the [separation of dashboards to metrics layer and dashboards](/build/metrics-view/what-are-metrics-views, you will need to review your current dashboards and make the following changes (note: Legacy dashboards will continue to function.):
 
 **[Sample Legacy Dashboard Contents](https://docs.rilldata.com/reference/project-files/explore-dashboards):**
 
