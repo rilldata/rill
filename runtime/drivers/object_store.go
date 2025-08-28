@@ -45,6 +45,7 @@ type FileIterator interface {
 // ObjectStoreModelInputProperties contain common input properties for object store models.
 type ObjectStoreModelInputProperties struct {
 	Path   string         `mapstructure:"path"`
+	SQL    string         `mapstructure:"sql"` // SQL to be executed on the output connector if it supports SQL. Cannot be combined with `path`.
 	URI    string         `mapstructure:"uri"` // Deprecated: use `path` instead
 	Format FileFormat     `mapstructure:"format"`
 	DuckDB map[string]any `mapstructure:"duckdb"` // Deprecated: use DuckDB directly
@@ -55,16 +56,16 @@ func (p *ObjectStoreModelInputProperties) Decode(props map[string]any) error {
 	if err != nil {
 		return fmt.Errorf("failed to parse input properties: %w", err)
 	}
-	if p.Path == "" && p.URI == "" {
-		return fmt.Errorf("missing property `path`")
-	}
-	if p.Path != "" && p.URI != "" {
-		return fmt.Errorf("cannot specify both `path` and `uri`")
-	}
 	if p.URI != "" { // Backwards compatibility
 		p.Path = p.URI
 	}
-	if !doublestar.ValidatePattern(p.Path) {
+	if p.Path == "" && p.SQL == "" {
+		return fmt.Errorf("missing property `path` or `sql`")
+	}
+	if p.Path != "" && p.SQL != "" {
+		return fmt.Errorf("cannot specify both `path` and `sql`")
+	}
+	if p.Path != "" && !doublestar.ValidatePattern(p.Path) {
 		return fmt.Errorf("glob pattern %q is invalid", p.Path)
 	}
 	return nil
