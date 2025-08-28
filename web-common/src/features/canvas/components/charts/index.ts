@@ -23,6 +23,11 @@ import {
 } from "./circular-charts/CircularChart";
 import { generateVLPieChartSpec } from "./circular-charts/pie";
 import {
+  ComboChartComponent,
+  type ComboChartSpec,
+} from "./combo-charts/ComboChart";
+import { generateVLComboChartSpec } from "./combo-charts/spec";
+import {
   FunnelChartComponent,
   type FunnelChartSpec,
 } from "./funnel-charts/FunnelChart";
@@ -46,14 +51,16 @@ export type ChartComponent =
   | typeof CircularChartComponent
   | typeof FunnelChartComponent
   | typeof HeatmapChartComponent
-  | typeof MultiMetricChartComponent;
+  | typeof MultiMetricChartComponent
+  | typeof ComboChartComponent;
 
 export type ChartSpec =
   | CartesianChartSpec
   | CircularChartSpec
   | FunnelChartSpec
   | HeatmapChartSpec
-  | MultiMetricChartSpec;
+  | MultiMetricChartSpec
+  | ComboChartSpec;
 
 export function getChartComponent(
   type: ChartType,
@@ -74,8 +81,10 @@ export function getChartComponent(
       return HeatmapChartComponent;
     case "multi_metric_chart":
       return MultiMetricChartComponent;
+    case "combo_chart":
+      return ComboChartComponent;
     default:
-      throw new Error(`Unsupported chart type: ${type}`);
+      throw new Error("Unsupported chart type: " + type);
   }
 }
 
@@ -149,6 +158,12 @@ export const CHART_CONFIG: Record<ChartType, ChartMetadataConfig> = {
     component: MultiMetricChartComponent,
     generateSpec: generateVLMultiMetricChartSpec,
     hideFromSelector: true,
+  },
+  combo_chart: {
+    title: "Combo",
+    icon: MultiChart,
+    component: ComboChartComponent,
+    generateSpec: generateVLComboChartSpec,
   },
 };
 
