@@ -1,7 +1,7 @@
 ---
 title: "Ingesting Data into ClickHouse"
 sidebar_label: "Ingesting Data Directly into ClickHouse"
-sidebar_position: 50
+sidebar_position: 40
 hide_table_of_contents: false
 tags:
   - OLAP:ClickHouse
@@ -16,10 +16,7 @@ Currently, ClickHouse lacks some [direct ingestion](https://clickhouse.com/docs/
 
 When switching from DuckDB, you may have noticed some changes to the capabilities of Rill. By default, we disable modeling when ClickHouse is enabled as the default OLAP engine. However, we can change this behavior by enabling the feature flag `clickhouseModeling`.
 
-```yaml
-features:
-  clickhouseModeling: true
-  ```
+
 
 Once this is enabled, you'll be able to create model files and add sources in the UI and use these for SQL transformations, as you would with DuckDB. 
 

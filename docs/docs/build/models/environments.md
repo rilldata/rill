@@ -51,8 +51,9 @@ prod:
 :::info Hierarchy of inheritance and property overrides
 
 As a general rule of thumb, properties that have been specified at a more _granular_ level will supersede or override higher-level properties that have been inherited. Therefore, in order of inheritance, Rill will prioritize properties in the following order:
+
 1. Individual [model](/build/models)/[dashboard](/reference/project-files/explore-dashboards.md) object level properties (e.g. `model.yaml` or `dashboard.yaml`)
-2. [Environment](/docs/build/models/environments.md) level properties (e.g., a specific property that has been set for `dev`)
+2. [Environment](/build/models/templating) level properties (e.g., a specific property that has been set for `dev`)
 3. [Project-wide defaults](/reference/project-files/rill-yaml.md#project-wide-defaults) for a specific property and resource type
 
 :::

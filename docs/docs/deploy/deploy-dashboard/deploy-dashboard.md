@@ -47,7 +47,7 @@ Starting from **v0.48**, we have introduced the possibility to push dashboards _
 
 Now that you project has been deployed to Rill Cloud, you will need to ensure that your users have access! Please refer to the [user management](../../manage/user-management.md) section. 
 
-If you make changes locally on Rill Developer, you will need to push the contents to Rill Cloud by selecting the `Update` button.
+If you make changes locally on Rill Developer, you will need to push the contents to Rill Cloud by selecting the `Deploy` button.
 
 <img src = '/img/deploy/existing-project/redeploy.gif' class='rounded-gif' />
 <br />
@@ -197,7 +197,7 @@ Whether you decide to manage your Rill projects using GitHub or re-running `rill
 rill project status
 ```
 
-Likewise, if using the UI by selecting the `Update` button, Rill will detect the changes in files and update your deployed project accordingly. Along with the above CLI command, you can view the status of the objects in the Status page.
+Likewise, if using the UI by selecting the `Deploy` button, Rill will detect the changes in files and update your deployed project accordingly. Along with the above CLI command, you can view the status of the objects in the Status page.
 
 :::tip Interested in using Gitlab?
 

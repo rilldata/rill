@@ -126,4 +126,4 @@ Error: can't refresh partitions on model "model_name" because it is not incremen
 ```
 :::
 
-You will need to enable [incremental modeling](incremental-partitioned-models.md) in order to individually refresh a partition. 
+You will need to enable [incremental modeling](/build/models/incremental-partitioned-models.md) in order to individually refresh a partition. 

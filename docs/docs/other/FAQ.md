@@ -32,7 +32,7 @@ Rill is optimized for Google Chrome. While other browsers may work, we recommend
 
 
 ### What is Rill Developer?
-Rill Developer is a local application used to preview your project and make any necessary changes before deploying to Rill Cloud. For more information, please review [our documentation](https://docs.rilldata.com/concepts/cloud-vs-developer#rill-developer). Within Rill Developer, you can ingest new datasets, transform the sources into models, build a metrics layer, and finally visualize your data in an explore dashboard. This preview allows you to develop your project before deploying or updating an existing deployment in Rill Cloud.
+Rill Developer is a local application used to preview your project and make any necessary changes before deploying to Rill Cloud. For more information, please review [our documentation](/deploy/cloud-vs-developer#rill-developer). Within Rill Developer, you can ingest new datasets, transform the sources into models, build a metrics layer, and finally visualize your data in an explore dashboard. This preview allows you to develop your project before deploying or updating an existing deployment in Rill Cloud.
 
 ### How do I do XXX in Rill Developer? 
 
@@ -64,7 +64,7 @@ To share your dashboards with your colleagues, you need to [deploy your dashboar
 
 
 ### What is Rill Cloud?
-Rill Cloud is where your deployed Rill project exists and can be shared with your colleagues or end-users. For more information, please review [our documentation](https://docs.rilldata.com/concepts/cloud-vs-developer#rill-cloud). Unlike Rill Developer, which is developer-based, Rill Cloud is where your dashboards are consumed by your end users. Additional features include bookmarks, public URLs, reporting, alerts, and more! 
+Rill Cloud is where your deployed Rill project exists and can be shared with your colleagues or end-users. For more information, please review [our documentation](/deploy/cloud-vs-developer#rill-cloud). Unlike Rill Developer, which is developer-based, Rill Cloud is where your dashboards are consumed by your end users. Additional features include bookmarks, public URLs, reporting, alerts, and more! 
 
 ### How do I deploy to Rill Cloud?
 You can deploy your project directly from the UI by selecting [the Deploy button](/deploy/deploy-dashboard/#deploying-a-project-from-rill-developer). Upon deployment, an organization will be automatically created with your Rill project inside. Each organization can have multiple projects that house multiple sources, models, metrics views, and dashboards. Note that sources are not cross-project compatible. When creating your first project, we will automatically start your 30-day free trial. In order to extend usage, you will need to sign up for a [Team Plan](#rill-team-plan).

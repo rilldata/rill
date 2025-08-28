@@ -117,6 +117,6 @@ Changes to sources and models will initiate a full refresh of the source, unless
 For projects that were cloned via git, you'll need to run the required git commands to add, commit, and push changes. Keep in mind the basic git practices about merging files to main without having an approval process.
 
 
-### via Rill Update Button
+### via Rill Deploy Button
 
-For projects cloned via the CLI, the underlying connection to the deployment will also be brought locally so that when the button to "Deploy" is now "Update" the existing deployment. Keep in mind the warning above about changes to sources and models. 
+For projects cloned via the CLI, the underlying connection to the deployment will also be brought locally so that you can easily re-deploy the project to your existing deployment using the Deploy button in the UI.
