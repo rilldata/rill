@@ -46,6 +46,9 @@ export async function testOLAPConnector(
   }
 }
 
+// 1. Create the connector file using `runtimeServicePutFile`
+// 2. Poll the connector resource status using `runtimeServiceGetResource`
+// 3. Delete the connector file using `runtimeServiceDeleteFile` if it fails with a reconcile error
 export async function testNonOlapConnector(
   instanceId: string,
   newConnectorName: string,
