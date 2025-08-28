@@ -520,7 +520,6 @@ func generateDoc(sidebarPosition, level int, node *yaml.Node, indent string, req
 			}
 		} 
 	}
-
 	return doc.String()
 }
 
