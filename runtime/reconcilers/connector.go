@@ -94,13 +94,10 @@ func (r *ConnectorReconciler) Reconcile(ctx context.Context, n *runtimev1.Resour
 
 	// Test the connector configuration
 	err = r.testConnector(ctx, self.Meta.Name.Name)
-	if err != nil {
-		return runtime.ReconcileResult{Err: fmt.Errorf("validation failed: %w", err)}
-	}
-
+	// update state even if test fails because the instance connectors have already been updated
 	t.State.SpecHash = specHash
 
-	err = r.C.UpdateState(ctx, self.Meta.Name, self)
+	err = errors.Join(err, r.C.UpdateState(ctx, self.Meta.Name, self))
 	if err != nil {
 		return runtime.ReconcileResult{Err: err}
 	}
