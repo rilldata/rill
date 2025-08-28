@@ -49,15 +49,6 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 
 					projectPath = repoName
 				}
-
-				if ch.IsAuthenticated() {
-					if _, err := os.Stat(filepath.Join(projectPath, "rill.yaml")); err == nil {
-						err := env.PullVars(cmd.Context(), ch, projectPath, "", environment, true)
-						if err != nil {
-							ch.PrintfWarn("Warning: failed to pull environment credentials: %v\n", err)
-						}
-					}
-				}
 			} else if !cmdutil.HasRillProject(".") {
 				if !ch.Interactive {
 					return fmt.Errorf("required arg <path> missing")
@@ -110,6 +101,16 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			// Default to the current directory if no path is provided
 			if projectPath == "" {
 				projectPath = "."
+			}
+
+			// Always attempt to pull env for any valid Rill project (after projectPath is set)
+			if ch.IsAuthenticated() {
+				if _, err := os.Stat(filepath.Join(projectPath, "rill.yaml")); err == nil {
+					err := env.PullVars(cmd.Context(), ch, projectPath, "", environment, true)
+					if err != nil {
+						ch.PrintfWarn("Warning: failed to pull environment credentials: %v\n", err)
+					}
+				}
 			}
 
 			// Check that projectPath doesn't have an excessive number of files.
