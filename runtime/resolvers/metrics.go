@@ -161,22 +161,18 @@ func (r *metricsResolver) ResolveExport(ctx context.Context, w io.Writer, opts *
 
 func (r *metricsResolver) InferRequiredSecurityRules() []*runtimev1.SecurityRule {
 	var rules []*runtimev1.SecurityRule
-	var condition strings.Builder
 
-	for i, ref := range r.Refs() {
-		if i > 0 {
-			condition.WriteString(" OR ")
-		}
-		condition.WriteString(fmt.Sprintf("('{{.self.kind}}'=%s AND '{{lower .self.name}}'=%s)", duckdbsql.EscapeStringValue(ref.Kind), duckdbsql.EscapeStringValue(strings.ToLower(ref.Name))))
-	}
-	rules = append(rules, &runtimev1.SecurityRule{
-		Rule: &runtimev1.SecurityRule_Access{
-			Access: &runtimev1.SecurityRuleAccess{
-				Condition: fmt.Sprintf("NOT (%s)", condition.String()),
-				Allow:     false,
+	// allow explicit access to the references
+	for _, ref := range r.Refs() {
+		rules = append(rules, &runtimev1.SecurityRule{
+			Rule: &runtimev1.SecurityRule_Access{
+				Access: &runtimev1.SecurityRuleAccess{
+					Condition: fmt.Sprintf("'{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s", ref.Kind, duckdbsql.EscapeStringValue(strings.ToLower(ref.Name))),
+					Allow:     true,
+				},
 			},
-		},
-	})
+		})
+	}
 
 	if r.query.Where != nil {
 		rules = append(rules, &runtimev1.SecurityRule{
