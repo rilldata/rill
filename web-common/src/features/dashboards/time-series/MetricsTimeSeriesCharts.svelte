@@ -375,12 +375,12 @@
                 checkRight
                 role="menuitem"
                 checked={option === activeTimeGrain}
-                class="text-xs cursor-pointer capitalize"
+                class="text-xs cursor-pointer"
                 on:click={() => {
                   metricsExplorerStore.setTimeGrain(exploreName, option);
                 }}
               >
-                {TIME_GRAIN[option].label}
+                {V1TimeGrainToDateTimeUnit[option]}
               </DropdownMenu.CheckboxItem>
             {/each}
           </DropdownMenu.Content>
@@ -437,7 +437,6 @@
       <!-- FIXME: this is pending the remaining state work for show/hide measures and dimensions -->
       {#each renderedMeasures as measure, i (measure.name)}
         <!-- FIXME: I can't select the big number by the measure id. -->
-
         {@const bigNum = measure.name ? totals?.[measure.name] : null}
         {@const comparisonValue = measure.name
           ? totalsComparisons?.[measure.name]
