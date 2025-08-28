@@ -133,6 +133,7 @@ managed: true
 
 Data ingestion features are not yet available in the UI, please refer to our [model documentation](/reference/project-files/models) on how to ingest data into ClickHouse. For a guide, see [ingesting data directly into ClickHouse](/guides/rill-clickhouse/r_ch_ingest).
 
+
 ## Read Only Connector
 
 You can configure your ClickHouse connector to operate in read-only mode by adding a mode parameter. This provides an additional security layer by ensuring your connector can only read data and cannot perform write operations.

@@ -387,7 +387,7 @@ export async function createSqlModelFromTable(
 
   // Create model
   const topComments =
-    "-- Model SQL\n-- Reference documentation: https://docs.rilldata.com/reference/project-files/models";
+    "-- Model SQL\n-- Reference documentation: https://docs.rilldata.com/build/models";
   const connectorLine = `-- @connector: ${connector}`;
   const selectStatement = isNonStandardIdentifier(
     sufficientlyQualifiedTableName,

@@ -28,14 +28,60 @@ var spec = drivers.Spec{
 	DocsURL:     "https://docs.rilldata.com/connect/data-source/postgres",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
-			Key:         "database_url",
+			Key:         "dsn",
 			Type:        drivers.StringPropertyType,
 			DisplayName: "Postgres Connection String",
-			Required:    true,
 			DocsURL:     "https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING",
 			Placeholder: "postgresql://postgres:postgres@localhost:5432/postgres",
-			Hint:        "Can be configured here or by setting the 'connector.postgres.database_url' environment variable (using '.env' or '--env')",
+			Hint:        "Can be configured here or by setting the 'connector.postgres.dsn' environment variable (using '.env' or '--env').",
 			Secret:      true,
+		},
+		{
+			Key:         "host",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Host",
+			Placeholder: "localhost",
+			Required:    true,
+			Hint:        "Postgres server hostname or IP address",
+		},
+		{
+			Key:         "port",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Port",
+			Placeholder: "5432",
+			Default:     "5432",
+			Hint:        "Postgres server port (default is 5432)",
+		},
+		{
+			Key:         "user",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Username",
+			Placeholder: "postgres",
+			Required:    true,
+			Hint:        "Postgres username for authentication",
+		},
+		{
+			Key:         "password",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Password",
+			Placeholder: "your_password",
+			Hint:        "Postgres password for authentication",
+			Secret:      true,
+		},
+		{
+			Key:         "dbname",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Database",
+			Placeholder: "postgres",
+			Required:    true,
+			Hint:        "Name of the Postgres database to connect to",
+		},
+		{
+			Key:         "sslmode",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "SSL Mode",
+			Placeholder: "require",
+			Hint:        "Options include disable, require, verify-ca, and verify-full",
 		},
 	},
 	ImplementsSQLStore: true,
@@ -259,7 +305,7 @@ func (c *connection) AsNotifier(properties map[string]any) (drivers.Notifier, er
 func (c *connection) getDB() (*sqlx.DB, error) {
 	dsn := c.config.ResolveDSN()
 	if dsn == "" {
-		return nil, fmt.Errorf("database_url or dsn not provided")
+		return nil, fmt.Errorf("missing required fields. When using individual fields, host, user, and dbname are required")
 	}
 
 	db, err := sqlx.Open("pgx", dsn)
