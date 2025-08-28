@@ -34,7 +34,7 @@
   export let formId: string;
   export let submitting: boolean;
   export let isSubmitDisabled: boolean;
-  export let connectorType: ClickHouseConnectorType = "self-managed";
+  export let connectorType: ClickHouseConnectorType = "self-hosted";
   export let onClose: () => void;
   export let setError: (
     error: string | null,
@@ -131,7 +131,7 @@
     // Switching to self-managed: restore defaults and set managed=false
     else if (
       prevConnectorType === "rill-managed" &&
-      connectorType === "self-managed"
+      connectorType === "self-hosted"
     ) {
       paramsForm.update(() => ({ ...initialFormValues, managed: false }), {
         taint: false,
@@ -331,7 +331,7 @@
     {/if}
   </div>
 
-  {#if connectorType === "self-managed"}
+  {#if connectorType === "self-hosted"}
     <Tabs bind:value={connectionTab} options={CONNECTION_TAB_OPTIONS}>
       <TabsContent value="parameters">
         <form
