@@ -102,7 +102,7 @@ _[array of object]_ - Used to define the numeric aggregates of columns from your
 
   - **`expression`** - _[string]_ - a combination of operators and functions for aggregations _(required)_
 
-  - **`window`** - _[anyOf]_ - A measure window can be defined as a keyword string (e.g. 'time' or 'all') or an object with detailed window configuration. For more information, see the [window functions](/build/metrics-view/advanced-expressions/windows) documentation. 
+  - **`window`** - _[anyOf]_ - A measure window can be defined as a keyword string (e.g. 'time' or 'all') or an object with detailed window configuration. For more information, see the [window functions](/build/metrics-view/measures/windows) documentation. 
 
     - **option 1** - _[string]_ - Shorthand: `time` or `true` means time-partitioned, `all` means non-partitioned.
 
@@ -140,7 +140,7 @@ _[array of object]_ - Used to define the numeric aggregates of columns from your
 
         - **`time_grain`** - _[string]_ - Time grain for time-based dimensions. 
 
-  - **`requires`** - _[oneOf]_ - using an available measure or dimension in your metrics view to set a required parameter, cannot be used with simple measures. See [referencing measures](/build/metrics-view/advanced-expressions/referencing) for more information. 
+  - **`requires`** - _[oneOf]_ - using an available measure or dimension in your metrics view to set a required parameter, cannot be used with simple measures. See [referencing measures](/build/metrics-view/measures/referencing) for more information. 
 
     - **option 1** - _[string]_ - Simple field name as a string.
 

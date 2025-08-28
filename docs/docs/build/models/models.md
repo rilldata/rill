@@ -104,7 +104,7 @@ We support modeling on [ClickHouse\*](/connect/olap/clickhouse), [DuckDB](/conne
 \* indicates some caveats with modeling and encourage you to read the documentation before getting started.
 ::: 
 
-For additional tips on advanced expressions (either in models or measures definitions), visit our [advanced expressions page](../metrics-view/advanced-expressions/advanced-expressions.md).
+For additional tips on advanced expressions (either in models or measures definitions), visit our [advanced expressions page](/build/metrics-view/what-are-metrics-views#creating-valid-metrics-views).
 
 
 

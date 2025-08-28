@@ -1656,7 +1656,7 @@ definitions:
                   type: string
                   description: a combination of operators and functions for aggregations
                 window:
-                  description: A measure window can be defined as a keyword string (e.g. 'time' or 'all') or an object with detailed window configuration. For more information, see the [window functions](/build/metrics-view/advanced-expressions/windows) documentation.
+                  description: A measure window can be defined as a keyword string (e.g. 'time' or 'all') or an object with detailed window configuration. For more information, see the [window functions](/build/metrics-view/measures/windows) documentation.
                   anyOf:
                     - type: string
                       enum:
@@ -1683,7 +1683,7 @@ definitions:
                   description: for per dimensions
                 requires:
                   $ref: '#/definitions/field_selectors_properties'
-                  description: using an available measure or dimension in your metrics view to set a required parameter, cannot be used with simple measures. See [referencing measures](/build/metrics-view/advanced-expressions/referencing) for more information.
+                  description: using an available measure or dimension in your metrics view to set a required parameter, cannot be used with simple measures. See [referencing measures](/build/metrics-view/measures/referencing) for more information.
                 valid_percent_of_total:
                   type: boolean
                   description: a boolean indicating whether percent-of-total values should be rendered for this measure

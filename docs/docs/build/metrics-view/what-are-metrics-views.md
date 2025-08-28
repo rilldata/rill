@@ -68,14 +68,14 @@ For more information about available metrics view properties, feel free to check
 
 ### Creating a Metrics View with AI
 
-In order to streamline the process and get to a dashboard as quickly as possible, we've added the "Create Metrics with AI" and "Create Dashboard with AI" options! This will pass your schema to OpenAI to suggest measures and dimensions to get started with Rill. You can define your own OpenAI key by creating a [connector file](/reference/project-files/connectors#ai). If you want to disable AI from your environment, please set the following in the `rill.yaml`:
+In order to streamline the process and get to a dashboard as quickly as possible, we've added the "Create Metrics with AI" and "Create Dashboard with AI" options! This will pass your schema to OpenAI to suggest measures and dimensions to get started with Rill. You can define your own OpenAI key by creating a [connector file](/reference/project-files/connectors#openapi). If you want to disable AI from your environment, please set the following in the `rill.yaml`:
 
 ```yaml
 features:
   ai: false
 ```
 
-## Creating Valid Metrics View
+## Creating Valid Metrics Views
 
 ### Time Series
 

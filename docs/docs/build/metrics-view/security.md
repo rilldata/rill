@@ -17,6 +17,7 @@ Policies are based on user attributes such as **email address**, **domain**, or 
 ## How Does It Work?
 
 Access policies are defined in the **metrics view** and/or **[dashboard YAML](/build/dashboards/#define-dashboard-access)**.  
+
 There are three types of rules:
 
  **General Access:** (`access`) A boolean expression deciding if a user can access the metrics view
@@ -48,8 +49,8 @@ When a user loads a dashboard, the policies are resolved in two phases:
 
 Typical use cases include:
 
-- [**Granting or Restricting Access**](#restrict-dashboard-access-to-users-matching-specific-criteria) to data and, as a result, dashboards
-- [**Hiding specific dimensions and measures**](#conditionally-hide-a-dashboard-dimension-or-measure) from specific groups of users, creating a tailored dashboard experience
+- [**Granting or Restricting Access**](#restrict-data-access-to-users-matching-specific-criteria) to data and, as a result, dashboards
+- [**Hiding specific dimensions and measures**](#conditionally-hide-a-metrics-view-dimension-or-measure) from specific groups of users, creating a tailored dashboard experience
 - [**Restricting Access to Internal users**](#hide-dimensions-or-measures-for-members-of-a-certain-group) of your organization, allowing specific dashboards to be viewed by internal users only
 - [**Partner-filtered Dashboards**](#show-only-data-from-the-users-own-domain) where external users can only access the subset of their data
 - [**Embedded**](#advanced-example-custom-attributes-embed-dashboards) use cases, passing custom attributes to Rill
@@ -97,31 +98,12 @@ security:
 
 :::tip Access Policy Behavior
 
-When combining access policies from project defaults and object-specific policies, remember that the object level policies will overwrite the project level ones. Dashboard and metrics ciew policies are binary logically ANDed.
+When combining access policies from project defaults and object-specific policies, remember that the object level policies will overwrite the project level ones. 
+
+
+Access policies in metrics views and dashboards will be combined using a logical AND, so if a user doesn’t pass both, they won’t get access to the dashboard.
  
 <!-- Not behaving as you're expecting? See our [troubleshooting guide.](/build/debugging/dashboard-access) -->
-
-:::
-
-## Dashboard Access
-
-Dashboards also have an `access` key that can override the metrics view access rules. Both [explore](/build/dashboards/#define-dashboard-access) and [canvas](/build/canvas/#define-dashboard-access) dashboards can set the following:
-
-```yaml
-security:
-  access: true
-```
-
-This is useful if you want to apply specific rules to the metrics view for metrics SQL API access, but want different rules for the visual dashboard in Rill.
-
-:::tip complicated set-ups
-
-Access Policies can get quite complicated as your use case grows and having to navigate mulitple files to figure out why a user is able to or unable to access certain dashboards. 
-
-A few recommendations:
-1. Only change project level access if absolutely necessary. (They get overwritten by object level security)
-2. Dashboard access is controlled in the metrics view, only add extra policies on the dashboard if absolutely necessary as this gets logically ANDed with the metrics view anyway.
-3. Solve project access issues higher up in the [user](/manage/user-management) / [usergroup](/manage/usergroup-management) settings, and keep default project security rules.
 
 :::
 
@@ -168,11 +150,35 @@ When [requesting an embedded dashboard from Rill](/integrate/embedding) from you
 
 For more information, see [our embedding docs](/integrate/embedding#backend-build-an-iframe-url).
 
+
+## Dashboard Access
+
+Dashboards also have an `access` key that can override the metrics view access rules. Both [explore](/build/dashboards/#define-dashboard-access) and [canvas](/build/canvas/#define-dashboard-access) dashboards can set the following:
+
+```yaml
+security:
+  access: true
+```
+
+This is useful if you want to apply specific rules to the metrics view for metrics SQL API access, but want different rules for the visual dashboard in Rill.
+
+:::tip complicated set-ups
+
+Access Policies can get quite complicated as your use case grows and having to navigate mulitple files to figure out why a user is able to or unable to access certain dashboards. 
+
+A few recommendations:
+1. Only change project level access if absolutely necessary. (They get overwritten by object level security)
+2. Dashboard access is controlled in the metrics view, only add extra policies on the dashboard if absolutely necessary as this gets logically ANDed with the metrics view anyway.
+3. Solve project access issues higher up in the [user](/manage/user-management) / [usergroup](/manage/usergroup-management) settings, and keep default project security rules.
+
+:::
+
+
 ## Examples
 
-### Restrict dashboard access to users matching specific criteria
+### Restrict data access to users matching specific criteria
 
-Let's say you want to restrict dashboard access to admin users or users whose email domain is `example.com`. Add the following clause to your dashboard's YAML:
+Let's say you want to restrict dashboard access to admin users or users whose email domain is `example.com`. Add the following clause to your metrics view's YAML:
 ```yaml
 security:
   access: "{{ .user.admin }} OR '{{ .user.domain }}' == 'example.com'"
@@ -182,9 +188,9 @@ security:
 If the `security` section is defined and `access` is not, then `access` will default to `false`, meaning that it won't be accessible to anyone and users will need to be invited individually.
 :::
 
-### Restrict dashboard access to specific user groups
+### Restrict data access to specific user groups
 
-Group membership can be utilized to specify which users have access to a specific dashboard (using the templating function `has`). For example:
+Group membership can be utilized to specify which users have access to a specific metrics view (using the templating function `has`). For example:
 ```yaml
 security:
   access: '{{ has "partners" .user.groups }}'
@@ -204,7 +210,7 @@ security:
 The `row_filter` value needs to be valid SQL syntax for a `WHERE` clause. It will be injected into every SQL query used to render the dashboard.
 :::
 
-### Conditionally hide a dashboard dimension or measure
+### Conditionally hide a metrics view dimension or measure
 
 You can include or exclude dimensions and measures based on a boolean expression. For example, to exclude dimensions named `ssn` and `id` for users whose email domain is not `example.com`:
 
