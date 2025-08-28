@@ -5,12 +5,13 @@ sidebar_label: MotherDuck
 sidebar_position: 15
 ---
 
-## Overview
+[MotherDuck](https://motherduck.com/) is a cloud-native DuckDB service that provides scalable analytics and data processing capabilities. Built on the same core engine as DuckDB, MotherDuck offers the familiar SQL interface and performance characteristics while adding cloud-native features like serverless compute, automatic scaling, and collaborative data sharing.
+
+
 <img src='/img/reference/olap-engines/motherduck/rill-developer.png' class='rounded-gif' />
 <br />
 
 
-[MotherDuck](https://motherduck.com/) is a cloud-native DuckDB service that provides scalable analytics and data processing capabilities. Built on the same core engine as DuckDB, MotherDuck offers the familiar SQL interface and performance characteristics while adding cloud-native features like serverless compute, automatic scaling, and collaborative data sharing.
 
 Rill supports connecting to MotherDuck and using it as an OLAP engine to power dashboards. This is particularly useful when you want the performance and SQL compatibility of DuckDB with the scalability and collaboration features of a cloud service.
 

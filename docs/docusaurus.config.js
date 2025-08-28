@@ -213,7 +213,7 @@ const config = {
           },
           {
             from: '/develop/security',
-            to: '/manage/security'
+            to: '/build/metrics-view/security'
           },
           {
             from: '/deploy/credentials/',
@@ -261,7 +261,7 @@ const config = {
           },
           {
             from: '/deploy/source-refresh',
-            to: '/build/models/source-refresh'
+            to: '/build/models/data-refresh'
           },
           {
             from: '/reference/templating',
@@ -415,7 +415,7 @@ const config = {
           },
           {
             from: '/concepts/OLAP',
-            to: '/home/concepts/OLAP'
+            to: '/connect/olap#what-is-olap'
           },
           {
             from: '/concepts/architecture',
@@ -427,11 +427,35 @@ const config = {
           },
           {
             from: '/concepts/metrics-layer',
-            to: '/home/concepts/metrics-layer'
+            to: '/build/metrics-view'
           },
           {
             from: '/concepts/bi-as-code',
             to: '/home/concepts/bi-as-code'
+          },
+          {
+            from: '/home/concepts/metrics-layer',
+            to: '/build/metrics-view'
+          },
+          {
+            from: '/home/concepts/OLAP',
+            to: '/connect/olap#what-is-olap'
+          },
+          {
+            from: '/build/advanced-models/',
+            to: '/build/models/'
+          },
+          {
+            from: '/build/advanced-models/incremental-models',
+            to: '/build/models/incremental-models'
+          },
+          {
+            from: '/build/advanced-models/partitions',
+            to: '/build/models/partitioned-models'
+          },
+          {
+            from: '/build/advanced-models/staging',
+            to: '/build/models/staging-models'
           },
           {
             from: '/integrate/custom-apis',
@@ -464,7 +488,11 @@ const config = {
           {
             from: '/build/metrics-view/advanced-expressions/windows',
             to: '/build/metrics-view/measures/windows'
-          }
+          },
+          {
+            from: '/deploy/performance',
+            to: '/guides/performance'
+          },
           // {
           //   from: '/old-page',
           //   to: '/new-page',
