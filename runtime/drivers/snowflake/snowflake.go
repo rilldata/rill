@@ -45,7 +45,7 @@ var spec = drivers.Spec{
 			DisplayName: "Account Identifier",
 			Required:    true,
 			Placeholder: "your_account_identifier",
-			Hint:        "Your Snowflake account identifier (e.g., MCWQXJE-ED57280)",
+			Hint:        "To find your Snowflake account identifier, look at your Snowflake account URL. The account identifier is everything before .snowflakecomputing.com [Learn more](https://docs.snowflake.com/en/user-guide/admin-account-identifier)",
 		},
 		{
 			Key:         "user",
@@ -53,7 +53,7 @@ var spec = drivers.Spec{
 			DisplayName: "Username",
 			Required:    true,
 			Placeholder: "your_username",
-			Hint:        "Your Snowflake username",
+			Hint:        "Your Snowflake database username",
 		},
 		{
 			Key:         "password",
@@ -61,7 +61,7 @@ var spec = drivers.Spec{
 			DisplayName: "Password",
 			Required:    true,
 			Placeholder: "your_password",
-			Hint:        "Your Snowflake password (use this or Private Key, not both)",
+			Hint:        "Your Snowflake database password. This will be stored securely and used to authenticate your connection.",
 			Secret:      true,
 		},
 		{
@@ -69,22 +69,21 @@ var spec = drivers.Spec{
 			Type:        drivers.StringPropertyType,
 			DisplayName: "Database",
 			Placeholder: "your_database",
-			Required:    true,
-			Hint:        "The Snowflake database to connect to",
+			Hint:        "The name of the Snowflake database you want to connect to. This database must exist in your Snowflake account and you must have access permissions to it.",
 		},
 		{
 			Key:         "schema",
 			Type:        drivers.StringPropertyType,
 			DisplayName: "Schema",
 			Placeholder: "your_schema",
-			Hint:        "The Snowflake schema to use (defaults to PUBLIC if not specified)",
+			Hint:        "The schema within the database to use as the default. If not specified, Snowflake will use the PUBLIC schema or your user's default schema.",
 		},
 		{
 			Key:         "warehouse",
 			Type:        drivers.StringPropertyType,
 			DisplayName: "Warehouse",
 			Placeholder: "your_warehouse",
-			Hint:        "The Snowflake warehouse to use for compute",
+			Hint:        "The compute warehouse to use for running queries. If not specified, Snowflake will use your default warehouse. The warehouse must be running or have auto-resume enabled.",
 		},
 		{
 			Key:         "role",

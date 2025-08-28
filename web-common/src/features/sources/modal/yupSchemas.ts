@@ -87,7 +87,7 @@ export const getYupSchema = {
     account: yup.string().required("Account is required"),
     user: yup.string().required("Username is required"),
     password: yup.string().required("Password is required"),
-    database: yup.string().required("Database is required"),
+    database: yup.string().optional(),
     schema: yup.string().optional(),
     warehouse: yup.string().optional(),
     role: yup.string().optional(),
