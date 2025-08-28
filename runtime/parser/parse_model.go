@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"regexp"
 	"slices"
 	"strings"
 	"time"
@@ -19,7 +20,6 @@ import (
 type ModelYAML struct {
 	commonYAML            `yaml:",inline" mapstructure:",squash"` // Only to avoid loading common fields into InputProperties
 	Refresh               *ScheduleYAML                           `yaml:"refresh"`
-	Retry                 *RetryYAML                              `yaml:"retry"`
 	Timeout               string                                  `yaml:"timeout"`
 	Incremental           bool                                    `yaml:"incremental"`
 	ChangeMode            string                                  `yaml:"change_mode"`
@@ -33,6 +33,12 @@ type ModelYAML struct {
 		Connector  string         `yaml:"connector"`
 		Properties map[string]any `yaml:",inline" mapstructure:",remain"`
 	} `yaml:"stage"`
+	Retry struct {
+		Attempts           *uint32  `yaml:"attempts" mapstructure:"attempts"`
+		Delay              *string  `yaml:"delay"`
+		ExponentialBackoff *bool    `yaml:"exponential_backoff" mapstructure:"exponential_backoff"`
+		IfErrorMatches     []string `yaml:"if_error_matches" mapstructure:"if_error_matches"`
+	}
 	Output ModelOutputYAML `yaml:"output"`
 	Tests  []struct {
 		Name     string `yaml:"name"`
@@ -91,12 +97,6 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 
 	// Parse refresh schedule
 	schedule, err := p.parseScheduleYAML(tmp.Refresh)
-	if err != nil {
-		return err
-	}
-
-	// Parse retry configuration
-	retry, err := p.parseRetryYAML(tmp.Retry)
 	if err != nil {
 		return err
 	}
@@ -234,8 +234,32 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 		r.ModelSpec.RefreshSchedule = schedule
 	}
 
-	if retry != nil {
-		r.ModelSpec.Retry = retry
+	// Parse retry options
+	if tmp.Retry.Attempts != nil {
+		r.ModelSpec.RetryAttempts = *tmp.Retry.Attempts
+	}
+
+	if tmp.Retry.Delay != nil {
+		duration, err := time.ParseDuration(*tmp.Retry.Delay)
+		if err != nil {
+			return fmt.Errorf(`invalid retry delay: %w`, err)
+		}
+		r.ModelSpec.RetryDelay = uint32(duration.Seconds())
+	}
+
+	if tmp.Retry.ExponentialBackoff != nil {
+		r.ModelSpec.RetryExponentialBackoff = *tmp.Retry.ExponentialBackoff
+	}
+
+	// Set error matches if provided, otherwise keep defaults
+	if len(tmp.Retry.IfErrorMatches) > 0 {
+		// Validate regex patterns
+		for _, pattern := range tmp.Retry.IfErrorMatches {
+			if _, err := regexp.Compile(pattern); err != nil {
+				return fmt.Errorf("invalid regex pattern '%s': %w", pattern, err)
+			}
+		}
+		r.ModelSpec.RetryIfErrorMatches = tmp.Retry.IfErrorMatches
 	}
 
 	if timeout > 0 {

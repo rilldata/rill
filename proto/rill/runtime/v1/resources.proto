@@ -122,7 +122,10 @@ message ModelSpec {
   string output_connector = 1;
   google.protobuf.Struct output_properties = 12;
   // retry is optional.
-  Retry retry = 26;
+  uint32 retry_attempts = 26;
+  uint32 retry_delay = 27;
+  bool retry_exponential_backoff = 28;
+  repeated string retry_if_error_matches = 29;
   // change_mode is the mode of change detection to use for the model.
   ModelChangeMode change_mode = 24;
   repeated ModelTest tests = 25;
@@ -823,13 +826,6 @@ message Schedule {
   string cron = 1;
   uint32 ticker_seconds = 2;
   string time_zone = 3;
-}
-
-message Retry {
-  uint32 attempts = 1;
-  uint32 delay = 2;
-  bool exponential_backoff = 3;
-  repeated string if_error_matches = 4;
 }
 
 message ParseError {
