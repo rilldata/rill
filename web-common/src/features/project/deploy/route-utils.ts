@@ -1,9 +1,14 @@
+import { getDeployingName } from "@rilldata/web-common/features/project/deploy/utils.ts";
 import { addPosthogSessionIdToUrl } from "@rilldata/web-common/lib/analytics/posthog.ts";
+import type { Page } from "@sveltejs/kit";
 
-export function getDeployRoute(pageUrl: URL) {
-  const deployUrl = new URL(pageUrl);
+export function getDeployRoute(page: Page) {
+  const deployUrl = new URL(page.url);
   deployUrl.pathname = "/deploy";
   deployUrl.search = "";
+  if (page.params.name) {
+    deployUrl.searchParams.set("deploying_name", page.params.name);
+  }
   return deployUrl.toString();
 }
 
@@ -38,12 +43,10 @@ export function getSelectOrganizationRoute() {
   return `/deploy/organization/select`;
 }
 
-export function getDeployLandingPage(
-  frontendUrl: string,
-  dashboardName: string | null,
-) {
+export function getDeployLandingPage(frontendUrl: string) {
   const url = new URL(frontendUrl);
   url.searchParams.set("deploying", "true");
+  const dashboardName = getDeployingName();
   if (dashboardName) {
     url.searchParams.set("deploying_name", dashboardName);
   }

@@ -62,7 +62,7 @@
 
   $: allowPrimary.set(isDeployed || !hasValidDashboard);
 
-  $: deployPageUrl = getDeployRoute($page.url);
+  $: deployPageUrl = getDeployRoute($page);
   $: redirectPageUrl = copyWithAdditionalArguments($page.url, {
     deploy: "true",
   });
