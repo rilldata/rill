@@ -518,10 +518,7 @@ func generateDoc(sidebarPosition, level int, node *yaml.Node, indent string, req
 				}
 				doc.WriteString(fmt.Sprintf("\n\n```yaml\n%s```", string(b)))
 			}
-		} else if examples.Kind == yaml.ScalarNode {
-			// Handle string examples (like markdown code blocks)
-			doc.WriteString(fmt.Sprintf("\n\n%s", examples.Value))
-		}
+		} 
 	}
 
 	return doc.String()
