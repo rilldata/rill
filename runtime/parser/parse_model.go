@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"regexp"
 	"slices"
 	"strings"
 	"time"
@@ -32,6 +33,12 @@ type ModelYAML struct {
 		Connector  string         `yaml:"connector"`
 		Properties map[string]any `yaml:",inline" mapstructure:",remain"`
 	} `yaml:"stage"`
+	Retry struct {
+		Attempts           *uint32  `yaml:"attempts" mapstructure:"attempts"`
+		Delay              *string  `yaml:"delay"`
+		ExponentialBackoff *bool    `yaml:"exponential_backoff" mapstructure:"exponential_backoff"`
+		IfErrorMatches     []string `yaml:"if_error_matches" mapstructure:"if_error_matches"`
+	}
 	Output ModelOutputYAML `yaml:"output"`
 	Tests  []struct {
 		Name     string `yaml:"name"`
@@ -225,6 +232,34 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 
 	if schedule != nil {
 		r.ModelSpec.RefreshSchedule = schedule
+	}
+
+	// Parse retry options
+	if tmp.Retry.Attempts != nil {
+		r.ModelSpec.RetryAttempts = *tmp.Retry.Attempts
+	}
+
+	if tmp.Retry.Delay != nil {
+		duration, err := time.ParseDuration(*tmp.Retry.Delay)
+		if err != nil {
+			return fmt.Errorf(`invalid retry delay: %w`, err)
+		}
+		r.ModelSpec.RetryDelay = uint32(duration.Seconds())
+	}
+
+	if tmp.Retry.ExponentialBackoff != nil {
+		r.ModelSpec.RetryExponentialBackoff = *tmp.Retry.ExponentialBackoff
+	}
+
+	// Set error matches if provided, otherwise keep defaults
+	if len(tmp.Retry.IfErrorMatches) > 0 {
+		// Validate regex patterns
+		for _, pattern := range tmp.Retry.IfErrorMatches {
+			if _, err := regexp.Compile(pattern); err != nil {
+				return fmt.Errorf("invalid regex pattern '%s': %w", pattern, err)
+			}
+		}
+		r.ModelSpec.RetryIfErrorMatches = tmp.Retry.IfErrorMatches
 	}
 
 	if timeout > 0 {

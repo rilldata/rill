@@ -2492,6 +2492,12 @@ func (m *ModelSpec) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for RetryAttempts
+
+	// no validation rules for RetryDelay
+
+	// no validation rules for RetryExponentialBackoff
+
 	// no validation rules for ChangeMode
 
 	for idx, item := range m.GetTests() {

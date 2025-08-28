@@ -3,12 +3,14 @@ package reconcilers
 import (
 	"context"
 	"crypto/md5"
+	"database/sql/driver"
 	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"regexp"
 	"sort"
 	"strings"
 	"sync/atomic"
@@ -21,6 +23,7 @@ import (
 	"github.com/rilldata/rill/runtime/parser"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
+	"github.com/rilldata/rill/runtime/pkg/retrier"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/sync/semaphore"
@@ -1233,20 +1236,61 @@ func (r *ModelReconciler) executeSingle(ctx context.Context, executor *wrappedMo
 		return nil, err
 	}
 
-	// Execute the stage step if configured
+	attempts := int(mdl.Spec.RetryAttempts)
+	if attempts == 0 {
+		attempts = 1
+	}
+	maxRetries := attempts - 1
+	if maxRetries < 0 {
+		maxRetries = 0
+	}
+	backoff := time.Duration(mdl.Spec.RetryDelay) * time.Second
+	if backoff == 0 {
+		backoff = 5 * time.Second
+	}
+
+	runner := retrier.NewRetrier(maxRetries, backoff, nil)
+
+	var finalResult *drivers.ModelResult
 	var stageDuration time.Duration
-	if executor.stage != nil {
-		// Also resolve templating in the stage props
-		stageProps, err := r.resolveTemplatedProps(ctx, self, incrementalState, partitionData, mdl.Spec.StageConnector, mdl.Spec.StageProperties.AsMap())
-		if err != nil {
-			return nil, err
+
+	_, err = runner.RunCtx(ctx, func(ctx context.Context) (driver.Rows, retrier.Action, error) {
+		// Stage step (if any)
+		var stageResult *drivers.ModelResult
+		var err error
+
+		if executor.stage != nil {
+			stageProps, err := r.resolveTemplatedProps(ctx, self, incrementalState, partitionData, mdl.Spec.StageConnector, mdl.Spec.StageProperties.AsMap())
+			if err != nil {
+				return nil, retryActionFromError(err, mdl.Spec.RetryIfErrorMatches), err
+			}
+			stageResult, err = executor.stage.Execute(ctx, &drivers.ModelExecuteOptions{
+				ModelExecutorOptions: executor.stageOpts,
+				InputProperties:      inputProps,
+				OutputProperties:     stageProps,
+				Priority:             0,
+				Incremental:          mdl.Spec.Incremental,
+				IncrementalRun:       incrementalRun,
+				PartitionRun:         partitionKey != "",
+				PartitionKey:         partitionKey,
+				PreviousResult:       prevResult,
+				TempDir:              tempDir,
+			})
+			if err != nil {
+				return nil, retryActionFromError(err, mdl.Spec.RetryIfErrorMatches), err
+			}
+			stageDuration = stageResult.ExecDuration
+			inputProps = stageResult.Properties
+			defer func() {
+				_ = executor.stageResultManager.Delete(ctx, stageResult)
+			}()
 		}
 
-		// Execute the stage step
-		stageResult, err := executor.stage.Execute(ctx, &drivers.ModelExecuteOptions{
-			ModelExecutorOptions: executor.stageOpts,
+		// Final step
+		finalResult, err = executor.final.Execute(ctx, &drivers.ModelExecuteOptions{
+			ModelExecutorOptions: executor.finalOpts,
 			InputProperties:      inputProps,
-			OutputProperties:     stageProps,
+			OutputProperties:     outputProps,
 			Priority:             0,
 			Incremental:          mdl.Spec.Incremental,
 			IncrementalRun:       incrementalRun,
@@ -1256,41 +1300,14 @@ func (r *ModelReconciler) executeSingle(ctx context.Context, executor *wrappedMo
 			TempDir:              tempDir,
 		})
 		if err != nil {
-			return nil, err
+			return nil, retryActionFromError(err, mdl.Spec.RetryIfErrorMatches), err
 		}
-		stageDuration = stageResult.ExecDuration
-
-		// We change the inputProps to be the result properties of the stage step
-		inputProps = stageResult.Properties
-
-		// Drop the stage result after the final step has executed.
-		// We do this using the same ctx, which means we may leak data in the staging connector in case of context cancellations.
-		// This is acceptable since the staging connector is assumed to be configured for temporary data.
-		defer func() {
-			err := executor.stageResultManager.Delete(ctx, stageResult)
-			if err != nil {
-				r.C.Logger.Warn("Failed to clean up staged model output", zap.String("model", self.Meta.Name.Name), zap.Error(err), observability.ZapCtx(ctx))
-			}
-		}()
-	}
-
-	// Execute the final step
-	finalResult, err := executor.final.Execute(ctx, &drivers.ModelExecuteOptions{
-		ModelExecutorOptions: executor.finalOpts,
-		InputProperties:      inputProps,
-		OutputProperties:     outputProps,
-		Priority:             0,
-		Incremental:          mdl.Spec.Incremental,
-		IncrementalRun:       incrementalRun,
-		PartitionRun:         partitionKey != "",
-		PartitionKey:         partitionKey,
-		PreviousResult:       prevResult,
-		TempDir:              tempDir,
+		finalResult.ExecDuration += stageDuration
+		return nil, retrier.Succeed, nil
 	})
 	if err != nil {
 		return nil, err
 	}
-	finalResult.ExecDuration += stageDuration
 	return finalResult, nil
 }
 
@@ -1679,6 +1696,23 @@ func (r *ModelReconciler) execModelTest(ctx context.Context, test *runtimev1.Mod
 	}
 
 	return fmt.Sprintf("%s: test did not pass", test.Name), nil
+}
+
+// retryActionFromError maps an error to a retrier.Action based on the provided error patterns.
+func retryActionFromError(err error, patterns []string) retrier.Action {
+	// If there's no error or no patterns, consider it a success.
+	if err == nil || len(patterns) == 0 {
+		return retrier.Succeed
+	}
+
+	errStr := err.Error()
+	for _, pattern := range patterns {
+		if matched, _ := regexp.MatchString(pattern, errStr); matched {
+			return retrier.Retry
+		}
+	}
+
+	return retrier.Fail
 }
 
 // newTestsError creates a new error that summarizes the messages returned from runModelTests.

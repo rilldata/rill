@@ -966,6 +966,28 @@ export class ModelSpec extends Message<ModelSpec> {
   outputProperties?: Struct;
 
   /**
+   * retry is optional.
+   *
+   * @generated from field: uint32 retry_attempts = 26;
+   */
+  retryAttempts = 0;
+
+  /**
+   * @generated from field: uint32 retry_delay = 27;
+   */
+  retryDelay = 0;
+
+  /**
+   * @generated from field: bool retry_exponential_backoff = 28;
+   */
+  retryExponentialBackoff = false;
+
+  /**
+   * @generated from field: repeated string retry_if_error_matches = 29;
+   */
+  retryIfErrorMatches: string[] = [];
+
+  /**
    * change_mode is the mode of change detection to use for the model.
    *
    * @generated from field: rill.runtime.v1.ModelChangeMode change_mode = 24;
@@ -1017,6 +1039,10 @@ export class ModelSpec extends Message<ModelSpec> {
     { no: 17, name: "stage_properties", kind: "message", T: Struct },
     { no: 1, name: "output_connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 12, name: "output_properties", kind: "message", T: Struct },
+    { no: 26, name: "retry_attempts", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 27, name: "retry_delay", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 28, name: "retry_exponential_backoff", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 29, name: "retry_if_error_matches", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 24, name: "change_mode", kind: "enum", T: proto3.getEnumType(ModelChangeMode) },
     { no: 25, name: "tests", kind: "message", T: ModelTest, repeated: true },
     { no: 9, name: "trigger", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
