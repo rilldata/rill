@@ -41,11 +41,15 @@
   export let timeEnd: string | undefined;
   export let watermark: DateTime | undefined = undefined;
   export let side: "top" | "right" | "bottom" | "left" = "bottom";
+  export let primaryTimeDimension: string | undefined;
+  export let selectedTimeDimension: string | undefined;
+  export let timeColumns: { value: string; label: string }[] = [];
   export let onSelectRange: (range: NamedRange | ISODurationString) => void;
   export let onPan: (direction: "left" | "right") => void;
   export let onTimeGrainSelect: (timeGrain: V1TimeGrain) => void;
   export let onSelectTimeZone: (timeZone: string) => void;
   export let applyRange: (range: TimeRange) => void;
+  export let onTimeColumnSelect: (column: string) => void;
 
   const newPicker = featureFlags.rillTime;
 
@@ -81,9 +85,13 @@
       {lockTimeZone}
       {availableTimeZones}
       {showFullRange}
+      {timeColumns}
+      {primaryTimeDimension}
+      {selectedTimeDimension}
       {onSelectTimeZone}
       {onSelectRange}
       {onTimeGrainSelect}
+      {onTimeColumnSelect}
     />
   {:else if interval.isValid && activeTimeGrain}
     <Elements.RangePicker
