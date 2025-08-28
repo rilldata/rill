@@ -1,11 +1,10 @@
 ---
-title: "Performance Optimization"
-description: Performance Optimization
-sidebar_label: "Performance Optimization"
-sidebar_position: 20
+title: Troubleshooting Performance in Rill
+description: Dev/Prod Setup
+sidebar_label: Optimize Performance in Rill
+sidebar_position: 10
 ---
 
-## Overview
 
 On this page, we've gathered a running list of recommendations and general guidelines to ensure your experience of using Rill remains performant and optimized. These best practices will help to ensure your dashboards remain performant, and that things continue to "just work" (for both Rill Developer and Rill Cloud), even as the size of your underlying data and deployment continues to grow. These best practices and guidelines will also continue to evolve but please don't hesitate to [reach out](/contact) if you start facing any bottlenecks or have further questions about ways to improve the Rill experience!
 
@@ -23,7 +22,7 @@ Depending on the complexity of your underlying models and the size of the data m
 
 By default, models will be materialized as views (in DuckDB). This allows for a dynamic and highly interactive experience when modeling, such as keystroke-by-keystroke profiling. However, since views are logical in nature, as the complexity and size of your data models continue grow (especially if the underlying data is very large), this can start to significantly impact performance as these complex queries will need to be continuously re-executed along with a number of profiling queries that the Rill runtime will send in the backend. 
 
-In such scenarios, we recommend [materializing these models as tables](/build/models/#model-materialization). However, there are some tradeoffs to consider.
+In such scenarios, we recommend [materializing these models as tables.](/build/models/performance#model-performance) However, there are some tradeoffs to consider.
 - **Pros:** Materializing a model will generally ensure significantly improved performance for downstream dependent models and dashboards. 
 - **Cons:** Enabling materialization for a model can severely impact or break the "keystroke-by-keystroke" experience and these models may also take longer to update (because the results are being written to a table vs remaining a view). It can also lead to _degraded_ performance for very specific operations, such as when you need to perform cross joins.
 
@@ -42,10 +41,33 @@ When used in conjunction, Rill Developer and Rill Cloud are meant to serve two d
 As a general rule of thumb, we strongly recommend working with a segment of the data for modeling purposes as part of your local development workflow. This becomes increasingly important as the size of your source data grows in size, which will help ensure that your developer experience remains optimal in Rill Developer. With Rill Developer, it's best to work with a "dev partition" to help validate that the model logic is correct and producing results as expected. Then, once finalized, you can push to Rill Cloud for primary dashboard consumption (including analysis and sharing as necessary).
 
 There are a few ways to achieve this:
-1. Limiting the source data to a smaller time range (e.g. one week's worth of data instead of the full year)
-2. Creating intermediate staging models from your source data, either through statistical sampling or by applying a raw limit, which will then serve as the starting point for your actual downstream models / modeling
-3. Use data from a dev / staging environment
+- Defining an [**environment-specific database/cluster**](/connect/templating#environment-specific-connectors) to connect to between development and production
+- Pointing to [**different source data endpoints/databases**](/connect/templating#environment-specific-data-source-location) between your development and production environments
+- Working with a [**sample or subset of data**](/build/models/templating#inline-sql-templating) during local development (but making sure the full dataset is being used in production dashboards)
+- Applying [**filters or other if/else predefined logic**](/build/models/templating#inline-sql-templating) to run different SQL whether a model is being run locally or in production
 
+#### Environment-Specific Connectors
+
+The most common use case for connector templating is defining separate databases for your development and production operations. This approach gives you the freedom to experiment, test, and iterate on your models without the risk of accidentally modifying or corrupting your production data.
+
+Example: Here's how you can configure a ClickHouse connector to use different environments:
+```yaml
+type: connector
+driver: clickhouse
+
+dev:
+  dsn: "clickhouse://user:password@localhost:9000/dev_database" # ClickHouse connection DSN  
+
+# Production environment configuration
+prod:
+  host: "{{ .env.connector.clickhouse.host }}"
+  port: "{{ .env.connector.clickhouse.port }}"
+  database: "{{ .env.connector.clickhouse.database }}"
+  username: "{{ .env.connector.clickhouse.username }}"
+  password: "{{ .env.connector.clickhouse.password }}"
+  ssl: true
+  cluster: "{{ .env.connector.clickhouse.cluster }}"
+```
 #### Limiting the source data to a smaller time range
 
 There are different ways this can be achieved and the method also depends heavily on the data source being used. For example, assuming we had a [S3 source](/connect/data-source/s3.md) that was well partitioned by year and month (and written into a partitioned bucket), the recommended pattern would be to leverage the `path` [source property](/reference/project-files/sources.md) and a glob pattern to limit the size of the ingestion in your development environment. Something like (as your `source.yaml`):

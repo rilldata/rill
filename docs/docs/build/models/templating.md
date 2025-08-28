@@ -1,38 +1,18 @@
 ---
-title: Environment Templating
+title: Model Environment Templating
 description: Dev/Prod Setup
 sidebar_label: Environment Templating
 sidebar_position: 40
 ---
 
-## Overview
-
-Environments allow the separation of logic between different deployments of Rill, most commonly when using a project in Rill Developer and Rill Cloud. Generally speaking, Rill Developer is meant primarily for local development purposes, where the developer may want to use a segment or sample of data for modeling purposes to help validate that the model logic is correct and producing expected results. Then, once finalized and a project is ready to be deployed to Rill Cloud, the focus is on shared collaboration at scale and where most of the dashboard consumption in production will happen.
-
-There could be a few reasons to have separate logic for sources, models, and dashboards for Rill Developer and Rill Cloud, respectively:
-
-1. As the size of data grows, the locally embedded OLAP engine (using DuckDB) may start to face scaling challenges, which can impact performance and the "snappiness" of models and dashboards. Furthermore, for model development, the full data is often not needed and working with a sample is sufficient. For production, though, where analysts and business users are interacting with Rill dashboards to perform interactive, exploratory analysis or make decisions, it is important that these same models and dashboards are powered by the entire range of data available.
-2. For certain organizations, there might be a development and production version of source data. Therefore, you can develop your models and validate the results in Rill Developer against development data. When deployed to Rill Cloud, these same models and dashboards can then be powered by your production source, reflecting the most correct and up-to-date version of your business data.
-
-Rill uses the Go programming language's [native templating engine](https://pkg.go.dev/text/template), known as `text/template`, which you might know from projects such as [Helm](https://helm.sh/) or [Hugo](https://gohugo.io/). It additionally includes the [Sprig](http://masterminds.github.io/sprig/) library of utility functions.
-
-Templating can be a powerful tool to help introduce dynamic conditional statements based on local variables that have been passed into Rill or based on the environment being used. Some common use cases may include but are not limited to:
-
-- Working with a [**sample or subset of data**](/build/models/templating#inline-sql-templating) during local development (but making sure the full dataset is being used in production dashboards)
-- Applying [**filters or other if/else predefined logic**](/build/models/templating#inline-sql-templating) to run different SQL whether a model is being run locally or in production
-
-:::info Where can you template in Rill?
-
-For the most part, templating should be used in [SQL models](/build/models/sql-models) and when defining [connector properties](/connect). If you have further questions about templating, please don't hesitate to [reach out](/contact) and we'd love to assist you further!
-
-:::
+Along with [connector templating](/connect/templating), you can also optimize your development environment for performance and cost-effectiveness at the model layer. This approach is particularly useful when you don't have a separate development database or file system, as it allows you to limit the amount of data processed in source models.
 
 ## Why Use Templating?
 
 Templating serves several important purposes in your data workflow:
 
 - **Cost Management**: Avoid running expensive queries on production data during development
-- **Environment Separation**: Keep development and production data sources completely separate
+- [**Performance in dev**](/build/models/performance): Optimize development environment performance by limiting data volume
 - **Testing Safety**: Test your models and transformations without affecting production data
 
 :::note Rill Developer is a dev environment
@@ -41,15 +21,11 @@ Unless explicitly defined, Rill Developer will use a `dev` environment. If you w
 
 :::
 
-## Setting Up Environmental Variables
-
-You can set up environmental variables in several locations in Rill. Please review our [configure local credentials documentation](/connect/credentials#setting-credentials-for-rill-developer) for more information.
-
-## Environment-Specific Data Source Location
+## Separate Dev and Prod SQL Queries
 
 Another common templating pattern is using the `dev:` partition in your model definitions. This tells Rill to use a different data source or query when running in development mode, typically with a smaller dataset or different data location.
 
-### Example: Limited Data in Source Model in Development
+### Example: Ingest Data from specific folder path in dev
 
 ```yaml
 # Model YAML
@@ -124,7 +100,7 @@ In this example:
 
 ### Applying a One-Week Sample to the Source Bucket for Local Development
 
-In another example, let's say we had an [S3](/connect/data-source/s3.md) source defined that happens to be reading a very large amount of parquet data. Following [best practices](/deploy/performance#work-with-a-subset-of-your-source-data-for-local-development-and-modeling), we'll want to read in a subset of this source data for local modeling in Rill Developer rather than using the full dataset for development purposes. Furthermore, we'll make the assumption that the upstream data is not partitioned and thus the S3 bucket is not partitioned (where we could then simply filter the `path` by using a glob pattern potentially in conjunction with [environment-specific logic](/build/models/templating.md)). So what can we do?
+In another example, let's say we had an [S3](/connect/data-source/s3.md) source defined that happens to be reading a very large amount of parquet data. Following [best practices](/build/models/performance#work-with-a-subset-of-your-source-data-for-local-development-and-modeling), we'll want to read in a subset of this source data for local modeling in Rill Developer rather than using the full dataset for development purposes. Furthermore, we'll make the assumption that the upstream data is not partitioned and thus the S3 bucket is not partitioned (where we could then simply filter the `path` by using a glob pattern potentially in conjunction with [environment-specific logic](/build/models/templating.md)). So what can we do?
 
 Fortunately, we can leverage DuckDB's ability to read from S3 files directly and _apply a filter post-download_ using templating logic in the SQL. In this case, because there is an existing `updated_at` timestamp column, we can use it to filter and retrieve only one week's worth of data. For example, our `source.yaml` file may end up looking something like:
 

@@ -22,8 +22,8 @@ Rill provides the user the option to build various types of models based on diff
 - [**Incremental + Partitioned Models**](/build/models/incremental-partitioned-models) - Combine the concepts in Incremental Model and Paritioned Model into a single file
 - [**Staging Models**](/build/models/staging-models) - When data is not directly available to ingest
 
-### Performance
-- [**Performance**](/build/models/performance) - Optimize model performance and data refresh strategies
-
 ### Environment Management
 - [**Environment Templating**](/build/models/templating) - Separate your production and development settings 
+
+### Performance Optimization
+- [**Optimize your Models**](/build/models/performance) - Optimize model performance and data refresh strategies

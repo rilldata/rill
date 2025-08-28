@@ -5,20 +5,6 @@ sidebar_label: Dev/Prod Connectors
 sidebar_position: 19
 ---
 
-Rill uses the Go programming language's [native templating engine](https://pkg.go.dev/text/template), known as `text/template`, which you might know from projects such as [Helm](https://helm.sh/) or [Hugo](https://gohugo.io/). It additionally includes the [Sprig](http://masterminds.github.io/sprig/) library of utility functions.
-
-Templating can be a powerful tool to help introduce dynamic conditional statements based on local variables that have been passed into Rill or based on the environment being used. Some common use cases may include but are not limited to:
-- Defining an [**environment-specific database/cluster**](/connect/templating#environment-specific-connectors) to connect to between development and production
-- Pointing to [**different source data endpoints/databases**](/connect/templating#environment-specific-data-source-location) between your development and production environments
-
-:::info Where can you template in Rill?
-
-For the most part, templating should be used in [SQL models](../build/models/sql-models) and when defining [connector properties](/connect). If you have further questions about templating, please don't hesitate to [reach out](/contact) and we'd love to assist you further!
-
-:::
-
-## Why Use Templating?
-
 Templating serves several important purposes in your data workflow:
 
 - **Cost Management**: Avoid running expensive queries on production data during development
@@ -107,7 +93,7 @@ dsn: "postgres://user:password@localhost:5432/database"
 ```
 
 ## Additional Resources
-
+- [Performance Optimization Guide](/guides/performance)
 - [Official docs](https://pkg.go.dev/text/template) (Go)
 - [Learn Go Template Syntax](https://developer.hashicorp.com/nomad/tutorials/templates/go-template-syntax) (HashiCorp)
 - [Sprig Function Documentation](http://masterminds.github.io/sprig/)

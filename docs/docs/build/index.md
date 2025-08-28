@@ -13,8 +13,9 @@ Rill provides a comprehensive platform for building end-to-end data analytics so
 - [**SQL Models**](/build/models/sql-models) - Transform and prepare your data
 - [**Data Refresh**](/build/models/data-refresh) - Schedule your data refresh  
 - [**YAML Models**](/build/models/model-differences#yaml-models) - Incremental ingestion, data partitions, and more
-- [**Performance**](/build/models/performance) - Optimize model performance and data refresh strategies
 - [**Additional Model Templating**](/build/models/templating) - Separate your production and development settings 
+- [**Performance Optimization**](/build/models/performance) - Optimize model performance and data refresh strategies
+
 
 
 ### Define Measures and Dimensions

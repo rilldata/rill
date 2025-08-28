@@ -216,10 +216,6 @@ const config = {
             to: '/build/metrics-view/security'
           },
           {
-            from: '/manage/security',
-            to: '/build/metrics-view/security'
-          },
-          {
             from: '/deploy/credentials/',
             to: '/connect/credentials/'
           },
@@ -464,6 +460,10 @@ const config = {
           {
             from: '/integrate/custom-apis',
             to: '/build/custom-apis'
+          },
+          {
+            from: '/deploy/performance',
+            to: '/guides/performance'
           },
           // {
           //   from: '/old-page',

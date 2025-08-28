@@ -4,11 +4,7 @@ sidebar_label: Source Models
 sidebar_position: 10
 ---
 
-After [creating a connector to your data source](/connect/data-source), you'll need to create a model to bring that data into Rill. This can be implemented as either a SQL model with [defined connector parameters](/build/models/sql-models#specifying-the-data-source-connector) or as a YAML configuration file. This guide focuses on YAML-based source models.
-
-## Overview
-
-Once you can see your tables through the connector, you can directly create a Rill model and ingest the source data. Rill includes built-in safeguards to prevent excessive costs and time consumption during the initial data read. These safeguards are configured through the `dev:` parameter settings. For more information on dev/prod configurations in models, see [Dev/Prod Environments](/build/models/templating).
+After [creating a connector to your data source](/connect/data-source), you'll need to create a model to bring that data into Rill. This can be implemented as either a SQL model with [defined connector parameters](/build/models/sql-models#specifying-the-data-source-connector) or as a YAML configuration file. This guide focuses on YAML-based source models, which are auto-generated when using the UI.
 
 ```yaml
 # Model YAML
@@ -17,17 +13,11 @@ Once you can see your tables through the connector, you can directly create a Ri
 type: model
 materialize: true
 
-connector: "duckdb"
-
-dev:
-  sql: |
-    select * from read_csv('gs://my-bucket/path/to/file.csv', auto_detect=true, ignore_errors=1, header=true) limit 10000
+connector: snowflake
 
 sql: |
-  select * from read_csv('gs://my-bucket/path/to/file.csv', auto_detect=true, ignore_errors=1, header=true)
+  select * from database_name.schema_name.table_name
 ```
-
-## Source Model Configuration
 
 ### YAML Structure
 
@@ -36,8 +26,7 @@ The YAML configuration file contains several key parameters:
 - **`type: model`**: Explicitly defines the file type. While Rill automatically detects the file type based on the parent folder, this parameter provides explicit definition.
 - **`connector`**: Defines the connector type used to create the model (e.g., `bigquery`, `athena`, `snowflake`, etc.).
 - **`sql`**: The actual SQL query to be executed. When nested under `dev:`, the query runs in Rill Developer environment.
-- **`dev`**: Configuration for development mode. Rill Developer runs in dev mode by default, but when deployed to Rill Cloud, the root-level SQL configuration executes.
-
+- **`dev`**: Configuration for development mode. Rill Developer runs in dev mode by default, but when deployed to Rill Cloud, the root-level SQL configuration executes. See [ Environment Templating](/build/models/templating) for more information.
 
 ## Examples
 
@@ -69,7 +58,7 @@ materialize: true
 connector: "snowflake"
 
 dev:
-  sql: select * from database_name.schema_name.table_namelimit 10000
+  sql: select * from database_name.schema_name.table_name limit 10000
 
 sql: select * from database_name.schema_name.table_name
 

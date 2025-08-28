@@ -82,7 +82,7 @@ As mentioned in a [Model Performance](#consider-which-models-to-materialize), mo
 
 By default, models will be materialized as views (in DuckDB). This allows for a dynamic and highly interactive experience when modeling, such as keystroke-by-keystroke profiling. However, since views are logical in nature, as the complexity and size of your data models continue grow (especially if the underlying data is very large), this can start to significantly impact performance as these complex queries will need to be continuously re-executed along with a number of profiling queries that the Rill runtime will send in the backend. 
 
-In such scenarios, we recommend [materializing these models as tables](/reference/project-files/models.md#model-materialization). However, there are some tradeoffs to consider.
+In such scenarios, we recommend materializing these models as tables. However, there are some tradeoffs to consider.
 - **Pros:** Materializing a model will generally ensure significantly improved performance for downstream dependent models and dashboards. 
 - **Cons:** Enabling materialization for a model can severely impact or break the "keystroke-by-keystroke" experience and these models may also take longer to update (because the results are being written to a table vs remaining a view). It can also lead to _degraded_ performance for very specific operations, such as when you need to perform cross joins.
 
