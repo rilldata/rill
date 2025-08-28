@@ -66,6 +66,7 @@ var spec = drivers.Spec{
 			DisplayName: "SQL",
 			Description: "Query to extract data from DuckDB.",
 			Placeholder: "select * from table;",
+			NoPrompt:    true,
 		},
 		{
 			Key:         "name",
