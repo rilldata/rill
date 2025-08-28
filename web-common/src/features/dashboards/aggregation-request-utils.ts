@@ -142,6 +142,15 @@ export const aggregationRequestWithRowsAndColumns = ({
   };
 };
 
+/**
+ * Splits dimensions and measures from a {@link V1MetricsViewAggregationRequest} into
+ * logical rows and columns based on the request's pivot configuration.
+ *
+ * @returns An object containing three arrays:
+ *   - `rows`: Dimensions that are not part of the pivot (specified by `pivotedOn` field in the request)
+ *   - `dimensionColumns`: Dimensions that are part of the pivot (specified by `pivotedOn` field in the request)
+ *   - `measureColumns`: Measure fields that represent the values in the table, includes just the base measures.
+ */
 export function splitDimensionsAndMeasuresAsRowsAndColumns(
   aggregationRequest: V1MetricsViewAggregationRequest,
 ) {
