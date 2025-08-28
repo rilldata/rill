@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { IconButton } from "@rilldata/web-common/components/button";
   import { EyeIcon, EyeOffIcon } from "lucide-svelte";
   import { onMount } from "svelte";
   import { slide } from "svelte/transition";
@@ -12,6 +13,7 @@
   export let inputType: "text" | "number" = "text";
   export let id = "";
   export let label = "";
+  export let title = ""; // Fallback title attribute if label is empty
   export let description = "";
   export let errors: string | string[] | null | undefined = null;
   export let placeholder = "";
@@ -23,7 +25,7 @@
   export let optional = false;
   export let truncate = false;
   export let width: string = "100%";
-  export let size: "sm" | "md" | "lg" = "lg";
+  export let size: "sm" | "md" | "lg" | "xl" = "lg";
   export let labelGap = 1;
   export let selected: number = -1;
   export let full = false;
@@ -37,7 +39,7 @@
   export let link: string = "";
   export let lockable = false;
   export let capitalizeLabel = true;
-  export let leftPadding = 8;
+  export let textInputPrefix = "";
   export let lockTooltip: string | undefined = undefined;
   export let disabledMessage = "No valid options";
   export let options:
@@ -138,11 +140,20 @@
   {#if !options}
     <div
       class="input-wrapper {textClass}"
-      style:padding-left="{leftPadding}px"
       style:width
       class:error-input-wrapper={!!errors?.length}
       style:font-family={fontFamily}
+      class:pl-2={!textInputPrefix}
     >
+      {#if textInputPrefix}
+        <div
+          class:text-sm={size !== "xl"}
+          class="{size} bg-neutral-100 items-center flex flex-none cursor-default line-clamp-1 text-gray-500 border-r border-gray-300 text-base px-2 mr-2"
+        >
+          {textInputPrefix}
+        </div>
+      {/if}
+
       {#if $$slots.icon}
         <span class="mr-1 flex-none">
           <slot name="icon" />
@@ -167,7 +178,7 @@
         />
       {:else}
         <input
-          title={label}
+          title={label || title}
           {id}
           {type}
           {placeholder}
@@ -195,20 +206,20 @@
         />
       {/if}
       {#if secret}
-        <button
-          class="toggle"
-          type="button"
-          aria-label={showPassword ? "Hide password" : "Show password"}
+        <IconButton
+          size={20}
+          disableHover
+          ariaLabel={showPassword ? "Hide password" : "Show password"}
           on:click={() => {
             showPassword = !showPassword;
           }}
         >
           {#if showPassword}
-            <EyeOffIcon size="14px" class="stroke-primary-600" />
+            <EyeOffIcon size="14px" class="text-muted-foreground" />
           {:else}
-            <EyeIcon size="14px" class="stroke-primary-600" />
+            <EyeIcon size="14px" class="text-muted-foreground" />
           {/if}
-        </button>
+        </IconButton>
       {/if}
     </div>
   {:else if typeof value !== "number"}
@@ -245,14 +256,20 @@
     {/if}
   {/if}
 
-  {#if description}
-    <div class="description">{description}</div>
+  {#if $$slots.description || description}
+    <div class="description">
+      {#if $$slots.description}
+        <slot name="description" />
+      {:else}
+        {description}
+      {/if}
+    </div>
   {/if}
 </div>
 
 <style lang="postcss">
   .component-wrapper {
-    @apply flex  flex-col h-fit justify-center;
+    @apply flex flex-col h-fit justify-center;
   }
 
   .sm {
@@ -268,18 +285,23 @@
     height: 30px;
   }
 
+  .xl {
+    height: 38px;
+    font-size: 16px;
+  }
+
   .input-wrapper {
     @apply overflow-hidden;
-    @apply flex justify-center items-center pr-0.5;
+    @apply flex justify-center items-center pr-1;
     @apply bg-surface justify-center;
     @apply border border-gray-300 rounded-[2px];
     @apply cursor-pointer;
-    @apply h-fit w-fit bg-background;
+    @apply h-fit w-fit;
   }
 
   input,
   .multiline-input {
-    @apply p-0 bg-background;
+    @apply bg-surface p-0;
     @apply size-full;
     @apply outline-none border-0;
     @apply cursor-text;
@@ -313,6 +335,8 @@
 
   .toggle {
     @apply h-full aspect-square flex items-center justify-center;
+    @apply px-1.5;
+    @apply -mr-0.5;
   }
 
   .toggle:hover {

@@ -13,7 +13,7 @@
     disabled: boolean;
     rounded: boolean;
     size: number;
-    bgDark: boolean;
+    bgGray: boolean;
     active: boolean;
   };
 
@@ -22,13 +22,13 @@
   for (const disabled of [true, false]) {
     for (const rounded of [true, false]) {
       for (const size of [20, 24, 28]) {
-        for (const bgDark of [true, false]) {
+        for (const bgGray of [true, false]) {
           for (const active of [true, false]) {
             buttonProps.push({
               disabled,
               rounded,
               size,
-              bgDark,
+              bgGray,
               active,
             });
           }
@@ -45,7 +45,7 @@
       <td>disabled</td>
       <td>rounded</td>
       <td>size</td>
-      <td>bgDark</td>
+      <td>bgGray</td>
       <td>active</td>
     </tr>
     {#each buttonProps as props}
@@ -61,7 +61,7 @@
         <td>{props.disabled}</td>
         <td>{props.rounded}</td>
         <td>{props.size}</td>
-        <td>{props.bgDark}</td>
+        <td>{props.bgGray}</td>
         <td>{props.active}</td>
       </tr>
     {/each}

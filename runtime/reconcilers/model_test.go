@@ -3,12 +3,49 @@ package reconcilers_test
 import (
 	"testing"
 
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 
 	_ "github.com/rilldata/rill/runtime/resolvers"
 )
+
+func TestPatchModeManualTrigger(t *testing.T) {
+	rt, instanceID := testruntime.NewInstance(t)
+
+	// Create a model with patch mode
+	testruntime.PutFiles(t, rt, instanceID, map[string]string{
+		"rill.yaml": ``,
+		"models/patch_model.yaml": `
+type: model
+incremental: true
+change_mode: patch
+partitions:
+  sql: SELECT now() AS now
+sql: SELECT '{{.partition.now}}::TIMESTAMP' AS now
+`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, instanceID)
+	testruntime.RequireReconcileState(t, rt, instanceID, 2, 0, 0)
+
+	// Check there's one row
+	testruntime.RequireResolve(t, rt, instanceID, &testruntime.RequireResolveOptions{
+		Resolver:   "sql",
+		Properties: map[string]any{"sql": `SELECT COUNT(*) AS count FROM patch_model`},
+		Result:     []map[string]any{{"count": 1}},
+	})
+
+	// Create a manual trigger
+	testruntime.RefreshAndWait(t, rt, instanceID, &runtimev1.ResourceName{Kind: runtime.ResourceKindModel, Name: "patch_model"})
+
+	// Check there's now two rows
+	testruntime.RequireResolve(t, rt, instanceID, &testruntime.RequireResolveOptions{
+		Resolver:   "sql",
+		Properties: map[string]any{"sql": `SELECT COUNT(*) AS count FROM patch_model`},
+		Result:     []map[string]any{{"count": 2}},
+	})
+}
 
 func TestModelTests(t *testing.T) {
 	rt, instanceID := testruntime.NewInstance(t)

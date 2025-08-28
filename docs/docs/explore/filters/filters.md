@@ -5,9 +5,34 @@ sidebar_label: "Filters & Comparisons"
 sidebar_position: 10
 ---
 
+<div style={{ 
+  position: "relative", 
+  width: "100%", 
+  paddingTop: "56.25%", 
+  borderRadius: "15px",  /* Softer corners */
+  boxShadow: "0px 4px 15px rgba(0, 0, 0, 0.2)"  /* Shadow effect */
+}}>
+  <iframe credentialless="true"
+    src="https://www.youtube.com/embed/LNyvn8lRFUw?si=FyEViEreF4cIrE09"
+    frameBorder="0"
+    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+    allowFullScreen
+    style={{
+      position: "absolute",
+      top: 0,
+      left: 0,
+      width: "100%",
+      height: "100%",
+      borderRadius: "10px", 
+    }}
+  ></iframe>
+</div>
+<br/>
+If videos are more your jam, take a look at [our series of YouTube videos](https://www.youtube.com/watch?v=wTP46eOzoCk&list=PL_ZoDsg2yFKgi7ud_fOOD33AH8ONWQS7I&index=1) to get started!
+
 ## Overview
 
-Rill is particularly suited for exploratory analysis - to be able to slice & dice data quickly. As such, there are a variety of filter types and filter mechanisms throughout the app. The goal for each Rill dashboard is to provide users with as all metrics and dimensions required for each use case and create an interactive experience to cut data in any form.
+Rill is particularly suited for exploratory analysis - to be able to slice & dice data quickly. As such, there are a variety of filter types and filter mechanisms throughout the app. The goal for each Rill dashboard is to provide users with all metrics and dimensions required for each use case and create an interactive experience to cut data in any form.
 
 :::tip Human readable URL
 With the release of v0.52, we have introduced an easy way to craft specific views by modifying the URL directly. As you select filters, time ranges, and default dimension and measures, the URL will change accordingly. 
@@ -85,7 +110,7 @@ This allows the ability for a more detailed view into your time series without h
 
 
 ### Time Comparisons
-Time comparison is a key feature of Rill and recommended to find insights quicker by highlighting differences between periods. To compare different periods, first select your time period for analysis - either a predefined period or a custom range in top left time picker. After selecting that range, select the toggle to enable Time Comparisons.
+Time comparison is a key feature of Rill and is recommended to find insights quicker by highlighting differences between periods. To compare different periods, first select your time period for analysis - either a predefined period or a custom range in top left time picker. After selecting that range, select the toggle to enable Time Comparisons. For more information see our [time series filter documentation](/explore/filters/time-series).
 
 
 <img src = '/img/explore/alerts/time-series.gif' class='rounded-gif' />

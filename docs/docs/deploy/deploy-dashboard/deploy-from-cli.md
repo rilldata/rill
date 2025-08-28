@@ -7,7 +7,7 @@ sidebar_position: 10
 
 While Rill Cloud natively integrates with [GitHub](https://github.com), you can also deploy your Rill project from [Gitlab](https://about.gitlab.com/) using direct uploads from a [Gitlab CI/CD pipeline](https://docs.gitlab.com/ee/ci/quick_start/).
 
-Follow these steps to setup continuous deployment from Gitlab to Rill Cloud:
+Follow these steps to set up continuous deployment from Gitlab to Rill Cloud:
 
 1. Create a new Gitlab repository and push your Rill project to it.
 

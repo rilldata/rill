@@ -124,6 +124,7 @@ func (w *RunAutoscalerWorker) Work(ctx context.Context, job *river.Job[RunAutosc
 			Name:                 targetProject.Name,
 			Description:          targetProject.Description,
 			Public:               targetProject.Public,
+			DirectoryName:        targetProject.DirectoryName,
 			ArchiveAssetID:       targetProject.ArchiveAssetID,
 			GitRemote:            targetProject.GitRemote,
 			GithubInstallationID: targetProject.GithubInstallationID,

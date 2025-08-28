@@ -19,6 +19,7 @@
     },
     metricsViewName,
     exploreName,
+    dashboardStore,
   } = getStateManagers();
 
   $: ({ instanceId } = $runtime);
@@ -29,7 +30,7 @@
   let open = false;
 </script>
 
-{#if hasTimeDimension}
+{#if hasTimeDimension && $dashboardStore}
   <GuardedDialog
     title="Close without saving?"
     description="You haven’t saved changes to this alert yet, so closing this window will lose your work."
@@ -46,6 +47,7 @@
           disabled={$isCustomTimeRange}
           type="secondary"
           builders={[builder]}
+          label="Create alert"
         >
           <BellPlusIcon class="inline-flex" size="16px" />
         </Button>

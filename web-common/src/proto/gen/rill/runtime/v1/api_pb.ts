@@ -4,9 +4,10 @@
 // @ts-nocheck
 
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
-import { Message, proto3, Struct, Timestamp } from "@bufbuild/protobuf";
+import { Message as Message$1, proto3, Struct, Timestamp } from "@bufbuild/protobuf";
 import { StructType } from "./schema_pb.js";
 import { RefreshModelTrigger, Resource, ResourceName } from "./resources_pb.js";
+import { ContentBlock } from "../../ai/v1/ai_pb.js";
 
 /**
  * FileEvent describes a file change.
@@ -107,11 +108,39 @@ proto3.util.setEnumType(ResourceEvent, "rill.runtime.v1.ResourceEvent", [
 ]);
 
 /**
+ * Application context for AI conversations
+ *
+ * @generated from enum rill.runtime.v1.AppContextType
+ */
+export enum AppContextType {
+  /**
+   * @generated from enum value: APP_CONTEXT_TYPE_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: APP_CONTEXT_TYPE_PROJECT_CHAT = 1;
+   */
+  PROJECT_CHAT = 1,
+
+  /**
+   * @generated from enum value: APP_CONTEXT_TYPE_EXPLORE_DASHBOARD = 2;
+   */
+  EXPLORE_DASHBOARD = 2,
+}
+// Retrieve enum metadata with: proto3.getEnumType(AppContextType)
+proto3.util.setEnumType(AppContextType, "rill.runtime.v1.AppContextType", [
+  { no: 0, name: "APP_CONTEXT_TYPE_UNSPECIFIED" },
+  { no: 1, name: "APP_CONTEXT_TYPE_PROJECT_CHAT" },
+  { no: 2, name: "APP_CONTEXT_TYPE_EXPLORE_DASHBOARD" },
+]);
+
+/**
  * Request message for RuntimeService.Ping
  *
  * @generated from message rill.runtime.v1.PingRequest
  */
-export class PingRequest extends Message<PingRequest> {
+export class PingRequest extends Message$1<PingRequest> {
   constructor(data?: PartialMessage<PingRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -144,7 +173,7 @@ export class PingRequest extends Message<PingRequest> {
  *
  * @generated from message rill.runtime.v1.PingResponse
  */
-export class PingResponse extends Message<PingResponse> {
+export class PingResponse extends Message$1<PingResponse> {
   /**
    * Runtime version
    *
@@ -191,7 +220,7 @@ export class PingResponse extends Message<PingResponse> {
 /**
  * @generated from message rill.runtime.v1.HealthRequest
  */
-export class HealthRequest extends Message<HealthRequest> {
+export class HealthRequest extends Message$1<HealthRequest> {
   constructor(data?: PartialMessage<HealthRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -222,7 +251,7 @@ export class HealthRequest extends Message<HealthRequest> {
 /**
  * @generated from message rill.runtime.v1.HealthResponse
  */
-export class HealthResponse extends Message<HealthResponse> {
+export class HealthResponse extends Message$1<HealthResponse> {
   /**
    * @generated from field: string limiter_error = 1;
    */
@@ -283,7 +312,7 @@ export class HealthResponse extends Message<HealthResponse> {
 /**
  * @generated from message rill.runtime.v1.InstanceHealthRequest
  */
-export class InstanceHealthRequest extends Message<InstanceHealthRequest> {
+export class InstanceHealthRequest extends Message$1<InstanceHealthRequest> {
   /**
    * @generated from field: string instance_id = 1;
    */
@@ -320,7 +349,7 @@ export class InstanceHealthRequest extends Message<InstanceHealthRequest> {
 /**
  * @generated from message rill.runtime.v1.InstanceHealthResponse
  */
-export class InstanceHealthResponse extends Message<InstanceHealthResponse> {
+export class InstanceHealthResponse extends Message$1<InstanceHealthResponse> {
   /**
    * @generated from field: rill.runtime.v1.InstanceHealth instance_health = 1;
    */
@@ -357,7 +386,7 @@ export class InstanceHealthResponse extends Message<InstanceHealthResponse> {
 /**
  * @generated from message rill.runtime.v1.InstanceHealth
  */
-export class InstanceHealth extends Message<InstanceHealth> {
+export class InstanceHealth extends Message$1<InstanceHealth> {
   /**
    * @generated from field: string controller_error = 1;
    */
@@ -431,7 +460,7 @@ export class InstanceHealth extends Message<InstanceHealth> {
  *
  * @generated from message rill.runtime.v1.Instance
  */
-export class Instance extends Message<Instance> {
+export class Instance extends Message$1<Instance> {
   /**
    * @generated from field: string instance_id = 1;
    */
@@ -552,7 +581,7 @@ export class Instance extends Message<Instance> {
 /**
  * @generated from message rill.runtime.v1.Connector
  */
-export class Connector extends Message<Connector> {
+export class Connector extends Message$1<Connector> {
   /**
    * Type of the connector. One of the infra driver supported.
    *
@@ -631,7 +660,7 @@ export class Connector extends Message<Connector> {
  *
  * @generated from message rill.runtime.v1.ListInstancesRequest
  */
-export class ListInstancesRequest extends Message<ListInstancesRequest> {
+export class ListInstancesRequest extends Message$1<ListInstancesRequest> {
   /**
    * @generated from field: uint32 page_size = 1;
    */
@@ -676,7 +705,7 @@ export class ListInstancesRequest extends Message<ListInstancesRequest> {
  *
  * @generated from message rill.runtime.v1.ListInstancesResponse
  */
-export class ListInstancesResponse extends Message<ListInstancesResponse> {
+export class ListInstancesResponse extends Message$1<ListInstancesResponse> {
   /**
    * @generated from field: repeated rill.runtime.v1.Instance instances = 1;
    */
@@ -721,7 +750,7 @@ export class ListInstancesResponse extends Message<ListInstancesResponse> {
  *
  * @generated from message rill.runtime.v1.GetInstanceRequest
  */
-export class GetInstanceRequest extends Message<GetInstanceRequest> {
+export class GetInstanceRequest extends Message$1<GetInstanceRequest> {
   /**
    * @generated from field: string instance_id = 1;
    */
@@ -766,7 +795,7 @@ export class GetInstanceRequest extends Message<GetInstanceRequest> {
  *
  * @generated from message rill.runtime.v1.GetInstanceResponse
  */
-export class GetInstanceResponse extends Message<GetInstanceResponse> {
+export class GetInstanceResponse extends Message$1<GetInstanceResponse> {
   /**
    * @generated from field: rill.runtime.v1.Instance instance = 1;
    */
@@ -806,7 +835,7 @@ export class GetInstanceResponse extends Message<GetInstanceResponse> {
  *
  * @generated from message rill.runtime.v1.CreateInstanceRequest
  */
-export class CreateInstanceRequest extends Message<CreateInstanceRequest> {
+export class CreateInstanceRequest extends Message$1<CreateInstanceRequest> {
   /**
    * @generated from field: string instance_id = 1;
    */
@@ -893,7 +922,7 @@ export class CreateInstanceRequest extends Message<CreateInstanceRequest> {
  *
  * @generated from message rill.runtime.v1.CreateInstanceResponse
  */
-export class CreateInstanceResponse extends Message<CreateInstanceResponse> {
+export class CreateInstanceResponse extends Message$1<CreateInstanceResponse> {
   /**
    * @generated from field: rill.runtime.v1.Instance instance = 1;
    */
@@ -932,7 +961,7 @@ export class CreateInstanceResponse extends Message<CreateInstanceResponse> {
  *
  * @generated from message rill.runtime.v1.DeleteInstanceRequest
  */
-export class DeleteInstanceRequest extends Message<DeleteInstanceRequest> {
+export class DeleteInstanceRequest extends Message$1<DeleteInstanceRequest> {
   /**
    * @generated from field: string instance_id = 1;
    */
@@ -971,7 +1000,7 @@ export class DeleteInstanceRequest extends Message<DeleteInstanceRequest> {
  *
  * @generated from message rill.runtime.v1.DeleteInstanceResponse
  */
-export class DeleteInstanceResponse extends Message<DeleteInstanceResponse> {
+export class DeleteInstanceResponse extends Message$1<DeleteInstanceResponse> {
   constructor(data?: PartialMessage<DeleteInstanceResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1005,7 +1034,7 @@ export class DeleteInstanceResponse extends Message<DeleteInstanceResponse> {
  *
  * @generated from message rill.runtime.v1.EditInstanceRequest
  */
-export class EditInstanceRequest extends Message<EditInstanceRequest> {
+export class EditInstanceRequest extends Message$1<EditInstanceRequest> {
   /**
    * @generated from field: string instance_id = 1;
    */
@@ -1092,7 +1121,7 @@ export class EditInstanceRequest extends Message<EditInstanceRequest> {
  *
  * @generated from message rill.runtime.v1.EditInstanceResponse
  */
-export class EditInstanceResponse extends Message<EditInstanceResponse> {
+export class EditInstanceResponse extends Message$1<EditInstanceResponse> {
   /**
    * @generated from field: rill.runtime.v1.Instance instance = 1;
    */
@@ -1131,7 +1160,7 @@ export class EditInstanceResponse extends Message<EditInstanceResponse> {
  *
  * @generated from message rill.runtime.v1.ListFilesRequest
  */
-export class ListFilesRequest extends Message<ListFilesRequest> {
+export class ListFilesRequest extends Message$1<ListFilesRequest> {
   /**
    * @generated from field: string instance_id = 1;
    */
@@ -1176,7 +1205,7 @@ export class ListFilesRequest extends Message<ListFilesRequest> {
  *
  * @generated from message rill.runtime.v1.ListFilesResponse
  */
-export class ListFilesResponse extends Message<ListFilesResponse> {
+export class ListFilesResponse extends Message$1<ListFilesResponse> {
   /**
    * @generated from field: repeated rill.runtime.v1.DirEntry files = 1;
    */
@@ -1213,7 +1242,7 @@ export class ListFilesResponse extends Message<ListFilesResponse> {
 /**
  * @generated from message rill.runtime.v1.DirEntry
  */
-export class DirEntry extends Message<DirEntry> {
+export class DirEntry extends Message$1<DirEntry> {
   /**
    * @generated from field: string path = 1;
    */
@@ -1258,7 +1287,7 @@ export class DirEntry extends Message<DirEntry> {
  *
  * @generated from message rill.runtime.v1.WatchFilesRequest
  */
-export class WatchFilesRequest extends Message<WatchFilesRequest> {
+export class WatchFilesRequest extends Message$1<WatchFilesRequest> {
   /**
    * @generated from field: string instance_id = 1;
    */
@@ -1303,7 +1332,7 @@ export class WatchFilesRequest extends Message<WatchFilesRequest> {
  *
  * @generated from message rill.runtime.v1.WatchFilesResponse
  */
-export class WatchFilesResponse extends Message<WatchFilesResponse> {
+export class WatchFilesResponse extends Message$1<WatchFilesResponse> {
   /**
    * @generated from field: rill.runtime.v1.FileEvent event = 1;
    */
@@ -1354,7 +1383,7 @@ export class WatchFilesResponse extends Message<WatchFilesResponse> {
  *
  * @generated from message rill.runtime.v1.GetFileRequest
  */
-export class GetFileRequest extends Message<GetFileRequest> {
+export class GetFileRequest extends Message$1<GetFileRequest> {
   /**
    * @generated from field: string instance_id = 1;
    */
@@ -1399,7 +1428,7 @@ export class GetFileRequest extends Message<GetFileRequest> {
  *
  * @generated from message rill.runtime.v1.GetFileResponse
  */
-export class GetFileResponse extends Message<GetFileResponse> {
+export class GetFileResponse extends Message$1<GetFileResponse> {
   /**
    * @generated from field: string blob = 1;
    */
@@ -1444,7 +1473,7 @@ export class GetFileResponse extends Message<GetFileResponse> {
  *
  * @generated from message rill.runtime.v1.PutFileRequest
  */
-export class PutFileRequest extends Message<PutFileRequest> {
+export class PutFileRequest extends Message$1<PutFileRequest> {
   /**
    * @generated from field: string instance_id = 1;
    */
@@ -1512,7 +1541,7 @@ export class PutFileRequest extends Message<PutFileRequest> {
  *
  * @generated from message rill.runtime.v1.PutFileResponse
  */
-export class PutFileResponse extends Message<PutFileResponse> {
+export class PutFileResponse extends Message$1<PutFileResponse> {
   /**
    * TODO: Redundant, should be removed (but frontend currently uses it)
    *
@@ -1553,7 +1582,7 @@ export class PutFileResponse extends Message<PutFileResponse> {
  *
  * @generated from message rill.runtime.v1.CreateDirectoryRequest
  */
-export class CreateDirectoryRequest extends Message<CreateDirectoryRequest> {
+export class CreateDirectoryRequest extends Message$1<CreateDirectoryRequest> {
   /**
    * @generated from field: string instance_id = 1;
    */
@@ -1598,7 +1627,7 @@ export class CreateDirectoryRequest extends Message<CreateDirectoryRequest> {
  *
  * @generated from message rill.runtime.v1.CreateDirectoryResponse
  */
-export class CreateDirectoryResponse extends Message<CreateDirectoryResponse> {
+export class CreateDirectoryResponse extends Message$1<CreateDirectoryResponse> {
   constructor(data?: PartialMessage<CreateDirectoryResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1631,7 +1660,7 @@ export class CreateDirectoryResponse extends Message<CreateDirectoryResponse> {
  *
  * @generated from message rill.runtime.v1.DeleteFileRequest
  */
-export class DeleteFileRequest extends Message<DeleteFileRequest> {
+export class DeleteFileRequest extends Message$1<DeleteFileRequest> {
   /**
    * @generated from field: string instance_id = 1;
    */
@@ -1682,7 +1711,7 @@ export class DeleteFileRequest extends Message<DeleteFileRequest> {
  *
  * @generated from message rill.runtime.v1.DeleteFileResponse
  */
-export class DeleteFileResponse extends Message<DeleteFileResponse> {
+export class DeleteFileResponse extends Message$1<DeleteFileResponse> {
   constructor(data?: PartialMessage<DeleteFileResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1715,7 +1744,7 @@ export class DeleteFileResponse extends Message<DeleteFileResponse> {
  *
  * @generated from message rill.runtime.v1.RenameFileRequest
  */
-export class RenameFileRequest extends Message<RenameFileRequest> {
+export class RenameFileRequest extends Message$1<RenameFileRequest> {
   /**
    * @generated from field: string instance_id = 1;
    */
@@ -1766,7 +1795,7 @@ export class RenameFileRequest extends Message<RenameFileRequest> {
  *
  * @generated from message rill.runtime.v1.RenameFileResponse
  */
-export class RenameFileResponse extends Message<RenameFileResponse> {
+export class RenameFileResponse extends Message$1<RenameFileResponse> {
   constructor(data?: PartialMessage<RenameFileResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1799,7 +1828,7 @@ export class RenameFileResponse extends Message<RenameFileResponse> {
  *
  * @generated from message rill.runtime.v1.Example
  */
-export class Example extends Message<Example> {
+export class Example extends Message$1<Example> {
   /**
    * @generated from field: string name = 1;
    */
@@ -1850,7 +1879,7 @@ export class Example extends Message<Example> {
  *
  * @generated from message rill.runtime.v1.ListExamplesRequest
  */
-export class ListExamplesRequest extends Message<ListExamplesRequest> {
+export class ListExamplesRequest extends Message$1<ListExamplesRequest> {
   constructor(data?: PartialMessage<ListExamplesRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1883,7 +1912,7 @@ export class ListExamplesRequest extends Message<ListExamplesRequest> {
  *
  * @generated from message rill.runtime.v1.ListExamplesResponse
  */
-export class ListExamplesResponse extends Message<ListExamplesResponse> {
+export class ListExamplesResponse extends Message$1<ListExamplesResponse> {
   /**
    * @generated from field: repeated rill.runtime.v1.Example examples = 1;
    */
@@ -1922,7 +1951,7 @@ export class ListExamplesResponse extends Message<ListExamplesResponse> {
  *
  * @generated from message rill.runtime.v1.UnpackExampleRequest
  */
-export class UnpackExampleRequest extends Message<UnpackExampleRequest> {
+export class UnpackExampleRequest extends Message$1<UnpackExampleRequest> {
   /**
    * @generated from field: string instance_id = 1;
    */
@@ -1973,7 +2002,7 @@ export class UnpackExampleRequest extends Message<UnpackExampleRequest> {
  *
  * @generated from message rill.runtime.v1.UnpackExampleResponse
  */
-export class UnpackExampleResponse extends Message<UnpackExampleResponse> {
+export class UnpackExampleResponse extends Message$1<UnpackExampleResponse> {
   constructor(data?: PartialMessage<UnpackExampleResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2006,7 +2035,7 @@ export class UnpackExampleResponse extends Message<UnpackExampleResponse> {
  *
  * @generated from message rill.runtime.v1.UnpackEmptyRequest
  */
-export class UnpackEmptyRequest extends Message<UnpackEmptyRequest> {
+export class UnpackEmptyRequest extends Message$1<UnpackEmptyRequest> {
   /**
    * @generated from field: string instance_id = 1;
    */
@@ -2016,6 +2045,11 @@ export class UnpackEmptyRequest extends Message<UnpackEmptyRequest> {
    * @generated from field: string display_name = 2;
    */
   displayName = "";
+
+  /**
+   * @generated from field: string olap = 4;
+   */
+  olap = "";
 
   /**
    * @generated from field: bool force = 3;
@@ -2032,6 +2066,7 @@ export class UnpackEmptyRequest extends Message<UnpackEmptyRequest> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "olap", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "force", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
@@ -2057,7 +2092,7 @@ export class UnpackEmptyRequest extends Message<UnpackEmptyRequest> {
  *
  * @generated from message rill.runtime.v1.UnpackEmptyResponse
  */
-export class UnpackEmptyResponse extends Message<UnpackEmptyResponse> {
+export class UnpackEmptyResponse extends Message$1<UnpackEmptyResponse> {
   constructor(data?: PartialMessage<UnpackEmptyResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2090,7 +2125,7 @@ export class UnpackEmptyResponse extends Message<UnpackEmptyResponse> {
  *
  * @generated from message rill.runtime.v1.GenerateMetricsViewFileRequest
  */
-export class GenerateMetricsViewFileRequest extends Message<GenerateMetricsViewFileRequest> {
+export class GenerateMetricsViewFileRequest extends Message$1<GenerateMetricsViewFileRequest> {
   /**
    * @generated from field: string instance_id = 1;
    */
@@ -2191,7 +2226,7 @@ export class GenerateMetricsViewFileRequest extends Message<GenerateMetricsViewF
  *
  * @generated from message rill.runtime.v1.GenerateMetricsViewFileResponse
  */
-export class GenerateMetricsViewFileResponse extends Message<GenerateMetricsViewFileResponse> {
+export class GenerateMetricsViewFileResponse extends Message$1<GenerateMetricsViewFileResponse> {
   /**
    * Indicates if AI-based generation succeeded. If it failed, it falls back to the simpler heuristic approach.
    *
@@ -2230,7 +2265,7 @@ export class GenerateMetricsViewFileResponse extends Message<GenerateMetricsView
 /**
  * @generated from message rill.runtime.v1.GenerateResolverRequest
  */
-export class GenerateResolverRequest extends Message<GenerateResolverRequest> {
+export class GenerateResolverRequest extends Message$1<GenerateResolverRequest> {
   /**
    * @generated from field: string instance_id = 1;
    */
@@ -2295,7 +2330,7 @@ export class GenerateResolverRequest extends Message<GenerateResolverRequest> {
 /**
  * @generated from message rill.runtime.v1.GenerateResolverResponse
  */
-export class GenerateResolverResponse extends Message<GenerateResolverResponse> {
+export class GenerateResolverResponse extends Message$1<GenerateResolverResponse> {
   /**
    * @generated from field: string resolver = 1;
    */
@@ -2338,7 +2373,7 @@ export class GenerateResolverResponse extends Message<GenerateResolverResponse> 
 /**
  * @generated from message rill.runtime.v1.GenerateRendererRequest
  */
-export class GenerateRendererRequest extends Message<GenerateRendererRequest> {
+export class GenerateRendererRequest extends Message$1<GenerateRendererRequest> {
   /**
    * @generated from field: string instance_id = 1;
    */
@@ -2393,7 +2428,7 @@ export class GenerateRendererRequest extends Message<GenerateRendererRequest> {
 /**
  * @generated from message rill.runtime.v1.GenerateRendererResponse
  */
-export class GenerateRendererResponse extends Message<GenerateRendererResponse> {
+export class GenerateRendererResponse extends Message$1<GenerateRendererResponse> {
   /**
    * @generated from field: string renderer = 1;
    */
@@ -2436,7 +2471,7 @@ export class GenerateRendererResponse extends Message<GenerateRendererResponse> 
 /**
  * @generated from message rill.runtime.v1.QueryResolverRequest
  */
-export class QueryResolverRequest extends Message<QueryResolverRequest> {
+export class QueryResolverRequest extends Message$1<QueryResolverRequest> {
   /**
    * @generated from field: string instance_id = 1;
    */
@@ -2497,7 +2532,7 @@ export class QueryResolverRequest extends Message<QueryResolverRequest> {
 /**
  * @generated from message rill.runtime.v1.QueryResolverResponse
  */
-export class QueryResolverResponse extends Message<QueryResolverResponse> {
+export class QueryResolverResponse extends Message$1<QueryResolverResponse> {
   /**
    * @generated from field: google.protobuf.Struct meta = 3;
    */
@@ -2546,7 +2581,7 @@ export class QueryResolverResponse extends Message<QueryResolverResponse> {
 /**
  * @generated from message rill.runtime.v1.Log
  */
-export class Log extends Message<Log> {
+export class Log extends Message$1<Log> {
   /**
    * @generated from field: rill.runtime.v1.LogLevel level = 1;
    */
@@ -2601,7 +2636,7 @@ export class Log extends Message<Log> {
 /**
  * @generated from message rill.runtime.v1.ModelPartition
  */
-export class ModelPartition extends Message<ModelPartition> {
+export class ModelPartition extends Message$1<ModelPartition> {
   /**
    * @generated from field: string key = 1;
    */
@@ -2668,7 +2703,7 @@ export class ModelPartition extends Message<ModelPartition> {
 /**
  * @generated from message rill.runtime.v1.GetLogsRequest
  */
-export class GetLogsRequest extends Message<GetLogsRequest> {
+export class GetLogsRequest extends Message$1<GetLogsRequest> {
   /**
    * @generated from field: string instance_id = 1;
    */
@@ -2723,7 +2758,7 @@ export class GetLogsRequest extends Message<GetLogsRequest> {
 /**
  * @generated from message rill.runtime.v1.GetLogsResponse
  */
-export class GetLogsResponse extends Message<GetLogsResponse> {
+export class GetLogsResponse extends Message$1<GetLogsResponse> {
   /**
    * @generated from field: repeated rill.runtime.v1.Log logs = 1;
    */
@@ -2760,7 +2795,7 @@ export class GetLogsResponse extends Message<GetLogsResponse> {
 /**
  * @generated from message rill.runtime.v1.WatchLogsRequest
  */
-export class WatchLogsRequest extends Message<WatchLogsRequest> {
+export class WatchLogsRequest extends Message$1<WatchLogsRequest> {
   /**
    * @generated from field: string instance_id = 1;
    */
@@ -2815,7 +2850,7 @@ export class WatchLogsRequest extends Message<WatchLogsRequest> {
 /**
  * @generated from message rill.runtime.v1.WatchLogsResponse
  */
-export class WatchLogsResponse extends Message<WatchLogsResponse> {
+export class WatchLogsResponse extends Message$1<WatchLogsResponse> {
   /**
    * @generated from field: rill.runtime.v1.Log log = 1;
    */
@@ -2852,7 +2887,7 @@ export class WatchLogsResponse extends Message<WatchLogsResponse> {
 /**
  * @generated from message rill.runtime.v1.ListResourcesRequest
  */
-export class ListResourcesRequest extends Message<ListResourcesRequest> {
+export class ListResourcesRequest extends Message$1<ListResourcesRequest> {
   /**
    * Instance to list resources from.
    *
@@ -2915,7 +2950,7 @@ export class ListResourcesRequest extends Message<ListResourcesRequest> {
 /**
  * @generated from message rill.runtime.v1.ListResourcesResponse
  */
-export class ListResourcesResponse extends Message<ListResourcesResponse> {
+export class ListResourcesResponse extends Message$1<ListResourcesResponse> {
   /**
    * @generated from field: repeated rill.runtime.v1.Resource resources = 1;
    */
@@ -2952,7 +2987,7 @@ export class ListResourcesResponse extends Message<ListResourcesResponse> {
 /**
  * @generated from message rill.runtime.v1.WatchResourcesRequest
  */
-export class WatchResourcesRequest extends Message<WatchResourcesRequest> {
+export class WatchResourcesRequest extends Message$1<WatchResourcesRequest> {
   /**
    * @generated from field: string instance_id = 1;
    */
@@ -3007,7 +3042,7 @@ export class WatchResourcesRequest extends Message<WatchResourcesRequest> {
 /**
  * @generated from message rill.runtime.v1.WatchResourcesResponse
  */
-export class WatchResourcesResponse extends Message<WatchResourcesResponse> {
+export class WatchResourcesResponse extends Message$1<WatchResourcesResponse> {
   /**
    * @generated from field: rill.runtime.v1.ResourceEvent event = 1;
    */
@@ -3056,7 +3091,7 @@ export class WatchResourcesResponse extends Message<WatchResourcesResponse> {
 /**
  * @generated from message rill.runtime.v1.GetResourceRequest
  */
-export class GetResourceRequest extends Message<GetResourceRequest> {
+export class GetResourceRequest extends Message$1<GetResourceRequest> {
   /**
    * @generated from field: string instance_id = 1;
    */
@@ -3105,7 +3140,7 @@ export class GetResourceRequest extends Message<GetResourceRequest> {
 /**
  * @generated from message rill.runtime.v1.GetResourceResponse
  */
-export class GetResourceResponse extends Message<GetResourceResponse> {
+export class GetResourceResponse extends Message$1<GetResourceResponse> {
   /**
    * @generated from field: rill.runtime.v1.Resource resource = 1;
    */
@@ -3142,7 +3177,7 @@ export class GetResourceResponse extends Message<GetResourceResponse> {
 /**
  * @generated from message rill.runtime.v1.GetExploreRequest
  */
-export class GetExploreRequest extends Message<GetExploreRequest> {
+export class GetExploreRequest extends Message$1<GetExploreRequest> {
   /**
    * @generated from field: string instance_id = 1;
    */
@@ -3185,7 +3220,7 @@ export class GetExploreRequest extends Message<GetExploreRequest> {
 /**
  * @generated from message rill.runtime.v1.GetExploreResponse
  */
-export class GetExploreResponse extends Message<GetExploreResponse> {
+export class GetExploreResponse extends Message$1<GetExploreResponse> {
   /**
    * @generated from field: rill.runtime.v1.Resource explore = 1;
    */
@@ -3228,7 +3263,7 @@ export class GetExploreResponse extends Message<GetExploreResponse> {
 /**
  * @generated from message rill.runtime.v1.GetModelPartitionsRequest
  */
-export class GetModelPartitionsRequest extends Message<GetModelPartitionsRequest> {
+export class GetModelPartitionsRequest extends Message$1<GetModelPartitionsRequest> {
   /**
    * @generated from field: string instance_id = 1;
    */
@@ -3295,7 +3330,7 @@ export class GetModelPartitionsRequest extends Message<GetModelPartitionsRequest
 /**
  * @generated from message rill.runtime.v1.GetModelPartitionsResponse
  */
-export class GetModelPartitionsResponse extends Message<GetModelPartitionsResponse> {
+export class GetModelPartitionsResponse extends Message$1<GetModelPartitionsResponse> {
   /**
    * @generated from field: repeated rill.runtime.v1.ModelPartition partitions = 1;
    */
@@ -3338,7 +3373,7 @@ export class GetModelPartitionsResponse extends Message<GetModelPartitionsRespon
 /**
  * @generated from message rill.runtime.v1.CreateTriggerRequest
  */
-export class CreateTriggerRequest extends Message<CreateTriggerRequest> {
+export class CreateTriggerRequest extends Message$1<CreateTriggerRequest> {
   /**
    * Instance to target.
    *
@@ -3421,7 +3456,7 @@ export class CreateTriggerRequest extends Message<CreateTriggerRequest> {
 /**
  * @generated from message rill.runtime.v1.CreateTriggerResponse
  */
-export class CreateTriggerResponse extends Message<CreateTriggerResponse> {
+export class CreateTriggerResponse extends Message$1<CreateTriggerResponse> {
   constructor(data?: PartialMessage<CreateTriggerResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -3454,7 +3489,7 @@ export class CreateTriggerResponse extends Message<CreateTriggerResponse> {
  *
  * @generated from message rill.runtime.v1.ConnectorDriver
  */
-export class ConnectorDriver extends Message<ConnectorDriver> {
+export class ConnectorDriver extends Message$1<ConnectorDriver> {
   /**
    * Name is the name of the connector
    *
@@ -3603,7 +3638,7 @@ export class ConnectorDriver extends Message<ConnectorDriver> {
  *
  * @generated from message rill.runtime.v1.ConnectorDriver.Property
  */
-export class ConnectorDriver_Property extends Message<ConnectorDriver_Property> {
+export class ConnectorDriver_Property extends Message$1<ConnectorDriver_Property> {
   /**
    * The property key
    *
@@ -3770,7 +3805,7 @@ proto3.util.setEnumType(ConnectorDriver_Property_Type, "rill.runtime.v1.Connecto
  *
  * @generated from message rill.runtime.v1.AnalyzedConnector
  */
-export class AnalyzedConnector extends Message<AnalyzedConnector> {
+export class AnalyzedConnector extends Message$1<AnalyzedConnector> {
   /**
    * Connector name
    *
@@ -3891,7 +3926,7 @@ export class AnalyzedConnector extends Message<AnalyzedConnector> {
  *
  * @generated from message rill.runtime.v1.ListConnectorDriversRequest
  */
-export class ListConnectorDriversRequest extends Message<ListConnectorDriversRequest> {
+export class ListConnectorDriversRequest extends Message$1<ListConnectorDriversRequest> {
   constructor(data?: PartialMessage<ListConnectorDriversRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -3924,7 +3959,7 @@ export class ListConnectorDriversRequest extends Message<ListConnectorDriversReq
  *
  * @generated from message rill.runtime.v1.ListConnectorDriversResponse
  */
-export class ListConnectorDriversResponse extends Message<ListConnectorDriversResponse> {
+export class ListConnectorDriversResponse extends Message$1<ListConnectorDriversResponse> {
   /**
    * @generated from field: repeated rill.runtime.v1.ConnectorDriver connectors = 1;
    */
@@ -3963,7 +3998,7 @@ export class ListConnectorDriversResponse extends Message<ListConnectorDriversRe
  *
  * @generated from message rill.runtime.v1.AnalyzeConnectorsRequest
  */
-export class AnalyzeConnectorsRequest extends Message<AnalyzeConnectorsRequest> {
+export class AnalyzeConnectorsRequest extends Message$1<AnalyzeConnectorsRequest> {
   /**
    * @generated from field: string instance_id = 1;
    */
@@ -4002,7 +4037,7 @@ export class AnalyzeConnectorsRequest extends Message<AnalyzeConnectorsRequest> 
  *
  * @generated from message rill.runtime.v1.AnalyzeConnectorsResponse
  */
-export class AnalyzeConnectorsResponse extends Message<AnalyzeConnectorsResponse> {
+export class AnalyzeConnectorsResponse extends Message$1<AnalyzeConnectorsResponse> {
   /**
    * @generated from field: repeated rill.runtime.v1.AnalyzedConnector connectors = 1;
    */
@@ -4041,7 +4076,7 @@ export class AnalyzeConnectorsResponse extends Message<AnalyzeConnectorsResponse
  *
  * @generated from message rill.runtime.v1.ListNotifierConnectorsRequest
  */
-export class ListNotifierConnectorsRequest extends Message<ListNotifierConnectorsRequest> {
+export class ListNotifierConnectorsRequest extends Message$1<ListNotifierConnectorsRequest> {
   /**
    * @generated from field: string instance_id = 1;
    */
@@ -4080,7 +4115,7 @@ export class ListNotifierConnectorsRequest extends Message<ListNotifierConnector
  *
  * @generated from message rill.runtime.v1.ListNotifierConnectorsResponse
  */
-export class ListNotifierConnectorsResponse extends Message<ListNotifierConnectorsResponse> {
+export class ListNotifierConnectorsResponse extends Message$1<ListNotifierConnectorsResponse> {
   /**
    * Note: In this list, the Connector.config property will always be empty.
    *
@@ -4117,11 +4152,466 @@ export class ListNotifierConnectorsResponse extends Message<ListNotifierConnecto
 }
 
 /**
+ * Message exchanged in a conversation
+ *
+ * @generated from message rill.runtime.v1.Message
+ */
+export class Message extends Message$1<Message> {
+  /**
+   * @generated from field: string id = 1;
+   */
+  id = "";
+
+  /**
+   * @generated from field: string role = 2;
+   */
+  role = "";
+
+  /**
+   * @generated from field: repeated rill.ai.v1.ContentBlock content = 3;
+   */
+  content: ContentBlock[] = [];
+
+  /**
+   * @generated from field: google.protobuf.Timestamp created_on = 4;
+   */
+  createdOn?: Timestamp;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp updated_on = 5;
+   */
+  updatedOn?: Timestamp;
+
+  constructor(data?: PartialMessage<Message>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.Message";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "role", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "content", kind: "message", T: ContentBlock, repeated: true },
+    { no: 4, name: "created_on", kind: "message", T: Timestamp },
+    { no: 5, name: "updated_on", kind: "message", T: Timestamp },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Message {
+    return new Message().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): Message {
+    return new Message().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): Message {
+    return new Message().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: Message | PlainMessage<Message> | undefined, b: Message | PlainMessage<Message> | undefined): boolean {
+    return proto3.util.equals(Message, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.AppContext
+ */
+export class AppContext extends Message$1<AppContext> {
+  /**
+   * @generated from field: rill.runtime.v1.AppContextType context_type = 1;
+   */
+  contextType = AppContextType.UNSPECIFIED;
+
+  /**
+   * @generated from field: google.protobuf.Struct context_metadata = 2;
+   */
+  contextMetadata?: Struct;
+
+  constructor(data?: PartialMessage<AppContext>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.AppContext";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "context_type", kind: "enum", T: proto3.getEnumType(AppContextType) },
+    { no: 2, name: "context_metadata", kind: "message", T: Struct },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AppContext {
+    return new AppContext().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): AppContext {
+    return new AppContext().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): AppContext {
+    return new AppContext().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: AppContext | PlainMessage<AppContext> | undefined, b: AppContext | PlainMessage<AppContext> | undefined): boolean {
+    return proto3.util.equals(AppContext, a, b);
+  }
+}
+
+/**
+ * Conversation metadata and messages
+ *
+ * @generated from message rill.runtime.v1.Conversation
+ */
+export class Conversation extends Message$1<Conversation> {
+  /**
+   * @generated from field: string id = 1;
+   */
+  id = "";
+
+  /**
+   * @generated from field: string owner_id = 2;
+   */
+  ownerId = "";
+
+  /**
+   * @generated from field: string title = 3;
+   */
+  title = "";
+
+  /**
+   * @generated from field: google.protobuf.Timestamp created_on = 4;
+   */
+  createdOn?: Timestamp;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp updated_on = 5;
+   */
+  updatedOn?: Timestamp;
+
+  /**
+   * @generated from field: repeated rill.runtime.v1.Message messages = 6;
+   */
+  messages: Message[] = [];
+
+  constructor(data?: PartialMessage<Conversation>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.Conversation";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "owner_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "title", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "created_on", kind: "message", T: Timestamp },
+    { no: 5, name: "updated_on", kind: "message", T: Timestamp },
+    { no: 6, name: "messages", kind: "message", T: Message, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Conversation {
+    return new Conversation().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): Conversation {
+    return new Conversation().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): Conversation {
+    return new Conversation().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: Conversation | PlainMessage<Conversation> | undefined, b: Conversation | PlainMessage<Conversation> | undefined): boolean {
+    return proto3.util.equals(Conversation, a, b);
+  }
+}
+
+/**
+ * Request message for RuntimeService.Complete
+ *
+ * @generated from message rill.runtime.v1.CompleteRequest
+ */
+export class CompleteRequest extends Message$1<CompleteRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * If not provided, creates a new conversation
+   *
+   * @generated from field: optional string conversation_id = 2;
+   */
+  conversationId?: string;
+
+  /**
+   * @generated from field: repeated rill.runtime.v1.Message messages = 3;
+   */
+  messages: Message[] = [];
+
+  /**
+   * @generated from field: repeated string tool_names = 4;
+   */
+  toolNames: string[] = [];
+
+  /**
+   * @generated from field: optional rill.runtime.v1.AppContext app_context = 5;
+   */
+  appContext?: AppContext;
+
+  constructor(data?: PartialMessage<CompleteRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.CompleteRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "conversation_id", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 3, name: "messages", kind: "message", T: Message, repeated: true },
+    { no: 4, name: "tool_names", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 5, name: "app_context", kind: "message", T: AppContext, opt: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CompleteRequest {
+    return new CompleteRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CompleteRequest {
+    return new CompleteRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CompleteRequest {
+    return new CompleteRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: CompleteRequest | PlainMessage<CompleteRequest> | undefined, b: CompleteRequest | PlainMessage<CompleteRequest> | undefined): boolean {
+    return proto3.util.equals(CompleteRequest, a, b);
+  }
+}
+
+/**
+ * Response message for RuntimeService.Complete
+ *
+ * @generated from message rill.runtime.v1.CompleteResponse
+ */
+export class CompleteResponse extends Message$1<CompleteResponse> {
+  /**
+   * @generated from field: string conversation_id = 1;
+   */
+  conversationId = "";
+
+  /**
+   * @generated from field: repeated rill.runtime.v1.Message messages = 2;
+   */
+  messages: Message[] = [];
+
+  constructor(data?: PartialMessage<CompleteResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.CompleteResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "conversation_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "messages", kind: "message", T: Message, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CompleteResponse {
+    return new CompleteResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CompleteResponse {
+    return new CompleteResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CompleteResponse {
+    return new CompleteResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: CompleteResponse | PlainMessage<CompleteResponse> | undefined, b: CompleteResponse | PlainMessage<CompleteResponse> | undefined): boolean {
+    return proto3.util.equals(CompleteResponse, a, b);
+  }
+}
+
+/**
+ * Request message for RuntimeService.ListConversations
+ *
+ * @generated from message rill.runtime.v1.ListConversationsRequest
+ */
+export class ListConversationsRequest extends Message$1<ListConversationsRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  constructor(data?: PartialMessage<ListConversationsRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ListConversationsRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListConversationsRequest {
+    return new ListConversationsRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListConversationsRequest {
+    return new ListConversationsRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListConversationsRequest {
+    return new ListConversationsRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListConversationsRequest | PlainMessage<ListConversationsRequest> | undefined, b: ListConversationsRequest | PlainMessage<ListConversationsRequest> | undefined): boolean {
+    return proto3.util.equals(ListConversationsRequest, a, b);
+  }
+}
+
+/**
+ * Response message for RuntimeService.ListConversations
+ *
+ * @generated from message rill.runtime.v1.ListConversationsResponse
+ */
+export class ListConversationsResponse extends Message$1<ListConversationsResponse> {
+  /**
+   * @generated from field: repeated rill.runtime.v1.Conversation conversations = 1;
+   */
+  conversations: Conversation[] = [];
+
+  constructor(data?: PartialMessage<ListConversationsResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ListConversationsResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "conversations", kind: "message", T: Conversation, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListConversationsResponse {
+    return new ListConversationsResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListConversationsResponse {
+    return new ListConversationsResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListConversationsResponse {
+    return new ListConversationsResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListConversationsResponse | PlainMessage<ListConversationsResponse> | undefined, b: ListConversationsResponse | PlainMessage<ListConversationsResponse> | undefined): boolean {
+    return proto3.util.equals(ListConversationsResponse, a, b);
+  }
+}
+
+/**
+ * Request message for RuntimeService.GetConversation
+ *
+ * @generated from message rill.runtime.v1.GetConversationRequest
+ */
+export class GetConversationRequest extends Message$1<GetConversationRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * @generated from field: string conversation_id = 2;
+   */
+  conversationId = "";
+
+  /**
+   * Whether to include system messages in the response (defaults to false for UI use)
+   *
+   * @generated from field: bool include_system_messages = 3;
+   */
+  includeSystemMessages = false;
+
+  constructor(data?: PartialMessage<GetConversationRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.GetConversationRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "conversation_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "include_system_messages", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetConversationRequest {
+    return new GetConversationRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetConversationRequest {
+    return new GetConversationRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetConversationRequest {
+    return new GetConversationRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetConversationRequest | PlainMessage<GetConversationRequest> | undefined, b: GetConversationRequest | PlainMessage<GetConversationRequest> | undefined): boolean {
+    return proto3.util.equals(GetConversationRequest, a, b);
+  }
+}
+
+/**
+ * Response message for RuntimeService.GetConversation
+ *
+ * @generated from message rill.runtime.v1.GetConversationResponse
+ */
+export class GetConversationResponse extends Message$1<GetConversationResponse> {
+  /**
+   * @generated from field: rill.runtime.v1.Conversation conversation = 1;
+   */
+  conversation?: Conversation;
+
+  constructor(data?: PartialMessage<GetConversationResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.GetConversationResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "conversation", kind: "message", T: Conversation },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetConversationResponse {
+    return new GetConversationResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetConversationResponse {
+    return new GetConversationResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetConversationResponse {
+    return new GetConversationResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetConversationResponse | PlainMessage<GetConversationResponse> | undefined, b: GetConversationResponse | PlainMessage<GetConversationResponse> | undefined): boolean {
+    return proto3.util.equals(GetConversationResponse, a, b);
+  }
+}
+
+/**
  * Request message for RuntimeService.IssueDevJWT
  *
  * @generated from message rill.runtime.v1.IssueDevJWTRequest
  */
-export class IssueDevJWTRequest extends Message<IssueDevJWTRequest> {
+export class IssueDevJWTRequest extends Message$1<IssueDevJWTRequest> {
   /**
    * @generated from field: string name = 1;
    */
@@ -4187,7 +4677,7 @@ export class IssueDevJWTRequest extends Message<IssueDevJWTRequest> {
  *
  * @generated from message rill.runtime.v1.IssueDevJWTResponse
  */
-export class IssueDevJWTResponse extends Message<IssueDevJWTResponse> {
+export class IssueDevJWTResponse extends Message$1<IssueDevJWTResponse> {
   /**
    * @generated from field: string jwt = 1;
    */
@@ -4226,7 +4716,7 @@ export class IssueDevJWTResponse extends Message<IssueDevJWTResponse> {
  *
  * @generated from message rill.runtime.v1.AnalyzeVariablesRequest
  */
-export class AnalyzeVariablesRequest extends Message<AnalyzeVariablesRequest> {
+export class AnalyzeVariablesRequest extends Message$1<AnalyzeVariablesRequest> {
   /**
    * @generated from field: string instance_id = 1;
    */
@@ -4265,7 +4755,7 @@ export class AnalyzeVariablesRequest extends Message<AnalyzeVariablesRequest> {
  *
  * @generated from message rill.runtime.v1.AnalyzeVariablesResponse
  */
-export class AnalyzeVariablesResponse extends Message<AnalyzeVariablesResponse> {
+export class AnalyzeVariablesResponse extends Message$1<AnalyzeVariablesResponse> {
   /**
    * @generated from field: repeated rill.runtime.v1.AnalyzedVariable variables = 1;
    */
@@ -4302,7 +4792,7 @@ export class AnalyzeVariablesResponse extends Message<AnalyzeVariablesResponse> 
 /**
  * @generated from message rill.runtime.v1.AnalyzedVariable
  */
-export class AnalyzedVariable extends Message<AnalyzedVariable> {
+export class AnalyzedVariable extends Message$1<AnalyzedVariable> {
   /**
    * Name of the variable.
    *

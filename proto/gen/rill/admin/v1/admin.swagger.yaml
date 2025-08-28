@@ -2785,11 +2785,12 @@ paths:
                 type: string
               public:
                 type: boolean
+              directoryName:
+                type: string
+                description: |-
+                  directory_name should be the most recently observed local directory name for the project.
+                  See ListProjectsForFingerprint for more context.
               provisioner:
-                type: string
-              prodOlapDriver:
-                type: string
-              prodOlapDsn:
                 type: string
               prodSlots:
                 type: string
@@ -2904,6 +2905,8 @@ paths:
                 type: string
               public:
                 type: boolean
+              directoryName:
+                type: string
               prodBranch:
                 type: string
               gitRemote:
@@ -3429,6 +3432,45 @@ paths:
           type: string
       tags:
         - AdminService
+  /v1/projects-for-fingerprint:
+    get:
+      summary: |-
+        ListProjectsForFingerprint lists all projects the current user has access to that match the provided local project details.
+        This can be used to produce a short list of cloud projects that are likely to have been deployed from a local project.
+      operationId: AdminService_ListProjectsForFingerprint
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListProjectsForFingerprintResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: directoryName
+          in: query
+          required: false
+          type: string
+        - name: gitRemote
+          in: query
+          required: false
+          type: string
+        - name: subPath
+          in: query
+          required: false
+          type: string
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
+          in: query
+          required: false
+          type: string
+      tags:
+        - AdminService
   /v1/projects/-/redeploy:
     post:
       summary: |-
@@ -3612,6 +3654,12 @@ paths:
                   $ref: '#/definitions/v1ResourceName'
               webOpenMode:
                 type: string
+              whereFilterJson:
+                type: string
+              accessibleFields:
+                type: array
+                items:
+                  type: string
       tags:
         - AdminService
   /v1/roles:
@@ -4431,6 +4479,10 @@ definitions:
     properties:
       displayName:
         type: string
+      refreshCron:
+        type: string
+      refreshTimeZone:
+        type: string
       intervalDuration:
         type: string
       resolver:
@@ -4659,6 +4711,12 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1CompletionMessage'
+      tools:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1Tool'
+        title: Optional list of tools that the AI can use during completion
   v1CompleteResponse:
     type: object
     properties:
@@ -4671,6 +4729,13 @@ definitions:
         type: string
       data:
         type: string
+        title: Deprecated in favor of content
+      content:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ContentBlock'
+    title: Completion message for AI API calls
   v1Condition:
     type: object
     properties:
@@ -4683,6 +4748,16 @@ definitions:
           $ref: '#/definitions/v1Expression'
   v1ConnectProjectToGithubResponse:
     type: object
+  v1ContentBlock:
+    type: object
+    properties:
+      text:
+        type: string
+      toolCall:
+        $ref: '#/definitions/v1ToolCall'
+      toolResult:
+        $ref: '#/definitions/v1ToolResult'
+    title: Content block within a message
   v1CreateAlertResponse:
     type: object
     properties:
@@ -5325,6 +5400,16 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1WhitelistedDomain'
+  v1ListProjectsForFingerprintResponse:
+    type: object
+    properties:
+      projects:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1Project'
+      nextPageToken:
+        type: string
   v1ListProjectsForOrganizationAndUserResponse:
     type: object
     properties:
@@ -5697,6 +5782,8 @@ definitions:
         type: boolean
       createdByUserId:
         type: string
+      directoryName:
+        type: string
       provisioner:
         type: string
       gitRemote:
@@ -5709,10 +5796,6 @@ definitions:
       prodBranch:
         type: string
       archiveAssetId:
-        type: string
-      prodOlapDriver:
-        type: string
-      prodOlapDsn:
         type: string
       prodSlots:
         type: string
@@ -6305,6 +6388,39 @@ definitions:
     properties:
       user:
         $ref: '#/definitions/v1User'
+  v1Tool:
+    type: object
+    properties:
+      name:
+        type: string
+        title: The name of the tool
+      description:
+        type: string
+        title: A human-readable description of the tool
+      inputSchema:
+        type: string
+        title: JSON Schema defining the expected parameters for the tool (as JSON string)
+    title: Tool represents a tool definition for AI usage
+  v1ToolCall:
+    type: object
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+      input:
+        type: object
+    title: Tool call specification
+  v1ToolResult:
+    type: object
+    properties:
+      id:
+        type: string
+      content:
+        type: string
+      isError:
+        type: boolean
+    title: Tool execution result
   v1TriggerReconcileResponse:
     type: object
   v1TriggerRedeployRequest:

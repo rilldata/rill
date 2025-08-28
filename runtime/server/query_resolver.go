@@ -82,9 +82,9 @@ func (s *Server) QueryResolver(ctx context.Context, req *runtimev1.QueryResolver
 	}
 
 	// Return the response
-	metaPB, err := structpb.NewStruct(res.Meta())
+	metaPB, err := pbutil.ToStruct(res.Meta(), nil)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to convert meta to struct: %v", err)
+		metaPB = &structpb.Struct{Fields: make(map[string]*structpb.Value)}
 	}
 	return &runtimev1.QueryResolverResponse{
 		Meta:   metaPB,

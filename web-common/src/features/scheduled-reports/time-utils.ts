@@ -1,3 +1,4 @@
+import type { V1Schedule } from "@rilldata/web-common/runtime-client";
 import { DateTime } from "luxon";
 import {
   getAbbreviationForIANA,
@@ -162,4 +163,27 @@ export function makeTimeZoneOptions(availableTimeZones: string[] | undefined) {
       label: abbreviation + (value === userLocalIANA ? " (Local)" : ""),
     };
   });
+}
+
+export function getInitialScheduleFormValues() {
+  return {
+    frequency: ReportFrequency.Weekly,
+    dayOfWeek: getTodaysDayOfWeek(),
+    dayOfMonth: 1,
+    timeOfDay: getTimeIn24FormatFromDateTime(getNextQuarterHour()),
+    timeZone: getLocalIANA(),
+  };
+}
+
+export function getExistingScheduleFormValues(
+  schedule: V1Schedule | undefined,
+) {
+  if (!schedule?.cron) return getInitialScheduleFormValues();
+  return {
+    frequency: getFrequencyFromCronExpression(schedule?.cron),
+    dayOfWeek: getDayOfWeekFromCronExpression(schedule?.cron),
+    dayOfMonth: getDayOfMonthFromCronExpression(schedule?.cron),
+    timeOfDay: getTimeOfDayFromCronExpression(schedule?.cron),
+    timeZone: schedule?.timeZone ?? getLocalIANA(),
+  };
 }

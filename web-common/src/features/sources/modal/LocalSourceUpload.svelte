@@ -68,7 +68,7 @@
     >Upload a CSV, JSON or Parquet file
   </Button>
 </div>
-<div class="flex">
+<div class="flex p-6">
   <div class="grow" />
   <Button onClick={() => dispatch("back")} type="secondary">Back</Button>
 </div>

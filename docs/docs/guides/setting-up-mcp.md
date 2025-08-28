@@ -13,7 +13,7 @@ Connecting your Rill project to your AI Agent has never been easier!
 
 Before you begin, make sure you have:
 
-- A MCP Client (Claude Desktop, ChatGPT Desktop, etc.)
+- An MCP Client (Claude Desktop, ChatGPT Desktop, etc.)
 - **Access to a [Rill Project](https://ui.rilldata.com/)** 
 
 For detailed steps, please refer to our documentation on [MCP Servers](/explore/mcp)
@@ -23,7 +23,7 @@ For detailed steps, please refer to our documentation on [MCP Servers](/explore/
 <img src='/img/explore/mcp/project-ai.png' class='rounded-gif'/>
 <br />
 
-In your project's AI tab, you'll be able to create a [user based token] and copy the MCP config.json directly in the UI. Simple paste this into your application of choice.
+In your project's AI tab, you'll be able to create a [user-based token] and copy the MCP config.json directly in the UI. Simply paste this into your application of choice.
 
 
 
@@ -32,10 +32,17 @@ Depending on your client application, paste the config from step 1.
 
 - [Anthropic's Claude Desktop Documentation](https://modelcontextprotocol.io/quickstart/user)
 - [OpenAI's ChatGPT Documentation](https://platform.openai.com/docs/guides/tools-remote-mcp#page-top)
-- [Cursor Documetnation](https://docs.cursor.com/context/model-context-protocol)
+- [Cursor Documentation](https://docs.cursor.com/context/model-context-protocol)
 - [Windsurf Documentation](https://docs.windsurf.com/windsurf/cascade/mcp)
 
+### Working with OpenAI's ChatGPT
 
+To use Rill with OpenAI's ChatGPT, you'll need to follow the same steps as above to set up your MCP connection. Once that's done, you can start querying your Rill metrics directly from ChatGPT interfaces.
+
+- Import your remote MCP servers directly in [ChatGPT settings](https://chatgpt.com/#settings) or in the desktop application navigate to settings by clicking on your profile picture in the bottom left corner.
+- Connect your server in the Connectors tab. You may have to add the server as a source with the create button.
+
+> Note: You may need at least the `Plus` plan to access connectors.
 
 ## Step 3: Start Querying your Agent about your Rill metrics.
 
@@ -47,10 +54,9 @@ A below is an example chat with Claude using our MCP server to get information o
 
 
 ## Step 4: Agent Customization
-If you watched the whole clip above, you'll see that Claude tries to make code a webapp to visualize the information that it found, but you'll see it takes time. (fast-forwarded in the clip) Instead, what you can do is provide the Agent context and instructions on how you'd like the Agent to behave. 
+If you watched the whole clip above, you'll see that Claude tries to code a web app to visualize the information it found, but you'll notice it takes time (fast-forwarded in the clip). Instead, you can provide the Agent with context and instructions on how you'd like the Agent to behave. 
 
-I highly recommend taking a look at our series of videos on [Conversation BI with Claude and Rill](https://www.youtube.com/playlist?list=PL_ZoDsg2yFKjSeetRNHbdI4GzmVn-XbBT
-).
+I highly recommend taking a look at our series of videos on [Conversation BI with Claude and Rill](https://www.youtube.com/playlist?list=PL_ZoDsg2yFKjSeetRNHbdI4GzmVn-XbBT).
 
 <div style={{ 
   position: "relative", 

@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"maps"
+	"strings"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/mitchellh/mapstructure"
@@ -25,40 +25,63 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "Postgres",
 	Description: "Connect to Postgres.",
-	DocsURL:     "https://docs.rilldata.com/reference/connectors/postgres",
+	DocsURL:     "https://docs.rilldata.com/connect/data-source/postgres",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
-			Key:    "database_url",
-			Secret: true,
-		},
-	},
-	// Important: Any edits to the below properties must be accompanied by changes to the client-side form validation schemas.
-	SourceProperties: []*drivers.PropertySpec{
-		{
-			Key:         "sql",
-			Type:        drivers.StringPropertyType,
-			Required:    true,
-			DisplayName: "SQL",
-			Description: "Query to extract data from Postgres.",
-			Placeholder: "select * from table;",
-		},
-		{
-			Key:         "database_url",
+			Key:         "dsn",
 			Type:        drivers.StringPropertyType,
 			DisplayName: "Postgres Connection String",
-			Required:    false,
 			DocsURL:     "https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING",
 			Placeholder: "postgresql://postgres:postgres@localhost:5432/postgres",
-			Hint:        "Can be configured here or by setting the 'connector.postgres.database_url' environment variable (using '.env' or '--env')",
+			Hint:        "Can be configured here or by setting the 'connector.postgres.dsn' environment variable (using '.env' or '--env').",
 			Secret:      true,
 		},
 		{
-			Key:         "name",
+			Key:         "host",
 			Type:        drivers.StringPropertyType,
-			DisplayName: "Source name",
-			Description: "The name of the source",
-			Placeholder: "my_new_source",
+			DisplayName: "Host",
+			Placeholder: "localhost",
 			Required:    true,
+			Hint:        "Postgres server hostname or IP address",
+		},
+		{
+			Key:         "port",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Port",
+			Placeholder: "5432",
+			Default:     "5432",
+			Hint:        "Postgres server port (default is 5432)",
+		},
+		{
+			Key:         "user",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Username",
+			Placeholder: "postgres",
+			Required:    true,
+			Hint:        "Postgres username for authentication",
+		},
+		{
+			Key:         "password",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Password",
+			Placeholder: "your_password",
+			Hint:        "Postgres password for authentication",
+			Secret:      true,
+		},
+		{
+			Key:         "dbname",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Database",
+			Placeholder: "postgres",
+			Required:    true,
+			Hint:        "Name of the Postgres database to connect to",
+		},
+		{
+			Key:         "sslmode",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "SSL Mode",
+			Placeholder: "require",
+			Hint:        "Options include disable, require, verify-ca, and verify-full",
 		},
 	},
 	ImplementsSQLStore: true,
@@ -69,13 +92,74 @@ type driver struct{}
 type ConfigProperties struct {
 	DatabaseURL string `mapstructure:"database_url"`
 	DSN         string `mapstructure:"dsn"`
+	Host        string `mapstructure:"host"`
+	Port        string `mapstructure:"port"`
+	DBname      string `mapstructure:"dbname"`
+	User        string `mapstructure:"user"`
+	Password    string `mapstructure:"password"`
+	SSLMode     string `mapstructure:"sslmode"`
+}
+
+func (c *ConfigProperties) Validate() error {
+	var dsn string
+	if c.DSN != "" {
+		dsn = c.DSN
+	} else {
+		dsn = c.DatabaseURL
+	}
+
+	var set []string
+	if c.Host != "" {
+		set = append(set, "host")
+	}
+	if c.Port != "" {
+		set = append(set, "port")
+	}
+	if c.User != "" {
+		set = append(set, "user")
+	}
+	if c.Password != "" {
+		set = append(set, "password")
+	}
+	if c.DBname != "" {
+		set = append(set, "dbname")
+	}
+	if c.SSLMode != "" {
+		set = append(set, "sslmode")
+	}
+	if dsn != "" && len(set) > 0 {
+		return fmt.Errorf("postgres: Only one of 'dsn' or [%s] can be set", strings.Join(set, ", "))
+	}
+	return nil
 }
 
 func (c *ConfigProperties) ResolveDSN() string {
 	if c.DSN != "" {
 		return c.DSN
 	}
-	return c.DatabaseURL
+	if c.DatabaseURL != "" {
+		return c.DatabaseURL
+	}
+	var parts []string
+	if c.Host != "" {
+		parts = append(parts, "host="+quotedValue(c.Host))
+	}
+	if c.Port != "" {
+		parts = append(parts, "port="+quotedValue(c.Port))
+	}
+	if c.User != "" {
+		parts = append(parts, "user="+quotedValue(c.User))
+	}
+	if c.Password != "" {
+		parts = append(parts, "password="+quotedValue(c.Password))
+	}
+	if c.DBname != "" {
+		parts = append(parts, "dbname="+quotedValue(c.DBname))
+	}
+	if c.SSLMode != "" {
+		parts = append(parts, "sslmode="+quotedValue(c.SSLMode))
+	}
+	return strings.Join(parts, " ")
 }
 
 func (d driver) Open(instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
@@ -83,8 +167,18 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		return nil, errors.New("postgres driver can't be shared")
 	}
 
+	conf := &ConfigProperties{}
+	err := mapstructure.WeakDecode(config, conf)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode config: %w", err)
+	}
+
+	if err := conf.Validate(); err != nil {
+		return nil, err
+	}
+
 	return &connection{
-		config: config,
+		config: conf,
 	}, nil
 }
 
@@ -101,7 +195,7 @@ func (d driver) TertiarySourceConnectors(ctx context.Context, src map[string]any
 }
 
 type connection struct {
-	config map[string]any
+	config *ConfigProperties
 }
 
 // Ping implements drivers.Handle.
@@ -132,7 +226,9 @@ func (c *connection) Driver() string {
 
 // Config implements drivers.Connection.
 func (c *connection) Config() map[string]any {
-	return maps.Clone(c.config)
+	var m map[string]any
+	_ = mapstructure.WeakDecode(c.config, &m)
+	return m
 }
 
 // Close implements drivers.Connection.
@@ -207,13 +303,9 @@ func (c *connection) AsNotifier(properties map[string]any) (drivers.Notifier, er
 
 // getDB opens a new sqlx.DB connection using the config.
 func (c *connection) getDB() (*sqlx.DB, error) {
-	conf := &ConfigProperties{}
-	if err := mapstructure.WeakDecode(c.config, conf); err != nil {
-		return nil, fmt.Errorf("failed to decode config: %w", err)
-	}
-	dsn := conf.ResolveDSN()
+	dsn := c.config.ResolveDSN()
 	if dsn == "" {
-		return nil, fmt.Errorf("database_url or dsn not provided")
+		return nil, fmt.Errorf("missing required fields. When using individual fields, host, user, and dbname are required")
 	}
 
 	db, err := sqlx.Open("pgx", dsn)
@@ -221,4 +313,14 @@ func (c *connection) getDB() (*sqlx.DB, error) {
 		return nil, fmt.Errorf("failed to open connection: %w", err)
 	}
 	return db, nil
+}
+
+func quotedValue(val string) string {
+	// Quote if it contains special characters
+	if strings.ContainsAny(val, " \t\r\n'\\=") {
+		val = strings.ReplaceAll(val, `\`, `\\`)
+		val = strings.ReplaceAll(val, `'`, `\'`)
+		return fmt.Sprintf("'%s'", val)
+	}
+	return val
 }

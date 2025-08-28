@@ -328,6 +328,23 @@ export interface V1AnalyzedVariable {
   usedBy?: V1ResourceName[];
 }
 
+export type V1AppContextContextMetadata = { [key: string]: unknown };
+
+export interface V1AppContext {
+  contextType?: V1AppContextType;
+  contextMetadata?: V1AppContextContextMetadata;
+}
+
+export type V1AppContextType =
+  (typeof V1AppContextType)[keyof typeof V1AppContextType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1AppContextType = {
+  APP_CONTEXT_TYPE_UNSPECIFIED: "APP_CONTEXT_TYPE_UNSPECIFIED",
+  APP_CONTEXT_TYPE_PROJECT_CHAT: "APP_CONTEXT_TYPE_PROJECT_CHAT",
+  APP_CONTEXT_TYPE_EXPLORE_DASHBOARD: "APP_CONTEXT_TYPE_EXPLORE_DASHBOARD",
+} as const;
+
 export type V1AssertionResultFailRow = { [key: string]: unknown };
 
 export interface V1AssertionResult {
@@ -608,6 +625,11 @@ export interface V1ColumnTopKResponse {
   categoricalSummary?: V1CategoricalSummary;
 }
 
+export interface V1CompleteResponse {
+  conversationId?: string;
+  messages?: V1Message[];
+}
+
 export interface V1Component {
   spec?: V1ComponentSpec;
   state?: V1ComponentState;
@@ -699,6 +721,21 @@ export interface V1ConnectorState {
 export interface V1ConnectorV2 {
   spec?: V1ConnectorSpec;
   state?: V1ConnectorState;
+}
+
+export interface V1ContentBlock {
+  text?: string;
+  toolCall?: V1ToolCall;
+  toolResult?: V1ToolResult;
+}
+
+export interface V1Conversation {
+  id?: string;
+  ownerId?: string;
+  title?: string;
+  createdOn?: string;
+  updatedOn?: string;
+  messages?: V1Message[];
 }
 
 export interface V1CreateDirectoryResponse {
@@ -869,8 +906,7 @@ These are not currently parsed from YAML, but will be derived from the parent me
   banner?: string;
   lockTimeZone?: boolean;
   allowCustomTimeRange?: boolean;
-  /** When true, it indicates that the explore was defined in a metrics view.
-This currently happens for legacy metrics views (that don't have `version: 1`), which also emits explores. */
+  /** When true, it indicates that the explore was defined in a metrics view either explicitly or emitted because version was not set. */
   definedInMetricsView?: boolean;
 }
 
@@ -995,6 +1031,10 @@ export type V1GenerateResolverResponseResolverProperties = {
 export interface V1GenerateResolverResponse {
   resolver?: string;
   resolverProperties?: V1GenerateResolverResponseResolverProperties;
+}
+
+export interface V1GetConversationResponse {
+  conversation?: V1Conversation;
 }
 
 export interface V1GetExploreResponse {
@@ -1125,6 +1165,10 @@ export interface V1ListConnectorDriversResponse {
   connectors?: V1ConnectorDriver[];
 }
 
+export interface V1ListConversationsResponse {
+  conversations?: V1Conversation[];
+}
+
 export interface V1ListDatabaseSchemasResponse {
   databaseSchemas?: V1DatabaseSchemaInfo[];
 }
@@ -1177,6 +1221,14 @@ export const V1LogLevel = {
 export interface V1MapType {
   keyType?: Runtimev1Type;
   valueType?: Runtimev1Type;
+}
+
+export interface V1Message {
+  id?: string;
+  role?: string;
+  content?: V1ContentBlock[];
+  createdOn?: string;
+  updatedOn?: string;
 }
 
 export interface V1MetricsView {
@@ -1277,6 +1329,32 @@ export interface V1MetricsViewAggregationResponse {
 export interface V1MetricsViewAggregationSort {
   name?: string;
   desc?: boolean;
+}
+
+export interface V1MetricsViewAnnotationsResponse {
+  rows?: V1MetricsViewAnnotationsResponseAnnotation[];
+}
+
+/**
+ * Any other fields are captured here. Will be used in predicates in the future.
+ */
+export type V1MetricsViewAnnotationsResponseAnnotationAdditionalFields = {
+  [key: string]: unknown;
+};
+
+export interface V1MetricsViewAnnotationsResponseAnnotation {
+  /** Time when the annotation applies. Maps to `time` column from the table. */
+  time?: string;
+  /** Optional. Time when the annotation ends. Only present if the underlying table has the `time_end` column. */
+  timeEnd?: string;
+  /** User defined description of the annotation applies. Maps to `description` column from the table. */
+  description?: string;
+  /** Optional. Minimum duration this annotation is displayed for. Maps to `duration` column from the table. */
+  duration?: string;
+  /** Any other fields are captured here. Will be used in predicates in the future. */
+  additionalFields?: V1MetricsViewAnnotationsResponseAnnotationAdditionalFields;
+  /** List of measure names that this annotation applies to. If empty, no restrictions apply. */
+  forMeasures?: string[];
 }
 
 export interface V1MetricsViewColumn {
@@ -1414,6 +1492,8 @@ export interface V1MetricsViewSort {
 }
 
 export interface V1MetricsViewSpec {
+  /** name of parent metrics view, if this is a derived metrics view. If this is set then certain fields like table, connector, database*, model, dimensions, and measures will only be set in `state.valid_spec`. */
+  parent?: string;
   connector?: string;
   database?: string;
   databaseSchema?: string;
@@ -1430,6 +1510,9 @@ export interface V1MetricsViewSpec {
   watermarkExpression?: string;
   dimensions?: MetricsViewSpecDimension[];
   measures?: MetricsViewSpecMeasure[];
+  parentDimensions?: V1FieldSelector;
+  parentMeasures?: V1FieldSelector;
+  annotations?: V1MetricsViewSpecAnnotation[];
   securityRules?: V1SecurityRule[];
   /** ISO 8601 weekday number to use as the base for time aggregations by week. Defaults to 1 (Monday). */
   firstDayOfWeek?: number;
@@ -1439,6 +1522,29 @@ export interface V1MetricsViewSpec {
   cacheEnabled?: boolean;
   cacheKeySql?: string;
   cacheKeyTtlSeconds?: string;
+}
+
+/**
+ * Annotations that can be applied to measures. Each annotation needs to have a model or a table defined.
+1. The underlying model/table has to have a `time` and `description` columns.
+2. Can additionally have `time_end` column to convert the annotation to range type annotation.
+3. Can additionally have `duration` column, this is used to not query for annotations greater than selected grain in dashboard. Also forces `time` and `time_end` in UI to be truncated to selected grain.
+ */
+export interface V1MetricsViewSpecAnnotation {
+  name?: string;
+  connector?: string;
+  database?: string;
+  databaseSchema?: string;
+  table?: string;
+  /** Name of the model that source of annotation. Either table or model should be set. */
+  model?: string;
+  /** Measures to apply the annotation to. If `measures_selector` is set, this will only be set in `state.valid_spec`. */
+  measures?: string[];
+  measuresSelector?: V1FieldSelector;
+  /** Signifies that the underlying table has `time_end` column. Will be used while querying to add additional filter. */
+  hasTimeEnd?: boolean;
+  /** Signifies that the underlying table has `duration` column. Will be used while querying to add additional filter. */
+  hasDuration?: boolean;
 }
 
 export interface V1MetricsViewState {
@@ -2236,6 +2342,20 @@ export interface V1TimeSeriesValue {
   records?: V1TimeSeriesValueRecords;
 }
 
+export type V1ToolCallInput = { [key: string]: unknown };
+
+export interface V1ToolCall {
+  id?: string;
+  name?: string;
+  input?: V1ToolCallInput;
+}
+
+export interface V1ToolResult {
+  id?: string;
+  content?: string;
+  isError?: boolean;
+}
+
 export interface V1TopK {
   entries?: TopKEntry[];
 }
@@ -2362,6 +2482,20 @@ export type RuntimeServiceEditInstanceBody = {
   annotations?: RuntimeServiceEditInstanceBodyAnnotations;
 };
 
+export type RuntimeServiceCompleteBody = {
+  conversationId?: string;
+  messages?: V1Message[];
+  toolNames?: string[];
+  appContext?: V1AppContext;
+};
+
+export type RuntimeServiceGetConversationParams = {
+  /**
+   * Whether to include system messages in the response (defaults to false for UI use)
+   */
+  includeSystemMessages?: boolean;
+};
+
 export type RuntimeServiceListFilesParams = {
   glob?: string;
 };
@@ -2418,6 +2552,7 @@ export type RuntimeServiceRenameFileBody = {
 
 export type RuntimeServiceUnpackEmptyBody = {
   displayName?: string;
+  olap?: string;
   force?: boolean;
 };
 
@@ -2583,6 +2718,16 @@ export type QueryServiceMetricsViewAggregationBody = {
   exact?: boolean;
   fillMissing?: boolean;
   rows?: boolean;
+};
+
+export type QueryServiceMetricsViewAnnotationsBody = {
+  measures?: string[];
+  priority?: number;
+  timeRange?: V1TimeRange;
+  timeGrain?: V1TimeGrain;
+  timeZone?: string;
+  limit?: string;
+  offset?: string;
 };
 
 export type QueryServiceMetricsViewComparisonBody = {

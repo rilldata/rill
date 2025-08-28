@@ -53,6 +53,14 @@
 
   function onSelectItem(e: MouseEvent) {
     if (e.shiftKey) return;
+
+    // Check if user has selected text
+    const selection = window.getSelection();
+    if (selection && selection.toString().length > 0) {
+      // User has selected text, don't trigger row selection
+      return;
+    }
+
     dispatch("select-item", { index: row.index, meta: e.ctrlKey || e.metaKey });
   }
 

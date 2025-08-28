@@ -150,7 +150,7 @@ func (p *Parser) parseStem(paths []string, ymlPath, yml, sqlPath, sql string) (*
 			res.YAMLOverride = &envOverride
 
 			// Apply the override immediately in case it changes any of the commonYAML fields
-			err := res.YAMLOverride.Decode(&cfg)
+			err := res.YAMLOverride.Decode(cfg)
 			if err != nil {
 				return nil, pathError{path: ymlPath, err: newYAMLError(err)}
 			}

@@ -15,6 +15,7 @@
     type ExploreLinkError,
   } from "@rilldata/web-common/features/explore-mappers/types";
   import { getErrorMessage } from "@rilldata/web-common/features/explore-mappers/utils";
+  import { isEmbedPage } from "@rilldata/web-common/layout/navigation/navigation-utils";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { derived } from "svelte/store";
   import { useTransformCanvasToExploreState } from "./canvas-explore-transformer";
@@ -31,6 +32,8 @@
 
   $: spec = component.specStore;
   $: metricsViewName = $spec?.metrics_view;
+
+  $: isEmbedded = isEmbedPage($page);
 
   // Check if component can be linked to explore
   $: exploreAvailability = useExploreAvailability(instanceId, metricsViewName);
@@ -84,7 +87,10 @@
   }
 
   $: canNavigate =
-    $exploreAvailability.isAvailable && !isNavigating && !!exploreState;
+    $exploreAvailability.isAvailable &&
+    !isNavigating &&
+    !!exploreState &&
+    !isEmbedded;
 </script>
 
 {#if $exploreAvailability.isAvailable}

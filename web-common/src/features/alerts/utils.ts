@@ -1,18 +1,12 @@
 import { type AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
 import { AllMeasureFilterTypeOptions } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-options";
-import { getComparisonLabel } from "@rilldata/web-common/lib/time/comparisons";
 import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config";
+import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types.ts";
 import type { V1MetricsViewSpec } from "@rilldata/web-common/runtime-client";
 import type { TaintedFields } from "sveltekit-superforms";
 
-const IgnoredKeys: Partial<Record<keyof AlertFormValues, boolean>> = {
-  whereFilter: true,
-  timeRange: true,
-};
-
 export function isSomeFieldTainted(taintedFields: TaintedFields<any>) {
   for (const key in taintedFields) {
-    if (key in IgnoredKeys) continue;
     if (typeof taintedFields[key] === "boolean") {
       if (taintedFields[key]) return true;
       continue;
@@ -30,6 +24,7 @@ export function isSomeFieldTainted(taintedFields: TaintedFields<any>) {
 
 export function generateAlertName(
   formValues: AlertFormValues,
+  selectedComparisonTimeRange: DashboardTimeControls | undefined,
   metricsViewSpec: V1MetricsViewSpec,
 ) {
   const firstCriteria = formValues.criteria[0];
@@ -48,12 +43,11 @@ export function generateAlertName(
 
   let comparisonTitle = "";
   if (
-    formValues.comparisonTimeRange?.isoOffset &&
-    formValues.comparisonTimeRange.isoOffset in TIME_COMPARISON
+    selectedComparisonTimeRange?.name &&
+    selectedComparisonTimeRange?.name in TIME_COMPARISON
   ) {
-    const label = getComparisonLabel(
-      formValues.comparisonTimeRange,
-    ).toLowerCase();
+    const label =
+      TIME_COMPARISON[selectedComparisonTimeRange.name].label.toLowerCase();
     comparisonTitle = ` vs ${label}`;
   }
 

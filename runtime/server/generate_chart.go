@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
+	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
-	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/server/auth"
@@ -74,9 +74,30 @@ func (s *Server) GenerateRenderer(ctx context.Context, req *runtimev1.GenerateRe
 // It currently only supports generating a Vega lite render.
 func (s *Server) generateRendererWithAI(ctx context.Context, instanceID, userPrompt string, schema *runtimev1.StructType) (string, map[string]any, error) {
 	// Build messages
-	msgs := []*drivers.CompletionMessage{
-		{Role: "system", Data: vegaSpecSystemPrompt()},
-		{Role: "user", Data: vegaSpecUserPrompt(userPrompt, schema)},
+	systemPrompt := vegaSpecSystemPrompt()
+	userPrompt = vegaSpecUserPrompt(userPrompt, schema)
+
+	msgs := []*aiv1.CompletionMessage{
+		{
+			Role: "system",
+			Content: []*aiv1.ContentBlock{
+				{
+					BlockType: &aiv1.ContentBlock_Text{
+						Text: systemPrompt,
+					},
+				},
+			},
+		},
+		{
+			Role: "user",
+			Content: []*aiv1.ContentBlock{
+				{
+					BlockType: &aiv1.ContentBlock_Text{
+						Text: userPrompt,
+					},
+				},
+			},
+		},
 	}
 
 	// Connect to the AI service configured for the instance
@@ -91,17 +112,31 @@ func (s *Server) generateRendererWithAI(ctx context.Context, instanceID, userPro
 	defer cancel()
 
 	// Call AI service to infer a metrics view YAML
-	res, err := ai.Complete(ctx, msgs)
+	res, err := ai.Complete(ctx, msgs, nil)
 	if err != nil {
 		return "", nil, err
 	}
 
-	// The AI may produce Markdown output. Remove the code tags around the JSON.
-	res.Data = strings.TrimPrefix(res.Data, "```json")
-	res.Data = strings.TrimPrefix(res.Data, "```")
-	res.Data = strings.TrimSuffix(res.Data, "```")
+	// Extract text from content blocks
+	var responseText string
+	for _, block := range res.Content {
+		switch blockType := block.GetBlockType().(type) {
+		case *aiv1.ContentBlock_Text:
+			if text := blockType.Text; text != "" {
+				responseText += text
+			}
+		default:
+			// For chart generation, we only expect text responses
+			return "", nil, fmt.Errorf("unexpected content block type in AI response: %T", blockType)
+		}
+	}
 
-	return "vega_lite", map[string]any{"spec": res.Data}, nil
+	// The AI may produce Markdown output. Remove the code tags around the JSON.
+	responseText = strings.TrimPrefix(responseText, "```json")
+	responseText = strings.TrimPrefix(responseText, "```")
+	responseText = strings.TrimSuffix(responseText, "```")
+
+	return "vega_lite", map[string]any{"spec": responseText}, nil
 }
 
 // vegaSpecSystemPrompt returns the static system prompt for the Vega spec generation AI.

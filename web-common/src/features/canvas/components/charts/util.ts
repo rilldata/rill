@@ -1,14 +1,33 @@
+import type { CartesianChartSpec } from "@rilldata/web-common/features/canvas/components/charts/cartesian-charts/CartesianChart";
+import type { HeatmapChartSpec } from "@rilldata/web-common/features/canvas/components/charts/heatmap-charts/HeatmapChart";
+import { COMPARIONS_COLORS } from "@rilldata/web-common/features/dashboards/config";
+import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
 import { adjustOffsetForZone } from "@rilldata/web-common/lib/convertTimestampPreview";
 import { timeGrainToDuration } from "@rilldata/web-common/lib/time/grains";
 import {
   V1TimeGrain,
   type V1MetricsViewAggregationResponseDataItem,
+  type V1MetricsViewAggregationSort,
 } from "@rilldata/web-common/runtime-client";
 import merge from "deepmerge";
 import type { Config } from "vega-lite";
 import { CHART_CONFIG, type ChartSpec } from "./";
-import type { ChartDataResult, ChartType } from "./types";
+import type {
+  ChartDataResult,
+  ChartDomainValues,
+  ChartSortDirection,
+  ChartType,
+  FieldConfig,
+} from "./types";
 
+export function isFieldConfig(field: unknown): field is FieldConfig {
+  return (
+    typeof field === "object" &&
+    field !== null &&
+    "type" in field &&
+    "field" in field
+  );
+}
 export function generateSpec(
   chartType: ChartType,
   rillChartSpec: ChartSpec,
@@ -16,10 +35,6 @@ export function generateSpec(
 ) {
   if (data.isFetching || data.error) return {};
   return CHART_CONFIG[chartType]?.generateSpec(rillChartSpec, data);
-}
-
-export function isChartLineLike(chartType: ChartType) {
-  return chartType === "line_chart" || chartType === "area_chart";
 }
 
 export function mergedVlConfig(
@@ -55,7 +70,7 @@ export interface FieldsByType {
 }
 
 export function getFieldsByType(spec: ChartSpec): FieldsByType {
-  const measures: string[] = [];
+  let measures: string[] = [];
   const dimensions: string[] = [];
   const timeDimensions: string[] = [];
 
@@ -66,7 +81,7 @@ export function getFieldsByType(spec: ChartSpec): FieldsByType {
     }
 
     // Check if current object is a FieldConfig with type and field
-    if ("type" in obj && "field" in obj && typeof obj.field === "string") {
+    if (isFieldConfig(obj)) {
       const type = obj.type as string;
       const field = obj.field;
 
@@ -92,6 +107,10 @@ export function getFieldsByType(spec: ChartSpec): FieldsByType {
   };
 
   checkFields(spec);
+
+  if ("measures" in spec && Array.isArray(spec.measures)) {
+    measures = spec.measures;
+  }
   return {
     measures,
     dimensions,
@@ -108,13 +127,165 @@ export function adjustDataForTimeZone(
   if (!data) return data;
 
   return data.map((datum) => {
+    // Create a shallow copy of the datum to avoid mutating the original
+    const adjustedDatum = { ...datum };
     timeFields.forEach((timeField) => {
-      datum[timeField] = adjustOffsetForZone(
+      adjustedDatum[timeField] = adjustOffsetForZone(
         datum[timeField] as string,
         selectedTimezone,
         timeGrainToDuration(timeGrain),
       );
     });
-    return datum;
+    return adjustedDatum;
   });
+}
+
+/**
+ * Converts a Vega-style sort configuration to Rill's aggregation sort format.
+ */
+export function vegaSortToAggregationSort(
+  encoder: "x" | "y",
+  config: CartesianChartSpec | HeatmapChartSpec,
+  defaultSort: ChartSortDirection,
+): V1MetricsViewAggregationSort | undefined {
+  const encoderConfig = config[encoder];
+
+  if (!encoderConfig) {
+    return undefined;
+  }
+
+  let sort = encoderConfig.sort;
+
+  if (!sort || Array.isArray(sort)) {
+    sort = defaultSort;
+  }
+
+  let field: string | undefined;
+  let desc: boolean = false;
+
+  switch (sort) {
+    case "x":
+    case "-x":
+      field = config.x?.field;
+      desc = sort === "-x";
+      break;
+    case "y":
+    case "-y":
+      field = config.y?.field;
+      desc = sort === "-y";
+      break;
+    case "color":
+    case "-color":
+      field = isFieldConfig(config.color) ? config.color.field : undefined;
+      desc = sort === "-color";
+      break;
+    default:
+      return undefined;
+  }
+
+  if (!field) return undefined;
+
+  return {
+    name: field,
+    desc,
+  };
+}
+
+const allowedTimeDimensionDetailTypes = [
+  "line_chart",
+  "area_chart",
+  "stacked_bar",
+  "stacked_bar_normalized",
+  "bar_chart",
+];
+
+export const CanvasChartTypeToTDDChartType = {
+  line_chart: TDDChart.DEFAULT,
+  area_chart: TDDChart.STACKED_AREA,
+  stacked_bar: TDDChart.STACKED_BAR,
+  stacked_bar_normalized: TDDChart.STACKED_BAR,
+  bar_chart: TDDChart.GROUPED_BAR,
+};
+
+export function getLinkStateForTimeDimensionDetail(
+  spec: ChartSpec,
+  type: ChartType,
+): {
+  canLink: boolean;
+  measureName?: string;
+  dimensionName?: string;
+} {
+  if (!allowedTimeDimensionDetailTypes.includes(type))
+    return {
+      canLink: false,
+    };
+
+  const hasXAxis = "x" in spec;
+  const hasYAxis = "y" in spec;
+  if (!hasXAxis || !hasYAxis)
+    return {
+      canLink: false,
+    };
+
+  const xAxis = spec.x;
+  const yAxis = spec.y;
+
+  if (isFieldConfig(xAxis) && isFieldConfig(yAxis)) {
+    const colorDimension = spec.color;
+    if (isFieldConfig(colorDimension)) {
+      return {
+        canLink: xAxis.type === "temporal",
+        measureName: yAxis.field,
+        dimensionName: colorDimension.field,
+      };
+    }
+
+    return {
+      canLink: xAxis.type === "temporal",
+      measureName: yAxis.field,
+    };
+  }
+  return {
+    canLink: false,
+  };
+}
+
+export function getColorForValues(
+  colorValues: string[] | undefined,
+  // if provided, use the colors for mentioned values
+  overrideColorMapping: { value: string; color: string }[] | undefined,
+): { value: string; color: string }[] | undefined {
+  if (!colorValues || colorValues.length === 0) return undefined;
+
+  const colorMapping = colorValues.map((value, index) => {
+    const overrideColor = overrideColorMapping?.find(
+      (mapping) => mapping.value === value,
+    );
+    return {
+      value,
+      color:
+        overrideColor?.color ||
+        COMPARIONS_COLORS[index % COMPARIONS_COLORS.length],
+    };
+  });
+
+  return colorMapping;
+}
+
+export function getColorMappingForChart(
+  chartSpec: ChartSpec,
+  domainValues: ChartDomainValues | undefined,
+): { value: string; color: string }[] | undefined {
+  if (!("color" in chartSpec) || !domainValues) return undefined;
+  const colorField = chartSpec.color;
+
+  let colorMapping: { value: string; color: string }[] | undefined;
+  if (isFieldConfig(colorField)) {
+    colorMapping = getColorForValues(
+      domainValues[colorField.field],
+      colorField.colorMapping,
+    );
+  }
+
+  return colorMapping;
 }

@@ -5,8 +5,36 @@ sidebar_label: "Exports & Scheduled Reports"
 sidebar_position: 38
 ---
 
+<div style={{ 
+  position: "relative", 
+  width: "100%", 
+  paddingTop: "56.25%", 
+  borderRadius: "15px",  /* Softer corners */
+  boxShadow: "0px 4px 15px rgba(0, 0, 0, 0.2)"  /* Shadow effect */
+}}>
+  <iframe credentialless="true"
+    src="https://www.youtube.com/embed/yNfQ505Fnsg?si=-BvtTwHE7hpSMIPT"
+    frameBorder="0"
+    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+    allowFullScreen
+    style={{
+      position: "absolute",
+      top: 0,
+      left: 0,
+      width: "100%",
+      height: "100%",
+      borderRadius: "10px", 
+    }}
+  ></iframe>
+</div>
+<br/>
+
+Prefer video? Check out our [YouTube playlist](https://www.youtube.com/watch?v=wTP46eOzoCk&list=PL_ZoDsg2yFKgi7ud_fOOD33AH8ONWQS7I&index=1) for a quick start!
+
+
+
 ## Overview 
-Rill provides the ability to export data from multiple locations - leaderboards, Time Dimension detail and Pivot Tables (_coming soon_). In addition to direct downloads, you can also set up reoccurring reports to your inbox. Scheduled Reports allow you to effortlessly generate and manage email reports for any exportable content within your Rill cloud dashboard. 
+Rill provides the ability to export data from multiple locations - leaderboards, Time Dimension detail, and Pivot Tables (_coming soon_). In addition to direct downloads, you can also set up recurring reports to your inbox. Scheduled Reports allow you to effortlessly generate and manage email reports for any exportable content within your Rill Cloud dashboard. 
 
 - [Overview](#overview)
 - [Exporting from Rill](#exporting-from-rill)
@@ -24,6 +52,30 @@ Exports are available from:
 - Pivot Tables: _coming soon_ 
 
 ## How to Schedule an Email Report
+
+<div style={{ 
+  position: "relative", 
+  width: "100%", 
+  paddingTop: "56.25%", 
+  borderRadius: "15px",  /* Softer corners */
+  boxShadow: "0px 4px 15px rgba(0, 0, 0, 0.2)"  /* Shadow effect */
+}}>
+  <iframe credentialless="true"
+    src="https://www.youtube.com/embed/EodttApEOvI?si=w59is3vvrm6hD2Es"
+    frameBorder="0"
+    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+    allowFullScreen
+    style={{
+      position: "absolute",
+      top: 0,
+      left: 0,
+      width: "100%",
+      height: "100%",
+      borderRadius: "10px", 
+    }}
+  ></iframe>
+</div>
+<br/>
 
 Follow these simple steps to schedule an email report:
 

@@ -25,6 +25,8 @@ var (
 	// ErrOptimizationFailure is returned when an optimization fails.
 	ErrOptimizationFailure = errors.New("drivers: optimization failure")
 
+	DefaultQuerySchemaTimeout = 30 * time.Second
+
 	dictPwdRegex = regexp.MustCompile(`PASSWORD\s+'[^']*'`)
 )
 
@@ -47,6 +49,8 @@ type OLAPStore interface {
 	// Query executes a query against the OLAP driver and returns an iterator for the resulting rows and schema.
 	// The result MUST be closed after use.
 	Query(ctx context.Context, stmt *Statement) (*Result, error)
+	// QuerySchema returns the schema of the sql without trying not to run the actual query.
+	QuerySchema(ctx context.Context, query string, args []any) (*runtimev1.StructType, error)
 	// InformationSchema enables introspecting the tables and views available in the OLAP driver.
 	InformationSchema() OLAPInformationSchema
 }
@@ -259,6 +263,19 @@ func (d Dialect) RequiresCastForLike() bool {
 	return d == DialectClickHouse
 }
 
+func (d Dialect) SupportsRegexMatch() bool {
+	return d == DialectDruid
+}
+
+func (d Dialect) GetRegexMatchFunction() string {
+	switch d {
+	case DialectDruid:
+		return "REGEXP_LIKE"
+	default:
+		panic(fmt.Sprintf("unsupported dialect %q for regex match", d))
+	}
+}
+
 // EscapeTable returns an esacped fully qualified table name
 func (d Dialect) EscapeTable(db, schema, table string) string {
 	if d == DialectDuckDB {
@@ -331,7 +348,7 @@ func (d Dialect) LateralUnnest(expr, tableAlias, colName string) (tbl string, tu
 	}
 	if d == DialectClickHouse {
 		// using `LEFT ARRAY JOIN` instead of just `ARRAY JOIN` as it includes empty arrays in the result set with zero values
-		return fmt.Sprintf("LEFT ARRAY JOIN %s as %s", expr, colName), false, false, nil
+		return fmt.Sprintf("LEFT ARRAY JOIN %s as %s", expr, d.EscapeIdentifier(colName)), false, false, nil
 	}
 	return fmt.Sprintf(`LATERAL UNNEST(%s) %s(%s)`, expr, tableAlias, d.EscapeIdentifier(colName)), true, false, nil
 }
@@ -544,7 +561,7 @@ func (d Dialect) IntervalSubtract(tsExpr, unitExpr string, grain runtimev1.TimeG
 	}
 }
 
-func (d Dialect) SelectTimeRangeBins(start, end time.Time, grain runtimev1.TimeGrain, alias string) (string, []any, error) {
+func (d Dialect) SelectTimeRangeBins(start, end time.Time, grain runtimev1.TimeGrain, alias string, tz *time.Location) (string, []any, error) {
 	var args []any
 	switch d {
 	case DialectDuckDB:
@@ -553,7 +570,7 @@ func (d Dialect) SelectTimeRangeBins(start, end time.Time, grain runtimev1.TimeG
 		// format - SELECT c1 AS "alias" FROM VALUES(toDateTime('2021-01-01 00:00:00'), toDateTime('2021-01-01 00:00:00'),...)
 		var sb strings.Builder
 		sb.WriteString(fmt.Sprintf("SELECT c1 AS %s FROM VALUES(", d.EscapeIdentifier(alias)))
-		for t := start; t.Before(end); t = timeutil.OffsetTime(t, timeutil.TimeGrainFromAPI(grain), 1) {
+		for t := start; t.Before(end); t = timeutil.OffsetTime(t, timeutil.TimeGrainFromAPI(grain), 1, tz) {
 			if t != start {
 				sb.WriteString(", ")
 			}
@@ -570,7 +587,7 @@ func (d Dialect) SelectTimeRangeBins(start, end time.Time, grain runtimev1.TimeG
 		// ) t (time)
 		var sb strings.Builder
 		sb.WriteString("SELECT * FROM (VALUES ")
-		for t := start; t.Before(end); t = timeutil.OffsetTime(t, timeutil.TimeGrainFromAPI(grain), 1) {
+		for t := start; t.Before(end); t = timeutil.OffsetTime(t, timeutil.TimeGrainFromAPI(grain), 1, tz) {
 			if t != start {
 				sb.WriteString(", ")
 			}

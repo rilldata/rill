@@ -70,6 +70,8 @@ export type V1AlertOptionsResolverProperties = { [key: string]: unknown };
 
 export interface V1AlertOptions {
   displayName?: string;
+  refreshCron?: string;
+  refreshTimeZone?: string;
   intervalDuration?: string;
   resolver?: string;
   resolverProperties?: V1AlertOptionsResolverProperties;
@@ -226,6 +228,7 @@ export interface V1CancelBillingSubscriptionResponse {
 
 export interface V1CompleteRequest {
   messages?: V1CompletionMessage[];
+  tools?: V1Tool[];
 }
 
 export interface V1CompleteResponse {
@@ -235,6 +238,7 @@ export interface V1CompleteResponse {
 export interface V1CompletionMessage {
   role?: string;
   data?: string;
+  content?: V1ContentBlock[];
 }
 
 export interface V1Condition {
@@ -244,6 +248,12 @@ export interface V1Condition {
 
 export interface V1ConnectProjectToGithubResponse {
   [key: string]: unknown;
+}
+
+export interface V1ContentBlock {
+  text?: string;
+  toolCall?: V1ToolCall;
+  toolResult?: V1ToolResult;
 }
 
 export interface V1CreateAlertResponse {
@@ -716,6 +726,11 @@ export interface V1ListProjectWhitelistedDomainsResponse {
   domains?: V1WhitelistedDomain[];
 }
 
+export interface V1ListProjectsForFingerprintResponse {
+  projects?: V1Project[];
+  nextPageToken?: string;
+}
+
 export interface V1ListProjectsForOrganizationAndUserResponse {
   projects?: V1Project[];
   nextPageToken?: string;
@@ -919,6 +934,7 @@ export interface V1Project {
   description?: string;
   public?: boolean;
   createdByUserId?: string;
+  directoryName?: string;
   provisioner?: string;
   gitRemote?: string;
   /** managed_git_id is set if the project is connected to a rill-managed git repo. */
@@ -926,8 +942,6 @@ export interface V1Project {
   subpath?: string;
   prodBranch?: string;
   archiveAssetId?: string;
-  prodOlapDriver?: string;
-  prodOlapDsn?: string;
   prodSlots?: string;
   prodDeploymentId?: string;
   devSlots?: string;
@@ -1353,6 +1367,26 @@ export interface V1SudoUpdateUserQuotasRequest {
 
 export interface V1SudoUpdateUserQuotasResponse {
   user?: V1User;
+}
+
+export interface V1Tool {
+  name?: string;
+  description?: string;
+  inputSchema?: string;
+}
+
+export type V1ToolCallInput = { [key: string]: unknown };
+
+export interface V1ToolCall {
+  id?: string;
+  name?: string;
+  input?: V1ToolCallInput;
+}
+
+export interface V1ToolResult {
+  id?: string;
+  content?: string;
+  isError?: boolean;
 }
 
 export interface V1TriggerReconcileResponse {
@@ -1847,9 +1881,10 @@ export type AdminServiceCreateProjectBody = {
   name?: string;
   description?: string;
   public?: boolean;
+  /** directory_name should be the most recently observed local directory name for the project.
+See ListProjectsForFingerprint for more context. */
+  directoryName?: string;
   provisioner?: string;
-  prodOlapDriver?: string;
-  prodOlapDsn?: string;
   prodSlots?: string;
   subpath?: string;
   prodBranch?: string;
@@ -1872,6 +1907,7 @@ export type AdminServiceGetProjectParams = {
 export type AdminServiceUpdateProjectBody = {
   description?: string;
   public?: boolean;
+  directoryName?: string;
   prodBranch?: string;
   gitRemote?: string;
   subpath?: string;
@@ -1918,6 +1954,14 @@ export type AdminServiceListProjectsForUserByNameParams = {
   name?: string;
 };
 
+export type AdminServiceListProjectsForFingerprintParams = {
+  directoryName?: string;
+  gitRemote?: string;
+  subPath?: string;
+  pageSize?: number;
+  pageToken?: string;
+};
+
 export type AdminServiceGetAlertMetaBodyAnnotations = { [key: string]: string };
 
 export type AdminServiceGetAlertMetaBody = {
@@ -1951,6 +1995,8 @@ export type AdminServiceGetReportMetaBody = {
   anonRecipients?: boolean;
   resources?: V1ResourceName[];
   webOpenMode?: string;
+  whereFilterJson?: string;
+  accessibleFields?: string[];
 };
 
 export type AdminServiceSearchProjectNamesParams = {

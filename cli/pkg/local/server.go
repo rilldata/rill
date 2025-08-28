@@ -25,14 +25,12 @@ import (
 	"github.com/rilldata/rill/admin/pkg/urlutil"
 	"github.com/rilldata/rill/cli/cmd/auth"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/dotrillcloud"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/pkce"
 	"github.com/rilldata/rill/cli/pkg/web"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	localv1 "github.com/rilldata/rill/proto/gen/rill/local/v1"
 	"github.com/rilldata/rill/proto/gen/rill/local/v1/localv1connect"
-	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
@@ -317,14 +315,26 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 		}
 	}
 
+	repo, release, err := s.app.Runtime.Repo(ctx, s.app.Instance.ID)
+	if err != nil {
+		return nil, err
+	}
+	defer release()
+
+	// Ensure .gitignore exists and contains necessary entries
+	err = cmdutil.SetupGitIgnore(ctx, repo)
+	if err != nil {
+		return nil, fmt.Errorf("failed to set up .gitignore: %w", err)
+	}
+
+	// Get the project's directory name
+	directoryName := ""
+	if s.app.ProjectPath != "" {
+		directoryName = filepath.Base(s.app.ProjectPath)
+	}
+
 	var projRequest *adminv1.CreateProjectRequest
 	if r.Msg.Archive { // old zip-and-ship, currently used only for testing until we figure out a good way to test using manged github repos
-		repo, release, err := s.app.Runtime.Repo(ctx, s.app.Instance.ID)
-		if err != nil {
-			return nil, err
-		}
-		defer release()
-
 		assetID, err := cmdutil.UploadRepo(ctx, repo, s.app.ch, r.Msg.Org, r.Msg.ProjectName)
 		if err != nil {
 			return nil, err
@@ -337,10 +347,9 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 			Description:      "Auto created by Rill",
 			Provisioner:      "",
 			ProdVersion:      "",
-			ProdOlapDriver:   "duckdb",
-			ProdOlapDsn:      "",
 			ProdSlots:        int64(DefaultProdSlots(s.app.ch)),
 			Public:           false,
+			DirectoryName:    directoryName,
 			ArchiveAssetId:   assetID,
 		}
 	} else if r.Msg.Upload { // upload repo to rill managed storage instead of github
@@ -356,10 +365,9 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 			Description:      "Auto created by Rill",
 			Provisioner:      "",
 			ProdVersion:      "",
-			ProdOlapDriver:   "duckdb",
-			ProdOlapDsn:      "",
 			ProdSlots:        int64(DefaultProdSlots(s.app.ch)),
 			Public:           false,
+			DirectoryName:    directoryName,
 			GitRemote:        ghRepo.Remote,
 		}
 	} else {
@@ -409,10 +417,9 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 			Description:      "Auto created by Rill",
 			Provisioner:      "",
 			ProdVersion:      "",
-			ProdOlapDriver:   "duckdb",
-			ProdOlapDsn:      "",
 			ProdSlots:        int64(DefaultProdSlots(s.app.ch)),
 			Public:           false,
+			DirectoryName:    directoryName,
 			GitRemote:        githubRemote,
 			Subpath:          "",
 			ProdBranch:       repoStatus.DefaultBranch,
@@ -434,30 +441,6 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 	})
 	if err != nil {
 		return nil, err
-	}
-
-	err = dotrillcloud.SetAll(s.app.ProjectPath, s.app.ch.AdminURL(), &dotrillcloud.Config{
-		ProjectID: projResp.Project.Id,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	// if the project is backed by git repo, we need to push the .rillcloud directory to the remote
-	if r.Msg.Upload {
-		err = s.app.ch.GitHelper(r.Msg.Org, r.Msg.ProjectName, s.app.ProjectPath).PushToManagedRepo(ctx)
-		if err != nil {
-			return nil, fmt.Errorf("failed to push .rillcloud directory to remote: %w", err)
-		}
-	} else if !r.Msg.Archive {
-		author, err := s.app.ch.GitSignature(ctx, s.app.ProjectPath)
-		if err != nil {
-			return nil, fmt.Errorf("failed to generate git commit signature: %w", err)
-		}
-		err = gitutil.CommitAndForcePush(ctx, s.app.ProjectPath, &gitutil.Config{Remote: projResp.Project.GitRemote, DefaultBranch: projResp.Project.ProdBranch}, "Autocommit .rillcloud dir", author)
-		if err != nil {
-			return nil, fmt.Errorf("failed to push .rillcloud directory to remote: %w", err)
-		}
 	}
 
 	// Parse .env and push it as variables
@@ -530,8 +513,14 @@ func (s *Server) RedeployProject(ctx context.Context, r *connect.Request[localv1
 			return nil, err
 		}
 	} else if r.Msg.Reupload {
-		if projResp.Project.ArchiveAssetId != "" {
-			// project was previously deployed using zip and ship
+		if projResp.Project.ManagedGitId != "" {
+			// If rill-managed project then push to the repo based on org/project passed in.
+			err = s.app.ch.GitHelper(projResp.Project.OrgName, projResp.Project.Name, s.app.ProjectPath).PushToManagedRepo(ctx)
+			if err != nil {
+				return nil, err
+			}
+		} else if projResp.Project.ArchiveAssetId != "" || r.Msg.CreateManagedRepo {
+			// project was previously deployed using zip and ship, or we are overwriting another project already connected to github
 			ghRepo, err := s.app.ch.GitHelper(projResp.Project.OrgName, projResp.Project.Name, s.app.ProjectPath).PushToNewManagedRepo(ctx)
 			if err != nil {
 				return nil, err
@@ -544,13 +533,20 @@ func (s *Server) RedeployProject(ctx context.Context, r *connect.Request[localv1
 			if err != nil {
 				return nil, err
 			}
-		} else if projResp.Project.ManagedGitId != "" {
-			err = s.app.ch.GitHelper(projResp.Project.OrgName, projResp.Project.Name, s.app.ProjectPath).PushToManagedRepo(ctx)
+		} else {
+			author, err := s.app.ch.GitSignature(ctx, s.app.ProjectPath)
 			if err != nil {
 				return nil, err
 			}
-		} else {
-			return nil, fmt.Errorf("to update this deployment, use GitHub")
+			// TODO : handle when project deploys from branch other than current branch
+			config := &gitutil.Config{
+				Remote:        projResp.Project.GitRemote,
+				DefaultBranch: projResp.Project.ProdBranch,
+			}
+			err = gitutil.CommitAndForcePush(ctx, s.app.ProjectPath, config, "", author)
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 
@@ -630,6 +626,7 @@ func (s *Server) GetCurrentUser(ctx context.Context, r *connect.Request[localv1.
 }
 
 // GetCurrentProject implements localv1connect.LocalServiceHandler.
+// Remove this endpoint once UI cleans up code referring to it.
 func (s *Server) GetCurrentProject(ctx context.Context, r *connect.Request[localv1.GetCurrentProjectRequest]) (*connect.Response[localv1.GetCurrentProjectResponse], error) {
 	localProjectName := filepath.Base(s.app.ProjectPath)
 
@@ -640,14 +637,19 @@ func (s *Server) GetCurrentProject(ctx context.Context, r *connect.Request[local
 		}), nil
 	}
 
-	project, err := s.app.ch.LoadProject(ctx, s.app.ProjectPath)
+	projects, err := s.app.ch.InferProjects(ctx, s.app.ch.Org, s.app.ProjectPath)
 	if err != nil {
+		if errors.Is(err, cmdutil.ErrNoMatchingProject) {
+			return connect.NewResponse(&localv1.GetCurrentProjectResponse{
+				LocalProjectName: localProjectName,
+			}), nil
+		}
 		return nil, err
 	}
 
 	return connect.NewResponse(&localv1.GetCurrentProjectResponse{
 		LocalProjectName: localProjectName,
-		Project:          project,
+		Project:          projects[0],
 	}), nil
 }
 
@@ -715,21 +717,19 @@ func (s *Server) ListMatchingProjects(ctx context.Context, r *connect.Request[lo
 	if !s.app.ch.IsAuthenticated() {
 		return nil, errors.New("must authenticate before performing this action")
 	}
-	c, err := s.app.ch.Client()
+
+	projects, err := s.app.ch.InferProjects(ctx, "", s.app.ProjectPath)
 	if err != nil {
-		return nil, err
+		if errors.Is(err, cmdutil.ErrNoMatchingProject) {
+			return connect.NewResponse(&localv1.ListMatchingProjectsResponse{
+				Projects: nil,
+			}), nil
+		}
 	}
 
-	projectName := fileutil.Stem(s.app.ProjectPath)
-	projResp, err := c.ListProjectsForUserByName(ctx, &adminv1.ListProjectsForUserByNameRequest{
-		Name: projectName,
-	})
-	if err != nil {
-		return nil, err
-	}
-
+	// TODO : filter projects that deploy from a different branch than the current one
 	return connect.NewResponse(&localv1.ListMatchingProjectsResponse{
-		Projects: projResp.Projects,
+		Projects: projects,
 	}), nil
 }
 

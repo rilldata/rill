@@ -1,0 +1,93 @@
+/* =========================
+   Variables & Color System
+   ========================= */
+:root {
+  /* Base colors */
+  --color-white: #ffffff;
+  --color-black: #000000;
+
+  /* Palette */
+  --palette_neutral_0: #FFFFFF;
+  --palette_neutral_100: #F9F9F9;
+  --palette_neutral_200: #DFDFDF;
+  --palette_neutral_300: #C0C0C0;
+  --palette_neutral_400: #A0A0A0;
+  --palette_neutral_500: #808080;
+  --palette_neutral_600: #606060;
+  --palette_neutral_650: #414141;
+  --palette_neutral_700: #282828;
+  --palette_neutral_725: #212121;
+  --palette_neutral_750: #1F1F1C;
+  --palette_neutral_800: #1D1D1D;
+  --palette_neutral_900: #151515;
+
+  --palette_slate_50: #F6F7FA;
+  --palette_slate_100: #E6E7E9;
+  --palette_slate_200: #CCCFD3;
+  --palette_slate_300: #B3B6BD;
+  --palette_slate_400: #9A9EA7;
+  --palette_slate_500: #808691;
+  --palette_slate_600: #696E79;
+  --palette_slate_700: #53575F;
+  --palette_slate_750: #373439;
+  --palette_slate_800: #302E32;
+  --palette_slate_900: #161517;
+
+  /* Semantic colors */
+  --ifm-color-primary: #3524C7;
+  --ifm-color-primary-dark: #3125AE;
+  --ifm-color-primary-darker: #2C2689;
+  --ifm-color-primary-darkest: #1C1650;
+  --ifm-color-primary-light: #00B8FF;
+  --ifm-color-primary-lighter: #2CC9FF;
+  --ifm-color-primary-lightest: #01DCE9;
+  --ifm-color-secondary-contrast-background: #efefef;
+  --ifm-color-emphasis-300: #dadde1;
+
+  /* Sidebar */
+  --ifm-hover-overlay: var(--click-color-sidebar-item-active);
+  --ifm-menu-color: #2b2e32;
+  --ifm-menu-link-padding-vertical: 0.1rem;
+  --ifm-menu-link-padding-horizontal: 0; /* Only define once */
+  --ifm-menu-color-active: #3524C7;
+  --ifm-menu-link-sublist-icon: url("data:image/svg+xml,%3Csvg width='24' height='24' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11.9988 9.21211L16.2363 13.4684L15.4488 14.2559L11.9988 10.8059L8.54883 14.2559L7.76133 13.4684L11.9988 9.21211Z' fill='%23575C6B'/%3E%3Cpath d='M11.9988 9.21211L16.2363 13.4684L15.4488 14.2559L11.9988 10.8059L8.54883 14.2559L7.76133 13.4684L11.9988 9.21211Z' fill='black' fill-opacity='0.2'/%3E%3C/svg%3E");
+  --ifm-menu-link-sublist-icon-filter: none;
+  --docusaurus-highlighted-code-line-bg: rgba(255, 255, 255, 0.2);
+  --color-stroke: var(--palette_slate_100);
+  --doc-menu-caret-right-padding: 1.25rem; /* Standardized to rem */
+  --sidebar-scroll-padding: 4.5rem; /* For sticky release notes */
+  --ifm-menu-sidebar-color: #ccc;
+
+  /* Footer */
+  --ifm-footer-padding-vertical: 1rem;
+
+  /* Typography */
+  --default-font: 0.875rem; /* 14px */
+  --default-line-height: 1.5;
+  --ifm-font-family-base: Inter, sans-serif;
+  --ifm-h4-font-size: 0.95rem !important;
+  --ifm-h3-font-size: 1rem !important;
+  --ifm-h2-font-size: 1.25rem !important;
+  --ifm-h1-font-size: 1.75rem !important;
+  --ifm-font-weight-semibold: 500;
+
+  /* Spacing scale */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+}
+
+[data-theme='dark'] {
+  --ifm-color-primary: #459BFF;
+  --ifm-color-primary-dark: #3190FF;
+  --ifm-color-primary-darker: #107FFF;
+  --ifm-color-primary-darkest: #27599A;
+  --ifm-color-primary-light: #00CBD7;
+  --ifm-color-primary-lighter: #01D4E0;
+  --ifm-color-primary-lightest: #75DAFF;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+  --color-stroke: var(--palette_neutral_700);
+  --ifm-menu-color: #FFFFFF; /* Fixed typo */
+  --ifm-menu-color-active: #FFFFFF;
+} 

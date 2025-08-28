@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.uber.org/zap"
@@ -83,6 +84,22 @@ func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (*drive
 	})
 
 	return r, nil
+}
+
+func (c *connection) QuerySchema(ctx context.Context, query string, args []any) (*runtimev1.StructType, error) {
+	query = fmt.Sprintf("SELECT * FROM (%s) LIMIT 0", query)
+
+	res, err := c.Query(ctx, &drivers.Statement{
+		Query:            query,
+		Args:             args,
+		ExecutionTimeout: drivers.DefaultQuerySchemaTimeout,
+	})
+	if err != nil {
+		return nil, err
+	}
+	defer res.Close()
+
+	return res.Schema, nil
 }
 
 func (c *connection) InformationSchema() drivers.OLAPInformationSchema {

@@ -56,7 +56,9 @@ export const updateMetricsExplorerByName = (
   });
 };
 
-function includeExcludeModeFromFilters(filters: V1Expression | undefined) {
+export function includeExcludeModeFromFilters(
+  filters: V1Expression | undefined,
+) {
   const map = new Map<string, boolean>();
   if (!filters) return map;
   forEachIdentifier(filters, (e, ident) => {
@@ -509,6 +511,15 @@ const metricsViewReducers = {
       exploreState.selectedComparisonTimeRange = comparisonTimeRange;
 
       AdvancedMeasureCorrector.correct(exploreState, metricsViewSpec);
+    });
+  },
+
+  setTimeGrain(name: string, timeGrain: V1TimeGrain) {
+    updateMetricsExplorerByName(name, (exploreState) => {
+      exploreState.selectedTimeRange = {
+        ...(exploreState.selectedTimeRange as DashboardTimeControls),
+        interval: timeGrain,
+      };
     });
   },
 

@@ -35,13 +35,10 @@ func createScriptFile(ctx context.Context, version string) (string, error) {
 	var url string
 	switch version {
 	case "nightly":
-		// https://cdn.rilldata.com/rill/nightly/install.sh
 		url = "https://cdn.rilldata.com/rill/nightly/install.sh"
-	case "latest":
-		// https://cdn.rilldata.com/rill/latest/install.sh
-		url = "https://cdn.rilldata.com/rill/latest/install.sh"
+	case "latest", "":
+		url = "https://cdn.rilldata.com/rill/install.sh"
 	default:
-		// https://raw.githubusercontent.com/rilldata/rill/<version>/scripts/install.sh
 		url = fmt.Sprintf("https://raw.githubusercontent.com/rilldata/rill/%s/scripts/install.sh", version)
 	}
 

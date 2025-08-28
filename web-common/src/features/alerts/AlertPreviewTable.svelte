@@ -115,7 +115,7 @@
           {columns}
           {rows}
           activeIndex={-1}
-          cellLabel="Filter dimension value"
+          cellLabel="Preview cell"
         />
       {/if}
     </div>

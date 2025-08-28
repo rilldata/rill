@@ -15,9 +15,9 @@
   import Github from "@rilldata/web-common/components/icons/Github.svelte";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
   import {
-    getGitUrlFromRemote,
     getRepoNameFromGitRemote,
-  } from "@rilldata/web-common/features/project/github-utils";
+    getGitUrlFromRemote,
+  } from "@rilldata/web-common/features/project/deploy/github-utils";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
   import { BehaviourEventAction } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";

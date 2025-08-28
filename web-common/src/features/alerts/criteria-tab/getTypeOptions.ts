@@ -4,11 +4,13 @@ import {
   MeasureFilterComparisonTypeOptions,
   MeasureFilterPercentOfTotalOption,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-options";
-import { getComparisonLabel } from "@rilldata/web-common/lib/time/comparisons";
+import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config.ts";
+import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types.ts";
 import type { MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
 
 export function getTypeOptions(
   formValues: AlertFormValues,
+  selectedComparisonTimeRange: DashboardTimeControls | undefined,
   selectedMeasure: MetricsViewSpecMeasure | undefined,
 ) {
   const options: {
@@ -19,12 +21,11 @@ export function getTypeOptions(
   }[] = [...MeasureFilterBaseTypeOptions];
 
   if (
-    formValues.comparisonTimeRange?.isoDuration ||
-    formValues.comparisonTimeRange?.isoOffset
+    selectedComparisonTimeRange?.name &&
+    selectedComparisonTimeRange?.name in TIME_COMPARISON
   ) {
-    const comparisonLabel = getComparisonLabel(
-      formValues.comparisonTimeRange,
-    ).toLowerCase();
+    const comparisonLabel =
+      TIME_COMPARISON[selectedComparisonTimeRange.name].label.toLowerCase();
     options.push(
       ...MeasureFilterComparisonTypeOptions.map((o) => {
         return {

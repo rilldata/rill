@@ -39,13 +39,13 @@
       | undefined) ??
     $alert.data?.resource?.alert?.spec?.queryArgsJson ??
     "";
-  $: dashboardStateForAlert = mapQueryToDashboard(
+  $: dashboardStateForAlert = mapQueryToDashboard({
     exploreName,
     queryName,
     queryArgsJson,
     executionTime,
-    $alert.data?.resource?.alert?.spec?.annotations ?? {},
-  );
+    annotations: $alert.data?.resource?.alert?.spec?.annotations ?? {},
+  });
 
   $: if ($alert.data?.resource?.alert?.spec && (!queryName || !queryArgsJson)) {
     goto(`/${organization}/${project}/-/alerts/${alertId}`);
@@ -68,11 +68,14 @@
     ).toString();
     return goto(url.toString());
   }
+
+  // When alert is loading we will have a "missing require field" error in dashboardStateForAlert so check loading for both queries.
+  $: loading = $alert.isPending || $dashboardStateForAlert?.isLoading;
 </script>
 
 <CtaLayoutContainer>
   <CtaContentContainer>
-    {#if $dashboardStateForAlert.isLoading}
+    {#if loading}
       <div class="h-36 mt-10">
         <Spinner status={EntityStatus.Running} size="7rem" duration={725} />
       </div>

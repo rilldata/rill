@@ -10,6 +10,20 @@ import {
 import type { ChartDataResult } from "../types";
 import type { HeatmapChartSpec } from "./HeatmapChart";
 
+function createHeatmapSortEncoding(
+  axisType: "x" | "y",
+  config: HeatmapChartSpec,
+  data: ChartDataResult,
+) {
+  const axisConfig = config[axisType];
+
+  if (!axisConfig?.field || axisConfig.type !== "nominal") {
+    return undefined;
+  }
+  // Use the pre-computed domain values from the query
+  return data.domainValues?.[axisConfig.field];
+}
+
 export function generateVLHeatmapSpec(
   config: HeatmapChartSpec,
   data: ChartDataResult,
@@ -38,18 +52,14 @@ export function generateVLHeatmapSpec(
   const xEncoding = createPositionEncoding(config.x, data);
   const yEncoding = createPositionEncoding(config.y, data);
 
-  if (config.x?.type === "nominal" && config.color?.field) {
-    xEncoding.sort = {
-      op: "sum",
-      field: config.color.field,
-      order: "descending",
-    };
-  } else if (config.y?.type === "nominal" && config.color?.field) {
-    yEncoding.sort = {
-      op: "sum",
-      field: config.color.field,
-      order: "descending",
-    };
+  const xSort = createHeatmapSortEncoding("x", config, data);
+  if (xSort !== undefined) {
+    xEncoding.sort = xSort;
+  }
+
+  const ySort = createHeatmapSortEncoding("y", config, data);
+  if (ySort !== undefined) {
+    yEncoding.sort = ySort;
   }
 
   // Add transform to calculate threshold for text color - using 75th percentile for better contrast
@@ -85,6 +95,10 @@ export function generateVLHeatmapSpec(
   spec.encoding = {
     x: xEncoding,
     y: yEncoding,
+    tooltip: createDefaultTooltipEncoding(
+      [config.x, config.y, config.color],
+      data,
+    ),
   };
 
   spec.layer = [
@@ -92,10 +106,6 @@ export function generateVLHeatmapSpec(
       mark: "rect",
       encoding: {
         color: createColorEncoding(config.color, data),
-        tooltip: createDefaultTooltipEncoding(
-          [config.x, config.y, config.color],
-          data,
-        ),
       },
     },
   ];

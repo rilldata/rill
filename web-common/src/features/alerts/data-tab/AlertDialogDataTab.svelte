@@ -1,16 +1,20 @@
 <script lang="ts">
   import DataPreview from "@rilldata/web-common/features/alerts/data-tab/DataPreview.svelte";
   import type { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
-  import { createTimeControlStoreFromName } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
+  import type { Filters } from "@rilldata/web-common/features/dashboards/stores/Filters.ts";
+  import FiltersForm from "@rilldata/web-common/features/scheduled-reports/FiltersForm.svelte";
+  import type { TimeControls } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
   import { MetricsViewSpecMeasureType } from "@rilldata/web-common/runtime-client";
   import type { SuperForm } from "sveltekit-superforms/client";
   import FormSection from "../../../components/forms/FormSection.svelte";
   import Select from "../../../components/forms/Select.svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import ExploreFilterChipsReadOnly from "../../dashboards/filters/ExploreFilterChipsReadOnly.svelte";
   import { useMetricsViewValidSpec } from "../../dashboards/selectors";
 
   export let superFormInstance: SuperForm<AlertFormValues>;
+  export let filters: Filters;
+  export let timeControls: TimeControls;
+
   $: ({ form } = superFormInstance);
 
   $: ({ instanceId } = $runtime);
@@ -43,29 +47,11 @@
         : (d.expression ?? (d.name as string)),
     })) ?? []),
   ];
-
-  $: timeControlStore = createTimeControlStoreFromName(
-    instanceId,
-    metricsViewName,
-    $form["exploreName"],
-  );
 </script>
 
 <div class="flex flex-col gap-y-3">
-  <FormSection
-    description="These are inherited from the underlying dashboard view."
-    title="Filters"
-  >
-    <ExploreFilterChipsReadOnly
-      dimensionThresholdFilters={$form["dimensionThresholdFilters"]}
-      filters={$form["whereFilter"]}
-      dimensionsWithInlistFilter={$form["dimensionsWithInlistFilter"]}
-      exploreName={$form["exploreName"]}
-      displayTimeRange={$form["timeRange"]}
-      displayComparisonTimeRange={$form["comparisonTimeRange"]}
-      queryTimeStart={$timeControlStore.timeStart}
-      queryTimeEnd={$timeControlStore.timeEnd}
-    />
+  <FormSection title="Filters">
+    <FiltersForm {filters} {timeControls} maxWidth={750} />
   </FormSection>
   <FormSection
     description="Select the measures you want to monitor."
@@ -91,6 +77,6 @@
     title="Data preview"
     description="Here’s a look at the data you’ve selected above."
   >
-    <DataPreview formValues={$form} />
+    <DataPreview formValues={$form} {filters} {timeControls} />
   </FormSection>
 </div>

@@ -1,6 +1,6 @@
 import type { BaseCanvasComponent } from "@rilldata/web-common/features/canvas/components/BaseCanvasComponent";
 import type { ChartSpec } from "@rilldata/web-common/features/canvas/components/charts";
-import type { FieldConfig } from "@rilldata/web-common/features/canvas/components/charts/types";
+import { isFieldConfig } from "@rilldata/web-common/features/canvas/components/charts/util";
 import type { ComponentWithMetricsView } from "@rilldata/web-common/features/canvas/components/types";
 import type { TimeAndFilterStore } from "@rilldata/web-common/features/canvas/stores/types";
 import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
@@ -86,13 +86,8 @@ export function getPivotStateFromChartSpec(
     }
 
     // Check if this property is a field config object
-    if (
-      typeof value === "object" &&
-      value !== null &&
-      "field" in value &&
-      "type" in value
-    ) {
-      const fieldConfig = value as FieldConfig;
+    if (isFieldConfig(value)) {
+      const fieldConfig = value;
 
       let chipType: PivotChipType;
       let id: string;

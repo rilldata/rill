@@ -11,8 +11,9 @@
   export let value: string = "";
   export let id: string;
   export let label: string = "";
+  export let ariaLabel: string = ""; // Fallback aria-label attribute if label is empty
   export let lockTooltip: string = "";
-  export let size: "sm" | "md" | "lg" = "lg";
+  export let size: "sm" | "md" | "lg" | "xl" = "lg";
   export let options: {
     value: string;
     label: string;
@@ -52,11 +53,23 @@
         option.label.toLowerCase().includes(searchText.toLowerCase()),
       )
     : options;
+
+  // Needed to pass a close method to slots
+  // In certain cases, the "additional-dropdown-content" slot might need to close the dropdown without selecting a value.
+  // So we need an explicit close method and not use Select.Item
+  let open = false;
+
+  function close() {
+    open = false;
+  }
 </script>
 
 <div class="flex flex-col gap-y-2 max-w-full" class:w-full={full}>
   {#if label?.length}
-    <label for={id} class="text-sm flex items-center gap-x-1">
+    <label
+      for={id}
+      class="{size === 'sm' ? 'text-xs' : 'text-sm'} flex items-center gap-x-1"
+    >
       <span class="text-gray-800 font-medium">
         {label}
       </span>
@@ -77,6 +90,7 @@
   {/if}
 
   <Select.Root
+    bind:open
     {disabled}
     {selected}
     onSelectedChange={(newSelection) => {
@@ -103,7 +117,7 @@
         'focus:ring-2 focus:ring-primary-100'} {truncate
         ? 'break-all overflow-hidden'
         : ''} {forcedTriggerStyle}"
-      aria-label={label}
+      aria-label={label || ariaLabel}
     >
       <Select.Value
         {placeholder}
@@ -154,6 +168,7 @@
       {:else}
         <div class="px-2.5 py-1.5 text-gray-600">No results found</div>
       {/each}
+      <slot name="additional-dropdown-content" {close} />
     </Select.Content>
   </Select.Root>
 </div>

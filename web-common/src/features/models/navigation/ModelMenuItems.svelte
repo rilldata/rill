@@ -16,9 +16,9 @@
   import { behaviourEvent } from "../../../metrics/initMetrics";
   import { V1ReconcileStatus, type V1Resource } from "../../../runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import { createModelFromTable } from "../../connectors/olap/createModel";
   import { getScreenNameFromPage } from "../../file-explorer/telemetry";
   import { useCreateMetricsViewFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
+  import { createSqlModelFromTable } from "../../connectors/code-utils";
 
   const { ai } = featureFlags;
   const queryClient = useQueryClient();
@@ -43,7 +43,7 @@
     try {
       const previousActiveEntity = getScreenNameFromPage();
       const addDevLimit = false; // Typically, the `dev` limit would be applied on the Source itself
-      const [newModelPath, newModelName] = await createModelFromTable(
+      const [newModelPath, newModelName] = await createSqlModelFromTable(
         queryClient,
         connector as string,
         "",

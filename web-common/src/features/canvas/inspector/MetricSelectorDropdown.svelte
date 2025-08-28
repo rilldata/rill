@@ -1,15 +1,17 @@
 <script lang="ts">
-  import Input from "@rilldata/web-common/components/forms/Input.svelte";
-  import type { ComponentInputParam } from "@rilldata/web-common/features/canvas/inspector/types";
+  import Select from "@rilldata/web-common/components/forms/Select.svelte";
+  import type {
+    AllKeys,
+    ComponentInputParam,
+  } from "@rilldata/web-common/features/canvas/inspector/types";
   import {
     ResourceKind,
     useFilteredResources,
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { isString } from "../../workspaces/visual-util";
-  import type { AllKeys } from "@rilldata/web-common/features/canvas/inspector/types";
-  import type { ComponentSpec } from "../components/types";
   import type { BaseCanvasComponent } from "../components/BaseCanvasComponent";
+  import type { ComponentSpec } from "../components/types";
 
   export let component: BaseCanvasComponent;
   export let key: AllKeys<ComponentSpec>;
@@ -33,23 +35,19 @@
     "metrics_view" in $spec ? $spec.metrics_view : metricsViewNames[0];
 </script>
 
-<Input
-  hint="View documentation"
-  link="https://docs.rilldata.com/reference/project-files/metrics-views"
+<Select
+  id="metrics-view-selector"
   label={inputParam.label}
-  capitalizeLabel={false}
   bind:value={metricsView}
-  sameWidth
+  full
   size="sm"
-  labelGap={2}
+  sameWidth
   options={metricsViewNames.map((name) => ({
     label: name,
     value: name,
   }))}
-  onBlur={() => {
-    component.updateProperty(key, metricsView);
+  onChange={(value) => {
+    component.updateProperty(key, value);
   }}
-  onChange={() => {
-    component.updateProperty(key, metricsView);
-  }}
+  tooltip="View documentation: https://docs.rilldata.com/reference/project-files/metrics-views"
 />

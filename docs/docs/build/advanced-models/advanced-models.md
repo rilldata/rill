@@ -8,7 +8,7 @@ sidebar_position: 00
 <img src = '/img/build/advanced-models/advanced-model.png' class='rounded-gif' />
 <br />
 
-Unlike SQL models, YAML file models allow you to fine-tune a model to perform additional capabilities such as pre-exec, post-exec SQL, partitioning, and incremental modeling. This is an important addition to modeling, as it allows the user to customize the model's build process. In the case of partitions and incremental modeling, this will reduce the amount of data ingested into Rill at each interval and allow insight into specific issues per partition. Another use case is when using [multiple OLAP engines](../connect/multiple-connectors.md), this allows you to define where a SQL query is run. 
+Unlike SQL models, YAML file models allow you to fine-tune a model to perform additional capabilities such as pre-exec, post-exec SQL, partitioning, and incremental modeling. This is an important addition to modeling, as it allows the user to customize the model's build process. In the case of partitions and incremental modeling, this will reduce the amount of data ingested into Rill at each interval and allow insight into specific issues per partition. Another use case is when using [multiple OLAP engines](/connect/olap/multiple-olap), this allows you to define where a SQL query is run. 
 
 ## When to use Advanced Models? 
 
@@ -19,9 +19,9 @@ Another use case is when using multiple OLAP engines. This allows you to specify
 
 ## Types of Advanced Models
 
-1. [Incremental Models](./incremental-models)
-2. [Partitioned Models](./partitions)
-3. [Staging Models](./staging)
+1. [Incremental Models](/build/advanced-models/incremental-models)
+2. [Partitioned Models](/build/advanced-models/partitions)
+3. [Staging Models](/build/advanced-models/staging)
 4. [DuckDB `pre_exec`/`post_exec` Models](#duckdb-models-pre-exec-sql-post-exec)
 
 
@@ -30,7 +30,7 @@ You can get started with an advanced model with the following code block:
 
 ```yaml
 #Model YAML
-#Reference documentation: https://docs.rilldata.com/reference/project-files/advanced-models
+#Reference documentation: https://docs.rilldata.com/reference/project-files/models
 
 type: model
 connector: duckdb
@@ -38,7 +38,7 @@ connector: duckdb
 sql: select * from <source>
 ```
 
-Please refer to [our reference documentation](../../reference/project-files/advanced-models) linked above for the available parameters to set in your model.
+Please refer to [our reference documentation](/reference/project-files/models) linked above for the available parameters to set in your model.
 
 :::note
 
@@ -79,8 +79,6 @@ post_exec: DETACH DATABASE IF EXISTS postgres_db # Note : this is not mandatory 
 
 ## Similar Considerations to Note
 
-1. As with normal SQL models, materialization will be disabled by default and depending on your use-case setting this parameter to true may improve performance. For more information, check out [our model materialization notes.](../../reference/project-files/models#model-materialization)
-
-
+1. As with normal SQL models, materialization will be disabled by default and depending on your use-case setting this parameter to true may improve performance. For more information, check out [our model materialization notes.](/build/models/#model-materialization)
 2. The `pre_exec` and `post_exec` statements are run for every model execution and thus should be made idempotent.
 A typical way is to use `IF NOT EXISTS` clauses for CREATE statements. Please refer to duckDB docs for exact definitions and verify if the statements are idempotent.

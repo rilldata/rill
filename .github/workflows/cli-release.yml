@@ -23,26 +23,11 @@ env:
   PUBLISH_RELEASE: ${{ startsWith(github.ref, 'refs/tags/v') }}
 
 jobs:
-  validate-sequential:
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Check Admin Migrations
-      run: |
-        ./scripts/check_migrations.sh admin/database/postgres/migrations
-
-    - name: Check Runtime Migrations
-      run: |
-        ./scripts/check_migrations.sh runtime/drivers/sqlite/migrations
-
-  release:
-    name: Release rill
+  build:
+    name: Build rill
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-22.04, ubuntu-22.04-arm, macos-13, macos-14]
         include:
           - os: ubuntu-22.04
             platform: linux_amd64
@@ -54,13 +39,9 @@ jobs:
             platform: darwin_arm64
       fail-fast: false
 
-    needs: validate-sequential
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Fetch tags required by goreleaser
-        run: git fetch --prune --unshallow
 
       - name: Set up Go
         uses: actions/setup-go@v5
@@ -81,21 +62,77 @@ jobs:
           RILL_UI_PUBLIC_PYLON_APP_ID: "26a0fdd2-3bd3-41e2-82bc-1b35a444729f"
           NODE_OPTIONS: --max-old-space-size=4096
 
-      - name: Set GORELEASER_CURRENT_TAG and NIGHTLY
-        run: |
-          echo '${{ github.ref_name }}' >> latest.txt
+      - name: Build rill cli
+        run: |-
           if [[ ${{ env.PUBLISH_NIGHTLY }} == 'true' ]]; then
-            echo "NIGHTLY=--snapshot" >> $GITHUB_ENV
-            LATEST_TAG=$(git describe --tags $(git rev-list --tags --max-count=1))
-            echo "GORELEASER_CURRENT_TAG=${LATEST_TAG}" >> $GITHUB_ENV
+            git fetch --prune --unshallow
+            VERSION="$(git describe --tags $(git rev-list --tags --max-count=1) | sed 's/r/v/')-nightly"
           else
-            echo "NIGHTLY=" >> $GITHUB_ENV
+            VERSION='${{ github.ref_name }}'
           fi   
+          
+          go build -o rill \
+            -mod=readonly \
+            -ldflags="-s -w -X main.Version=${VERSION} -X main.Commit=${{ github.sha }} -X main.BuildDate=$(date +%FT%TZ)" \
+            cli/main.go
 
       - name: Authenticate GCS
         uses: google-github-actions/auth@v2
         with:
           credentials_json: "${{ secrets.RILL_BINARY_SA }}"
+
+      - name: Nightly - Upload nightly to CDN bucket
+        if: env.PUBLISH_NIGHTLY == 'true'
+        uses: google-github-actions/upload-cloud-storage@v2
+        with:
+          path: rill
+          destination: prod-cdn.rilldata.com/rill/nightly/binaries/${{ matrix.platform }}/
+          headers: |-
+            cache-control: no-store
+
+      - name: Release - Upload nightly to CDN bucket
+        if: env.PUBLISH_RELEASE == 'true'
+        uses: google-github-actions/upload-cloud-storage@v2
+        with:
+          path: rill
+          destination: prod-cdn.rilldata.com/rill/${{ github.ref_name }}/binaries/${{ matrix.platform }}/
+          headers: |-
+            cache-control: no-store
+
+  release:
+    name: Release rill
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Fetch tags required by goreleaser
+        run: git fetch --prune --unshallow
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: "${{ secrets.RILL_BINARY_SA }}"
+
+      - name: Set up gcloud CLI
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Set GORELEASER_CURRENT_TAG and NIGHTLY
+        run: |-
+          if [[ ${{ env.PUBLISH_NIGHTLY }} == 'true' ]]; then
+            BUCKET_DIR=nightly
+            LATEST_TAG=$(git describe --tags $(git rev-list --tags --max-count=1) | sed 's/r/v/')
+            echo "NIGHTLY=--nightly" >> $GITHUB_ENV
+            echo "GORELEASER_CURRENT_TAG=$(echo ${LATEST_TAG})" >> $GITHUB_ENV
+          else
+            echo "NIGHTLY=" >> $GITHUB_ENV
+            BUCKET_DIR=$(echo "${GITHUB_REF#refs/tags/}")
+          fi
+
+          echo '${{ github.ref_name }}' >> latest.txt
+          gsutil -m cp -r gs://prod-cdn.rilldata.com/rill/$BUCKET_DIR/binaries .
 
       - name: Login to Docker Hub
         uses: docker/login-action@v3
@@ -103,89 +140,18 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USER }}
           password: ${{ secrets.DOCKERHUB_PASS }}
 
-      - name: Build Rill using Goreleaser
+      - name: Release Rill using Goreleaser
         uses: goreleaser/goreleaser-action@v6
         with:
-          distribution: goreleaser
+          distribution: goreleaser-pro
           version: '~> v2'
-          args: release ${{ env.NIGHTLY }} --config .goreleaser-${{ matrix.platform }}.yaml
+          args: release ${{ env.NIGHTLY }}
         env:
-          GITHUB_TOKEN: ${{ secrets.GORELEASER_ACCESS_TOKEN }}
           CGO_ENABLED: 1
+          GITHUB_TOKEN: ${{ secrets.GORELEASER_ACCESS_TOKEN }}
+          GORELEASER_KEY: ${{ secrets.GORELEASER_KEY }}
           GORELEASER_CURRENT_TAG: ${{ env.GORELEASER_CURRENT_TAG }}
           PUBLISH_NIGHTLY: ${{ env.PUBLISH_NIGHTLY }}
-          DOCKERHUB_USER: ${{ secrets.DOCKERHUB_USER }}
-          DOCKERHUB_PASS: ${{ secrets.DOCKERHUB_PASS }}
-
-      - name: Release - Upload install script to CDN bucket
-        uses: google-github-actions/upload-cloud-storage@v2
-        if: env.PUBLISH_RELEASE == 'true'
-        with:
-          path: scripts/install.sh
-          destination: prod-cdn.rilldata.com/
-          headers: |-
-            cache-control: no-store
-
-      - name: Release - Upload install script to versioned CDN bucket
-        if: env.PUBLISH_RELEASE == 'true'
-        uses: google-github-actions/upload-cloud-storage@v2
-        with:
-          path: scripts/install.sh
-          destination: prod-cdn.rilldata.com/rill/${{ github.ref_name }}/install.sh
-          headers: |-
-            cache-control: no-store
-
-      - name: Release - Upload install script to latest CDN bucket
-        if: env.PUBLISH_RELEASE == 'true'
-        uses: google-github-actions/upload-cloud-storage@v2
-        with:
-          path: scripts/install.sh
-          destination: prod-cdn.rilldata.com/rill/latest/install.sh
-          headers: |-
-            cache-control: no-store
-
-      - name: Release - Upload latest version file to CDN bucket
-        if: env.PUBLISH_RELEASE == 'true'
-        uses: google-github-actions/upload-cloud-storage@v2
-        with:
-          path: latest.txt
-          destination: prod-cdn.rilldata.com/rill/
-          headers: |-
-            cache-control: no-store
-
-      - name: Publish nightly docker image
-        if: ${{ env.PUBLISH_NIGHTLY == 'true' && matrix.platform == 'linux_amd64' }}
-        run: |-
-          docker tag rilldata/rill:latest rilldata/rill:nightly
-          docker push rilldata/rill:nightly
-
-      - name: Nightly - Prepare for nightly GCS upload
-        if: env.PUBLISH_NIGHTLY == 'true'
-        run: |-
-          mkdir nightly
-          cp dist/*.zip nightly/
-          cp dist/checksums*.txt nightly/
-
-      - name: Nightly - Upload nightly to CDN bucket
-        if: env.PUBLISH_NIGHTLY == 'true'
-        uses: google-github-actions/upload-cloud-storage@v2
-        with:
-          path: nightly/
-          destination: prod-cdn.rilldata.com/rill/
-          headers: |-
-            cache-control: no-store
-
-      - name: Nightly - Upload install script to nightly CDN bucket
-        if: env.PUBLISH_NIGHTLY == 'true'
-        uses: google-github-actions/upload-cloud-storage@v2
-        with:
-          path: scripts/install.sh
-          destination: prod-cdn.rilldata.com/rill/nightly/install.sh
-          headers: |-
-            cache-control: no-store
-
-      - name: Set up Cloud SDK
-        uses: 'google-github-actions/setup-gcloud@v2'
 
       - name: CDN - Explicitly invalidate the old artifacts from CDN cache
         run: |-
@@ -197,7 +163,7 @@ jobs:
 
       - name: Notify Slack
         uses: ravsamhq/notify-slack-action@v2
-        if: always()
+        if: env.PUBLISH_NIGHTLY == 'true' || env.PUBLISH_RELEASE == 'true'
         with:
           status: ${{ job.status }}
           notification_title: "{workflow} has {status_message}"
@@ -206,45 +172,3 @@ jobs:
           notify_when: "failure"
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_ANNOUNCE_DD }}
-
-  combine-checksums:
-    runs-on: ubuntu-latest
-    needs: release
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v2
-        with:
-          credentials_json: "${{ secrets.RILL_BINARY_SA }}"
-
-      - name: Set up gcloud CLI
-        uses: google-github-actions/setup-gcloud@v2
-
-      - name: Create working directory
-        run: mkdir -p checksums
-
-      - name: Evaluate release specific bucket dir
-        run: |
-          if [[ ${{ env.PUBLISH_NIGHTLY }} == 'true' ]]; then
-            echo "BUCKET_DIR=rill/nightly" >> $GITHUB_ENV
-          else
-            echo "BUCKET_DIR=rill/$(echo "${GITHUB_REF#refs/tags/}")" >> $GITHUB_ENV
-          fi
-
-      - name: Download checksum files from GCS
-        run: |
-          gsutil cp gs://prod-cdn.rilldata.com/$BUCKET_DIR/checksums_*.txt ./checksums/
-
-      - name: Combine checksum files
-        run: |
-          cat checksums/*.txt | sort | uniq > combined-checksums.txt
-
-      - name: Upload combined checksums back to GCS
-        run: |
-          gsutil cp combined-checksums.txt gs://prod-cdn.rilldata.com/$BUCKET_DIR/checksums.txt
-          if [[ ${{ env.PUBLISH_RELEASE }} == 'true' ]]; then
-            gsutil cp combined-checksums.txt gs://prod-cdn.rilldata.com/rill/latest/checksums.txt
-          fi

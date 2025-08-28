@@ -66,9 +66,6 @@ func RefreshCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			// Build non-model resources
 			var resources []*runtimev1.ResourceName
-			for _, s := range sources {
-				resources = append(resources, &runtimev1.ResourceName{Kind: runtime.ResourceKindSource, Name: s})
-			}
 			for _, a := range alerts {
 				resources = append(resources, &runtimev1.ResourceName{Kind: runtime.ResourceKindAlert, Name: a})
 			}
@@ -78,6 +75,9 @@ func RefreshCmd(ch *cmdutil.Helper) *cobra.Command {
 			for _, v := range metricViews {
 				resources = append(resources, &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: v})
 			}
+
+			// Merge sources into models since sources have been deprecated and are no longer created on the backend.
+			models = append(models, sources...)
 
 			// Build model triggers
 			if len(modelPartitions) > 0 || erroredPartitions {

@@ -16,10 +16,10 @@ This guide walks you through the GitHub Analytics demo project, which showcases 
 ## Overview
 
 The GitHub Analytics demo analyzes data from the ClickHouse repository, providing insights into:
-- **Commit activity** - Daily commits, authors, and patterns
-- **File changes** - Most modified files, line additions/deletions
-- **Contributor analysis** - Top contributors and their activity
-- **Repository trends** - Growth patterns and development velocity
+- **Commit activity** – Daily commits, authors, and patterns
+- **File changes** – Most modified files, line additions/deletions
+- **Contributor analysis** – Top contributors and their activity
+- **Repository trends** – Growth patterns and development velocity
 
 ## Step 1: Clone the Project
 
@@ -98,11 +98,11 @@ uri: "gs://rilldata-public/github-analytics/rilldata/rill/commits/modified_files
 ## Step 4: Data Models
 
 ### Joining the sources
-Without going into a full deep dive, this is joining the commit details and modified files sources based on the commit hash.
+Without going into a full deep dive, this involves joining the commit details and modified files sources based on the commit hash.
 
 ```sql
 -- Model SQL
--- Reference documentation: https://docs.rilldata.com/reference/project-files/models
+-- Reference documentation: https://docs.rilldata.com/build/models
 -- @materialize: true
 
 SELECT
@@ -207,19 +207,19 @@ time_grain: "day"
 **What this metrics file does:**
 
 - **Measures** define the calculations you want to perform:
-  - `total_commits` - Count of all commits
-  - `unique_contributors` - Number of different developers
-  - `total_changes` - Lines of code modified
-  - `avg_commit_size` - Average complexity of commits
-  - `merge_commit_ratio` - Percentage of merge commits
+  - `total_commits` – Count of all commits
+  - `unique_contributors` – Number of different developers
+  - `total_changes` – Lines of code modified
+  - `avg_commit_size` – Average complexity of commits
+  - `merge_commit_ratio` – Percentage of merge commits
 
 - **Dimensions** define how you can slice and dice the data:
-  - `date` - Time-based analysis
-  - `username` - Per-contributor analysis
-  - `file_extension` - Analysis by file type
-  - `first_directory` - Analysis by code area
+  - `date` – Time-based analysis
+  - `username` – Per-contributor analysis
+  - `file_extension` – Analysis by file type
+  - `first_directory` – Analysis by code area
 
-- **Time grain** sets the default time aggregation to daily
+- **Time grain** sets the default time aggregation to daily.
 
 ### Creating Custom Metrics
 
@@ -244,10 +244,10 @@ measures:
 ## Step 6: Dashboard Exploration
 
 #### **Features**
-- **Explore Slice-and-Dice** - For data exploration and ad-hoc analysis
-- **Canvas** - Traditional charts and visualizations
-- **Pivot/Flat Table** - Tabular data views with sorting and grouping
-- **Measure's TDD** - Granular Analysis of single measure
+- **Explore Slice-and-Dice** – For data exploration and ad-hoc analysis
+- **Canvas** – Traditional charts and visualizations
+- **Pivot/Flat Table** – Tabular data views with sorting and grouping
+- **Measure's TDD** – Granular analysis of a single measure
 
 #### **Selectors**
 - **Date range selector** - Analyze specific time periods

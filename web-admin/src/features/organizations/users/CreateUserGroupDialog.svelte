@@ -181,12 +181,19 @@
       : undefined;
   }
 
+  // Check if form has been modified
+  $: hasFormChanges = $form.name !== initialValues.name;
+
   function handleClose() {
     open = false;
     searchText = "";
     selectedUsers = [];
     pendingAdditions = [];
     pendingRemovals = [];
+    // Only reset the form if it has been modified
+    if (hasFormChanges) {
+      $form.name = initialValues.name;
+    }
   }
 </script>
 
@@ -194,7 +201,6 @@
   bind:open
   onOutsideClick={(e) => {
     e.preventDefault();
-    handleClose();
   }}
   onOpenChange={(open) => {
     if (!open) {
@@ -222,6 +228,7 @@
           label="Name"
           placeholder="Untitled"
           errors={$errors.name}
+          alwaysShowError={true}
         />
 
         <div class="flex flex-col gap-y-1">
@@ -234,7 +241,7 @@
           <Combobox
             searchValue={searchText}
             options={coercedUsersToOptions}
-            placeholder="Search for users"
+            placeholder="Search to add/remove users"
             {getMetadata}
             selectedValues={[
               ...new Set(
@@ -310,7 +317,7 @@
       <Button type="plain" onClick={handleClose}>Cancel</Button>
       <Button
         type="primary"
-        disabled={$submitting || $form.name.trim() === ""}
+        disabled={$submitting || $form.name.trim() === "" || !!$errors.name}
         form={formId}
         submitForm
       >

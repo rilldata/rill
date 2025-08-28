@@ -440,6 +440,10 @@ func (s *Server) yamlForManagedAlert(opts *adminv1.AlertOptions, ownerUserID str
 	res.Refs = []string{fmt.Sprintf("MetricsView/%s", opts.MetricsViewName)}
 	res.DisplayName = opts.DisplayName
 	res.Watermark = "inherit"
+	if opts.RefreshCron != "" {
+		res.Refresh.Cron = opts.RefreshCron
+		res.Refresh.TimeZone = opts.RefreshTimeZone
+	}
 	res.Intervals.Duration = opts.IntervalDuration
 	if opts.Resolver != "" {
 		res.Data = map[string]any{
@@ -482,6 +486,10 @@ func (s *Server) yamlForCommittedAlert(opts *adminv1.AlertOptions) ([]byte, erro
 	res.Refs = []string{fmt.Sprintf("MetricsView/%s", opts.MetricsViewName)}
 	res.DisplayName = opts.DisplayName
 	res.Watermark = "inherit"
+	if opts.RefreshCron != "" {
+		res.Refresh.Cron = opts.RefreshCron
+		res.Refresh.TimeZone = opts.RefreshTimeZone
+	}
 	res.Intervals.Duration = opts.IntervalDuration
 	if opts.Resolver != "" {
 		res.Data = map[string]any{
@@ -546,8 +554,12 @@ type alertYAML struct {
 	Refs        []string `yaml:"refs"`
 	DisplayName string   `yaml:"display_name"`
 	Title       string   `yaml:"title,omitempty"` // Deprecated: replaced by display_name, but preserved for backwards compatibility
-	Watermark   string   `yaml:"watermark"`
-	Intervals   struct {
+	Refresh     struct {
+		Cron     string `yaml:"cron"`
+		TimeZone string `yaml:"time_zone"`
+	} `yaml:"refresh"`
+	Watermark string `yaml:"watermark"`
+	Intervals struct {
 		Duration string `yaml:"duration"`
 	} `yaml:"intervals"`
 	Data map[string]any `yaml:"data,omitempty"`

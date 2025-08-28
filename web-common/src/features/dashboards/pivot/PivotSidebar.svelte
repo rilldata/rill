@@ -1,16 +1,13 @@
 <script lang="ts">
+  import { Search } from "@rilldata/web-common/components/search";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-  import {
-    getAllowedTimeGrains,
-    isGrainBigger,
-  } from "@rilldata/web-common/lib/time/grains";
-  import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+  import { onMount } from "svelte";
   import { slide } from "svelte/transition";
   import PivotDrag from "./PivotDrag.svelte";
+  import { timePillActions, timePillSelectors } from "./time-pill-store";
   import type { PivotChipData } from "./types";
   import { PivotChipType } from "./types";
-  import { Search } from "@rilldata/web-common/components/search";
 
   const CHIP_HEIGHT = 34;
 
@@ -21,35 +18,39 @@
     },
   } = stateManagers;
 
-  const timeControlsStore = useTimeControlStore(getStateManagers());
+  const timeControlsStore = useTimeControlStore(stateManagers);
 
   let sidebarHeight = 0;
   let searchText = "";
 
-  $: allTimeGrains = getAllowedTimeGrains(
-    new Date($timeControlsStore.timeStart!),
-    new Date($timeControlsStore.timeEnd!),
-  ).map((tgo) => {
-    return {
-      id: tgo.grain,
-      title: tgo.label,
-      type: PivotChipType.Time,
-    };
+  onMount(() => {
+    timePillActions.initTimeDimension("time", "Time");
   });
 
-  $: usedTimeGrains = $columns.dimension
-    .filter((m) => m.type === PivotChipType.Time)
-    .concat($rows.filter((d) => d.type === PivotChipType.Time));
-
-  $: timeGrainOptions = allTimeGrains
-    .filter((tgo) => !usedTimeGrains.some((utg) => utg.id === tgo.id))
-    .filter(
-      (tgo) =>
-        $timeControlsStore.minTimeGrain === undefined ||
-        $timeControlsStore.minTimeGrain ===
-          V1TimeGrain.TIME_GRAIN_UNSPECIFIED ||
-        !isGrainBigger($timeControlsStore.minTimeGrain, tgo.id),
+  $: if ($timeControlsStore.timeStart && $timeControlsStore.timeEnd) {
+    timePillActions.setTimeControls(
+      $timeControlsStore.timeStart,
+      $timeControlsStore.timeEnd,
+      $timeControlsStore.minTimeGrain,
     );
+  }
+
+  $: if ($rows && $columns) {
+    timePillActions.updateUsedGrains("time", $rows, $columns.dimension);
+  }
+
+  // Get reactive values from the store
+  $: shouldShowTimePill = timePillSelectors.getAllGrainsUsed("time");
+
+  $: timeGrainOptions = !$shouldShowTimePill
+    ? [
+        {
+          id: "time",
+          title: "Time",
+          type: PivotChipType.Time,
+        },
+      ]
+    : [];
 
   $: filteredMeasures = filterBasedOnSearch($measures, searchText);
   $: filteredDimensions = filterBasedOnSearch($dimensions, searchText);

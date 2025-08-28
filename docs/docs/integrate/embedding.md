@@ -17,7 +17,7 @@ Rill Cloud provides the ability to embed dashboards as components in your own ap
 - Embedding individual dashboards with the ability to navigate to other dashboards (that exist in the _same_ project)
 - Embedding the dashboard list page present in a Rill project (with the ability to select and navigate between dashboards)
 
-When embedding Rill, a service token for the backend will need to be generated to request an authenticated iframe URL via the Rill APIs. Afterwards, the iframe URL can be passed to your frontend application for rendering. Here's a high-level diagram of what this flow looks like:
+When embedding Rill, you need to generate a service token for your backend to request an authenticated iframe URL via the Rill APIs. Afterwards, the iframe URL can be passed to your frontend application for rendering. Here's a high-level diagram of what this flow looks like:
 
 ```mermaid
 sequenceDiagram
@@ -50,7 +50,7 @@ See our CLI reference docs for more details on managing a [service account and t
 :::
 
 :::caution
-The service account _provides admin-level access to your organization_ and should be handled confidentially. Therefore, the service account itself should **not** be integrated directly in a fronted or other user-facing code that can be exposed publicly.
+The service account _provides admin-level access to your organization_ and should be handled confidentially. Therefore, the service account itself should **not** be integrated directly in frontend or other user-facing code that can be exposed publicly.
 :::
 
 ### Backend: Build an iframe URL
@@ -59,7 +59,7 @@ You should implement an API on your backend that uses the service token to retri
 There are multiple reasons why the iframe URL <u>must</u> be constructed on your backend:
 - To avoid leaking your master Rill service token in the browser
 - To allow you to use your own authentication and authorization logic to restrict access to the dashboard
-- To allow you to optionally use your backend's context about the authenticated user to include user attributes in the iframe URL for enforcement of row-level security policies
+- To optionally use your backend's context about the authenticated user to include user attributes in the iframe URL for enforcement of row-level security policies
 
 Here are examples of how to get an iframe URL using different languages:
 
@@ -315,7 +315,7 @@ Finally, _if you wish to embed the project list view of dashboards instead (what
 
 :::
 
-The response of the above POST request will then contain an `iframeSrc` value that can be used to embed the dashboard / set of dashboards in your application. It will also contain a `ttlSeconds` value, which indicates how long the iframe URL will be valid for. _After the TTL has elapsed_, the iframe URL needs be refreshed as the underlying access token being used will no longer be valid (for security purposes). Here's an example response:
+The response of the above POST request will then contain an `iframeSrc` value that can be used to embed the dashboard or set of dashboards in your application. It will also contain a `ttlSeconds` value, which indicates how long the iframe URL will be valid for. _After the TTL has elapsed_, the iframe URL needs to be refreshed as the underlying access token being used will no longer be valid (for security purposes). Here's an example response:
 
 ```json
 {
@@ -329,7 +329,7 @@ The response of the above POST request will then contain an `iframeSrc` value th
 
 ### Testing the dashboard
 
-While it is possible to create the iframeSrc URL via the CLI or code to _test_ your embed dashboard, it might be easier to start off using [Rill Developer's mock users](/manage/security#advanced-example-custom-attributes-embed-dashboards), especially if you have multiple attribute views that you want to test before deploying to Rill Cloud. You can pass specific custom_attributes as you would during iframe URL generation to view the pre-filtered explore dashboard. 
+While it is possible to create the iframeSrc URL via the CLI or code to _test_ your embedded dashboard, it might be easier to start off using [Rill Developer's mock users](/manage/security#advanced-example-custom-attributes-embed-dashboards), especially if you have multiple attribute views that you want to test before deploying to Rill Cloud. You can pass specific custom_attributes as you would during iframe URL generation to view the pre-filtered explore dashboard. 
 
 ```yaml
 - email: embed@rilldata.com
@@ -349,7 +349,7 @@ Your frontend should request an iframe URL from your backend API (which you set 
 
 ### React Example
 
-Depending on how your app is written and the language being used, you can then use the resulting iframe URL to embed and display Rill dashboards accordingly. Please find below a basic example of how to fetch and render a dashboard in **React**:
+Depending on how your app is written and the language being used, you can then use the resulting iframe URL to embed and display Rill dashboards accordingly. Below is a basic example of how to fetch and render a dashboard in **React**:
 
 ```jsx
 import React, { useEffect, useState } from 'react';

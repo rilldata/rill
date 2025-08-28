@@ -25,6 +25,7 @@ func SeedCmd(ch *cmdutil.Helper) *cobra.Command {
 				Name:        "rill-openrtb-prog-ads",
 				ProdVersion: "latest",
 				Slots:       2,
+				Github:      true,
 			})
 		},
 	}
