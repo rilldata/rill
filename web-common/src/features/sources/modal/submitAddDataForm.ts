@@ -22,7 +22,10 @@ import {
   updateDotEnvWithSecrets,
   updateRillYAMLWithOlapConnector,
 } from "../../connectors/code-utils";
-import { testOLAPConnector } from "../../connectors/olap/test-connection";
+import {
+  testOLAPConnector,
+  testNonOlapConnector,
+} from "../../connectors/olap/test-connection";
 import { runtimeServicePutFileAndWaitForReconciliation } from "../../entity-management/actions";
 import { getFileAPIPathFromNameAndType } from "../../entity-management/entity-mappers";
 import { fileArtifacts } from "../../entity-management/file-artifacts";
@@ -182,6 +185,20 @@ export async function submitAddConnectorForm(
       instanceId,
       connector.name as string,
     );
+    if (!result.success) {
+      await rollbackConnectorChanges(
+        instanceId,
+        newConnectorFilePath,
+        originalEnvBlob,
+      );
+      throw {
+        message: result.error || "Unable to establish a connection",
+        details: result.details,
+      };
+    }
+  } else {
+    // Test connection for non-OLAP connectors
+    const result = await testNonOlapConnector(instanceId, newConnectorName);
     if (!result.success) {
       await rollbackConnectorChanges(
         instanceId,
