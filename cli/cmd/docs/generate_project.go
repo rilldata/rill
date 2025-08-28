@@ -518,7 +518,7 @@ func generateDoc(sidebarPosition, level int, node *yaml.Node, indent string, req
 				}
 				doc.WriteString(fmt.Sprintf("\n\n```yaml\n%s```", string(b)))
 			}
-		} 
+		}
 	}
 	return doc.String()
 }
