@@ -2,7 +2,6 @@ import { queryClient } from "../../../lib/svelte-query/globalQueryClient";
 import {
   connectorServiceOLAPListTables,
   getConnectorServiceOLAPListTablesQueryKey,
-  getRuntimeServiceGetResourceQueryKey,
   runtimeServiceGetResource,
 } from "../../../runtime-client";
 import { humanReadableErrorMessage } from "../../sources/errors/errors";
@@ -13,12 +12,11 @@ export interface TestConnectorResult {
   details?: string;
 }
 
+// Test the connection by calling  `ListTables`
 export async function testOLAPConnector(
   instanceId: string,
   newConnectorName: string,
 ): Promise<TestConnectorResult> {
-  // Test the connection by calling `ListTables`
-
   const queryKey = getConnectorServiceOLAPListTablesQueryKey({
     instanceId,
     connector: newConnectorName,
@@ -46,32 +44,29 @@ export async function testOLAPConnector(
   }
 }
 
-// Poll the connector resource status using `runtimeServiceGetResource`
+// Poll the connector resource status using `createRuntimeServiceGetResource`
 // to check if the connector configuration is valid and reconciled
 export async function pollConnectorResource(
   instanceId: string,
-  newConnectorName: string,
+  connectorName: string,
 ): Promise<TestConnectorResult> {
-  // Test the connection by polling the connector resource status
-  const maxAttempts = 10; // Maximum number of polling attempts
-  const pollInterval = 2000; // 2 seconds between attempts
-  const maxWaitTime = maxAttempts * pollInterval; // Maximum total wait time
+  const maxAttempts = 10;
+  const pollInterval = 2000;
+  const maxWaitTime = maxAttempts * pollInterval;
+
+  // Wait for file reconciliation before checking resource
+  await new Promise((resolve) => setTimeout(resolve, 3000));
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
-      const resource = await queryClient.fetchQuery({
-        queryKey: getRuntimeServiceGetResourceQueryKey(instanceId, {
-          "name.kind": "connector",
-          "name.name": newConnectorName,
-        }),
-        queryFn: () =>
-          runtimeServiceGetResource(instanceId, {
-            "name.kind": "connector",
-            "name.name": newConnectorName,
-          }),
+      console.log(`Attempt ${attempt} of ${maxAttempts}`);
+
+      const resource = await runtimeServiceGetResource(instanceId, {
+        "name.kind": "connector",
+        "name.name": connectorName,
       });
 
-      // Check if resource has reconcile errors
+      // If we get here, resource exists - check its status
       if (resource.resource?.meta?.reconcileError) {
         return {
           success: false,
@@ -80,42 +75,62 @@ export async function pollConnectorResource(
         };
       }
 
-      // Check if resource is healthy (reconcile status is idle)
       if (
         resource.resource?.meta?.reconcileStatus === "RECONCILE_STATUS_IDLE"
       ) {
         return { success: true };
       }
 
-      // If this is the last attempt, return the current status
-      if (attempt === maxAttempts) {
-        return {
-          success: false,
-          error: "Connector reconciliation timeout",
-          details: `Connector is still reconciling after ${maxWaitTime / 1000} seconds. Current status: ${resource.resource?.meta?.reconcileStatus || "unknown"}`,
-        };
+      // Still reconciling, continue polling
+      if (attempt < maxAttempts) {
+        await new Promise((resolve) => setTimeout(resolve, pollInterval));
+        continue;
       }
 
-      // Wait before the next poll attempt
-      await new Promise((resolve) => setTimeout(resolve, pollInterval));
+      // Last attempt and still not idle
+      return {
+        success: false,
+        error: "Connector reconciliation timeout",
+        details: `Connector is still reconciling after ${maxWaitTime / 1000} seconds. Current status: ${resource.resource?.meta?.reconcileStatus || "unknown"}`,
+      };
     } catch (error) {
-      // If this is the last attempt, return the error
+      console.error(`Attempt ${attempt} failed:`, error);
+
+      // Resource not found is expected initially after file creation
+      if (error?.status === 404 || error?.response?.status === 404) {
+        console.log(
+          `Resource not found yet (attempt ${attempt}/${maxAttempts}), waiting...`,
+        );
+
+        if (attempt === maxAttempts) {
+          return {
+            success: false,
+            error: "Connector resource was never created",
+            details: `The connector "${connectorName}" file was created but the runtime never processed it into a resource. This may indicate a configuration error or runtime issue.`,
+          };
+        }
+
+        // Wait and try again
+        await new Promise((resolve) => setTimeout(resolve, pollInterval));
+        continue;
+      }
+
+      // For the last attempt, provide detailed error info
       if (attempt === maxAttempts) {
         return {
           success: false,
           error: "Failed to check connector status",
           details:
+            error?.response?.data?.message ||
             error?.message ||
-            "Unknown error occurred while polling connector status",
+            "Unknown error occurred",
         };
       }
-
-      // Wait before retrying on error
       await new Promise((resolve) => setTimeout(resolve, pollInterval));
     }
   }
 
-  // This should never be reached, but just in case
+  // Fallback (should never reach here)
   return {
     success: false,
     error: "Unexpected error during connector testing",
