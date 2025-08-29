@@ -72,6 +72,7 @@
   $: defaultTimeRange = $canvasSpec?.defaultPreset?.timeRange;
   $: availableTimeZones = $canvasSpec?.timeZones ?? [];
   $: timeRanges = $canvasSpec?.timeRanges ?? [];
+  $: allTime = $allTimeRange;
 
   $: interval = selectedTimeRange
     ? Interval.fromDateTimes(
@@ -129,7 +130,7 @@
     <Calendar size="16px" />
     <SuperPill
       context={canvasName}
-      allTimeRange={$allTimeRange}
+      {allTime}
       {selectedRangeAlias}
       showPivot={false}
       minTimeGrain={$minTimeGrain}
@@ -158,7 +159,7 @@
       {onPan}
     />
     <CanvasComparisonPill
-      allTimeRange={$allTimeRange}
+      allTimeRange={allTime}
       {selectedTimeRange}
       {selectedComparisonTimeRange}
       showTimeComparison={$comparisonRangeStateStore?.showTimeComparison ??

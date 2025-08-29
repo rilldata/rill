@@ -18,7 +18,7 @@
   import RangePickerV2 from "./new-time-dropdown/RangePickerV2.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
 
-  export let allTimeRange: TimeRange;
+  export let allTime: Interval<true> | undefined;
   export let selectedRangeAlias: string | undefined;
   export let showPivot: boolean;
   export let minTimeGrain: V1TimeGrain | undefined;
@@ -70,8 +70,7 @@
     <RangePickerV2
       {context}
       smallestTimeGrain={minTimeGrain}
-      minDate={DateTime.fromJSDate(allTimeRange.start)}
-      maxDate={DateTime.fromJSDate(allTimeRange.end)}
+      {allTime}
       {watermark}
       {showDefaultItem}
       {defaultTimeRange}
@@ -87,8 +86,7 @@
     />
   {:else if interval.isValid && activeTimeGrain}
     <Elements.RangePicker
-      minDate={DateTime.fromJSDate(allTimeRange.start)}
-      maxDate={DateTime.fromJSDate(allTimeRange.end)}
+      {allTime}
       ranges={rangeBuckets}
       {showDefaultItem}
       {showFullRange}

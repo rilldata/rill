@@ -113,15 +113,20 @@
     v1TimeRange,
   );
 
+  $: possibleAllTimeInterval =
+    $allTimeRange &&
+    Interval.fromDateTimes($allTimeRange.start, $allTimeRange.end);
+
+  $: allTimeInterval = possibleAllTimeInterval?.isValid
+    ? possibleAllTimeInterval
+    : undefined;
+
   $: interval = selectedTimeRange
     ? Interval.fromDateTimes(
         DateTime.fromJSDate(selectedTimeRange.start).setZone($selectedTimezone),
         DateTime.fromJSDate(selectedTimeRange.end).setZone($selectedTimezone),
       )
-    : Interval.fromDateTimes(
-        $allTimeRange?.start ?? new Date(),
-        $allTimeRange?.end ?? new Date(),
-      );
+    : (allTimeInterval ?? Interval.invalid("Unable to parse time range"));
 
   function handleMeasureFilterApply(
     dimension: string,
@@ -217,7 +222,7 @@
   }
 
   function onSelectTimeZone(timeZone: string) {
-    if (!interval.isValid) return;
+    if (!interval?.isValid) return;
 
     if (selectedRangeAlias === TimeRangePreset.CUSTOM) {
       selectRange({
@@ -257,7 +262,7 @@
       <Calendar size="16px" />
       {#if $allTimeRange}
         <SuperPill
-          allTimeRange={$allTimeRange}
+          allTime={allTimeInterval}
           {selectedRangeAlias}
           showPivot={false}
           {defaultTimeRange}
@@ -282,7 +287,7 @@
           {side}
         />
         <CanvasComparisonPill
-          allTimeRange={$allTimeRange}
+          allTimeRange={allTimeInterval}
           {selectedTimeRange}
           {selectedComparisonTimeRange}
           showTimeComparison={$comparisonRangeStateStore?.showTimeComparison ??
