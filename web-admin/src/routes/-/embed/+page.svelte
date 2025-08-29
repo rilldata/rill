@@ -23,6 +23,7 @@
   $: resourceType =
     $page.url.searchParams.get("type") ?? $page.url.searchParams.get("kind"); // "kind" is for backwards compatibility
   const navigation = $page.url.searchParams.get("navigation");
+  const navigationEnabled = navigation === "true";
   // Ignoring state and theme params for now
   // const state = $page.url.searchParams.get("state");
   // const theme = $page.url.searchParams.get("theme");
@@ -78,7 +79,7 @@
   {/if}
 </svelte:head>
 
-{#if navigation}
+{#if navigationEnabled}
   <TopNavigationBarEmbed
     {instanceId}
     {activeResource}
@@ -99,7 +100,11 @@
   {#if activeResource?.kind === ResourceKind.Explore.toString()}
     <ExploreEmbed {instanceId} exploreName={activeResource.name} />
   {:else if activeResource?.kind === ResourceKind.Canvas.toString()}
-    <CanvasEmbed {instanceId} canvasName={activeResource.name} />
+    <CanvasEmbed
+      {instanceId}
+      canvasName={activeResource.name}
+      {navigationEnabled}
+    />
   {:else}
     <UnsupportedKind />
   {/if}
