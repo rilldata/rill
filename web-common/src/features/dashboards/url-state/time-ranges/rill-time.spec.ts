@@ -115,12 +115,27 @@ function getPeriodToDateTestCases(): TestCase[] {
   }).flat();
 }
 
+function getLegacyISOTestCases(): TestCase[] {
+  return [
+    [`P2M3D`, "Last 2 months and 3 days", false, undefined, undefined],
+    [`PT2H3M`, "Last 2 hours and 3 minutes", false, undefined, undefined],
+    [
+      `P2M3DT2H3M`,
+      "Last 2 months, 3 days, 2 hours and 3 minutes",
+      false,
+      undefined,
+      undefined,
+    ],
+  ];
+}
+
 describe("rill time", () => {
   describe("positive cases", () => {
     const Cases: TestCase[] = [
       ...getSinglePeriodTestCases(),
       ...getMultiPeriodTestCases(7),
       ...getPeriodToDateTestCases(),
+      ...getLegacyISOTestCases(),
       [
         "-5W4M3Q2Y to -4W3M2Q1Y",
         "-5W4M3Q2Y to -4W3M2Q1Y",

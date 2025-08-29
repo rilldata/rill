@@ -11,6 +11,7 @@
     RillTimeStartEndInterval,
     RillTimeOrdinalInterval,
     RillIsoInterval,
+    RillLegacyIsoInterval,
 
     RillPointInTime,
     RillPointInTimeWithSnap,
@@ -21,8 +22,11 @@
   } from "./RillTime.ts"
 %}
 
-rill_time => interval_with_grain                            {% id %}
-           | interval_with_grain _ "tz" _ timezone_modifier {% ([rt, , , , tz]) => rt.withTimezone(tz) %}
+rill_time => new_rill_time {% id %}
+           | old_rill_time {% id %}
+
+new_rill_time => interval_with_grain                            {% id %}
+               | interval_with_grain _ "tz" _ timezone_modifier {% ([rt, , , , tz]) => rt.withTimezone(tz) %}
 
 interval_with_grain => interval_with_anchor_override _ "by"i _ grain {% ([rt, , , , grain]) => rt.withGrain(grain) %}
                      | interval_with_anchor_override                 {% id %}
@@ -73,7 +77,7 @@ ordinal => grain num {% ([grain, num]) => ({num, grain}) %}
 grain_duration      => grain_duration_part:+ {% ([parts]) => parts %}
 grain_duration_part => num grain             {% ([num, grain]) => ({num, grain}) %}
 
-period_to_grain => [sSmhHdDwWqQMyY] "TD" {% ([grain]) => grain %}
+period_to_grain => grain "TD" {% ([grain]) => grain %}
 
 abs_time => [\d] [\d] [\d] [\d] [\-] [\d] [\d] [\-] [\d] [\d] "T" [\d] [\d] [:] [\d] [\d] [:] [\d] [\d] [.] [\d]:+ "Z" {% RillAbsoluteTime.postProcessor %}
           | [\d] [\d] [\d] [\d] [\-] [\d] [\d] [\-] [\d] [\d] "T" [\d] [\d] [:] [\d] [\d] [:] [\d] [\d] "Z"            {% RillAbsoluteTime.postProcessor %}
@@ -85,8 +89,20 @@ abs_time => [\d] [\d] [\d] [\d] [\-] [\d] [\d] [\-] [\d] [\d] "T" [\d] [\d] [:] 
 
 timezone_modifier => [0-9a-zA-Z/+\-_]:+ {% ([args]) => args.join("") %}
 
+old_rill_time => iso_time {% ([legacyIsoInterval]) => new RillTime(legacyIsoInterval) %}
+
+iso_time => "P" iso_date_part:+ "T" iso_time_part:+ {% ([, dateGrains, , timeGrains]) => new RillLegacyIsoInterval(dateGrains, timeGrains) %}
+          | "P" iso_date_part:+                     {% ([, dateGrains]) => new RillLegacyIsoInterval(dateGrains, []) %}
+          | "PT" iso_time_part:+                    {% ([, timeGrains]) => new RillLegacyIsoInterval([], timeGrains) %}
+
+iso_date_part => num date_grains {% ([num, grain]) => ({num, grain}) %}
+iso_time_part => num time_grains {% ([num, grain]) => ({num, grain}) %}
+
 prefix => [+\-] {% id %}
 
 num => [0-9]:+ {% ([args]) => Number(args.join("")) %}
 
 grain => [sSmhHdDwWqQMyY] {% id %}
+
+date_grains => [DWQMY] {% id %}
+time_grains => [SMH] {% id %}

@@ -1,4 +1,5 @@
 import { isGrainBigger } from "@rilldata/web-common/lib/time/grains";
+import { humaniseISODuration } from "@rilldata/web-common/lib/time/ranges/iso-ranges.ts";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import { DateTime, Duration } from "luxon";
 import type { DateObjectUnits } from "luxon/src/datetime";
@@ -36,6 +37,8 @@ export class RillTime {
   public readonly isShorthandSyntax: boolean;
   public asOfLabel: RillTimeAsOfLabel | undefined = undefined;
 
+  public isOldFormat = false;
+
   public constructor(public readonly interval: RillTimeInterval) {
     this.updateIsComplete();
 
@@ -43,6 +46,7 @@ export class RillTime {
       interval instanceof RillShorthandInterval ||
       interval instanceof RillPeriodToGrainInterval;
     this.rangeGrain = this.interval.getGrain();
+    this.isOldFormat = interval instanceof RillLegacyIsoInterval;
   }
 
   public withGrain(grain: string) {
@@ -69,6 +73,8 @@ export class RillTime {
   }
 
   public overrideRef(override: RillPointInTime) {
+    if (this.isOldFormat) return;
+
     const pointUsingRefIndex = this.anchorOverrides.findIndex((pt) =>
       pt.hasLabelledPart(),
     );
@@ -385,6 +391,39 @@ export class RillIsoInterval implements RillTimeInterval {
       timeRange += ` to ${this.end.toString()}`;
     }
     return timeRange;
+  }
+}
+
+export class RillLegacyIsoInterval implements RillTimeInterval {
+  public constructor(
+    private readonly dateGrains: RillGrain[],
+    private readonly timeGrains: RillGrain[],
+  ) {}
+
+  public isComplete() {
+    return false;
+  }
+
+  public getLabel(): [label: string, supported: boolean] {
+    const isoDuration = this.toString();
+    const label = "Last " + humaniseISODuration(isoDuration, false);
+    return [label, true];
+  }
+
+  public getGrain() {
+    return undefined;
+  }
+
+  public toString() {
+    const dateParts = this.dateGrains.map(
+      ({ grain, num }) => `${num!}${grain.toUpperCase()}`,
+    );
+    const datePart = "P" + dateParts.join("");
+    const timeParts = this.timeGrains.map(
+      ({ grain, num }) => `${num!}${grain.toUpperCase()}`,
+    );
+    const timePart = timeParts.length > 0 ? "T" + timeParts.join("") : "";
+    return datePart + timePart;
   }
 }
 
