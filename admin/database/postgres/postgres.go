@@ -3101,9 +3101,10 @@ func (c *connection) magicAuthTokenFromDTO(dto *magicAuthTokenDTO, fetchSecret b
 // magicAuthTokenWithUserDTO wraps database.MagicAuthTokenWithUser, using the pgtype package to handly types that pgx can't read directly into their native Go types.
 type magicAuthTokenWithUserDTO struct {
 	*database.MagicAuthTokenWithUser
-	Attributes pgtype.JSON      `db:"attributes"`
-	Fields     pgtype.TextArray `db:"fields"`
-	Resources  pgtype.JSONB     `db:"resources"`
+	Attributes               pgtype.JSON      `db:"attributes"`
+	Fields                   pgtype.TextArray `db:"fields"`
+	Resources                pgtype.JSONB     `db:"resources"`
+	TransitiveAccessResource *pgtype.JSONB    `db:"transitive_access_resource"`
 }
 
 func (c *connection) magicAuthTokenWithUserFromDTO(dto *magicAuthTokenWithUserDTO) (*database.MagicAuthTokenWithUser, error) {

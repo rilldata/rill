@@ -172,6 +172,10 @@ func (r *sqlResolver) ResolveExport(ctx context.Context, w io.Writer, opts *runt
 	}
 }
 
+func (r *sqlResolver) InferRequiredSecurityRules() []*runtimev1.SecurityRule {
+	panic("not implemented")
+}
+
 func (r *sqlResolver) generalExport(ctx context.Context, w io.Writer, filename string, opts *runtime.ExportOptions) error {
 	res, err := r.olap.Query(ctx, &drivers.Statement{
 		Query:    r.sql,

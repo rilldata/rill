@@ -135,3 +135,7 @@ func (r *annotationsResolver) ResolveInteractive(ctx context.Context) (runtime.R
 func (r *annotationsResolver) ResolveExport(ctx context.Context, w io.Writer, opts *runtime.ResolverExportOptions) error {
 	return errors.New("not implemented")
 }
+
+func (r *annotationsResolver) InferRequiredSecurityRules() []*runtimev1.SecurityRule {
+	panic("not implemented")
+}

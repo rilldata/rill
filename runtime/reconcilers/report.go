@@ -2,11 +2,9 @@ package reconcilers
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/url"
-	"strings"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -395,49 +393,14 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 	}
 	defer release()
 
-	var ownerID, explore, canvas, webOpenMode string
+	var ownerID, webOpenMode string
 	if id, ok := rep.Spec.Annotations["admin_owner_user_id"]; ok {
 		ownerID = id
-	}
-	if e, ok := rep.Spec.Annotations["explore"]; ok {
-		explore = e
-	}
-	if c, ok := rep.Spec.Annotations["canvas"]; ok {
-		canvas = c
 	}
 	if w, ok := rep.Spec.Annotations["web_open_mode"]; ok {
 		webOpenMode = w
 		if webOpenMode == "" { // backwards compatibility
 			webOpenMode = "recipient"
-		}
-	}
-
-	if webOpenMode != "none" && explore == "" { // backwards compatibility, try to find explore
-		if path, ok := rep.Spec.Annotations["web_open_path"]; ok {
-			// parse path, extract explore name, it will be like /explore/{explore}
-			if strings.HasPrefix(path, "/explore/") {
-				explore = path[9:]
-				if explore[len(explore)-1] == '/' {
-					explore = explore[:len(explore)-1]
-				}
-			}
-		}
-		// still not found, try to extract mv from query args
-		if explore == "" && rep.Spec.QueryArgsJson != "" {
-			m := make(map[string]interface{})
-			err := json.Unmarshal([]byte(rep.Spec.QueryArgsJson), &m)
-			if err == nil {
-				if v, ok := m["metricsView"]; ok {
-					explore = v.(string)
-				} else if v, ok = m["metrics_view_name"]; ok {
-					explore = v.(string)
-				} else if v, ok = m["metrics_view"]; ok {
-					explore = v.(string)
-				}
-			}
-		}
-		if explore == "" { // still not found
-			webOpenMode = "none"
 		}
 	}
 
@@ -450,13 +413,8 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 			anonRecipients = true
 		}
 	}
-	// extract dimensions, measures and where filter from query args
-	whereFilterJSON, fields, err := queries.SecurityFromQuery(rep.Spec.QueryName, rep.Spec.QueryArgsJson)
-	if err != nil {
-		return false, fmt.Errorf("failed to extract security from query args: %w", err)
-	}
 
-	meta, err := admin.GetReportMetadata(ctx, self.Meta.Name.Name, ownerID, explore, canvas, webOpenMode, whereFilterJSON, fields, emailRecipients, anonRecipients, t)
+	meta, err := admin.GetReportMetadata(ctx, self.Meta.Name.Name, ownerID, webOpenMode, emailRecipients, anonRecipients, t)
 	if err != nil {
 		return false, fmt.Errorf("failed to get report metadata: %w", err)
 	}
