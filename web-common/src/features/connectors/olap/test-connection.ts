@@ -48,7 +48,7 @@ export async function testOLAPConnector(
 
 // Poll the connector resource status using `runtimeServiceGetResource`
 // to check if the connector configuration is valid and reconciled
-export async function testNonOlapConnector(
+export async function pollConnectorResource(
   instanceId: string,
   newConnectorName: string,
 ): Promise<TestConnectorResult> {
