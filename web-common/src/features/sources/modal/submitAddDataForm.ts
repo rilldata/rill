@@ -192,12 +192,33 @@ export async function submitAddConnectorForm(
       };
     }
   } else {
-    // Create the connector file using `runtimeServicePutFile`
-    // Delete the connector file using `runtimeServiceDeleteFile` if it fails with a reconcile error
+    // Non-OLAP connectors: Verify file creation, then poll resource status
 
-    // Test connection for non-OLAP connectors
-    const result = await pollConnectorResource(instanceId, newConnectorName);
-    console.log("TESTED NON-OLAP CONNECTOR: ", result);
+    // Step 1: Verify the connector file was created successfully
+    try {
+      await runtimeServiceGetFile(instanceId, { path: newConnectorFilePath });
+      console.log(`Connector file verified: ${newConnectorFilePath}`);
+    } catch (error) {
+      await rollbackConnectorChanges(
+        instanceId,
+        newConnectorFilePath,
+        originalEnvBlob,
+      );
+      throw {
+        message: "Failed to create connector file",
+        details:
+          error?.response?.data?.message ||
+          error?.message ||
+          "File creation failed",
+      };
+    }
+
+    // Step 2: Poll for the connector resource status
+    const result = await pollConnectorResource(
+      instanceId,
+      connector.name as string,
+    );
+
     if (!result.success) {
       await rollbackConnectorChanges(
         instanceId,
@@ -205,7 +226,7 @@ export async function submitAddConnectorForm(
         originalEnvBlob,
       );
       throw {
-        message: result.error || "Unable to establish a connection",
+        message: result.error || "Connector configuration failed to reconcile",
         details: result.details,
       };
     }
