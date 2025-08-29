@@ -1,5 +1,3 @@
-
-
 <p align="center">
     <a href="https://sulu.io/" target="_blank">
         <img width="10%" src="https://cdn.prod.website-files.com/659ddac460dbacbdc813b204/660b0f85094eb576187342cf_rill_logo_sq_gradient.svg" alt="Rill logo">
@@ -28,14 +26,11 @@
     </a>
 </p>
 
-
-
 <div align="center">
 
-  [Docs](https://docs.rilldata.com/) • [Install](https://docs.rilldata.com/home/install) • [Quickstart](https://docs.rilldata.com/home/get-started) • [Guides](https://docs.rilldata.com/guides) • [Reference](https://docs.rilldata.com/reference/project-files)
+[Docs](https://docs.rilldata.com/) • [Install](https://docs.rilldata.com/home/install) • [Quickstart](https://docs.rilldata.com/home/get-started) • [Guides](https://docs.rilldata.com/guides) • [Reference](https://docs.rilldata.com/reference/project-files)
+
 </div>
-
-
 
 ---
 
@@ -57,6 +52,7 @@ We also support bringing your own OLAP engine as a live connector with pushdown 
 </p>
 
 ## Table of Contents
+
 - [Table of Contents](#table-of-contents)
 - [Rill's design principles:](#rills-design-principles)
 - [Core Concepts](#core-concepts)
@@ -82,7 +78,6 @@ We also support bringing your own OLAP engine as a live connector with pushdown 
 - **Real-time Response** - Responds to each keystroke by re-profiling the resulting dataset
 - **Interactive Dashboards** - Thoughtful, opinionated defaults for quick insights
 - **Dashboards as Code** - Version control, Git sharing, and easy project rehydration
-
 
 ## Core Concepts
 
@@ -127,14 +122,13 @@ measures:
     expression: sum(amount) / count(*)
     description: Average order value
 ```
-   
+
 ### AI Agents
 
 We understand the critical importance of AI and data in modern business intelligence. Our metrics layer is designed to provide AI systems with the structured, real-time data they need to deliver quick and accurate responses. By co-locating data and compute with embedded databases like DuckDB and ClickHouse, Rill eliminates the latency that traditional BI tools introduce, ensuring AI agents can access fresh metrics instantly for precise decision-making and intelligent automation.
 
-
-
 ## Learn More
+
 For visual learners, take a look at our various playlist that explains what Rill is and how to get the most out of it!
 
 <div align="center">
@@ -145,14 +139,13 @@ For visual learners, take a look at our various playlist that explains what Rill
 
 ## Production Examples
 
-
 ### Programmatic Ads/OpenRTB
 
 Bidstream data for programmatic advertisers to optimize pricing strategies, look for inventory opportunities, and improve campaign performance.
 
 - <a href="https://github.com/rilldata/rill-examples/tree/main/rill-openrtb-prog-ads">GitHub →</a><br />
 - <a href="/guides/openrtb-analytics">Walkthrough →</a><br />
-- <a href="https://ui.rilldata.com/demo/rill-openrtb-prog-ads">Live Demo →</a> 
+- <a href="https://ui.rilldata.com/demo/rill-openrtb-prog-ads">Live Demo →</a>
 
 ### Cost Monitoring
 
@@ -185,18 +178,15 @@ A compilation of projects that deep dives into Rill's features using ClickHouse'
 - <a href="/guides/rill-basics/launch">Walkthrough →</a><br />
 - <a href="https://ui.rilldata.com/demo/my-rill-tutorial">Live Demo →</a>
 
-
 ## Get in touch!
 
 - **[Discord Community](https://discord.gg/TatjVY32)** - Join discussions and get help
 - **[GitHub Issues](https://github.com/rilldata/rill/issues)** - Report bugs and request features
 - **[Rill Guru](https://gurubase.io/g/rill)** - Ask questions and get expert answers
 
-
 ## 🏢 Company
 
 Rill is developed and maintained by [Rill Data, Inc.](https://www.rilldata.com/).
-
 
 ## License
 
