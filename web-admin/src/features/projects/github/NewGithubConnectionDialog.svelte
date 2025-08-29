@@ -19,7 +19,6 @@
   import CaretDownFilledIcon from "@rilldata/web-common/components/icons/CaretDownFilledIcon.svelte";
   import CaretRightFilledIcon from "@rilldata/web-common/components/icons/CaretRightFilledIcon.svelte";
   import Github from "@rilldata/web-common/components/icons/Github.svelte";
-  import { SelectSeparator } from "@rilldata/web-common/components/select";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics.ts";
   import { BehaviourEventAction } from "@rilldata/web-common/metrics/service/BehaviourEventTypes.ts";
   import { derived } from "svelte/store";
@@ -55,7 +54,7 @@
   let advancedOpened = false;
   let showOverwriteConfirmation = false;
 
-  $: githubUserOrgs = getGithubUserOrgs();
+  const githubUserOrgs = getGithubUserOrgs();
   $: githubUserRepos = getGithubUserRepos(!isNewRepoType);
 
   const GithubSelectionTypeOptions = [
@@ -115,7 +114,7 @@
     }),
   );
 
-  const { form, errors, enhance, submit } = superForm(
+  const { form, errors, enhance, submit, reset } = superForm(
     defaults(initialValues, schema),
     {
       id: FORM_ID,
@@ -182,9 +181,19 @@
 
     $form.branch = repo.defaultBranch;
   }
+
+  function resetDialog() {
+    reset();
+    advancedOpened = false;
+  }
 </script>
 
-<Dialog.Root bind:open>
+<Dialog.Root
+  bind:open
+  onOpenChange={(o) => {
+    if (!o) resetDialog();
+  }}
+>
   <Dialog.Trigger asChild let:builder>
     <Button
       builders={[builder]}
@@ -232,20 +241,12 @@
             id="org"
             label="Repository org"
             options={$githubUserOrgs.data ?? []}
+            optionsLoading={$githubUserOrgs.isFetching}
             sameWidth
             enableSearch
-          >
-            <div slot="additional-dropdown-content">
-              <SelectSeparator />
-              <button
-                on:click={() => githubAccessManager.reselectRepos()}
-                class="w-full cursor-pointer select-none rounded-sm py-1.5 px-2 text-left hover:bg-accent"
-                type="button"
-              >
-                + Connect other orgs
-              </button>
-            </div>
-          </Select>
+            onAddNew={() => githubAccessManager.reselectRepos()}
+            addNewLabel="+ Connect other orgs"
+          />
 
           <Input
             bind:value={$form.name}
@@ -261,20 +262,12 @@
             label="Repository"
             sameWidth
             options={$githubUserRepos.data?.repoOptions ?? []}
+            optionsLoading={$githubUserRepos.isFetching}
             enableSearch
             onChange={(newRepo) => onSelectedRepoChange(newRepo)}
-          >
-            <div slot="additional-dropdown-content">
-              <SelectSeparator />
-              <button
-                on:click={() => githubAccessManager.reselectRepos()}
-                class="w-full cursor-pointer select-none rounded-sm py-1.5 px-2 text-left hover:bg-accent"
-                type="button"
-              >
-                + Connect other repos
-              </button>
-            </div>
-          </Select>
+            onAddNew={() => githubAccessManager.reselectRepos()}
+            addNewLabel="+ Connect other repos"
+          />
         {/if}
 
         <Collapsible.Root bind:open={advancedOpened}>
@@ -288,7 +281,7 @@
               <span class="text-sm">Advanced options</span>
             </Button>
           </Collapsible.Trigger>
-          <Collapsible.Content class="ml-6 flex flex-col gap-y-2">
+          <Collapsible.Content class="flex flex-col gap-y-2">
             <Input
               bind:value={$form.branch}
               errors={$errors?.branch}
@@ -334,7 +327,15 @@
       </form>
     </Dialog.Description>
     <Dialog.Footer>
-      <Button onClick={() => (open = false)} type="secondary">Cancel</Button>
+      <Button
+        onClick={() => {
+          open = false;
+          resetDialog();
+        }}
+        type="secondary"
+      >
+        Cancel
+      </Button>
       {#if isNewRepoType}
         <Button
           form={FORM_ID}
