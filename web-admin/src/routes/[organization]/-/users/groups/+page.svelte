@@ -13,7 +13,7 @@
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import { Plus } from "lucide-svelte";
 
-  const PAGE_SIZE = 20;
+  const PAGE_SIZE = 50;
 
   let userGroupName = "";
   let isCreateUserGroupDialogOpen = false;
@@ -66,6 +66,26 @@
     $listOrganizationMemberUsersInfinite.data?.pages.flatMap(
       (page) => page.members ?? [],
     ) ?? [];
+
+  // FIXME: Workaround to load users when dialogs open
+  // FIXME: PLAT-181 - server-side org users search
+  async function ensureAllUsersLoaded() {
+    if (
+      $listOrganizationMemberUsersInfinite.hasNextPage &&
+      !$listOrganizationMemberUsersInfinite.isFetchingNextPage
+    ) {
+      await $listOrganizationMemberUsersInfinite.fetchNextPage();
+      // Recursively call until all pages are loaded
+      if ($listOrganizationMemberUsersInfinite.hasNextPage) {
+        await ensureAllUsersLoaded();
+      }
+    }
+  }
+
+  // Load all users when dialogs open
+  $: if (isCreateUserGroupDialogOpen || isEditUserGroupDialogOpen) {
+    ensureAllUsersLoaded();
+  }
 
   function handleLoadMore() {
     if (hasNextPage) {

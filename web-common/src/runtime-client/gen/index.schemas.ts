@@ -2552,6 +2552,7 @@ export type RuntimeServiceRenameFileBody = {
 
 export type RuntimeServiceUnpackEmptyBody = {
   displayName?: string;
+  olap?: string;
   force?: boolean;
 };
 
