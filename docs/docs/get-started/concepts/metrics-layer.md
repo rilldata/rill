@@ -39,7 +39,7 @@ A metrics view on its own does not have any visualization capabilities. Instead,
 
 ## Next Steps
 
-- [Learn about Rill's Architecture](/home/concepts/architecture)
-- [Get started with Rill](/home/install)
+- [Learn about Rill's Architecture](/get-started/concepts/architecture)
+- [Get started with Rill](/get-started/install)
 - [Explore the Reference](/connect)
 - [Step-by-step Tutorial](/guides)

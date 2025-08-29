@@ -103,7 +103,7 @@ const config = {
         items: [
           {
             type: "doc",
-            docId: "home/home",
+            docId: "get-started/get-started",
             position: "left",
             label: "Docs",
           },
@@ -189,11 +189,7 @@ const config = {
         redirects: [
           {
             from: '/install',
-            to: '/home/install',
-          },
-          {
-            from: '/get-started',
-            to: '/home/get-started',
+            to: '/get-started/install',
           },
           {
             from: '/home/example-repository',
@@ -269,7 +265,7 @@ const config = {
           },
           {
             from: '/example-projects',
-            to: '/home/get-started#example-projects-repository'
+            to: '/#examples'
           },
           {
             from: '/integration/embedding',
@@ -411,31 +407,39 @@ const config = {
           },
           {
             from: '/concepts/developerVsCloud',
-            to: '/home/concepts/cloud-vs-developer'
+            to: '/get-started/concepts/cloud-vs-developer'
           },
           {
             from: '/concepts/OLAP',
-            to: '/home/concepts/OLAP'
+            to: '/get-started/concepts/OLAP'
           },
           {
             from: '/concepts/architecture',
-            to: '/home/concepts/architecture'
+            to: '/get-started/concepts/architecture'
           },
           {
             from: '/concepts/operational',
-            to: '/home/concepts/operational'
+            to: '/get-started/concepts/operational'
           },
           {
             from: '/concepts/metrics-layer',
-            to: '/home/concepts/metrics-layer'
+            to: '/get-started/concepts/metrics-layer'
           },
           {
             from: '/concepts/bi-as-code',
-            to: '/home/concepts/bi-as-code'
+            to: '/get-started/concepts/bi-as-code'
           },
           {
             from: '/integrate/custom-apis',
             to: '/build/custom-apis'
+          },
+          {
+            from: '/home/install',
+            to: '/get-started/install'
+          },
+          {
+            from: '/home/get-started',
+            to: '/get-started/quickstart'
           },
           // {
           //   from: '/old-page',
