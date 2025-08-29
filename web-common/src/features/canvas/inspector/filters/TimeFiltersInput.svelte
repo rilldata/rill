@@ -52,7 +52,7 @@
         DateTime.fromJSDate(selectedTimeRange.start).setZone(activeTimeZone),
         DateTime.fromJSDate(selectedTimeRange.end).setZone(activeTimeZone),
       )
-    : Interval.fromDateTimes($allTimeRange.start, $allTimeRange.end);
+    : ($allTimeRange ?? Interval.invalid("Unable to parse time range"));
 </script>
 
 <div class="flex flex-col gap-y-1 pt-1">
@@ -90,7 +90,7 @@
     <div class="flex flex-row flex-wrap pt-2 gap-y-1.5 items-center">
       <SuperPill
         context="filters-input"
-        allTimeRange={$allTimeRange}
+        allTime={$allTimeRange}
         {selectedRangeAlias}
         showPivot={!showGrain}
         minTimeGrain={$minTimeGrain}
