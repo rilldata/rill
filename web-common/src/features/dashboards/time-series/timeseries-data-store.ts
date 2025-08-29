@@ -87,6 +87,7 @@ export function createMetricsViewTimeSeries(
             timeControls.selectedTimeRange?.interval ??
             timeControls.minTimeGrain,
           timeZone: dashboardStore.selectedTimezone,
+          timeDimension: dashboardStore.selectedTimeColumn,
         },
         {
           query: {

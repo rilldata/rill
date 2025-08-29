@@ -38,7 +38,10 @@
   import { useTimeControlStore } from "../time-controls/time-control-store";
   import FilterButton from "./FilterButton.svelte";
   import DimensionFilter from "./dimension-filters/DimensionFilter.svelte";
-  import { createQueryServiceMetricsViewTimeRange } from "@rilldata/web-common/runtime-client";
+  import {
+    createQueryServiceMetricsViewTimeRange,
+    createQueryServiceTableColumns,
+  } from "@rilldata/web-common/runtime-client";
   import { featureFlags } from "../../feature-flags";
   import Timestamp from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/Timestamp.svelte";
   import { getDefaultTimeGrain } from "@rilldata/web-common/lib/time/grains";
@@ -47,6 +50,7 @@
   import { getValidComparisonOption } from "../time-controls/time-range-store";
   import { getPinnedTimeZones } from "../url-state/getDefaultExplorePreset";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { TIMESTAMPS } from "@rilldata/web-common/lib/duckdb-data-types";
 
   const { rillTime } = featureFlags;
 
@@ -161,7 +165,9 @@
   $: hasFilters =
     currentDimensionFilters.length > 0 || currentMeasureFilters.length > 0;
 
-  $: isComplexFilter = isExpressionUnsupported($dashboardStore.whereFilter);
+  $: ({ whereFilter, selectedTimeColumn } = $dashboardStore);
+
+  $: isComplexFilter = isExpressionUnsupported(whereFilter);
 
   $: availableTimeZones = getPinnedTimeZones(exploreSpec);
 
@@ -185,6 +191,37 @@
       end: selectedTimeRange.end,
     };
 
+  $: selectedTimeDimension = selectedTimeColumn;
+
+  $: model = metricsViewSpec.model;
+  $: database = metricsViewSpec.database;
+  $: connector = metricsViewSpec.connector;
+  $: databaseSchema = metricsViewSpec.databaseSchema;
+  $: primaryTimeDimension = metricsViewSpec.timeDimension;
+
+  $: columnsQuery = createQueryServiceTableColumns(
+    instanceId,
+    model,
+    {
+      connector,
+      database,
+      databaseSchema,
+    },
+    {
+      query: {
+        enabled: Boolean(metricsViewSpec?.model && metricsViewSpec?.connector),
+      },
+    },
+  );
+
+  $: ({ data: columnsResponse } = $columnsQuery);
+
+  $: columns = columnsResponse?.profileColumns ?? [];
+
+  $: timeColumns = columns
+    .filter(({ type }) => type && TIMESTAMPS.has(type))
+    .map(({ name }) => ({ value: name ?? "", label: name ?? "" }));
+
   function handleMeasureFilterApply(
     dimension: string,
     measureName: string,
@@ -195,6 +232,10 @@
       removeMeasureFilter(oldDimension, measureName);
     }
     setMeasureFilter(dimension, filter);
+  }
+
+  function onTimeColumnSelect(column: string) {
+    metricsExplorerStore.setTimeColumn($exploreName, column);
   }
 
   function onPan(direction: "left" | "right") {
@@ -355,6 +396,7 @@
   }
 </script>
 
+{selectedTimeDimension}
 <div class="flex flex-col gap-y-2 size-full">
   {#if hasTimeSeries}
     <div class="flex flex-row flex-wrap gap-x-2 gap-y-1.5 items-center">
@@ -380,9 +422,13 @@
           canPanLeft={$canPanLeft}
           canPanRight={$canPanRight}
           showPan
+          {primaryTimeDimension}
+          {selectedTimeDimension}
           {showDefaultItem}
+          {timeColumns}
           watermark={watermark ? DateTime.fromISO(watermark) : undefined}
           applyRange={selectRange}
+          {onTimeColumnSelect}
           {onSelectRange}
           {onTimeGrainSelect}
           {onSelectTimeZone}
@@ -427,7 +473,7 @@
     {/if}
     <div class="relative flex flex-row flex-wrap gap-x-2 gap-y-2">
       {#if isComplexFilter}
-        <AdvancedFilter advancedFilter={$dashboardStore.whereFilter} />
+        <AdvancedFilter advancedFilter={whereFilter} />
       {:else if !allDimensionFilters.length && !allMeasureFilters.length}
         <div
           in:fly={{ duration: 200, x: 8 }}
@@ -445,7 +491,7 @@
           <div animate:flip={{ duration: 200 }}>
             {#if dimensionName}
               <DimensionFilter
-                whereFilter={$dashboardStore.whereFilter}
+                {whereFilter}
                 metricsViewNames={[metricsViewName]}
                 {readOnly}
                 {name}

@@ -363,6 +363,12 @@ export function fromTimeRangesParams(
         getSingleFieldError("compare dimension", comparisonDimension),
       );
     }
+
+    if (searchParams.has(ExploreStateURLParams.TimeColumn)) {
+      preset.timeColumn = searchParams.get(
+        ExploreStateURLParams.TimeColumn,
+      ) as string;
+    }
   }
 
   if (searchParams.has(ExploreStateURLParams.HighlightedTimeRange)) {

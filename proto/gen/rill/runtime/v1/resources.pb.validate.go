@@ -5188,6 +5188,10 @@ func (m *ExplorePreset) validate(all bool) error {
 		// no validation rules for SelectTimeRange
 	}
 
+	if m.TimeColumn != nil {
+		// no validation rules for TimeColumn
+	}
+
 	if m.CompareTimeRange != nil {
 		// no validation rules for CompareTimeRange
 	}

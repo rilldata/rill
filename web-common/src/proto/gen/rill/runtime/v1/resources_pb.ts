@@ -2690,6 +2690,11 @@ export class ExplorePreset extends Message<ExplorePreset> {
   selectTimeRange?: string;
 
   /**
+   * @generated from field: optional string time_column = 33;
+   */
+  timeColumn?: string;
+
+  /**
    * Comparison mode.
    *
    * @generated from field: rill.runtime.v1.ExploreComparisonMode comparison_mode = 7;
@@ -2808,6 +2813,7 @@ export class ExplorePreset extends Message<ExplorePreset> {
     { no: 12, name: "timezone", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 13, name: "time_grain", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 14, name: "select_time_range", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 33, name: "time_column", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 7, name: "comparison_mode", kind: "enum", T: proto3.getEnumType(ExploreComparisonMode) },
     { no: 15, name: "compare_time_range", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 8, name: "comparison_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
