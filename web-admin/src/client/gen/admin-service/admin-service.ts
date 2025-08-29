@@ -166,6 +166,7 @@ import type {
   V1LeaveOrganizationResponse,
   V1ListBookmarksResponse,
   V1ListDeploymentsResponse,
+  V1ListGithubUserOrgsResponse,
   V1ListGithubUserReposResponse,
   V1ListMagicAuthTokensResponse,
   V1ListOrganizationBillingIssuesResponse,
@@ -1233,6 +1234,80 @@ export function createAdminServiceGetGithubUserStatus<
   queryKey: DataTag<QueryKey, TData, TError>;
 } {
   const queryOptions = getAdminServiceGetGithubUserStatusQueryOptions(options);
+
+  const query = createQuery(queryOptions, queryClient) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+export const adminServiceListGithubUserOrgs = (signal?: AbortSignal) => {
+  return httpClient<V1ListGithubUserOrgsResponse>({
+    url: `/v1/github/user/orgs`,
+    method: "GET",
+    signal,
+  });
+};
+
+export const getAdminServiceListGithubUserOrgsQueryKey = () => {
+  return [`/v1/github/user/orgs`] as const;
+};
+
+export const getAdminServiceListGithubUserOrgsQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminServiceListGithubUserOrgs>>,
+  TError = RpcStatus,
+>(options?: {
+  query?: Partial<
+    CreateQueryOptions<
+      Awaited<ReturnType<typeof adminServiceListGithubUserOrgs>>,
+      TError,
+      TData
+    >
+  >;
+}) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getAdminServiceListGithubUserOrgsQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceListGithubUserOrgs>>
+  > = ({ signal }) => adminServiceListGithubUserOrgs(signal);
+
+  return { queryKey, queryFn, ...queryOptions } as CreateQueryOptions<
+    Awaited<ReturnType<typeof adminServiceListGithubUserOrgs>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type AdminServiceListGithubUserOrgsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceListGithubUserOrgs>>
+>;
+export type AdminServiceListGithubUserOrgsQueryError = RpcStatus;
+
+export function createAdminServiceListGithubUserOrgs<
+  TData = Awaited<ReturnType<typeof adminServiceListGithubUserOrgs>>,
+  TError = RpcStatus,
+>(
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof adminServiceListGithubUserOrgs>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getAdminServiceListGithubUserOrgsQueryOptions(options);
 
   const query = createQuery(queryOptions, queryClient) as CreateQueryResult<
     TData,

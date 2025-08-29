@@ -90,6 +90,7 @@ const (
 	AdminService_RevokeCurrentAuthToken_FullMethodName                = "/rill.admin.v1.AdminService/RevokeCurrentAuthToken"
 	AdminService_GetGithubRepoStatus_FullMethodName                   = "/rill.admin.v1.AdminService/GetGithubRepoStatus"
 	AdminService_GetGithubUserStatus_FullMethodName                   = "/rill.admin.v1.AdminService/GetGithubUserStatus"
+	AdminService_ListGithubUserOrgs_FullMethodName                    = "/rill.admin.v1.AdminService/ListGithubUserOrgs"
 	AdminService_ListGithubUserRepos_FullMethodName                   = "/rill.admin.v1.AdminService/ListGithubUserRepos"
 	AdminService_ConnectProjectToGithub_FullMethodName                = "/rill.admin.v1.AdminService/ConnectProjectToGithub"
 	AdminService_CreateManagedGitRepo_FullMethodName                  = "/rill.admin.v1.AdminService/CreateManagedGitRepo"
@@ -333,6 +334,7 @@ type AdminServiceClient interface {
 	// GetGithubUserStatus returns info about a Github user account based on the caller's installations.
 	// If we don't have access to user's personal account tokens or it is expired, instructions for granting access are returned.
 	GetGithubUserStatus(ctx context.Context, in *GetGithubUserStatusRequest, opts ...grpc.CallOption) (*GetGithubUserStatusResponse, error)
+	ListGithubUserOrgs(ctx context.Context, in *ListGithubUserOrgsRequest, opts ...grpc.CallOption) (*ListGithubUserOrgsResponse, error)
 	ListGithubUserRepos(ctx context.Context, in *ListGithubUserReposRequest, opts ...grpc.CallOption) (*ListGithubUserReposResponse, error)
 	// Connects a rill managed project to github.
 	// Replaces the contents of the remote repo with the contents of the project.
@@ -1202,6 +1204,16 @@ func (c *adminServiceClient) GetGithubUserStatus(ctx context.Context, in *GetGit
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetGithubUserStatusResponse)
 	err := c.cc.Invoke(ctx, AdminService_GetGithubUserStatus_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) ListGithubUserOrgs(ctx context.Context, in *ListGithubUserOrgsRequest, opts ...grpc.CallOption) (*ListGithubUserOrgsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListGithubUserOrgsResponse)
+	err := c.cc.Invoke(ctx, AdminService_ListGithubUserOrgs_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -2151,6 +2163,7 @@ type AdminServiceServer interface {
 	// GetGithubUserStatus returns info about a Github user account based on the caller's installations.
 	// If we don't have access to user's personal account tokens or it is expired, instructions for granting access are returned.
 	GetGithubUserStatus(context.Context, *GetGithubUserStatusRequest) (*GetGithubUserStatusResponse, error)
+	ListGithubUserOrgs(context.Context, *ListGithubUserOrgsRequest) (*ListGithubUserOrgsResponse, error)
 	ListGithubUserRepos(context.Context, *ListGithubUserReposRequest) (*ListGithubUserReposResponse, error)
 	// Connects a rill managed project to github.
 	// Replaces the contents of the remote repo with the contents of the project.
@@ -2528,6 +2541,9 @@ func (UnimplementedAdminServiceServer) GetGithubRepoStatus(context.Context, *Get
 }
 func (UnimplementedAdminServiceServer) GetGithubUserStatus(context.Context, *GetGithubUserStatusRequest) (*GetGithubUserStatusResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetGithubUserStatus not implemented")
+}
+func (UnimplementedAdminServiceServer) ListGithubUserOrgs(context.Context, *ListGithubUserOrgsRequest) (*ListGithubUserOrgsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListGithubUserOrgs not implemented")
 }
 func (UnimplementedAdminServiceServer) ListGithubUserRepos(context.Context, *ListGithubUserReposRequest) (*ListGithubUserReposResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListGithubUserRepos not implemented")
@@ -4058,6 +4074,24 @@ func _AdminService_GetGithubUserStatus_Handler(srv interface{}, ctx context.Cont
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AdminServiceServer).GetGithubUserStatus(ctx, req.(*GetGithubUserStatusRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_ListGithubUserOrgs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListGithubUserOrgsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).ListGithubUserOrgs(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_ListGithubUserOrgs_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).ListGithubUserOrgs(ctx, req.(*ListGithubUserOrgsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -5756,6 +5790,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetGithubUserStatus",
 			Handler:    _AdminService_GetGithubUserStatus_Handler,
+		},
+		{
+			MethodName: "ListGithubUserOrgs",
+			Handler:    _AdminService_ListGithubUserOrgs_Handler,
 		},
 		{
 			MethodName: "ListGithubUserRepos",
