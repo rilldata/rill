@@ -12,6 +12,7 @@ import {
   RillTimeOrdinalInterval,
   RillIsoInterval,
   RillLegacyIsoInterval,
+  RillLegacyDaxInterval,
   RillPointInTime,
   RillPointInTimeWithSnap,
   RillLabelledPointInTime,
@@ -644,7 +645,13 @@ let ParserRules = [
   {
     name: "old_rill_time",
     symbols: ["iso_time"],
-    postprocess: ([legacyIsoInterval]) => new RillTime(legacyIsoInterval),
+    postprocess: ([legacyIso]) => new RillTime(legacyIso),
+  },
+  {
+    name: "old_rill_time",
+    symbols: ["dax_time"],
+    postprocess: ([legacyDax]) =>
+      new RillTime(new RillLegacyDaxInterval(legacyDax)),
   },
   { name: "iso_time$ebnf$1", symbols: ["iso_date_part"] },
   {
@@ -716,6 +723,70 @@ let ParserRules = [
     symbols: ["num", "time_grains"],
     postprocess: ([num, grain]) => ({ num, grain }),
   },
+  {
+    name: "dax_time$string$1",
+    symbols: [
+      { literal: "r" },
+      { literal: "i" },
+      { literal: "l" },
+      { literal: "l" },
+      { literal: "-" },
+    ],
+    postprocess: function joiner(d) {
+      return d.join("");
+    },
+  },
+  {
+    name: "dax_time",
+    symbols: ["dax_time$string$1", "dax_notations"],
+    postprocess: (args) => args.join(""),
+  },
+  {
+    name: "dax_notations$string$1",
+    symbols: [{ literal: "T" }, { literal: "D" }],
+    postprocess: function joiner(d) {
+      return d.join("");
+    },
+  },
+  {
+    name: "dax_notations",
+    symbols: ["dax_to_date", "dax_notations$string$1"],
+    postprocess: (args) => args.join(""),
+  },
+  {
+    name: "dax_notations$string$2",
+    symbols: [{ literal: "T" }, { literal: "D" }],
+    postprocess: function joiner(d) {
+      return d.join("");
+    },
+  },
+  {
+    name: "dax_notations",
+    symbols: ["dax_notations$string$2"],
+    postprocess: id,
+  },
+  {
+    name: "dax_notations",
+    symbols: [{ literal: "P" }, "date_grains", { literal: "C" }],
+    postprocess: (args) => args.join(""),
+  },
+  {
+    name: "dax_notations$string$3",
+    symbols: [{ literal: "P" }, { literal: "P" }],
+    postprocess: function joiner(d) {
+      return d.join("");
+    },
+  },
+  {
+    name: "dax_notations",
+    symbols: ["dax_notations$string$3"],
+    postprocess: id,
+  },
+  {
+    name: "dax_notations",
+    symbols: [{ literal: "P" }, "date_grains"],
+    postprocess: (args) => args.join(""),
+  },
   { name: "prefix", symbols: [/[+\-]/], postprocess: id },
   { name: "num$ebnf$1", symbols: [/[0-9]/] },
   {
@@ -733,6 +804,7 @@ let ParserRules = [
   { name: "grain", symbols: [/[sSmhHdDwWqQMyY]/], postprocess: id },
   { name: "date_grains", symbols: [/[DWQMY]/], postprocess: id },
   { name: "time_grains", symbols: [/[SMH]/], postprocess: id },
+  { name: "dax_to_date", symbols: [/[WQMY]/], postprocess: id },
 ];
 let ParserStart = "rill_time";
 export default { Lexer, ParserRules, ParserStart };

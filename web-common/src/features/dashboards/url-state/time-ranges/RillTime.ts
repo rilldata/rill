@@ -1,3 +1,4 @@
+import { DEFAULT_TIME_RANGES } from "@rilldata/web-common/lib/time/config.ts";
 import { isGrainBigger } from "@rilldata/web-common/lib/time/grains";
 import { humaniseISODuration } from "@rilldata/web-common/lib/time/ranges/iso-ranges.ts";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
@@ -424,6 +425,28 @@ export class RillLegacyIsoInterval implements RillTimeInterval {
     );
     const timePart = timeParts.length > 0 ? "T" + timeParts.join("") : "";
     return datePart + timePart;
+  }
+}
+
+export class RillLegacyDaxInterval implements RillTimeInterval {
+  public constructor(private readonly name: string) {}
+
+  public isComplete() {
+    return false;
+  }
+
+  public getLabel(): [label: string, supported: boolean] {
+    const entry = DEFAULT_TIME_RANGES[this.name];
+    if (!entry) return ["", false];
+    return [entry.label, true];
+  }
+
+  public getGrain() {
+    return undefined;
+  }
+
+  public toString() {
+    return this.name;
   }
 }
 

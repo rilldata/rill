@@ -12,6 +12,7 @@
     RillTimeOrdinalInterval,
     RillIsoInterval,
     RillLegacyIsoInterval,
+    RillLegacyDaxInterval,
 
     RillPointInTime,
     RillPointInTimeWithSnap,
@@ -89,7 +90,8 @@ abs_time => [\d] [\d] [\d] [\d] [\-] [\d] [\d] [\-] [\d] [\d] "T" [\d] [\d] [:] 
 
 timezone_modifier => [0-9a-zA-Z/+\-_]:+ {% ([args]) => args.join("") %}
 
-old_rill_time => iso_time {% ([legacyIsoInterval]) => new RillTime(legacyIsoInterval) %}
+old_rill_time => iso_time {% ([legacyIso]) => new RillTime(legacyIso) %}
+               | dax_time {% ([legacyDax]) => new RillTime(new RillLegacyDaxInterval(legacyDax)) %}
 
 iso_time => "P" iso_date_part:+ "T" iso_time_part:+ {% ([, dateGrains, , timeGrains]) => new RillLegacyIsoInterval(dateGrains, timeGrains) %}
           | "P" iso_date_part:+                     {% ([, dateGrains]) => new RillLegacyIsoInterval(dateGrains, []) %}
@@ -97,6 +99,13 @@ iso_time => "P" iso_date_part:+ "T" iso_time_part:+ {% ([, dateGrains, , timeGra
 
 iso_date_part => num date_grains {% ([num, grain]) => ({num, grain}) %}
 iso_time_part => num time_grains {% ([num, grain]) => ({num, grain}) %}
+
+dax_time => "rill-" dax_notations    {% (args) => args.join("") %}
+dax_notations => dax_to_date "TD"    {% (args) => args.join("") %}
+               | "TD"                {% id %}
+               | "P" date_grains "C" {% (args) => args.join("") %}
+               | "PP"                {% id %}
+               | "P" date_grains     {% (args) => args.join("") %}
 
 prefix => [+\-] {% id %}
 
@@ -106,3 +115,4 @@ grain => [sSmhHdDwWqQMyY] {% id %}
 
 date_grains => [DWQMY] {% id %}
 time_grains => [SMH] {% id %}
+dax_to_date => [WQMY] {% id %}
