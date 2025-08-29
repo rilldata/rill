@@ -1,7 +1,7 @@
 ---
 title: "Dashboard Quickstart"
 description: Dashboard Quickstart
-sidebar_label: "Dashboard Quickstart"
+sidebar_label: "Explore Dashboard Quickstart"
 sidebar_position: 03
 ---
 
@@ -96,7 +96,7 @@ The main screen of any Rill dashboard is called the _Explore_ page. As seen abov
 
 :::note Big Number Formatting
 
-[Formatting of your measures](/build/metrics-view/advanced-expressions/metric-formatting) will not change the granularity of the Big Number, but you'll see the formatting being applied to the TDD, Dimension Leaderboard, and Pivot tables. 
+[Formatting of your measures](/build/metrics-view#measures) will not change the granularity of the Big Number, but you'll see the formatting being applied to the TDD, Dimension Leaderboard, and Pivot tables. 
 :::
 
 ### Dimensions Leaderboard Panel

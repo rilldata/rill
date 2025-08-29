@@ -2,6 +2,7 @@
 title: "Set up MCP and more!"
 sidebar_label: "MCP Setup and Customization"
 hide_table_of_contents: false
+sidebar_position: 20
 tags:
     - Quickstart
     - Tutorial

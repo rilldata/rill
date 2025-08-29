@@ -2,6 +2,7 @@
 title: "OpenRTB Analytics Demo"
 sidebar_label: "OpenRTB Analytics Demo"
 hide_table_of_contents: false
+sidebar_position: 20
 tags:
     - Tutorial
     - Quickstart

@@ -1,7 +1,7 @@
 ---
 title: "Cost Monitoring Analytics Demo"
 sidebar_label: "Cost Monitoring Analytics Demo"
-sidebar_position: 6
+sidebar_position: 20
 hide_table_of_contents: false
 tags:
   - Tutorial

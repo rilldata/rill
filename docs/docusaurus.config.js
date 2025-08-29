@@ -213,7 +213,7 @@ const config = {
           },
           {
             from: '/develop/security',
-            to: '/manage/security'
+            to: '/build/metrics-view/security'
           },
           {
             from: '/deploy/credentials/',
@@ -261,7 +261,7 @@ const config = {
           },
           {
             from: '/deploy/source-refresh',
-            to: '/build/models/source-refresh'
+            to: '/build/models/data-refresh'
           },
           {
             from: '/reference/templating',
@@ -411,11 +411,11 @@ const config = {
           },
           {
             from: '/concepts/developerVsCloud',
-            to: '/home/concepts/cloud-vs-developer'
+            to: '/deploy/cloud-vs-developer'
           },
           {
             from: '/concepts/OLAP',
-            to: '/home/concepts/OLAP'
+            to: '/connect/olap#what-is-olap'
           },
           {
             from: '/concepts/architecture',
@@ -427,15 +427,71 @@ const config = {
           },
           {
             from: '/concepts/metrics-layer',
-            to: '/home/concepts/metrics-layer'
+            to: '/build/metrics-view'
           },
           {
             from: '/concepts/bi-as-code',
-            to: '/home/concepts/bi-as-code'
+            to: '/build/ide#how-it-works'
+          },
+          {
+            from: '/home/concepts/metrics-layer',
+            to: '/build/metrics-view'
+          },
+          {
+            from: '/home/concepts/OLAP',
+            to: '/connect/olap#what-is-olap'
+          },
+          {
+            from: '/build/advanced-models/',
+            to: '/build/models/'
+          },
+          {
+            from: '/build/advanced-models/incremental-models',
+            to: '/build/models/incremental-models'
+          },
+          {
+            from: '/build/advanced-models/partitions',
+            to: '/build/models/partitioned-models'
+          },
+          {
+            from: '/build/advanced-models/staging',
+            to: '/build/models/staging-models'
           },
           {
             from: '/integrate/custom-apis',
             to: '/build/custom-apis'
+          },
+          {
+            from: '/build/metrics-view/advanced-expressions/case-statements',
+            to: '/build/metrics-view/measures/case-statements'
+          },
+          {
+            from: '/build/metrics-view/advanced-expressions/fixed-metrics',
+            to: '/build/metrics-view/measures/fixed-metrics'
+          },
+          {
+            from: '/build/metrics-view/advanced-expressions/metric-formatting',
+            to: '/build/metrics-view/measures/metric-formatting'
+          },
+          {
+            from: '/build/metrics-view/advanced-expressions/quantiles',
+            to: '/build/metrics-view/measures/quantiles'
+          },
+          {
+            from: '/build/metrics-view/advanced-expressions/referencing',
+            to: '/build/metrics-view/measures/referencing'
+          },
+          {
+            from: '/build/metrics-view/advanced-expressions/unnesting',
+            to: '/build/metrics-view/dimensions/unnesting'
+          },
+          {
+            from: '/build/metrics-view/advanced-expressions/windows',
+            to: '/build/metrics-view/measures/windows'
+          },
+          {
+            from: '/deploy/performance',
+            to: '/guides/performance'
           },
           // {
           //   from: '/old-page',

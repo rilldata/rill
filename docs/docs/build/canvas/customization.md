@@ -62,7 +62,7 @@ The value must be either a valid [ISO 8601 duration](https://en.wikipedia.org/wi
 
 ### Default Comparison Modes
 
-It is also possible to set up a default comparison mode for your dashboard. For Canvas Dashboards, we support [time comparisons](/explore/filters/#time-comparisons). 
+It is also possible to set up a default comparison mode for your dashboard. For Canvas Dashboards, we support [time comparisons](/explore/filters#comparison-time-ranges). 
 
 ```yaml
 defaults:
@@ -72,7 +72,7 @@ defaults:
 ## Row Access Policies
 ### Security
 
-Defining security policies for your data is crucial. For more information, please refer to our [Dashboard Access Policies](/manage/security.md).
+Defining security policies for your data is crucial. For more information, please refer to our [Data Access Policies](/build/metrics-view/security). Check our [examples](/build/metrics-view/security#examples) for frequently used patterns.
 
 ## Changing Themes & Colors
 
