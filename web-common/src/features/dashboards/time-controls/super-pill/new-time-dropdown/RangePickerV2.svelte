@@ -50,8 +50,7 @@
   export let zone: string;
   export let showDefaultItem: boolean;
   export let context: string;
-  export let minDate: DateTime;
-  export let maxDate: DateTime;
+  export let allTime: Interval<true> | undefined;
   export let watermark: DateTime | undefined;
   export let smallestTimeGrain: V1TimeGrain | undefined;
   export let defaultTimeRange: NamedRange | ISODurationString | undefined;
@@ -107,7 +106,7 @@
 
   $: if (truncationGrain) onTimeGrainSelect(truncationGrain);
 
-  $: zoneAbbreviation = getAbbreviationForIANA(maxDate, zone);
+  $: zoneAbbreviation = getAbbreviationForIANA(allTime?.end, zone);
 
   $: groups = allOptions.reduce(
     (acc, options) => {
@@ -195,8 +194,9 @@
 
   // Zone is taken as a param to make it reactive
   function returnAnchor(asOf: string, zone: string): DateTime | undefined {
+    if (!allTime) return DateTime.now().setZone(zone);
     if (asOf === "latest") {
-      return maxDate.setZone(zone);
+      return allTime?.end.setZone(zone);
     } else if (asOf === "watermark" && watermark) {
       return watermark.setZone(zone);
     } else if (asOf === "now") {
@@ -424,8 +424,8 @@
             {firstVisibleMonth}
             {interval}
             {zone}
-            {maxDate}
-            {minDate}
+            minDate={allTime?.start}
+            maxDate={allTime?.end}
             applyRange={(interval) => {
               const string = `${interval.start.toFormat("yyyy-MM-dd")} to ${interval.end.toFormat("yyyy-MM-dd")}`;
               onSelectRange(string);
@@ -445,7 +445,7 @@
     rangeGrain={parsedTime?.rangeGrain ?? truncationGrain}
     isPeriodToDate={parsedTime?.interval instanceof RillPeriodToGrainInterval}
     {watermark}
-    latest={maxDate}
+    latest={allTime?.end}
     {smallestTimeGrain}
     {snapToEnd}
     {ref}

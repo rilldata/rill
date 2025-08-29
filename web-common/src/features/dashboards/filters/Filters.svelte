@@ -165,18 +165,20 @@
 
   $: availableTimeZones = getPinnedTimeZones(exploreSpec);
 
-  $: allTimeRangeInterval = allTimeRange
-    ? Interval.fromDateTimes(allTimeRange.start, allTimeRange.end)
-    : Interval.invalid("Invalid interval");
+  $: possibleAllTimeInterval =
+    allTimeRange &&
+    Interval.fromDateTimes(allTimeRange.start, allTimeRange.end);
+
+  $: allTimeInterval = possibleAllTimeInterval?.isValid
+    ? possibleAllTimeInterval
+    : undefined;
 
   $: interval = selectedTimeRange
     ? Interval.fromDateTimes(
         DateTime.fromJSDate(selectedTimeRange.start).setZone(activeTimeZone),
         DateTime.fromJSDate(selectedTimeRange.end).setZone(activeTimeZone),
       )
-    : allTimeRange
-      ? Interval.fromDateTimes(allTimeRange.start, allTimeRange.end)
-      : Interval.invalid("Invalid interval");
+    : (allTimeInterval ?? Interval.invalid("Unable to parse time range"));
 
   $: baseTimeRange = selectedTimeRange?.start &&
     selectedTimeRange?.end && {
@@ -224,7 +226,7 @@
 
   async function onSelectRange(alias: string) {
     // If we don't have a valid time range, early return
-    if (!allTimeRange?.end) return;
+    if (!allTimeInterval || !allTimeRange) return;
 
     if (alias === ALL_TIME_RANGE_ALIAS) {
       makeTimeSeriesTimeRangeAndUpdateAppState(
@@ -245,10 +247,7 @@
 
     const { interval, grain } = await deriveInterval(
       alias,
-      Interval.fromDateTimes(
-        DateTime.fromJSDate(allTimeRange.start),
-        DateTime.fromJSDate(allTimeRange.end),
-      ),
+      allTimeInterval,
       metricsViewName,
       activeTimeZone,
     );
@@ -305,7 +304,7 @@
   }
 
   function onSelectTimeZone(timeZone: string) {
-    if (!interval.isValid) return;
+    if (!interval?.isValid) return;
 
     if (selectedRangeAlias === TimeRangePreset.CUSTOM) {
       selectRange({
@@ -361,7 +360,7 @@
       <Calendar size="16px" />
       {#if allTimeRange?.start && allTimeRange?.end}
         <SuperPill
-          {allTimeRange}
+          allTime={allTimeInterval}
           {selectedRangeAlias}
           showPivot={$showPivot}
           {minTimeGrain}
@@ -396,7 +395,7 @@
         />
       {/if}
 
-      {#if !$rillTime && allTimeRangeInterval?.end?.isValid}
+      {#if !$rillTime && allTimeInterval?.end?.isValid}
         <Tooltip.Root openDelay={0}>
           <Tooltip.Trigger>
             <span class="text-gray-600 italic">
@@ -404,7 +403,7 @@
                 italic
                 suppress
                 showDate={false}
-                date={allTimeRangeInterval.end}
+                date={allTimeInterval.end}
                 zone={activeTimeZone}
               />
             </span>

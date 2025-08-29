@@ -17,8 +17,7 @@
   export let interval: Interval<true>;
   export let zone: string;
   export let showDefaultItem: boolean;
-  export let minDate: DateTime | undefined = undefined;
-  export let maxDate: DateTime | undefined = undefined;
+  export let allTime: Interval<true> | undefined;
   export let showFullRange: boolean;
   export let allowCustomTimeRange = true;
   export let defaultTimeRange: NamedRange | ISODurationString | undefined;
@@ -83,8 +82,8 @@
             {firstVisibleMonth}
             {interval}
             {zone}
-            {maxDate}
-            {minDate}
+            minDate={allTime?.start}
+            maxDate={allTime?.end}
             applyRange={applyCustomRange}
             closeMenu={() => (open = false)}
           />

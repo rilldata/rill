@@ -57,7 +57,12 @@ export function getTimeZoneNameFromIANA(
   return watermark.setZone(iana).toFormat("ZZZZZ");
 }
 
-export function getAbbreviationForIANA(watermark: DateTime, iana: string) {
+export function getAbbreviationForIANA(
+  watermark: DateTime | undefined,
+  iana: string,
+) {
+  if (!watermark) return "UTC";
+
   const zoneName = getTimeZoneNameFromIANA(watermark, iana);
 
   if (zoneName in timeZoneNameToAbbreviationMap)

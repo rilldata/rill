@@ -18,11 +18,7 @@ import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import { isGrainBigger } from "@rilldata/web-common/lib/time/grains";
 import { isoDurationToFullTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
-import {
-  TimeRangePreset,
-  type DashboardTimeControls,
-  type TimeRange,
-} from "@rilldata/web-common/lib/time/types";
+import { type DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
 import {
   createQueryServiceMetricsViewTimeRange,
   V1ExploreComparisonMode,
@@ -46,10 +42,7 @@ import {
 } from "../../dashboards/time-controls/new-time-controls";
 import { type CanvasResponse } from "../selector";
 import type { SearchParamsStore } from "./canvas-entity";
-
-type AllTimeRange = TimeRange & { isFetching: boolean };
-
-let lastAllTimeRange: AllTimeRange | undefined;
+import { keepPreviousData } from "@tanstack/svelte-query";
 
 export class TimeControls {
   /**
@@ -62,7 +55,7 @@ export class TimeControls {
   /**
    * Derived stores based on writables and spec
    */
-  allTimeRange: Readable<AllTimeRange>;
+  allTimeRange: Readable<Interval<true> | undefined>;
   isReady: Readable<boolean>;
   minTimeGrain: Writable<V1TimeGrain> = writable(
     V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
@@ -146,22 +139,17 @@ export class TimeControls {
           (timeRanges?.[0] as string | undefined) ||
           "PT24H";
 
-        const allTimeInterval = Interval.fromDateTimes(
-          DateTime.fromJSDate(allTimeRange.start),
-          DateTime.fromJSDate(allTimeRange.end),
-        );
-
         let interval: Interval;
         let grain: V1TimeGrain | undefined;
 
         // Handle "inf" (All Time) case specially
         if (finalRange === "inf") {
-          interval = allTimeInterval;
+          interval = allTimeRange;
           grain = undefined;
         } else {
           const result = await deriveInterval(
             finalRange,
-            allTimeInterval,
+            allTimeRange,
             firstMetricsViewName,
             timeZone,
           );
@@ -191,13 +179,16 @@ export class TimeControls {
 
         const defaultTimeRange = isoDurationToFullTimeRange(
           defaultPreset?.timeRange,
-          allTimeRange.start,
-          allTimeRange.end,
+          allTimeRange.start.toJSDate(),
+          allTimeRange.end.toJSDate(),
           timeZone,
         );
 
         const timeRangeState = calculateTimeRangePartial(
-          allTimeRange,
+          {
+            start: allTimeRange.start.toJSDate(),
+            end: allTimeRange.end.toJSDate(),
+          },
           selectedTimeRange,
           undefined, // scrub not present in canvas yet
           timeZone,
@@ -230,11 +221,14 @@ export class TimeControls {
         showTimeComparison,
         timeRangeState,
       ]) => {
-        if (!spec?.data || !timeRangeState) return undefined;
+        if (!spec?.data || !timeRangeState || !allTimeRange) return undefined;
         const timeRanges = spec.data?.canvas?.timeRanges;
         return calculateComparisonTimeRangePartial(
           timeRanges,
-          allTimeRange,
+          {
+            start: allTimeRange.start.toJSDate(),
+            end: allTimeRange.end.toJSDate(),
+          },
           selectedComparisonTimeRange,
           selectedTimezone,
           undefined, // scrub not present in canvas yet
@@ -259,10 +253,12 @@ export class TimeControls {
         const allTimeRange = get(this.allTimeRange);
         const selectedTimezone = get(this.selectedTimezone);
 
+        if (!allTimeRange) return;
+
         const initialRange = isoDurationToFullTimeRange(
           defaultPreset?.timeRange,
-          allTimeRange.start,
-          allTimeRange.end,
+          allTimeRange.start.toJSDate(),
+          allTimeRange.end.toJSDate(),
           selectedTimezone,
         );
 
@@ -273,7 +269,10 @@ export class TimeControls {
 
         const newComparisonRange = getComparisonTimeRange(
           timeRanges,
-          get(this.allTimeRange),
+          {
+            start: allTimeRange.start.toJSDate(),
+            end: allTimeRange.end.toJSDate(),
+          },
           { name: defaultRange } as DashboardTimeControls,
           undefined,
         );
@@ -293,8 +292,10 @@ export class TimeControls {
   combinedTimeRangeSummaryStore = (
     runtime: Writable<Runtime>,
     specStore: CanvasSpecResponseStore,
-  ): Readable<AllTimeRange> => {
-    return derived([runtime, specStore], ([r, spec], set) => {
+  ): Readable<Interval<true> | undefined> => {
+    let cachedInterval: Interval<true> | undefined = undefined;
+
+    return derived([runtime, specStore], ([{ instanceId }, spec], set) => {
       const metricsViews = spec?.data?.metricsViews || {};
 
       const metricsViewName = getComponentMetricsViewFromSpec(
@@ -310,17 +311,12 @@ export class TimeControls {
         !metricsReferred.length ||
         (metricsViewName && !metricsViews[metricsViewName])
       ) {
-        return set({
-          name: TimeRangePreset.ALL_TIME,
-          start: new Date(0),
-          end: new Date(),
-          isFetching: false,
-        });
+        return set(undefined);
       }
 
       const timeRangeQueries = [...metricsReferred].map((metricView) => {
         return createQueryServiceMetricsViewTimeRange(
-          r.instanceId,
+          instanceId,
           metricView,
           {},
           {
@@ -329,62 +325,51 @@ export class TimeControls {
                 !!metricsViews[metricView]?.state?.validSpec?.timeDimension,
               staleTime: Infinity,
               gcTime: Infinity,
+              placeholderData: keepPreviousData,
+              refetchOnMount: false,
             },
           },
           queryClient,
         );
       });
 
-      return derived(timeRangeQueries, (timeRanges, querySet) => {
+      return derived(timeRangeQueries, (timeRanges) => {
         const isFetching = timeRanges.some((q) => q.isFetching);
-        let start = new Date();
-        let end = new Date(0);
+
+        if (isFetching) {
+          return cachedInterval;
+        }
+
+        let start: DateTime | undefined;
+        let end: DateTime | undefined;
+
         timeRanges.forEach((timeRange) => {
-          const metricsStart = timeRange.data?.timeRangeSummary?.min;
-          const metricsEnd = timeRange.data?.timeRangeSummary?.max;
-          if (metricsStart) {
-            const metricsStartDate = new Date(metricsStart);
-            start = new Date(
-              Math.min(start.getTime(), metricsStartDate.getTime()),
-            );
+          const { min, max } = timeRange.data?.timeRangeSummary || {};
+
+          if (min) {
+            const minDateTime = DateTime.fromISO(min);
+            start = start ? DateTime.min(start, minDateTime) : minDateTime;
           }
-          if (metricsEnd) {
-            const metricsEndDate = new Date(metricsEnd);
-            end = new Date(Math.max(end.getTime(), metricsEndDate.getTime()));
+          if (max) {
+            const maxDateTime = DateTime.fromISO(max);
+            end = end ? DateTime.max(end, maxDateTime) : maxDateTime;
           }
         });
-        if (start.getTime() > end.getTime()) {
-          start = new Date(0);
-          end = new Date();
-        }
-        let newTimeRange: AllTimeRange = {
-          name: TimeRangePreset.ALL_TIME,
-          start,
-          end,
-          isFetching,
-        };
-        if (isFetching && lastAllTimeRange) {
-          newTimeRange = { ...lastAllTimeRange, isFetching };
-        }
-        const noChange =
-          lastAllTimeRange &&
-          lastAllTimeRange.start.getTime() === newTimeRange.start.getTime() &&
-          lastAllTimeRange.end.getTime() === newTimeRange.end.getTime();
 
-        /**
-         * TODO: We want to avoid updating the store when there is no change
-         * to avoid any downstream updates which depend on allTimeRange
-         * Returning without setting any value leads to undefined value in the store.
-         */
-        if (noChange) {
-          querySet(lastAllTimeRange);
-          return;
+        if (start && end) {
+          const interval = Interval.fromDateTimes(start, end);
+          if (interval.isValid) {
+            cachedInterval = interval;
+            // querySet(interval);
+            return interval;
+          } else {
+            // querySet(cachedInterval);
+            return cachedInterval;
+          }
+        } else {
+          // querySet(cachedInterval);
+          return cachedInterval;
         }
-
-        if (!isFetching) {
-          lastAllTimeRange = newTimeRange;
-        }
-        querySet(newTimeRange);
       }).subscribe(set);
     });
   };
