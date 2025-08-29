@@ -67,7 +67,7 @@ We also support bringing your own OLAP engine as a live connector with pushdown 
   - [App Engagement](#app-engagement)
   - [Kitchen-sink example](#kitchen-sink-example)
 - [Get in touch!](#get-in-touch)
-- [🏢 Company](#-company)
+- [Company](#company)
 - [License](#license)
 
 ## Rill's design principles:
@@ -184,7 +184,7 @@ A compilation of projects that deep dives into Rill's features using ClickHouse'
 - **[GitHub Issues](https://github.com/rilldata/rill/issues)** - Report bugs and request features
 - **[Rill Guru](https://gurubase.io/g/rill)** - Ask questions and get expert answers
 
-## 🏢 Company
+## Company
 
 Rill is developed and maintained by [Rill Data, Inc.](https://www.rilldata.com/).
 
