@@ -41,12 +41,15 @@
   export let excludeMode: boolean;
   export let openOnMount: boolean = true;
   export let readOnly: boolean = false;
+  export let limit: number | undefined = undefined;
   export let timeStart: string | undefined;
   export let timeEnd: string | undefined;
   export let timeControlsReady: boolean | undefined;
   export let smallChip = false;
   export let whereFilter: V1Expression;
   export let side: "top" | "right" | "bottom" | "left" = "bottom";
+  export let removable = true;
+  export let locked = false;
   export let onRemove: () => void;
   export let onApplyInList: (values: string[]) => void;
   export let onSelect: (value: string) => void;
@@ -183,6 +186,8 @@
     selectedValues,
     curSearchText,
   ));
+
+  $: atLimit = Boolean(limit && effectiveSelectedValues.length >= limit);
 
   /**
    * Reset filter settings based on params to the component.
@@ -385,7 +390,8 @@
         label={`${name} filter`}
         theme
         on:remove={onRemove}
-        removable={!readOnly}
+        {locked}
+        removable={!readOnly && removable}
         {readOnly}
         removeTooltipText="remove {selectedValues.length} value{selectedValues.length !==
         1
@@ -428,11 +434,13 @@
   >
     <div class="flex flex-col px-3 pt-3">
       <div class="flex flex-row">
-        <DimensionFilterModeSelector
-          bind:mode={curMode}
-          onModeChange={handleModeChange}
-          size="md"
-        />
+        {#if limit !== 1}
+          <DimensionFilterModeSelector
+            bind:mode={curMode}
+            onModeChange={handleModeChange}
+            size="md"
+          />
+        {/if}
         <Search
           bind:value={curSearchText}
           label={`${name} search list`}
@@ -492,6 +500,7 @@
                 role="menuitem"
                 checked={selected}
                 showXForSelected={curExcludeMode}
+                disabled={!selected && atLimit}
                 on:click={() => handleItemClick(name)}
               >
                 <span>
@@ -526,7 +535,8 @@
               role="menuitem"
               checked={curMode === DimensionFilterMode.Select && selected}
               showXForSelected={curExcludeMode}
-              disabled={curMode !== DimensionFilterMode.Select}
+              disabled={curMode !== DimensionFilterMode.Select ||
+                (!selected && atLimit)}
               on:click={() => handleItemClick(name)}
             >
               <span>
@@ -554,6 +564,7 @@
       excludeMode={curExcludeMode}
       {allSelected}
       {disableApplyButton}
+      hideSelectAll={limit === 1}
       onToggleExcludeMode={handleToggleExcludeMode}
       {onToggleSelectAll}
       {onApply}
