@@ -42,10 +42,7 @@ interface AddDataFormValues {
   [key: string]: unknown;
 }
 
-/**
- * Handles submission for sources, including those that get rewritten to DuckDB
- * (GCS, S3, Azure, etc.) and actual source files.
- */
+// Source YAML - `type: model`
 export async function submitAddSourceForm(
   queryClient: QueryClient,
   connector: V1ConnectorDriver,
@@ -87,9 +84,7 @@ export async function submitAddSourceForm(
   await goto(`/files/${newSourceFilePath}`);
 }
 
-/**
- * Handles submission for all connector types: ImplementsOLAP, ImplementsWarehouse, ImplementsSQLStore
- */
+// Connector YAML - `type: connector`
 export async function submitAddConnectorForm(
   queryClient: QueryClient,
   connector: V1ConnectorDriver,
@@ -200,6 +195,9 @@ export async function submitAddConnectorForm(
       };
     }
   } else {
+    // Create the connector file using `runtimeServicePutFile`
+    // Delete the connector file using `runtimeServiceDeleteFile` if it fails with a reconcile error
+
     // Test connection for non-OLAP connectors
     const result = await testNonOlapConnector(instanceId, newConnectorName);
     if (!result.success) {
