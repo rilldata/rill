@@ -150,3 +150,58 @@ func (s *Server) Complete(ctx context.Context, req *runtimev1.CompleteRequest) (
 		Messages:       result.Messages,
 	}, nil
 }
+
+// CompleteStreaming implements RuntimeService
+func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stream runtimev1.RuntimeService_CompleteStreamingServer) error {
+	// Access check
+	if !auth.GetClaims(stream.Context()).CanInstance(req.InstanceId, auth.UseAI) {
+		return ErrForbidden
+	}
+
+	// Add basic validation - fail fast for invalid requests
+	if req.Prompt == "" {
+		return status.Error(codes.InvalidArgument, "prompt cannot be empty")
+	}
+
+	// Create tool service for this server
+	toolService := &serverToolService{server: s, instanceID: req.InstanceId}
+
+	// Delegate to runtime business logic
+	res, err := s.runtime.CompleteWithTools(stream.Context(), &runtime.CompleteWithToolsOptions{
+		OwnerID:        auth.GetClaims(stream.Context()).Subject(),
+		InstanceID:     req.InstanceId,
+		ConversationID: req.ConversationId,
+		Messages: []*runtimev1.Message{{Role: "user", Content: []*aiv1.ContentBlock{{
+			BlockType: &aiv1.ContentBlock_Text{
+				Text: req.Prompt,
+			},
+		}}}},
+		ToolService: toolService,
+	})
+	if err != nil {
+		return err
+	}
+
+	// Emit one message for each content block.
+	// In a future refactor, we'll try to apply this in the internal interfaces as well.
+	for _, msg := range res.Messages {
+		for _, block := range msg.Content {
+			err := stream.Send(&runtimev1.CompleteStreamingResponse{
+				ConversationId: res.ConversationID,
+				Message: &runtimev1.Message{
+					Id:        msg.Id,
+					Role:      msg.Role,
+					Content:   []*aiv1.ContentBlock{block},
+					CreatedOn: msg.CreatedOn,
+					UpdatedOn: msg.UpdatedOn,
+				},
+			})
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	// Transform runtime result to gRPC response
+	return nil
+}
