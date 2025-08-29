@@ -75,6 +75,7 @@ require (
 	github.com/mazznoer/csscolorparser v0.1.3
 	github.com/mitchellh/hashstructure/v2 v2.0.2
 	github.com/mitchellh/mapstructure v1.5.0
+	github.com/modelcontextprotocol/go-sdk v0.3.0
 	github.com/orbcorp/orb-go v0.74.0
 	github.com/paulmach/orb v0.11.1
 	github.com/pingcap/tidb/pkg/parser v0.0.0-20231124053542-069631e2ecfe
@@ -163,6 +164,7 @@ require (
 	github.com/ForceCLI/inflect v0.0.0-20130829110746-cc00b5ad7a6a // indirect
 	github.com/ViViDboarder/gotifier v0.0.0-20140619195515-0f19f3d7c54c // indirect
 	github.com/go-jose/go-jose/v4 v4.0.5 // indirect
+	github.com/google/jsonschema-go v0.2.0 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/oasdiff/yaml v0.0.0-20250309154309-f31be36b4037 // indirect
 	github.com/oasdiff/yaml3 v0.0.0-20250309153720-d2182401db90 // indirect
@@ -429,7 +431,7 @@ require (
 	golang.org/x/crypto v0.40.0 // indirect
 	golang.org/x/mod v0.25.0 // indirect
 	golang.org/x/net v0.41.0
-	golang.org/x/term v0.33.0 // indirect
+	golang.org/x/term v0.33.0
 	golang.org/x/time v0.11.0 // indirect
 	golang.org/x/tools v0.34.0 // indirect
 	golang.org/x/xerrors v0.0.0-20240903120638-7835f813f4da // indirect
