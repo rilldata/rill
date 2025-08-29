@@ -24,7 +24,7 @@ import {
 } from "../../connectors/code-utils";
 import {
   testOLAPConnector,
-  testNonOlapConnector,
+  pollConnectorResource,
 } from "../../connectors/olap/test-connection";
 import { runtimeServicePutFileAndWaitForReconciliation } from "../../entity-management/actions";
 import { getFileAPIPathFromNameAndType } from "../../entity-management/entity-mappers";
@@ -199,7 +199,8 @@ export async function submitAddConnectorForm(
     // Delete the connector file using `runtimeServiceDeleteFile` if it fails with a reconcile error
 
     // Test connection for non-OLAP connectors
-    const result = await testNonOlapConnector(instanceId, newConnectorName);
+    const result = await pollConnectorResource(instanceId, newConnectorName);
+    console.log("TESTED NON-OLAP CONNECTOR: ", result);
     if (!result.success) {
       await rollbackConnectorChanges(
         instanceId,
