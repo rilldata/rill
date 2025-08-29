@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/md5"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -324,6 +325,10 @@ func (h *Helper) CurrentUserID(ctx context.Context) (string, error) {
 }
 
 func (h *Helper) ProjectNamesByGitRemote(ctx context.Context, org, remote, subPath string) ([]string, error) {
+	if org == "" || remote == "" {
+		return nil, errors.New("org, remote cannot be blank")
+	}
+
 	c, err := h.Client()
 	if err != nil {
 		return nil, err
