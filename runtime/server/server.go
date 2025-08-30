@@ -291,7 +291,8 @@ func timeoutSelector(fullMethodName string) time.Duration {
 		return time.Minute * 59 // Not 60 to avoid forced timeout on ingress
 	}
 
-	if strings.HasPrefix(fullMethodName, "/rill.runtime.v1.QueryService") {
+	if strings.HasPrefix(fullMethodName, "/rill.runtime.v1.QueryService") ||
+		strings.HasPrefix(fullMethodName, "/rill.runtime.v1.ConnectorService") {
 		return time.Minute * 5
 	}
 
