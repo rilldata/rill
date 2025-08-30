@@ -78,7 +78,7 @@ func (u *URLs) WithCustomDomain(domain string) *URLs {
 	}
 }
 
-// WithCustomDomainFromURL attempts to infer a custom domain from a redirect URL.
+// WithCustomDomainFromRedirectURL attempts to infer a custom domain from a redirect URL.
 // If it succeeds, it passes the custom domain to WithCustomDomain and returns the result.
 // If it does not detect a custom domain in the redirect URL, or the redirect URL is invalid, it fails silently by returning itself unchanged.
 func (u *URLs) WithCustomDomainFromRedirectURL(redirectURL string) *URLs {
@@ -104,6 +104,21 @@ func (u *URLs) WithCustomDomainFromRedirectURL(redirectURL string) *URLs {
 // IsHTTPS returns true if the admin service's external URL uses HTTPS.
 func (u *URLs) IsHTTPS() bool {
 	return u.https
+}
+
+// IsCustomDomain returns true if the given domain is a custom domain.
+func (u *URLs) IsCustomDomain(domain string) bool {
+	if u.custom == "" {
+		return false
+	}
+
+	// Parse the custom domain to extract just the hostname
+	if customURL, err := url.Parse(u.custom); err == nil {
+		customHost := customURL.Hostname()
+		// Check if the given domain matches our configured custom domain
+		return strings.EqualFold(customHost, domain)
+	}
+	return false
 }
 
 // External returns the external URL for the admin service.
