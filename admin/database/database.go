@@ -196,6 +196,11 @@ type DB interface {
 	FindReportTokenForMagicAuthToken(ctx context.Context, magicAuthTokenID string) (*ReportToken, error)
 	InsertReportToken(ctx context.Context, opts *InsertReportTokenOptions) (*ReportToken, error)
 
+	FindAlertTokens(ctx context.Context, alertName string) ([]*AlertToken, error)
+	FindAlertTokensWithSecret(ctx context.Context, alertName string) ([]*AlertTokenWithSecret, error)
+	FindAlertTokenForMagicAuthToken(ctx context.Context, magicAuthTokenID string) (*AlertToken, error)
+	InsertAlertToken(ctx context.Context, opts *InsertAlertTokenOptions) (*AlertToken, error)
+
 	FindDeviceAuthCodeByDeviceCode(ctx context.Context, deviceCode string) (*DeviceAuthCode, error)
 	FindPendingDeviceAuthCodeByUserCode(ctx context.Context, userCode string) (*DeviceAuthCode, error)
 	InsertDeviceAuthCode(ctx context.Context, deviceCode, userCode, clientID string, expiresOn time.Time) (*DeviceAuthCode, error)
@@ -784,6 +789,27 @@ type ReportTokenWithSecret struct {
 
 type InsertReportTokenOptions struct {
 	ReportName       string
+	RecipientEmail   string
+	MagicAuthTokenID string
+}
+
+type AlertToken struct {
+	ID               string
+	AlertName        string `db:"alert_name"`
+	RecipientEmail   string `db:"recipient_email"`
+	MagicAuthTokenID string `db:"magic_auth_token_id"`
+}
+
+type AlertTokenWithSecret struct {
+	ID                   string
+	AlertName            string `db:"alert_name"`
+	RecipientEmail       string `db:"recipient_email"`
+	MagicAuthTokenID     string `db:"magic_auth_token_id"`
+	MagicAuthTokenSecret []byte `db:"magic_auth_token_secret"`
+}
+
+type InsertAlertTokenOptions struct {
+	AlertName        string
 	RecipientEmail   string
 	MagicAuthTokenID string
 }

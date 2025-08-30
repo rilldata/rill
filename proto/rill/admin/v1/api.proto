@@ -2398,13 +2398,21 @@ message GetAlertMetaRequest {
     string query_for_user_id = 5;
     string query_for_user_email = 6;
   }
+  string owner_id = 7;
+  repeated string email_recipients = 8;
+  bool anon_recipients = 9;
   reserved 2;
 }
 
 message GetAlertMetaResponse {
-  string open_url = 1;
-  string edit_url = 2;
+  message URLs {
+    string open_url = 1;
+    string edit_url = 2;
+    string unsubscribe_url = 3;
+  }
+  map<string, URLs> recipient_urls = 2;
   google.protobuf.Struct query_for_attributes = 3;
+  reserved 1;
 }
 
 message CreateReportRequest {
@@ -2488,6 +2496,8 @@ message UnsubscribeAlertRequest {
   string organization = 1;
   string project = 2;
   string name = 3;
+  string email = 4 [(validate.rules).string = {email: true, ignore_empty: true}];
+  string slack_user = 5 [(validate.rules).string = {email: true, ignore_empty: true}];
 }
 
 message UnsubscribeAlertResponse {}

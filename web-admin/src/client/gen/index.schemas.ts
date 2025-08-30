@@ -4,13 +4,6 @@
  * rill/admin/v1/ai.proto
  * OpenAPI spec version: version not set
  */
-export interface GetReportMetaResponseURLs {
-  openUrl?: string;
-  exportUrl?: string;
-  editUrl?: string;
-  unsubscribeUrl?: string;
-}
-
 export interface ListGithubUserReposResponseRepo {
   name?: string;
   owner?: string;
@@ -433,14 +426,23 @@ export interface V1GenerateReportYAMLResponse {
   yaml?: string;
 }
 
+export type V1GetAlertMetaResponseRecipientUrls = {
+  [key: string]: V1GetAlertMetaResponseURLs;
+};
+
 export type V1GetAlertMetaResponseQueryForAttributes = {
   [key: string]: unknown;
 };
 
 export interface V1GetAlertMetaResponse {
+  recipientUrls?: V1GetAlertMetaResponseRecipientUrls;
+  queryForAttributes?: V1GetAlertMetaResponseQueryForAttributes;
+}
+
+export interface V1GetAlertMetaResponseURLs {
   openUrl?: string;
   editUrl?: string;
-  queryForAttributes?: V1GetAlertMetaResponseQueryForAttributes;
+  unsubscribeUrl?: string;
 }
 
 export interface V1GetAlertYAMLResponse {
@@ -598,11 +600,18 @@ This enables checkpointing progress across hibernations and also more easily pin
 }
 
 export type V1GetReportMetaResponseRecipientUrls = {
-  [key: string]: GetReportMetaResponseURLs;
+  [key: string]: V1GetReportMetaResponseURLs;
 };
 
 export interface V1GetReportMetaResponse {
   recipientUrls?: V1GetReportMetaResponseRecipientUrls;
+}
+
+export interface V1GetReportMetaResponseURLs {
+  openUrl?: string;
+  exportUrl?: string;
+  editUrl?: string;
+  unsubscribeUrl?: string;
 }
 
 export interface V1GetServiceResponse {
@@ -1537,6 +1546,11 @@ export type AdminServiceCreateAlertBodyBody = {
   options?: V1AlertOptions;
 };
 
+export type AdminServiceUnsubscribeAlertBodyBody = {
+  email?: string;
+  slackUser?: string;
+};
+
 export type AdminServiceCreateReportBodyBody = {
   options?: V1ReportOptions;
 };
@@ -1758,11 +1772,6 @@ export type AdminServiceRedeployProjectParams = {
   superuserForceAccess?: boolean;
 };
 
-export type AdminServiceUnsubscribeReportBody = {
-  email?: string;
-  slackUser?: string;
-};
-
 export type AdminServiceListMagicAuthTokensParams = {
   pageSize?: number;
   pageToken?: string;
@@ -1951,6 +1960,9 @@ export type AdminServiceGetAlertMetaBody = {
   annotations?: AdminServiceGetAlertMetaBodyAnnotations;
   queryForUserId?: string;
   queryForUserEmail?: string;
+  ownerId?: string;
+  emailRecipients?: string[];
+  anonRecipients?: boolean;
 };
 
 export type AdminServicePullVirtualRepoParams = {

@@ -1112,6 +1112,11 @@ paths:
           required: true
           schema:
             type: object
+            properties:
+              email:
+                type: string
+              slackUser:
+                type: string
       tags:
         - AdminService
   /v1/organizations/{organization}/projects/{project}/alerts/{name}/yaml:
@@ -3502,6 +3507,14 @@ paths:
                 type: string
               queryForUserEmail:
                 type: string
+              ownerId:
+                type: string
+              emailRecipients:
+                type: array
+                items:
+                  type: string
+              anonRecipients:
+                type: boolean
       tags:
         - AdminService
   /v1/projects/{projectId}/repo/meta:
@@ -4357,17 +4370,6 @@ paths:
       tags:
         - AdminService
 definitions:
-  GetReportMetaResponseURLs:
-    type: object
-    properties:
-      openUrl:
-        type: string
-      exportUrl:
-        type: string
-      editUrl:
-        type: string
-      unsubscribeUrl:
-        type: string
   ListGithubUserReposResponseRepo:
     type: object
     properties:
@@ -4912,12 +4914,21 @@ definitions:
   v1GetAlertMetaResponse:
     type: object
     properties:
+      recipientUrls:
+        type: object
+        additionalProperties:
+          $ref: '#/definitions/v1GetAlertMetaResponseURLs'
+      queryForAttributes:
+        type: object
+  v1GetAlertMetaResponseURLs:
+    type: object
+    properties:
       openUrl:
         type: string
       editUrl:
         type: string
-      queryForAttributes:
-        type: object
+      unsubscribeUrl:
+        type: string
   v1GetAlertYAMLResponse:
     type: object
     properties:
@@ -5152,7 +5163,18 @@ definitions:
       recipientUrls:
         type: object
         additionalProperties:
-          $ref: '#/definitions/GetReportMetaResponseURLs'
+          $ref: '#/definitions/v1GetReportMetaResponseURLs'
+  v1GetReportMetaResponseURLs:
+    type: object
+    properties:
+      openUrl:
+        type: string
+      exportUrl:
+        type: string
+      editUrl:
+        type: string
+      unsubscribeUrl:
+        type: string
   v1GetServiceResponse:
     type: object
     properties:

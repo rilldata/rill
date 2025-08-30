@@ -48,11 +48,14 @@ func (h *Handle) GetReportMetadata(ctx context.Context, reportName, ownerID, web
 	}, nil
 }
 
-func (h *Handle) GetAlertMetadata(ctx context.Context, alertName string, annotations map[string]string, queryForUserID, queryForUserEmail string) (*drivers.AlertMetadata, error) {
+func (h *Handle) GetAlertMetadata(ctx context.Context, alertName, ownerID string, emailRecipients []string, anonRecipients bool, annotations map[string]string, queryForUserID, queryForUserEmail string) (*drivers.AlertMetadata, error) {
 	req := &adminv1.GetAlertMetaRequest{
-		ProjectId:   h.config.ProjectID,
-		Alert:       alertName,
-		Annotations: annotations,
+		ProjectId:       h.config.ProjectID,
+		Alert:           alertName,
+		Annotations:     annotations,
+		OwnerId:         ownerID,
+		EmailRecipients: emailRecipients,
+		AnonRecipients:  anonRecipients,
 	}
 
 	if queryForUserID != "" {
@@ -66,9 +69,17 @@ func (h *Handle) GetAlertMetadata(ctx context.Context, alertName string, annotat
 		return nil, err
 	}
 
+	recipientURLs := make(map[string]drivers.AlertURLs)
+	for email, urls := range res.RecipientUrls {
+		recipientURLs[email] = drivers.AlertURLs{
+			OpenURL:        urls.OpenUrl,
+			EditURL:        urls.EditUrl,
+			UnsubscribeURL: urls.UnsubscribeUrl,
+		}
+	}
+
 	meta := &drivers.AlertMetadata{
-		OpenURL: res.OpenUrl,
-		EditURL: res.EditUrl,
+		RecipientURLs: recipientURLs,
 	}
 
 	if res.QueryForAttributes != nil {

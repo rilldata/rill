@@ -394,7 +394,20 @@ func (r *AlertReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 	}
 	if err == nil { // Connected successfully
 		defer release()
-		adminMeta, err = admin.GetAlertMetadata(ctx, self.Meta.Name.Name, a.Spec.Annotations, a.Spec.GetQueryForUserId(), a.Spec.GetQueryForUserEmail())
+		anonRecipients := false
+		var emailRecipients []string
+		for _, notifier := range a.Spec.Notifiers {
+			if notifier.Connector == "email" {
+				emailRecipients = pbutil.ToSliceString(notifier.Properties.AsMap()["recipients"])
+			} else {
+				anonRecipients = true
+			}
+		}
+		ownerID := ""
+		if a.Spec.Annotations != nil {
+			ownerID = a.Spec.Annotations["admin_owner_user_id"]
+		}
+		adminMeta, err = admin.GetAlertMetadata(ctx, self.Meta.Name.Name, ownerID, emailRecipients, anonRecipients, a.Spec.Annotations, a.Spec.GetQueryForUserId(), a.Spec.GetQueryForUserEmail())
 		if err != nil {
 			return fmt.Errorf("failed to get alert metadata: %w", err)
 		}
@@ -724,16 +737,6 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 	var notificationErr error
 	var sentNotifications bool
 	if msg != nil {
-		if adminMeta != nil {
-			// Note: adminMeta may not always be available (if outside of cloud). In those cases, we leave the links blank (no clickthrough available).
-			openLink, err := addExecutionTime(adminMeta.OpenURL, executionTime)
-			if err != nil {
-				return fmt.Errorf("failed to build open url: %w", err)
-			}
-			msg.OpenLink = openLink
-			msg.EditLink = adminMeta.EditURL
-		}
-
 		for _, notifier := range a.Spec.Notifiers {
 			switch notifier.Connector {
 			// TODO: transform email client to notifier
@@ -741,6 +744,26 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 				recipients := pbutil.ToSliceString(notifier.Properties.AsMap()["recipients"])
 				for _, recipient := range recipients {
 					msg.ToEmail = recipient
+
+					// Set recipient-specific URLs if available from admin metadata
+					if adminMeta != nil && adminMeta.RecipientURLs != nil {
+						if recipientURLs, ok := adminMeta.RecipientURLs[recipient]; ok {
+							// Use recipient-specific URLs (with magic token)
+							openLink, err := addExecutionTime(recipientURLs.OpenURL, executionTime)
+							if err != nil {
+								return fmt.Errorf("failed to build recipient open url: %w", err)
+							}
+							msg.OpenLink = openLink
+							msg.EditLink = recipientURLs.EditURL
+							msg.UnsubscribeLink = recipientURLs.UnsubscribeURL
+						} else {
+							// Fallback to default URLs (for internal users)
+							msg.OpenLink = ""
+							msg.EditLink = ""
+							msg.UnsubscribeLink = ""
+						}
+					}
+
 					err := r.C.Runtime.Email.SendAlertStatus(msg)
 					if err != nil {
 						notificationErr = fmt.Errorf("failed to send email to %q: %w", recipient, err)
