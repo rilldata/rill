@@ -735,6 +735,11 @@ export interface V1ListProjectWhitelistedDomainsResponse {
   domains?: V1WhitelistedDomain[];
 }
 
+export interface V1ListProjectsForFingerprintResponse {
+  projects?: V1Project[];
+  nextPageToken?: string;
+}
+
 export interface V1ListProjectsForOrganizationAndUserResponse {
   projects?: V1Project[];
   nextPageToken?: string;
@@ -938,6 +943,7 @@ export interface V1Project {
   description?: string;
   public?: boolean;
   createdByUserId?: string;
+  directoryName?: string;
   provisioner?: string;
   gitRemote?: string;
   /** managed_git_id is set if the project is connected to a rill-managed git repo. */
@@ -1884,6 +1890,9 @@ export type AdminServiceCreateProjectBody = {
   name?: string;
   description?: string;
   public?: boolean;
+  /** directory_name should be the most recently observed local directory name for the project.
+See ListProjectsForFingerprint for more context. */
+  directoryName?: string;
   provisioner?: string;
   prodSlots?: string;
   subpath?: string;
@@ -1907,6 +1916,7 @@ export type AdminServiceGetProjectParams = {
 export type AdminServiceUpdateProjectBody = {
   description?: string;
   public?: boolean;
+  directoryName?: string;
   prodBranch?: string;
   gitRemote?: string;
   subpath?: string;
@@ -1951,6 +1961,14 @@ export type AdminServiceUpdateServiceBody = {
 
 export type AdminServiceListProjectsForUserByNameParams = {
   name?: string;
+};
+
+export type AdminServiceListProjectsForFingerprintParams = {
+  directoryName?: string;
+  gitRemote?: string;
+  subPath?: string;
+  pageSize?: number;
+  pageToken?: string;
 };
 
 export type AdminServiceGetAlertMetaBodyAnnotations = { [key: string]: string };

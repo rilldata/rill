@@ -20,8 +20,10 @@
   export let error: string | null = null;
   export let canvasDashboard = false;
   export let renderer: "canvas" | "svg" = "canvas";
+  export let theme: "light" | "dark" = "light";
   export let config: Config | undefined = undefined;
   export let tooltipFormatter: VLTooltipFormatter | undefined = undefined;
+  export let colorMapping: { value: string; color: string }[] = [];
   export let viewVL: View;
 
   let contentRect = new DOMRect(0, 0, 0, 0);
@@ -47,7 +49,9 @@
     height,
     config,
     renderer,
+    theme,
     expressionFunctions,
+    colorMapping,
   });
 
   const onError = (e: CustomEvent<{ error: Error }>) => {
