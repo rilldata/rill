@@ -15,11 +15,16 @@ import {
   createPositionEncoding,
 } from "../builder";
 import type { ChartDataResult } from "../types";
-import type { MultiMetricChartSpec } from "./MultiMetricChart";
+import type { CartesianChartSpec } from "./CartesianChart";
 
 export function generateVLMultiMetricChartSpec(
-  config: MultiMetricChartSpec,
+  config: CartesianChartSpec,
   data: ChartDataResult,
+  markType:
+    | "grouped_bar"
+    | "stacked_bar"
+    | "stacked_area"
+    | "line" = "grouped_bar",
 ): VisualizationSpec {
   const measureField = "Measure";
   const valueField = "value";
@@ -47,7 +52,7 @@ export function generateVLMultiMetricChartSpec(
 
   spec.encoding = { x: createPositionEncoding(config.x, data) };
 
-  const markType = config.mark_type || "stacked_bar";
+  // Use the markType parameter instead of config.mark_type
   const xField = sanitizeValueForVega(config.x?.field);
 
   const legend = {
