@@ -8,7 +8,7 @@ import {
 import { makeDotEnvConnectorKey } from "../connectors/code-utils";
 import { sanitizeEntityName } from "../entity-management/name-utils";
 
-// Helper text that we put at the top of every Source YAML file
+// Helper text that we put at the top of every Model YAML file
 const SOURCE_MODEL_FILE_TOP = `# Model YAML
 # Reference documentation: https://docs.rilldata.com/reference/project-files/models
 
