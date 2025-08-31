@@ -805,15 +805,6 @@ func (p *securityEngine) resolveTransitiveAccessRuleForAlert(ctx context.Context
 	// all themes
 	condition.WriteString(fmt.Sprintf(" OR '{{.self.kind}}'='%s'", ResourceKindTheme))
 
-	rules = append(rules, &runtimev1.SecurityRule{
-		Rule: &runtimev1.SecurityRule_Access{
-			Access: &runtimev1.SecurityRuleAccess{
-				Condition: fmt.Sprintf("NOT (%s)", condition.String()),
-				Allow:     false,
-			},
-		},
-	})
-
 	if spec.QueryName != "" {
 		initializer, ok := ResolverInitializers["legacy_metrics"]
 		if !ok {
@@ -889,7 +880,7 @@ func (p *securityEngine) resolveTransitiveAccessRuleForAlert(ctx context.Context
 				}
 			}
 		}
-		// still not found, use mv name as explore name
+		// still not found, use mv name as explore name // TODO does this harm anything? as some alerts may not have any explore like those based on sql resolvers
 		if explore == "" {
 			explore = mvName
 		}

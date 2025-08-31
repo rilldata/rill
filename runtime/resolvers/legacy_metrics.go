@@ -216,15 +216,6 @@ func (r *legacyMetricsResolver) InferRequiredSecurityRules() []*runtimev1.Securi
 		})
 	}
 
-	rules = append(rules, &runtimev1.SecurityRule{
-		Rule: &runtimev1.SecurityRule_Access{
-			Access: &runtimev1.SecurityRuleAccess{
-				Condition: fmt.Sprintf("'{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s", runtime.ResourceKindMetricsView, duckdbsql.EscapeStringValue(strings.ToLower(r.metricsViewName))),
-				Allow:     true,
-			},
-		},
-	})
-
 	if r.rowFilter != "" {
 		expr := &runtimev1.Expression{}
 		err := protojson.Unmarshal([]byte(r.rowFilter), expr)

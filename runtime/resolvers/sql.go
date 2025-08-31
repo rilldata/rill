@@ -173,7 +173,20 @@ func (r *sqlResolver) ResolveExport(ctx context.Context, w io.Writer, opts *runt
 }
 
 func (r *sqlResolver) InferRequiredSecurityRules() []*runtimev1.SecurityRule {
-	panic("not implemented")
+	var rules []*runtimev1.SecurityRule
+	// allow explicit access to the references
+	for _, ref := range r.Refs() {
+		rules = append(rules, &runtimev1.SecurityRule{
+			Rule: &runtimev1.SecurityRule_Access{
+				Access: &runtimev1.SecurityRuleAccess{
+					Condition: fmt.Sprintf("'{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s", ref.Kind, duckdbsql.EscapeStringValue(strings.ToLower(ref.Name))),
+					Allow:     true,
+				},
+			},
+		})
+	}
+	// TODO: parse SQL to extract fields and row filters to infer more rules, for now we just allow everything
+	return rules
 }
 
 func (r *sqlResolver) generalExport(ctx context.Context, w io.Writer, filename string, opts *runtime.ExportOptions) error {
