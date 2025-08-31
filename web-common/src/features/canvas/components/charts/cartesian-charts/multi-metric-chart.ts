@@ -54,7 +54,6 @@ export function generateVLMultiMetricChartSpec(
 
   spec.encoding = { x: createPositionEncoding(config.x, data) };
 
-  // Use the markType parameter instead of config.mark_type
   const xField = sanitizeValueForVega(config.x?.field);
 
   const legend = {

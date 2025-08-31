@@ -96,10 +96,9 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
   }
 
   getChartSpecificOptions(): Record<string, ComponentInputParam> {
+    const inputParams = CartesianChartComponent.chartInputParams;
     const config = get(this.specStore);
     const isMultiMeasure = isMultiFieldConfig(config.y);
-
-    const inputParams = { ...CartesianChartComponent.chartInputParams };
 
     inputParams.color.showInUI = !isMultiMeasure;
 
@@ -174,11 +173,7 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
       dimensions = [{ name: dimensionName }];
     }
 
-    if (
-      typeof config.color === "object" &&
-      config.color?.field &&
-      !isMultiMeasure
-    ) {
+    if (isFieldConfig(config.color) && !isMultiMeasure) {
       colorDimensionName = config.color.field;
       colorLimit = config.color.limit ?? DEFAULT_SPLIT_LIMIT;
       dimensions = [...dimensions, { name: colorDimensionName }];
