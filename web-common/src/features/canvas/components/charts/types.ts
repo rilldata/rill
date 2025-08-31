@@ -96,6 +96,7 @@ export interface FieldConfig
   type: "quantitative" | "ordinal" | "nominal" | "temporal";
   showAxisTitle?: boolean; // Default is false
   timeUnit?: string; // For temporal fields
+  fields?: string[]; // To support multi metric chart variants
 }
 
 export interface CommonChartProperties {

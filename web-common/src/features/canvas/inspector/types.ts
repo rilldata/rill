@@ -39,6 +39,7 @@ export type ChartFieldInput = {
   nullSelector?: boolean;
   labelAngleSelector?: boolean;
   axisRangeSelector?: boolean;
+  multiFieldSelector?: boolean;
   /**
    * The default legend position for the chart.
    * If this key is not specified, legend selector will not be shown.

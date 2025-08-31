@@ -26,7 +26,6 @@ import { isFieldConfig, vegaSortToAggregationSort } from "../util";
 export type CartesianChartSpec = BaseChartConfig & {
   x?: FieldConfig;
   y?: FieldConfig;
-  measures?: string[];
   color?: FieldConfig | string;
 };
 
@@ -60,21 +59,15 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
     y: {
       type: "positional",
       label: "Y-axis",
-      showInUI: true,
       meta: {
         chartFieldInput: {
           type: "measure",
           axisTitleSelector: true,
           originSelector: true,
           axisRangeSelector: true,
+          multiFieldSelector: true,
         },
       },
-    },
-    measures: {
-      type: "multi_fields",
-      label: "Measures",
-      meta: { allowedTypes: ["measure"] },
-      showInUI: true,
     },
     // TODO: Refactor to use simpler primitives
     color: {
@@ -98,74 +91,12 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
     super(resource, parent, path);
   }
 
-  updateProperty(
-    key: keyof CartesianChartSpec,
-    value: string | string[] | FieldConfig | undefined,
-  ): void {
-    if (key === "measures") {
-      const config = get(this.specStore);
-      const currentMeasures = config.measures || [];
-      const updatedMeasures = value as string[];
-
-      // Transition from single to multi-measure mode
-      if (
-        currentMeasures.length === 0 &&
-        updatedMeasures &&
-        updatedMeasures.length > 0 &&
-        config.y?.field
-      ) {
-        const measuresSet = new Set([config.y.field, ...updatedMeasures]);
-        value = Array.from(measuresSet);
-      }
-      // Transition from multi to single-measure mode
-      else if (
-        currentMeasures.length > 1 &&
-        updatedMeasures &&
-        updatedMeasures.length === 1
-      ) {
-        // When down to one measure, move it to Y-axis and clear measures array
-        const singleMeasure = updatedMeasures[0];
-        this.specStore.update((spec) => ({
-          ...spec,
-          y: {
-            type: "quantitative",
-            field: singleMeasure,
-            zeroBasedOrigin: true,
-          },
-        }));
-        value = [];
-      }
-      // Complete removal of measures
-      else if (
-        currentMeasures.length > 0 &&
-        (!updatedMeasures || updatedMeasures.length === 0)
-      ) {
-        // Take the last measure and put it in Y-axis
-        const lastMeasure = currentMeasures[currentMeasures.length - 1];
-        if (lastMeasure) {
-          this.specStore.update((spec) => ({
-            ...spec,
-            y: {
-              type: "quantitative",
-              field: lastMeasure,
-              zeroBasedOrigin: true,
-            },
-          }));
-        }
-        value = [];
-      }
-    }
-
-    super.updateProperty(key, value);
-  }
-
   getChartSpecificOptions(): Record<string, ComponentInputParam> {
     const config = get(this.specStore);
-    const isMultiMeasure = config.measures && config.measures.length > 1;
+    const isMultiMeasure = config.y?.fields && config.y.fields.length > 1;
 
     const inputParams = { ...CartesianChartComponent.chartInputParams };
 
-    inputParams.y.showInUI = !isMultiMeasure;
     inputParams.color.showInUI = !isMultiMeasure;
 
     const sortSelector = inputParams.x.meta?.chartFieldInput?.sortSelector;
@@ -187,13 +118,13 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
   ): ChartDataQuery {
     const config = get(this.specStore);
 
-    const isMultiMeasure = config.measures && config.measures.length > 1;
+    const isMultiMeasure = config.y?.fields && config.y.fields.length > 1;
 
     let measures: V1MetricsViewAggregationMeasure[] = [];
     let dimensions: V1MetricsViewAggregationDimension[] = [];
 
     if (isMultiMeasure) {
-      const measuresSet = new Set(config.measures || []);
+      const measuresSet = new Set(config.y?.fields || []);
       if (config.y?.type === "quantitative" && config.y?.field) {
         measuresSet.add(config.y.field);
       }
@@ -218,7 +149,7 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
         const sort = config.x?.sort;
         if (sort === "y" || sort === "-y") {
           // Use first measure for y-based sorts
-          const firstMeasure = config.measures?.[0];
+          const firstMeasure = config.y?.fields?.[0];
           if (firstMeasure) {
             xAxisSort = {
               name: firstMeasure,
@@ -456,20 +387,18 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
 
   chartTitle(fields: ChartFieldsMap) {
     const config = get(this.specStore);
-    const isMultiMeasure = config.measures && config.measures.length > 1;
+    const isMultiMeasure = config.y?.fields && config.y.fields.length > 1;
 
     if (isMultiMeasure) {
-      // Multi-measure title logic
       const xLabel = config.x?.field
         ? fields[config.x.field]?.displayName || config.x.field
         : "";
-      const measuresLabel = (config.measures || [])
+      const measuresLabel = (config.y?.fields || [])
         .map((m) => fields[m]?.displayName || m)
         .join(", ");
       const preposition = xLabel === "Time" ? "over" : "by";
       return `${measuresLabel} ${preposition} ${xLabel}`;
     } else {
-      // Existing single-measure title logic
       const { x, y, color } = config;
       const xLabel = x?.field ? fields[x.field]?.displayName || x.field : "";
       const yLabel = y?.field ? fields[y.field]?.displayName || y.field : "";

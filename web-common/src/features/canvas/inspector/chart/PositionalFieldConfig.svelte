@@ -1,7 +1,8 @@
 <script lang="ts">
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import type { FieldConfig } from "@rilldata/web-common/features/canvas/components/charts/types";
-  import SingleFieldInput from "@rilldata/web-common/features/canvas/inspector/SingleFieldInput.svelte";
+  import MultiPositionalFieldsInput from "@rilldata/web-common/features/canvas/inspector/fields/MultiPositionalFieldsInput.svelte";
+  import SingleFieldInput from "@rilldata/web-common/features/canvas/inspector/fields/SingleFieldInput.svelte";
   import type { ComponentInputParam } from "@rilldata/web-common/features/canvas/inspector/types";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -24,8 +25,10 @@
   } = getCanvasStore(canvasName, instanceId));
 
   $: chartFieldInput = config.meta?.chartFieldInput;
+  $: multiMetricSelector = chartFieldInput?.multiFieldSelector;
 
   $: isDimension = chartFieldInput?.type === "dimension";
+  $: hasMultipleMeasures = fieldConfig.fields && fieldConfig.fields.length > 1;
 
   $: timeDimension = getTimeDimensionForMetricView(metricsView);
 
@@ -69,6 +72,51 @@
     onChange(updatedConfig);
   }
 
+  function handleMultiFieldUpdate(items: string[]) {
+    // Handle transitions between single and multi-measure modes
+    const currentMultiMeasures = fieldConfig.fields || [];
+    const updatedMultiMeasures = items;
+
+    let updatedConfig: FieldConfig = { ...fieldConfig };
+
+    // Transition from single to multi-measure mode
+    if (
+      currentMultiMeasures.length === 0 &&
+      updatedMultiMeasures &&
+      updatedMultiMeasures.length > 0 &&
+      fieldConfig.field
+    ) {
+      const measuresSet = new Set([fieldConfig.field, ...updatedMultiMeasures]);
+      updatedConfig = {
+        ...fieldConfig,
+        fields: Array.from(measuresSet),
+      };
+    }
+    // Transition from multi to single-measure mode
+    else if (
+      currentMultiMeasures.length > 1 &&
+      updatedMultiMeasures &&
+      updatedMultiMeasures.length === 1
+    ) {
+      // When down to one measure, move it to the main field and clear fields array
+      const singleMeasure = updatedMultiMeasures[0];
+      updatedConfig = {
+        ...fieldConfig,
+        field: singleMeasure,
+        fields: undefined,
+      };
+    }
+    // Normal multi-field update
+    else {
+      updatedConfig = {
+        ...fieldConfig,
+        fields: items,
+      };
+    }
+
+    onChange(updatedConfig);
+  }
+
   $: popoverKey = `${$selectedComponent}-${metricsView}-${fieldConfig.field}`;
 </script>
 
@@ -87,15 +135,28 @@
     {/key}
   </div>
 
-  <SingleFieldInput
-    {canvasName}
-    metricName={metricsView}
-    id={`${key}-field`}
-    type={isDimension ? "dimension" : "measure"}
-    includeTime={!chartFieldInput?.hideTimeDimension}
-    selectedItem={fieldConfig?.field}
-    onSelect={async (field) => {
-      updateFieldConfig(field);
-    }}
-  />
+  <div class="flex flex-col gap-y-2">
+    {#if !hasMultipleMeasures}
+      <SingleFieldInput
+        {canvasName}
+        metricName={metricsView}
+        id={`${key}-field`}
+        type={isDimension ? "dimension" : "measure"}
+        includeTime={!chartFieldInput?.hideTimeDimension}
+        selectedItem={fieldConfig?.field}
+        onSelect={async (field) => {
+          updateFieldConfig(field);
+        }}
+      />
+    {/if}
+    {#if multiMetricSelector}
+      <MultiPositionalFieldsInput
+        {canvasName}
+        metricName={metricsView}
+        selectedItems={fieldConfig.fields}
+        types={isDimension ? ["dimension"] : ["measure"]}
+        onMultiSelect={handleMultiFieldUpdate}
+      />
+    {/if}
+  </div>
 </div>

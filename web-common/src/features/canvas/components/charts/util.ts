@@ -70,9 +70,9 @@ export interface FieldsByType {
 }
 
 export function getFieldsByType(spec: ChartSpec): FieldsByType {
-  let measures: string[] = [];
-  const dimensions: string[] = [];
-  const timeDimensions: string[] = [];
+  const measures = new Set<string>();
+  const dimensions = new Set<string>();
+  const timeDimensions = new Set<string>();
 
   // Recursively check all properties for FieldConfig objects
   const checkFields = (obj: unknown): void => {
@@ -84,16 +84,26 @@ export function getFieldsByType(spec: ChartSpec): FieldsByType {
     if (isFieldConfig(obj)) {
       const type = obj.type as string;
       const field = obj.field;
+      const fields = obj.fields;
 
       switch (type) {
         case "quantitative":
-          measures.push(field);
+          measures.add(field);
+          if (fields) {
+            fields.forEach((f) => measures.add(f));
+          }
           break;
         case "nominal":
-          dimensions.push(field);
+          dimensions.add(field);
+          if (fields) {
+            fields.forEach((f) => dimensions.add(f));
+          }
           break;
         case "temporal":
-          timeDimensions.push(field);
+          timeDimensions.add(field);
+          if (fields) {
+            fields.forEach((f) => timeDimensions.add(f));
+          }
           break;
       }
       return;
@@ -108,13 +118,10 @@ export function getFieldsByType(spec: ChartSpec): FieldsByType {
 
   checkFields(spec);
 
-  if ("measures" in spec && Array.isArray(spec.measures)) {
-    measures = spec.measures;
-  }
   return {
-    measures,
-    dimensions,
-    timeDimensions,
+    measures: Array.from(measures),
+    dimensions: Array.from(dimensions),
+    timeDimensions: Array.from(timeDimensions),
   };
 }
 

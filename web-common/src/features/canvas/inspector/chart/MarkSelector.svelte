@@ -3,7 +3,7 @@
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import type { FieldConfig } from "@rilldata/web-common/features/canvas/components/charts/types";
   import { isFieldConfig } from "@rilldata/web-common/features/canvas/components/charts/util";
-  import SingleFieldInput from "@rilldata/web-common/features/canvas/inspector/SingleFieldInput.svelte";
+  import SingleFieldInput from "@rilldata/web-common/features/canvas/inspector/fields/SingleFieldInput.svelte";
   import type { ComponentInputParam } from "@rilldata/web-common/features/canvas/inspector/types";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";

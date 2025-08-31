@@ -35,8 +35,7 @@ export function generateVLMultiMetricChartSpec(
     type: "nominal",
   });
 
-  // Fold measures into a long format for easier encoding
-  const measures = config.measures || [];
+  const measures = config.y?.fields || [];
 
   const measureDisplayNames: Record<string, string> = {};
   measures.forEach((measure) => {
