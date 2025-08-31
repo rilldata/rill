@@ -7,6 +7,7 @@ import type { VisualizationSpec } from "svelte-vega";
 import type { Field } from "vega-lite/build/src/channeldef";
 import type { LayerSpec } from "vega-lite/build/src/spec/layer";
 import type { UnitSpec } from "vega-lite/build/src/spec/unit";
+import type { Transform } from "vega-lite/build/src/transform";
 import {
   buildHoverPointOverlay,
   buildHoverRuleLayer,
@@ -23,6 +24,7 @@ export function generateVLMultiMetricChartSpec(
   markType:
     | "grouped_bar"
     | "stacked_bar"
+    | "stacked_bar_normalized"
     | "stacked_area"
     | "line" = "grouped_bar",
 ): VisualizationSpec {
@@ -42,12 +44,13 @@ export function generateVLMultiMetricChartSpec(
     measureDisplayNames[measure] = data.fields[measure]?.displayName || measure;
   });
 
-  spec.transform = [
+  const transforms: Transform[] = [
     {
       fold: measures,
       as: [measureField, valueField],
     },
   ];
+  spec.transform = transforms;
 
   spec.encoding = { x: createPositionEncoding(config.x, data) };
 
@@ -83,6 +86,18 @@ export function generateVLMultiMetricChartSpec(
     stack: "zero" as const,
   };
 
+  const normalizedYEncoding = {
+    ...baseYEncoding,
+    stack: "normalize" as const,
+    scale: {
+      zero: false,
+    },
+    axis: {
+      title: null,
+      format: ".0%",
+    },
+  };
+
   // Build multi-value tooltip for hover rule
   let multiValueTooltipChannel: TooltipValue[] | undefined;
   if (config.x && measures.length > 0) {
@@ -111,7 +126,9 @@ export function generateVLMultiMetricChartSpec(
 
   if (
     config.x?.type === "temporal" &&
-    (markType === "stacked_bar" || markType === "grouped_bar")
+    (markType === "stacked_bar" ||
+      markType === "stacked_bar_normalized" ||
+      markType === "grouped_bar")
   ) {
     xBand = 0.5;
   }
@@ -126,7 +143,10 @@ export function generateVLMultiMetricChartSpec(
       xField && measures.length && multiValueTooltipChannel?.length
         ? { field: measureField, value: valueField, groupby: [xField] }
         : undefined,
-    isBarMark: markType === "stacked_bar" || markType === "grouped_bar",
+    isBarMark:
+      markType === "stacked_bar" ||
+      markType === "stacked_bar_normalized" ||
+      markType === "grouped_bar",
   });
 
   const hoverPointLayer = buildHoverPointOverlay();
@@ -170,7 +190,20 @@ export function generateVLMultiMetricChartSpec(
         {
           mark: { type: "bar", clip: true, width: { band: 0.9 } },
           encoding: {
-            y: sumYEncoding,
+            y: stackedYEncoding,
+            color: baseColorEncoding,
+          },
+        },
+      ];
+      break;
+    }
+    case "stacked_bar_normalized": {
+      spec.layer = [
+        hoverRuleLayer,
+        {
+          mark: { type: "bar", clip: true, width: { band: 0.9 } },
+          encoding: {
+            y: normalizedYEncoding,
             color: baseColorEncoding,
           },
         },

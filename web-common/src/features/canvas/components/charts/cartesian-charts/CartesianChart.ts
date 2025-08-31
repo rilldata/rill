@@ -21,7 +21,11 @@ import type {
 } from "../../../stores/canvas-entity";
 import { BaseChart, type BaseChartConfig } from "../BaseChart";
 import type { ChartDataQuery, ChartFieldsMap, FieldConfig } from "../types";
-import { isFieldConfig, vegaSortToAggregationSort } from "../util";
+import {
+  isFieldConfig,
+  isMultiFieldConfig,
+  vegaSortToAggregationSort,
+} from "../util";
 
 export type CartesianChartSpec = BaseChartConfig & {
   x?: FieldConfig;
@@ -93,7 +97,7 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
 
   getChartSpecificOptions(): Record<string, ComponentInputParam> {
     const config = get(this.specStore);
-    const isMultiMeasure = config.y?.fields && config.y.fields.length > 1;
+    const isMultiMeasure = isMultiFieldConfig(config.y);
 
     const inputParams = { ...CartesianChartComponent.chartInputParams };
 
@@ -118,13 +122,13 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
   ): ChartDataQuery {
     const config = get(this.specStore);
 
-    const isMultiMeasure = config.y?.fields && config.y.fields.length > 1;
+    const isMultiMeasure = isMultiFieldConfig(config.y);
 
     let measures: V1MetricsViewAggregationMeasure[] = [];
     let dimensions: V1MetricsViewAggregationDimension[] = [];
 
     if (isMultiMeasure) {
-      const measuresSet = new Set(config.y?.fields || []);
+      const measuresSet = new Set(config.y?.fields);
       if (config.y?.type === "quantitative" && config.y?.field) {
         measuresSet.add(config.y.field);
       }
@@ -387,7 +391,7 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
 
   chartTitle(fields: ChartFieldsMap) {
     const config = get(this.specStore);
-    const isMultiMeasure = config.y?.fields && config.y.fields.length > 1;
+    const isMultiMeasure = isMultiFieldConfig(config.y);
 
     if (isMultiMeasure) {
       const xLabel = config.x?.field

@@ -28,6 +28,11 @@ export function isFieldConfig(field: unknown): field is FieldConfig {
     "field" in field
   );
 }
+
+export function isMultiFieldConfig(field: unknown): field is FieldConfig {
+  return isFieldConfig(field) && !!field.fields && field.fields.length > 0;
+}
+
 export function generateSpec(
   chartType: ChartType,
   rillChartSpec: ChartSpec,

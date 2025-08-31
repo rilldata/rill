@@ -6,6 +6,7 @@ import LineChart from "@rilldata/web-common/components/icons/LineChart.svelte";
 import StackedArea from "@rilldata/web-common/components/icons/StackedArea.svelte";
 import StackedBar from "@rilldata/web-common/components/icons/StackedBar.svelte";
 import StackedBarFull from "@rilldata/web-common/components/icons/StackedBarFull.svelte";
+import { isMultiFieldConfig } from "@rilldata/web-common/features/canvas/components/charts/util.ts";
 import type { BaseCanvasComponentConstructor } from "@rilldata/web-common/features/canvas/components/util";
 import type { ComponentType, SvelteComponent } from "svelte";
 import type { VisualizationSpec } from "svelte-vega";
@@ -85,8 +86,7 @@ export const CHART_CONFIG: Record<ChartType, ChartMetadataConfig> = {
     component: CartesianChartComponent,
     generateSpec: (config: ChartSpec, data: ChartDataResult) => {
       const cartesianConfig = config as CartesianChartSpec;
-      const isMultiMeasure =
-        cartesianConfig.measures && cartesianConfig.measures.length > 1;
+      const isMultiMeasure = isMultiFieldConfig(cartesianConfig.y);
       return isMultiMeasure
         ? generateVLMultiMetricChartSpec(cartesianConfig, data, "grouped_bar")
         : generateVLBarChartSpec(cartesianConfig, data);
@@ -98,8 +98,7 @@ export const CHART_CONFIG: Record<ChartType, ChartMetadataConfig> = {
     component: CartesianChartComponent,
     generateSpec: (config: ChartSpec, data: ChartDataResult) => {
       const cartesianConfig = config as CartesianChartSpec;
-      const isMultiMeasure =
-        cartesianConfig.measures && cartesianConfig.measures.length > 1;
+      const isMultiMeasure = isMultiFieldConfig(cartesianConfig.y);
       return isMultiMeasure
         ? generateVLMultiMetricChartSpec(cartesianConfig, data, "line")
         : generateVLLineChartSpec(cartesianConfig, data);
@@ -111,8 +110,7 @@ export const CHART_CONFIG: Record<ChartType, ChartMetadataConfig> = {
     component: CartesianChartComponent,
     generateSpec: (config: ChartSpec, data: ChartDataResult) => {
       const cartesianConfig = config as CartesianChartSpec;
-      const isMultiMeasure =
-        cartesianConfig.measures && cartesianConfig.measures.length > 1;
+      const isMultiMeasure = isMultiFieldConfig(cartesianConfig.y);
       return isMultiMeasure
         ? generateVLMultiMetricChartSpec(cartesianConfig, data, "stacked_area")
         : generateVLAreaChartSpec(cartesianConfig, data);
@@ -124,8 +122,7 @@ export const CHART_CONFIG: Record<ChartType, ChartMetadataConfig> = {
     component: CartesianChartComponent,
     generateSpec: (config: ChartSpec, data: ChartDataResult) => {
       const cartesianConfig = config as CartesianChartSpec;
-      const isMultiMeasure =
-        cartesianConfig.measures && cartesianConfig.measures.length > 1;
+      const isMultiMeasure = isMultiFieldConfig(cartesianConfig.y);
       return isMultiMeasure
         ? generateVLMultiMetricChartSpec(cartesianConfig, data, "stacked_bar")
         : generateVLStackedBarChartSpec(cartesianConfig, data);
@@ -137,11 +134,13 @@ export const CHART_CONFIG: Record<ChartType, ChartMetadataConfig> = {
     component: CartesianChartComponent,
     generateSpec: (config: ChartSpec, data: ChartDataResult) => {
       const cartesianConfig = config as CartesianChartSpec;
-      const isMultiMeasure =
-        cartesianConfig.measures && cartesianConfig.measures.length > 1;
-      // Normalized stacked doesn't have a multi-metric equivalent, use regular stacked
+      const isMultiMeasure = isMultiFieldConfig(cartesianConfig.y);
       return isMultiMeasure
-        ? generateVLMultiMetricChartSpec(cartesianConfig, data, "stacked_bar")
+        ? generateVLMultiMetricChartSpec(
+            cartesianConfig,
+            data,
+            "stacked_bar_normalized",
+          )
         : generateVLStackedBarNormalizedSpec(cartesianConfig, data);
     },
   },
