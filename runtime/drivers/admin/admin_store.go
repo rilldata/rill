@@ -12,22 +12,20 @@ import (
 )
 
 func (h *Handle) GetReportMetadata(ctx context.Context, reportName, ownerID, webOpenMode string, emailRecipients []string, anonRecipients bool, executionTime time.Time) (*drivers.ReportMetadata, error) {
-	var resources []*adminv1.ResourceName
-	resources = append(resources, &adminv1.ResourceName{
-		Type: runtime.ResourceKindReport,
-		Name: reportName,
-	})
 	res, err := h.admin.GetReportMeta(ctx, &adminv1.GetReportMetaRequest{
-		ProjectId:        h.config.ProjectID,
-		Report:           reportName,
-		OwnerId:          ownerID,
-		EmailRecipients:  emailRecipients,
-		AnonRecipients:   anonRecipients,
-		ExecutionTime:    timestamppb.New(executionTime),
-		Resources:        resources,
-		WebOpenMode:      webOpenMode,
-		WhereFilterJson:  "",
-		AccessibleFields: nil,
+		ProjectId:       h.config.ProjectID,
+		Report:          reportName,
+		OwnerId:         ownerID,
+		EmailRecipients: emailRecipients,
+		AnonRecipients:  anonRecipients,
+		ExecutionTime:   timestamppb.New(executionTime),
+		Resources: []*adminv1.ResourceName{
+			{
+				Type: runtime.ResourceKindReport,
+				Name: reportName,
+			},
+		},
+		WebOpenMode: webOpenMode,
 	})
 	if err != nil {
 		return nil, err

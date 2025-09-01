@@ -11645,12 +11645,14 @@ export class GetReportMetaRequest extends Message<GetReportMetaRequest> {
   webOpenMode = "";
 
   /**
-   * @generated from field: string where_filter_json = 11;
+   * @generated from field: string where_filter_json = 11 [deprecated = true];
+   * @deprecated
    */
   whereFilterJson = "";
 
   /**
-   * @generated from field: repeated string accessible_fields = 12;
+   * @generated from field: repeated string accessible_fields = 12 [deprecated = true];
+   * @deprecated
    */
   accessibleFields: string[] = [];
 

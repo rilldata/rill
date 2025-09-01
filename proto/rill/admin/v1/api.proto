@@ -2397,8 +2397,8 @@ message GetReportMetaRequest {
   bool anon_recipients = 8;
   repeated ResourceName resources = 9;
   string web_open_mode = 10;
-  string where_filter_json = 11;
-  repeated string accessible_fields = 12;
+  string where_filter_json = 11 [deprecated = true];
+  repeated string accessible_fields = 12 [deprecated = true];
   reserved 2, 4;
 }
 
