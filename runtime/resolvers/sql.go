@@ -185,7 +185,8 @@ func (r *sqlResolver) InferRequiredSecurityRules() []*runtimev1.SecurityRule {
 			},
 		})
 	}
-	// TODO: parse SQL to extract fields and row filters to infer more rules, for now we just allow everything
+	// NOTE - not adding field level or row security rules since it requires full sql parsing logic
+	// and also direct columns in the underlying table can be referenced in the sql which may not be defined in the metrics view to which secruity applies
 	return rules
 }
 
