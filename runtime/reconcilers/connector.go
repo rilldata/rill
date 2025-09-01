@@ -83,7 +83,9 @@ func (r *ConnectorReconciler) Reconcile(ctx context.Context, n *runtimev1.Resour
 	}
 
 	if specHash == t.State.SpecHash {
-		return runtime.ReconcileResult{}
+		// The connector configuration should be tested even when spec has not changed since connector errors can be transient (e.g. cluster temporarily down)
+		err := r.testConnector(ctx, self.Meta.Name.Name)
+		return runtime.ReconcileResult{Err: err}
 	}
 
 	// Update instance connectors
