@@ -19,8 +19,8 @@ export function createHomeBookmarkModifier(exploreName: string) {
       return get(bookmarkUpdater).mutateAsync({
         data: {
           bookmarkId: homeBookmark.id,
-          displayName: "Home",
-          description: "Main view for this dashboard",
+          displayName: "Go to Home",
+          description: "",
           shared: true,
           default: true,
           data,
@@ -29,8 +29,8 @@ export function createHomeBookmarkModifier(exploreName: string) {
     } else {
       return get(bookmarkCreator).mutateAsync({
         data: {
-          displayName: "Home",
-          description: "Main view for this dashboard",
+          displayName: "Go to Home",
+          description: "",
           projectId,
           resourceKind: ResourceKind.Explore,
           resourceName: exploreName,

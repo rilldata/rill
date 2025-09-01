@@ -58,6 +58,7 @@
       {#if !hidePivot || tab === MetricsEventScreenName.Explore}
         {@const selected = tab === currentTab}
         <Tab
+          theme
           {selected}
           href="?{ExploreStateURLParams.WebView}={tab}"
           on:click={() => handleTabChange(tab)}

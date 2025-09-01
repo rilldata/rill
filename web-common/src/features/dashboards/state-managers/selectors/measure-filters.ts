@@ -2,7 +2,7 @@ import { getMeasureDisplayName } from "@rilldata/web-common/features/dashboards/
 import type { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import type { DashboardDataSources } from "@rilldata/web-common/features/dashboards/state-managers/selectors/types";
 import type { AtLeast } from "@rilldata/web-common/features/dashboards/state-managers/types";
-import type { DimensionThresholdFilter } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import type { DimensionThresholdFilter } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import {
   type MetricsViewSpecDimension,
   type MetricsViewSpecMeasure,

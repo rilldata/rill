@@ -1,8 +1,6 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import {
-    createAdminServiceGetCurrentUser,
-    createAdminServiceListBookmarks,
     createAdminServiceRemoveBookmark,
     getAdminServiceListBookmarksQueryKey,
   } from "@rilldata/web-admin/client";
@@ -10,17 +8,30 @@
   import BookmarksContent from "@rilldata/web-admin/features/bookmarks/BookmarksDropdownMenuContent.svelte";
   import { createHomeBookmarkModifier } from "@rilldata/web-admin/features/bookmarks/createOrUpdateHomeBookmark";
   import { getBookmarkDataForDashboard } from "@rilldata/web-admin/features/bookmarks/getBookmarkDataForDashboard";
-  import type { BookmarkEntry } from "@rilldata/web-admin/features/bookmarks/selectors";
-  import { useProjectId } from "@rilldata/web-admin/features/projects/selectors";
+  import HomeBookmarkButton from "@rilldata/web-admin/features/bookmarks/HomeBookmarkButton.svelte";
+  import {
+    type BookmarkEntry,
+    categorizeBookmarks,
+    getBookmarks,
+  } from "@rilldata/web-admin/features/bookmarks/selectors";
+  import {
+    getProjectPermissions,
+    useProjectId,
+  } from "@rilldata/web-admin/features/projects/selectors";
   import { Button } from "@rilldata/web-common/components/button";
   import {
     DropdownMenu,
     DropdownMenuTrigger,
   } from "@rilldata/web-common/components/dropdown-menu";
+  import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { useExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+  import { createUrlForExploreYAMLDefaultState } from "@rilldata/web-common/features/dashboards/stores/get-explore-state-from-yaml-config";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import { createQueryServiceMetricsViewSchema } from "@rilldata/web-common/runtime-client";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { BookmarkIcon } from "lucide-svelte";
 
@@ -32,21 +43,44 @@
 
   const { validSpecStore } = getStateManagers();
 
+  $: organization = $page.params.organization;
+  $: project = $page.params.project;
+  $: ({ instanceId } = $runtime);
+
   $: exploreState = useExploreState(exploreName);
-  $: projectId = useProjectId($page.params.organization, $page.params.project);
-  const userResp = createAdminServiceGetCurrentUser();
-  $: bookamrksResp = createAdminServiceListBookmarks(
-    {
-      projectId: $projectId.data,
-      resourceKind: ResourceKind.Explore,
-      resourceName: exploreName,
-    },
-    {
-      query: {
-        enabled: !!$projectId.data && !!$userResp.data.user,
-      },
-    },
+  $: projectId = useProjectId(organization, project);
+  $: bookamrksResp = getBookmarks($projectId.data, exploreName);
+
+  $: validExploreSpec = useExploreValidSpec(instanceId, exploreName);
+  $: metricsViewSpec = $validExploreSpec.data?.metricsView ?? {};
+  $: exploreSpec = $validExploreSpec.data?.explore ?? {};
+  $: metricsViewTimeRange = useMetricsViewTimeRange(
+    instanceId,
+    metricsViewName,
+    {},
+    queryClient,
   );
+  $: schemaResp = createQueryServiceMetricsViewSchema(
+    instanceId,
+    metricsViewName,
+  );
+
+  $: urlForExploreYAMLDefaultState = createUrlForExploreYAMLDefaultState(
+    validExploreSpec,
+    metricsViewTimeRange,
+  );
+
+  $: categorizedBookmarks = categorizeBookmarks(
+    $bookamrksResp.data?.bookmarks ?? [],
+    metricsViewSpec,
+    exploreSpec,
+    $schemaResp.data?.schema ?? {},
+    $exploreState,
+    $metricsViewTimeRange.data?.timeRangeSummary,
+  );
+
+  $: projectPermissions = getProjectPermissions(organization, project);
+  $: manageProject = $projectPermissions.data?.manageProject;
 
   const queryClient = useQueryClient();
   $: homeBookmarkModifier = createHomeBookmarkModifier(exploreName);
@@ -93,32 +127,38 @@
   let open = false;
 </script>
 
+<HomeBookmarkButton
+  {organization}
+  {project}
+  {exploreName}
+  homeBookmark={categorizedBookmarks.home}
+  urlForExploreYAMLDefaultState={$urlForExploreYAMLDefaultState ?? ""}
+  onCreate={createHomeBookmark}
+  onDelete={deleteBookmark}
+  {manageProject}
+/>
+
 <DropdownMenu bind:open typeahead={false}>
   <DropdownMenuTrigger asChild let:builder>
     <Button
       builders={[builder]}
       compact
       type="secondary"
-      label="Bookmark dropdown"
+      label="Other bookmark dropdown"
+      active={open}
     >
-      <BookmarkIcon
-        class="inline-flex"
-        fill={open ? "black" : "none"}
-        size="16px"
-      />
+      <BookmarkIcon class="inline-flex" size="16px" />
     </Button>
   </DropdownMenuTrigger>
   <BookmarksContent
-    onCreate={(isHome) => {
-      isHome ? createHomeBookmark() : (showDialog = true);
-    }}
+    onCreate={() => (showDialog = true)}
     onEdit={(editingBookmark) => {
       showDialog = true;
       bookmark = editingBookmark;
     }}
     onDelete={deleteBookmark}
-    {metricsViewName}
-    {exploreName}
+    {categorizedBookmarks}
+    {manageProject}
   />
 </DropdownMenu>
 

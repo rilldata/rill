@@ -6,12 +6,12 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sync"
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
+	"github.com/rilldata/rill/runtime/pkg/filewatcher"
 	"github.com/rilldata/rill/runtime/storage"
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v3"
@@ -102,6 +102,9 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		}
 	}
 
+	// Setup the file watcher
+	c.watcher = filewatcher.NewLazyWatcher(c.root, c.ignorePaths, c.logger)
+
 	return c, nil
 }
 
@@ -133,47 +136,53 @@ func parseSourceProperties(props map[string]any) (*sourceProperties, error) {
 }
 
 type connection struct {
-	logger *zap.Logger
-	// root should be absolute path
-	root         string
+	logger       *zap.Logger
+	root         string // root should be absolute path
 	driverConfig *configProperties
 	driverName   string
 
-	watcherMu    sync.Mutex
-	watcherCount int
-	watcher      *watcher
-
+	watcher     *filewatcher.LazyWatcher
 	ignorePaths []string
 }
 
 // Ping implements drivers.Handle.
 func (c *connection) Ping(ctx context.Context) error {
-	return drivers.ErrNotImplemented
+	return c.checkRoot()
 }
 
-// Config implements drivers.Connection.
+// Driver implements drivers.Handle.
+func (c *connection) Driver() string {
+	return c.driverName
+}
+
+// Config implements drivers.Handle.
 func (c *connection) Config() map[string]any {
 	m := make(map[string]any, 0)
 	_ = mapstructure.Decode(c.driverConfig, &m)
 	return m
 }
 
-// Close implements drivers.Connection.
+// InformationSchema implements drivers.Handle.
+func (c *connection) AsInformationSchema() (drivers.InformationSchema, bool) {
+	return nil, false
+}
+
+// Close implements drivers.Handle.
 func (c *connection) Close() error {
 	return nil
 }
 
-// AsRegistry implements drivers.Connection.
+// AsRegistry implements drivers.Handle.
 func (c *connection) AsRegistry() (drivers.RegistryStore, bool) {
 	return nil, false
 }
 
-// AsCatalogStore implements drivers.Connection.
+// AsCatalogStore implements drivers.Handle.
 func (c *connection) AsCatalogStore(instanceID string) (drivers.CatalogStore, bool) {
 	return nil, false
 }
 
-// AsRepoStore implements drivers.Connection.
+// AsRepoStore implements drivers.Handle.
 func (c *connection) AsRepoStore(instanceID string) (drivers.RepoStore, bool) {
 	return c, true
 }
@@ -188,22 +197,22 @@ func (c *connection) AsAI(instanceID string) (drivers.AIService, bool) {
 	return nil, false
 }
 
-// AsOLAP implements drivers.Connection.
+// AsOLAP implements drivers.Handle.
 func (c *connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
 	return nil, false
 }
 
-// Migrate implements drivers.Connection.
+// Migrate implements drivers.Handle.
 func (c *connection) Migrate(ctx context.Context) (err error) {
 	return nil
 }
 
-// MigrationStatus implements drivers.Connection.
+// MigrationStatus implements drivers.Handle.
 func (c *connection) MigrationStatus(ctx context.Context) (current, desired int, err error) {
 	return 0, 0, nil
 }
 
-// AsObjectStore implements drivers.Connection.
+// AsObjectStore implements drivers.Handle.
 func (c *connection) AsObjectStore() (drivers.ObjectStore, bool) {
 	return nil, false
 }
@@ -223,7 +232,7 @@ func (c *connection) AsModelManager(instanceID string) (drivers.ModelManager, bo
 	return nil, false
 }
 
-// AsFileStore implements drivers.Connection.
+// AsFileStore implements drivers.Handle.
 func (c *connection) AsFileStore() (drivers.FileStore, bool) {
 	return c, true
 }
@@ -233,7 +242,7 @@ func (c *connection) AsWarehouse() (drivers.Warehouse, bool) {
 	return nil, false
 }
 
-// AsNotifier implements drivers.Connection.
+// AsNotifier implements drivers.Handle.
 func (c *connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
 	return nil, drivers.ErrNotNotifier
 }

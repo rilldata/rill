@@ -31,13 +31,14 @@ import (
 func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRequest) (*adminv1.GetReportMetaResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.project_id", req.ProjectId),
-		attribute.String("args.branch", req.Branch),
 		attribute.String("args.report", req.Report),
 		attribute.StringSlice("args.email_recipients", req.EmailRecipients),
 		attribute.String("args.execution_time", req.ExecutionTime.String()),
 		attribute.Bool("args.anon_recipients", req.AnonRecipients),
 		attribute.String("args.owner_id", req.OwnerId),
 		attribute.String("args.web_open_mode", req.WebOpenMode),
+		attribute.String("args.where_filter_json", req.WhereFilterJson),
+		attribute.StringSlice("args.accessible_fields", req.AccessibleFields),
 	)
 
 	proj, err := s.admin.DB.FindProject(ctx, req.ProjectId)
@@ -48,10 +49,6 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 	permissions := auth.GetClaims(ctx).ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
 	if !permissions.ReadProdStatus {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read report meta")
-	}
-
-	if proj.ProdBranch != req.Branch {
-		return nil, status.Error(codes.InvalidArgument, "branch not found")
 	}
 
 	webOpenMode := WebOpenMode(req.WebOpenMode)
@@ -76,7 +73,14 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 		recipients = append(recipients, "")
 	}
 
-	tokens, ownerEmail, err := s.createMagicTokens(ctx, proj.OrganizationID, proj.ID, req.Report, req.OwnerId, recipients, req.Resources)
+	filterJSON := req.WhereFilterJson
+	accessibleFields := req.AccessibleFields
+	if webOpenMode != WebOpenModeFiltered {
+		// If web open mode is not filtered, we don't need to apply where filter or accessible fields
+		filterJSON = ""
+		accessibleFields = nil
+	}
+	tokens, ownerEmail, err := s.createMagicTokens(ctx, proj.OrganizationID, proj.ID, req.Report, req.OwnerId, filterJSON, accessibleFields, recipients, req.Resources)
 	if err != nil {
 		return nil, fmt.Errorf("failed to issue magic auth tokens: %w", err)
 	}
@@ -120,7 +124,7 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 			ExportUrl:      s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportExport(org.Name, proj.Name, req.Report, tokens[recipient]),
 			UnsubscribeUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportUnsubscribe(org.Name, proj.Name, req.Report, tokens[recipient], recipient),
 		}
-		if webOpenMode == WebOpenModeCreator {
+		if webOpenMode == WebOpenModeCreator || webOpenMode == WebOpenModeFiltered {
 			urls[recipient].OpenUrl = s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, tokens[recipient], req.ExecutionTime.AsTime())
 		} else if webOpenMode == WebOpenModeRecipient && canOpenReport[recipient] {
 			urls[recipient].OpenUrl = s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, "", req.ExecutionTime.AsTime())
@@ -173,10 +177,10 @@ func (s *Server) CreateReport(ctx context.Context, req *adminv1.CreateReportRequ
 	}
 
 	err = s.admin.DB.UpsertVirtualFile(ctx, &database.InsertVirtualFileOptions{
-		ProjectID: proj.ID,
-		Branch:    proj.ProdBranch,
-		Path:      virtualFilePathForManagedReport(name),
-		Data:      data,
+		ProjectID:   proj.ID,
+		Environment: "prod",
+		Path:        virtualFilePathForManagedReport(name),
+		Data:        data,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to insert virtual file: %w", err)
@@ -240,10 +244,10 @@ func (s *Server) EditReport(ctx context.Context, req *adminv1.EditReportRequest)
 	}
 
 	err = s.admin.DB.UpsertVirtualFile(ctx, &database.InsertVirtualFileOptions{
-		ProjectID: proj.ID,
-		Branch:    proj.ProdBranch,
-		Path:      virtualFilePathForManagedReport(req.Name),
-		Data:      data,
+		ProjectID:   proj.ID,
+		Environment: "prod",
+		Path:        virtualFilePathForManagedReport(req.Name),
+		Data:        data,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to update virtual file: %w", err)
@@ -356,7 +360,7 @@ func (s *Server) UnsubscribeReport(ctx context.Context, req *adminv1.Unsubscribe
 	}
 
 	if len(opts.EmailRecipients) == 0 && len(opts.SlackUsers) == 0 && len(opts.SlackChannels) == 0 && len(opts.SlackWebhooks) == 0 {
-		err = s.admin.DB.UpdateVirtualFileDeleted(ctx, proj.ID, proj.ProdBranch, virtualFilePathForManagedReport(req.Name))
+		err = s.admin.DB.UpdateVirtualFileDeleted(ctx, proj.ID, "prod", virtualFilePathForManagedReport(req.Name))
 		if err != nil {
 			return nil, fmt.Errorf("failed to update virtual file: %w", err)
 		}
@@ -367,10 +371,10 @@ func (s *Server) UnsubscribeReport(ctx context.Context, req *adminv1.Unsubscribe
 		}
 
 		err = s.admin.DB.UpsertVirtualFile(ctx, &database.InsertVirtualFileOptions{
-			ProjectID: proj.ID,
-			Branch:    proj.ProdBranch,
-			Path:      virtualFilePathForManagedReport(req.Name),
-			Data:      data,
+			ProjectID:   proj.ID,
+			Environment: "prod",
+			Path:        virtualFilePathForManagedReport(req.Name),
+			Data:        data,
 		})
 		if err != nil {
 			return nil, fmt.Errorf("failed to update virtual file: %w", err)
@@ -427,7 +431,7 @@ func (s *Server) DeleteReport(ctx context.Context, req *adminv1.DeleteReportRequ
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to edit report")
 	}
 
-	err = s.admin.DB.UpdateVirtualFileDeleted(ctx, proj.ID, proj.ProdBranch, virtualFilePathForManagedReport(req.Name))
+	err = s.admin.DB.UpdateVirtualFileDeleted(ctx, proj.ID, "prod", virtualFilePathForManagedReport(req.Name))
 	if err != nil {
 		return nil, fmt.Errorf("failed to delete virtual file: %w", err)
 	}
@@ -513,6 +517,7 @@ func (s *Server) yamlForManagedReport(opts *adminv1.ReportOptions, ownerUserID s
 	res.Query.Name = opts.QueryName
 	res.Query.ArgsJSON = opts.QueryArgsJson
 	res.Export.Format = opts.ExportFormat.String()
+	res.Export.IncludeHeader = opts.ExportIncludeHeader
 	res.Export.Limit = uint(opts.ExportLimit)
 	res.Notify.Email.Recipients = opts.EmailRecipients
 	res.Notify.Slack.Channels = opts.SlackChannels
@@ -571,6 +576,7 @@ func (s *Server) yamlForCommittedReport(opts *adminv1.ReportOptions) ([]byte, er
 	res.Query.Name = opts.QueryName
 	res.Query.Args = args
 	res.Export.Format = exportFormat
+	res.Export.IncludeHeader = opts.ExportIncludeHeader
 	res.Export.Limit = uint(opts.ExportLimit)
 	res.Notify.Email.Recipients = opts.EmailRecipients
 	res.Notify.Slack.Channels = opts.SlackChannels
@@ -608,7 +614,7 @@ func (s *Server) generateReportName(ctx context.Context, depl *database.Deployme
 	return uuid.New().String(), nil
 }
 
-func (s *Server) createMagicTokens(ctx context.Context, orgID, projectID, reportName, ownerID string, emails []string, resources []*adminv1.ResourceName) (map[string]string, string, error) {
+func (s *Server) createMagicTokens(ctx context.Context, orgID, projectID, reportName, ownerID, whereFilterJSON string, accessibleFields, emails []string, resources []*adminv1.ResourceName) (map[string]string, string, error) {
 	var createdByUserID *string
 	if ownerID != "" {
 		createdByUserID = &ownerID
@@ -617,6 +623,8 @@ func (s *Server) createMagicTokens(ctx context.Context, orgID, projectID, report
 	mgcOpts := &admin.IssueMagicAuthTokenOptions{
 		ProjectID:       projectID,
 		CreatedByUserID: createdByUserID,
+		FilterJSON:      whereFilterJSON,
+		Fields:          accessibleFields,
 		Internal:        true,
 		TTL:             &ttl,
 	}
@@ -732,6 +740,7 @@ func recreateReportOptionsFromSpec(spec *runtimev1.ReportSpec) (*adminv1.ReportO
 	opts.QueryArgsJson = spec.QueryArgsJson
 	opts.ExportLimit = spec.ExportLimit
 	opts.ExportFormat = spec.ExportFormat
+	opts.ExportIncludeHeader = spec.ExportIncludeHeader
 	for _, notifier := range spec.Notifiers {
 		switch notifier.Connector {
 		case "email":
@@ -784,8 +793,9 @@ type reportYAML struct {
 		ArgsJSON string         `yaml:"args_json,omitempty"`
 	} `yaml:"query"`
 	Export struct {
-		Format string `yaml:"format"`
-		Limit  uint   `yaml:"limit"`
+		Format        string `yaml:"format"`
+		IncludeHeader bool   `yaml:"include_header"`
+		Limit         uint   `yaml:"limit"`
 	} `yaml:"export"`
 	Notify struct {
 		Email struct {

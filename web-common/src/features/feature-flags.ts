@@ -8,49 +8,78 @@ import { runtime } from "../runtime-client/runtime-store";
 
 class FeatureFlag {
   private _internal = false;
+  private _default: boolean;
   private state = writable(false);
   subscribe = this.state.subscribe;
 
-  constructor(scope: "user" | "rill", initial: boolean) {
+  constructor(scope: "user" | "rill", defaultValue: boolean) {
     this._internal = scope === "rill";
-    this.set(initial);
+    this._default = defaultValue;
+    this.set(defaultValue);
   }
 
   get internalOnly() {
     return this._internal;
   }
 
+  get defaultValue() {
+    return this._default;
+  }
+
   toggle = () => this.state.update((n) => !n);
   set = (n: boolean) => this.state.set(n);
+  resetToDefault = () => this.set(this._default);
 }
 
 type FeatureFlagKey = keyof Omit<FeatureFlags, "set">;
 
 class FeatureFlags {
+  ready: Promise<void>;
+  private _resolveReady!: () => void;
+
   adminServer = new FeatureFlag("rill", false);
   readOnly = new FeatureFlag("rill", false);
-  /**
-   * We make some calls to cloud for fetching user related stats. But this is not needed in playwring tests.
-   * While there wont be token in CI there could be one when running on a dev's laptop.
-   */
-  rillDevCloudFeatures = new FeatureFlag(
+  // Until we figure out a good way to test managed github we need to use the legacy archive method.
+  // Right now this is true only in an E2E environment.
+  legacyArchiveDeploy = new FeatureFlag(
     "rill",
-    !import.meta.env.VITE_PLAYWRIGHT_TEST,
+    !!import.meta.env.VITE_PLAYWRIGHT_TEST,
   );
 
   ai = new FeatureFlag("user", !import.meta.env.VITE_PLAYWRIGHT_TEST);
   exports = new FeatureFlag("user", true);
   cloudDataViewer = new FeatureFlag("user", false);
   dimensionSearch = new FeatureFlag("user", false);
-  clickhouseModeling = new FeatureFlag("user", false);
   twoTieredNavigation = new FeatureFlag("user", false);
+  rillTime = new FeatureFlag("user", false);
   hidePublicUrl = new FeatureFlag("user", false);
+  exportHeader = new FeatureFlag("user", false);
   alerts = new FeatureFlag("user", true);
   reports = new FeatureFlag("user", true);
-  leaderboardMeasureCount = new FeatureFlag("user", false);
+  darkMode = new FeatureFlag("user", false);
+  chat = new FeatureFlag("user", false);
+  dashboardChat = new FeatureFlag("user", false);
 
   constructor() {
+    this.ready = new Promise<void>((resolve) => {
+      this._resolveReady = resolve;
+    });
+
     const updateFlags = (userFlags: V1InstanceFeatureFlags) => {
+      this._resolveReady();
+
+      // First, reset all user flags to their defaults
+      const userFlagKeys = Object.keys(this).filter((key) => {
+        const flag = this[key];
+        return flag instanceof FeatureFlag && !flag.internalOnly;
+      });
+
+      for (const key of userFlagKeys) {
+        const flag = this[key] as FeatureFlag;
+        flag.resetToDefault();
+      }
+
+      // Then apply project-specific overrides
       for (const key in userFlags) {
         const flag = this[key] as FeatureFlag | undefined;
         if (!flag || flag.internalOnly) continue;

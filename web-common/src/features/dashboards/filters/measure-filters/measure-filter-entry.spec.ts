@@ -20,7 +20,7 @@ import { describe, expect, it } from "vitest";
 
 const TestCases: [
   title: string,
-  measureFilter: MeasureFilterEntry,
+  measureFilter: MeasureFilterEntry | undefined,
   expr: V1Expression | undefined,
 ][] = [
   [
@@ -115,6 +115,14 @@ const TestCases: [
     ]),
   ],
   [
+    "invalid between",
+    undefined,
+    createAndExpression([
+      createBinaryExpression("imp", V1Operation.OPERATION_GTE, 10),
+      createBinaryExpression("imp", V1Operation.OPERATION_LTE, 20),
+    ]),
+  ],
+  [
     "not between",
     {
       measure: "imp",
@@ -126,6 +134,14 @@ const TestCases: [
     createOrExpression([
       createBinaryExpression("imp", V1Operation.OPERATION_LTE, 10),
       createBinaryExpression("imp", V1Operation.OPERATION_GTE, 20),
+    ]),
+  ],
+  [
+    "invalid not between",
+    undefined,
+    createOrExpression([
+      createBinaryExpression("imp", V1Operation.OPERATION_LT, 10),
+      createBinaryExpression("imp", V1Operation.OPERATION_GT, 20),
     ]),
   ],
   [
@@ -191,6 +207,7 @@ const TestCases: [
 
 describe("mapMeasureFilterToExpr", () => {
   TestCases.forEach(([title, criteria, expr]) => {
+    if (!criteria) return;
     it(title, () => {
       expect(mapMeasureFilterToExpr(criteria)).toEqual(expr);
     });

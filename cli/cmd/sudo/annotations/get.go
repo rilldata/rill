@@ -21,8 +21,9 @@ func GetCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 			res, err := client.GetProject(ctx, &adminv1.GetProjectRequest{
-				OrganizationName: args[0],
-				Name:             args[1],
+				OrganizationName:     args[0],
+				Name:                 args[1],
+				SuperuserForceAccess: true,
 			})
 			if err != nil {
 				return err

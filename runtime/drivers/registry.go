@@ -38,6 +38,8 @@ type Instance struct {
 	AdminConnector string
 	// Driver name for the AI service (optional)
 	AIConnector string
+	// ProjectAIConnector is an override of AIConnector that may be set in rill.yaml.
+	ProjectAIConnector string
 	// Driver name for catalog
 	CatalogConnector string
 	// CreatedOn is when the instance was created
@@ -57,15 +59,12 @@ type Instance struct {
 	FeatureFlags map[string]bool `db:"feature_flags"`
 	// Annotations to enrich activity events (like usage tracking)
 	Annotations map[string]string
-	// EmbedCatalog tells the runtime to store the instance's catalog in its OLAP store instead
-	// of in the runtime's metadata store. Currently only supported for the duckdb driver.
-	EmbedCatalog bool `db:"embed_catalog"`
-	// WatchRepo indicates whether to watch the repo for file changes and reconcile them automatically.
-	WatchRepo bool `db:"watch_repo"`
 	// Paths to expose over HTTP (defaults to ./public)
 	PublicPaths []string `db:"public_paths"`
 	// IgnoreInitialInvalidProjectError indicates whether to ignore an invalid project error when the instance is initially created.
 	IgnoreInitialInvalidProjectError bool `db:"-"`
+	// AIInstructions is extra context for LLM/AI features. Used to guide natural language question answering and routing.
+	AIInstructions string `db:"ai_instructions"`
 }
 
 // InstanceConfig contains dynamic configuration for an instance.
@@ -79,6 +78,8 @@ type InstanceConfig struct {
 	InteractiveSQLRowLimit int64 `mapstructure:"rill.interactive_sql_row_limit"`
 	// StageChanges indicates whether to keep previously ingested tables for sources/models, and only override them if ingestion of a new table is successful.
 	StageChanges bool `mapstructure:"rill.stage_changes"`
+	// WatchRepo configures the project parser to setup a file watcher to instantly detect and parse changes to the project files.
+	WatchRepo bool `mapstructure:"rill.watch_repo"`
 	// ModelDefaultMaterialize indicates whether to materialize models by default.
 	ModelDefaultMaterialize bool `mapstructure:"rill.models.default_materialize"`
 	// ModelMaterializeDelaySeconds adds a delay before materializing models.
@@ -106,7 +107,18 @@ func (i *Instance) ResolveOLAPConnector() string {
 	if i.ProjectOLAPConnector != "" {
 		return i.ProjectOLAPConnector
 	}
-	return i.OLAPConnector
+	if i.OLAPConnector != "" {
+		return i.OLAPConnector
+	}
+	// Fallback to duckdb for backwards compatibility with projects that don't specify an OLAP connector
+	return "duckdb"
+}
+
+func (i *Instance) ResolveAIConnector() string {
+	if i.ProjectAIConnector != "" {
+		return i.ProjectAIConnector
+	}
+	return i.AIConnector
 }
 
 // ResolveVariables returns the final resolved variables
@@ -139,6 +151,7 @@ func (i *Instance) Config() (InstanceConfig, error) {
 		DownloadLimitBytes:                   int64(datasize.MB * 128),
 		InteractiveSQLRowLimit:               10_000,
 		StageChanges:                         true,
+		WatchRepo:                            i.Environment == "dev",
 		ModelDefaultMaterialize:              false,
 		ModelMaterializeDelaySeconds:         0,
 		ModelConcurrentExecutionLimit:        5,

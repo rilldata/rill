@@ -42,7 +42,7 @@ service ConnectorService {
     option (google.api.http) = {get: "/v1/gcs/credentials_info"};
   }
 
-  // OLAPListTables list all tables across all databases on motherduck
+  // OLAPListTables list all tables across all databases in an OLAP
   rpc OLAPListTables(OLAPListTablesRequest) returns (OLAPListTablesResponse) {
     option (google.api.http) = {get: "/v1/olap/tables"};
   }
@@ -50,6 +50,21 @@ service ConnectorService {
   // OLAPGetTable returns metadata about a table or view in an OLAP
   rpc OLAPGetTable(OLAPGetTableRequest) returns (OLAPGetTableResponse) {
     option (google.api.http) = {get: "/v1/connectors/olap/table"};
+  }
+
+  // ListDatabaseSchemas list all schemas across databases 
+  rpc ListDatabaseSchemas(ListDatabaseSchemasRequest) returns (ListDatabaseSchemasResponse) {
+    option (google.api.http) = {get: "/v1/connectors/database_schemas"};
+  }
+
+  // ListTables list all tables for database and database_schema provided
+  rpc ListTables(ListTablesRequest) returns (ListTablesResponse) {
+    option (google.api.http) = {get: "/v1/connectors/tables"};
+  }
+
+  // GetTable returns metadata about a table or view
+  rpc GetTable(GetTableRequest) returns (GetTableResponse) {
+    option (google.api.http) = {get: "/v1/connectors/table_metadata"};
   }
 
   // BigQueryListDatasets list all datasets in a bigquery project
@@ -88,7 +103,6 @@ message S3ListObjectsRequest {
   uint32 page_size = 3 [(validate.rules).uint32 = {ignore_empty: true, lte: 100}];
   string page_token = 4;
   string bucket = 5 [(validate.rules).string.min_len = 1];
-  string region = 6;
   string prefix = 7;
   string start_after = 8;
   string delimiter = 9;
@@ -176,10 +190,10 @@ message OLAPListTablesRequest {
 }
 
 message OLAPListTablesResponse {
-  repeated TableInfo tables = 1;
+  repeated OlapTableInfo tables = 1;
 }
 
-message TableInfo {
+message OlapTableInfo { 
   string database = 1;
   string database_schema = 4;
   bool is_default_database = 5;
@@ -207,6 +221,49 @@ message OLAPGetTableResponse {
   // physical_size_bytes is the physical size of the table. Set to -1 if the size cannot be determined.
   int64 physical_size_bytes = 4;
 }
+
+message ListDatabaseSchemasRequest {
+  string instance_id = 1;
+  string connector = 2;
+}
+
+message ListDatabaseSchemasResponse {
+  repeated DatabaseSchemaInfo database_schemas = 1;
+}
+
+message DatabaseSchemaInfo {
+  string database = 1;
+  string database_schema = 2;
+}
+
+message ListTablesRequest {
+  string instance_id = 1;
+  string connector = 2;
+  string database = 3;
+  string database_schema = 4;
+}
+
+message ListTablesResponse {
+  repeated TableInfo tables = 1;
+}
+
+message TableInfo { 
+  string name = 1;
+  bool view = 2;
+}
+
+message GetTableRequest {
+  string instance_id = 1;
+  string connector = 2;
+  string database = 4;
+  string database_schema = 5;
+  string table = 3;
+}
+
+message GetTableResponse {
+  map<string, string> schema = 1;
+}
+
 
 message BigQueryListDatasetsRequest {
   string instance_id = 1;

@@ -162,6 +162,7 @@ func driverSpecToPB(name string, spec *drivers.Spec) *runtimev1.ConnectorDriver 
 		SourceProperties:      nil,
 		DisplayName:           spec.DisplayName,
 		Description:           spec.Description,
+		DocsUrl:               spec.DocsURL,
 		ImplementsRegistry:    spec.ImplementsRegistry,
 		ImplementsCatalog:     spec.ImplementsCatalog,
 		ImplementsRepo:        spec.ImplementsRepo,

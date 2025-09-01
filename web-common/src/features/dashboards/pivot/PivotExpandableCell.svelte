@@ -7,22 +7,24 @@
   export let row: Row<PivotDataRow>;
   export let value: string;
   export let assembled = true;
+
+  $: canExpand = row.getCanExpand();
+  $: expanded = row.getIsExpanded();
+  $: assembledAndCanExpand = assembled && canExpand;
 </script>
 
 <div
   role="presentation"
   class="dimension-cell pointer-events-none"
   style:padding-left="{row.depth * 14}px"
-  class:-ml-1={assembled && row.getCanExpand()}
-  class:cursor-pointer={assembled && row.getCanExpand()}
+  class:-ml-1={assembledAndCanExpand}
+  class:cursor-pointer={assembledAndCanExpand}
 >
   {#if value === "LOADING_CELL"}
     <span class="loading-cell" />
-  {:else if assembled && row.getCanExpand()}
-    <div class="caret" class:expanded={row.getIsExpanded()}>
-      <div class:rotate={row.getIsExpanded()}>
-        <ChevronRight size="16px" color="#9CA3AF" />
-      </div>
+  {:else if assembledAndCanExpand}
+    <div class="caret opacity-0 group-hover/cell:opacity-100" class:expanded>
+      <ChevronRight size="16px" color="#9CA3AF" />
     </div>
   {:else if row.depth >= 1}
     <Spacer size="16px" />
@@ -44,22 +46,11 @@
     @apply h-2 bg-gray-200 rounded w-full inline-block;
   }
 
-  .rotate {
-    @apply transform rotate-90;
-  }
-
   .dimension-cell {
     @apply flex gap-x-0.5;
   }
 
-  .caret {
-    @apply opacity-0;
-  }
-  .dimension-cell:hover .caret {
-    @apply opacity-100;
-  }
-
   .caret.expanded {
-    @apply opacity-100;
+    @apply opacity-100 transform rotate-90;
   }
 </style>

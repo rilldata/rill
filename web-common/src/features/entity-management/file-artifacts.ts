@@ -147,6 +147,26 @@ export class FileArtifacts {
       ),
     );
   }
+
+  /**
+   * Checks if a file has any errors and returns the first error message if any exist.
+   * Returns null if there are no errors.
+   */
+  async checkFileErrors(
+    queryClient: QueryClient,
+    instanceId: string,
+    filePath: string,
+  ): Promise<string | null> {
+    const fileArtifact = this.getFileArtifact(filePath);
+    const hasErrorsStore = fileArtifact.getHasErrors(queryClient, instanceId);
+    const hasErrors = get(hasErrorsStore);
+
+    if (hasErrors) {
+      const errors = get(fileArtifact.getAllErrors(queryClient, instanceId));
+      return errors[0]?.message ?? null;
+    }
+    return null;
+  }
 }
 
 export const fileArtifacts = new FileArtifacts();

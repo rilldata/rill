@@ -4,6 +4,7 @@ package rill.runtime.v1;
 import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/struct.proto";
+import "rill/ai/v1/ai.proto";
 import "rill/runtime/v1/schema.proto";
 import "rill/runtime/v1/resources.proto";
 import "validate/validate.proto";
@@ -227,6 +228,26 @@ service RuntimeService {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/connectors/notifiers"};
   }
 
+  // AI
+
+  // Complete runs a language model completion (LLM chat) using the configured AI connector.
+  rpc Complete(CompleteRequest) returns (CompleteResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/ai/complete",
+      body: "*"
+    };
+  }
+
+  // ListConversations lists all AI chat conversations for an instance.
+  rpc ListConversations(ListConversationsRequest) returns (ListConversationsResponse) {
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/ai/conversations"};
+  }
+
+  // GetConversation returns a specific AI chat conversation.
+  rpc GetConversation(GetConversationRequest) returns (GetConversationResponse) {
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/ai/conversations/{conversation_id}"};
+  }
+
   // Access management
 
   // IssueDevJWT issues a JWT for mimicking a user in local development.
@@ -309,8 +330,7 @@ message Instance {
   map<string, string> project_variables = 8;
   map<string, bool> feature_flags = 22;
   map<string, string> annotations = 14;
-  bool embed_catalog = 6;
-  bool watch_repo = 15;
+  string ai_instructions = 23;
 }
  
 message Connector {
@@ -365,8 +385,6 @@ message CreateInstanceRequest {
   repeated Connector connectors = 10;
   map<string, string> variables = 7;
   map<string, string> annotations = 9;
-  bool embed_catalog = 6;
-  bool watch_repo = 11;
 }
 
 // Response message for RuntimeService.CreateInstance
@@ -394,8 +412,6 @@ message EditInstanceRequest {
   repeated Connector connectors = 9;
   map<string, string> variables = 15;
   map<string, string> annotations = 10;
-  optional bool embed_catalog = 6;
-  optional bool watch_repo = 11;
 }
 
 // Response message for RuntimeService.EditInstance
@@ -530,6 +546,7 @@ message UnpackExampleResponse {}
 message UnpackEmptyRequest {
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
   string display_name = 2;
+  string olap = 4;
   bool force = 3;
 }
 
@@ -603,6 +620,7 @@ message QueryResolverRequest {
 }
 
 message QueryResolverResponse {
+  google.protobuf.Struct meta = 3;
   StructType schema = 1;
   repeated google.protobuf.Struct data = 2;
 }
@@ -736,11 +754,13 @@ message CreateTriggerRequest {
   // Parser is a convenience flag to trigger the global project parser.
   // Triggering the project parser ensures a pull of the repository and a full parse of all files.
   bool parser = 6;
-  // Convenience flag to trigger all sources and models.
-  bool all_sources_models = 7;
-  // Convenience flag to trigger all sources and models.
-  // Will trigger models with RefreshModelTrigger.full set to true.
-  bool all_sources_models_full = 8;
+  // Convenience flag to trigger all resources.
+  // Note: Despite the name, it does not currently trigger alerts and reports.
+  bool all = 7;
+  // Convenience flag to trigger all resources with full refreshes for resources that support it.
+  // Currently, only models support full refreshes. It's equivalent to passing RefreshModelTrigger.full for those models.
+  // Note: Despite the name, it does not currently trigger alerts and reports.
+  bool all_full = 8;
 }
 
 message CreateTriggerResponse {}
@@ -795,6 +815,8 @@ message ConnectorDriver {
   string display_name = 4;
   // Human readable description of the connector
   string description = 5;
+  // Docs url for the connector
+  string docs_url = 21;
   // Capabilities supported by the connector
   bool implements_registry = 10;
   bool implements_catalog = 11;
@@ -863,6 +885,83 @@ message ListNotifierConnectorsResponse {
   // Note: In this list, the Connector.config property will always be empty.
   repeated Connector connectors = 1;
 }
+
+// **********
+// AI
+// **********
+
+// Message exchanged in a conversation
+message Message {
+  string id = 1;
+  string role = 2;
+  repeated rill.ai.v1.ContentBlock content = 3;
+  google.protobuf.Timestamp created_on = 4;
+  google.protobuf.Timestamp updated_on = 5;
+}
+
+// Application context for AI conversations
+enum AppContextType {
+  APP_CONTEXT_TYPE_UNSPECIFIED = 0;
+  APP_CONTEXT_TYPE_PROJECT_CHAT = 1;
+  APP_CONTEXT_TYPE_EXPLORE_DASHBOARD = 2;
+}
+
+message AppContext {
+  AppContextType context_type = 1;
+  google.protobuf.Struct context_metadata = 2;
+}
+
+// Conversation metadata and messages
+message Conversation {
+  string id = 1;
+  string owner_id = 2;
+  string title = 3;
+  google.protobuf.Timestamp created_on = 4;
+  google.protobuf.Timestamp updated_on = 5;
+  repeated Message messages = 6;
+}
+
+// Request message for RuntimeService.Complete
+message CompleteRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  optional string conversation_id = 2; // If not provided, creates a new conversation
+  repeated Message messages = 3;
+  repeated string tool_names = 4;
+  optional AppContext app_context = 5;
+}
+
+// Response message for RuntimeService.Complete
+message CompleteResponse {
+  string conversation_id = 1;
+  repeated Message messages = 2;
+}
+
+// Request message for RuntimeService.ListConversations
+message ListConversationsRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+}
+
+// Response message for RuntimeService.ListConversations
+message ListConversationsResponse {
+  repeated Conversation conversations = 1;
+}
+
+// Request message for RuntimeService.GetConversation
+message GetConversationRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  string conversation_id = 2;
+  // Whether to include system messages in the response (defaults to false for UI use)
+  bool include_system_messages = 3;
+}
+
+// Response message for RuntimeService.GetConversation
+message GetConversationResponse {
+  Conversation conversation = 1;
+}
+
+// **********
+// Access management
+// **********
 
 // Request message for RuntimeService.IssueDevJWT
 message IssueDevJWTRequest {

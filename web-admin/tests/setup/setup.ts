@@ -1,26 +1,28 @@
 import { expect } from "@playwright/test";
+import { cliLogin } from "@rilldata/web-common/tests/fixtures/cli";
+import { writeFileEnsuringDir } from "@rilldata/web-common/tests/utils/fs";
+import { isServiceReady } from "@rilldata/web-common/tests/utils/is-service-ready.ts";
 import {
   execAsync,
   spawnAndMatch,
 } from "@rilldata/web-common/tests/utils/spawn";
-import axios from "axios";
+import {
+  RILL_DEVTOOL_BACKGROUND_PROCESS_PID_FILE,
+  RILL_EMBED_SERVICE_TOKEN_FILE,
+} from "@rilldata/web-integration/tests/constants";
 import { spawn } from "child_process";
 import dotenv from "dotenv";
 import { openSync } from "fs";
 import { mkdir } from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
-import { writeFileEnsuringDir } from "../utils/fs";
 import { test as setup } from "./base";
 import {
   ADMIN_STORAGE_STATE,
-  RILL_DEVTOOL_BACKGROUND_PROCESS_PID_FILE,
-  RILL_EMBED_SERVICE_TOKEN_FILE,
   RILL_ORG_NAME,
   RILL_PROJECT_NAME,
   RILL_SERVICE_NAME,
 } from "./constants";
-import { cliLogin } from "./fixtures/cli";
 
 setup.describe("global setup", () => {
   setup.describe.configure({
@@ -37,7 +39,7 @@ setup.describe("global setup", () => {
     // This will block until the services are ready
     await spawnAndMatch(
       "rill",
-      ["devtool", "start", "e2e", "--reset", "--only", "deps"],
+      ["devtool", "start", "other", "--reset", "--only", "deps"],
       /All services ready/,
       {
         cwd: repoRoot,
@@ -71,7 +73,7 @@ setup.describe("global setup", () => {
     // However, we need to be sure to clean-up the processes manually in the teardown project.
     const child = spawn(
       "rill",
-      ["devtool", "start", "e2e", "--only", "admin,runtime"],
+      ["devtool", "start", "other", "--only", "admin,runtime"],
       {
         detached: true,
         stdio: ["ignore", logFd, logFd],
@@ -120,16 +122,35 @@ setup.describe("global setup", () => {
 
     // Log in with the admin account
     await page.goto("/");
-    await page.getByRole("button", { name: "Continue with Email" }).click();
-    await page.getByPlaceholder("Enter your email address").click();
+
+    // Fill in the email
+    const emailInput = page.locator('input[name="username"]');
+    await emailInput.waitFor({ state: "visible" });
+    await emailInput.click();
+    await emailInput.fill(process.env.RILL_DEVTOOL_E2E_ADMIN_ACCOUNT_EMAIL);
+
+    // Click the continue button
     await page
-      .getByPlaceholder("Enter your email address")
-      .fill(process.env.RILL_DEVTOOL_E2E_ADMIN_ACCOUNT_EMAIL);
-    await page.getByPlaceholder("Enter your email address").press("Tab");
+      .locator('button[type="submit"][data-action-button-primary="true"]', {
+        hasText: "Continue",
+      })
+      .click();
+
+    // Fill in the password
+    const passwordInput = page.locator('input[name="password"]');
+    await passwordInput.waitFor({ state: "visible" });
+    await passwordInput.click();
+    await passwordInput.fill(
+      process.env.RILL_DEVTOOL_E2E_ADMIN_ACCOUNT_PASSWORD,
+    );
+
+    // Click the continue button
     await page
-      .getByPlaceholder("Enter your password")
-      .fill(process.env.RILL_DEVTOOL_E2E_ADMIN_ACCOUNT_PASSWORD);
-    await page.getByRole("button", { name: "Continue with Email" }).click();
+      .locator('button[type="submit"][data-action-button-primary="true"]', {
+        hasText: "Continue",
+      })
+      .click();
+
     await page.waitForURL("/");
 
     // Save the admin's Rill auth cookies to file.
@@ -147,12 +168,13 @@ setup.describe("global setup", () => {
 
     // create service and write access token to file
     const { stdout: orgCreateService } = await execAsync(
-      `rill service create ${RILL_SERVICE_NAME}`,
+      `rill service create ${RILL_SERVICE_NAME} --org-role admin`,
     );
     expect(orgCreateService).toContain("Created service");
 
     const serviceToken = orgCreateService.match(/Access token:\s+(\S+)/);
-    writeFileEnsuringDir(RILL_EMBED_SERVICE_TOKEN_FILE, serviceToken![1]);
+    const writePath = path.join(process.cwd(), RILL_EMBED_SERVICE_TOKEN_FILE);
+    writeFileEnsuringDir(writePath, serviceToken![1]);
 
     // Go to the organization's page
     await adminPage.goto(`/${RILL_ORG_NAME}`);
@@ -168,10 +190,10 @@ setup.describe("global setup", () => {
       [
         "deploy",
         "--path",
-        "tests/setup/projects/openrtb",
+        "../web-common/tests/projects/openrtb",
         "--project",
         RILL_PROJECT_NAME,
-        "--upload",
+        "--archive",
         "--interactive=false",
       ],
       /https?:\/\/[^\s]+/,
@@ -182,6 +204,16 @@ setup.describe("global setup", () => {
     await adminPage.goto(url);
     await expect(adminPage.getByText(RILL_ORG_NAME)).toBeVisible(); // Organization breadcrumb
     await expect(adminPage.getByText(RILL_PROJECT_NAME)).toBeVisible(); // Project breadcrumb
+
+    // Expect to land on the chat page
+    await adminPage.waitForURL("**/-/chat");
+    await expect(
+      adminPage.getByText("How can I help you today?"),
+    ).toBeVisible();
+
+    // Navigate to the dashboards page to validate the deployment
+    await adminPage.getByRole("link", { name: "Dashboards" }).click();
+    await adminPage.waitForURL("**/-/dashboards");
 
     // Trial is started in an async job after the 1st deploy. It is not worth the effort to re-fetch the issues list right now.
     // So disabling this for now, we could add a re-fetch to the issues list if users start facing issues.
@@ -244,12 +276,3 @@ setup.describe("global setup", () => {
       .toContain("Last refreshed");
   });
 });
-
-async function isServiceReady(url: string): Promise<boolean> {
-  try {
-    const response = await axios.get(url);
-    return response.status === 200;
-  } catch {
-    return false;
-  }
-}

@@ -73,6 +73,7 @@ type TemplateData struct {
 	Slots        int
 	Names        ResourceNames
 	Annotations  map[string]string
+	Environment  string
 }
 
 type ResourceNames struct {
@@ -168,6 +169,12 @@ func (p *KubernetesProvisioner) Provision(ctx context.Context, r *provisioner.Re
 		version = opts.RillVersion
 	}
 
+	// Use 'prod' if no environment is specified
+	environment := args.Environment
+	if environment == "" {
+		environment = "prod"
+	}
+
 	// Get Kubernetes resource names
 	provisionID := getProvisionID(r.ID)
 	names := p.getResourceNames(provisionID)
@@ -186,6 +193,7 @@ func (p *KubernetesProvisioner) Provision(ctx context.Context, r *provisioner.Re
 		StorageBytes: 40 * int64(args.Slots) * int64(datasize.GB),
 		Slots:        args.Slots,
 		Annotations:  opts.Annotations,
+		Environment:  environment,
 	}
 
 	// Define the structured Kubernetes API resources

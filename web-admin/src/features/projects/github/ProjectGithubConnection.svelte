@@ -14,7 +14,10 @@
   import DisconnectIcon from "@rilldata/web-common/components/icons/DisconnectIcon.svelte";
   import Github from "@rilldata/web-common/components/icons/Github.svelte";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
-  import { getRepoNameFromGithubUrl } from "@rilldata/web-common/features/project/github-utils";
+  import {
+    getRepoNameFromGitRemote,
+    getGitUrlFromRemote,
+  } from "@rilldata/web-common/features/project/deploy/github-utils";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
   import { BehaviourEventAction } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -26,11 +29,12 @@
 
   $: proj = createAdminServiceGetProject(organization, project);
   $: ({
-    project: { githubUrl, subpath, prodBranch },
+    project: { gitRemote, managedGitId, subpath, prodBranch },
   } = $proj.data);
 
-  $: isGithubConnected = !!githubUrl;
-  $: repoName = getRepoNameFromGithubUrl(githubUrl);
+  $: isGithubConnected = !!gitRemote;
+  $: isManagedGit = !!managedGitId;
+  $: repoName = getRepoNameFromGitRemote(gitRemote);
   $: githubLastSynced = useGithubLastSynced(instanceId);
   $: dashboardsLastUpdated = useDashboardsLastUpdated(
     instanceId,
@@ -81,11 +85,11 @@
       GitHub
     </span>
     <div class="flex flex-col gap-x-1">
-      {#if isGithubConnected}
+      {#if isGithubConnected && !isManagedGit}
         <div class="flex flex-row gap-x-1 items-center">
           <Github className="w-4 h-4" />
           <a
-            href={$proj.data?.project?.githubUrl}
+            href={getGitUrlFromRemote($proj.data?.project?.gitRemote)}
             class="text-gray-800 text-[12px] font-semibold font-mono leading-5 truncate"
             target="_blank"
             rel="noreferrer noopener"
@@ -103,7 +107,7 @@
             <DropdownMenu.Content align="start">
               <!-- Disabling for now, until we figure out how to do this  -->
               <!--              <DropdownMenu.Item class="px-1 py-1">-->
-              <!--                <Button on:click={editGithubConnection} type="text" compact>-->
+              <!--                <Button onClick={editGithubConnection} type="text" compact>-->
               <!--                  <div class="flex flex-row items-center gap-x-2">-->
               <!--                    <EditIcon size="14px" />-->
               <!--                    <span class="text-xs">Edit</span>-->
@@ -111,7 +115,7 @@
               <!--                </Button>-->
               <!--              </DropdownMenu.Item>-->
               <DropdownMenu.Item class="px-1 py-1">
-                <Button on:click={disconnectGithubConnect} type="text" compact>
+                <Button onClick={disconnectGithubConnect} type="text" compact>
                   <div class="flex flex-row items-center gap-x-2">
                     <DisconnectIcon size="14px" />
                     <span class="text-xs">Disconnect</span>
@@ -169,7 +173,7 @@
 
 <GithubRepoSelectionDialog
   bind:open={$repoSelectionOpen}
-  currentUrl={$proj.data?.project?.githubUrl}
+  currentGithubRemote={$proj.data?.project?.gitRemote}
   currentSubpath={$proj.data?.project?.subpath}
   currentBranch={$proj.data?.project?.prodBranch}
   {organization}

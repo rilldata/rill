@@ -19,18 +19,14 @@
   } from "../dashboard-utils";
   import { mergeDimensionAndMeasureFilters } from "../filters/measure-filters/measure-filter-utils";
   import { SortType } from "../proto-state/derived-types";
-  import {
-    additionalMeasures,
-    getFiltersForOtherDimensions,
-  } from "../selectors";
-  import type { selectedDimensionValuesV2 } from "../state-managers/selectors/dimension-filters";
+  import { getFiltersForOtherDimensions } from "../selectors";
   import {
     createAndExpression,
     createOrExpression,
     isExpressionUnsupported,
     sanitiseExpression,
   } from "../stores/filter-utils";
-  import type { DimensionThresholdFilter } from "../stores/metrics-explorer-entity";
+  import type { DimensionThresholdFilter } from "web-common/src/features/dashboards/stores/explore-state";
   import DelayedLoadingRows from "./DelayedLoadingRows.svelte";
   import LeaderboardHeader from "./LeaderboardHeader.svelte";
   import LeaderboardRow from "./LeaderboardRow.svelte";
@@ -40,42 +36,40 @@
     getSort,
     prepareLeaderboardItemData,
   } from "./leaderboard-utils";
-  import { COMPARISON_COLUMN_WIDTH, valueColumn } from "./leaderboard-widths";
+  import { valueColumn, COMPARISON_COLUMN_WIDTH } from "./leaderboard-widths";
+  import type { selectedDimensionValues } from "../state-managers/selectors/dimension-filters";
+  import { getMeasuresForDimensionOrLeaderboardDisplay } from "../state-managers/selectors/dashboard-queries";
 
   const gutterWidth = 24;
 
-  // FIXME: clean up `sortBy` and `activeMeasureName`
   export let dimension: MetricsViewSpecDimension;
   export let timeRange: V1TimeRange;
   export let comparisonTimeRange: V1TimeRange | undefined;
-  export let selectedValues: ReturnType<typeof selectedDimensionValuesV2>;
+  export let selectedValues: ReturnType<typeof selectedDimensionValues>;
   export let instanceId: string;
   export let whereFilter: V1Expression;
   export let dimensionThresholdFilters: DimensionThresholdFilter[];
-  export let activeMeasureName: string;
+  export let leaderboardSortByMeasureName: string;
   export let leaderboardMeasureNames: string[];
-  export let visibleMeasures: string[];
+  export let leaderboardShowContextForAllMeasures: boolean;
   export let metricsViewName: string;
   export let sortType: SortType;
-  export let sortBy: string | null;
   export let slice = 7;
   export let tableWidth: number;
   export let sortedAscending: boolean;
-  export let isValidPercentOfTotal: (measureName: string) => boolean;
   export let timeControlsReady: boolean;
   export let dimensionColumnWidth: number;
   export let filterExcludeMode: boolean;
   export let isBeingCompared: boolean;
   export let parentElement: HTMLElement;
-  export let suppressTooltip = false;
-  export let leaderboardMeasureCountFeatureFlag: boolean;
   export let allowExpandTable = true;
   export let allowDimensionComparison = true;
-  export let measureLabel: (measureName: string) => string;
   export let formatters: Record<
     string,
     (value: number | string | null | undefined) => string | null | undefined
   >;
+  export let isValidPercentOfTotal: (measureName: string) => boolean;
+  export let measureLabel: (measureName: string) => string;
   export let toggleDimensionValueSelection: (
     dimensionName: string,
     dimensionValue: string,
@@ -131,25 +125,19 @@
       );
 
   $: measures = [
-    ...(leaderboardMeasureCountFeatureFlag
-      ? leaderboardMeasureNames.map(
-          (name) =>
-            ({
-              name,
-            }) as V1MetricsViewAggregationMeasure,
-        )
-      : additionalMeasures(activeMeasureName, dimensionThresholdFilters).map(
-          (n) =>
-            ({
-              name: n,
-            }) as V1MetricsViewAggregationMeasure,
-        )),
+    ...getMeasuresForDimensionOrLeaderboardDisplay(
+      leaderboardShowContextForAllMeasures
+        ? null
+        : leaderboardSortByMeasureName,
+      dimensionThresholdFilters,
+      leaderboardMeasureNames,
+    ).map((name) => ({ name }) as V1MetricsViewAggregationMeasure),
 
     // Add comparison measures if there's a comparison time range
     ...(comparisonTimeRange
-      ? (leaderboardMeasureCountFeatureFlag
+      ? (leaderboardShowContextForAllMeasures
           ? leaderboardMeasureNames
-          : [activeMeasureName]
+          : [leaderboardSortByMeasureName]
         ).flatMap((name) => getComparisonRequestMeasures(name))
       : []),
 
@@ -160,7 +148,7 @@
   $: sort = getSort(
     sortedAscending,
     sortType,
-    activeMeasureName,
+    leaderboardSortByMeasureName,
     dimensionName,
     !!comparisonTimeRange,
   );
@@ -189,13 +177,7 @@
     instanceId,
     metricsViewName,
     {
-      ...(leaderboardMeasureCountFeatureFlag
-        ? {
-            measures: visibleMeasures.map((name) => ({ name })),
-          }
-        : {
-            measures: [{ name: activeMeasureName }],
-          }),
+      measures: leaderboardMeasureNames.map((name) => ({ name })),
       where,
       timeStart: timeRange.start,
       timeEnd: timeRange.end,
@@ -212,10 +194,7 @@
 
   $: leaderboardTotals = totalsData?.data?.[0]
     ? Object.fromEntries(
-        (leaderboardMeasureCountFeatureFlag
-          ? visibleMeasures
-          : leaderboardMeasureNames
-        ).map((name) => [
+        leaderboardMeasureNames.map((name) => [
           name,
           (totalsData?.data?.[0]?.[name] as number) ?? null,
         ]),
@@ -274,10 +253,12 @@
 
   $: belowTheFoldData = data?.data?.length
     ? data?.data
-    : belowTheFoldValues.map((value) => ({
-        [dimensionName]: value,
-        [activeMeasureName]: null,
-      }));
+    : belowTheFoldValues
+        .map((value) => ({
+          [dimensionName]: value,
+          [leaderboardSortByMeasureName]: null,
+        }))
+        .slice(0, belowTheFoldDataLimit);
 
   $: belowTheFoldRows = belowTheFoldData.map((item) =>
     cleanUpComparisonValue(
@@ -298,9 +279,16 @@
     leaderboardMeasureNames.length + // Value column for each measure
     (isTimeComparisonActive
       ? leaderboardMeasureNames.length * // For each measure
-        ((isValidPercentOfTotal(activeMeasureName) ? 1 : 0) + // Percent of total column
+        ((isValidPercentOfTotal(leaderboardSortByMeasureName) ? 1 : 0) + // Percent of total column
           (isTimeComparisonActive ? 2 : 0)) // Delta absolute and delta percent columns
       : 0);
+
+  function shouldShowContextColumns(measureName: string): boolean {
+    return (
+      leaderboardShowContextForAllMeasures ||
+      measureName === leaderboardSortByMeasureName
+    );
+  }
 </script>
 
 <div
@@ -315,15 +303,15 @@
     <colgroup>
       <col data-gutter-column style:width="{gutterWidth}px" />
       <col data-dimension-column style:width="{dimensionColumnWidth}px" />
-      {#each leaderboardMeasureNames as _, index (index)}
+      {#each leaderboardMeasureNames as measureName, index (index)}
         <col data-measure-column style:width="{$valueColumn}px" />
-        {#if isValidPercentOfTotal(leaderboardMeasureNames[index])}
+        {#if isValidPercentOfTotal(measureName) && shouldShowContextColumns(measureName)}
           <col
             data-percent-of-total-column
             style:width="{COMPARISON_COLUMN_WIDTH}px"
           />
         {/if}
-        {#if isTimeComparisonActive}
+        {#if isTimeComparisonActive && shouldShowContextColumns(measureName)}
           <col
             data-absolute-change-column
             style:width="{COMPARISON_COLUMN_WIDTH}px"
@@ -350,12 +338,12 @@
       {isTimeComparisonActive}
       {sortedAscending}
       {leaderboardMeasureNames}
+      {leaderboardShowContextForAllMeasures}
       {toggleSort}
       {setPrimaryDimension}
       {toggleComparisonDimension}
-      {sortBy}
+      {leaderboardSortByMeasureName}
       {measureLabel}
-      {leaderboardMeasureCountFeatureFlag}
     />
 
     <tbody>
@@ -368,7 +356,6 @@
       >
         {#each aboveTheFold as itemData (itemData.dimensionValue)}
           <LeaderboardRow
-            {suppressTooltip}
             {tableWidth}
             {isBeingCompared}
             {filterExcludeMode}
@@ -376,17 +363,19 @@
             {dimensionName}
             {itemData}
             {isValidPercentOfTotal}
+            {leaderboardShowContextForAllMeasures}
             {isTimeComparisonActive}
             {leaderboardMeasureNames}
             {toggleDimensionValueSelection}
+            {leaderboardSortByMeasureName}
             {formatters}
+            {dimensionColumnWidth}
           />
         {/each}
       </DelayedLoadingRows>
 
       {#each belowTheFoldRows as itemData, i (itemData.dimensionValue)}
         <LeaderboardRow
-          {suppressTooltip}
           {itemData}
           {tableWidth}
           {dimensionName}
@@ -394,12 +383,15 @@
           {filterExcludeMode}
           {atLeastOneActive}
           {isValidPercentOfTotal}
+          {leaderboardShowContextForAllMeasures}
           {isTimeComparisonActive}
           {leaderboardMeasureNames}
           borderTop={i === 0}
           borderBottom={i === belowTheFoldRows.length - 1}
           {toggleDimensionValueSelection}
+          {leaderboardSortByMeasureName}
           {formatters}
+          {dimensionColumnWidth}
         />
       {/each}
     </tbody>

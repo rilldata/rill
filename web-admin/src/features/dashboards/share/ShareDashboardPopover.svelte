@@ -1,6 +1,7 @@
 <script lang="ts">
   import CreatePublicURLForm from "@rilldata/web-admin/features/public-urls/CreatePublicURLForm.svelte";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
+  import Check from "@rilldata/web-common/components/icons/Check.svelte";
   import Link from "@rilldata/web-common/components/icons/Link.svelte";
   import {
     Popover,
@@ -13,7 +14,6 @@
     TabsList,
     TabsTrigger,
   } from "@rilldata/web-common/components/tabs";
-  import Check from "@rilldata/web-common/components/icons/Check.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
 
   export let createMagicAuthTokens: boolean;
@@ -58,7 +58,7 @@
           </h3>
           <Button
             type="secondary"
-            on:click={() => {
+            onClick={() => {
               onCopy();
             }}
           >
@@ -73,7 +73,9 @@
         </div>
       </TabsContent>
       <TabsContent value="tab2" class="mt-0 p-4">
-        <CreatePublicURLForm />
+        {#if createMagicAuthTokens && !$hidePublicUrl}
+          <CreatePublicURLForm />
+        {/if}
       </TabsContent>
     </Tabs>
   </PopoverContent>

@@ -10,6 +10,7 @@ import {
   runtimeServiceDeleteFile,
   runtimeServicePutFile,
   runtimeServiceRenameFile,
+  type RuntimeServicePutFileBody,
 } from "@rilldata/web-common/runtime-client";
 import { httpRequestQueue } from "@rilldata/web-common/runtime-client/http-client";
 import { get } from "svelte/store";
@@ -18,6 +19,24 @@ import {
   addLeadingSlash,
   removeLeadingSlash,
 } from "./entity-mappers";
+import {
+  getProjectParserVersion,
+  waitForProjectParserVersion,
+} from "./project-parser";
+
+export async function runtimeServicePutFileAndWaitForReconciliation(
+  instanceId: string,
+  runtimeServicePutFileBody: RuntimeServicePutFileBody,
+) {
+  const projectParserStartingVersion = getProjectParserVersion(instanceId);
+
+  await runtimeServicePutFile(instanceId, runtimeServicePutFileBody);
+
+  await waitForProjectParserVersion(
+    instanceId,
+    projectParserStartingVersion + 1,
+  );
+}
 
 export async function renameFileArtifact(
   instanceId: string,

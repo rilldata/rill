@@ -6,23 +6,19 @@
   } from "@rilldata/web-admin/client";
   import AccessRequestContainer from "@rilldata/web-admin/features/access-request/AccessRequestContainer.svelte";
   import { Button } from "@rilldata/web-common/components/button";
-  import Lock from "@rilldata/web-common/components/icons/Lock.svelte";
   import Check from "@rilldata/web-common/components/icons/Check.svelte";
+  import Lock from "@rilldata/web-common/components/icons/Lock.svelte";
+  import { ProjectUserRoles } from "@rilldata/web-common/features/users/roles.ts";
   import type { AxiosError } from "axios";
 
   $: organization = $page.url.searchParams.get("organization");
   $: project = $page.url.searchParams.get("project");
+  $: role = $page.url.searchParams.get("role") ?? ProjectUserRoles.Viewer;
+  $: autoRequest = $page.url.searchParams.get("auto_request") === "true";
+  $: if (autoRequest) onRequestAccess();
 
   let requested = false;
-  $: requestAccess = createAdminServiceRequestProjectAccess();
-  function onRequestAccess() {
-    requested = true;
-    void $requestAccess.mutateAsync({
-      organization,
-      project,
-      data: {},
-    });
-  }
+  const requestAccess = createAdminServiceRequestProjectAccess();
 
   let errorMessage = "";
   $: if ($requestAccess.error) {
@@ -37,6 +33,17 @@
   }
 
   $: isPending = $requestAccess.isPending;
+
+  function onRequestAccess() {
+    requested = true;
+    void $requestAccess.mutateAsync({
+      organization,
+      project,
+      data: {
+        role,
+      },
+    });
+  }
 </script>
 
 <AccessRequestContainer>
@@ -51,7 +58,7 @@
   <Button
     type="primary"
     wide
-    on:click={onRequestAccess}
+    onClick={onRequestAccess}
     loading={isPending}
     disabled={requested}
   >

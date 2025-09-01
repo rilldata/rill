@@ -11,7 +11,7 @@ on:
   push:
     # Trigger a full release on new Git tag
     tags:
-      - "**"
+      - "v*"
   # Trigger a nightly release at midnight
   schedule:
     - cron: '0 0 * * *'
@@ -23,46 +23,35 @@ env:
   PUBLISH_RELEASE: ${{ startsWith(github.ref, 'refs/tags/v') }}
 
 jobs:
-  validate-sequential:
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+  build:
+    name: Build rill
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            platform: linux_amd64
+          - os: ubuntu-22.04-arm
+            platform: linux_arm64
+          - os: macos-13
+            platform: darwin_amd64
+          - os: macos-14
+            platform: darwin_arm64
+      fail-fast: false
 
-    - name: Check Admin Migrations
-      run: |
-        ./scripts/check_migrations.sh admin/database/postgres/migrations
-
-    - name: Check Runtime Migrations
-      run: |
-        ./scripts/check_migrations.sh runtime/drivers/sqlite/migrations
-
-  release:
-    name: Release rill
-    runs-on: large-hosted
-    needs: validate-sequential
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Fetch tags required by goreleaser
-        run: git fetch --prune --unshallow
-
-      - name: Checkout sysroot for cross compilation
-        uses: actions/checkout@v4
-        with:
-          repository: goreleaser/goreleaser-cross-example-sysroot
-          path: sysroot
-
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.23
+          go-version: 1.24
 
       - name: Set up NodeJS
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version-file: '.nvmrc'
 
       - name: Build and embed static UI
         run: make cli.prepare
@@ -71,86 +60,98 @@ jobs:
           RILL_UI_PUBLIC_INTAKE_PASSWORD: ${{ secrets.RILL_INTAKE_PASSWORD }}
           RILL_UI_PUBLIC_POSTHOG_API_KEY: "phc_4qnfUotXUuevk2zJN8ei8HgKXMynddEMI0wPI9XwzlS"
           RILL_UI_PUBLIC_PYLON_APP_ID: "26a0fdd2-3bd3-41e2-82bc-1b35a444729f"
+          NODE_OPTIONS: --max-old-space-size=4096
 
-      - name: Build Rill using Goreleaser
+      - name: Build rill cli
         run: |-
-          echo '${{ secrets.RILL_BINARY_SA }}' > rill-binary-sa.json
-
-          echo 'GITHUB_TOKEN=${{ secrets.GORELEASER_ACCESS_TOKEN }}' > .release-env
-          echo 'GOOGLE_APPLICATION_CREDENTIALS=/rill-binary-sa.json' >> .release-env
-          echo 'DOCKERHUB_USER=${{ secrets.DOCKERHUB_USER }}' >> .release-env
-          echo 'DOCKERHUB_PASS=${{ secrets.DOCKERHUB_PASS }}' >> .release-env
-
-          echo '${{ github.ref_name }}' >> latest.txt
-
           if [[ ${{ env.PUBLISH_NIGHTLY }} == 'true' ]]; then
-            export NIGHTLY="--snapshot"
-            LATEST_TAG=$(git describe --tags $(git rev-list --tags --max-count=1))
-            echo "GORELEASER_CURRENT_TAG=${LATEST_TAG}" >> .release-env 
-          fi
-
-          docker run \
-              --rm \
-              --privileged \
-              -e CGO_ENABLED=1 \
-              --env-file .release-env \
-              -v /var/run/docker.sock:/var/run/docker.sock \
-              -v `pwd`:/go/src/rilldata/rill \
-              -v `pwd`/sysroot:/sysroot \
-              -v `pwd`/rill-binary-sa.json:/rill-binary-sa.json \
-              -w /go/src/rilldata/rill \
-              goreleaser/goreleaser-cross:v1.23 \
-              release ${NIGHTLY}
+            git fetch --prune --unshallow
+            VERSION="$(git describe --tags $(git rev-list --tags --max-count=1) | sed 's/r/v/')-nightly"
+          else
+            VERSION='${{ github.ref_name }}'
+          fi   
+          
+          go build -o rill \
+            -mod=readonly \
+            -ldflags="-s -w -X main.Version=${VERSION} -X main.Commit=${{ github.sha }} -X main.BuildDate=$(date +%FT%TZ)" \
+            cli/main.go
 
       - name: Authenticate GCS
         uses: google-github-actions/auth@v2
         with:
           credentials_json: "${{ secrets.RILL_BINARY_SA }}"
 
-
-      - name: Release - Upload install script to CDN bucket
-        uses: google-github-actions/upload-cloud-storage@v2
-        if: env.PUBLISH_RELEASE == 'true'
-        with:
-          path: scripts/install.sh
-          destination: prod-cdn.rilldata.com/
-          headers: |-
-            cache-control: no-store
-
-      - name: Release - Upload latest version file to CDN bucket
-        if: env.PUBLISH_RELEASE == 'true'
-        uses: google-github-actions/upload-cloud-storage@v2
-        with:
-          path: latest.txt
-          destination: prod-cdn.rilldata.com/rill/
-          headers: |-
-            cache-control: no-store
-
-      - name: Publish nightly docker image
-        if: env.PUBLISH_NIGHTLY == 'true'
-        run: |-
-          echo '${{ secrets.DOCKERHUB_PASS }}' | docker login -u '${{ secrets.DOCKERHUB_USER }}' --password-stdin
-          docker tag rilldata/rill:latest rilldata/rill:nightly
-          docker push rilldata/rill:nightly
-
-      - name: Nightly - Prepare for nightly GCS upload
-        if: env.PUBLISH_NIGHTLY == 'true'
-        run: |-
-          mkdir nightly
-          cp dist/*.zip nightly/
-          cp dist/checksums.txt nightly/
-
       - name: Nightly - Upload nightly to CDN bucket
         if: env.PUBLISH_NIGHTLY == 'true'
         uses: google-github-actions/upload-cloud-storage@v2
         with:
-          path: nightly/
-          destination: prod-cdn.rilldata.com/rill/
+          path: rill
+          destination: prod-cdn.rilldata.com/rill/nightly/binaries/${{ matrix.platform }}/
           headers: |-
             cache-control: no-store
 
-      - name: Set up Cloud SDK
-        uses: 'google-github-actions/setup-gcloud@v2'
+      - name: Release - Upload nightly to CDN bucket
+        if: env.PUBLISH_RELEASE == 'true'
+        uses: google-github-actions/upload-cloud-storage@v2
+        with:
+          path: rill
+          destination: prod-cdn.rilldata.com/rill/${{ github.ref_name }}/binaries/${{ matrix.platform }}/
+          headers: |-
+            cache-control: no-store
+
+  release:
+    name: Release rill
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Fetch tags required by goreleaser
+        run: git fetch --prune --unshallow
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: "${{ secrets.RILL_BINARY_SA }}"
+
+      - name: Set up gcloud CLI
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Set GORELEASER_CURRENT_TAG and NIGHTLY
+        run: |-
+          if [[ ${{ env.PUBLISH_NIGHTLY }} == 'true' ]]; then
+            BUCKET_DIR=nightly
+            LATEST_TAG=$(git describe --tags $(git rev-list --tags --max-count=1) | sed 's/r/v/')
+            echo "NIGHTLY=--nightly" >> $GITHUB_ENV
+            echo "GORELEASER_CURRENT_TAG=$(echo ${LATEST_TAG})" >> $GITHUB_ENV
+          else
+            echo "NIGHTLY=" >> $GITHUB_ENV
+            BUCKET_DIR=$(echo "${GITHUB_REF#refs/tags/}")
+          fi
+
+          echo '${{ github.ref_name }}' >> latest.txt
+          gsutil -m cp -r gs://prod-cdn.rilldata.com/rill/$BUCKET_DIR/binaries .
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USER }}
+          password: ${{ secrets.DOCKERHUB_PASS }}
+
+      - name: Release Rill using Goreleaser
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          distribution: goreleaser-pro
+          version: '~> v2'
+          args: release ${{ env.NIGHTLY }}
+        env:
+          CGO_ENABLED: 1
+          GITHUB_TOKEN: ${{ secrets.GORELEASER_ACCESS_TOKEN }}
+          GORELEASER_KEY: ${{ secrets.GORELEASER_KEY }}
+          GORELEASER_CURRENT_TAG: ${{ env.GORELEASER_CURRENT_TAG }}
+          PUBLISH_NIGHTLY: ${{ env.PUBLISH_NIGHTLY }}
 
       - name: CDN - Explicitly invalidate the old artifacts from CDN cache
         run: |-
@@ -162,7 +163,7 @@ jobs:
 
       - name: Notify Slack
         uses: ravsamhq/notify-slack-action@v2
-        if: always()
+        if: env.PUBLISH_NIGHTLY == 'true' || env.PUBLISH_RELEASE == 'true'
         with:
           status: ${{ job.status }}
           notification_title: "{workflow} has {status_message}"

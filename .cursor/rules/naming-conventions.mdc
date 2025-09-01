@@ -1,0 +1,77 @@
+---
+description: Naming conventions for files and components in the Rill web frontend codebases
+globs:
+  [
+    "web-admin/**/*.ts",
+    "web-admin/**/*.svelte",
+    "web-admin/**/*.js",
+    "web-common/**/*.ts",
+    "web-common/**/*.svelte",
+    "web-common/**/*.js",
+    "web-local/**/*.ts",
+    "web-local/**/*.svelte",
+    "web-local/**/*.js",
+  ]
+alwaysApply: false
+---
+
+# Naming Conventions
+
+## File Naming Rules
+
+### TypeScript/JavaScript Files
+
+- Use **kebab-case** for all TypeScript and JavaScript files
+- Examples: `user-management.ts`, `environment-variables.ts`, `project-status.ts`
+
+### Svelte Component Files
+
+- Use **PascalCase** for Svelte component files
+- Examples: `ProjectCard.svelte`, `UserManagement.svelte`, `EnvironmentVariables.svelte`
+- Exception: Use **kebab-case** for layout files (e.g., `+layout.svelte`, `+page.svelte`)
+
+### Directory Naming
+
+- Use **kebab-case** for all directories
+- Examples: `user-management/`, `environment-variables/`, `project-status/`
+
+## Component Naming Rules
+
+### Svelte Components
+
+- Use **PascalCase** for component names in Svelte files
+- Examples: `<ProjectCard />`, `<UserManagement />`, `<EnvironmentVariables />`
+- Match the component name to the file name
+
+### TypeScript Interfaces/Types
+
+- Use **PascalCase** for interfaces and types
+- Examples: `ProjectPermissions`, `UserManagement`, `EnvironmentVariable`
+
+## Variable and Function Naming
+
+### Variables
+
+- Use **camelCase** for variables and constants
+- Examples: `projectPermissions`, `environmentVariables`, `userManagement`
+
+### Functions
+
+- Use **camelCase** for function names
+- Use descriptive verbs: `getProjectPermissions()`, `updateEnvironmentVariables()`, `validateUserInput()`
+
+### Constants
+
+- Use **UPPER_SNAKE_CASE** for true constants
+- Examples: `MAX_FILE_SIZE`, `DEFAULT_TIMEOUT`, `API_BASE_URL`
+
+## Special Cases
+
+### Test Files
+
+- Use the same naming as the source file with `.spec` suffix
+
+### Configuration Files
+
+- Use **kebab-case** for configuration files
+- Examples: `tailwind.config.ts`, `vite.config.ts`, `svelte.config.js`

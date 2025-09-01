@@ -5,17 +5,20 @@ import {
 } from "@rilldata/web-common/features/canvas/components/util";
 import type { InputParams } from "@rilldata/web-common/features/canvas/inspector/types";
 
+import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
+import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import type {
   V1MetricsViewSpec,
   V1Resource,
 } from "@rilldata/web-common/runtime-client";
+import { get } from "svelte/store";
+import type { CanvasEntity, ComponentPath } from "../../stores/canvas-entity";
 import type {
   CanvasComponentType,
   ComponentCommonProperties,
   ComponentComparisonOptions,
   ComponentFilterProperties,
 } from "../types";
-import type { CanvasEntity, ComponentPath } from "../../stores/canvas-entity";
 import KPIGrid from "./KPIGrid.svelte";
 
 export { default as KPIGrid } from "./KPIGrid.svelte";
@@ -54,6 +57,16 @@ export class KPIGridComponent extends BaseCanvasComponent<KPIGridSpec> {
 
   isValid(spec: KPIGridSpec): boolean {
     return typeof spec.metrics_view === "string";
+  }
+
+  getExploreTransformerProperties(): Partial<ExploreState> {
+    const spec = get(this.specStore);
+    return {
+      visibleMeasures: spec.measures,
+      activePage: DashboardState_ActivePage.DEFAULT,
+      allMeasuresVisible: false,
+      leaderboardSortByMeasureName: spec.measures[0],
+    };
   }
 
   inputParams(): InputParams<KPIGridSpec> {

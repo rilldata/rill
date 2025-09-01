@@ -9,18 +9,17 @@
     type V1ListResourcesResponse,
     type V1Resource,
   } from "@rilldata/web-common/runtime-client";
+  import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient, type Query } from "@tanstack/svelte-query";
   import Button from "web-common/src/components/button/Button.svelte";
   import ProjectResourcesTable from "./ProjectResourcesTable.svelte";
   import RefreshAllSourcesAndModelsConfirmDialog from "./RefreshAllSourcesAndModelsConfirmDialog.svelte";
-  import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 
   const queryClient = useQueryClient();
   const createTrigger = createRuntimeServiceCreateTrigger();
 
   let isConfirmDialogOpen = false;
-  let isReconciling = false;
 
   const INITIAL_REFETCH_INTERVAL = 200; // Start at 200ms for immediate feedback
   const MAX_REFETCH_INTERVAL = 2_000; // Cap at 2s
@@ -96,17 +95,13 @@
     isResourceReconciling,
   );
 
-  $: isReconciling = Boolean(hasReconcilingResources);
-
   $: isRefreshButtonDisabled = hasReconcilingResources;
 
   function refreshAllSourcesAndModels() {
-    isReconciling = false;
-
     void $createTrigger
       .mutateAsync({
         instanceId,
-        data: { allSourcesModels: true },
+        data: { all: true },
       })
       .then(() => {
         currentRefetchInterval = INITIAL_REFETCH_INTERVAL;
@@ -125,7 +120,7 @@
     <h2 class="text-lg font-medium">Resources</h2>
     <Button
       type="secondary"
-      on:click={() => {
+      onClick={() => {
         isConfirmDialogOpen = true;
       }}
       disabled={isRefreshButtonDisabled}
@@ -141,7 +136,7 @@
       Error loading resources: {$resources.error?.message}
     </div>
   {:else if $resources.data}
-    <ProjectResourcesTable data={$resources?.data?.resources} {isReconciling} />
+    <ProjectResourcesTable data={$resources?.data?.resources} />
   {/if}
 </section>
 

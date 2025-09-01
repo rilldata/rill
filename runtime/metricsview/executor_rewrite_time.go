@@ -13,7 +13,7 @@ import (
 
 // rewriteQueryTimeRanges rewrites the time ranges in the query to fixed start/end timestamps.
 func (e *Executor) rewriteQueryTimeRanges(ctx context.Context, qry *Query, executionTime *time.Time) error {
-	if e.metricsView.TimeDimension == "" {
+	if e.metricsView.TimeDimension == "" && (qry.TimeRange == nil || qry.TimeRange.TimeDimension == "") {
 		return nil
 	}
 
@@ -52,6 +52,7 @@ func (e *Executor) rewriteQueryTimeRanges(ctx context.Context, qry *Query, execu
 		qry.Spine.TimeRange.Start = timeutil.TruncateTime(qry.TimeRange.Start, computedTimeDims[0].Compute.TimeFloor.Grain.ToTimeutil(), tz, 1, 1)
 		qry.Spine.TimeRange.End = qry.TimeRange.End
 		qry.Spine.TimeRange.Grain = computedTimeDims[0].Compute.TimeFloor.Grain
+		qry.Spine.TimeRange.TimeDimension = computedTimeDims[0].Compute.TimeFloor.Dimension
 	}
 
 	return nil
@@ -71,7 +72,7 @@ func (e *Executor) resolveTimeRange(ctx context.Context, tr *TimeRange, tz *time
 	}
 
 	// TODO: Implement lazy evaluation where we only evaluate timestamps if required for the time expression.
-	ts, err := e.Timestamps(ctx)
+	ts, err := e.Timestamps(ctx, tr.TimeDimension)
 	if err != nil {
 		return fmt.Errorf("failed to fetch timestamps: %w", err)
 	}
@@ -87,7 +88,8 @@ func (e *Executor) resolveTimeRange(ctx context.Context, tr *TimeRange, tz *time
 		return err
 	}
 
-	tr.Start, tr.End, err = rillTime.Eval(rilltime.EvalOptions{
+	// TODO: use grain when we have timeseries from metrics_view_aggregation
+	tr.Start, tr.End, _ = rillTime.Eval(rilltime.EvalOptions{
 		Now:        ts.Now,
 		MinTime:    ts.Min,
 		MaxTime:    ts.Max,
@@ -95,9 +97,6 @@ func (e *Executor) resolveTimeRange(ctx context.Context, tr *TimeRange, tz *time
 		FirstDay:   int(e.metricsView.FirstDayOfWeek),
 		FirstMonth: int(e.metricsView.FirstMonthOfYear),
 	})
-	if err != nil {
-		return err
-	}
 
 	// Clear all other fields than Start and End
 	tr.Expression = ""
@@ -112,7 +111,7 @@ func (e *Executor) resolveTimeRange(ctx context.Context, tr *TimeRange, tz *time
 func (e *Executor) resolveISOTimeRange(ctx context.Context, tr *TimeRange, tz *time.Location, executionTime *time.Time) error {
 	if tr.Start.IsZero() && tr.End.IsZero() {
 		if executionTime == nil {
-			ts, err := e.Timestamps(ctx)
+			ts, err := e.Timestamps(ctx, tr.TimeDimension)
 			if err != nil {
 				return fmt.Errorf("failed to fetch timestamps: %w", err)
 			}

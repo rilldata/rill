@@ -22,6 +22,7 @@ import {
   FromURLParamTimeRangePresetMap,
   FromURLParamViewMap,
 } from "@rilldata/web-common/features/dashboards/url-state/mappers";
+import { validateRillTime } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser";
 import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
 import {
   getMapFromArray,
@@ -125,7 +126,8 @@ export function convertURLToExplorePreset(
   // only extract params if the view is explicitly set to the relevant one
   switch (preset.view) {
     case V1ExploreWebView.EXPLORE_WEB_VIEW_EXPLORE:
-    case V1ExploreWebView.EXPLORE_WEB_VIEW_UNSPECIFIED: {
+    case V1ExploreWebView.EXPLORE_WEB_VIEW_UNSPECIFIED:
+    case undefined: {
       const { preset: ovPreset, errors: ovErrors } = fromExploreUrlParams(
         searchParams,
         measures,
@@ -157,17 +159,26 @@ export function convertURLToExplorePreset(
     }
   }
 
-  if (searchParams.has(ExploreStateURLParams.LeaderboardMeasureCount)) {
-    const count = searchParams.get(
-      ExploreStateURLParams.LeaderboardMeasureCount,
+  // Validate that the measures here are actually present and visible.
+  // Unset if any are invalid.
+  if (searchParams.has(ExploreStateURLParams.LeaderboardMeasures)) {
+    const leaderboardMeasures = searchParams.get(
+      ExploreStateURLParams.LeaderboardMeasures,
+    ) as string;
+    const measuresList = leaderboardMeasures.split(",");
+
+    // Check if all measures exist and are visible
+    const allMeasuresValid = measuresList.every(
+      (measure) =>
+        measures.has(measure) &&
+        (!preset.measures || preset.measures.includes(measure)),
     );
-    const parsedCount = parseInt(count ?? "", 10);
-    if (!isNaN(parsedCount) && parsedCount > 0) {
-      preset.exploreLeaderboardMeasureCount = parsedCount;
+
+    if (allMeasuresValid) {
+      preset.exploreLeaderboardMeasures = measuresList;
     } else {
-      errors.push(
-        getSingleFieldError("leaderboard measure count", count ?? ""),
-      );
+      // Unset leaderboard measures if any are invalid
+      preset.exploreLeaderboardMeasures = [];
     }
   }
 
@@ -288,7 +299,12 @@ export function fromTimeRangesParams(
     ) {
       preset.timeRange = tr;
     } else {
-      errors.push(getSingleFieldError("time range", tr));
+      const rillTimeError = validateRillTime(tr);
+      if (rillTimeError) {
+        errors.push(getSingleFieldError("time range", tr));
+      } else {
+        preset.timeRange = tr;
+      }
     }
   }
 
@@ -456,20 +472,6 @@ function fromExploreUrlParams(
       preset.exploreSortType = FromURLParamsSortTypeMap[sortType];
     } else {
       errors.push(getSingleFieldError("sort type", sortType));
-    }
-  }
-
-  if (searchParams.has(ExploreStateURLParams.LeaderboardMeasureCount)) {
-    const count = searchParams.get(
-      ExploreStateURLParams.LeaderboardMeasureCount,
-    );
-    const parsedCount = parseInt(count ?? "", 10);
-    if (!isNaN(parsedCount) && parsedCount > 0) {
-      preset.exploreLeaderboardMeasureCount = parsedCount;
-    } else {
-      errors.push(
-        getSingleFieldError("leaderboard measure count", count ?? ""),
-      );
     }
   }
 

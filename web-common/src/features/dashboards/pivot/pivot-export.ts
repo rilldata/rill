@@ -1,11 +1,11 @@
+import { getDimensionForTimeField } from "@rilldata/web-common/features/dashboards/aggregation-request/dimension-utils.ts";
 import { mergeDimensionAndMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { mapSelectedTimeRangeToV1TimeRange } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers";
-import type { TimeRangeString } from "@rilldata/web-common/lib/time/types";
+import { type TimeRangeString } from "@rilldata/web-common/lib/time/types";
 import {
-  V1TimeGrain,
   type V1MetricsViewAggregationRequest,
   type V1MetricsViewAggregationSort,
   type V1Query,
@@ -28,7 +28,7 @@ export function getPivotExportQuery(ctx: StateManagers, isScheduled: boolean) {
   const metricsViewName = get(ctx.metricsViewName);
   const validSpecStore = get(ctx.validSpecStore);
   const timeControlState = get(useTimeControlStore(ctx));
-  const dashboardState = get(ctx.dashboardStore);
+  const exploreState = get(ctx.dashboardStore);
   const configStore = get(getPivotConfig(ctx));
   const rows = get(ctx.selectors.pivot.rows);
   const columns = get(ctx.selectors.pivot.columns);
@@ -44,22 +44,27 @@ export function getPivotExportQuery(ctx: StateManagers, isScheduled: boolean) {
   const metricsViewSpec = validSpecStore.data?.metricsView ?? {};
   const exploreSpec = validSpecStore.data?.explore ?? {};
 
-  const timeRange = mapSelectedTimeRangeToV1TimeRange(
-    timeControlState,
-    dashboardState.selectedTimezone,
-    exploreSpec,
-  );
-  if (!timeRange) return undefined;
-  if (!isScheduled) {
-    // To match the UI's time range, we must explicitly specify `timeEnd` for on-demand exports
-    timeRange.end = timeControlState.timeEnd;
+  let timeRange: V1TimeRange | undefined;
+  if (isScheduled) {
+    timeRange = mapSelectedTimeRangeToV1TimeRange(
+      timeControlState.selectedTimeRange,
+      exploreState.selectedTimezone,
+      exploreSpec,
+    );
+  } else {
+    timeRange = {
+      start: timeControlState.timeStart,
+      end: timeControlState.timeEnd,
+    };
   }
 
+  if (!timeRange) return undefined;
+
   const query: V1Query = {
-    metricsViewAggregationRequest: getPivotAggregationRequest(
+    metricsViewAggregationRequest: getPivotAggregationRequest({
       metricsViewName,
-      metricsViewSpec.timeDimension ?? "",
-      dashboardState,
+      timeDimension: metricsViewSpec.timeDimension ?? "",
+      exploreState,
       timeRange,
       rows,
       columns,
@@ -67,24 +72,35 @@ export function getPivotExportQuery(ctx: StateManagers, isScheduled: boolean) {
       comparisonTime,
       isFlat,
       pivotState,
-    ),
+    }),
   };
 
   return query;
 }
 
-function getPivotAggregationRequest(
-  metricsView: string,
-  timeDimension: string,
-  dashboardState: MetricsExplorerEntity,
-  timeRange: V1TimeRange,
-  rows: PivotChipData[],
-  columns: { dimension: PivotChipData[]; measure: PivotChipData[] },
-  enableComparison: boolean,
-  comparisonTime: TimeRangeString | undefined,
-  isFlat: boolean,
-  pivotState: PivotState,
-): undefined | V1MetricsViewAggregationRequest {
+export function getPivotAggregationRequest({
+  metricsViewName,
+  timeDimension,
+  exploreState,
+  timeRange,
+  rows,
+  columns,
+  enableComparison,
+  comparisonTime,
+  isFlat,
+  pivotState,
+}: {
+  metricsViewName: string;
+  timeDimension: string;
+  exploreState: ExploreState;
+  timeRange: V1TimeRange;
+  rows: PivotChipData[];
+  columns: { dimension: PivotChipData[]; measure: PivotChipData[] };
+  enableComparison: boolean;
+  comparisonTime: TimeRangeString | undefined;
+  isFlat: boolean;
+  pivotState: PivotState;
+}): undefined | V1MetricsViewAggregationRequest {
   const measures = columns.measure.flatMap((m) => {
     const measureName = m.id;
     const group = [{ name: measureName }];
@@ -101,12 +117,12 @@ function getPivotAggregationRequest(
 
   const allDimensions = [...rows, ...columns.dimension].map((d) =>
     d.type === PivotChipType.Time
-      ? {
-          name: timeDimension,
-          timeGrain: d.id as V1TimeGrain,
-          timeZone: dashboardState.selectedTimezone,
-          alias: `Time ${d.title}`,
-        }
+      ? getDimensionForTimeField(
+          timeDimension,
+          exploreState.selectedTimezone,
+          d,
+          !isFlat,
+        )
       : {
           name: d.id,
         },
@@ -120,12 +136,12 @@ function getPivotAggregationRequest(
 
   const rowDimensions = rows.map((d) =>
     d.type === PivotChipType.Time
-      ? {
-          name: timeDimension,
-          timeGrain: d.id as V1TimeGrain,
-          timeZone: dashboardState.selectedTimezone,
-          alias: `Time ${d.title}`,
-        }
+      ? getDimensionForTimeField(
+          timeDimension,
+          exploreState.selectedTimezone,
+          d,
+          true,
+        )
       : {
           name: d.id,
         },
@@ -161,7 +177,7 @@ function getPivotAggregationRequest(
 
   return {
     instanceId: get(runtime).instanceId,
-    metricsView,
+    metricsView: metricsViewName,
     timeRange,
     comparisonTimeRange: comparisonTime,
     measures: enableComparison
@@ -170,8 +186,8 @@ function getPivotAggregationRequest(
     dimensions: allDimensions,
     where: sanitiseExpression(
       mergeDimensionAndMeasureFilters(
-        dashboardState.whereFilter,
-        dashboardState.dimensionThresholdFilters,
+        exploreState.whereFilter,
+        exploreState.dimensionThresholdFilters,
       ),
       undefined,
     ),

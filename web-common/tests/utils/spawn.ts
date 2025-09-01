@@ -15,37 +15,42 @@ export async function spawnAndMatch(
   options: {
     cwd?: string;
     timeoutMs?: number;
+    additionalEnv?: NodeJS.ProcessEnv;
   } = {},
 ): Promise<SpawnAndMatchResult> {
   const { timeoutMs = 30000 } = options;
 
   return new Promise((resolve, reject) => {
-    const process = spawn(command, args, {
+    const childProcess = spawn(command, args, {
       stdio: ["inherit", "pipe", "inherit"],
       cwd: options.cwd,
+      env: {
+        ...process.env,
+        ...(options.additionalEnv ?? {}),
+      },
     });
 
     const timeout = setTimeout(() => {
-      process.kill();
+      childProcess.kill();
       reject(new Error(`Timeout waiting for regex match: ${pattern}`));
     }, timeoutMs);
 
-    process.stdout.on("data", (data: Buffer | string) => {
+    childProcess.stdout.on("data", (data: Buffer | string) => {
       const output = data.toString();
       console.log(output);
       const match = output.match(pattern);
       if (match) {
         clearTimeout(timeout);
-        resolve({ process, match });
+        resolve({ process: childProcess, match });
       }
     });
 
-    process.on("error", (err) => {
+    childProcess.on("error", (err) => {
       clearTimeout(timeout);
       reject(err);
     });
 
-    process.on("exit", (code) => {
+    childProcess.on("exit", (code) => {
       clearTimeout(timeout);
       reject(
         new Error(

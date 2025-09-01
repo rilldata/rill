@@ -17,6 +17,7 @@
   export let allowSelectAll = true;
   export let searchText = "";
   export let showHiddenSelectionsCount = false;
+  export let side: "top" | "right" | "bottom" | "left" = "bottom";
   export let onSelect: (name: string) => void;
   export let onToggleSelectAll: () => void = voidFn;
 
@@ -63,6 +64,7 @@
 
 <DropdownMenu.Content
   align="start"
+  {side}
   class="flex flex-col max-h-96 w-72 overflow-hidden p-0"
 >
   <div class="px-3 pt-3 pb-1">
@@ -131,7 +133,7 @@
 
   {#if allowSelectAll && allowMultiSelect}
     <footer>
-      <Button on:click={onToggleSelectAll} type="plain">
+      <Button onClick={onToggleSelectAll} type="plain">
         {#if allSelected}
           Deselect all
         {:else}

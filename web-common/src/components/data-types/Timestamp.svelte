@@ -5,7 +5,6 @@
   export let inTable = false;
   export const textAlign = "text-right";
   export let customStyle = "";
-  export let dark: boolean;
   export let type: string;
   export let value;
   export let truncate: boolean;
@@ -15,10 +14,8 @@
 <Base
   {truncate}
   {isNull}
-  classes="ui-copy-number font-semibold {customStyle} {dark
-    ? 'text-slate-200'
-    : 'text-slate-800'} {inTable && 'text-left'}"
-  {dark}
+  classes="ui-copy-number font-semibold {customStyle} text-gray-800 {inTable &&
+    'text-left'}"
   {color}
 >
   <slot name="value">

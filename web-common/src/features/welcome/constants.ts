@@ -20,6 +20,6 @@ export const EXAMPLES = [
     title: "Github Analytics",
     description: "A Git project's commit activity",
     image: "/img/welcome-bg-github-analytics.png",
-    firstFile: "duckdb_commits_explore.yaml",
+    firstFile: "clickhouse_commits_explore.yaml",
   },
 ];

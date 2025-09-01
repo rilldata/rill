@@ -6,19 +6,20 @@ This is a fully controlled componentent, so it us up to the containing component
 
 Additionally, `<SubButton>` may have a `tooltips` prop, with type:
 
-``` javascript
+```javascript
 tootips: {
     selected?: string;
     unselected?: string;
     disabled?: string;
   };
 ```
-If the subbutton is disabled, then that will override the other two tooltip options. If  the button is not disabled, the tooltip string corresponding to the buttons selection state will be shown.
+
+If the subbutton is disabled, then that will override the other two tooltip options. If the button is not disabled, the tooltip string corresponding to the buttons selection state will be shown.
 
 # Usage Example:
 
 ```javascript
-<ButtonToggleGroup selected={[1,2]} disabled={[4]} >
+<ButtonToggleGroup selected={[1, 2]} disabled={[4]}>
   <SubButton value={1}>
     <Bold />%
   </SubButton>
@@ -33,6 +34,3 @@ If the subbutton is disabled, then that will override the other two tooltip opti
   </SubButton>
 </ButtonToggleGroup>
 ```
-
-
-

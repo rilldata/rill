@@ -17,14 +17,16 @@ var ErrRillYAMLNotFound = errors.New("rill.yaml not found")
 
 // RillYAML is the parsed contents of rill.yaml
 type RillYAML struct {
-	DisplayName   string
-	Description   string
-	OLAPConnector string
-	Connectors    []*ConnectorDef
-	Variables     []*VariableDef
-	Defaults      map[ResourceKind]yaml.Node
-	FeatureFlags  map[string]bool
-	PublicPaths   []string
+	DisplayName    string
+	Description    string
+	AIInstructions string
+	OLAPConnector  string
+	AIConnector    string
+	Connectors     []*ConnectorDef
+	Variables      []*VariableDef
+	Defaults       map[ResourceKind]yaml.Node
+	FeatureFlags   map[string]bool
+	PublicPaths    []string
 }
 
 // ConnectorDef is a subtype of RillYAML, defining connectors required by the project
@@ -54,6 +56,10 @@ type rillYAML struct {
 	Name string `yaml:"name"` // Deprecated: use display_name
 	// Description of the project
 	Description string `yaml:"description"`
+	// User-provided context for LLM/AI features
+	AIInstructions string `yaml:"ai_instructions"`
+	// Connector to use for the AI service
+	AIConnector string `yaml:"ai_connector"`
 	// The project's default OLAP connector to use (can be overridden in the individual resources)
 	OLAPConnector string `yaml:"olap_connector"`
 	// Connectors required by the project
@@ -84,6 +90,10 @@ type rillYAML struct {
 	MetricsViewsLegacy yaml.Node `yaml:"dashboards"`
 	// Default YAML values for explores
 	Explores yaml.Node `yaml:"explores"`
+	// Default YAML values for canvases
+	Canvases yaml.Node `yaml:"canvases"`
+	// Default YAML values for custom apis
+	APIs yaml.Node `yaml:"apis"`
 	// Default YAML values for migrations
 	Migrations yaml.Node `yaml:"migrations"`
 	// Feature flags (preferably a map[string]bool, but can also be a []string for backwards compatibility)
@@ -192,7 +202,8 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 
 	// Validate resource defaults
 	if !tmp.Sources.IsZero() {
-		if err := tmp.Sources.Decode(&SourceYAML{}); err != nil {
+		// NOTE: Validating against ModelYAML since SourceYAML is deprecated.
+		if err := tmp.Sources.Decode(&ModelYAML{}); err != nil {
 			return newYAMLError(err)
 		}
 	}
@@ -213,6 +224,16 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 	}
 	if !tmp.Explores.IsZero() {
 		if err := tmp.Explores.Decode(&ExploreYAML{}); err != nil {
+			return newYAMLError(err)
+		}
+	}
+	if !tmp.Canvases.IsZero() {
+		if err := tmp.Canvases.Decode(&CanvasYAML{}); err != nil {
+			return newYAMLError(err)
+		}
+	}
+	if !tmp.APIs.IsZero() {
+		if err := tmp.APIs.Decode(&APIYAML{}); err != nil {
 			return newYAMLError(err)
 		}
 	}
@@ -255,20 +276,24 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 		ResourceKindMetricsView: tmp.MetricsViews,
 		ResourceKindExplore:     tmp.Explores,
 		ResourceKindMigration:   tmp.Migrations,
+		ResourceKindCanvas:      tmp.Canvases,
+		ResourceKindAPI:         tmp.APIs,
 	}
 	if !tmp.MetricsViewsLegacy.IsZero() {
 		defaults[ResourceKindMetricsView] = tmp.MetricsViewsLegacy
 	}
 
 	res := &RillYAML{
-		DisplayName:   tmp.DisplayName,
-		Description:   tmp.Description,
-		OLAPConnector: tmp.OLAPConnector,
-		Connectors:    make([]*ConnectorDef, len(tmp.Connectors)),
-		Variables:     make([]*VariableDef, len(vars)),
-		Defaults:      defaults,
-		FeatureFlags:  featureFlags,
-		PublicPaths:   tmp.PublicPaths,
+		DisplayName:    tmp.DisplayName,
+		Description:    tmp.Description,
+		AIInstructions: tmp.AIInstructions,
+		AIConnector:    tmp.AIConnector,
+		OLAPConnector:  tmp.OLAPConnector,
+		Connectors:     make([]*ConnectorDef, len(tmp.Connectors)),
+		Variables:      make([]*VariableDef, len(vars)),
+		Defaults:       defaults,
+		FeatureFlags:   featureFlags,
+		PublicPaths:    tmp.PublicPaths,
 	}
 
 	for i, c := range tmp.Connectors {

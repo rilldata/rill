@@ -88,7 +88,10 @@ export class HttpRequestQueue {
     if (!priority) {
       priority = getPriority(type);
     }
-    requestOptions.params.priority = priority;
+    // Skip adding priority parameter for canvas resolve requests
+    if (type !== "canvases") {
+      requestOptions.params.priority = priority;
+    }
     entry.weight = priority;
     entry.id = this.ids++;
 

@@ -8,10 +8,10 @@ import (
 	"net"
 	"strings"
 	"testing"
+	"time"
 
-	"github.com/google/go-github/v50/github"
+	"github.com/google/go-github/v71/github"
 	"github.com/rilldata/rill/admin"
-	"github.com/rilldata/rill/admin/ai"
 	"github.com/rilldata/rill/admin/billing"
 	"github.com/rilldata/rill/admin/billing/payment"
 	"github.com/rilldata/rill/admin/client"
@@ -19,7 +19,9 @@ import (
 	"github.com/rilldata/rill/admin/jobs/river"
 	"github.com/rilldata/rill/admin/pkg/pgtestcontainer"
 	"github.com/rilldata/rill/admin/server"
+	"github.com/rilldata/rill/cli/pkg/version"
 	"github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/pkg/ai"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	runtimeauth "github.com/rilldata/rill/runtime/server/auth"
@@ -51,7 +53,7 @@ type Fixture struct {
 // New creates an ephemeral admin service and server for testing.
 // See the docstring for the returned Fixture for details.
 func New(t *testing.T) *Fixture {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Postgres
 	pg := pgtestcontainer.New(t)
@@ -74,20 +76,18 @@ func New(t *testing.T) *Fixture {
 	require.NoError(t, err)
 
 	// Ports and external URLs
-	httpPort := findPort(t)
-	grpcPort := findPort(t)
-	externalURL := fmt.Sprintf("http://localhost:%d", grpcPort)
-	externalHTTPURL := fmt.Sprintf("http://localhost:%d", httpPort)
+	port := findPort(t)
+	externalURL := fmt.Sprintf("http://localhost:%d", port)
 	frontendURL := "http://frontend.mock"
 
 	// JWT issuer
-	issuer, err := runtimeauth.NewEphemeralIssuer(externalHTTPURL)
+	issuer, err := runtimeauth.NewEphemeralIssuer(externalURL)
 	require.NoError(t, err)
 
 	// Runtime provisioner.
 	// NOTE: Only gives the appearance of a static runtime, but does not actually start one.
 	// TODO: Support actually starting a runtime.
-	runtimeExternalURL := "http://localhost:9091"
+	runtimeExternalURL := "http://localhost:8081"
 	runtimeAudienceURL := "http://localhost:8081"
 	defaultProvisioner := "static"
 	provisionerSetJSON := must(json.Marshal(map[string]any{
@@ -114,8 +114,7 @@ func New(t *testing.T) *Fixture {
 		FrontendURL:               frontendURL,
 		ProvisionerSetJSON:        string(provisionerSetJSON),
 		DefaultProvisioner:        defaultProvisioner,
-		VersionNumber:             "",
-		VersionCommit:             "",
+		Version:                   version.Version{},
 		MetricsProjectOrg:         "",
 		MetricsProjectName:        "",
 		AutoscalerCron:            "",
@@ -133,8 +132,8 @@ func New(t *testing.T) *Fixture {
 
 	// Server
 	srvOpts := &server.Options{
-		HTTPPort:         httpPort,
-		GRPCPort:         grpcPort,
+		HTTPPort:         port,
+		GRPCPort:         port,
 		AllowedOrigins:   []string{"*"},
 		SessionKeyPairs:  [][]byte{randomBytes(16), randomBytes(16)},
 		ServePrometheus:  true,
@@ -149,7 +148,6 @@ func New(t *testing.T) *Fixture {
 	ctx, cancel := context.WithCancel(ctx)
 	t.Cleanup(cancel)
 	group, ctx := errgroup.WithContext(ctx)
-	group.Go(func() error { return srv.ServeGRPC(ctx) })
 	group.Go(func() error { return srv.ServeHTTP(ctx) })
 	require.NoError(t, srv.AwaitServing(ctx))
 
@@ -168,7 +166,7 @@ func (f *Fixture) NewUser(t *testing.T) (*database.User, *client.Client) {
 // NewSuperuser creates a new user with superuser permission in the fixture's admin service.
 func (f *Fixture) NewSuperuser(t *testing.T) (*database.User, *client.Client) {
 	u, c := f.NewUserWithDomain(t, "test-superuser.com")
-	err := f.Admin.DB.UpdateSuperuser(context.Background(), u.ID, true)
+	err := f.Admin.DB.UpdateSuperuser(t.Context(), u.ID, true)
 	require.NoError(t, err)
 	return u, c
 }
@@ -182,12 +180,13 @@ func (f *Fixture) NewUserWithDomain(t *testing.T, domain string) (*database.User
 
 // NewUserWithEmail creates a new user with the given email in the fixture's admin service.
 func (f *Fixture) NewUserWithEmail(t *testing.T, emailAddr string) (*database.User, *client.Client) {
+	ctx := t.Context()
 	name := fmt.Sprintf("Test %s", strings.Split(emailAddr, "@")[0])
 
-	u, err := f.Admin.CreateOrUpdateUser(context.Background(), emailAddr, name, "")
+	u, err := f.Admin.CreateOrUpdateUser(ctx, emailAddr, name, "")
 	require.NoError(t, err)
 
-	tkn, err := f.Admin.IssueUserAuthToken(context.Background(), u.ID, database.AuthClientIDRillWeb, "Test session", nil, nil)
+	tkn, err := f.Admin.IssueUserAuthToken(ctx, u.ID, database.AuthClientIDRillWeb, "Test session", nil, nil)
 	require.NoError(t, err)
 
 	return u, f.NewClient(t, tkn.Token().String())
@@ -213,12 +212,20 @@ func (m *mockGithub) AppClient() *github.Client {
 	return nil
 }
 
-func (m *mockGithub) InstallationClient(installationID int64) (*github.Client, error) {
-	return nil, nil
+func (m *mockGithub) InstallationClient(installationID int64, repoID *int64) *github.Client {
+	return nil
 }
 
-func (m *mockGithub) InstallationToken(ctx context.Context, installationID int64) (string, error) {
-	return "", nil
+func (m *mockGithub) InstallationToken(ctx context.Context, installationID, repoID int64) (string, time.Time, error) {
+	return "", time.Time{}, nil
+}
+
+func (m *mockGithub) CreateManagedRepo(ctx context.Context, repoPrefix string) (*github.Repository, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+func (m *mockGithub) ManagedOrgInstallationID() (int64, error) {
+	return 0, fmt.Errorf("not implemented")
 }
 
 func findPort(t *testing.T) int {

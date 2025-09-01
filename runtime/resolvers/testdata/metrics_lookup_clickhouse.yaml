@@ -1,0 +1,62 @@
+connectors:
+  - clickhouse
+project_files:
+  clickhouse_data.yaml:
+    type: model
+    connector: clickhouse
+    sql: |
+      select parseDateTimeBestEffort('2024-01-01T00:00:00Z') as time, 'DK' as country_code, 1 as val union all
+      select parseDateTimeBestEffort('2024-01-02T00:00:00Z') as time, 'US' as country_code, 2 as val union all
+      select parseDateTimeBestEffort('2024-01-03T00:00:00Z') as time, 'US' as country_code, 3 as val union all
+      select parseDateTimeBestEffort('2024-01-04T00:00:00Z') as time, 'US' as country_code, 4 as val union all
+      select parseDateTimeBestEffort('2024-01-05T00:00:00Z') as time, 'DK' as country_code, 5 as val
+    output:
+      connector: clickhouse
+  clickhouse_country_dict.yaml:
+    type: model
+    connector: clickhouse
+    sql: |
+      select 'DK' as code, 'Denmark' as name union all
+      select 'US' as code, 'United States' as name
+    output:
+      connector: clickhouse
+      type: DICTIONARY
+      primary_key: code
+      dictionary_source_user: 'clickhouse'
+      dictionary_source_password: 'clickhouse'
+  clickhouse_metrics.yaml:
+    type: metrics_view
+    model: clickhouse_data
+    timeseries: time
+    dimensions:
+      - name: country
+        column: country_code
+        lookup_table: clickhouse_country_dict
+        lookup_key_column: code
+        lookup_value_column: name
+    measures:
+      - name: count
+        expression: count(*)
+      - name: sum
+        expression: sum(val)
+tests:
+  - name: lookup_dimension_clickhouse
+    resolver: metrics
+    properties:
+      metrics_view: clickhouse_metrics
+      dimensions:
+        - name: country
+      measures:
+        - name: sum
+      time_range:
+        end: 2024-01-06T00:00:00Z
+        start: 2024-01-01T00:00:00Z
+      where:
+        cond:
+          op: in
+          exprs:
+            - name: country
+            - val: 'Denmark'
+    result:
+      - sum: 6
+        country: Denmark

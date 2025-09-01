@@ -23,6 +23,26 @@
 
   let sorting: SortingState = [];
 
+  // Initialize sorting for sortDescFirst column
+  const sortDescFirstColumn = columns.find((col) => col.sortDescFirst);
+  if (sortDescFirstColumn) {
+    const columnId =
+      "id" in sortDescFirstColumn
+        ? sortDescFirstColumn.id
+        : "accessorKey" in sortDescFirstColumn
+          ? sortDescFirstColumn.accessorKey
+          : "accessorFn" in sortDescFirstColumn
+            ? (sortDescFirstColumn.header as string)
+            : Object.keys(sortDescFirstColumn)[0];
+
+    sorting = [
+      {
+        id: columnId as string,
+        desc: true,
+      },
+    ];
+  }
+
   $: safeData = Array.isArray(data) ? data : [];
   $: {
     if (safeData) {
@@ -50,7 +70,7 @@
   };
 
   const options = writable<TableOptions<any>>({
-    data: data,
+    data: safeData,
     columns: columns,
     state: {
       sorting,
@@ -58,6 +78,7 @@
     onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
+    enableSortingRemoval: false,
   });
 
   const table = createSvelteTable(options);
@@ -80,7 +101,7 @@
           role="columnheader"
           tabindex="0"
           class="pl-{header.column.columnDef.meta?.marginLeft ||
-            '4'} py-2 font-semibold text-gray-500 text-left flex flex-row items-center gap-x-1 truncate"
+            '4'} py-2 font-semibold text-gray-500 text-left flex flex-row items-center gap-x-1 truncate text-sm"
           on:click={header.column.getToggleSortingHandler()}
         >
           {#if !header.isPlaceholder}
@@ -92,13 +113,12 @@
                 )}
               />
             </span>
-            {#if header.column.getIsSorted().toString() === "asc"}
+            {#if header.column.getIsSorted()}
               <span>
-                <ArrowDown flip size="12px" />
-              </span>
-            {:else if header.column.getIsSorted().toString() === "desc"}
-              <span>
-                <ArrowDown size="12px" />
+                <ArrowDown
+                  flip={header.column.getIsSorted().toString() === "asc"}
+                  size="12px"
+                />
               </span>
             {/if}
           {/if}

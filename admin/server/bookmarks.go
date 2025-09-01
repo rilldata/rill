@@ -60,7 +60,7 @@ func (s *Server) GetBookmark(ctx context.Context, req *adminv1.GetBookmarkReques
 		permissions.ReadProd = true
 	}
 
-	if !permissions.ReadProject && !claims.Superuser(ctx) {
+	if !permissions.ReadProject {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read the project")
 	}
 
@@ -88,7 +88,7 @@ func (s *Server) CreateBookmark(ctx context.Context, req *adminv1.CreateBookmark
 		permissions.CreateBookmarks = claims.OwnerType() == auth.OwnerTypeUser // Logged in users can create bookmarks on public projects
 	}
 
-	if !permissions.CreateBookmarks && !claims.Superuser(ctx) {
+	if !permissions.CreateBookmarks {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to create bookmarks")
 	}
 

@@ -39,7 +39,7 @@ func (e *Executor) rewriteLimitsIntoSubqueriesWalk(ast *AST, n *SelectNode) erro
 	}
 
 	// Apply limits
-	rewriteLimitInSubquery(n, spineNode, ast.Root.OrderBy, ast.Root.Limit, ast.Root.Offset)
+	rewriteLimitInSubquery(n, spineNode, ast.Root.OrderBy, n.Limit, ast.Root.Offset)
 
 	// Recurse
 	err := e.rewriteLimitsIntoSubqueriesWalk(ast, spineNode)
@@ -63,9 +63,10 @@ func rewriteLimitInSubquery(parent, child *SelectNode, order []OrderFieldNode, l
 		}
 	}
 
-	// Apply changes to child, and clear offset from parent
+	// Apply changes to child, and clear offset and limit from parent as we just wnt limit in the innermost query
 	child.OrderBy = order
 	child.Limit = limit
 	child.Offset = offset
 	parent.Offset = nil
+	parent.Limit = nil
 }

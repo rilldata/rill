@@ -1,5 +1,5 @@
 import { createSparkline } from "@rilldata/web-common/components/data-graphic/marks/sparkline";
-import { selectedDimensionValues } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
+import { useSelectedValuesForCompareDimension } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import {
@@ -66,7 +66,7 @@ function getHeaderDataForRow(
     {
       value: row?.total?.toString() ?? "",
       spark: createSparkline(rowData, (v) =>
-        typeof v?.[measureName] === "number" ? (v[measureName] as number) : 0,
+        typeof v?.[measureName] === "number" ? v[measureName] : 0,
       ),
     },
   ];
@@ -142,7 +142,7 @@ function prepareDimensionData(
     {
       value: total?.toString(),
       spark: createSparkline(totalsTableData, (v) =>
-        typeof v?.[measureName] === "number" ? (v[measureName] as number) : 0,
+        typeof v?.[measureName] === "number" ? v[measureName] : 0,
       ),
     },
   ];
@@ -232,7 +232,7 @@ function prepareTimeData(
     {
       value: total?.toString() ?? "",
       spark: createSparkline(tableData, (v) =>
-        typeof v?.[measureName] === "number" ? (v[measureName] as number) : 0,
+        typeof v?.[measureName] === "number" ? v[measureName] : 0,
       ),
     },
   ]);
@@ -246,9 +246,7 @@ function prepareTimeData(
         {
           value: total?.toString() ?? "",
           spark: createSparkline(tableData, (v) =>
-            typeof v?.[measureName] === "number"
-              ? (v[measureName] as number)
-              : 0,
+            typeof v?.[measureName] === "number" ? v[measureName] : 0,
           ),
         },
       ],
@@ -371,6 +369,7 @@ export function createTimeDimensionDataStore(
       useTimeControlStore(ctx),
       useTimeSeriesDataStore(ctx),
       useDimensionTableData(ctx),
+      useSelectedValuesForCompareDimension(ctx),
     ],
     ([
       dashboardStore,
@@ -378,13 +377,15 @@ export function createTimeDimensionDataStore(
       timeControls,
       timeSeries,
       tableDimensionData,
+      selectedValues,
     ]) => {
       if (timeSeries?.isError) return { isFetching: false, isError: true };
       if (
         !validSpec.data ||
         !timeControls.ready ||
         timeControls?.isFetching ||
-        timeSeries?.isFetching
+        timeSeries?.isFetching ||
+        !selectedValues.data
       )
         return { isFetching: true };
 
@@ -417,17 +418,13 @@ export function createTimeDimensionDataStore(
       if (dimensionName) {
         comparing = "dimension";
 
-        const selectedValues = selectedDimensionValues({
-          dashboard: dashboardStore,
-        })(dimensionName);
-
         data = prepareDimensionData(
           timeSeries?.timeSeriesData,
           tableDimensionData,
           total as number,
           unfilteredTotal as number,
           measure,
-          selectedValues,
+          selectedValues.data,
           isAllTime,
           pinIndex,
         );

@@ -1,7 +1,6 @@
 package testruntime
 
 import (
-	"context"
 	"fmt"
 	"testing"
 
@@ -11,32 +10,35 @@ import (
 )
 
 func RequireOLAPTable(t testing.TB, rt *runtime.Runtime, id, name string) {
-	olap, release, err := rt.OLAP(context.Background(), id, "")
+	ctx := t.Context()
+	olap, release, err := rt.OLAP(ctx, id, "")
 	require.NoError(t, err)
 	defer release()
 
-	_, err = olap.InformationSchema().Lookup(context.Background(), "", "", name)
+	_, err = olap.InformationSchema().Lookup(ctx, "", "", name)
 	require.NoError(t, err)
 }
 
 func RequireNoOLAPTable(t testing.TB, rt *runtime.Runtime, id, name string) {
-	olap, release, err := rt.OLAP(context.Background(), id, "")
+	ctx := t.Context()
+	olap, release, err := rt.OLAP(ctx, id, "")
 	require.NoError(t, err)
 	defer release()
 
-	_, err = olap.InformationSchema().Lookup(context.Background(), "", "", name)
+	_, err = olap.InformationSchema().Lookup(ctx, "", "", name)
 	require.ErrorIs(t, err, drivers.ErrNotFound)
 }
 
 func RequireOLAPTableCount(t testing.TB, rt *runtime.Runtime, id, name string, count int) {
-	olap, release, err := rt.OLAP(context.Background(), id, "")
+	ctx := t.Context()
+	olap, release, err := rt.OLAP(ctx, id, "")
 	require.NoError(t, err)
 	defer release()
 
-	_, err = olap.InformationSchema().Lookup(context.Background(), "", "", name)
+	_, err = olap.InformationSchema().Lookup(ctx, "", "", name)
 	require.NoError(t, err)
 
-	rows, err := olap.Query(context.Background(), &drivers.Statement{Query: fmt.Sprintf(`SELECT count(*) FROM %s`, drivers.DialectDuckDB.EscapeIdentifier(name))})
+	rows, err := olap.Query(ctx, &drivers.Statement{Query: fmt.Sprintf(`SELECT count(*) FROM %s`, drivers.DialectDuckDB.EscapeIdentifier(name))})
 	require.NoError(t, err)
 	defer rows.Close()
 
@@ -50,7 +52,7 @@ func RequireOLAPTableCount(t testing.TB, rt *runtime.Runtime, id, name string, c
 }
 
 func RequireIsView(t testing.TB, olap drivers.OLAPStore, tableName string, isView bool) {
-	table, err := olap.InformationSchema().Lookup(context.Background(), "", "", tableName)
+	table, err := olap.InformationSchema().Lookup(t.Context(), "", "", tableName)
 	require.NoError(t, err)
 	// Assert that the model is a table now
 	require.Equal(t, table.View, isView)

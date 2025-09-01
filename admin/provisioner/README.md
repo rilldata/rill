@@ -22,7 +22,7 @@ The provisioners are configured using the environment variable `RILL_ADMIN_PROVI
           "runtimes":
             [
               {
-                "host": "http://localhost:9091",          // Runtime host
+                "host": "http://localhost:8081",          // Runtime host
                 "slots": 50,                              // Amount of slots in the pre-provisioned runtime
                 "data_dir": "/mnt/data",                  // Directory to use for data storage like DB files etc.
                 "audience_url": "http://localhost:8081"   // Audience URL (JWT)

@@ -7,6 +7,8 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/drivers"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func init() {
@@ -65,14 +67,33 @@ func (r *ComponentReconciler) Reconcile(ctx context.Context, n *runtimev1.Resour
 		return runtime.ReconcileResult{}
 	}
 
-	// Validate
+	// Get instance config
+	cfg, err := r.C.Runtime.InstanceConfig(ctx, r.C.InstanceID)
+	if err != nil {
+		return runtime.ReconcileResult{Err: err}
+	}
+
+	// Validate all refs
 	validateErr := checkRefs(ctx, r.C, self.Meta.Refs)
+
+	// Check metrics view refs specifically (even if validateErr != nil)
+	validMetrics, dataRefreshedOn, err := r.checkMetricsViews(ctx, self.Meta.Refs)
+	if err != nil {
+		return runtime.ReconcileResult{Err: err}
+	}
 
 	// Capture the valid spec in the state
 	if validateErr == nil {
 		c.State.ValidSpec = c.Spec
+		c.State.DataRefreshedOn = dataRefreshedOn
+	} else if cfg.StageChanges && validMetrics {
+		// When StageChanges is enabled, we want to make a best effort to serve the canvas anyway.
+		// If all the metrics view(s) referenced by the spec have a ValidSpec, we'll consider the component valid.
+		c.State.ValidSpec = c.Spec
+		c.State.DataRefreshedOn = dataRefreshedOn
 	} else {
 		c.State.ValidSpec = nil
+		c.State.DataRefreshedOn = nil
 	}
 
 	// Update state. Even if the validation result is unchanged, we always update the state to ensure the state version is incremented.
@@ -82,4 +103,38 @@ func (r *ComponentReconciler) Reconcile(ctx context.Context, n *runtimev1.Resour
 	}
 
 	return runtime.ReconcileResult{Err: validateErr}
+}
+
+// checkMetricsViews returns true if all the metrics views referenced by the component have a valid spec.
+// If all metrics views are valid, it also returns the most recent DataRefreshedOn timestamp across all referenced metrics views.
+// Note that it returns false if no metrics views are referenced.
+func (r *ComponentReconciler) checkMetricsViews(ctx context.Context, refs []*runtimev1.ResourceName) (bool, *timestamppb.Timestamp, error) {
+	var n int
+	var dataRefreshedOn *timestamppb.Timestamp
+	for _, ref := range refs {
+		if ref.Kind != runtime.ResourceKindMetricsView {
+			continue
+		}
+
+		res, err := r.C.Get(ctx, ref, false)
+		if err != nil {
+			if errors.Is(err, drivers.ErrResourceNotFound) {
+				return false, nil, nil
+			}
+			return false, nil, err
+		}
+		if res.GetMetricsView().State.ValidSpec == nil {
+			return false, nil, nil
+		}
+
+		n++
+
+		t := res.GetMetricsView().State.DataRefreshedOn
+		if dataRefreshedOn == nil {
+			dataRefreshedOn = t
+		} else if t != nil && t.AsTime().After(dataRefreshedOn.AsTime()) {
+			dataRefreshedOn = t
+		}
+	}
+	return n > 0, dataRefreshedOn, nil
 }

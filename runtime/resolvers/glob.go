@@ -72,8 +72,6 @@ type globProps struct {
 	// TransformSQL is an optional SQL statement to transform the results.
 	// The SQL statement should be a DuckDB SQL statement that queries a table templated into the query with "{{ .table }}".
 	TransformSQL string `mapstructure:"transform_sql"`
-	// AdditionalProps is a map of additional properties to pass to the connector when calling its ObjectStore functions.
-	AdditionalProps map[string]any `mapstructure:",remain"`
 }
 
 // globArgs declares the arguments for a "glob" resolver.
@@ -109,7 +107,7 @@ func newGlob(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolv
 		ExtraProps: map[string]any{
 			"table": tmpTableName,
 		},
-	}, false)
+	}, true)
 	if err != nil {
 		return nil, fmt.Errorf("glob resolver: failed to resolve templating: %w", err)
 	}
@@ -118,6 +116,8 @@ func newGlob(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolv
 	if err := mapstructureutil.WeakDecode(propsMap, props); err != nil {
 		return nil, err
 	}
+
+	props.Path = strings.TrimSpace(props.Path)
 
 	// set props to span attributes
 	span := trace.SpanFromContext(ctx)
@@ -140,7 +140,11 @@ func newGlob(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolv
 
 	// If connector is not specified outright, infer it from the path (e.g. for "s3://bucket/path", the connector becomes "s3").
 	if props.Connector == "" {
-		props.Connector = bucketURI.Scheme
+		if bucketURI.Scheme == "gs" {
+			props.Connector = "gcs"
+		} else {
+			props.Connector = bucketURI.Scheme
+		}
 	}
 
 	return &globResolver{
@@ -180,12 +184,7 @@ func (r *globResolver) ResolveInteractive(ctx context.Context) (runtime.Resolver
 		return nil, fmt.Errorf("connector %q is not an object store", r.props.Connector)
 	}
 
-	listObjectsProps := map[string]any{"path": r.props.Path}
-	for k, v := range r.props.AdditionalProps {
-		listObjectsProps[k] = v
-	}
-
-	entries, err := store.ListObjects(ctx, listObjectsProps)
+	entries, err := store.ListObjects(ctx, r.props.Path)
 	if err != nil {
 		return nil, err
 	}

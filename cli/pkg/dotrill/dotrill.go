@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"gopkg.in/yaml.v2"
@@ -21,17 +22,19 @@ const (
 
 // Constants for YAML keys
 const (
-	DefaultOrgConfigKey            = "org"
-	DefaultAdminURLConfigKey       = "api_url"
-	AnalyticsEnabledConfigKey      = "analytics_enabled"
-	AccessTokenCredentialsKey      = "token"
-	InstallIDStateKey              = "install_id"
-	RepresentingUserCredentialsKey = "representing_user"
-	BackupTokenCredentialsKey      = "backup_token"
-	LatestVersionStateKey          = "latest_version"
-	LatestVersionCheckedAtStateKey = "latest_version_checked_at"
-	UserIDStateKey                 = "user_id"
-	UserCheckHashStateKey          = "user_check_hash"
+	DefaultOrgConfigKey                             = "org"
+	BackupDefaultOrgConfigKey                       = "backup_org"
+	DefaultAdminURLConfigKey                        = "api_url"
+	AnalyticsEnabledConfigKey                       = "analytics_enabled"
+	AccessTokenCredentialsKey                       = "token"
+	InstallIDStateKey                               = "install_id"
+	RepresentingUserCredentialsKey                  = "representing_user"
+	RepresentingUserAccessTokenExpiryCredentialsKey = "representing_user_token_expiry"
+	BackupTokenCredentialsKey                       = "backup_token"
+	LatestVersionStateKey                           = "latest_version"
+	LatestVersionCheckedAtStateKey                  = "latest_version_checked_at"
+	UserIDStateKey                                  = "user_id"
+	UserCheckHashStateKey                           = "user_check_hash"
 )
 
 // DotRill encapsulates access to .rill.
@@ -120,6 +123,16 @@ func (d DotRill) SetDefaultOrg(orgName string) error {
 	return d.Set(ConfigFilename, DefaultOrgConfigKey, orgName)
 }
 
+// GetBackupDefaultOrg loads the backedup default org
+func (d DotRill) GetBackupDefaultOrg() (string, error) {
+	return d.Get(ConfigFilename, BackupDefaultOrgConfigKey)
+}
+
+// SetBackupDefaultOrg saves the backedup default org
+func (d DotRill) SetBackupDefaultOrg(orgName string) error {
+	return d.Set(ConfigFilename, BackupDefaultOrgConfigKey, orgName)
+}
+
 // SetDefaultAdminURL loads the default admin URL (if set)
 func (d DotRill) SetDefaultAdminURL(url string) error {
 	return d.Set(ConfigFilename, DefaultAdminURLConfigKey, url)
@@ -153,6 +166,31 @@ func (d DotRill) SetBackupToken(token string) error {
 // GetRepresentingUser loads the current representing user email
 func (d DotRill) GetRepresentingUser() (string, error) {
 	return d.Get(CredentialsFilename, RepresentingUserCredentialsKey)
+}
+
+// GetRepresentingUserAccessTokenExpiry loads the current auth token expiry
+func (d DotRill) GetRepresentingUserAccessTokenExpiry() (time.Time, error) {
+	expiryStr, err := d.Get(CredentialsFilename, RepresentingUserAccessTokenExpiryCredentialsKey)
+	if err != nil {
+		return time.Time{}, err
+	}
+	if expiryStr == "" {
+		return time.Time{}, nil
+	}
+	expiry, err := time.Parse(time.RFC3339Nano, expiryStr)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("failed to parse token expiry: %w", err)
+	}
+	return expiry, nil
+}
+
+// SetRepresentingUserAccessTokenExpiry saves an auth token expiry
+func (d DotRill) SetRepresentingUserAccessTokenExpiry(expiry time.Time) error {
+	var expiryStr string
+	if !expiry.IsZero() {
+		expiryStr = expiry.Format(time.RFC3339Nano)
+	}
+	return d.Set(CredentialsFilename, RepresentingUserAccessTokenExpiryCredentialsKey, expiryStr)
 }
 
 // SetRepresentingUser saves representing user email

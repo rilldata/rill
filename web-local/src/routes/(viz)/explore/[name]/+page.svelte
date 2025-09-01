@@ -5,6 +5,7 @@
     DashboardBannerPriority,
   } from "@rilldata/web-common/components/banner/constants";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
+  import ExploreChat from "@rilldata/web-common/features/chat/ExploreChat.svelte";
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
   import DashboardThemeProvider from "@rilldata/web-common/features/dashboards/DashboardThemeProvider.svelte";
   import { resetSelectedMockUserAfterNavigate } from "@rilldata/web-common/features/dashboards/granular-access-policies/resetSelectedMockUserAfterNavigate";
@@ -14,9 +15,9 @@
   import { useProjectParser } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import type { PageData } from "./$types";
-  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 
   export let data: PageData;
   $: ({ metricsView, explore, exploreName } = data);
@@ -58,8 +59,11 @@
   $: mockUserHasNoAccess =
     $selectedMockUserStore && $exploreQuery.error?.response?.status === 404;
 
-  onNavigate(() => {
-    if (hasBanner) {
+  onNavigate(({ from, to }) => {
+    const changedDashboard =
+      !from || !to || from?.params?.name !== to?.params?.name;
+    // Clear out any dashboard banners
+    if (hasBanner && changedDashboard) {
       eventBus.emit("remove-banner", DashboardBannerID);
     }
   });
@@ -89,12 +93,17 @@
   />
 {:else}
   {#key exploreName}
-    <StateManagersProvider {metricsViewName} {exploreName}>
-      <DashboardStateManager {exploreName}>
-        <DashboardThemeProvider>
-          <Dashboard {metricsViewName} {exploreName} />
-        </DashboardThemeProvider>
-      </DashboardStateManager>
-    </StateManagersProvider>
+    <div class="flex h-full overflow-hidden">
+      <div class="flex-1 overflow-hidden">
+        <StateManagersProvider {metricsViewName} {exploreName}>
+          <DashboardStateManager {exploreName}>
+            <DashboardThemeProvider>
+              <Dashboard {metricsViewName} {exploreName} />
+            </DashboardThemeProvider>
+          </DashboardStateManager>
+        </StateManagersProvider>
+      </div>
+      <ExploreChat />
+    </div>
   {/key}
 {/if}

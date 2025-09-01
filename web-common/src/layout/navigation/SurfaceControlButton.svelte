@@ -26,7 +26,7 @@
     gray={!navOpen}
     selected={navOpen}
     square
-    on:click={onClick}
+    {onClick}
   >
     {#if navOpen}
       <HideSidebar side="left" open={navOpen} size="18px" />

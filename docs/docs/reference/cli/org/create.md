@@ -13,8 +13,9 @@ rill org create [<org-name>] [flags]
 ### Flags
 
 ```
-      --name string          Organization Name
-      --description string   Description
+      --name string           Organization Name
+      --display-name string   Display name
+      --description string    Description
 ```
 
 ### Global flags

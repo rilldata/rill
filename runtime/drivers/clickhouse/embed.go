@@ -4,6 +4,9 @@ import (
 	"archive/tar"
 	"bufio"
 	"compress/gzip"
+	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -11,7 +14,9 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"runtime"
+	"strconv"
 	"strings"
 	"sync"
 	"syscall"
@@ -25,8 +30,9 @@ import (
 const embedVersion = "25.2.2.39"
 
 var (
-	embed *embedClickHouse
-	once  sync.Once
+	embed             *embedClickHouse
+	once              sync.Once
+	errAlreadyRunning = fmt.Errorf("ClickHouse server is already running, please stop it before starting a new one")
 )
 
 type embedClickHouse struct {
@@ -88,6 +94,77 @@ func (e *embedClickHouse) start() (*clickhouse.Options, error) {
 		return nil, err
 	}
 
+	// Start the ClickHouse server
+	stderr, err := e.startClickhouse(binPath, configPath)
+	if err != nil {
+		if !errors.Is(err, errAlreadyRunning) {
+			return nil, err
+		}
+		e.logger.Warn("ClickHouse server is already running, attempting to kill the existing process")
+		err = e.killExistingProcess()
+		if err != nil {
+			return nil, fmt.Errorf("failed to kill existing ClickHouse process: %w", err)
+		}
+		stderr, err = e.startClickhouse(binPath, configPath)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// If you're using cmd.StdoutPipe() or cmd.StderrPipe() and not reading from them fast enough,
+	// the buffer can fill up, and the subprocess will block on writing output.
+	// We read StderrPipe initially to check for clickhouse running status.
+	// Once the process is closed the stderr pipe will be closed too, io.Copy will return EOF and the goroutine will exit.
+	go func() {
+		decoder := json.NewDecoder(stderr)
+
+		for {
+			var log clickhouseLog
+			if err := decoder.Decode(&log); err != nil {
+				if err == io.EOF {
+					// EOF means the process has exited and the stderr pipe is closed.
+					break
+				}
+				e.logger.Error("Failed to decode ClickHouse log", zap.Error(err))
+				continue
+			}
+
+			switch log.Level {
+			case "Fatal":
+				e.logger.Error("ClickHouse embedded server: fatal log received, restart server", zap.String("logger_name", log.LoggerName), zap.String("message", log.Message))
+			case "Critical", "Error":
+				code := parseErrorCode(log.Message)
+				if isUserError(code) {
+					e.logger.Debug("ClickHouse embedded server", zap.String("logger_name", log.LoggerName), zap.String("message", log.Message))
+				} else {
+					e.logger.Error("ClickHouse embedded server", zap.String("logger_name", log.LoggerName), zap.String("message", log.Message))
+				}
+			case "Warning", "Notice":
+				code := parseErrorCode(log.Message)
+				if isUserError(code) {
+					e.logger.Debug("ClickHouse embedded server", zap.String("logger_name", log.LoggerName), zap.String("message", log.Message))
+				} else {
+					e.logger.Warn("ClickHouse embedded server", zap.String("logger_name", log.LoggerName), zap.String("message", log.Message))
+				}
+			case "Information", "Debug", "Trace", "Test":
+				// even the information logs are too verbose in clickhouse so we log them at debug level
+				e.logger.Debug("ClickHouse embedded server", zap.String("logger_name", log.LoggerName), zap.String("message", log.Message))
+			}
+		}
+		stderr.Close()
+	}()
+
+	addr := net.JoinHostPort("localhost", fmt.Sprintf("%d", e.tcpPort))
+	e.logger.Info("Running an embedded ClickHouse server", zap.String("addr", addr))
+
+	e.opts = &clickhouse.Options{
+		Protocol: clickhouse.Native,
+		Addr:     []string{addr},
+	}
+	return e.opts, nil
+}
+
+func (e *embedClickHouse) startClickhouse(binPath, configPath string) (io.ReadCloser, error) {
 	e.cmd = exec.Command(binPath, "server", "--config-file", configPath)
 	e.cmd.Stdout = io.Discard
 
@@ -104,32 +181,12 @@ func (e *embedClickHouse) start() (*clickhouse.Options, error) {
 			_ = e.cmd.Process.Kill()
 			return
 		}
-
-		if err := e.cmd.Wait(); err != nil {
-			e.logger.Error("clickhouse server exited with an error", zap.Error(err))
-		}
 	}()
 
 	if err := <-ready; err != nil {
 		return nil, err
 	}
-
-	// If you're using cmd.StdoutPipe() or cmd.StderrPipe() and not reading from them fast enough,
-	// the buffer can fill up, and the subprocess will block on writing output.
-	// We read StderrPipe initially to check for clickhouse running status.
-	// Once the process is closed the stderr pipe will be closed too, io.Copy will return EOF and the goroutine will exit.
-	go func() {
-		_, _ = io.Copy(io.Discard, stderr)
-	}()
-
-	addr := net.JoinHostPort("localhost", fmt.Sprintf("%d", e.tcpPort))
-	e.logger.Info("Running an embedded ClickHouse server", zap.String("addr", addr))
-
-	e.opts = &clickhouse.Options{
-		Protocol: clickhouse.Native,
-		Addr:     []string{addr},
-	}
-	return e.opts, nil
+	return stderr, nil
 }
 
 func (e *embedClickHouse) stop() error {
@@ -190,6 +247,8 @@ func (e *embedClickHouse) install(destDir string, logger *zap.Logger) (string, e
 			fileName = "clickhouse-macos"
 		case "arm64":
 			fileName = "clickhouse-macos-aarch64"
+		default:
+			return "", fmt.Errorf("unsupported architecture %q for embedded Clickhouse", goarch)
 		}
 		url := "https://github.com/ClickHouse/ClickHouse/releases/download/" + release + "/" + fileName
 		logger.Info("Downloading ClickHouse binary", zap.String("url", url), zap.String("dst", destPath))
@@ -200,9 +259,11 @@ func (e *embedClickHouse) install(destDir string, logger *zap.Logger) (string, e
 		fileName := ""
 		switch goarch {
 		case "amd64":
-			fileName = "clickhouse-common-static-24.7.4.51-amd64.tgz"
+			fileName = fmt.Sprintf("clickhouse-common-static-%s-amd64.tgz", embedVersion)
 		case "arm64":
-			fileName = "clickhouse-common-static-24.7.4.51-arm64.tgz"
+			fileName = fmt.Sprintf("clickhouse-common-static-%s-arm64.tgz", embedVersion)
+		default:
+			return "", fmt.Errorf("unsupported architecture %q for embedded Clickhouse", goarch)
 		}
 		url := "https://github.com/ClickHouse/ClickHouse/releases/download/" + release + "/" + fileName
 		destTgzPath := filepath.Join(destDir, release, fileName)
@@ -214,6 +275,8 @@ func (e *embedClickHouse) install(destDir string, logger *zap.Logger) (string, e
 		if err := extractFileFromTgz(destTgzPath, fileToExtract, destPath); err != nil {
 			return "", fmt.Errorf("error extracting ClickHouse: %w", err)
 		}
+	default:
+		return "", fmt.Errorf("unsupported OS %q for embedded Clickhouse", goos)
 	}
 
 	err := os.Chmod(destPath, 0x755)
@@ -267,8 +330,16 @@ func (e *embedClickHouse) getConfigContent() ([]byte, error) {
 
 	config := []byte(fmt.Sprintf(`<clickhouse>
     <logger>
-        <level>information</level>
+        <level>debug</level>
         <console>true</console>
+		<formatting>
+			<type>json</type>
+			<names>
+				<level>level</level>
+				<logger_name>logger_name</logger_name>
+				<message>message</message>
+			</names>
+		</formatting>
     </logger>
 
     <tcp_port>%d</tcp_port>
@@ -321,18 +392,26 @@ func (e *embedClickHouse) startAndWaitUntilReady(stderr io.Reader) error {
 		case <-timer.C:
 			return fmt.Errorf("clickhouse is not ready: timeout")
 		default:
-			if scanner.Scan() {
-				line := scanner.Text()
-				if strings.Contains(line, "<Error>") {
-					e.logger.Error(line)
-				} else if strings.Contains(line, "Application: Ready for connections") {
-					return nil
-				}
-			} else {
-				if err := scanner.Err(); err != nil {
-					return fmt.Errorf("error reading clickhouse logs: %w", err)
+			if !scanner.Scan() {
+				if scanner.Err() != nil {
+					return fmt.Errorf("error reading clickhouse logs: %w", scanner.Err())
 				}
 				return fmt.Errorf("clickhouse is not ready")
+			}
+			line := scanner.Text()
+			var logLine clickhouseLog
+			if err := json.Unmarshal([]byte(line), &logLine); err != nil {
+				// Till the clickhouse configs are parsed the logs may not be in JSON format.
+				continue
+			}
+			if logLine.LoggerName == "Application" && strings.Contains(logLine.Message, "Ready for connections") {
+				return nil
+			}
+			if logLine.Level == "Error" {
+				if strings.Contains(logLine.Message, "Another server instance in same directory is already running") {
+					return errAlreadyRunning
+				}
+				e.logger.Error("ClickHouse error", zap.String("message", logLine.Message), zap.String("logger_name", logLine.LoggerName))
 			}
 		}
 	}
@@ -424,4 +503,113 @@ func getFreePort() (int, error) {
 
 	addr := listener.Addr().(*net.TCPAddr)
 	return addr.Port, nil
+}
+
+var errorCodeRegexp = regexp.MustCompile(`Code:\s*(\d+)`)
+
+func parseErrorCode(msg string) int {
+	match := errorCodeRegexp.FindStringSubmatch(msg)
+	if len(match) < 2 {
+		return -1
+	}
+	code, err := strconv.Atoi(match[1])
+	if err != nil {
+		return -1
+	}
+	return code
+}
+
+// isUserError checks if the error code is a user error.
+// Clickhouse returns lots of exceptions that are not server errors or an issue with the server but rather a user error.
+// Exceptions are usually accompanied by an error code, which is a number that can be used to identify the type of error.
+// This function checks for specific error codes that are considered user errors.
+// As of writing this is not an exhaustive list so if you find an error that is not to be logged add the error code here.
+func isUserError(code int) bool {
+	switch code {
+	case 16: // no such column in table
+		return true
+	case 20: // number of columns does not match
+		return true
+	case 34, 35: // too many/too few arguments for function
+		return true
+	case 50: // unknown type
+		return true
+	case 38, 42, 43, 44, 46, 47, 51, 52, 53, 57, 60, 62, 63, 81, 82, 179: // different query syntax error
+		return true
+	case 181, 182, 183, 184, 215: // aggregate syntax error
+		return true
+	case 210: // network error but also thrown on query cancellation, connection failures etc which are usually auto recovered
+		return true
+	case 394: // query was cancelled
+		return true
+
+	default:
+		return false
+	}
+}
+
+func (e *embedClickHouse) killExistingProcess() error {
+	file, err := os.Open(filepath.Join(e.dataDir, "status"))
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	var pid int
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if !strings.HasPrefix(line, "PID:") {
+			continue
+		}
+		parts := strings.Split(line, ":")
+		if len(parts) == 2 {
+			pid, err = strconv.Atoi(strings.TrimSpace(parts[1]))
+			if err != nil {
+				return fmt.Errorf("failed to parse PID from status file: %w", err)
+			}
+			break
+		}
+	}
+
+	if pid <= 0 {
+		return fmt.Errorf("no valid PID found in status file")
+	}
+	p, err := os.FindProcess(pid)
+	if err != nil {
+		return fmt.Errorf("failed to find process with PID %d: %w", pid, err)
+	}
+	err = p.Signal(syscall.SIGTERM)
+	if err != nil {
+		return fmt.Errorf("failed to kill process with PID %d: %w", pid, err)
+	}
+
+	// wait for the process to exit
+	// unfortunately no way to wait for the process to exit gracefully since we don't have the original handle that started this process
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
+	for {
+		select {
+		case <-ctx.Done():
+			return fmt.Errorf("timeout while waiting for process with PID %d to exit: %w", pid, ctx.Err())
+		case <-time.After(500 * time.Millisecond):
+			// check if the process is still running
+			err = p.Signal(syscall.Signal(0))
+			if err != nil {
+				if errors.Is(err, os.ErrProcessDone) {
+					// process has exited
+					return nil
+				}
+				// some other error occurred, return it
+				return fmt.Errorf("failed to check if process with PID %d is running: %w", pid, err)
+			}
+			// process is still running, continue waiting
+		}
+	}
+}
+
+type clickhouseLog struct {
+	LoggerName string `json:"logger_name"`
+	Message    string `json:"message"`
+	Level      string `json:"level"`
 }

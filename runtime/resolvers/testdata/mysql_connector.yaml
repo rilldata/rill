@@ -4,8 +4,9 @@ connectors:
 project_files:
   all_datatypes_clickhouse.yaml:
     type: model
-    connector: clickhouse
     materialize: true
+    connector: clickhouse
+    output: clickhouse
     sql: "SELECT * FROM mysql('{{.env.connector.mysql.ip}}:3306', 'mysql', 'all_datatypes', 'mysql', 'mysql')"
   all_datatypes_duckdb.yaml:
     type: model
@@ -77,9 +78,9 @@ tests:
   - name: query_all_datatypes_clickhouse
     resolver: sql
     properties:
+      connector: clickhouse
       sql: |
         select name, type from system.columns where `table` = 'all_datatypes_clickhouse'
-      connector: clickhouse
     result_csv: |
       name,type
       tinyint_col,Nullable(Int8)

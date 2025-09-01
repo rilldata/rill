@@ -10,6 +10,9 @@ import {
   type V1ListFilesResponse,
 } from "@rilldata/web-common/runtime-client/index.js";
 import { handleUninitializedProject } from "@rilldata/web-common/features/welcome/is-project-initialized.js";
+import { Settings } from "luxon";
+
+Settings.defaultLocale = "en";
 
 export async function load({ url, depends, untrack }) {
   depends("init");

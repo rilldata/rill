@@ -56,6 +56,8 @@ func (d driver) Spec() drivers.Spec {
 	return drivers.Spec{
 		DisplayName: "SQLite",
 		Description: "Import data from SQLite into DuckDB.",
+		DocsURL:     "https://docs.rilldata.com/connect/data-source/sqlite",
+		// Important: Any edits to the below properties must be accompanied by changes to the client-side form validation schemas.
 		SourceProperties: []*drivers.PropertySpec{
 			{
 				Key:         "db",
@@ -149,6 +151,11 @@ func (c *connection) AsAI(instanceID string) (drivers.AIService, bool) {
 
 // AsOLAP implements drivers.Connection.
 func (c *connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
+	return nil, false
+}
+
+// AsInformationSchema implements drivers.Connection.
+func (c *connection) AsInformationSchema() (drivers.InformationSchema, bool) {
 	return nil, false
 }
 

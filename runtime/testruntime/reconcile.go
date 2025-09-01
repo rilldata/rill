@@ -1,7 +1,9 @@
 package testruntime
 
 import (
-	"context"
+	"bytes"
+	"encoding/csv"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"testing"
@@ -14,7 +16,7 @@ import (
 )
 
 func PutFiles(t testing.TB, rt *runtime.Runtime, id string, files map[string]string) {
-	ctx := context.Background()
+	ctx := t.Context()
 	repo, release, err := rt.Repo(ctx, id)
 	require.NoError(t, err)
 	defer release()
@@ -26,7 +28,7 @@ func PutFiles(t testing.TB, rt *runtime.Runtime, id string, files map[string]str
 }
 
 func RenameFile(t testing.TB, rt *runtime.Runtime, id, from, to string) {
-	ctx := context.Background()
+	ctx := t.Context()
 	repo, release, err := rt.Repo(ctx, id)
 	require.NoError(t, err)
 	defer release()
@@ -35,7 +37,7 @@ func RenameFile(t testing.TB, rt *runtime.Runtime, id, from, to string) {
 }
 
 func DeleteFiles(t testing.TB, rt *runtime.Runtime, id string, files ...string) {
-	ctx := context.Background()
+	ctx := t.Context()
 	repo, release, err := rt.Repo(ctx, id)
 	require.NoError(t, err)
 	defer release()
@@ -51,27 +53,29 @@ func ReconcileParserAndWait(t testing.TB, rt *runtime.Runtime, id string) {
 }
 
 func ReconcileAndWait(t testing.TB, rt *runtime.Runtime, id string, n *runtimev1.ResourceName) {
-	ctrl, err := rt.Controller(context.Background(), id)
+	ctx := t.Context()
+	ctrl, err := rt.Controller(ctx, id)
 	require.NoError(t, err)
 
-	err = ctrl.Reconcile(context.Background(), n)
+	err = ctrl.Reconcile(ctx, n)
 	require.NoError(t, err)
 
-	err = ctrl.WaitUntilIdle(context.Background(), false)
+	err = ctrl.WaitUntilIdle(ctx, false)
 	require.NoError(t, err)
 }
 
 func RefreshAndWait(t testing.TB, rt *runtime.Runtime, id string, n *runtimev1.ResourceName) {
-	ctrl, err := rt.Controller(context.Background(), id)
+	ctx := t.Context()
+	ctrl, err := rt.Controller(ctx, id)
 	require.NoError(t, err)
 
 	// Get resource before refresh
-	rPrev, err := ctrl.Get(context.Background(), n, false)
+	rPrev, err := ctrl.Get(ctx, n, false)
 	require.NoError(t, err)
 
 	// Create refresh trigger
 	trgName := &runtimev1.ResourceName{Kind: runtime.ResourceKindRefreshTrigger, Name: time.Now().String()}
-	err = ctrl.Create(context.Background(), trgName, nil, nil, nil, false, &runtimev1.Resource{
+	err = ctrl.Create(ctx, trgName, nil, nil, nil, false, &runtimev1.Resource{
 		Resource: &runtimev1.Resource_RefreshTrigger{
 			RefreshTrigger: &runtimev1.RefreshTrigger{
 				Spec: &runtimev1.RefreshTriggerSpec{
@@ -83,11 +87,11 @@ func RefreshAndWait(t testing.TB, rt *runtime.Runtime, id string, n *runtimev1.R
 	require.NoError(t, err)
 
 	// Wait for refresh to complete
-	err = ctrl.WaitUntilIdle(context.Background(), false)
+	err = ctrl.WaitUntilIdle(ctx, false)
 	require.NoError(t, err)
 
 	// Get resource after refresh
-	rNew, err := ctrl.Get(context.Background(), n, false)
+	rNew, err := ctrl.Get(ctx, n, false)
 	require.NoError(t, err)
 
 	// Check the resource's spec version has increased
@@ -95,22 +99,11 @@ func RefreshAndWait(t testing.TB, rt *runtime.Runtime, id string, n *runtimev1.R
 }
 
 func RequireReconcileState(t testing.TB, rt *runtime.Runtime, id string, lenResources, lenReconcileErrs, lenParseErrs int) {
-	var (
-		rs  []*runtimev1.Resource
-		err error
-	)
-	for range 5 {
-		ctrl, err := rt.Controller(context.Background(), id)
-		require.NoError(t, err)
+	ctx := t.Context()
+	ctrl, err := rt.Controller(ctx, id)
+	require.NoError(t, err)
 
-		rs, err = ctrl.List(context.Background(), "", "", false)
-		if err != nil && strings.Contains(err.Error(), "controller is closed") {
-			// controller can be closed if a connector resource requests for controller restart. Retry a few times.
-			time.Sleep(100 * time.Millisecond)
-			continue
-		}
-		require.NoError(t, err)
-	}
+	rs, err := ctrl.List(ctx, "", "", false)
 	require.NoError(t, err)
 
 	var reconcileErrs, parseErrs []string
@@ -143,20 +136,22 @@ func RequireReconcileState(t testing.TB, rt *runtime.Runtime, id string, lenReso
 }
 
 func GetResource(t testing.TB, rt *runtime.Runtime, id, kind, name string) *runtimev1.Resource {
-	ctrl, err := rt.Controller(context.Background(), id)
+	ctx := t.Context()
+	ctrl, err := rt.Controller(ctx, id)
 	require.NoError(t, err)
 
-	r, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: kind, Name: name}, true)
+	r, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: kind, Name: name}, true)
 	require.NoError(t, err)
 
 	return r
 }
 
 func RequireResource(t testing.TB, rt *runtime.Runtime, id string, a *runtimev1.Resource) {
-	ctrl, err := rt.Controller(context.Background(), id)
+	ctx := t.Context()
+	ctrl, err := rt.Controller(ctx, id)
 	require.NoError(t, err)
 
-	b, err := ctrl.Get(context.Background(), a.Meta.Name, true) // Set clone=true because we may manipulate it before comparing
+	b, err := ctrl.Get(ctx, a.Meta.Name, true) // Set clone=true because we may manipulate it before comparing
 	require.NoError(t, err)
 
 	require.True(t, proto.Equal(a.Meta.Name, b.Meta.Name), "expected: %v\nactual: %v", a.Meta.Name, b.Meta.Name)
@@ -196,11 +191,21 @@ func RequireResource(t testing.TB, rt *runtime.Runtime, id string, a *runtimev1.
 		state.RefreshedOn = nil
 		state.SpecHash = ""
 		state.RefsHash = ""
+		state.TestHash = ""
 		state.LatestExecutionDurationMs = 0
 		state.TotalExecutionDurationMs = 0
 	case runtime.ResourceKindMetricsView:
 		state := b.GetMetricsView().State
-		state.ModelRefreshedOn = nil
+		state.DataRefreshedOn = nil
+	case runtime.ResourceKindExplore:
+		state := b.GetExplore().State
+		state.DataRefreshedOn = nil
+	case runtime.ResourceKindComponent:
+		state := b.GetComponent().State
+		state.DataRefreshedOn = nil
+	case runtime.ResourceKindCanvas:
+		state := b.GetCanvas().State
+		state.DataRefreshedOn = nil
 	case runtime.ResourceKindAlert:
 		state := b.GetAlert().State
 		state.SpecHash = ""
@@ -227,10 +232,11 @@ func RequireResource(t testing.TB, rt *runtime.Runtime, id string, a *runtimev1.
 }
 
 func DumpResources(t testing.TB, rt *runtime.Runtime, id string) {
-	ctrl, err := rt.Controller(context.Background(), id)
+	ctx := t.Context()
+	ctrl, err := rt.Controller(ctx, id)
 	require.NoError(t, err)
 
-	rs, err := ctrl.List(context.Background(), "", "", false)
+	rs, err := ctrl.List(ctx, "", "", false)
 	require.NoError(t, err)
 
 	for _, r := range rs {
@@ -239,10 +245,11 @@ func DumpResources(t testing.TB, rt *runtime.Runtime, id string) {
 }
 
 func RequireParseErrors(t testing.TB, rt *runtime.Runtime, id string, expectedParseErrors map[string]string) {
-	ctrl, err := rt.Controller(context.Background(), id)
+	ctx := t.Context()
+	ctrl, err := rt.Controller(ctx, id)
 	require.NoError(t, err)
 
-	pp, err := ctrl.Get(context.Background(), runtime.GlobalProjectParserName, true)
+	pp, err := ctrl.Get(ctx, runtime.GlobalProjectParserName, true)
 	require.NoError(t, err)
 
 	parseErrs := map[string]string{}
@@ -257,9 +264,128 @@ func RequireParseErrors(t testing.TB, rt *runtime.Runtime, id string, expectedPa
 	}
 }
 
+type RequireResolveOptions struct {
+	Resolver           string
+	Properties         map[string]any
+	Args               map[string]any
+	UserAttributes     map[string]any
+	SkipSecurityChecks bool
+
+	Result        []map[string]any
+	ResultCSV     string
+	ErrorContains string
+	Update        bool
+}
+
+func RequireResolve(t testing.TB, rt *runtime.Runtime, id string, opts *RequireResolveOptions) {
+	// Run the resolver.
+	ctx := t.Context()
+	res, err := rt.Resolve(ctx, &runtime.ResolveOptions{
+		InstanceID:         id,
+		Resolver:           opts.Resolver,
+		ResolverProperties: opts.Properties,
+		Args:               opts.Args,
+		Claims: &runtime.SecurityClaims{
+			UserAttributes: opts.UserAttributes,
+			SkipChecks:     opts.SkipSecurityChecks,
+		},
+	})
+
+	// If it succeeded, get the result rows.
+	// Does a JSON roundtrip to coerce to simple types (easier to compare).
+	var rows []map[string]any
+	if err == nil {
+		data, err2 := res.MarshalJSON()
+		if err2 != nil {
+			err = err2
+		} else {
+			err = json.Unmarshal(data, &rows)
+		}
+	}
+
+	// If the Update flag is set, update the results in opts instead of checking them.
+	// The caller can then access the updated values.
+	if opts.Update {
+		opts.Result = rows
+		opts.ResultCSV = resultToCSV(t, rows, res.Schema())
+		opts.ErrorContains = ""
+		if err != nil {
+			opts.ErrorContains = err.Error()
+		}
+		return
+	}
+
+	// Check if an error was expected.
+	if opts.ErrorContains != "" {
+		require.Error(t, err)
+		require.Contains(t, err.Error(), opts.ErrorContains)
+		return
+	}
+	require.NoError(t, err)
+
+	// We support expressing the expected result as a CSV string, which is more compact.
+	// Serialize the result to CSV and compare.
+	if opts.ResultCSV != "" {
+		actual := resultToCSV(t, rows, res.Schema())
+		require.Equal(t, strings.TrimSpace(opts.ResultCSV), strings.TrimSpace(actual))
+		return
+	}
+
+	// Compare the result rows to the expected result.
+	// Like for rows, we do a JSON roundtrip on the expected result (parsed from YAML) to coerce to simple types.
+	var expected []map[string]any
+	data, err := json.Marshal(opts.Result)
+	require.NoError(t, err)
+	err = json.Unmarshal(data, &expected)
+	require.NoError(t, err)
+	if len(expected) != 0 || len(rows) != 0 {
+		require.EqualValues(t, expected, rows)
+	}
+}
+
 func Must[T any](v T, err error) T {
 	if err != nil {
 		panic(err)
 	}
 	return v
+}
+
+// resultToCSV serializes the rows to a CSV formatted string.
+// It is derived from runtime/drivers/file/model_executor_olap_self.go#writeCSV.
+func resultToCSV(t testing.TB, rows []map[string]any, schema *runtimev1.StructType) string {
+	buf := &bytes.Buffer{}
+	w := csv.NewWriter(buf)
+
+	strs := make([]string, len(schema.Fields))
+	for i, f := range schema.Fields {
+		strs[i] = f.Name
+	}
+	err := w.Write(strs)
+	require.NoError(t, err)
+
+	for _, row := range rows {
+		for i, f := range schema.Fields {
+			v, ok := row[f.Name]
+			require.True(t, ok, "missing field %q", f.Name)
+
+			var s string
+			if v != nil {
+				if v2, ok := v.(string); ok {
+					s = v2
+				} else {
+					tmp, err := json.Marshal(v)
+					require.NoError(t, err)
+					s = string(tmp)
+				}
+			}
+
+			strs[i] = s
+		}
+
+		err = w.Write(strs)
+		require.NoError(t, err)
+	}
+
+	w.Flush()
+	return buf.String()
 }

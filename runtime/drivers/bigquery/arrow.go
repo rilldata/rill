@@ -8,16 +8,16 @@ import (
 	"time"
 
 	"cloud.google.com/go/bigquery"
-	"github.com/apache/arrow/go/v15/arrow"
-	"github.com/apache/arrow/go/v15/arrow/array"
-	"github.com/apache/arrow/go/v15/arrow/ipc"
-	"github.com/apache/arrow/go/v15/arrow/memory"
+	"github.com/apache/arrow-go/v18/arrow"
+	"github.com/apache/arrow-go/v18/arrow/array"
+	"github.com/apache/arrow-go/v18/arrow/ipc"
+	"github.com/apache/arrow-go/v18/arrow/memory"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.uber.org/zap"
 	"google.golang.org/api/iterator"
 )
 
-func (f *fileIterator) AsArrowRecordReader() (array.RecordReader, error) {
+func (f *fileIterator) AsArrowRecordReader(ctx context.Context) (array.RecordReader, error) {
 	arrowIt, err := f.bqIter.ArrowIterator()
 	if err != nil {
 		return nil, err
@@ -38,7 +38,7 @@ func (f *fileIterator) AsArrowRecordReader() (array.RecordReader, error) {
 		allocator:   allocator,
 		logger:      f.logger,
 		records:     make([]arrow.Record, 0),
-		ctx:         f.ctx,
+		ctx:         ctx,
 		buf:         &bytes.Buffer{},
 	}
 	rec.refCount.Store(1)
@@ -87,8 +87,7 @@ func (rs *arrowRecordReader) Release() {
 		}
 		rs.records = nil
 	}
-	rs.logger.Debug("next api call took", zap.Float64("seconds", rs.apinext.Seconds()), observability.ZapCtx(rs.ctx))
-	rs.logger.Debug("next ipc read took", zap.Float64("seconds", rs.ipcread.Seconds()), observability.ZapCtx(rs.ctx))
+	rs.logger.Debug("next call took", zap.Float64("apinext_seconds", rs.apinext.Seconds()), zap.Float64("ipcread_seconds", rs.ipcread.Seconds()), observability.ZapCtx(rs.ctx))
 }
 
 // Schema returns the underlying arrow schema

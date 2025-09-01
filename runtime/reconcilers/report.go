@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
-	"strconv"
 	"strings"
 	"time"
 
@@ -451,8 +450,13 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 			anonRecipients = true
 		}
 	}
+	// extract dimensions, measures and where filter from query args
+	whereFilterJSON, fields, err := queries.SecurityFromQuery(rep.Spec.QueryName, rep.Spec.QueryArgsJson)
+	if err != nil {
+		return false, fmt.Errorf("failed to extract security from query args: %w", err)
+	}
 
-	meta, err := admin.GetReportMetadata(ctx, self.Meta.Name.Name, ownerID, explore, canvas, webOpenMode, emailRecipients, anonRecipients, t)
+	meta, err := admin.GetReportMetadata(ctx, self.Meta.Name.Name, ownerID, explore, canvas, webOpenMode, whereFilterJSON, fields, emailRecipients, anonRecipients, t)
 	if err != nil {
 		return false, fmt.Errorf("failed to get report metadata: %w", err)
 	}
@@ -475,7 +479,7 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 					return false, fmt.Errorf("failed to get recipient URLs for %q", recipient)
 				}
 				opts.OpenLink = urls.OpenURL
-				u, err := createExportURL(urls.ExportURL, rep.Spec.ExportFormat.String(), t, int(rep.Spec.ExportLimit))
+				u, err := createExportURL(urls.ExportURL, t)
 				if err != nil {
 					return false, err
 				}
@@ -503,7 +507,7 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 				if !ok {
 					return fmt.Errorf("failed to get recipient URLs for anon user")
 				}
-				u, err := createExportURL(urls.ExportURL, rep.Spec.ExportFormat.String(), t, int(rep.Spec.ExportLimit))
+				u, err := createExportURL(urls.ExportURL, t)
 				if err != nil {
 					return err
 				}
@@ -543,20 +547,15 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 	return false, nil
 }
 
-func createExportURL(inURL, format string, executionTime time.Time, exportLimit int) (*url.URL, error) {
+func createExportURL(inURL string, executionTime time.Time) (*url.URL, error) {
 	exportURL, err := url.Parse(inURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse export URL %q: %w", inURL, err)
 	}
 
 	exportURLQry := exportURL.Query()
-	exportURLQry.Set("format", format)
 	exportURLQry.Set("execution_time", executionTime.Format(time.RFC3339))
-	if exportLimit > 0 {
-		exportURLQry.Set("limit", strconv.Itoa(exportLimit))
-	}
 	exportURL.RawQuery = exportURLQry.Encode()
-
 	return exportURL, nil
 }
 

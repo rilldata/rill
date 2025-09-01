@@ -16,7 +16,7 @@
       query: {
         select: (data) => {
           const refreshDate =
-            data?.metricsView?.metricsView?.state?.modelRefreshedOn;
+            data?.metricsView?.metricsView?.state?.dataRefreshedOn;
           return refreshDate ? new Date(refreshDate) : null;
         },
       },

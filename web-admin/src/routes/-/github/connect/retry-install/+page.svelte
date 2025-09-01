@@ -25,7 +25,7 @@
     <CtaHeader>Could not connect to GitHub</CtaHeader>
     <CtaMessage>
       It looks like you did not grant access to the desired repository at <GithubRepoInline
-        githubUrl={remote}
+        gitRemote={remote}
       />.
     </CtaMessage>
     <CtaMessage>
@@ -33,7 +33,7 @@
       <KeyboardKey label="Control" /> + <KeyboardKey label="C" /> in the CLI to cancel
       the connect request.)
     </CtaMessage>
-    <CtaButton variant="primary" on:click={() => redirectToGithubLogin(remote)}>
+    <CtaButton variant="primary" onClick={() => redirectToGithubLogin(remote)}>
       Connect to GitHub
     </CtaButton>
   </CtaContentContainer>

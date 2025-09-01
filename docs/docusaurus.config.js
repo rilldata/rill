@@ -6,6 +6,8 @@ const { themes } = require('prism-react-renderer');
 const lightCodeTheme = themes.github;
 const darkCodeTheme = themes.dracula;
 
+const llmsTxtPlugin = require('./plugins/llms-txt-plugin');
+
 const def = require("redocusaurus");
 def;
 
@@ -17,6 +19,7 @@ const config = {
   // netlify settings
   url: "https://docs.rilldata.com",
   baseUrl: "/",
+  trailingSlash: false,
 
   onBrokenLinks: "throw",
   onBrokenMarkdownLinks: "throw",
@@ -38,13 +41,9 @@ const config = {
         docs: {
           routeBasePath: "/",
           sidebarPath: require.resolve("./sidebars.js"),
-          sidebarCollapsed: true,
-          // Please change this to your repo.
-          // Remove this to remove the "edit this page" links.
-          editUrl:
-            "https://github.com/rilldata/rill/blob/main/docs/",
+          sidebarCollapsed: true
         },
-  
+
         blog: {
           routeBasePath: 'notes',
           blogTitle: 'Release Notes',
@@ -52,6 +51,7 @@ const config = {
           postsPerPage: 1,
           blogSidebarTitle: 'Release Notes',
           blogSidebarCount: 'ALL',
+          onUntruncatedBlogPosts: 'ignore',
           feedOptions: {
             type: 'all',
             copyright: `Copyright © ${new Date().getFullYear()} Rill Data, Inc.`,
@@ -67,6 +67,11 @@ const config = {
   themeConfig:
     /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
     ({
+      colorMode: {
+        defaultMode: 'light',
+        disableSwitch: false,
+        respectPrefersColorScheme: false,
+      },
       algolia: {
         appId: "4U01DM4NS4",
         apiKey: "c0399915ae21a35c6d34a473d017c15b",
@@ -92,7 +97,7 @@ const config = {
           alt: "Rill Logo",
           src: "img/rill-logo-light.svg",
           srcDark: "img/rill-logo-dark.svg",
-          href: "https://www.rilldata.com",
+          href: "/",
           target: "_self",
         },
         items: [
@@ -102,44 +107,59 @@ const config = {
             position: "left",
             label: "Docs",
           },
-          {
-            type: "docSidebar",
-            sidebarId: "tutorialsSidebar",
-            position: "left",
-            label: "Tutorials",
-          },
+
           {
             type: "docSidebar",
             sidebarId: "refSidebar",
             position: "left",
             label: "Reference",
           },
-         
-          {
-            label: "Release Notes",
-            to: "notes",
-            position: "left",
-          },
 
           {
-            to: "contact",
+            type: "docSidebar",
+            sidebarId: "contactSidebar",
             position: "left",
             label: "Contact Us",
           },
+
           {
-            href: "https://github.com/rilldata/rill",
-            label: "GitHub",
+            type: "html",
             position: "right",
+            value: '<a href="https://docs.rilldata.com/notes" class="navbar-release-notes-mobile navbar-icon-link" aria-label="Release Notes">Release Notes</i></a>',
+          },
+
+          // Right side items
+          {
+            type: "html",
+            position: "right",
+            value: '<a href="https://github.com/rilldata/rill" class="navbar-icon-link" aria-label="GitHub">GitHub</i></a>',
           },
           {
-            href: "https://www.rilldata.com/blog",
-            label: "Blog",
+            type: "html",
             position: "right",
+            value: '<a href="https://www.rilldata.com/blog" class="navbar-icon-link" aria-label="Blog">Blog</i></a>',
           },
+
           {
             type: "search",
             position: "right"
-          }
+          },
+          {
+            type: "html",
+            position: "right",
+            value: '<span class="navbar-divider"></span>',
+          },
+          // {
+          //   type: "html",
+          //   position: "right",
+          //   value: '<button id="dark-mode-toggle" class="navbar-icon-link" aria-label="Toggle dark mode"><div class="icon-container"></div></button>',
+          // },
+
+          // {
+          //   type: "html",
+          //   position: "right",
+          //   value: '<a href="https://ui.rilldata.com" class="navbar-cloud-btn" target="_blank" rel="noopener">Rill Cloud</a>',
+          // },
         ],
       },
       footer: {
@@ -154,6 +174,8 @@ const config = {
     }),
 
   plugins: [
+    // @ts-ignore
+    llmsTxtPlugin,
     'docusaurus-plugin-sass',
     [
       require.resolve('docusaurus-gtm-plugin'),
@@ -174,8 +196,12 @@ const config = {
             to: '/home/get-started',
           },
           {
+            from: '/home/example-repository',
+            to: '/',
+          },
+          {
             from: '/develop/import-data',
-            to: '/build/connect'
+            to: '/connect/'
           },
           {
             from: '/develop/sql-models',
@@ -191,51 +217,55 @@ const config = {
           },
           {
             from: '/deploy/credentials/',
-            to: '/build/credentials'
+            to: '/connect/credentials/'
+          },
+          {
+            from: '/build/credentials',
+            to: '/connect/credentials/'
           },
           {
             from: '/deploy/credentials/s3',
-            to: '/reference/connectors/s3'
+            to: '/connect/data-source/s3'
           },
           {
             from: '/deploy/credentials/gcs',
-            to: '/reference/connectors/gcs'
+            to: '/connect/data-source/gcs'
           },
           {
             from: '/deploy/credentials/azure',
-            to: '/reference/connectors/azure'
+            to: '/connect/data-source/azure'
           },
           {
             from: '/deploy/credentials/athena',
-            to: '/reference/connectors/athena'
+            to: '/connect/data-source/athena'
           },
           {
             from: '/deploy/credentials/bigquery',
-            to: '/reference/connectors/bigquery'
+            to: '/connect/data-source/bigquery'
           },
           {
             from: '/deploy/credentials/snowflake',
-            to: '/reference/connectors/snowflake'
+            to: '/connect/data-source/snowflake'
           },
           {
             from: '/deploy/credentials/postgres',
-            to: '/reference/connectors/postgres'
+            to: '/connect/data-source/postgres'
           },
           {
             from: '/deploy/credentials/salesforce',
-            to: '/reference/connectors/salesforce'
+            to: '/connect/data-source/salesforce'
           },
           {
             from: '/deploy/credentials/motherduck',
-            to: '/reference/connectors/motherduck'
+            to: '/connect/data-source/duckdb'
           },
           {
             from: '/deploy/source-refresh',
-            to: '/build/connect/source-refresh'
+            to: '/build/models/source-refresh'
           },
           {
             from: '/reference/templating',
-            to: '/deploy/templating'
+            to: '/connect/templating'
           },
           {
             from: '/example-projects',
@@ -257,6 +287,160 @@ const config = {
             from: '/share/scheduled-reports',
             to: '/explore/exports'
           },
+          // OLAP Engine redirects
+          {
+            from: '/reference/olap-engines/',
+            to: '/connect/olap/'
+          },
+          {
+            from: '/reference/olap-engines/duckdb',
+            to: '/connect/olap/duckdb'
+          },
+          {
+            from: '/reference/olap-engines/clickhouse',
+            to: '/connect/olap/clickhouse'
+          },
+          {
+            from: '/reference/olap-engines/pinot',
+            to: '/connect/olap/pinot'
+          },
+          {
+            from: '/reference/olap-engines/druid',
+            to: '/connect/olap/druid'
+          },
+          {
+            from: '/reference/olap-engines/multiple-olap',
+            to: '/connect/olap/multiple-olap'
+          },
+          // Connector redirects
+          {
+            from: '/reference/connectors/',
+            to: '/connect/'
+          },
+          {
+            from: '/reference/connectors/gcs',
+            to: '/connect/data-source/gcs'
+          },
+          {
+            from: '/reference/connectors/azure',
+            to: '/connect/data-source/azure'
+          },
+          {
+            from: '/reference/connectors/s3',
+            to: '/connect/data-source/s3'
+          },
+          {
+            from: '/reference/connectors/snowflake',
+            to: '/connect/data-source/snowflake'
+          },
+          {
+            from: '/reference/connectors/bigquery',
+            to: '/connect/data-source/bigquery'
+          },
+          {
+            from: '/reference/connectors/redshift',
+            to: '/connect/data-source/redshift'
+          },
+          {
+            from: '/reference/connectors/postgres',
+            to: '/connect/data-source/postgres'
+          },
+          {
+            from: '/reference/connectors/athena',
+            to: '/connect/data-source/athena'
+          },
+          {
+            from: '/reference/connectors/mysql',
+            to: '/connect/data-source/mysql'
+          },
+          {
+            from: '/reference/connectors/sqlite',
+            to: '/connect/data-source/sqlite'
+          },
+          {
+            from: '/reference/connectors/salesforce',
+            to: '/connect/data-source/salesforce'
+          },
+          {
+            from: '/reference/connectors/sheets',
+            to: '/connect/data-source/googlesheets'
+          },
+          {
+            from: '/reference/connectors/slack',
+            to: '/connect/data-source/slack'
+          },
+          {
+            from: '/reference/connectors/local-file',
+            to: '/connect/data-source/local-file'
+          },
+          {
+            from: '/reference/connectors/https',
+            to: '/connect/data-source/https'
+          },
+          {
+            from: '/deploy/templating',
+            to: '/connect/templating'
+          },
+          {
+            from: '/manage/account-management/billing',
+            to: '/other/plans'
+          },
+          {
+            from: '/manage/granting/azure-storage-container',
+            to: '/other/granting/azure-storage-container'
+          },
+          {
+            from: '/manage/granting/gcs-bucket',
+            to: '/other/granting/gcs-bucket'
+          },
+          {
+            from: '/manage/granting/google-bigquery',
+            to: '/other/granting/google-bigquery'
+          },
+          {
+            from: '/manage/granting/aws-s3-bucket',
+            to: '/other/granting/aws-s3-bucket'
+          },
+          {
+            from: '/manage/granting/',
+            to: '/other/granting/'
+          },
+          {
+            from: '/home/FAQ',
+            to: '/other/FAQ'
+          },
+          {
+            from: '/concepts/developerVsCloud',
+            to: '/home/concepts/cloud-vs-developer'
+          },
+          {
+            from: '/concepts/OLAP',
+            to: '/home/concepts/OLAP'
+          },
+          {
+            from: '/concepts/architecture',
+            to: '/home/concepts/architecture'
+          },
+          {
+            from: '/concepts/operational',
+            to: '/home/concepts/operational'
+          },
+          {
+            from: '/concepts/metrics-layer',
+            to: '/home/concepts/metrics-layer'
+          },
+          {
+            from: '/concepts/bi-as-code',
+            to: '/home/concepts/bi-as-code'
+          },
+          {
+            from: '/integrate/custom-apis',
+            to: '/build/custom-apis'
+          },
+          // {
+          //   from: '/old-page',
+          //   to: '/new-page',
+          // }
         ],
       },
     ],
@@ -267,6 +451,9 @@ const config = {
   markdown: {
     mermaid: true,
   },
+  stylesheets: [
+    "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+  ],
 };
 
 module.exports = config;

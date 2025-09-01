@@ -3,7 +3,10 @@
   style="grid-template-columns: auto max-content"
   style:min-width="200px"
 >
-  <div class="font-bold truncate" aria-label="tooltip-name">
+  <div
+    class="font-bold truncate text-gray-100 dark:text-gray-200"
+    aria-label="tooltip-name"
+  >
     <slot name="name" />
   </div>
   <div

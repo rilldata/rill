@@ -32,9 +32,21 @@ type QueryResult struct {
 }
 
 type ExportOptions struct {
-	Format       runtimev1.ExportFormat
-	Priority     int
+	// Format of the export.
+	Format runtimev1.ExportFormat
+	// Priority of the export. Higher priority exports are executed first.
+	Priority int
+	// PreWriteHook is called with information about the file before writes begin to the io.Writer.
 	PreWriteHook func(filename string) error
+	// IncludeHeader indicates whether to include a header with metadata in the export.
+	// Not supported for all file formats (currently only CSV and Excel).
+	IncludeHeader bool
+	// OriginDashboard is the dashboard that the export originated from (optional).
+	// It is only used if IncludeHeader is true.
+	OriginDashboard *runtimev1.ResourceName
+	// OriginURL is the UI URL that the export originated from (optional).
+	// It is only used if IncludeHeader is true.
+	OriginURL string
 }
 
 type Query interface {

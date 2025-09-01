@@ -1,5 +1,5 @@
-import { removeSomeAdvancedMeasures } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
-import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import { filterOutSomeAdvancedMeasures } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
+import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import {
   type V1MetricsViewSpec,
   V1TimeGrain,
@@ -99,12 +99,12 @@ describe("measures selectors", () => {
     for (const { title, measures, timeGrain, expectedMeasures } of TestCases) {
       it(title, () => {
         expect(
-          removeSomeAdvancedMeasures(
+          filterOutSomeAdvancedMeasures(
             {
               selectedTimeRange: {
                 interval: timeGrain,
               },
-            } as MetricsExplorerEntity,
+            } as ExploreState,
             MetricsView,
             measures,
             true,
@@ -115,12 +115,12 @@ describe("measures selectors", () => {
 
     it("with window measure and do not select it", () => {
       expect(
-        removeSomeAdvancedMeasures(
+        filterOutSomeAdvancedMeasures(
           {
             selectedTimeRange: {
               interval: V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
             },
-          } as MetricsExplorerEntity,
+          } as ExploreState,
           MetricsView,
           ["mes", "window_mes"],
           false,

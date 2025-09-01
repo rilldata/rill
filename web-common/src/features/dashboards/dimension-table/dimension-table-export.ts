@@ -5,7 +5,7 @@ import {
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import {
   mapSelectedComparisonTimeRangeToV1TimeRange,
@@ -28,7 +28,7 @@ export function getDimensionTableExportQuery(
   isScheduled: boolean,
 ): V1Query | undefined {
   const metricsViewName = get(ctx.metricsViewName);
-  const dashboardState = get(ctx.dashboardStore);
+  const exploreState = get(ctx.dashboardStore);
   const timeControlState = get(useTimeControlStore(ctx));
   const validSpecStore = get(ctx.validSpecStore);
   const dimensionSearchText = get(dimensionSearchTextStore);
@@ -36,51 +36,70 @@ export function getDimensionTableExportQuery(
   if (!validSpecStore.data?.explore || !timeControlState.ready)
     return undefined;
 
-  const timeRange = mapSelectedTimeRangeToV1TimeRange(
-    timeControlState,
-    dashboardState.selectedTimezone,
-    validSpecStore.data.explore,
-  );
-  const comparisonTimeRange = mapSelectedComparisonTimeRangeToV1TimeRange(
-    timeControlState,
-    timeRange,
-  );
+  let timeRange: V1TimeRange | undefined;
+  if (isScheduled) {
+    timeRange = mapSelectedTimeRangeToV1TimeRange(
+      timeControlState.selectedTimeRange,
+      exploreState.selectedTimezone,
+      validSpecStore.data.explore,
+    );
+  } else {
+    timeRange = {
+      start: timeControlState.timeStart,
+      end: timeControlState.timeEnd,
+    };
+  }
   if (!timeRange) return undefined;
-  if (!isScheduled) {
-    // To match the UI's time range, we must explicitly specify `timeEnd` for on-demand exports
-    timeRange.end = timeControlState.timeEnd;
-    if (comparisonTimeRange) {
-      comparisonTimeRange.end = timeControlState.timeEnd;
+
+  let comparisonTimeRange: V1TimeRange | undefined;
+  if (timeControlState.showTimeComparison) {
+    if (isScheduled) {
+      comparisonTimeRange = mapSelectedComparisonTimeRangeToV1TimeRange(
+        timeControlState.selectedComparisonTimeRange,
+        timeControlState.showTimeComparison,
+        timeRange,
+      );
+    } else {
+      comparisonTimeRange = {
+        start: timeControlState.comparisonTimeStart,
+        end: timeControlState.comparisonTimeEnd,
+      };
     }
   }
 
   const query: V1Query = {
-    metricsViewAggregationRequest: getDimensionTableAggregationRequestForTime(
+    metricsViewAggregationRequest: getDimensionTableAggregationRequestForTime({
       metricsViewName,
-      dashboardState,
+      exploreState,
       timeRange,
       comparisonTimeRange,
       dimensionSearchText,
-    ),
+    }),
   };
 
   return query;
 }
 
-export function getDimensionTableAggregationRequestForTime(
-  metricsView: string,
-  dashboardState: MetricsExplorerEntity,
-  timeRange: V1TimeRange,
-  comparisonTimeRange: V1TimeRange | undefined,
-  dimensionSearchText: string,
-): V1MetricsViewAggregationRequest {
+export function getDimensionTableAggregationRequestForTime({
+  metricsViewName,
+  exploreState,
+  timeRange,
+  comparisonTimeRange,
+  dimensionSearchText,
+}: {
+  metricsViewName: string;
+  exploreState: ExploreState;
+  timeRange: V1TimeRange;
+  comparisonTimeRange: V1TimeRange | undefined;
+  dimensionSearchText: string;
+}): V1MetricsViewAggregationRequest {
   const measures: V1MetricsViewAggregationMeasure[] =
-    dashboardState.visibleMeasures.map((name) => ({
+    exploreState.visibleMeasures.map((name) => ({
       name: name,
     }));
 
-  let apiSortName = dashboardState.leaderboardSortByMeasureName;
-  if (!dashboardState.visibleMeasures.includes(apiSortName)) {
+  let apiSortName = exploreState.leaderboardSortByMeasureName;
+  if (!exploreState.visibleMeasures.includes(apiSortName)) {
     // if selected sort measure is not visible add it to list
     measures.push({ name: apiSortName });
   }
@@ -91,7 +110,7 @@ export function getDimensionTableAggregationRequestForTime(
       0,
       ...getComparisonRequestMeasures(apiSortName),
     );
-    switch (dashboardState.dashboardSortType) {
+    switch (exploreState.dashboardSortType) {
       case DashboardState_LeaderboardSortType.DELTA_ABSOLUTE:
         apiSortName += ComparisonDeltaAbsoluteSuffix;
         break;
@@ -102,18 +121,18 @@ export function getDimensionTableAggregationRequestForTime(
   }
 
   const where = buildWhereParamForDimensionTableAndTDDExports(
-    dashboardState.whereFilter,
-    dashboardState.dimensionThresholdFilters,
-    dashboardState.selectedDimensionName!, // must exist when viewing a dimension table
+    exploreState.whereFilter,
+    exploreState.dimensionThresholdFilters,
+    exploreState.selectedDimensionName!, // must exist when viewing a dimension table
     dimensionSearchText,
   );
 
   return {
     instanceId: get(runtime).instanceId,
-    metricsView,
+    metricsView: metricsViewName,
     dimensions: [
       {
-        name: dashboardState.selectedDimensionName,
+        name: exploreState.selectedDimensionName,
       },
     ],
     measures,
@@ -122,7 +141,7 @@ export function getDimensionTableAggregationRequestForTime(
     sort: [
       {
         name: apiSortName,
-        desc: dashboardState.sortDirection === SortDirection.DESCENDING,
+        desc: exploreState.sortDirection === SortDirection.DESCENDING,
       },
     ],
     where,

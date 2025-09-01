@@ -1,7 +1,7 @@
 ---
-title: How to install Rill Developer
-sidebar_label: Install Rill
-sidebar_position: 15
+title: How to Install Rill Developer
+sidebar_label: Install Rill Developer
+sidebar_position: 01
 ---
 
 ## Quick Install
@@ -12,21 +12,21 @@ You can install `rill` using our installation script on both macOS and Linux:
 curl https://rill.sh | sh
 ```
 
-To verify that the installation succeeded, run the following command. You will see an output of various commands that you can run via the CLI.
+To verify that the installation succeeded, run the following command. You will see a list of various commands that you can run via the CLI.
 ```bash
 rill --help
 ```
 
-:::tip sharing dashboards in Rill cloud? Clone your git repo first
+:::tip Sharing dashboards in Rill Cloud? Clone your Git repo first
 
-If you plan to share your dashboards, it is helpful to start by creating a repo in Git. Go to https://github.com/new to create a new repo. Then, run the [Rill install script](/home/install#quick-install) in your cloned location locally to make deployment easier. 
+If you plan to share your dashboards, it is helpful to start by creating a repo in Git. Go to https://github.com/new to create a new repo. Then, run the [Rill install script](/home/install#quick-install) in your cloned location locally to make deployment easier.
 
-More details on deploying Rill via Git in our [Deploy section](../deploy/deploy-dashboard/).
+More details on deploying Rill via Git are in our [Deploy section](../deploy/deploy-dashboard).
 :::
 
 :::warning macOS users
 
-If you previously installed Rill using `brew`, *the brew-managed binary will take precedent*. You can remove it by running `brew uninstall rill`.
+If you previously installed Rill using `brew`, *the brew-managed binary will take precedence*. You can remove it by running `brew uninstall rill`.
 
 :::
 
@@ -39,7 +39,7 @@ rill version
 
 ### Upgrade to the newest version of Rill Developer
 
-To ensure you're on the latest version of Rill and enjoying all of our newest features, you can upgrade Rill Developer easily via the command line.
+To ensure you're on the latest version of Rill and enjoying all of our newest features, you can upgrade Rill Developer easily via the command line:
 
 ```bash
 rill upgrade
@@ -47,7 +47,7 @@ rill upgrade
 
 :::info What about Rill Cloud?
 
-Rill Cloud is always on the latest and stable version of Rill Cloud. To check the latest version available, please see our [Releases](https://github.com/rilldata/rill/releases) page.
+Rill Cloud is always on the latest stable version of Rill. To check the latest version available, please see our [Releases](https://github.com/rilldata/rill/releases) page.
 
 :::
 
@@ -59,8 +59,8 @@ curl https://rill.sh | sh -s -- --nightly
 ```
 
 
-### What is nightly release?
-The nightly release will give you the most up-to-date version of Rill without having to wait for the official release. As these releases are not fully ready for production, you may encounter some issues. Also, version mismatching from Rill Developer to Rill Cloud may result in broken components as Rill Cloud is on the previous stable release. 
+### What is a nightly release?
+The nightly release will give you the most up-to-date version of Rill without having to wait for the official release. As these releases are not fully ready for production, you may encounter some issues. Also, version mismatches between Rill Developer and Rill Cloud may result in broken components, as Rill Cloud is on the previous stable release.
 
 
 ## Installing a specific version of Rill
@@ -72,7 +72,7 @@ curl https://rill.sh | sh -s -- --version <insert_version_number>
 
 :::info Checking the Rill version
 
-To check the precise version of available releases, you can navigate to the [**Releases'**](https://github.com/rilldata/rill/releases) page of our [Rill repo](https://github.com/rilldata/rill). Note that if an invalid or incorrect version is passed to the installation script, you will get prompted with an error to specify a correct version.
+To check the precise version of available releases, you can navigate to the [**Releases**](https://github.com/rilldata/rill/releases) page of our [Rill repo](https://github.com/rilldata/rill). Note that if an invalid or incorrect version is passed to the installation script, you will get prompted with an error to specify a correct version.
 
 :::
 
@@ -90,15 +90,15 @@ Once you have installed WSL and logged in to your Linux instance, you just need 
 sudo apt-get update
 sudo apt-get install unzip
 ```
-:::tip Where should Rill be running? 
-Please check that you are running the commands in your Linux instance not from your Windows Command Prompt. 
+:::tip Where should Rill be running?
+Please check that you are running the commands in your Linux instance, not from your Windows Command Prompt.
 
-If you are seeing strange behavior in Rill Developer, run the following command from the CLI to see where your project files are being save `echo "$PWD"`. If they are mounted from your Windows drive, you'll need to bring them into the WSL environment. 
+If you are seeing strange behavior in Rill Developer, run the following command from the CLI to see where your project files are being saved: `echo "$PWD"`.
 
 :::
 
 With `unzip` installed, you're ready to install Rill Developer by running the following command:
-```bash
+```
 curl https://rill.sh | sh
 ```
 
@@ -118,4 +118,3 @@ brew install rilldata/tap/rill
 To uninstall Rill, you can use the following command:
 ```bash
 rill uninstall
-```

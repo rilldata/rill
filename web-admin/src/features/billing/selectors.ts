@@ -34,19 +34,23 @@ export type CategorisedOrganizationBillingIssues = {
   payment: V1BillingIssue[];
 };
 export function useCategorisedOrganizationBillingIssues(organization: string) {
-  return createAdminServiceListOrganizationBillingIssues(organization, {
-    query: {
-      select: (data) => {
-        const issues = data.issues ?? [];
-        return <CategorisedOrganizationBillingIssues>{
-          neverSubscribed: getNeverSubscribedIssue(issues),
-          trial: getTrialIssue(issues),
-          cancelled: getCancelledIssue(issues),
-          payment: getPaymentIssues(issues),
-        };
+  return createAdminServiceListOrganizationBillingIssues(
+    organization,
+    undefined,
+    {
+      query: {
+        select: (data) => {
+          const issues = data.issues ?? [];
+          return <CategorisedOrganizationBillingIssues>{
+            neverSubscribed: getNeverSubscribedIssue(issues),
+            trial: getTrialIssue(issues),
+            cancelled: getCancelledIssue(issues),
+            payment: getPaymentIssues(issues),
+          };
+        },
       },
     },
-  });
+  );
 }
 
 export function hasBlockerIssues(issues: V1BillingIssue[]) {

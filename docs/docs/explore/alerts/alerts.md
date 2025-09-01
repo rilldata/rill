@@ -5,6 +5,32 @@ sidebar_label: "Alerts"
 sidebar_position: 40
 ---
 
+<div style={{ 
+  position: "relative", 
+  width: "100%", 
+  paddingTop: "56.25%", 
+  borderRadius: "15px",  /* Softer corners */
+  boxShadow: "0px 4px 15px rgba(0, 0, 0, 0.2)"  /* Shadow effect */
+}}>
+  <iframe credentialless="true"
+    src="https://www.youtube.com/embed/n8OAwi5-tk4?si=5k65x9zNLM2huca6"
+    frameBorder="0"
+    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+    allowFullScreen
+    style={{
+      position: "absolute",
+      top: 0,
+      left: 0,
+      width: "100%",
+      height: "100%",
+      borderRadius: "10px", 
+    }}
+  ></iframe>
+</div>
+<br/>
+Prefer video? Check out our [YouTube playlist](https://www.youtube.com/watch?v=wTP46eOzoCk&list=PL_ZoDsg2yFKgi7ud_fOOD33AH8ONWQS7I&index=1) for a quick start!
+
+
 ## Overview
 
 Alerting is a key element for any BI or analytics workflow. Because Rill's dashboards are typically built off of raw or near-raw data, we expose alerting on a wide range of filters and depth, including high cardinality fields. Alerts are accessible from any dashboard via the upper-right alarm bell icon and can be used to create context-based triggers or alerts to bring you back to an analysis if an alert is triggered. This allows the analyst or end user to then dive deeper and use Rill dashboards to interactively explore their data as needed.
@@ -46,8 +72,8 @@ On the second tab, you will have the opportunity to specify the criteria for whi
 
 ### Delivery
 
-On the final tab, you will choose how and where your alert is delivered. By default, the alert will be checked whenever the source data is [refreshed](/build/connect/source-refresh). There are a few additional things worth noting:
-1. To limit the number of alerts, you can set an optional **Snooz**e** period after an alert is triggered.
+On the final tab, you will choose how and where your alert is delivered. By default, the alert will be checked whenever the source data is [refreshed](/build/models/source-refresh). There are a few additional things worth noting:
+1. To limit the number of alerts, you can set an optional **Snooze** period after an alert is triggered.
 2. Depending on the available notification targets (see next section), choose which targets and/or users to subscribe to the alert.
 
 Afterwards, click **Create** to finish creating the alert.
@@ -62,7 +88,7 @@ When creating an alert, all available notification targets that can be configure
 
 :::note Interested in other alerting notification targets?
 
-If there is a potential alerting destination that you'd like to use with Rill but don't currently see available as a target, please don't hesitate to [contact us](contact.md). We're always iterating and would love to learn more about your use case!
+If there is a potential alerting destination that you'd like to use with Rill but don't currently see available as a target, please don't hesitate to [contact us](/contact). We're always iterating and would love to learn more about your use case!
 
 :::
 
@@ -97,10 +123,10 @@ To view or make changes to existing alerts, navigate to the project home page an
 ## Common use cases
 
 ### Troubleshooting 
-Alerts for troubleshooting purposes are useful for making sure that applications are running as expected, campaigns are set up correctly, or any use case where the outcome is binary. For these alerts, the criteria is often is the amount > 0 or is the amount below a threshold. These alerts are best mixed with dimension filters to be alerted on any instance or split (e.g. Impressions > 0 for all Campaign_ID).
+Alerts for troubleshooting purposes are useful for making sure that applications are running as expected, campaigns are set up correctly, or any use case where the outcome is binary. For these alerts, the criteria is often: is the amount > 0 or is the amount below a threshold. These alerts are best mixed with dimension filters to be alerted on any instance or split (e.g. Impressions > 0 for all Campaign_ID).
 
 ### Pacing 
-Alerts for pacing purposes are good for budgeting and threshold use cases - where a pre-defined range can be applied to evaluate progress towards a goal. There alerts tend to be more specific (setting up filters and criteria for specifics values) and marking progress towards that goal. Consider setting up multiple threshold alerts like 50%, 75% attainment.
+Alerts for pacing purposes are good for budgeting and threshold use cases - where a pre-defined range can be applied to evaluate progress towards a goal. There alerts tend to be more specific (setting up filters and criteria for specific values) and marking progress towards that goal. Consider setting up multiple threshold alerts like 50%, 75% attainment.
 
 ### Monitoring & Comparison
 Alerts for monitoring purposes are probably the most common alerting use case, i.e. wanting to be alerted based on relative values to prior periods. For these alerts, rather than absolutes, create criteria for % change of values. 

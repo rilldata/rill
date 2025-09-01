@@ -13,11 +13,13 @@ import {
   isValueBasedSort,
   toggleSortDirection,
 } from "@rilldata/web-common/features/dashboards/state-managers/actions/sorting";
+import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
+import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import type {
   V1MetricsViewSpec,
   V1Resource,
 } from "@rilldata/web-common/runtime-client";
-import { derived, get, writable, type Writable } from "svelte/store";
+import { get, writable, type Writable } from "svelte/store";
 import type { CanvasEntity, ComponentPath } from "../../stores/canvas-entity";
 import type {
   CanvasComponentType,
@@ -76,6 +78,24 @@ export class LeaderboardComponent extends BaseCanvasComponent<LeaderboardSpec> {
     return typeof spec.metrics_view === "string";
   }
 
+  getExploreTransformerProperties(): Partial<ExploreState> {
+    const spec = get(this.specStore);
+    const leaderboardState = get(this.leaderboardState);
+    return {
+      visibleMeasures: spec.measures,
+      visibleDimensions: spec.dimensions,
+      activePage: DashboardState_ActivePage.DEFAULT,
+      allMeasuresVisible: false,
+      allDimensionsVisible: false,
+      leaderboardSortByMeasureName:
+        leaderboardState.leaderboardSortByMeasureName || spec.measures[0],
+      leaderboardMeasureNames: spec.measures,
+      leaderboardShowContextForAllMeasures: true,
+      dashboardSortType: leaderboardState.sortType,
+      sortDirection: leaderboardState.sortDirection,
+    };
+  }
+
   inputParams(): InputParams<LeaderboardSpec> {
     return {
       options: {
@@ -115,15 +135,6 @@ export class LeaderboardComponent extends BaseCanvasComponent<LeaderboardSpec> {
       dimensions,
       num_rows: 7,
     };
-  }
-
-  get sortByMeasure() {
-    return derived(this.leaderboardState, (state) => {
-      return state.sortType !== SortType.DIMENSION &&
-        state.sortType !== SortType.UNSPECIFIED
-        ? state.leaderboardSortByMeasureName
-        : null;
-    });
   }
 
   validateAndResetSortMeasure = (spec: LeaderboardSpec) => {

@@ -41,6 +41,7 @@ func (c *connection) findInstances(_ context.Context, whereClause string, args .
 			repo_connector,
 			admin_connector,
 			ai_connector,
+			project_ai_connector,
 			catalog_connector,
 			created_on,
 			updated_on,
@@ -50,9 +51,8 @@ func (c *connection) findInstances(_ context.Context, whereClause string, args .
 			project_variables,
 			feature_flags,
 			annotations,
-			embed_catalog,
-			watch_repo,
-			public_paths
+			public_paths,
+			ai_instructions
 		FROM instances %s ORDER BY id
 	`, whereClause)
 
@@ -75,6 +75,7 @@ func (c *connection) findInstances(_ context.Context, whereClause string, args .
 			&i.RepoConnector,
 			&i.AdminConnector,
 			&i.AIConnector,
+			&i.ProjectAIConnector,
 			&i.CatalogConnector,
 			&i.CreatedOn,
 			&i.UpdatedOn,
@@ -84,9 +85,8 @@ func (c *connection) findInstances(_ context.Context, whereClause string, args .
 			&projectVariables,
 			&featureFlags,
 			&annotations,
-			&i.EmbedCatalog,
-			&i.WatchRepo,
 			&publicPaths,
+			&i.AIInstructions,
 		)
 		if err != nil {
 			return nil, err
@@ -193,6 +193,7 @@ func (c *connection) CreateInstance(_ context.Context, inst *drivers.Instance) e
 			repo_connector,
 			admin_connector,
 			ai_connector,
+			project_ai_connector,
 			catalog_connector,
 			created_on,
 			updated_on,
@@ -202,9 +203,8 @@ func (c *connection) CreateInstance(_ context.Context, inst *drivers.Instance) e
 			project_variables,
 			feature_flags,
 			annotations,
-			embed_catalog,
-			watch_repo,
-			public_paths
+			public_paths,
+			ai_instructions
 		)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
 		`,
@@ -215,6 +215,7 @@ func (c *connection) CreateInstance(_ context.Context, inst *drivers.Instance) e
 		inst.RepoConnector,
 		inst.AdminConnector,
 		inst.AIConnector,
+		inst.ProjectAIConnector,
 		inst.CatalogConnector,
 		now,
 		now,
@@ -224,9 +225,8 @@ func (c *connection) CreateInstance(_ context.Context, inst *drivers.Instance) e
 		projectVariables,
 		featureFlags,
 		annotations,
-		inst.EmbedCatalog,
-		inst.WatchRepo,
 		publicPaths,
+		inst.AIInstructions,
 	)
 	if err != nil {
 		return err
@@ -290,17 +290,17 @@ func (c *connection) EditInstance(_ context.Context, inst *drivers.Instance) err
 			repo_connector = $5,
 			admin_connector = $6,
 			ai_connector = $7,
-			catalog_connector = $8,
-			updated_on = $9,
-			connectors = $10,
-			project_connectors = $11,
-			variables = $12,
-			project_variables = $13,
-			feature_flags = $14,
-			annotations = $15,
-			embed_catalog = $16,
-			watch_repo = $17,
-			public_paths = $18
+			project_ai_connector = $8,
+			catalog_connector = $9,
+			updated_on = $10,
+			connectors = $11,
+			project_connectors = $12,
+			variables = $13,
+			project_variables = $14,
+			feature_flags = $15,
+			annotations = $16,
+			public_paths = $17,
+			ai_instructions = $18
 		WHERE id = $1
 		`,
 		inst.ID,
@@ -310,6 +310,7 @@ func (c *connection) EditInstance(_ context.Context, inst *drivers.Instance) err
 		inst.RepoConnector,
 		inst.AdminConnector,
 		inst.AIConnector,
+		inst.ProjectAIConnector,
 		inst.CatalogConnector,
 		now,
 		connectors,
@@ -318,9 +319,8 @@ func (c *connection) EditInstance(_ context.Context, inst *drivers.Instance) err
 		projectVariables,
 		featureFlags,
 		annotations,
-		inst.EmbedCatalog,
-		inst.WatchRepo,
 		publicPaths,
+		inst.AIInstructions,
 	)
 	if err != nil {
 		return err

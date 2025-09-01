@@ -1,6 +1,7 @@
 <script lang="ts">
   import {
     createAdminServiceAddProjectMemberUser,
+    getAdminServiceListOrganizationMemberUsersQueryKey,
     getAdminServiceListProjectInvitesQueryKey,
     getAdminServiceListProjectMemberUsersQueryKey,
   } from "@rilldata/web-admin/client";
@@ -8,6 +9,7 @@
   import { Button } from "@rilldata/web-common/components/button";
   import MultiInput from "@rilldata/web-common/components/forms/MultiInput.svelte";
   import { RFC5322EmailRegex } from "@rilldata/web-common/components/forms/validation";
+  import { ProjectUserRoles } from "@rilldata/web-common/features/users/roles.ts";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { defaults, superForm } from "sveltekit-superforms";
@@ -26,7 +28,7 @@
     role: string;
   } = {
     emails: [""],
-    role: "viewer",
+    role: ProjectUserRoles.Viewer,
   };
   const schema = yup(
     object({
@@ -85,6 +87,12 @@
           ),
         });
 
+        await queryClient.invalidateQueries({
+          queryKey:
+            getAdminServiceListOrganizationMemberUsersQueryKey(organization),
+          type: "all", // Clear regular and inactive queries
+        });
+
         eventBus.emit("notification", {
           type: "success",
           message: `Invited ${succeeded.length} ${succeeded.length === 1 ? "person" : "people"} as ${values.role}`,
@@ -118,6 +126,7 @@
     errors={$errors.emails}
     singular="email"
     plural="emails"
+    preventFocus={true}
   >
     <div slot="within-input" class="h-full items-center flex">
       <UserRoleSelect bind:value={$form.role} />

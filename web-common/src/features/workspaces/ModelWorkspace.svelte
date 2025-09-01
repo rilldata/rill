@@ -22,6 +22,8 @@
   import { isProfilingQuery } from "@rilldata/web-common/runtime-client/query-matcher";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { fade, slide } from "svelte/transition";
+  import ReconcilingSpinner from "../entity-management/ReconcilingSpinner.svelte";
+  import { getUserFriendlyError } from "../models/error-utils";
 
   export let fileArtifact: FileArtifact;
 
@@ -54,7 +56,7 @@
   $: tableName = (model as V1Model)?.state?.resultTable as string;
 
   $: refreshedOn = model?.state?.refreshedOn;
-  $: resourceIsReconciling = resourceIsLoading($resourceQuery.data);
+  $: isResourceReconciling = resourceIsLoading($resourceQuery.data);
 
   async function save() {
     httpRequestQueue.removeByName(assetName);
@@ -136,12 +138,10 @@
 
     {#if $tableVisible}
       <WorkspaceTableContainer {filePath}>
-        {#if connector && tableName}
-          <ConnectedPreviewTable
-            {connector}
-            table={tableName}
-            loading={resourceIsReconciling}
-          />
+        {#if isResourceReconciling}
+          <ReconcilingSpinner />
+        {:else if connector && tableName}
+          <ConnectedPreviewTable {connector} table={tableName} />
         {/if}
         <svelte:fragment slot="error">
           {#if allErrors.length > 0}
@@ -150,7 +150,9 @@
               class="error bottom-4 break-words overflow-auto p-6 border-2 border-gray-300 font-bold text-gray-700 w-full shrink-0 max-h-[60%] bg-gray-100 flex flex-col gap-2"
             >
               {#each allErrors as error (error.message)}
-                <div>{error.message}</div>
+                <div>
+                  {getUserFriendlyError(error.message ?? "")}
+                </div>
               {/each}
             </div>
           {/if}
@@ -170,5 +172,6 @@
     hasUnsavedChanges={$hasUnsavedChanges}
     {resource}
     isEmpty={!$remoteContent?.length}
+    {isResourceReconciling}
   />
 </WorkspaceContainer>

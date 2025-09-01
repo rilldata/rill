@@ -1,7 +1,8 @@
-import { DimensionFilterMode } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/dimension-filter-mode";
+import { DimensionFilterMode } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/constants";
 import { useDimensionSearch } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/dimension-filter-values";
 import { getDimensionDisplayName } from "@rilldata/web-common/features/dashboards/filters/getDisplayName";
 import { filterItemsSortFunction } from "@rilldata/web-common/features/dashboards/state-managers/selectors/filters";
+import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import {
   forEachIdentifier,
   getValuesInExpression,
@@ -13,36 +14,11 @@ import type {
   V1Expression,
 } from "@rilldata/web-common/runtime-client";
 import { V1Operation } from "@rilldata/web-common/runtime-client";
-import { readable } from "svelte/store";
+import { derived, readable } from "svelte/store";
 import type { AtLeast } from "../types";
 import type { DashboardDataSources } from "./types";
 
 export const selectedDimensionValues = (
-  dashData: AtLeast<DashboardDataSources, "dashboard">,
-): ((dimName: string) => string[]) => {
-  return (dimName: string) => {
-    // if it is a complex filter unsupported by UI then no values are selected
-    if (isExpressionUnsupported(dashData.dashboard.whereFilter)) return [];
-
-    const dimExpr = getWhereFilterExpression(dashData)(dimName);
-    if (
-      dimExpr?.cond?.op &&
-      (dimExpr.cond.op === V1Operation.OPERATION_LIKE ||
-        dimExpr.cond.op === V1Operation.OPERATION_NLIKE)
-    )
-      return [];
-
-    // FIXME: it is possible for this way of accessing the filters
-    // to return the same value twice, which would seem to indicate
-    // a bug in the way we're setting the filters / active values.
-    // Need to investigate further to determine whether this is a
-    // problem with the runtime or the client, but for now wrapping
-    // it in a set dedupes the values.
-    return [...new Set(getValuesInExpression(dimExpr) as string[])];
-  };
-};
-
-export const selectedDimensionValuesV2 = (
   instanceId: string,
   metricsViewNames: string[],
   whereFilter: V1Expression | undefined,
@@ -51,7 +27,7 @@ export const selectedDimensionValuesV2 = (
   timeEnd?: string,
 ) => {
   // if it is a complex filter unsupported by UI then no values are selected
-  if (!whereFilter || isExpressionUnsupported(whereFilter))
+  if (!whereFilter || isExpressionUnsupported(whereFilter) || !dimensionName)
     return readable({
       isFetching: false,
       isLoading: false,
@@ -107,11 +83,17 @@ export const selectedDimensionValuesV2 = (
   });
 };
 
-export const atLeastOneSelection = (
-  dashData: AtLeast<DashboardDataSources, "dashboard">,
-): ((dimName: string) => boolean) => {
-  return (dimName: string) =>
-    selectedDimensionValues(dashData)(dimName).length > 0;
+export const useSelectedValuesForCompareDimension = (ctx: StateManagers) => {
+  return derived(
+    [ctx.runtime, ctx.metricsViewName, ctx.dashboardStore],
+    ([runtime, metricsViewName, exploreState], set) =>
+      selectedDimensionValues(
+        runtime.instanceId,
+        [metricsViewName],
+        exploreState.whereFilter,
+        exploreState.selectedComparisonDimension ?? "",
+      ).subscribe(set),
+  ) as ReturnType<typeof selectedDimensionValues>;
 };
 
 export const isFilterExcludeMode = (
@@ -168,13 +150,13 @@ export function getDimensionFilterItems(
   };
 }
 
-export function getDimensionFilters(
+export function getDimensionFiltersMap(
   dimensionIdMap: Map<string, MetricsViewSpecDimension>,
   filter: V1Expression | undefined,
   dimensionsWithInlistFilter: string[],
-) {
-  if (!filter) return [];
-  const filteredDimensions: DimensionFilterItem[] = [];
+): Map<string, DimensionFilterItem> {
+  if (!filter) return new Map();
+  const filteredDimensions: Map<string, DimensionFilterItem> = new Map();
   const addedDimension = new Set<string>();
   forEachIdentifier(filter, (e, ident) => {
     if (addedDimension.has(ident) || !dimensionIdMap.has(ident)) return;
@@ -187,7 +169,7 @@ export function getDimensionFilters(
     const op = e.cond?.op;
     if (op === V1Operation.OPERATION_IN || op === V1Operation.OPERATION_NIN) {
       const isInListMode = dimensionsWithInlistFilter.includes(ident);
-      filteredDimensions.push({
+      filteredDimensions.set(ident, {
         name: ident,
         label: getDimensionDisplayName(dim),
         mode: isInListMode
@@ -200,7 +182,7 @@ export function getDimensionFilters(
       op === V1Operation.OPERATION_LIKE ||
       op === V1Operation.OPERATION_NLIKE
     ) {
-      filteredDimensions.push({
+      filteredDimensions.set(ident, {
         name: ident,
         label: getDimensionDisplayName(dim),
         mode: DimensionFilterMode.Contains,
@@ -211,8 +193,21 @@ export function getDimensionFilters(
     }
   });
 
-  // sort based on name to make sure toggling include/exclude is not jarring
-  return filteredDimensions.sort(filterItemsSortFunction);
+  return filteredDimensions;
+}
+
+export function getDimensionFilters(
+  dimensionIdMap: Map<string, MetricsViewSpecDimension>,
+  filter: V1Expression | undefined,
+  dimensionsWithInlistFilter: string[],
+) {
+  return Array.from(
+    getDimensionFiltersMap(
+      dimensionIdMap,
+      filter,
+      dimensionsWithInlistFilter,
+    ).values(),
+  );
 }
 
 export const getAllDimensionFilterItems = (
@@ -281,18 +276,6 @@ export const hasAtLeastOneDimensionFilter = (
 };
 
 export const dimensionFilterSelectors = {
-  /**
-   * Returns a function that can be used to get the selected values
-   * for the specified dimension name.
-   */
-  selectedDimensionValues,
-
-  /**
-   * Returns a function that can be used to get whether the specified
-   * dimension has at least one selected value.
-   */
-  atLeastOneSelection,
-
   /**
    * Returns a function that can be used to get whether the specified
    * dimension is in exclude mode.

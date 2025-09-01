@@ -1,3 +1,4 @@
+expensive: true
 connectors:
   - clickhouse
   - snowflake
@@ -91,9 +92,9 @@ tests:
       STRING_COL,VARCHAR,YES,,,
       TEXT_COL,VARCHAR,YES,,,
       DATE_COL,DATE,YES,,,
-      TIMESTAMP_NTZ_COL,TIMESTAMP WITH TIME ZONE,YES,,,
-      TIMESTAMP_LTZ_COL,TIMESTAMP_NS,YES,,,
-      TIMESTAMP_TZ_COL,TIMESTAMP WITH TIME ZONE,YES,,,
+      TIMESTAMP_NTZ_COL,TIMESTAMP_NS,YES,,,
+      TIMESTAMP_LTZ_COL,TIMESTAMP WITH TIME ZONE,YES,,,
+      TIMESTAMP_TZ_COL,TIMESTAMP_NS,YES,,,
       VARIANT_COL,VARCHAR,YES,,,
       ARRAY_COL,VARCHAR,YES,,,
       OBJECT_COL,VARCHAR,YES,,,
@@ -103,8 +104,8 @@ tests:
   - name: query_all_result_clickhouse
     resolver: sql
     properties:
-      sql: "select * from all_datatypes_clickhouse order by ID"
       connector: clickhouse
+      sql: "select * from all_datatypes_clickhouse order by ID"
     result_csv: |
       ID,BOOLEAN_COL,TINYINT_COL,SMALLINT_COL,INT32_COL,INT64_COL,NUMBER_COL,FLOAT_COL,DOUBLE_COL,DECIMAL_COL,STRING_COL,TEXT_COL,DATE_COL,TIME_COL,TIMESTAMP_NTZ_COL,VARIANT_COL,ARRAY_COL,OBJECT_COL,BINARY_COL,GEOGRAPHY_COL,GEOMETRY_COL
       1,true,127,32767,2147483647,9223372036854776000,12345.6789,3.14,2.718,456.789,Sample String,Large text data,2024-03-26,1970-01-01T14:30:00Z,2025-03-26T03:35:51.195Z,"{""key"":""value""}","[1,2,3]","{""city"":""New York""}",Hello,"{""coordinates"":[-122.4194,37.7749],""type"":""Point""}","{""coordinates"":[[0.000000000000000e+00,0.000000000000000e+00],[1.000000000000000e+00,1.000000000000000e+00],[2.000000000000000e+00,2.000000000000000e+00]],""type"":""LineString""}"
@@ -113,9 +114,9 @@ tests:
   - name: query_all_datatypes_clickhouse
     resolver: sql
     properties:
+      connector: clickhouse
       sql: |
         select name, type from system.columns where `table` = 'all_datatypes_clickhouse'
-      connector: clickhouse
     result_csv: |
       name,type
       ID,"Nullable(Decimal(38, 0))"

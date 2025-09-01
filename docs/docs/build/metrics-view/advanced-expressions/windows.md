@@ -5,16 +5,16 @@ sidebar_label: "Window Functions"
 sidebar_position: 05
 ---
 
-In addition to standard metrics, it is possible to define running window calculations of your data whether you are looking to monitor a cumulative trend, smooth out fluctuations, etc. You'll need to navigate to the Code view in order to create a windowed measure.
+In addition to standard metrics, it is possible to define running window calculations on your data, whether you are looking to monitor a cumulative trend, smooth out fluctuations, etc. You'll need to navigate to the Code view in order to create a windowed measure.
 
 Please review the reference documentation, [here.](/reference/project-files/metrics-views)
 
 
 ## Example
-In the below example, bids is another measure defined in the metrics view, and we are getting the previous week and current date's values and averaging them. This allows us to remove any short term trends to detect real patterns. You'll need to add the [`requires`](./referencing) array parameter to use reference another measure.
+In the example below, bids is another measure defined in the metrics view, and we are getting the previous week and current date's values and averaging them. This allows us to remove any short-term trends to detect real patterns. You'll need to add the [`requires`](./referencing) array parameter to reference another measure.
 
 <img src = '/img/build/metrics-view/examples/explore-percent.png' class='rounded-gif' />
-<br /> update this photo
+<br />  
 
 ```yaml
   - name: bids_7day_rolling_avg
@@ -27,7 +27,7 @@ In the below example, bids is another measure defined in the metrics view, and w
 ```
 
 
-Another example is using a rolling sum with no bounding preceding rows, aka your whole data. This will be a cumulative sum of all of your measure's data, in this case it is the average voltage measure.
+Another example is using a rolling sum with no bounding preceding rows, also known as your whole data. This will be a cumulative sum of all of your measure's data; in this case, it is the average voltage measure.
 
 <img src = '/img/build/metrics-view/examples/window-example.png' class='rounded-gif' />
 <br /> 

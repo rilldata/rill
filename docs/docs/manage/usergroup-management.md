@@ -4,8 +4,6 @@ sidebar_label: User Group Management
 sidebar_position: 24
 ---
 
-import ComingSoon from '@site/src/components/ComingSoon';
-
 Creating user groups in Rill allows administrators to easily grant permission to multiple projects at different access levels. It is possible to mix and match viewer and administrator permission in a single group and users can be part of multiple groups. However, please keep in mind that the higher permission will be applied.
 
 ## Managing User groups Permissions
@@ -15,11 +13,10 @@ There are two ways to set up user groups in Rill.
 2. Administrator via CLI 
 
 ### How to Manage User Groups in Rill Cloud
-<ComingSoon />
+From the organization page, you can manage user groups under the Users tab. Adding user groups from this page will add the user group to the organization. You can then add users to a user group to inherit the group [permissions](/manage/roles-permissions).
 
-<div class='contents_to_overlay'>
-a
-</div>
+<img src = '/img/manage/user-management/usergroup-management.png' class='rounded-gif' />
+<br />
 
 ### How to Manage User Groups via the CLI
 ```

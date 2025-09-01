@@ -108,7 +108,11 @@ message DashboardState {
 
   optional LeaderboardSortDirection leaderboard_sort_direction = 15;
   optional LeaderboardSortType leaderboard_sort_type = 16;
+
+  // Deprecated
   optional uint32 leaderboard_measure_count = 38;
+  repeated string leaderboard_measures = 39;
+  optional bool leaderboard_show_context_for_all_measures = 40;
 
   optional string comparison_dimension = 17;
 

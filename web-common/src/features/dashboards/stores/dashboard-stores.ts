@@ -2,13 +2,12 @@ import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboar
 import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
 import { getWhereFilterExpressionIndex } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
 import { AdvancedMeasureCorrector } from "@rilldata/web-common/features/dashboards/stores/AdvancedMeasureCorrector";
-import { getFullInitExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-store-defaults";
 import {
   createAndExpression,
   filterExpressions,
   forEachIdentifier,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import { type MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import { type ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
 import {
   TimeRangePreset,
@@ -37,7 +36,7 @@ import {
 } from "../pivot/types";
 
 export interface MetricsExplorerStoreType {
-  entities: Record<string, MetricsExplorerEntity>;
+  entities: Record<string, ExploreState>;
 }
 const { update, subscribe } = writable({
   entities: {},
@@ -45,7 +44,7 @@ const { update, subscribe } = writable({
 
 export const updateMetricsExplorerByName = (
   name: string,
-  callback: (metricsExplorer: MetricsExplorerEntity) => void,
+  callback: (exploreState: ExploreState) => void,
 ) => {
   update((state) => {
     if (!state.entities[name]) {
@@ -57,7 +56,9 @@ export const updateMetricsExplorerByName = (
   });
 };
 
-function includeExcludeModeFromFilters(filters: V1Expression | undefined) {
+export function includeExcludeModeFromFilters(
+  filters: V1Expression | undefined,
+) {
   const map = new Map<string, boolean>();
   if (!filters) return map;
   forEachIdentifier(filters, (e, ident) => {
@@ -72,98 +73,93 @@ function includeExcludeModeFromFilters(filters: V1Expression | undefined) {
   return map;
 }
 
-function syncMeasures(
-  explore: V1ExploreSpec,
-  metricsExplorer: MetricsExplorerEntity,
-) {
+function syncMeasures(explore: V1ExploreSpec, exploreState: ExploreState) {
   const measuresSet = new Set(explore.measures ?? []);
 
-  // sync measures with selected leaderboard measure.
-  if (
-    explore.measures?.length &&
-    !measuresSet.has(metricsExplorer.leaderboardSortByMeasureName)
-  ) {
+  // sync measures with selected leaderboard measure and ensure default measure is set
+  if (explore.measures?.length) {
     const defaultMeasure = explore.measures[0];
-    metricsExplorer.leaderboardSortByMeasureName = defaultMeasure;
+    if (!measuresSet.has(exploreState.leaderboardSortByMeasureName)) {
+      exploreState.leaderboardSortByMeasureName = defaultMeasure;
+    }
+    if (!exploreState.leaderboardMeasureNames?.length) {
+      exploreState.leaderboardMeasureNames = [defaultMeasure];
+    }
   }
 
   if (
-    metricsExplorer.tdd.expandedMeasureName &&
-    !measuresSet.has(metricsExplorer.tdd.expandedMeasureName)
+    exploreState.tdd.expandedMeasureName &&
+    !measuresSet.has(exploreState.tdd.expandedMeasureName)
   ) {
-    metricsExplorer.tdd.expandedMeasureName = undefined;
+    exploreState.tdd.expandedMeasureName = undefined;
   }
 
-  metricsExplorer.pivot.columns = metricsExplorer.pivot.columns.filter(
-    (measure) => measuresSet.has(measure.id),
+  exploreState.pivot.columns = exploreState.pivot.columns.filter((measure) =>
+    measuresSet.has(measure.id),
   );
 
-  if (metricsExplorer.allMeasuresVisible) {
+  if (exploreState.allMeasuresVisible) {
     // this makes sure that the visible keys is in sync with list of measures
-    metricsExplorer.visibleMeasures = [...measuresSet];
+    exploreState.visibleMeasures = [...measuresSet];
   } else {
     // remove any visible measures that doesn't exist anymore
-    metricsExplorer.visibleMeasures = metricsExplorer.visibleMeasures.filter(
-      (m) => measuresSet.has(m),
+    exploreState.visibleMeasures = exploreState.visibleMeasures.filter((m) =>
+      measuresSet.has(m),
     );
     // If there are no visible measures, make the first measure visible
-    if (
-      explore.measures?.length &&
-      metricsExplorer.visibleMeasures.length === 0
-    ) {
-      metricsExplorer.visibleMeasures = [explore.measures[0]];
+    if (explore.measures?.length && exploreState.visibleMeasures.length === 0) {
+      exploreState.visibleMeasures = [explore.measures[0]];
     }
   }
 }
 
-function syncDimensions(
-  explore: V1ExploreSpec,
-  metricsExplorer: MetricsExplorerEntity,
-) {
+function syncDimensions(explore: V1ExploreSpec, exploreState: ExploreState) {
   // Having a map here improves the lookup for existing dimension name
   const dimensionsSet = new Set(explore.dimensions ?? []);
-  metricsExplorer.whereFilter =
-    filterExpressions(metricsExplorer.whereFilter, (e) => {
+  exploreState.whereFilter =
+    filterExpressions(exploreState.whereFilter, (e) => {
       if (!e.cond?.exprs?.length) return true;
       return dimensionsSet.has(e.cond.exprs[0].ident!);
     }) ?? createAndExpression([]);
 
   if (
-    metricsExplorer.selectedDimensionName &&
-    !dimensionsSet.has(metricsExplorer.selectedDimensionName)
+    exploreState.selectedDimensionName &&
+    !dimensionsSet.has(exploreState.selectedDimensionName)
   ) {
-    metricsExplorer.selectedDimensionName = undefined;
-    metricsExplorer.activePage = DashboardState_ActivePage.DEFAULT;
+    exploreState.selectedDimensionName = undefined;
+    exploreState.activePage = DashboardState_ActivePage.DEFAULT;
   }
 
-  metricsExplorer.pivot.rows = metricsExplorer.pivot.rows.filter(
+  exploreState.pivot.rows = exploreState.pivot.rows.filter(
     (dimension) =>
       dimensionsSet.has(dimension.id) || dimension.type === PivotChipType.Time,
   );
 
-  metricsExplorer.pivot.columns = metricsExplorer.pivot.columns.filter(
+  exploreState.pivot.columns = exploreState.pivot.columns.filter(
     (dimension) =>
       dimensionsSet.has(dimension.id) || dimension.type === PivotChipType.Time,
   );
 
-  if (metricsExplorer.allDimensionsVisible) {
+  if (exploreState.allDimensionsVisible) {
     // this makes sure that the visible keys is in sync with list of dimensions
-    metricsExplorer.visibleDimensions = [...dimensionsSet];
+    exploreState.visibleDimensions = [...dimensionsSet];
   } else {
     // remove any visible dimensions that doesn't exist anymore
-    metricsExplorer.visibleDimensions =
-      metricsExplorer.visibleDimensions.filter((d) => dimensionsSet.has(d));
+    exploreState.visibleDimensions = exploreState.visibleDimensions
+      ? exploreState.visibleDimensions.filter((d) => dimensionsSet.has(d))
+      : [];
   }
 }
 
 const metricsViewReducers = {
-  init(name: string, initState: Partial<MetricsExplorerEntity> = {}) {
+  init(name: string, initState: ExploreState) {
     update((state) => {
       // TODO: revisit this during the url state / restore user refactor
       initState.dimensionFilterExcludeMode = includeExcludeModeFromFilters(
         initState.whereFilter,
       );
-      state.entities[name] = getFullInitExploreState(name, initState);
+      state.entities[name] = structuredClone(initState);
+      state.entities[name].name = name;
 
       return state;
     });
@@ -187,71 +183,75 @@ const metricsViewReducers = {
     );
     if (!partial) return;
 
-    updateMetricsExplorerByName(name, (metricsExplorer) => {
+    updateMetricsExplorerByName(name, (exploreState) => {
       for (const key in partial) {
-        metricsExplorer[key] = partial[key];
+        exploreState[key] = partial[key];
       }
       // this hack is needed since what is shown for comparison is not a single source
       // TODO: use an enum and get rid of this
       if (!partial.showTimeComparison) {
-        metricsExplorer.showTimeComparison = false;
+        exploreState.showTimeComparison = false;
       }
-      metricsExplorer.dimensionFilterExcludeMode =
-        includeExcludeModeFromFilters(partial.whereFilter);
-      AdvancedMeasureCorrector.correct(metricsExplorer, metricsView);
+      exploreState.dimensionFilterExcludeMode = includeExcludeModeFromFilters(
+        partial.whereFilter,
+      );
+      AdvancedMeasureCorrector.correct(exploreState, metricsView);
     });
   },
 
   mergePartialExplorerEntity(
     name: string,
-    partialExploreState: Partial<MetricsExplorerEntity>,
+    partialExploreState: Partial<ExploreState>,
     metricsView: V1MetricsViewSpec,
   ) {
-    updateMetricsExplorerByName(name, (metricsExplorer) => {
+    partialExploreState = structuredClone(partialExploreState);
+
+    updateMetricsExplorerByName(name, (exploreState) => {
       for (const key in partialExploreState) {
-        metricsExplorer[key] = partialExploreState[key];
+        exploreState[key] = partialExploreState[key];
       }
       // this hack is needed since what is shown for comparison is not a single source
       // TODO: use an enum and get rid of this
       if (!partialExploreState.showTimeComparison) {
-        metricsExplorer.showTimeComparison = false;
+        exploreState.showTimeComparison = false;
       }
-      metricsExplorer.dimensionFilterExcludeMode =
-        includeExcludeModeFromFilters(partialExploreState.whereFilter);
-      AdvancedMeasureCorrector.correct(metricsExplorer, metricsView);
+      exploreState.dimensionFilterExcludeMode = includeExcludeModeFromFilters(
+        partialExploreState.whereFilter,
+      );
+      AdvancedMeasureCorrector.correct(exploreState, metricsView);
     });
   },
 
   sync(name: string, explore: V1ExploreSpec) {
     if (!name || !explore || !explore.measures) return;
-    updateMetricsExplorerByName(name, (metricsExplorer) => {
+    updateMetricsExplorerByName(name, (exploreState) => {
       // remove references to non existent measures
-      syncMeasures(explore, metricsExplorer);
+      syncMeasures(explore, exploreState);
 
       // remove references to non existent dimensions
-      syncDimensions(explore, metricsExplorer);
+      syncDimensions(explore, exploreState);
     });
   },
 
   setPivotMode(name: string, mode: boolean) {
-    updateMetricsExplorerByName(name, (metricsExplorer) => {
+    updateMetricsExplorerByName(name, (exploreState) => {
       if (mode) {
-        metricsExplorer.activePage = DashboardState_ActivePage.PIVOT;
-      } else if (metricsExplorer.selectedDimensionName) {
-        metricsExplorer.activePage = DashboardState_ActivePage.DIMENSION_TABLE;
-      } else if (metricsExplorer.tdd.expandedMeasureName) {
-        metricsExplorer.activePage =
+        exploreState.activePage = DashboardState_ActivePage.PIVOT;
+      } else if (exploreState.selectedDimensionName) {
+        exploreState.activePage = DashboardState_ActivePage.DIMENSION_TABLE;
+      } else if (exploreState.tdd.expandedMeasureName) {
+        exploreState.activePage =
           DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL;
       } else {
-        metricsExplorer.activePage = DashboardState_ActivePage.DEFAULT;
+        exploreState.activePage = DashboardState_ActivePage.DEFAULT;
       }
     });
   },
 
   setPivotRows(name: string, value: PivotChipData[]) {
-    updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.pivot.rowPage = 1;
-      metricsExplorer.pivot.activeCell = null;
+    updateMetricsExplorerByName(name, (exploreState) => {
+      exploreState.pivot.rowPage = 1;
+      exploreState.pivot.activeCell = null;
 
       const dimensions: PivotChipData[] = [];
 
@@ -261,75 +261,75 @@ const metricsViewReducers = {
         }
       });
 
-      if (metricsExplorer.pivot.sorting.length) {
-        const accessor = metricsExplorer.pivot.sorting[0].id;
+      if (exploreState.pivot.sorting.length) {
+        const accessor = exploreState.pivot.sorting[0].id;
         const anchorDimension = dimensions?.[0]?.id;
         if (accessor !== anchorDimension) {
-          metricsExplorer.pivot.sorting = [];
+          exploreState.pivot.sorting = [];
         }
       }
 
-      metricsExplorer.pivot.rows = dimensions;
+      exploreState.pivot.rows = dimensions;
     });
   },
 
   setPivotColumns(name: string, value: PivotChipData[]) {
-    updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.pivot.rowPage = 1;
-      metricsExplorer.pivot.activeCell = null;
-      metricsExplorer.pivot.expanded = {};
+    updateMetricsExplorerByName(name, (exploreState) => {
+      exploreState.pivot.rowPage = 1;
+      exploreState.pivot.activeCell = null;
+      exploreState.pivot.expanded = {};
 
-      if (metricsExplorer.pivot.sorting.length) {
-        const accessor = metricsExplorer.pivot.sorting[0].id;
+      if (exploreState.pivot.sorting.length) {
+        const accessor = exploreState.pivot.sorting[0].id;
 
-        if (metricsExplorer.pivot.tableMode === "flat") {
+        if (exploreState.pivot.tableMode === "flat") {
           const validAccessors = value.map((d) => d.id);
           if (!validAccessors.includes(accessor)) {
-            metricsExplorer.pivot.sorting = [];
+            exploreState.pivot.sorting = [];
           }
         } else {
-          const anchorDimension = metricsExplorer.pivot.rows?.[0]?.id;
+          const anchorDimension = exploreState.pivot.rows?.[0]?.id;
           if (accessor !== anchorDimension) {
-            metricsExplorer.pivot.sorting = [];
+            exploreState.pivot.sorting = [];
           }
         }
       }
-      metricsExplorer.pivot.columns = value;
+      exploreState.pivot.columns = value;
     });
   },
 
   addPivotField(name: string, value: PivotChipData, rows: boolean) {
-    updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.pivot.rowPage = 1;
-      metricsExplorer.pivot.activeCell = null;
+    updateMetricsExplorerByName(name, (exploreState) => {
+      exploreState.pivot.rowPage = 1;
+      exploreState.pivot.activeCell = null;
       if (value.type === PivotChipType.Measure) {
-        metricsExplorer.pivot.columns.push(value);
+        exploreState.pivot.columns.push(value);
       } else {
         if (rows) {
-          metricsExplorer.pivot.rows.push(value);
+          exploreState.pivot.rows.push(value);
         } else {
-          metricsExplorer.pivot.columns.push(value);
+          exploreState.pivot.columns.push(value);
         }
       }
     });
   },
 
   setPivotExpanded(name: string, expanded: ExpandedState) {
-    updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.pivot = { ...metricsExplorer.pivot, expanded };
+    updateMetricsExplorerByName(name, (exploreState) => {
+      exploreState.pivot = { ...exploreState.pivot, expanded };
     });
   },
 
   setPivotComparison(name: string, enableComparison: boolean) {
-    updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.pivot = { ...metricsExplorer.pivot, enableComparison };
+    updateMetricsExplorerByName(name, (exploreState) => {
+      exploreState.pivot = { ...exploreState.pivot, enableComparison };
     });
   },
 
   setPivotSort(name: string, sorting: SortingState) {
-    updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.pivot = {
-        ...metricsExplorer.pivot,
+    updateMetricsExplorerByName(name, (exploreState) => {
+      exploreState.pivot = {
+        ...exploreState.pivot,
         sorting,
         rowPage: 1,
         expanded: {},
@@ -339,40 +339,40 @@ const metricsViewReducers = {
   },
 
   setPivotColumnPage(name: string, pageNumber: number) {
-    updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.pivot = {
-        ...metricsExplorer.pivot,
+    updateMetricsExplorerByName(name, (exploreState) => {
+      exploreState.pivot = {
+        ...exploreState.pivot,
         columnPage: pageNumber,
       };
     });
   },
 
   setPivotRowPage(name: string, pageNumber: number) {
-    updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.pivot = {
-        ...metricsExplorer.pivot,
+    updateMetricsExplorerByName(name, (exploreState) => {
+      exploreState.pivot = {
+        ...exploreState.pivot,
         rowPage: pageNumber,
       };
     });
   },
 
   setPivotActiveCell(name: string, rowId: string, columnId: string) {
-    updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.pivot.activeCell = { rowId, columnId };
+    updateMetricsExplorerByName(name, (exploreState) => {
+      exploreState.pivot.activeCell = { rowId, columnId };
     });
   },
 
   removePivotActiveCell(name: string) {
-    updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.pivot.activeCell = null;
+    updateMetricsExplorerByName(name, (exploreState) => {
+      exploreState.pivot.activeCell = null;
     });
   },
 
   createPivot(name: string, rows: PivotChipData[], columns: PivotChipData[]) {
-    updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.activePage = DashboardState_ActivePage.PIVOT;
-      metricsExplorer.pivot = {
-        ...metricsExplorer.pivot,
+    updateMetricsExplorerByName(name, (exploreState) => {
+      exploreState.activePage = DashboardState_ActivePage.PIVOT;
+      exploreState.pivot = {
+        ...exploreState.pivot,
         rows,
         columns,
         expanded: {},
@@ -385,75 +385,75 @@ const metricsViewReducers = {
   },
 
   setExpandedMeasureName(name: string, measureName: string | undefined) {
-    updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.tdd.expandedMeasureName = measureName;
+    updateMetricsExplorerByName(name, (exploreState) => {
+      exploreState.tdd.expandedMeasureName = measureName;
       if (measureName) {
-        metricsExplorer.activePage =
+        exploreState.activePage =
           DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL;
       } else {
-        metricsExplorer.activePage = DashboardState_ActivePage.DEFAULT;
+        exploreState.activePage = DashboardState_ActivePage.DEFAULT;
       }
 
       // If going into TDD view and already having a comparison dimension,
       // then set the pinIndex
-      if (metricsExplorer.selectedComparisonDimension) {
-        metricsExplorer.tdd.pinIndex = getPinIndexForDimension(
-          metricsExplorer,
-          metricsExplorer.selectedComparisonDimension,
+      if (exploreState.selectedComparisonDimension) {
+        exploreState.tdd.pinIndex = getPinIndexForDimension(
+          exploreState,
+          exploreState.selectedComparisonDimension,
         );
       }
     });
   },
 
   setPinIndex(name: string, index: number) {
-    updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.tdd.pinIndex = index;
+    updateMetricsExplorerByName(name, (exploreState) => {
+      exploreState.tdd.pinIndex = index;
     });
   },
 
   setTDDChartType(name: string, type: TDDChart) {
-    updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.tdd.chartType = type;
+    updateMetricsExplorerByName(name, (exploreState) => {
+      exploreState.tdd.chartType = type;
     });
   },
 
   setSelectedTimeRange(name: string, timeRange: DashboardTimeControls) {
-    updateMetricsExplorerByName(name, (metricsExplorer) => {
-      setSelectedScrubRange(metricsExplorer, undefined);
-      metricsExplorer.selectedTimeRange = timeRange;
+    updateMetricsExplorerByName(name, (exploreState) => {
+      setSelectedScrubRange(exploreState, undefined);
+      exploreState.selectedTimeRange = timeRange;
     });
   },
 
   setSelectedScrubRange(name: string, scrubRange: ScrubRange | undefined) {
-    updateMetricsExplorerByName(name, (metricsExplorer) => {
-      setSelectedScrubRange(metricsExplorer, scrubRange);
+    updateMetricsExplorerByName(name, (exploreState) => {
+      setSelectedScrubRange(exploreState, scrubRange);
     });
   },
 
   setMetricDimensionName(name: string, dimensionName: string | null) {
-    updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.selectedDimensionName = dimensionName ?? undefined;
+    updateMetricsExplorerByName(name, (exploreState) => {
+      exploreState.selectedDimensionName = dimensionName ?? undefined;
       if (dimensionName) {
-        metricsExplorer.activePage = DashboardState_ActivePage.DIMENSION_TABLE;
+        exploreState.activePage = DashboardState_ActivePage.DIMENSION_TABLE;
       } else {
-        metricsExplorer.activePage = DashboardState_ActivePage.DEFAULT;
+        exploreState.activePage = DashboardState_ActivePage.DEFAULT;
       }
     });
   },
 
   setComparisonDimension(name: string, dimensionName: string) {
-    updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.selectedComparisonDimension = dimensionName;
-      metricsExplorer.tdd.pinIndex = getPinIndexForDimension(
-        metricsExplorer,
+    updateMetricsExplorerByName(name, (exploreState) => {
+      exploreState.selectedComparisonDimension = dimensionName;
+      exploreState.tdd.pinIndex = getPinIndexForDimension(
+        exploreState,
         dimensionName,
       );
     });
   },
 
   disableAllComparisons(name: string) {
-    updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.selectedComparisonDimension = undefined;
+    updateMetricsExplorerByName(name, (exploreState) => {
+      exploreState.selectedComparisonDimension = undefined;
     });
   },
 
@@ -462,27 +462,27 @@ const metricsViewReducers = {
     comparisonTimeRange: DashboardTimeControls,
     metricsViewSpec: V1MetricsViewSpec,
   ) {
-    updateMetricsExplorerByName(name, (metricsExplorer) => {
+    updateMetricsExplorerByName(name, (exploreState) => {
       if (comparisonTimeRange) {
-        metricsExplorer.showTimeComparison = true;
+        exploreState.showTimeComparison = true;
       }
-      metricsExplorer.selectedComparisonTimeRange = comparisonTimeRange;
-      AdvancedMeasureCorrector.correct(metricsExplorer, metricsViewSpec);
+      exploreState.selectedComparisonTimeRange = comparisonTimeRange;
+      AdvancedMeasureCorrector.correct(exploreState, metricsViewSpec);
     });
   },
 
   setTimeZone(name: string, zoneIANA: string) {
-    updateMetricsExplorerByName(name, (metricsExplorer) => {
+    updateMetricsExplorerByName(name, (exploreState) => {
       // Reset scrub when timezone changes
-      setSelectedScrubRange(metricsExplorer, undefined);
+      setSelectedScrubRange(exploreState, undefined);
 
-      metricsExplorer.selectedTimezone = zoneIANA;
+      exploreState.selectedTimezone = zoneIANA;
     });
   },
 
   displayTimeComparison(name: string, showTimeComparison: boolean) {
-    updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.showTimeComparison = showTimeComparison;
+    updateMetricsExplorerByName(name, (exploreState) => {
+      exploreState.showTimeComparison = showTimeComparison;
     });
   },
 
@@ -493,24 +493,33 @@ const metricsViewReducers = {
     comparisonTimeRange: DashboardTimeControls | undefined,
     metricsViewSpec: V1MetricsViewSpec,
   ) {
-    updateMetricsExplorerByName(name, (metricsExplorer) => {
+    updateMetricsExplorerByName(name, (exploreState) => {
       if (!timeRange.name) return;
 
       // Reset scrub when range changes
-      setSelectedScrubRange(metricsExplorer, undefined);
+      setSelectedScrubRange(exploreState, undefined);
 
       if (timeRange.name === TimeRangePreset.ALL_TIME) {
-        metricsExplorer.showTimeComparison = false;
+        exploreState.showTimeComparison = false;
       }
 
-      metricsExplorer.selectedTimeRange = {
+      exploreState.selectedTimeRange = {
         ...timeRange,
         interval: timeGrain,
       };
 
-      metricsExplorer.selectedComparisonTimeRange = comparisonTimeRange;
+      exploreState.selectedComparisonTimeRange = comparisonTimeRange;
 
-      AdvancedMeasureCorrector.correct(metricsExplorer, metricsViewSpec);
+      AdvancedMeasureCorrector.correct(exploreState, metricsViewSpec);
+    });
+  },
+
+  setTimeGrain(name: string, timeGrain: V1TimeGrain) {
+    updateMetricsExplorerByName(name, (exploreState) => {
+      exploreState.selectedTimeRange = {
+        ...(exploreState.selectedTimeRange as DashboardTimeControls),
+        interval: timeGrain,
+      };
     });
   },
 
@@ -527,9 +536,9 @@ const metricsViewReducers = {
     rows: PivotChipData[],
     columns: PivotChipData[],
   ) {
-    updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.pivot = {
-        ...metricsExplorer.pivot,
+    updateMetricsExplorerByName(name, (exploreState) => {
+      exploreState.pivot = {
+        ...exploreState.pivot,
         tableMode,
         rows,
         columns,
@@ -547,7 +556,7 @@ export const metricsExplorerStore: Readable<MetricsExplorerStoreType> &
   ...metricsViewReducers,
 };
 
-export function useExploreState(name: string): Readable<MetricsExplorerEntity> {
+export function useExploreState(name: string): Readable<ExploreState> {
   return derived(metricsExplorerStore, ($store) => {
     return $store.entities[name];
   });
@@ -574,30 +583,29 @@ export function sortTypeForContextColumnType(
 }
 
 function setSelectedScrubRange(
-  metricsExplorer: MetricsExplorerEntity,
+  exploreState: ExploreState,
   scrubRange: ScrubRange | undefined,
 ) {
   if (scrubRange === undefined) {
-    metricsExplorer.lastDefinedScrubRange = undefined;
+    exploreState.lastDefinedScrubRange = undefined;
   } else if (!scrubRange.isScrubbing && scrubRange?.start && scrubRange?.end) {
-    metricsExplorer.lastDefinedScrubRange = scrubRange;
+    exploreState.lastDefinedScrubRange = scrubRange;
   }
 
-  metricsExplorer.selectedScrubRange = scrubRange;
+  exploreState.selectedScrubRange = scrubRange;
 }
 
 function getPinIndexForDimension(
-  metricsExplorer: MetricsExplorerEntity,
+  exploreState: ExploreState,
   dimensionName: string,
 ) {
   const dimensionEntryIndex = getWhereFilterExpressionIndex({
-    dashboard: metricsExplorer,
+    dashboard: exploreState,
   })(dimensionName);
   if (dimensionEntryIndex === undefined || dimensionEntryIndex === -1)
     return -1;
 
-  const dimExpr =
-    metricsExplorer.whereFilter.cond?.exprs?.[dimensionEntryIndex];
+  const dimExpr = exploreState.whereFilter.cond?.exprs?.[dimensionEntryIndex];
   if (!dimExpr?.cond?.exprs?.length) return -1;
 
   // 1st entry in the expression is the identifier. hence the -2 here.

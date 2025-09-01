@@ -1,0 +1,33 @@
+/* =========================
+   Documentation Headings
+   ========================= */
+.markdown h2 {
+  margin-top: var(--space-4);
+  padding-top: var(--space-4);
+  margin-bottom: var(--space-2);
+  --ifm-h2-font-size: 1.25rem !important;
+  font-weight: 700;
+  line-height: 1.5;
+  border-top: 1px solid var(--color-stroke);
+}
+
+.markdown h3 {
+  --ifm-h3-font-size: 1rem !important;
+  line-height: 1.5;
+  font-weight: 600;
+  margin-top: var(--space-3);
+  margin-bottom: var(--space-2);
+}
+
+.markdown h4 {
+  font-weight: 600;
+  margin: 0;
+  padding: 0;
+  display: inline;
+  font-size: var(--ifm-h4-font-size);
+  line-height: inherit;
+}
+
+.markdown h1:first-child {
+  font-size: 32px !important;
+} 

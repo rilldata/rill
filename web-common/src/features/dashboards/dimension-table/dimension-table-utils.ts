@@ -35,7 +35,7 @@ import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/numb
 import type { SvelteComponent } from "svelte";
 import { SortType } from "../proto-state/derived-types";
 import { getFiltersForOtherDimensions } from "../selectors";
-import type { MetricsExplorerEntity } from "../stores/metrics-explorer-entity";
+import type { ExploreState } from "web-common/src/features/dashboards/stores/explore-state";
 import type { DimensionTableRow } from "./dimension-table-types";
 import type { DimensionTableConfig } from "./DimensionTableConfig";
 
@@ -237,7 +237,7 @@ export function estimateColumnSizes(
 }
 
 export function prepareVirtualizedDimTableColumns(
-  dash: MetricsExplorerEntity,
+  exploreState: ExploreState,
   allMeasures: MetricsViewSpecMeasure[],
   measureTotals: { [key: string]: number },
   dimension: MetricsViewSpecDimension,
@@ -245,11 +245,12 @@ export function prepareVirtualizedDimTableColumns(
   validPercentOfTotal: boolean,
   activeMeasures?: string[],
 ): VirtualizedTableColumns[] {
-  const sortType = dash.dashboardSortType;
-  const sortDirection = dash.sortDirection;
+  const sortType = exploreState.dashboardSortType;
+  const sortDirection = exploreState.sortDirection;
 
   const measureNames = allMeasures.map((m) => m.name);
-  const leaderboardSortByMeasureName = dash.leaderboardSortByMeasureName;
+  const leaderboardSortByMeasureName =
+    exploreState.leaderboardSortByMeasureName;
   const selectedMeasure = allMeasures.find(
     (m) => m.name === leaderboardSortByMeasureName,
   );
@@ -257,14 +258,17 @@ export function prepareVirtualizedDimTableColumns(
   const dimensionColumn = dimension.name ?? "";
 
   // copy column names so we don't mutate the original
-  const columnNames = dash.visibleMeasures.filter((m) =>
+  const columnNames = exploreState.visibleMeasures.filter((m) =>
     allMeasures.some((am) => am.name === m),
   );
 
   // Show context columns based on selected context columns and time comparison settings
   if (selectedMeasure) {
-    // If activeMeasures is provided, add context columns for each active measure
-    if (activeMeasures?.length) {
+    // If activeMeasures is provided and leaderboardShowContextForAllMeasures is true, add context columns for each active measure
+    if (
+      activeMeasures?.length &&
+      exploreState.leaderboardShowContextForAllMeasures
+    ) {
       activeMeasures.forEach((measureName) => {
         const measure = allMeasures.find((m) => m.name === measureName);
         if (measure) {
@@ -277,6 +281,7 @@ export function prepareVirtualizedDimTableColumns(
         }
       });
     } else {
+      // Only add context columns for the leaderboardSortByMeasureName
       addContextColumnNames(
         columnNames,
         timeComparison,

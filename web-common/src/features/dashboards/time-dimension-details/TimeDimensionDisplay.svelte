@@ -196,7 +196,7 @@
 >
   <TDDHeader
     {areAllTableRowsSelected}
-    {comparing}
+    comparing={comparisonCopy}
     {expandedMeasureName}
     {dimensionName}
     isFetching={!$timeDimensionDataStore?.data?.columnHeaderData}
@@ -220,7 +220,7 @@
           If the issue persists, please contact us on <a
             target="_blank"
             rel="noopener noreferrer"
-            href="http://bit.ly/3jg4IsF">Discord</a
+            href="https://discord.gg/TatjVY32">Discord</a
           >.
         </div>
       </div>

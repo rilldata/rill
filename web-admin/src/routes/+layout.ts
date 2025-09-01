@@ -11,6 +11,7 @@ import {
   getAdminServiceGetCurrentUserQueryKey,
   type RpcStatus,
   type V1GetCurrentUserResponse,
+  type V1GetOrganizationResponse,
   type V1OrganizationPermissions,
   type V1ProjectPermissions,
   type V1User,
@@ -19,12 +20,15 @@ import { redirectToLogin } from "@rilldata/web-admin/client/redirect-utils";
 import { redirectToLoginOrRequestAccess } from "@rilldata/web-admin/features/authentication/checkUserAccess";
 import { getFetchOrganizationQueryOptions } from "@rilldata/web-admin/features/organizations/selectors";
 import { fetchProjectDeploymentDetails } from "@rilldata/web-admin/features/projects/selectors";
+import { getOrgWithBearerToken } from "@rilldata/web-admin/features/public-urls/get-org-with-bearer-token";
 import { initPosthog } from "@rilldata/web-common/lib/analytics/posthog";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.js";
-import { fixLocalhostRuntimePort } from "@rilldata/web-common/runtime-client/fix-localhost-runtime-port";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { error, redirect, type Page } from "@sveltejs/kit";
 import { isAxiosError } from "axios";
+import { Settings } from "luxon";
+
+Settings.defaultLocale = "en";
 
 export const load = async ({ params, url, route, depends }) => {
   depends("app:root");
@@ -80,35 +84,34 @@ export const load = async ({ params, url, route, depends }) => {
     };
   }
 
-  // Get organization permissions
-  let organizationPermissions: V1OrganizationPermissions = {};
-  let organizationLogoUrl: string | undefined = undefined;
-  let organizationFaviconUrl: string | undefined = undefined;
-  let planDisplayName: string | undefined = undefined;
-  if (organization && !token) {
-    try {
-      const organizationResp = await queryClient.fetchQuery(
-        getFetchOrganizationQueryOptions(organization),
-      );
-      organizationPermissions = organizationResp.permissions ?? {};
-      organizationLogoUrl = organizationResp.organization?.logoUrl;
-      organizationFaviconUrl = organizationResp.organization?.faviconUrl;
-      planDisplayName = organizationResp.organization?.billingPlanDisplayName;
-    } catch (e: unknown) {
-      if (!isAxiosError<RpcStatus>(e) || !e.response) {
-        throw error(500, "Error fetching organization");
-      }
+  // Get organization
+  let organizationResp: V1GetOrganizationResponse | undefined;
+  const getOrganizationPromise = token
+    ? getOrgWithBearerToken(organization, token)
+    : queryClient.fetchQuery(getFetchOrganizationQueryOptions(organization));
+  try {
+    organizationResp = await getOrganizationPromise;
+  } catch (e) {
+    if (!isAxiosError<RpcStatus>(e) || !e.response) {
+      throw error(500, "Error fetching organization");
+    }
 
-      const shouldRedirectToRequestAccess =
-        e.response.status === 403 && !!project;
+    const shouldRedirectToRequestAccess =
+      e.response.status === 403 && !!project;
 
-      if (shouldRedirectToRequestAccess) {
-        // The redirect is handled below after the call to `GetProject`
-      } else {
-        throw error(e.response.status, e.response.data.message);
-      }
+    if (shouldRedirectToRequestAccess) {
+      // The redirect is handled below after the call to `GetProject`
+    } else {
+      throw error(e.response.status, e.response.data.message);
     }
   }
+
+  const organizationPermissions = organizationResp?.permissions ?? {};
+  const organizationLogoUrl = organizationResp?.organization?.logoUrl;
+  const organizationFaviconUrl = organizationResp?.organization?.faviconUrl;
+  const organizationThumbnailUrl = organizationResp?.organization?.thumbnailUrl;
+  const planDisplayName =
+    organizationResp?.organization?.billingPlanDisplayName;
 
   if (!project) {
     return {
@@ -116,6 +119,7 @@ export const load = async ({ params, url, route, depends }) => {
       organizationPermissions,
       organizationLogoUrl,
       organizationFaviconUrl,
+      organizationThumbnailUrl,
       planDisplayName,
       projectPermissions: <V1ProjectPermissions>{},
     };
@@ -130,7 +134,7 @@ export const load = async ({ params, url, route, depends }) => {
 
     await runtime.setRuntime(
       queryClient,
-      fixLocalhostRuntimePort(runtimeData.host ?? ""),
+      runtimeData.host ?? "",
       runtimeData.instanceId,
       runtimeData.jwt?.token,
       runtimeData.jwt?.authContext,
@@ -141,6 +145,7 @@ export const load = async ({ params, url, route, depends }) => {
       organizationPermissions,
       organizationLogoUrl,
       organizationFaviconUrl,
+      organizationThumbnailUrl,
       planDisplayName,
       projectPermissions,
       project: proj,

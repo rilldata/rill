@@ -1,9 +1,6 @@
 package subscription
 
 import (
-	"fmt"
-	"strings"
-
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
@@ -26,7 +23,8 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			subResp, err := client.GetBillingSubscription(ctx, &adminv1.GetBillingSubscriptionRequest{
-				Organization: ch.Org,
+				Organization:         ch.Org,
+				SuperuserForceAccess: force,
 			})
 			if err != nil {
 				return err
@@ -48,26 +46,6 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 			if !ok {
 				ch.PrintfWarn("Aborted\n")
 				return nil
-			}
-
-			// If plan flag is set, validate it
-			if cmd.Flags().Changed("plan") {
-				valid := IsValidPlan(plan)
-				if !valid {
-					return fmt.Errorf("invalid plan %q, must be one of: %s", plan, strings.Join(AllPlans, ", "))
-				}
-			} else {
-				// Only show plan selection prompt if in interactive mode
-				if !ch.Interactive {
-					return fmt.Errorf("--plan flag is required when running in non-interactive mode. Valid plans: %s",
-						strings.Join(AllPlans, ", "))
-				}
-				// Prompt for plan if not provided via flag
-				selectedPlan, err := cmdutil.SelectPrompt("Select plan:", AllPlans, "")
-				if err != nil {
-					return err
-				}
-				plan = selectedPlan
 			}
 
 			resp, err := client.UpdateBillingSubscription(cmd.Context(), &adminv1.UpdateBillingSubscriptionRequest{

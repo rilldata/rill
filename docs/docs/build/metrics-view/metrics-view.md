@@ -12,14 +12,23 @@ In Rill, your metrics view is defined by _metric definitions_. Metric definition
 * _**model**_ - A data model creating a One Big Table that will power the metrics view.
 * _**timeseries**_ - A column from your model that will underlie x-axis data in the line charts. Time will be truncated into different time periods.
 * _**measures**_ - Numerical aggregates of columns from your data model shown on the y-axis of the line charts and the "big number" summaries.
-* _**dimensions**_ - Categorical columns from your data model whose values are shown in _leaderboards_ and allows you to look at segments or attributes of your data (and filter / slice accordingly).
+* _**dimensions**_ - Categorical columns from your data model whose values are shown in _leaderboards_ and allow you to look at segments or attributes of your data (and filter/slice accordingly).
 
 
 :::tip
-Starting in version 0.50, metrics view has been separated from dashboard. This allows for a cleaner, more accessible metrics layer and the ability to build various dashboards and components on top of a single metrics layer. For more information on why we decided to do this, please refer to the following: [Why separate the dashboard and metrics layer](/concepts/metrics-layer)
+Starting in version 0.50, the metrics view has been separated from the dashboard. This allows for a cleaner, more accessible metrics layer and the ability to build various dashboards and components on top of a single metrics layer. For more information on why we decided to do this, please refer to the following: [Why separate the dashboard and metrics layer](/home/concepts/metrics-layer)
 
-For migration steps, see [Migrations](/latest-changes/v50-dashboard-changes#how-to-migrate-your-current-dashboards).
+For migration steps, see [Migrations](/other/v50-dashboard-changes#how-to-migrate-your-current-dashboards).
 :::
+
+
+## Creating Metric Views with AI
+
+In order to streamline the process and get to a dashboard as quickly as possible, we've added the "Create Metrics with AI" and "Create Dashboard with AI" options! This will pass your schema to OpenAI to suggest measure and dimensions to get started with Rill. You can define you own OpenAI key by creating a [connector file](/reference/project-files/connectors#openapi). If you want to disable AI from your environment, please set the following in the `rill.yaml`.
+```yaml
+features:
+  ai: false
+```
 
 ## Creating valid metrics
 
@@ -33,20 +42,20 @@ Measures are numeric aggregates of columns from your data model. A measure must 
 
 * Any DuckDB SQL [numeric](https://duckdb.org/docs/sql/functions/numeric) operators and functions
 * This set of DuckDB SQL [aggregates](https://duckdb.org/docs/sql/aggregates): `AVG`, `COUNT`, `FAVG`,`FIRST`, `FSUM`, `LAST`, `MAX`, `MIN`, `PRODUCT`, `SUM`, `APPROX_COUNT_DISTINCT`, `APPROX_QUANTILE`, `STDDEV_POP`, `STDDEV_SAMP`, `VAR_POP`, `VAR_SAMP`.
-* [Filtered aggregates](https://duckdb.org/docs/sql/query_syntax/filter.html) can be used to filter set of rows fed to the aggregate functions.
+* [Filtered aggregates](https://duckdb.org/docs/sql/query_syntax/filter.html) can be used to filter the set of rows fed to the aggregate functions.
 
 As an example, if you have a table of sales events with the sales price and customer ID, you could calculate the following metrics with these aggregates and expressions:
 * Number of sales: `COUNT(*)`
 * Total revenue: `SUM(sales_price)` 
 * Revenue per customer: `CAST(SUM(sales_price) AS FLOAT)/CAST(COUNT(DISTINCT customer_id) AS FLOAT)`
-* Number of orders with order value more than $100 : `count(*) FILTER (WHERE order_val > 100)`
+* Number of orders with order value more than $100: `count(*) FILTER (WHERE order_val > 100)`
 
 You can also add labels, descriptions, and your choice of number formatting to customize how they are shown.
 
 
 ### Dimensions
 
-Dimensions are used for exploring segments and filtering. Valid dimensions can be any type and are selected using the drop-down menu. You can also add labels and descriptions to your dimensions to customize how they are shown.
+Dimensions are used for exploring segments and filtering. Valid dimensions can be any type and are selected using the drop-down menu. You can also add labels and descriptions to your dimensions to customize how they are displayed.
 
 
 ## Updating the Metrics View
@@ -61,7 +70,7 @@ Whether you prefer the UI or YAML artifacts, Rill supports both methods for upda
 When you add a metrics definition using the UI, a code definition will automatically be created as a YAML file in your Rill project within the metrics directory by default. 
 
 ### Using YAML
-You can also create metrics definitions more directly by creating the artifact.
+You can also create metrics definitions directly by creating the artifact yourself.
 
 In your Rill project directory, after the `metrics-view.yaml` file is created in the `metrics` directory, its configuration or definition can be updated as needed by updating the YAML file directly, using the following template as an example:
 
@@ -95,7 +104,8 @@ For more information about available metrics view properties, feel free to check
 
 ## Multi-editor and external IDE support
 
-Rill Developer is meant to be developer friendly and has been built around the idea of keystroke-by-keystroke feedback when modeling your data, allowing live interactivity and a real-time feedback loop to iterate quickly (or make adjustments as necessary) with your models and dashboards. Additionally, Rill Developer has support for the concept of "hot reloading", which means that you can keep two windows of Rill open at the same time and/or use a preferred editor of choice, such as VSCode, side-by-side with the dashboard that you're actively developing!
+Rill Developer is meant to be developer-friendly and has been built around the idea of real-time feedback when modeling your data, allowing live interactivity and a real-time feedback loop to iterate quickly (or make adjustments as necessary) with your models and dashboards. Additionally, Rill Developer supports "hot reloading", which means that you can keep two windows of Rill open at the same time and/or use a preferred editor, such as VS Code, side-by-side with the dashboard that you're actively developing!
 
 <img src = 'https://cdn.rilldata.com/docs/release-notes/36_hot_reload.gif' class='rounded-gif' />
 <br />
+

@@ -38,7 +38,7 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "DuckDB",
 	Description: "DuckDB SQL connector.",
-	DocsURL:     "https://docs.rilldata.com/reference/connectors/motherduck",
+	DocsURL:     "https://docs.rilldata.com/connect/olap/motherduck",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:         "path",
@@ -49,12 +49,13 @@ var spec = drivers.Spec{
 			Placeholder: "/path/to/main.db",
 		},
 	},
+	// NOTE: reinstated SourceProperties to address https://github.com/rilldata/rill/pull/7726#discussion_r2271449022
 	SourceProperties: []*drivers.PropertySpec{
 		{
-			Key:         "db",
+			Key:         "path",
 			Type:        drivers.StringPropertyType,
 			Required:    true,
-			DisplayName: "DB",
+			DisplayName: "Path",
 			Description: "Path to DuckDB database",
 			Placeholder: "/path/to/duckdb.db",
 		},
@@ -75,19 +76,22 @@ var spec = drivers.Spec{
 			Required:    true,
 		},
 	},
-	ImplementsCatalog: true,
-	ImplementsOLAP:    true,
+	ImplementsOLAP: true,
 }
 
 var motherduckSpec = drivers.Spec{
 	DisplayName: "MotherDuck",
 	Description: "MotherDuck SQL connector.",
-	DocsURL:     "https://docs.rilldata.com/reference/connectors/motherduck",
+	DocsURL:     "https://docs.rilldata.com/connect/olap/motherduck",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:    "token",
 			Type:   drivers.StringPropertyType,
 			Secret: true,
+		},
+		{
+			Key:  "db",
+			Type: drivers.StringPropertyType,
 		},
 	},
 	SourceProperties: []*drivers.PropertySpec{
@@ -345,7 +349,7 @@ func (c *connection) AsRegistry() (drivers.RegistryStore, bool) {
 
 // AsCatalogStore Catalog implements drivers.Connection.
 func (c *connection) AsCatalogStore(instanceID string) (drivers.CatalogStore, bool) {
-	return c, true
+	return nil, false
 }
 
 // AsRepoStore Repo implements drivers.Connection.
@@ -366,6 +370,11 @@ func (c *connection) AsAI(instanceID string) (drivers.AIService, bool) {
 // AsOLAP OLAP implements drivers.Connection.
 func (c *connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
 	return c, true
+}
+
+// AsInformationSchema implements drivers.Connection.
+func (c *connection) AsInformationSchema() (drivers.InformationSchema, bool) {
+	return nil, false
 }
 
 // AsObjectStore implements drivers.Connection.
@@ -403,7 +412,7 @@ func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecu
 			if err := mapstructure.WeakDecode(opts.PreliminaryOutputProperties, outputProps); err != nil {
 				return nil, false
 			}
-			if supportsExportFormat(outputProps.Format) {
+			if supportsExportFormat(outputProps.Format, outputProps.Headers) {
 				return &selfToFileExecutor{c}, true
 			}
 		}
@@ -430,6 +439,16 @@ func (c *connection) AsNotifier(properties map[string]any) (drivers.Notifier, er
 	return nil, drivers.ErrNotNotifier
 }
 
+// Migrate implements drivers.Handle.
+func (c *connection) Migrate(ctx context.Context) error {
+	return nil
+}
+
+// MigrationStatus implements drivers.Handle.
+func (c *connection) MigrationStatus(ctx context.Context) (int, int, error) {
+	return 0, 0, nil
+}
+
 // reopenDB opens the DuckDB handle anew. If c.db is already set, it closes the existing handle first.
 func (c *connection) reopenDB(ctx context.Context) error {
 	// If c.db is already open, close it first
@@ -446,10 +465,27 @@ func (c *connection) reopenDB(ctx context.Context) error {
 		connInitQueries []string
 	)
 
-	// Add custom boot queries before any other (e.g. to override the extensions repository)
+	if c.driverName == "motherduck" {
+		dbInitQueries = append(dbInitQueries,
+			"INSTALL 'motherduck'",
+			"LOAD 'motherduck'",
+		)
+		if c.config.Token != "" {
+			dbInitQueries = append(dbInitQueries,
+				fmt.Sprintf("SET motherduck_token = '%s'", c.config.Token),
+			)
+		}
+	}
+
+	// Add custom InitSQL queries before any other (e.g. to override the extensions repository)
+	// BootQueries is deprecated. Use InitSQL instead. Retained for backward compatibility.
 	if c.config.BootQueries != "" {
 		dbInitQueries = append(dbInitQueries, c.config.BootQueries)
 	}
+	if c.config.InitSQL != "" {
+		dbInitQueries = append(dbInitQueries, c.config.InitSQL)
+	}
+
 	dbInitQueries = append(dbInitQueries,
 		"INSTALL 'json'",
 		"INSTALL 'sqlite'",
@@ -463,7 +499,6 @@ func (c *connection) reopenDB(ctx context.Context) error {
 		"LOAD 'httpfs'",
 		"SET GLOBAL timezone='UTC'",
 		"SET GLOBAL old_implicit_casting = true", // Implicit Cast to VARCHAR
-		"SET GLOBAL allow_community_extensions = false", // This locks the configuration, so it can't later be enabled.
 	)
 
 	dataDir, err := c.storage.DataDir()
@@ -480,12 +515,35 @@ func (c *connection) reopenDB(ctx context.Context) error {
 	}
 
 	// Add init SQL if provided
-	if c.config.InitSQL != "" {
-		connInitQueries = append(connInitQueries, c.config.InitSQL)
+	if c.config.ConnInitSQL != "" {
+		connInitQueries = append(connInitQueries, c.config.ConnInitSQL)
 	}
 	connInitQueries = append(connInitQueries, "SET max_expression_depth TO 250")
 
 	// Create new DB
+	if c.config.Path != "" || c.config.Attach != "" {
+		settings := make(map[string]string)
+		maps.Copy(settings, c.config.readSettings())
+		maps.Copy(settings, c.config.writeSettings())
+		c.db, err = rduckdb.NewGeneric(ctx, &rduckdb.GenericOptions{
+			Path:               c.config.Path,
+			Attach:             c.config.Attach,
+			DBName:             c.config.DatabaseName,
+			SchemaName:         c.config.SchemaName,
+			LocalDataDir:       dataDir,
+			LocalCPU:           c.config.CPU,
+			LocalMemoryLimitGB: c.config.MemoryLimitGB,
+			Settings:           settings,
+			DBInitQueries:      dbInitQueries,
+			ConnInitQueries:    connInitQueries,
+			Logger:             c.logger,
+			OtelAttributes:     []attribute.KeyValue{attribute.String("instance_id", c.instanceID)},
+		})
+		if err != nil {
+			return err
+		}
+		return nil
+	}
 	c.db, err = rduckdb.NewDB(ctx, &rduckdb.DBOptions{
 		LocalPath:       dataDir,
 		Remote:          c.remote,
@@ -650,7 +708,7 @@ func (c *connection) triggerReopen() {
 	go func() {
 		c.dbCond.L.Lock()
 		defer c.dbCond.L.Unlock()
-		if !c.dbReopen || c.dbConnCount == 0 {
+		if !c.dbReopen || c.dbConnCount != 0 {
 			c.logger.Error("triggerReopen called but should not reopen", zap.Bool("dbReopen", c.dbReopen), zap.Int("dbConnCount", c.dbConnCount))
 			return
 		}

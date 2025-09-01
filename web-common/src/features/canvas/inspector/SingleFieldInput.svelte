@@ -5,6 +5,7 @@
   import Search from "@rilldata/web-common/components/search/Search.svelte";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import { useMetricFieldData } from "./selectors";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
   export let metricName: string;
   export let label: string | undefined = undefined;
@@ -19,7 +20,9 @@
   let open = false;
   let searchValue = "";
 
-  $: ctx = getCanvasStore(canvasName);
+  $: ({ instanceId } = $runtime);
+
+  $: ctx = getCanvasStore(canvasName, instanceId);
   $: ({ getTimeDimensionForMetricView } = ctx.canvasEntity.spec);
 
   $: timeDimension = getTimeDimensionForMetricView(metricName);

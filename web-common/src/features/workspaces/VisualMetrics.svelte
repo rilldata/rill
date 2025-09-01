@@ -28,15 +28,14 @@
   import { tick } from "svelte";
   import { slide } from "svelte/transition";
   import { parseDocument, Scalar, YAMLMap, YAMLSeq } from "yaml";
-  import ConnectorExplorer from "../connectors/ConnectorExplorer.svelte";
-  import { connectorExplorerStore } from "../connectors/connector-explorer-store";
-  import { OLAP_DRIVERS_WITHOUT_MODELING } from "../connectors/olap/olap-config";
+  import ConnectorExplorer from "../connectors/explorer/ConnectorExplorer.svelte";
+  import { connectorExplorerStore } from "../connectors/explorer/connector-explorer-store";
+  import { useIsModelingSupportedForConnectorOLAP as useIsModelingSupportedForConnector } from "../connectors/selectors";
   import { FileArtifact } from "../entity-management/file-artifact";
   import {
     ResourceKind,
     useResource,
   } from "../entity-management/resource-selectors";
-  import { featureFlags } from "../feature-flags";
   import { useModels } from "../models/selectors";
   import { useSources } from "../sources/selectors";
   import AlertConfirmation from "../visual-metrics-editing/AlertConfirmation.svelte";
@@ -50,7 +49,6 @@
     YAMLMeasure,
   } from "../visual-metrics-editing/lib";
 
-  const { clickhouseModeling } = featureFlags;
   const store = connectorExplorerStore.duplicateStore(
     (connector, database, schema, table) => {
       if (!table || !schema) return;
@@ -105,11 +103,10 @@
     dimensions: parsedDocument.get("dimensions"),
   };
 
-  $: modelingDisabled =
-    olapConnector &&
-    OLAP_DRIVERS_WITHOUT_MODELING.filter(
-      (driver) => driver === "clickhouse" && $clickhouseModeling,
-    ).includes(olapConnector);
+  $: isModelingSupportedForConnector = olapConnector
+    ? useIsModelingSupportedForConnector(instanceId, olapConnector)
+    : null;
+  $: isModelingSupported = $isModelingSupportedForConnector?.data;
 
   $: rawSmallestTimeGrain = parsedDocument.get("smallest_time_grain");
   $: rawTimeDimension = parsedDocument.get("timeseries");
@@ -146,28 +143,35 @@
 
   $: hasValidModelOrSourceSelection = hasSourceSelected || hasModelSelected;
 
-  $: connectorsQuery = createRuntimeServiceAnalyzeConnectors(instanceId, {
-    query: {
-      select: (data) => {
-        if (!data?.connectors) return [];
+  $: hasNonDuckDBOLAPConnectorQuery = createRuntimeServiceAnalyzeConnectors(
+    instanceId,
+    {
+      query: {
+        select: (data) => {
+          if (!data?.connectors) return false;
 
-        const connectors = data.connectors.filter(
-          (connector) =>
-            connector.driver?.implementsOlap &&
-            connector.driver.name !== "duckdb",
-        );
-        return connectors;
+          const hasNonDuckDBOLAPConnector = data.connectors
+            .filter((connector) => !!connector.driver)
+            .filter((connector) => connector.driver!.implementsOlap)
+            .some((connector) => {
+              const isDuckDB = connector.driver!.name === "duckdb";
+              const isMotherDuck = isDuckDB && !!connector.config?.access_token;
+              const isDuckDBButNotMotherDuck = isDuckDB && !isMotherDuck;
+              return !isDuckDBButNotMotherDuck;
+            });
+
+          return hasNonDuckDBOLAPConnector;
+        },
       },
     },
-  });
+  );
+  $: hasNonDuckDBOLAPConnector = $hasNonDuckDBOLAPConnectorQuery.data;
 
   $: resourceKind = hasSourceSelected
     ? ResourceKind.Source
     : hasModelSelected
       ? ResourceKind.Model
       : undefined;
-
-  $: hasNonDuckDBOLAPConnector = Boolean($connectorsQuery.data?.length);
 
   $: resourceQuery =
     resourceKind &&
@@ -522,11 +526,11 @@
 <div class="wrapper">
   <div class="main-area">
     <div class="flex gap-x-4 border-b pb-4">
-      {#if tableMode || modelingDisabled}
+      {#if tableMode || !isModelingSupported}
         <div class="flex flex-col gap-y-1 w-full">
           <InputLabel label="Table" id="table">
             <svelte:fragment slot="mode-switch">
-              {#if !modelingDisabled}
+              {#if isModelingSupported}
                 <button
                   on:click={switchTableMode}
                   class="ml-auto text-primary-600 font-medium text-xs"
@@ -663,7 +667,7 @@
 
       {#if totalSelected}
         <div
-          class="bg-white rounded-[2px] z-20 shadow-md flex gap-x-0 h-8 text-gray-700 border border-slate-100 absolute right-0"
+          class="bg-surface rounded-[2px] z-20 shadow-md flex gap-x-0 h-8 text-gray-700 border border-slate-100 absolute right-0"
         >
           <div class="px-2 flex items-center">
             {totalSelected}
@@ -706,7 +710,7 @@
               square
               gray
               noStroke
-              on:click={() => {
+              onClick={() => {
                 collapsed[type] = !collapsed[type];
               }}
             >
@@ -728,7 +732,7 @@
               gray
               noStroke
               label="Add new {type.slice(0, -1)}"
-              on:click={() => {
+              onClick={() => {
                 editingItemData.set({
                   type,
                   index: -1,

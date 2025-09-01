@@ -7,11 +7,11 @@ sidebar_position: 03
 
 ## What are Partitions?
 
-In Rill, partitions are a special type of state in which you can explicitly partition the model into parts. Depending on if your data is in cloud storage or a data warehouse, you can use the `glob` or `sql` parameters. This is useful when a specific partition is failing to ingest, you can specify to reload only that specific partition.
+In Rill, partitions are a special type of state that allows you to explicitly partition the model into parts. Depending on whether your data is in cloud storage or a data warehouse, you can use the `glob` or `sql` parameters. This is useful when a specific partition is failing to ingest, you can specify to reload only that specific partition.
 
 
 ### Defining a Partition in a Model
-Under the `partitions:` parameter, you will define the pattern in which your data is stored. Both SQL and glob patterns support [templating](/deploy/templating) and can be used to separate `dev` and `prod` instances. 
+Under the `partitions:` parameter, you will define the pattern in which your data is stored. Both SQL and glob patterns support [templating](/connect/templating) and can be used to separate `dev` and `prod` instances. 
 
 ### SQL
 When defining your SQL, it is important to understand the data that you are querying and creating a partition that makes sense. For example, possibly selecting a distinct customer_name per partition, or possibly partition the SQL by a chronological partition, such as month.
@@ -57,7 +57,7 @@ dev:
   
 ```
 
-If you'd prefer to partition it by folder your can add the partition parameter and define it as `directory`.
+If you'd prefer to partition it by folder, you can add the partition parameter and define it as `directory`.
 ```yaml
 glob:
   path: gs://rendo-test/**/*data.csv
@@ -76,12 +76,12 @@ sql: SELECT * FROM read_parquet('{{ .partition.uri }}')
 
 ### Viewing Partitions in Rill Developer
 
-Once `partitions:` is defined in your model, a new button will appear in the right-hand panel, `View Partitions`. When selecting this, a new UI will appear with all of your partitions and more information on each. Note that these can be sorted on all, pending, and errors.
+Once `partitions:` is defined in your model, a new button will appear in the right-hand panel: `View Partitions`. When selecting this, a new UI will appear with all of your partitions and more information on each. Note that these can be sorted on all, pending, and errors.
 
 <img src = '/img/build/advanced-models/partitions-developer.png' class='rounded-gif' />
 <br />
 
-You can sort the view on `all partitions`, `pending partitions` and `error partitions`. 
+You can sort the view by `all partitions`, `pending partitions`, and `error partitions`. 
 - **all partitions**: shows all the available partitions in the model.
 - **pending partitions**: shows the partitions that are waiting to be processed.
 - **error partitions**: displays any partitions that errored during ingestion. 

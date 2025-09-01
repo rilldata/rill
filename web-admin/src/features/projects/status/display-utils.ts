@@ -24,6 +24,13 @@ export const deploymentChipDisplays: Record<V1DeploymentStatus, StatusDisplay> =
       textClass: "text-indigo-600",
       wrapperClass: "bg-indigo-50 border-indigo-300",
     },
+    [V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPED]: {
+      icon: InfoCircleFilled,
+      iconProps: { className: "text-indigo-600 hover:text-indigo-500" },
+      text: "Not deployed",
+      textClass: "text-indigo-600",
+      wrapperClass: "bg-indigo-50 border-indigo-300",
+    },
     [V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING]: {
       icon: Spinner,
       iconProps: {

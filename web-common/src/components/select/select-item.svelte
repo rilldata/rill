@@ -30,7 +30,7 @@
   on:pointermove
   on:focusin
 >
-  <div class="flex flex-row items-center justify-between w-full">
+  <div class="flex flex-row items-center justify-between w-full gap-x-2">
     <slot>
       {label ? label : value}
     </slot>

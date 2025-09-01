@@ -76,7 +76,7 @@
         <AlertDialogTitle>Are you sure you want to cancel?</AlertDialogTitle>
 
         <AlertDialogDescription>
-          If you cancel your plan, you’ll still be able to access your account
+          If you cancel your plan, you'll still be able to access your account
           through <span class="font-semibold"
             >{currentBillingCycleEndDate}.</span
           >
@@ -91,14 +91,12 @@
       <AlertDialogFooter class="mt-3">
         <Button
           type="secondary"
-          on:click={handleCancelPlan}
+          onClick={handleCancelPlan}
           loading={$planCanceller.isPending}
         >
           Cancel plan
         </Button>
-        <Button type="primary" on:click={() => (open = false)}>
-          Keep plan
-        </Button>
+        <Button type="primary" onClick={() => (open = false)}>Keep plan</Button>
       </AlertDialogFooter>
     </AlertDialogContent>
   </AlertDialog>

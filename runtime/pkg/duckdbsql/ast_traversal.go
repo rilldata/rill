@@ -217,6 +217,9 @@ func (a *AST) traverseTableFunction(parent astNode, childKey string) {
 		"read_parquet",
 		"read_json", "read_json_auto", "read_json_objects", "read_json_objects_auto",
 		"read_ndjson_objects", "read_ndjson", "read_ndjson_auto":
+		if len(arguments) == 0 {
+			return
+		}
 		ref.Paths = getListOfValues[string](arguments[0])
 	default:
 		// only read_... are supported for now

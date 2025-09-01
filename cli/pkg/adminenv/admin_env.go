@@ -8,7 +8,7 @@ var EnvURLs = map[string]string{
 	"prod":  "https://admin.rilldata.com",
 	"stage": "https://admin.rilldata.io",
 	"test":  "https://admin.rilldata.in",
-	"dev":   "http://localhost:9090",
+	"dev":   "http://localhost:8080",
 }
 
 func Infer(adminURL string) (string, error) {

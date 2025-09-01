@@ -28,7 +28,9 @@ const (
 	AdminService_UpdateOrganization_FullMethodName                    = "/rill.admin.v1.AdminService/UpdateOrganization"
 	AdminService_ListProjectsForOrganization_FullMethodName           = "/rill.admin.v1.AdminService/ListProjectsForOrganization"
 	AdminService_ListProjectsForOrganizationAndUser_FullMethodName    = "/rill.admin.v1.AdminService/ListProjectsForOrganizationAndUser"
+	AdminService_ListProjectsForFingerprint_FullMethodName            = "/rill.admin.v1.AdminService/ListProjectsForFingerprint"
 	AdminService_GetProject_FullMethodName                            = "/rill.admin.v1.AdminService/GetProject"
+	AdminService_ListProjectsForUserByName_FullMethodName             = "/rill.admin.v1.AdminService/ListProjectsForUserByName"
 	AdminService_GetProjectByID_FullMethodName                        = "/rill.admin.v1.AdminService/GetProjectByID"
 	AdminService_SearchProjectNames_FullMethodName                    = "/rill.admin.v1.AdminService/SearchProjectNames"
 	AdminService_CreateProject_FullMethodName                         = "/rill.admin.v1.AdminService/CreateProject"
@@ -39,6 +41,12 @@ const (
 	AdminService_CreateAsset_FullMethodName                           = "/rill.admin.v1.AdminService/CreateAsset"
 	AdminService_RedeployProject_FullMethodName                       = "/rill.admin.v1.AdminService/RedeployProject"
 	AdminService_HibernateProject_FullMethodName                      = "/rill.admin.v1.AdminService/HibernateProject"
+	AdminService_ListDeployments_FullMethodName                       = "/rill.admin.v1.AdminService/ListDeployments"
+	AdminService_CreateDeployment_FullMethodName                      = "/rill.admin.v1.AdminService/CreateDeployment"
+	AdminService_GetDeployment_FullMethodName                         = "/rill.admin.v1.AdminService/GetDeployment"
+	AdminService_StartDeployment_FullMethodName                       = "/rill.admin.v1.AdminService/StartDeployment"
+	AdminService_StopDeployment_FullMethodName                        = "/rill.admin.v1.AdminService/StopDeployment"
+	AdminService_DeleteDeployment_FullMethodName                      = "/rill.admin.v1.AdminService/DeleteDeployment"
 	AdminService_TriggerReconcile_FullMethodName                      = "/rill.admin.v1.AdminService/TriggerReconcile"
 	AdminService_TriggerRefreshSources_FullMethodName                 = "/rill.admin.v1.AdminService/TriggerRefreshSources"
 	AdminService_TriggerRedeploy_FullMethodName                       = "/rill.admin.v1.AdminService/TriggerRedeploy"
@@ -72,20 +80,24 @@ const (
 	AdminService_AddUsergroupMemberUser_FullMethodName                = "/rill.admin.v1.AdminService/AddUsergroupMemberUser"
 	AdminService_ListUsergroupMemberUsers_FullMethodName              = "/rill.admin.v1.AdminService/ListUsergroupMemberUsers"
 	AdminService_RemoveUsergroupMemberUser_FullMethodName             = "/rill.admin.v1.AdminService/RemoveUsergroupMemberUser"
+	AdminService_GetUser_FullMethodName                               = "/rill.admin.v1.AdminService/GetUser"
 	AdminService_GetCurrentUser_FullMethodName                        = "/rill.admin.v1.AdminService/GetCurrentUser"
 	AdminService_DeleteUser_FullMethodName                            = "/rill.admin.v1.AdminService/DeleteUser"
+	AdminService_ListUserAuthTokens_FullMethodName                    = "/rill.admin.v1.AdminService/ListUserAuthTokens"
+	AdminService_IssueUserAuthToken_FullMethodName                    = "/rill.admin.v1.AdminService/IssueUserAuthToken"
+	AdminService_RevokeUserAuthToken_FullMethodName                   = "/rill.admin.v1.AdminService/RevokeUserAuthToken"
 	AdminService_IssueRepresentativeAuthToken_FullMethodName          = "/rill.admin.v1.AdminService/IssueRepresentativeAuthToken"
 	AdminService_RevokeCurrentAuthToken_FullMethodName                = "/rill.admin.v1.AdminService/RevokeCurrentAuthToken"
 	AdminService_GetGithubRepoStatus_FullMethodName                   = "/rill.admin.v1.AdminService/GetGithubRepoStatus"
 	AdminService_GetGithubUserStatus_FullMethodName                   = "/rill.admin.v1.AdminService/GetGithubUserStatus"
 	AdminService_ListGithubUserRepos_FullMethodName                   = "/rill.admin.v1.AdminService/ListGithubUserRepos"
 	AdminService_ConnectProjectToGithub_FullMethodName                = "/rill.admin.v1.AdminService/ConnectProjectToGithub"
-	AdminService_UploadProjectAssets_FullMethodName                   = "/rill.admin.v1.AdminService/UploadProjectAssets"
+	AdminService_CreateManagedGitRepo_FullMethodName                  = "/rill.admin.v1.AdminService/CreateManagedGitRepo"
+	AdminService_DisconnectProjectFromGithub_FullMethodName           = "/rill.admin.v1.AdminService/DisconnectProjectFromGithub"
 	AdminService_GetCloneCredentials_FullMethodName                   = "/rill.admin.v1.AdminService/GetCloneCredentials"
 	AdminService_CreateWhitelistedDomain_FullMethodName               = "/rill.admin.v1.AdminService/CreateWhitelistedDomain"
 	AdminService_RemoveWhitelistedDomain_FullMethodName               = "/rill.admin.v1.AdminService/RemoveWhitelistedDomain"
 	AdminService_ListWhitelistedDomains_FullMethodName                = "/rill.admin.v1.AdminService/ListWhitelistedDomains"
-	AdminService_GetUser_FullMethodName                               = "/rill.admin.v1.AdminService/GetUser"
 	AdminService_SearchUsers_FullMethodName                           = "/rill.admin.v1.AdminService/SearchUsers"
 	AdminService_SearchProjectUsers_FullMethodName                    = "/rill.admin.v1.AdminService/SearchProjectUsers"
 	AdminService_ListSuperusers_FullMethodName                        = "/rill.admin.v1.AdminService/ListSuperusers"
@@ -106,8 +118,14 @@ const (
 	AdminService_RemoveProjectWhitelistedDomain_FullMethodName        = "/rill.admin.v1.AdminService/RemoveProjectWhitelistedDomain"
 	AdminService_ListProjectWhitelistedDomains_FullMethodName         = "/rill.admin.v1.AdminService/ListProjectWhitelistedDomains"
 	AdminService_ListServices_FullMethodName                          = "/rill.admin.v1.AdminService/ListServices"
+	AdminService_ListProjectMemberServices_FullMethodName             = "/rill.admin.v1.AdminService/ListProjectMemberServices"
 	AdminService_CreateService_FullMethodName                         = "/rill.admin.v1.AdminService/CreateService"
+	AdminService_GetService_FullMethodName                            = "/rill.admin.v1.AdminService/GetService"
 	AdminService_UpdateService_FullMethodName                         = "/rill.admin.v1.AdminService/UpdateService"
+	AdminService_SetOrganizationMemberServiceRole_FullMethodName      = "/rill.admin.v1.AdminService/SetOrganizationMemberServiceRole"
+	AdminService_RemoveOrganizationMemberService_FullMethodName       = "/rill.admin.v1.AdminService/RemoveOrganizationMemberService"
+	AdminService_SetProjectMemberServiceRole_FullMethodName           = "/rill.admin.v1.AdminService/SetProjectMemberServiceRole"
+	AdminService_RemoveProjectMemberService_FullMethodName            = "/rill.admin.v1.AdminService/RemoveProjectMemberService"
 	AdminService_DeleteService_FullMethodName                         = "/rill.admin.v1.AdminService/DeleteService"
 	AdminService_ListServiceAuthTokens_FullMethodName                 = "/rill.admin.v1.AdminService/ListServiceAuthTokens"
 	AdminService_IssueServiceAuthToken_FullMethodName                 = "/rill.admin.v1.AdminService/IssueServiceAuthToken"
@@ -177,8 +195,13 @@ type AdminServiceClient interface {
 	// ListProjectsForOrganizationAndUser lists all the projects that an organization member user has access to.
 	// It does not include projects that the user has access to through a usergroup.
 	ListProjectsForOrganizationAndUser(ctx context.Context, in *ListProjectsForOrganizationAndUserRequest, opts ...grpc.CallOption) (*ListProjectsForOrganizationAndUserResponse, error)
+	// ListProjectsForFingerprint lists all projects the current user has access to that match the provided local project details.
+	// This can be used to produce a short list of cloud projects that are likely to have been deployed from a local project.
+	ListProjectsForFingerprint(ctx context.Context, in *ListProjectsForFingerprintRequest, opts ...grpc.CallOption) (*ListProjectsForFingerprintResponse, error)
 	// GetProject returns information about a specific project
 	GetProject(ctx context.Context, in *GetProjectRequest, opts ...grpc.CallOption) (*GetProjectResponse, error)
+	// ListProjectsForUserByName returns projects matching a name accessible by the logged in user
+	ListProjectsForUserByName(ctx context.Context, in *ListProjectsForUserByNameRequest, opts ...grpc.CallOption) (*ListProjectsForUserByNameResponse, error)
 	// GetProject returns information about a specific project
 	GetProjectByID(ctx context.Context, in *GetProjectByIDRequest, opts ...grpc.CallOption) (*GetProjectByIDResponse, error)
 	// SearchProjectNames returns project names matching the pattern
@@ -201,6 +224,18 @@ type AdminServiceClient interface {
 	RedeployProject(ctx context.Context, in *RedeployProjectRequest, opts ...grpc.CallOption) (*RedeployProjectResponse, error)
 	// HibernateProject hibernates a project by tearing down its deployments.
 	HibernateProject(ctx context.Context, in *HibernateProjectRequest, opts ...grpc.CallOption) (*HibernateProjectResponse, error)
+	// ListDeployments lists deployments for a project.
+	ListDeployments(ctx context.Context, in *ListDeploymentsRequest, opts ...grpc.CallOption) (*ListDeploymentsResponse, error)
+	// CreateDeployment creates a new deployment for a project.
+	CreateDeployment(ctx context.Context, in *CreateDeploymentRequest, opts ...grpc.CallOption) (*CreateDeploymentResponse, error)
+	// GetDeployment returns runtime info and access token on behalf of a specific user, or alternatively for a raw set of JWT attributes
+	GetDeployment(ctx context.Context, in *GetDeploymentRequest, opts ...grpc.CallOption) (*GetDeploymentResponse, error)
+	// StartDeployment starts a deployment.
+	StartDeployment(ctx context.Context, in *StartDeploymentRequest, opts ...grpc.CallOption) (*StartDeploymentResponse, error)
+	// StopDeployment stops a deployment.
+	StopDeployment(ctx context.Context, in *StopDeploymentRequest, opts ...grpc.CallOption) (*StopDeploymentResponse, error)
+	// DeleteDeployment deletes a deployment.
+	DeleteDeployment(ctx context.Context, in *DeleteDeploymentRequest, opts ...grpc.CallOption) (*DeleteDeploymentResponse, error)
 	// TriggerReconcile triggers reconcile for the project's prod deployment.
 	// DEPRECATED: Clients should call CreateTrigger directly on the deployed runtime instead.
 	TriggerReconcile(ctx context.Context, in *TriggerReconcileRequest, opts ...grpc.CallOption) (*TriggerReconcileResponse, error)
@@ -271,13 +306,26 @@ type AdminServiceClient interface {
 	ListUsergroupMemberUsers(ctx context.Context, in *ListUsergroupMemberUsersRequest, opts ...grpc.CallOption) (*ListUsergroupMemberUsersResponse, error)
 	// RemoveUsergroupMemberUser removes member from the user group
 	RemoveUsergroupMemberUser(ctx context.Context, in *RemoveUsergroupMemberUserRequest, opts ...grpc.CallOption) (*RemoveUsergroupMemberUserResponse, error)
+	// GetUser returns user by email
+	GetUser(ctx context.Context, in *GetUserRequest, opts ...grpc.CallOption) (*GetUserResponse, error)
 	// GetCurrentUser returns the currently authenticated user (if any)
 	GetCurrentUser(ctx context.Context, in *GetCurrentUserRequest, opts ...grpc.CallOption) (*GetCurrentUserResponse, error)
 	// DeleteUser deletes the user from the organization by email
 	DeleteUser(ctx context.Context, in *DeleteUserRequest, opts ...grpc.CallOption) (*DeleteUserResponse, error)
-	// IssueRepresentativeAuthToken returns the temporary token for given email
+	// ListUserAuthTokens lists the current user's auth tokens.
+	// You can optionally pass "current" instead of the user ID to list the current user's tokens.
+	ListUserAuthTokens(ctx context.Context, in *ListUserAuthTokensRequest, opts ...grpc.CallOption) (*ListUserAuthTokensResponse, error)
+	// IssueUserAuthToken issues an access token for the current user.
+	// You can optionally pass "current" instead of the user ID to issue a token for the current user.
+	IssueUserAuthToken(ctx context.Context, in *IssueUserAuthTokenRequest, opts ...grpc.CallOption) (*IssueUserAuthTokenResponse, error)
+	// RevokeUserAuthToken revokes a user access token.
+	// You can optionally pass "current" instead of the token ID to revoke the current token.
+	RevokeUserAuthToken(ctx context.Context, in *RevokeUserAuthTokenRequest, opts ...grpc.CallOption) (*RevokeUserAuthTokenResponse, error)
+	// IssueRepresentativeAuthToken returns the temporary token for given email.
+	// Deprecated: Use IssueUserAuthToken with the represent_email option instead.
 	IssueRepresentativeAuthToken(ctx context.Context, in *IssueRepresentativeAuthTokenRequest, opts ...grpc.CallOption) (*IssueRepresentativeAuthTokenResponse, error)
-	// RevokeCurrentAuthToken revoke the current auth token
+	// RevokeCurrentAuthToken revoke the current auth token.
+	// Deprecated: Use RevokeUserAuthToken with ID set to "current" instead.
 	RevokeCurrentAuthToken(ctx context.Context, in *RevokeCurrentAuthTokenRequest, opts ...grpc.CallOption) (*RevokeCurrentAuthTokenResponse, error)
 	// GetGithubRepoRequest returns info about a Github repo based on the caller's installations.
 	// If the caller has not granted access to the repository, instructions for granting access are returned.
@@ -289,9 +337,10 @@ type AdminServiceClient interface {
 	// Connects a rill managed project to github.
 	// Replaces the contents of the remote repo with the contents of the project.
 	ConnectProjectToGithub(ctx context.Context, in *ConnectProjectToGithubRequest, opts ...grpc.CallOption) (*ConnectProjectToGithubResponse, error)
+	// CreateManagedGitRepo creates a new rill managed git repo for the organization.
+	CreateManagedGitRepo(ctx context.Context, in *CreateManagedGitRepoRequest, opts ...grpc.CallOption) (*CreateManagedGitRepoResponse, error)
 	// Converts a project connected to github to a rill managed project.
-	// Uploads the current project to assets.
-	UploadProjectAssets(ctx context.Context, in *UploadProjectAssetsRequest, opts ...grpc.CallOption) (*UploadProjectAssetsResponse, error)
+	DisconnectProjectFromGithub(ctx context.Context, in *DisconnectProjectFromGithubRequest, opts ...grpc.CallOption) (*DisconnectProjectFromGithubResponse, error)
 	// GetCloneCredentials returns credentials and other details for a project's Git repository or archive path if git repo is not configured.
 	GetCloneCredentials(ctx context.Context, in *GetCloneCredentialsRequest, opts ...grpc.CallOption) (*GetCloneCredentialsResponse, error)
 	// CreateWhitelistedDomain adds a domain to the whitelist
@@ -300,8 +349,6 @@ type AdminServiceClient interface {
 	RemoveWhitelistedDomain(ctx context.Context, in *RemoveWhitelistedDomainRequest, opts ...grpc.CallOption) (*RemoveWhitelistedDomainResponse, error)
 	// ListWhitelistedDomains lists all the whitelisted domains for the organization
 	ListWhitelistedDomains(ctx context.Context, in *ListWhitelistedDomainsRequest, opts ...grpc.CallOption) (*ListWhitelistedDomainsResponse, error)
-	// GetUser returns user by email
-	GetUser(ctx context.Context, in *GetUserRequest, opts ...grpc.CallOption) (*GetUserResponse, error)
 	// GetUsersByEmail returns users by email
 	SearchUsers(ctx context.Context, in *SearchUsersRequest, opts ...grpc.CallOption) (*SearchUsersResponse, error)
 	// SearchProjectUsers returns users who has access to to a project (including org members that have access through a usergroup)
@@ -309,6 +356,7 @@ type AdminServiceClient interface {
 	// ListSuperusers lists all the superusers
 	ListSuperusers(ctx context.Context, in *ListSuperusersRequest, opts ...grpc.CallOption) (*ListSuperusersResponse, error)
 	// GetDeploymentCredentials returns runtime info and access token on behalf of a specific user, or alternatively for a raw set of JWT attributes
+	// DEPRECATED: Clients should call GetDeployment instead.
 	GetDeploymentCredentials(ctx context.Context, in *GetDeploymentCredentialsRequest, opts ...grpc.CallOption) (*GetDeploymentCredentialsResponse, error)
 	// GetIFrame returns the iframe URL for the given project
 	GetIFrame(ctx context.Context, in *GetIFrameRequest, opts ...grpc.CallOption) (*GetIFrameResponse, error)
@@ -344,17 +392,29 @@ type AdminServiceClient interface {
 	ListProjectWhitelistedDomains(ctx context.Context, in *ListProjectWhitelistedDomainsRequest, opts ...grpc.CallOption) (*ListProjectWhitelistedDomainsResponse, error)
 	// ListService returns all the services per organization
 	ListServices(ctx context.Context, in *ListServicesRequest, opts ...grpc.CallOption) (*ListServicesResponse, error)
+	// ListProjectMemberServices returns all the services for the project for an organization
+	ListProjectMemberServices(ctx context.Context, in *ListProjectMemberServicesRequest, opts ...grpc.CallOption) (*ListProjectMemberServicesResponse, error)
 	// CreateService creates a new service per organization
 	CreateService(ctx context.Context, in *CreateServiceRequest, opts ...grpc.CallOption) (*CreateServiceResponse, error)
+	// GetService returns information about a specific service
+	GetService(ctx context.Context, in *GetServiceRequest, opts ...grpc.CallOption) (*GetServiceResponse, error)
 	// UpdateService updates a service per organization
 	UpdateService(ctx context.Context, in *UpdateServiceRequest, opts ...grpc.CallOption) (*UpdateServiceResponse, error)
+	// SetOrganizationMemberServiceRole sets or updates the role of the service in the organization
+	SetOrganizationMemberServiceRole(ctx context.Context, in *SetOrganizationMemberServiceRoleRequest, opts ...grpc.CallOption) (*SetOrganizationMemberServiceRoleResponse, error)
+	// RemoveOrganizationMemberService removes the organization role for the service
+	RemoveOrganizationMemberService(ctx context.Context, in *RemoveOrganizationMemberServiceRequest, opts ...grpc.CallOption) (*RemoveOrganizationMemberServiceResponse, error)
+	// SetProjectMemberServiceRole updates the project role for the service
+	SetProjectMemberServiceRole(ctx context.Context, in *SetProjectMemberServiceRoleRequest, opts ...grpc.CallOption) (*SetProjectMemberServiceRoleResponse, error)
+	// RemoveProjectMemberService removes the service from the project
+	RemoveProjectMemberService(ctx context.Context, in *RemoveProjectMemberServiceRequest, opts ...grpc.CallOption) (*RemoveProjectMemberServiceResponse, error)
 	// DeleteService deletes a service per organization
 	DeleteService(ctx context.Context, in *DeleteServiceRequest, opts ...grpc.CallOption) (*DeleteServiceResponse, error)
 	// ListServiceAuthTokens lists all the service auth tokens
 	ListServiceAuthTokens(ctx context.Context, in *ListServiceAuthTokensRequest, opts ...grpc.CallOption) (*ListServiceAuthTokensResponse, error)
-	// IssueServiceAuthToken returns the temporary token for given service account
+	// IssueServiceAuthToken issues an access token for a service
 	IssueServiceAuthToken(ctx context.Context, in *IssueServiceAuthTokenRequest, opts ...grpc.CallOption) (*IssueServiceAuthTokenResponse, error)
-	// RevokeServiceAuthToken revoke the service auth token
+	// RevokeServiceAuthToken revoke a service's access token
 	RevokeServiceAuthToken(ctx context.Context, in *RevokeServiceAuthTokenRequest, opts ...grpc.CallOption) (*RevokeServiceAuthTokenResponse, error)
 	// IssueMagicAuthToken creates a "magic" auth token that provides limited access to a specific filtered dashboard in a specific project.
 	IssueMagicAuthToken(ctx context.Context, in *IssueMagicAuthTokenRequest, opts ...grpc.CallOption) (*IssueMagicAuthTokenResponse, error)
@@ -528,10 +588,30 @@ func (c *adminServiceClient) ListProjectsForOrganizationAndUser(ctx context.Cont
 	return out, nil
 }
 
+func (c *adminServiceClient) ListProjectsForFingerprint(ctx context.Context, in *ListProjectsForFingerprintRequest, opts ...grpc.CallOption) (*ListProjectsForFingerprintResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListProjectsForFingerprintResponse)
+	err := c.cc.Invoke(ctx, AdminService_ListProjectsForFingerprint_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *adminServiceClient) GetProject(ctx context.Context, in *GetProjectRequest, opts ...grpc.CallOption) (*GetProjectResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetProjectResponse)
 	err := c.cc.Invoke(ctx, AdminService_GetProject_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) ListProjectsForUserByName(ctx context.Context, in *ListProjectsForUserByNameRequest, opts ...grpc.CallOption) (*ListProjectsForUserByNameResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListProjectsForUserByNameResponse)
+	err := c.cc.Invoke(ctx, AdminService_ListProjectsForUserByName_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -632,6 +712,66 @@ func (c *adminServiceClient) HibernateProject(ctx context.Context, in *Hibernate
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(HibernateProjectResponse)
 	err := c.cc.Invoke(ctx, AdminService_HibernateProject_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) ListDeployments(ctx context.Context, in *ListDeploymentsRequest, opts ...grpc.CallOption) (*ListDeploymentsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListDeploymentsResponse)
+	err := c.cc.Invoke(ctx, AdminService_ListDeployments_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) CreateDeployment(ctx context.Context, in *CreateDeploymentRequest, opts ...grpc.CallOption) (*CreateDeploymentResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateDeploymentResponse)
+	err := c.cc.Invoke(ctx, AdminService_CreateDeployment_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) GetDeployment(ctx context.Context, in *GetDeploymentRequest, opts ...grpc.CallOption) (*GetDeploymentResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetDeploymentResponse)
+	err := c.cc.Invoke(ctx, AdminService_GetDeployment_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) StartDeployment(ctx context.Context, in *StartDeploymentRequest, opts ...grpc.CallOption) (*StartDeploymentResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(StartDeploymentResponse)
+	err := c.cc.Invoke(ctx, AdminService_StartDeployment_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) StopDeployment(ctx context.Context, in *StopDeploymentRequest, opts ...grpc.CallOption) (*StopDeploymentResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(StopDeploymentResponse)
+	err := c.cc.Invoke(ctx, AdminService_StopDeployment_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) DeleteDeployment(ctx context.Context, in *DeleteDeploymentRequest, opts ...grpc.CallOption) (*DeleteDeploymentResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteDeploymentResponse)
+	err := c.cc.Invoke(ctx, AdminService_DeleteDeployment_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -968,6 +1108,16 @@ func (c *adminServiceClient) RemoveUsergroupMemberUser(ctx context.Context, in *
 	return out, nil
 }
 
+func (c *adminServiceClient) GetUser(ctx context.Context, in *GetUserRequest, opts ...grpc.CallOption) (*GetUserResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetUserResponse)
+	err := c.cc.Invoke(ctx, AdminService_GetUser_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *adminServiceClient) GetCurrentUser(ctx context.Context, in *GetCurrentUserRequest, opts ...grpc.CallOption) (*GetCurrentUserResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetCurrentUserResponse)
@@ -982,6 +1132,36 @@ func (c *adminServiceClient) DeleteUser(ctx context.Context, in *DeleteUserReque
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(DeleteUserResponse)
 	err := c.cc.Invoke(ctx, AdminService_DeleteUser_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) ListUserAuthTokens(ctx context.Context, in *ListUserAuthTokensRequest, opts ...grpc.CallOption) (*ListUserAuthTokensResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListUserAuthTokensResponse)
+	err := c.cc.Invoke(ctx, AdminService_ListUserAuthTokens_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) IssueUserAuthToken(ctx context.Context, in *IssueUserAuthTokenRequest, opts ...grpc.CallOption) (*IssueUserAuthTokenResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(IssueUserAuthTokenResponse)
+	err := c.cc.Invoke(ctx, AdminService_IssueUserAuthToken_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) RevokeUserAuthToken(ctx context.Context, in *RevokeUserAuthTokenRequest, opts ...grpc.CallOption) (*RevokeUserAuthTokenResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RevokeUserAuthTokenResponse)
+	err := c.cc.Invoke(ctx, AdminService_RevokeUserAuthToken_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1048,10 +1228,20 @@ func (c *adminServiceClient) ConnectProjectToGithub(ctx context.Context, in *Con
 	return out, nil
 }
 
-func (c *adminServiceClient) UploadProjectAssets(ctx context.Context, in *UploadProjectAssetsRequest, opts ...grpc.CallOption) (*UploadProjectAssetsResponse, error) {
+func (c *adminServiceClient) CreateManagedGitRepo(ctx context.Context, in *CreateManagedGitRepoRequest, opts ...grpc.CallOption) (*CreateManagedGitRepoResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(UploadProjectAssetsResponse)
-	err := c.cc.Invoke(ctx, AdminService_UploadProjectAssets_FullMethodName, in, out, cOpts...)
+	out := new(CreateManagedGitRepoResponse)
+	err := c.cc.Invoke(ctx, AdminService_CreateManagedGitRepo_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) DisconnectProjectFromGithub(ctx context.Context, in *DisconnectProjectFromGithubRequest, opts ...grpc.CallOption) (*DisconnectProjectFromGithubResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DisconnectProjectFromGithubResponse)
+	err := c.cc.Invoke(ctx, AdminService_DisconnectProjectFromGithub_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1092,16 +1282,6 @@ func (c *adminServiceClient) ListWhitelistedDomains(ctx context.Context, in *Lis
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListWhitelistedDomainsResponse)
 	err := c.cc.Invoke(ctx, AdminService_ListWhitelistedDomains_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *adminServiceClient) GetUser(ctx context.Context, in *GetUserRequest, opts ...grpc.CallOption) (*GetUserResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GetUserResponse)
-	err := c.cc.Invoke(ctx, AdminService_GetUser_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1308,6 +1488,16 @@ func (c *adminServiceClient) ListServices(ctx context.Context, in *ListServicesR
 	return out, nil
 }
 
+func (c *adminServiceClient) ListProjectMemberServices(ctx context.Context, in *ListProjectMemberServicesRequest, opts ...grpc.CallOption) (*ListProjectMemberServicesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListProjectMemberServicesResponse)
+	err := c.cc.Invoke(ctx, AdminService_ListProjectMemberServices_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *adminServiceClient) CreateService(ctx context.Context, in *CreateServiceRequest, opts ...grpc.CallOption) (*CreateServiceResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(CreateServiceResponse)
@@ -1318,10 +1508,60 @@ func (c *adminServiceClient) CreateService(ctx context.Context, in *CreateServic
 	return out, nil
 }
 
+func (c *adminServiceClient) GetService(ctx context.Context, in *GetServiceRequest, opts ...grpc.CallOption) (*GetServiceResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetServiceResponse)
+	err := c.cc.Invoke(ctx, AdminService_GetService_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *adminServiceClient) UpdateService(ctx context.Context, in *UpdateServiceRequest, opts ...grpc.CallOption) (*UpdateServiceResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(UpdateServiceResponse)
 	err := c.cc.Invoke(ctx, AdminService_UpdateService_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) SetOrganizationMemberServiceRole(ctx context.Context, in *SetOrganizationMemberServiceRoleRequest, opts ...grpc.CallOption) (*SetOrganizationMemberServiceRoleResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SetOrganizationMemberServiceRoleResponse)
+	err := c.cc.Invoke(ctx, AdminService_SetOrganizationMemberServiceRole_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) RemoveOrganizationMemberService(ctx context.Context, in *RemoveOrganizationMemberServiceRequest, opts ...grpc.CallOption) (*RemoveOrganizationMemberServiceResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RemoveOrganizationMemberServiceResponse)
+	err := c.cc.Invoke(ctx, AdminService_RemoveOrganizationMemberService_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) SetProjectMemberServiceRole(ctx context.Context, in *SetProjectMemberServiceRoleRequest, opts ...grpc.CallOption) (*SetProjectMemberServiceRoleResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SetProjectMemberServiceRoleResponse)
+	err := c.cc.Invoke(ctx, AdminService_SetProjectMemberServiceRole_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) RemoveProjectMemberService(ctx context.Context, in *RemoveProjectMemberServiceRequest, opts ...grpc.CallOption) (*RemoveProjectMemberServiceResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RemoveProjectMemberServiceResponse)
+	err := c.cc.Invoke(ctx, AdminService_RemoveProjectMemberService_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1773,8 +2013,13 @@ type AdminServiceServer interface {
 	// ListProjectsForOrganizationAndUser lists all the projects that an organization member user has access to.
 	// It does not include projects that the user has access to through a usergroup.
 	ListProjectsForOrganizationAndUser(context.Context, *ListProjectsForOrganizationAndUserRequest) (*ListProjectsForOrganizationAndUserResponse, error)
+	// ListProjectsForFingerprint lists all projects the current user has access to that match the provided local project details.
+	// This can be used to produce a short list of cloud projects that are likely to have been deployed from a local project.
+	ListProjectsForFingerprint(context.Context, *ListProjectsForFingerprintRequest) (*ListProjectsForFingerprintResponse, error)
 	// GetProject returns information about a specific project
 	GetProject(context.Context, *GetProjectRequest) (*GetProjectResponse, error)
+	// ListProjectsForUserByName returns projects matching a name accessible by the logged in user
+	ListProjectsForUserByName(context.Context, *ListProjectsForUserByNameRequest) (*ListProjectsForUserByNameResponse, error)
 	// GetProject returns information about a specific project
 	GetProjectByID(context.Context, *GetProjectByIDRequest) (*GetProjectByIDResponse, error)
 	// SearchProjectNames returns project names matching the pattern
@@ -1797,6 +2042,18 @@ type AdminServiceServer interface {
 	RedeployProject(context.Context, *RedeployProjectRequest) (*RedeployProjectResponse, error)
 	// HibernateProject hibernates a project by tearing down its deployments.
 	HibernateProject(context.Context, *HibernateProjectRequest) (*HibernateProjectResponse, error)
+	// ListDeployments lists deployments for a project.
+	ListDeployments(context.Context, *ListDeploymentsRequest) (*ListDeploymentsResponse, error)
+	// CreateDeployment creates a new deployment for a project.
+	CreateDeployment(context.Context, *CreateDeploymentRequest) (*CreateDeploymentResponse, error)
+	// GetDeployment returns runtime info and access token on behalf of a specific user, or alternatively for a raw set of JWT attributes
+	GetDeployment(context.Context, *GetDeploymentRequest) (*GetDeploymentResponse, error)
+	// StartDeployment starts a deployment.
+	StartDeployment(context.Context, *StartDeploymentRequest) (*StartDeploymentResponse, error)
+	// StopDeployment stops a deployment.
+	StopDeployment(context.Context, *StopDeploymentRequest) (*StopDeploymentResponse, error)
+	// DeleteDeployment deletes a deployment.
+	DeleteDeployment(context.Context, *DeleteDeploymentRequest) (*DeleteDeploymentResponse, error)
 	// TriggerReconcile triggers reconcile for the project's prod deployment.
 	// DEPRECATED: Clients should call CreateTrigger directly on the deployed runtime instead.
 	TriggerReconcile(context.Context, *TriggerReconcileRequest) (*TriggerReconcileResponse, error)
@@ -1867,13 +2124,26 @@ type AdminServiceServer interface {
 	ListUsergroupMemberUsers(context.Context, *ListUsergroupMemberUsersRequest) (*ListUsergroupMemberUsersResponse, error)
 	// RemoveUsergroupMemberUser removes member from the user group
 	RemoveUsergroupMemberUser(context.Context, *RemoveUsergroupMemberUserRequest) (*RemoveUsergroupMemberUserResponse, error)
+	// GetUser returns user by email
+	GetUser(context.Context, *GetUserRequest) (*GetUserResponse, error)
 	// GetCurrentUser returns the currently authenticated user (if any)
 	GetCurrentUser(context.Context, *GetCurrentUserRequest) (*GetCurrentUserResponse, error)
 	// DeleteUser deletes the user from the organization by email
 	DeleteUser(context.Context, *DeleteUserRequest) (*DeleteUserResponse, error)
-	// IssueRepresentativeAuthToken returns the temporary token for given email
+	// ListUserAuthTokens lists the current user's auth tokens.
+	// You can optionally pass "current" instead of the user ID to list the current user's tokens.
+	ListUserAuthTokens(context.Context, *ListUserAuthTokensRequest) (*ListUserAuthTokensResponse, error)
+	// IssueUserAuthToken issues an access token for the current user.
+	// You can optionally pass "current" instead of the user ID to issue a token for the current user.
+	IssueUserAuthToken(context.Context, *IssueUserAuthTokenRequest) (*IssueUserAuthTokenResponse, error)
+	// RevokeUserAuthToken revokes a user access token.
+	// You can optionally pass "current" instead of the token ID to revoke the current token.
+	RevokeUserAuthToken(context.Context, *RevokeUserAuthTokenRequest) (*RevokeUserAuthTokenResponse, error)
+	// IssueRepresentativeAuthToken returns the temporary token for given email.
+	// Deprecated: Use IssueUserAuthToken with the represent_email option instead.
 	IssueRepresentativeAuthToken(context.Context, *IssueRepresentativeAuthTokenRequest) (*IssueRepresentativeAuthTokenResponse, error)
-	// RevokeCurrentAuthToken revoke the current auth token
+	// RevokeCurrentAuthToken revoke the current auth token.
+	// Deprecated: Use RevokeUserAuthToken with ID set to "current" instead.
 	RevokeCurrentAuthToken(context.Context, *RevokeCurrentAuthTokenRequest) (*RevokeCurrentAuthTokenResponse, error)
 	// GetGithubRepoRequest returns info about a Github repo based on the caller's installations.
 	// If the caller has not granted access to the repository, instructions for granting access are returned.
@@ -1885,9 +2155,10 @@ type AdminServiceServer interface {
 	// Connects a rill managed project to github.
 	// Replaces the contents of the remote repo with the contents of the project.
 	ConnectProjectToGithub(context.Context, *ConnectProjectToGithubRequest) (*ConnectProjectToGithubResponse, error)
+	// CreateManagedGitRepo creates a new rill managed git repo for the organization.
+	CreateManagedGitRepo(context.Context, *CreateManagedGitRepoRequest) (*CreateManagedGitRepoResponse, error)
 	// Converts a project connected to github to a rill managed project.
-	// Uploads the current project to assets.
-	UploadProjectAssets(context.Context, *UploadProjectAssetsRequest) (*UploadProjectAssetsResponse, error)
+	DisconnectProjectFromGithub(context.Context, *DisconnectProjectFromGithubRequest) (*DisconnectProjectFromGithubResponse, error)
 	// GetCloneCredentials returns credentials and other details for a project's Git repository or archive path if git repo is not configured.
 	GetCloneCredentials(context.Context, *GetCloneCredentialsRequest) (*GetCloneCredentialsResponse, error)
 	// CreateWhitelistedDomain adds a domain to the whitelist
@@ -1896,8 +2167,6 @@ type AdminServiceServer interface {
 	RemoveWhitelistedDomain(context.Context, *RemoveWhitelistedDomainRequest) (*RemoveWhitelistedDomainResponse, error)
 	// ListWhitelistedDomains lists all the whitelisted domains for the organization
 	ListWhitelistedDomains(context.Context, *ListWhitelistedDomainsRequest) (*ListWhitelistedDomainsResponse, error)
-	// GetUser returns user by email
-	GetUser(context.Context, *GetUserRequest) (*GetUserResponse, error)
 	// GetUsersByEmail returns users by email
 	SearchUsers(context.Context, *SearchUsersRequest) (*SearchUsersResponse, error)
 	// SearchProjectUsers returns users who has access to to a project (including org members that have access through a usergroup)
@@ -1905,6 +2174,7 @@ type AdminServiceServer interface {
 	// ListSuperusers lists all the superusers
 	ListSuperusers(context.Context, *ListSuperusersRequest) (*ListSuperusersResponse, error)
 	// GetDeploymentCredentials returns runtime info and access token on behalf of a specific user, or alternatively for a raw set of JWT attributes
+	// DEPRECATED: Clients should call GetDeployment instead.
 	GetDeploymentCredentials(context.Context, *GetDeploymentCredentialsRequest) (*GetDeploymentCredentialsResponse, error)
 	// GetIFrame returns the iframe URL for the given project
 	GetIFrame(context.Context, *GetIFrameRequest) (*GetIFrameResponse, error)
@@ -1940,17 +2210,29 @@ type AdminServiceServer interface {
 	ListProjectWhitelistedDomains(context.Context, *ListProjectWhitelistedDomainsRequest) (*ListProjectWhitelistedDomainsResponse, error)
 	// ListService returns all the services per organization
 	ListServices(context.Context, *ListServicesRequest) (*ListServicesResponse, error)
+	// ListProjectMemberServices returns all the services for the project for an organization
+	ListProjectMemberServices(context.Context, *ListProjectMemberServicesRequest) (*ListProjectMemberServicesResponse, error)
 	// CreateService creates a new service per organization
 	CreateService(context.Context, *CreateServiceRequest) (*CreateServiceResponse, error)
+	// GetService returns information about a specific service
+	GetService(context.Context, *GetServiceRequest) (*GetServiceResponse, error)
 	// UpdateService updates a service per organization
 	UpdateService(context.Context, *UpdateServiceRequest) (*UpdateServiceResponse, error)
+	// SetOrganizationMemberServiceRole sets or updates the role of the service in the organization
+	SetOrganizationMemberServiceRole(context.Context, *SetOrganizationMemberServiceRoleRequest) (*SetOrganizationMemberServiceRoleResponse, error)
+	// RemoveOrganizationMemberService removes the organization role for the service
+	RemoveOrganizationMemberService(context.Context, *RemoveOrganizationMemberServiceRequest) (*RemoveOrganizationMemberServiceResponse, error)
+	// SetProjectMemberServiceRole updates the project role for the service
+	SetProjectMemberServiceRole(context.Context, *SetProjectMemberServiceRoleRequest) (*SetProjectMemberServiceRoleResponse, error)
+	// RemoveProjectMemberService removes the service from the project
+	RemoveProjectMemberService(context.Context, *RemoveProjectMemberServiceRequest) (*RemoveProjectMemberServiceResponse, error)
 	// DeleteService deletes a service per organization
 	DeleteService(context.Context, *DeleteServiceRequest) (*DeleteServiceResponse, error)
 	// ListServiceAuthTokens lists all the service auth tokens
 	ListServiceAuthTokens(context.Context, *ListServiceAuthTokensRequest) (*ListServiceAuthTokensResponse, error)
-	// IssueServiceAuthToken returns the temporary token for given service account
+	// IssueServiceAuthToken issues an access token for a service
 	IssueServiceAuthToken(context.Context, *IssueServiceAuthTokenRequest) (*IssueServiceAuthTokenResponse, error)
-	// RevokeServiceAuthToken revoke the service auth token
+	// RevokeServiceAuthToken revoke a service's access token
 	RevokeServiceAuthToken(context.Context, *RevokeServiceAuthTokenRequest) (*RevokeServiceAuthTokenResponse, error)
 	// IssueMagicAuthToken creates a "magic" auth token that provides limited access to a specific filtered dashboard in a specific project.
 	IssueMagicAuthToken(context.Context, *IssueMagicAuthTokenRequest) (*IssueMagicAuthTokenResponse, error)
@@ -2061,8 +2343,14 @@ func (UnimplementedAdminServiceServer) ListProjectsForOrganization(context.Conte
 func (UnimplementedAdminServiceServer) ListProjectsForOrganizationAndUser(context.Context, *ListProjectsForOrganizationAndUserRequest) (*ListProjectsForOrganizationAndUserResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListProjectsForOrganizationAndUser not implemented")
 }
+func (UnimplementedAdminServiceServer) ListProjectsForFingerprint(context.Context, *ListProjectsForFingerprintRequest) (*ListProjectsForFingerprintResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListProjectsForFingerprint not implemented")
+}
 func (UnimplementedAdminServiceServer) GetProject(context.Context, *GetProjectRequest) (*GetProjectResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetProject not implemented")
+}
+func (UnimplementedAdminServiceServer) ListProjectsForUserByName(context.Context, *ListProjectsForUserByNameRequest) (*ListProjectsForUserByNameResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListProjectsForUserByName not implemented")
 }
 func (UnimplementedAdminServiceServer) GetProjectByID(context.Context, *GetProjectByIDRequest) (*GetProjectByIDResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetProjectByID not implemented")
@@ -2093,6 +2381,24 @@ func (UnimplementedAdminServiceServer) RedeployProject(context.Context, *Redeplo
 }
 func (UnimplementedAdminServiceServer) HibernateProject(context.Context, *HibernateProjectRequest) (*HibernateProjectResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method HibernateProject not implemented")
+}
+func (UnimplementedAdminServiceServer) ListDeployments(context.Context, *ListDeploymentsRequest) (*ListDeploymentsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListDeployments not implemented")
+}
+func (UnimplementedAdminServiceServer) CreateDeployment(context.Context, *CreateDeploymentRequest) (*CreateDeploymentResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateDeployment not implemented")
+}
+func (UnimplementedAdminServiceServer) GetDeployment(context.Context, *GetDeploymentRequest) (*GetDeploymentResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetDeployment not implemented")
+}
+func (UnimplementedAdminServiceServer) StartDeployment(context.Context, *StartDeploymentRequest) (*StartDeploymentResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method StartDeployment not implemented")
+}
+func (UnimplementedAdminServiceServer) StopDeployment(context.Context, *StopDeploymentRequest) (*StopDeploymentResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method StopDeployment not implemented")
+}
+func (UnimplementedAdminServiceServer) DeleteDeployment(context.Context, *DeleteDeploymentRequest) (*DeleteDeploymentResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteDeployment not implemented")
 }
 func (UnimplementedAdminServiceServer) TriggerReconcile(context.Context, *TriggerReconcileRequest) (*TriggerReconcileResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method TriggerReconcile not implemented")
@@ -2193,11 +2499,23 @@ func (UnimplementedAdminServiceServer) ListUsergroupMemberUsers(context.Context,
 func (UnimplementedAdminServiceServer) RemoveUsergroupMemberUser(context.Context, *RemoveUsergroupMemberUserRequest) (*RemoveUsergroupMemberUserResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RemoveUsergroupMemberUser not implemented")
 }
+func (UnimplementedAdminServiceServer) GetUser(context.Context, *GetUserRequest) (*GetUserResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetUser not implemented")
+}
 func (UnimplementedAdminServiceServer) GetCurrentUser(context.Context, *GetCurrentUserRequest) (*GetCurrentUserResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetCurrentUser not implemented")
 }
 func (UnimplementedAdminServiceServer) DeleteUser(context.Context, *DeleteUserRequest) (*DeleteUserResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteUser not implemented")
+}
+func (UnimplementedAdminServiceServer) ListUserAuthTokens(context.Context, *ListUserAuthTokensRequest) (*ListUserAuthTokensResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListUserAuthTokens not implemented")
+}
+func (UnimplementedAdminServiceServer) IssueUserAuthToken(context.Context, *IssueUserAuthTokenRequest) (*IssueUserAuthTokenResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method IssueUserAuthToken not implemented")
+}
+func (UnimplementedAdminServiceServer) RevokeUserAuthToken(context.Context, *RevokeUserAuthTokenRequest) (*RevokeUserAuthTokenResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RevokeUserAuthToken not implemented")
 }
 func (UnimplementedAdminServiceServer) IssueRepresentativeAuthToken(context.Context, *IssueRepresentativeAuthTokenRequest) (*IssueRepresentativeAuthTokenResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method IssueRepresentativeAuthToken not implemented")
@@ -2217,8 +2535,11 @@ func (UnimplementedAdminServiceServer) ListGithubUserRepos(context.Context, *Lis
 func (UnimplementedAdminServiceServer) ConnectProjectToGithub(context.Context, *ConnectProjectToGithubRequest) (*ConnectProjectToGithubResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ConnectProjectToGithub not implemented")
 }
-func (UnimplementedAdminServiceServer) UploadProjectAssets(context.Context, *UploadProjectAssetsRequest) (*UploadProjectAssetsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method UploadProjectAssets not implemented")
+func (UnimplementedAdminServiceServer) CreateManagedGitRepo(context.Context, *CreateManagedGitRepoRequest) (*CreateManagedGitRepoResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateManagedGitRepo not implemented")
+}
+func (UnimplementedAdminServiceServer) DisconnectProjectFromGithub(context.Context, *DisconnectProjectFromGithubRequest) (*DisconnectProjectFromGithubResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DisconnectProjectFromGithub not implemented")
 }
 func (UnimplementedAdminServiceServer) GetCloneCredentials(context.Context, *GetCloneCredentialsRequest) (*GetCloneCredentialsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetCloneCredentials not implemented")
@@ -2231,9 +2552,6 @@ func (UnimplementedAdminServiceServer) RemoveWhitelistedDomain(context.Context, 
 }
 func (UnimplementedAdminServiceServer) ListWhitelistedDomains(context.Context, *ListWhitelistedDomainsRequest) (*ListWhitelistedDomainsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListWhitelistedDomains not implemented")
-}
-func (UnimplementedAdminServiceServer) GetUser(context.Context, *GetUserRequest) (*GetUserResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetUser not implemented")
 }
 func (UnimplementedAdminServiceServer) SearchUsers(context.Context, *SearchUsersRequest) (*SearchUsersResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SearchUsers not implemented")
@@ -2295,11 +2613,29 @@ func (UnimplementedAdminServiceServer) ListProjectWhitelistedDomains(context.Con
 func (UnimplementedAdminServiceServer) ListServices(context.Context, *ListServicesRequest) (*ListServicesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListServices not implemented")
 }
+func (UnimplementedAdminServiceServer) ListProjectMemberServices(context.Context, *ListProjectMemberServicesRequest) (*ListProjectMemberServicesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListProjectMemberServices not implemented")
+}
 func (UnimplementedAdminServiceServer) CreateService(context.Context, *CreateServiceRequest) (*CreateServiceResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateService not implemented")
 }
+func (UnimplementedAdminServiceServer) GetService(context.Context, *GetServiceRequest) (*GetServiceResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetService not implemented")
+}
 func (UnimplementedAdminServiceServer) UpdateService(context.Context, *UpdateServiceRequest) (*UpdateServiceResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateService not implemented")
+}
+func (UnimplementedAdminServiceServer) SetOrganizationMemberServiceRole(context.Context, *SetOrganizationMemberServiceRoleRequest) (*SetOrganizationMemberServiceRoleResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SetOrganizationMemberServiceRole not implemented")
+}
+func (UnimplementedAdminServiceServer) RemoveOrganizationMemberService(context.Context, *RemoveOrganizationMemberServiceRequest) (*RemoveOrganizationMemberServiceResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RemoveOrganizationMemberService not implemented")
+}
+func (UnimplementedAdminServiceServer) SetProjectMemberServiceRole(context.Context, *SetProjectMemberServiceRoleRequest) (*SetProjectMemberServiceRoleResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SetProjectMemberServiceRole not implemented")
+}
+func (UnimplementedAdminServiceServer) RemoveProjectMemberService(context.Context, *RemoveProjectMemberServiceRequest) (*RemoveProjectMemberServiceResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RemoveProjectMemberService not implemented")
 }
 func (UnimplementedAdminServiceServer) DeleteService(context.Context, *DeleteServiceRequest) (*DeleteServiceResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteService not implemented")
@@ -2610,6 +2946,24 @@ func _AdminService_ListProjectsForOrganizationAndUser_Handler(srv interface{}, c
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_ListProjectsForFingerprint_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListProjectsForFingerprintRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).ListProjectsForFingerprint(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_ListProjectsForFingerprint_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).ListProjectsForFingerprint(ctx, req.(*ListProjectsForFingerprintRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AdminService_GetProject_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetProjectRequest)
 	if err := dec(in); err != nil {
@@ -2624,6 +2978,24 @@ func _AdminService_GetProject_Handler(srv interface{}, ctx context.Context, dec 
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AdminServiceServer).GetProject(ctx, req.(*GetProjectRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_ListProjectsForUserByName_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListProjectsForUserByNameRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).ListProjectsForUserByName(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_ListProjectsForUserByName_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).ListProjectsForUserByName(ctx, req.(*ListProjectsForUserByNameRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -2804,6 +3176,114 @@ func _AdminService_HibernateProject_Handler(srv interface{}, ctx context.Context
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AdminServiceServer).HibernateProject(ctx, req.(*HibernateProjectRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_ListDeployments_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListDeploymentsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).ListDeployments(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_ListDeployments_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).ListDeployments(ctx, req.(*ListDeploymentsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_CreateDeployment_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateDeploymentRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).CreateDeployment(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_CreateDeployment_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).CreateDeployment(ctx, req.(*CreateDeploymentRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_GetDeployment_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetDeploymentRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).GetDeployment(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_GetDeployment_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).GetDeployment(ctx, req.(*GetDeploymentRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_StartDeployment_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(StartDeploymentRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).StartDeployment(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_StartDeployment_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).StartDeployment(ctx, req.(*StartDeploymentRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_StopDeployment_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(StopDeploymentRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).StopDeployment(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_StopDeployment_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).StopDeployment(ctx, req.(*StopDeploymentRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_DeleteDeployment_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteDeploymentRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).DeleteDeployment(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_DeleteDeployment_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).DeleteDeployment(ctx, req.(*DeleteDeploymentRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -3402,6 +3882,24 @@ func _AdminService_RemoveUsergroupMemberUser_Handler(srv interface{}, ctx contex
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_GetUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetUserRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).GetUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_GetUser_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).GetUser(ctx, req.(*GetUserRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AdminService_GetCurrentUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetCurrentUserRequest)
 	if err := dec(in); err != nil {
@@ -3434,6 +3932,60 @@ func _AdminService_DeleteUser_Handler(srv interface{}, ctx context.Context, dec 
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AdminServiceServer).DeleteUser(ctx, req.(*DeleteUserRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_ListUserAuthTokens_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListUserAuthTokensRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).ListUserAuthTokens(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_ListUserAuthTokens_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).ListUserAuthTokens(ctx, req.(*ListUserAuthTokensRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_IssueUserAuthToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(IssueUserAuthTokenRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).IssueUserAuthToken(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_IssueUserAuthToken_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).IssueUserAuthToken(ctx, req.(*IssueUserAuthTokenRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_RevokeUserAuthToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RevokeUserAuthTokenRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).RevokeUserAuthToken(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_RevokeUserAuthToken_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).RevokeUserAuthToken(ctx, req.(*RevokeUserAuthTokenRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -3546,20 +4098,38 @@ func _AdminService_ConnectProjectToGithub_Handler(srv interface{}, ctx context.C
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AdminService_UploadProjectAssets_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(UploadProjectAssetsRequest)
+func _AdminService_CreateManagedGitRepo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateManagedGitRepoRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AdminServiceServer).UploadProjectAssets(ctx, in)
+		return srv.(AdminServiceServer).CreateManagedGitRepo(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: AdminService_UploadProjectAssets_FullMethodName,
+		FullMethod: AdminService_CreateManagedGitRepo_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminServiceServer).UploadProjectAssets(ctx, req.(*UploadProjectAssetsRequest))
+		return srv.(AdminServiceServer).CreateManagedGitRepo(ctx, req.(*CreateManagedGitRepoRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_DisconnectProjectFromGithub_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DisconnectProjectFromGithubRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).DisconnectProjectFromGithub(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_DisconnectProjectFromGithub_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).DisconnectProjectFromGithub(ctx, req.(*DisconnectProjectFromGithubRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -3632,24 +4202,6 @@ func _AdminService_ListWhitelistedDomains_Handler(srv interface{}, ctx context.C
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AdminServiceServer).ListWhitelistedDomains(ctx, req.(*ListWhitelistedDomainsRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _AdminService_GetUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetUserRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AdminServiceServer).GetUser(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: AdminService_GetUser_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminServiceServer).GetUser(ctx, req.(*GetUserRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -4014,6 +4566,24 @@ func _AdminService_ListServices_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_ListProjectMemberServices_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListProjectMemberServicesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).ListProjectMemberServices(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_ListProjectMemberServices_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).ListProjectMemberServices(ctx, req.(*ListProjectMemberServicesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AdminService_CreateService_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CreateServiceRequest)
 	if err := dec(in); err != nil {
@@ -4032,6 +4602,24 @@ func _AdminService_CreateService_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_GetService_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetServiceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).GetService(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_GetService_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).GetService(ctx, req.(*GetServiceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AdminService_UpdateService_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(UpdateServiceRequest)
 	if err := dec(in); err != nil {
@@ -4046,6 +4634,78 @@ func _AdminService_UpdateService_Handler(srv interface{}, ctx context.Context, d
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AdminServiceServer).UpdateService(ctx, req.(*UpdateServiceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_SetOrganizationMemberServiceRole_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetOrganizationMemberServiceRoleRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).SetOrganizationMemberServiceRole(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_SetOrganizationMemberServiceRole_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).SetOrganizationMemberServiceRole(ctx, req.(*SetOrganizationMemberServiceRoleRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_RemoveOrganizationMemberService_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RemoveOrganizationMemberServiceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).RemoveOrganizationMemberService(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_RemoveOrganizationMemberService_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).RemoveOrganizationMemberService(ctx, req.(*RemoveOrganizationMemberServiceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_SetProjectMemberServiceRole_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetProjectMemberServiceRoleRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).SetProjectMemberServiceRole(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_SetProjectMemberServiceRole_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).SetProjectMemberServiceRole(ctx, req.(*SetProjectMemberServiceRoleRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_RemoveProjectMemberService_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RemoveProjectMemberServiceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).RemoveProjectMemberService(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_RemoveProjectMemberService_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).RemoveProjectMemberService(ctx, req.(*RemoveProjectMemberServiceRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -4850,8 +5510,16 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AdminService_ListProjectsForOrganizationAndUser_Handler,
 		},
 		{
+			MethodName: "ListProjectsForFingerprint",
+			Handler:    _AdminService_ListProjectsForFingerprint_Handler,
+		},
+		{
 			MethodName: "GetProject",
 			Handler:    _AdminService_GetProject_Handler,
+		},
+		{
+			MethodName: "ListProjectsForUserByName",
+			Handler:    _AdminService_ListProjectsForUserByName_Handler,
 		},
 		{
 			MethodName: "GetProjectByID",
@@ -4892,6 +5560,30 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "HibernateProject",
 			Handler:    _AdminService_HibernateProject_Handler,
+		},
+		{
+			MethodName: "ListDeployments",
+			Handler:    _AdminService_ListDeployments_Handler,
+		},
+		{
+			MethodName: "CreateDeployment",
+			Handler:    _AdminService_CreateDeployment_Handler,
+		},
+		{
+			MethodName: "GetDeployment",
+			Handler:    _AdminService_GetDeployment_Handler,
+		},
+		{
+			MethodName: "StartDeployment",
+			Handler:    _AdminService_StartDeployment_Handler,
+		},
+		{
+			MethodName: "StopDeployment",
+			Handler:    _AdminService_StopDeployment_Handler,
+		},
+		{
+			MethodName: "DeleteDeployment",
+			Handler:    _AdminService_DeleteDeployment_Handler,
 		},
 		{
 			MethodName: "TriggerReconcile",
@@ -5026,12 +5718,28 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AdminService_RemoveUsergroupMemberUser_Handler,
 		},
 		{
+			MethodName: "GetUser",
+			Handler:    _AdminService_GetUser_Handler,
+		},
+		{
 			MethodName: "GetCurrentUser",
 			Handler:    _AdminService_GetCurrentUser_Handler,
 		},
 		{
 			MethodName: "DeleteUser",
 			Handler:    _AdminService_DeleteUser_Handler,
+		},
+		{
+			MethodName: "ListUserAuthTokens",
+			Handler:    _AdminService_ListUserAuthTokens_Handler,
+		},
+		{
+			MethodName: "IssueUserAuthToken",
+			Handler:    _AdminService_IssueUserAuthToken_Handler,
+		},
+		{
+			MethodName: "RevokeUserAuthToken",
+			Handler:    _AdminService_RevokeUserAuthToken_Handler,
 		},
 		{
 			MethodName: "IssueRepresentativeAuthToken",
@@ -5058,8 +5766,12 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AdminService_ConnectProjectToGithub_Handler,
 		},
 		{
-			MethodName: "UploadProjectAssets",
-			Handler:    _AdminService_UploadProjectAssets_Handler,
+			MethodName: "CreateManagedGitRepo",
+			Handler:    _AdminService_CreateManagedGitRepo_Handler,
+		},
+		{
+			MethodName: "DisconnectProjectFromGithub",
+			Handler:    _AdminService_DisconnectProjectFromGithub_Handler,
 		},
 		{
 			MethodName: "GetCloneCredentials",
@@ -5076,10 +5788,6 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListWhitelistedDomains",
 			Handler:    _AdminService_ListWhitelistedDomains_Handler,
-		},
-		{
-			MethodName: "GetUser",
-			Handler:    _AdminService_GetUser_Handler,
 		},
 		{
 			MethodName: "SearchUsers",
@@ -5162,12 +5870,36 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AdminService_ListServices_Handler,
 		},
 		{
+			MethodName: "ListProjectMemberServices",
+			Handler:    _AdminService_ListProjectMemberServices_Handler,
+		},
+		{
 			MethodName: "CreateService",
 			Handler:    _AdminService_CreateService_Handler,
 		},
 		{
+			MethodName: "GetService",
+			Handler:    _AdminService_GetService_Handler,
+		},
+		{
 			MethodName: "UpdateService",
 			Handler:    _AdminService_UpdateService_Handler,
+		},
+		{
+			MethodName: "SetOrganizationMemberServiceRole",
+			Handler:    _AdminService_SetOrganizationMemberServiceRole_Handler,
+		},
+		{
+			MethodName: "RemoveOrganizationMemberService",
+			Handler:    _AdminService_RemoveOrganizationMemberService_Handler,
+		},
+		{
+			MethodName: "SetProjectMemberServiceRole",
+			Handler:    _AdminService_SetProjectMemberServiceRole_Handler,
+		},
+		{
+			MethodName: "RemoveProjectMemberService",
+			Handler:    _AdminService_RemoveProjectMemberService_Handler,
 		},
 		{
 			MethodName: "DeleteService",

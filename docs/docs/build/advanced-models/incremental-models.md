@@ -5,24 +5,24 @@ sidebar_label: Incremental Models
 sidebar_position: 01
 ---
 
-Incremental Models help with the ingestion of large datasets as it allows a dataset to be broken down into smaller sections to ingest rather than a single read of the entire dataset.  Unlike [standard SQL models](../models/models.md) that are created via .sql file, incremental models are defined in a YAML file and are used when a large dataset needs to be incrementally ingested to improve ingestion costs and ingestion time. 
+Incremental models help with the ingestion of large datasets, as they allow a dataset to be broken down into smaller sections to ingest, rather than reading the entire dataset at once. Unlike [standard SQL models](../models/models.md) that are created via a .sql file, incremental models are defined in a YAML file and are used when a large dataset needs to be incrementally ingested to improve ingestion costs and time. 
 
 :::note Take a look at the Reference!
-If you are unsure what are the required parameters, please review the [reference page for Advanced Models](/reference/project-files/advanced-models).
+If you are unsure what are the required parameters, please review the [reference page for Advanced Models](/reference/project-files/models).
 :::
 
 
 Rill supports incremental models on either cloud storage or data warehouses but the parameters to set these up will be different. Cloud storage requires the `glob` parameter while data warehouses will need to use `sql`. 
 
-See [our reference documentation](/reference/project-files/advanced-models) for more information.
+See [our reference documentation](/reference/project-files/models) for more information.
 
 :::tip Need help with getting Incremental Models set up?
-Please [reach out to us](contact.md) if you have any questions regarding incremental modeling! 
+Please [reach out to us](/contact) if you have any questions regarding incremental modeling! 
 :::
 
 ## Creating an Incremental Model
 
- In order to enable incremental model, you will need to set the following: `incremental: true`.
+ In order to enable an incremental model, you will need to set the following: `incremental: true`.
 ```yaml
 type: model
 incremental: true
@@ -73,7 +73,7 @@ You can verify the current value of your state in the left hand panel under Incr
 
 When you are testing with incremental models in Rill Developer, you will notice a change in the refresh functionality. Instead of a full refresh, you are given the option for `incremental refresh`.
 
-<img src = '/img/tutorials/302/now-incremental.png' class='rounded-gif' />
+<img src = '/img/tutorials/advanced-models/now-incremental.png' class='rounded-gif' />
 <br />
 
 :::tip What's the difference?
@@ -88,11 +88,21 @@ When selecting to refresh incrementally what is being run in the CLI is:
  rill project refresh --local --model <model_name> 
 ```
 
-Kind in mind that if you select `Full refresh` this will start the ingestion of **all of your data** from scratch. Only use this when absolutely required. When running a full refresh, the CLI command is:
+Keep in mind that if you select `Full refresh`, this will start the ingestion of **all of your data** from scratch. Only use this when absolutely required. When running a full refresh, the CLI command is:
 
 ```bash
  rill project refresh --local --model <model_name> --full
 ```
 
+## Model Change Modes
 
+Configure how changes to your model specifications are applied:
 
+```yaml
+# model.yaml
+change_mode: reset  # Options: reset (default), manual, patch
+```
+
+- `reset`: changing the model automatically leads to a full refresh (default)
+- `manual`: changing the model stops refreshes until a manual incremental or full refresh is run
+- `patch`: changing the model automatically changes to the new logic without a reset (only works for models with `incremental: true`)

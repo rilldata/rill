@@ -1,5 +1,5 @@
 <script lang="ts">
-  import * as Dialog from "@rilldata/web-common/components/dialog-v2";
+  import * as Dialog from "@rilldata/web-common/components/dialog";
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
   import type { Selected } from "bits-ui";
   import CollapsibleSectionTitle from "../../../layout/CollapsibleSectionTitle.svelte";

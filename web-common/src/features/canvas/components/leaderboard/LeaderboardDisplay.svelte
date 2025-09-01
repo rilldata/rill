@@ -10,7 +10,7 @@
   } from "@rilldata/web-common/features/dashboards/leaderboard/leaderboard-widths";
   import Leaderboard from "@rilldata/web-common/features/dashboards/leaderboard/Leaderboard.svelte";
   import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
-  import { selectedDimensionValuesV2 } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
+  import { selectedDimensionValues } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
   import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import ComponentHeader from "../../ComponentHeader.svelte";
@@ -26,22 +26,21 @@
   let leaderboardMeasureNames: string[] = [];
   let dimensionNames: string[] = [];
   let numRows = 7;
-
   let parentElement: HTMLDivElement;
-  let suppressTooltip = false;
   let leaderboardWrapperWidth = 0;
+
+  $: ({ instanceId } = $runtime);
 
   $: ({
     specStore,
     timeAndFilterStore,
     leaderboardState,
-    sortByMeasure,
     toggleSort,
     parent: { name: canvasName },
   } = component);
   $: leaderboardProperties = $specStore;
 
-  $: store = getCanvasStore(canvasName);
+  $: store = getCanvasStore(canvasName, instanceId);
   $: ({
     canvasEntity: {
       spec: {
@@ -52,8 +51,6 @@
       filters: { isFilterExcludeMode, toggleDimensionValueSelection },
     },
   } = store);
-
-  $: ({ instanceId } = $runtime);
 
   $: {
     metricsViewName = leaderboardProperties.metrics_view;
@@ -78,16 +75,15 @@
   $: allDimensions = getDimensionsForMetricView(metricsViewName);
   $: allMeasures = getMeasuresForMetricView(metricsViewName);
 
-  $: visibleDimensions = $allDimensions.filter((d) =>
-    dimensionNames.includes(d.name || (d.column as string)),
-  );
+  $: visibleDimensions = dimensionNames
+    .map((name) =>
+      $allDimensions.find((d) => (d.name || (d.column as string)) === name),
+    )
+    .filter((d) => d !== undefined);
 
   $: visibleMeasures = $allMeasures.filter((m) =>
     leaderboardMeasureNames.includes(m.name as string),
   );
-
-  $: activeMeasureName =
-    $sortByMeasure || leaderboardMeasureNames?.[0] || "measure";
 
   $: measureFormatters = Object.fromEntries(
     visibleMeasures.map((m) => [
@@ -136,7 +132,7 @@
 </script>
 
 {#if schema.isValid}
-  <ComponentHeader {title} {description} {filters} />
+  <ComponentHeader {component} {title} {description} {filters} />
 
   <div
     class="h-fit p-0 grow relative"
@@ -148,12 +144,6 @@
       class="grid-wrapper gap-px overflow-x-auto"
       style:grid-template-columns="repeat(auto-fit, minmax({estimatedTableWidth +
         LEADERBOARD_WRAPPER_PADDING}px, 1fr))"
-      on:scroll={() => {
-        suppressTooltip = true;
-      }}
-      on:scrollend={() => {
-        suppressTooltip = false;
-      }}
     >
       {#if parentElement}
         {#each visibleDimensions as dimension (dimension.name)}
@@ -168,9 +158,10 @@
                 {instanceId}
                 {isValidPercentOfTotal}
                 {metricsViewName}
-                {activeMeasureName}
+                leaderboardSortByMeasureName={$leaderboardState.leaderboardSortByMeasureName ??
+                  leaderboardMeasureNames?.[0]}
                 {leaderboardMeasureNames}
-                visibleMeasures={leaderboardMeasureNames}
+                leaderboardShowContextForAllMeasures={true}
                 {whereFilter}
                 {dimensionThresholdFilters}
                 tableWidth={dimensionColumnWidth + totalContextWidth}
@@ -185,11 +176,10 @@
                   : undefined}
                 {dimension}
                 {parentElement}
-                {suppressTooltip}
                 timeControlsReady={true}
                 allowExpandTable={false}
                 allowDimensionComparison={false}
-                selectedValues={selectedDimensionValuesV2(
+                selectedValues={selectedDimensionValues(
                   $runtime.instanceId,
                   [metricsViewName],
                   whereFilter,
@@ -201,11 +191,9 @@
                 formatters={measureFormatters}
                 {toggleSort}
                 {toggleDimensionValueSelection}
-                sortBy={$sortByMeasure}
                 measureLabel={(measureName) =>
                   visibleMeasures.find((m) => m.name === measureName)
                     ?.displayName || measureName}
-                leaderboardMeasureCountFeatureFlag={true}
               />
             </div>
           {/if}
@@ -232,7 +220,7 @@
   }
 
   .border-overlay {
-    @apply absolute border-[12.5px] pointer-events-none border-white size-full;
+    @apply absolute border-[12.5px] pointer-events-none border-surface size-full;
     z-index: 20;
   }
 </style>

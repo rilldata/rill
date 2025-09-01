@@ -64,11 +64,11 @@
 </script>
 
 <div class="grid place-items-center h-44">
-  <Button on:click={handleOpenFileDialog} type="primary"
+  <Button onClick={handleOpenFileDialog} type="primary"
     >Upload a CSV, JSON or Parquet file
   </Button>
 </div>
-<div class="flex">
+<div class="flex p-6">
   <div class="grow" />
-  <Button on:click={() => dispatch("back")} type="secondary">Back</Button>
+  <Button onClick={() => dispatch("back")} type="secondary">Back</Button>
 </div>

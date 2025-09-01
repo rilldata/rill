@@ -61,7 +61,8 @@ func (s *Server) GetOrganization(ctx context.Context, req *adminv1.GetOrganizati
 
 	claims := auth.GetClaims(ctx)
 	perms := claims.OrganizationPermissions(ctx, org.ID)
-	if !perms.ReadOrg && !claims.Superuser(ctx) {
+	forceAccess := claims.Superuser(ctx) && req.SuperuserForceAccess
+	if !perms.ReadOrg && !forceAccess {
 		ok, err := s.admin.DB.CheckOrganizationHasPublicProjects(ctx, org.ID)
 		if err != nil {
 			return nil, err
@@ -133,7 +134,7 @@ func (s *Server) CreateOrganization(ctx context.Context, req *adminv1.CreateOrga
 		}
 	}
 
-	org, err := s.admin.CreateOrganizationForUser(ctx, user.ID, user.Email, req.Name, req.Description)
+	org, err := s.admin.CreateOrganizationForUser(ctx, user.ID, user.Email, req.Name, req.DisplayName, req.Description)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -207,6 +208,15 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 		}
 	}
 
+	thumbnailAssetID := org.ThumbnailAssetID
+	if req.ThumbnailAssetId != nil { // Means it should be updated
+		if *req.ThumbnailAssetId == "" { // Means it should be cleared
+			thumbnailAssetID = nil
+		} else {
+			thumbnailAssetID = req.ThumbnailAssetId
+		}
+	}
+
 	defaultProjectRoleID := org.DefaultProjectRoleID
 	if req.DefaultProjectRole != nil {
 		if *req.DefaultProjectRole == "" {
@@ -228,6 +238,7 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 		Description:                         valOrDefault(req.Description, org.Description),
 		LogoAssetID:                         logoAssetID,
 		FaviconAssetID:                      faviconAssetID,
+		ThumbnailAssetID:                    thumbnailAssetID,
 		CustomDomain:                        org.CustomDomain,
 		DefaultProjectRoleID:                defaultProjectRoleID,
 		QuotaProjects:                       org.QuotaProjects,
@@ -287,7 +298,8 @@ func (s *Server) ListOrganizationMemberUsers(ctx context.Context, req *adminv1.L
 	}
 
 	claims := auth.GetClaims(ctx)
-	if !claims.Superuser(ctx) && !claims.OrganizationPermissions(ctx, org.ID).ReadOrgMembers {
+	forceAccess := claims.Superuser(ctx) && req.SuperuserForceAccess
+	if !claims.OrganizationPermissions(ctx, org.ID).ReadOrgMembers && !forceAccess {
 		return nil, status.Error(codes.PermissionDenied, "not authorized to read org members")
 	}
 
@@ -311,6 +323,11 @@ func (s *Server) ListOrganizationMemberUsers(ctx context.Context, req *adminv1.L
 		return nil, err
 	}
 
+	count, err := s.admin.DB.CountOrganizationMemberUsers(ctx, org.ID, roleID)
+	if err != nil {
+		return nil, err
+	}
+
 	nextToken := ""
 	if len(members) >= pageSize {
 		nextToken = marshalPageToken(members[len(members)-1].Email)
@@ -323,6 +340,7 @@ func (s *Server) ListOrganizationMemberUsers(ctx context.Context, req *adminv1.L
 
 	return &adminv1.ListOrganizationMemberUsersResponse{
 		Members:       dtos,
+		TotalCount:    uint32(count),
 		NextPageToken: nextToken,
 	}, nil
 }
@@ -354,18 +372,24 @@ func (s *Server) ListOrganizationInvites(ctx context.Context, req *adminv1.ListO
 		return nil, err
 	}
 
+	count, err := s.admin.DB.CountInvitesForOrganization(ctx, org.ID)
+	if err != nil {
+		return nil, err
+	}
+
 	nextToken := ""
 	if len(userInvites) >= pageSize {
 		nextToken = marshalPageToken(userInvites[len(userInvites)-1].Email)
 	}
 
-	invitesDtos := make([]*adminv1.UserInvite, len(userInvites))
+	invitesDtos := make([]*adminv1.OrganizationInvite, len(userInvites))
 	for i, invite := range userInvites {
-		invitesDtos[i] = inviteToPB(invite)
+		invitesDtos[i] = orgInviteToPB(invite)
 	}
 
 	return &adminv1.ListOrganizationInvitesResponse{
 		Invites:       invitesDtos,
+		TotalCount:    uint32(count),
 		NextPageToken: nextToken,
 	}, nil
 }
@@ -568,7 +592,8 @@ func (s *Server) SetOrganizationMemberUserRole(ctx context.Context, req *adminv1
 	}
 
 	claims := auth.GetClaims(ctx)
-	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrgMembers {
+	forceAccess := claims.Superuser(ctx) && req.SuperuserForceAccess
+	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrgMembers && !forceAccess {
 		return nil, status.Error(codes.PermissionDenied, "not allowed to set org members role")
 	}
 
@@ -576,7 +601,7 @@ func (s *Server) SetOrganizationMemberUserRole(ctx context.Context, req *adminv1
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
-	if role.Admin && !claims.OrganizationPermissions(ctx, org.ID).ManageOrgAdmins {
+	if role.Admin && !claims.OrganizationPermissions(ctx, org.ID).ManageOrgAdmins && !forceAccess {
 		return nil, status.Error(codes.PermissionDenied, "as a non-admin you are not allowed to assign an admin role")
 	}
 
@@ -602,7 +627,7 @@ func (s *Server) SetOrganizationMemberUserRole(ctx context.Context, req *adminv1
 	if err != nil {
 		return nil, err
 	}
-	if isAdmin && !claims.OrganizationPermissions(ctx, org.ID).ManageOrgAdmins {
+	if isAdmin && !claims.OrganizationPermissions(ctx, org.ID).ManageOrgAdmins && !forceAccess {
 		return nil, status.Error(codes.PermissionDenied, "as a non-admin you are not allowed to remove an admin member")
 	}
 	if isLastAdmin {
@@ -852,6 +877,7 @@ func (s *Server) SudoUpdateOrganizationQuotas(ctx context.Context, req *adminv1.
 		LogoAssetID:                         org.LogoAssetID,
 		FaviconAssetID:                      org.FaviconAssetID,
 		CustomDomain:                        org.CustomDomain,
+		ThumbnailAssetID:                    org.ThumbnailAssetID,
 		DefaultProjectRoleID:                org.DefaultProjectRoleID,
 		QuotaProjects:                       int(valOrDefault(req.Projects, int32(org.QuotaProjects))),
 		QuotaDeployments:                    int(valOrDefault(req.Deployments, int32(org.QuotaDeployments))),
@@ -900,6 +926,7 @@ func (s *Server) SudoUpdateOrganizationCustomDomain(ctx context.Context, req *ad
 		LogoAssetID:                         org.LogoAssetID,
 		FaviconAssetID:                      org.FaviconAssetID,
 		CustomDomain:                        req.CustomDomain,
+		ThumbnailAssetID:                    org.ThumbnailAssetID,
 		DefaultProjectRoleID:                org.DefaultProjectRoleID,
 		QuotaProjects:                       org.QuotaProjects,
 		QuotaDeployments:                    org.QuotaDeployments,
@@ -934,6 +961,11 @@ func (s *Server) organizationToDTO(o *database.Organization, privileged bool) *a
 		faviconURL = s.admin.URLs.WithCustomDomain(o.CustomDomain).Asset(*o.FaviconAssetID)
 	}
 
+	var thumbnailURL string
+	if o.ThumbnailAssetID != nil {
+		thumbnailURL = s.admin.URLs.WithCustomDomain(o.CustomDomain).Asset(*o.ThumbnailAssetID)
+	}
+
 	var defaultProjectRoleID string
 	if o.DefaultProjectRoleID != nil {
 		defaultProjectRoleID = *o.DefaultProjectRoleID
@@ -946,6 +978,7 @@ func (s *Server) organizationToDTO(o *database.Organization, privileged bool) *a
 		Description:          o.Description,
 		LogoUrl:              logoURL,
 		FaviconUrl:           faviconURL,
+		ThumbnailUrl:         thumbnailURL,
 		CustomDomain:         o.CustomDomain,
 		DefaultProjectRoleId: defaultProjectRoleID,
 		Quotas: &adminv1.OrganizationQuotas{

@@ -15,6 +15,27 @@ Before a project can be deployed onto Rill Cloud, an organization must be create
 
 An Organization in Rill is the parent management object and encompasses how your team  interfaces with Rill Cloud. Organizations are designed to hold the different components of your Rill project. Organizations consists of projects that each consist of their own source, models, metrics view, dashboards, user management, and general settings.
 
+### Organization Hierarchy
+
+```
+Organization
+├── Users & Groups
+│   ├── Admins
+│   ├── Editors
+│   ├── Members
+│   └── Guests
+├── Projects
+│   ├── Project A
+│   └── Resources
+│       ├── Data Sources
+│       ├── Models
+│       ├── Metrics Views
+│       ├── Dashboards
+│       └── APIs
+│   └── Project B
+│       ...
+```
+
 ### User Management
 
 From the User page, you can view and manage your users with organizational. Note that users with specific project access will not appear on this page and can be managed via each individual project. For more information, please review our [User Management documentation](user-management.md).
@@ -22,7 +43,7 @@ From the User page, you can view and manage your users with organizational. Note
 
 ### Org Settings via Rill Cloud
 
-In the organization setting page, depending on your plan type, you can view the general information, billing and current usage. The Billing tab is only available for those on a `Team Plan`. You can use this page to add, or modify your current payment type. For more information, please review our [Billing Information documentation](account-management/billing.md).
+In the organization setting page, depending on your plan type, you can view the general information, billing and current usage. The Billing tab is only available for those on a `Team Plan`. You can use this page to add, or modify your current payment type. For more information, please review our [Billing Information documentation](/other/plans).
 
 <img src = '/img/manage/project-management/rill-org-settings.png' class='rounded-gif' />
 <br />

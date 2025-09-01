@@ -1,6 +1,10 @@
+import type {
+  ChartLegend,
+  ChartSortDirectionOptions,
+} from "@rilldata/web-common/features/canvas/components/charts/types";
 import type { ComponentAlignment } from "@rilldata/web-common/features/canvas/components/types";
 
-type NativeInputTypes = "text" | "number" | "boolean" | "textArea";
+type NativeInputTypes = "text" | "number" | "boolean" | "textArea" | "select";
 type SemanticInputTypes = "metrics" | "measure" | "dimension" | "multi_fields";
 type ChartInputTypes = "positional" | "mark" | "tooltip" | "config";
 type CustomInputTypes = "rill_time" | "sparkline" | "comparison_options";
@@ -17,6 +21,31 @@ export type FilterInputTypes = "time_filters" | "dimension_filters";
 
 export type FieldType = "measure" | "dimension" | "time";
 
+export type SortSelectorConfig = {
+  enable: boolean;
+  customSortItems?: string[];
+  defaultSort?: string;
+  options?: ChartSortDirectionOptions[];
+};
+
+export type ChartFieldInput = {
+  type: FieldType;
+  axisTitleSelector?: boolean;
+  hideTimeDimension?: boolean;
+  originSelector?: boolean;
+  sortSelector?: SortSelectorConfig;
+  limitSelector?: { defaultLimit: number };
+  colorMappingSelector?: { enable: boolean; values?: string[] };
+  nullSelector?: boolean;
+  labelAngleSelector?: boolean;
+  axisRangeSelector?: boolean;
+  /**
+   * The default legend position for the chart.
+   * If this key is not specified, legend selector will not be shown.
+   */
+  defaultLegendOrientation?: ChartLegend;
+};
+
 export interface ComponentInputParam {
   type: InputType;
   label?: string;
@@ -26,6 +55,7 @@ export interface ComponentInputParam {
   meta?: {
     allowedTypes?: FieldType[]; // Specify which field types are allowed for multi-field selection
     defaultAlignment?: ComponentAlignment;
+    chartFieldInput?: ChartFieldInput;
     [key: string]: any;
   };
 }

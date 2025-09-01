@@ -13,7 +13,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/bradleyfalzon/ghinstallation/v2"
 	"github.com/c2h5oh/datasize"
 	"github.com/rilldata/rill/runtime/drivers"
 )
@@ -33,11 +32,10 @@ func Download(ctx context.Context, downloadURL, downloadDst, projPath string, cl
 	if err != nil {
 		return err
 	}
-	if resp.StatusCode != http.StatusOK {
-		// return ghinstallation.HTTPError for outer retry to not retry on 404
-		return &ghinstallation.HTTPError{Response: resp}
-	}
 	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("failed to download file: status code %d", resp.StatusCode)
+	}
 
 	out, err := os.Create(downloadDst)
 	if err != nil {

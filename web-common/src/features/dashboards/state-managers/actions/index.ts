@@ -1,12 +1,8 @@
 import { filterActions } from "@rilldata/web-common/features/dashboards/state-managers/actions/filters";
 import { measureFilterActions } from "@rilldata/web-common/features/dashboards/state-managers/actions/measure-filters";
-import type { MetricsExplorerEntity } from "../../stores/metrics-explorer-entity";
+import type { ExploreState } from "web-common/src/features/dashboards/stores/explore-state";
 import { comparisonActions } from "./comparison";
 import { contextColActions } from "./context-columns";
-import {
-  setLeaderboardMeasureCount,
-  setLeaderboardSortByMeasureName,
-} from "./core-actions";
 import { dimensionFilterActions } from "./dimension-filters";
 import { dimensionTableActions } from "./dimension-table";
 import { dimensionActions } from "./dimensions";
@@ -18,6 +14,7 @@ import type {
   DashboardMutatorFns,
   DashboardUpdaters,
 } from "./types";
+import { leaderboardActions } from "./leaderboard";
 
 export type StateManagerActions = ReturnType<typeof createStateManagerActions>;
 
@@ -86,22 +83,9 @@ export const createStateManagerActions = (
     measuresFilter: createDashboardUpdaters(actionArgs, measureFilterActions),
 
     /**
-     * sets the number of measures to show in the leaderboard.
+     * Actions related to the leaderboard.
      */
-    setLeaderboardMeasureCount: dashboardMutatorToUpdater(
-      actionArgs,
-      setLeaderboardMeasureCount,
-    ),
-
-    // Note: for now, some core actions are kept in the root of the
-    // actions object. Can revisit that later if we want to move them.
-    /**
-     * sets the main measure name for the dashboard.
-     */
-    setLeaderboardSortByMeasureName: dashboardMutatorToUpdater(
-      actionArgs,
-      setLeaderboardSortByMeasureName,
-    ),
+    leaderboard: createDashboardUpdaters(actionArgs, leaderboardActions),
   };
 };
 
@@ -115,10 +99,10 @@ function dashboardMutatorToUpdater<T extends unknown[]>(
   mutator: DashboardMutatorFn<T>,
 ): (...params: T) => void {
   return (...x) => {
-    const callback = (dash: MetricsExplorerEntity) =>
+    const callback = (exploreState: ExploreState) =>
       mutator(
         {
-          dashboard: dash,
+          dashboard: exploreState,
         },
         ...x,
       );

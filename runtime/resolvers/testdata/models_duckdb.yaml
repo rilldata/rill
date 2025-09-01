@@ -1,0 +1,40 @@
+project_files:
+  rill.yaml:
+    olap_connector: duckdb
+  # Model that creates 10 distinct partitions with 10 rows each.
+  # We'll expect the output to have 100 rows.
+  partition_overwrite1.yaml:
+    type: model
+    partitions:
+      sql: SELECT range as id FROM range(0, 10)
+    sql: SELECT {{.partition.id}} as partition_id, range as num FROM range(0, 10)
+    output:
+      incremental_strategy: partition_overwrite
+      partition_by: partition_id
+  # Model that creates 10 partitions that are inserted with the same partition_id. Each partition has 10 rows.
+  # We'll expect the partitions to keep overwriting each other, so the output has 10 rows.
+  partition_overwrite2.yaml:
+    type: model
+    partitions:
+      sql: SELECT range as id FROM range(0, 10)
+    sql: SELECT 1 as partition_id, range as num FROM range(0, 10)
+    output:
+      incremental_strategy: partition_overwrite
+      partition_by: partition_id
+tests:
+  - name: partition_overwrite1 has 100 rows
+    resolver: sql
+    properties:
+      sql: SELECT COUNT(*) AS count, MIN(num) AS min, MAX(num) AS max FROM partition_overwrite1
+    result:
+      - count: 100
+        min: 0
+        max: 9
+  - name: partition_overwrite2 has 10 rows
+    resolver: sql
+    properties:
+      sql: SELECT COUNT(*) AS count, MIN(num) AS min, MAX(num) AS max FROM partition_overwrite2
+    result:
+      - count: 10
+        min: 0
+        max: 9

@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 )
@@ -200,4 +201,30 @@ func TestAnalyticsMigration(t *testing.T) {
 		require.True(t, oldExists())
 	})
 
+}
+
+func TestRepresentingUserAccessTokenExpiry(t *testing.T) {
+	d := New(t.TempDir())
+
+	// Test empty expiry
+	expiry, err := d.GetRepresentingUserAccessTokenExpiry()
+	require.NoError(t, err)
+	require.Zero(t, expiry)
+
+	// Test setting and getting a valid expiry
+	now := time.Now().Add(1 * time.Hour)
+	err = d.SetRepresentingUserAccessTokenExpiry(now)
+	require.NoError(t, err)
+
+	expiry, err = d.GetRepresentingUserAccessTokenExpiry()
+	require.NoError(t, err)
+	require.True(t, expiry.Equal(now))
+
+	// Test setting and getting zero value expiry
+	err = d.SetRepresentingUserAccessTokenExpiry(time.Time{})
+	require.NoError(t, err)
+
+	expiry, err = d.GetRepresentingUserAccessTokenExpiry()
+	require.NoError(t, err)
+	require.Zero(t, expiry)
 }

@@ -1,8 +1,6 @@
 package whoami
 
 import (
-	"fmt"
-
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
@@ -25,8 +23,8 @@ func WhoamiCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			fmt.Printf("Email: %s\n", res.User.Email)
-			fmt.Printf("Name: %s\n", res.User.DisplayName)
+			ch.Printf("Email: %s\n", res.User.Email)
+			ch.Printf("Name: %s\n", res.User.DisplayName)
 
 			return nil
 		},

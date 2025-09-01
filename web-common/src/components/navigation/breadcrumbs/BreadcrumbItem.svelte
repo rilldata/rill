@@ -41,7 +41,10 @@
 </script>
 
 <li class="flex items-center gap-x-2 px-2">
-  <div class="flex flex-row gap-x-1 items-center">
+  <div
+    class="flex flex-row gap-x-1 items-center"
+    aria-label="Breadcrumb navigation, level {depth}"
+  >
     {#if selected}
       <a
         on:click={() => {
@@ -64,7 +67,12 @@
     {#if options.size > 1}
       <DropdownMenu.Root>
         <DropdownMenu.Trigger asChild let:builder>
-          <button use:builder.action {...builder} class="trigger">
+          <button
+            use:builder.action
+            {...builder}
+            class="trigger"
+            aria-label="Breadcrumb dropdown"
+          >
             <CaretDownIcon size="14px" />
           </button>
         </DropdownMenu.Trigger>

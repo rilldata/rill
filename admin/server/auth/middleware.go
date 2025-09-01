@@ -62,6 +62,21 @@ func (a *Authenticator) StreamServerInterceptor() grpc.StreamServerInterceptor {
 	}
 }
 
+// CookieToAuthHeader is a middleware that reads the access token from the cookie and sets it in the "Authorization" header
+// only if the Authorization header isn't already present.
+func (a *Authenticator) CookieToAuthHeader(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Authorization") == "" {
+			sess := a.cookies.Get(r, cookieName)
+			authToken, ok := sess.Values[cookieFieldAccessToken].(string)
+			if ok && authToken != "" {
+				r.Header.Set("Authorization", fmt.Sprintf("Bearer %s", authToken))
+			}
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
 // HTTPMiddleware is a HTTP middleware variant of UnaryServerInterceptor.
 // It additionally supports reading access tokens from cookies.
 // It should be used for non-gRPC HTTP endpoints (CookieAuthAnnotator takes care of handling cookies in gRPC-gateway requests).
@@ -73,6 +88,23 @@ func (a *Authenticator) HTTPMiddleware(next http.Handler) http.Handler {
 // If the authoriztion header is malformed or invalid, it will still succeed, setting anonClaims on the request.
 func (a *Authenticator) HTTPMiddlewareLenient(next http.Handler) http.Handler {
 	return a.httpMiddleware(next, true)
+}
+
+// CookieRefreshMiddleware is a middleware that refreshes the auth cookie.
+// This enables us to do rolling cookie refreshes so we can have a relatively short cookie max age.
+// Note that it does not update the auth token encrypted inside the cookie.
+func (a *Authenticator) CookieRefreshMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		sess := a.cookies.Get(r, cookieName)
+		if authToken, ok := sess.Values[cookieFieldAccessToken].(string); ok && authToken != "" {
+			// Re-save the cookie to refresh its expiration
+			if err := sess.Save(r, w); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 // httpMiddleware is the actual implementation of HTTPMiddleware and HTTPMiddlewareLenient.

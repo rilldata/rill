@@ -77,14 +77,16 @@ type DB interface {
 	FindProjectPathsByPattern(ctx context.Context, namePattern, afterName string, limit int) ([]string, error)
 	FindProjectPathsByPatternAndAnnotations(ctx context.Context, namePattern, afterName string, annotationKeys []string, annotationPairs map[string]string, limit int) ([]string, error)
 	FindProjectsForUser(ctx context.Context, userID string) ([]*Project, error)
+	FindProjectsForUserAndFingerprint(ctx context.Context, userID, directoryName, gitRemote, subpath, afterID string, limit int) ([]*Project, error)
 	FindProjectsForOrganization(ctx context.Context, orgID, afterProjectName string, limit int) ([]*Project, error)
 	// FindProjectsForOrgAndUser lists the public projects in the org and the projects where user is added as an external user
 	FindProjectsForOrgAndUser(ctx context.Context, orgID, userID string, includePublic bool, afterProjectName string, limit int) ([]*Project, error)
 	FindPublicProjectsInOrganization(ctx context.Context, orgID, afterProjectName string, limit int) ([]*Project, error)
-	FindProjectsByGithubURL(ctx context.Context, githubURL string) ([]*Project, error)
+	FindProjectsByGitRemote(ctx context.Context, remote string) ([]*Project, error)
 	FindProjectsByGithubInstallationID(ctx context.Context, id int64) ([]*Project, error)
 	FindProject(ctx context.Context, id string) (*Project, error)
 	FindProjectByName(ctx context.Context, orgName string, name string) (*Project, error)
+	FindProjectsByNameAndUser(ctx context.Context, name, userID string) ([]*Project, error)
 	InsertProject(ctx context.Context, opts *InsertProjectOptions) (*Project, error)
 	DeleteProject(ctx context.Context, id string) error
 	UpdateProject(ctx context.Context, id string, opts *UpdateProjectOptions) (*Project, error)
@@ -149,16 +151,20 @@ type DB interface {
 	InsertManagedUsergroupsMemberUser(ctx context.Context, orgID, userID, roleID string) error
 	DeleteManagedUsergroupsMemberUser(ctx context.Context, orgID, userID string) error
 
-	FindUserAuthTokens(ctx context.Context, userID string) ([]*UserAuthToken, error)
+	FindUserAuthTokens(ctx context.Context, userID, afterID string, limit int) ([]*UserAuthToken, error)
 	FindUserAuthToken(ctx context.Context, id string) (*UserAuthToken, error)
 	InsertUserAuthToken(ctx context.Context, opts *InsertUserAuthTokenOptions) (*UserAuthToken, error)
 	UpdateUserAuthTokenUsedOn(ctx context.Context, ids []string) error
 	DeleteUserAuthToken(ctx context.Context, id string) error
 	DeleteExpiredUserAuthTokens(ctx context.Context, retention time.Duration) error
+	DeleteInactiveUserAuthTokens(ctx context.Context, retention time.Duration) error
 
-	FindServicesByOrgID(ctx context.Context, orgID string) ([]*Service, error)
+	FindOrganizationMemberServices(ctx context.Context, orgID string) ([]*OrganizationMemberService, error)
+	FindProjectMemberServices(ctx context.Context, projectID string) ([]*ProjectMemberService, error)
 	FindService(ctx context.Context, id string) (*Service, error)
 	FindServiceByName(ctx context.Context, orgID, name string) (*Service, error)
+	FindOrganizationMemberServiceForService(ctx context.Context, id string) (*OrganizationMemberService, error)
+	FindProjectMemberServicesForService(ctx context.Context, id string) ([]*ProjectMemberServiceWithProject, error)
 	InsertService(ctx context.Context, opts *InsertServiceOptions) (*Service, error)
 	DeleteService(ctx context.Context, id string) error
 	UpdateService(ctx context.Context, id string, opts *UpdateServiceOptions) (*Service, error)
@@ -170,6 +176,7 @@ type DB interface {
 	UpdateServiceAuthTokenUsedOn(ctx context.Context, ids []string) error
 	DeleteServiceAuthToken(ctx context.Context, id string) error
 	DeleteExpiredServiceAuthTokens(ctx context.Context, retention time.Duration) error
+	DeleteInactiveServiceAuthTokens(ctx context.Context, retention time.Duration) error
 
 	FindDeploymentAuthToken(ctx context.Context, id string) (*DeploymentAuthToken, error)
 	InsertDeploymentAuthToken(ctx context.Context, opts *InsertDeploymentAuthTokenOptions) (*DeploymentAuthToken, error)
@@ -208,8 +215,11 @@ type DB interface {
 	FindProjectRole(ctx context.Context, name string) (*ProjectRole, error)
 	ResolveOrganizationRolesForUser(ctx context.Context, userID, orgID string) ([]*OrganizationRole, error)
 	ResolveProjectRolesForUser(ctx context.Context, userID, projectID string) ([]*ProjectRole, error)
+	ResolveOrganizationRoleForService(ctx context.Context, serviceID, orgID string) (*OrganizationRole, error)
+	ResolveProjectRolesForService(ctx context.Context, serviceID, projectID string) ([]*ProjectRole, error)
 
 	FindOrganizationMemberUsers(ctx context.Context, orgID, filterRoleID string, withCounts bool, afterEmail string, limit int) ([]*OrganizationMemberUser, error)
+	CountOrganizationMemberUsers(ctx context.Context, orgID, filterRoleID string) (int, error)
 	FindOrganizationMemberUsersByRole(ctx context.Context, orgID, roleID string) ([]*User, error)
 	FindOrganizationMemberUserAdminStatus(ctx context.Context, orgID, userID string) (isAdmin, isLastAdmin bool, err error)
 	InsertOrganizationMemberUser(ctx context.Context, orgID, userID, roleID string, ifNotExists bool) (bool, error)
@@ -217,13 +227,18 @@ type DB interface {
 	UpdateOrganizationMemberUserRole(ctx context.Context, orgID, userID, roleID string) error
 	CountSingleuserOrganizationsForMemberUser(ctx context.Context, userID string) (int, error)
 	FindOrganizationMembersWithManageUsersRole(ctx context.Context, orgID string) ([]*OrganizationMemberUser, error)
+	InsertOrganizationMemberService(ctx context.Context, serviceID, orgID, roleID string) error
+	UpdateOrganizationMemberServiceRole(ctx context.Context, serviceID, orgID, roleID string) error
 
-	FindProjectMemberUsers(ctx context.Context, projectID, filterRoleID, afterEmail string, limit int) ([]*ProjectMemberUser, error)
+	FindProjectMemberUsers(ctx context.Context, orgID, projectID, filterRoleID, afterEmail string, limit int) ([]*ProjectMemberUser, error)
 	FindProjectMemberUserRole(ctx context.Context, projectID, userID string) (*ProjectRole, error)
 	InsertProjectMemberUser(ctx context.Context, projectID, userID, roleID string) error
 	DeleteProjectMemberUser(ctx context.Context, projectID, userID string) error
 	DeleteAllProjectMemberUserForOrganization(ctx context.Context, orgID, userID string) error
 	UpdateProjectMemberUserRole(ctx context.Context, projectID, userID, roleID string) error
+	UpsertProjectMemberServiceRole(ctx context.Context, serviceID, projectID, roleID string) error
+	DeleteOrganizationMemberService(ctx context.Context, serviceID, orgID string) error
+	DeleteProjectMemberService(ctx context.Context, serviceID, projectID string) error
 
 	FindOrganizationMemberUsergroups(ctx context.Context, orgID, filterRoleID string, withCounts bool, afterName string, limit int) ([]*MemberUsergroup, error)
 	FindOrganizationMemberUsergroupRole(ctx context.Context, groupID, orgID string) (*OrganizationRole, error)
@@ -237,7 +252,8 @@ type DB interface {
 	UpdateProjectMemberUsergroup(ctx context.Context, groupID, projectID, roleID string) error
 	DeleteProjectMemberUsergroup(ctx context.Context, groupID, projectID string) error
 
-	FindOrganizationInvites(ctx context.Context, orgID, afterEmail string, limit int) ([]*Invite, error)
+	FindOrganizationInvites(ctx context.Context, orgID, afterEmail string, limit int) ([]*OrganizationInviteWithRole, error)
+	CountOrganizationInvites(ctx context.Context, orgID string) (int, error)
 	FindOrganizationInvitesByEmail(ctx context.Context, userEmail string) ([]*OrganizationInvite, error)
 	FindOrganizationInvite(ctx context.Context, orgID, userEmail string) (*OrganizationInvite, error)
 	InsertOrganizationInvite(ctx context.Context, opts *InsertOrganizationInviteOptions) error
@@ -246,7 +262,7 @@ type DB interface {
 	CountInvitesForOrganization(ctx context.Context, orgID string) (int, error)
 	UpdateOrganizationInviteRole(ctx context.Context, id, roleID string) error
 
-	FindProjectInvites(ctx context.Context, projectID, afterEmail string, limit int) ([]*Invite, error)
+	FindProjectInvites(ctx context.Context, projectID, afterEmail string, limit int) ([]*ProjectInviteWithRole, error)
 	FindProjectInvitesByEmail(ctx context.Context, userEmail string) ([]*ProjectInvite, error)
 	FindProjectInvite(ctx context.Context, projectID, userEmail string) (*ProjectInvite, error)
 	InsertProjectInvite(ctx context.Context, opts *InsertProjectInviteOptions) error
@@ -268,10 +284,10 @@ type DB interface {
 
 	SearchProjectUsers(ctx context.Context, projectID, emailQuery string, afterEmail string, limit int) ([]*User, error)
 
-	FindVirtualFiles(ctx context.Context, projectID, branch string, afterUpdatedOn time.Time, afterPath string, limit int) ([]*VirtualFile, error)
-	FindVirtualFile(ctx context.Context, projectID, branch, path string) (*VirtualFile, error)
+	FindVirtualFiles(ctx context.Context, projectID, environment string, afterUpdatedOn time.Time, afterPath string, limit int) ([]*VirtualFile, error)
+	FindVirtualFile(ctx context.Context, projectID, environment, path string) (*VirtualFile, error)
 	UpsertVirtualFile(ctx context.Context, opts *InsertVirtualFileOptions) error
-	UpdateVirtualFileDeleted(ctx context.Context, projectID, branch, path string) error
+	UpdateVirtualFileDeleted(ctx context.Context, projectID, environment, path string) error
 	DeleteExpiredVirtualFiles(ctx context.Context, retention time.Duration) error
 
 	FindAsset(ctx context.Context, id string) (*Asset, error)
@@ -308,6 +324,12 @@ type DB interface {
 	InsertProvisionerResource(ctx context.Context, opts *InsertProvisionerResourceOptions) (*ProvisionerResource, error)
 	UpdateProvisionerResource(ctx context.Context, id string, opts *UpdateProvisionerResourceOptions) (*ProvisionerResource, error)
 	DeleteProvisionerResource(ctx context.Context, id string) error
+
+	FindManagedGitRepo(ctx context.Context, remote string) (*ManagedGitRepo, error)
+	FindUnusedManagedGitRepos(ctx context.Context, limit int) ([]*ManagedGitRepo, error)
+	CountManagedGitRepos(ctx context.Context, orgID string) (int, error)
+	InsertManagedGitRepo(ctx context.Context, opts *InsertManagedGitRepoOptions) (*ManagedGitRepo, error)
+	DeleteManagedGitRepos(ctx context.Context, ids []string) error
 }
 
 // Tx represents a database transaction. It can only be used to commit and rollback transactions.
@@ -331,6 +353,7 @@ type Organization struct {
 	Description                         string
 	LogoAssetID                         *string   `db:"logo_asset_id"`
 	FaviconAssetID                      *string   `db:"favicon_asset_id"`
+	ThumbnailAssetID                    *string   `db:"thumbnail_asset_id"`
 	CustomDomain                        string    `db:"custom_domain"`
 	DefaultProjectRoleID                *string   `db:"default_project_role_id"`
 	CreatedOn                           time.Time `db:"created_on"`
@@ -351,11 +374,12 @@ type Organization struct {
 
 // InsertOrganizationOptions defines options for inserting a new org
 type InsertOrganizationOptions struct {
-	Name                                string `validate:"slug"`
+	Name                                string `validate:"min=2,max=40,slug"`
 	DisplayName                         string
 	Description                         string
 	LogoAssetID                         *string
 	FaviconAssetID                      *string
+	ThumbnailAssetID                    *string
 	CustomDomain                        string `validate:"omitempty,fqdn"`
 	DefaultProjectRoleID                *string
 	QuotaProjects                       int
@@ -372,11 +396,12 @@ type InsertOrganizationOptions struct {
 
 // UpdateOrganizationOptions defines options for updating an existing org
 type UpdateOrganizationOptions struct {
-	Name                                string `validate:"slug"`
+	Name                                string `validate:"min=2,max=40,slug"`
 	DisplayName                         string
 	Description                         string
 	LogoAssetID                         *string
 	FaviconAssetID                      *string
+	ThumbnailAssetID                    *string
 	CustomDomain                        string `validate:"omitempty,fqdn"`
 	DefaultProjectRoleID                *string
 	QuotaProjects                       int
@@ -396,68 +421,114 @@ type UpdateOrganizationOptions struct {
 // Project represents one Git connection.
 // Projects belong to an organization.
 type Project struct {
-	ID              string
-	OrganizationID  string `db:"org_id"`
-	Name            string
-	Description     string
-	Public          bool
+	ID string
+	// OrganizationID is the ID of the organization that owns this project.
+	OrganizationID string `db:"org_id"`
+	// Name is a slug for the project that is unique within the organization.
+	Name string
+	// Description is a human-readable description of the project.
+	Description string
+	// Public indicates if the project is publicly accessible to anyone with the link.
+	Public bool
+	// CreatedByUserID is the ID of the user that created this project (if any).
 	CreatedByUserID *string `db:"created_by_user_id"`
-	Provisioner     string
-	// ArchiveAssetID is set when project files are managed by Rill instead of maintained in Git.
-	// If ArchiveAssetID is set all git related fields will be empty.
-	ArchiveAssetID               *string           `db:"archive_asset_id"`
-	GithubURL                    *string           `db:"github_url"`
-	GithubInstallationID         *int64            `db:"github_installation_id"`
-	Subpath                      string            `db:"subpath"`
-	ProdVersion                  string            `db:"prod_version"`
-	ProdBranch                   string            `db:"prod_branch"`
-	ProdVariables                map[string]string `db:"prod_variables"`
-	ProdVariablesEncryptionKeyID string            `db:"prod_variables_encryption_key_id"`
-	ProdOLAPDriver               string            `db:"prod_olap_driver"`
-	ProdOLAPDSN                  string            `db:"prod_olap_dsn"`
-	ProdSlots                    int               `db:"prod_slots"`
-	ProdTTLSeconds               *int64            `db:"prod_ttl_seconds"`
-	ProdDeploymentID             *string           `db:"prod_deployment_id"`
-	Annotations                  map[string]string `db:"annotations"`
-	CreatedOn                    time.Time         `db:"created_on"`
-	UpdatedOn                    time.Time         `db:"updated_on"`
+	// DirectoryName is the most recently observed local directory name for the project's files.
+	// It is NOT user-facing configuration and does not relate to how files are found in the archive or Git repository.
+	// It is tracked only as internal metadata and used for fuzzy matching local files to cloud projects.
+	DirectoryName string `db:"directory_name"`
+	// Provisioner is the provisioner to use for deploying the project's runtimes.
+	Provisioner string
+	// ArchiveAssetID references a tarball archive of project files to serve.
+	// It is used for non-Git connected projects. It is a foreign key to the assets table.
+	// If it is set, all the Git(hub)-related fields should be empty.
+	ArchiveAssetID *string `db:"archive_asset_id"`
+	// GitRemote is the URL of the GitHub repository for this project.
+	// It should be a regular `https://github.com/account/repo` URL, not a remote ending in `.git`.
+	// It is set for Github-connected projects.
+	// If it is set, ArchiveAssetID should be empty.
+	GitRemote *string `db:"git_remote"`
+	// GithubInstallationID is the Github installation ID for the repository in GithubURL.
+	GithubInstallationID *int64 `db:"github_installation_id"`
+	// GithubRepoID is the Github ID for the repository in Github.
+	GithubRepoID *int64 `db:"github_repo_id"`
+	// ManagedGitRepoID refers to the ID of the managed git repository.
+	// It is set when the project is connected to a managed git repository.
+	ManagedGitRepoID *string `db:"managed_git_repo_id"`
+	// Subpath is an optional subpath for the project files within the Git repository.
+	// It enables Rill files to be stored in a monorepo.
+	Subpath string `db:"subpath"`
+	// ProdVersion is the runtime version to use for the production deployment.
+	ProdVersion string `db:"prod_version"`
+	// ProdBranch is the Git branch to use for the production deployment for Git-connected projects.
+	ProdBranch string `db:"prod_branch"`
+	// Deprecated: See the ProjectVariable type instead.
+	ProdVariables map[string]string `db:"prod_variables"`
+	// Deprecated: See the ProjectVariable type instead.
+	ProdVariablesEncryptionKeyID string `db:"prod_variables_encryption_key_id"`
+	// ProdSlots is the number of slots to use for the production deployment.
+	// Slots are a virtual unit of compute, memory and disk resources.
+	ProdSlots int `db:"prod_slots"`
+	// ProdTTLSeconds is the time-to-live for the production deployment.
+	// If the project has not been accessed in this time, its deployment(s) will be hibernated.
+	ProdTTLSeconds *int64 `db:"prod_ttl_seconds"`
+	// ProdDeploymentID is the ID of the current production deployment.
+	ProdDeploymentID *string `db:"prod_deployment_id"`
+	// DevSlots is the number of slots to use for dev deployments.
+	DevSlots int `db:"dev_slots"`
+	// DevTTLSeconds is the time-to-live for dev deployments.
+	DevTTLSeconds int64 `db:"dev_ttl_seconds"`
+	// Annotations are internally configured key-value metadata about the project.
+	// They propagate to the project's deployments and telemetry.
+	Annotations map[string]string `db:"annotations"`
+	// CreatedOn is the time the project was created.
+	CreatedOn time.Time `db:"created_on"`
+	// UpdatedOn is the time the project was last updated.
+	UpdatedOn time.Time `db:"updated_on"`
 }
 
 // InsertProjectOptions defines options for inserting a new Project.
 type InsertProjectOptions struct {
 	OrganizationID       string `validate:"required"`
-	Name                 string `validate:"slug"`
+	Name                 string `validate:"min=1,max=40,slug"`
 	Description          string
 	Public               bool
 	CreatedByUserID      *string
+	DirectoryName        string
 	Provisioner          string
 	ArchiveAssetID       *string
-	GithubURL            *string `validate:"omitempty,http_url"`
+	GitRemote            *string `validate:"omitempty,http_url,endswith=.git"`
 	GithubInstallationID *int64  `validate:"omitempty,ne=0"`
+	GithubRepoID         *int64
+	ManagedGitRepoID     *string
 	Subpath              string
 	ProdVersion          string
 	ProdBranch           string
-	ProdOLAPDriver       string
-	ProdOLAPDSN          string
 	ProdSlots            int
 	ProdTTLSeconds       *int64
+	DevSlots             int
+	DevTTLSeconds        int64
 }
 
 // UpdateProjectOptions defines options for updating a Project.
 type UpdateProjectOptions struct {
-	Name                 string `validate:"slug"`
+	Name                 string `validate:"min=1,max=40,slug"`
 	Description          string
 	Public               bool
+	DirectoryName        string
 	Provisioner          string
 	ArchiveAssetID       *string
-	GithubURL            *string `validate:"omitempty,http_url"`
+	GitRemote            *string `validate:"omitempty,http_url,endswith=.git"`
 	GithubInstallationID *int64  `validate:"omitempty,ne=0"`
+	GithubRepoID         *int64
+	ManagedGitRepoID     *string
 	Subpath              string
 	ProdVersion          string
 	ProdBranch           string
 	ProdDeploymentID     *string
 	ProdSlots            int
 	ProdTTLSeconds       *int64
+	DevSlots             int
+	DevTTLSeconds        int64
 	Annotations          map[string]string
 }
 
@@ -469,6 +540,7 @@ const (
 	DeploymentStatusPending     DeploymentStatus = 1
 	DeploymentStatusOK          DeploymentStatus = 2
 	DeploymentStatusError       DeploymentStatus = 4
+	DeploymentStatusStopped     DeploymentStatus = 5
 )
 
 func (d DeploymentStatus) String() string {
@@ -479,6 +551,8 @@ func (d DeploymentStatus) String() string {
 		return "OK"
 	case DeploymentStatusError:
 		return "Error"
+	case DeploymentStatusStopped:
+		return "Stopped"
 	default:
 		return "Unspecified"
 	}
@@ -489,6 +563,8 @@ func (d DeploymentStatus) String() string {
 type Deployment struct {
 	ID                string           `db:"id"`
 	ProjectID         string           `db:"project_id"`
+	OwnerUserID       *string          `db:"owner_user_id"`
+	Environment       string           `db:"environment"`
 	Branch            string           `db:"branch"`
 	RuntimeHost       string           `db:"runtime_host"`
 	RuntimeInstanceID string           `db:"runtime_instance_id"`
@@ -503,6 +579,8 @@ type Deployment struct {
 // InsertDeploymentOptions defines options for inserting a new Deployment.
 type InsertDeploymentOptions struct {
 	ProjectID         string
+	OwnerUserID       *string
+	Environment       string
 	Branch            string
 	RuntimeHost       string
 	RuntimeInstanceID string
@@ -570,30 +648,33 @@ type UpdateUserOptions struct {
 // Service represents a service account.
 // Service accounts may belong to single organization
 type Service struct {
-	ID        string
-	OrgID     string    `db:"org_id"`
-	Name      string    `validate:"slug"`
-	CreatedOn time.Time `db:"created_on"`
-	UpdatedOn time.Time `db:"updated_on"`
-	ActiveOn  time.Time `db:"active_on"`
+	ID         string
+	OrgID      string `db:"org_id"`
+	Name       string
+	Attributes map[string]any `db:"attributes"`
+	CreatedOn  time.Time      `db:"created_on"`
+	UpdatedOn  time.Time      `db:"updated_on"`
+	ActiveOn   time.Time      `db:"active_on"`
 }
 
 // InsertServiceOptions defines options for inserting a new service
 type InsertServiceOptions struct {
-	OrgID string
-	Name  string `validate:"slug"`
+	OrgID      string
+	Name       string `validate:"min=1,max=40,slug"`
+	Attributes map[string]any
 }
 
 // UpdateServiceOptions defines options for updating an existing service
 type UpdateServiceOptions struct {
-	Name string `validate:"slug"`
+	Name       string `validate:"min=1,max=40,slug"`
+	Attributes map[string]any
 }
 
 // Usergroup represents a group of org members
 type Usergroup struct {
 	ID          string    `db:"id"`
 	OrgID       string    `db:"org_id"`
-	Name        string    `db:"name" validate:"slug"`
+	Name        string    `db:"name"`
 	Managed     bool      `db:"managed"`
 	Description string    `db:"description"`
 	CreatedOn   time.Time `db:"created_on"`
@@ -603,7 +684,7 @@ type Usergroup struct {
 // InsertUsergroupOptions defines options for inserting a new usergroup
 type InsertUsergroupOptions struct {
 	OrgID   string
-	Name    string `validate:"slug"`
+	Name    string `validate:"min=1,max=40,slug"`
 	Managed bool
 }
 
@@ -618,15 +699,16 @@ const (
 
 // UserAuthToken is a persistent API token for a user.
 type UserAuthToken struct {
-	ID                 string
-	SecretHash         []byte     `db:"secret_hash"`
-	UserID             string     `db:"user_id"`
-	DisplayName        string     `db:"display_name"`
-	AuthClientID       *string    `db:"auth_client_id"`
-	RepresentingUserID *string    `db:"representing_user_id"`
-	CreatedOn          time.Time  `db:"created_on"`
-	ExpiresOn          *time.Time `db:"expires_on"`
-	UsedOn             time.Time  `db:"used_on"`
+	ID                    string
+	SecretHash            []byte     `db:"secret_hash"`
+	UserID                string     `db:"user_id"`
+	DisplayName           string     `db:"display_name"`
+	AuthClientID          *string    `db:"auth_client_id"`
+	AuthClientDisplayName *string    `db:"auth_client_display_name"`
+	RepresentingUserID    *string    `db:"representing_user_id"`
+	CreatedOn             time.Time  `db:"created_on"`
+	ExpiresOn             *time.Time `db:"expires_on"`
+	UsedOn                time.Time  `db:"used_on"`
 }
 
 // InsertUserAuthTokenOptions defines options for creating a UserAuthToken.
@@ -759,6 +841,7 @@ const (
 	AuthClientIDRillCLI      = "12345678-0000-0000-0000-000000000002"
 	AuthClientIDRillSupport  = "12345678-0000-0000-0000-000000000003"
 	AuthClientIDRillWebLocal = "12345678-0000-0000-0000-000000000004"
+	AuthClientIDRillManual   = "12345678-0000-0000-0000-000000000005"
 )
 
 // DeviceAuthCodeState is an enum representing the approval state of a DeviceAuthCode
@@ -872,7 +955,8 @@ type ProjectMemberUser struct {
 	Email       string
 	DisplayName string    `db:"display_name"`
 	PhotoURL    string    `db:"photo_url"`
-	RoleName    string    `db:"name"`
+	RoleName    string    `db:"role_name"`
+	OrgRoleName string    `db:"org_role_name"`
 	CreatedOn   time.Time `db:"created_on"`
 	UpdatedOn   time.Time `db:"updated_on"`
 }
@@ -891,7 +975,7 @@ type UsergroupMemberUser struct {
 // MemberUsergroup is a convenience type used for display-friendly representation of an org or project member that is a usergroup.
 type MemberUsergroup struct {
 	ID         string    `db:"id"`
-	Name       string    `db:"name" validate:"slug"`
+	Name       string    `db:"name"`
 	Managed    bool      `db:"managed"`
 	RoleName   string    `db:"role_name"`
 	UsersCount int       `db:"users_count"`
@@ -910,6 +994,14 @@ type OrganizationInvite struct {
 	CreatedOn       time.Time `db:"created_on"`
 }
 
+// OrganizationInviteWithRole is a convenience type used for display-friendly representation of an OrganizationInvite.
+type OrganizationInviteWithRole struct {
+	ID        string
+	Email     string
+	RoleName  string `db:"role_name"`
+	InvitedBy string `db:"invited_by"`
+}
+
 // ProjectInvite represents an outstanding invitation to join a project.
 // A ProjectInvite must have a corresponding OrganizationInvite.
 type ProjectInvite struct {
@@ -922,11 +1014,13 @@ type ProjectInvite struct {
 	CreatedOn       time.Time `db:"created_on"`
 }
 
-// Invite is a convenience type used for display-friendly representation of an OrganizationInvite or ProjectInvite.
-type Invite struct {
-	Email     string
-	Role      string
-	InvitedBy string `db:"invited_by"`
+// ProjectInviteWithRole is a convenience type used for display-friendly representation of a ProjectInvite.
+type ProjectInviteWithRole struct {
+	ID          string
+	Email       string
+	RoleName    string `db:"role_name"`
+	OrgRoleName string `db:"org_role_name"`
+	InvitedBy   string `db:"invited_by"`
 }
 
 type ProjectsQuotaUsage struct {
@@ -1050,10 +1144,10 @@ type VirtualFile struct {
 
 // InsertVirtualFileOptions defines options for inserting a VirtualFile
 type InsertVirtualFileOptions struct {
-	ProjectID string
-	Branch    string
-	Path      string `validate:"required"`
-	Data      []byte `validate:"max=8192"` // 8kb
+	ProjectID   string
+	Environment string
+	Path        string `validate:"required"`
+	Data        []byte `validate:"max=131072"` // 128kb
 }
 
 // Asset represents a user-uploaded file asset.
@@ -1260,4 +1354,52 @@ type UpdateProvisionerResourceOptions struct {
 	Args          map[string]any
 	State         map[string]any
 	Config        map[string]any
+}
+
+// ManagedGitRepo represents metadata about a Rill managed Git repository for projects deployed on Rill Cloud.
+type ManagedGitRepo struct {
+	ID        string    `db:"id"`
+	OrgID     *string   `db:"org_id"`
+	Remote    string    `db:"remote"`
+	OwnerID   string    `db:"owner_id"`
+	CreatedOn time.Time `db:"created_on"`
+	UpdatedOn time.Time `db:"updated_on"`
+}
+
+type InsertManagedGitRepoOptions struct {
+	OrgID   string `validate:"required"`
+	Remote  string `validate:"required"`
+	OwnerID string `validate:"required"`
+}
+
+type OrganizationMemberService struct {
+	ID              string
+	Name            string
+	RoleName        string         `db:"role_name"`
+	HasProjectRoles bool           `db:"has_project_roles"`
+	Attributes      map[string]any `db:"attributes"`
+	CreatedOn       time.Time      `db:"created_on"`
+	UpdatedOn       time.Time      `db:"updated_on"`
+}
+
+type ProjectMemberService struct {
+	ID          string
+	Name        string
+	RoleName    string         `db:"role_name"`
+	OrgRoleName string         `db:"org_role_name"`
+	Attributes  map[string]any `db:"attributes"`
+	CreatedOn   time.Time      `db:"created_on"`
+	UpdatedOn   time.Time      `db:"updated_on"`
+}
+
+type ProjectMemberServiceWithProject struct {
+	ID          string
+	Name        string
+	ProjectID   string         `db:"project_id"`
+	ProjectName string         `db:"project_name"`
+	RoleName    string         `db:"role_name"`
+	OrgRoleName string         `db:"org_role_name"`
+	Attributes  map[string]any `db:"attributes"`
+	CreatedOn   time.Time      `db:"created_on"`
+	UpdatedOn   time.Time      `db:"updated_on"`
 }

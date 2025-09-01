@@ -4,11 +4,12 @@
   export let disabled = false;
   export let selected = false;
   export let href: string | undefined = undefined;
+  export let theme = false;
 </script>
 
 <!-- Use snippets when transitioning to Svelte 5 -->
 {#if href}
-  <a class="relative group" class:selected {href} on:click>
+  <a class="relative group" class:theme class:selected {href} on:click>
     <slot />
     {#if disabled}
       <div class="disabled group-hover:block">
@@ -39,6 +40,10 @@
   .disabled {
     @apply absolute top-full translate-y-2 z-10 w-fit;
     @apply -translate-x-1/2 left-1/2 hidden;
+  }
+
+  .selected.theme {
+    @apply border-b-2 border-theme-600 text-theme-600;
   }
 
   .selected {

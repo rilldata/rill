@@ -13,16 +13,20 @@ import (
 	"time"
 
 	"cloud.google.com/go/bigquery"
-	"github.com/apache/arrow/go/v15/parquet"
-	"github.com/apache/arrow/go/v15/parquet/compress"
-	"github.com/apache/arrow/go/v15/parquet/pqarrow"
+	"github.com/apache/arrow-go/v18/parquet"
+	"github.com/apache/arrow-go/v18/parquet/compress"
+	"github.com/apache/arrow-go/v18/parquet/pqarrow"
 	"github.com/c2h5oh/datasize"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/observability"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 	"go.uber.org/zap"
 	"google.golang.org/api/iterator"
-	"google.golang.org/api/option"
 )
+
+var tracer = otel.Tracer("github.com/rilldata/rill/runtime/drivers/bigquery")
 
 // entire data is buffered in memory before its written to disk so keeping it small reduces memory usage
 // but keeping it too small can lead to bad ingestion performance
@@ -37,8 +41,16 @@ var selectQueryRegex = regexp.MustCompile("(?i)^\\s*SELECT\\s+\\*\\s+FROM\\s+(`?
 var _ drivers.Warehouse = &Connection{}
 
 // QueryAsFiles implements drivers.SQLStore
-func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any) (drivers.FileIterator, error) {
-	srcProps, err := parseSourceProperties(props)
+func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any) (outIt drivers.FileIterator, outErr error) {
+	ctx, span := tracer.Start(ctx, "Connection.QueryAsFiles")
+	defer func() {
+		if outErr != nil {
+			span.SetStatus(codes.Error, outErr.Error())
+		}
+		span.End()
+	}()
+
+	srcProps, err := c.parseSourceProperties(props)
 	if err != nil {
 		return nil, err
 	}
@@ -73,7 +85,7 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any) (dr
 			return nil, fmt.Errorf("invalid table format, `project_id.dataset.table` is expected")
 		}
 
-		client, err = createClient(ctx, srcProps.ProjectID, opts)
+		client, err = c.createClient(ctx, srcProps.ProjectID)
 		if err != nil {
 			return nil, err
 		}
@@ -104,7 +116,7 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any) (dr
 		// storage api cannot be used, switching to a query execution
 		now := time.Now()
 
-		client, err = createClient(ctx, srcProps.ProjectID, opts)
+		client, err = c.createClient(ctx, srcProps.ProjectID)
 		if err != nil {
 			return nil, err
 		}
@@ -115,6 +127,7 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any) (dr
 		}
 
 		q := client.Query(srcProps.SQL)
+		q.QueryConfig.ForceStorageAPI = true
 		it, err = q.Read(ctx)
 
 		if err != nil && strings.Contains(err.Error(), "Response too large to return") {
@@ -131,7 +144,7 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any) (dr
 			// the query results are always cached in a temporary table that storage api can use
 			// there are some exceptions when results aren't cached
 			// so we also try without storage api
-			client, err = createClient(ctx, srcProps.ProjectID, opts)
+			client, err = c.createClient(ctx, srcProps.ProjectID)
 			if err != nil {
 				return nil, err
 			}
@@ -153,24 +166,11 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any) (dr
 		return nil, err
 	}
 	return &fileIterator{
-		client:       client,
-		bqIter:       it,
-		logger:       c.logger,
-		totalRecords: int64(it.TotalRows),
-		ctx:          ctx,
-		tempDir:      tempDir,
+		client:  client,
+		bqIter:  it,
+		logger:  c.logger,
+		tempDir: tempDir,
 	}, nil
-}
-
-func createClient(ctx context.Context, projectID string, opts []option.ClientOption) (*bigquery.Client, error) {
-	client, err := bigquery.NewClient(ctx, projectID, opts...)
-	if err != nil {
-		if strings.Contains(err.Error(), "unable to detect projectID") {
-			return nil, fmt.Errorf("projectID not detected in credentials. Please set `project_id` in source yaml")
-		}
-		return nil, fmt.Errorf("failed to create bigquery client: %w", err)
-	}
-	return client, nil
 }
 
 type fileIterator struct {
@@ -179,33 +179,49 @@ type fileIterator struct {
 	logger  *zap.Logger
 	tempDir string
 
-	totalRecords int64
-	downloaded   bool
-
-	ctx context.Context // TODO :: refatcor NextBatch to take context on NextBatch
+	downloaded bool
 }
+
+var _ drivers.FileIterator = &fileIterator{}
 
 // Close implements drivers.FileIterator.
 func (f *fileIterator) Close() error {
 	return os.RemoveAll(f.tempDir)
 }
 
+// Format implements drivers.FileIterator.
+func (f *fileIterator) Format() string {
+	return ""
+}
+
+// SetFormat implements drivers.FileIterator.
+func (f *fileIterator) SetKeepFilesUntilClose() {
+	// No-op because it already does this.
+}
+
 // Next implements drivers.FileIterator.
-// TODO :: currently it downloads all records in a single file. Need to check if it is efficient to ingest a single file with size in tens of GBs or more.
-func (f *fileIterator) Next() ([]string, error) {
+func (f *fileIterator) Next(ctx context.Context) ([]string, error) {
 	if f.downloaded {
 		return nil, io.EOF
 	}
+
+	ctx, span := tracer.Start(ctx, "fileIterator.Next")
+	defer span.End()
+
 	// storage API not available so can't read as arrow records. Read results row by row and dump in a json file.
 	if !f.bqIter.IsAccelerated() {
-		f.logger.Debug("downloading results in json file", observability.ZapCtx(f.ctx))
-		file, err := f.downloadAsJSONFile()
+		f.logger.Debug("downloading results in json file", observability.ZapCtx(ctx))
+		span.SetAttributes(attribute.Bool("storage_api", false))
+
+		file, err := f.downloadAsJSONFile(ctx)
 		if err != nil {
 			return nil, err
 		}
 		return []string{file}, nil
 	}
-	f.logger.Debug("downloading results in parquet file", observability.ZapCtx(f.ctx))
+
+	f.logger.Debug("downloading results in parquet file", observability.ZapCtx(ctx))
+	span.SetAttributes(attribute.Bool("storage_api", true))
 
 	// create a temp file
 	fw, err := os.CreateTemp(f.tempDir, "temp*.parquet")
@@ -215,7 +231,7 @@ func (f *fileIterator) Next() ([]string, error) {
 	defer fw.Close()
 	f.downloaded = true
 
-	rdr, err := f.AsArrowRecordReader()
+	rdr, err := f.AsArrowRecordReader(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -223,7 +239,7 @@ func (f *fileIterator) Next() ([]string, error) {
 
 	tf := time.Now()
 	defer func() {
-		f.logger.Debug("time taken to write arrow records in parquet file", zap.Duration("duration", time.Since(tf)), observability.ZapCtx(f.ctx))
+		f.logger.Debug("time taken to write arrow records in parquet file", zap.Duration("duration", time.Since(tf)), observability.ZapCtx(ctx))
 	}()
 	writer, err := pqarrow.NewFileWriter(rdr.Schema(), fw,
 		parquet.NewWriterProperties(
@@ -243,8 +259,8 @@ func (f *fileIterator) Next() ([]string, error) {
 	// write arrow records to parquet file
 	for rdr.Next() {
 		select {
-		case <-f.ctx.Done():
-			return nil, f.ctx.Err()
+		case <-ctx.Done():
+			return nil, ctx.Err()
 		default:
 			rec := rdr.Record()
 			if writer.RowGroupTotalBytesWritten() >= rowGroupBufferSize {
@@ -263,25 +279,21 @@ func (f *fileIterator) Next() ([]string, error) {
 	fw.Close()
 
 	if uint64(rows) < f.bqIter.TotalRows {
-		f.logger.Error("not all rows written to parquet file", zap.Int64("rows_written", rows), zap.Uint64("total_rows", f.bqIter.TotalRows), observability.ZapCtx(f.ctx))
+		f.logger.Error("not all rows written to parquet file", zap.Int64("rows_written", rows), zap.Uint64("total_rows", f.bqIter.TotalRows), observability.ZapCtx(ctx))
 	}
 
 	fileInfo, err := os.Stat(fw.Name())
 	if err != nil {
 		return nil, err
 	}
-	f.logger.Info("parquet file written", zap.String("size", datasize.ByteSize(fileInfo.Size()).HumanReadable()), zap.Int64("rows", rows), observability.ZapCtx(f.ctx))
+	f.logger.Debug("parquet file written", zap.String("size", datasize.ByteSize(fileInfo.Size()).HumanReadable()), zap.Int64("rows", rows), observability.ZapCtx(ctx))
 	return []string{fw.Name()}, nil
 }
 
-func (f *fileIterator) Format() string {
-	return ""
-}
-
-func (f *fileIterator) downloadAsJSONFile() (string, error) {
+func (f *fileIterator) downloadAsJSONFile(ctx context.Context) (string, error) {
 	tf := time.Now()
 	defer func() {
-		f.logger.Debug("time taken to write row in json file", zap.Duration("duration", time.Since(tf)), observability.ZapCtx(f.ctx))
+		f.logger.Debug("time taken to write row in json file", zap.Duration("duration", time.Since(tf)), observability.ZapCtx(ctx))
 	}()
 
 	// create a temp file
@@ -313,10 +325,10 @@ func (f *fileIterator) downloadAsJSONFile() (string, error) {
 			}
 
 			if uint64(rows) < f.bqIter.TotalRows {
-				f.logger.Error("not all rows written to json file", zap.Int64("rows_written", rows), zap.Uint64("total_rows", f.bqIter.TotalRows), observability.ZapCtx(f.ctx))
+				f.logger.Error("not all rows written to json file", zap.Int64("rows_written", rows), zap.Uint64("total_rows", f.bqIter.TotalRows), observability.ZapCtx(ctx))
 			}
 
-			f.logger.Info("json file written", zap.String("size", datasize.ByteSize(fileInfo.Size()).HumanReadable()), zap.Int64("rows", rows), observability.ZapCtx(f.ctx))
+			f.logger.Debug("json file written", zap.String("size", datasize.ByteSize(fileInfo.Size()).HumanReadable()), zap.Int64("rows", rows), observability.ZapCtx(ctx))
 			// all rows written successfully
 			return fw.Name(), nil
 		}
@@ -364,5 +376,3 @@ func (f *fileIterator) downloadAsJSONFile() (string, error) {
 		}
 	}
 }
-
-var _ drivers.FileIterator = &fileIterator{}

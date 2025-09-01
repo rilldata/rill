@@ -1,13 +1,16 @@
 import { getCompoundQuery } from "@rilldata/web-common/features/compound-query-result";
-import { DimensionFilterMode } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/dimension-filter-mode";
+import { DimensionFilterMode } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/constants";
 import {
   createInExpression,
   createLikeExpression,
+  createAndExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
   createQueryServiceMetricsViewAggregation,
   V1BuiltinMeasure,
 } from "@rilldata/web-common/runtime-client";
+import type { V1Expression } from "@rilldata/web-common/runtime-client";
 
 type DimensionSearchArgs = {
   mode: DimensionFilterMode;
@@ -16,6 +19,7 @@ type DimensionSearchArgs = {
   timeStart?: string;
   timeEnd?: string;
   enabled?: boolean;
+  additionalFilter?: V1Expression;
 };
 /**
  * Returns the search results from the search input in a dimension filter.
@@ -34,12 +38,14 @@ export function useDimensionSearch(
     timeStart,
     timeEnd,
     enabled,
+    additionalFilter,
   }: DimensionSearchArgs,
 ) {
   const where = getFilterForSearchArgs(dimensionName, {
     mode,
     searchText,
     values,
+    additionalFilter,
   });
 
   const queries = metricsViewNames.map((mvName) =>
@@ -57,6 +63,7 @@ export function useDimensionSearch(
       {
         query: { enabled },
       },
+      queryClient,
     ),
   );
 
@@ -88,12 +95,14 @@ export function useAllSearchResultsCount(
     timeStart,
     timeEnd,
     enabled,
+    additionalFilter,
   }: DimensionSearchArgs,
 ) {
   const where = getFilterForSearchArgs(dimensionName, {
     mode,
     searchText,
     values,
+    additionalFilter,
   });
 
   const queries = metricsViewNames.map((mvName) =>
@@ -116,6 +125,7 @@ export function useAllSearchResultsCount(
       {
         query: { enabled },
       },
+      queryClient,
     ),
   );
 
@@ -142,14 +152,20 @@ export function useAllSearchResultsCount(
  */
 function getFilterForSearchArgs(
   dimensionName: string,
-  { mode, searchText, values }: DimensionSearchArgs,
+  { mode, searchText, values, additionalFilter }: DimensionSearchArgs,
 ) {
+  let filter;
   if (mode === DimensionFilterMode.InList) {
-    return createInExpression(dimensionName, values);
+    filter = createInExpression(dimensionName, values);
+  } else {
+    const addNull = searchText.length !== 0 && "null".includes(searchText);
+    filter = addNull
+      ? createInExpression(dimensionName, [null])
+      : createLikeExpression(dimensionName, `%${searchText}%`);
   }
 
-  const addNull = searchText.length !== 0 && "null".includes(searchText);
-  return addNull
-    ? createInExpression(dimensionName, [null])
-    : createLikeExpression(dimensionName, `%${searchText}%`);
+  if (additionalFilter) {
+    return createAndExpression([filter, additionalFilter]);
+  }
+  return filter;
 }

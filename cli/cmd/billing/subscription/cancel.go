@@ -7,6 +7,8 @@ import (
 )
 
 func CancelCmd(ch *cmdutil.Helper) *cobra.Command {
+	var force bool
+
 	cancelCmd := &cobra.Command{
 		Use:   "cancel",
 		Short: "Cancel subscription for an organization",
@@ -18,7 +20,8 @@ func CancelCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			subResp, err := client.GetBillingSubscription(cmd.Context(), &adminv1.GetBillingSubscriptionRequest{
-				Organization: ch.Org,
+				Organization:         ch.Org,
+				SuperuserForceAccess: force,
 			})
 			if err != nil {
 				return err
@@ -34,7 +37,7 @@ func CancelCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			ch.PrintfWarn("\nAt the end of the current billing cycle, you will lose access to %q and all its projects.\n", ch.Org)
 			ch.PrintfWarn("\nIf you want to change the plan, please use `rill billing subscription edit` command.\n")
-			ok, err := cmdutil.ConfirmPrompt("Do you want to Continue ?", "", false)
+			ok, err := cmdutil.ConfirmPrompt("Do you want to continue?", "", false)
 			if err != nil {
 				return err
 			}
@@ -44,7 +47,8 @@ func CancelCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			_, err = client.CancelBillingSubscription(cmd.Context(), &adminv1.CancelBillingSubscriptionRequest{
-				Organization: ch.Org,
+				Organization:         ch.Org,
+				SuperuserForceAccess: force,
 			})
 			if err != nil {
 				return err
@@ -54,5 +58,9 @@ func CancelCmd(ch *cmdutil.Helper) *cobra.Command {
 			return nil
 		},
 	}
+
+	cancelCmd.Flags().BoolVar(&force, "force", false, "Allows superusers to bypass certain checks")
+	_ = cancelCmd.Flags().MarkHidden("force")
+
 	return cancelCmd
 }

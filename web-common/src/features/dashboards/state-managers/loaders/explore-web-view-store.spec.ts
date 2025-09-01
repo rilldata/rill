@@ -39,6 +39,7 @@ vi.mock("$app/navigation", () => {
   return {
     goto: (url, opts) => hoistedPage.goto(url, opts),
     afterNavigate: (cb) => hoistedPage.afterNavigate(cb),
+    onNavigate: () => {},
   };
 });
 vi.mock("$app/stores", () => {

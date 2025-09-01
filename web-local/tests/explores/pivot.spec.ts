@@ -594,20 +594,20 @@ test.describe("pivot run through", () => {
     // add second measure using menu and add column dimension
     await domain.dragTo(columnZone);
     const addColumnField = page
-      .getByRole("button", { name: "add-field" })
-      .nth(1);
+      .getByRole("button", { name: "Add filter button" })
+      .nth(2);
     await addColumnField.click();
     await clickMenuButton(page, "Sum of Bid Price");
     await expect(page.locator(".status.running")).toHaveCount(0);
     await validateTableContents(page, "table", expectedTwoMeasureRowDimColDim);
 
     // Flatten the table
-    await page.getByRole("button", { name: "Flatten" }).click();
+    await page.getByRole("button", { name: "Pivot table" }).click();
     await expect(page.locator(".status.running")).toHaveCount(0);
     await validateTableContents(page, "table", expectedFlatTable);
 
     // Nest the table
-    await page.getByRole("button", { name: "Nest" }).click();
+    await page.getByRole("button", { name: "Flat table" }).click();
     await expect(page.locator(".status.running")).toHaveCount(0);
 
     // Remove the row dimension and second measure
@@ -616,10 +616,12 @@ test.describe("pivot run through", () => {
     await expect(page.locator(".status.running")).toHaveCount(0);
     await validateTableContents(page, "table", expectedOneMeasureColDim);
 
-    const timeMonth = page.getByLabel("month pivot chip", { exact: true });
+    const timeMonth = page.getByLabel("Time pivot chip", { exact: true });
     await timeMonth.dragTo(rowZone);
 
-    const addRowField = page.getByRole("button", { name: "add-field" }).nth(0);
+    const addRowField = page
+      .getByRole("button", { name: "Add filter button" })
+      .nth(1);
     await addRowField.click();
     await clickMenuButton(page, "Publisher");
 
@@ -640,7 +642,7 @@ test.describe("pivot run through", () => {
     });
 
     // add measure and time week to column
-    const timeWeek = page.getByLabel("week pivot chip", { exact: true });
+    const timeWeek = page.getByLabel("Time pivot chip", { exact: true });
     await totalRecords.dragTo(columnZone);
     await timeWeek.dragTo(columnZone);
 
@@ -661,6 +663,6 @@ test.describe("pivot run through", () => {
       await page.getByRole("menuitem", { name: "Last 24 Hours" }).click();
     });
     await expect(page.locator(".status.running")).toHaveCount(0);
-    await validateTableContents(page, "table", expectSortedDeltaCol);
+    await validateTableContents(page, "table", expectSortedDeltaCol, 4);
   });
 });

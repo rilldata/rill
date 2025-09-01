@@ -3,7 +3,7 @@ import {
   createAndExpression,
   createInExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import {
   AD_BIDS_EXPLORE_INIT,
   AD_BIDS_EXPLORE_NAME,
@@ -25,7 +25,7 @@ const TestCases: {
   title: string;
   url: string;
   errors: string[];
-  entity: Partial<MetricsExplorerEntity>;
+  entity: Partial<ExploreState>;
 }[] = [
   {
     title: "Invalid filter syntax: unknown syntax",
@@ -64,7 +64,7 @@ Unexpected " ".`,
     },
   },
   {
-    title: "Invalid filter: missing dimension in measure filter",
+    title: "Invalid filter: missing measure in measure filter",
     url: "http://localhost/explore/AdBids_explore?f=publisher+IN+('ABC')+AND+publisher+having+(imp+lt+10)",
     errors: [`Selected filter field: "imp" is not valid.`],
     entity: {

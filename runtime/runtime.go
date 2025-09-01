@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/rilldata/rill/cli/pkg/version"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/parser"
@@ -29,6 +30,7 @@ type Options struct {
 	ControllerLogBufferCapacity  int
 	ControllerLogBufferSizeBytes int64
 	AllowHostAccess              bool
+	Version                      version.Version
 }
 
 type Runtime struct {
@@ -82,6 +84,10 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, st *storage.Cli
 
 func (r *Runtime) AllowHostAccess() bool {
 	return r.opts.AllowHostAccess
+}
+
+func (r *Runtime) Version() version.Version {
+	return r.opts.Version
 }
 
 func (r *Runtime) Close() error {
@@ -170,6 +176,8 @@ func (r *Runtime) UpdateInstanceWithRillYAML(ctx context.Context, instanceID str
 	inst.ProjectVariables = vars
 	inst.FeatureFlags = rillYAML.FeatureFlags
 	inst.PublicPaths = rillYAML.PublicPaths
+	inst.AIInstructions = rillYAML.AIInstructions
+	inst.ProjectAIConnector = rillYAML.AIConnector
 	return r.EditInstance(ctx, inst, restartController)
 }
 
@@ -181,32 +189,30 @@ func (r *Runtime) UpdateInstanceConnector(ctx context.Context, instanceID, name 
 		return err
 	}
 
-	// Shallow clone for editing
+	// Copy the existing connectors into a new list except the one being updated.
+	projConns := make([]*runtimev1.Connector, 0, len(inst.ProjectConnectors))
+	for _, c := range inst.ProjectConnectors {
+		if c.Name == name {
+			continue
+		}
+		projConns = append(projConns, c)
+	}
+	// If not removing, append the new/updated connector.
+	if connector != nil {
+		projConns = append(projConns, &runtimev1.Connector{
+			Name:                name,
+			Type:                connector.Driver,
+			Config:              connector.Properties,
+			TemplatedProperties: connector.TemplatedProperties,
+			Provision:           connector.Provision,
+			ProvisionArgs:       connector.ProvisionArgs,
+		})
+	}
+
+	// Clone for editing
 	tmp := *inst
 	inst = &tmp
-
-	// remove the connector if it exists
-	for i, c := range inst.ProjectConnectors {
-		if c.Name == name {
-			inst.ProjectConnectors = append(inst.ProjectConnectors[:i], inst.ProjectConnectors[i+1:]...)
-			break
-		}
-	}
-
-	if connector == nil {
-		// connector should be removed
-		return r.EditInstance(ctx, inst, false)
-	}
-
-	// append the new/updated connector
-	inst.ProjectConnectors = append(inst.ProjectConnectors, &runtimev1.Connector{
-		Name:                name,
-		Type:                connector.Driver,
-		Config:              connector.Properties,
-		TemplatedProperties: connector.TemplatedProperties,
-		Provision:           connector.Provision,
-		ProvisionArgs:       connector.ProvisionArgs,
-	})
+	inst.ProjectConnectors = projConns
 
 	return r.EditInstance(ctx, inst, true)
 }

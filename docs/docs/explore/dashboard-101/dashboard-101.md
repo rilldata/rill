@@ -2,15 +2,36 @@
 title: "Dashboard Quickstart"
 description: Dashboard Quickstart
 sidebar_label: "Dashboard Quickstart"
-sidebar_position: 00
+sidebar_position: 03
 ---
+
+<div style={{ 
+  position: "relative", 
+  width: "100%", 
+  paddingTop: "56.25%", 
+  borderRadius: "15px",  /* Softer corners */
+  boxShadow: "0px 4px 15px rgba(0, 0, 0, 0.2)"  /* Shadow effect */
+}}>
+  <iframe credentialless="true"
+    src="https://www.youtube.com/embed/wTP46eOzoCk?si=9JzY-CuzqQU4uMiR"
+    frameBorder="0"
+    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+    allowFullScreen
+    style={{
+      position: "absolute",
+      top: 0,
+      left: 0,
+      width: "100%",
+      height: "100%",
+      borderRadius: "10px", 
+    }}
+  ></iframe>
+</div>
+<br/>
+Prefer video? Check out our [YouTube playlist](https://www.youtube.com/watch?v=wTP46eOzoCk&list=PL_ZoDsg2yFKgi7ud_fOOD33AH8ONWQS7I&index=1) for a quick start!
 
 
 ## Overview
-
-
-Depending on whether you are opening Rill Developer or logging into Rill Cloud, you will either the default "Getting started" landing page or a list of all projects available to your user. For the purposes of this article, we will assume that your project has already been [deployed to Rill Cloud](/deploy/deploy-dashboard/) and that you are looking to consume your dashboards in a production capacity.
-
 
 After logging into [Rill Cloud](https://ui.rilldata.com), you should see all projects within your [organization](/manage/organization-management#organization) that is available and/or has been granted permissions to your user profile. Within each project, you'll then be able to access the corresponding individual dashboards that belong to a particular Rill project. 
 
@@ -42,9 +63,34 @@ The main screen of any Rill dashboard is called the _Explore_ page. As seen abov
 - _**Alerts, Bookmarks and Sharing:**_ You can create an [alert](/explore/alerts/alerts.md) by selecting the bell, customizing the default view of the dashboard (see `purple` box) to a predefined set of metrics, dimensions, and filters by selecting the [bookmark](../bookmarks.md), or share the dashboard ([internally by clicking the `Share` button](/manage/user-management#admin-invites-user-from-rill-cloud) or [externally via Public URLs](../public-url.md)) .
 
 
-### Measures Panel
+### KPI Widget (Measures) Panel
+<div style={{ 
+  position: "relative", 
+  width: "100%", 
+  paddingTop: "56.25%", 
+  borderRadius: "15px",  /* Softer corners */
+  boxShadow: "0px 4px 15px rgba(0, 0, 0, 0.2)"  /* Shadow effect */
+}}>
+  <iframe credentialless="true"
+    src="https://www.youtube.com/embed/Dqkfp6F_9y4?si=z-22kqFd5dhQA6w8"
+    frameBorder="0"
+    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+    allowFullScreen
+    style={{
+      position: "absolute",
+      top: 0,
+      left: 0,
+      width: "100%",
+      height: "100%",
+      borderRadius: "10px", 
+    }}
+  ></iframe>
+</div>
+<br/>
 
-- _**Measures:**_  All _**metrics**_ that are available in the underlying model \ are viewable on the left-hand side, broken out with summary numbers (e.g. eCPM) and timeseries visualizations (based on your configured `timeseries` column in your [dashboard YAML](/reference/project-files/explore-dashboards.md)). You can add or remove any metric from the page by simply selecting them from the dropdown above the charts (see `yellow` box). If you select any specific measure, you will be navigating to the [Time Dimension Detail](/explore/dashboard-101/tdd).
+
+
+- _**Measures:**_  All _**metrics**_ that are available in the underlying model \ are viewable on the left-hand side, broken out with summary numbers (e.g. eCPM) and timeseries visualizations (based on your configured `timeseries` column in your [dashboard YAML](/reference/project-files/explore-dashboards.md)). You can add, remove or reorder your metrics from the page by simply selecting them from the dropdown above the charts (see `yellow` box). If you select any specific measure, you will be navigating to the [Time Dimension Detail](/explore/dashboard-101/tdd).
 
 - _**Time Dimension Detail:**_ A detailed view of a single specific measure that can be further drilled down to understand minute details in your data. As with the Explore page, you can add comparison dimensions to visualize the value for several specific dimension values. For more information see: [Time Dimension Detail](/explore/dashboard-101/tdd).
 
@@ -55,7 +101,32 @@ The main screen of any Rill dashboard is called the _Explore_ page. As seen abov
 
 ### Dimensions Leaderboard Panel
 
-- _**Dimensions:**_  All _**dimensions**_ available in the underlying model on the right-hand side via leaderboard / toplist charts. You can add or remove any dimension from the page by simply selecting them from the dropdown above the charts (see `green` boxes). You can also drill into leaderboards further (see `blue` box) to see all corresponding metrics for a specific dimension. Within that drilldown, you can also then sort by metric, search your dimensions, and/or [export data](../exports.md). 
+<div style={{ 
+  position: "relative", 
+  width: "100%", 
+  paddingTop: "56.25%", 
+  borderRadius: "15px",  /* Softer corners */
+  boxShadow: "0px 4px 15px rgba(0, 0, 0, 0.2)"  /* Shadow effect */
+}}>
+  <iframe credentialless="true"
+    src="https://www.youtube.com/embed/aQQBFHbLrMQ?si=il-w_ssQmGrqCfsO"
+    frameBorder="0"
+    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+    allowFullScreen
+    style={{
+      position: "absolute",
+      top: 0,
+      left: 0,
+      width: "100%",
+      height: "100%",
+      borderRadius: "10px", 
+    }}
+  ></iframe>
+</div>
+<br/>
+
+
+- _**Dimensions:**_  All _**dimensions**_ available in the underlying model on the right-hand side via leaderboard / toplist charts. You can add, remove or re-order any dimension from the page by simply selecting them from the dropdown above the charts (see `green` boxes). You can also drill into leaderboards further (see `blue` box) to see all corresponding metrics for a specific dimension. Within that drilldown, you can also then sort by metric, search your dimensions, and/or [export data](../exports.md). It is also possible to display [multiple measures in the dimension leaderboard](/explore/dashboard-101/multi-metrics).
 
 
 :::info Search for individual attributes
@@ -63,8 +134,9 @@ The main screen of any Rill dashboard is called the _Explore_ page. As seen abov
 
 After drilling into a leaderboard (or what we sometimes refer to as a _toplist_ chart), rather than scrolling and finding an individual attribute (especially if the list is very long), you can also quickly search for a value and select / apply it to your dashboard by using the upper-right search box.
 
-![Using the search box within a leaderboard](/img/explore/dashboard101/search-box.png)
 
+<img src = '/img/explore/dashboard101/search-box.png' class='rounded-gif' />
+<br />
 
 :::
 
@@ -72,11 +144,23 @@ After drilling into a leaderboard (or what we sometimes refer to as a _toplist_ 
 
 
 :::tip Don't have a Rill project or dashboard deployed yet?
-If you want to get hands on and see what interacting with a Rill dashboard feels like, we have a set of [demo projects](https://ui.rilldata.com/demo) already deployed on Rill Cloud and publicly available for everyone to try out. These [same projects](/home/get-started#example-projects-repository) are also available on GitHub and can be deployed locally using Rill Developer.
+If you want to get hands on and see what interacting with a Rill dashboard feels like, we have a set of [demo projects](https://ui.rilldata.com/demo) already deployed on Rill Cloud and publicly available for everyone to try out. These [same projects](/#examples) are also available on GitHub and can be deployed locally using Rill Developer.
 :::
 
 
 For more details about additional capabilities and/or how to utilize more advanced functionality within Rill dashboards, please see the [reference](#reference) section.
+
+
+### Keyboard shortcuts
+Whether you need to see the full value of a long JSON, or copy a value, there are some available keyboard shortcuts in the Rill Cloud Dashboards. More coming soon!
+
+List of commands:
+- __*Copy values*__ ( ``shift + click`` ) - Copy the value of the row value. 
+- __*Value previewer*__ ( ``space`` ) - See the full text value of the row value.
+- __*Lock Insepector*__ ( ``L`` ) - Lock the inspector (allows scrolling through long values)
+
+<img src = '/img/explore/dashboard101/preview-value.png' class='rounded-gif' />
+<br />
 
 
 ## Banners!

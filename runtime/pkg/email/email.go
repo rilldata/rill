@@ -8,6 +8,7 @@ import (
 	"math"
 	"time"
 
+	"github.com/rilldata/rill/admin/database"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 )
@@ -23,9 +24,12 @@ type Client struct {
 }
 
 func New(sender Sender) *Client {
+	templateFuncs := template.FuncMap{
+		"now": time.Now,
+	}
 	return &Client{
 		Sender:    sender,
-		templates: template.Must(template.New("").ParseFS(templatesFS, "templates/gen/*.html")),
+		templates: template.Must(template.New("").Funcs(templateFuncs).ParseFS(templatesFS, "templates/gen/*.html")),
 	}
 }
 
@@ -331,15 +335,26 @@ type ProjectAccessRequest struct {
 	ToName      string
 	Email       string
 	OrgName     string
+	Role        string
 	ProjectName string
 	ApproveLink string
 	DenyLink    string
 }
 
 func (c *Client) SendProjectAccessRequest(opts *ProjectAccessRequest) error {
-	subject := fmt.Sprintf("%s would like to view %s/%s", opts.Email, opts.OrgName, opts.ProjectName)
+	var accessPrefix string
+	switch opts.Role {
+	case database.ProjectRoleNameAdmin:
+		accessPrefix = "to be an admin of"
+	case database.ProjectRoleNameEditor:
+		accessPrefix = "to edit"
+	case database.ProjectRoleNameViewer:
+		accessPrefix = "to view"
+	}
+
+	subject := fmt.Sprintf("%s would like %s %s/%s", opts.Email, accessPrefix, opts.OrgName, opts.ProjectName)
 	if opts.Body == "" {
-		opts.Body = template.HTML(fmt.Sprintf("<b>%s</b> would like to view <b>%s/%s</b>", opts.Email, opts.OrgName, opts.ProjectName))
+		opts.Body = template.HTML(fmt.Sprintf("<b>%s</b> would like %s <b>%s/%s</b>", opts.Email, accessPrefix, opts.OrgName, opts.ProjectName))
 	}
 
 	buf := new(bytes.Buffer)
@@ -502,7 +517,7 @@ func (c *Client) SendSubscriptionEnded(opts *SubscriptionEnded) error {
 		ToName:  opts.ToName,
 		Subject: fmt.Sprintf("Subscription for %s has now ended. Org is hibernated", opts.OrgName),
 		PreButton: template.HTML(fmt.Sprintf(`
-Your cancelled subscription for <b>%s</b> has ended and its projects are now <a href="https://docs.rilldata.com/home/FAQ#what-is-project-hibernation">hibernating</a>. We hope you enjoyed using Rill Cloud during your time with us.
+Your cancelled subscription for <b>%s</b> has ended and its projects are now <a href="https://docs.rilldata.com/other/FAQ#what-is-project-hibernation">hibernating</a>. We hope you enjoyed using Rill Cloud during your time with us.
 <br /><br />
 If you’d like to reactivate your subscription and regain access, you can easily do so at any time by renewing your subscription from here:
 `, opts.OrgName)),
@@ -609,7 +624,7 @@ func (c *Client) SendTrialGracePeriodEnded(opts *TrialGracePeriodEnded) error {
 		ToName:  opts.ToName,
 		Subject: fmt.Sprintf("Trial plan grace period for %s has ended. Org is now hibernated", opts.OrgName),
 		PreButton: template.HTML(fmt.Sprintf(`
-<b>%s</b> and its projects are now <a href="https://docs.rilldata.com/home/FAQ#what-is-project-hibernation">hibernating</a>.
+<b>%s</b> and its projects are now <a href="https://docs.rilldata.com/other/FAQ#what-is-project-hibernation">hibernating</a>.
 <br /><br />
 Reactivate your org by upgrading to the Team Plan today!
 `, opts.OrgName)),

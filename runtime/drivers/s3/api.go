@@ -60,17 +60,6 @@ func (c *Connection) ListBuckets(ctx context.Context) ([]string, error) {
 }
 
 func (c *Connection) ListObjectsRaw(ctx context.Context, req *runtimev1.S3ListObjectsRequest) ([]*runtimev1.S3Object, string, error) {
-	creds, err := c.newCredentials()
-	if err != nil {
-		return nil, "", err
-	}
-
-	bucket, err := c.openBucket(ctx, &sourceProperties{AWSRegion: req.Region}, req.Bucket, creds)
-	if err != nil {
-		return nil, "", err
-	}
-	defer bucket.Close()
-
 	var pageToken []byte
 	if req.PageToken == "" {
 		pageToken = blob.FirstPageToken
@@ -82,21 +71,27 @@ func (c *Connection) ListObjectsRaw(ctx context.Context, req *runtimev1.S3ListOb
 	if pageSize == 0 {
 		pageSize = defaultPageSize
 	}
-	objects, nextToken, err := fetchObjects(ctx, bucket, pageToken, pageSize, req)
+
+	bucket, err := c.openBucket(ctx, req.Bucket, false)
+	if err != nil {
+		return nil, "", err
+	}
+	defer bucket.Close()
+
+	objects, nextToken, err := fetchObjects(ctx, bucket.Underlying(), pageToken, pageSize, req)
 	if err != nil {
 		var failureErr awserr.RequestFailure
 		if !errors.As(err, &failureErr) {
 			return nil, "", err
 		}
-
-		if (failureErr.StatusCode() == http.StatusForbidden || failureErr.StatusCode() == http.StatusBadRequest) && creds != credentials.AnonymousCredentials {
-			// try again with anonymous credentials
-			creds = credentials.AnonymousCredentials
-			bucketObj, bucketErr := c.openBucket(ctx, &sourceProperties{AWSRegion: req.Region}, req.Bucket, creds)
-			if bucketErr != nil {
-				return nil, "", fmt.Errorf("failed to open bucket %q, %w", req.Bucket, bucketErr)
+		if failureErr.StatusCode() == http.StatusForbidden || failureErr.StatusCode() == http.StatusBadRequest {
+			bucket, err = c.openBucket(ctx, req.Bucket, true)
+			if err != nil {
+				return nil, "", fmt.Errorf("failed to open bucket %q, %w", req.Bucket, err)
 			}
-			objects, nextToken, err = fetchObjects(ctx, bucketObj, pageToken, pageSize, req)
+			defer bucket.Close()
+
+			objects, nextToken, err = fetchObjects(ctx, bucket.Underlying(), pageToken, pageSize, req)
 		}
 	}
 	if err != nil {
@@ -113,23 +108,6 @@ func (c *Connection) ListObjectsRaw(ctx context.Context, req *runtimev1.S3ListOb
 		}
 	}
 	return s3Objects, string(nextToken), nil
-}
-
-func (c *Connection) GetBucketRegion(ctx context.Context, bkt string) (string, error) {
-	creds, err := c.newCredentials()
-	if err != nil {
-		return "", err
-	}
-
-	sess, err := c.newSessionForBucket(ctx, bkt, "", "", creds)
-	if err != nil {
-		return "", err
-	}
-
-	if sess.Config.Region != nil {
-		return *sess.Config.Region, nil
-	}
-	return "", fmt.Errorf("unable to get region")
 }
 
 func (c *Connection) GetCredentialsInfo(ctx context.Context) (provider string, exist bool, err error) {

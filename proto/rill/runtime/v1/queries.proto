@@ -161,6 +161,13 @@ service QueryService {
     };
   }
 
+  rpc MetricsViewAnnotations(MetricsViewAnnotationsRequest) returns (MetricsViewAnnotationsResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/queries/metrics-views/{metrics_view_name}/annotations",
+      body: "*"
+    };
+  }
+
   // Canvas APIs
 
   // ResolveCanvas is a convenience API that returns a canvas and all its referenced components and metrics views.
@@ -289,11 +296,24 @@ message QueryBatchResponse {
 }
 
 message ExportRequest {
+  // Instance ID to run the query against.
   string instance_id = 1;
+  // Optional limit on the number of rows to export. It is applied in addition to any limit specified in the query.
   int64 limit = 2;
+  // Format of the export.
   ExportFormat format = 3;
+  // Query to export.
   Query query = 4;
+  // Deprecated. Use query instead.
   string baked_query = 5 [deprecated = true];
+  // If true, the export will include header comments with metadata about the export.
+  bool include_header = 6;
+  // Optional name of the dashboard the export originates from.
+  // Only used if include_header is true.
+  ResourceName origin_dashboard = 7;
+  // Optional UI URL that the export originates from.
+  // Only used if include_header is true.
+  string origin_url = 8;
 }
 
 message ExportResponse {
@@ -301,11 +321,16 @@ message ExportResponse {
 }
 
 message ExportReportRequest {
+  // Instance ID that contains the report.
   string instance_id = 1;
+  // Name of the report to export.
   string report = 2;
-  int64 limit = 3;
-  ExportFormat format = 4;
+  // The execution time to evaluate the report relative to.
+  // This is provided by the report implementation when sending a report.
   google.protobuf.Timestamp execution_time = 5;
+  // Contextual information about the base URL of the UI that initiated the export.
+  // This is used to generate header comments in the exported file when include_header is true in the report spec.
+  string origin_base_url = 6;
 }
 
 message ExportReportResponse {
@@ -444,6 +469,7 @@ message MetricsViewAggregationMeasure {
     MetricsViewAggregationMeasureComputeComparisonRatio comparison_ratio = 9;
     MetricsViewAggregationMeasureComputePercentOfTotal percent_of_total = 10;
     MetricsViewAggregationMeasureComputeURI uri = 11;
+    MetricsViewAggregationMeasureComputeComparisonTime comparison_time = 12;
   }
 }
 
@@ -470,6 +496,10 @@ message MetricsViewAggregationMeasureComputePercentOfTotal {
 }
 
 message MetricsViewAggregationMeasureComputeURI {
+  string dimension = 1;
+}
+
+message MetricsViewAggregationMeasureComputeComparisonTime {
   string dimension = 1;
 }
 
@@ -573,6 +603,7 @@ message TimeRange {
   // Optional. Rill format time range. Should only be used for alerts and reports.
   // For dashboard call ResolveTimeRanges.
   string expression = 7;
+  string time_dimension = 8; // Optional. If not specified, falls back to the primary time dimension in the metrics view spec
 }
 
 // Present for backwards compatibility
@@ -651,6 +682,7 @@ message MetricsViewTimeSeriesRequest {
   string time_zone = 10;
   int32 priority = 8;
   MetricsViewFilter filter = 12; // Deprecated. should be removed once UI is moved to use new filters
+  string time_dimension = 15; // Optional. If not specified, falls back to the primary time dimension in the metrics view spec
 }
 
 message MetricsViewTimeSeriesResponse {
@@ -674,6 +706,7 @@ message MetricsViewTotalsRequest {
   string where_sql = 11;
   int32 priority = 8;
   MetricsViewFilter filter = 10; // Deprecated. should be removed once UI is moved to use new filters
+  string time_dimension = 12; // Optional. If not specified, falls back to the primary time dimension in the metrics view spec
 }
 
 message MetricsViewTotalsResponse {
@@ -704,6 +737,8 @@ message MetricsViewRowsRequest {
   // Optional. IANA format, ie Europe/Copenhagen. Defaults to UTC
   string time_zone = 11;
   MetricsViewFilter filter = 12; // Deprecated. should be removed once UI is moved to use new filters
+  // Optional. If not specified, falls back to the primary time dimension in the metrics view spec
+  string time_dimension = 13;
 }
 
 message MetricsViewRowsResponse {
@@ -750,6 +785,8 @@ message MetricsViewTimeRangeRequest {
   string instance_id = 1;
   string metrics_view_name = 2 [(validate.rules).string.min_len = 1];
   int32 priority = 3;
+  // Optional. If not specified, falls back to the primary time dimension in the metrics view spec
+  string time_dimension = 4;
 }
 
 message MetricsViewTimeRangeResponse {
@@ -797,10 +834,49 @@ message MetricsViewTimeRangesRequest {
   string metrics_view_name = 2 [(validate.rules).string.min_len = 1];
   repeated string expressions = 3;
   int32 priority = 4;
+  // Optional timezone param to easily override time-range expressions
+  string time_zone = 5;
+  // Optional. If not specified, falls back to the primary time dimension in the metrics view spec
+  string time_dimension = 6;
 }
 
 message MetricsViewTimeRangesResponse {
   repeated TimeRange time_ranges = 1;
+}
+
+message MetricsViewAnnotationsRequest {
+  string instance_id = 1;
+  string metrics_view_name = 2 [(validate.rules).string.min_len = 1];
+  repeated string measures = 3;
+  int32 priority = 4;
+  TimeRange time_range = 5;
+  // Optional
+  TimeGrain time_grain = 6;
+  // Optional
+  string time_zone = 7;
+  // Optional
+  int64 limit = 8 [(validate.rules).int64.gte = 0];
+  // Optional
+  int64 offset = 9 [(validate.rules).int64.gte = 0];
+}
+
+message MetricsViewAnnotationsResponse {
+  message Annotation {
+    // Time when the annotation applies. Maps to `time` column from the table.
+    google.protobuf.Timestamp time = 1;
+    // Optional. Time when the annotation ends. Only present if the underlying table has the `time_end` column.
+    optional google.protobuf.Timestamp time_end = 2;
+    // User defined description of the annotation applies. Maps to `description` column from the table.
+    string description = 3;
+    // Optional. Minimum duration this annotation is displayed for. Maps to `duration` column from the table.
+    optional string duration = 4;
+    // Any other fields are captured here. Will be used in predicates in the future.
+    google.protobuf.Struct additional_fields = 5;
+    // List of measure names that this annotation applies to. If empty, no restrictions apply.
+    repeated string for_measures = 6;
+  }
+
+  repeated Annotation rows = 1;
 }
 
 // **********

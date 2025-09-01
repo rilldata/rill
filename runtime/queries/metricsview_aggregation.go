@@ -135,7 +135,7 @@ func (q *MetricsViewAggregation) Export(ctx context.Context, rt *runtime.Runtime
 	defer e.Close()
 
 	if mv.ValidSpec.TimeDimension != "" {
-		tsRes, err := ResolveTimestampResult(ctx, rt, instanceID, q.MetricsViewName, q.SecurityClaims, opts.Priority)
+		tsRes, err := ResolveTimestampResult(ctx, rt, instanceID, q.MetricsViewName, q.TimeRange.TimeDimension, q.SecurityClaims, opts.Priority)
 		if err != nil {
 			return err
 		}
@@ -158,7 +158,12 @@ func (q *MetricsViewAggregation) Export(ctx context.Context, rt *runtime.Runtime
 		return fmt.Errorf("unsupported format: %s", opts.Format.String())
 	}
 
-	path, err := e.Export(ctx, qry, nil, format)
+	headers, err := q.generateExportHeaders(ctx, rt, instanceID, opts, qry)
+	if err != nil {
+		return err
+	}
+
+	path, err := e.Export(ctx, qry, nil, format, headers)
 	if err != nil {
 		return err
 	}
@@ -183,7 +188,9 @@ func (q *MetricsViewAggregation) Export(ctx context.Context, rt *runtime.Runtime
 	return nil
 }
 
-func ResolveTimestampResult(ctx context.Context, rt *runtime.Runtime, instanceID, metricsViewName string, security *runtime.SecurityClaims, priority int) (metricsview.TimestampsResult, error) {
+// ResolveTimestampResult resolves the time range for a metrics view and returns the min, max, and watermark timestamps.
+// timeDimension is optional and can be used to specify which time dimension to use for the time range query otherwise it will use the default time dimension of the metrics view.
+func ResolveTimestampResult(ctx context.Context, rt *runtime.Runtime, instanceID, metricsViewName, timeDimension string, security *runtime.SecurityClaims, priority int) (metricsview.TimestampsResult, error) {
 	res, err := rt.Resolve(ctx, &runtime.ResolveOptions{
 		InstanceID: instanceID,
 		Resolver:   "metrics_time_range",
@@ -191,7 +198,8 @@ func ResolveTimestampResult(ctx context.Context, rt *runtime.Runtime, instanceID
 			"metrics_view": metricsViewName,
 		},
 		Args: map[string]any{
-			"priority": priority,
+			"priority":       priority,
+			"time_dimension": timeDimension,
 		},
 		Claims: security,
 	})
@@ -290,6 +298,10 @@ func (q *MetricsViewAggregation) rewriteToMetricsViewQuery(export bool) (*metric
 				res.Compute = &metricsview.MeasureCompute{URI: &metricsview.MeasureComputeURI{
 					Dimension: c.Uri.Dimension,
 				}}
+			case *runtimev1.MetricsViewAggregationMeasure_ComparisonTime:
+				res.Compute = &metricsview.MeasureCompute{ComparisonTime: &metricsview.MeasureComputeComparisonTime{
+					Dimension: c.ComparisonTime.Dimension,
+				}}
 			}
 		}
 
@@ -320,6 +332,7 @@ func (q *MetricsViewAggregation) rewriteToMetricsViewQuery(export bool) (*metric
 		if q.TimeRange.TimeZone != "" {
 			qry.TimeZone = q.TimeRange.TimeZone
 		}
+		res.TimeDimension = q.TimeRange.TimeDimension
 		qry.TimeRange = res
 	}
 
@@ -341,6 +354,7 @@ func (q *MetricsViewAggregation) rewriteToMetricsViewQuery(export bool) (*metric
 			}
 			qry.TimeZone = q.ComparisonTimeRange.TimeZone
 		}
+		res.TimeDimension = q.ComparisonTimeRange.TimeDimension
 		qry.ComparisonTimeRange = res
 	}
 
@@ -398,8 +412,7 @@ func (q *MetricsViewAggregation) rewriteToMetricsViewQuery(export bool) (*metric
 
 	if q.Limit != nil {
 		if *q.Limit == 0 {
-			tmp := int64(100)
-			q.Limit = &tmp
+			q.Limit = nil
 		}
 		qry.Limit = q.Limit
 	}
@@ -416,6 +429,99 @@ func (q *MetricsViewAggregation) rewriteToMetricsViewQuery(export bool) (*metric
 	qry.Rows = q.Rows
 
 	return qry, nil
+}
+
+func (q *MetricsViewAggregation) generateExportHeaders(ctx context.Context, rt *runtime.Runtime, instanceID string, opts *runtime.ExportOptions, qry *metricsview.Query) ([]string, error) {
+	if !opts.IncludeHeader {
+		return nil, nil
+	}
+
+	// Get org and project name from instance annotations.
+	var org, project string
+	inst, err := rt.Instance(ctx, instanceID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get instance: %w", err)
+	}
+	if inst.Annotations != nil {
+		org = inst.Annotations["organization_name"]
+		project = inst.Annotations["project_name"]
+	}
+
+	var headers []string
+
+	// Build title
+	var parts []string
+	if org != "" && project != "" {
+		parts = append(parts, org, project)
+	}
+	var dashboardDisplayName string
+	if opts.OriginDashboard != nil {
+		dashboardDisplayName, err = q.getDisplayName(ctx, rt, instanceID, opts.OriginDashboard)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get dashboard display name: %w", err)
+		}
+	}
+	if dashboardDisplayName != "" {
+		parts = append(parts, dashboardDisplayName)
+	}
+	title := "Report by Rill Data"
+	if len(parts) > 0 {
+		title += " – " + strings.Join(parts, " / ")
+	}
+	headers = append(headers, title)
+
+	// Build date range
+	if !qry.TimeRange.Start.IsZero() || !qry.TimeRange.End.IsZero() {
+		timeRange := fmt.Sprintf("Date range: %s to %s", qry.TimeRange.Start.Format(time.RFC3339), qry.TimeRange.End.Format(time.RFC3339))
+		headers = append(headers, timeRange)
+	}
+
+	// Build filters
+	expStr, err := metricsview.ExpressionToExport(qry.Where)
+	if err != nil {
+		return nil, err
+	}
+	headers = append(headers, fmt.Sprintf("Filters: %s", expStr))
+
+	// Add URL to dashboard
+	if opts.OriginURL != "" && dashboardDisplayName != "" {
+		headers = append(headers, fmt.Sprintf("Go to dashboard: %s", opts.OriginURL))
+	}
+
+	// Always add blank line at end
+	headers = append(headers, "")
+
+	return headers, nil
+}
+
+func (q *MetricsViewAggregation) getDisplayName(ctx context.Context, rt *runtime.Runtime, instanceID string, resourceName *runtimev1.ResourceName) (string, error) {
+	c, err := rt.Controller(ctx, instanceID)
+	if err != nil {
+		return "", fmt.Errorf("failed to get controller: %w", err)
+	}
+
+	res, err := c.Get(ctx, resourceName, false)
+	if err != nil {
+		if errors.Is(err, drivers.ErrResourceNotFound) {
+			return resourceName.Name, nil
+		}
+		return "", fmt.Errorf("failed to get resource: %w", err)
+	}
+
+	// Try to get DisplayName for known resource types
+	switch resourceName.Kind {
+	case runtime.ResourceKindExplore:
+		explore := res.GetExplore()
+		if explore != nil && explore.State != nil && explore.State.ValidSpec != nil && explore.State.ValidSpec.DisplayName != "" {
+			return explore.State.ValidSpec.DisplayName, nil
+		}
+	case runtime.ResourceKindCanvas:
+		canvas := res.GetCanvas()
+		if canvas != nil && canvas.State != nil && canvas.State.ValidSpec != nil && canvas.State.ValidSpec.DisplayName != "" {
+			return canvas.State.ValidSpec.DisplayName, nil
+		}
+	}
+	return resourceName.Name, nil
 }
 
 func metricViewExpression(expr *runtimev1.Expression, sql string) (*metricsview.Expression, error) {

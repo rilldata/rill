@@ -28,7 +28,6 @@ import (
 func (s *Server) GetAlertMeta(ctx context.Context, req *adminv1.GetAlertMetaRequest) (*adminv1.GetAlertMetaResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.project_id", req.ProjectId),
-		attribute.String("args.branch", req.Branch),
 		attribute.String("args.alert", req.Alert),
 		attribute.Bool("args.query_for", req.GetQueryFor() != nil),
 	)
@@ -41,10 +40,6 @@ func (s *Server) GetAlertMeta(ctx context.Context, req *adminv1.GetAlertMetaRequ
 	permissions := auth.GetClaims(ctx).ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
 	if !permissions.ReadProdStatus {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read alert meta")
-	}
-
-	if proj.ProdBranch != req.Branch {
-		return nil, status.Error(codes.InvalidArgument, "branch not found")
 	}
 
 	org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
@@ -126,10 +121,10 @@ func (s *Server) CreateAlert(ctx context.Context, req *adminv1.CreateAlertReques
 	}
 
 	err = s.admin.DB.UpsertVirtualFile(ctx, &database.InsertVirtualFileOptions{
-		ProjectID: proj.ID,
-		Branch:    proj.ProdBranch,
-		Path:      virtualFilePathForManagedAlert(name),
-		Data:      data,
+		ProjectID:   proj.ID,
+		Environment: "prod",
+		Path:        virtualFilePathForManagedAlert(name),
+		Data:        data,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to insert virtual file: %s", err.Error())
@@ -196,10 +191,10 @@ func (s *Server) EditAlert(ctx context.Context, req *adminv1.EditAlertRequest) (
 	}
 
 	err = s.admin.DB.UpsertVirtualFile(ctx, &database.InsertVirtualFileOptions{
-		ProjectID: proj.ID,
-		Branch:    proj.ProdBranch,
-		Path:      virtualFilePathForManagedAlert(req.Name),
-		Data:      data,
+		ProjectID:   proj.ID,
+		Environment: "prod",
+		Path:        virtualFilePathForManagedAlert(req.Name),
+		Data:        data,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to update virtual file: %s", err.Error())
@@ -261,7 +256,7 @@ func (s *Server) UnsubscribeAlert(ctx context.Context, req *adminv1.UnsubscribeA
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	file, err := s.admin.DB.FindVirtualFile(ctx, proj.ID, proj.ProdBranch, virtualFilePathForManagedAlert(req.Name))
+	file, err := s.admin.DB.FindVirtualFile(ctx, proj.ID, "prod", virtualFilePathForManagedAlert(req.Name))
 	if err != nil {
 		return nil, err
 	}
@@ -297,7 +292,7 @@ func (s *Server) UnsubscribeAlert(ctx context.Context, req *adminv1.UnsubscribeA
 	}
 
 	if len(alert.Notify.Email.Recipients) == 0 && len(alert.Notify.Slack.Users) == 0 && len(alert.Notify.Slack.Channels) == 0 && len(alert.Notify.Slack.Webhooks) == 0 {
-		err = s.admin.DB.UpdateVirtualFileDeleted(ctx, proj.ID, proj.ProdBranch, virtualFilePathForManagedAlert(req.Name))
+		err = s.admin.DB.UpdateVirtualFileDeleted(ctx, proj.ID, "prod", virtualFilePathForManagedAlert(req.Name))
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to update virtual file: %s", err.Error())
 		}
@@ -308,10 +303,10 @@ func (s *Server) UnsubscribeAlert(ctx context.Context, req *adminv1.UnsubscribeA
 		}
 
 		err = s.admin.DB.UpsertVirtualFile(ctx, &database.InsertVirtualFileOptions{
-			ProjectID: proj.ID,
-			Branch:    proj.ProdBranch,
-			Path:      virtualFilePathForManagedAlert(req.Name),
-			Data:      data,
+			ProjectID:   proj.ID,
+			Environment: "prod",
+			Path:        virtualFilePathForManagedAlert(req.Name),
+			Data:        data,
 		})
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to update virtual file: %s", err.Error())
@@ -371,7 +366,7 @@ func (s *Server) DeleteAlert(ctx context.Context, req *adminv1.DeleteAlertReques
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to edit alert")
 	}
 
-	err = s.admin.DB.UpdateVirtualFileDeleted(ctx, proj.ID, proj.ProdBranch, virtualFilePathForManagedAlert(req.Name))
+	err = s.admin.DB.UpdateVirtualFileDeleted(ctx, proj.ID, "prod", virtualFilePathForManagedAlert(req.Name))
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to delete virtual file: %s", err.Error())
 	}
@@ -425,7 +420,7 @@ func (s *Server) GetAlertYAML(ctx context.Context, req *adminv1.GetAlertYAMLRequ
 		return nil, status.Error(codes.FailedPrecondition, "project does not have a production deployment")
 	}
 
-	vf, err := s.admin.DB.FindVirtualFile(ctx, proj.ID, proj.ProdBranch, virtualFilePathForManagedAlert(req.Name))
+	vf, err := s.admin.DB.FindVirtualFile(ctx, proj.ID, "prod", virtualFilePathForManagedAlert(req.Name))
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -445,6 +440,10 @@ func (s *Server) yamlForManagedAlert(opts *adminv1.AlertOptions, ownerUserID str
 	res.Refs = []string{fmt.Sprintf("MetricsView/%s", opts.MetricsViewName)}
 	res.DisplayName = opts.DisplayName
 	res.Watermark = "inherit"
+	if opts.RefreshCron != "" {
+		res.Refresh.Cron = opts.RefreshCron
+		res.Refresh.TimeZone = opts.RefreshTimeZone
+	}
 	res.Intervals.Duration = opts.IntervalDuration
 	if opts.Resolver != "" {
 		res.Data = map[string]any{
@@ -487,6 +486,10 @@ func (s *Server) yamlForCommittedAlert(opts *adminv1.AlertOptions) ([]byte, erro
 	res.Refs = []string{fmt.Sprintf("MetricsView/%s", opts.MetricsViewName)}
 	res.DisplayName = opts.DisplayName
 	res.Watermark = "inherit"
+	if opts.RefreshCron != "" {
+		res.Refresh.Cron = opts.RefreshCron
+		res.Refresh.TimeZone = opts.RefreshTimeZone
+	}
 	res.Intervals.Duration = opts.IntervalDuration
 	if opts.Resolver != "" {
 		res.Data = map[string]any{
@@ -551,8 +554,12 @@ type alertYAML struct {
 	Refs        []string `yaml:"refs"`
 	DisplayName string   `yaml:"display_name"`
 	Title       string   `yaml:"title,omitempty"` // Deprecated: replaced by display_name, but preserved for backwards compatibility
-	Watermark   string   `yaml:"watermark"`
-	Intervals   struct {
+	Refresh     struct {
+		Cron     string `yaml:"cron"`
+		TimeZone string `yaml:"time_zone"`
+	} `yaml:"refresh"`
+	Watermark string `yaml:"watermark"`
+	Intervals struct {
 		Duration string `yaml:"duration"`
 	} `yaml:"intervals"`
 	Data map[string]any `yaml:"data,omitempty"`

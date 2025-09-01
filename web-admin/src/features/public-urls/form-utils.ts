@@ -1,7 +1,7 @@
 import { PivotChipType } from "@rilldata/web-common/features/dashboards/pivot/types";
 import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
 import { getAllIdentifiers } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import type {
   MetricsViewSpecDimension,
@@ -9,31 +9,31 @@ import type {
   V1ExploreSpec,
 } from "@rilldata/web-common/runtime-client";
 
-export function hasDashboardWhereFilter(dashboardStore: MetricsExplorerEntity) {
-  return dashboardStore.whereFilter?.cond?.exprs?.length;
+export function hasDashboardWhereFilter(exploreState: ExploreState) {
+  return exploreState.whereFilter?.cond?.exprs?.length;
 }
 
 export function hasDashboardDimensionThresholdFilter(
-  dashboardStore: MetricsExplorerEntity,
+  exploreState: ExploreState,
 ) {
-  return dashboardStore.dimensionThresholdFilters?.length;
+  return exploreState.dimensionThresholdFilters?.length;
 }
 
 export function getExploreFields(
-  dashboardStore: MetricsExplorerEntity,
+  exploreState: ExploreState,
   visibleDimensions: MetricsViewSpecDimension[],
   visibleMeasures: MetricsViewSpecMeasure[],
 ): string[] | undefined {
-  const hasFilter = hasDashboardWhereFilter(dashboardStore);
+  const hasFilter = hasDashboardWhereFilter(exploreState);
 
   const everythingIsVisible =
-    dashboardStore.allDimensionsVisible &&
-    dashboardStore.allMeasuresVisible &&
+    exploreState.allDimensionsVisible &&
+    exploreState.allMeasuresVisible &&
     !hasFilter;
 
   if (everythingIsVisible) return undefined; // Not specifying any fields means all fields are visible
 
-  const filteredDimensions = getAllIdentifiers(dashboardStore.whereFilter);
+  const filteredDimensions = getAllIdentifiers(exploreState.whereFilter);
 
   return [
     ...visibleDimensions
@@ -59,71 +59,72 @@ export function convertDateToMinutes(date: string) {
  * It removes all state that refers to fields that will be hidden, like filters, pivot chips, and visible field keys.
  * This ensures we do not leak hidden information to the URL recipient.
  */
-export function getSanitizedDashboardStateParam(
-  dashboard: MetricsExplorerEntity,
+export function getSanitizedExploreStateParam(
+  exploreState: ExploreState,
   metricsViewFields: string[] | undefined,
   exploreSpec: V1ExploreSpec,
 ): string {
   // If no metrics view fields are specified, everything is visible, and there's no need to sanitize
   if (!metricsViewFields)
-    return getProtoFromDashboardState(dashboard, exploreSpec);
+    return getProtoFromDashboardState(exploreState, exploreSpec);
 
   // Else, explicitly add the sanitized state that we want to remember.
   const sanitizedDashboardState = {
     // Remove any measures not specified in the metrics view fields
-    visibleMeasures: dashboard.visibleMeasures.filter((measure) =>
+    visibleMeasures: exploreState.visibleMeasures.filter((measure) =>
       metricsViewFields?.includes(measure),
     ),
-    allMeasuresVisible: dashboard.allMeasuresVisible,
+    allMeasuresVisible: exploreState.allMeasuresVisible,
     // Remove any dimensions not specified in the metrics view fields
-    visibleDimensions: dashboard.visibleDimensions.filter((dimension) =>
+    visibleDimensions: exploreState.visibleDimensions.filter((dimension) =>
       metricsViewFields?.includes(dimension),
     ),
-    allDimensionsVisible: dashboard.allDimensionsVisible,
-    leaderboardSortByMeasureName: dashboard.leaderboardSortByMeasureName,
-    dashboardSortType: dashboard.dashboardSortType,
-    sortDirection: dashboard.sortDirection,
+    allDimensionsVisible: exploreState.allDimensionsVisible,
+    leaderboardSortByMeasureName: exploreState.leaderboardSortByMeasureName,
+    dashboardSortType: exploreState.dashboardSortType,
+    sortDirection: exploreState.sortDirection,
     // Remove the where filter
     // whereFilter: dashboard.whereFilter,
-    dimensionThresholdFilters: dashboard.dimensionThresholdFilters,
-    dimensionFilterExcludeMode: dashboard.dimensionFilterExcludeMode,
+    dimensionThresholdFilters: exploreState.dimensionThresholdFilters,
+    dimensionFilterExcludeMode: exploreState.dimensionFilterExcludeMode,
     // There's no need to share filters-in-progress
     // temporaryFilterName: dashboard.temporaryFilterName,
-    selectedTimeRange: dashboard.selectedTimeRange,
-    selectedScrubRange: dashboard.selectedScrubRange,
+    selectedTimeRange: exploreState.selectedTimeRange,
+    selectedScrubRange: exploreState.selectedScrubRange,
     // There's no need to share the user's previous scrub range
     // lastDefinedScrubRange: dashboard.lastDefinedScrubRange,
-    selectedComparisonTimeRange: dashboard.selectedComparisonTimeRange,
+    selectedComparisonTimeRange: exploreState.selectedComparisonTimeRange,
     // When TDD, we remove the selected comparison dimension (because, if filtered, it's locked & hidden)
     selectedComparisonDimension:
-      dashboard.activePage === DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL
+      exploreState.activePage ===
+      DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL
         ? undefined
-        : dashboard.selectedComparisonDimension,
+        : exploreState.selectedComparisonDimension,
     // We do not support sharing the dimension table page (because, if filtered, the dimension is locked & hidden)
     activePage:
-      dashboard.activePage === DashboardState_ActivePage.DIMENSION_TABLE
+      exploreState.activePage === DashboardState_ActivePage.DIMENSION_TABLE
         ? DashboardState_ActivePage.DEFAULT
-        : dashboard.activePage,
-    selectedTimezone: dashboard.selectedTimezone,
-    showTimeComparison: dashboard.showTimeComparison,
-    leaderboardContextColumn: dashboard.leaderboardContextColumn,
-    contextColumnWidths: dashboard.contextColumnWidths,
-    selectedDimensionName: dashboard.selectedDimensionName,
-    tdd: dashboard.tdd,
+        : exploreState.activePage,
+    selectedTimezone: exploreState.selectedTimezone,
+    showTimeComparison: exploreState.showTimeComparison,
+    leaderboardContextColumn: exploreState.leaderboardContextColumn,
+    contextColumnWidths: exploreState.contextColumnWidths,
+    selectedDimensionName: exploreState.selectedDimensionName,
+    tdd: exploreState.tdd,
     pivot: {
-      ...dashboard.pivot,
-      rows: dashboard.pivot.rows.filter(
+      ...exploreState.pivot,
+      rows: exploreState.pivot.rows.filter(
         (chip) =>
           metricsViewFields?.includes(chip.id) ||
           chip.type === PivotChipType.Time,
       ),
-      columns: dashboard.pivot.columns.filter(
+      columns: exploreState.pivot.columns.filter(
         (chip) =>
           metricsViewFields?.includes(chip.id) ||
           chip.type === PivotChipType.Time,
       ),
     },
-  } as MetricsExplorerEntity;
+  } as ExploreState;
 
   return getProtoFromDashboardState(sanitizedDashboardState, exploreSpec);
 }

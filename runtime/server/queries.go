@@ -110,7 +110,7 @@ func rowsToData(rows *drivers.Result) ([]*structpb.Struct, error) {
 
 func ensureLimits(ctx context.Context, olap drivers.OLAPStore, inputSQL string, limit int) (string, error) {
 	r, err := olap.Query(ctx, &drivers.Statement{
-		Query: "select json_serialize_sql(?::VARCHAR)",
+		Query: "select json_serialize_sql(?::VARCHAR)::BLOB",
 		Args:  []any{inputSQL},
 	})
 	if err != nil {

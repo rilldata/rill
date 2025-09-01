@@ -3,92 +3,160 @@
 </script>
 
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { getNeverSubscribedIssue } from "@rilldata/web-common/features/billing/issues";
   import TrialDetailsDialog from "@rilldata/web-common/features/billing/TrialDetailsDialog.svelte";
-  import ProjectRedeployConfirmDialog from "@rilldata/web-common/features/project/ProjectRedeployConfirmDialog.svelte";
-  import PushToGitForDeployDialog from "@rilldata/web-common/features/project/PushToGitForDeployDialog.svelte";
+  import { getDeployRoute } from "@rilldata/web-common/features/project/deploy/route-utils.ts";
+  import UpdateProjectPopup from "@rilldata/web-common/features/project/deploy/UpdateProjectPopup.svelte";
+  import { copyWithAdditionalArguments } from "@rilldata/web-common/lib/url-utils";
   import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
+  import ProjectContainsRemoteChangesDialog from "@rilldata/web-common/features/project/ProjectContainsRemoteChangesDialog.svelte";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
   import { BehaviourEventAction } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import {
-    createLocalServiceGetCurrentProject,
     createLocalServiceGetCurrentUser,
     createLocalServiceGetMetadata,
-    createLocalServiceListOrganizationsAndBillingMetadataRequest,
+    createLocalServiceListMatchingProjectsRequest,
+    createLocalServiceGitPull,
+    createLocalServiceGitStatus,
+    getLocalServiceGitStatusQueryKey,
   } from "@rilldata/web-common/runtime-client/local-service";
+  import { onMount } from "svelte";
   import Rocket from "svelte-radix/Rocket.svelte";
-  import { get, writable } from "svelte/store";
+  import { writable, get, derived } from "svelte/store";
   import { Button } from "../../../components/button";
 
   export let hasValidDashboard: boolean;
 
-  let pushThroughGitOpen = false;
+  let remoteChangeDialog = false;
   let deployConfirmOpen = false;
-  let deployCTAUrl: string;
+  let updateProjectDropdownOpen = false;
 
-  $: orgsMetadata =
-    createLocalServiceListOrganizationsAndBillingMetadataRequest();
-  $: currentProject = createLocalServiceGetCurrentProject({
-    query: {
-      refetchOnWindowFocus: true,
-    },
-  });
-  $: isDeployed = !!$currentProject.data?.project;
-  $: isFirstTimeDeploy =
-    !isDeployed &&
-    $orgsMetadata.data?.orgs?.every((o) => !!getNeverSubscribedIssue(o.issues));
+  const userQuery = createLocalServiceGetCurrentUser();
+  const metadata = createLocalServiceGetMetadata();
+  const matchingProjectsQuery = createLocalServiceListMatchingProjectsRequest();
+
+  const gitStatusQuery = createLocalServiceGitStatus();
+  const gitPullMutation = createLocalServiceGitPull();
+
+  $: ({ isPending: githubPullPending, error: githubPullError } =
+    $gitPullMutation);
+  let errorFromGitCommand: Error | null = null;
+  $: error = githubPullError ?? errorFromGitCommand;
+
+  const deploymentState = derived(
+    [gitStatusQuery, userQuery, matchingProjectsQuery],
+    ([$git, $user, $projects]) => ({
+      // gitStatusQuery is refetched. So we have to check `isFetching` to get the correct loading status.
+      loading:
+        $git.isFetching || ($user.data?.user ? $projects.isLoading : false),
+      isDeployed: !!$projects.data?.projects?.length,
+      hasRemoteChanges: $git.data && $git.data.remoteCommits > 0,
+    }),
+  );
+  $: ({ loading, isDeployed, hasRemoteChanges } = $deploymentState);
 
   $: allowPrimary.set(isDeployed || !hasValidDashboard);
 
-  $: user = createLocalServiceGetCurrentUser();
-  $: metadata = createLocalServiceGetMetadata();
+  $: deployPageUrl = getDeployRoute($page.url);
+  $: redirectPageUrl = copyWithAdditionalArguments($page.url, {
+    deploy: "true",
+  });
 
-  $: deployPageUrl = `${$page.url.protocol}//${$page.url.host}/deploy`;
-
-  $: if (!$user.data?.user && $metadata.data) {
-    deployCTAUrl = `${$metadata.data.loginUrl}?redirect=${deployPageUrl}`;
-  } else {
-    deployCTAUrl = deployPageUrl;
-  }
-
-  async function onRedeploy() {
-    void behaviourEvent?.fireDeployEvent(BehaviourEventAction.DeployIntent);
-
-    await waitUntil(() => !get(currentProject).isFetching);
-    if (get(currentProject).data?.project?.githubUrl) {
-      pushThroughGitOpen = true;
+  async function onDeploy(resumingDeploy = false) {
+    await waitUntil(() => !get(deploymentState).loading);
+    if (get(deploymentState).hasRemoteChanges) {
+      remoteChangeDialog = true;
       return;
     }
 
-    window.open(deployCTAUrl, "_blank");
-  }
+    // Check user login
 
-  function onShowDeploy() {
-    if (!isFirstTimeDeploy) {
-      // do not show the confirmation dialog for successive deploys
-      void behaviourEvent?.fireDeployEvent(BehaviourEventAction.DeployIntent);
-      window.open(deployCTAUrl, "_blank");
+    const userResp = get(userQuery).data;
+    if (!userResp?.user) {
+      if (resumingDeploy) {
+        // Redirect loop breaker.
+        // Right now we set `deploy=true` during a login flow to resume deploy intent.
+        // So if it is true without a user, then there was an unexpected error somewhere.
+        eventBus.emit("notification", {
+          type: "error",
+          message: "Authentication failed. Please try deploying again.",
+        });
+        return;
+      }
+      // Login url is on a separate domain, so use window.open instead of goto.
+      window.location.href = `${$metadata.data!.loginUrl}?redirect=${redirectPageUrl}`;
       return;
     }
 
-    deployConfirmOpen = true;
+    // Check matching projects
+
+    await waitUntil(() => !get(matchingProjectsQuery).isLoading);
+    const matchingProjects = get(matchingProjectsQuery).data?.projects;
+    if (matchingProjects?.length) {
+      updateProjectDropdownOpen = true;
+      return;
+    }
+
+    if (!userResp.rillUserOrgs?.length) {
+      // 1st time user. show a modal explaining the trial period.
+      deployConfirmOpen = true;
+      return;
+    }
+
+    // do not show the confirmation dialog for successive deploys
     void behaviourEvent?.fireDeployEvent(BehaviourEventAction.DeployIntent);
+    window.open(deployPageUrl, "_blank");
   }
+
+  async function handleForceFetchRemoteCommits() {
+    errorFromGitCommand = null;
+    const resp = await $gitPullMutation.mutateAsync({
+      discardLocal: true,
+    });
+    // TODO: download diff once API is ready
+
+    void queryClient.invalidateQueries({
+      queryKey: getLocalServiceGitStatusQueryKey(),
+    });
+
+    if (!resp.output) {
+      remoteChangeDialog = false;
+      eventBus.emit("notification", {
+        message:
+          "Remote project changes fetched and merged. Your changes have been stashed.",
+      });
+      return;
+    }
+
+    errorFromGitCommand = new Error(resp.output);
+  }
+
+  onMount(() => {
+    if ($page.url.searchParams.get("deploy") === "true") {
+      // If we are resuming deploy, then unset the param from the url.
+      // This prevents the user from saving/sharing a url that would open the deploy dropdown.
+      void goto(copyWithAdditionalArguments($page.url, {}, { deploy: false }));
+      void onDeploy(true);
+    }
+  });
 </script>
 
-{#if isDeployed}
-  <ProjectRedeployConfirmDialog
-    isLoading={$currentProject.isLoading}
-    onConfirm={onRedeploy}
+{#if isDeployed && !hasRemoteChanges}
+  <UpdateProjectPopup
+    bind:open={updateProjectDropdownOpen}
+    matchingProjects={$matchingProjectsQuery.data?.projects ?? []}
   />
 {:else}
   <Tooltip distance={8}>
     <Button
-      loading={$currentProject.isLoading}
-      on:click={onShowDeploy}
+      {loading}
+      onClick={() =>
+        hasRemoteChanges ? (remoteChangeDialog = true) : onDeploy()}
       type={hasValidDashboard ? "primary" : "secondary"}
     >
       <Rocket size="16px" />
@@ -101,10 +169,11 @@
   </Tooltip>
 {/if}
 
-<TrialDetailsDialog bind:open={deployConfirmOpen} {deployCTAUrl} />
+<TrialDetailsDialog bind:open={deployConfirmOpen} />
 
-<PushToGitForDeployDialog
-  bind:open={pushThroughGitOpen}
-  githubUrl={$currentProject.data?.project?.githubUrl ?? ""}
-  subpath={$currentProject.data?.project?.subpath ?? ""}
+<ProjectContainsRemoteChangesDialog
+  bind:open={remoteChangeDialog}
+  loading={githubPullPending}
+  {error}
+  onFetchAndMerge={handleForceFetchRemoteCommits}
 />

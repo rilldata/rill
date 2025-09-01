@@ -2,6 +2,8 @@ package postgres
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"testing"
@@ -30,6 +32,7 @@ func TestPostgres(t *testing.T) {
 	require.NotNil(t, db)
 
 	require.NoError(t, db.Migrate(ctx))
+	defer func() { require.NoError(t, db.Close()) }()
 
 	t.Run("TestOrganizations", func(t *testing.T) { testOrganizations(t, db) })
 	t.Run("TestOrgsWithPagination", func(t *testing.T) { testOrgsWithPagination(t, db) })
@@ -39,9 +42,71 @@ func TestPostgres(t *testing.T) {
 	t.Run("TestProjectsForUsersWithPagination", func(t *testing.T) { testProjectsForUserWithPagination(t, db) })
 	t.Run("TestMembersWithPagination", func(t *testing.T) { testOrgsMembersPagination(t, db) })
 	t.Run("TestUpsertProjectVariable", func(t *testing.T) { testUpsertProjectVariable(t, db) })
-	// Add new tests here
+	t.Run("TestManagedGitRepos", func(t *testing.T) { testManagedGitRepos(t, db) })
 
-	require.NoError(t, db.Close())
+	t.Run("TestOrgNameValidation", func(t *testing.T) {
+		cases := []struct {
+			name          string
+			errorContains string
+		}{
+			{"", "must be at least 2 characters"},
+			{"a", "must be at least 2 characters"},
+			{"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "must be at most 40 characters"},
+			{"foo bar", "must use only letters, numbers, underscores and dashes"},
+			{"foo@bar", "must use only letters, numbers, underscores and dashes"},
+			{"foo_bar!", "must use only letters, numbers, underscores and dashes"},
+			{"-foo", "must use only letters, numbers, underscores and dashes"},
+			{"aa", ""},
+			{"foo-", ""},
+			{"_foo", ""},
+			{"foo_bar_baz_123", ""},
+			{"hello", ""},
+			{"foo-bar", ""},
+			{"foo-bar-baz", ""},
+			{"foo_bar_baz", ""},
+			{"foo_bar_baz_123_", ""},
+			{"FooBar", ""},
+		}
+		for _, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
+				_, err := db.InsertOrganization(context.Background(), &database.InsertOrganizationOptions{Name: tc.name})
+				if tc.errorContains != "" {
+					require.ErrorContains(t, err, tc.errorContains)
+				} else {
+					require.NoError(t, err)
+					require.NoError(t, db.DeleteOrganization(context.Background(), tc.name))
+				}
+			})
+		}
+	})
+
+	t.Run("TestProjectNameValidation", func(t *testing.T) {
+		org, err := db.InsertOrganization(context.Background(), &database.InsertOrganizationOptions{Name: randomName()})
+		require.NoError(t, err)
+
+		cases := []struct {
+			name          string
+			errorContains string
+		}{
+			{"", "must be at least 1 character"},
+			{"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "must be at most 40 characters"},
+			{"foo bar", "must use only letters, numbers, underscores and dashes"},
+			{"foo!", "must use only letters, numbers, underscores and dashes"},
+			{"a", ""},
+			{"foo", ""},
+			{"Foo-Bar_1", ""},
+		}
+		for _, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
+				_, err = db.InsertProject(context.Background(), &database.InsertProjectOptions{OrganizationID: org.ID, Name: tc.name})
+				if tc.errorContains != "" {
+					require.ErrorContains(t, err, tc.errorContains)
+				} else {
+					require.NoError(t, err)
+				}
+			})
+		}
+	})
 }
 
 func testOrganizations(t *testing.T, db database.DB) {
@@ -471,6 +536,120 @@ func testUpsertProjectVariable(t *testing.T, db database.DB) {
 	require.NoError(t, db.DeleteUser(ctx, userID))
 }
 
+func testManagedGitRepos(t *testing.T, db database.DB) {
+	// create a user with random email id
+	user, err := db.InsertUser(context.Background(), &database.InsertUserOptions{Email: fmt.Sprintf("user%d@rilldata.com", time.Now().UnixNano())})
+	require.NoError(t, err)
+
+	// add some orgs
+	org1, err := db.InsertOrganization(context.Background(), &database.InsertOrganizationOptions{
+		Name:            "test-mgd-repo-1",
+		CreatedByUserID: &user.ID,
+	})
+	require.NoError(t, err)
+
+	org2, err := db.InsertOrganization(context.Background(), &database.InsertOrganizationOptions{
+		Name:            "test-mgd-repo-2",
+		CreatedByUserID: &user.ID,
+	})
+	require.NoError(t, err)
+
+	org3, err := db.InsertOrganization(context.Background(), &database.InsertOrganizationOptions{
+		Name:            "test-mgd-repo-3",
+		CreatedByUserID: &user.ID,
+	})
+	require.NoError(t, err)
+
+	// insert some repos
+	m1, err := db.InsertManagedGitRepo(context.Background(), &database.InsertManagedGitRepoOptions{
+		OrgID:   org1.ID,
+		Remote:  "https://github.com/rilldata/rill.git",
+		OwnerID: user.ID,
+	})
+	require.NoError(t, err)
+
+	m2, err := db.InsertManagedGitRepo(context.Background(), &database.InsertManagedGitRepoOptions{
+		OrgID:   org2.ID,
+		Remote:  "https://github.com/rilldata/rill2.git",
+		OwnerID: user.ID,
+	})
+	require.NoError(t, err)
+
+	// there are no unused repos because just created
+	mgdRepos, err := db.FindUnusedManagedGitRepos(context.Background(), 100)
+	require.NoError(t, err)
+	require.Equal(t, 0, len(mgdRepos))
+
+	m3, err := db.InsertManagedGitRepo(context.Background(), &database.InsertManagedGitRepoOptions{
+		OrgID:   org3.ID,
+		Remote:  "https://github.com/rilldata/rill3.git",
+		OwnerID: user.ID,
+	})
+	require.NoError(t, err)
+
+	// create projects using the repos
+	p1, err := db.InsertProject(context.Background(), &database.InsertProjectOptions{
+		OrganizationID:   org1.ID,
+		Name:             "test-mgd-repo-1",
+		ManagedGitRepoID: &m1.ID,
+	})
+	require.NoError(t, err)
+
+	p3, err := db.InsertProject(context.Background(), &database.InsertProjectOptions{
+		OrganizationID:   org3.ID,
+		Name:             "test-mgd-repo-3",
+		ManagedGitRepoID: &m3.ID,
+	})
+	require.NoError(t, err)
+
+	// verify 3 repos exist
+	repos, err := db.CountManagedGitRepos(context.Background(), org1.ID)
+	require.NoError(t, err)
+	require.Equal(t, 1, repos)
+	repos, err = db.CountManagedGitRepos(context.Background(), org2.ID)
+	require.NoError(t, err)
+	require.Equal(t, 1, repos)
+	repos, err = db.CountManagedGitRepos(context.Background(), org3.ID)
+	require.NoError(t, err)
+	require.Equal(t, 1, repos)
+
+	// delete org
+	require.NoError(t, db.DeleteProject(context.Background(), p3.ID))
+	require.NoError(t, db.DeleteOrganization(context.Background(), org3.Name))
+
+	// the mgd repo still exists but org_id is set to null
+	repo, err := db.FindManagedGitRepo(context.Background(), "https://github.com/rilldata/rill3.git")
+	require.NoError(t, err)
+	var res *string = nil
+	require.Equal(t, repo.OrgID, res)
+
+	// there are no unused repos because just created
+	mgdRepos, err = db.FindUnusedManagedGitRepos(context.Background(), 100)
+	require.NoError(t, err)
+	require.Equal(t, 0, len(mgdRepos))
+
+	// manually update updated_at to old date for managed repos
+	_, err = db.(*connection).db.Exec("UPDATE managed_git_repos SET updated_on = NOW() - INTERVAL '10 DAY'")
+	require.NoError(t, err)
+
+	// now we should see 2 unused repos(m2 and m3)
+	mgdRepos, err = db.FindUnusedManagedGitRepos(context.Background(), 100)
+	require.NoError(t, err)
+	require.Equal(t, 2, len(mgdRepos))
+	var ids []string
+	for _, repo := range mgdRepos {
+		ids = append(ids, repo.ID)
+	}
+	require.NotContains(t, m1.ID, ids)
+
+	// cleanup
+	require.NoError(t, db.DeleteProject(context.Background(), p1.ID))
+	require.NoError(t, db.DeleteOrganization(context.Background(), org1.Name))
+	require.NoError(t, db.DeleteOrganization(context.Background(), org2.Name))
+	require.NoError(t, db.DeleteUser(context.Background(), user.ID))
+	require.NoError(t, db.DeleteManagedGitRepos(context.Background(), []string{m1.ID, m2.ID, m3.ID}))
+}
+
 func seed(t *testing.T, db database.DB) (orgID, projectID, userID string) {
 	ctx := context.Background()
 
@@ -491,4 +670,13 @@ func seed(t *testing.T, db database.DB) (orgID, projectID, userID string) {
 	require.NoError(t, err)
 
 	return org.ID, proj.ID, adminUser.ID
+}
+
+func randomName() string {
+	id := make([]byte, 16)
+	_, err := rand.Read(id)
+	if err != nil {
+		panic(err)
+	}
+	return "test_" + hex.EncodeToString(id)
 }

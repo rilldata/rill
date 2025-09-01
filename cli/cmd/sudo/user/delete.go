@@ -57,7 +57,10 @@ Example:
 				}
 			}
 
-			_, err = client.DeleteUser(ctx, &adminv1.DeleteUserRequest{Email: email})
+			_, err = client.DeleteUser(ctx, &adminv1.DeleteUserRequest{
+				Email:                email,
+				SuperuserForceAccess: true,
+			})
 			if err != nil {
 				return fmt.Errorf("failed to delete user %q: %w", email, err)
 			}

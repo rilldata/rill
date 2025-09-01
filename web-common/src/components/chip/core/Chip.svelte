@@ -11,7 +11,8 @@
   export let removable = false;
   export let active = false;
   export let readOnly = false;
-  export let type: "measure" | "dimension" | "time" | "special" = "dimension";
+  export let type: "measure" | "dimension" | "time" | "special" | "amber" =
+    "dimension";
   export let exclude = false;
   export let grab = false;
   export let compact = false;
@@ -23,6 +24,7 @@
   export let label: string | undefined = undefined;
   export let removeTooltipText: string | undefined = undefined;
   export let allowPointerEvents = false;
+  export let theme = false;
 
   const dispatch = createEventDispatcher();
 
@@ -41,6 +43,7 @@
 <div in:slideRight={{ duration: slideDuration }}>
   <div
     class="chip {type}"
+    class:theme
     class:active
     class:grab
     class:exclude
@@ -65,6 +68,7 @@
           on:mouseleave={blurOnRemove}
           on:blur={blurOnRemove}
           on:click|stopPropagation={() => dispatch("remove")}
+          type="button"
         >
           <CancelCircle size="16px" />
         </button>
@@ -81,6 +85,7 @@
         on:mousedown
         aria-label={`Open ${label}`}
         class="text-inherit w-full select-none flex items-center justify-between gap-x-1 px-0.5"
+        type="button"
       >
         <slot name="body" />
 
@@ -116,9 +121,24 @@
     @apply bg-primary-100;
   }
 
+  .dimension:hover,
   .dimension:active,
   .dimension.active {
-    @apply border-primary-400;
+    @apply bg-primary-100;
+  }
+
+  .dimension.theme {
+    @apply bg-theme-50 border-theme-200 text-theme-800;
+  }
+
+  .dimension.theme:active,
+  .dimension.theme.active {
+    @apply border-theme-400;
+  }
+
+  .dimension.theme:active,
+  .dimension.theme.active {
+    @apply border-theme-400;
   }
 
   .measure {
@@ -137,8 +157,24 @@
     @apply border-secondary-400;
   }
 
+  .measure.theme {
+    @apply rounded-sm;
+    @apply bg-theme-secondary-50 border-theme-secondary-200 text-theme-secondary-800;
+  }
+
+  .measure.theme:hover,
+  .measure.theme:active,
+  .measure.theme.active {
+    @apply bg-theme-secondary-100;
+  }
+
+  .measure.theme:active,
+  .measure.theme.active {
+    @apply border-theme-secondary-400;
+  }
+
   .exclude {
-    @apply bg-gray-50 border-gray-200 text-gray-600;
+    @apply bg-gray-50 text-gray-600;
   }
 
   .exclude:hover,
@@ -154,7 +190,7 @@
 
   .time {
     @apply rounded-2xl;
-    @apply bg-white border-slate-200 text-slate-800;
+    @apply bg-surface border-slate-200 text-slate-800;
   }
 
   .time:hover,
@@ -166,6 +202,18 @@
   .time.active,
   .time:active {
     @apply border-slate-400;
+  }
+
+  .amber {
+    @apply rounded-2xl h-[18px] text-xs;
+    @apply bg-amber-50 border-amber-300 text-amber-600;
+    @apply font-normal;
+  }
+
+  .amber:hover,
+  .amber:active,
+  .amber.active {
+    @apply bg-amber-100;
   }
 
   .compact {

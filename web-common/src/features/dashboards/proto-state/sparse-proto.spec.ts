@@ -1,7 +1,7 @@
 import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
 import { getFullInitExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-store-defaults";
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
-import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import {
   AD_BIDS_EXPLORE_INIT,
   AD_BIDS_EXPLORE_NAME,
@@ -39,7 +39,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 const TestCases: {
   title: string;
   mutations: TestDashboardMutation[];
-  keys: (keyof MetricsExplorerEntity)[];
+  keys: (keyof ExploreState)[];
 }[] = [
   {
     title: "filters",
@@ -151,18 +151,20 @@ describe("sparse proto", () => {
   });
 });
 
-function assertDashboardEquals(name: string, expected: MetricsExplorerEntity) {
+function assertDashboardEquals(name: string, expectedState: ExploreState) {
   expect(cleanDashboard(get(metricsExplorerStore).entities[name])).toEqual(
-    cleanDashboard(expected),
+    cleanDashboard(expectedState),
   );
 }
 
-function cleanDashboard(dashboard: MetricsExplorerEntity) {
-  const newDash = deepClone(dashboard);
+function cleanDashboard(exploreState: ExploreState) {
+  const newDash = deepClone(exploreState);
   delete newDash.proto;
   if (newDash.selectedTimeRange) {
     delete (newDash.selectedTimeRange as any).start;
     delete (newDash.selectedTimeRange as any).end;
   }
+  delete (newDash as any).contextColumnWidths;
+  delete (newDash as any).temporaryFilterName;
   return newDash;
 }

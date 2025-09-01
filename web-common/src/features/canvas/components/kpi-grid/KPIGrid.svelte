@@ -1,10 +1,10 @@
 <script lang="ts">
   import type { KPIGridComponent } from ".";
+  import ComponentHeader from "../../ComponentHeader.svelte";
   import ComponentError from "../ComponentError.svelte";
-  import { validateKPIGridSchema } from "./selector";
   import { getMinWidth, type KPISpec } from "../kpi";
   import KPIProvider from "../kpi/KPIProvider.svelte";
-  import ComponentHeader from "../../ComponentHeader.svelte";
+  import { validateKPIGridSchema } from "./selector";
 
   export let component: KPIGridComponent;
 
@@ -41,7 +41,7 @@
   $: description = kpiGridProperties.description;
 </script>
 
-<ComponentHeader {title} {description} {filters} />
+<ComponentHeader {component} {title} {description} {filters} />
 
 {#if schema.isValid}
   <div class="h-fit p-0 grow relative" class:!p-0={kpis.length === 1}>
@@ -73,7 +73,7 @@
   }
 
   .border-overlay {
-    @apply absolute border-[12.5px] pointer-events-none border-white size-full;
+    @apply absolute border-[12.5px] pointer-events-none border-surface size-full;
     z-index: 50;
   }
 

@@ -518,7 +518,7 @@
             type="subtle"
             gray={viewingDefaults}
             large
-            on:click={() => {
+            onClick={() => {
               if (viewingDefaults) {
                 updateProperties({}, ["defaults"]);
               } else {

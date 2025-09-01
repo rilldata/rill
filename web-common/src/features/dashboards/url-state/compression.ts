@@ -9,7 +9,10 @@ export function shouldCompressParams(url: URL) {
 
 export function compressUrlParams(params: string) {
   const paramsAsUint8Array = new TextEncoder().encode(params);
-  const compressed = gzipSync(paramsAsUint8Array);
+  const compressed = gzipSync(paramsAsUint8Array, {
+    // Since we are not compression a file disable modified time to avoid output changing based on time.
+    mtime: 0,
+  });
   return protoBase64.enc(compressed).replaceAll("+", "-").replaceAll("/", "_");
 }
 

@@ -1,37 +1,43 @@
+# Service template
+x-service: &service
+  restart: always
+
+# Postgres template
+x-postgres: &postgres
+  <<: *service
+  image: postgres:17
+  ports:
+    - '5432:5432'
+  environment:
+    - POSTGRES_USER=postgres
+    - POSTGRES_PASSWORD=postgres
+
 services:
   postgres:
-    image: postgres:17
-    restart: always
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-    ports:
-      - '5432:5432'
+    <<: *postgres
+    profiles: ["cloud"]
     volumes:
       - ../../../../${RILL_DEVTOOL_STATE_DIRECTORY}/postgres:/var/lib/postgresql/data
   e2e-postgres:
-    image: postgres:17
-    restart: always
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
+    <<: *postgres
+    profiles: ["e2e"]
     ports:
       - '6432:5432'
   redis:
+    <<: *service
     image: redis
-    restart: always
     ports:
       - '6379:6379'
   zipkin:
+    <<: *service
     container_name: zipkin
     image: openzipkin/zipkin:3
-    restart: always
     ports:
       - "9411:9411"
   mailpit:
+    <<: *service
     container_name: mailpit
     image: axllent/mailpit
-    restart: always
     ports:
       - "8025:8025"
       - "1025:1025"
@@ -40,25 +46,25 @@ services:
       MP_UI_BIND_ADDR: 0.0.0.0:8025
       MP_SMTP_AUTH: "user:passwd"
   prometheus:
+    <<: *service
     container_name: prometheus
     image: prom/prometheus:v2.55.1
-    restart: always
     volumes:
       - ./prometheus.yaml:/etc/prometheus/prometheus.yml
     ports:
       - "9412:9090"
   riverui:
+    <<: *service
     container_name: riverui
     image: ghcr.io/riverqueue/riverui:latest
-    restart: always
     environment:
       - DATABASE_URL=postgres://postgres:postgres@postgres:5432/postgres
     ports:
       - 7070:8080
   otel-collector:
+    <<: *service
     container_name: otel-collector
     image: otel/opentelemetry-collector:0.90.0
-    restart: always
     command: ["--config=/etc/otel-collector-config.yaml"]
     volumes:
       - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
@@ -71,11 +77,13 @@ services:
     depends_on:
       - zipkin
   stripe-cli:
+    <<: *service
     image: stripe/stripe-cli:v1.21.11
     command: listen --forward-to http://host.docker.internal:8080/payment/webhook --config /etc/stripe-config.toml
     volumes:
       - ../../../../${RILL_DEVTOOL_STATE_DIRECTORY}/stripe-config.toml:/etc/stripe-config.toml
   clickhouse:
+    <<: *service
     image: 'clickhouse/clickhouse-server:24.11.1.2557'
     volumes:
       - ./clickhouse-config.xml:/etc/clickhouse-server/config.d/config.xml
@@ -85,8 +93,9 @@ services:
       - '9000:9000' # Native port
       - '8123:8123' # HTTP port
   pgweb:
+    <<: *service
+    profiles: ["cloud"]
     image: sosedoff/pgweb
-    restart: always
     ports:
       - "8082:8081"
     environment:

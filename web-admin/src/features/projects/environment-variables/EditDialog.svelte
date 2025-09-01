@@ -1,31 +1,31 @@
 <script lang="ts">
   import { page } from "$app/stores";
+  import {
+    createAdminServiceUpdateProjectVariables,
+    getAdminServiceGetProjectVariablesQueryKey,
+    type AdminServiceUpdateProjectVariablesBodyVariables,
+  } from "@rilldata/web-admin/client";
   import { Button } from "@rilldata/web-common/components/button";
   import {
     Dialog,
     DialogContent,
+    DialogDescription,
+    DialogFooter,
     DialogHeader,
     DialogTitle,
     DialogTrigger,
-    DialogDescription,
-    DialogFooter,
-  } from "@rilldata/web-common/components/dialog-v2";
+  } from "@rilldata/web-common/components/dialog";
   import Checkbox from "@rilldata/web-common/components/forms/Checkbox.svelte";
-  import {
-    createAdminServiceUpdateProjectVariables,
-    getAdminServiceGetProjectVariablesQueryKey,
-  } from "@rilldata/web-admin/client";
-  import { type AdminServiceUpdateProjectVariablesBodyVariables } from "@rilldata/web-admin/client";
-  import { useQueryClient } from "@tanstack/svelte-query";
+  import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import { useQueryClient } from "@tanstack/svelte-query";
+  import { debounce } from "lodash";
+  import { onMount } from "svelte";
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
   import { object, string } from "yup";
   import { EnvironmentType, type VariableNames } from "./types";
-  import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import { getCurrentEnvironment, isDuplicateKey } from "./utils";
-  import { onMount } from "svelte";
-  import { debounce } from "lodash";
 
   export let open = false;
   export let id: string;
@@ -283,7 +283,7 @@
     </DialogHeader>
     <DialogDescription>
       For help, see <a
-        href="https://docs.rilldata.com/tutorials/administration/project/credentials-env-variable-management"
+        href="https://docs.rilldata.com/manage/project-management/variables-and-credentials"
         target="_blank">documentation</a
       >
     </DialogDescription>
@@ -362,7 +362,7 @@
     <DialogFooter>
       <Button
         type="plain"
-        on:click={() => {
+        onClick={() => {
           open = false;
           handleReset();
         }}>Cancel</Button

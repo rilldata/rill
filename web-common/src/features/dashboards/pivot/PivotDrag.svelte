@@ -70,7 +70,7 @@
     @apply pt-3 px-4;
     @apply flex flex-col gap-1 items-start;
     @apply w-full overflow-hidden flex-grow-0;
-    @apply border-b border-slate-200;
+    @apply border-b;
   }
 
   .container:last-of-type {

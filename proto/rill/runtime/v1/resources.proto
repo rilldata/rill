@@ -121,6 +121,9 @@ message ModelSpec {
   google.protobuf.Struct stage_properties = 17;
   string output_connector = 1;
   google.protobuf.Struct output_properties = 12;
+  // change_mode is the mode of change detection to use for the model.
+  ModelChangeMode change_mode = 24;
+  repeated ModelTest tests = 25;
   bool trigger = 9;
   bool trigger_full = 22;
   // defined_as_source is true if it was defined by user as a source but converted internally to a model.
@@ -141,6 +144,10 @@ message ModelState {
   string spec_hash = 3;
   // refs_hash is a hash of the model's refs current state. It is used to determine if the model's refs have changed.
   string refs_hash = 9;
+  // test_hash is a hash of the model's tests current state. It is used to determine if the model's tests have changed.
+  string test_hash = 27;
+  // test_errors contains the results of the model's tests.
+  repeated string test_errors = 28;
   // refreshed_on is the time the model was last executed.
   google.protobuf.Timestamp refreshed_on = 4;
   // incremental_state contains the result of the most recent invocation of the model's incremental state resolver.
@@ -159,6 +166,19 @@ message ModelState {
   int64 latest_execution_duration_ms = 13;
 }
 
+enum ModelChangeMode {
+  MODEL_CHANGE_MODE_UNSPECIFIED = 0;
+  MODEL_CHANGE_MODE_RESET = 1;
+  MODEL_CHANGE_MODE_MANUAL = 2;
+  MODEL_CHANGE_MODE_PATCH = 3;
+}
+
+message ModelTest {
+  string name = 1;
+  string resolver = 2;
+  google.protobuf.Struct resolver_properties = 3;
+}
+
 message MetricsView {
   MetricsViewSpec spec = 1;
   MetricsViewState state = 2;
@@ -174,6 +194,13 @@ message MetricsViewSpec {
     string expression = 6;
     bool unnest = 5;
     string uri = 7;
+    // Lookup fields for the dimension
+    string lookup_table = 8;
+    string lookup_key_column = 9;
+    string lookup_value_column = 10;
+    string lookup_default_expression = 11;
+    // The data type of the dimension. Only populated in ValidSpec.
+    Type data_type = 12;
   }
   // Selector for a dimension
   message DimensionSelector {
@@ -213,6 +240,35 @@ message MetricsViewSpec {
     google.protobuf.Struct format_d3_locale = 13;
     bool valid_percent_of_total = 6;
     string treat_nulls_as = 14;
+    // The data type of the measure. Only populated in ValidSpec.
+    Type data_type = 15;
+  }
+  // name of parent metrics view, if this is a derived metrics view. If this is set then certain fields like table, connector, database*, model, dimensions, and measures will only be set in `state.valid_spec`.
+  string parent = 30;
+  // Annotations that can be applied to measures. Each annotation needs to have a model or a table defined.
+  // 1. The underlying model/table has to have a `time` and `description` columns.
+  // 2. Can additionally have `time_end` column to convert the annotation to range type annotation.
+  // 3. Can additionally have `duration` column, this is used to not query for annotations greater than selected grain in dashboard. Also forces `time` and `time_end` in UI to be truncated to selected grain.
+  message Annotation {
+    string name = 1;
+    // Connector containing the table
+    string connector = 2;
+    // Name of the database where table is located (optional)
+    string database = 3;
+    // Name of the database schema where table is located (optional)
+    string database_schema = 4;
+    // Name of the model that source of annotation
+    string table = 5;
+    // Name of the model that source of annotation. Either table or model should be set.
+    string model = 6;
+    // Measures to apply the annotation to. If `measures_selector` is set, this will only be set in `state.valid_spec`.
+    repeated string measures = 7;
+    // Dynamic selector for `measures`. Will be processed during validation, so it will always be empty in `state.valid_spec`.
+    FieldSelector measures_selector = 8;
+    // Signifies that the underlying table has `time_end` column. Will be used while querying to add additional filter.
+    bool has_time_end = 10;
+    // Signifies that the underlying table has `duration` column. Will be used while querying to add additional filter.
+    bool has_duration = 11;
   }
   // Connector containing the table
   string connector = 1;
@@ -228,6 +284,8 @@ message MetricsViewSpec {
   string display_name = 3;
   // User-facing description
   string description = 4;
+  // Extra context for LLM/AI features. Used to guide natural language question answering and routing.
+  string ai_instructions = 28;
   // Name of the primary time dimension, used for rendering time series
   string time_dimension = 5;
   // The smallest time grain that can be queried for.
@@ -239,6 +297,12 @@ message MetricsViewSpec {
   repeated Dimension dimensions = 6;
   // Measures in the metrics view
   repeated Measure measures = 7;
+  // Dynamic selector for dimensions from parent metrics view. Will be processed during validation, so it will always be empty in `state.valid_spec`. Can only be used if parent is set.
+  FieldSelector parent_dimensions = 31;
+  // Dynamic selector for measures from parent metrics view. Will be processed during validation, so it will always be empty in `state.valid_spec`. Can only be used if parent is set.
+  FieldSelector parent_measures = 32;
+  // Annotations in the metrics view
+  repeated Annotation annotations = 29;
   // Security for the metrics view
   repeated SecurityRule security_rules = 23;
   // ISO 8601 weekday number to use as the base for time aggregations by week. Defaults to 1 (Monday).
@@ -283,9 +347,9 @@ message MetricsViewState {
   // Streaming is true if the underlying data may change without the metrics view's spec/state version changing.
   // It's set to true if the metrics view is based on an externally managed table.
   bool streaming = 2;
-  // The last time the metrics view's underlying model was refreshed.
+  // The last time the metrics view's underlying data was refreshed.
   // This may be empty if the metrics view is based on an externally managed table.
-  google.protobuf.Timestamp model_refreshed_on = 3;
+  google.protobuf.Timestamp data_refreshed_on = 3;
 }
 
 message Explore {
@@ -331,10 +395,17 @@ message ExploreSpec {
   bool lock_time_zone = 19;
   // Allow custom time range
   bool allow_custom_time_range = 20;
+  // When true, it indicates that the explore was defined in a metrics view either explicitly or emitted because version was not set.
+  bool defined_in_metrics_view = 21;
 }
 
 message ExploreState {
+  // Valid spec is a (potentially previous) version of the spec that is known to be valid.
+  // It is also guaranteed to have concrete dimensions and measures, i.e. if the spec has a `dimensions_selector` or `measures_selector`, they will be resolved to concrete fields.
   ExploreSpec valid_spec = 1;
+  // The last time the underlying metrics view's data was refreshed.
+  // This may be empty if the data refresh time is not known, e.g. if the metrics view is based on an externally managed table.
+  google.protobuf.Timestamp data_refreshed_on = 2;
 }
 
 message ExploreTimeRange {
@@ -386,7 +457,11 @@ message ExplorePreset {
   optional bool explore_sort_asc = 18;
   optional ExploreSortType explore_sort_type = 19;
   optional string explore_expanded_dimension = 20;
+
+  // Deprecated
   optional uint32 explore_leaderboard_measure_count = 30;
+  repeated string explore_leaderboard_measures = 31;
+  optional bool explore_leaderboard_show_context_for_all_measures = 32;
 
   optional string time_dimension_measure = 21;
   optional string time_dimension_chart_type = 22;
@@ -473,6 +548,7 @@ message ReportSpec {
   string query_args_json = 6;
   uint64 export_limit = 7;
   ExportFormat export_format = 8;
+  bool export_include_header = 16;
   repeated Notifier notifiers = 11;
   map<string, string> annotations = 10;
   bool watermark_inherit = 12; // If true, will use the lowest watermark of its refs instead of the trigger time.
@@ -624,7 +700,11 @@ message ComponentSpec {
 }
 
 message ComponentState {
+  // Valid spec is a (potentially previous) version of the component's spec that is known to be valid.
   ComponentSpec valid_spec = 1;
+  // The last time any underlying metrics view(s)'s data was refreshed.
+  // This may be empty if the data refresh time is not known, e.g. if the metrics view is based on an externally managed table.
+  google.protobuf.Timestamp data_refreshed_on = 2;
 }
 
 message ComponentVariable {
@@ -676,7 +756,11 @@ message CanvasSpec {
 }
 
 message CanvasState {
+  // Valid spec is a (potentially previous) version of the canvas's spec that is known to be valid.
   CanvasSpec valid_spec = 1;
+  // The last time any underlying metrics view(s)'s data was refreshed.
+  // This may be empty if the data refresh time is not known, e.g. if the metrics view is based on an externally managed table.
+  google.protobuf.Timestamp data_refreshed_on = 2;
 }
 
 message CanvasRow {
@@ -721,8 +805,10 @@ message APISpec {
   string resolver = 1;
   google.protobuf.Struct resolver_properties = 2;
   string openapi_summary = 3;
-  repeated google.protobuf.Struct openapi_parameters = 4;
-  google.protobuf.Struct openapi_response_schema = 5;
+  string openapi_parameters_json = 8;
+  string openapi_request_schema_json = 9;
+  string openapi_response_schema_json = 10;
+  string openapi_defs_prefix = 11;
   repeated SecurityRule security_rules = 6;
   bool skip_nested_security = 7;
 }

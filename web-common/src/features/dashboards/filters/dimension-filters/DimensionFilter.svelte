@@ -1,29 +1,35 @@
-<script context="module">
-  const BulkValueSplitRegex = /\s*[,\n]\s*/;
-</script>
-
 <script lang="ts">
-  import { Button } from "@rilldata/web-common/components/button";
   import { Chip } from "@rilldata/web-common/components/chip";
-  import Label from "@rilldata/web-common/components/forms/Label.svelte";
-  import Select from "@rilldata/web-common/components/forms/Select.svelte";
-  import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
-  import DimensionFilterChipBody from "@rilldata/web-common/features/dashboards/filters/dimension-filters/DimensionFilterChipBody.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
+
   import LoadingSpinner from "@rilldata/web-common/components/icons/LoadingSpinner.svelte";
   import { Search } from "@rilldata/web-common/components/search";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
+  import { DimensionFilterMode } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/constants";
   import {
-    DimensionFilterMode,
-    DimensionFilterModeOptions,
-  } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/dimension-filter-mode";
+    getEffectiveSelectedValues,
+    getItemLists,
+    getSearchPlaceholder,
+    shouldDisableApplyButton,
+  } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/helpers";
+  import {
+    mergeDimensionSearchValues,
+    splitDimensionSearchText,
+  } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/dimension-search-text-utils";
+  import DimensionFilterChipBody from "@rilldata/web-common/features/dashboards/filters/dimension-filters/DimensionFilterChipBody.svelte";
+  import DimensionFilterFooter from "@rilldata/web-common/features/dashboards/filters/dimension-filters/DimensionFilterFooter.svelte";
+  import DimensionFilterModeSelector from "@rilldata/web-common/features/dashboards/filters/dimension-filters/DimensionFilterModeSelector.svelte";
+  import { mergeDimensionAndMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
+  import { getFiltersForOtherDimensions } from "@rilldata/web-common/features/dashboards/selectors";
+  import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+  import type { V1Expression } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { fly } from "svelte/transition";
   import {
-    useDimensionSearch,
     useAllSearchResultsCount,
+    useDimensionSearch,
   } from "web-common/src/features/dashboards/filters/dimension-filters/dimension-filter-values";
 
   export let name: string;
@@ -39,21 +45,34 @@
   export let timeEnd: string | undefined;
   export let timeControlsReady: boolean | undefined;
   export let smallChip = false;
+  export let whereFilter: V1Expression;
+  export let side: "top" | "right" | "bottom" | "left" = "bottom";
   export let onRemove: () => void;
   export let onApplyInList: (values: string[]) => void;
   export let onSelect: (value: string) => void;
+  export let onMultiSelect: (values: string[]) => void;
   export let onApplyContainsMode: (inputText: string) => void = () => {};
   export let onToggleFilterMode: () => void;
+  export let isUrlTooLongAfterInListFilter: (
+    values: string[],
+  ) => boolean = () => false;
 
   let open = openOnMount && !selectedValues.length && !inputText;
   $: sanitisedSearchText = inputText?.replace(/^%/, "").replace(/%$/, "");
   let curMode = mode;
   let curSearchText = "";
   let curExcludeMode = excludeMode;
+  let inListTooLong = false;
+  let selectedValuesProxy: string[] = [];
 
   $: ({ instanceId } = $runtime);
 
   $: resetFilterSettings(mode, sanitisedSearchText);
+
+  // Sync proxy when selectedValues changes (for Select mode)
+  $: if (curMode === DimensionFilterMode.Select) {
+    selectedValuesProxy = [...selectedValues];
+  }
 
   $: checkSearchText(curSearchText);
 
@@ -78,6 +97,13 @@
       timeStart,
       timeEnd,
       enabled: enableSearchQuery,
+      additionalFilter: sanitiseExpression(
+        mergeDimensionAndMeasureFilters(
+          getFiltersForOtherDimensions(whereFilter, name),
+          [],
+        ),
+        undefined,
+      ),
     },
   );
   $: ({
@@ -104,6 +130,13 @@
       timeStart,
       timeEnd,
       enabled: enableSearchCountQuery,
+      additionalFilter: sanitiseExpression(
+        mergeDimensionAndMeasureFilters(
+          getFiltersForOtherDimensions(whereFilter, name),
+          [],
+        ),
+        undefined,
+      ),
     },
   );
   $: ({
@@ -117,12 +150,7 @@
       : `${allSearchResultsCount} of ${searchedBulkValues.length} matched`
     : "0 results";
 
-  $: searchPlaceholder =
-    curMode === DimensionFilterMode.Select
-      ? "Enter search term or paste list of values"
-      : curMode === DimensionFilterMode.InList
-        ? "Paste a list separated by commas or \\n"
-        : "Enter a search term";
+  $: searchPlaceholder = getSearchPlaceholder(curMode);
 
   $: error = errorFromSearchResults ?? errorFromAllSearchResultsCount;
   $: isFetching =
@@ -131,13 +159,30 @@
   $: showExtraInfo = curMode !== DimensionFilterMode.Select; // || curSearchText.length > 0; (Add once we have docs)
 
   $: allSelected = Boolean(
-    selectedValues.length &&
-      correctedSearchResults?.length === selectedValues.length,
+    effectiveSelectedValues.length &&
+      correctedSearchResults?.length === effectiveSelectedValues.length,
   );
-  $: effectiveSelectedValues =
-    curMode !== DimensionFilterMode.InList
-      ? selectedValues
-      : (correctedSearchResults ?? []);
+  $: effectiveSelectedValues = getEffectiveSelectedValues(
+    curMode,
+    selectedValuesProxy,
+    correctedSearchResults ?? [],
+    selectedValues,
+  );
+
+  $: disableApplyButton = shouldDisableApplyButton(
+    curMode,
+    enableSearchCountQuery,
+    inListTooLong,
+  );
+
+  // Split results into checked and unchecked for better UX (like SelectionDropdown)
+  // Use actual selectedValues (not proxy) so items only sort after dropdown closes
+  $: ({ checkedItems, uncheckedItems } = getItemLists(
+    curMode,
+    correctedSearchResults ?? [],
+    selectedValues,
+    curSearchText,
+  ));
 
   /**
    * Reset filter settings based on params to the component.
@@ -151,11 +196,12 @@
       case DimensionFilterMode.Select:
         curMode = DimensionFilterMode.Select;
         curSearchText = "";
+        selectedValuesProxy = [...selectedValues];
         break;
 
       case DimensionFilterMode.InList:
         curMode = DimensionFilterMode.InList;
-        curSearchText = selectedValues.join(",");
+        curSearchText = mergeDimensionSearchValues(selectedValues);
         break;
 
       case DimensionFilterMode.Contains:
@@ -166,14 +212,12 @@
   }
 
   function checkSearchText(inputText: string) {
+    inListTooLong = false;
+
     // Do not check search text and possibly switch to InList when mode is Contains
     if (curMode === DimensionFilterMode.Contains) return;
 
-    let values = inputText.split(BulkValueSplitRegex);
-    if (values.length > 0 && values[values.length - 1] === "") {
-      // Remove the last empty value when the last character is a comma/newline
-      values = values.slice(0, values.length - 1);
-    }
+    const values = splitDimensionSearchText(inputText);
 
     if (values.length <= 1) {
       if (curMode === DimensionFilterMode.InList) {
@@ -183,14 +227,16 @@
     }
     searchedBulkValues = values;
     curMode = DimensionFilterMode.InList;
+    inListTooLong = isUrlTooLongAfterInListFilter(values);
   }
 
   function handleModeChange(newMode: DimensionFilterMode) {
     if (newMode !== DimensionFilterMode.InList) {
       searchedBulkValues = [];
-      // Since in select mode exclude toggle is reflected immediately, reset the mode when user switches to it.
+      // Reset proxy when switching to/from Select mode
       if (newMode === DimensionFilterMode.Select) {
         curExcludeMode = excludeMode;
+        selectedValuesProxy = [...selectedValues];
       }
     } else {
       checkSearchText(curSearchText);
@@ -201,14 +247,21 @@
     if (open) {
       curSearchText =
         mode === DimensionFilterMode.InList
-          ? selectedValues.join(",")
+          ? mergeDimensionSearchValues(selectedValues)
           : (sanitisedSearchText ?? "");
     } else {
+      // Apply proxy changes for Select mode when dropdown closes
+      if (curMode === DimensionFilterMode.Select) {
+        applySelectModeChanges();
+        // Don't reset immediately for Select mode - let props update first
+        return;
+      }
+
       if (selectedValues.length === 0 && !inputText) {
         // filter was cleared. so remove the filter
         onRemove();
       } else {
-        // reset the settings on unmount
+        // reset the settings on unmount (but not for Select mode)
         resetFilterSettings(mode, sanitisedSearchText);
       }
     }
@@ -221,18 +274,36 @@
   }
 
   function onToggleSelectAll() {
-    correctedSearchResults?.forEach((dimensionValue) => {
-      if (!allSelected && selectedValues.includes(dimensionValue)) return;
+    if (curMode === DimensionFilterMode.Select) {
+      // Update proxy for select all/deselect all
+      if (allSelected) {
+        selectedValuesProxy = selectedValuesProxy.filter(
+          (v) => !correctedSearchResults?.includes(v),
+        );
+      } else {
+        const newValues =
+          correctedSearchResults?.filter(
+            (v) => !selectedValuesProxy.includes(v),
+          ) ?? [];
+        selectedValuesProxy = [...selectedValuesProxy, ...newValues];
+      }
+    } else {
+      correctedSearchResults?.forEach((dimensionValue) => {
+        if (!allSelected && effectiveSelectedValues.includes(dimensionValue))
+          return;
 
-      onSelect(dimensionValue);
-    });
+        onSelect(dimensionValue);
+      });
+    }
   }
 
   function onApply() {
+    if (disableApplyButton) return;
     switch (curMode) {
       case DimensionFilterMode.Select:
-        onToggleSelectAll();
-        // Do not close the dropdown.
+        // Apply proxy changes for Select mode
+        applySelectModeChanges();
+        open = false;
         break;
       case DimensionFilterMode.InList:
         if (searchedBulkValues.length === 0) return;
@@ -249,16 +320,38 @@
     }
   }
 
-  // Pasting a text with new line is not supported in input element.
-  // So we need to manually replace newlines to commas.
-  function onPaste(e: ClipboardEvent) {
-    e.stopPropagation();
-    e.preventDefault();
+  function applySelectModeChanges() {
+    // Find values that were added or removed
+    const currentValues = new Set(selectedValues);
+    const proxyValues = new Set(selectedValuesProxy);
 
-    const pastedData = e.clipboardData?.getData("Text");
-    if (!pastedData) return;
+    // Apply all changes
+    onMultiSelect(
+      [...currentValues, ...proxyValues].filter((value) => {
+        const wasSelected = currentValues.has(value);
+        const isSelected = proxyValues.has(value);
 
-    curSearchText = pastedData.replace(/[\n\r]/g, ",");
+        return wasSelected !== isSelected;
+      }),
+    );
+
+    // Handle exclude mode toggle
+    if (curExcludeMode !== excludeMode) {
+      onToggleFilterMode();
+    }
+  }
+
+  function handleItemClick(name: string) {
+    if (curMode === DimensionFilterMode.Select) {
+      // Update proxy instead of calling onSelect immediately
+      if (selectedValuesProxy.includes(name)) {
+        selectedValuesProxy = selectedValuesProxy.filter((v) => v !== name);
+      } else {
+        selectedValuesProxy = [...selectedValuesProxy, name];
+      }
+    } else {
+      onSelect(name);
+    }
   }
 </script>
 
@@ -290,11 +383,14 @@
         active={open}
         exclude={curExcludeMode}
         label={`${name} filter`}
+        theme
         on:remove={onRemove}
         removable={!readOnly}
         {readOnly}
         removeTooltipText="remove {selectedValues.length} value{selectedValues.length !==
-          1 && 's'}"
+        1
+          ? 's'
+          : ''}"
       >
         <DimensionFilterChipBody
           slot="body"
@@ -327,19 +423,15 @@
        So we have a custom implementation here to not overload SearchableMenuContent unnecessarily. -->
   <DropdownMenu.Content
     align="start"
+    {side}
     class="flex flex-col max-h-96 w-[400px] overflow-hidden p-0"
   >
     <div class="flex flex-col px-3 pt-3">
       <div class="flex flex-row">
-        <!-- min-w-[82px] We need the min width since the select component is adding ellipsis unnecessarily when label has a space. -->
-        <Select
-          id="search-mode"
-          bind:value={curMode}
-          options={DimensionFilterModeOptions}
-          onChange={handleModeChange}
+        <DimensionFilterModeSelector
+          bind:mode={curMode}
+          onModeChange={handleModeChange}
           size="md"
-          minWidth={82}
-          forcedTriggerStyle="rounded-r-none"
         />
         <Search
           bind:value={curSearchText}
@@ -348,8 +440,8 @@
           retainValueOnMount
           placeholder={searchPlaceholder}
           on:submit={onApply}
-          on:paste={onPaste}
           forcedInputStyle="rounded-l-none"
+          multiline
         />
       </div>
       {#if showExtraInfo}
@@ -364,15 +456,6 @@
           {:else}
             <div class="grow" />
           {/if}
-
-          <!-- Add it back once we have the docs -->
-          <!--  <a-->
-          <!--    href="https://docs.rilldata.com/"-->
-          <!--    target="_blank"-->
-          <!--    class="text-primary-600 font-medium justify-end"-->
-          <!--  >-->
-          <!--    Learn more-->
-          <!--  </a>-->
         </div>
       {/if}
     </div>
@@ -390,12 +473,45 @@
           <LoadingSpinner />
         </div>
       {:else if error}
+        <div class="min-h-9 p-3 text-center text-red-600 text-xs">error</div>
+      {:else if inListTooLong}
         <div class="min-h-9 p-3 text-center text-red-600 text-xs">
-          {error}
+          List is too long. Please remove some values.
         </div>
       {:else if correctedSearchResults}
         <DropdownMenu.Group class="px-1" aria-label={`${name} results`}>
-          {#each correctedSearchResults as name (name)}
+          <!-- Show checked items first (only in Select mode and when not searching) -->
+          {#if curMode === DimensionFilterMode.Select && !curSearchText}
+            {#each checkedItems as name (name)}
+              {@const selected = effectiveSelectedValues.includes(name)}
+              {@const label = name ?? "null"}
+
+              <svelte:component
+                this={DropdownMenu.CheckboxItem}
+                class="text-xs cursor-pointer"
+                role="menuitem"
+                checked={selected}
+                showXForSelected={curExcludeMode}
+                on:click={() => handleItemClick(name)}
+              >
+                <span>
+                  {#if label.length > 240}
+                    {label.slice(0, 240)}...
+                  {:else}
+                    {label}
+                  {/if}
+                </span>
+              </svelte:component>
+            {/each}
+          {/if}
+
+          <!-- Separator between checked and unchecked items -->
+          {#if curMode === DimensionFilterMode.Select && !curSearchText && checkedItems.length > 0 && uncheckedItems.length > 0}
+            <DropdownMenu.Separator />
+          {/if}
+
+          <!-- Show unchecked items (or all items for non-Select modes) -->
+          {#each uncheckedItems as name (name)}
             {@const selected = effectiveSelectedValues.includes(name)}
             {@const label = name ?? "null"}
 
@@ -411,7 +527,7 @@
               checked={curMode === DimensionFilterMode.Select && selected}
               showXForSelected={curExcludeMode}
               disabled={curMode !== DimensionFilterMode.Select}
-              on:click={() => onSelect(name)}
+              on:click={() => handleItemClick(name)}
             >
               <span>
                 {#if label.length > 240}
@@ -422,58 +538,25 @@
               </span>
             </svelte:component>
           {:else}
-            <div class="ui-copy-disabled text-center p-2 w-full">
-              no results
-            </div>
+            <!-- Show "no results" only if both checked and unchecked are empty -->
+            {#if curMode !== DimensionFilterMode.Select || checkedItems.length === 0}
+              <div class="ui-copy-disabled text-center p-2 w-full">
+                no results
+              </div>
+            {/if}
           {/each}
         </DropdownMenu.Group>
       {/if}
     </div>
 
-    <footer>
-      <div class="flex items-center gap-x-1.5">
-        <Switch
-          checked={curExcludeMode}
-          id="include-exclude"
-          small
-          on:click={handleToggleExcludeMode}
-          label="Include exclude toggle"
-        />
-        <Label class="font-normal text-xs" for="include-exclude">Exclude</Label>
-      </div>
-      {#if curMode === DimensionFilterMode.Select}
-        <Button on:click={onToggleSelectAll} type="plain" class="justify-end">
-          {#if allSelected}
-            Deselect all
-          {:else}
-            Select all
-          {/if}
-        </Button>
-      {:else}
-        <Button
-          on:click={onApply}
-          type="primary"
-          class="justify-end"
-          disabled={!enableSearchCountQuery}
-        >
-          Apply
-        </Button>
-      {/if}
-    </footer>
+    <DimensionFilterFooter
+      mode={curMode}
+      excludeMode={curExcludeMode}
+      {allSelected}
+      {disableApplyButton}
+      onToggleExcludeMode={handleToggleExcludeMode}
+      {onToggleSelectAll}
+      {onApply}
+    />
   </DropdownMenu.Content>
 </DropdownMenu.Root>
-
-<style lang="postcss">
-  footer {
-    height: 42px;
-    @apply border-t border-slate-300;
-    @apply bg-slate-100;
-    @apply flex flex-row flex-none items-center justify-between;
-    @apply gap-x-2 p-2 px-3.5;
-  }
-
-  footer:is(.dark) {
-    @apply bg-gray-800;
-    @apply border-gray-700;
-  }
-</style>

@@ -30,6 +30,9 @@ export function getDefaultExplorePreset(
   metricsViewSpec: V1MetricsViewSpec,
   timeRangeSummary: V1TimeRangeSummary | undefined,
 ) {
+  const defaultMeasure =
+    explore.defaultPreset?.measures?.[0] ?? explore.measures?.[0];
+
   const defaultExplorePreset: V1ExplorePreset = {
     view: V1ExploreWebView.EXPLORE_WEB_VIEW_EXPLORE,
     where: createAndExpression([]),
@@ -47,12 +50,12 @@ export function getDefaultExplorePreset(
     compareTimeRange: "",
     comparisonDimension: "",
 
-    exploreSortBy:
-      explore.defaultPreset?.measures?.[0] ?? explore.measures?.[0],
+    exploreSortBy: defaultMeasure,
     exploreSortAsc: false,
     exploreSortType: V1ExploreSortType.EXPLORE_SORT_TYPE_VALUE,
     exploreExpandedDimension: "",
-    exploreLeaderboardMeasureCount: 1,
+    exploreLeaderboardMeasures: defaultMeasure ? [defaultMeasure] : [],
+    exploreLeaderboardShowContextForAllMeasures: false,
 
     timeDimensionMeasure: "",
     timeDimensionChartType: ToURLParamTDDChartMap[TDDChart.DEFAULT],

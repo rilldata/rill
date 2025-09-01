@@ -8,9 +8,12 @@ import (
 	"strings"
 	"time"
 
+	"connectrpc.com/vanguard/vanguardgrpc"
 	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
 	grpc_validator "github.com/grpc-ecosystem/go-grpc-middleware/validator"
 	gateway "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"github.com/mark3labs/mcp-go/client"
+	"github.com/mark3labs/mcp-go/server"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -28,7 +31,6 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -59,6 +61,9 @@ type Server struct {
 	codec    *securetoken.Codec
 	limiter  ratelimit.Limiter
 	activity *activity.Client
+	// MCP server and client for tool calling and API functionality
+	mcpServer *server.MCPServer
+	mcpClient *client.Client
 }
 
 var (
@@ -96,6 +101,14 @@ func NewServer(ctx context.Context, opts *Options, rt *runtime.Runtime, logger *
 		srv.aud = aud
 	}
 
+	// Initialize MCP server and client for shared use across the runtime
+	srv.mcpServer = srv.newMCPServer()
+	mcpClient, err := srv.newMCPClient(srv.mcpServer)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create MCP client: %w", err)
+	}
+	srv.mcpClient = mcpClient
+
 	return srv, nil
 }
 
@@ -107,21 +120,44 @@ func (s *Server) Close() error {
 		s.aud.Close()
 	}
 
+	if s.mcpClient != nil {
+		s.mcpClient.Close()
+	}
+
 	return nil
 }
 
 // Ping implements RuntimeService
 func (s *Server) Ping(ctx context.Context, req *runtimev1.PingRequest) (*runtimev1.PingResponse, error) {
 	resp := &runtimev1.PingResponse{
-		Version: "", // TODO: Return version
+		Version: s.runtime.Version().String(),
 		Time:    timestamppb.New(time.Now()),
 	}
 	return resp, nil
 }
 
-// ServeGRPC Starts the gRPC server.
-func (s *Server) ServeGRPC(ctx context.Context) error {
-	server := grpc.NewServer(
+// Starts the HTTP server.
+func (s *Server) ServeHTTP(ctx context.Context, registerAdditionalHandlers func(mux *http.ServeMux), local bool) error {
+	handler, err := s.HTTPHandler(ctx, registerAdditionalHandlers, local)
+	if err != nil {
+		return err
+	}
+
+	return graceful.ServeHTTP(ctx, handler, graceful.ServeOptions{
+		Port:     s.opts.HTTPPort,
+		GRPCPort: s.opts.GRPCPort,
+		CertPath: s.opts.TLSCertPath,
+		KeyPath:  s.opts.TLSKeyPath,
+		Logger:   s.logger,
+	})
+}
+
+// HTTPHandler returns a HTTP handler that serves REST and gRPC.
+func (s *Server) HTTPHandler(ctx context.Context, registerAdditionalHandlers func(mux *http.ServeMux), local bool) (http.Handler, error) {
+	httpMux := http.NewServeMux()
+
+	// Create gRPC server
+	grpcServer := grpc.NewServer(
 		grpc.ChainStreamInterceptor(
 			middleware.TimeoutStreamServerInterceptor(timeoutSelector),
 			observability.LoggingStreamServerInterceptor(s.logger),
@@ -142,80 +178,29 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 		),
 		grpc.StatsHandler(otelgrpc.NewServerHandler()),
 	)
+	runtimev1.RegisterRuntimeServiceServer(grpcServer, s)
+	runtimev1.RegisterQueryServiceServer(grpcServer, s)
+	runtimev1.RegisterConnectorServiceServer(grpcServer, s)
 
-	runtimev1.RegisterRuntimeServiceServer(server, s)
-	runtimev1.RegisterQueryServiceServer(server, s)
-	runtimev1.RegisterConnectorServiceServer(server, s)
-	s.logger.Sugar().Infof("serving runtime gRPC on port:%v", s.opts.GRPCPort)
-	return graceful.ServeGRPC(ctx, server, s.opts.GRPCPort)
-}
-
-// Starts the HTTP server.
-func (s *Server) ServeHTTP(ctx context.Context, registerAdditionalHandlers func(mux *http.ServeMux)) error {
-	handler, err := s.HTTPHandler(ctx, registerAdditionalHandlers)
+	// Add gRPC and gRPC-to-REST transcoder.
+	// This will be the fallback for REST routes like `/v1/ping` and GPRC routes like `/rill.admin.v1.RuntimeService/Ping`.
+	transcoder, err := vanguardgrpc.NewTranscoder(grpcServer)
 	if err != nil {
-		return err
+		return nil, fmt.Errorf("failed to create transcoder: %w", err)
 	}
-
-	server := &http.Server{Handler: handler}
-	s.logger.Sugar().Infof("serving HTTP on port:%v", s.opts.HTTPPort)
-	options := graceful.ServeOptions{
-		Port:     s.opts.HTTPPort,
-		CertPath: s.opts.TLSCertPath,
-		KeyPath:  s.opts.TLSKeyPath,
-	}
-	return graceful.ServeHTTP(ctx, server, options)
-}
-
-// HTTPHandler HTTP handler serving REST gateway.
-func (s *Server) HTTPHandler(ctx context.Context, registerAdditionalHandlers func(mux *http.ServeMux)) (http.Handler, error) {
-	// Create REST gateway
-	gwMux := gateway.NewServeMux(
-		gateway.WithErrorHandler(HTTPErrorHandler),
-		gateway.WithOutgoingHeaderMatcher(func(s string) (string, bool) {
-			// grpc gateway adds gateway.MetadataHeaderPrefix to all outgoing headers
-			// we want to skip that for `x-trace-id` set in response
-			if s == observability.TracingHeader {
-				return s, true
-			}
-			// default matcher logic
-			return fmt.Sprintf("%s%s", gateway.MetadataHeaderPrefix, s), true
-		}),
-	)
-	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
-	grpcAddress := fmt.Sprintf("localhost:%d", s.opts.GRPCPort)
-	err := runtimev1.RegisterRuntimeServiceHandlerFromEndpoint(ctx, gwMux, grpcAddress, opts)
-	if err != nil {
-		return nil, err
-	}
-	err = runtimev1.RegisterQueryServiceHandlerFromEndpoint(ctx, gwMux, grpcAddress, opts)
-	if err != nil {
-		return nil, err
-	}
-	err = runtimev1.RegisterConnectorServiceHandlerFromEndpoint(ctx, gwMux, grpcAddress, opts)
-	if err != nil {
-		return nil, err
-	}
-
-	// One-off REST-only path for multipart file upload
-	// NOTE: It's local only and we should deprecate it in favor of a cloud-friendly alternative.
-	err = gwMux.HandlePath("POST", "/v1/instances/{instance_id}/files/upload/-/{path=**}", auth.GatewayMiddleware(s.aud, s.UploadMultipartFile))
-	if err != nil {
-		panic(err)
-	}
+	httpMux.Handle("/v1/", transcoder)
+	httpMux.Handle("/rill.runtime.v1.RuntimeService/", transcoder)
+	httpMux.Handle("/rill.runtime.v1.QueryService/", transcoder)
+	httpMux.Handle("/rill.runtime.v1.ConnectorService/", transcoder)
 
 	// Call callback to register additional paths
 	// NOTE: This is so ugly, but not worth refactoring it properly right now.
-	httpMux := http.NewServeMux()
 	if registerAdditionalHandlers != nil {
 		registerAdditionalHandlers(httpMux)
 	}
 
-	// Add gRPC-gateway on httpMux
-	httpMux.Handle("/v1/", gwMux)
-
 	// Add HTTP handler for health check
-	observability.MuxHandle(httpMux, "/v1/health", observability.Middleware("runtime", s.logger, http.HandlerFunc(s.healthCheckHandler)))
+	observability.MuxHandle(httpMux, "/v1/health", observability.Middleware("runtime", s.logger, httputil.Handler(s.healthCheckHandler)))
 
 	// Add HTTP handler for query export downloads
 	observability.MuxHandle(httpMux, "/v1/download", observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, http.HandlerFunc(s.downloadHandler))))
@@ -229,10 +214,29 @@ func (s *Server) HTTPHandler(ctx context.Context, registerAdditionalHandlers fun
 	// Serving static assets
 	observability.MuxHandle(httpMux, "/v1/instances/{instance_id}/assets/{path...}", observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, httputil.Handler(s.assetsHandler))))
 
+	// Add HTTP handler for multipart file upload
+	observability.MuxHandle(httpMux, "/v1/instances/{instance_id}/files/upload/-/{path...}", observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, http.HandlerFunc(s.UploadMultipartFile))))
+
+	// Add HTTP handler for watching files
+	httpMux.Handle("/v1/instances/{instance_id}/files/watch", auth.HTTPMiddleware(s.aud, http.HandlerFunc(s.WatchFilesHandler)))
+
+	// Add HTTP handler for watching resources
+	httpMux.Handle("/v1/instances/{instance_id}/resources/-/watch", auth.HTTPMiddleware(s.aud, http.HandlerFunc(s.WatchResourcesHandler)))
+
 	// Add Prometheus
 	if s.opts.ServePrometheus {
 		httpMux.Handle("/metrics", promhttp.Handler())
 	}
+
+	// Adds the MCP server handlers.
+	// The path without an instance ID is a convenience path intended for Rill Developer (localhost). In this case, the implementation falls back to using the default instance ID.
+	mcpHandler := observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, s.newMCPHTTPHandler(s.mcpServer)))
+	observability.MuxHandle(httpMux, "/mcp", mcpHandler)                                    // Routes to the default instance ID (for Rill Developer on localhost)
+	observability.MuxHandle(httpMux, "/v1/instances/{instance_id}/mcp", mcpHandler)         // The MCP handler will extract the instance ID from the request path.
+	observability.MuxHandle(httpMux, "/mcp/sse", mcpHandler)                                // Backwards compatibility
+	observability.MuxHandle(httpMux, "/mcp/message", mcpHandler)                            // Backwards compatibility
+	observability.MuxHandle(httpMux, "/v1/instances/{instance_id}/mcp/sse", mcpHandler)     // Backwards compatibility
+	observability.MuxHandle(httpMux, "/v1/instances/{instance_id}/mcp/message", mcpHandler) // Backwards compatibility
 
 	// Build CORS options for runtime server
 

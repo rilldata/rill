@@ -1,31 +1,23 @@
+import { getSnoozeValueFromAlertSpec } from "@rilldata/web-common/features/alerts/delivery-tab/snooze.ts";
 import type { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
 import {
   getEmptyMeasureFilterEntry,
   mapExprToMeasureFilter,
   type MeasureFilterEntry,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
-import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
-import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
-import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
+import { getExploreName } from "@rilldata/web-common/features/explore-mappers/utils.ts";
+import { getExistingScheduleFormValues } from "@rilldata/web-common/features/scheduled-reports/time-utils.ts";
 import {
   type V1AlertSpec,
   type V1MetricsViewAggregationDimension,
   type V1MetricsViewAggregationMeasure,
   type V1MetricsViewAggregationRequest,
-  type V1MetricsViewSpec,
-  type V1MetricsViewTimeRangeResponse,
   V1Operation,
-  type V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
 
 export type AlertFormValuesSubset = Pick<
   AlertFormValues,
   | "metricsViewName"
-  | "whereFilter"
-  | "dimensionsWithInlistFilter"
-  | "dimensionThresholdFilters"
-  | "timeRange"
-  | "comparisonTimeRange"
   | "measure"
   | "splitByDimension"
   | "criteria"
@@ -34,39 +26,12 @@ export type AlertFormValuesSubset = Pick<
 
 export function extractAlertFormValues(
   queryArgs: V1MetricsViewAggregationRequest,
-  metricsViewSpec: V1MetricsViewSpec,
-  allTimeRange: V1MetricsViewTimeRangeResponse,
-  partialExploreState: Partial<MetricsExplorerEntity>,
 ): AlertFormValuesSubset {
   if (!queryArgs) return {} as AlertFormValuesSubset;
 
   const measures = queryArgs.measures as V1MetricsViewAggregationMeasure[];
   const dimensions =
     queryArgs.dimensions as V1MetricsViewAggregationDimension[];
-
-  const timeRange = (queryArgs.timeRange as V1TimeRange) ?? {
-    isoDuration: TimeRangePreset.ALL_TIME,
-  };
-  if (!timeRange.end && allTimeRange.timeRangeSummary?.max) {
-    // alerts only have duration optionally offset, end is added during execution by reconciler
-    // so, we add end here to get a valid query
-    timeRange.end = allTimeRange.timeRangeSummary?.max;
-  }
-
-  const comparisonTimeRange = queryArgs.comparisonTimeRange;
-  if (
-    comparisonTimeRange &&
-    !comparisonTimeRange.end &&
-    allTimeRange.timeRangeSummary?.max
-  ) {
-    // alerts only have duration and offset, end is added during execution by reconciler
-    // so, we add end here to get a valid query
-    comparisonTimeRange.end = allTimeRange.timeRangeSummary?.max;
-  }
-
-  const { dimensionFilters, dimensionThresholdFilters } = splitWhereFilter(
-    queryArgs.where,
-  );
 
   return {
     measure: measures[0]?.name ?? "",
@@ -79,12 +44,6 @@ export function extractAlertFormValues(
 
     // These are not part of the form, but are used to track the state of the form
     metricsViewName: queryArgs.metricsView as string,
-    whereFilter: dimensionFilters,
-    dimensionsWithInlistFilter:
-      partialExploreState.dimensionsWithInlistFilter ?? [],
-    dimensionThresholdFilters,
-    timeRange,
-    comparisonTimeRange,
   };
 }
 
@@ -103,30 +62,54 @@ export function extractAlertNotification(
   const slackNotifier = alertSpec.notifiers?.find(
     (n) => n.connector === "slack",
   );
-  const slackChannels = slackNotifier?.properties?.channels as
-    | string[]
-    | undefined;
-  const slackUsers = slackNotifier?.properties?.users as string[] | undefined;
+  const slackChannels = slackNotifier?.properties?.channels
+    ? [...(slackNotifier.properties.channels as string[])]
+    : [];
+  slackChannels.push("");
+  const slackUsers = slackNotifier?.properties?.users
+    ? [...(slackNotifier.properties.users as string[])]
+    : [];
+  slackUsers.push("");
 
   const emailNotifier = alertSpec.notifiers?.find(
     (n) => n.connector === "email",
   );
-  const emailRecipients = emailNotifier?.properties?.recipients as
-    | string[]
-    | undefined;
+  const emailRecipients = emailNotifier?.properties?.recipients
+    ? [...(emailNotifier.properties.recipients as string[])]
+    : [];
+  emailRecipients.push("");
 
   return {
     enableSlackNotification: !!slackNotifier,
-    slackChannels: mapAndAddEmptyEntry(slackChannels, "channel"),
-    slackUsers: mapAndAddEmptyEntry(slackUsers, "email"),
+    slackChannels,
+    slackUsers,
 
     enableEmailNotification: !!emailNotifier,
-    emailRecipients: mapAndAddEmptyEntry(emailRecipients, "email"),
+    emailRecipients,
   };
 }
 
-function mapAndAddEmptyEntry<R>(entries: string[] | undefined, key: string): R {
-  const mappedEntries = entries?.map((e) => ({ [key]: e })) ?? [];
-  mappedEntries.push({ [key]: "" });
-  return mappedEntries as R;
+export function getExistingAlertInitialFormValues(
+  alertSpec: V1AlertSpec,
+  metricsViewName: string,
+): AlertFormValues {
+  const queryArgsJson = JSON.parse(
+    (alertSpec.resolverProperties?.query_args_json ??
+      alertSpec.queryArgsJson) as string,
+  ) as V1MetricsViewAggregationRequest;
+
+  const exploreName = getExploreName(
+    alertSpec.annotations?.web_open_path ?? "",
+  );
+
+  return {
+    name: alertSpec.displayName as string,
+    exploreName: exploreName ?? metricsViewName,
+    snooze: getSnoozeValueFromAlertSpec(alertSpec),
+    evaluationInterval: alertSpec.intervalsIsoDuration ?? "",
+    refreshWhenDataRefreshes: !alertSpec.refreshSchedule?.cron,
+    ...getExistingScheduleFormValues(alertSpec.refreshSchedule),
+    ...extractAlertNotification(alertSpec),
+    ...extractAlertFormValues(queryArgsJson),
+  };
 }

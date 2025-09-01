@@ -1,0 +1,4 @@
+ALTER TABLE projects ADD COLUMN dev_slots INTEGER NOT NULL DEFAULT 8;
+ALTER TABLE projects ADD COLUMN dev_ttl_seconds BIGINT NOT NULL DEFAULT 21600; -- 6 hours
+ALTER TABLE deployments ADD COLUMN environment TEXT NOT NULL DEFAULT 'prod';
+ALTER TABLE deployments ADD COLUMN owner_user_id UUID REFERENCES users(id) ON DELETE SET NULL;

@@ -5,46 +5,97 @@
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import type { V1ThemeSpec } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { featureFlags } from "../feature-flags";
   import {
     defaultPrimaryColors,
     defaultSecondaryColors,
   } from "../themes/color-config";
   import { useTheme } from "../themes/selectors";
 
-  const defaultTheme: V1ThemeSpec = {
-    primaryColorRaw: `hsl(${defaultPrimaryColors[500].split(" ").join(",")})`,
-    secondaryColorRaw: `hsl(${defaultSecondaryColors[500].split(" ").join(",")})`,
-  };
+  const DEFAULT_PRIMARY = `hsl(${defaultPrimaryColors[500].split(" ").join(",")})`;
+  const DEFAULT_SECONDARY = `hsl(${defaultSecondaryColors[500].split(" ").join(",")})`;
+  const FALLBACK_PRIMARY = "hsl(180, 100%, 50%)";
+  const FALLBACK_SECONDARY = "lightgreen";
 
-  const fallbackCustomTheme: V1ThemeSpec = {
-    primaryColorRaw: "hsl(180, 100%, 50%)",
-    secondaryColorRaw: "lightgreen",
-  };
+  const { darkMode } = featureFlags;
 
   export let themeNames: string[];
   export let theme: string | V1ThemeSpec | undefined;
+  export let small = false;
   export let onThemeChange: (themeName: string | undefined) => void;
   export let onColorChange: (primary: string, secondary: string) => void;
-  export let small = false;
 
-  let themeProxy: V1ThemeSpec =
-    typeof theme === "string" || theme === undefined
-      ? fallbackCustomTheme
-      : theme;
-  let presetProxy: string | undefined =
-    typeof theme === "string" ? theme : undefined;
+  let customPrimary = "";
+  let customSecondary = "";
+  let lastPresetTheme: string | undefined = undefined;
 
   $: ({ instanceId } = $runtime);
 
+  $: isPresetMode = theme === undefined || typeof theme === "string";
+  $: embeddedTheme = typeof theme === "object" ? theme : undefined;
+
+  $: lastPresetTheme =
+    isPresetMode && typeof theme === "string" ? theme : lastPresetTheme;
+
   $: themeQuery =
-    typeof theme === "string" ? useTheme(instanceId, theme) : undefined;
+    theme && typeof theme === "string"
+      ? useTheme(instanceId, theme)
+      : undefined;
 
-  $: fetchedTheme = themeQuery && $themeQuery?.data?.theme?.spec;
+  $: fetchedTheme = $themeQuery?.data?.theme?.spec as V1ThemeSpec | undefined;
 
-  $: currentTheme =
-    fetchedTheme ?? (theme === undefined ? defaultTheme : themeProxy);
+  $: currentThemeSpec = embeddedTheme || fetchedTheme;
 
-  $: presetMode = theme === undefined || typeof theme === "string";
+  $: effectivePrimary = isPresetMode
+    ? currentThemeSpec?.primaryColorRaw || DEFAULT_PRIMARY
+    : customPrimary || currentThemeSpec?.primaryColorRaw || FALLBACK_PRIMARY;
+
+  $: effectiveSecondary = isPresetMode
+    ? currentThemeSpec?.secondaryColorRaw || DEFAULT_SECONDARY
+    : customSecondary ||
+      currentThemeSpec?.secondaryColorRaw ||
+      FALLBACK_SECONDARY;
+
+  $: currentSelectValue = isPresetMode
+    ? typeof theme === "string"
+      ? theme
+      : "Default"
+    : "Default";
+
+  function handleModeSwitch(mode: string) {
+    if (mode === "Custom") {
+      if (!customPrimary) {
+        customPrimary = currentThemeSpec?.primaryColorRaw || FALLBACK_PRIMARY;
+      }
+      if (!customSecondary) {
+        customSecondary =
+          currentThemeSpec?.secondaryColorRaw || FALLBACK_SECONDARY;
+      }
+      onColorChange(customPrimary, customSecondary);
+    } else {
+      onThemeChange(lastPresetTheme);
+    }
+  }
+
+  function handleThemeSelection(value: string) {
+    if (value === "Default") {
+      lastPresetTheme = undefined;
+      onThemeChange(undefined);
+    } else {
+      lastPresetTheme = value;
+      onThemeChange(value);
+    }
+  }
+
+  function handleColorChange(color: string, isPrimary: boolean) {
+    if (isPrimary) {
+      customPrimary = color;
+      onColorChange(customPrimary, effectiveSecondary);
+    } else {
+      customSecondary = color;
+      onColorChange(effectivePrimary, customSecondary);
+    }
+  }
 </script>
 
 <div class="flex flex-col {small ? 'gap-y-2' : 'gap-y-1'}">
@@ -59,35 +110,20 @@
     {small}
     expand
     fields={["Presets", "Custom"]}
-    selected={presetMode ? 0 : 1}
+    selected={isPresetMode ? 0 : 1}
     onClick={(_, field) => {
-      if (field === "Custom") {
-        onColorChange(
-          themeProxy.primaryColorRaw ?? "",
-          themeProxy.secondaryColorRaw ?? "",
-        );
-        currentTheme = themeProxy;
-      } else if (field === "Presets") {
-        onThemeChange(presetProxy);
-      }
+      handleModeSwitch(field);
     }}
   />
+
   <div class="gap-y-2 flex flex-col">
-    {#if typeof theme === "string" || theme === undefined}
+    {#if isPresetMode}
       <Select
         size={small ? "sm" : "lg"}
         fontSize={small ? 12 : 14}
         sameWidth
-        onChange={(value) => {
-          if (value === "Default") {
-            onThemeChange(undefined);
-            presetProxy = undefined;
-          } else {
-            onThemeChange(value);
-            presetProxy = value;
-          }
-        }}
-        value={theme ?? "Default"}
+        onChange={handleThemeSelection}
+        value={currentSelectValue}
         options={["Default", ...themeNames].map((value) => ({
           value,
           label: value,
@@ -98,23 +134,22 @@
 
     <ColorInput
       {small}
-      stringColor={currentTheme.primaryColorRaw}
+      stringColor={effectivePrimary}
       label="Primary"
-      disabled={presetMode}
-      onChange={(color) => {
-        onColorChange(color, themeProxy.secondaryColorRaw ?? "");
-        themeProxy.primaryColorRaw = color;
-      }}
+      labelFirst
+      disabled={isPresetMode}
+      allowLightnessControl={$darkMode}
+      onChange={(color) => handleColorChange(color, true)}
     />
+
     <ColorInput
       {small}
-      stringColor={currentTheme.secondaryColorRaw}
+      stringColor={effectiveSecondary}
       label="Secondary"
-      disabled={presetMode}
-      onChange={(color) => {
-        onColorChange(themeProxy.primaryColorRaw ?? "", color);
-        themeProxy.secondaryColorRaw = color;
-      }}
+      labelFirst
+      disabled={isPresetMode}
+      allowLightnessControl={$darkMode}
+      onChange={(color) => handleColorChange(color, false)}
     />
   </div>
 </div>

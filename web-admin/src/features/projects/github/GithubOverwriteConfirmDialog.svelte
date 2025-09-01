@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { extractGithubConnectError } from "@rilldata/web-admin/features/projects/github/github-errors";
-  import { getRepoNameFromGithubUrl } from "@rilldata/web-common/features/project/github-utils";
+  import { getRepoNameFromGitRemote } from "@rilldata/web-common/features/project/deploy/github-utils";
   import {
     AlertDialog,
     AlertDialogContent,
@@ -11,8 +11,8 @@
     AlertDialogTrigger,
   } from "@rilldata/web-common/components/alert-dialog/index.js";
   import { Button } from "@rilldata/web-common/components/button/index.js";
-  import AlertCircleOutline from "@rilldata/web-common/components/icons/AlertCircleOutline.svelte";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
+  import AlertCircleOutline from "@rilldata/web-common/components/icons/AlertCircleOutline.svelte";
 
   export let open = false;
   export let loading: boolean;
@@ -20,13 +20,13 @@
 
   export let onConfirm: () => Promise<void>;
   export let onCancel: () => void;
-  export let githubUrl: string;
+  export let githubRemote: string;
   export let subpath: string;
 
   let confirmInput = "";
   $: confirmed = confirmInput === "overwrite";
 
-  $: path = `${getRepoNameFromGithubUrl(githubUrl)}/${subpath}`;
+  $: path = `${getRepoNameFromGitRemote(githubRemote)}/${subpath}`;
 
   function close() {
     onCancel();
@@ -55,7 +55,7 @@
       </AlertDialogTitle>
       <AlertDialogDescription class="flex flex-col gap-y-1.5">
         <div>
-          It appears that <b>{path}</b> is not empty. Rill will overwrite this repo’s
+          It appears that <b>{path}</b> is not empty. Rill will overwrite this repo's
           contents with this project.
         </div>
         <div class="mt-1">
@@ -70,10 +70,10 @@
       </AlertDialogDescription>
     </AlertDialogHeader>
     <AlertDialogFooter class="mt-5">
-      <Button type="secondary" on:click={close}>Cancel</Button>
+      <Button type="secondary" onClick={close}>Cancel</Button>
       <Button
         type="primary"
-        on:click={handleContinue}
+        onClick={handleContinue}
         disabled={!confirmed}
         {loading}
       >

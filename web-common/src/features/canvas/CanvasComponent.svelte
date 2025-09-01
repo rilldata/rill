@@ -11,6 +11,7 @@
   export let ghost = false;
   export let allowPointerEvents = true;
   export let editable = false;
+  export let navigationEnabled: boolean = true;
   export let onMouseDown: (e: MouseEvent) => void = () => {};
   export let onDuplicate: () => void = () => {};
   export let onDelete: () => void = () => {};
@@ -31,11 +32,16 @@
   style:pointer-events={!allowPointerEvents ? "none" : "auto"}
   class:outline={allowBorder || open}
   class:shadow-sm={allowBorder || open}
-  class="group component-card size-full flex flex-col cursor-pointer z-10 p-0 relative outline-[1px] outline-gray-200 bg-white overflow-hidden rounded-sm"
+  class="group component-card size-full flex flex-col cursor-pointer z-10 p-0 relative outline-[1px] outline-gray-200 dark:outline-gray-300 bg-surface overflow-hidden rounded-sm"
 >
-  {#if editable}
-    <Toolbar {onDelete} {onDuplicate} bind:dropdownOpen={open} />
-  {/if}
+  <Toolbar
+    {component}
+    {onDelete}
+    {onDuplicate}
+    {editable}
+    bind:dropdownOpen={open}
+    {navigationEnabled}
+  />
 
   <div
     role="presentation"

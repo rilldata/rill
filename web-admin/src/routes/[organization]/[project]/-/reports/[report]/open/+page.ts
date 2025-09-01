@@ -1,4 +1,4 @@
-import { getExploreName } from "@rilldata/web-admin/features/dashboards/query-mappers/utils";
+import { getExploreName } from "@rilldata/web-common/features/explore-mappers/utils";
 
 export async function load({ parent, url, params }) {
   const { report } = await parent();

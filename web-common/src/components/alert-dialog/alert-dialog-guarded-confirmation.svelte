@@ -9,8 +9,8 @@
     AlertDialogTrigger,
   } from "@rilldata/web-common/components/alert-dialog/index.js";
   import { Button } from "@rilldata/web-common/components/button/index.js";
-  import AlertCircleOutline from "@rilldata/web-common/components/icons/AlertCircleOutline.svelte";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
+  import AlertCircleOutline from "@rilldata/web-common/components/icons/AlertCircleOutline.svelte";
 
   export let open = false;
 
@@ -63,10 +63,10 @@
       </AlertDialogDescription>
     </AlertDialogHeader>
     <AlertDialogFooter class="mt-5">
-      <Button type="secondary" on:click={close}>Cancel</Button>
+      <Button type="secondary" onClick={close}>Cancel</Button>
       <Button
         type="primary"
-        on:click={handleContinue}
+        onClick={handleContinue}
         disabled={!confirmed}
         {loading}
       >

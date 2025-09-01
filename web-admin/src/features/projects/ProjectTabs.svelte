@@ -1,22 +1,27 @@
 <script lang="ts">
-  import { type V1ProjectPermissions } from "../../client";
-  import Tab from "@rilldata/web-admin/components/nav/Tab.svelte";
   import {
-    width,
     position,
+    width,
   } from "@rilldata/web-admin//components/nav/Tab.svelte";
+  import Tab from "@rilldata/web-admin/components/nav/Tab.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
+  import { type V1ProjectPermissions } from "../../client";
 
   export let projectPermissions: V1ProjectPermissions;
   export let organization: string;
   export let project: string;
   export let pathname: string;
 
-  const { alerts, reports } = featureFlags;
+  const { chat, reports, alerts } = featureFlags;
 
   $: tabs = [
     {
-      route: `/${organization}/${project}`,
+      route: `/${organization}/${project}/-/chat`,
+      label: "Chat",
+      hasPermission: $chat,
+    },
+    {
+      route: `/${organization}/${project}/-/dashboards`,
       label: "Dashboards",
       hasPermission: true,
     },
@@ -29,6 +34,11 @@
       route: `/${organization}/${project}/-/alerts`,
       label: "Alerts",
       hasPermission: $alerts,
+    },
+    {
+      route: `/${organization}/${project}/-/ai`,
+      label: "AI",
+      hasPermission: true,
     },
     {
       route: `/${organization}/${project}/-/status`,

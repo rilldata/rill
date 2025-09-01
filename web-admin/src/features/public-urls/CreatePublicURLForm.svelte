@@ -15,7 +15,7 @@
     PopoverContent,
     PopoverTrigger,
   } from "@rilldata/web-common/components/popover";
-  import FilterChipsReadOnly from "@rilldata/web-common/features/dashboards/filters/FilterChipsReadOnly.svelte";
+  import ExploreFilterChipsReadOnly from "@rilldata/web-common/features/dashboards/filters/ExploreFilterChipsReadOnly.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
@@ -30,7 +30,7 @@
   import {
     convertDateToMinutes,
     getExploreFields,
-    getSanitizedDashboardStateParam,
+    getSanitizedExploreStateParam,
     hasDashboardDimensionThresholdFilter,
     hasDashboardWhereFilter,
   } from "./form-utils";
@@ -60,7 +60,7 @@
     $visibleMeasures,
   );
 
-  $: sanitizedState = getSanitizedDashboardStateParam(
+  $: sanitizedState = getSanitizedExploreStateParam(
     $dashboardStore,
     exploreFields,
     $validSpecStore.data?.explore,
@@ -152,7 +152,6 @@
 
   $: ({ length: allErrorsLength } = $allErrors);
 
-  $: includingTomorrowDate = DateTime.now().plus({ days: 1 }).startOf("day");
   $: maxExpirationDate = DateTime.now().plus({ years: 1 }).startOf("day");
 </script>
 
@@ -193,11 +192,10 @@
                   <Pencil size="14px" class="text-primary-600" />
                 </IconButton>
               </PopoverTrigger>
-              <PopoverContent align="end" class="p-0">
+              <PopoverContent align="end" class="p-0" strategy="fixed">
                 <Calendar
                   selection={DateTime.fromISO($form.expiresAt)}
                   singleDaySelection
-                  minDate={includingTomorrowDate}
                   maxDate={maxExpirationDate}
                   firstVisibleMonth={DateTime.fromISO($form.expiresAt)}
                   onSelectDay={(date) => {
@@ -240,14 +238,14 @@
     </div> -->
 
       {#if hasWhereFilter || hasDimensionThresholdFilter}
-        <hr class="border-gray-200 mt-4 mb-4" />
+        <hr class="mt-4 mb-4" />
 
         <div class="flex flex-col gap-y-1">
           <p class="text-xs text-gray-800 font-normal">
             The following filters will be locked and hidden:
           </p>
           <div class="flex flex-row gap-1 mt-2">
-            <FilterChipsReadOnly
+            <ExploreFilterChipsReadOnly
               exploreName={$exploreName}
               filters={$dashboardStore.whereFilter}
               dimensionsWithInlistFilter={$dashboardStore.dimensionsWithInlistFilter}
@@ -288,7 +286,7 @@
     <h3>Success! A public URL has been created.</h3>
     <Button
       type="secondary"
-      on:click={onCopy}
+      onClick={onCopy}
       dataAttributes={{ "data-public-url": url }}
     >
       {#if copied}

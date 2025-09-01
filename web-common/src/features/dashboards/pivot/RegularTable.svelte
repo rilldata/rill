@@ -6,6 +6,7 @@
   import "./regular-table-style.css";
   import { isEmptyPos, range } from "./regular-table-utils";
   import type { PivotPos, PivotRenderCallback } from "./types";
+  import { cellInspectorStore } from "../stores/cell-inspector-store";
 
   const LOADING_CELL = `<div load class="loading-cell h-4 bg-gray-50 rounded" style="width: 100%; min-width: 32px;"/>`;
   const NULL_CELL = `<div class="null-cell text-gray-400">-</div>`;
@@ -109,8 +110,25 @@
     if (typeof x !== "number" || typeof y !== "number") return;
     th.setAttribute("__col", String(x - numFixedCols!));
     th.setAttribute("__row", String(y));
-    if (value?.value) th.setAttribute("title", value?.value);
+    if (value?.value !== undefined && value?.value !== null) {
+      th.setAttribute("title", value.value);
+    }
 
+    // Add mouseover event to update the value in the store without changing visibility
+    th.onmouseover = () => {
+      if (value?.value !== undefined && value?.value !== null) {
+        // Always update the value in the store, but don't change visibility
+        cellInspectorStore.updateValue(String(value.value));
+      }
+    };
+
+    // Add focus event to update the value in the store without changing visibility
+    th.onfocus = () => {
+      if (value?.value !== undefined && value?.value !== null) {
+        // Always update the value in the store, but don't change visibility
+        cellInspectorStore.updateValue(String(value.value));
+      }
+    };
     const maybeWidth = getRowHeaderWidth(x);
     if (maybeWidth) {
       th.style.width = `${maybeWidth}px`;
@@ -144,6 +162,21 @@
     td.setAttribute("__col", String(x));
     td.setAttribute("__row", String(y));
 
+    // Add mouseover event to update the value in the store without changing visibility
+    td.onmouseover = () => {
+      if (value !== undefined && value !== null) {
+        // Always update the value in the store, but don't change visibility
+        cellInspectorStore.updateValue(String(value));
+      }
+    };
+
+    td.onfocus = () => {
+      if (value !== undefined && value !== null) {
+        // Always update the value in the store, but don't change visibility
+        cellInspectorStore.updateValue(String(value));
+      }
+    };
+
     const maybeWidth = getColumnWidth(x);
     if (maybeWidth) {
       td.style.width = `${maybeWidth}px`;
@@ -151,12 +184,13 @@
       td.style.maxWidth = `${maybeWidth}px`;
     }
 
-    if (typeof value === "string") {
-      td.innerHTML = value;
-    } else if (value === null) {
+    if (value === null) {
       td.innerHTML = NULL_CELL;
     } else if (value === undefined) {
       td.innerHTML = LOADING_CELL;
+    } else if (typeof value === "string") {
+      td.setAttribute("title", value);
+      td.innerHTML = value;
     } else if (typeof value === "number") {
       td.setAttribute("title", value);
       td.innerHTML = formatter(value) ?? "";
@@ -309,7 +343,7 @@
     padding-right: 0px;
   }
   :global(regular-table table) {
-    color: rgb(55 65 81);
+    color: var(--color-gray-700);
     table-layout: fixed;
     border-collapse: separate;
     font-family: Inter;
@@ -343,10 +377,6 @@
       "calt",
       "ccmp",
       "kern";
-  }
-
-  :global(regular-table thead tr) {
-    border-bottom: 2px solid rgb(229 231 235);
   }
 
   :global(regular-table *) {

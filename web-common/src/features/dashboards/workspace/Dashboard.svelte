@@ -10,6 +10,7 @@
   import { useExploreState } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { DashboardState_ActivePage } from "../../../proto/gen/rill/ui/v1/dashboard_pb";
   import { runtime } from "../../../runtime-client/runtime-store";
+  import CellInspector from "@rilldata/web-common/components/CellInspector.svelte";
   import MeasuresContainer from "../big-number/MeasuresContainer.svelte";
   import DimensionDisplay from "../dimension-table/DimensionDisplay.svelte";
   import Filters from "../filters/Filters.svelte";
@@ -30,30 +31,20 @@
   const StateManagers = getStateManagers();
   const {
     selectors: {
-      measures: {
-        visibleMeasures,
-        leaderboardSortByMeasureName,
-        activeMeasuresFromMeasureCount,
-      },
+      measures: { visibleMeasures },
       dimensions: { getDimensionByName },
       pivot: { showPivot },
     },
     dashboardStore,
   } = StateManagers;
 
-  const {
-    cloudDataViewer,
-    readOnly,
-    leaderboardMeasureCount: leaderboardMeasureCountFeatureFlag,
-  } = featureFlags;
+  const { cloudDataViewer, readOnly } = featureFlags;
 
   const timeControlsStore = useTimeControlStore(StateManagers);
 
   let exploreContainerWidth: number;
-
-  $: leaderboardMeasureNames = $leaderboardMeasureCountFeatureFlag
-    ? $activeMeasuresFromMeasureCount
-    : [$leaderboardSortByMeasureName];
+  let metricsWidth = DEFAULT_TIMESERIES_WIDTH;
+  let resizing = false;
 
   $: ({ instanceId } = $runtime);
 
@@ -113,9 +104,6 @@
   $: timeRanges = exploreSpec?.timeRanges ?? [];
 
   $: visibleMeasureNames = $visibleMeasures.map(({ name }) => name ?? "");
-
-  let metricsWidth = DEFAULT_TIMESERIES_WIDTH;
-  let resizing = false;
 
   let initEmbedPublicAPI;
 
@@ -198,7 +186,7 @@
       </div>
 
       {#if showTimeDimensionDetail && expandedMeasureName}
-        <hr class="border-t border-gray-200 -ml-4" />
+        <hr class="border-t -ml-4" />
         <TimeDimensionDisplay
           {exploreName}
           {expandedMeasureName}
@@ -227,7 +215,6 @@
               {dimensionThresholdFilters}
               {timeRange}
               {comparisonTimeRange}
-              activeMeasureName={$leaderboardSortByMeasureName}
               {timeControlsReady}
               {visibleMeasureNames}
               hideStartPivotButton={hidePivot}
@@ -235,8 +222,6 @@
           {:else}
             <LeaderboardDisplay
               {metricsViewName}
-              activeMeasureName={$leaderboardSortByMeasureName}
-              {leaderboardMeasureNames}
               {whereFilter}
               {dimensionThresholdFilters}
               {timeRange}
@@ -248,6 +233,8 @@
       {/if}
     </div>
   {/if}
+
+  <CellInspector />
 </article>
 
 {#if (isRillDeveloper || $cloudDataViewer) && !showTimeDimensionDetail && !mockUserHasNoAccess}

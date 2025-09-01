@@ -1,21 +1,68 @@
 package gitutil
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/url"
 	"os"
-	"path"
+	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/go-git/go-git/v5"
+	gitConfig "github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/transport"
+	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	exec "golang.org/x/sys/execabs"
 )
 
-var ErrGitRemoteNotFound = errors.New("no git remotes found")
+var (
+	ErrGitRemoteNotFound = errors.New("no git remotes found")
+	ErrNotAGitRepository = errors.New("not a git repository")
+)
+
+type Config struct {
+	Remote            string
+	Username          string
+	Password          string
+	PasswordExpiresAt time.Time
+	DefaultBranch     string
+	Subpath           string
+	ManagedRepo       bool
+}
+
+func (g *Config) IsExpired() bool {
+	return g.Password != "" && g.PasswordExpiresAt.Before(time.Now())
+}
+
+func (g *Config) FullyQualifiedRemote() (string, error) {
+	if g.Remote == "" {
+		return "", fmt.Errorf("remote is not set")
+	}
+	u, err := url.Parse(g.Remote)
+	if err != nil {
+		return "", err
+	}
+	if g.Username != "" {
+		if g.Password != "" {
+			u.User = url.UserPassword(g.Username, g.Password)
+		} else {
+			u.User = url.User(g.Username)
+		}
+	}
+	return u.String(), nil
+}
+
+func (g *Config) RemoteName() string {
+	if g.ManagedRepo {
+		return "__rill_remote"
+	}
+	return "origin"
+}
 
 func CloneRepo(repoURL string) (string, error) {
 	endpoint, err := transport.NewEndpoint(repoURL)
@@ -34,11 +81,46 @@ func CloneRepo(repoURL string) (string, error) {
 	return repoName, nil
 }
 
+// Remote represents a Git remote with its name and URL.
+// The URL is normalized to a HTTPS URL with a .git suffix.
 type Remote struct {
 	Name string
 	URL  string
 }
 
+// Github returns a normalized HTTPS Github URL ending in .git for the remote.
+func (r Remote) Github() (string, error) {
+	if r.URL == "" {
+		return "", fmt.Errorf("remote %q has no URL", r.Name)
+	}
+	return NormalizeGithubRemote(r.URL)
+}
+
+// ExtractGitRemote extracts the first Git remote from the Git repository at projectPath.
+// If remoteName is provided, it will return the remote with that name.
+// If detectDotGit is true, it will look for a .git directory in parent directories.
+func ExtractGitRemote(projectPath, remoteName string, detectDotGit bool) (Remote, error) {
+	remotes, err := ExtractRemotes(projectPath, detectDotGit)
+	if err != nil {
+		return Remote{}, err
+	}
+	if remoteName != "" {
+		for _, remote := range remotes {
+			if remote.Name == remoteName {
+				return remote, nil
+			}
+		}
+		return Remote{}, ErrGitRemoteNotFound
+	}
+	if len(remotes) == 0 {
+		return Remote{}, ErrGitRemoteNotFound
+	}
+	return remotes[0], nil
+}
+
+// ExtractRemotes extracts all Git remotes from the Git repository at projectPath.
+// The returned remotes are normalized with NormalizeGithubRemote.
+// If detectDotGit is true, it will look for a .git directory in parent directories.
 func ExtractRemotes(projectPath string, detectDotGit bool) ([]Remote, error) {
 	repo, err := git.PlainOpenWithOptions(projectPath, &git.PlainOpenOptions{
 		DetectDotGit: detectDotGit,
@@ -67,90 +149,6 @@ func ExtractRemotes(projectPath string, detectDotGit bool) ([]Remote, error) {
 	}
 
 	return res, nil
-}
-
-func RemotesToGithubURL(remotes []Remote) (*Remote, string, error) {
-	// Return the first Github URL found.
-	// If no Github remotes were found, return the first error.
-	var firstErr error
-	for _, remote := range remotes {
-		ghurl, err := RemoteToGithubURL(remote.URL)
-		if err == nil {
-			// Found a Github remote. Success!
-			return &remote, ghurl, nil
-		}
-		if firstErr == nil {
-			firstErr = fmt.Errorf("invalid remote %q: %w", remote.URL, err)
-		}
-	}
-
-	if firstErr == nil {
-		return nil, "", ErrGitRemoteNotFound
-	}
-
-	return nil, "", firstErr
-}
-
-func RemoteToGithubURL(remote string) (string, error) {
-	ep, err := transport.NewEndpoint(remote)
-	if err != nil {
-		return "", err
-	}
-
-	if ep.Host != "github.com" {
-		return "", fmt.Errorf("must be a git remote on github.com")
-	}
-
-	account, repo := path.Split(ep.Path)
-	account = strings.Trim(account, "/")
-	repo = strings.TrimSuffix(repo, ".git")
-	if account == "" || repo == "" || strings.Contains(account, "/") {
-		return "", fmt.Errorf("not a valid github.com remote")
-	}
-
-	githubURL := &url.URL{
-		Scheme: "https",
-		Host:   ep.Host,
-		Path:   strings.TrimSuffix(ep.Path, ".git"),
-	}
-
-	return githubURL.String(), nil
-}
-
-func SplitGithubURL(githubURL string) (account, repo string, ok bool) {
-	ep, err := transport.NewEndpoint(githubURL)
-	if err != nil {
-		return "", "", false
-	}
-
-	if ep.Host != "github.com" {
-		return "", "", false
-	}
-
-	account, repo = path.Split(ep.Path)
-	account = strings.Trim(account, "/")
-	if account == "" || repo == "" || strings.Contains(account, "/") {
-		return "", "", false
-	}
-
-	return account, repo, true
-}
-
-func ExtractGitRemote(projectPath, remoteName string, detectDotGit bool) (*Remote, string, error) {
-	remotes, err := ExtractRemotes(projectPath, detectDotGit)
-	if err != nil {
-		return nil, "", err
-	}
-	if remoteName != "" {
-		for _, remote := range remotes {
-			if remote.Name == remoteName {
-				return RemotesToGithubURL([]Remote{remote})
-			}
-		}
-	}
-
-	// Parse into a https://github.com/account/repo (no .git) format
-	return RemotesToGithubURL(remotes)
 }
 
 type SyncStatus int
@@ -221,4 +219,196 @@ func GetSyncStatus(repoPath, branch, remote string) (SyncStatus, error) {
 		return SyncStatusAhead, nil
 	}
 	return SyncStatusSynced, nil
+}
+
+func CommitAndForcePush(ctx context.Context, projectPath string, config *Config, commitMsg string, author *object.Signature) error {
+	// init git repo
+	repo, err := git.PlainInitWithOptions(projectPath, &git.PlainInitOptions{
+		InitOptions: git.InitOptions{
+			DefaultBranch: plumbing.NewBranchReferenceName(config.DefaultBranch),
+		},
+		Bare: false,
+	})
+	if err != nil {
+		if !errors.Is(err, git.ErrRepositoryAlreadyExists) {
+			return fmt.Errorf("failed to init git repo: %w", err)
+		}
+		repo, err = git.PlainOpen(projectPath)
+		if err != nil {
+			return fmt.Errorf("failed to open git repo: %w", err)
+		}
+	}
+
+	wt, err := repo.Worktree()
+	if err != nil {
+		return fmt.Errorf("failed to get worktree: %w", err)
+	}
+
+	// git add .
+	if err := wt.AddWithOptions(&git.AddOptions{All: true}); err != nil {
+		return fmt.Errorf("failed to add files to git: %w", err)
+	}
+
+	// git commit -m
+	if commitMsg == "" {
+		commitMsg = "Auto committed by Rill"
+	}
+	_, err = wt.Commit(commitMsg, &git.CommitOptions{All: true, Author: author, AllowEmptyCommits: true})
+	if err != nil {
+		if !errors.Is(err, git.ErrEmptyCommit) {
+			return fmt.Errorf("failed to commit files to git: %w", err)
+		}
+		// empty commit - nothing to cmmit
+		return nil
+	}
+
+	// set remote and push the changes
+	err = SetRemote(projectPath, config)
+	if err != nil {
+		return err
+	}
+
+	if config.Username == "" {
+		// If no credentials are provided we assume that is user's self managed repo and auth is already set in git
+		// go-git does not support pushing to a private repo without auth so we will trigger the git command directly
+		return RunGitPush(ctx, projectPath, config.RemoteName(), config.DefaultBranch, true)
+	}
+
+	pushOpts := &git.PushOptions{
+		RemoteName: config.RemoteName(),
+		RemoteURL:  config.Remote,
+		Force:      true,
+	}
+	if config.Username != "" && config.Password != "" {
+		pushOpts.Auth = &githttp.BasicAuth{
+			Username: config.Username,
+			Password: config.Password,
+		}
+	}
+	err = repo.PushContext(ctx, pushOpts)
+	if err != nil {
+		return fmt.Errorf("failed to push to remote : %w", err)
+	}
+	return nil
+}
+
+func Clone(ctx context.Context, path string, c *Config) (*git.Repository, error) {
+	return git.PlainCloneContext(ctx, path, false, &git.CloneOptions{
+		URL:           c.Remote,
+		RemoteName:    c.RemoteName(),
+		Auth:          &githttp.BasicAuth{Username: c.Username, Password: c.Password},
+		ReferenceName: plumbing.NewBranchReferenceName(c.DefaultBranch),
+		SingleBranch:  true,
+	})
+}
+
+func NativeGitSignature(ctx context.Context, path string) (*object.Signature, error) {
+	repo, err := git.PlainOpen(path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open git repository: %w", err)
+	}
+	cfg, err := repo.ConfigScoped(gitConfig.SystemScope)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get git config: %w", err)
+	}
+	if cfg.User.Email != "" && cfg.User.Name != "" {
+		// user has git properly configured use that
+		return &object.Signature{
+			Name:  cfg.User.Name,
+			Email: cfg.User.Email,
+			When:  time.Now(),
+		}, nil
+	}
+	return nil, fmt.Errorf("git user email or name is not set in git config")
+}
+
+func GitFetch(ctx context.Context, path string, config *Config) error {
+	repo, err := git.PlainOpen(path)
+	if err != nil {
+		return fmt.Errorf("failed to open git repository: %w", err)
+	}
+	if config == nil {
+		// uses default git configuration
+		// go-git does not support fetching from a private repo without auth
+		// so we will trigger the git command directly
+		return RunGitFetch(ctx, path, "origin")
+	}
+	err = repo.FetchContext(ctx, &git.FetchOptions{
+		RemoteName: config.RemoteName(),
+		RemoteURL:  config.Remote,
+		Auth: &githttp.BasicAuth{
+			Username: config.Username,
+			Password: config.Password,
+		},
+	})
+	if err != nil {
+		if errors.Is(err, git.NoErrAlreadyUpToDate) {
+			// no new changes to fetch, this is not an error
+			return nil
+		}
+		return fmt.Errorf("failed to fetch from remote: %w", err)
+	}
+	return nil
+}
+
+// SetRemote sets the remote by name Rill for the given repository to the provided remote URL.
+func SetRemote(path string, config *Config) error {
+	if config.Remote == "" {
+		return nil
+	}
+	repo, err := git.PlainOpen(path)
+	if err != nil {
+		return fmt.Errorf("failed to open git repository: %w", err)
+	}
+
+	remote, err := repo.Remote(config.RemoteName())
+	if err != nil && !errors.Is(err, git.ErrRemoteNotFound) {
+		return fmt.Errorf("failed to get remote: %w", err)
+	}
+	if remote != nil {
+		if remote.Config().URLs[0] == config.Remote {
+			// remote already exists with the same URL, no need to create it again
+			return nil
+		}
+		// if the remote already exists with a different URL, delete it
+		err = repo.DeleteRemote(config.RemoteName())
+		if err != nil {
+			return fmt.Errorf("failed to delete existing remote: %w", err)
+		}
+	}
+
+	_, err = repo.CreateRemote(&gitConfig.RemoteConfig{
+		Name: config.RemoteName(),
+		URLs: []string{config.Remote},
+	})
+	return err
+}
+
+func IsGitRepo(path string) bool {
+	_, err := git.PlainOpen(path)
+	return err == nil
+}
+
+// InferRepoRootAndSubpath infers the root of the Git repository and the subpath from the given path.
+// Since the extraction stops at first .git directory it means that if a subpath in a github monorepo is deployed as a rill managed project it will prevent the subpath from being inferred.
+// This means :
+// - user will need to explicitly set the subpath if they want to connect this to Github.
+// - When finding matching projects it will only list the rill managed projects for that subpath.
+func InferRepoRootAndSubpath(path string) (string, string, error) {
+	// check if is a git repository
+	repoRoot, err := InferGitRepoRoot(path)
+	if err != nil {
+		return "", "", err
+	}
+
+	// infer subpath if it exists
+	subPath, err := filepath.Rel(repoRoot, path)
+	if err != nil {
+		// should never happen because repoRoot is detected from path
+		return "", "", err
+	}
+	if subPath != "." {
+		return repoRoot, subPath, nil
+	}
+	return repoRoot, "", nil
 }

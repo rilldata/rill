@@ -31,7 +31,7 @@ func TestValidateMetricsView(t *testing.T) {
 	e, err := metricsview.NewExecutor(context.Background(), rt, instanceID, mv, false, runtime.ResolvedSecurityOpen, 0)
 	require.NoError(t, err)
 
-	res, err := e.ValidateMetricsView(context.Background())
+	res, err := e.ValidateAndNormalizeMetricsView(context.Background())
 	require.NoError(t, err)
 	require.Empty(t, res.TimeDimensionErr)
 	require.Empty(t, res.DimensionErrs)
@@ -49,7 +49,7 @@ func TestValidateMetricsViewClickHouseNames(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
 		TestConnectors: []string{"clickhouse"},
 		Files: map[string]string{
-			"rill.yaml": "",
+			"rill.yaml": "olap_connector: clickhouse",
 			"model.sql": `
 -- @connector: clickhouse
 select parseDateTimeBestEffort('2024-01-01T00:00:00Z') as time, 'DK' as country, 1 as val union all
@@ -158,6 +158,169 @@ timeseries: time
 				require.Contains(t, r.Meta.ReconcileError, c.errorContains)
 			} else {
 				require.Empty(t, r.Meta.ReconcileError)
+			}
+		})
+	}
+}
+
+func TestValidateAnnotations(t *testing.T) {
+	// Start a test runtime with a simple ClickHouse model.
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: map[string]string{
+			"rill.yaml": "",
+			"simple_model.sql": `
+select 'DK' as country, 1 as val union all
+select 'US' as country, 2 as val union all
+select 'US' as country, 3 as val union all
+select 'US' as country, 4 as val union all
+select 'DK' as country, 5 as val
+`,
+			"model.sql": `
+select '2024-01-01T00:00:00Z'::TIMESTAMP as time, 'DK' as country, 1 as val union all
+select '2024-01-02T00:00:00Z'::TIMESTAMP as time, 'US' as country, 2 as val union all
+select '2024-01-03T00:00:00Z'::TIMESTAMP as time, 'US' as country, 3 as val union all
+select '2024-01-04T00:00:00Z'::TIMESTAMP as time, 'US' as country, 4 as val union all
+select '2024-01-05T00:00:00Z'::TIMESTAMP as time, 'DK' as country, 5 as val`,
+			"simple_annotation.sql": `
+select '2022-01-05T00:00:00Z' as time, '1st event' as description
+union all
+select '2022-02-16T00:00:00Z' as time, '2nd event' as description
+union all
+select '2022-03-27T00:00:00Z' as time, '3rd event' as description`,
+			"time_end_annotation.sql": `
+select '2022-01-05T00:00:00Z' as time, '2022-01-09T00:00:00Z' as time_end, '1st event' as description
+union all
+select '2022-02-16T00:00:00Z' as time, '2022-02-20T00:00:00Z' as time_end, '2nd event' as description
+union all
+select '2022-03-27T00:00:00Z' as time, '2022-04-11T00:00:00Z' as time_end, '3rd event' as description`,
+			"grain_annotation.sql": `
+select '2022-01-05T00:00:00Z' as time, 'day' as duration, '1st event' as description
+union all
+select '2022-02-16T00:00:00Z' as time, 'month' as duration, '2nd event' as description
+union all
+select '2022-03-27T00:00:00Z' as time, 'hour' as duration, '3rd event' as description`,
+		},
+	})
+	testruntime.RequireReconcileState(t, rt, instanceID, 6, 0, 0)
+
+	cases := []struct {
+		name          string
+		partial       string
+		annotation    []*runtimev1.MetricsViewSpec_Annotation
+		errorContains string
+	}{
+		{
+			name: "simple model annotation",
+			partial: `
+annotations:
+  - model: simple_annotation`,
+			annotation: []*runtimev1.MetricsViewSpec_Annotation{
+				{
+					Name:      "simple_annotation",
+					Connector: "duckdb",
+					Table:     "simple_annotation",
+					Model:     "simple_annotation",
+					Measures:  []string{"val_sum"},
+				},
+			},
+			errorContains: "",
+		},
+		{
+			name: "simple talbe annotation",
+			partial: `
+annotations:
+  - table: simple_annotation`,
+			annotation: []*runtimev1.MetricsViewSpec_Annotation{
+				{
+					Name:     "simple_annotation",
+					Table:    "simple_annotation",
+					Measures: []string{"val_sum"},
+				},
+			},
+			errorContains: "",
+		},
+		{
+			name: "with time_end",
+			partial: `
+annotations:
+  - model: time_end_annotation`,
+			annotation: []*runtimev1.MetricsViewSpec_Annotation{
+				{
+					Name:       "time_end_annotation",
+					Connector:  "duckdb",
+					Table:      "time_end_annotation",
+					Model:      "time_end_annotation",
+					Measures:   []string{"val_sum"},
+					HasTimeEnd: true,
+				},
+			},
+			errorContains: "",
+		},
+		{
+			name: "with grain",
+			partial: `
+annotations:
+  - model: grain_annotation`,
+			annotation: []*runtimev1.MetricsViewSpec_Annotation{
+				{
+					Name:        "grain_annotation",
+					Connector:   "duckdb",
+					Table:       "grain_annotation",
+					Model:       "grain_annotation",
+					Measures:    []string{"val_sum"},
+					HasDuration: true,
+				},
+			},
+			errorContains: "",
+		},
+		{
+			name: "missing model",
+			partial: `
+annotations:
+  - model: missing_model`,
+			errorContains: `failed to get table details "missing_model" for annotation "missing_model"`,
+		},
+		{
+			name: "model without time",
+			partial: `
+annotations:
+  - model: simple_model`,
+			errorContains: `table "simple_model" for annotation "simple_model" does not have the required "time" column`,
+		},
+		{
+			name: "model without description",
+			partial: `
+annotations:
+  - model: model`,
+			errorContains: `table "model" for annotation "model" does not have the required "description" column`,
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			metricsView := `
+version: 1
+type: metrics_view
+model: model
+timeseries: time
+dimensions:
+  - name: country
+    expression: country
+measures:
+  - name: val_sum
+    expression: sum(val)
+` + c.partial
+
+			testruntime.PutFiles(t, rt, instanceID, map[string]string{"metrics_view.yaml": metricsView})
+			testruntime.ReconcileParserAndWait(t, rt, instanceID)
+			testruntime.RequireReconcileState(t, rt, instanceID, 7, -1, 0)
+
+			r := testruntime.GetResource(t, rt, instanceID, runtime.ResourceKindMetricsView, "metrics_view")
+			if c.errorContains != "" {
+				require.Contains(t, r.Meta.ReconcileError, c.errorContains)
+			} else {
+				require.Empty(t, r.Meta.ReconcileError)
+				require.Equal(t, c.annotation, r.GetMetricsView().State.ValidSpec.Annotations)
 			}
 		})
 	}

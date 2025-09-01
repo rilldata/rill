@@ -1,16 +1,23 @@
 package server
 
 import (
+	"bufio"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/rilldata/rill/admin/server/auth"
 	"github.com/rilldata/rill/runtime/pkg/httputil"
 	runtimeauth "github.com/rilldata/rill/runtime/server/auth"
 )
+
+// runtimeProxyAccessTokenTTL is the TTL for tokens minted by the runtime proxy.
+// Since streaming connections and MCP SSE connections can be long-lived, we set this to a long duration.
+const runtimeProxyAccessTokenTTL = 24 * time.Hour
 
 // runtimeProxyForOrgAndProject proxies a request to the runtime service for a specific project.
 // This provides a way to directly query a project's runtime on a stable URL without needing to call GetProject or GetDeploymentCredentials to discover the runtime URL.
@@ -37,41 +44,58 @@ func (s *Server) runtimeProxyForOrgAndProject(w http.ResponseWriter, r *http.Req
 		return httputil.Error(http.StatusBadRequest, err)
 	}
 
-	// Get or issue a JWT to use for the proxied request.
+	// Prepare a JWT to use for the proxied request.
+	// We support three scenarios:
+	// 1. Passing a runtime JWT directly.
+	// 2. Using admin service authentication, which requires us to issue a new ephemeral runtime JWT for the proxied request.
+	// 3. Accessing public projects anonymously, which also requires us to issue a new ephemeral runtime JWT for the proxied request.
 	var jwt string
+
+	// We support passing a runtime JWT directly.
+	// Since we use HTTPMiddlewareLenient for this handler, it's invoked even if the Authorization header contains a token that is not valid for the admin service.
 	claims := auth.GetClaims(r.Context())
-	switch claims.OwnerType() {
-	case auth.OwnerTypeAnon:
-		// If the client is not authenticated with the admin service, we just proxy the contents of the Authorization header to the runtime (if any).
-		// Note that the authorization middleware for this handler is set to be "lenient",
-		// which means it will still invoke this handler even if the Authorization header contains a token that is not valid for the admin service.
+	if claims.OwnerType() == auth.OwnerTypeAnon {
 		authorizationHeader := r.Header.Get("Authorization")
 		if len(authorizationHeader) >= 6 && strings.EqualFold(authorizationHeader[0:6], "bearer") {
 			jwt = strings.TrimSpace(authorizationHeader[6:])
 		}
-	case auth.OwnerTypeUser, auth.OwnerTypeService:
-		// If the client is authenticated with the admin service, we issue a new ephemeral runtime JWT.
-		// The JWT should have the same permissions/configuration as one they would get by calling AdminService.GetProject.
+	}
 
+	// If a direct JWT was not provided, we rely on admin service auth to issue a new ephemeral runtime JWT for the proxied request.
+	// TODO: This mirrors logic in GetProject. Consider refactoring to avoid duplication.
+	if jwt == "" {
 		permissions := claims.ProjectPermissions(r.Context(), proj.OrganizationID, depl.ProjectID)
+		if proj.Public {
+			permissions.ReadProject = true
+			permissions.ReadProd = true
+		}
 		if !permissions.ReadProd {
 			return httputil.Errorf(http.StatusForbidden, "does not have permission to access the production deployment")
 		}
 
 		var attr map[string]any
-		if claims.OwnerType() == auth.OwnerTypeUser {
+		switch claims.OwnerType() {
+		case auth.OwnerTypeAnon:
+			// No attributes
+		case auth.OwnerTypeUser:
 			attr, err = s.jwtAttributesForUser(r.Context(), claims.OwnerID(), proj.OrganizationID, permissions)
 			if err != nil {
 				return httputil.Error(http.StatusInternalServerError, err)
 			}
-		} else if claims.OwnerType() == auth.OwnerTypeService {
-			attr = map[string]any{"admin": true}
+		case auth.OwnerTypeService:
+			attr, err = s.jwtAttributesForService(r.Context(), claims.OwnerID(), permissions)
+			if err != nil {
+				return httputil.Error(http.StatusInternalServerError, err)
+			}
+		default:
+			return httputil.Errorf(http.StatusBadRequest, "runtime proxy not available for owner type %q", claims.OwnerType())
 		}
 
 		instancePermissions := []runtimeauth.Permission{
 			runtimeauth.ReadObjects,
 			runtimeauth.ReadMetrics,
 			runtimeauth.ReadAPI,
+			runtimeauth.UseAI,
 		}
 		if permissions.ManageProject {
 			instancePermissions = append(instancePermissions, runtimeauth.EditTrigger)
@@ -80,7 +104,7 @@ func (s *Server) runtimeProxyForOrgAndProject(w http.ResponseWriter, r *http.Req
 		jwt, err = s.issuer.NewToken(runtimeauth.TokenOptions{
 			AudienceURL: depl.RuntimeAudience,
 			Subject:     claims.OwnerID(),
-			TTL:         runtimeAccessTokenDefaultTTL,
+			TTL:         runtimeProxyAccessTokenTTL,
 			InstancePermissions: map[string][]runtimeauth.Permission{
 				depl.RuntimeInstanceID: instancePermissions,
 			},
@@ -89,8 +113,6 @@ func (s *Server) runtimeProxyForOrgAndProject(w http.ResponseWriter, r *http.Req
 		if err != nil {
 			return httputil.Error(http.StatusInternalServerError, err)
 		}
-	default:
-		return httputil.Errorf(http.StatusBadRequest, "runtime proxy not available for owner type %q", claims.OwnerType())
 	}
 
 	// Track usage of the deployment
@@ -132,6 +154,10 @@ func (s *Server) runtimeProxyForOrgAndProject(w http.ResponseWriter, r *http.Req
 		req.Header.Del("Authorization")
 	}
 
+	// Add the X-Original-URI header to preserve the original request URI.
+	// This enables the runtime to know the runtime proxy path that was used.
+	req.Header.Set("X-Original-URI", r.RequestURI)
+
 	// Send the proxied request using http.DefaultClient. The default client automatically handles caching/pooling of TCP connections.
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -139,7 +165,7 @@ func (s *Server) runtimeProxyForOrgAndProject(w http.ResponseWriter, r *http.Req
 	}
 	defer res.Body.Close()
 
-	// Copy the proxied response to the original response writer
+	// Copy response headers
 	outHeader := w.Header()
 	for k, v := range res.Header {
 		for _, vv := range v {
@@ -147,9 +173,38 @@ func (s *Server) runtimeProxyForOrgAndProject(w http.ResponseWriter, r *http.Req
 		}
 	}
 	w.WriteHeader(res.StatusCode)
-	_, err = io.Copy(w, res.Body)
-	if err != nil {
-		return httputil.Error(http.StatusInternalServerError, err)
+
+	// For SSE responses, we need to flush eagerly
+	if res.Header.Get("Content-Type") == "text/event-stream" {
+		flusher, ok := w.(http.Flusher)
+		if !ok {
+			return httputil.Error(http.StatusInternalServerError, fmt.Errorf("streaming not supported"))
+		}
+
+		// Use a larger buffer for better performance
+		reader := bufio.NewReaderSize(res.Body, 4096)
+		buffer := make([]byte, 4096)
+
+		for {
+			n, err := reader.Read(buffer)
+			if n > 0 {
+				if _, writeErr := w.Write(buffer[:n]); writeErr != nil {
+					return writeErr
+				}
+				flusher.Flush()
+			}
+			if err != nil {
+				if err == io.EOF {
+					break
+				}
+				return err
+			}
+		}
+	} else {
+		_, err = io.Copy(w, res.Body)
+		if err != nil {
+			return httputil.Error(http.StatusInternalServerError, err)
+		}
 	}
 
 	return nil

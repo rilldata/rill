@@ -21,7 +21,7 @@ import {
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { WatchRequestClient } from "@rilldata/web-common/runtime-client/watch-request-client";
 import { get } from "svelte/store";
-import { connectorExplorerStore } from "../connectors/connector-explorer-store";
+import { connectorExplorerStore } from "../connectors/explorer/connector-explorer-store";
 import { sourceImportedPath } from "../sources/sources-store";
 import { isLeafResource } from "./dag-utils";
 
@@ -192,9 +192,11 @@ export class WatchResourcesClient {
             if (!connectorName || !tableName) return;
 
             // If it's a new source, show the "Source imported successfully" modal
+            const isSourceModel =
+              res.resource.meta?.filePaths?.[0]?.startsWith("/sources/");
             const isNewSource =
               res.name.kind === ResourceKind.Model &&
-              res.resource.model?.spec?.definedAsSource &&
+              isSourceModel &&
               res.resource.meta.specVersion === "1" && // First file version
               res.resource.meta.stateVersion === "2" && // First ingest is complete
               (await isLeafResource(res.resource, this.instanceId)); // Protects against existing projects reconciling anew

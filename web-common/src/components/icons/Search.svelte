@@ -1,6 +1,7 @@
 <script>
   export let size = "16";
   export let color = "currentColor";
+  export let className = "";
 </script>
 
 <svg
@@ -9,6 +10,7 @@
   viewBox="0 0 24 24"
   fill={color}
   xmlns="http://www.w3.org/2000/svg"
+  class={className}
 >
   <g clip-path="url(#clip0_2417_13383)">
     <path

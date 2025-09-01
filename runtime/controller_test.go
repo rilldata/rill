@@ -63,6 +63,7 @@ measures:
 					OutputProperties: must(structpb.NewStruct(map[string]any{"materialize": true})),
 					RefreshSchedule:  &runtimev1.Schedule{RefUpdate: true},
 					DefinedAsSource:  true,
+					ChangeMode:       runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
 				},
 				State: &runtimev1.ModelState{
 					ExecutorConnector: "duckdb",
@@ -91,6 +92,7 @@ measures:
 					InputConnector:  "duckdb",
 					InputProperties: must(structpb.NewStruct(map[string]any{"sql": "SELECT * FROM foo"})),
 					OutputConnector: "duckdb",
+					ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
 				},
 				State: &runtimev1.ModelState{
 					ExecutorConnector: "duckdb",
@@ -128,8 +130,8 @@ measures:
 						Table:       "bar",
 						Model:       "bar",
 						DisplayName: "Foobar",
-						Dimensions:  []*runtimev1.MetricsViewSpec_Dimension{{Name: "a", DisplayName: "A", Column: "a"}},
-						Measures:    []*runtimev1.MetricsViewSpec_Measure{{Name: "b", DisplayName: "B", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE}},
+						Dimensions:  []*runtimev1.MetricsViewSpec_Dimension{{Name: "a", DisplayName: "A", Column: "a", DataType: &runtimev1.Type{Code: runtimev1.Type_CODE_INT64, Nullable: true}}},
+						Measures:    []*runtimev1.MetricsViewSpec_Measure{{Name: "b", DisplayName: "B", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE, DataType: &runtimev1.Type{Code: runtimev1.Type_CODE_INT64, Nullable: true}}},
 					},
 				},
 			},
@@ -161,6 +163,7 @@ path
 					InputConnector:  "duckdb",
 					InputProperties: must(structpb.NewStruct(map[string]any{"sql": "SELECT * FROM foo"})),
 					OutputConnector: "duckdb",
+					ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
 				},
 				State: &runtimev1.ModelState{},
 			},
@@ -227,6 +230,7 @@ path: data/foo.csv
 					OutputProperties: must(structpb.NewStruct(map[string]any{"materialize": true})),
 					RefreshSchedule:  &runtimev1.Schedule{RefUpdate: true},
 					DefinedAsSource:  true,
+					ChangeMode:       runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
 				},
 				State: &runtimev1.ModelState{
 					ExecutorConnector: "duckdb",
@@ -314,6 +318,7 @@ path: data/foo.csv
 					OutputProperties: must(structpb.NewStruct(map[string]any{"materialize": true})),
 					RefreshSchedule:  &runtimev1.Schedule{RefUpdate: true},
 					DefinedAsSource:  true,
+					ChangeMode:       runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
 				},
 				State: &runtimev1.ModelState{
 					ExecutorConnector: "duckdb",
@@ -685,7 +690,7 @@ measures:
 - expression: avg(a)
 `,
 	})
-	metrics, metricsRes := newMetricsView("dash", "bar3", []string{"count(*)", "avg(a)"}, []string{"b", "c"})
+	metrics, metricsRes := newMetricsView("dash", "bar3", "", []any{"count(*)", runtimev1.Type_CODE_INT64, "avg(a)", runtimev1.Type_CODE_FLOAT64}, []any{"b", runtimev1.Type_CODE_INT64, "c", runtimev1.Type_CODE_INT64})
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 6, 0, 0)
 	testruntime.RequireOLAPTableCount(t, rt, id, "bar1", 3)
@@ -837,7 +842,7 @@ measures:
 `,
 	})
 
-	_, metricsRes := newMetricsView("dash", "bar", []string{"count(*)", "avg(a)"}, []string{"b", "c"})
+	_, metricsRes := newMetricsView("dash", "bar", "", []any{"count(*)", runtimev1.Type_CODE_INT64, "avg(a)", runtimev1.Type_CODE_FLOAT64}, []any{"b", runtimev1.Type_CODE_INT64, "c", runtimev1.Type_CODE_INT64})
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
 	testruntime.RequireResource(t, rt, id, metricsRes)
@@ -859,7 +864,7 @@ measures:
   ignore: true
 `,
 	})
-	_, metricsRes = newMetricsView("dash", "bar", []string{"count(*)"}, []string{"b"})
+	_, metricsRes = newMetricsView("dash", "bar", "", []any{"count(*)", runtimev1.Type_CODE_INT64}, []any{"b", runtimev1.Type_CODE_INT64})
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
 	testruntime.RequireResource(t, rt, id, metricsRes)
@@ -904,7 +909,7 @@ measures:
   ignore: true
 `,
 	})
-	_, metricsRes = newMetricsView("dash", "bar", []string{"count(*)"}, []string{})
+	_, metricsRes = newMetricsView("dash", "bar", "", []any{"count(*)", runtimev1.Type_CODE_INT64}, []any{})
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
 	testruntime.RequireResource(t, rt, id, metricsRes)
@@ -987,14 +992,14 @@ measures:
 - expression: avg(a)
 `,
 	})
-	metrics, metricsRes := newMetricsView("dash", "bar", []string{"count(*)", "avg(a)"}, []string{"b", "c"})
+	metrics, metricsRes := newMetricsView("dash", "bar", "", []any{"count(*)", runtimev1.Type_CODE_INT64, "avg(a)", runtimev1.Type_CODE_FLOAT64}, []any{"b", runtimev1.Type_CODE_INT64, "c", runtimev1.Type_CODE_INT64})
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
 	testruntime.RequireResource(t, rt, id, metricsRes)
 
-	// Since RequireResource doesn't check that State.ModelRefreshedOn is set, we add a manual check for it here.
+	// Since RequireResource doesn't check that State.DataRefreshedOn is set, we add a manual check for it here.
 	mv := testruntime.GetResource(t, rt, id, metricsRes.Meta.Name.Kind, metricsRes.Meta.Name.Name)
-	require.NotNil(t, mv.GetMetricsView().State.ModelRefreshedOn)
+	require.NotNil(t, mv.GetMetricsView().State.DataRefreshedOn)
 
 	// Model has error, dashboard has error as well
 	testruntime.PutFiles(t, rt, id, map[string]string{
@@ -1005,6 +1010,55 @@ measures:
 	metricsRes.Meta.ReconcileError = `table "bar" does not exist`
 	metrics.State = &runtimev1.MetricsViewState{}
 	testruntime.RequireResource(t, rt, id, metricsRes)
+}
+
+func TestDerivedMetricsView(t *testing.T) {
+	// Create source and model
+	rt, id := testruntime.NewInstance(t)
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"/data/foo.csv": `a,b,c,d,e
+1,2,3,4,5
+1,2,3,4,5
+1,2,3,4,5
+`,
+		"/sources/foo.yaml": `
+connector: local_file
+path: data/foo.csv
+`,
+		"/models/bar.sql": `SELECT * FROM foo`,
+		"/metrics/dash.yaml": `
+version: 1
+type: metrics_view
+display_name: Dash
+model: bar
+dimensions:
+- column: b
+- column: c
+measures:
+- expression: count(*)
+- expression: avg(a)
+`,
+		"/metrics/dash_derived.yaml": `
+type: metrics_view
+parent: dash
+`,
+	})
+
+	_, metricsRes := newMetricsView("dash", "bar", "", []any{"count(*)", runtimev1.Type_CODE_INT64, "avg(a)", runtimev1.Type_CODE_FLOAT64}, []any{"b", runtimev1.Type_CODE_INT64, "c", runtimev1.Type_CODE_INT64})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 6, 0, 0)
+	testruntime.RequireResource(t, rt, id, metricsRes)
+
+	_, metricsRes = newMetricsView("dash_derived", "bar", "dash", []any{"count(*)", runtimev1.Type_CODE_INT64, "avg(a)", runtimev1.Type_CODE_FLOAT64}, []any{"b", runtimev1.Type_CODE_INT64, "c", runtimev1.Type_CODE_INT64})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 6, 0, 0)
+	testruntime.RequireResource(t, rt, id, metricsRes)
+
+	// check explore
+	_, exploreRes := newExplore("dash_derived", []string{"measure_0", "measure_1"}, []string{"b", "c"})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 6, 0, 0)
+	testruntime.RequireResource(t, rt, id, exploreRes)
 }
 
 func TestStageChanges(t *testing.T) {
@@ -1038,7 +1092,7 @@ measures:
 `,
 	})
 	_, modelRes := newModel("SELECT * FROM foo", "bar", "foo")
-	_, metricsRes := newMetricsView("dash", "bar", []string{"count(*)", "avg(a)"}, []string{"b", "c"})
+	_, metricsRes := newMetricsView("dash", "bar", "", []any{"count(*)", runtimev1.Type_CODE_INT64, "avg(a)", runtimev1.Type_CODE_FLOAT64}, []any{"b", runtimev1.Type_CODE_INT64, "c", runtimev1.Type_CODE_INT64})
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
 	testruntime.RequireResource(t, rt, id, modelRes)
@@ -1131,7 +1185,7 @@ measures:
 	})
 	awaitIdle()
 	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
-	_, metricsRes := newMetricsView("dash", "bar", []string{"count(*)", "avg(a)"}, []string{"b", "c"})
+	_, metricsRes := newMetricsView("dash", "bar", "", []any{"count(*)", runtimev1.Type_CODE_INT64, "avg(a)", runtimev1.Type_CODE_FLOAT64}, []any{"b", runtimev1.Type_CODE_INT64, "c", runtimev1.Type_CODE_INT64})
 	testruntime.RequireResource(t, rt, id, metricsRes)
 }
 
@@ -1160,7 +1214,7 @@ measures:
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
 
-	_, metricsRes := newMetricsView("dash", "bar", []string{"count(*)"}, []string{"country"})
+	_, metricsRes := newMetricsView("dash", "bar", "", []any{"count(*)", runtimev1.Type_CODE_INT64}, []any{"country", runtimev1.Type_CODE_STRING})
 	testruntime.RequireResource(t, rt, id, metricsRes)
 }
 
@@ -1173,6 +1227,7 @@ func newSource(name, path, localFileHash string) (*runtimev1.Model, *runtimev1.R
 			OutputProperties: must(structpb.NewStruct(map[string]any{"materialize": true})),
 			RefreshSchedule:  &runtimev1.Schedule{RefUpdate: true},
 			DefinedAsSource:  true,
+			ChangeMode:       runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
 		},
 		State: &runtimev1.ModelState{
 			ExecutorConnector: "duckdb",
@@ -1201,6 +1256,7 @@ func newModel(query, name, source string) (*runtimev1.Model, *runtimev1.Resource
 			InputConnector:  "duckdb",
 			InputProperties: must(structpb.NewStruct(map[string]any{"sql": query})),
 			OutputConnector: "duckdb",
+			ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
 		},
 		State: &runtimev1.ModelState{
 			ExecutorConnector: "duckdb",
@@ -1223,58 +1279,90 @@ func newModel(query, name, source string) (*runtimev1.Model, *runtimev1.Resource
 	return model, modelRes
 }
 
-func newMetricsView(name, model string, measures, dimensions []string) (*runtimev1.MetricsView, *runtimev1.Resource) {
+func newMetricsView(name, model, parent string, measures, dimensions []any) (*runtimev1.MetricsView, *runtimev1.Resource) {
+	var dimensionsSelector, measuresSelector *runtimev1.FieldSelector
+	var dims []*runtimev1.MetricsViewSpec_Dimension
+	var ms []*runtimev1.MetricsViewSpec_Measure
+	var mdl string
+	if parent == "" {
+		ms = make([]*runtimev1.MetricsViewSpec_Measure, len(measures)/2)
+		dims = make([]*runtimev1.MetricsViewSpec_Dimension, len(dimensions)/2)
+		mdl = model
+	} else {
+		dimensionsSelector = &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}}
+		measuresSelector = &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}}
+	}
 	metrics := &runtimev1.MetricsView{
 		Spec: &runtimev1.MetricsViewSpec{
-			Connector:   "duckdb",
-			Model:       model,
-			DisplayName: parser.ToDisplayName(name),
-			Measures:    make([]*runtimev1.MetricsViewSpec_Measure, len(measures)),
-			Dimensions:  make([]*runtimev1.MetricsViewSpec_Dimension, len(dimensions)),
+			Parent:           parent,
+			Connector:        "duckdb",
+			Model:            mdl,
+			DisplayName:      parser.ToDisplayName(name),
+			Measures:         ms,
+			Dimensions:       dims,
+			ParentDimensions: dimensionsSelector,
+			ParentMeasures:   measuresSelector,
 		},
 		State: &runtimev1.MetricsViewState{
 			ValidSpec: &runtimev1.MetricsViewSpec{
+				Parent:      parent,
 				Connector:   "duckdb",
 				Table:       model,
 				Model:       model,
 				DisplayName: parser.ToDisplayName(name),
-				Measures:    make([]*runtimev1.MetricsViewSpec_Measure, len(measures)),
-				Dimensions:  make([]*runtimev1.MetricsViewSpec_Dimension, len(dimensions)),
+				Measures:    make([]*runtimev1.MetricsViewSpec_Measure, len(measures)/2),
+				Dimensions:  make([]*runtimev1.MetricsViewSpec_Dimension, len(dimensions)/2),
 			},
 		},
 	}
 
-	for i, measure := range measures {
+	for i := range len(measures) / 2 {
 		name := fmt.Sprintf("measure_%d", i)
-		metrics.Spec.Measures[i] = &runtimev1.MetricsViewSpec_Measure{
-			Name:        name,
-			DisplayName: parser.ToDisplayName(name),
-			Expression:  measure,
-			Type:        runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
+		idx := i * 2
+		expr := measures[idx].(string)
+		if parent == "" {
+			metrics.Spec.Measures[i] = &runtimev1.MetricsViewSpec_Measure{
+				Name:        name,
+				DisplayName: parser.ToDisplayName(name),
+				Expression:  expr,
+				Type:        runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
+			}
 		}
 		metrics.State.ValidSpec.Measures[i] = &runtimev1.MetricsViewSpec_Measure{
 			Name:        name,
 			DisplayName: parser.ToDisplayName(name),
-			Expression:  measure,
+			Expression:  expr,
 			Type:        runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
+			DataType:    &runtimev1.Type{Code: measures[idx+1].(runtimev1.Type_Code), Nullable: true},
 		}
 	}
-	for i, dimension := range dimensions {
-		metrics.Spec.Dimensions[i] = &runtimev1.MetricsViewSpec_Dimension{
-			Name:        dimension,
-			DisplayName: parser.ToDisplayName(dimension),
-			Column:      dimension,
+	for i := range len(dimensions) / 2 {
+		idx := i * 2
+		name := dimensions[idx].(string)
+		if parent == "" {
+			metrics.Spec.Dimensions[i] = &runtimev1.MetricsViewSpec_Dimension{
+				Name:        name,
+				DisplayName: parser.ToDisplayName(name),
+				Column:      name,
+			}
 		}
 		metrics.State.ValidSpec.Dimensions[i] = &runtimev1.MetricsViewSpec_Dimension{
-			Name:        dimension,
-			DisplayName: parser.ToDisplayName(dimension),
-			Column:      dimension,
+			Name:        name,
+			DisplayName: parser.ToDisplayName(name),
+			Column:      name,
+			DataType:    &runtimev1.Type{Code: dimensions[idx+1].(runtimev1.Type_Code), Nullable: true},
 		}
+	}
+	var refs []*runtimev1.ResourceName
+	if parent == "" {
+		refs = []*runtimev1.ResourceName{{Kind: runtime.ResourceKindModel, Name: model}}
+	} else {
+		refs = []*runtimev1.ResourceName{{Kind: runtime.ResourceKindMetricsView, Name: parent}}
 	}
 	metricsRes := &runtimev1.Resource{
 		Meta: &runtimev1.ResourceMeta{
 			Name:      &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: name},
-			Refs:      []*runtimev1.ResourceName{{Kind: runtime.ResourceKindModel, Name: model}},
+			Refs:      refs,
 			Owner:     runtime.GlobalProjectParserName,
 			FilePaths: []string{fmt.Sprintf("/metrics/%s.yaml", name)},
 		},
@@ -1285,10 +1373,65 @@ func newMetricsView(name, model string, measures, dimensions []string) (*runtime
 	return metrics, metricsRes
 }
 
+func newExplore(metricsVew string, measures, dims []string) (*runtimev1.Explore, *runtimev1.Resource) {
+	explore := &runtimev1.Explore{
+		Spec: &runtimev1.ExploreSpec{
+			DisplayName:        parser.ToDisplayName(metricsVew),
+			MetricsView:        metricsVew,
+			DimensionsSelector: &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}},
+			MeasuresSelector:   &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}},
+			DefaultPreset: &runtimev1.ExplorePreset{
+				DimensionsSelector: &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}},
+				MeasuresSelector:   &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}},
+			},
+			AllowCustomTimeRange: true,
+			DefinedInMetricsView: true,
+		},
+		State: &runtimev1.ExploreState{
+			ValidSpec: &runtimev1.ExploreSpec{
+				DisplayName: parser.ToDisplayName(metricsVew),
+				MetricsView: metricsVew,
+				Dimensions:  dims,
+				Measures:    measures,
+				DefaultPreset: &runtimev1.ExplorePreset{
+					Dimensions: dims,
+					Measures:   measures,
+				},
+				AllowCustomTimeRange: true,
+				DefinedInMetricsView: true,
+			},
+		},
+	}
+	exploreRes := &runtimev1.Resource{
+		Meta: &runtimev1.ResourceMeta{
+			Name:      &runtimev1.ResourceName{Kind: runtime.ResourceKindExplore, Name: metricsVew},
+			Refs:      []*runtimev1.ResourceName{{Kind: runtime.ResourceKindMetricsView, Name: metricsVew}},
+			Owner:     runtime.GlobalProjectParserName,
+			FilePaths: []string{fmt.Sprintf("/metrics/%s.yaml", metricsVew)},
+		},
+		Resource: &runtimev1.Resource_Explore{
+			Explore: explore,
+		},
+	}
+	return explore, exploreRes
+}
+
 func TestDedicatedConnector(t *testing.T) {
-	// Add source, model, and dashboard
-	rt, id := testruntime.NewInstance(t)
-	testruntime.PutFiles(t, rt, id, map[string]string{
+	// Acquire the connectors for the runtime instance.
+	vars := make(map[string]string)
+
+	acquireS3, ok := testruntime.Connectors["s3"]
+	cfgS3 := acquireS3(t)
+	require.True(t, ok, "unknown connector s3")
+	vars["connector.s3-dedicated.aws_access_key_id"] = cfgS3["aws_access_key_id"]
+	vars["connector.s3-dedicated.aws_secret_access_key"] = cfgS3["aws_secret_access_key"]
+
+	acquireGcs, ok := testruntime.Connectors["gcs"]
+	cfgGcs := acquireGcs(t)
+	require.True(t, ok, "unknown connector gcs")
+	vars["connector.my-gcs.google_application_credentials"] = cfgGcs["google_application_credentials"]
+
+	files := map[string]string{
 		"rill.yaml": `
 connectors:
 - name: s3-integrated
@@ -1305,7 +1448,13 @@ region: us-west-2
 driver: gcs
 name: my-gcs
 `,
+	}
+	// Create the test runtime instance.
+	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files:     files,
+		Variables: vars,
 	})
+
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 3, 0, 0)
 
@@ -1351,7 +1500,7 @@ func localFileHash(t *testing.T, rt *runtime.Runtime, id string, paths []string)
 	defer func() {
 		release()
 	}()
-	localFileHash, err := repo.FileHash(context.Background(), paths)
+	localFileHash, err := repo.Hash(context.Background(), paths)
 	require.NoError(t, err)
 	return localFileHash
 }

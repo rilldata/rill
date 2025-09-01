@@ -19,7 +19,7 @@ import {
   ToProtoTimeGrainMap,
 } from "@rilldata/web-common/features/dashboards/proto-state/enum-maps";
 import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
 import { arrayOrderedEquals } from "@rilldata/web-common/lib/arrayUtils";
 import type {
@@ -71,20 +71,20 @@ const TDDChartTypeMap: Record<TDDChart, string> = {
 };
 
 export function getProtoFromDashboardState(
-  metrics: MetricsExplorerEntity,
+  exploreState: ExploreState,
   exploreSpec: V1ExploreSpec,
 ): string {
-  if (!metrics) return "";
+  if (!exploreState) return "";
 
   const state: PartialMessage<DashboardState> = {};
-  if (metrics.whereFilter) {
-    state.where = toExpressionProto(metrics.whereFilter);
+  if (exploreState.whereFilter) {
+    state.where = toExpressionProto(exploreState.whereFilter);
   }
-  if (metrics.dimensionsWithInlistFilter) {
-    state.dimensionsWithInlistFilter = metrics.dimensionsWithInlistFilter;
+  if (exploreState.dimensionsWithInlistFilter) {
+    state.dimensionsWithInlistFilter = exploreState.dimensionsWithInlistFilter;
   }
-  if (metrics.dimensionThresholdFilters?.length) {
-    state.having = metrics.dimensionThresholdFilters.map(
+  if (exploreState.dimensionThresholdFilters?.length) {
+    state.having = exploreState.dimensionThresholdFilters.map(
       ({ name, filters }) =>
         new DashboardDimensionFilter({
           name,
@@ -98,81 +98,89 @@ export function getProtoFromDashboardState(
         }),
     );
   }
-  if (metrics.selectedTimeRange) {
-    state.timeRange = toTimeRangeProto(metrics.selectedTimeRange);
-    if (metrics.selectedTimeRange.interval) {
+  if (exploreState.selectedTimeRange) {
+    state.timeRange = toTimeRangeProto(exploreState.selectedTimeRange);
+    if (exploreState.selectedTimeRange.interval) {
       state.timeGrain =
-        ToProtoTimeGrainMap[metrics.selectedTimeRange.interval] ??
+        ToProtoTimeGrainMap[exploreState.selectedTimeRange.interval] ??
         V1TimeGrain.TIME_GRAIN_UNSPECIFIED;
     }
   }
-  if (metrics.selectedComparisonTimeRange) {
+  if (exploreState.selectedComparisonTimeRange) {
     state.compareTimeRange = toTimeRangeProto(
-      metrics.selectedComparisonTimeRange,
+      exploreState.selectedComparisonTimeRange,
     );
   }
-  if (metrics.lastDefinedScrubRange) {
-    state.scrubRange = toScrubProto(metrics.lastDefinedScrubRange);
+  if (exploreState.lastDefinedScrubRange) {
+    state.scrubRange = toScrubProto(exploreState.lastDefinedScrubRange);
   }
-  state.showTimeComparison = Boolean(metrics.showTimeComparison);
-  if (metrics.selectedComparisonDimension) {
-    state.comparisonDimension = metrics.selectedComparisonDimension;
-  }
-
-  state.selectedTimezone = metrics.selectedTimezone;
-
-  if (metrics.leaderboardSortByMeasureName) {
-    state.leaderboardMeasure = metrics.leaderboardSortByMeasureName;
+  state.showTimeComparison = Boolean(exploreState.showTimeComparison);
+  if (exploreState.selectedComparisonDimension) {
+    state.comparisonDimension = exploreState.selectedComparisonDimension;
   }
 
-  if (metrics.leaderboardMeasureCount) {
-    state.leaderboardMeasureCount = metrics.leaderboardMeasureCount;
+  state.selectedTimezone = exploreState.selectedTimezone;
+
+  if (exploreState.leaderboardSortByMeasureName) {
+    state.leaderboardMeasure = exploreState.leaderboardSortByMeasureName;
   }
 
-  if (metrics.tdd?.pinIndex !== undefined) {
-    state.pinIndex = metrics.tdd.pinIndex;
+  if (exploreState.leaderboardShowContextForAllMeasures) {
+    state.leaderboardShowContextForAllMeasures =
+      exploreState.leaderboardShowContextForAllMeasures;
   }
-  if (metrics.tdd?.chartType !== undefined) {
-    state.chartType = TDDChartTypeMap[metrics.tdd.chartType];
+
+  if (exploreState.leaderboardMeasureNames) {
+    state.leaderboardMeasures = exploreState.leaderboardMeasureNames;
+  }
+
+  if (exploreState.tdd?.pinIndex !== undefined) {
+    state.pinIndex = exploreState.tdd.pinIndex;
+  }
+  if (exploreState.tdd?.chartType !== undefined) {
+    state.chartType = TDDChartTypeMap[exploreState.tdd.chartType];
   }
 
   const measuresMatchExactly =
-    exploreSpec?.measures && metrics.visibleMeasures
-      ? arrayOrderedEquals(exploreSpec.measures, metrics.visibleMeasures)
-      : metrics.allMeasuresVisible;
+    exploreSpec?.measures && exploreState.visibleMeasures
+      ? arrayOrderedEquals(exploreSpec.measures, exploreState.visibleMeasures)
+      : exploreState.allMeasuresVisible;
   if (measuresMatchExactly) {
     state.allMeasuresVisible = true;
-  } else if (metrics.visibleMeasures) {
-    state.visibleMeasures = [...metrics.visibleMeasures];
+  } else if (exploreState.visibleMeasures) {
+    state.visibleMeasures = [...exploreState.visibleMeasures];
   }
 
   const dimensionsMatchExactly =
-    exploreSpec?.dimensions && metrics.visibleDimensions
-      ? arrayOrderedEquals(exploreSpec.dimensions, metrics.visibleDimensions)
-      : metrics.allDimensionsVisible;
+    exploreSpec?.dimensions && exploreState.visibleDimensions
+      ? arrayOrderedEquals(
+          exploreSpec.dimensions,
+          exploreState.visibleDimensions,
+        )
+      : exploreState.allDimensionsVisible;
   if (dimensionsMatchExactly) {
     state.allDimensionsVisible = true;
-  } else if (metrics.visibleDimensions) {
-    state.visibleDimensions = [...metrics.visibleDimensions];
+  } else if (exploreState.visibleDimensions) {
+    state.visibleDimensions = [...exploreState.visibleDimensions];
   }
 
-  if (metrics.leaderboardContextColumn) {
+  if (exploreState.leaderboardContextColumn) {
     state.leaderboardContextColumn =
-      LeaderboardContextColumnMap[metrics.leaderboardContextColumn];
+      LeaderboardContextColumnMap[exploreState.leaderboardContextColumn];
   }
 
-  if (metrics.sortDirection) {
-    state.leaderboardSortDirection = metrics.sortDirection;
+  if (exploreState.sortDirection) {
+    state.leaderboardSortDirection = exploreState.sortDirection;
   }
-  if (metrics.dashboardSortType) {
-    state.leaderboardSortType = metrics.dashboardSortType;
-  }
-
-  if (metrics.pivot) {
-    Object.assign(state, toPivotProto(metrics.pivot));
+  if (exploreState.dashboardSortType) {
+    state.leaderboardSortType = exploreState.dashboardSortType;
   }
 
-  Object.assign(state, toActivePageProto(metrics));
+  if (exploreState.pivot) {
+    Object.assign(state, toPivotProto(exploreState.pivot));
+  }
+
+  Object.assign(state, toActivePageProto(exploreState));
 
   const message = new DashboardState(state);
   return protoToBase64(message.toBinary());
@@ -326,25 +334,25 @@ function toPivotProto(pivotState: PivotState): PartialMessage<DashboardState> {
 }
 
 function toActivePageProto(
-  metrics: MetricsExplorerEntity,
+  exploreState: ExploreState,
 ): PartialMessage<DashboardState> {
-  switch (metrics.activePage) {
+  switch (exploreState.activePage) {
     case DashboardState_ActivePage.DEFAULT:
     case DashboardState_ActivePage.PIVOT:
       return {
-        activePage: metrics.activePage,
+        activePage: exploreState.activePage,
       };
 
     case DashboardState_ActivePage.DIMENSION_TABLE:
       return {
-        activePage: metrics.activePage,
-        selectedDimension: metrics.selectedDimensionName,
+        activePage: exploreState.activePage,
+        selectedDimension: exploreState.selectedDimensionName,
       };
 
     case DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL:
       return {
-        activePage: metrics.activePage,
-        expandedMeasure: metrics.tdd.expandedMeasureName,
+        activePage: exploreState.activePage,
+        expandedMeasure: exploreState.tdd.expandedMeasureName,
       };
   }
 

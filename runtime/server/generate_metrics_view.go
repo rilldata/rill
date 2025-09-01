@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -197,11 +198,32 @@ type generateMetricsViewYAMLWithres struct {
 
 // generateMetricsViewYAMLWithAI attempts to generate a metrics view YAML definition from a table schema using AI.
 // It validates that the result is a valid metrics view. Due to the unpredictable nature of AI (and chance of downtime), this function may error non-deterministically.
-func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, dialect, connector string, tbl *drivers.Table, isDefaultConnector, isModel bool) (*generateMetricsViewYAMLWithres, error) {
+func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, dialect, connector string, tbl *drivers.OlapTable, isDefaultConnector, isModel bool) (*generateMetricsViewYAMLWithres, error) {
 	// Build messages
-	msgs := []*drivers.CompletionMessage{
-		{Role: "system", Data: metricsViewYAMLSystemPrompt()},
-		{Role: "user", Data: metricsViewYAMLUserPrompt(dialect, tbl.Name, tbl.Schema)},
+	systemPrompt := metricsViewYAMLSystemPrompt()
+	userPrompt := metricsViewYAMLUserPrompt(dialect, tbl.Name, tbl.Schema)
+
+	msgs := []*aiv1.CompletionMessage{
+		{
+			Role: "system",
+			Content: []*aiv1.ContentBlock{
+				{
+					BlockType: &aiv1.ContentBlock_Text{
+						Text: systemPrompt,
+					},
+				},
+			},
+		},
+		{
+			Role: "user",
+			Content: []*aiv1.ContentBlock{
+				{
+					BlockType: &aiv1.ContentBlock_Text{
+						Text: userPrompt,
+					},
+				},
+			},
+		},
 	}
 
 	// Connect to the AI service configured for the instance
@@ -216,19 +238,33 @@ func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, 
 	defer cancel()
 
 	// Call AI service to infer a metrics view YAML
-	res, err := ai.Complete(ctx, msgs)
+	res, err := ai.Complete(ctx, msgs, nil)
 	if err != nil {
 		return nil, err
 	}
 
+	// Extract text from content blocks
+	var responseText string
+	for _, block := range res.Content {
+		switch blockType := block.GetBlockType().(type) {
+		case *aiv1.ContentBlock_Text:
+			if text := blockType.Text; text != "" {
+				responseText += text
+			}
+		default:
+			// For metrics view generation, we only expect text responses
+			return nil, fmt.Errorf("unexpected content block type in AI response: %T", blockType)
+		}
+	}
+
 	// The AI may produce Markdown output. Remove the code tags around the YAML.
-	res.Data = strings.TrimPrefix(res.Data, "```yaml")
-	res.Data = strings.TrimPrefix(res.Data, "```")
-	res.Data = strings.TrimSuffix(res.Data, "```")
+	responseText = strings.TrimPrefix(responseText, "```yaml")
+	responseText = strings.TrimPrefix(responseText, "```")
+	responseText = strings.TrimSuffix(responseText, "```")
 
 	// Parse the YAML structure
 	var doc metricsViewYAML
-	if err := yaml.Unmarshal([]byte(res.Data), &doc); err != nil {
+	if err := yaml.Unmarshal([]byte(responseText), &doc); err != nil {
 		return nil, fmt.Errorf("invalid metrics view YAML: %w", err)
 	}
 
@@ -289,7 +325,7 @@ func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, 
 		return nil, err
 	}
 	defer e.Close()
-	validateResult, err := e.ValidateMetricsView(ctx)
+	validateResult, err := e.ValidateAndNormalizeMetricsView(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -372,7 +408,7 @@ Give me up to 10 suggested metrics using the %q SQL dialect based on the table n
 }
 
 // generateMetricsViewYAMLSimple generates a simple metrics view YAML definition from a table schema.
-func generateMetricsViewYAMLSimple(connector string, tbl *drivers.Table, isDefaultConnector, isModel bool) (string, error) {
+func generateMetricsViewYAMLSimple(connector string, tbl *drivers.OlapTable, isDefaultConnector, isModel bool) (string, error) {
 	doc := &metricsViewYAML{
 		Version:       1,
 		Type:          "metrics_view",
@@ -414,7 +450,7 @@ func generateMetricsViewYAMLSimpleDimensions(schema *runtimev1.StructType) []*me
 	var dims []*metricsViewDimensionYAML
 	for _, f := range schema.Fields {
 		switch f.Type.Code {
-		case runtimev1.Type_CODE_BOOL, runtimev1.Type_CODE_STRING, runtimev1.Type_CODE_BYTES, runtimev1.Type_CODE_UUID:
+		case runtimev1.Type_CODE_BOOL, runtimev1.Type_CODE_STRING, runtimev1.Type_CODE_BYTES, runtimev1.Type_CODE_UUID, runtimev1.Type_CODE_DATE, runtimev1.Type_CODE_TIMESTAMP:
 			dims = append(dims, &metricsViewDimensionYAML{
 				Name:        f.Name,
 				DisplayName: identifierToDisplayName(f.Name),
@@ -425,7 +461,7 @@ func generateMetricsViewYAMLSimpleDimensions(schema *runtimev1.StructType) []*me
 	return dims
 }
 
-func generateMetricsViewYAMLSimpleMeasures(tbl *drivers.Table) []*metricsViewMeasureYAML {
+func generateMetricsViewYAMLSimpleMeasures(tbl *drivers.OlapTable) []*metricsViewMeasureYAML {
 	// Add a count measure
 	var measures []*metricsViewMeasureYAML
 	measures = append(measures, &metricsViewMeasureYAML{
@@ -502,7 +538,7 @@ func marshalMetricsViewYAML(doc *metricsViewYAML, aiPowered bool) (string, error
 	buf := new(bytes.Buffer)
 
 	buf.WriteString("# Metrics view YAML\n")
-	buf.WriteString("# Reference documentation: https://docs.rilldata.com/reference/project-files/dashboards\n")
+	buf.WriteString("# Reference documentation: https://docs.rilldata.com/reference/project-files/metrics-views\n")
 	if aiPowered {
 		buf.WriteString("# This file was generated using AI.\n")
 	}
@@ -559,7 +595,7 @@ func insertEmptyLinesInYaml(node *yaml.Node) {
 }
 
 func identifierToDisplayName(s string) string {
-	return cases.Title(language.English).String(strings.ReplaceAll(s, "_", " "))
+	return strings.TrimLeft(cases.Title(language.English).String(strings.ReplaceAll(s, "_", " ")), " ")
 }
 
 var alphanumericUnderscoreRegexp = regexp.MustCompile("^[_a-zA-Z0-9]+$")

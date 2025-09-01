@@ -33,6 +33,16 @@ checkDependency() {
     fi
 }
 
+# Ensure that 'git' is installed and executable, exit and print help message if not
+checkGitDependency() {
+    if ! [ -x "$(command -v git)" ]; then
+        publishSyftEvent git_missing
+        printf "Git could not be found, Rill depends on it, please install and try again.\n\n"
+        printf "Helpful instructions: https://github.com/git-guides/install-git\n"
+        exit 1
+    fi
+}
+
 # Ensure that either 'shasum' or 'sha256sum' is installed and executable, exit and print help message if not
 resolveShasumDependency() {
     if [ -x "$(command -v shasum)" ]; then
@@ -211,6 +221,7 @@ installRill() {
     publishSyftEvent install
     checkDependency curl
     checkDependency unzip
+    checkGitDependency
     resolveShasumDependency
     initPlatform
     detectPreviousInstallation

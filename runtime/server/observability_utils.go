@@ -1,6 +1,8 @@
 package server
 
 import (
+	"strings"
+
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -26,6 +28,54 @@ func filterCount(m *runtimev1.Expression) int {
 		}
 	}
 	return c
+}
+
+func marshalTimeRange(m *runtimev1.TimeRange) string {
+	if m == nil {
+		return ""
+	}
+	var tr strings.Builder
+	if m.Start != nil {
+		tr.WriteString(safeTimeStr(m.Start))
+		tr.WriteByte('-')
+		tr.WriteString(safeTimeStr(m.End))
+	}
+	if m.IsoDuration != "" {
+		if tr.Len() > 0 {
+			tr.WriteByte('-')
+		}
+		tr.WriteString(m.IsoDuration)
+	}
+	if m.IsoOffset != "" {
+		if tr.Len() > 0 {
+			tr.WriteByte('-')
+		}
+		tr.WriteString(m.IsoOffset)
+	}
+
+	tr.WriteByte('-')
+	tr.WriteString(m.RoundToGrain.String())
+
+	if m.TimeZone != "" {
+		if tr.Len() > 0 {
+			tr.WriteByte('-')
+		}
+		tr.WriteString(m.TimeZone)
+	}
+	if m.Expression != "" {
+		if tr.Len() > 0 {
+			tr.WriteByte('-')
+		}
+		tr.WriteString(m.Expression)
+	}
+	if m.TimeDimension != "" {
+		if tr.Len() > 0 {
+			tr.WriteByte('-')
+		}
+		tr.WriteString(m.TimeDimension)
+	}
+
+	return tr.String()
 }
 
 func marshalMetricsViewAggregationDimension(ms []*runtimev1.MetricsViewAggregationDimension) []string {

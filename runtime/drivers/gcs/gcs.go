@@ -5,16 +5,12 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/bmatcuk/doublestar/v4"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
-	rillblob "github.com/rilldata/rill/runtime/drivers/blob"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/gcputil"
-	"github.com/rilldata/rill/runtime/pkg/globutil"
 	"github.com/rilldata/rill/runtime/storage"
 	"go.uber.org/zap"
-	"gocloud.dev/blob/gcsblob"
 	"gocloud.dev/gcp"
 )
 
@@ -30,7 +26,7 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "Google Cloud Storage",
 	Description: "Connect to Google Cloud Storage.",
-	DocsURL:     "https://docs.rilldata.com/reference/connectors/gcs",
+	DocsURL:     "https://docs.rilldata.com/connect/data-source/gcs",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:  "google_application_credentials",
@@ -55,14 +51,6 @@ var spec = drivers.Spec{
 			Description: "The name of the source",
 			Placeholder: "my_new_source",
 			Required:    true,
-		},
-		{
-			Key:         "gcp.credentials",
-			Type:        drivers.InformationalPropertyType,
-			DisplayName: "GCP credentials",
-			Description: "GCP credentials inferred from your local environment.",
-			Hint:        "Set your local credentials: <code>gcloud auth application-default login</code> Click to learn more.",
-			DocsURL:     "https://docs.rilldata.com/reference/connectors/gcs#local-credentials",
 		},
 	},
 	ImplementsObjectStore: true,
@@ -111,71 +99,11 @@ func (d driver) Spec() drivers.Spec {
 }
 
 func (d driver) HasAnonymousSourceAccess(ctx context.Context, src map[string]any, logger *zap.Logger) (bool, error) {
-	conf, err := parseSourceProperties(src)
-	if err != nil {
-		return false, fmt.Errorf("failed to parse config: %w", err)
-	}
-
-	client := gcp.NewAnonymousHTTPClient(gcp.DefaultTransport())
-	bucketObj, err := gcsblob.OpenBucket(ctx, client, conf.url.Host, nil)
-	if err != nil {
-		return false, fmt.Errorf("failed to open bucket %q, %w", conf.url.Host, err)
-	}
-
-	return bucketObj.IsAccessible(ctx)
+	return false, nil
 }
 
 func (d driver) TertiarySourceConnectors(ctx context.Context, src map[string]any, logger *zap.Logger) ([]string, error) {
 	return nil, nil
-}
-
-type sourceProperties struct {
-	Path                  string         `mapstructure:"path"`
-	URI                   string         `mapstructure:"uri"`
-	Extract               map[string]any `mapstructure:"extract"`
-	GlobMaxTotalSize      int64          `mapstructure:"glob.max_total_size"`
-	GlobMaxObjectsMatched int            `mapstructure:"glob.max_objects_matched"`
-	GlobMaxObjectsListed  int64          `mapstructure:"glob.max_objects_listed"`
-	GlobPageSize          int            `mapstructure:"glob.page_size"`
-	BatchSize             string         `mapstructure:"batch_size"`
-	url                   *globutil.URL
-	extractPolicy         *rillblob.ExtractPolicy
-}
-
-func parseSourceProperties(props map[string]any) (*sourceProperties, error) {
-	conf := &sourceProperties{}
-	err := mapstructure.WeakDecode(props, conf)
-	if err != nil {
-		return nil, err
-	}
-
-	// Backwards compatibility for "uri" renamed to "path"
-	if conf.URI != "" {
-		conf.Path = conf.URI
-	}
-
-	if !doublestar.ValidatePattern(conf.Path) {
-		// ideally this should be validated at much earlier stage
-		// keeping it here to have gcs specific validations
-		return nil, fmt.Errorf("glob pattern %s is invalid", conf.Path)
-	}
-
-	url, err := globutil.ParseBucketURL(conf.Path)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse path %q, %w", conf.Path, err)
-	}
-	conf.url = url
-
-	if url.Scheme != "gs" {
-		return nil, fmt.Errorf("invalid gcs path %q, should start with gs://", conf.Path)
-	}
-
-	conf.extractPolicy, err = rillblob.ParseExtractPolicy(conf.Extract)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse extract config: %w", err)
-	}
-
-	return conf, nil
 }
 
 type Connection struct {
@@ -188,7 +116,25 @@ var _ drivers.Handle = &Connection{}
 
 // Ping implements drivers.Handle.
 func (c *Connection) Ping(ctx context.Context) error {
-	return drivers.ErrNotImplemented
+	if c.config.SecretJSON != "" {
+		creds, err := gcputil.Credentials(ctx, c.config.SecretJSON, c.config.AllowHostAccess)
+		if err != nil {
+			return fmt.Errorf("failed to load credentials: %w", err)
+		}
+
+		ts := gcp.CredentialsTokenSource(creds)
+		_, err = ts.Token()
+		if err != nil {
+			return fmt.Errorf("failed to retrieve access token: %w", err)
+		}
+	}
+
+	if c.config.KeyID != "" && c.config.Secret != "" {
+		// TODO: handle in case of HMAC key secret
+		return nil
+	}
+
+	return nil
 }
 
 // Driver implements drivers.Connection.
@@ -201,6 +147,17 @@ func (c *Connection) Config() map[string]any {
 	m := make(map[string]any, 0)
 	_ = mapstructure.Decode(c.config, &m)
 	return m
+}
+
+// ParsedConfig returns a copy of the parsed config properties.
+func (c *Connection) ParsedConfig() *ConfigProperties {
+	cpy := *c.config
+	return &cpy
+}
+
+// InformationSchema implements drivers.Handle.
+func (c *Connection) AsInformationSchema() (drivers.InformationSchema, bool) {
+	return nil, false
 }
 
 // Close implements drivers.Connection.

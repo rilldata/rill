@@ -10,6 +10,7 @@ import (
 
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/database"
+	"github.com/rilldata/rill/admin/pkg/gitutil"
 	"github.com/rilldata/rill/admin/pkg/publicemail"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
@@ -29,6 +30,10 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
+
+const devDeplTTL = 6 * time.Hour
+
+const devSlots = 8
 
 const prodDeplTTL = 14 * 24 * time.Hour
 
@@ -137,6 +142,91 @@ func (s *Server) ListProjectsForOrganizationAndUser(ctx context.Context, req *ad
 	}, nil
 }
 
+func (s *Server) ListProjectsForFingerprint(ctx context.Context, req *adminv1.ListProjectsForFingerprintRequest) (*adminv1.ListProjectsForFingerprintResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.directory_name", req.DirectoryName),
+		attribute.String("args.git_remote", req.GitRemote),
+		attribute.String("args.sub_path", req.SubPath),
+	)
+
+	claims := auth.GetClaims(ctx)
+	if claims.OwnerType() != auth.OwnerTypeUser {
+		return nil, status.Error(codes.PermissionDenied, "only users can list projects by fingerprint")
+	}
+	userID := claims.OwnerID()
+
+	pageToken, err := unmarshalPageToken(req.PageToken)
+	if err != nil {
+		return nil, err
+	}
+	pageSize := validPageSize(req.PageSize)
+
+	projects, err := s.admin.DB.FindProjectsForUserAndFingerprint(ctx, userID, req.DirectoryName, req.GitRemote, req.SubPath, pageToken.Val, pageSize)
+	if err != nil {
+		return nil, err
+	}
+
+	nextToken := ""
+	if len(projects) >= pageSize {
+		nextToken = marshalPageToken(projects[len(projects)-1].ID)
+	}
+
+	dtos := make([]*adminv1.Project, len(projects))
+	orgNames := make(map[string]string)
+	for i, p := range projects {
+		orgName := orgNames[p.OrganizationID]
+		if orgName == "" {
+			org, err := s.admin.DB.FindOrganization(ctx, p.OrganizationID)
+			if err != nil {
+				return nil, err
+			}
+			orgName = org.Name
+			orgNames[p.OrganizationID] = orgName
+		}
+
+		dtos[i] = s.projToDTO(p, orgName)
+	}
+
+	return &adminv1.ListProjectsForFingerprintResponse{
+		Projects:      dtos,
+		NextPageToken: nextToken,
+	}, nil
+}
+
+func (s *Server) ListProjectsForUserByName(ctx context.Context, req *adminv1.ListProjectsForUserByNameRequest) (*adminv1.ListProjectsForUserByNameResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.project", req.Name),
+	)
+
+	claims := auth.GetClaims(ctx)
+	userID := claims.OwnerID()
+
+	projects, err := s.admin.DB.FindProjectsByNameAndUser(ctx, req.Name, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	orgsByID := make(map[string]*database.Organization)
+
+	dtos := make([]*adminv1.Project, len(projects))
+	for i, p := range projects {
+		org, hasOrg := orgsByID[p.OrganizationID]
+		if !hasOrg {
+			org, err = s.admin.DB.FindOrganization(ctx, p.OrganizationID)
+			if err != nil {
+				return nil, err
+			}
+			orgsByID[p.OrganizationID] = org
+		}
+
+		dtos[i] = s.projToDTO(p, org.Name)
+	}
+
+	return &adminv1.ListProjectsForUserByNameResponse{
+		Projects: dtos,
+	}, nil
+}
+
 func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest) (*adminv1.GetProjectResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.OrganizationName),
@@ -155,11 +245,12 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 
 	claims := auth.GetClaims(ctx)
 	permissions := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
+	forceAccess := claims.Superuser(ctx) && req.SuperuserForceAccess
 	if proj.Public {
 		permissions.ReadProject = true
 		permissions.ReadProd = true
 	}
-	if claims.Superuser(ctx) {
+	if forceAccess {
 		permissions.ReadProject = true
 		permissions.ReadProd = true
 		permissions.ReadProdStatus = true
@@ -197,7 +288,10 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 			return nil, err
 		}
 	} else if claims.OwnerType() == auth.OwnerTypeService {
-		attr = map[string]any{"admin": true}
+		attr, err = s.jwtAttributesForService(ctx, claims.OwnerID(), permissions)
+		if err != nil {
+			return nil, err
+		}
 	} else if claims.OwnerType() == auth.OwnerTypeMagicAuthToken {
 		mdl, ok := claims.AuthTokenModel().(*database.MagicAuthToken)
 		if !ok {
@@ -304,6 +398,7 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 		runtimeauth.ReadObjects,
 		runtimeauth.ReadMetrics,
 		runtimeauth.ReadAPI,
+		runtimeauth.UseAI,
 	}
 	if permissions.ManageProject {
 		instancePermissions = append(instancePermissions, runtimeauth.EditTrigger, runtimeauth.ReadResolvers)
@@ -422,16 +517,19 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		attribute.String("args.project", req.Name),
 		attribute.String("args.description", req.Description),
 		attribute.Bool("args.public", req.Public),
+		attribute.String("args.directory_name", req.DirectoryName),
 		attribute.String("args.provisioner", req.Provisioner),
 		attribute.String("args.prod_version", req.ProdVersion),
-		attribute.String("args.prod_olap_driver", req.ProdOlapDriver),
 		attribute.Int64("args.prod_slots", req.ProdSlots),
 		attribute.String("args.sub_path", req.Subpath),
 		attribute.String("args.prod_branch", req.ProdBranch),
-		attribute.String("args.github_url", req.GithubUrl),
+		attribute.String("args.git_remote", req.GitRemote),
 		attribute.String("args.archive_asset_id", req.ArchiveAssetId),
 		attribute.Bool("args.skip_deploy", req.SkipDeploy),
 	)
+
+	// Backwards compatibility
+	req.GitRemote = normalizeGitRemote(req.GitRemote)
 
 	// Find parent org
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrganizationName)
@@ -472,12 +570,15 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		return nil, status.Errorf(codes.FailedPrecondition, "quota exceeded: org %q is limited to %d deployments", org.Name, org.QuotaDeployments)
 	}
 
-	// Add prod TTL as 7 days if not a public project else infinite
+	// Add prod TTL as 14 days if not a public project else infinite
 	var prodTTL *int64
 	if !req.Public {
 		tmp := int64(prodDeplTTL.Seconds())
 		prodTTL = &tmp
 	}
+
+	// Add dev TTL as 6 hours
+	devTTL := int64(devDeplTTL.Seconds())
 
 	// Backwards compatibility: if prod version is not set, default to "latest"
 	if req.ProdVersion == "" {
@@ -498,37 +599,32 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		Description:          req.Description,
 		Public:               req.Public,
 		CreatedByUserID:      userID,
+		DirectoryName:        req.DirectoryName,
 		Provisioner:          req.Provisioner,
 		ArchiveAssetID:       nil,         // Populated below
-		GithubURL:            nil,         // Populated below
+		GitRemote:            nil,         // Populated below
 		GithubInstallationID: nil,         // Populated below
+		GithubRepoID:         nil,         // Populated below
+		ManagedGitRepoID:     nil,         // Populated below
 		ProdBranch:           "",          // Populated below
 		Subpath:              req.Subpath, // Populated below
 		ProdVersion:          req.ProdVersion,
-		ProdOLAPDriver:       req.ProdOlapDriver,
-		ProdOLAPDSN:          req.ProdOlapDsn,
 		ProdSlots:            int(req.ProdSlots),
 		ProdTTLSeconds:       prodTTL,
+		DevSlots:             devSlots,
+		DevTTLSeconds:        devTTL,
 	}
 
 	// Check and validate the project file source.
 	// NOTE: It is allowed to create a project without a source. It will then error later when creating the deployment (which can be skipped by passing skip_deploy).
-	if req.GithubUrl != "" && req.ArchiveAssetId != "" {
-		return nil, status.Error(codes.InvalidArgument, "cannot set both github_url and archive_asset_id")
-	} else if req.GithubUrl != "" {
-		// Github projects must be configured by a user so we can ensure that they're allowed to access the repo.
-		if userID == nil {
-			return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
-		}
-
-		// Check Github app is installed and caller has access on the repo
-		installationID, err := s.getAndCheckGithubInstallationID(ctx, req.GithubUrl, *userID)
+	if req.GitRemote != "" && req.ArchiveAssetId != "" {
+		return nil, status.Error(codes.InvalidArgument, "cannot set both git_remote and archive_asset_id")
+	} else if req.GitRemote != "" {
+		opts.GithubRepoID, opts.GithubInstallationID, opts.ManagedGitRepoID, opts.ProdBranch, err = s.githubOptsForRemote(ctx, org.ID, req.ProdBranch, userID, req.GitRemote)
 		if err != nil {
 			return nil, err
 		}
-		opts.GithubInstallationID = &installationID
-		opts.GithubURL = &req.GithubUrl
-		opts.ProdBranch = req.ProdBranch
+		opts.GitRemote = &req.GitRemote
 		opts.Subpath = req.Subpath
 	} else if req.ArchiveAssetId != "" {
 		// Check access to the archive asset
@@ -603,8 +699,17 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		attribute.String("args.org", req.OrganizationName),
 		attribute.String("args.project", req.Name),
 	)
+	if req.NewName != nil {
+		observability.AddRequestAttributes(ctx, attribute.String("args.new_name", *req.NewName))
+	}
 	if req.Description != nil {
 		observability.AddRequestAttributes(ctx, attribute.String("args.description", *req.Description))
+	}
+	if req.Public != nil {
+		observability.AddRequestAttributes(ctx, attribute.Bool("args.public", *req.Public))
+	}
+	if req.DirectoryName != nil {
+		observability.AddRequestAttributes(ctx, attribute.String("args.directory_name", *req.DirectoryName))
 	}
 	if req.Provisioner != nil {
 		observability.AddRequestAttributes(ctx, attribute.String("args.provisioner", *req.Provisioner))
@@ -615,8 +720,8 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 	if req.ProdBranch != nil {
 		observability.AddRequestAttributes(ctx, attribute.String("args.prod_branch", *req.ProdBranch))
 	}
-	if req.GithubUrl != nil {
-		observability.AddRequestAttributes(ctx, attribute.String("args.github_url", *req.GithubUrl))
+	if req.GitRemote != nil {
+		observability.AddRequestAttributes(ctx, attribute.String("args.git_remote", *req.GitRemote))
 	}
 	if req.Subpath != nil {
 		observability.AddRequestAttributes(ctx, attribute.String("args.subpath", *req.Subpath))
@@ -637,6 +742,11 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		observability.AddRequestAttributes(ctx, attribute.String("args.new_name", *req.NewName))
 	}
 
+	// Backwards compatibility
+	if req.GitRemote != nil {
+		*req.GitRemote = normalizeGitRemote(*req.GitRemote)
+	}
+
 	// Find project
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.OrganizationName, req.Name)
 	if err != nil {
@@ -649,29 +759,29 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to manage project")
 	}
 
-	if req.GithubUrl != nil && req.ArchiveAssetId != nil {
-		return nil, fmt.Errorf("cannot set both github_url and archive_asset_id")
+	if req.GitRemote != nil && req.ArchiveAssetId != nil {
+		return nil, fmt.Errorf("cannot set both git_remote and archive_asset_id")
 	}
-	githubURL := proj.GithubURL
+	gitRemote := proj.GitRemote
 	githubInstID := proj.GithubInstallationID
+	githubRepoID := proj.GithubRepoID
+	managedGitRepoID := proj.ManagedGitRepoID
 	subpath := valOrDefault(req.Subpath, proj.Subpath)
 	prodBranch := valOrDefault(req.ProdBranch, proj.ProdBranch)
 	archiveAssetID := proj.ArchiveAssetID
-	if req.GithubUrl != nil {
-		// If changing the Github URL, check github app is installed and caller has access on the repo
-		if safeStr(proj.GithubURL) != *req.GithubUrl {
-			// Github projects must be configured by a user so we can ensure that they're allowed to access the repo.
-			if claims.OwnerType() != auth.OwnerTypeUser {
-				return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
+	if req.GitRemote != nil {
+		// If changing the Git remote, check the Github app is installed and caller has access on the repo
+		if safeStr(proj.GitRemote) != *req.GitRemote {
+			var userID *string
+			if claims.OwnerType() == auth.OwnerTypeUser {
+				tmp := claims.OwnerID()
+				userID = &tmp
 			}
-
-			instID, err := s.getAndCheckGithubInstallationID(ctx, *req.GithubUrl, claims.OwnerID())
-			// github installation ID might change, so make sure it is updated
-			githubInstID = &instID
+			githubRepoID, githubInstID, managedGitRepoID, prodBranch, err = s.githubOptsForRemote(ctx, proj.OrganizationID, prodBranch, userID, *req.GitRemote)
 			if err != nil {
 				return nil, err
 			}
-			githubURL = req.GithubUrl
+			gitRemote = req.GitRemote
 		}
 		archiveAssetID = nil
 	}
@@ -684,7 +794,7 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		if !s.hasAssetUsagePermission(ctx, *archiveAssetID, org.ID, claims.OwnerID()) {
 			return nil, status.Error(codes.PermissionDenied, "archive_asset_id is not accessible to this org")
 		}
-		githubURL = nil
+		gitRemote = nil
 		githubInstID = nil
 		subpath = ""
 		prodBranch = ""
@@ -703,15 +813,20 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		Name:                 valOrDefault(req.NewName, proj.Name),
 		Description:          valOrDefault(req.Description, proj.Description),
 		Public:               valOrDefault(req.Public, proj.Public),
+		DirectoryName:        valOrDefault(req.DirectoryName, proj.DirectoryName),
 		ArchiveAssetID:       archiveAssetID,
-		GithubURL:            githubURL,
+		GitRemote:            gitRemote,
 		GithubInstallationID: githubInstID,
+		GithubRepoID:         githubRepoID,
+		ManagedGitRepoID:     managedGitRepoID,
 		Subpath:              subpath,
 		ProdVersion:          valOrDefault(req.ProdVersion, proj.ProdVersion),
 		ProdBranch:           prodBranch,
 		ProdDeploymentID:     proj.ProdDeploymentID,
 		ProdSlots:            int(valOrDefault(req.ProdSlots, int64(proj.ProdSlots))),
 		ProdTTLSeconds:       prodTTLSeconds,
+		DevSlots:             proj.DevSlots,
+		DevTTLSeconds:        proj.DevTTLSeconds,
 		Provisioner:          valOrDefault(req.Provisioner, proj.Provisioner),
 		Annotations:          proj.Annotations,
 	}
@@ -824,7 +939,8 @@ func (s *Server) ListProjectMemberUsers(ctx context.Context, req *adminv1.ListPr
 	}
 
 	claims := auth.GetClaims(ctx)
-	if !claims.Superuser(ctx) && !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ReadProjectMembers {
+	forceAccess := claims.Superuser(ctx) && req.SuperuserForceAccess
+	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ReadProjectMembers && !forceAccess {
 		return nil, status.Error(codes.PermissionDenied, "not authorized to read project members")
 	}
 
@@ -843,7 +959,7 @@ func (s *Server) ListProjectMemberUsers(ctx context.Context, req *adminv1.ListPr
 		roleID = role.ID
 	}
 
-	members, err := s.admin.DB.FindProjectMemberUsers(ctx, proj.ID, roleID, token.Val, pageSize)
+	members, err := s.admin.DB.FindProjectMemberUsers(ctx, proj.OrganizationID, proj.ID, roleID, token.Val, pageSize)
 	if err != nil {
 		return nil, err
 	}
@@ -897,9 +1013,9 @@ func (s *Server) ListProjectInvites(ctx context.Context, req *adminv1.ListProjec
 		nextToken = marshalPageToken(userInvites[len(userInvites)-1].Email)
 	}
 
-	invitesDtos := make([]*adminv1.UserInvite, len(userInvites))
+	invitesDtos := make([]*adminv1.ProjectInvite, len(userInvites))
 	for i, invite := range userInvites {
-		invitesDtos[i] = inviteToPB(invite)
+		invitesDtos[i] = projInviteToPB(invite)
 	}
 
 	return &adminv1.ListProjectInvitesResponse{
@@ -1169,10 +1285,6 @@ func (s *Server) SetProjectMemberUserRole(ctx context.Context, req *adminv1.SetP
 }
 
 func (s *Server) GetCloneCredentials(ctx context.Context, req *adminv1.GetCloneCredentialsRequest) (*adminv1.GetCloneCredentialsResponse, error) {
-	claims := auth.GetClaims(ctx)
-	if !claims.Superuser(ctx) {
-		return nil, status.Error(codes.PermissionDenied, "superuser permission required to get clone credentials")
-	}
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.Organization),
 		attribute.String("args.project", req.Project),
@@ -1181,6 +1293,13 @@ func (s *Server) GetCloneCredentials(ctx context.Context, req *adminv1.GetCloneC
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	claims := auth.GetClaims(ctx)
+	forceAccess := claims.Superuser(ctx) && req.SuperuserForceAccess
+	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProject && !forceAccess {
+		// neither a superuser nor can manage the project
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to get clone credentials")
 	}
 
 	if proj.ArchiveAssetID != nil {
@@ -1195,21 +1314,28 @@ func (s *Server) GetCloneCredentials(ctx context.Context, req *adminv1.GetCloneC
 		return &adminv1.GetCloneCredentialsResponse{ArchiveDownloadUrl: downloadURL}, nil
 	}
 
-	if proj.GithubURL == nil || proj.GithubInstallationID == nil {
+	if proj.GitRemote == nil || proj.GithubInstallationID == nil {
 		return nil, status.Error(codes.FailedPrecondition, "project's repository is not managed by Rill, and it does not have a GitHub integration")
 	}
 
-	token, err := s.admin.Github.InstallationToken(ctx, *proj.GithubInstallationID)
+	repoID, err := s.githubRepoIDForProject(ctx, proj)
+	if err != nil {
+		return nil, err
+	}
+
+	token, expiresAt, err := s.admin.Github.InstallationToken(ctx, *proj.GithubInstallationID, repoID)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	return &adminv1.GetCloneCredentialsResponse{
-		GitRepoUrl:    *proj.GithubURL + ".git", // TODO: Can the clone URL be different from the HTTP URL of a Github repo?
-		GitUsername:   "x-access-token",
-		GitPassword:   token,
-		GitSubpath:    proj.Subpath,
-		GitProdBranch: proj.ProdBranch,
+		GitRepoUrl:           *proj.GitRemote,
+		GitUsername:          "x-access-token",
+		GitPassword:          token,
+		GitPasswordExpiresAt: timestamppb.New(expiresAt),
+		GitSubpath:           proj.Subpath,
+		GitProdBranch:        proj.ProdBranch,
+		GitManagedRepo:       proj.ManagedGitRepoID != nil,
 	}, nil
 }
 
@@ -1225,7 +1351,9 @@ func (s *Server) RequestProjectAccess(ctx context.Context, req *adminv1.RequestP
 	}
 
 	claims := auth.GetClaims(ctx)
-	if claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ReadProject {
+	projectPermissions := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
+	if (req.Role != database.ProjectRoleNameAdmin && projectPermissions.ReadProject) ||
+		(req.Role == database.ProjectRoleNameAdmin && projectPermissions.ManageProject) {
 		return nil, status.Error(codes.InvalidArgument, "already have access to project")
 	}
 
@@ -1271,7 +1399,8 @@ func (s *Server) RequestProjectAccess(ctx context.Context, req *adminv1.RequestP
 			Email:       user.Email,
 			OrgName:     org.Name,
 			ProjectName: proj.Name,
-			ApproveLink: s.admin.URLs.WithCustomDomain(org.CustomDomain).ApproveProjectAccess(org.Name, proj.Name, accessReq.ID),
+			Role:        req.Role,
+			ApproveLink: s.admin.URLs.WithCustomDomain(org.CustomDomain).ApproveProjectAccess(org.Name, proj.Name, accessReq.ID, req.Role),
 			DenyLink:    s.admin.URLs.WithCustomDomain(org.CustomDomain).DenyProjectAccess(org.Name, proj.Name, accessReq.ID),
 		})
 		if err != nil {
@@ -1349,10 +1478,23 @@ func (s *Server) ApproveProjectAccess(ctx context.Context, req *adminv1.ApproveP
 		return nil, status.Error(codes.PermissionDenied, "as a non-admin you are not allowed to assign an admin role")
 	}
 
-	// Add the user as a project member.
-	err = s.admin.InsertProjectMemberUser(ctx, proj.OrganizationID, proj.ID, user.ID, role.ID)
+	ok, err := s.admin.DB.CheckUserIsAProjectMember(ctx, user.ID, proj.ID)
 	if err != nil {
 		return nil, err
+	}
+
+	if ok {
+		// User is already a project member, update the role.
+		err = s.admin.DB.UpdateProjectMemberUserRole(ctx, proj.ID, user.ID, role.ID)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		// Add the user as a project member.
+		err = s.admin.InsertProjectMemberUser(ctx, proj.OrganizationID, proj.ID, user.ID, role.ID)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// Remove the access request.
@@ -1424,40 +1566,40 @@ func (s *Server) DenyProjectAccess(ctx context.Context, req *adminv1.DenyProject
 }
 
 // getAndCheckGithubInstallationID returns a valid installation ID iff app is installed and user is a collaborator of the repo
-func (s *Server) getAndCheckGithubInstallationID(ctx context.Context, githubURL, userID string) (int64, error) {
+func (s *Server) getAndCheckGithubInstallationID(ctx context.Context, gitRemote, userID string) (repoID, installationID int64, err error) {
 	// Get Github installation ID for the repo
-	installationID, err := s.admin.GetGithubInstallation(ctx, githubURL)
+	installationID, err = s.admin.GetGithubInstallation(ctx, gitRemote)
 	if err != nil {
 		if errors.Is(err, admin.ErrGithubInstallationNotFound) {
-			return 0, status.Errorf(codes.PermissionDenied, "you have not granted Rill access to %q", githubURL)
+			return 0, 0, status.Errorf(codes.PermissionDenied, "you have not granted Rill access to %q", gitRemote)
 		}
 
-		return 0, fmt.Errorf("failed to get Github installation: %w", err)
+		return 0, 0, fmt.Errorf("failed to get Github installation: %w", err)
 	}
 
 	if installationID == 0 {
-		return 0, status.Errorf(codes.PermissionDenied, "you have not granted Rill access to %q", githubURL)
+		return 0, 0, status.Errorf(codes.PermissionDenied, "you have not granted Rill access to %q", gitRemote)
 	}
 
 	// Check that user is a collaborator on the repo
 	user, err := s.admin.DB.FindUser(ctx, userID)
 	if err != nil {
-		return 0, err
+		return 0, 0, err
 	}
 
 	if user.GithubUsername == "" {
-		return 0, status.Errorf(codes.PermissionDenied, "you have not granted Rill access to your Github account")
+		return 0, 0, status.Errorf(codes.PermissionDenied, "you have not granted Rill access to your Github account")
 	}
 
-	_, err = s.admin.LookupGithubRepoForUser(ctx, installationID, githubURL, user.GithubUsername)
+	repo, err := s.admin.LookupGithubRepoForUser(ctx, installationID, gitRemote, user.GithubUsername)
 	if err != nil {
 		if errors.Is(err, admin.ErrUserIsNotCollaborator) {
-			return 0, status.Errorf(codes.PermissionDenied, "you are not collaborator to the repo %q", githubURL)
+			return 0, 0, status.Errorf(codes.PermissionDenied, "you are not collaborator to the repo %q", gitRemote)
 		}
-		return 0, err
+		return 0, 0, err
 	}
 
-	return installationID, nil
+	return repo.GetID(), installationID, nil
 }
 
 // SudoUpdateTags updates the tags for a project in organization for superusers
@@ -1483,15 +1625,20 @@ func (s *Server) SudoUpdateAnnotations(ctx context.Context, req *adminv1.SudoUpd
 		Name:                 proj.Name,
 		Description:          proj.Description,
 		Public:               proj.Public,
+		DirectoryName:        proj.DirectoryName,
 		ArchiveAssetID:       proj.ArchiveAssetID,
-		GithubURL:            proj.GithubURL,
+		GitRemote:            proj.GitRemote,
 		GithubInstallationID: proj.GithubInstallationID,
+		GithubRepoID:         proj.GithubRepoID,
+		ManagedGitRepoID:     proj.ManagedGitRepoID,
 		ProdVersion:          proj.ProdVersion,
 		ProdBranch:           proj.ProdBranch,
 		Subpath:              proj.Subpath,
 		ProdDeploymentID:     proj.ProdDeploymentID,
 		ProdSlots:            proj.ProdSlots,
 		ProdTTLSeconds:       proj.ProdTTLSeconds,
+		DevSlots:             proj.DevSlots,
+		DevTTLSeconds:        proj.DevTTLSeconds,
 		Provisioner:          proj.Provisioner,
 		Annotations:          req.Annotations,
 	})
@@ -1673,7 +1820,7 @@ func (s *Server) RedeployProject(ctx context.Context, req *adminv1.RedeployProje
 	}
 
 	claims := auth.GetClaims(ctx)
-	forceAccess := req.SuperuserForceAccess && claims.Superuser(ctx)
+	forceAccess := claims.Superuser(ctx) && req.SuperuserForceAccess
 	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProd && !forceAccess {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to manage deployment")
 	}
@@ -1717,7 +1864,8 @@ func (s *Server) HibernateProject(ctx context.Context, req *adminv1.HibernatePro
 	}
 
 	claims := auth.GetClaims(ctx)
-	if !(claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProject || claims.Superuser(ctx)) {
+	forceAccess := claims.Superuser(ctx) && req.SuperuserForceAccess
+	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProject && !forceAccess {
 		return nil, status.Error(codes.PermissionDenied, "not allowed to manage project")
 	}
 
@@ -1799,14 +1947,14 @@ func (s *Server) projToDTO(p *database.Project, orgName string) *adminv1.Project
 		Description:      p.Description,
 		Public:           p.Public,
 		CreatedByUserId:  safeStr(p.CreatedByUserID),
+		DirectoryName:    p.DirectoryName,
 		Provisioner:      p.Provisioner,
 		ProdVersion:      p.ProdVersion,
-		ProdOlapDriver:   p.ProdOLAPDriver,
-		ProdOlapDsn:      p.ProdOLAPDSN,
 		ProdSlots:        int64(p.ProdSlots),
 		ProdBranch:       p.ProdBranch,
 		Subpath:          p.Subpath,
-		GithubUrl:        safeStr(p.GithubURL),
+		GitRemote:        safeStr(p.GitRemote),
+		ManagedGitId:     safeStr(p.ManagedGitRepoID),
 		ArchiveAssetId:   safeStr(p.ArchiveAssetID),
 		ProdDeploymentId: safeStr(p.ProdDeploymentID),
 		ProdTtlSeconds:   safeInt64(p.ProdTTLSeconds),
@@ -1825,6 +1973,106 @@ func (s *Server) hasAssetUsagePermission(ctx context.Context, id, orgID, ownerID
 	return asset.OrganizationID != nil && *asset.OrganizationID == orgID && asset.OwnerID == ownerID
 }
 
+func (s *Server) githubOptsForRemote(ctx context.Context, orgID, branch string, userID *string, gitRemote string) (githubRepoID, instID *int64, mgdGitRepoID *string, prodBranch string, resErr error) {
+	isMgdGitRepo := true
+	mgdGitRepo, err := s.admin.DB.FindManagedGitRepo(ctx, gitRemote)
+	if err != nil {
+		if !errors.Is(err, database.ErrNotFound) {
+			return nil, nil, nil, "", err
+		}
+		isMgdGitRepo = false
+	}
+	if isMgdGitRepo {
+		// rill managed git repo
+		if mgdGitRepo.OrgID == nil || orgID != *mgdGitRepo.OrgID {
+			return nil, nil, nil, "", status.Error(codes.PermissionDenied, "not allowed to access this managed git repo")
+		}
+		id, err := s.admin.Github.ManagedOrgInstallationID()
+		if err != nil {
+			return nil, nil, nil, "", err
+		}
+
+		// fetch github repo id from github
+		// ideally this can be stored in managed git repo table but it is fine to fetch it from github during project creation/updation
+		c := s.admin.Github.InstallationClient(id, nil)
+		account, repo, ok := gitutil.SplitGithubRemote(gitRemote)
+		if !ok {
+			return nil, nil, nil, "", status.Error(codes.InvalidArgument, "invalid github url")
+		}
+		ghRepo, _, err := c.Repositories.Get(ctx, account, repo)
+		if err != nil {
+			return nil, nil, nil, "", status.Error(codes.InvalidArgument, "failed to get github repo")
+		}
+
+		if prodBranch != "" && prodBranch != safeStr(ghRepo.DefaultBranch) {
+			return nil, nil, nil, "", fmt.Errorf("branch should be empty or default repo branch for rill managed git repos")
+		}
+		return ghRepo.ID, &id, &mgdGitRepo.ID, safeStr(ghRepo.DefaultBranch), nil
+	}
+	// User managed github projects must be configured by a user so we can ensure that they're allowed to access the repo.
+	if userID == nil {
+		return nil, nil, nil, "", status.Error(codes.Unauthenticated, "not authenticated as a user")
+	}
+
+	// Check Github app is installed and caller has access on the repo
+	ghRepoID, installationID, err := s.getAndCheckGithubInstallationID(ctx, gitRemote, *userID)
+	if err != nil {
+		return nil, nil, nil, "", err
+	}
+	return &ghRepoID, &installationID, nil, branch, nil
+}
+
+// githubRepoIDForProject returns the github repo id for a project stored in the database.
+// For older projects this may be nil since the github repo id was not stored.
+// This function fetches the ID from github API and stores it in the database.
+// It assumes that the project is connected to github and necessary checks have been done by the caller.
+func (s *Server) githubRepoIDForProject(ctx context.Context, p *database.Project) (int64, error) {
+	if p.GithubRepoID != nil {
+		return *p.GithubRepoID, nil
+	}
+
+	if p.GithubInstallationID == nil {
+		return 0, fmt.Errorf("project %q is not connected to github", p.Name)
+	}
+
+	client := s.admin.Github.InstallationClient(*p.GithubInstallationID, nil)
+	account, repo, ok := gitutil.SplitGithubRemote(*p.GitRemote)
+	if !ok {
+		return 0, status.Error(codes.InvalidArgument, "invalid github url")
+	}
+
+	ghRepo, _, err := client.Repositories.Get(ctx, account, repo)
+	if err != nil {
+		return 0, status.Error(codes.InvalidArgument, "failed to get github repo")
+	}
+	id := ghRepo.GetID()
+	_, err = s.admin.DB.UpdateProject(ctx, p.ID, &database.UpdateProjectOptions{
+		Name:                 p.Name,
+		Description:          p.Description,
+		Public:               p.Public,
+		DirectoryName:        p.DirectoryName,
+		ArchiveAssetID:       p.ArchiveAssetID,
+		GitRemote:            p.GitRemote,
+		GithubInstallationID: p.GithubInstallationID,
+		GithubRepoID:         &id,
+		ManagedGitRepoID:     p.ManagedGitRepoID,
+		ProdVersion:          p.ProdVersion,
+		ProdBranch:           p.ProdBranch,
+		Subpath:              p.Subpath,
+		ProdDeploymentID:     p.ProdDeploymentID,
+		ProdSlots:            p.ProdSlots,
+		ProdTTLSeconds:       p.ProdTTLSeconds,
+		DevSlots:             p.DevSlots,
+		DevTTLSeconds:        p.DevTTLSeconds,
+		Provisioner:          p.Provisioner,
+		Annotations:          p.Annotations,
+	})
+	if err != nil {
+		return 0, status.Error(codes.Internal, "failed to update project with github repo id")
+	}
+	return id, nil
+}
+
 func deploymentToDTO(d *database.Deployment) *adminv1.Deployment {
 	var s adminv1.DeploymentStatus
 	switch d.Status {
@@ -1836,6 +2084,8 @@ func deploymentToDTO(d *database.Deployment) *adminv1.Deployment {
 		s = adminv1.DeploymentStatus_DEPLOYMENT_STATUS_OK
 	case database.DeploymentStatusError:
 		s = adminv1.DeploymentStatus_DEPLOYMENT_STATUS_ERROR
+	case database.DeploymentStatusStopped:
+		s = adminv1.DeploymentStatus_DEPLOYMENT_STATUS_STOPPED
 	default:
 		panic(fmt.Errorf("unhandled deployment status %d", d.Status))
 	}
@@ -1843,6 +2093,8 @@ func deploymentToDTO(d *database.Deployment) *adminv1.Deployment {
 	return &adminv1.Deployment{
 		Id:                d.ID,
 		ProjectId:         d.ProjectID,
+		OwnerUserId:       safeStr(d.OwnerUserID),
+		Environment:       d.Environment,
 		Branch:            d.Branch,
 		RuntimeHost:       d.RuntimeHost,
 		RuntimeInstanceId: d.RuntimeInstanceID,

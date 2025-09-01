@@ -66,9 +66,6 @@ func RefreshCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			// Build non-model resources
 			var resources []*runtimev1.ResourceName
-			for _, s := range sources {
-				resources = append(resources, &runtimev1.ResourceName{Kind: runtime.ResourceKindSource, Name: s})
-			}
 			for _, a := range alerts {
 				resources = append(resources, &runtimev1.ResourceName{Kind: runtime.ResourceKindAlert, Name: a})
 			}
@@ -78,6 +75,9 @@ func RefreshCmd(ch *cmdutil.Helper) *cobra.Command {
 			for _, v := range metricViews {
 				resources = append(resources, &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: v})
 			}
+
+			// Merge sources into models since sources have been deprecated and are no longer created on the backend.
+			models = append(models, sources...)
 
 			// Build model triggers
 			if len(modelPartitions) > 0 || erroredPartitions {
@@ -118,12 +118,12 @@ func RefreshCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			// Send request
 			_, err = rt.CreateTrigger(cmd.Context(), &runtimev1.CreateTriggerRequest{
-				InstanceId:           instanceID,
-				Resources:            resources,
-				Models:               modelTriggers,
-				Parser:               parser,
-				AllSourcesModels:     all && !full,
-				AllSourcesModelsFull: all && full,
+				InstanceId: instanceID,
+				Resources:  resources,
+				Models:     modelTriggers,
+				Parser:     parser,
+				All:        all && !full,
+				AllFull:    all && full,
 			})
 			if err != nil {
 				return fmt.Errorf("failed to create trigger: %w", err)
@@ -144,7 +144,7 @@ func RefreshCmd(ch *cmdutil.Helper) *cobra.Command {
 	refreshCmd.Flags().StringVar(&project, "project", "", "Project name")
 	refreshCmd.Flags().StringVar(&path, "path", ".", "Project directory")
 	refreshCmd.Flags().BoolVar(&local, "local", false, "Target locally running Rill")
-	refreshCmd.Flags().BoolVar(&all, "all", false, "Refresh all sources and models (default)")
+	refreshCmd.Flags().BoolVar(&all, "all", false, "Refresh all resources except alerts and reports (default)")
 	refreshCmd.Flags().BoolVar(&full, "full", false, "Fully reload the targeted models (use with --all or --model)")
 	refreshCmd.Flags().StringSliceVar(&models, "model", nil, "Refresh a model")
 	refreshCmd.Flags().StringSliceVar(&modelPartitions, "partition", nil, "Refresh a model partition (must set --model)")

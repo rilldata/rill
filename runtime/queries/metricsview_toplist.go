@@ -130,7 +130,7 @@ func (q *MetricsViewToplist) Export(ctx context.Context, rt *runtime.Runtime, in
 		return fmt.Errorf("unsupported format: %s", opts.Format.String())
 	}
 
-	path, err := e.Export(ctx, qry, nil, format)
+	path, err := e.Export(ctx, qry, nil, format, nil)
 	if err != nil {
 		return err
 	}

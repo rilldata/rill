@@ -1,28 +1,15 @@
+@import "./colors.css";
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer utilities {
-  .surface {
-    @apply bg-white;
-  }
-
   .ui-copy {
     @apply text-gray-900;
   }
 
-  .ui-copy-dashboard-header {
-    @apply ui-copy;
-    font-size: 16px;
-  }
-
   .ui-copy-muted {
-    @apply text-gray-600;
-  }
-
-  .ui-header-primary {
-    @apply text-slate-600;
-    @apply hover:text-primary-700 group-hover:text-primary-700;
+    @apply text-gray-800 dark:text-gray-800;
   }
 
   .ui-copy-strong {
@@ -86,11 +73,11 @@
   }
 
   .ui-measure-bar-included {
-    @apply bg-primary-100;
+    @apply bg-theme-100;
   }
 
   .ui-measure-bar-included-selected {
-    @apply bg-primary-200;
+    @apply bg-theme-200;
   }
 
   .ui-measure-bar-excluded {
@@ -108,80 +95,244 @@
 
 @layer base {
   :root {
+    color-scheme: light;
+    color: var(--color-gray-900);
+
     --ui-editor-error-foreground: hsl(0, 75%, 45%);
+    --surface: oklch(100% 0 0);
 
-    --background: 210 40% 98%;
-    --surface: 0 0% 100%;
-
-    --foreground: 222.2 84% 4.9%;
-
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-
-    /* 
-    FIXME: 
-    We need to overhaul these ShadCN vars to use the new
-    palette as the source of truth, and remove these manual
-    translations/approximations in HSL, but this is fine for
-     the initial roll out
-     */
-
-    /* 
-    `246, 57%, 20%` approximates primary color 
-    from our new palette vs previous color:
-    `--primary: 222.2 47.4% 11.2%
-    */
-    --primary: 246 57% 20%;
-    /* 
-    `227, 100%, 96%` approximates primary color 
-    from our new palette vs previous color:
-    `--primary-foreground: 210 40% 98%;`
-    */
-    --primary-foreground: 227 100% 96%;
-
-    /* 
-    `202, 100%, 94%` approximates secondary color 
-    from our new palette vs previous color:
-    `--secondary: 210 40% 96.1%;`
-    */
-    --secondary: 202 100% 94%;
-    /* 
-    `202, 90%, 16%` approximates secondary color 
-    from our new palette vs previous color:
-    `--secondary-foreground: 222.2 47.4% 11.2%;`
-    Note that this one in particular is a poor approximation,
-    because the darkest color in the new palette is much
-    lighter than the previous --secondary-foreground color.
-    */
-    --secondary-foreground: 202 90% 16%;
-
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-
-    --destructive: 0 72.2% 50.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --ring: 222.2 84% 4.9%;
-
+    /* SHADCN VARIABLES */
+    --background: var(--color-gray-50);
+    --foreground: var(--color-gray-900);
+    --card: var(--surface);
+    --card-foreground: var(--color-gray-900);
+    --popover: var(--surface);
+    --popover-foreground: var(--color-gray-900);
+    --primary: var(--color-primary-950);
+    --primary-foreground: var(--color-primary-50);
+    --secondary: var(--color-secondary-100);
+    --secondary-foreground: var(--color-secondary-950);
+    --muted: var(--color-gray-100);
+    --muted-foreground: var(--color-gray-500);
+    --accent: var(--color-gray-100);
+    --accent-foreground: var(--color-gray-900);
+    --destructive: var(--color-red-600);
+    --destructive-foreground: var(--color-gray-50);
+    --border: var(--color-gray-200);
+    --input: var(--color-gray-200);
+    --ring: var(--color-gray-950);
     --radius: 0.5rem;
 
-    /* Used to set svg gradient */
-    --color-slate-200: theme("colors.slate.200");
-    --color-slate-300: theme("colors.slate.300");
+    --color-theme-50: var(
+      --color-theme-light-50,
+      var(--color-primary-light-50)
+    );
+    --color-theme-100: var(
+      --color-theme-light-100,
+      var(--color-primary-light-100)
+    );
+    --color-theme-200: var(
+      --color-theme-light-200,
+      var(--color-primary-light-200)
+    );
+    --color-theme-300: var(
+      --color-theme-light-300,
+      var(--color-primary-light-300)
+    );
+    --color-theme-400: var(
+      --color-theme-light-400,
+      var(--color-primary-light-400)
+    );
+    --color-theme-500: var(
+      --color-theme-light-500,
+      var(--color-primary-light-500)
+    );
+    --color-theme-600: var(
+      --color-theme-light-600,
+      var(--color-primary-light-600)
+    );
+    --color-theme-700: var(
+      --color-theme-light-700,
+      var(--color-primary-light-700)
+    );
+    --color-theme-800: var(
+      --color-theme-light-800,
+      var(--color-primary-light-800)
+    );
+    --color-theme-900: var(
+      --color-theme-light-900,
+      var(--color-primary-light-900)
+    );
+    --color-theme-950: var(
+      --color-theme-light-950,
+      var(--color-primary-light-950)
+    );
+
+    --color-theme-secondary-50: var(
+      --color-theme-secondary-light-50,
+      var(--color-secondary-light-50)
+    );
+    --color-theme-secondary-100: var(
+      --color-theme-secondary-light-100,
+      var(--color-secondary-light-100)
+    );
+    --color-theme-secondary-200: var(
+      --color-theme-secondary-light-200,
+      var(--color-secondary-light-200)
+    );
+    --color-theme-secondary-300: var(
+      --color-theme-secondary-light-300,
+      var(--color-secondary-light-300)
+    );
+    --color-theme-secondary-400: var(
+      --color-theme-secondary-light-400,
+      var(--color-secondary-light-400)
+    );
+    --color-theme-secondary-500: var(
+      --color-theme-secondary-light-500,
+      var(--color-secondary-light-500)
+    );
+    --color-theme-secondary-600: var(
+      --color-theme-secondary-light-600,
+      var(--color-secondary-light-600)
+    );
+    --color-theme-secondary-700: var(
+      --color-theme-secondary-light-700,
+      var(--color-secondary-light-700)
+    );
+    --color-theme-secondary-800: var(
+      --color-theme-secondary-light-800,
+      var(--color-secondary-light-800)
+    );
+    --color-theme-secondary-900: var(
+      --color-theme-secondary-light-900,
+      var(--color-secondary-light-900)
+    );
+    --color-theme-secondary-950: var(
+      --color-theme-secondary-light-950,
+      var(--color-secondary-light-950)
+    );
+
+    --editor-selection: #b0daffb3;
+    --line-highlight: #ededed5b;
   }
 
-  :root[data-theme="dark"] {
+  :root.dark {
     color-scheme: dark;
-    color: white;
+    color: var(--color-gray-900);
+
+    --surface: var(--color-gray-50);
+
+    /* SHADCN VARIABLES */
+    --background: var(--color-gray-100);
+    /* --foreground: var(--color-gray-900); */
+    /* --card: var(--surface); */
+    /* --card-foreground: var(--color-gray-900); */
+    --popover: var(--color-gray-100);
+    /* --popover-foreground: var(--color-gray-900); */
+    /* --primary: var(--color-primary-950); */
+    /* --primary-foreground: var(--color-primary-50); */
+    /* --secondary: var(--color-secondary-100); */
+    /* --secondary-foreground: var(--color-secondary-950); */
+    --muted: var(--color-gray-200);
+    /* --muted-foreground: var(--color-gray-500); */
+    --accent: var(--color-gray-300);
+    /* --accent-foreground: var(--color-gray-900); */
+    /* --destructive: var(--color-red-600); */
+    /* --destructive-foreground: var(--color-gray-50); */
+    --border: var(--color-gray-200);
+    /* --input: var(--color-gray-200); */
+    /* --ring: var(--color-gray-950); */
+
+    --color-theme-50: var(--color-theme-dark-50, var(--color-primary-dark-50));
+    --color-theme-100: var(
+      --color-theme-dark-100,
+      var(--color-primary-dark-100)
+    );
+    --color-theme-200: var(
+      --color-theme-dark-200,
+      var(--color-primary-dark-200)
+    );
+    --color-theme-300: var(
+      --color-theme-dark-300,
+      var(--color-primary-dark-300)
+    );
+    --color-theme-400: var(
+      --color-theme-dark-400,
+      var(--color-primary-dark-400)
+    );
+    --color-theme-500: var(
+      --color-theme-dark-500,
+      var(--color-primary-dark-500)
+    );
+    --color-theme-600: var(
+      --color-theme-dark-600,
+      var(--color-primary-dark-600)
+    );
+    --color-theme-700: var(
+      --color-theme-dark-700,
+      var(--color-primary-dark-700)
+    );
+    --color-theme-800: var(
+      --color-theme-dark-800,
+      var(--color-primary-dark-800)
+    );
+    --color-theme-900: var(
+      --color-theme-dark-900,
+      var(--color-primary-dark-900)
+    );
+    --color-theme-950: var(
+      --color-theme-dark-950,
+      var(--color-primary-dark-950)
+    );
+
+    --color-theme-secondary-50: var(
+      --color-theme-secondary-dark-50,
+      var(--color-secondary-dark-50)
+    );
+    --color-theme-secondary-100: var(
+      --color-theme-secondary-dark-100,
+      var(--color-secondary-dark-100)
+    );
+    --color-theme-secondary-200: var(
+      --color-theme-secondary-dark-200,
+      var(--color-secondary-dark-200)
+    );
+    --color-theme-secondary-300: var(
+      --color-theme-secondary-dark-300,
+      var(--color-secondary-dark-300)
+    );
+    --color-theme-secondary-400: var(
+      --color-theme-secondary-dark-400,
+      var(--color-secondary-dark-400)
+    );
+    --color-theme-secondary-500: var(
+      --color-theme-secondary-dark-500,
+      var(--color-secondary-dark-500)
+    );
+    --color-theme-secondary-600: var(
+      --color-theme-secondary-dark-600,
+      var(--color-secondary-dark-600)
+    );
+    --color-theme-secondary-700: var(
+      --color-theme-secondary-dark-700,
+      var(--color-secondary-dark-700)
+    );
+    --color-theme-secondary-800: var(
+      --color-theme-secondary-dark-800,
+      var(--color-secondary-dark-800)
+    );
+    --color-theme-secondary-900: var(
+      --color-theme-secondary-dark-900,
+      var(--color-secondary-dark-900)
+    );
+    --color-theme-secondary-950: var(
+      --color-theme-secondary-dark-950,
+      var(--color-secondary-dark-950)
+    );
+
+    --editor-selection: #304e75;
+    --line-highlight: #26262659;
   }
 
   h1,
@@ -206,12 +357,14 @@ body {
   font-family: "Inter";
   font-size: 12px;
 
-  /* Use this for a few keyboard characters in tooltips, etc. */
-  --system: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
-    Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+  --system:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
+    Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji",
+    "Segoe UI Symbol", "Noto Color Emoji";
 
   --monospace: "Source Code Variable";
   margin: 0;
+
   padding: 0;
 
   --right-drawer-width: 400px;

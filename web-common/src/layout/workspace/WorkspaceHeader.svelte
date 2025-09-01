@@ -1,23 +1,23 @@
 <script lang="ts">
+  import Button from "@rilldata/web-common/components/button/Button.svelte";
+  import InputWithConfirm from "@rilldata/web-common/components/forms/InputWithConfirm.svelte";
+  import File from "@rilldata/web-common/components/icons/File.svelte";
+  import HideBottomPane from "@rilldata/web-common/components/icons/HideBottomPane.svelte";
   import HideSidebar from "@rilldata/web-common/components/icons/HideSidebar.svelte";
   import SlidingWords from "@rilldata/web-common/components/tooltip/SlidingWords.svelte";
-  import { workspaces } from "./workspace-stores";
-  import { navigationOpen } from "../navigation/Navigation.svelte";
-  import HideBottomPane from "@rilldata/web-common/components/icons/HideBottomPane.svelte";
-  import Button from "@rilldata/web-common/components/button/Button.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import {
     resourceColorMapping,
     resourceIconMapping,
   } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
-  import InputWithConfirm from "@rilldata/web-common/components/forms/InputWithConfirm.svelte";
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import type { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
-  import { Settings } from "lucide-svelte";
-  import File from "@rilldata/web-common/components/icons/File.svelte";
+  import CodeToggle from "@rilldata/web-common/features/visual-editing/CodeToggle.svelte";
   import WorkspaceBreadcrumbs from "@rilldata/web-common/features/workspaces/WorkspaceBreadcrumbs.svelte";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
-  import CodeToggle from "@rilldata/web-common/features/visual-editing/CodeToggle.svelte";
+  import { Settings } from "lucide-svelte";
+  import { navigationOpen } from "../navigation/Navigation.svelte";
+  import { workspaces } from "./workspace-stores";
 
   export let resourceKind: ResourceKind | undefined;
   export let titleInput: string;
@@ -95,7 +95,7 @@
             square
             selected={$tableVisible}
             label="Toggle table visibility"
-            on:click={workspaceLayout.table.toggle}
+            onClick={workspaceLayout.table.toggle}
           >
             <HideBottomPane size="18px" open={$tableVisible} />
           </Button>
@@ -114,7 +114,7 @@
             square
             selected={$inspectorVisible}
             label="Toggle inspector visibility"
-            on:click={workspaceLayout.inspector.toggle}
+            onClick={workspaceLayout.inspector.toggle}
           >
             <HideSidebar open={$inspectorVisible} size="18px" />
           </Button>

@@ -1,4 +1,16 @@
 <script lang="ts">
+  import { page } from "$app/stores";
+  import type { V1OrganizationMemberUser } from "@rilldata/web-admin/client";
+  import {
+    createAdminServiceAddUsergroupMemberUser,
+    createAdminServiceCreateUsergroup,
+    getAdminServiceListOrganizationMemberUsergroupsQueryKey,
+    getAdminServiceListOrganizationMemberUsersQueryKey,
+    getAdminServiceListUsergroupMemberUsersQueryKey,
+  } from "@rilldata/web-admin/client";
+  import Avatar from "@rilldata/web-common/components/avatar/Avatar.svelte";
+  import { Button } from "@rilldata/web-common/components/button/index.js";
+  import Combobox from "@rilldata/web-common/components/combobox/Combobox.svelte";
   import {
     Dialog,
     DialogContent,
@@ -6,32 +18,30 @@
     DialogHeader,
     DialogTitle,
     DialogTrigger,
-  } from "@rilldata/web-common/components/dialog-v2";
-  import { Button } from "@rilldata/web-common/components/button/index.js";
+  } from "@rilldata/web-common/components/dialog";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
   import { object, string } from "yup";
-  import { page } from "$app/stores";
-  import {
-    createAdminServiceCreateUsergroup,
-    createAdminServiceListUsergroupMemberUsers,
-    getAdminServiceListOrganizationMemberUsergroupsQueryKey,
-  } from "@rilldata/web-admin/client";
-  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
-  import { useQueryClient } from "@tanstack/svelte-query";
+  import { SLUG_REGEX } from "../constants";
 
   export let open = false;
   export let groupName: string;
+  export let organizationUsers: V1OrganizationMemberUser[] = [];
+  export let currentUserEmail: string = "";
+
+  let searchText = "";
+  let selectedUsers: V1OrganizationMemberUser[] = [];
+  let pendingAdditions: string[] = [];
+  let pendingRemovals: string[] = [];
 
   $: organization = $page.params.organization;
-  $: listUsergroupMemberUsers = createAdminServiceListUsergroupMemberUsers(
-    organization,
-    groupName,
-  );
 
   const queryClient = useQueryClient();
   const createUserGroup = createAdminServiceCreateUsergroup();
+  const addUsergroupMemberUser = createAdminServiceAddUsergroupMemberUser();
 
   async function handleCreate(newName: string) {
     try {
@@ -42,21 +52,85 @@
         },
       });
 
+      // Apply pending user changes after group creation
+      await applyPendingChanges(newName);
+
       await queryClient.invalidateQueries({
-        queryKey:
-          getAdminServiceListOrganizationMemberUsergroupsQueryKey(organization),
+        queryKey: getAdminServiceListOrganizationMemberUsergroupsQueryKey(
+          organization,
+          {
+            includeCounts: true,
+          },
+        ),
       });
 
       groupName = "";
+      selectedUsers = [];
+      pendingAdditions = [];
+      pendingRemovals = [];
       open = false;
 
       eventBus.emit("notification", { message: "User group created" });
     } catch (error) {
-      console.error("Error creating user group", error);
       eventBus.emit("notification", {
-        message: "Error creating user group",
+        message: `Error: ${error.response.data.message}`,
         type: "error",
       });
+    }
+  }
+
+  async function applyPendingChanges(usergroup: string) {
+    try {
+      // Add pending users to the group
+      for (const email of pendingAdditions) {
+        await $addUsergroupMemberUser.mutateAsync({
+          organization: organization,
+          usergroup: usergroup,
+          email: email,
+          data: {},
+        });
+      }
+
+      await queryClient.invalidateQueries({
+        queryKey:
+          getAdminServiceListOrganizationMemberUsersQueryKey(organization),
+      });
+
+      await queryClient.invalidateQueries({
+        queryKey: getAdminServiceListUsergroupMemberUsersQueryKey(
+          organization,
+          usergroup,
+        ),
+      });
+
+      eventBus.emit("notification", {
+        message: "User group changes saved successfully",
+      });
+    } catch (error) {
+      eventBus.emit("notification", {
+        message: `Error: ${error.response.data.message}`,
+        type: "error",
+      });
+    }
+  }
+
+  async function handleRemove(email: string) {
+    selectedUsers = selectedUsers.filter((user) => user.userEmail !== email);
+    pendingRemovals = [...pendingRemovals, email];
+    pendingAdditions = pendingAdditions.filter((e) => e !== email);
+  }
+
+  async function handleAdd(email: string) {
+    const user = organizationUsers.find((u) => u.userEmail === email);
+
+    // Don't add if already in selectedUsers
+    if (
+      user &&
+      !selectedUsers.some((selected) => selected.userEmail === email)
+    ) {
+      selectedUsers = [...selectedUsers, user];
+      pendingAdditions = [...pendingAdditions, email];
+      pendingRemovals = pendingRemovals.filter((e) => e !== email);
     }
   }
 
@@ -69,11 +143,12 @@
   const schema = yup(
     object({
       name: string()
-        .required("User group name is required")
-        .min(3, "User group name must be at least 3 characters")
+        .required("Name is required")
+        .min(1, "Name must be at least 1 character")
+        .max(40, "Name must be at most 40 characters")
         .matches(
-          /^[a-z0-9]+(-[a-z0-9]+)*$/,
-          "User group name must be lowercase and can contain letters, numbers, and hyphens (slug)",
+          SLUG_REGEX,
+          "Name can only include letters, numbers, underscores, and hyphens — no spaces or special characters",
         ),
     }),
   );
@@ -83,31 +158,53 @@
     {
       SPA: true,
       validators: schema,
+      validationMethod: "oninput",
       async onUpdate({ form }) {
         if (!form.valid) return;
         const values = form.data;
 
-        try {
-          await handleCreate(values.name);
-          open = false;
-        } catch (error) {
-          console.error(error);
-        }
+        await handleCreate(values.name);
+        open = false;
       },
     },
   );
+
+  $: coercedUsersToOptions = organizationUsers.map((user) => ({
+    value: user.userEmail,
+    label: user.userName,
+  }));
+
+  function getMetadata(email: string) {
+    const user = organizationUsers.find((user) => user.userEmail === email);
+    return user
+      ? { name: user.userName, photoUrl: user.userPhotoUrl }
+      : undefined;
+  }
+
+  // Check if form has been modified
+  $: hasFormChanges = $form.name !== initialValues.name;
+
+  function handleClose() {
+    open = false;
+    searchText = "";
+    selectedUsers = [];
+    pendingAdditions = [];
+    pendingRemovals = [];
+    // Only reset the form if it has been modified
+    if (hasFormChanges) {
+      $form.name = initialValues.name;
+    }
+  }
 </script>
 
 <Dialog
   bind:open
   onOutsideClick={(e) => {
     e.preventDefault();
-    open = false;
-    groupName = "";
   }}
   onOpenChange={(open) => {
     if (!open) {
-      groupName = "";
+      handleClose();
     }
   }}
 >
@@ -128,29 +225,99 @@
         <Input
           bind:value={$form.name}
           id="create-user-group-name"
-          label="Group label"
+          label="Name"
           placeholder="Untitled"
           errors={$errors.name}
-          alwaysShowError
+          alwaysShowError={true}
         />
 
-        {#if $listUsergroupMemberUsers.data?.members.length > 0}
-          <div class="text-xs font-semibold uppercase text-gray-500">
-            {$listUsergroupMemberUsers.data?.members.length} Users
-          </div>
-        {/if}
+        <div class="flex flex-col gap-y-1">
+          <label
+            for="user-group-users"
+            class="line-clamp-1 text-sm font-medium text-gray-800"
+          >
+            Users
+          </label>
+          <Combobox
+            searchValue={searchText}
+            options={coercedUsersToOptions}
+            placeholder="Search to add/remove users"
+            {getMetadata}
+            selectedValues={[
+              ...new Set(
+                [
+                  ...selectedUsers.map((user) => user.userEmail),
+                  ...pendingAdditions,
+                ].filter((email) => !pendingRemovals.includes(email)),
+              ),
+            ]}
+            onSelectedChange={(values) => {
+              if (!values) return;
+
+              const newEmails = values.map((v) => v.value);
+              const currentEmails = selectedUsers.map((u) => u.userEmail);
+
+              // Find emails to add (in new but not in current)
+              newEmails
+                .filter((email) => !currentEmails.includes(email))
+                .forEach((email) => handleAdd(email));
+
+              // Find emails to remove (in current but not in new)
+              currentEmails
+                .filter((email) => !newEmails.includes(email))
+                .forEach((email) => handleRemove(email));
+            }}
+          />
+        </div>
       </div>
     </form>
+
+    <div class="flex flex-col gap-2 w-full">
+      {#if selectedUsers.length > 0}
+        <div class="flex flex-row items-center gap-x-1">
+          <div class="text-xs font-semibold uppercase text-gray-500">
+            {selectedUsers.length} User{selectedUsers.length === 1 ? "" : "s"}
+          </div>
+        </div>
+      {/if}
+      <div class="max-h-[208px] overflow-y-auto">
+        <div class="flex flex-col gap-2">
+          {#each selectedUsers as user (user.userEmail)}
+            <div class="flex flex-row justify-between gap-2 items-center">
+              <div class="flex items-center gap-2">
+                <Avatar
+                  avatarSize="h-7 w-7"
+                  alt={user.userName}
+                  src={user.userPhotoUrl}
+                />
+                <div class="flex flex-col text-left">
+                  <span class="text-sm font-medium text-gray-900">
+                    {user.userName}
+                    <span class="text-gray-500 font-normal">
+                      {user.userEmail === currentUserEmail ? "(You)" : ""}
+                    </span>
+                  </span>
+                  <span class="text-xs text-gray-500">{user.userEmail}</span>
+                </div>
+              </div>
+              <Button
+                type="text"
+                danger
+                onClick={() => handleRemove(user.userEmail)}
+              >
+                Remove
+              </Button>
+            </div>
+          {/each}
+        </div>
+      </div>
+    </div>
+
     <DialogFooter>
-      <Button
-        type="plain"
-        on:click={() => {
-          open = false;
-        }}>Cancel</Button
-      >
+      <Button type="plain" onClick={handleClose}>Cancel</Button>
       <Button
         type="primary"
-        disabled={$submitting || $form.name.trim() === ""}
+        disabled={$submitting || $form.name.trim() === "" || !!$errors.name}
         form={formId}
         submitForm
       >

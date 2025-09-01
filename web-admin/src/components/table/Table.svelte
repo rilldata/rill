@@ -112,7 +112,7 @@ Rounded table corners are tricky:
     @apply border-separate border-spacing-0;
   }
   tbody td {
-    @apply border-b border-gray-200;
+    @apply border-b;
   }
   tbody td:first-child {
     @apply border-l;

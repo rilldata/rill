@@ -1,17 +1,21 @@
 <script lang="ts">
+  import { Button } from "@rilldata/web-common/components/button";
   import FormSection from "@rilldata/web-common/components/forms/FormSection.svelte";
-  import InputArray from "@rilldata/web-common/components/forms/InputArray.svelte";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
+  import MultiInput from "@rilldata/web-common/components/forms/MultiInput.svelte";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import { getHasSlackConnection } from "@rilldata/web-common/features/alerts/delivery-tab/notifiers-utils";
   import { SnoozeOptions } from "@rilldata/web-common/features/alerts/delivery-tab/snooze";
   import type { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
+  import ScheduleForm from "@rilldata/web-common/features/scheduled-reports/ScheduleForm.svelte";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import type { createForm } from "svelte-forms-lib";
+  import type { SuperForm } from "sveltekit-superforms/client";
 
-  export let formState: ReturnType<typeof createForm<AlertFormValues>>;
+  export let superFormInstance: SuperForm<AlertFormValues>;
+  export let exploreName: string;
 
-  const { form, errors, handleChange } = formState;
+  $: ({ form, errors } = superFormInstance);
+
   $: ({ instanceId } = $runtime);
 
   $: hasSlackNotifier = getHasSlackConnection(instanceId);
@@ -23,15 +27,32 @@
       alwaysShowError
       errors={$errors["name"]}
       id="name"
-      onInput={(_, e) => handleChange(e)}
+      title="Alert name"
       placeholder="My alert"
-      value={$form["name"]}
+      bind:value={$form["name"]}
     />
   </FormSection>
-  <FormSection
-    description="We'll check for this alert whenever the data refreshes"
-    title="Trigger"
-  />
+
+  <FormSection title="Trigger">
+    <div class="grid grid-cols-2">
+      <Button
+        onClick={() => ($form["refreshWhenDataRefreshes"] = true)}
+        active={$form["refreshWhenDataRefreshes"]}
+      >
+        Whenever data refreshes
+      </Button>
+      <Button
+        onClick={() => ($form["refreshWhenDataRefreshes"] = false)}
+        active={!$form["refreshWhenDataRefreshes"]}
+      >
+        Set schedule
+      </Button>
+    </div>
+    {#if !$form["refreshWhenDataRefreshes"]}
+      <ScheduleForm data={form} {exploreName} />
+    {/if}
+  </FormSection>
+
   <FormSection
     description="Set a snooze period to silence repeat notifications for the same alert."
     title="Snooze"
@@ -49,23 +70,27 @@
       showSectionToggle
       title="Slack notifications"
     >
-      <InputArray
-        accessorKey="channel"
-        addItemLabel="Add channel"
-        description="We’ll send alerts directly to these channels."
-        {formState}
+      <MultiInput
         id="slackChannels"
-        label="Channels"
         placeholder="# Enter a Slack channel name"
+        description="We’ll send alerts directly to these channels."
+        contentClassName="relative"
+        bind:values={$form.slackChannels}
+        errors={$errors.slackChannels}
+        singular="channel"
+        plural="channels"
+        preventFocus={true}
       />
-      <InputArray
-        accessorKey="email"
-        addItemLabel="Add user"
-        description="We’ll alert them with direct messages in Slack."
-        {formState}
+      <MultiInput
         id="slackUsers"
-        label="Users"
         placeholder="Enter an email address"
+        description="We’ll alert them with direct messages in Slack."
+        contentClassName="relative"
+        bind:values={$form.slackUsers}
+        errors={$errors.slackUsers}
+        singular="user"
+        plural="users"
+        preventFocus={true}
       />
     </FormSection>
   {:else}
@@ -88,12 +113,15 @@
     showSectionToggle
     title="Email notifications"
   >
-    <InputArray
-      accessorKey="email"
-      addItemLabel="Add email"
-      {formState}
-      id="emailRecipients"
+    <MultiInput
+      id="slackUsers"
       placeholder="Enter an email address"
+      contentClassName="relative"
+      bind:values={$form.emailRecipients}
+      errors={$errors.emailRecipients}
+      singular="email"
+      plural="emails"
+      preventFocus={true}
     />
   </FormSection>
 </div>

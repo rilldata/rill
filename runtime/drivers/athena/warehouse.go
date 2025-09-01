@@ -4,39 +4,44 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"math"
 	"net/url"
 	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/credentials"
-	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
 	"github.com/aws/aws-sdk-go-v2/service/athena"
-	types2 "github.com/aws/aws-sdk-go-v2/service/athena/types"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
-	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/aws/smithy-go/tracing/smithyoteltracing"
 	"github.com/google/uuid"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
-	rillblob "github.com/rilldata/rill/runtime/drivers/blob"
+	"github.com/rilldata/rill/runtime/pkg/blob"
+	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"go.opentelemetry.io/otel"
-	"gocloud.dev/blob"
+	"go.opentelemetry.io/otel/codes"
+	"go.uber.org/zap"
 	"gocloud.dev/blob/s3blob"
 )
+
+var tracer = otel.Tracer("github.com/rilldata/rill/runtime/drivers/athena")
 
 var _ drivers.Warehouse = &Connection{}
 
 func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any) (outIt drivers.FileIterator, outErr error) {
-	conf, err := parseSourceProperties(props)
+	ctx, span := tracer.Start(ctx, "Connection.QueryAsFiles")
+	defer func() {
+		if outErr != nil {
+			span.SetStatus(codes.Error, outErr.Error())
+		}
+		span.End()
+	}()
+
+	sourceProperties, err := parseSourceProperties(props)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse config: %w", err)
 	}
-
-	awsConfig, err := c.awsConfig(ctx, conf.AWSRegion)
+	awsConfig, err := c.awsConfig(ctx, sourceProperties.ResolveRegion(c.config))
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +49,7 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any) (ou
 	client := athena.NewFromConfig(awsConfig, func(o *athena.Options) {
 		o.TracerProvider = smithyoteltracing.Adapt(otel.GetTracerProvider())
 	})
-	outputLocation, err := resolveOutputLocation(ctx, client, conf)
+	outputLocation, err := sourceProperties.ResolveOutputLocation(ctx, client, c.config)
 	if err != nil {
 		return nil, err
 	}
@@ -64,10 +69,12 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any) (ou
 	unloadPath := strings.TrimPrefix(unloadURL.Path, "/")
 
 	cleanupFn := func() error {
+		ctx, cancel := graceful.WithMinimumDuration(ctx, 10*time.Second)
+		defer cancel()
 		return deleteObjectsInPrefix(ctx, awsConfig, bucketName, unloadPath)
 	}
 
-	err = c.unload(ctx, client, conf, unloadLocation)
+	err = c.unload(ctx, client, sourceProperties, unloadLocation)
 	if err != nil {
 		unloadErr := fmt.Errorf("failed to unload: %w", err)
 		cleanupErr := cleanupFn()
@@ -86,24 +93,24 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any) (ou
 		}
 	}()
 
-	bucketObj, err := openBucket(ctx, awsConfig, bucketName)
+	bucket, err := openBucket(ctx, awsConfig, bucketName, c.logger)
 	if err != nil {
 		return nil, fmt.Errorf("cannot open bucket %q: %w", bucketName, err)
 	}
 
-	opts := rillblob.Options{
-		GlobPattern: unloadPath + "/**",
-		Format:      "parquet",
-		// All the glob limits are set to max values since these files are created by Rill.
-		// Limits if any on data imported by connector should be imposed before these files are created.
-		GlobMaxTotalSize:      math.MaxInt64,
-		GlobMaxObjectsMatched: math.MaxInt,
-		GlobMaxObjectsListed:  math.MaxInt64,
+	tempDir, err := c.storage.TempDir()
+	if err != nil {
+		return nil, err
 	}
 
-	it, err := rillblob.NewIterator(ctx, bucketObj, opts, c.logger)
+	it, err := bucket.Download(ctx, &blob.DownloadOptions{
+		Glob:        unloadPath + "/**",
+		Format:      "parquet",
+		TempDir:     tempDir,
+		CloseBucket: true,
+	})
 	if err != nil {
-		return nil, fmt.Errorf("cannot download parquet output %q %w", opts.GlobPattern, err)
+		return nil, fmt.Errorf("cannot download parquet output %q: %w", unloadPath, err)
 	}
 
 	return autoDeleteFileIterator{
@@ -112,96 +119,16 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any) (ou
 	}, nil
 }
 
-func (c *Connection) awsConfig(ctx context.Context, awsRegion string) (aws.Config, error) {
-	loadOptions := []func(*config.LoadOptions) error{
-		// Setting the default region to an empty string, will result in the default region value being ignored
-		config.WithDefaultRegion("us-east-1"),
-		// Setting the region to an empty string, will result in the region value being ignored
-		config.WithRegion(awsRegion),
-	}
+func (c *Connection) unload(ctx context.Context, client *athena.Client, sourceProperties *sourceProperties, unloadLocation string) error {
+	finalSQL := fmt.Sprintf("UNLOAD (%s\n) TO '%s' WITH (format = 'PARQUET')", sourceProperties.SQL, unloadLocation)
 
-	// If one of the static properties is specified: access key, secret key, or session token, use static credentials,
-	// Else fallback to the SDK's default credential chain (environment, instance, etc) unless AllowHostAccess is false
-	if c.config.AccessKeyID != "" || c.config.SecretAccessKey != "" || c.config.SessionToken != "" {
-		p := credentials.NewStaticCredentialsProvider(c.config.AccessKeyID, c.config.SecretAccessKey, c.config.SessionToken)
-		loadOptions = append(loadOptions, config.WithCredentialsProvider(p))
-	} else if !c.config.AllowHostAccess {
-		return aws.Config{}, fmt.Errorf("static creds are not provided, and host access is not allowed")
-	}
-
-	awsConfig, err := config.LoadDefaultConfig(ctx, loadOptions...)
-	if err != nil {
-		return aws.Config{}, err
-	}
-
-	if c.config.RoleARN != "" {
-		stsClient := sts.NewFromConfig(awsConfig)
-		assumeRoleOptions := []func(*stscreds.AssumeRoleOptions){}
-		if c.config.RoleSessionName != "" {
-			assumeRoleOptions = append(assumeRoleOptions, func(o *stscreds.AssumeRoleOptions) {
-				o.RoleSessionName = c.config.RoleSessionName
-			})
-		}
-		if c.config.ExternalID != "" {
-			assumeRoleOptions = append(assumeRoleOptions, func(o *stscreds.AssumeRoleOptions) {
-				o.ExternalID = &c.config.ExternalID
-			})
-		}
-		provider := stscreds.NewAssumeRoleProvider(stsClient, c.config.RoleARN, assumeRoleOptions...)
-		awsConfig.Credentials = aws.NewCredentialsCache(provider)
-	}
-
-	return awsConfig, nil
-}
-
-func (c *Connection) unload(ctx context.Context, client *athena.Client, conf *sourceProperties, unloadLocation string) error {
-	finalSQL := fmt.Sprintf("UNLOAD (%s\n) TO '%s' WITH (format = 'PARQUET')", conf.SQL, unloadLocation)
-
-	executeParams := &athena.StartQueryExecutionInput{
-		QueryString: aws.String(finalSQL),
-	}
-
-	if conf.OutputLocation != "" {
-		executeParams.ResultConfiguration = &types2.ResultConfiguration{
-			OutputLocation: aws.String(conf.OutputLocation),
-		}
-	}
-
-	if conf.Workgroup != "" { // primary is used if nothing is set
-		executeParams.WorkGroup = aws.String(conf.Workgroup)
-	}
-
-	queryExecutionOutput, err := client.StartQueryExecution(ctx, executeParams)
+	outputLocation, err := sourceProperties.ResolveOutputLocation(ctx, client, c.config)
 	if err != nil {
 		return err
 	}
 
-	for {
-		select {
-		case <-ctx.Done():
-			_, err = client.StopQueryExecution(ctx, &athena.StopQueryExecutionInput{
-				QueryExecutionId: queryExecutionOutput.QueryExecutionId,
-			})
-			return errors.Join(ctx.Err(), err)
-		default:
-			status, err := client.GetQueryExecution(ctx, &athena.GetQueryExecutionInput{
-				QueryExecutionId: queryExecutionOutput.QueryExecutionId,
-			})
-			if err != nil {
-				return err
-			}
-
-			switch status.QueryExecution.Status.State {
-			case types2.QueryExecutionStateSucceeded:
-				return nil
-			case types2.QueryExecutionStateCancelled:
-				return fmt.Errorf("Athena query execution cancelled")
-			case types2.QueryExecutionStateFailed:
-				return fmt.Errorf("Athena query execution failed %s", *status.QueryExecution.Status.AthenaError.ErrorMessage)
-			}
-		}
-		time.Sleep(time.Second)
-	}
+	_, err = c.executeQuery(ctx, client, finalSQL, sourceProperties.ResolveWorkgroup(c.config), outputLocation)
+	return err
 }
 
 func parseSourceProperties(props map[string]any) (*sourceProperties, error) {
@@ -214,35 +141,13 @@ func parseSourceProperties(props map[string]any) (*sourceProperties, error) {
 	return conf, nil
 }
 
-func resolveOutputLocation(ctx context.Context, client *athena.Client, conf *sourceProperties) (string, error) {
-	if conf.OutputLocation != "" {
-		return conf.OutputLocation, nil
-	}
-
-	workgroup := conf.Workgroup
-	// fallback to "primary" (default) workgroup if no workgroup is specified
-	if workgroup == "" {
-		workgroup = "primary"
-	}
-
-	wo, err := client.GetWorkGroup(ctx, &athena.GetWorkGroupInput{
-		WorkGroup: aws.String(workgroup),
-	})
-	if err != nil {
-		return "", err
-	}
-
-	resultConfiguration := wo.WorkGroup.Configuration.ResultConfiguration
-	if resultConfiguration != nil && resultConfiguration.OutputLocation != nil && *resultConfiguration.OutputLocation != "" {
-		return *resultConfiguration.OutputLocation, nil
-	}
-
-	return "", fmt.Errorf("either output_location or workgroup with an output location must be set")
-}
-
-func openBucket(ctx context.Context, cfg aws.Config, bucket string) (*blob.Bucket, error) {
+func openBucket(ctx context.Context, cfg aws.Config, bucket string, logger *zap.Logger) (*blob.Bucket, error) {
 	s3client := s3.NewFromConfig(cfg)
-	return s3blob.OpenBucketV2(ctx, s3client, bucket, nil)
+	s3bucket, err := s3blob.OpenBucketV2(ctx, s3client, bucket, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open bucket %q: %w", bucket, err)
+	}
+	return blob.NewBucket(s3bucket, logger)
 }
 
 func deleteObjectsInPrefix(ctx context.Context, cfg aws.Config, bucketName, prefix string) error {
@@ -297,6 +202,47 @@ type sourceProperties struct {
 	OutputLocation string `mapstructure:"output_location"`
 	Workgroup      string `mapstructure:"workgroup"`
 	AWSRegion      string `mapstructure:"region"`
+}
+
+func (s *sourceProperties) ResolveRegion(config *configProperties) string {
+	if s.AWSRegion != "" {
+		return s.AWSRegion
+	}
+	return config.AWSRegion
+}
+
+func (s *sourceProperties) ResolveWorkgroup(config *configProperties) string {
+	if s.Workgroup != "" {
+		return s.Workgroup
+	}
+	if config.Workgroup != "" {
+		return config.Workgroup
+	}
+	return "primary"
+}
+
+func (s *sourceProperties) ResolveOutputLocation(ctx context.Context, client *athena.Client, config *configProperties) (string, error) {
+	if s.OutputLocation != "" {
+		return s.OutputLocation, nil
+	}
+	if config.OutputLocation != "" {
+		return config.OutputLocation, nil
+	}
+
+	workgroup := s.ResolveWorkgroup(config)
+	wo, err := client.GetWorkGroup(ctx, &athena.GetWorkGroupInput{
+		WorkGroup: aws.String(workgroup),
+	})
+	if err != nil {
+		return "", err
+	}
+
+	resultConfiguration := wo.WorkGroup.Configuration.ResultConfiguration
+	if resultConfiguration != nil && resultConfiguration.OutputLocation != nil && *resultConfiguration.OutputLocation != "" {
+		return *resultConfiguration.OutputLocation, nil
+	}
+
+	return "", fmt.Errorf("either output_location or workgroup with an output location must be set")
 }
 
 type autoDeleteFileIterator struct {

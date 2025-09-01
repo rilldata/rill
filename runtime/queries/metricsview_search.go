@@ -117,6 +117,7 @@ func searchQuery(q *MetricsViewSearch) *metricsview.SearchQuery {
 		}
 		res.IsoDuration = q.TimeRange.IsoDuration
 		res.IsoOffset = q.TimeRange.IsoOffset
+		res.TimeDimension = q.TimeRange.TimeDimension
 		res.RoundToGrain = metricsview.TimeGrainFromProto(q.TimeRange.RoundToGrain)
 		search.TimeRange = res
 	}

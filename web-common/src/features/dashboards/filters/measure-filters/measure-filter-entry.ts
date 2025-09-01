@@ -7,6 +7,7 @@ import {
 import {
   createBetweenExpression,
   createBinaryExpression,
+  isBetweenExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import {
   type V1Expression,
@@ -35,7 +36,8 @@ export const ComparisonDeltaPreviousSuffix = "_prev";
 export const ComparisonDeltaAbsoluteSuffix = "_delta";
 export const ComparisonDeltaRelativeSuffix = "_delta_perc";
 export const ComparisonPercentOfTotal = "_percent_of_total";
-const HasSuffixRegex = /_delta(?:_perc)?|_percent_of_total/;
+export const MeasureModifierSuffixRegex =
+  /_prev|_delta(?:_perc)?|_percent_of_total/;
 
 export function mapExprToMeasureFilter(
   expr: V1Expression | undefined,
@@ -51,6 +53,8 @@ export function mapExprToMeasureFilter(
   switch (expr.cond?.op) {
     case V1Operation.OPERATION_OR:
     case V1Operation.OPERATION_AND:
+      if (!isBetweenExpression(expr)) return undefined;
+
       // handle between and not-between
       field = expr.cond.exprs?.[0].cond?.exprs?.[0].ident ?? "";
       value1 = (expr.cond.exprs?.[0].cond?.exprs?.[1].val as number) ?? 0;
@@ -80,6 +84,9 @@ export function mapExprToMeasureFilter(
         ProtoToMeasureFilterOperations[expr.cond?.op] ??
         MeasureFilterOperation.GreaterThan;
       break;
+
+    default:
+      return undefined;
   }
 
   switch (true) {
@@ -97,7 +104,7 @@ export function mapExprToMeasureFilter(
   }
 
   return {
-    measure: field.replace(HasSuffixRegex, ""),
+    measure: field.replace(MeasureModifierSuffixRegex, ""),
     operation,
     type,
     value1: value1.toString(),
@@ -157,8 +164,8 @@ export function mapMeasureFilterToExpr(
 }
 
 export function measureHasSuffix(measureName: string) {
-  return HasSuffixRegex.test(measureName);
+  return MeasureModifierSuffixRegex.test(measureName);
 }
 export function stripMeasureSuffix(measureName: string) {
-  return measureName.replace(HasSuffixRegex, "");
+  return measureName.replace(MeasureModifierSuffixRegex, "");
 }

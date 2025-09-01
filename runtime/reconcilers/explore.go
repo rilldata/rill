@@ -4,11 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/fieldselectorpb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func init() {
@@ -74,7 +76,7 @@ func (r *ExploreReconciler) Reconcile(ctx context.Context, n *runtimev1.Resource
 	}
 
 	// Validate and rewrite
-	validSpec, validateErr := r.validateAndRewrite(ctx, self, e.Spec)
+	validSpec, dataRefreshedOn, validateErr := r.validateAndRewrite(ctx, self, e.Spec)
 
 	// If spec validation failed and StageChanges is enabled, we will keep the old valid spec if its parent metrics view is still valid.
 	// This is not perfect, but increases the chance of keeping the dashboard working in many cases.
@@ -85,11 +87,13 @@ func (r *ExploreReconciler) Reconcile(ctx context.Context, n *runtimev1.Resource
 		if err == nil && mv.GetMetricsView().State.ValidSpec != nil {
 			// Keep the old valid spec
 			validSpec = e.State.ValidSpec
+			dataRefreshedOn = mv.GetMetricsView().State.DataRefreshedOn
 		}
 	}
 
 	// We update the state even if the validation result is unchanged to ensure the state version is incremented.
 	e.State.ValidSpec = validSpec
+	e.State.DataRefreshedOn = dataRefreshedOn
 	err = r.C.UpdateState(ctx, self.Meta.Name, self)
 	if err != nil {
 		return runtime.ReconcileResult{Err: err}
@@ -103,17 +107,17 @@ func (r *ExploreReconciler) Reconcile(ctx context.Context, n *runtimev1.Resource
 //   - The parent metrics view's access and field access security rules will be copied to the explore spec's security rules.
 //
 // The provided spec will be modified in place, so it must be a deep clone.
-func (r *ExploreReconciler) validateAndRewrite(ctx context.Context, self *runtimev1.Resource, spec *runtimev1.ExploreSpec) (*runtimev1.ExploreSpec, error) {
+func (r *ExploreReconciler) validateAndRewrite(ctx context.Context, self *runtimev1.Resource, spec *runtimev1.ExploreSpec) (*runtimev1.ExploreSpec, *timestamppb.Timestamp, error) {
 	err := checkRefs(ctx, r.C, self.Meta.Refs)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// Check the theme exists
 	if spec.Theme != "" {
 		_, err := r.C.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindTheme, Name: spec.Theme}, false)
 		if err != nil {
-			return nil, fmt.Errorf("failed to find theme %q: %w", spec.Theme, err)
+			return nil, nil, fmt.Errorf("failed to find theme %q: %w", spec.Theme, err)
 		}
 	}
 
@@ -121,11 +125,11 @@ func (r *ExploreReconciler) validateAndRewrite(ctx context.Context, self *runtim
 	mvn := &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: spec.MetricsView}
 	mvr, err := r.C.Get(ctx, mvn, false)
 	if err != nil {
-		return nil, fmt.Errorf("could not find metrics view %q: %w", spec.MetricsView, err)
+		return nil, nil, fmt.Errorf("could not find metrics view %q: %w", spec.MetricsView, err)
 	}
 	mv := mvr.GetMetricsView().State.ValidSpec
 	if mv == nil {
-		return nil, fmt.Errorf("parent metrics view %q is invalid", spec.MetricsView)
+		return nil, nil, fmt.Errorf("parent metrics view %q is invalid", spec.MetricsView)
 	}
 
 	if len(spec.SecurityRules) == 0 && len(mv.SecurityRules) > 0 {
@@ -137,13 +141,12 @@ func (r *ExploreReconciler) validateAndRewrite(ctx context.Context, self *runtim
 	} else {
 		for _, rule := range spec.SecurityRules {
 			if rule.GetAccess() == nil {
-				return nil, fmt.Errorf("security rule %v is not an access rule", rule)
+				return nil, nil, fmt.Errorf("security rule %v is not an access rule", rule)
 			}
 		}
 
 		// Merge access rules into a single rule
-		mv.SecurityRules = append(mv.SecurityRules, spec.SecurityRules...)
-		access := mergeAccessRules(mv.SecurityRules)
+		access := mergeAccessRules(slices.Concat(mv.SecurityRules, spec.SecurityRules))
 		if access != nil {
 			spec.SecurityRules = []*runtimev1.SecurityRule{access}
 		}
@@ -161,9 +164,9 @@ func (r *ExploreReconciler) validateAndRewrite(ctx context.Context, self *runtim
 	for _, d := range mv.Dimensions {
 		allDims = append(allDims, d.Name)
 	}
-	spec.Dimensions, err = r.resolveFields(spec.Dimensions, spec.DimensionsSelector, allDims)
+	spec.Dimensions, err = fieldselectorpb.ResolveFields(spec.Dimensions, spec.DimensionsSelector, allDims)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	spec.DimensionsSelector = nil
 
@@ -172,9 +175,9 @@ func (r *ExploreReconciler) validateAndRewrite(ctx context.Context, self *runtim
 	for _, m := range mv.Measures {
 		allMeasures = append(allMeasures, m.Name)
 	}
-	spec.Measures, err = r.resolveFields(spec.Measures, spec.MeasuresSelector, allMeasures)
+	spec.Measures, err = fieldselectorpb.ResolveFields(spec.Measures, spec.MeasuresSelector, allMeasures)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	spec.MeasuresSelector = nil
 
@@ -182,46 +185,23 @@ func (r *ExploreReconciler) validateAndRewrite(ctx context.Context, self *runtim
 	if spec.DefaultPreset != nil {
 		p := spec.DefaultPreset
 
-		dims, err := r.resolveFields(p.Dimensions, p.DimensionsSelector, spec.Dimensions)
+		dims, err := fieldselectorpb.ResolveFields(p.Dimensions, p.DimensionsSelector, spec.Dimensions)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		p.Dimensions = dims
 		p.DimensionsSelector = nil
 
-		measures, err := r.resolveFields(p.Measures, p.MeasuresSelector, spec.Measures)
+		measures, err := fieldselectorpb.ResolveFields(p.Measures, p.MeasuresSelector, spec.Measures)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		p.Measures = measures
 		p.MeasuresSelector = nil
 	}
 
 	// Done with rewriting
-	return spec, nil
-}
-
-func (r *ExploreReconciler) resolveFields(selected []string, selector *runtimev1.FieldSelector, all []string) ([]string, error) {
-	// If no selector is provided, validate and return the selected fields.
-	if selector == nil {
-		allMap := make(map[string]struct{}, len(all))
-		for _, f := range all {
-			allMap[f] = struct{}{}
-		}
-		for _, f := range selected {
-			if _, ok := allMap[f]; !ok {
-				return nil, fmt.Errorf("dimension or measure name %q not found in the parent metrics view", f)
-			}
-		}
-		return selected, nil
-	}
-
-	// Resolve the selector (it includes validation of the resulting fields against `all` if needed).
-	res, err := fieldselectorpb.Resolve(selector, all)
-	if err != nil {
-		return nil, fmt.Errorf("failed to resolve dimension or measure name selector: %w", err)
-	}
-	return res, nil
+	return spec, mvr.GetMetricsView().State.DataRefreshedOn, nil
 }
 
 // mergeAccessRules combines Access rule conditions into a single rule

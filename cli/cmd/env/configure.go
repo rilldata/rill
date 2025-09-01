@@ -200,8 +200,8 @@ func VariablesFlow(ctx context.Context, ch *cmdutil.Helper, projectPath string) 
 	return variables, nil
 }
 
-func fileValidateFunc(any interface{}) error {
-	val := any.(string)
+func fileValidateFunc(v any) error {
+	val := v.(string)
 	if val == "" {
 		// user can chhose to leave empty for public sources
 		return nil
@@ -216,8 +216,8 @@ func fileValidateFunc(any interface{}) error {
 	return err
 }
 
-func fileTransformFunc(any interface{}) interface{} {
-	val := any.(string)
+func fileTransformFunc(v any) any {
+	val := v.(string)
 	if val == "" {
 		return ""
 	}

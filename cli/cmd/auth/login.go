@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/rilldata/rill/cli/pkg/browser"
@@ -55,13 +54,7 @@ func LoginCmd(ch *cmdutil.Helper) *cobra.Command {
 }
 
 func Login(ctx context.Context, ch *cmdutil.Helper, redirectURL string) error {
-	// In production, the REST and gRPC endpoints are the same, but in development, they're served on different ports.
-	// We plan to move to connect.build for gRPC, which will allow us to serve both on the same port in development as well.
-	// Until we make that change, this is a convenient hack for local development (assumes gRPC on port 9090 and REST on port 8080).
 	authURL := ch.AdminURL()
-	if strings.Contains(authURL, "http://localhost:9090") {
-		authURL = "http://localhost:8080"
-	}
 
 	authenticator, err := deviceauth.New(authURL)
 	if err != nil {

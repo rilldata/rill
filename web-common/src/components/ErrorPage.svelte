@@ -69,7 +69,7 @@
   .detail-toggle {
     @apply text-sm text-slate-600 font-medium;
     @apply flex items-center;
-    @apply transition-colors duration-300 ease-in-out;
+    @apply duration-300 ease-in-out;
   }
 
   .detail-toggle:hover {

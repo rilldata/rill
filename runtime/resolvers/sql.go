@@ -74,9 +74,11 @@ func newSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolve
 		return nil, err
 	}
 
-	interactiveRowLimit := cfg.InteractiveSQLRowLimit
+	var interactiveRowLimit int64
 	if props.Limit != 0 {
 		interactiveRowLimit = props.Limit
+	} else if cfg.InteractiveSQLRowLimit != 0 {
+		interactiveRowLimit = cfg.InteractiveSQLRowLimit
 	}
 
 	olap, release, err := opts.Runtime.OLAP(ctx, opts.InstanceID, props.Connector)
@@ -126,7 +128,12 @@ func (r *sqlResolver) Validate(ctx context.Context) error {
 func (r *sqlResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverResult, error) {
 	// Wrap the SQL with an outer SELECT to limit the number of rows returned in interactive mode.
 	// Adding +1 to the limit so we can return a nice error message if the limit is exceeded.
-	sql := fmt.Sprintf("SELECT * FROM (%s\n) LIMIT %d", r.sql, r.interactiveRowLimit+1)
+	var sql string
+	if r.interactiveRowLimit != 0 {
+		sql = fmt.Sprintf("SELECT * FROM (%s\n) LIMIT %d", r.sql, r.interactiveRowLimit+1)
+	} else {
+		sql = r.sql
+	}
 
 	res, err := r.olap.Query(ctx, &drivers.Statement{
 		Query:    sql,
@@ -140,7 +147,7 @@ func (r *sqlResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverR
 	if r.interactiveRowLimit != 0 {
 		res.SetCap(r.interactiveRowLimit)
 	}
-	return runtime.NewDriverResolverResult(res), nil
+	return runtime.NewDriverResolverResult(res, nil), nil
 }
 
 func (r *sqlResolver) ResolveExport(ctx context.Context, w io.Writer, opts *runtime.ResolverExportOptions) error {

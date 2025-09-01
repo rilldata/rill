@@ -18,6 +18,7 @@
   export let measureHasFilter: (measureName: string) => boolean;
   export let setTemporaryFilterName: (name: string) => void;
   export let addBorder = true;
+  export let side: "top" | "right" | "bottom" | "left" = "bottom";
 
   let open = false;
 
@@ -68,6 +69,7 @@
     }}
     {selectableGroups}
     selectedItems={[]}
+    {side}
   />
 </DropdownMenu.Root>
 
@@ -75,8 +77,7 @@
   button {
     @apply w-[34px] h-[26px] rounded-2xl;
     @apply flex items-center justify-center;
-
-    @apply bg-white;
+    @apply bg-surface;
   }
 
   button.addBorder {

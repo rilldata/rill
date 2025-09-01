@@ -13,6 +13,7 @@
 
   const user = createAdminServiceGetCurrentUser();
 
+  let primaryMenuOpen = false;
   let subMenuOpen = false;
 
   $: if ($user.data?.user) {
@@ -30,7 +31,7 @@
   }
 </script>
 
-<DropdownMenu.Root>
+<DropdownMenu.Root bind:open={primaryMenuOpen}>
   <DropdownMenu.Trigger class="flex-none">
     <img
       src={$user.data?.user?.photoUrl}
@@ -48,17 +49,22 @@
         <svelte:fragment slot="manage-project">
           <DropdownMenu.Sub bind:open={subMenuOpen}>
             <DropdownMenu.SubTrigger
-              disabled={true}
-              on:click={() => (subMenuOpen = !subMenuOpen)}
+              on:click={() => {
+                subMenuOpen = !subMenuOpen;
+              }}
             >
               View as
             </DropdownMenu.SubTrigger>
             <DropdownMenu.SubContent
-              class="flex flex-col min-w-[150px] max-w-[300px] min-h-[150px] max-h-[190px]"
+              class="flex flex-col min-w-[150px] max-w-[300px]"
             >
               <ViewAsUserPopover
                 organization={params.organization}
                 project={params.project}
+                onSelectUser={() => {
+                  subMenuOpen = false;
+                  primaryMenuOpen = false;
+                }}
               />
             </DropdownMenu.SubContent>
           </DropdownMenu.Sub>
@@ -86,7 +92,7 @@
       Documentation
     </DropdownMenu.Item>
     <DropdownMenu.Item
-      href="https://discord.com/invite/ngVV4KzEGv?utm_source=rill&utm_medium=rill-cloud-avatar-menu"
+      href="https://discord.gg/TatjVY32"
       target="_blank"
       rel="noreferrer noopener"
       class="text-gray-800 font-normal"

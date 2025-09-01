@@ -63,9 +63,20 @@ service AdminService {
     option (google.api.http) = {get: "/v1/organizations/{organization}/projects-for-user"};
   }
 
+  // ListProjectsForFingerprint lists all projects the current user has access to that match the provided local project details.
+  // This can be used to produce a short list of cloud projects that are likely to have been deployed from a local project.
+  rpc ListProjectsForFingerprint(ListProjectsForFingerprintRequest) returns (ListProjectsForFingerprintResponse) {
+    option (google.api.http) = {get: "/v1/projects-for-fingerprint"};
+  }
+
   // GetProject returns information about a specific project
   rpc GetProject(GetProjectRequest) returns (GetProjectResponse) {
     option (google.api.http) = {get: "/v1/organizations/{organization_name}/projects/{name}"};
+  }
+
+  // ListProjectsForUserByName returns projects matching a name accessible by the logged in user
+  rpc ListProjectsForUserByName(ListProjectsForUserByNameRequest) returns (ListProjectsForUserByNameResponse) {
+    option (google.api.http) = {get: "/v1/projects"};
   }
 
   // GetProject returns information about a specific project
@@ -130,6 +141,52 @@ service AdminService {
   // HibernateProject hibernates a project by tearing down its deployments.
   rpc HibernateProject(HibernateProjectRequest) returns (HibernateProjectResponse) {
     option (google.api.http) = {post: "/v1/organizations/{organization}/projects/{project}/hibernate"};
+  }
+
+  // ListDeployments lists deployments for a project.
+  rpc ListDeployments(ListDeploymentsRequest) returns (ListDeploymentsResponse) {
+    option (google.api.http) = {
+      get: "/v1/organizations/{organization_name}/projects/{project_name}/deployments"
+    };
+  }
+
+  // CreateDeployment creates a new deployment for a project.
+  rpc CreateDeployment(CreateDeploymentRequest) returns (CreateDeploymentResponse) {
+    option (google.api.http) = {
+      post: "/v1/organizations/{organization_name}/projects/{project_name}/deployments",
+      body: "*"
+    };
+  }
+
+  // GetDeployment returns runtime info and access token on behalf of a specific user, or alternatively for a raw set of JWT attributes
+  rpc GetDeployment(GetDeploymentRequest) returns (GetDeploymentResponse) {
+    option (google.api.http) = {
+      post: "/v1/deployments/{deployment_id}/credentials",
+      body: "*"
+    };
+  }
+
+  // StartDeployment starts a deployment.
+  rpc StartDeployment(StartDeploymentRequest) returns (StartDeploymentResponse) {
+    option (google.api.http) = {
+      post: "/v1/deployments/{deployment_id}/start",
+      body: "*"
+    };
+  }
+
+  // StopDeployment stops a deployment.
+  rpc StopDeployment(StopDeploymentRequest) returns (StopDeploymentResponse) {
+    option (google.api.http) = {
+      post: "/v1/deployments/{deployment_id}/stop",
+      body: "*"
+    };
+  }
+
+  // DeleteDeployment deletes a deployment.
+  rpc DeleteDeployment(DeleteDeploymentRequest) returns (DeleteDeploymentResponse) {
+    option (google.api.http) = {
+      delete: "/v1/deployments/{deployment_id}"
+    };
   }
 
   // TriggerReconcile triggers reconcile for the project's prod deployment.
@@ -351,6 +408,11 @@ service AdminService {
     option (google.api.http) = {delete: "/v1/organizations/{organization}/usergroups/{usergroup}/members/{email}"};
   }
 
+  // GetUser returns user by email
+  rpc GetUser(GetUserRequest) returns (GetUserResponse) {
+    option (google.api.http) = {get: "/v1/users"};
+  }
+
   // GetCurrentUser returns the currently authenticated user (if any)
   rpc GetCurrentUser(GetCurrentUserRequest) returns (GetCurrentUserResponse) {
     option (google.api.http) = {
@@ -363,7 +425,29 @@ service AdminService {
     option (google.api.http) = {delete: "/v1/users/{email}"};
   }
 
-  // IssueRepresentativeAuthToken returns the temporary token for given email
+  // ListUserAuthTokens lists the current user's auth tokens.
+  // You can optionally pass "current" instead of the user ID to list the current user's tokens.
+  rpc ListUserAuthTokens(ListUserAuthTokensRequest) returns (ListUserAuthTokensResponse) {
+    option (google.api.http) = {get: "/v1/users/{user_id}/tokens"};
+  }
+
+  // IssueUserAuthToken issues an access token for the current user.
+  // You can optionally pass "current" instead of the user ID to issue a token for the current user.
+  rpc IssueUserAuthToken(IssueUserAuthTokenRequest) returns (IssueUserAuthTokenResponse) {
+    option (google.api.http) = {
+      post: "/v1/users/{user_id}/tokens",
+      body: "*"
+    };
+  }
+
+  // RevokeUserAuthToken revokes a user access token.
+  // You can optionally pass "current" instead of the token ID to revoke the current token.
+  rpc RevokeUserAuthToken(RevokeUserAuthTokenRequest) returns (RevokeUserAuthTokenResponse) {
+    option (google.api.http) = {delete: "/v1/users/-/tokens/{token_id}"};
+  }
+
+  // IssueRepresentativeAuthToken returns the temporary token for given email.
+  // Deprecated: Use IssueUserAuthToken with the represent_email option instead.
   rpc IssueRepresentativeAuthToken(IssueRepresentativeAuthTokenRequest) returns (IssueRepresentativeAuthTokenResponse) {
     option (google.api.http) = {
       post: "/v1/tokens/represent",
@@ -371,7 +455,8 @@ service AdminService {
     };
   }
 
-  // RevokeCurrentAuthToken revoke the current auth token
+  // RevokeCurrentAuthToken revoke the current auth token.
+  // Deprecated: Use RevokeUserAuthToken with ID set to "current" instead.
   rpc RevokeCurrentAuthToken(RevokeCurrentAuthTokenRequest) returns (RevokeCurrentAuthTokenResponse) {
     option (google.api.http) = {delete: "/v1/tokens/current"};
   }
@@ -401,10 +486,18 @@ service AdminService {
     };
   }
 
-  // Converts a project connected to github to a rill managed project.
-  // Uploads the current project to assets.
-  rpc UploadProjectAssets(UploadProjectAssetsRequest) returns (UploadProjectAssetsResponse) {
+  // CreateManagedGitRepo creates a new rill managed git repo for the organization.
+  rpc CreateManagedGitRepo(CreateManagedGitRepoRequest) returns (CreateManagedGitRepoResponse) {
     option (google.api.http) = {
+      put: "/v1/organizations/{organization}/create-managed-git-repo",
+      body: "*"
+    };
+  }
+
+  // Converts a project connected to github to a rill managed project.
+  rpc DisconnectProjectFromGithub(DisconnectProjectFromGithubRequest) returns (DisconnectProjectFromGithubResponse) {
+    option (google.api.http) = {
+      // the path is still called `upload-assets` for backward compatibility
       post: "/v1/organizations/{organization}/projects/{project}/upload-assets",
       body: "*"
     };
@@ -433,11 +526,6 @@ service AdminService {
     option (google.api.http) = {get: "/v1/organizations/{organization}/whitelisted"};
   }
 
-  // GetUser returns user by email
-  rpc GetUser(GetUserRequest) returns (GetUserResponse) {
-    option (google.api.http) = {get: "/v1/users"};
-  }
-
   // GetUsersByEmail returns users by email
   rpc SearchUsers(SearchUsersRequest) returns (SearchUsersResponse) {
     option (google.api.http) = {get: "/v1/users/search"};
@@ -454,6 +542,7 @@ service AdminService {
   }
 
   // GetDeploymentCredentials returns runtime info and access token on behalf of a specific user, or alternatively for a raw set of JWT attributes
+  // DEPRECATED: Clients should call GetDeployment instead.
   rpc GetDeploymentCredentials(GetDeploymentCredentialsRequest) returns (GetDeploymentCredentialsResponse) {
     option (google.api.http) = {
       post: "/v1/organizations/{organization}/projects/{project}/credentials",
@@ -579,11 +668,22 @@ service AdminService {
     option (google.api.http) = {get: "/v1/organizations/{organization_name}/services"};
   }
 
+  // ListProjectMemberServices returns all the services for the project for an organization
+  rpc ListProjectMemberServices(ListProjectMemberServicesRequest) returns (ListProjectMemberServicesResponse) {
+    option (google.api.http) = {get: "/v1/organizations/{organization_name}/projects/{project_name}/services"};
+  }
+
   // CreateService creates a new service per organization
   rpc CreateService(CreateServiceRequest) returns (CreateServiceResponse) {
     option (google.api.http) = {
       post: "/v1/organizations/{organization_name}/services",
+      body: "*"
     };
+  }
+
+  // GetService returns information about a specific service
+  rpc GetService(GetServiceRequest) returns (GetServiceResponse) {
+    option (google.api.http) = {get: "/v1/organizations/{organization_name}/services/{name}"};
   }
 
   // UpdateService updates a service per organization
@@ -592,6 +692,32 @@ service AdminService {
       patch: "/v1/organizations/{organization_name}/services/{name}",
       body: "*"
     };
+  }
+
+  // SetOrganizationMemberServiceRole sets or updates the role of the service in the organization
+  rpc SetOrganizationMemberServiceRole(SetOrganizationMemberServiceRoleRequest) returns (SetOrganizationMemberServiceRoleResponse) {
+    option (google.api.http) = {
+      put: "/v1/organizations/{organization_name}/services/{name}/role",
+      body: "*"
+    };
+  }
+
+  // RemoveOrganizationMemberService removes the organization role for the service
+  rpc RemoveOrganizationMemberService(RemoveOrganizationMemberServiceRequest) returns (RemoveOrganizationMemberServiceResponse) {
+    option (google.api.http) = {delete: "/v1/organizations/{organization_name}/services/{name}/role"};
+  }
+
+  // SetProjectMemberServiceRole updates the project role for the service
+  rpc SetProjectMemberServiceRole(SetProjectMemberServiceRoleRequest) returns (SetProjectMemberServiceRoleResponse) {
+    option (google.api.http) = {
+      put: "/v1/organizations/{organization_name}/projects/{project_name}/services/{name}/role",
+      body: "*"
+    };
+  }
+
+  // RemoveProjectMemberService removes the service from the project
+  rpc RemoveProjectMemberService(RemoveProjectMemberServiceRequest) returns (RemoveProjectMemberServiceResponse) {
+    option (google.api.http) = {delete: "/v1/organizations/{organization_name}/projects/{project_name}/services/{name}"};
   }
 
   // DeleteService deletes a service per organization
@@ -604,7 +730,7 @@ service AdminService {
     option (google.api.http) = {get: "/v1/organizations/{organization_name}/services/{service_name}/tokens"};
   }
 
-  // IssueServiceAuthToken returns the temporary token for given service account
+  // IssueServiceAuthToken issues an access token for a service
   rpc IssueServiceAuthToken(IssueServiceAuthTokenRequest) returns (IssueServiceAuthTokenResponse) {
     option (google.api.http) = {
       post: "/v1/organizations/{organization_name}/services/{service_name}/tokens",
@@ -612,7 +738,7 @@ service AdminService {
     };
   }
 
-  // RevokeServiceAuthToken revoke the service auth token
+  // RevokeServiceAuthToken revoke a service's access token
   rpc RevokeServiceAuthToken(RevokeServiceAuthTokenRequest) returns (RevokeServiceAuthTokenResponse) {
     option (google.api.http) = {delete: "/v1/services/tokens/{token_id}"};
   }
@@ -890,6 +1016,7 @@ message ListOrganizationsResponse {
 
 message GetOrganizationRequest {
   string name = 1;
+  bool superuser_force_access = 2;
 }
 
 message GetOrganizationResponse {
@@ -908,6 +1035,7 @@ message GetOrganizationNameForDomainResponse {
 message CreateOrganizationRequest {
   string name = 2 [(validate.rules).string.min_len = 1];
   string description = 3;
+  string display_name = 4;
 }
 
 message CreateOrganizationResponse {
@@ -927,6 +1055,7 @@ message UpdateOrganizationRequest {
   optional string display_name = 5;
   optional string logo_asset_id = 6;
   optional string favicon_asset_id = 7;
+  optional string thumbnail_asset_id = 9;
   optional string default_project_role = 8;
   optional string billing_email = 4 [(validate.rules).string.email = true];
 }
@@ -939,6 +1068,68 @@ message ListProjectsForOrganizationRequest {
   string organization_name = 1 [(validate.rules).string.min_len = 1];
   uint32 page_size = 2 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
   string page_token = 3;
+}
+
+message ListDeploymentsRequest {
+  string organization_name = 1 [(validate.rules).string.min_len = 1];
+  string project_name = 2 [(validate.rules).string.min_len = 1];
+  string environment = 3;
+  string user_id = 4;
+}
+
+message ListDeploymentsResponse {
+  repeated Deployment deployments = 1;
+}
+
+message CreateDeploymentRequest {
+  string organization_name = 1 [(validate.rules).string.min_len = 1];
+  string project_name = 2 [(validate.rules).string.min_len = 1];
+  string environment = 3 [(validate.rules).string.min_len = 1];
+}
+
+message CreateDeploymentResponse {
+  Deployment deployment = 1;
+}
+
+message GetDeploymentRequest {
+  string deployment_id = 1;
+  uint32 access_token_ttl_seconds = 2;
+  oneof for {
+    string user_id = 3 [(validate.rules).string.min_len = 1];
+    string user_email = 4 [(validate.rules).string.email = true];
+    google.protobuf.Struct attributes = 5;
+  }
+}
+
+message GetDeploymentResponse {
+  string runtime_host = 1;
+  string instance_id = 2;
+  string access_token = 3;
+  uint32 ttl_seconds = 4;
+}
+
+message StartDeploymentRequest {
+  string deployment_id = 1;
+}
+
+message StartDeploymentResponse {
+  Deployment deployment = 1;
+}
+
+message StopDeploymentRequest {
+  string deployment_id = 1;
+}
+
+message StopDeploymentResponse {
+  string deployment_id = 1;
+}
+
+message DeleteDeploymentRequest {
+  string deployment_id = 1;
+}
+
+message DeleteDeploymentResponse {
+  string deployment_id = 1;
 }
 
 message ListProjectsForOrganizationResponse {
@@ -958,10 +1149,24 @@ message ListProjectsForOrganizationAndUserResponse {
   string next_page_token = 2;
 }
 
+message ListProjectsForFingerprintRequest {
+  string directory_name = 1;
+  string git_remote = 2;
+  string sub_path = 3;
+  uint32 page_size = 4 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
+  string page_token = 5;
+}
+
+message ListProjectsForFingerprintResponse {
+  repeated Project projects = 1;
+  string next_page_token = 2;
+}
+
 message GetProjectRequest {
   string organization_name = 1;
   string name = 2;
   uint32 access_token_ttl_seconds = 3;
+  bool superuser_force_access = 5;
   bool issue_superuser_token = 4;
 }
 
@@ -970,6 +1175,14 @@ message GetProjectResponse {
   Deployment prod_deployment = 2;
   string jwt = 3;
   ProjectPermissions project_permissions = 4;
+}
+
+message ListProjectsForUserByNameRequest {
+  string name = 1 [(validate.rules).string.min_len = 1];
+}
+
+message ListProjectsForUserByNameResponse {
+  repeated Project projects = 1;
 }
 
 message GetProjectByIDRequest {
@@ -1130,27 +1343,83 @@ message ListServicesRequest {
 }
 
 message ListServicesResponse {
-  repeated Service services = 1;
+  repeated OrganizationMemberService services = 1;
+}
+
+message ListProjectMemberServicesRequest {
+  string organization_name = 1 [(validate.rules).string.min_len = 1];
+  string project_name = 2 [(validate.rules).string.min_len = 1];
+}
+
+message ListProjectMemberServicesResponse {
+  repeated ProjectMemberService services = 1;
 }
 
 message CreateServiceRequest {
   string name = 1 [(validate.rules).string.min_len = 1];
   string organization_name = 2 [(validate.rules).string.min_len = 1];
+  string org_role_name = 3; // Optional org role to assign
+  string project_name = 4; // Optional project to assign role to
+  string project_role_name = 5; // Optional project role to assign
+  optional google.protobuf.Struct attributes = 6;
 }
 
 message CreateServiceResponse {
   Service service = 1;
 }
 
+message GetServiceRequest {
+  string name = 1 [(validate.rules).string.min_len = 1];
+  string organization_name = 2 [(validate.rules).string.min_len = 1];
+}
+
+message GetServiceResponse {
+  OrganizationMemberService service = 1;
+  repeated ProjectMemberService project_memberships = 2; // All projects that the service is a member of
+}
+
 message UpdateServiceRequest {
   string name = 1 [(validate.rules).string.min_len = 1];
   string organization_name = 2 [(validate.rules).string.min_len = 1];
   optional string new_name = 3;
+  optional google.protobuf.Struct attributes = 4;
 }
 
 message UpdateServiceResponse {
   Service service = 1;
 }
+
+message SetOrganizationMemberServiceRoleRequest {
+  string name = 1 [(validate.rules).string.min_len = 1];
+  string organization_name = 2 [(validate.rules).string.min_len = 1];
+  string role = 3 [(validate.rules).string.min_len = 1];
+}
+
+message SetOrganizationMemberServiceRoleResponse {}
+
+message RemoveOrganizationMemberServiceRequest {
+  string name = 1 [(validate.rules).string.min_len = 1];
+  string organization_name = 2 [(validate.rules).string.min_len = 1];
+}
+
+message RemoveOrganizationMemberServiceResponse {}
+
+message RemoveProjectMemberServiceRequest {
+  string name = 1 [(validate.rules).string.min_len = 1];
+  string organization_name = 2 [(validate.rules).string.min_len = 1];
+  string project_name = 3 [(validate.rules).string.min_len = 1];
+}
+
+message RemoveProjectMemberServiceResponse {}
+
+message SetProjectMemberServiceRoleRequest {
+  string name = 1 [(validate.rules).string.min_len = 1];
+  string organization_name = 2 [(validate.rules).string.min_len = 1];
+  string project_name = 3 [(validate.rules).string.min_len = 1];
+  string role = 5 [(validate.rules).string.min_len = 1];
+}
+
+message SetProjectMemberServiceRoleResponse {}
 
 message DeleteServiceRequest {
   string name = 1 [(validate.rules).string.min_len = 1];
@@ -1166,19 +1435,23 @@ message CreateProjectRequest {
   string name = 2 [(validate.rules).string.min_len = 1];
   string description = 3;
   bool public = 4;
+  // directory_name should be the most recently observed local directory name for the project.
+  // See ListProjectsForFingerprint for more context.
+  string directory_name = 16;
   string provisioner = 5;
-  string prod_olap_driver = 6;
-  string prod_olap_dsn = 7;
   int64 prod_slots = 8;
   string subpath = 12;
   string prod_branch = 9;
-  // github_url is set for projects whose project files are stored in github. This is set to a github repo url.
-  // Either github_url or archive_asset_id should be set.
-  string github_url = 10;
+  // git_remote is set for projects whose project files are stored in Git.
+  // It currently only supports Github remotes. It should be a HTTPS remote ending in .git for github.com.
+  // Either git_remote or archive_asset_id should be set.
+  string git_remote = 10;
   // archive_asset_id is set for projects whose project files are not stored in github but are managed by rill.
   string archive_asset_id = 14;
   string prod_version = 13;
   bool skip_deploy = 15;
+  // Reserved for backwards compatibility (prod_olap_driver and prod_olap_dsn)
+  reserved 6, 7;
 }
 
 message CreateProjectResponse {
@@ -1199,8 +1472,9 @@ message UpdateProjectRequest {
   string name = 2 [(validate.rules).string.min_len = 1];
   optional string description = 3;
   optional bool public = 4;
+  optional string directory_name = 15;
   optional string prod_branch = 5;
-  optional string github_url = 6;
+  optional string git_remote = 6;
   optional string subpath = 13;
   optional string archive_asset_id = 12;
   optional int64 prod_slots = 7;
@@ -1241,6 +1515,7 @@ message RedeployProjectResponse {}
 message HibernateProjectRequest {
   string organization = 1;
   string project = 2;
+  bool superuser_force_access = 3;
 }
 
 message HibernateProjectResponse {}
@@ -1298,10 +1573,12 @@ message ListOrganizationMemberUsersRequest {
   bool include_counts = 5; // Optionally include counts
   uint32 page_size = 2 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
   string page_token = 3;
+  bool superuser_force_access = 6;
 }
 
 message ListOrganizationMemberUsersResponse {
   repeated OrganizationMemberUser members = 1;
+  uint32 total_count = 3; // Total number of members in the organization
   string next_page_token = 2;
 }
 
@@ -1312,7 +1589,8 @@ message ListOrganizationInvitesRequest {
 }
 
 message ListOrganizationInvitesResponse {
-  repeated UserInvite invites = 1;
+  repeated OrganizationInvite invites = 1;
+  uint32 total_count = 3; // Total number of invites in the organization
   string next_page_token = 2;
 }
 
@@ -1344,6 +1622,7 @@ message SetOrganizationMemberUserRoleRequest {
   string organization = 1 [(validate.rules).string.min_len = 1];
   string email = 2 [(validate.rules).string.email = true];
   string role = 3 [(validate.rules).string.min_len = 1];
+  bool superuser_force_access = 4;
 }
 
 message SetOrganizationMemberUserRoleResponse {}
@@ -1469,6 +1748,7 @@ message ListProjectMemberUsersRequest {
   string role = 5; // Optionally filter by role
   uint32 page_size = 3 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
   string page_token = 4;
+  bool superuser_force_access = 6;
 }
 
 message ListProjectMemberUsersResponse {
@@ -1484,7 +1764,7 @@ message ListProjectInvitesRequest {
 }
 
 message ListProjectInvitesResponse {
-  repeated UserInvite invites = 1;
+  repeated ProjectInvite invites = 1;
   string next_page_token = 2;
 }
 
@@ -1675,21 +1955,6 @@ message RemoveUsergroupMemberUserRequest {
 
 message RemoveUsergroupMemberUserResponse {}
 
-message GetCurrentUserRequest {}
-
-message GetCurrentUserResponse {
-  User user = 1;
-  UserPreferences preferences = 2;
-}
-
-message GetUserRequest {
-  string email = 1 [(validate.rules).string.email = true];
-}
-
-message GetUserResponse {
-  User user = 1;
-}
-
 message UserPreferences {
   optional string time_zone = 1;
 }
@@ -1702,11 +1967,92 @@ message UpdateUserPreferencesResponse {
   UserPreferences preferences = 1;
 }
 
-message DeleteUserRequest {
+message GetUserRequest {
   string email = 1 [(validate.rules).string.email = true];
 }
 
+message GetUserResponse {
+  User user = 1;
+}
+
+message GetCurrentUserRequest {}
+
+message GetCurrentUserResponse {
+  User user = 1;
+  UserPreferences preferences = 2;
+}
+
+message DeleteUserRequest {
+  string email = 1 [(validate.rules).string.email = true];
+  bool superuser_force_access = 2;
+}
+
 message DeleteUserResponse {}
+
+message ListUserAuthTokensRequest {
+  // User ID to list auth tokens for. Set to "current" to list auth tokens for the current user.
+  string user_id = 1 [(validate.rules).string.min_len = 1];
+  // Page size for pagination. If not set, a default page size will be used.
+  uint32 page_size = 2 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
+  // Page token for pagination. If set, the first page of results will be returned.
+  string page_token = 3;
+  // Flag for superusers to override normal access checks.
+  bool superuser_force_access = 4;
+}
+
+message ListUserAuthTokensResponse {
+  // List of auth tokens for the user.
+  repeated UserAuthToken tokens = 1;
+  // Page token for the next page of results. If empty, there are no more pages.
+  string next_page_token = 2;
+}
+
+message IssueUserAuthTokenRequest {
+  // User ID to issue the auth token for.
+  // Set to "current" to issue an auth token for the current user.
+  string user_id = 1 [(validate.rules).string.min_len = 1];
+  // Client ID to issue the token for. 
+  string client_id = 2 [(validate.rules).string.min_len = 1];
+  // Optional display name for the auth token.
+  string display_name = 3;
+  // Optional TTL for the auth token in minutes. Set to 0 for no expiry. Defaults to no expiry.
+  int64 ttl_minutes = 4;
+  // Optional email of another user to assume the identity of.
+  // This is only allowed for superusers.
+  string represent_email = 5 [(validate.rules).string = {ignore_empty: true, email: true}];
+  // Flag for superusers to override normal access checks.
+  bool superuser_force_access = 6;
+}
+
+message IssueUserAuthTokenResponse {
+  // Newly issued auth token.
+  string token = 1;
+}
+
+message RevokeUserAuthTokenRequest {
+  // ID of the auth token to revoke.
+  // Set to "current" to revoke the current auth token.
+  string token_id = 1;
+  // Flag for superusers to override normal access checks.
+  bool superuser_force_access = 2;
+}
+
+message RevokeUserAuthTokenResponse {
+}
+
+message IssueRepresentativeAuthTokenRequest {
+  string email = 1 [(validate.rules).string.email = true];
+  int64 ttl_minutes = 2;
+}
+
+message IssueRepresentativeAuthTokenResponse {
+  string token = 1;
+}
+
+message RevokeCurrentAuthTokenRequest {}
+
+message RevokeCurrentAuthTokenResponse {
+}
 
 message ListBookmarksRequest {
   string project_id = 1;
@@ -1767,21 +2113,6 @@ message SearchUsersRequest {
 message SearchUsersResponse {
   repeated User users = 1;
   string next_page_token = 2;
-}
-
-message RevokeCurrentAuthTokenRequest {}
-
-message RevokeCurrentAuthTokenResponse {
-  string token_id = 1;
-}
-
-message IssueRepresentativeAuthTokenRequest {
-  string email = 1 [(validate.rules).string.email = true];
-  int64 ttl_minutes = 2;
-}
-
-message IssueRepresentativeAuthTokenResponse {
-  string token = 1;
 }
 
 message RevokeServiceAuthTokenRequest {
@@ -1868,7 +2199,7 @@ message RevokeMagicAuthTokenRequest {
 message RevokeMagicAuthTokenResponse {}
 
 message GetGithubRepoStatusRequest {
-  string github_url = 1;
+  string remote = 1;
 }
 
 message GetGithubRepoStatusResponse {
@@ -1897,7 +2228,7 @@ message ListGithubUserReposResponse {
     string name = 1;
     string owner = 2;
     string description = 3;
-    string url = 4;
+    string remote = 4;
     string default_branch = 5;
   }
   repeated Repo repos = 1;
@@ -1906,7 +2237,7 @@ message ListGithubUserReposResponse {
 message ConnectProjectToGithubRequest {
   string organization = 1;
   string project = 2;
-  string repo = 3;
+  string remote = 3;
   string branch = 4;
   string subpath = 5;
   bool force = 6;
@@ -1914,12 +2245,27 @@ message ConnectProjectToGithubRequest {
 
 message ConnectProjectToGithubResponse {}
 
-message UploadProjectAssetsRequest {
+message CreateManagedGitRepoRequest {
+  string organization = 1;
+  // name of the repo to create. 
+  // Note: The final name will be suffixed with a random string to ensure uniqueness.
+  string name = 2;
+}
+
+message CreateManagedGitRepoResponse {
+  string remote = 1;
+  string username = 2;
+  string password = 3;
+  string default_branch = 4;
+  google.protobuf.Timestamp password_expires_at = 5; 
+}
+
+message DisconnectProjectFromGithubRequest {
   string organization = 1;
   string project = 2;
 }
 
-message UploadProjectAssetsResponse {}
+message DisconnectProjectFromGithubResponse {}
 
 enum GithubPermission {
   GITHUB_PERMISSION_UNSPECIFIED = 0;
@@ -1930,14 +2276,17 @@ enum GithubPermission {
 message GetCloneCredentialsRequest {
   string organization = 1 [(validate.rules).string.min_len = 1];
   string project = 2 [(validate.rules).string.min_len = 1];
+  bool superuser_force_access = 3;
 }
 
 message GetCloneCredentialsResponse {
   string git_repo_url = 1;
   string git_username = 2;
   string git_password = 3;
+  google.protobuf.Timestamp git_password_expires_at = 7;
   string git_subpath = 4;
   string git_prod_branch = 5;
+  bool git_managed_repo = 8;
   // either archive_download_url or git related details will be set
   string archive_download_url = 6;
 }
@@ -1992,35 +2341,55 @@ message ListProjectWhitelistedDomainsResponse {
 }
 
 message GetRepoMetaRequest {
+  // The project ID to get repository metadata for.
   string project_id = 1;
-  string branch = 2;
 }
 
 message GetRepoMetaResponse {
-    // If the Git-related fields are set, the archive-related fields will not be set (and vice versa).
-    string git_url = 1;
-    google.protobuf.Timestamp git_url_expires_on = 2;
-    string git_subpath = 3;
-    string archive_download_url = 4;
-    string archive_id = 5;
-    google.protobuf.Timestamp archive_created_on = 6;
+  // How long the returned config is valid for. Clients should call GetRepoMeta again after this time.
+  google.protobuf.Timestamp expires_on = 2;
+  // When the returned config was last modified. This covers all fields in the response except the ephemeral credentials embedded in git_url and archive_download_url.
+  google.protobuf.Timestamp last_updated_on = 9;
+  // Git remote for cloning (and maybe pushing) a Git repository.
+  // The URL uses HTTPS with embedded username/password.
+  string git_url = 1;
+  // Optional subpath within the Git repository to use as the project root.
+  string git_subpath = 3;
+  // The branch to use for the deployment.
+  string git_branch = 7;
+  // A unique branch name generated for temporary/ephemeral use in edit mode where files may be mutated.
+  // This enables checkpointing progress across hibernations and also more easily pinning to a specific commit of the base branch to delay conflict resolution.
+  string git_edit_branch = 8;
+  // Signed URL for downloading a tarball of project files. If this is set, the git_* fields will be empty (and vice versa).
+  string archive_download_url = 4;
+  // A stable ID for the archive returned from archive_download_url.
+  string archive_id = 5;
+  // The creation time of the archive returned from archive_download_url.
+  google.protobuf.Timestamp archive_created_on = 6;
 }
 
 message PullVirtualRepoRequest {
+  // The project ID to pull virtual files for.
   string project_id = 1;
-  string branch = 2;
+  // The environment to pull virtual files for.
+  // It is optional. If the call is made with a deployment access token, it defaults to the environment of the deployment. Otherwise, it defaults to "prod".
+  string environment = 5;
+  // Page size for pagination.
   uint32 page_size = 3 [(validate.rules).uint32 = {ignore_empty: true, lte: 100}];
+  // Page token for pagination.
   string page_token = 4;
+  reserved 2;
 }
 
 message PullVirtualRepoResponse {
+  // List of virtual files ordered by update time, most recent last.
   repeated VirtualFile files = 1;
+  // Next page token for pagination.
   string next_page_token = 2;
 }
 
 message GetReportMetaRequest {
   string project_id = 1;
-  string branch = 2;
   string report = 3;
   string owner_id = 5;
   google.protobuf.Timestamp execution_time = 6;
@@ -2028,7 +2397,9 @@ message GetReportMetaRequest {
   bool anon_recipients = 8;
   repeated ResourceName resources = 9;
   string web_open_mode = 10;
-  reserved 4;
+  string where_filter_json = 11;
+  repeated string accessible_fields = 12;
+  reserved 2, 4;
 }
 
 message GetReportMetaResponse {
@@ -2044,13 +2415,13 @@ message GetReportMetaResponse {
 
 message GetAlertMetaRequest {
   string project_id = 1;
-  string branch = 2;
   string alert = 3;
   map<string, string> annotations = 4;
   oneof query_for {
     string query_for_user_id = 5;
     string query_for_user_email = 6;
   }
+  reserved 2;
 }
 
 message GetAlertMetaResponse {
@@ -2175,6 +2546,7 @@ message GetAlertYAMLResponse {
 
 message GetBillingSubscriptionRequest {
   string organization = 1 [(validate.rules).string.min_len = 1];
+  bool superuser_force_access = 2;
 }
 
 message GetBillingSubscriptionResponse {
@@ -2196,6 +2568,7 @@ message UpdateBillingSubscriptionResponse {
 
 message CancelBillingSubscriptionRequest {
   string organization = 1 [(validate.rules).string.min_len = 1];
+  bool superuser_force_access = 2;
 }
 
 message CancelBillingSubscriptionResponse {}
@@ -2214,6 +2587,7 @@ message RenewBillingSubscriptionResponse {
 message GetPaymentsPortalURLRequest {
   string organization = 1 [(validate.rules).string.min_len = 1];
   string return_url = 2 [(validate.rules).string.min_len = 1];
+  bool superuser_force_access = 3;
 }
 
 message GetPaymentsPortalURLResponse {
@@ -2251,6 +2625,7 @@ message TelemetryResponse {}
 message RequestProjectAccessRequest {
   string organization = 1;
   string project = 2;
+  string role = 3;
 }
 
 message RequestProjectAccessResponse {}
@@ -2278,6 +2653,7 @@ message DenyProjectAccessResponse {}
 
 message ListOrganizationBillingIssuesRequest {
   string organization = 1;
+  bool superuser_force_access = 2;
 }
 
 message ListOrganizationBillingIssuesResponse {
@@ -2299,8 +2675,35 @@ message Service {
   string name = 2;
   string org_id = 3;
   string org_name = 4;
+  google.protobuf.Struct attributes = 8;
   google.protobuf.Timestamp created_on = 5;
   google.protobuf.Timestamp updated_on = 6;
+}
+
+message OrganizationMemberService {
+  string id = 1;
+  string name = 2;
+  string org_id = 3;
+  string org_name = 4;
+  string role_name = 5;
+  bool has_project_roles = 7; // True if the user has a project role in any project in the organization.
+  google.protobuf.Struct attributes = 8;
+  google.protobuf.Timestamp created_on = 9;
+  google.protobuf.Timestamp updated_on = 10;
+}
+
+message ProjectMemberService {
+  string id = 1;
+  string name = 2;
+  string org_id = 3;
+  string org_name = 4;
+  string org_role_name = 5;
+  string project_id = 6;
+  string project_name = 7;
+  string project_role_name = 8;
+  google.protobuf.Struct attributes = 9;
+  google.protobuf.Timestamp created_on = 10;
+  google.protobuf.Timestamp updated_on = 11;
 }
 
 message Organization {
@@ -2310,6 +2713,7 @@ message Organization {
   string description = 3;
   string logo_url = 12;
   string favicon_url = 13;
+  string thumbnail_url = 17;
   string custom_domain = 10;
   string default_project_role_id = 16;
   OrganizationQuotas quotas = 4;
@@ -2354,21 +2758,25 @@ message Project {
   string description = 5;
   bool public = 6;
   string created_by_user_id = 22;
+  string directory_name = 26;
   string provisioner = 7;
-  string github_url = 8;
+  string git_remote = 8;
+  // managed_git_id is set if the project is connected to a rill-managed git repo.
+  string managed_git_id = 24;
   string subpath = 17;
   string prod_branch = 9;
   string archive_asset_id = 23;
-  string prod_olap_driver = 10;
-  string prod_olap_dsn = 11;
   int64 prod_slots = 12;
   string prod_deployment_id = 13;
+  int64 dev_slots = 25;
   string frontend_url = 16; // Note: Does NOT incorporate the parent org's custom domain.
   int64 prod_ttl_seconds = 18;
   map<string, string> annotations = 20;
   string prod_version = 21;
   google.protobuf.Timestamp created_on = 14;
   google.protobuf.Timestamp updated_on = 15;
+  // Reserved for backwards compatibility (prod_olap_driver and prod_olap_dsn)
+  reserved 10, 11;
 }
 
 enum DeploymentStatus {
@@ -2376,11 +2784,14 @@ enum DeploymentStatus {
   DEPLOYMENT_STATUS_PENDING = 1;
   DEPLOYMENT_STATUS_OK = 2;
   DEPLOYMENT_STATUS_ERROR = 4;
+  DEPLOYMENT_STATUS_STOPPED = 5;
 }
 
 message Deployment {
   string id = 1;
   string project_id = 2;
+  string owner_user_id = 12;
+  string environment = 11;
   string branch = 4;
   string runtime_host = 5;
   string runtime_instance_id = 6;
@@ -2467,6 +2878,7 @@ message ProjectMemberUser {
   string user_name = 2;
   string user_photo_url = 7;
   string role_name = 4;
+  string org_role_name = 8;
   google.protobuf.Timestamp created_on = 5;
   google.protobuf.Timestamp updated_on = 6;
 }
@@ -2480,9 +2892,16 @@ message UsergroupMemberUser {
   google.protobuf.Timestamp updated_on = 6;
 }
 
-message UserInvite {
+message OrganizationInvite {
   string email = 1;
-  string role = 2;
+  string role_name = 2;
+  string invited_by = 3;
+}
+
+message ProjectInvite {
+  string email = 1;
+  string role_name = 2;
+  string org_role_name = 4;
   string invited_by = 3;
 }
 
@@ -2508,8 +2927,21 @@ message Bookmark {
 
 message ServiceToken {
   string id = 1;
+  string prefix = 4;
   google.protobuf.Timestamp created_on = 2;
   google.protobuf.Timestamp expires_on = 3;
+}
+
+message UserAuthToken {
+  string id = 1;
+  string display_name = 2;
+  string auth_client_id = 3;
+  string auth_client_display_name = 4;
+  string representing_user_id = 5;
+  string prefix = 9;
+  google.protobuf.Timestamp created_on = 6;
+  google.protobuf.Timestamp expires_on = 7;
+  google.protobuf.Timestamp used_on = 8;
 }
 
 message MagicAuthToken {
@@ -2548,6 +2980,7 @@ message ReportOptions {
   string query_args_json = 4;
   uint64 export_limit = 5;
   rill.runtime.v1.ExportFormat export_format = 6;
+  bool export_include_header = 20;
   repeated string email_recipients = 8;
   repeated string slack_users = 10;
   repeated string slack_channels = 11;
@@ -2568,6 +3001,8 @@ message ReportOptions {
 
 message AlertOptions {
   string display_name = 1;
+  string refresh_cron = 16;
+  string refresh_time_zone = 17;
   string interval_duration = 2;
   string resolver = 13;
   google.protobuf.Struct resolver_properties = 14;

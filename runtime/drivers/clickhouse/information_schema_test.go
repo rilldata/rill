@@ -38,13 +38,13 @@ func TestInformationSchema(t *testing.T) {
 	port, err := clickHouseContainer.MappedPort(ctx, "9000/tcp")
 	require.NoError(t, err)
 
-	conn, err := drivers.Open("clickhouse", "default", map[string]any{"dsn": fmt.Sprintf("clickhouse://clickhouse:clickhouse@%v:%v", host, port.Port())}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	conn, err := drivers.Open("clickhouse", "default", map[string]any{"dsn": fmt.Sprintf("clickhouse://clickhouse:clickhouse@%v:%v", host, port.Port()), "mode": "readwrite"}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	prepareConn(t, conn)
 	t.Run("testInformationSchemaAll", func(t *testing.T) { testInformationSchemaAll(t, conn) })
 	t.Run("testInformationSchemaAllLike", func(t *testing.T) { testInformationSchemaAllLike(t, conn) })
 	t.Run("testInformationSchemaSystemAllLike", func(t *testing.T) {
-		conn, err := drivers.Open("clickhouse", "default", map[string]any{"dsn": fmt.Sprintf("clickhouse://clickhouse:clickhouse@%v:%v/system", host, port.Port())}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+		conn, err := drivers.Open("clickhouse", "default", map[string]any{"dsn": fmt.Sprintf("clickhouse://clickhouse:clickhouse@%v:%v/system", host, port.Port()), "mode": "readwrite"}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 		require.NoError(t, err)
 		testInformationSchemaSystemAllLike(t, conn)
 	})

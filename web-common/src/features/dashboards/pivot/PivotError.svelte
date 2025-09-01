@@ -30,7 +30,7 @@
   {#each uniqueErrors as error}
     <div class="flex text-base gap-x-2">
       <span class="text-red-600 font-semibold">{error.statusCode} :</span>
-      <span class="text-gray-700">{error.message}</span>
+      <span class="text-gray-800">{error.message}</span>
     </div>
   {/each}
 </div>

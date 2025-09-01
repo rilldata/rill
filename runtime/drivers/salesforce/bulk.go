@@ -33,10 +33,11 @@ type bulkJob struct {
 	batchID    string
 	logger     *zap.Logger
 	// pkChunking automatically splits large data sets into smaller batches of pkChunkSize, which we can query concurrently later on
-	pkChunkSize  int
-	results      []batchResult
-	nextResult   int
-	tempFilePath string
+	pkChunkSize         int
+	results             []batchResult
+	nextResult          int
+	tempFilePaths       []string
+	keepFilesUntilClose bool
 }
 
 func (j *bulkJob) RecordReader(in io.Reader) record_reader.RecordReader {

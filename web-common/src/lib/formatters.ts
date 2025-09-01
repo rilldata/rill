@@ -167,11 +167,9 @@ export function formatDataType(value: unknown, type: string) {
   } else if (isStruct(type)) {
     return JSON.stringify(value).replace(/"/g, "'");
   } else if (isList(type)) {
-    return (
-      `[${(value as Array<unknown>)
-        ?.map((entry) => (+entry ? +entry : `'${entry}'`))
-        ?.join(", ")}]` || `null`
-    );
+    return `[${(value as Array<unknown>)
+      ?.map((entry) => (+entry ? +entry : `'${entry}'`))
+      ?.join(", ")}]`;
   } else if (isNested(type)) {
     return JSON.stringify(value).replace(/"/g, "'");
   }
@@ -221,11 +219,9 @@ export function formatDataTypeAsDuckDbQueryString(
   } else if (isStruct(type)) {
     return JSON.stringify(value).replace(/"/g, "'");
   } else if (isList(type)) {
-    return (
-      `[${(value as Array<unknown>)
-        ?.map((entry) => (+entry ? +entry : `'${entry}'`))
-        ?.join(", ")}]` || `null`
-    );
+    return `[${(value as Array<unknown>)
+      ?.map((entry) => (+entry ? +entry : `'${entry}'`))
+      ?.join(", ")}]`;
   } else if (isNested(type)) {
     return JSON.stringify(value).replace(/"/g, "'");
   }

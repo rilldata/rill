@@ -59,12 +59,14 @@ func (c *Connection) WithConnection(ctx context.Context, priority int, fn driver
 }
 
 func (c *Connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
-	ctx = contextWithQueryID(ctx)
 	// Log query if enabled (usually disabled)
 	if c.config.LogQueries {
-		c.logger.Info("clickhouse query", zap.String("sql", stmt.Query), zap.Any("args", stmt.Args), observability.ZapCtx(ctx))
+		c.logger.Info("clickhouse query", zap.String("sql", c.Dialect().SanitizeQueryForLogging(stmt.Query)), zap.Any("args", stmt.Args), observability.ZapCtx(ctx))
 	}
 
+	// We can not directly append settings to the query as in Execute method because some queries like CREATE TABLE will not support it.
+	// Instead, we set the settings in the context.
+	// TODO: Fix query_settings_override not honoured here.
 	settings := map[string]any{
 		"cast_keep_nullable":        1,
 		"insert_distributed_sync":   1,
@@ -72,6 +74,7 @@ func (c *Connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 		"session_timezone":          "UTC",
 		"join_use_nulls":            1,
 	}
+	ctx = contextWithQueryID(ctx)
 	ctx = clickhouse.Context(ctx, clickhouse.WithSettings(settings))
 
 	// We use the meta conn for dry run queries
@@ -86,31 +89,29 @@ func (c *Connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 		return err
 	}
 
-	conn, release, err := c.acquireOLAPConn(ctx, stmt.Priority)
+	// Use write connection for Exec operations
+	conn, release, err := c.acquireWriteConn(ctx)
 	if err != nil {
 		return err
 	}
+	defer func() { _ = release() }()
 
-	// TODO: should we use timeout to acquire connection as well ?
 	var cancelFunc context.CancelFunc
 	if stmt.ExecutionTimeout != 0 {
 		ctx, cancelFunc = context.WithTimeout(ctx, stmt.ExecutionTimeout)
+		defer cancelFunc()
 	}
-	defer func() {
-		if cancelFunc != nil {
-			cancelFunc()
-		}
-		_ = release()
-	}()
+
 	_, err = conn.ExecContext(ctx, stmt.Query, stmt.Args...)
 	return err
 }
 
 func (c *Connection) Query(ctx context.Context, stmt *drivers.Statement) (res *drivers.Result, outErr error) {
 	ctx = contextWithQueryID(ctx)
+
 	// Log query if enabled (usually disabled)
 	if c.config.LogQueries {
-		c.logger.Info("clickhouse query", zap.String("sql", stmt.Query), zap.Any("args", stmt.Args))
+		c.logger.Info("clickhouse query", zap.String("sql", c.Dialect().SanitizeQueryForLogging(stmt.Query)), zap.Any("args", stmt.Args))
 	}
 
 	// We use the meta conn for dry run queries
@@ -125,8 +126,8 @@ func (c *Connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 		return nil, err
 	}
 
-	if c.config.SettingsOverride != "" {
-		stmt.Query += "\n SETTINGS " + c.config.SettingsOverride
+	if c.config.QuerySettingsOverride != "" {
+		stmt.Query += "\n SETTINGS " + c.config.QuerySettingsOverride
 	} else {
 		stmt.Query += "\n SETTINGS cast_keep_nullable = 1, join_use_nulls = 1, session_timezone = 'UTC', prefer_global_in_and_join = 1, insert_distributed_sync = 1"
 	}
@@ -210,6 +211,57 @@ func (c *Connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 	return res, nil
 }
 
+func (c *Connection) QuerySchema(ctx context.Context, query string, args []any) (*runtimev1.StructType, error) {
+	// ClickHouse does not return schema with LIMIT 0, so we need to wrap query inside DESCRIBE to explicitly get the schema. describe_compact_output returns only name and type.
+	query = fmt.Sprintf("DESCRIBE (%s) SETTINGS describe_compact_output=1", query)
+
+	if c.config.LogQueries {
+		c.logger.Info("clickhouse query", zap.String("sql", c.Dialect().SanitizeQueryForLogging(query)), zap.Any("args", args))
+	}
+
+	conn, release, err := c.acquireOLAPConn(ctx, 0)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = release() }()
+
+	ctx, cancelFunc := context.WithTimeout(ctx, drivers.DefaultQuerySchemaTimeout)
+	defer cancelFunc()
+
+	rows, err := conn.QueryxContext(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	schema := &runtimev1.StructType{}
+	var name, cType string
+	for rows.Next() {
+		if err = rows.Scan(&name, &cType); err != nil {
+			return nil, fmt.Errorf("failed to scan schema: %w", err)
+		}
+		// Convert ClickHouse data type to runtimev1.StructType_Field_Type
+		t, err := databaseTypeToPB(cType, false)
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert clickHouse type '%s': %w", cType, err)
+		}
+		schema.Fields = append(schema.Fields, &runtimev1.StructType_Field{
+			Name: name,
+			Type: t,
+		})
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error scanning schema: %w", err)
+	}
+
+	return schema, nil
+}
+
+func (c *Connection) InformationSchema() drivers.OLAPInformationSchema {
+	return c
+}
+
 // acquireMetaConn gets a connection from the pool for "meta" queries like information schema (i.e. fast queries).
 // It returns a function that puts the connection back in the pool (if applicable).
 func (c *Connection) acquireMetaConn(ctx context.Context) (*sqlx.Conn, func() error, error) {
@@ -274,9 +326,24 @@ func (c *Connection) acquireOLAPConn(ctx context.Context, priority int) (*sqlx.C
 	return conn, release, nil
 }
 
-// acquireConn returns a DuckDB connection. It should only be used internally in acquireMetaConn and acquireOLAPConn.
+// acquireConn returns a ClickHouse connection. It should only be used internally in acquireMetaConn and acquireOLAPConn.
 func (c *Connection) acquireConn(ctx context.Context) (*sqlx.Conn, func() error, error) {
-	conn, err := c.db.Connx(ctx)
+	conn, err := c.readDB.Connx(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	c.used()
+	release := func() error {
+		c.used()
+		return conn.Close()
+	}
+	return conn, release, nil
+}
+
+// acquireWriteConn returns a ClickHouse write connection for write operations.
+func (c *Connection) acquireWriteConn(ctx context.Context) (*sqlx.Conn, func() error, error) {
+	conn, err := c.writeDB.Connx(ctx)
 	if err != nil {
 		return nil, nil, err
 	}

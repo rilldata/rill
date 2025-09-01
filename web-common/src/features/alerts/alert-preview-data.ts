@@ -10,12 +10,21 @@ import {
   ComparisonDeltaRelativeSuffix,
   ComparisonPercentOfTotal,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
-import { useMetricsViewValidSpec } from "@rilldata/web-common/features/dashboards/selectors";
+import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors.ts";
+import type {
+  Filters,
+  FiltersState,
+} from "@rilldata/web-common/features/dashboards/stores/Filters.ts";
+import type {
+  TimeControls,
+  TimeControlState,
+} from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
 import {
   createQueryServiceMetricsViewAggregation,
   queryServiceMetricsViewAggregation,
   type StructTypeField,
   TypeCode,
+  type V1ExploreSpec,
   type V1MetricsViewAggregationRequest,
   type V1MetricsViewAggregationResponseDataItem,
   type V1MetricsViewSpec,
@@ -36,21 +45,30 @@ export type AlertPreviewResponse = {
 export function getAlertPreviewData(
   queryClient: QueryClient,
   formValues: AlertFormValues,
+  filters: Filters,
+  timeControls: TimeControls,
 ): CreateQueryResult<AlertPreviewResponse> {
   return derived(
     [
-      useMetricsViewValidSpec(
-        get(runtime).instanceId,
-        formValues.metricsViewName,
-      ),
+      useExploreValidSpec(get(runtime).instanceId, formValues.exploreName),
+      filters.getStore(),
+      timeControls.getStore(),
     ],
-    ([metricsViewResp], set) =>
+    ([validExploreSpec, filtersState, timeControlsState], set) =>
       createQueryServiceMetricsViewAggregation(
         get(runtime).instanceId,
         formValues.metricsViewName,
-        getAlertPreviewQueryRequest(formValues),
+        getAlertPreviewQueryRequest(
+          formValues,
+          filtersState,
+          timeControlsState,
+          validExploreSpec.data?.explore ?? {},
+        ),
         {
-          query: getAlertPreviewQueryOptions(formValues, metricsViewResp.data),
+          query: getAlertPreviewQueryOptions(
+            formValues,
+            validExploreSpec.data?.metricsView,
+          ),
         },
         queryClient,
       ).subscribe(set),
@@ -59,14 +77,25 @@ export function getAlertPreviewData(
 
 function getAlertPreviewQueryRequest(
   formValues: AlertFormValues,
+  filtersArgs: FiltersState,
+  timeControlArgs: TimeControlState,
+  exploreSpec: V1ExploreSpec,
 ): V1MetricsViewAggregationRequest {
-  const req = getAlertQueryArgsFromFormValues(formValues);
+  const req = getAlertQueryArgsFromFormValues(
+    formValues,
+    filtersArgs,
+    timeControlArgs,
+    exploreSpec,
+  );
   req.limit = "50"; // arbitrary limit to make sure we do not pull too much of data
-  if (req.timeRange) {
-    req.timeRange.end = formValues.timeRange.end;
+  if (!timeControlArgs.selectedTimeRange?.end) return req;
+
+  if (req.timeRange && !req.timeRange.expression) {
+    req.timeRange.end = timeControlArgs.selectedTimeRange.end.toISOString();
   }
   if (req.comparisonTimeRange) {
-    req.comparisonTimeRange.end = formValues.timeRange?.end;
+    req.comparisonTimeRange.end =
+      timeControlArgs.selectedTimeRange.end.toISOString();
   }
   return req;
 }
@@ -82,11 +111,7 @@ function getAlertPreviewQueryOptions(
   >
 > {
   return {
-    enabled:
-      !!formValues.measure &&
-      !!metricsViewSpec &&
-      (!formValues.timeRange || !!formValues.timeRange.end) &&
-      (!formValues.comparisonTimeRange || !!formValues.comparisonTimeRange.end),
+    enabled: !!formValues.measure && !!metricsViewSpec,
     select: (resp) => {
       return {
         rows: resp.data as V1MetricsViewAggregationResponseDataItem[],

@@ -3,6 +3,7 @@ package runtime
 import (
 	"context"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"os"
 	"time"
@@ -37,7 +38,9 @@ import (
 	_ "github.com/rilldata/rill/runtime/drivers/file"
 	_ "github.com/rilldata/rill/runtime/drivers/gcs"
 	_ "github.com/rilldata/rill/runtime/drivers/https"
+	_ "github.com/rilldata/rill/runtime/drivers/mock/ai"
 	_ "github.com/rilldata/rill/runtime/drivers/mysql"
+	_ "github.com/rilldata/rill/runtime/drivers/openai"
 	_ "github.com/rilldata/rill/runtime/drivers/pinot"
 	_ "github.com/rilldata/rill/runtime/drivers/postgres"
 	_ "github.com/rilldata/rill/runtime/drivers/redshift"
@@ -61,7 +64,7 @@ type Config struct {
 	TracesExporter          observability.Exporter `default:"" split_words:"true"`
 	LogLevel                zapcore.Level          `default:"info" split_words:"true"`
 	HTTPPort                int                    `default:"8080" split_words:"true"`
-	GRPCPort                int                    `default:"9090" split_words:"true"`
+	GRPCPort                int                    `default:"8080" split_words:"true"`
 	DebugPort               int                    `default:"6060" split_words:"true"`
 	AllowedOrigins          []string               `default:"*" split_words:"true"`
 	SessionKeyPairs         []string               `split_words:"true"`
@@ -234,6 +237,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 						Config: map[string]string{"dsn": conf.MetastoreURL},
 					},
 				},
+				Version: ch.Version,
 			}
 			rt, err := runtime.New(ctx, opts, logger, storage, activityClient, emailClient)
 			if err != nil {
@@ -270,13 +274,12 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			// Run server
 			group, cctx := errgroup.WithContext(ctx)
-			group.Go(func() error { return s.ServeGRPC(cctx) })
-			group.Go(func() error { return s.ServeHTTP(cctx, nil) })
+			group.Go(func() error { return s.ServeHTTP(cctx, nil, false) })
 			if conf.DebugPort != 0 {
 				group.Go(func() error { return debugserver.ServeHTTP(cctx, conf.DebugPort) })
 			}
 			err = group.Wait()
-			if err != nil {
+			if err != nil && !errors.Is(err, context.Canceled) {
 				logger.Error("server crashed", zap.Error(err))
 				return
 			}

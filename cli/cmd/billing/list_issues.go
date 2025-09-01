@@ -7,6 +7,8 @@ import (
 )
 
 func ListIssuesCmd(ch *cmdutil.Helper) *cobra.Command {
+	var force bool
+
 	listCmd := &cobra.Command{
 		Use:   "list-issues",
 		Short: "List billing issues for an organization",
@@ -18,7 +20,8 @@ func ListIssuesCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			resp, err := client.ListOrganizationBillingIssues(cmd.Context(), &adminv1.ListOrganizationBillingIssuesRequest{
-				Organization: ch.Org,
+				Organization:         ch.Org,
+				SuperuserForceAccess: force,
 			})
 			if err != nil {
 				return err
@@ -33,6 +36,9 @@ func ListIssuesCmd(ch *cmdutil.Helper) *cobra.Command {
 			return nil
 		},
 	}
+
+	listCmd.Flags().BoolVar(&force, "force", false, "Allows superusers to bypass certain checks")
+	_ = listCmd.Flags().MarkHidden("force")
 
 	listCmd.Flags().StringVar(&ch.Org, "org", ch.Org, "Organization Name")
 	return listCmd

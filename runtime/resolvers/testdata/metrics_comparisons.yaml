@@ -5,6 +5,7 @@ project_files:
   clickhouse_data.yaml:
     type: model
     connector: clickhouse
+    output: clickhouse
     sql: |
       select parseDateTimeBestEffort('2024-01-01T00:00:00Z') as time, 'DK' as country, 1 as val union all
       select parseDateTimeBestEffort('2024-01-02T00:00:00Z') as time, 'US' as country, 2 as val union all
@@ -234,9 +235,9 @@ tests:
             comparison_value:
               measure: sum
       time_range:
-        expression: '-2D,latest'
+        expression: '3D as of watermark/D+1D'
       comparison_time_range:
-        expression: '-2D,latest @ -2D'
+        expression: '3D as of -3D as of watermark/D+1D'
       sort:
         - name: sum
     result:
@@ -259,9 +260,9 @@ tests:
             comparison_value:
               measure: sum
       time_range:
-        expression: '-2D,latest'
+        expression: '3D as of watermark/D+1D'
       comparison_time_range:
-        expression: '-2D,latest @ -2D'
+        expression: '3D as of -3D as of watermark/D+1D'
       sort:
         - name: sum
     result:

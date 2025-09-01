@@ -6,12 +6,14 @@ import (
 	"fmt"
 
 	"cloud.google.com/go/storage"
-	"github.com/rilldata/rill/admin/ai"
+	lru "github.com/hashicorp/golang-lru"
 	"github.com/rilldata/rill/admin/billing"
 	"github.com/rilldata/rill/admin/billing/payment"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/jobs"
 	"github.com/rilldata/rill/admin/provisioner"
+	"github.com/rilldata/rill/cli/pkg/version"
+	"github.com/rilldata/rill/runtime/pkg/ai"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"go.uber.org/zap"
@@ -26,8 +28,7 @@ type Options struct {
 	ProvisionerSetJSON        string
 	ProvisionerMaxConcurrency int
 	DefaultProvisioner        string
-	VersionNumber             string
-	VersionCommit             string
+	Version                   version.Version
 	MetricsProjectOrg         string
 	MetricsProjectName        string
 	AutoscalerCron            string
@@ -48,8 +49,8 @@ type Service struct {
 	Logger                    *zap.Logger
 	opts                      *Options
 	issuer                    *auth.Issuer
-	VersionNumber             string
-	VersionCommit             string
+	authCache                 *lru.Cache
+	Version                   version.Version
 	MetricsProjectID          string
 	AutoscalerCron            string
 	ScaleDownConstraint       int
@@ -113,6 +114,12 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Is
 		}
 	}
 
+	// Create the auth token cache. See auth_token.go for details.
+	authCache, err := lru.New(_authCacheSize)
+	if err != nil {
+		return nil, fmt.Errorf("error creating auth token cache: %w", err)
+	}
+
 	return &Service{
 		DB:                        db,
 		URLs:                      urls,
@@ -126,8 +133,8 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Is
 		Logger:                    logger,
 		opts:                      opts,
 		issuer:                    issuer,
-		VersionNumber:             opts.VersionNumber,
-		VersionCommit:             opts.VersionCommit,
+		authCache:                 authCache,
+		Version:                   opts.Version,
 		MetricsProjectID:          metricsProjectID,
 		AutoscalerCron:            opts.AutoscalerCron,
 		ScaleDownConstraint:       opts.ScaleDownConstraint,

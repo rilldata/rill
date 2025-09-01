@@ -62,7 +62,7 @@ func (s *Server) UnpackExample(ctx context.Context, req *runtimev1.UnpackExample
 	existingPaths := make(map[string]bool)
 	if !req.Force {
 		// we don't need to explicitly unpack directories since repo.Put will take care of creating folders
-		files, err := repo.ListRecursive(ctx, "**", true)
+		files, err := repo.ListGlob(ctx, "**", true)
 		if err != nil {
 			return nil, err
 		}
@@ -115,6 +115,7 @@ func (s *Server) UnpackEmpty(ctx context.Context, req *runtimev1.UnpackEmptyRequ
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
 		attribute.String("args.display_name", req.DisplayName),
+		attribute.String("args.olap", req.Olap),
 		attribute.Bool("args.force", req.Force),
 	)
 
@@ -135,7 +136,7 @@ func (s *Server) UnpackEmpty(ctx context.Context, req *runtimev1.UnpackEmptyRequ
 	}
 
 	// Init empty project
-	err = parser.InitEmpty(ctx, repo, req.InstanceId, req.DisplayName)
+	err = parser.InitEmpty(ctx, repo, req.InstanceId, req.DisplayName, req.Olap)
 	if err != nil {
 		return nil, err
 	}

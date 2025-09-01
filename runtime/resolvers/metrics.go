@@ -21,13 +21,13 @@ func init() {
 }
 
 type metricsResolver struct {
-	runtime        *runtime.Runtime
-	instanceID     string
-	executor       *metricsview.Executor
-	query          *metricsview.Query
-	args           *metricsResolverArgs
-	claims         *runtime.SecurityClaims
-	metricsHasTime bool
+	runtime    *runtime.Runtime
+	instanceID string
+	mv         *runtimev1.MetricsViewSpec
+	executor   *metricsview.Executor
+	query      *metricsview.Query
+	args       *metricsResolverArgs
+	claims     *runtime.SecurityClaims
 }
 
 type metricsResolverArgs struct {
@@ -81,13 +81,13 @@ func newMetrics(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Res
 	}
 
 	return &metricsResolver{
-		runtime:        opts.Runtime,
-		instanceID:     opts.InstanceID,
-		executor:       executor,
-		query:          qry,
-		args:           args,
-		claims:         opts.Claims,
-		metricsHasTime: mv.TimeDimension != "",
+		runtime:    opts.Runtime,
+		instanceID: opts.InstanceID,
+		mv:         mv,
+		executor:   executor,
+		query:      qry,
+		args:       args,
+		claims:     opts.Claims,
 	}, nil
 }
 
@@ -126,8 +126,12 @@ func (r *metricsResolver) Validate(ctx context.Context) error {
 }
 
 func (r *metricsResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverResult, error) {
-	if r.metricsHasTime {
-		tsRes, err := resolveTimestampResult(ctx, r.runtime, r.instanceID, r.query.MetricsView, r.claims, r.args.Priority)
+	if r.mv.TimeDimension != "" || (r.query.TimeRange != nil && r.query.TimeRange.TimeDimension != "") {
+		timeDim := ""
+		if r.query.TimeRange != nil && r.query.TimeRange.TimeDimension != "" {
+			timeDim = r.query.TimeRange.TimeDimension
+		}
+		tsRes, err := resolveTimestampResult(ctx, r.runtime, r.instanceID, r.query.MetricsView, timeDim, r.claims, r.args.Priority)
 		if err != nil {
 			return nil, err
 		}
@@ -138,13 +142,66 @@ func (r *metricsResolver) ResolveInteractive(ctx context.Context) (runtime.Resol
 		}
 	}
 
+	meta := map[string]any{}
+	meta["fields"] = fieldsFromQuery(r.mv, r.query)
+
 	res, err := r.executor.Query(ctx, r.query, r.args.ExecutionTime)
 	if err != nil {
 		return nil, err
 	}
-	return runtime.NewDriverResolverResult(res), nil
+
+	return runtime.NewDriverResolverResult(res, meta), nil
 }
 
 func (r *metricsResolver) ResolveExport(ctx context.Context, w io.Writer, opts *runtime.ResolverExportOptions) error {
 	return errors.New("not implemented")
+}
+
+// fieldsFromQuery returns metadata for only those dimensions and measures present in the query, preserving query order.
+func fieldsFromQuery(spec *runtimev1.MetricsViewSpec, q *metricsview.Query) []map[string]any {
+	if q == nil || spec == nil {
+		return nil
+	}
+
+	dimDetails := make(map[string]*runtimev1.MetricsViewSpec_Dimension, len(spec.Dimensions))
+	for _, d := range spec.Dimensions {
+		dimDetails[d.Name] = d
+	}
+	measDetails := make(map[string]*runtimev1.MetricsViewSpec_Measure, len(spec.Measures))
+	for _, m := range spec.Measures {
+		measDetails[m.Name] = m
+	}
+
+	meta := make([]map[string]any, 0, len(q.Dimensions)+len(q.Measures))
+
+	// Add dimensions in query order
+	for _, dim := range q.Dimensions {
+		if d, ok := dimDetails[dim.Name]; ok {
+			meta = append(meta, map[string]any{
+				"type":         "dimension",
+				"name":         d.Name,
+				"display_name": d.DisplayName,
+				"description":  d.Description,
+			})
+		}
+	}
+
+	// Add measures in query order
+	for _, m := range q.Measures {
+		if meas, ok := measDetails[m.Name]; ok {
+			meta = append(meta, map[string]any{
+				"type":                   "measure",
+				"name":                   meas.Name,
+				"display_name":           meas.DisplayName,
+				"description":            meas.Description,
+				"format_preset":          meas.FormatPreset,
+				"format_d3":              meas.FormatD3,
+				"format_d3_locale":       meas.FormatD3Locale.AsMap(),
+				"valid_percent_of_total": meas.ValidPercentOfTotal,
+				"treat_nulls_as":         meas.TreatNullsAs,
+			})
+		}
+	}
+
+	return meta
 }

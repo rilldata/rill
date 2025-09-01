@@ -4,7 +4,9 @@
   import Cross2 from "svelte-radix/Cross2.svelte";
   import * as AlertDialog from "web-common/src/components/alert-dialog/index.js";
 
-  type $$Props = AlertDialogPrimitive.ContentProps;
+  type $$Props = AlertDialogPrimitive.ContentProps & {
+    noCancel?: boolean;
+  };
 
   let className: $$Props["class"] = undefined;
   export let transition: $$Props["transition"] = flyAndScale;

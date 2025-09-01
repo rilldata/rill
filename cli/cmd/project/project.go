@@ -29,13 +29,15 @@ func ProjectCmd(ch *cmdutil.Helper) *cobra.Command {
 	projectCmd.AddCommand(DescribeCmd(ch))
 	projectCmd.AddCommand(RefreshCmd(ch))
 	projectCmd.AddCommand(JwtCmd(ch))
+	projectCmd.AddCommand(CloneCmd(ch))
 	projectCmd.AddCommand(GitPushCmd(ch))
 	projectCmd.AddCommand(DeployCmd(ch))
+	projectCmd.AddCommand(TablesCmd(ch))
 
 	return projectCmd
 }
 
-func projectNames(ctx context.Context, ch *cmdutil.Helper) ([]string, error) {
+func ProjectNames(ctx context.Context, ch *cmdutil.Helper) ([]string, error) {
 	c, err := ch.Client()
 	if err != nil {
 		return nil, err

@@ -1,12 +1,11 @@
 <script lang="ts">
   import Month from "./Month.svelte";
-  import { DateTime } from "luxon";
+  import { DateTime, Settings } from "luxon";
   import { Interval } from "luxon";
 
   type MaybeDate = DateTime | undefined;
 
   export let selection: MaybeDate | Interval = undefined;
-  export let minDate: MaybeDate = undefined;
   export let maxDate: MaybeDate = DateTime.now().startOf("day");
   export let visibleMonths = 1;
   export let selectingStart = true;
@@ -20,6 +19,9 @@
 
   let potentialEnd: DateTime<true> | undefined;
   let potentialStart: DateTime<true> | undefined;
+
+  // This is set globally in DashboardStateDataLoader or canvas/stores/time-control.ts
+  $: firstDayOfWeek = Settings.defaultWeekSettings?.firstDay ?? 1;
 
   $: finalInterval = isValidDateTime(selection)
     ? (Interval.fromDateTimes(
@@ -51,10 +53,10 @@
   }
 </script>
 
-<div class="flex gap-x-3 p-2 w-full min-w-56">
+<div class="flex gap-x-3 w-full">
   {#each { length: visibleMonths } as month, i (month)}
     <Month
-      {minDate}
+      {firstDayOfWeek}
       {maxDate}
       {singleDaySelection}
       interval={finalInterval}

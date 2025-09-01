@@ -2,14 +2,14 @@
   import {
     DialogContent,
     DialogTrigger,
-  } from "@rilldata/web-common/components/dialog-v2";
-  import GuardedDialog from "@rilldata/web-common/components/dialog-v2/GuardedDialog.svelte";
-  import EditAlertForm from "@rilldata/web-common/features/alerts/EditAlertForm.svelte";
+  } from "@rilldata/web-common/components/dialog";
+  import GuardedDialog from "@rilldata/web-common/components/dialog/GuardedDialog.svelte";
+  import AlertForm from "@rilldata/web-common/features/alerts/AlertForm.svelte";
   import type { V1AlertSpec } from "@rilldata/web-common/runtime-client";
   import Button from "web-common/src/components/button/Button.svelte";
 
   export let alertSpec: V1AlertSpec;
-  export let metricsViewName: string;
+  export let disabled: boolean;
 </script>
 
 <GuardedDialog
@@ -21,14 +21,9 @@
   let:onClose
 >
   <DialogTrigger asChild let:builder>
-    <Button type="secondary" builders={[builder]}>Edit</Button>
+    <Button type="secondary" builders={[builder]} {disabled}>Edit</Button>
   </DialogTrigger>
   <DialogContent class="p-0 m-0 w-[802px] max-w-fit" noClose>
-    <EditAlertForm
-      {alertSpec}
-      on:cancel={onCancel}
-      on:close={onClose}
-      {metricsViewName}
-    />
+    <AlertForm props={{ mode: "edit", alertSpec }} {onCancel} {onClose} />
   </DialogContent>
 </GuardedDialog>

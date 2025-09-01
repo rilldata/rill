@@ -8,10 +8,10 @@ import (
 	"strings"
 	"time"
 
+	"connectrpc.com/vanguard/vanguardgrpc"
 	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
 	"github.com/grpc-ecosystem/go-grpc-middleware/util/metautils"
 	grpc_validator "github.com/grpc-ecosystem/go-grpc-middleware/validator"
-	gateway "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/hashicorp/go-version"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rilldata/rill/admin"
@@ -31,7 +31,6 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -42,6 +41,7 @@ var (
 		"/rill.admin.v1.AdminService/UpdateProject":          version.Must(version.NewVersion("0.28.0")),
 		"/rill.admin.v1.AdminService/UpdateOrganization":     version.Must(version.NewVersion("0.28.0")),
 		"/rill.admin.v1.AdminService/UpdateProjectVariables": version.Must(version.NewVersion("0.51.0")),
+		"/rill.admin.v1.AdminService/CreateService":          version.Must(version.NewVersion("0.67.0")),
 	}
 )
 
@@ -58,6 +58,7 @@ type Options struct {
 	GithubAppWebhookSecret string
 	GithubClientID         string
 	GithubClientSecret     string
+	GithubManagedAccount   string
 	// AssetsBucket is the path on gcs where rill managed project artifacts are stored.
 	AssetsBucket string
 }
@@ -90,7 +91,7 @@ func New(logger *zap.Logger, adm *admin.Service, issuer *runtimeauth.Issuer, lim
 	cookieStore := cookies.New(logger, opts.SessionKeyPairs...)
 
 	// Auth tokens are validated against the DB on each request, so we can set a long MaxAge.
-	cookieStore.MaxAge(60 * 60 * 24 * 365 * 10) // 10 years
+	cookieStore.MaxAge(60 * 60 * 24 * 14) // 14 days
 
 	// Set Secure if the admin service is served over HTTPS (will resolve to true in production and false in local dev environments).
 	cookieStore.Options.Secure = adm.URLs.IsHTTPS()
@@ -134,9 +135,26 @@ func New(logger *zap.Logger, adm *admin.Service, issuer *runtimeauth.Issuer, lim
 	}, nil
 }
 
-// ServeGRPC Starts the gRPC server.
-func (s *Server) ServeGRPC(ctx context.Context) error {
-	server := grpc.NewServer(
+// Starts the HTTP server.
+func (s *Server) ServeHTTP(ctx context.Context) error {
+	handler, err := s.HTTPHandler(ctx)
+	if err != nil {
+		return err
+	}
+
+	return graceful.ServeHTTP(ctx, handler, graceful.ServeOptions{
+		Port:     s.opts.HTTPPort,
+		GRPCPort: s.opts.GRPCPort,
+		Logger:   s.logger,
+	})
+}
+
+// HTTPHandler returns a HTTP handler that serves REST and gRPC.
+func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
+	mux := http.NewServeMux()
+
+	// Create gRPC server
+	grpcServer := grpc.NewServer(
 		grpc.ChainStreamInterceptor(
 			middleware.TimeoutStreamServerInterceptor(timeoutSelector),
 			observability.LoggingStreamServerInterceptor(s.logger),
@@ -157,72 +175,34 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 		),
 		grpc.StatsHandler(otelgrpc.NewServerHandler()),
 	)
+	adminv1.RegisterAdminServiceServer(grpcServer, s)
+	adminv1.RegisterAIServiceServer(grpcServer, s)
+	adminv1.RegisterTelemetryServiceServer(grpcServer, s)
 
-	adminv1.RegisterAdminServiceServer(server, s)
-	adminv1.RegisterAIServiceServer(server, s)
-	adminv1.RegisterTelemetryServiceServer(server, s)
-	s.logger.Sugar().Infof("serving admin gRPC on port:%v", s.opts.GRPCPort)
-	return graceful.ServeGRPC(ctx, server, s.opts.GRPCPort)
-}
-
-// Starts the HTTP server.
-func (s *Server) ServeHTTP(ctx context.Context) error {
-	handler, err := s.HTTPHandler(ctx)
+	// Add gRPC and gRPC-to-REST transcoder.
+	// This will be the fallback for REST routes like `/v1/ping` and GPRC routes like `/rill.admin.v1.AdminService/Ping`.
+	transcoder, err := vanguardgrpc.NewTranscoder(grpcServer)
 	if err != nil {
-		return err
+		return nil, fmt.Errorf("failed to create transcoder: %w", err)
 	}
 
-	server := &http.Server{Handler: handler}
-	s.logger.Sugar().Infof("serving admin HTTP on port:%v", s.opts.HTTPPort)
+	// Add auth cookie refresh specifically for the GetCurrentUser RPC.
+	// This is sufficient to refresh the cookie on each page load without unnecessarily refreshing cookies in each API call.
+	mux.Handle("/v1/users/current", s.authenticator.CookieRefreshMiddleware(transcoder))
 
-	return graceful.ServeHTTP(ctx, server, graceful.ServeOptions{
-		Port: s.opts.HTTPPort,
-	})
-}
-
-// HTTPHandler HTTP handler serving REST gateway.
-func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
-	// Create REST gateway
-	gwMux := gateway.NewServeMux(
-		gateway.WithErrorHandler(httpErrorHandler),
-		gateway.WithMetadata(s.authenticator.Annotator),
-		gateway.WithOutgoingHeaderMatcher(func(s string) (string, bool) {
-			// grpc gateway adds gateway.MetadataHeaderPrefix to all outgoing headers
-			// we want to skip that for `x-trace-id` set in response
-			if s == observability.TracingHeader {
-				return s, true
-			}
-			// default matcher logic
-			return fmt.Sprintf("%s%s", gateway.MetadataHeaderPrefix, s), true
-		}),
-	)
-	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
-	grpcAddress := fmt.Sprintf(":%d", s.opts.GRPCPort)
-	err := adminv1.RegisterAdminServiceHandlerFromEndpoint(ctx, gwMux, grpcAddress, opts)
-	if err != nil {
-		return nil, err
-	}
-	err = adminv1.RegisterAIServiceHandlerFromEndpoint(ctx, gwMux, grpcAddress, opts)
-	if err != nil {
-		return nil, err
-	}
-	err = adminv1.RegisterTelemetryServiceHandlerFromEndpoint(ctx, gwMux, grpcAddress, opts)
-	if err != nil {
-		return nil, err
-	}
-
-	// Create regular http mux and mount gwMux on it
-	mux := http.NewServeMux()
-	mux.Handle("/v1/", gwMux)
+	mux.Handle("/v1/", transcoder)
+	mux.Handle("/rill.admin.v1.AdminService/", transcoder)
+	mux.Handle("/rill.admin.v1.AIService/", transcoder)
+	mux.Handle("/rill.admin.v1.TelemetryService/", transcoder)
 
 	// Add runtime proxy
-	observability.MuxHandle(mux, "/v1/orgs/{org}/projects/{project}/runtime/{path...}",
-		observability.Middleware(
-			"runtime-proxy",
-			s.logger,
-			s.authenticator.HTTPMiddlewareLenient(httputil.Handler(s.runtimeProxyForOrgAndProject)),
-		),
+	proxyHandler := observability.Middleware(
+		"runtime-proxy",
+		s.logger,
+		s.authenticator.HTTPMiddlewareLenient(httputil.Handler(s.runtimeProxyForOrgAndProject)),
 	)
+	observability.MuxHandle(mux, "/v1/orgs/{org}/projects/{project}/runtime/{path...}", proxyHandler) // Backwards compatibility
+	observability.MuxHandle(mux, "/v1/organizations/{org}/projects/{project}/runtime/{path...}", proxyHandler)
 
 	// Add Prometheus
 	if s.opts.ServePrometheus {
@@ -261,6 +241,14 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 		}
 	}
 
+	// Temporary endpoint for testing headers.
+	// NOTE: Commented out since it is unsafe, but keeping the code since it's been helpful for debugging on several occasions.
+	// mux.HandleFunc("/v1/dump-headers", func(w http.ResponseWriter, r *http.Request) {
+	// 	for k, v := range r.Header {
+	// 		fmt.Fprintf(w, "%s: %v\n", k, v)
+	// 	}
+	// })
+
 	// Build CORS options for admin server
 
 	// If the AllowedOrigins contains a "*" we want to return the requester's origin instead of "*" in the "Access-Control-Allow-Origin" header.
@@ -295,7 +283,9 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 	}
 
 	// Wrap mux with CORS middleware
-	handler := cors.New(corsOpts).Handler(mux)
+	handlerWithAuth := s.authenticator.CookieToAuthHeader(mux)
+	handlerWithCors := cors.New(corsOpts).Handler(handlerWithAuth)
+	handler := middleware.TraceMiddleware(handlerWithCors)
 
 	return handler, nil
 }
@@ -332,7 +322,7 @@ func (s *Server) AwaitServing(ctx context.Context) error {
 // Ping implements AdminService
 func (s *Server) Ping(ctx context.Context, req *adminv1.PingRequest) (*adminv1.PingResponse, error) {
 	resp := &adminv1.PingResponse{
-		Version: "", // TODO: Return version
+		Version: s.admin.Version.String(),
 		Time:    timestamppb.New(time.Now()),
 	}
 	return resp, nil
@@ -399,14 +389,22 @@ func (s *Server) jwtAttributesForUser(ctx context.Context, userID, orgID string,
 	return attr, nil
 }
 
-// httpErrorHandler wraps gateway.DefaultHTTPErrorHandler to map gRPC unknown errors (i.e. errors without an explicit
-// code) to HTTP status code 400 instead of 500.
-func httpErrorHandler(ctx context.Context, mux *gateway.ServeMux, marshaler gateway.Marshaler, w http.ResponseWriter, r *http.Request, err error) {
-	s := status.Convert(err)
-	if s.Code() == codes.Unknown {
-		err = &gateway.HTTPStatusError{HTTPStatus: http.StatusBadRequest, Err: err}
+func (s *Server) jwtAttributesForService(ctx context.Context, serviceID string, projectPermissions *adminv1.ProjectPermissions) (map[string]any, error) {
+	service, err := s.admin.DB.FindService(ctx, serviceID)
+	if err != nil {
+		return nil, err
 	}
-	gateway.DefaultHTTPErrorHandler(ctx, mux, marshaler, w, r, err)
+
+	attr := map[string]any{
+		"name":  service.Name,
+		"admin": projectPermissions.ManageProject,
+	}
+
+	for k, v := range service.Attributes {
+		attr[k] = v
+	}
+
+	return attr, nil
 }
 
 func timeoutSelector(fullMethodName string) time.Duration {

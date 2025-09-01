@@ -34,7 +34,7 @@
       location="bottom"
       suppress={open}
     >
-      <Chip type="measure" active={open} {label} builders={[builder]}>
+      <Chip theme type="measure" active={open} {label} builders={[builder]}>
         <div slot="body" class="font-bold truncate">
           {label}
         </div>

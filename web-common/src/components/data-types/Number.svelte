@@ -4,7 +4,6 @@
 
   export let isNull = false;
   export let inTable = false;
-  export let dark = false;
   export let customStyle = "";
   export let type: string;
   export let value;
@@ -18,7 +17,6 @@
   classes="ui-copy-number font-normal {inTable
     ? 'block text-right'
     : ''} {customStyle}"
-  {dark}
   {color}
 >
   <slot name="value">

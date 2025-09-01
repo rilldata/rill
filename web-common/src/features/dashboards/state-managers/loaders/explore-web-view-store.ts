@@ -1,4 +1,4 @@
-import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import type { TimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
 import { convertPartialExploreStateToUrlParams } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params";
@@ -33,7 +33,7 @@ export function getKeyForSessionStore(
 export function updateExploreSessionStore(
   exploreName: string,
   storageNamespacePrefix: string | undefined,
-  exploreState: MetricsExplorerEntity,
+  exploreState: ExploreState,
   exploreSpec: V1ExploreSpec,
   timeControlsState: TimeControlState | undefined,
 ) {
@@ -110,17 +110,7 @@ export function getPartialExploreStateFromSessionStorage(
   metricsViewSpec: V1MetricsViewSpec,
   exploreSpec: V1ExploreSpec,
 ) {
-  if (
-    // exactly one param is set, but it is not `view`
-    (searchParams.size === 1 &&
-      !searchParams.has(ExploreStateURLParams.WebView)) ||
-    // exactly 2 params are set and both `view` and `measure` are not set.
-    (searchParams.size === 2 &&
-      !searchParams.has(ExploreStateURLParams.WebView) &&
-      !searchParams.has(ExploreStateURLParams.ExpandedMeasure)) ||
-    // more than 2 params are set.
-    searchParams.size > 2
-  ) {
+  if (shouldSkipSessionStorage(searchParams)) {
     return undefined;
   }
 
@@ -189,5 +179,26 @@ export function setExploreStateForWebView(
   sessionStorage.setItem(
     getKeyForSessionStore(exploreName, storageNamespacePrefix, webView),
     state,
+  );
+}
+
+function shouldSkipSessionStorage(searchParams: URLSearchParams) {
+  // exactly one param is set, but it is not `view`
+  const hasSingleNonViewParam =
+    searchParams.size === 1 && !searchParams.has(ExploreStateURLParams.WebView);
+
+  // exactly 2 params are set and both `view` and `measure` are not set.
+  const hasTwoParamsWithoutViewOrMeasure =
+    searchParams.size === 2 &&
+    !searchParams.has(ExploreStateURLParams.WebView) &&
+    !searchParams.has(ExploreStateURLParams.ExpandedMeasure);
+
+  // more than 2 params are set.
+  const hasMoreThanTwoParams = searchParams.size > 2;
+
+  return (
+    hasSingleNonViewParam ||
+    hasTwoParamsWithoutViewOrMeasure ||
+    hasMoreThanTwoParams
   );
 }

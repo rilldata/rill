@@ -11,14 +11,13 @@ node_modules/
 runtime/
 scripts/
 admin/
-state/
 static/
 temp/
 dev-project/
 proto/
 playwright-report/
-web-admin/tests/setup/projects
-web-local/tests/data/projects
+web-common/tests/projects
+web-local/tests/data
 
 .env
 *.sql
@@ -49,12 +48,11 @@ log
 .prettierignore
 Dockerfile
 Duckdb-Dockerfile
-README.md
 docs
-*.json
-*.cjs
 _redirects
 Makefile
+.nvmrc
+*.mdc
 
 # Java SQL lib
 sql/

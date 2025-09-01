@@ -13,17 +13,33 @@ import { BehaviourEventFactory } from "@rilldata/web-common/metrics/service/Beha
 import { ErrorEventFactory } from "@rilldata/web-common/metrics/service/ErrorEventFactory";
 import { MetricsService } from "@rilldata/web-common/metrics/service/MetricsService";
 import { ProductHealthEventFactory } from "@rilldata/web-common/metrics/service/ProductHealthEventFactory";
+import { onDestroy } from "svelte";
 import { get } from "svelte/store";
 
 export const cloudVersion = import.meta.env.RILL_UI_PUBLIC_VERSION;
 
 export async function initCloudMetrics() {
-  const metricsService = new MetricsService(new RillAdminTelemetryClient(), [
+  const telemetryClient = new RillAdminTelemetryClient();
+
+  const metricsService = new MetricsService(telemetryClient, [
     new ProductHealthEventFactory(),
     new BehaviourEventFactory(),
     new ErrorEventFactory(),
   ]);
   setMetricsService(metricsService);
+
+  // --- Flush telemetry on unload/visibilitychange ---
+  const flushTelemetry = () => {
+    telemetryClient.flush(true);
+  };
+  window.addEventListener("beforeunload", flushTelemetry);
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") flushTelemetry();
+  });
+  onDestroy(() => {
+    window.removeEventListener("beforeunload", flushTelemetry);
+    document.removeEventListener("visibilitychange", flushTelemetry);
+  });
 
   const commonUserMetrics = await collectCommonUserFields();
   setBehaviourEvent(

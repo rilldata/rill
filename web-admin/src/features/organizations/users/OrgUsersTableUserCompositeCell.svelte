@@ -6,6 +6,14 @@
   export let isCurrentUser: boolean;
   export let pendingAcceptance: boolean;
   export let photoUrl: string | null;
+  export let role: string;
 </script>
 
-<AvatarListItem {name} {email} {isCurrentUser} {pendingAcceptance} {photoUrl} />
+<AvatarListItem
+  {name}
+  {email}
+  {isCurrentUser}
+  {pendingAcceptance}
+  {photoUrl}
+  {role}
+/>

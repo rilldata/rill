@@ -1,9 +1,13 @@
 name: Build and Deploy Cloud UI to Netlify
 on:
   create:
+    tags:
+      - "v*"
+    branches:
+      - "release**"
   push:
     tags:
-      - "**"
+      - "v*"
     branches:
       - "main"
       - "release**"
@@ -28,6 +32,12 @@ env:
 
 jobs:
   validate-sequential:
+    if: |
+      github.event_name == 'workflow_dispatch' || 
+      github.event_name == 'push' || 
+      (github.event_name == 'create' && 
+        ( startsWith(github.ref_name, 'release') || startsWith(github.ref, 'refs/tags/v') ) 
+      )
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -58,7 +68,7 @@ jobs:
       - name: Set up NodeJS
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version-file: '.nvmrc'
 
       - name: Setup Env variables from Inputs for Prod
         if: ( github.event_name == 'create' && startsWith(github.ref, 'refs/tags/v') ) || ( github.event_name == 'workflow_dispatch' && inputs.env == 'prod' )

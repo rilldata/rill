@@ -2,13 +2,20 @@ package server
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io"
+	"strings"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/metricsview"
+	"github.com/rilldata/rill/runtime/pkg/mapstructureutil"
 	"github.com/rilldata/rill/runtime/pkg/observability"
+	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"github.com/rilldata/rill/runtime/pkg/rilltime"
+	"github.com/rilldata/rill/runtime/pkg/timeutil"
 	"github.com/rilldata/rill/runtime/queries"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"go.opentelemetry.io/otel/attribute"
@@ -27,6 +34,8 @@ func (s *Server) MetricsViewAggregation(ctx context.Context, req *runtimev1.Metr
 		attribute.StringSlice("args.sort.names", marshalMetricsViewAggregationSort(req.Sort)),
 		attribute.String("args.time_start", safeTimeStr(req.TimeStart)),
 		attribute.String("args.time_end", safeTimeStr(req.TimeEnd)),
+		attribute.String("args.time_range", marshalTimeRange(req.TimeRange)),
+		attribute.String("args.comparison_time_range", marshalTimeRange(req.ComparisonTimeRange)),
 		attribute.Int("args.filter_count", filterCount(req.Where)),
 		attribute.Int64("args.limit", req.Limit),
 		attribute.Int64("args.offset", req.Offset),
@@ -200,6 +209,7 @@ func (s *Server) MetricsViewTimeSeries(ctx context.Context, req *runtimev1.Metri
 		attribute.String("args.time_granularity", req.TimeGranularity.String()),
 		attribute.Int("args.filter_count", filterCount(req.Where)),
 		attribute.Int("args.priority", int(req.Priority)),
+		attribute.String("args.time_dimension", req.TimeDimension),
 	)
 
 	s.addInstanceRequestAttributes(ctx, req.InstanceId)
@@ -221,6 +231,7 @@ func (s *Server) MetricsViewTimeSeries(ctx context.Context, req *runtimev1.Metri
 		TimeZone:        req.TimeZone,
 		Filter:          req.Filter,
 		SecurityClaims:  auth.GetClaims(ctx).SecurityClaims(),
+		TimeDimension:   req.TimeDimension,
 	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
@@ -239,6 +250,7 @@ func (s *Server) MetricsViewTotals(ctx context.Context, req *runtimev1.MetricsVi
 		attribute.String("args.time_end", safeTimeStr(req.TimeEnd)),
 		attribute.Int("args.filter_count", filterCount(req.Where)),
 		attribute.Int("args.priority", int(req.Priority)),
+		attribute.String("args.time_dimension", req.TimeDimension),
 	)
 
 	s.addInstanceRequestAttributes(ctx, req.InstanceId)
@@ -256,6 +268,7 @@ func (s *Server) MetricsViewTotals(ctx context.Context, req *runtimev1.MetricsVi
 		WhereSQL:        req.WhereSql,
 		Filter:          req.Filter,
 		SecurityClaims:  auth.GetClaims(ctx).SecurityClaims(),
+		TimeDimension:   req.TimeDimension,
 	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
@@ -277,6 +290,7 @@ func (s *Server) MetricsViewRows(ctx context.Context, req *runtimev1.MetricsView
 		attribute.Int("args.limit", int(req.Limit)),
 		attribute.Int64("args.offset", req.Offset),
 		attribute.Int("args.priority", int(req.Priority)),
+		attribute.String("args.time_dimension", req.TimeDimension),
 	)
 
 	s.addInstanceRequestAttributes(ctx, req.InstanceId)
@@ -306,6 +320,7 @@ func (s *Server) MetricsViewRows(ctx context.Context, req *runtimev1.MetricsView
 		ResolvedMVSecurity: security,
 		Streaming:          mv.Streaming,
 		Filter:             req.Filter,
+		TimeDimension:      req.TimeDimension,
 	}
 	err = s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
@@ -321,6 +336,7 @@ func (s *Server) MetricsViewTimeRange(ctx context.Context, req *runtimev1.Metric
 		attribute.String("args.instance_id", req.InstanceId),
 		attribute.String("args.metric_view", req.MetricsViewName),
 		attribute.Int("args.priority", int(req.Priority)),
+		attribute.String("args.time_dimension", req.TimeDimension),
 	)
 
 	s.addInstanceRequestAttributes(ctx, req.InstanceId)
@@ -329,7 +345,7 @@ func (s *Server) MetricsViewTimeRange(ctx context.Context, req *runtimev1.Metric
 		return nil, ErrForbidden
 	}
 
-	ts, err := queries.ResolveTimestampResult(ctx, s.runtime, req.InstanceId, req.MetricsViewName, auth.GetClaims(ctx).SecurityClaims(), int(req.Priority))
+	ts, err := queries.ResolveTimestampResult(ctx, s.runtime, req.InstanceId, req.MetricsViewName, req.TimeDimension, auth.GetClaims(ctx).SecurityClaims(), int(req.Priority))
 	if err != nil {
 		return nil, err
 	}
@@ -376,6 +392,7 @@ func (s *Server) MetricsViewSearch(ctx context.Context, req *runtimev1.MetricsVi
 		attribute.String("args.metric_view", req.MetricsViewName),
 		attribute.StringSlice("args.dimensions.names", req.Dimensions),
 		attribute.String("args.search", req.Search),
+		attribute.String("args.time_range", marshalTimeRange(req.TimeRange)),
 		attribute.Int("args.filter_count", filterCount(req.Where)),
 		attribute.Int("args.priority", int(req.Priority)),
 	)
@@ -411,6 +428,7 @@ func (s *Server) MetricsViewTimeRanges(ctx context.Context, req *runtimev1.Metri
 		attribute.String("args.instance_id", req.InstanceId),
 		attribute.String("args.metric_view", req.MetricsViewName),
 		attribute.StringSlice("args.expressions", req.Expressions),
+		attribute.String("args.time_dimension", req.TimeDimension),
 	)
 
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadMetrics) {
@@ -423,9 +441,17 @@ func (s *Server) MetricsViewTimeRanges(ctx context.Context, req *runtimev1.Metri
 		return nil, err
 	}
 
-	ts, err := queries.ResolveTimestampResult(ctx, s.runtime, req.InstanceId, req.MetricsViewName, auth.GetClaims(ctx).SecurityClaims(), int(req.Priority))
+	ts, err := queries.ResolveTimestampResult(ctx, s.runtime, req.InstanceId, req.MetricsViewName, req.TimeDimension, auth.GetClaims(ctx).SecurityClaims(), int(req.Priority))
 	if err != nil {
 		return nil, err
+	}
+
+	var tz *time.Location
+	if req.TimeZone != "" {
+		tz, err = time.LoadLocation(req.TimeZone)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// to keep results consistent
@@ -433,12 +459,14 @@ func (s *Server) MetricsViewTimeRanges(ctx context.Context, req *runtimev1.Metri
 
 	timeRanges := make([]*runtimev1.TimeRange, len(req.Expressions))
 	for i, tr := range req.Expressions {
-		rillTime, err := rilltime.Parse(tr, rilltime.ParseOptions{})
+		rillTime, err := rilltime.Parse(tr, rilltime.ParseOptions{
+			TimeZoneOverride: tz,
+		})
 		if err != nil {
 			return nil, fmt.Errorf("error parsing time range %s: %w", tr, err)
 		}
 
-		start, end, err := rillTime.Eval(rilltime.EvalOptions{
+		start, end, grain := rillTime.Eval(rilltime.EvalOptions{
 			Now:        now,
 			MinTime:    ts.Min,
 			MaxTime:    ts.Max,
@@ -446,21 +474,134 @@ func (s *Server) MetricsViewTimeRanges(ctx context.Context, req *runtimev1.Metri
 			FirstDay:   int(mv.ValidSpec.FirstDayOfWeek),
 			FirstMonth: int(mv.ValidSpec.FirstMonthOfYear),
 		})
-		if err != nil {
-			return nil, err
-		}
 
 		timeRanges[i] = &runtimev1.TimeRange{
-			Start: timestamppb.New(start),
-			End:   timestamppb.New(end),
+			Start:        timestamppb.New(start),
+			End:          timestamppb.New(end),
+			RoundToGrain: timeutil.TimeGrainToAPI(grain),
 			// for a reference
-			Expression: tr,
+			Expression:    tr,
+			TimeDimension: req.TimeDimension,
 		}
 	}
 
 	return &runtimev1.MetricsViewTimeRangesResponse{
 		TimeRanges: timeRanges,
 	}, nil
+}
+
+func (s *Server) MetricsViewAnnotations(ctx context.Context, req *runtimev1.MetricsViewAnnotationsRequest) (*runtimev1.MetricsViewAnnotationsResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.metric_view", req.MetricsViewName),
+		attribute.String("args.measures", strings.Join(req.Measures, ",")),
+	)
+
+	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadMetrics) {
+		return nil, ErrForbidden
+	}
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+
+	var limit *int64
+	if req.Limit != 0 {
+		limit = &req.Limit
+	}
+
+	var offset *int64
+	if req.Offset != 0 {
+		limit = &req.Offset
+	}
+
+	qry := metricsview.AnnotationsQuery{
+		MetricsView: req.MetricsViewName,
+		Measures:    req.Measures,
+		Limit:       limit,
+		Offset:      offset,
+		TimeZone:    req.TimeZone,
+		TimeGrain:   metricsview.TimeGrainFromProto(req.TimeGrain),
+		Priority:    int(req.Priority),
+	}
+
+	if req.TimeRange != nil {
+		qry.TimeRange = &metricsview.TimeRange{
+			Start:         req.TimeRange.Start.AsTime(),
+			End:           req.TimeRange.End.AsTime(),
+			Expression:    req.TimeRange.Expression,
+			IsoDuration:   req.TimeRange.IsoDuration,
+			IsoOffset:     req.TimeRange.IsoOffset,
+			RoundToGrain:  metricsview.TimeGrainFromProto(req.TimeRange.RoundToGrain),
+			TimeDimension: req.TimeRange.TimeDimension,
+		}
+	}
+
+	props, err := qry.AsMap()
+	if err != nil {
+		return nil, err
+	}
+
+	res, err := s.runtime.Resolve(ctx, &runtime.ResolveOptions{
+		InstanceID:         req.InstanceId,
+		Resolver:           "annotations",
+		ResolverProperties: props,
+		Claims:             auth.GetClaims(ctx).SecurityClaims(),
+	})
+	if err != nil {
+		return nil, err
+	}
+	defer res.Close()
+
+	rows := make([]*runtimev1.MetricsViewAnnotationsResponse_Annotation, 0)
+	for {
+		row, err := res.Next()
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				break
+			}
+			return nil, err
+		}
+		var ann annotation
+		err = mapstructureutil.WeakDecode(row, &ann)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+
+		additionalFieldsPb, err := pbutil.ToStruct(ann.AdditionalFields, res.Schema())
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+
+		var timeEnd *timestamppb.Timestamp
+		if !ann.TimeEnd.IsZero() {
+			timeEnd = timestamppb.New(ann.TimeEnd)
+		}
+
+		var dur *string
+		if ann.Duration != "" {
+			dur = &ann.Duration
+		}
+
+		rows = append(rows, &runtimev1.MetricsViewAnnotationsResponse_Annotation{
+			Time:             timestamppb.New(ann.Time),
+			TimeEnd:          timeEnd,
+			Description:      ann.Description,
+			Duration:         dur,
+			ForMeasures:      ann.ForMeasures,
+			AdditionalFields: additionalFieldsPb,
+		})
+	}
+
+	return &runtimev1.MetricsViewAnnotationsResponse{
+		Rows: rows,
+	}, nil
+}
+
+type annotation struct {
+	Time             time.Time      `mapstructure:"time"`
+	TimeEnd          time.Time      `mapstructure:"time_end"`
+	Description      string         `mapstructure:"description"`
+	Duration         string         `mapstructure:"duration"`
+	ForMeasures      []string       `mapstructure:"for_measures"`
+	AdditionalFields map[string]any `mapstructure:",remain"`
 }
 
 func resolveMVAndSecurity(ctx context.Context, rt *runtime.Runtime, instanceID, metricsViewName string) (*runtimev1.MetricsViewState, *runtime.ResolvedSecurity, error) {

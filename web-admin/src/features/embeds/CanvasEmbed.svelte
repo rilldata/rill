@@ -1,6 +1,5 @@
 <script lang="ts">
   import CanvasDashboardEmbed from "@rilldata/web-common/features/canvas/CanvasDashboardEmbed.svelte";
-  import CanvasThemeProvider from "@rilldata/web-common/features/canvas/CanvasThemeProvider.svelte";
   import {
     ResourceKind,
     useResource,
@@ -9,6 +8,7 @@
 
   export let instanceId: string;
   export let canvasName: string;
+  export let navigationEnabled: boolean = true;
 
   $: canvasQuery = useResource(instanceId, canvasName, ResourceKind.Canvas);
 
@@ -36,8 +36,6 @@
   {#if isCanvasErrored}
     <br /> Canvas Error <br />
   {:else if data}
-    <CanvasThemeProvider {canvasName}>
-      <CanvasDashboardEmbed {resource} />
-    </CanvasThemeProvider>
+    <CanvasDashboardEmbed {resource} {navigationEnabled} />
   {/if}
 {/if}

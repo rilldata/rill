@@ -6,16 +6,16 @@ export const levels = {
     secondary:
       "text-gray-800 border rounded-sm border-gray-300 shadow-sm hover:bg-gray-100 hover:text-gray-700 hover:border-gray-300 focus:ring-primary-300",
     highlighted:
-      "text-gray-500 border border-gray-200 hover:bg-gray-200 hover:text-gray-600 hover:border-gray-200 focus:ring-primary-300 shadow-lg rounded-sm h-8 ",
+      "text-gray-500 border hover:bg-gray-200 hover:text-gray-600 focus:ring-primary-300 shadow-lg rounded-sm h-8",
     text: "text-gray-900 hover:bg-gray-300 focus:ring-primary-300",
     dashed:
-      "text-gray-800 border border-dashed rounded-sm border-gray-300 shadow-sm hover:bg-gray-100 hover:text-gray-700 hover:border-gray-300 focus:ring-primary-300 ",
+      "text-gray-800 border border-dashed rounded-sm border-gray-300 shadow-sm hover:bg-gray-100 hover:text-gray-700 hover:border-gray-300 focus:ring-primary-300",
   },
   error: {
     primary:
       "bg-red-200 border border-red-200 hover:bg-red-300 hover:border-red-300 text-red-800 active:ring-red-600 focus:ring-red-400",
     secondary:
-      "border border-red-500 hover:bg-red-100 hover:border-red-600  focus:ring-red-400",
+      "border border-red-500 hover:bg-red-100 hover:border-red-600 focus:ring-red-400",
     text: "text-red-400 hover:bg-red-200  focus:ring-red-400",
   },
 };

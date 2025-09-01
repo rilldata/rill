@@ -27,6 +27,7 @@ type MetricsViewRows struct {
 	MetricsView        *runtimev1.MetricsViewSpec   `json:"-"`
 	ResolvedMVSecurity *runtime.ResolvedSecurity    `json:"security"`
 	Streaming          bool                         `json:"streaming,omitempty"`
+	TimeDimension      string                       `json:"time_dimension,omitempty"` // if empty, the default time dimension in mv is used
 
 	// backwards compatibility
 	Filter *runtimev1.MetricsViewFilter `json:"filter,omitempty"`
@@ -67,8 +68,8 @@ func (q *MetricsViewRows) UnmarshalResult(v any) error {
 }
 
 func (q *MetricsViewRows) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
-	if q.MetricsView.TimeDimension == "" && (q.TimeStart != nil || q.TimeEnd != nil) {
-		return fmt.Errorf("metrics view '%s' does not have a time dimension", q.MetricsViewName)
+	if (q.MetricsView.TimeDimension == "" && q.TimeDimension == "") && (q.TimeStart != nil || q.TimeEnd != nil) {
+		return fmt.Errorf("no time dimension specified for metrics view '%s' and time range provided", q.MetricsViewName)
 	}
 
 	qry, err := q.rewriteToMetricsViewQuery()
@@ -104,8 +105,8 @@ func (q *MetricsViewRows) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 }
 
 func (q *MetricsViewRows) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions) error {
-	if q.MetricsView.TimeDimension == "" && (q.TimeStart != nil || q.TimeEnd != nil) {
-		return fmt.Errorf("metrics view '%s' does not have a time dimension", q.MetricsViewName)
+	if (q.MetricsView.TimeDimension == "" && q.TimeDimension == "") && (q.TimeStart != nil || q.TimeEnd != nil) {
+		return fmt.Errorf("no time dimension specified for metrics view '%s' and time range provided", q.MetricsViewName)
 	}
 
 	qry, err := q.rewriteToMetricsViewQuery()
@@ -132,7 +133,7 @@ func (q *MetricsViewRows) Export(ctx context.Context, rt *runtime.Runtime, insta
 		return fmt.Errorf("unsupported format: %s", opts.Format.String())
 	}
 
-	path, err := e.Export(ctx, qry, nil, format)
+	path, err := e.Export(ctx, qry, nil, format, nil)
 	if err != nil {
 		return err
 	}
@@ -174,6 +175,7 @@ func (q *MetricsViewRows) rewriteToMetricsViewQuery() (*metricsview.Query, error
 	if q.TimeEnd != nil {
 		res.End = q.TimeEnd.AsTime()
 	}
+	res.TimeDimension = q.TimeDimension
 	qry.TimeRange = res
 
 	qry.Limit = q.Limit

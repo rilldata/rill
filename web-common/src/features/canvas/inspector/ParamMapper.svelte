@@ -1,7 +1,11 @@
 <script lang="ts">
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
+  import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
+  import { BaseChart } from "@rilldata/web-common/features/canvas/components/charts/BaseChart";
+  import type { BaseCanvasComponent } from "../components/BaseCanvasComponent";
+  import { PivotCanvasComponent } from "../components/pivot";
   import type { ComponentSpec } from "../components/types";
   import AlignmentInput from "./AlignmentInput.svelte";
   import ChartTypeSelector from "./chart/ChartTypeSelector.svelte";
@@ -13,9 +17,6 @@
   import SingleFieldInput from "./SingleFieldInput.svelte";
   import SparklineInput from "./SparklineInput.svelte";
   import TableTypeSelector from "./TableTypeSelector.svelte";
-  import type { BaseCanvasComponent } from "../components/BaseCanvasComponent";
-  import { ChartComponent } from "../components/charts";
-  import { PivotCanvasComponent } from "../components/pivot";
   import type { AllKeys, ComponentInputParam } from "./types";
 
   export let component: BaseCanvasComponent;
@@ -44,7 +45,7 @@
   ][];
 </script>
 
-{#if component instanceof ChartComponent}
+{#if component instanceof BaseChart}
   <ChartTypeSelector {component} />
 {/if}
 
@@ -53,7 +54,7 @@
 {/if}
 
 <div>
-  {#each entries as [key, config] (key)}
+  {#each entries as [key, config] (`${component.id}-${key}`)}
     {#if config.showInUI !== false}
       <div class="component-param">
         <!-- TEXT, NUMBER, RILL_TIME -->
@@ -116,7 +117,13 @@
               id={key}
               faint={!localParamValues[key]}
             />
-            <Switch bind:checked={$specStore[key]} small />
+            <Switch
+              checked={$specStore[key]}
+              on:click={() => {
+                component.updateProperty(key, !localParamValues[key]);
+              }}
+              small
+            />
           </div>
 
           <!-- TEXT AREA -->
@@ -138,6 +145,22 @@
               placeholder={config.label ?? key}
             />
           </div>
+
+          <!-- SELECT DROPDOWN -->
+        {:else if config.type === "select"}
+          <Select
+            id={key}
+            label={config.label ?? key}
+            options={config.meta?.options ?? []}
+            value={$specStore[key] ?? config.meta?.default}
+            full={true}
+            size="sm"
+            sameWidth
+            fontSize={12}
+            onChange={(newValue) => {
+              component.updateProperty(key, newValue);
+            }}
+          />
 
           <!-- KPI SPARKLINE INPUT -->
         {:else if config.type === "sparkline"}
@@ -192,10 +215,10 @@
         {:else if metricsView && config.type === "mark"}
           <MarkSelector
             {canvasName}
-            label={config.label ?? key}
             {key}
+            {config}
             {metricsView}
-            value={localParamValues[key] || {}}
+            markConfig={localParamValues[key] || {}}
             onChange={(updatedConfig) => {
               localParamValues[key] = updatedConfig;
               component.updateProperty(key, updatedConfig);
@@ -210,6 +233,6 @@
 <style lang="postcss">
   .component-param {
     @apply py-3 px-5;
-    @apply border-t border-gray-200;
+    @apply border-t;
   }
 </style>

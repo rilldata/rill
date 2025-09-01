@@ -34,14 +34,6 @@ type URLs struct {
 // NewURLs creates a new URLs. The provided URLs should include the scheme, host, optional port, and optional path prefix.
 // The provided URLs should be the primary external and frontend URL for the Rill service. The returned *URLs will rewrite them as needed for custom domains.
 func NewURLs(externalURL, frontendURL string) (*URLs, error) {
-	// NOTE: This is a temporary hack for local development.
-	// In local development, the gRPC and REST endpoints are served on different ports.
-	// And the external URL is configured to point to the gRPC endpoint.
-	// TODO: Move both gRPC and REST to the same port for local development.
-	if strings.HasPrefix(externalURL, "http://localhost:9090") {
-		externalURL = "http://localhost:8080"
-	}
-
 	eu, err := url.Parse(externalURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse external URL: %w", err)
@@ -299,8 +291,8 @@ func (u *URLs) MagicAuthTokenOpen(org, project, token string) string {
 }
 
 // ApproveProjectAccess returns the frontend URL for approving a project access request.
-func (u *URLs) ApproveProjectAccess(org, project, id string) string {
-	return urlutil.MustJoinURL(u.Frontend(), org, project, "-", "request-access", id, "approve")
+func (u *URLs) ApproveProjectAccess(org, project, id, role string) string {
+	return urlutil.MustWithQuery(urlutil.MustJoinURL(u.Frontend(), org, project, "-", "request-access", id, "approve"), map[string]string{"role": role})
 }
 
 // DenyProjectAccess returns the frontend URL for denying a project access request.

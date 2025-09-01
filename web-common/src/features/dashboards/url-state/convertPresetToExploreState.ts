@@ -5,7 +5,7 @@ import {
   type PivotTableMode,
 } from "@rilldata/web-common/features/dashboards/pivot/types";
 import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
-import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
 import {
   getMultiFieldError,
@@ -25,6 +25,7 @@ import {
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import {
   type DashboardTimeControls,
+  TimeComparisonOption,
   TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types";
 import {
@@ -51,7 +52,7 @@ export function convertPresetToExploreState(
   explore: V1ExploreSpec,
   preset: V1ExplorePreset,
 ) {
-  const partialExploreState: Partial<MetricsExplorerEntity> = {};
+  const partialExploreState: Partial<ExploreState> = {};
   const errors: Error[] = [];
 
   const measures = getMapFromArray(
@@ -111,7 +112,7 @@ function fromTimeRangesParams(
   preset: V1ExplorePreset,
   dimensions: Map<string, MetricsViewSpecDimension>,
 ) {
-  const partialExploreState: Partial<MetricsExplorerEntity> = {};
+  const partialExploreState: Partial<ExploreState> = {};
   const errors: Error[] = [];
 
   if (preset.timeRange) {
@@ -120,7 +121,8 @@ function fromTimeRangesParams(
     );
   }
 
-  if (preset.timeGrain && partialExploreState.selectedTimeRange) {
+  if (preset.timeGrain) {
+    partialExploreState.selectedTimeRange ??= {} as DashboardTimeControls;
     partialExploreState.selectedTimeRange.interval =
       FromURLParamTimeGrainMap[preset.timeGrain];
   }
@@ -134,6 +136,13 @@ function fromTimeRangesParams(
     partialExploreState.selectedComparisonTimeRange = fromTimeRangeUrlParam(
       preset.compareTimeRange,
     );
+    if (
+      partialExploreState.selectedComparisonTimeRange.name ===
+      TimeRangePreset.CUSTOM
+    ) {
+      partialExploreState.selectedComparisonTimeRange.name =
+        TimeComparisonOption.CUSTOM;
+    }
     partialExploreState.showTimeComparison = true;
     setCompareTimeRange = true;
     if (
@@ -212,6 +221,7 @@ export function fromTimeRangeUrlParam(tr: string) {
       end: new Date(end),
     } as DashboardTimeControls;
   }
+
   return {
     name: tr,
   } as DashboardTimeControls;
@@ -223,7 +233,7 @@ function fromExploreUrlParams(
   explore: V1ExploreSpec,
   preset: V1ExplorePreset,
 ) {
-  const partialExploreState: Partial<MetricsExplorerEntity> = {};
+  const partialExploreState: Partial<ExploreState> = {};
   const errors: Error[] = [];
 
   if (preset.measures?.length) {
@@ -273,14 +283,15 @@ function fromExploreUrlParams(
     preset.exploreSortType !== undefined &&
     preset.exploreSortType !== V1ExploreSortType.EXPLORE_SORT_TYPE_UNSPECIFIED
   ) {
-    partialExploreState.dashboardSortType =
-      Number(ToLegacySortTypeMap[preset.exploreSortType]) ??
-      DashboardState_LeaderboardSortType.UNSPECIFIED;
+    partialExploreState.dashboardSortType = Number(
+      ToLegacySortTypeMap[preset.exploreSortType] ??
+        DashboardState_LeaderboardSortType.UNSPECIFIED,
+    );
   }
 
-  if (preset.exploreLeaderboardMeasureCount !== undefined) {
-    partialExploreState.leaderboardMeasureCount =
-      preset.exploreLeaderboardMeasureCount;
+  if (preset.exploreLeaderboardMeasures !== undefined) {
+    partialExploreState.leaderboardMeasureNames =
+      preset.exploreLeaderboardMeasures;
   }
 
   if (preset.exploreExpandedDimension !== undefined) {
@@ -321,7 +332,7 @@ function fromTimeDimensionUrlParams(
   measures: Map<string, MetricsViewSpecMeasure>,
   preset: V1ExplorePreset,
 ): {
-  partialExploreState: Partial<MetricsExplorerEntity>;
+  partialExploreState: Partial<ExploreState>;
   errors: Error[];
 } {
   if (!preset.timeDimensionMeasure) {
@@ -345,7 +356,7 @@ function fromTimeDimensionUrlParams(
     errors.push(getSingleFieldError("expanded measure", expandedMeasureName));
   }
 
-  const partialExploreState: Partial<MetricsExplorerEntity> = {
+  const partialExploreState: Partial<ExploreState> = {
     tdd: {
       expandedMeasureName,
       chartType: preset.timeDimensionChartType
@@ -366,7 +377,7 @@ function fromPivotUrlParams(
   dimensions: Map<string, MetricsViewSpecDimension>,
   preset: V1ExplorePreset,
 ): {
-  partialExploreState: Partial<MetricsExplorerEntity>;
+  partialExploreState: Partial<ExploreState>;
   errors: Error[];
 } {
   const errors: Error[] = [];

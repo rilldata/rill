@@ -1,22 +1,12 @@
-<script context="module" lang="ts">
-  export const lastNestState = writable<PivotChipData[] | null>(null);
-</script>
-
 <script lang="ts">
-  import { IconButton } from "@rilldata/web-common/components/button";
   import Column from "@rilldata/web-common/components/icons/Column.svelte";
   import Row from "@rilldata/web-common/components/icons/Row.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-  import { ArrowUpDownIcon } from "lucide-svelte";
-  import { writable } from "svelte/store";
   import { slide } from "svelte/transition";
   import { metricsExplorerStore } from "../stores/dashboard-stores";
   import DragList from "./DragList.svelte";
-  import {
-    PivotChipType,
-    type PivotChipData,
-    type PivotTableMode,
-  } from "./types";
+  import { lastNestState } from "./PivotToolbar.svelte";
+  import { PivotChipType, type PivotChipData } from "./types";
 
   const stateManagers = getStateManagers();
   const {
@@ -28,45 +18,17 @@
 
   $: ({ dimension: columnsDimensions, measure: columnsMeasures } = $columns);
 
-  function updateColumn(e: CustomEvent<PivotChipData[]>) {
+  function updateColumn(items: PivotChipData[]) {
     // Reset lastNestState when columns are updated
     lastNestState.set(null);
-    metricsExplorerStore.setPivotColumns($exploreName, e.detail);
+    metricsExplorerStore.setPivotColumns($exploreName, items);
   }
 
-  function updateRows(e: CustomEvent<PivotChipData[]>) {
-    const filtered = e.detail.filter(
+  function updateRows(items: PivotChipData[]) {
+    const filtered = items.filter(
       (item) => item.type !== PivotChipType.Measure,
     );
     metricsExplorerStore.setPivotRows($exploreName, filtered);
-  }
-
-  /**
-   * This method stores the previous nest state and passes it to
-   * dashboard store when toggling back from `flat` to `nest`
-   */
-  function togglePivotType(newJoinState: PivotTableMode) {
-    if (newJoinState === "flat") {
-      lastNestState.set($rows);
-      metricsExplorerStore.setPivotTableMode(
-        $exploreName,
-        "flat",
-        [],
-        [...$columns.dimension, ...$rows, ...$columns.measure],
-      );
-      return;
-    }
-
-    // Handle nest state
-    const updatedRows = $lastNestState ?? $columns.dimension;
-    const rowDimensionIds = new Set(updatedRows.map((d) => d.id));
-
-    metricsExplorerStore.setPivotTableMode($exploreName, "nest", updatedRows, [
-      ...($lastNestState
-        ? $columns.dimension.filter((d) => !rowDimensionIds.has(d.id))
-        : []),
-      ...$columns.measure,
-    ]);
   }
 </script>
 
@@ -86,27 +48,13 @@
         zone="rows"
         placeholder="Drag dimensions here"
         items={$rows}
-        on:update={updateRows}
+        onUpdate={updateRows}
       />
     </div>
   {/if}
   <div class="header-row">
     <div class="row-label">
       <Column size="16px" /> Columns
-
-      <IconButton
-        marginClasses="ml-1"
-        rounded
-        ariaLabel={$isFlat ? "Nest" : "Flatten"}
-        on:click={() => togglePivotType($isFlat ? "nest" : "flat")}
-      >
-        <span slot="tooltip-content">{$isFlat ? "Nest" : "Flatten"} table</span>
-        <ArrowUpDownIcon
-          size="16px"
-          class="stroke-gray-500"
-          strokeWidth={1.8}
-        />
-      </IconButton>
     </div>
 
     <DragList
@@ -116,7 +64,7 @@
         ? $originalColumns
         : columnsDimensions.concat(columnsMeasures)}
       placeholder="Drag dimensions or measures here"
-      on:update={updateColumn}
+      onUpdate={updateColumn}
     />
   </div>
 </div>
@@ -124,9 +72,9 @@
 <style lang="postcss">
   .header {
     @apply flex flex-col border-b select-none;
-    @apply bg-white justify-center py-2 gap-y-2;
+    @apply bg-surface justify-center py-2 gap-y-2;
     @apply flex flex-col flex-none relative overflow-hidden;
-    @apply border-r z-0;
+    @apply z-0;
     transition-property: height;
     will-change: height;
     @apply select-none;
@@ -136,7 +84,6 @@
     @apply flex items-center gap-x-2 px-2;
   }
   .row-label {
-    @apply flex items-center gap-x-1 flex-shrink-0;
-    width: 104px;
+    @apply w-20 flex items-center gap-x-1 flex-shrink-0;
   }
 </style>

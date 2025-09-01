@@ -9,14 +9,14 @@ sidebar_position: 11
 
 # Embed Iframe API
 
-When embedding Rill inside of an `iframe` you can communicate with it using the [`postMessage`](https://developer.mozilla.org/en-US/docs/Web/API/Window/postMessage) API via a JSON-RPC 2.0-like protocol.
+When embedding Rill inside of an `iframe`, you can communicate with it using the [`postMessage`](https://developer.mozilla.org/en-US/docs/Web/API/Window/postMessage) API via a JSON-RPC 2.0-like protocol.
 
 
 ## Overview
 
 The iframe exposes an API that enables external control and monitoring of its internal state. Communication is bidirectional and supports both **requests** and **notifications** using `window.postMessage`.
 
-The state of a dashboard in Rill can be found in the URL as you are browsing it, the URL is fully human readable and will reflect whatever you are looking at on the screen.
+The state of a dashboard in Rill can be found in the URL as you are browsing it. The URL is fully human-readable and will reflect whatever you are looking at on the screen.
 
 
 ## Embedding and Initialization
@@ -58,7 +58,7 @@ window.addEventListener("message", (event) => {
 ## Supported Methods
 
 These methods are called **from the parent** and handled **by the iframe**.  
-Note: if including an `id` the server will respond, if you do not need a response you can omit the `id` property.
+Note: if including an `id`, the server will respond. If you do not need a response, you can omit the `id` property.
 
 ### `setState(state)`
 
@@ -133,13 +133,13 @@ All errors follow the JSON-RPC 2.0 structure:
 
 **Common Error Codes:**
 
-| Code    | Message           | Description          |
-|---------|-------------------|----------------------|
-| -32600  | Invalid Request    | Malformed request    |
-| -32601  | Method Not Found   | Unknown method       |
-| -32602  | Invalid Params     | Parameters incorrect |
-| -32603  | Internal Error     | Unexpected failure   |
-| -32700  | Parse Error        | Malformed JSON       |
+| Code   | Message          | Description          |
+| ------ | ---------------- | -------------------- |
+| -32600 | Invalid Request  | Malformed request    |
+| -32601 | Method Not Found | Unknown method       |
+| -32602 | Invalid Params   | Parameters incorrect |
+| -32603 | Internal Error   | Unexpected failure   |
+| -32700 | Parse Error      | Malformed JSON       |
 
 ---
 

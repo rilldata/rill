@@ -222,18 +222,28 @@ func (s *Server) generateOpenAPISpec(ctx context.Context, instanceID string, api
 	}
 
 	for name, api := range apis {
-		pathItem, err := s.generatePathItemSpec(name, api)
+		pathItem, componentsForPath, err := s.generatePathItemSpec(name, api)
 		if err != nil {
 			return nil, err
 		}
 
 		spec.Paths.Set(fmt.Sprintf("/%s", name), pathItem)
+
+		for k, v := range componentsForPath {
+			if spec.Components == nil {
+				spec.Components = &openapi3.Components{}
+			}
+			if spec.Components.Schemas == nil {
+				spec.Components.Schemas = make(map[string]*openapi3.SchemaRef)
+			}
+			spec.Components.Schemas[k] = v
+		}
 	}
 
 	return spec, nil
 }
 
-func (s *Server) generatePathItemSpec(name string, api *runtimev1.API) (*openapi3.PathItem, error) {
+func (s *Server) generatePathItemSpec(name string, api *runtimev1.API) (*openapi3.PathItem, map[string]*openapi3.SchemaRef, error) {
 	summary := ""
 	if api.Spec.OpenapiSummary != "" {
 		summary = api.Spec.OpenapiSummary
@@ -243,67 +253,95 @@ func (s *Server) generatePathItemSpec(name string, api *runtimev1.API) (*openapi
 	}
 
 	var parameters openapi3.Parameters
-	if api.Spec.OpenapiParameters != nil {
-		maps := make([]map[string]any, len(api.Spec.OpenapiParameters))
-		for i, param := range api.Spec.OpenapiParameters {
-			maps[i] = param.AsMap()
-		}
+	if api.Spec.OpenapiParametersJson != "" {
 		var err error
-		parameters, err = openapiutil.MapToParameters(maps)
+		parameters, err = openapiutil.ParseJSONParameters(api.Spec.OpenapiParametersJson)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 	}
 
-	var schema *openapi3.Schema
-	if api.Spec.OpenapiResponseSchema != nil {
-		var err error
-		schema, err = openapiutil.MapToSchema(api.Spec.OpenapiResponseSchema.AsMap())
+	components := make(map[string]*openapi3.SchemaRef)
+
+	var requestBody *openapi3.RequestBodyRef
+	if api.Spec.OpenapiRequestSchemaJson != "" {
+		s, cs, err := openapiutil.ParseJSONSchema(api.Spec.OpenapiDefsPrefix, api.Spec.OpenapiRequestSchemaJson)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
+
+		for k, v := range cs {
+			components[k] = v
+		}
+
+		requestBody = &openapi3.RequestBodyRef{
+			Value: &openapi3.RequestBody{
+				Content: openapi3.NewContentWithJSONSchema(s),
+			},
+		}
+	}
+
+	var responseSchema *openapi3.Schema
+	if api.Spec.OpenapiResponseSchemaJson != "" {
+		s, cs, err := openapiutil.ParseJSONSchema(api.Spec.OpenapiDefsPrefix, api.Spec.OpenapiResponseSchemaJson)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		for k, v := range cs {
+			components[k] = v
+		}
+
+		responseSchema = s
 	} else {
-		schema = &openapi3.Schema{
+		responseSchema = &openapi3.Schema{
 			Type: &openapi3.Types{"object"},
 		}
 	}
 
-	pathItem := &openapi3.PathItem{
-		Get: &openapi3.Operation{
-			Summary:    summary,
-			Parameters: parameters,
-			Responses: openapi3.NewResponses(
-				openapi3.WithStatus(200, &openapi3.ResponseRef{
-					Value: openapi3.NewResponse().WithDescription(
-						fmt.Sprintf("Successful response of %s resolver", name),
-					).WithContent(
-						openapi3.NewContentWithJSONSchema(&openapi3.Schema{
-							Type: &openapi3.Types{"array"},
-							Items: &openapi3.SchemaRef{
-								Value: schema,
-							},
-						}),
-					),
-				}),
-				openapi3.WithStatus(400, &openapi3.ResponseRef{
-					Value: openapi3.NewResponse().WithDescription(
-						"Bad request",
-					).WithContent(
-						openapi3.NewContentWithJSONSchema(&openapi3.Schema{
-							Type: &openapi3.Types{"object"},
-							Properties: map[string]*openapi3.SchemaRef{
-								"error": {
-									Value: &openapi3.Schema{
-										Type: &openapi3.Types{"string"},
-									},
+	op := &openapi3.Operation{
+		Summary:     summary,
+		Parameters:  parameters,
+		RequestBody: requestBody,
+		Responses: openapi3.NewResponses(
+			openapi3.WithStatus(200, &openapi3.ResponseRef{
+				Value: openapi3.NewResponse().WithDescription(
+					fmt.Sprintf("Successful response of %s resolver", name),
+				).WithContent(
+					openapi3.NewContentWithJSONSchema(&openapi3.Schema{
+						Type: &openapi3.Types{"array"},
+						Items: &openapi3.SchemaRef{
+							Value: responseSchema,
+						},
+					}),
+				),
+			}),
+			openapi3.WithStatus(400, &openapi3.ResponseRef{
+				Value: openapi3.NewResponse().WithDescription(
+					"Bad request",
+				).WithContent(
+					openapi3.NewContentWithJSONSchema(&openapi3.Schema{
+						Type: &openapi3.Types{"object"},
+						Properties: map[string]*openapi3.SchemaRef{
+							"error": {
+								Value: &openapi3.Schema{
+									Type: &openapi3.Types{"string"},
 								},
 							},
-						}),
-					),
-				}),
-			),
-		},
+						},
+					}),
+				),
+			}),
+		),
 	}
 
-	return pathItem, nil
+	// If the API has a request body schema, use POST method. Otherwise, use GET method.
+	var pathItem *openapi3.PathItem
+	if requestBody != nil {
+		pathItem = &openapi3.PathItem{Post: op}
+	} else {
+		pathItem = &openapi3.PathItem{Get: op}
+	}
+
+	return pathItem, components, nil
 }

@@ -1,21 +1,21 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import { createAdminServiceGetProjectVariables } from "@rilldata/web-admin/client";
-  import EnvironmentVariablesTable from "@rilldata/web-admin/features/projects/environment-variables/EnvironmentVariablesTable.svelte";
-  import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
-  import Button from "@rilldata/web-common/components/button/Button.svelte";
-  import { Plus } from "lucide-svelte";
-  import { Search } from "@rilldata/web-common/components/search";
-  import RadixLarge from "@rilldata/web-common/components/typography/RadixLarge.svelte";
   import AddDialog from "@rilldata/web-admin/features/projects/environment-variables/AddDialog.svelte";
-  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
-  import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
-  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
+  import EnvironmentVariablesTable from "@rilldata/web-admin/features/projects/environment-variables/EnvironmentVariablesTable.svelte";
   import {
     EnvironmentType,
     type EnvironmentTypes,
   } from "@rilldata/web-admin/features/projects/environment-variables/types";
   import { getEnvironmentType } from "@rilldata/web-admin/features/projects/environment-variables/utils";
+  import Button from "@rilldata/web-common/components/button/Button.svelte";
+  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
+  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
+  import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
+  import { Search } from "@rilldata/web-common/components/search";
+  import RadixLarge from "@rilldata/web-common/components/typography/RadixLarge.svelte";
+  import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
+  import { Plus } from "lucide-svelte";
 
   let open = false;
   let searchText = "";
@@ -104,7 +104,7 @@
           <RadixLarge>Environment variables</RadixLarge>
           <p class="text-sm text-slate-700 font-medium">
             Manage your environment variables here. <a
-              href="https://docs.rilldata.com/manage/variables-and-credentials"
+              href="https://docs.rilldata.com/manage/project-management/variables-and-credentials"
               target="_blank"
               class="text-primary-600 hover:text-primary-700 active:text-primary-800"
             >
@@ -165,7 +165,7 @@
               </DropdownMenu.CheckboxItem>
             </DropdownMenu.Content>
           </DropdownMenu.Root>
-          <Button type="primary" large on:click={() => (open = true)}>
+          <Button type="primary" large onClick={() => (open = true)}>
             <Plus size="16px" />
             <!-- <span>Add environment variable</span> -->
           </Button>

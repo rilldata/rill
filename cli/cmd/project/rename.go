@@ -27,7 +27,7 @@ func RenameCmd(ch *cmdutil.Helper) *cobra.Command {
 			ch.PrintfWarn("Warn: Renaming a project will invalidate dashboard URLs\n")
 
 			if !cmd.Flags().Changed("project") && ch.Interactive {
-				projectNames, err := projectNames(ctx, ch)
+				projectNames, err := ProjectNames(ctx, ch)
 				if err != nil {
 					return err
 				}

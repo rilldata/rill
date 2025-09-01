@@ -1,15 +1,15 @@
 import { additionalMeasures } from "../../selectors";
-import type { DimensionThresholdFilter } from "../../stores/metrics-explorer-entity";
+import type { DimensionThresholdFilter } from "web-common/src/features/dashboards/stores/explore-state";
 
-export function getMeasuresForDimensionTable(
-  activeMeasureName: string | null,
+export function getMeasuresForDimensionOrLeaderboardDisplay(
+  sortByMeasureName: string | null,
   dimensionThresholdFilters: DimensionThresholdFilter[],
   visibleMeasureNames: string[],
 ) {
   const allMeasures = new Set([
     ...visibleMeasureNames,
-    ...(activeMeasureName
-      ? additionalMeasures(activeMeasureName, dimensionThresholdFilters)
+    ...(sortByMeasureName
+      ? additionalMeasures(sortByMeasureName, dimensionThresholdFilters)
       : []),
   ]);
   return [...allMeasures];

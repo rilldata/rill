@@ -10,6 +10,9 @@
     createLocalServiceGetMetadata,
   } from "@rilldata/web-common/runtime-client/local-service";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
+  import ThemeToggle from "@rilldata/web-common/features/themes/ThemeToggle.svelte";
+
+  export let darkMode: boolean;
 
   $: user = createLocalServiceGetCurrentUser({
     query: {
@@ -54,7 +57,10 @@
   </div>
 {:else if $user.data && $metadata.data}
   <DropdownMenu.Root>
-    <DropdownMenu.Trigger class="flex-none w-7">
+    <DropdownMenu.Trigger
+      class="flex-none w-7"
+      aria-label="Avatar logged {loggedIn ? 'in' : 'out'}"
+    >
       {#if loggedIn && !photoUrlErrored}
         <Avatar
           src={$user.data?.user?.photoUrl}
@@ -65,7 +71,12 @@
         <NoUser />
       {/if}
     </DropdownMenu.Trigger>
-    <DropdownMenu.Content>
+    <DropdownMenu.Content class="p-1">
+      {#if darkMode}
+        <ThemeToggle />
+        <DropdownMenu.Separator />
+      {/if}
+
       <DropdownMenu.Item
         href="https://docs.rilldata.com"
         target="_blank"
@@ -74,18 +85,22 @@
       >
         Documentation
       </DropdownMenu.Item>
+      <DropdownMenu.Separator />
+
       <DropdownMenu.Item
-        href="https://discord.com/invite/ngVV4KzEGv?utm_source=rill&utm_medium=rill-cloud-avatar-menu"
+        href="https://discord.gg/TatjVY32"
         target="_blank"
         rel="noreferrer noopener"
         class="text-gray-800 font-normal"
       >
         Join us on Discord
       </DropdownMenu.Item>
+
       {#if loggedIn}
         <DropdownMenu.Item on:click={handlePylon}>
           Contact Rill support
         </DropdownMenu.Item>
+        <DropdownMenu.Separator />
         <DropdownMenu.Item
           href={logoutUrl}
           rel="external"
@@ -94,6 +109,7 @@
           Logout
         </DropdownMenu.Item>
       {:else}
+        <DropdownMenu.Separator />
         <DropdownMenu.Item
           href={loginUrl}
           rel="external"

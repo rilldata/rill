@@ -28,7 +28,7 @@
     {#if remote}
       <CtaMessage>
         Please grant access to your repository<br /><GithubRepoInline
-          githubUrl={remote}
+          gitRemote={remote}
         />
       </CtaMessage>
     {/if}

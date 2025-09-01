@@ -45,7 +45,9 @@ export async function fetchWrapper({
   if (params) {
     const paramParts: string[] = [];
     for (const p in params) {
-      paramParts.push(`${p}=${encodeURIComponent(params[p] as string)}`);
+      if (params[p] !== undefined) {
+        paramParts.push(`${p}=${encodeURIComponent(params[p] as string)}`);
+      }
     }
     if (paramParts.length) {
       url = `${url}?${paramParts.join("&")}`;

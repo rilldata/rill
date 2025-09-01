@@ -1,9 +1,10 @@
 <script lang="ts">
-  import * as Dialog from "@rilldata/web-common/components/dialog-v2";
+  import * as Dialog from "@rilldata/web-common/components/dialog";
   import AmazonAthena from "@rilldata/web-common/components/icons/connectors/AmazonAthena.svelte";
   import AmazonRedshift from "@rilldata/web-common/components/icons/connectors/AmazonRedshift.svelte";
   import MySQL from "@rilldata/web-common/components/icons/connectors/MySQL.svelte";
   import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
+  import { cn } from "@rilldata/web-common/lib/shadcn";
   import {
     createRuntimeServiceListConnectorDrivers,
     type V1ConnectorDriver,
@@ -31,38 +32,19 @@
   } from "../../../metrics/service/BehaviourEventTypes";
   import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import { useIsModelingSupportedForDefaultOlapDriver } from "../../connectors/olap/selectors";
+  import { connectorIconMapping } from "../../connectors/connector-icon-mapping";
+  import { useIsModelingSupportedForDefaultOlapDriverOLAP as useIsModelingSupportedForDefaultOlapDriver } from "../../connectors/selectors";
   import { duplicateSourceName } from "../sources-store";
   import AddDataForm from "./AddDataForm.svelte";
   import DuplicateSource from "./DuplicateSource.svelte";
   import LocalSourceUpload from "./LocalSourceUpload.svelte";
   import RequestConnectorForm from "./RequestConnectorForm.svelte";
+  import { OLAP_ENGINES, ALL_CONNECTORS, SOURCES } from "./constants";
 
   let step = 0;
   let selectedConnector: null | V1ConnectorDriver = null;
   let requestConnector = false;
-
-  const SOURCES = [
-    "gcs",
-    "s3",
-    "azure",
-    "bigquery",
-    "athena",
-    "redshift",
-    "duckdb",
-    "motherduck",
-    "postgres",
-    "mysql",
-    "sqlite",
-    "snowflake",
-    "salesforce",
-    "local_file",
-    "https",
-  ];
-
-  const OLAP_CONNECTORS = ["clickhouse", "druid", "pinot"];
-
-  const SORT_ORDER = [...SOURCES, ...OLAP_CONNECTORS];
+  let isSubmittingForm = false;
 
   const ICONS = {
     gcs: GoogleCloudStorage,
@@ -93,17 +75,17 @@
           data.connectors &&
           data.connectors
             .filter(
-              // Only show connectors in SOURCES or OLAP_CONNECTORS
+              // Only show connectors in SOURCES or OLAP_ENGINES
               (a) =>
                 a.name &&
-                (SOURCES.includes(a.name) || OLAP_CONNECTORS.includes(a.name)),
+                (SOURCES.includes(a.name) || OLAP_ENGINES.includes(a.name)),
             )
             .sort(
               // CAST SAFETY: we have filtered out any connectors that
               // don't have a `name` in the previous filter
               (a, b) =>
-                SORT_ORDER.indexOf(a.name as string) -
-                SORT_ORDER.indexOf(b.name as string),
+                ALL_CONNECTORS.indexOf(a.name as string) -
+                ALL_CONNECTORS.indexOf(b.name as string),
             );
         return data;
       },
@@ -145,10 +127,15 @@
     window.history.back();
   }
 
+  function handleSubmittingChange(event: CustomEvent) {
+    isSubmittingForm = event.detail.submitting;
+  }
+
   function resetModal() {
     const state = { step: 0, selectedConnector: null, requestConnector: false };
     window.history.pushState(state, "", "");
     dispatchEvent(new PopStateEvent("popstate", { state: state }));
+    isSubmittingForm = false;
   }
 
   async function onCancelDialog() {
@@ -164,6 +151,14 @@
 
   $: isModelingSupportedForDefaultOlapDriver =
     useIsModelingSupportedForDefaultOlapDriver($runtime.instanceId);
+  $: isModelingSupported = $isModelingSupportedForDefaultOlapDriver.data;
+
+  // FIXME: excluding salesforce until we implement the table discovery APIs
+  $: isConnectorType =
+    selectedConnector?.implementsOlap ||
+    selectedConnector?.implementsSqlStore ||
+    (selectedConnector?.implementsWarehouse &&
+      selectedConnector?.name !== "salesforce");
 </script>
 
 {#if step >= 1 || $duplicateSourceName}
@@ -174,10 +169,18 @@
         await onCancelDialog();
       }
     }}
+    closeOnEscape={!isSubmittingForm}
+    closeOnOutsideClick={!isSubmittingForm}
   >
-    <Dialog.Content noClose>
+    <Dialog.Content
+      class={cn(
+        "overflow-hidden",
+        step === 2 ? "max-w-4xl p-0 gap-0" : "p-6 gap-4",
+      )}
+      noClose={step === 1}
+    >
       {#if step === 1}
-        {#if $isModelingSupportedForDefaultOlapDriver}
+        {#if isModelingSupported}
           <Dialog.Title>Add a source</Dialog.Title>
           <section class="mb-1">
             <div class="connector-grid">
@@ -204,7 +207,7 @@
           <Dialog.Title>Connect an OLAP engine</Dialog.Title>
 
           <div class="connector-grid">
-            {#each connectors?.filter((c) => c.name && OLAP_CONNECTORS.includes(c.name)) as connector (connector.name)}
+            {#each connectors?.filter((c) => c.name && OLAP_ENGINES.includes(c.name)) as connector (connector.name)}
               {#if connector.name}
                 <button
                   id={connector.name}
@@ -232,33 +235,46 @@
       {/if}
 
       {#if step === 2 && selectedConnector}
-        <Dialog.Title>
+        <Dialog.Title class="p-4 border-b border-gray-200">
           {#if $duplicateSourceName !== null}
             Duplicate source
           {:else}
-            {selectedConnector.displayName}
+            <div class="flex items-center gap-[6px]">
+              {#if selectedConnector?.name}
+                <svelte:component
+                  this={connectorIconMapping[selectedConnector.name]}
+                  size="18px"
+                />
+              {/if}
+              <span class="text-lg leading-none font-semibold"
+                >{selectedConnector.displayName}</span
+              >
+            </div>
           {/if}
         </Dialog.Title>
 
         {#if $duplicateSourceName !== null}
-          <DuplicateSource onCancel={resetModal} onComplete={resetModal} />
+          <div class="p-6">
+            <DuplicateSource onCancel={resetModal} onComplete={resetModal} />
+          </div>
         {:else if selectedConnector.name === "local_file"}
           <LocalSourceUpload on:close={resetModal} on:back={back} />
         {:else if selectedConnector.name}
           <AddDataForm
             connector={selectedConnector}
-            formType={OLAP_CONNECTORS.includes(selectedConnector.name)
-              ? "connector"
-              : "source"}
+            formType={isConnectorType ? "connector" : "source"}
             onClose={resetModal}
             onBack={back}
+            on:submitting={handleSubmittingChange}
           />
         {/if}
       {/if}
 
       {#if step === 2 && requestConnector}
-        <Dialog.Title>Request a connector</Dialog.Title>
-        <RequestConnectorForm on:close={resetModal} on:back={back} />
+        <div class="p-6">
+          <Dialog.Title>Request a connector</Dialog.Title>
+          <RequestConnectorForm on:close={resetModal} on:back={back} />
+        </div>
       {/if}
     </Dialog.Content>
   </Dialog.Root>

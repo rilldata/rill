@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
+	"net/http"
 	"net/url"
 	"os"
 	"strings"
@@ -14,14 +15,13 @@ import (
 	"github.com/kelseyhightower/envconfig"
 	"github.com/redis/go-redis/v9"
 	"github.com/rilldata/rill/admin"
-	"github.com/rilldata/rill/admin/ai"
 	"github.com/rilldata/rill/admin/billing"
 	"github.com/rilldata/rill/admin/billing/payment"
 	"github.com/rilldata/rill/admin/jobs/river"
 	"github.com/rilldata/rill/admin/server"
-	"github.com/rilldata/rill/admin/worker"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/pkg/ai"
 	"github.com/rilldata/rill/runtime/pkg/debugserver"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
@@ -59,7 +59,7 @@ type Config struct {
 	MetricsExporter           observability.Exporter `default:"prometheus" split_words:"true"`
 	TracesExporter            observability.Exporter `default:"" split_words:"true"`
 	HTTPPort                  int                    `default:"8080" split_words:"true"`
-	GRPCPort                  int                    `default:"9090" split_words:"true"`
+	GRPCPort                  int                    `default:"8080" split_words:"true"`
 	DebugPort                 int                    `split_words:"true"`
 	ExternalURL               string                 `default:"http://localhost:8080" split_words:"true"`
 	ExternalGRPCURL           string                 `envconfig:"external_grpc_url"`
@@ -77,6 +77,7 @@ type Config struct {
 	GithubAppWebhookSecret    string                 `split_words:"true"`
 	GithubClientID            string                 `split_words:"true"`
 	GithubClientSecret        string                 `split_words:"true"`
+	GithubManagedAccount      string                 `split_words:"true"`
 	AssetsBucket              string                 `split_words:"true"`
 	// AssetsBucketGoogleCredentialsJSON is only required to be set for local development.
 	// For production use cases the service account will be directly attached to pods which is the recommended way of setting credentials.
@@ -131,13 +132,8 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			// Let ExternalGRPCURL default to ExternalURL, unless ExternalURL is itself the default.
-			// NOTE: This is temporary until we migrate to a server that can host HTTP and gRPC on the same port.
 			if conf.ExternalGRPCURL == "" {
-				if conf.ExternalURL == "http://localhost:8080" {
-					conf.ExternalGRPCURL = "http://localhost:9090"
-				} else {
-					conf.ExternalGRPCURL = conf.ExternalURL
-				}
+				conf.ExternalGRPCURL = conf.ExternalURL
 			}
 
 			// Validate frontend and external URLs
@@ -230,7 +226,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			emailClient := email.New(sender)
 
 			// Init github client
-			gh, err := admin.NewGithub(conf.GithubAppID, conf.GithubAppPrivateKey)
+			gh, err := admin.NewGithub(cmd.Context(), conf.GithubAppID, conf.GithubAppPrivateKey, conf.GithubManagedAccount, logger)
 			if err != nil {
 				logger.Fatal("error creating github client", zap.Error(err))
 			}
@@ -238,7 +234,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			// Init AI client
 			var aiClient ai.Client
 			if conf.OpenAIAPIKey != "" {
-				aiClient, err = ai.NewOpenAI(conf.OpenAIAPIKey)
+				aiClient, err = ai.NewOpenAI(conf.OpenAIAPIKey, nil)
 				if err != nil {
 					logger.Fatal("error creating OpenAI client", zap.Error(err))
 				}
@@ -292,8 +288,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				ProvisionerSetJSON:        conf.ProvisionerSetJSON,
 				ProvisionerMaxConcurrency: conf.ProvisionerMaxConcurrency,
 				DefaultProvisioner:        conf.DefaultProvisioner,
-				VersionNumber:             ch.Version.Number,
-				VersionCommit:             ch.Version.Commit,
+				Version:                   ch.Version,
 				MetricsProjectOrg:         metricsProjectOrg,
 				MetricsProjectName:        metricsProjectName,
 				AutoscalerCron:            conf.AutoscalerCron,
@@ -361,12 +356,12 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 					GithubAppWebhookSecret: conf.GithubAppWebhookSecret,
 					GithubClientID:         conf.GithubClientID,
 					GithubClientSecret:     conf.GithubClientSecret,
+					GithubManagedAccount:   conf.GithubManagedAccount,
 					AssetsBucket:           conf.AssetsBucket,
 				})
 				if err != nil {
 					logger.Fatal("error creating server", zap.Error(err))
 				}
-				group.Go(func() error { return srv.ServeGRPC(cctx) })
 				group.Go(func() error { return srv.ServeHTTP(cctx) })
 				if conf.DebugPort != 0 {
 					group.Go(func() error { return debugserver.ServeHTTP(cctx, conf.DebugPort) })
@@ -375,18 +370,34 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			// Init and run worker
 			if runWorker || runJobs {
-				wkr := worker.New(logger, adm, jobs)
 				if runWorker {
-					group.Go(func() error { return wkr.Run(cctx) })
+					group.Go(func() error { return jobs.Work(cctx) })
 					if !runServer {
 						// If we're not running the server, lets start a http server with /ping endpoint for health checks
-						group.Go(func() error { return worker.StartPingServer(cctx, conf.HTTPPort) })
+						mux := http.NewServeMux()
+						mux.HandleFunc("/ping", func(w http.ResponseWriter, r *http.Request) {
+							w.WriteHeader(http.StatusOK)
+							_, err := w.Write([]byte("pong"))
+							if err != nil {
+								panic(err)
+							}
+						})
+						group.Go(func() error {
+							return graceful.ServeHTTP(cctx, mux, graceful.ServeOptions{Port: conf.HTTPPort})
+						})
 					}
 				}
+
 				if runJobs {
 					for _, job := range conf.Jobs {
 						job := job
-						group.Go(func() error { return wkr.RunJob(cctx, job) })
+						group.Go(func() error {
+							_, err := jobs.EnqueueByKind(cmd.Context(), job)
+							if err != nil {
+								return err
+							}
+							return nil
+						})
 					}
 				}
 			}

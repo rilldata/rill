@@ -31,7 +31,8 @@ func (s *Server) GetBillingSubscription(ctx context.Context, req *adminv1.GetBil
 	}
 
 	claims := auth.GetClaims(ctx)
-	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrg && !claims.Superuser(ctx) {
+	forceAccess := claims.Superuser(ctx) && req.SuperuserForceAccess
+	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrg && !forceAccess {
 		return nil, status.Error(codes.PermissionDenied, "not allowed to read org subscriptions")
 	}
 
@@ -65,7 +66,8 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 	}
 
 	claims := auth.GetClaims(ctx)
-	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrg && !claims.Superuser(ctx) {
+	forceAccess := claims.Superuser(ctx) && req.SuperuserForceAccess
+	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrg && !forceAccess {
 		return nil, status.Error(codes.PermissionDenied, "not allowed to update org billing plan")
 	}
 
@@ -87,8 +89,6 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 	if bisc != nil {
 		return nil, status.Errorf(codes.FailedPrecondition, "plan cannot be changed on existing subscription as it was cancelled, please renew the subscription")
 	}
-
-	forceAccess := claims.Superuser(ctx) && req.SuperuserForceAccess
 
 	plan, err := s.admin.Biller.GetPlanByName(ctx, req.PlanName)
 	if err != nil {
@@ -258,7 +258,8 @@ func (s *Server) CancelBillingSubscription(ctx context.Context, req *adminv1.Can
 	}
 
 	claims := auth.GetClaims(ctx)
-	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrg && !claims.Superuser(ctx) {
+	forceAccess := claims.Superuser(ctx) && req.SuperuserForceAccess
+	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrg && !forceAccess {
 		return nil, status.Error(codes.PermissionDenied, "not allowed to cancel org subscription")
 	}
 
@@ -324,7 +325,8 @@ func (s *Server) RenewBillingSubscription(ctx context.Context, req *adminv1.Rene
 	}
 
 	claims := auth.GetClaims(ctx)
-	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrg && !claims.Superuser(ctx) {
+	forceAccess := claims.Superuser(ctx) && req.SuperuserForceAccess
+	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrg && !forceAccess {
 		return nil, status.Error(codes.PermissionDenied, "not allowed to renew org subscription")
 	}
 
@@ -348,8 +350,6 @@ func (s *Server) RenewBillingSubscription(ctx context.Context, req *adminv1.Rene
 	if plan.Default {
 		return nil, status.Errorf(codes.FailedPrecondition, "cannot renew to trial plan %s", plan.Name)
 	}
-
-	forceAccess := claims.Superuser(ctx) && req.SuperuserForceAccess
 
 	if !plan.Public && !forceAccess {
 		return nil, status.Errorf(codes.FailedPrecondition, "cannot renew to a private plan %q", plan.Name)
@@ -398,6 +398,7 @@ func (s *Server) RenewBillingSubscription(ctx context.Context, req *adminv1.Rene
 		Description:                         org.Description,
 		LogoAssetID:                         org.LogoAssetID,
 		FaviconAssetID:                      org.FaviconAssetID,
+		ThumbnailAssetID:                    org.ThumbnailAssetID,
 		CustomDomain:                        org.CustomDomain,
 		DefaultProjectRoleID:                org.DefaultProjectRoleID,
 		QuotaProjects:                       valOrDefault(sub.Plan.Quotas.NumProjects, org.QuotaProjects),
@@ -472,7 +473,8 @@ func (s *Server) GetPaymentsPortalURL(ctx context.Context, req *adminv1.GetPayme
 	}
 
 	claims := auth.GetClaims(ctx)
-	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrg && !claims.Superuser(ctx) {
+	forceAccess := claims.Superuser(ctx) && req.SuperuserForceAccess
+	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrg && !forceAccess {
 		return nil, status.Error(codes.PermissionDenied, "not allowed to manage org billing")
 	}
 
@@ -525,6 +527,7 @@ func (s *Server) SudoUpdateOrganizationBillingCustomer(ctx context.Context, req 
 		Description:                         org.Description,
 		LogoAssetID:                         org.LogoAssetID,
 		FaviconAssetID:                      org.FaviconAssetID,
+		ThumbnailAssetID:                    org.ThumbnailAssetID,
 		CustomDomain:                        org.CustomDomain,
 		DefaultProjectRoleID:                org.DefaultProjectRoleID,
 		QuotaProjects:                       org.QuotaProjects,
@@ -843,7 +846,8 @@ func (s *Server) ListOrganizationBillingIssues(ctx context.Context, req *adminv1
 	}
 
 	claims := auth.GetClaims(ctx)
-	if !claims.OrganizationPermissions(ctx, org.ID).ReadOrg && !claims.Superuser(ctx) {
+	forceAccess := claims.Superuser(ctx) && req.SuperuserForceAccess
+	if !claims.OrganizationPermissions(ctx, org.ID).ReadOrg && !forceAccess {
 		return nil, status.Error(codes.PermissionDenied, "not allowed to read org billing errors")
 	}
 
@@ -902,6 +906,7 @@ func (s *Server) updateQuotasAndHandleBillingIssues(ctx context.Context, org *da
 		Description:                         org.Description,
 		LogoAssetID:                         org.LogoAssetID,
 		FaviconAssetID:                      org.FaviconAssetID,
+		ThumbnailAssetID:                    org.ThumbnailAssetID,
 		CustomDomain:                        org.CustomDomain,
 		DefaultProjectRoleID:                org.DefaultProjectRoleID,
 		QuotaProjects:                       valOrDefault(sub.Plan.Quotas.NumProjects, org.QuotaProjects),
@@ -992,6 +997,7 @@ func (s *Server) getSubscriptionAndUpdateOrg(ctx context.Context, org *database.
 			Description:                         org.Description,
 			LogoAssetID:                         org.LogoAssetID,
 			FaviconAssetID:                      org.FaviconAssetID,
+			ThumbnailAssetID:                    org.ThumbnailAssetID,
 			CustomDomain:                        org.CustomDomain,
 			DefaultProjectRoleID:                org.DefaultProjectRoleID,
 			QuotaProjects:                       org.QuotaProjects,

@@ -66,7 +66,7 @@
     {#if organizationFaviconUrl}
       <Button
         type="secondary"
-        on:click={onRemove}
+        onClick={onRemove}
         loading={isLoading}
         disabled={isLoading}
       >

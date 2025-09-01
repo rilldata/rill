@@ -2,6 +2,7 @@ package reconcilers_test
 
 import (
 	"testing"
+	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -386,4 +387,52 @@ security:
 			},
 		},
 	})
+}
+
+func TestExploreDataRefreshedOn(t *testing.T) {
+	// Create an instance with StageChanges==true
+	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files:        map[string]string{"rill.yaml": ""},
+		StageChanges: true,
+	})
+
+	// Create basic model + metrics_view + canvas
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"m1.sql": `
+-- @materialize: true
+SELECT 'foo' as foo, 1 as x
+`,
+		"mv1.yaml": `
+version: 1
+type: metrics_view
+model: m1
+dimensions:
+- column: foo
+measures:
+- name: x
+  expression: sum(x)
+`,
+		"e1.yaml": `
+type: explore
+metrics_view: mv1
+`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
+
+	getAndCheckRefreshedOn := func() time.Time {
+		e1 := testruntime.GetResource(t, rt, id, runtime.ResourceKindExplore, "e1")
+		require.NotNil(t, e1.GetExplore().State.DataRefreshedOn)
+
+		mv1 := testruntime.GetResource(t, rt, id, runtime.ResourceKindMetricsView, "mv1")
+		require.NotNil(t, mv1.GetMetricsView().State.DataRefreshedOn)
+
+		require.Equal(t, e1.GetExplore().State.DataRefreshedOn, mv1.GetMetricsView().State.DataRefreshedOn)
+		return e1.GetExplore().State.DataRefreshedOn.AsTime()
+	}
+
+	refreshedOn1 := getAndCheckRefreshedOn()
+	testruntime.RefreshAndWait(t, rt, id, &runtimev1.ResourceName{Kind: runtime.ResourceKindModel, Name: "m1"})
+	refreshedOn2 := getAndCheckRefreshedOn()
+	require.Greater(t, refreshedOn2, refreshedOn1)
 }

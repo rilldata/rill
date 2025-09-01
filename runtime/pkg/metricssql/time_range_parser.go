@@ -11,18 +11,23 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/rilltime"
 )
 
-func (q *query) parseTimeRangeStart(ctx context.Context, node *ast.FuncCallExpr) (*metricsview.Expression, error) {
+func (q *query) parseTimeRangeStart(ctx context.Context, node *ast.FuncCallExpr, timeDimNode *ast.ColumnNameExpr) (*metricsview.Expression, error) {
 	rillTime, err := parseTimeRangeArgs(node.Args)
 	if err != nil {
 		return nil, err
 	}
 
-	ts, err := q.executor.Timestamps(ctx)
+	timeDim := "" // Default to empty string if no time dimension is provided
+	if timeDimNode != nil {
+		timeDim = timeDimNode.Name.Name.O
+	}
+
+	ts, err := q.executor.Timestamps(ctx, timeDim)
 	if err != nil {
 		return nil, err
 	}
 
-	watermark, _, err := rillTime.Eval(rilltime.EvalOptions{
+	watermark, _, _ := rillTime.Eval(rilltime.EvalOptions{
 		Now:        time.Now(),
 		MinTime:    ts.Min,
 		MaxTime:    ts.Max,
@@ -30,27 +35,29 @@ func (q *query) parseTimeRangeStart(ctx context.Context, node *ast.FuncCallExpr)
 		FirstDay:   int(q.metricsViewSpec.FirstDayOfWeek),
 		FirstMonth: int(q.metricsViewSpec.FirstMonthOfYear),
 	})
-	if err != nil {
-		return nil, err
-	}
 
 	return &metricsview.Expression{
 		Value: watermark,
 	}, nil
 }
 
-func (q *query) parseTimeRangeEnd(ctx context.Context, node *ast.FuncCallExpr) (*metricsview.Expression, error) {
+func (q *query) parseTimeRangeEnd(ctx context.Context, node *ast.FuncCallExpr, timeDimNode *ast.ColumnNameExpr) (*metricsview.Expression, error) {
 	rillTime, err := parseTimeRangeArgs(node.Args)
 	if err != nil {
 		return nil, err
 	}
 
-	ts, err := q.executor.Timestamps(ctx)
+	timeDim := "" // Default to empty string if no time dimension is provided
+	if timeDimNode != nil {
+		timeDim = timeDimNode.Name.Name.O
+	}
+
+	ts, err := q.executor.Timestamps(ctx, timeDim)
 	if err != nil {
 		return nil, err
 	}
 
-	_, watermark, err := rillTime.Eval(rilltime.EvalOptions{
+	_, watermark, _ := rillTime.Eval(rilltime.EvalOptions{
 		Now:        time.Now(),
 		MinTime:    ts.Min,
 		MaxTime:    ts.Max,
@@ -58,9 +65,6 @@ func (q *query) parseTimeRangeEnd(ctx context.Context, node *ast.FuncCallExpr) (
 		FirstDay:   int(q.metricsViewSpec.FirstDayOfWeek),
 		FirstMonth: int(q.metricsViewSpec.FirstMonthOfYear),
 	})
-	if err != nil {
-		return nil, err
-	}
 
 	return &metricsview.Expression{
 		Value: watermark,

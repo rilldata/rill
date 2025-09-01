@@ -53,7 +53,7 @@ func (s *Server) S3GetBucketMetadata(ctx context.Context, req *runtimev1.S3GetBu
 	}
 	defer release()
 
-	region, err := s3Conn.GetBucketRegion(ctx, req.Bucket)
+	region, err := s3Conn.BucketRegion(ctx, req.Bucket)
 	if err != nil {
 		return nil, err
 	}
@@ -149,9 +149,9 @@ func (s *Server) OLAPListTables(ctx context.Context, req *runtimev1.OLAPListTabl
 	}
 	_ = i.LoadPhysicalSize(ctx, tables)
 
-	res := make([]*runtimev1.TableInfo, len(tables))
+	res := make([]*runtimev1.OlapTableInfo, len(tables))
 	for i, table := range tables {
-		res[i] = &runtimev1.TableInfo{
+		res[i] = &runtimev1.OlapTableInfo{
 			Database:                table.Database,
 			DatabaseSchema:          table.DatabaseSchema,
 			IsDefaultDatabase:       table.IsDefaultDatabase,
@@ -177,13 +177,91 @@ func (s *Server) OLAPGetTable(ctx context.Context, req *runtimev1.OLAPGetTableRe
 	if err != nil {
 		return nil, err
 	}
-	_ = olap.InformationSchema().LoadPhysicalSize(ctx, []*drivers.Table{table})
+	_ = olap.InformationSchema().LoadPhysicalSize(ctx, []*drivers.OlapTable{table})
 
 	return &runtimev1.OLAPGetTableResponse{
 		Schema:             table.Schema,
 		UnsupportedColumns: table.UnsupportedCols,
 		View:               table.View,
 		PhysicalSizeBytes:  table.PhysicalSizeBytes,
+	}, nil
+}
+
+func (s *Server) ListDatabaseSchemas(ctx context.Context, req *runtimev1.ListDatabaseSchemasRequest) (*runtimev1.ListDatabaseSchemasResponse, error) {
+	handle, release, err := s.runtime.AcquireHandle(ctx, req.InstanceId, req.Connector)
+	if err != nil {
+		return nil, err
+	}
+	defer release()
+
+	is, ok := handle.AsInformationSchema()
+	if !ok {
+		return nil, fmt.Errorf("driver: information schema not implemented")
+	}
+
+	schemas, err := is.ListDatabaseSchemas(ctx)
+	if err != nil {
+		return nil, err
+	}
+	res := make([]*runtimev1.DatabaseSchemaInfo, len(schemas))
+	for i, schema := range schemas {
+		res[i] = &runtimev1.DatabaseSchemaInfo{
+			Database:       schema.Database,
+			DatabaseSchema: schema.DatabaseSchema,
+		}
+	}
+	return &runtimev1.ListDatabaseSchemasResponse{
+		DatabaseSchemas: res,
+	}, nil
+}
+
+func (s *Server) ListTables(ctx context.Context, req *runtimev1.ListTablesRequest) (*runtimev1.ListTablesResponse, error) {
+	handle, release, err := s.runtime.AcquireHandle(ctx, req.InstanceId, req.Connector)
+	if err != nil {
+		return nil, err
+	}
+	defer release()
+
+	is, ok := handle.AsInformationSchema()
+	if !ok {
+		return nil, fmt.Errorf("driver: information schema not implemented")
+	}
+
+	tables, err := is.ListTables(ctx, req.Database, req.DatabaseSchema)
+	if err != nil {
+		return nil, err
+	}
+	res := make([]*runtimev1.TableInfo, len(tables))
+	for i, table := range tables {
+		res[i] = &runtimev1.TableInfo{
+			Name: table.Name,
+			View: table.View,
+		}
+	}
+	return &runtimev1.ListTablesResponse{
+		Tables: res,
+	}, nil
+}
+
+func (s *Server) GetTable(ctx context.Context, req *runtimev1.GetTableRequest) (*runtimev1.GetTableResponse, error) {
+	handle, release, err := s.runtime.AcquireHandle(ctx, req.InstanceId, req.Connector)
+	if err != nil {
+		return nil, err
+	}
+	defer release()
+
+	is, ok := handle.AsInformationSchema()
+	if !ok {
+		return nil, fmt.Errorf("driver: information schema not implemented")
+	}
+
+	tableMetadata, err := is.GetTable(ctx, req.Database, req.DatabaseSchema, req.Table)
+	if err != nil {
+		return nil, err
+	}
+
+	return &runtimev1.GetTableResponse{
+		Schema: tableMetadata.Schema,
 	}, nil
 }
 
@@ -212,7 +290,7 @@ func (s *Server) BigQueryListTables(ctx context.Context, req *runtimev1.BigQuery
 	}
 	defer release()
 
-	names, nextToken, err := bq.ListTables(ctx, req)
+	names, nextToken, err := bq.ListBigQueryTables(ctx, req)
 	if err != nil {
 		return nil, err
 	}

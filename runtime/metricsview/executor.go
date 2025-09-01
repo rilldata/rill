@@ -6,9 +6,11 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"slices"
 	"strings"
 	"time"
 
+	"github.com/mitchellh/mapstructure"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -35,7 +37,7 @@ type Executor struct {
 	olapRelease func()
 	instanceCfg drivers.InstanceConfig
 
-	timestamps TimestampsResult
+	timestamps map[string]TimestampsResult
 }
 
 type TimestampsResult struct {
@@ -67,6 +69,7 @@ func NewExecutor(ctx context.Context, rt *runtime.Runtime, instanceID string, mv
 		olap:        olap,
 		olapRelease: release,
 		instanceCfg: instanceCfg,
+		timestamps:  make(map[string]TimestampsResult),
 	}, nil
 }
 
@@ -90,8 +93,8 @@ func (e *Executor) CacheKey(ctx context.Context) ([]byte, bool, error) {
 			// (until the metrics view is refreshed/edited, which always leads to cache invalidations)
 			return []byte(""), true, nil
 		}
-		// watermark is the default cache key for streaming metrics views
-		ts, err := e.Timestamps(ctx)
+		// watermark is the default cache key for streaming metrics views, use default mv time dimension
+		ts, err := e.Timestamps(ctx, "")
 		if err != nil {
 			return nil, false, err
 		}
@@ -134,18 +137,34 @@ func (e *Executor) ValidateQuery(qry *Query) error {
 	panic("not implemented")
 }
 
-// Timestamps queries min, max and watermark for the metrics view
-func (e *Executor) Timestamps(ctx context.Context) (TimestampsResult, error) {
-	if !e.timestamps.Min.IsZero() {
-		return e.timestamps, nil
+// Timestamps queries min, max and watermark for the metrics view.
+func (e *Executor) Timestamps(ctx context.Context, timeDim string) (TimestampsResult, error) {
+	if timeDim == "" {
+		timeDim = e.metricsView.TimeDimension
 	}
 
-	var err error
+	if res, ok := e.timestamps[timeDim]; ok && !res.Min.IsZero() {
+		return res, nil
+	}
+
+	timeExpr, err := e.timeColumnOrExpr(timeDim)
+	if err != nil {
+		return TimestampsResult{}, fmt.Errorf("failed to resolve time column or expression: %w", err)
+	}
+	if timeExpr == "" {
+		return TimestampsResult{}, fmt.Errorf("no time dimension found in metrics view '%s'", timeDim)
+	}
+
+	var res TimestampsResult
 	switch e.olap.Dialect() {
-	case drivers.DialectDuckDB, drivers.DialectClickHouse, drivers.DialectPinot:
-		e.timestamps, err = e.resolveDuckDBClickHouseAndPinot(ctx)
+	case drivers.DialectDuckDB:
+		res, err = e.resolveDuckDB(ctx, timeExpr)
+	case drivers.DialectClickHouse:
+		res, err = e.resolveClickHouse(ctx, timeExpr)
+	case drivers.DialectPinot:
+		res, err = e.resolvePinot(ctx, timeExpr)
 	case drivers.DialectDruid:
-		e.timestamps, err = e.resolveDruid(ctx)
+		res, err = e.resolveDruid(ctx, timeExpr)
 	default:
 		return TimestampsResult{}, fmt.Errorf("not available for dialect '%s'", e.olap.Dialect())
 	}
@@ -153,13 +172,24 @@ func (e *Executor) Timestamps(ctx context.Context) (TimestampsResult, error) {
 		return TimestampsResult{}, err
 	}
 
-	e.timestamps.Now = time.Now()
-	return e.timestamps, nil
+	res.Now = time.Now()
+	e.timestamps[timeDim] = res
+
+	return res, nil
 }
 
 // BindQuery allows to set min, max and watermark from a cache.
 func (e *Executor) BindQuery(ctx context.Context, qry *Query, timestamps TimestampsResult) error {
-	e.timestamps = timestamps
+	err := qry.Validate()
+	if err != nil {
+		return err
+	}
+
+	if qry.TimeRange != nil && qry.TimeRange.TimeDimension != "" {
+		e.timestamps[qry.TimeRange.TimeDimension] = timestamps
+	} else if e.metricsView.TimeDimension != "" {
+		e.timestamps[e.metricsView.TimeDimension] = timestamps
+	}
 	return e.rewriteQueryTimeRanges(ctx, qry, nil)
 }
 
@@ -186,6 +216,10 @@ func (e *Executor) Schema(ctx context.Context) (*runtimev1.StructType, error) {
 
 	for _, d := range e.metricsView.Dimensions {
 		if e.security.CanAccessField(d.Name) {
+			if e.metricsView.TimeDimension == d.Name {
+				// Skip the time dimension if it is already added
+				continue
+			}
 			qry.Dimensions = append(qry.Dimensions, Dimension{Name: d.Name})
 		}
 	}
@@ -224,18 +258,12 @@ func (e *Executor) Schema(ctx context.Context) (*runtimev1.StructType, error) {
 		return nil, err
 	}
 
-	res, err := e.olap.Query(ctx, &drivers.Statement{
-		Query:            sql,
-		Args:             args,
-		Priority:         e.priority,
-		ExecutionTimeout: defaultInteractiveTimeout,
-	})
+	schema, err := e.olap.QuerySchema(ctx, sql, args)
 	if err != nil {
 		return nil, err
 	}
-	defer res.Close()
 
-	return res.Schema, nil
+	return schema, nil
 }
 
 // Query executes the provided query against the metrics view.
@@ -294,6 +322,11 @@ func (e *Executor) Query(ctx context.Context, qry *Query, executionTime *time.Ti
 		return nil, err
 	}
 
+	err = e.wrapClickhouseComputedTimeDim(ast)
+	if err != nil {
+		return nil, err
+	}
+
 	var res *drivers.Result
 	if !pivoting {
 		sql, args, err := ast.SQL()
@@ -335,7 +368,7 @@ func (e *Executor) Query(ctx context.Context, qry *Query, executionTime *time.Ti
 		}
 
 		// Execute the pivot export
-		path, err := e.executePivotExport(ctx, ast, pivotAST, "parquet")
+		path, err := e.executePivotExport(ctx, ast, pivotAST, "parquet", nil)
 		if err != nil {
 			return nil, err
 		}
@@ -368,9 +401,14 @@ func (e *Executor) Query(ctx context.Context, qry *Query, executionTime *time.Ti
 
 // Export executes and exports the provided query against the metrics view.
 // It returns a path to a temporary file containing the export. The caller is responsible for cleaning up the file.
-func (e *Executor) Export(ctx context.Context, qry *Query, executionTime *time.Time, format drivers.FileFormat) (string, error) {
+func (e *Executor) Export(ctx context.Context, qry *Query, executionTime *time.Time, format drivers.FileFormat, headers []string) (string, error) {
 	if !e.security.CanAccess() {
 		return "", runtime.ErrForbidden
+	}
+
+	err := qry.Validate()
+	if err != nil {
+		return "", err
 	}
 
 	pivotAST, pivoting, err := e.rewriteQueryForPivot(qry)
@@ -405,8 +443,13 @@ func (e *Executor) Export(ctx context.Context, qry *Query, executionTime *time.T
 		return "", err
 	}
 
+	err = e.wrapClickhouseComputedTimeDim(ast)
+	if err != nil {
+		return "", err
+	}
+
 	if pivoting {
-		return e.executePivotExport(ctx, ast, pivotAST, format)
+		return e.executePivotExport(ctx, ast, pivotAST, format, headers)
 	}
 
 	sql, args, err := ast.SQL()
@@ -417,7 +460,7 @@ func (e *Executor) Export(ctx context.Context, qry *Query, executionTime *time.T
 	return e.executeExport(ctx, format, e.metricsView.Connector, map[string]any{
 		"sql":  sql,
 		"args": args,
-	})
+	}, headers)
 }
 
 type SearchQuery struct {
@@ -534,6 +577,90 @@ func (e *Executor) Search(ctx context.Context, qry *SearchQuery, executionTime *
 		return nil, err
 	}
 	return searchResult, nil
+}
+
+type AnnotationsQuery struct {
+	MetricsView string     `mapstructure:"metrics_view"`
+	Measures    []string   `mapstructure:"measures"`
+	TimeRange   *TimeRange `mapstructure:"time_range"`
+	Limit       *int64     `mapstructure:"limit"`
+	Offset      *int64     `mapstructure:"offset"`
+	TimeZone    string     `mapstructure:"time_zone"`
+	TimeGrain   TimeGrain  `mapstructure:"time_grain"`
+	Priority    int        `mapstructure:"priority"`
+}
+
+func (q *AnnotationsQuery) AsMap() (map[string]any, error) {
+	queryMap := make(map[string]any)
+	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
+		Result:     &queryMap,
+		DecodeHook: timeDecodeFunc,
+	})
+	if err != nil {
+		return nil, err
+	}
+	err = decoder.Decode(q)
+	if err != nil {
+		return nil, err
+	}
+	return queryMap, nil
+}
+
+// BindAnnotationsQuery allows setting min, max and watermark from a cache for an AnnotationsQuery
+func (e *Executor) BindAnnotationsQuery(ctx context.Context, qry *AnnotationsQuery, timestamps TimestampsResult) error {
+	if qry.TimeRange != nil && qry.TimeRange.TimeDimension != "" {
+		e.timestamps[qry.TimeRange.TimeDimension] = timestamps
+	} else if e.metricsView.TimeDimension != "" {
+		e.timestamps[e.metricsView.TimeDimension] = timestamps
+	}
+
+	tz, err := time.LoadLocation(qry.TimeZone)
+	if err != nil {
+		return err
+	}
+
+	err = e.resolveTimeRange(ctx, qry.TimeRange, tz, nil)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (e *Executor) Annotations(ctx context.Context, qry *AnnotationsQuery) ([]map[string]any, error) {
+	reqMeasures := qry.Measures
+	if len(reqMeasures) == 0 {
+		for _, mes := range e.metricsView.Measures {
+			reqMeasures = append(reqMeasures, mes.Name)
+		}
+	}
+
+	rows := make([]map[string]any, 0)
+
+	for _, ann := range e.metricsView.Annotations {
+		annMeasures := make([]string, 0)
+
+		// Collect measures that are requested.
+		for _, measure := range ann.Measures {
+			if slices.Contains(reqMeasures, measure) {
+				annMeasures = append(annMeasures, measure)
+			}
+		}
+
+		// If none of the measures in the annotation are requested, skip the annotation.
+		if len(annMeasures) == 0 {
+			continue
+		}
+
+		rowsForAnn, err := e.executeAnnotationsQuery(ctx, qry, ann, annMeasures)
+		if err != nil {
+			return nil, err
+		}
+
+		rows = append(rows, rowsForAnn...)
+	}
+
+	return rows, nil
 }
 
 func (e *Executor) executeSearchInDruid(ctx context.Context, qry *SearchQuery, executionTime *time.Time) ([]SearchResult, error) {
@@ -674,6 +801,128 @@ func (e *Executor) executeSearchInDruid(ctx context.Context, qry *SearchQuery, e
 		}
 	}
 	return result, nil
+}
+
+// timeColumnOrExpr returns the time column or expression to use for the metrics view. ues time column if provided, otherwise fall back to the metrics view TimeDimension.
+func (e *Executor) timeColumnOrExpr(timeDim string) (string, error) {
+	// figure out the time column or expression to use from the dimension list
+	for _, dim := range e.metricsView.Dimensions {
+		if dim.Name == timeDim {
+			expr, err := e.olap.Dialect().MetricsViewDimensionExpression(dim)
+			if err != nil {
+				return "", fmt.Errorf("failed to get time dimension expression for '%s': %w", timeDim, err)
+			}
+			return expr, nil
+		}
+	}
+	return e.olap.Dialect().EscapeIdentifier(timeDim), nil // fallback to the time dimension if not found in dimensions
+}
+
+func (e *Executor) executeAnnotationsQuery(ctx context.Context, qry *AnnotationsQuery, annotation *runtimev1.MetricsViewSpec_Annotation, forMeasures []string) ([]map[string]any, error) {
+	// Acquire olap connection for the annotation's table's connector
+	olap, release, err := e.rt.OLAP(ctx, e.instanceID, annotation.Connector)
+	if err != nil {
+		return nil, err
+	}
+	defer release()
+	dialect := olap.Dialect()
+
+	// Only call resolveTimeRange is either start/end was not provided.
+	// This avoids executing Timestamps without caching if it was not bound already.
+	if qry.TimeRange.Start.IsZero() || qry.TimeRange.End.IsZero() {
+		tz, err := time.LoadLocation(qry.TimeZone)
+		if err != nil {
+			return nil, err
+		}
+
+		err = e.resolveTimeRange(ctx, qry.TimeRange, tz, nil)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	start := qry.TimeRange.Start.Format(time.RFC3339)
+	end := qry.TimeRange.End.Format(time.RFC3339)
+
+	b := &strings.Builder{}
+
+	b.WriteString("SELECT *")
+	if annotation.HasDuration {
+		// Convert the string grain to an integer so that it is easy to calculate "greater than or equal to".
+		b.WriteString(`,(CASE
+  WHEN duration = 'millisecond' THEN 1
+  WHEN duration = 'second' THEN 2
+  WHEN duration = 'minute' THEN 3
+  WHEN duration = 'hour' THEN 4
+  WHEN duration = 'day' THEN 5
+  WHEN duration = 'week' THEN 6
+  WHEN duration = 'month' THEN 7
+  WHEN duration = 'quarter' THEN 8
+  WHEN duration = 'year' THEN 9
+  ELSE 0
+END) as __rill_time_grain`)
+	}
+
+	b.WriteString(" FROM ")
+	b.WriteString(dialect.EscapeTable(annotation.Database, annotation.DatabaseSchema, annotation.Table))
+
+	b.WriteString(" WHERE ")
+
+	b.WriteString("time >= ? AND time < ?")
+	args := []any{start, end}
+
+	if annotation.HasTimeEnd {
+		b.WriteString(" AND time_end >= ? AND time_end < ?")
+		args = append(args, start, end)
+	}
+
+	if annotation.HasDuration && qry.TimeGrain != TimeGrainUnspecified {
+		b.WriteString(" AND (__rill_time_grain == 0 OR __rill_time_grain <= ?)")
+		args = append(args, int(qry.TimeGrain.ToTimeutil()))
+	}
+
+	b.WriteString(" ORDER BY time")
+
+	if qry.Limit != nil {
+		b.WriteString(" LIMIT ?")
+		args = append(args, *qry.Limit)
+	}
+
+	if qry.Offset != nil {
+		b.WriteString(" OFFSET ?")
+		args = append(args, *qry.Offset)
+	}
+
+	res, err := olap.Query(ctx, &drivers.Statement{
+		Query:    b.String(),
+		Args:     args,
+		Priority: 0,
+	})
+	if err != nil {
+		return nil, err
+	}
+	defer res.Close()
+
+	rows := make([]map[string]any, 0)
+
+	for res.Next() {
+		row := make(map[string]any)
+		if err := res.MapScan(row); err != nil {
+			return nil, err
+		}
+
+		// Fill in the for_measures field. Used which annotations apply to which measures.
+		row["for_measures"] = forMeasures
+
+		rows = append(rows, row)
+	}
+
+	err = res.Err()
+	if err != nil {
+		return nil, err
+	}
+
+	return rows, nil
 }
 
 func whereExprForSearch(where *Expression, dimension, search string) *Expression {

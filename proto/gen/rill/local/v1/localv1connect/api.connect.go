@@ -40,6 +40,12 @@ const (
 	LocalServiceGetMetadataProcedure = "/rill.local.v1.LocalService/GetMetadata"
 	// LocalServiceGetVersionProcedure is the fully-qualified name of the LocalService's GetVersion RPC.
 	LocalServiceGetVersionProcedure = "/rill.local.v1.LocalService/GetVersion"
+	// LocalServiceGitStatusProcedure is the fully-qualified name of the LocalService's GitStatus RPC.
+	LocalServiceGitStatusProcedure = "/rill.local.v1.LocalService/GitStatus"
+	// LocalServiceGitPullProcedure is the fully-qualified name of the LocalService's GitPull RPC.
+	LocalServiceGitPullProcedure = "/rill.local.v1.LocalService/GitPull"
+	// LocalServiceGitPushProcedure is the fully-qualified name of the LocalService's GitPush RPC.
+	LocalServiceGitPushProcedure = "/rill.local.v1.LocalService/GitPush"
 	// LocalServicePushToGithubProcedure is the fully-qualified name of the LocalService's PushToGithub
 	// RPC.
 	LocalServicePushToGithubProcedure = "/rill.local.v1.LocalService/PushToGithub"
@@ -58,6 +64,17 @@ const (
 	// LocalServiceListOrganizationsAndBillingMetadataProcedure is the fully-qualified name of the
 	// LocalService's ListOrganizationsAndBillingMetadata RPC.
 	LocalServiceListOrganizationsAndBillingMetadataProcedure = "/rill.local.v1.LocalService/ListOrganizationsAndBillingMetadata"
+	// LocalServiceCreateOrganizationProcedure is the fully-qualified name of the LocalService's
+	// CreateOrganization RPC.
+	LocalServiceCreateOrganizationProcedure = "/rill.local.v1.LocalService/CreateOrganization"
+	// LocalServiceListMatchingProjectsProcedure is the fully-qualified name of the LocalService's
+	// ListMatchingProjects RPC.
+	LocalServiceListMatchingProjectsProcedure = "/rill.local.v1.LocalService/ListMatchingProjects"
+	// LocalServiceListProjectsForOrgProcedure is the fully-qualified name of the LocalService's
+	// ListProjectsForOrg RPC.
+	LocalServiceListProjectsForOrgProcedure = "/rill.local.v1.LocalService/ListProjectsForOrg"
+	// LocalServiceGetProjectProcedure is the fully-qualified name of the LocalService's GetProject RPC.
+	LocalServiceGetProjectProcedure = "/rill.local.v1.LocalService/GetProject"
 )
 
 // These variables are the protoreflect.Descriptor objects for the RPCs defined in this package.
@@ -66,12 +83,19 @@ var (
 	localServicePingMethodDescriptor                                = localServiceServiceDescriptor.Methods().ByName("Ping")
 	localServiceGetMetadataMethodDescriptor                         = localServiceServiceDescriptor.Methods().ByName("GetMetadata")
 	localServiceGetVersionMethodDescriptor                          = localServiceServiceDescriptor.Methods().ByName("GetVersion")
+	localServiceGitStatusMethodDescriptor                           = localServiceServiceDescriptor.Methods().ByName("GitStatus")
+	localServiceGitPullMethodDescriptor                             = localServiceServiceDescriptor.Methods().ByName("GitPull")
+	localServiceGitPushMethodDescriptor                             = localServiceServiceDescriptor.Methods().ByName("GitPush")
 	localServicePushToGithubMethodDescriptor                        = localServiceServiceDescriptor.Methods().ByName("PushToGithub")
 	localServiceDeployProjectMethodDescriptor                       = localServiceServiceDescriptor.Methods().ByName("DeployProject")
 	localServiceRedeployProjectMethodDescriptor                     = localServiceServiceDescriptor.Methods().ByName("RedeployProject")
 	localServiceGetCurrentUserMethodDescriptor                      = localServiceServiceDescriptor.Methods().ByName("GetCurrentUser")
 	localServiceGetCurrentProjectMethodDescriptor                   = localServiceServiceDescriptor.Methods().ByName("GetCurrentProject")
 	localServiceListOrganizationsAndBillingMetadataMethodDescriptor = localServiceServiceDescriptor.Methods().ByName("ListOrganizationsAndBillingMetadata")
+	localServiceCreateOrganizationMethodDescriptor                  = localServiceServiceDescriptor.Methods().ByName("CreateOrganization")
+	localServiceListMatchingProjectsMethodDescriptor                = localServiceServiceDescriptor.Methods().ByName("ListMatchingProjects")
+	localServiceListProjectsForOrgMethodDescriptor                  = localServiceServiceDescriptor.Methods().ByName("ListProjectsForOrg")
+	localServiceGetProjectMethodDescriptor                          = localServiceServiceDescriptor.Methods().ByName("GetProject")
 )
 
 // LocalServiceClient is a client for the rill.local.v1.LocalService service.
@@ -82,6 +106,16 @@ type LocalServiceClient interface {
 	GetMetadata(context.Context, *connect.Request[v1.GetMetadataRequest]) (*connect.Response[v1.GetMetadataResponse], error)
 	// GetVersion returns details about the current and latest available Rill versions.
 	GetVersion(context.Context, *connect.Request[v1.GetVersionRequest]) (*connect.Response[v1.GetVersionResponse], error)
+	// GitStatus returns the curren status of the local git repo. This is equivalent to doing a `git fetch` followed by running `git status`.
+	GitStatus(context.Context, *connect.Request[v1.GitStatusRequest]) (*connect.Response[v1.GitStatusResponse], error)
+	// GitPull fetches the latest changes from the remote git repo equivalent to `git pull` command.
+	// If there are any merge conflicts the pull is aborted.
+	// Force can be set to true to force the pull and overwrite any local changes.
+	GitPull(context.Context, *connect.Request[v1.GitPullRequest]) (*connect.Response[v1.GitPullResponse], error)
+	// GitPush pushes the local changes to the remote git repo equivalent to `git push` command.
+	// The difference between this and PushTiGithub is that this does not create a new repo.
+	// It only pushes the changes to the existing remote repo.
+	GitPush(context.Context, *connect.Request[v1.GitPushRequest]) (*connect.Response[v1.GitPushResponse], error)
 	// PushToGithub create a Git repo from local project and pushed to users git account.
 	PushToGithub(context.Context, *connect.Request[v1.PushToGithubRequest]) (*connect.Response[v1.PushToGithubResponse], error)
 	// DeployProject deploys the local project to the Rill cloud.
@@ -91,9 +125,18 @@ type LocalServiceClient interface {
 	// GetCurrentUser returns the locally logged in user
 	GetCurrentUser(context.Context, *connect.Request[v1.GetCurrentUserRequest]) (*connect.Response[v1.GetCurrentUserResponse], error)
 	// GetCurrentProject returns the rill cloud project connected to the local project
+	// Deprecated: Use ListMatchingProjects instead.
 	GetCurrentProject(context.Context, *connect.Request[v1.GetCurrentProjectRequest]) (*connect.Response[v1.GetCurrentProjectResponse], error)
 	// ListOrganizationsAndBillingMetadata returns metadata about the current user's orgs.
 	ListOrganizationsAndBillingMetadata(context.Context, *connect.Request[v1.ListOrganizationsAndBillingMetadataRequest]) (*connect.Response[v1.ListOrganizationsAndBillingMetadataResponse], error)
+	// CreateOrganization creates a new organization
+	CreateOrganization(context.Context, *connect.Request[v1.CreateOrganizationRequest]) (*connect.Response[v1.CreateOrganizationResponse], error)
+	// ListMatchingProjects returns all remote projects matching the local project name
+	ListMatchingProjects(context.Context, *connect.Request[v1.ListMatchingProjectsRequest]) (*connect.Response[v1.ListMatchingProjectsResponse], error)
+	// ListProjectsForOrg returns all projects within an org
+	ListProjectsForOrg(context.Context, *connect.Request[v1.ListProjectsForOrgRequest]) (*connect.Response[v1.ListProjectsForOrgResponse], error)
+	// GetProject returns information about a specific project
+	GetProject(context.Context, *connect.Request[v1.GetProjectRequest]) (*connect.Response[v1.GetProjectResponse], error)
 }
 
 // NewLocalServiceClient constructs a client for the rill.local.v1.LocalService service. By default,
@@ -122,6 +165,24 @@ func NewLocalServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 			httpClient,
 			baseURL+LocalServiceGetVersionProcedure,
 			connect.WithSchema(localServiceGetVersionMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
+		gitStatus: connect.NewClient[v1.GitStatusRequest, v1.GitStatusResponse](
+			httpClient,
+			baseURL+LocalServiceGitStatusProcedure,
+			connect.WithSchema(localServiceGitStatusMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
+		gitPull: connect.NewClient[v1.GitPullRequest, v1.GitPullResponse](
+			httpClient,
+			baseURL+LocalServiceGitPullProcedure,
+			connect.WithSchema(localServiceGitPullMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
+		gitPush: connect.NewClient[v1.GitPushRequest, v1.GitPushResponse](
+			httpClient,
+			baseURL+LocalServiceGitPushProcedure,
+			connect.WithSchema(localServiceGitPushMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
 		pushToGithub: connect.NewClient[v1.PushToGithubRequest, v1.PushToGithubResponse](
@@ -160,6 +221,30 @@ func NewLocalServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 			connect.WithSchema(localServiceListOrganizationsAndBillingMetadataMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
+		createOrganization: connect.NewClient[v1.CreateOrganizationRequest, v1.CreateOrganizationResponse](
+			httpClient,
+			baseURL+LocalServiceCreateOrganizationProcedure,
+			connect.WithSchema(localServiceCreateOrganizationMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
+		listMatchingProjects: connect.NewClient[v1.ListMatchingProjectsRequest, v1.ListMatchingProjectsResponse](
+			httpClient,
+			baseURL+LocalServiceListMatchingProjectsProcedure,
+			connect.WithSchema(localServiceListMatchingProjectsMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
+		listProjectsForOrg: connect.NewClient[v1.ListProjectsForOrgRequest, v1.ListProjectsForOrgResponse](
+			httpClient,
+			baseURL+LocalServiceListProjectsForOrgProcedure,
+			connect.WithSchema(localServiceListProjectsForOrgMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
+		getProject: connect.NewClient[v1.GetProjectRequest, v1.GetProjectResponse](
+			httpClient,
+			baseURL+LocalServiceGetProjectProcedure,
+			connect.WithSchema(localServiceGetProjectMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -168,12 +253,19 @@ type localServiceClient struct {
 	ping                                *connect.Client[v1.PingRequest, v1.PingResponse]
 	getMetadata                         *connect.Client[v1.GetMetadataRequest, v1.GetMetadataResponse]
 	getVersion                          *connect.Client[v1.GetVersionRequest, v1.GetVersionResponse]
+	gitStatus                           *connect.Client[v1.GitStatusRequest, v1.GitStatusResponse]
+	gitPull                             *connect.Client[v1.GitPullRequest, v1.GitPullResponse]
+	gitPush                             *connect.Client[v1.GitPushRequest, v1.GitPushResponse]
 	pushToGithub                        *connect.Client[v1.PushToGithubRequest, v1.PushToGithubResponse]
 	deployProject                       *connect.Client[v1.DeployProjectRequest, v1.DeployProjectResponse]
 	redeployProject                     *connect.Client[v1.RedeployProjectRequest, v1.RedeployProjectResponse]
 	getCurrentUser                      *connect.Client[v1.GetCurrentUserRequest, v1.GetCurrentUserResponse]
 	getCurrentProject                   *connect.Client[v1.GetCurrentProjectRequest, v1.GetCurrentProjectResponse]
 	listOrganizationsAndBillingMetadata *connect.Client[v1.ListOrganizationsAndBillingMetadataRequest, v1.ListOrganizationsAndBillingMetadataResponse]
+	createOrganization                  *connect.Client[v1.CreateOrganizationRequest, v1.CreateOrganizationResponse]
+	listMatchingProjects                *connect.Client[v1.ListMatchingProjectsRequest, v1.ListMatchingProjectsResponse]
+	listProjectsForOrg                  *connect.Client[v1.ListProjectsForOrgRequest, v1.ListProjectsForOrgResponse]
+	getProject                          *connect.Client[v1.GetProjectRequest, v1.GetProjectResponse]
 }
 
 // Ping calls rill.local.v1.LocalService.Ping.
@@ -189,6 +281,21 @@ func (c *localServiceClient) GetMetadata(ctx context.Context, req *connect.Reque
 // GetVersion calls rill.local.v1.LocalService.GetVersion.
 func (c *localServiceClient) GetVersion(ctx context.Context, req *connect.Request[v1.GetVersionRequest]) (*connect.Response[v1.GetVersionResponse], error) {
 	return c.getVersion.CallUnary(ctx, req)
+}
+
+// GitStatus calls rill.local.v1.LocalService.GitStatus.
+func (c *localServiceClient) GitStatus(ctx context.Context, req *connect.Request[v1.GitStatusRequest]) (*connect.Response[v1.GitStatusResponse], error) {
+	return c.gitStatus.CallUnary(ctx, req)
+}
+
+// GitPull calls rill.local.v1.LocalService.GitPull.
+func (c *localServiceClient) GitPull(ctx context.Context, req *connect.Request[v1.GitPullRequest]) (*connect.Response[v1.GitPullResponse], error) {
+	return c.gitPull.CallUnary(ctx, req)
+}
+
+// GitPush calls rill.local.v1.LocalService.GitPush.
+func (c *localServiceClient) GitPush(ctx context.Context, req *connect.Request[v1.GitPushRequest]) (*connect.Response[v1.GitPushResponse], error) {
+	return c.gitPush.CallUnary(ctx, req)
 }
 
 // PushToGithub calls rill.local.v1.LocalService.PushToGithub.
@@ -222,6 +329,26 @@ func (c *localServiceClient) ListOrganizationsAndBillingMetadata(ctx context.Con
 	return c.listOrganizationsAndBillingMetadata.CallUnary(ctx, req)
 }
 
+// CreateOrganization calls rill.local.v1.LocalService.CreateOrganization.
+func (c *localServiceClient) CreateOrganization(ctx context.Context, req *connect.Request[v1.CreateOrganizationRequest]) (*connect.Response[v1.CreateOrganizationResponse], error) {
+	return c.createOrganization.CallUnary(ctx, req)
+}
+
+// ListMatchingProjects calls rill.local.v1.LocalService.ListMatchingProjects.
+func (c *localServiceClient) ListMatchingProjects(ctx context.Context, req *connect.Request[v1.ListMatchingProjectsRequest]) (*connect.Response[v1.ListMatchingProjectsResponse], error) {
+	return c.listMatchingProjects.CallUnary(ctx, req)
+}
+
+// ListProjectsForOrg calls rill.local.v1.LocalService.ListProjectsForOrg.
+func (c *localServiceClient) ListProjectsForOrg(ctx context.Context, req *connect.Request[v1.ListProjectsForOrgRequest]) (*connect.Response[v1.ListProjectsForOrgResponse], error) {
+	return c.listProjectsForOrg.CallUnary(ctx, req)
+}
+
+// GetProject calls rill.local.v1.LocalService.GetProject.
+func (c *localServiceClient) GetProject(ctx context.Context, req *connect.Request[v1.GetProjectRequest]) (*connect.Response[v1.GetProjectResponse], error) {
+	return c.getProject.CallUnary(ctx, req)
+}
+
 // LocalServiceHandler is an implementation of the rill.local.v1.LocalService service.
 type LocalServiceHandler interface {
 	// Ping returns the current time.
@@ -230,6 +357,16 @@ type LocalServiceHandler interface {
 	GetMetadata(context.Context, *connect.Request[v1.GetMetadataRequest]) (*connect.Response[v1.GetMetadataResponse], error)
 	// GetVersion returns details about the current and latest available Rill versions.
 	GetVersion(context.Context, *connect.Request[v1.GetVersionRequest]) (*connect.Response[v1.GetVersionResponse], error)
+	// GitStatus returns the curren status of the local git repo. This is equivalent to doing a `git fetch` followed by running `git status`.
+	GitStatus(context.Context, *connect.Request[v1.GitStatusRequest]) (*connect.Response[v1.GitStatusResponse], error)
+	// GitPull fetches the latest changes from the remote git repo equivalent to `git pull` command.
+	// If there are any merge conflicts the pull is aborted.
+	// Force can be set to true to force the pull and overwrite any local changes.
+	GitPull(context.Context, *connect.Request[v1.GitPullRequest]) (*connect.Response[v1.GitPullResponse], error)
+	// GitPush pushes the local changes to the remote git repo equivalent to `git push` command.
+	// The difference between this and PushTiGithub is that this does not create a new repo.
+	// It only pushes the changes to the existing remote repo.
+	GitPush(context.Context, *connect.Request[v1.GitPushRequest]) (*connect.Response[v1.GitPushResponse], error)
 	// PushToGithub create a Git repo from local project and pushed to users git account.
 	PushToGithub(context.Context, *connect.Request[v1.PushToGithubRequest]) (*connect.Response[v1.PushToGithubResponse], error)
 	// DeployProject deploys the local project to the Rill cloud.
@@ -239,9 +376,18 @@ type LocalServiceHandler interface {
 	// GetCurrentUser returns the locally logged in user
 	GetCurrentUser(context.Context, *connect.Request[v1.GetCurrentUserRequest]) (*connect.Response[v1.GetCurrentUserResponse], error)
 	// GetCurrentProject returns the rill cloud project connected to the local project
+	// Deprecated: Use ListMatchingProjects instead.
 	GetCurrentProject(context.Context, *connect.Request[v1.GetCurrentProjectRequest]) (*connect.Response[v1.GetCurrentProjectResponse], error)
 	// ListOrganizationsAndBillingMetadata returns metadata about the current user's orgs.
 	ListOrganizationsAndBillingMetadata(context.Context, *connect.Request[v1.ListOrganizationsAndBillingMetadataRequest]) (*connect.Response[v1.ListOrganizationsAndBillingMetadataResponse], error)
+	// CreateOrganization creates a new organization
+	CreateOrganization(context.Context, *connect.Request[v1.CreateOrganizationRequest]) (*connect.Response[v1.CreateOrganizationResponse], error)
+	// ListMatchingProjects returns all remote projects matching the local project name
+	ListMatchingProjects(context.Context, *connect.Request[v1.ListMatchingProjectsRequest]) (*connect.Response[v1.ListMatchingProjectsResponse], error)
+	// ListProjectsForOrg returns all projects within an org
+	ListProjectsForOrg(context.Context, *connect.Request[v1.ListProjectsForOrgRequest]) (*connect.Response[v1.ListProjectsForOrgResponse], error)
+	// GetProject returns information about a specific project
+	GetProject(context.Context, *connect.Request[v1.GetProjectRequest]) (*connect.Response[v1.GetProjectResponse], error)
 }
 
 // NewLocalServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -266,6 +412,24 @@ func NewLocalServiceHandler(svc LocalServiceHandler, opts ...connect.HandlerOpti
 		LocalServiceGetVersionProcedure,
 		svc.GetVersion,
 		connect.WithSchema(localServiceGetVersionMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
+	localServiceGitStatusHandler := connect.NewUnaryHandler(
+		LocalServiceGitStatusProcedure,
+		svc.GitStatus,
+		connect.WithSchema(localServiceGitStatusMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
+	localServiceGitPullHandler := connect.NewUnaryHandler(
+		LocalServiceGitPullProcedure,
+		svc.GitPull,
+		connect.WithSchema(localServiceGitPullMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
+	localServiceGitPushHandler := connect.NewUnaryHandler(
+		LocalServiceGitPushProcedure,
+		svc.GitPush,
+		connect.WithSchema(localServiceGitPushMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
 	localServicePushToGithubHandler := connect.NewUnaryHandler(
@@ -304,6 +468,30 @@ func NewLocalServiceHandler(svc LocalServiceHandler, opts ...connect.HandlerOpti
 		connect.WithSchema(localServiceListOrganizationsAndBillingMetadataMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
+	localServiceCreateOrganizationHandler := connect.NewUnaryHandler(
+		LocalServiceCreateOrganizationProcedure,
+		svc.CreateOrganization,
+		connect.WithSchema(localServiceCreateOrganizationMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
+	localServiceListMatchingProjectsHandler := connect.NewUnaryHandler(
+		LocalServiceListMatchingProjectsProcedure,
+		svc.ListMatchingProjects,
+		connect.WithSchema(localServiceListMatchingProjectsMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
+	localServiceListProjectsForOrgHandler := connect.NewUnaryHandler(
+		LocalServiceListProjectsForOrgProcedure,
+		svc.ListProjectsForOrg,
+		connect.WithSchema(localServiceListProjectsForOrgMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
+	localServiceGetProjectHandler := connect.NewUnaryHandler(
+		LocalServiceGetProjectProcedure,
+		svc.GetProject,
+		connect.WithSchema(localServiceGetProjectMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/rill.local.v1.LocalService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case LocalServicePingProcedure:
@@ -312,6 +500,12 @@ func NewLocalServiceHandler(svc LocalServiceHandler, opts ...connect.HandlerOpti
 			localServiceGetMetadataHandler.ServeHTTP(w, r)
 		case LocalServiceGetVersionProcedure:
 			localServiceGetVersionHandler.ServeHTTP(w, r)
+		case LocalServiceGitStatusProcedure:
+			localServiceGitStatusHandler.ServeHTTP(w, r)
+		case LocalServiceGitPullProcedure:
+			localServiceGitPullHandler.ServeHTTP(w, r)
+		case LocalServiceGitPushProcedure:
+			localServiceGitPushHandler.ServeHTTP(w, r)
 		case LocalServicePushToGithubProcedure:
 			localServicePushToGithubHandler.ServeHTTP(w, r)
 		case LocalServiceDeployProjectProcedure:
@@ -324,6 +518,14 @@ func NewLocalServiceHandler(svc LocalServiceHandler, opts ...connect.HandlerOpti
 			localServiceGetCurrentProjectHandler.ServeHTTP(w, r)
 		case LocalServiceListOrganizationsAndBillingMetadataProcedure:
 			localServiceListOrganizationsAndBillingMetadataHandler.ServeHTTP(w, r)
+		case LocalServiceCreateOrganizationProcedure:
+			localServiceCreateOrganizationHandler.ServeHTTP(w, r)
+		case LocalServiceListMatchingProjectsProcedure:
+			localServiceListMatchingProjectsHandler.ServeHTTP(w, r)
+		case LocalServiceListProjectsForOrgProcedure:
+			localServiceListProjectsForOrgHandler.ServeHTTP(w, r)
+		case LocalServiceGetProjectProcedure:
+			localServiceGetProjectHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -343,6 +545,18 @@ func (UnimplementedLocalServiceHandler) GetMetadata(context.Context, *connect.Re
 
 func (UnimplementedLocalServiceHandler) GetVersion(context.Context, *connect.Request[v1.GetVersionRequest]) (*connect.Response[v1.GetVersionResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("rill.local.v1.LocalService.GetVersion is not implemented"))
+}
+
+func (UnimplementedLocalServiceHandler) GitStatus(context.Context, *connect.Request[v1.GitStatusRequest]) (*connect.Response[v1.GitStatusResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("rill.local.v1.LocalService.GitStatus is not implemented"))
+}
+
+func (UnimplementedLocalServiceHandler) GitPull(context.Context, *connect.Request[v1.GitPullRequest]) (*connect.Response[v1.GitPullResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("rill.local.v1.LocalService.GitPull is not implemented"))
+}
+
+func (UnimplementedLocalServiceHandler) GitPush(context.Context, *connect.Request[v1.GitPushRequest]) (*connect.Response[v1.GitPushResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("rill.local.v1.LocalService.GitPush is not implemented"))
 }
 
 func (UnimplementedLocalServiceHandler) PushToGithub(context.Context, *connect.Request[v1.PushToGithubRequest]) (*connect.Response[v1.PushToGithubResponse], error) {
@@ -367,4 +581,20 @@ func (UnimplementedLocalServiceHandler) GetCurrentProject(context.Context, *conn
 
 func (UnimplementedLocalServiceHandler) ListOrganizationsAndBillingMetadata(context.Context, *connect.Request[v1.ListOrganizationsAndBillingMetadataRequest]) (*connect.Response[v1.ListOrganizationsAndBillingMetadataResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("rill.local.v1.LocalService.ListOrganizationsAndBillingMetadata is not implemented"))
+}
+
+func (UnimplementedLocalServiceHandler) CreateOrganization(context.Context, *connect.Request[v1.CreateOrganizationRequest]) (*connect.Response[v1.CreateOrganizationResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("rill.local.v1.LocalService.CreateOrganization is not implemented"))
+}
+
+func (UnimplementedLocalServiceHandler) ListMatchingProjects(context.Context, *connect.Request[v1.ListMatchingProjectsRequest]) (*connect.Response[v1.ListMatchingProjectsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("rill.local.v1.LocalService.ListMatchingProjects is not implemented"))
+}
+
+func (UnimplementedLocalServiceHandler) ListProjectsForOrg(context.Context, *connect.Request[v1.ListProjectsForOrgRequest]) (*connect.Response[v1.ListProjectsForOrgResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("rill.local.v1.LocalService.ListProjectsForOrg is not implemented"))
+}
+
+func (UnimplementedLocalServiceHandler) GetProject(context.Context, *connect.Request[v1.GetProjectRequest]) (*connect.Response[v1.GetProjectResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("rill.local.v1.LocalService.GetProject is not implemented"))
 }

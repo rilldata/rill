@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"cloud.google.com/go/bigquery"
 	"github.com/mitchellh/mapstructure"
@@ -24,47 +25,24 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "BigQuery",
 	Description: "Import data from BigQuery.",
-	DocsURL:     "https://docs.rilldata.com/reference/connectors/bigquery",
+	DocsURL:     "https://docs.rilldata.com/connect/data-source/bigquery",
 	ConfigProperties: []*drivers.PropertySpec{
-		{
-			Key:  "google_application_credentials",
-			Type: drivers.FilePropertyType,
-			Hint: "Enter path of file to load from.",
-		},
-	},
-	SourceProperties: []*drivers.PropertySpec{
-		{
-			Key:         "sql",
-			Type:        drivers.StringPropertyType,
-			Required:    true,
-			DisplayName: "SQL",
-			Description: "Query to extract data from BigQuery.",
-			Placeholder: "select * from project.dataset.table;",
-		},
-		{
-			Key:         "project_id",
-			Type:        drivers.StringPropertyType,
-			Required:    true,
-			DisplayName: "Project ID",
-			Description: "Google project ID.",
-			Placeholder: "my-project",
-			Hint:        "Rill will use the project ID from your local credentials, unless set here. Set this if no project ID configured in credentials.",
-		},
-		{
-			Key:         "name",
-			Type:        drivers.StringPropertyType,
-			DisplayName: "Source name",
-			Description: "The name of the source",
-			Placeholder: "my_new_source",
-			Required:    true,
-		},
 		{
 			Key:         "google_application_credentials",
 			Type:        drivers.InformationalPropertyType,
 			DisplayName: "GCP credentials",
 			Description: "GCP credentials inferred from your local environment.",
 			Hint:        "Set your local credentials: <code>gcloud auth application-default login</code> Click to learn more.",
-			DocsURL:     "https://docs.rilldata.com/reference/connectors/gcs#local-credentials",
+			DocsURL:     "https://docs.rilldata.com/connect/data-source/gcs#rill-developer-local-credentials",
+		},
+		{
+			Key:         "project_id",
+			Type:        drivers.StringPropertyType,
+			Required:    false,
+			DisplayName: "Project ID",
+			Description: "Google project ID.",
+			Placeholder: "my-project",
+			Hint:        "Rill will use the project ID from your local credentials, unless set here. Set this if no project ID configured in credentials.",
 		},
 	},
 	ImplementsWarehouse: true,
@@ -74,6 +52,7 @@ type driver struct{}
 
 type configProperties struct {
 	SecretJSON      string `mapstructure:"google_application_credentials"`
+	ProjectID       string `mapstructure:"project_id"`
 	AllowHostAccess bool   `mapstructure:"allow_host_access"`
 }
 
@@ -119,12 +98,25 @@ var _ drivers.Handle = &Connection{}
 
 // Ping implements drivers.Handle.
 func (c *Connection) Ping(ctx context.Context) error {
-	return drivers.ErrNotImplemented
+	client, err := c.createClient(ctx, "")
+	if err != nil {
+		return fmt.Errorf("failed to create client: %w", err)
+	}
+	defer client.Close()
+
+	// Run a simple query to verify connection
+	q := client.Query("SELECT 1")
+	_, err = q.Read(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to execute test query: %w", err)
+	}
+
+	return nil
 }
 
 // Driver implements drivers.Connection.
 func (c *Connection) Driver() string {
-	return "gcs"
+	return "bigquery"
 }
 
 // Config implements drivers.Connection.
@@ -167,6 +159,11 @@ func (c *Connection) AsAI(instanceID string) (drivers.AIService, bool) {
 // OLAP implements drivers.Connection.
 func (c *Connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
 	return nil, false
+}
+
+// AsInformationSchema implements drivers.Connection.
+func (c *Connection) AsInformationSchema() (drivers.InformationSchema, bool) {
+	return c, true
 }
 
 // Migrate implements drivers.Connection.
@@ -217,24 +214,28 @@ func (c *Connection) AsNotifier(properties map[string]any) (drivers.Notifier, er
 	return nil, drivers.ErrNotNotifier
 }
 
-type sourceProperties struct {
-	ProjectID string `mapstructure:"project_id"`
-	SQL       string `mapstructure:"sql"`
-}
-
-func parseSourceProperties(props map[string]any) (*sourceProperties, error) {
-	conf := &sourceProperties{}
-	err := mapstructure.Decode(props, conf)
+// createClient initializes a BigQuery client using the provided context and project ID.
+// If no project ID is given, it attempts to use the one from the config or auto-detect it.
+func (c *Connection) createClient(ctx context.Context, projectID string) (*bigquery.Client, error) {
+	opts, err := c.clientOption(ctx)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get Google API client options: %w", err)
 	}
-	if conf.SQL == "" {
-		return nil, fmt.Errorf("property 'sql' is mandatory for connector \"bigquery\"")
+	if projectID == "" {
+		if c.config.ProjectID != "" {
+			projectID = c.config.ProjectID
+		} else {
+			projectID = bigquery.DetectProjectID
+		}
 	}
-	if conf.ProjectID == "" {
-		conf.ProjectID = bigquery.DetectProjectID
+	client, err := bigquery.NewClient(ctx, projectID, opts...)
+	if err != nil {
+		if strings.Contains(err.Error(), "unable to detect projectID") {
+			return nil, fmt.Errorf("projectID not detected in credentials. Please set `project_id` in source yaml")
+		}
+		return nil, fmt.Errorf("failed to create bigquery client: %w", err)
 	}
-	return conf, err
+	return client, nil
 }
 
 func (c *Connection) clientOption(ctx context.Context) ([]option.ClientOption, error) {
@@ -247,4 +248,28 @@ func (c *Connection) clientOption(ctx context.Context) ([]option.ClientOption, e
 		return nil, err
 	}
 	return []option.ClientOption{option.WithCredentials(creds)}, nil
+}
+
+type sourceProperties struct {
+	ProjectID string `mapstructure:"project_id"`
+	SQL       string `mapstructure:"sql"`
+}
+
+func (c *Connection) parseSourceProperties(props map[string]any) (*sourceProperties, error) {
+	conf := &sourceProperties{}
+	err := mapstructure.Decode(props, conf)
+	if err != nil {
+		return nil, err
+	}
+	if conf.SQL == "" {
+		return nil, fmt.Errorf("property 'sql' is mandatory for connector \"bigquery\"")
+	}
+	if conf.ProjectID == "" {
+		if c.config.ProjectID != "" {
+			conf.ProjectID = c.config.ProjectID
+		} else {
+			conf.ProjectID = bigquery.DetectProjectID
+		}
+	}
+	return conf, err
 }

@@ -1,4 +1,4 @@
-position: 40
+position: 50
 label: Manage
-collapsible: false
-collapsed: false
+collapsible: true
+collapsed: true

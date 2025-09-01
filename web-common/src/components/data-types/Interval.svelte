@@ -3,7 +3,6 @@
   import Base from "./Base.svelte";
   export let isNull = false;
   export let inTable = false;
-  export let dark = false;
   export let value;
   export let truncate = false;
   export let color = "";
@@ -13,7 +12,6 @@
   {truncate}
   {isNull}
   classes="font-semibold truncate w-full {inTable && 'block text-right'}"
-  {dark}
   {color}
 >
   <slot name="value">

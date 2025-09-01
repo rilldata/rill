@@ -7,9 +7,9 @@ import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialM
 import { Message, proto3, protoInt64, Struct, Timestamp, Value } from "@bufbuild/protobuf";
 import { StructType } from "./schema_pb.js";
 import { ExportFormat } from "./export_format_pb.js";
+import { Resource, ResourceName } from "./resources_pb.js";
 import { Expression } from "./expression_pb.js";
 import { TimeGrain } from "./time_grain_pb.js";
-import { Resource } from "./resources_pb.js";
 
 /**
  * @generated from enum rill.runtime.v1.BuiltinMeasure
@@ -354,30 +354,63 @@ export class QueryBatchResponse extends Message<QueryBatchResponse> {
  */
 export class ExportRequest extends Message<ExportRequest> {
   /**
+   * Instance ID to run the query against.
+   *
    * @generated from field: string instance_id = 1;
    */
   instanceId = "";
 
   /**
+   * Optional limit on the number of rows to export. It is applied in addition to any limit specified in the query.
+   *
    * @generated from field: int64 limit = 2;
    */
   limit = protoInt64.zero;
 
   /**
+   * Format of the export.
+   *
    * @generated from field: rill.runtime.v1.ExportFormat format = 3;
    */
   format = ExportFormat.UNSPECIFIED;
 
   /**
+   * Query to export.
+   *
    * @generated from field: rill.runtime.v1.Query query = 4;
    */
   query?: Query;
 
   /**
+   * Deprecated. Use query instead.
+   *
    * @generated from field: string baked_query = 5 [deprecated = true];
    * @deprecated
    */
   bakedQuery = "";
+
+  /**
+   * If true, the export will include header comments with metadata about the export.
+   *
+   * @generated from field: bool include_header = 6;
+   */
+  includeHeader = false;
+
+  /**
+   * Optional name of the dashboard the export originates from.
+   * Only used if include_header is true.
+   *
+   * @generated from field: rill.runtime.v1.ResourceName origin_dashboard = 7;
+   */
+  originDashboard?: ResourceName;
+
+  /**
+   * Optional UI URL that the export originates from.
+   * Only used if include_header is true.
+   *
+   * @generated from field: string origin_url = 8;
+   */
+  originUrl = "";
 
   constructor(data?: PartialMessage<ExportRequest>) {
     super();
@@ -392,6 +425,9 @@ export class ExportRequest extends Message<ExportRequest> {
     { no: 3, name: "format", kind: "enum", T: proto3.getEnumType(ExportFormat) },
     { no: 4, name: "query", kind: "message", T: Query },
     { no: 5, name: "baked_query", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "include_header", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 7, name: "origin_dashboard", kind: "message", T: ResourceName },
+    { no: 8, name: "origin_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ExportRequest {
@@ -453,29 +489,34 @@ export class ExportResponse extends Message<ExportResponse> {
  */
 export class ExportReportRequest extends Message<ExportReportRequest> {
   /**
+   * Instance ID that contains the report.
+   *
    * @generated from field: string instance_id = 1;
    */
   instanceId = "";
 
   /**
+   * Name of the report to export.
+   *
    * @generated from field: string report = 2;
    */
   report = "";
 
   /**
-   * @generated from field: int64 limit = 3;
-   */
-  limit = protoInt64.zero;
-
-  /**
-   * @generated from field: rill.runtime.v1.ExportFormat format = 4;
-   */
-  format = ExportFormat.UNSPECIFIED;
-
-  /**
+   * The execution time to evaluate the report relative to.
+   * This is provided by the report implementation when sending a report.
+   *
    * @generated from field: google.protobuf.Timestamp execution_time = 5;
    */
   executionTime?: Timestamp;
+
+  /**
+   * Contextual information about the base URL of the UI that initiated the export.
+   * This is used to generate header comments in the exported file when include_header is true in the report spec.
+   *
+   * @generated from field: string origin_base_url = 6;
+   */
+  originBaseUrl = "";
 
   constructor(data?: PartialMessage<ExportReportRequest>) {
     super();
@@ -487,9 +528,8 @@ export class ExportReportRequest extends Message<ExportReportRequest> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "report", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "limit", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
-    { no: 4, name: "format", kind: "enum", T: proto3.getEnumType(ExportFormat) },
     { no: 5, name: "execution_time", kind: "message", T: Timestamp },
+    { no: 6, name: "origin_base_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ExportReportRequest {
@@ -1272,6 +1312,12 @@ export class MetricsViewAggregationMeasure extends Message<MetricsViewAggregatio
      */
     value: MetricsViewAggregationMeasureComputeURI;
     case: "uri";
+  } | {
+    /**
+     * @generated from field: rill.runtime.v1.MetricsViewAggregationMeasureComputeComparisonTime comparison_time = 12;
+     */
+    value: MetricsViewAggregationMeasureComputeComparisonTime;
+    case: "comparisonTime";
   } | { case: undefined; value?: undefined } = { case: undefined };
 
   constructor(data?: PartialMessage<MetricsViewAggregationMeasure>) {
@@ -1293,6 +1339,7 @@ export class MetricsViewAggregationMeasure extends Message<MetricsViewAggregatio
     { no: 9, name: "comparison_ratio", kind: "message", T: MetricsViewAggregationMeasureComputeComparisonRatio, oneof: "compute" },
     { no: 10, name: "percent_of_total", kind: "message", T: MetricsViewAggregationMeasureComputePercentOfTotal, oneof: "compute" },
     { no: 11, name: "uri", kind: "message", T: MetricsViewAggregationMeasureComputeURI, oneof: "compute" },
+    { no: 12, name: "comparison_time", kind: "message", T: MetricsViewAggregationMeasureComputeComparisonTime, oneof: "compute" },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewAggregationMeasure {
@@ -1562,6 +1609,43 @@ export class MetricsViewAggregationMeasureComputeURI extends Message<MetricsView
 
   static equals(a: MetricsViewAggregationMeasureComputeURI | PlainMessage<MetricsViewAggregationMeasureComputeURI> | undefined, b: MetricsViewAggregationMeasureComputeURI | PlainMessage<MetricsViewAggregationMeasureComputeURI> | undefined): boolean {
     return proto3.util.equals(MetricsViewAggregationMeasureComputeURI, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.MetricsViewAggregationMeasureComputeComparisonTime
+ */
+export class MetricsViewAggregationMeasureComputeComparisonTime extends Message<MetricsViewAggregationMeasureComputeComparisonTime> {
+  /**
+   * @generated from field: string dimension = 1;
+   */
+  dimension = "";
+
+  constructor(data?: PartialMessage<MetricsViewAggregationMeasureComputeComparisonTime>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.MetricsViewAggregationMeasureComputeComparisonTime";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "dimension", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewAggregationMeasureComputeComparisonTime {
+    return new MetricsViewAggregationMeasureComputeComparisonTime().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewAggregationMeasureComputeComparisonTime {
+    return new MetricsViewAggregationMeasureComputeComparisonTime().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewAggregationMeasureComputeComparisonTime {
+    return new MetricsViewAggregationMeasureComputeComparisonTime().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: MetricsViewAggregationMeasureComputeComparisonTime | PlainMessage<MetricsViewAggregationMeasureComputeComparisonTime> | undefined, b: MetricsViewAggregationMeasureComputeComparisonTime | PlainMessage<MetricsViewAggregationMeasureComputeComparisonTime> | undefined): boolean {
+    return proto3.util.equals(MetricsViewAggregationMeasureComputeComparisonTime, a, b);
   }
 }
 
@@ -2055,6 +2139,13 @@ export class TimeRange extends Message<TimeRange> {
    */
   expression = "";
 
+  /**
+   * Optional. If not specified, falls back to the primary time dimension in the metrics view spec
+   *
+   * @generated from field: string time_dimension = 8;
+   */
+  timeDimension = "";
+
   constructor(data?: PartialMessage<TimeRange>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2070,6 +2161,7 @@ export class TimeRange extends Message<TimeRange> {
     { no: 5, name: "round_to_grain", kind: "enum", T: proto3.getEnumType(TimeGrain) },
     { no: 6, name: "time_zone", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 7, name: "expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 8, name: "time_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): TimeRange {
@@ -2404,6 +2496,13 @@ export class MetricsViewTimeSeriesRequest extends Message<MetricsViewTimeSeriesR
    */
   filter?: MetricsViewFilter;
 
+  /**
+   * Optional. If not specified, falls back to the primary time dimension in the metrics view spec
+   *
+   * @generated from field: string time_dimension = 15;
+   */
+  timeDimension = "";
+
   constructor(data?: PartialMessage<MetricsViewTimeSeriesRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2425,6 +2524,7 @@ export class MetricsViewTimeSeriesRequest extends Message<MetricsViewTimeSeriesR
     { no: 10, name: "time_zone", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 12, name: "filter", kind: "message", T: MetricsViewFilter },
+    { no: 15, name: "time_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewTimeSeriesRequest {
@@ -2550,6 +2650,13 @@ export class MetricsViewTotalsRequest extends Message<MetricsViewTotalsRequest> 
    */
   filter?: MetricsViewFilter;
 
+  /**
+   * Optional. If not specified, falls back to the primary time dimension in the metrics view spec
+   *
+   * @generated from field: string time_dimension = 12;
+   */
+  timeDimension = "";
+
   constructor(data?: PartialMessage<MetricsViewTotalsRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2567,6 +2674,7 @@ export class MetricsViewTotalsRequest extends Message<MetricsViewTotalsRequest> 
     { no: 11, name: "where_sql", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 10, name: "filter", kind: "message", T: MetricsViewFilter },
+    { no: 12, name: "time_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewTotalsRequest {
@@ -2715,6 +2823,13 @@ export class MetricsViewRowsRequest extends Message<MetricsViewRowsRequest> {
    */
   filter?: MetricsViewFilter;
 
+  /**
+   * Optional. If not specified, falls back to the primary time dimension in the metrics view spec
+   *
+   * @generated from field: string time_dimension = 13;
+   */
+  timeDimension = "";
+
   constructor(data?: PartialMessage<MetricsViewRowsRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2735,6 +2850,7 @@ export class MetricsViewRowsRequest extends Message<MetricsViewRowsRequest> {
     { no: 9, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 11, name: "time_zone", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 12, name: "filter", kind: "message", T: MetricsViewFilter },
+    { no: 13, name: "time_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewRowsRequest {
@@ -3061,6 +3177,13 @@ export class MetricsViewTimeRangeRequest extends Message<MetricsViewTimeRangeReq
    */
   priority = 0;
 
+  /**
+   * Optional. If not specified, falls back to the primary time dimension in the metrics view spec
+   *
+   * @generated from field: string time_dimension = 4;
+   */
+  timeDimension = "";
+
   constructor(data?: PartialMessage<MetricsViewTimeRangeRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -3072,6 +3195,7 @@ export class MetricsViewTimeRangeRequest extends Message<MetricsViewTimeRangeReq
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "metrics_view_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 4, name: "time_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewTimeRangeRequest {
@@ -3413,6 +3537,20 @@ export class MetricsViewTimeRangesRequest extends Message<MetricsViewTimeRangesR
    */
   priority = 0;
 
+  /**
+   * Optional timezone param to easily override time-range expressions
+   *
+   * @generated from field: string time_zone = 5;
+   */
+  timeZone = "";
+
+  /**
+   * Optional. If not specified, falls back to the primary time dimension in the metrics view spec
+   *
+   * @generated from field: string time_dimension = 6;
+   */
+  timeDimension = "";
+
   constructor(data?: PartialMessage<MetricsViewTimeRangesRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -3425,6 +3563,8 @@ export class MetricsViewTimeRangesRequest extends Message<MetricsViewTimeRangesR
     { no: 2, name: "metrics_view_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "expressions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 4, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 5, name: "time_zone", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "time_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewTimeRangesRequest {
@@ -3478,6 +3618,215 @@ export class MetricsViewTimeRangesResponse extends Message<MetricsViewTimeRanges
 
   static equals(a: MetricsViewTimeRangesResponse | PlainMessage<MetricsViewTimeRangesResponse> | undefined, b: MetricsViewTimeRangesResponse | PlainMessage<MetricsViewTimeRangesResponse> | undefined): boolean {
     return proto3.util.equals(MetricsViewTimeRangesResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.MetricsViewAnnotationsRequest
+ */
+export class MetricsViewAnnotationsRequest extends Message<MetricsViewAnnotationsRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * @generated from field: string metrics_view_name = 2;
+   */
+  metricsViewName = "";
+
+  /**
+   * @generated from field: repeated string measures = 3;
+   */
+  measures: string[] = [];
+
+  /**
+   * @generated from field: int32 priority = 4;
+   */
+  priority = 0;
+
+  /**
+   * @generated from field: rill.runtime.v1.TimeRange time_range = 5;
+   */
+  timeRange?: TimeRange;
+
+  /**
+   * Optional
+   *
+   * @generated from field: rill.runtime.v1.TimeGrain time_grain = 6;
+   */
+  timeGrain = TimeGrain.UNSPECIFIED;
+
+  /**
+   * Optional
+   *
+   * @generated from field: string time_zone = 7;
+   */
+  timeZone = "";
+
+  /**
+   * Optional
+   *
+   * @generated from field: int64 limit = 8;
+   */
+  limit = protoInt64.zero;
+
+  /**
+   * Optional
+   *
+   * @generated from field: int64 offset = 9;
+   */
+  offset = protoInt64.zero;
+
+  constructor(data?: PartialMessage<MetricsViewAnnotationsRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.MetricsViewAnnotationsRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "metrics_view_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 4, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 5, name: "time_range", kind: "message", T: TimeRange },
+    { no: 6, name: "time_grain", kind: "enum", T: proto3.getEnumType(TimeGrain) },
+    { no: 7, name: "time_zone", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 8, name: "limit", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 9, name: "offset", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewAnnotationsRequest {
+    return new MetricsViewAnnotationsRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewAnnotationsRequest {
+    return new MetricsViewAnnotationsRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewAnnotationsRequest {
+    return new MetricsViewAnnotationsRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: MetricsViewAnnotationsRequest | PlainMessage<MetricsViewAnnotationsRequest> | undefined, b: MetricsViewAnnotationsRequest | PlainMessage<MetricsViewAnnotationsRequest> | undefined): boolean {
+    return proto3.util.equals(MetricsViewAnnotationsRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.MetricsViewAnnotationsResponse
+ */
+export class MetricsViewAnnotationsResponse extends Message<MetricsViewAnnotationsResponse> {
+  /**
+   * @generated from field: repeated rill.runtime.v1.MetricsViewAnnotationsResponse.Annotation rows = 1;
+   */
+  rows: MetricsViewAnnotationsResponse_Annotation[] = [];
+
+  constructor(data?: PartialMessage<MetricsViewAnnotationsResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.MetricsViewAnnotationsResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "rows", kind: "message", T: MetricsViewAnnotationsResponse_Annotation, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewAnnotationsResponse {
+    return new MetricsViewAnnotationsResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewAnnotationsResponse {
+    return new MetricsViewAnnotationsResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewAnnotationsResponse {
+    return new MetricsViewAnnotationsResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: MetricsViewAnnotationsResponse | PlainMessage<MetricsViewAnnotationsResponse> | undefined, b: MetricsViewAnnotationsResponse | PlainMessage<MetricsViewAnnotationsResponse> | undefined): boolean {
+    return proto3.util.equals(MetricsViewAnnotationsResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.MetricsViewAnnotationsResponse.Annotation
+ */
+export class MetricsViewAnnotationsResponse_Annotation extends Message<MetricsViewAnnotationsResponse_Annotation> {
+  /**
+   * Time when the annotation applies. Maps to `time` column from the table.
+   *
+   * @generated from field: google.protobuf.Timestamp time = 1;
+   */
+  time?: Timestamp;
+
+  /**
+   * Optional. Time when the annotation ends. Only present if the underlying table has the `time_end` column.
+   *
+   * @generated from field: optional google.protobuf.Timestamp time_end = 2;
+   */
+  timeEnd?: Timestamp;
+
+  /**
+   * User defined description of the annotation applies. Maps to `description` column from the table.
+   *
+   * @generated from field: string description = 3;
+   */
+  description = "";
+
+  /**
+   * Optional. Minimum duration this annotation is displayed for. Maps to `duration` column from the table.
+   *
+   * @generated from field: optional string duration = 4;
+   */
+  duration?: string;
+
+  /**
+   * Any other fields are captured here. Will be used in predicates in the future.
+   *
+   * @generated from field: google.protobuf.Struct additional_fields = 5;
+   */
+  additionalFields?: Struct;
+
+  /**
+   * List of measure names that this annotation applies to. If empty, no restrictions apply.
+   *
+   * @generated from field: repeated string for_measures = 6;
+   */
+  forMeasures: string[] = [];
+
+  constructor(data?: PartialMessage<MetricsViewAnnotationsResponse_Annotation>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.MetricsViewAnnotationsResponse.Annotation";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "time", kind: "message", T: Timestamp },
+    { no: 2, name: "time_end", kind: "message", T: Timestamp, opt: true },
+    { no: 3, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "duration", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 5, name: "additional_fields", kind: "message", T: Struct },
+    { no: 6, name: "for_measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewAnnotationsResponse_Annotation {
+    return new MetricsViewAnnotationsResponse_Annotation().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewAnnotationsResponse_Annotation {
+    return new MetricsViewAnnotationsResponse_Annotation().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewAnnotationsResponse_Annotation {
+    return new MetricsViewAnnotationsResponse_Annotation().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: MetricsViewAnnotationsResponse_Annotation | PlainMessage<MetricsViewAnnotationsResponse_Annotation> | undefined, b: MetricsViewAnnotationsResponse_Annotation | PlainMessage<MetricsViewAnnotationsResponse_Annotation> | undefined): boolean {
+    return proto3.util.equals(MetricsViewAnnotationsResponse_Annotation, a, b);
   }
 }
 

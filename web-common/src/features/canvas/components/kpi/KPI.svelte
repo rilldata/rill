@@ -37,7 +37,7 @@
   export let comparisonLabel: string | undefined;
 
   let hoveredPoints: {
-    interval: Interval<true>;
+    date: Date;
     value: number | null | undefined;
   }[] = [];
 
@@ -89,7 +89,7 @@
 
 <div class="wrapper" class:spark-right={isSparkRight}>
   <div
-    class="data-wrapper"
+    class="data-wrapper overflow-hidden"
     style:min-width="{BIG_NUMBER_MIN_WIDTH - adjustment}px"
   >
     <h2 class="measure-name" title={measure?.displayName || measure?.name}>
@@ -177,7 +177,7 @@
 
     {#if !showSparkline && timeGrain && interval.isValid}
       <span class="text-gray-500">
-        <RangeDisplay {interval} grain={timeGrain} />
+        <RangeDisplay {interval} />
       </span>
     {/if}
   </div>
@@ -189,10 +189,10 @@
       class:saturate-0={primarySparklineResult.isFetching}
     >
       {#if primarySparklineResult.isError}
-        <AlertTriangleIcon class=" text-red-300" size="34px" />
+        <AlertTriangleIcon class="text-red-300" size="34px" />
       {:else if primarySparklineResult.isLoading || !timeGrain || !timeZone || !measure?.name}
         <div
-          class="size-full mt-2 !bg-primary-50 loading !rounded-md min-h-10"
+          class="size-full mt-2 !bg-theme-50 loading !rounded-md min-h-10"
         ></div>
       {:else if primarySparklineResult.data}
         <Chart
@@ -211,7 +211,8 @@
 
 <style lang="postcss">
   .wrapper {
-    @apply flex items-center justify-center size-full gap-2 flex-col max-w-full;
+    @apply flex flex-col items-center justify-center size-full gap-2;
+    container-type: inline-size;
   }
 
   .wrapper.spark-right {
@@ -219,8 +220,7 @@
   }
 
   .data-wrapper {
-    @apply flex flex-col w-full h-fit justify-center items-center max-w-full;
-    @apply overflow-hidden text-ellipsis truncate;
+    @apply flex flex-col w-full h-fit justify-center items-center;
     flex: 1 0 auto;
   }
 
@@ -230,19 +230,28 @@
   }
 
   .measure-name {
-    @apply flex-none text-center font-medium text-sm text-gray-600 break-words line-clamp-1;
+    @apply w-full truncate flex-none;
+    @apply text-center font-medium text-sm text-gray-800;
+  }
+
+  :global(.dark) .measure-name {
+    @apply text-gray-900;
   }
 
   .spark-right .measure-name {
-    @apply line-clamp-2 text-left max-w-40;
+    @apply text-left max-w-40;
   }
 
   .big-number {
-    @apply text-3xl font-medium text-gray-600;
+    @apply text-3xl font-medium text-gray-800;
+  }
+
+  :global(.dark) .big-number {
+    @apply text-gray-900;
   }
 
   .hovered-value {
-    @apply text-primary-500;
+    @apply text-theme-500;
   }
 
   .comparison-value-wrapper {

@@ -1,13 +1,12 @@
 <script lang="ts">
-  import { selectedDimensionValuesV2 } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
+  import { selectedDimensionValues } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import type {
     V1Expression,
     V1TimeRange,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { featureFlags } from "../../feature-flags";
-  import type { DimensionThresholdFilter } from "../stores/metrics-explorer-entity";
+  import type { DimensionThresholdFilter } from "web-common/src/features/dashboards/stores/explore-state";
   import Leaderboard from "./Leaderboard.svelte";
   import LeaderboardControls from "./LeaderboardControls.svelte";
   import { COMPARISON_COLUMN_WIDTH, valueColumn } from "./leaderboard-widths";
@@ -18,8 +17,6 @@
   export let timeRange: V1TimeRange;
   export let comparisonTimeRange: V1TimeRange | undefined;
   export let timeControlsReady: boolean;
-  export let activeMeasureName: string;
-  export let leaderboardMeasureNames: string[];
 
   const StateManagers = getStateManagers();
   const {
@@ -28,8 +25,13 @@
       dimensionFilters: { isFilterExcludeMode },
       dimensions: { visibleDimensions },
       comparison: { isBeingCompared: isBeingComparedReadable },
-      sorting: { sortedAscending, sortType, sortByMeasure },
-      measures: { measureLabel, isMeasureValidPercentOfTotal, visibleMeasures },
+      sorting: { sortedAscending, sortType },
+      measures: { measureLabel, isMeasureValidPercentOfTotal },
+      leaderboard: {
+        leaderboardShowContextForAllMeasures,
+        leaderboardMeasureNames,
+        leaderboardSortByMeasureName,
+      },
     },
     actions: {
       dimensions: { setPrimaryDimension },
@@ -42,21 +44,19 @@
   } = StateManagers;
 
   let parentElement: HTMLDivElement;
-  let suppressTooltip = false;
-
-  const { leaderboardMeasureCount: leaderboardMeasureCountFeatureFlag } =
-    featureFlags;
 
   $: ({ instanceId } = $runtime);
 
   // Reset column widths when the measure changes
-  $: if (activeMeasureName) {
+  $: if ($leaderboardSortByMeasureName) {
     valueColumn.reset();
   }
 
   $: dimensionColumnWidth = 164;
 
-  $: showPercentOfTotal = $isMeasureValidPercentOfTotal(activeMeasureName);
+  $: showPercentOfTotal = $isMeasureValidPercentOfTotal(
+    $leaderboardSortByMeasureName,
+  );
   $: showDeltaPercent = !!comparisonTimeRange;
 
   $: tableWidth =
@@ -67,26 +67,13 @@
       : showPercentOfTotal
         ? COMPARISON_COLUMN_WIDTH
         : 0);
-
-  $: validVisibleMeasures = $visibleMeasures
-    .map((m) => m.name)
-    .filter((name) => name !== undefined);
 </script>
 
 <div class="flex flex-col overflow-hidden size-full" aria-label="Leaderboards">
   <div class="pl-2.5 pb-3">
     <LeaderboardControls exploreName={$exploreName} />
   </div>
-  <div
-    bind:this={parentElement}
-    class="overflow-y-auto leaderboard-display"
-    on:scroll={() => {
-      suppressTooltip = true;
-    }}
-    on:scrollend={() => {
-      suppressTooltip = false;
-    }}
-  >
+  <div bind:this={parentElement} class="overflow-y-auto leaderboard-display">
     {#if parentElement}
       <div class="leaderboard-grid overflow-hidden pb-4">
         {#each $visibleDimensions as dimension (dimension.name)}
@@ -94,10 +81,9 @@
             <Leaderboard
               isValidPercentOfTotal={$isMeasureValidPercentOfTotal}
               {metricsViewName}
-              sortBy={$sortByMeasure}
-              {activeMeasureName}
-              {leaderboardMeasureNames}
-              visibleMeasures={validVisibleMeasures}
+              leaderboardSortByMeasureName={$leaderboardSortByMeasureName}
+              leaderboardMeasureNames={$leaderboardMeasureNames}
+              leaderboardShowContextForAllMeasures={$leaderboardShowContextForAllMeasures}
               {whereFilter}
               {dimensionThresholdFilters}
               {instanceId}
@@ -110,9 +96,8 @@
               {comparisonTimeRange}
               {dimension}
               {parentElement}
-              {suppressTooltip}
               {timeControlsReady}
-              selectedValues={selectedDimensionValuesV2(
+              selectedValues={selectedDimensionValues(
                 $runtime.instanceId,
                 [metricsViewName],
                 $dashboardStore.whereFilter,
@@ -121,15 +106,14 @@
                 timeRange.end,
               )}
               isBeingCompared={$isBeingComparedReadable(dimension.name)}
-              formatters={$leaderboardMeasureCountFeatureFlag
+              formatters={$leaderboardMeasureNames.length > 1
                 ? $measureFormatters
-                : { [activeMeasureName]: $activeMeasureFormatter }}
+                : { [$leaderboardSortByMeasureName]: $activeMeasureFormatter }}
               {setPrimaryDimension}
               {toggleSort}
               {toggleDimensionValueSelection}
               {toggleComparisonDimension}
               measureLabel={$measureLabel}
-              leaderboardMeasureCountFeatureFlag={$leaderboardMeasureCountFeatureFlag}
             />
           {/if}
         {/each}

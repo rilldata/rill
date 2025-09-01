@@ -18,7 +18,7 @@ import (
 func TestClickhouseSingle(t *testing.T) {
 	dsn := testclickhouse.Start(t)
 
-	conn, err := driver{}.Open("default", map[string]any{"dsn": dsn}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	conn, err := driver{}.Open("default", map[string]any{"dsn": dsn, "mode": "readwrite"}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	defer conn.Close()
 	prepareConn(t, conn)
@@ -30,13 +30,13 @@ func TestClickhouseSingle(t *testing.T) {
 	t.Run("WithConnection", func(t *testing.T) { testWithConnection(t, olap) })
 	t.Run("RenameView", func(t *testing.T) { testRenameView(t, c, olap) })
 	t.Run("RenameTable", func(t *testing.T) { testRenameTable(t, c, olap) })
-	t.Run("CreateTableAsSelect", func(t *testing.T) { testCreateTableAsSelect(t, c, olap) })
+	t.Run("CreateTableAsSelect", func(t *testing.T) { testCreateTableAsSelect(t, c) })
 	t.Run("InsertTableAsSelect_WithAppend", func(t *testing.T) { testInsertTableAsSelect_WithAppend(t, c, olap) })
 	t.Run("InsertTableAsSelect_WithMerge", func(t *testing.T) { testInsertTableAsSelect_WithMerge(t, c, olap) })
 	t.Run("InsertTableAsSelect_WithPartitionOverwrite", func(t *testing.T) { testInsertTableAsSelect_WithPartitionOverwrite(t, c, olap) })
 	t.Run("InsertTableAsSelect_WithPartitionOverwrite_DatePartition", func(t *testing.T) { testInsertTableAsSelect_WithPartitionOverwrite_DatePartition(t, c, olap) })
 	t.Run("TestDictionary", func(t *testing.T) { testDictionary(t, c, olap) })
-	t.Run("TestIntervalType", func(t *testing.T) { testIntervalType(t, c, olap) })
+	t.Run("TestIntervalType", func(t *testing.T) { testIntervalType(t, olap) })
 }
 
 func TestClickhouseCluster(t *testing.T) {
@@ -46,7 +46,7 @@ func TestClickhouseCluster(t *testing.T) {
 
 	dsn, cluster := testclickhouse.StartCluster(t)
 
-	conn, err := drivers.Open("clickhouse", "default", map[string]any{"dsn": dsn, "cluster": cluster}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	conn, err := drivers.Open("clickhouse", "default", map[string]any{"dsn": dsn, "cluster": cluster, "mode": "readwrite"}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	defer conn.Close()
 
@@ -54,12 +54,12 @@ func TestClickhouseCluster(t *testing.T) {
 	olap, ok := conn.AsOLAP("default")
 	require.True(t, ok)
 
-	prepareClusterConn(t, c, olap, cluster)
+	prepareClusterConn(t, olap, cluster)
 
 	t.Run("WithConnection", func(t *testing.T) { testWithConnection(t, olap) })
 	t.Run("RenameView", func(t *testing.T) { testRenameView(t, c, olap) })
 	t.Run("RenameTable", func(t *testing.T) { testRenameTable(t, c, olap) })
-	t.Run("CreateTableAsSelect", func(t *testing.T) { testCreateTableAsSelect(t, c, olap) })
+	t.Run("CreateTableAsSelect", func(t *testing.T) { testCreateTableAsSelect(t, c) })
 	t.Run("InsertTableAsSelect_WithAppend", func(t *testing.T) { testInsertTableAsSelect_WithAppend(t, c, olap) })
 	t.Run("InsertTableAsSelect_WithMerge", func(t *testing.T) { testInsertTableAsSelect_WithMerge(t, c, olap) })
 	t.Run("InsertTableAsSelect_WithPartitionOverwrite", func(t *testing.T) { testInsertTableAsSelect_WithPartitionOverwrite(t, c, olap) })
@@ -96,7 +96,7 @@ func testWithConnection(t *testing.T, olap drivers.OLAPStore) {
 
 func testRenameView(t *testing.T, c *Connection, olap drivers.OLAPStore) {
 	ctx := context.Background()
-	opts := map[string]any{"type": "VIEW"}
+	opts := &ModelOutputProperties{Typ: "VIEW"}
 	_, err := c.createTableAsSelect(ctx, "foo_view", "SELECT 1 AS id", opts)
 	require.NoError(t, err)
 
@@ -112,8 +112,8 @@ func testRenameView(t *testing.T, c *Connection, olap drivers.OLAPStore) {
 	require.NoError(t, err)
 
 	// check that views no longer exist
-	notExists(t, c, olap, "foo_view")
-	notExists(t, c, olap, "foo_view1")
+	notExists(t, olap, "foo_view")
+	notExists(t, olap, "foo_view1")
 
 	res, err := olap.Query(ctx, &drivers.Statement{Query: "SELECT id FROM bar_view"})
 	require.NoError(t, err)
@@ -132,11 +132,11 @@ func testRenameTable(t *testing.T, c *Connection, olap drivers.OLAPStore) {
 	err = c.renameEntity(ctx, "foo1", "bar")
 	require.NoError(t, err)
 
-	notExists(t, c, olap, "foo")
-	notExists(t, c, olap, "foo1")
+	notExists(t, olap, "foo")
+	notExists(t, olap, "foo1")
 }
 
-func notExists(t *testing.T, c *Connection, olap drivers.OLAPStore, tbl string) {
+func notExists(t *testing.T, olap drivers.OLAPStore, tbl string) {
 	result, err := olap.Query(context.Background(), &drivers.Statement{
 		Query: "EXISTS " + tbl,
 	})
@@ -148,24 +148,28 @@ func notExists(t *testing.T, c *Connection, olap drivers.OLAPStore, tbl string) 
 	require.NoError(t, result.Close())
 }
 
-func testCreateTableAsSelect(t *testing.T, c *Connection, olap drivers.OLAPStore) {
-	opts := map[string]any{"engine": "MergeTree", "table": "tbl", "distributed.sharding_key": "rand()"}
-	_, err := c.createTableAsSelect(context.Background(), "tbl", "SELECT 1 AS id, 'Earth' AS planet", opts)
+func testCreateTableAsSelect(t *testing.T, c *Connection) {
+	_, err := c.createTableAsSelect(context.Background(), "tbl", "SELECT 1 AS id, 'Earth' AS planet", &ModelOutputProperties{
+		Engine:                 "MergeTree",
+		Table:                  "tbl",
+		DistributedShardingKey: "rand()",
+	})
 	require.NoError(t, err)
 }
 
 func testInsertTableAsSelect_WithAppend(t *testing.T, c *Connection, olap drivers.OLAPStore) {
-	opts := map[string]any{
-		"engine":                   "MergeTree",
-		"table":                    "tbl",
-		"distributed.sharding_key": "rand()",
-		"incremental_strategy":     drivers.IncrementalStrategyAppend,
+	props := &ModelOutputProperties{
+		Engine:                 "MergeTree",
+		Table:                  "append_tbl",
+		DistributedShardingKey: "rand()",
+		IncrementalStrategy:    drivers.IncrementalStrategyAppend,
 	}
-	_, err := c.createTableAsSelect(context.Background(), "append_tbl", "SELECT 1 AS id, 'Earth' AS planet", opts)
+
+	_, err := c.createTableAsSelect(context.Background(), "append_tbl", "SELECT 1 AS id, 'Earth' AS planet", props)
 	require.NoError(t, err)
 
 	insertOpts := &InsertTableOptions{Strategy: drivers.IncrementalStrategyAppend}
-	_, err = c.insertTableAsSelect(context.Background(), "append_tbl", "SELECT 2 AS id, 'Mars' AS planet", insertOpts)
+	_, err = c.insertTableAsSelect(context.Background(), "append_tbl", "SELECT 2 AS id, 'Mars' AS planet", insertOpts, props)
 	require.NoError(t, err)
 
 	res, err := olap.Query(context.Background(), &drivers.Statement{Query: "SELECT id, planet FROM append_tbl ORDER BY id"})
@@ -210,19 +214,19 @@ func testInsertTableAsSelect_WithAppend(t *testing.T, c *Connection, olap driver
 }
 
 func testInsertTableAsSelect_WithMerge(t *testing.T, c *Connection, olap drivers.OLAPStore) {
-	opts := map[string]any{
-		"typs":                     "TABLE",
-		"engine":                   "ReplacingMergeTree",
-		"table":                    "tbl",
-		"distributed.sharding_key": "rand()",
-		"incremental_strategy":     drivers.IncrementalStrategyMerge,
-		"order_by":                 "id",
+	props := &ModelOutputProperties{
+		Typ:                    "TABLE",
+		Engine:                 "ReplacingMergeTree",
+		Table:                  "tbl",
+		DistributedShardingKey: "rand()",
+		IncrementalStrategy:    drivers.IncrementalStrategyMerge,
+		OrderBy:                "id",
 	}
-	_, err := c.createTableAsSelect(context.Background(), "merge_tbl", "SELECT generate_series AS id, 'insert' AS value FROM generate_series(0, 4)", opts)
+	_, err := c.createTableAsSelect(context.Background(), "merge_tbl", "SELECT generate_series AS id, 'insert' AS value FROM generate_series(0, 4)", props)
 	require.NoError(t, err)
 
 	insertOpts := &InsertTableOptions{Strategy: drivers.IncrementalStrategyMerge}
-	_, err = c.insertTableAsSelect(context.Background(), "merge_tbl", "SELECT generate_series AS id, 'merge' AS value FROM generate_series(2, 5)", insertOpts)
+	_, err = c.insertTableAsSelect(context.Background(), "merge_tbl", "SELECT generate_series AS id, 'merge' AS value FROM generate_series(2, 5)", insertOpts, props)
 	require.NoError(t, err)
 
 	var result []struct {
@@ -274,22 +278,22 @@ func testInsertTableAsSelect_WithMerge(t *testing.T, c *Connection, olap drivers
 }
 
 func testInsertTableAsSelect_WithPartitionOverwrite(t *testing.T, c *Connection, olap drivers.OLAPStore) {
-	opts := map[string]any{
-		"engine":                   "MergeTree",
-		"table":                    "tbl",
-		"distributed.sharding_key": "rand()",
-		"incremental_strategy":     drivers.IncrementalStrategyPartitionOverwrite,
-		"partition_by":             "id",
-		"order_by":                 "value",
-		"primary_key":              "value",
+	props := &ModelOutputProperties{
+		Engine:                 "MergeTree",
+		Table:                  "tbl",
+		DistributedShardingKey: "rand()",
+		IncrementalStrategy:    drivers.IncrementalStrategyPartitionOverwrite,
+		OrderBy:                "id",
+		PartitionBy:            "id",
+		PrimaryKey:             "id",
 	}
-	_, err := c.createTableAsSelect(context.Background(), "replace_tbl", "SELECT generate_series AS id, 'insert' AS value FROM generate_series(0, 4)", opts)
+	_, err := c.createTableAsSelect(context.Background(), "replace_tbl", "SELECT generate_series AS id, 'insert' AS value FROM generate_series(0, 4)", props)
 	require.NoError(t, err)
 
 	insertOpts := &InsertTableOptions{
 		Strategy: drivers.IncrementalStrategyPartitionOverwrite,
 	}
-	_, err = c.insertTableAsSelect(context.Background(), "replace_tbl", "SELECT generate_series AS id, 'replace' AS value FROM generate_series(2, 5)", insertOpts)
+	_, err = c.insertTableAsSelect(context.Background(), "replace_tbl", "SELECT generate_series AS id, 'replace' AS value FROM generate_series(2, 5)", insertOpts, props)
 	require.NoError(t, err)
 
 	res, err := olap.Query(context.Background(), &drivers.Statement{Query: "SELECT id, value FROM replace_tbl ORDER BY id"})
@@ -337,22 +341,22 @@ func testInsertTableAsSelect_WithPartitionOverwrite(t *testing.T, c *Connection,
 }
 
 func testInsertTableAsSelect_WithPartitionOverwrite_DatePartition(t *testing.T, c *Connection, olap drivers.OLAPStore) {
-	opts := map[string]any{
-		"engine":                   "MergeTree",
-		"table":                    "tbl",
-		"distributed.sharding_key": "rand()",
-		"incremental_strategy":     drivers.IncrementalStrategyPartitionOverwrite,
-		"partition_by":             "dt",
-		"order_by":                 "value",
-		"primary_key":              "value",
+	props := &ModelOutputProperties{
+		Engine:                 "MergeTree",
+		Table:                  "tbl",
+		DistributedShardingKey: "rand()",
+		IncrementalStrategy:    drivers.IncrementalStrategyPartitionOverwrite,
+		OrderBy:                "dt",
+		PartitionBy:            "dt",
+		PrimaryKey:             "dt",
 	}
-	_, err := c.createTableAsSelect(context.Background(), "replace_tbl", "SELECT date_add(hour, generate_series, toDate('2024-12-01')) AS dt, 'insert' AS value FROM generate_series(0, 4)", opts)
+	_, err := c.createTableAsSelect(context.Background(), "replace_tbl", "SELECT date_add(hour, generate_series, toDate('2024-12-01')) AS dt, 'insert' AS value FROM generate_series(0, 4)", props)
 	require.NoError(t, err)
 
 	insertOpts := &InsertTableOptions{
 		Strategy: drivers.IncrementalStrategyPartitionOverwrite,
 	}
-	_, err = c.insertTableAsSelect(context.Background(), "replace_tbl", "SELECT date_add(hour, generate_series, toDate('2024-12-01')) AS dt, 'replace' AS value FROM generate_series(2, 5)", insertOpts)
+	_, err = c.insertTableAsSelect(context.Background(), "replace_tbl", "SELECT date_add(hour, generate_series, toDate('2024-12-01')) AS dt, 'replace' AS value FROM generate_series(2, 5)", insertOpts, props)
 	require.NoError(t, err)
 
 	res, err := olap.Query(context.Background(), &drivers.Statement{Query: "SELECT dt, value FROM replace_tbl ORDER BY dt"})
@@ -400,8 +404,12 @@ func testInsertTableAsSelect_WithPartitionOverwrite_DatePartition(t *testing.T, 
 }
 
 func testDictionary(t *testing.T, c *Connection, olap drivers.OLAPStore) {
-	opts := map[string]any{"table": "Dictionary", "primary_key": "id"}
-	_, err := c.createTableAsSelect(context.Background(), "dict", "SELECT 1 AS id, 'Earth' AS planet", opts)
+	_, err := c.createTableAsSelect(context.Background(), "dict", "SELECT 1 AS id, 'Earth' AS planet", &ModelOutputProperties{
+		Typ:                      "DICTIONARY",
+		PrimaryKey:               "id",
+		DictionarySourceUser:     "clickhouse",
+		DictionarySourcePassword: "clickhouse",
+	})
 	require.NoError(t, err)
 
 	err = c.renameEntity(context.Background(), "dict", "dict1")
@@ -421,7 +429,7 @@ func testDictionary(t *testing.T, c *Connection, olap drivers.OLAPStore) {
 	require.NoError(t, c.dropTable(context.Background(), "dict1"))
 }
 
-func testIntervalType(t *testing.T, c *Connection, olap drivers.OLAPStore) {
+func testIntervalType(t *testing.T, olap drivers.OLAPStore) {
 	cases := []struct {
 		query string
 		ms    int64
@@ -448,7 +456,7 @@ func testIntervalType(t *testing.T, c *Connection, olap drivers.OLAPStore) {
 	}
 }
 
-func prepareClusterConn(t *testing.T, c *Connection, olap drivers.OLAPStore, cluster string) {
+func prepareClusterConn(t *testing.T, olap drivers.OLAPStore, cluster string) {
 	err := olap.Exec(context.Background(), &drivers.Statement{
 		Query: fmt.Sprintf("CREATE OR REPLACE TABLE foo_local ON CLUSTER %s (bar VARCHAR, baz INTEGER) engine=MergeTree ORDER BY tuple()", cluster),
 	})
@@ -478,4 +486,308 @@ func prepareClusterConn(t *testing.T, c *Connection, olap drivers.OLAPStore, clu
 		Query: "INSERT INTO bar VALUES ('a', 1), ('a', 2), ('b', 3), ('c', 4)",
 	})
 	require.NoError(t, err)
+}
+
+func TestClickhouseReadWriteMode(t *testing.T) {
+	dsn := testclickhouse.Start(t)
+
+	t.Run("ReadOnlyMode_DisablesModelExecution", func(t *testing.T) {
+		// Test default mode (read-only) with BYODB
+		conn, err := driver{}.Open("default", map[string]any{"dsn": dsn}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+		require.NoError(t, err)
+		defer conn.Close()
+
+		// Should not be able to get model executor in read-only mode
+		opts := &drivers.ModelExecutorOptions{
+			InputHandle:     conn,
+			InputConnector:  "clickhouse",
+			OutputHandle:    conn,
+			OutputConnector: "clickhouse",
+		}
+		executor, ok := conn.AsModelExecutor("default", opts)
+		require.False(t, ok, "Model executor should not be available in read-only mode")
+		require.Nil(t, executor)
+
+		// Should not be able to get model manager in read-only mode
+		manager, ok := conn.AsModelManager("default")
+		require.False(t, ok, "Model manager should not be available in read-only mode")
+		require.Nil(t, manager)
+	})
+
+	t.Run("ExplicitReadOnlyMode_DisablesModelExecution", func(t *testing.T) {
+		// Test explicit read-only mode
+		conn, err := driver{}.Open("default", map[string]any{
+			"dsn":  dsn,
+			"mode": "read",
+		}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+		require.NoError(t, err)
+		defer conn.Close()
+
+		// Should not be able to get model executor
+		opts := &drivers.ModelExecutorOptions{
+			InputHandle:     conn,
+			InputConnector:  "clickhouse",
+			OutputHandle:    conn,
+			OutputConnector: "clickhouse",
+		}
+		executor, ok := conn.AsModelExecutor("default", opts)
+		require.False(t, ok, "Model executor should not be available in explicit read-only mode")
+		require.Nil(t, executor)
+
+		// Should not be able to get model manager
+		manager, ok := conn.AsModelManager("default")
+		require.False(t, ok, "Model manager should not be available in explicit read-only mode")
+		require.Nil(t, manager)
+	})
+
+	t.Run("ReadWriteMode_EnablesModelExecution", func(t *testing.T) {
+		// Test readwrite mode for BYODB
+		conn, err := driver{}.Open("default", map[string]any{
+			"dsn":  dsn,
+			"mode": "readwrite",
+		}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+		require.NoError(t, err)
+		defer conn.Close()
+
+		// Should be able to get model executor in readwrite mode
+		opts := &drivers.ModelExecutorOptions{
+			InputHandle:     conn,
+			InputConnector:  "clickhouse",
+			OutputHandle:    conn,
+			OutputConnector: "clickhouse",
+		}
+		executor, ok := conn.AsModelExecutor("default", opts)
+		require.True(t, ok, "Model executor should be available in readwrite mode")
+		require.NotNil(t, executor)
+
+		// Should be able to get model manager in readwrite mode
+		manager, ok := conn.AsModelManager("default")
+		require.True(t, ok, "Model manager should be available in readwrite mode")
+		require.NotNil(t, manager)
+	})
+}
+
+func TestClickhouseDualDSN(t *testing.T) {
+	dsn := testclickhouse.Start(t)
+
+	t.Run("SeparateReadWriteDSNs", func(t *testing.T) {
+		// Test with both dsn and write_dsn specified
+		conn, err := driver{}.Open("default", map[string]any{
+			"dsn":       dsn,
+			"write_dsn": dsn,
+			"mode":      "readwrite",
+		}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+		require.NoError(t, err)
+		defer conn.Close()
+
+		c := conn.(*Connection)
+		require.NotNil(t, c.readDB)
+		require.NotNil(t, c.writeDB)
+
+		// Verify that separate connections were created
+		require.NotEqual(t, c.readDB, c.writeDB, "Read and write connections should be separate when using dual DSNs")
+
+		// Test that both connections work
+		olap, ok := conn.AsOLAP("default")
+		require.True(t, ok)
+
+		// Test read operation
+		res, err := olap.Query(context.Background(), &drivers.Statement{Query: "SELECT 1 AS test"})
+		require.NoError(t, err)
+		require.True(t, res.Next())
+		var testVal int
+		require.NoError(t, res.Scan(&testVal))
+		require.Equal(t, 1, testVal)
+		require.NoError(t, res.Close())
+
+		// Test write operation
+		err = olap.Exec(context.Background(), &drivers.Statement{
+			Query: "CREATE TABLE dual_dsn_test (id INT) ENGINE=Memory",
+		})
+		require.NoError(t, err)
+	})
+
+	t.Run("OnlyWriteDSN_ShouldFail", func(t *testing.T) {
+		// Test that providing only write_dsn fails
+		_, err := driver{}.Open("default", map[string]any{
+			"write_dsn": dsn,
+			"mode":      "readwrite",
+		}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "no clickhouse connection configured")
+	})
+
+	t.Run("DualDSNWithRegularDSN_UsesDualDSN", func(t *testing.T) {
+		// Test that dsn and write_dsn configuration works correctly
+		conn, err := driver{}.Open("default", map[string]any{
+			"dsn":       dsn,
+			"write_dsn": dsn,
+			"mode":      "readwrite",
+		}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+		require.NoError(t, err)
+		defer conn.Close()
+
+		c := conn.(*Connection)
+		require.NotEqual(t, c.readDB, c.writeDB, "Should use separate connections when dual DSNs are provided")
+
+		// Verify connection works (would fail if using invalid DSN)
+		olap, ok := conn.AsOLAP("default")
+		require.True(t, ok)
+
+		res, err := olap.Query(context.Background(), &drivers.Statement{Query: "SELECT 1"})
+		require.NoError(t, err)
+		require.NoError(t, res.Close())
+	})
+
+	t.Run("InvalidDSN_ShouldFail", func(t *testing.T) {
+		// Test that invalid dsn causes failure
+		_, err := driver{}.Open("default", map[string]any{
+			"dsn":       "invalid-dsn",
+			"write_dsn": dsn,
+			"mode":      "readwrite",
+		}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "failed to parse DSN")
+	})
+
+	t.Run("InvalidWriteDSN_ShouldFail", func(t *testing.T) {
+		// Test that invalid write_dsn causes failure
+		_, err := driver{}.Open("default", map[string]any{
+			"dsn":       dsn,
+			"write_dsn": "invalid-dsn",
+			"mode":      "readwrite",
+		}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "failed to parse write DSN")
+	})
+
+	t.Run("SingleDSN_SharedConnection", func(t *testing.T) {
+		// Test that single DSN still uses shared connection (backward compatibility)
+		conn, err := driver{}.Open("default", map[string]any{
+			"dsn":  dsn,
+			"mode": "readwrite",
+		}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+		require.NoError(t, err)
+		defer conn.Close()
+
+		c := conn.(*Connection)
+		require.NotNil(t, c.readDB)
+		require.NotNil(t, c.writeDB)
+
+		// Should use the same connection for both read and write when using single DSN
+		require.Equal(t, c.readDB, c.writeDB, "Read and write should share connection when using single DSN")
+	})
+
+	t.Run("NoConfiguration_ShouldFail", func(t *testing.T) {
+		// Test that providing no valid configuration fails with appropriate error
+		_, err := driver{}.Open("default", map[string]any{
+			"mode": "readwrite",
+		}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "no clickhouse connection configured")
+	})
+}
+
+func TestClickhouseDualDSNFunctionality(t *testing.T) {
+	dsn := testclickhouse.Start(t)
+
+	t.Run("ReadWriteOperationsWithDualDSN", func(t *testing.T) {
+		// Test that both read and write operations work with dual DSN setup
+		conn, err := driver{}.Open("default", map[string]any{
+			"dsn":       dsn,
+			"write_dsn": dsn,
+			"mode":      "readwrite",
+		}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+		require.NoError(t, err)
+		defer conn.Close()
+
+		c := conn.(*Connection)
+		olap, ok := conn.AsOLAP("default")
+		require.True(t, ok)
+
+		// Create a test table using write connection
+		err = olap.Exec(context.Background(), &drivers.Statement{
+			Query: "CREATE TABLE dual_test (id INT, name VARCHAR) ENGINE=Memory",
+		})
+		require.NoError(t, err)
+
+		// Insert data using write connection
+		err = olap.Exec(context.Background(), &drivers.Statement{
+			Query: "INSERT INTO dual_test VALUES (1, 'test1'), (2, 'test2')",
+		})
+		require.NoError(t, err)
+
+		// Read data using read connection
+		res, err := olap.Query(context.Background(), &drivers.Statement{
+			Query: "SELECT id, name FROM dual_test ORDER BY id",
+		})
+		require.NoError(t, err)
+
+		var results []struct {
+			ID   int
+			Name string
+		}
+		for res.Next() {
+			var r struct {
+				ID   int
+				Name string
+			}
+			require.NoError(t, res.Scan(&r.ID, &r.Name))
+			results = append(results, r)
+		}
+		require.NoError(t, res.Close())
+
+		require.Len(t, results, 2)
+		require.Equal(t, 1, results[0].ID)
+		require.Equal(t, "test1", results[0].Name)
+		require.Equal(t, 2, results[1].ID)
+		require.Equal(t, "test2", results[1].Name)
+
+		// Test model operations with dual DSN
+		testDualDSNModelOperations(t, c, olap)
+	})
+}
+
+func testDualDSNModelOperations(t *testing.T, c *Connection, olap drivers.OLAPStore) {
+	// Test that model operations work correctly with dual DSN setup
+	props := &ModelOutputProperties{
+		Engine:              "Memory",
+		Table:               "dual_dsn_model_test",
+		IncrementalStrategy: drivers.IncrementalStrategyAppend,
+	}
+
+	// Create table using model operations (should use write connection)
+	_, err := c.createTableAsSelect(context.Background(), "dual_dsn_model_test", "SELECT 1 AS id, 'initial' AS status", props)
+	require.NoError(t, err)
+
+	// Insert more data using model operations (should use write connection)
+	insertOpts := &InsertTableOptions{Strategy: drivers.IncrementalStrategyAppend}
+	_, err = c.insertTableAsSelect(context.Background(), "dual_dsn_model_test", "SELECT 2 AS id, 'added' AS status", insertOpts, props)
+	require.NoError(t, err)
+
+	// Query the results (should use read connection)
+	res, err := olap.Query(context.Background(), &drivers.Statement{
+		Query: "SELECT id, status FROM dual_dsn_model_test ORDER BY id",
+	})
+	require.NoError(t, err)
+
+	var results []struct {
+		ID     int
+		Status string
+	}
+	for res.Next() {
+		var r struct {
+			ID     int
+			Status string
+		}
+		require.NoError(t, res.Scan(&r.ID, &r.Status))
+		results = append(results, r)
+	}
+	require.NoError(t, res.Close())
+
+	require.Len(t, results, 2)
+	require.Equal(t, 1, results[0].ID)
+	require.Equal(t, "initial", results[0].Status)
+	require.Equal(t, 2, results[1].ID)
+	require.Equal(t, "added", results[1].Status)
 }

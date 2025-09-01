@@ -1,3 +1,4 @@
+expensive: true
 connectors:
   - athena
 project_files:

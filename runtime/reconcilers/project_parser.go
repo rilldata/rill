@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -113,9 +114,9 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 		return runtime.ReconcileResult{Err: fmt.Errorf("failed to access repo: %w", err)}
 	}
 	defer release()
-	err = repo.Sync(ctx)
+	err = repo.Pull(ctx, false, false)
 	if err != nil {
-		return runtime.ReconcileResult{Err: fmt.Errorf("failed to sync repo: %w", err)}
+		return runtime.ReconcileResult{Err: fmt.Errorf("failed to pull repo: %w", err)}
 	}
 
 	// Update commit sha and timestamp
@@ -145,6 +146,10 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 	if err != nil {
 		return runtime.ReconcileResult{Err: fmt.Errorf("failed to find instance: %w", err)}
 	}
+	instCfg, err := inst.Config()
+	if err != nil {
+		return runtime.ReconcileResult{Err: fmt.Errorf("failed to get instance config: %w", err)}
+	}
 
 	// Parse the project
 	// NOTE: Explicitly passing inst.OLAPConnector instead of inst.ResolveOLAPConnector() since the parser expects the base name to use if not overridden in rill.yaml.
@@ -160,7 +165,7 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 	if err != nil && !errors.Is(err, ErrParserHasParseErrors) {
 		return runtime.ReconcileResult{Err: err}
 	}
-	if !inst.WatchRepo {
+	if !instCfg.WatchRepo {
 		return runtime.ReconcileResult{Err: err}
 	}
 
@@ -181,6 +186,7 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 	// If pp.Spec is changed, the controller will cancel the context and call Reconcile again.
 	var reparseErr error
 	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 	err = repo.Watch(ctx, func(events []drivers.WatchEvent) {
 		// Get changed paths that are not directories
 		changedPaths := make([]string, 0, len(events))
@@ -237,18 +243,17 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 	})
 	if reparseErr != nil {
 		err = fmt.Errorf("re-parse failed: %w", reparseErr)
-	} else if err != nil {
-		if errors.Is(err, ctx.Err()) {
-			// The controller cancelled the context. It means pp.Spec was changed. Will be rescheduled.
-			return runtime.ReconcileResult{Err: err}
-		}
+	} else if err != nil && !errors.Is(err, ctx.Err()) {
 		err = fmt.Errorf("watch failed: %w", err)
 	}
 
-	// If the watch failed, we return without rescheduling.
-	// TODO: Should we have some kind of retry?
-	r.C.Logger.Error("Stopped watching for file changes", zap.String("error", err.Error()), observability.ZapCtx(ctx))
-	return runtime.ReconcileResult{Err: err}
+	// If the watch failed, we return and ask the controller to retry immediately.
+	if !errors.Is(err, ctx.Err()) { // context cancellations are used for manual triggers and graceful shutdowns, so not an error.
+		r.C.Logger.Error("Stopped watching for file changes, retrying...", zap.String("error", err.Error()), observability.ZapCtx(ctx))
+	} else {
+		r.C.Logger.Debug("Stopped watching for file changes, retrying...", observability.ZapCtx(ctx))
+	}
+	return runtime.ReconcileResult{Err: err, Retrigger: time.Now()}
 }
 
 // reconcileParser reconciles a parser's output with the current resources in the catalog.
@@ -509,59 +514,7 @@ func (r *ProjectParserReconciler) putParserResourceDef(ctx context.Context, inst
 
 	// Make resource spec to insert/update.
 	// res should be nil if no spec changes are needed.
-	var res *runtimev1.Resource
-	switch def.Name.Kind {
-	case parserpkg.ResourceKindSource:
-		if existing == nil || !equalSourceSpec(existing.GetSource().Spec, def.SourceSpec) {
-			res = &runtimev1.Resource{Resource: &runtimev1.Resource_Source{Source: &runtimev1.Source{Spec: def.SourceSpec}}}
-		}
-	case parserpkg.ResourceKindModel:
-		if existing == nil || !equalModelSpec(existing.GetModel().Spec, def.ModelSpec) {
-			res = &runtimev1.Resource{Resource: &runtimev1.Resource_Model{Model: &runtimev1.Model{Spec: def.ModelSpec}}}
-		}
-	case parserpkg.ResourceKindMetricsView:
-		if existing == nil || !equalMetricsViewSpec(existing.GetMetricsView().Spec, def.MetricsViewSpec) {
-			res = &runtimev1.Resource{Resource: &runtimev1.Resource_MetricsView{MetricsView: &runtimev1.MetricsView{Spec: def.MetricsViewSpec}}}
-		}
-	case parserpkg.ResourceKindExplore:
-		if existing == nil || !equalExploreSpec(existing.GetExplore().Spec, def.ExploreSpec) {
-			res = &runtimev1.Resource{Resource: &runtimev1.Resource_Explore{Explore: &runtimev1.Explore{Spec: def.ExploreSpec}}}
-		}
-	case parserpkg.ResourceKindMigration:
-		if existing == nil || !equalMigrationSpec(existing.GetMigration().Spec, def.MigrationSpec) {
-			res = &runtimev1.Resource{Resource: &runtimev1.Resource_Migration{Migration: &runtimev1.Migration{Spec: def.MigrationSpec}}}
-		}
-	case parserpkg.ResourceKindReport:
-		if existing == nil || !equalReportSpec(existing.GetReport().Spec, def.ReportSpec) {
-			res = &runtimev1.Resource{Resource: &runtimev1.Resource_Report{Report: &runtimev1.Report{Spec: def.ReportSpec}}}
-		}
-	case parserpkg.ResourceKindAlert:
-		if existing == nil || !equalAlertSpec(existing.GetAlert().Spec, def.AlertSpec) {
-			res = &runtimev1.Resource{Resource: &runtimev1.Resource_Alert{Alert: &runtimev1.Alert{Spec: def.AlertSpec}}}
-		}
-	case parserpkg.ResourceKindTheme:
-		if existing == nil || !equalThemeSpec(existing.GetTheme().Spec, def.ThemeSpec) {
-			res = &runtimev1.Resource{Resource: &runtimev1.Resource_Theme{Theme: &runtimev1.Theme{Spec: def.ThemeSpec}}}
-		}
-	case parserpkg.ResourceKindComponent:
-		if existing == nil || !equalComponentSpec(existing.GetComponent().Spec, def.ComponentSpec) {
-			res = &runtimev1.Resource{Resource: &runtimev1.Resource_Component{Component: &runtimev1.Component{Spec: def.ComponentSpec}}}
-		}
-	case parserpkg.ResourceKindCanvas:
-		if existing == nil || !equalCanvasSpec(existing.GetCanvas().Spec, def.CanvasSpec) {
-			res = &runtimev1.Resource{Resource: &runtimev1.Resource_Canvas{Canvas: &runtimev1.Canvas{Spec: def.CanvasSpec}}}
-		}
-	case parserpkg.ResourceKindAPI:
-		if existing == nil || !equalAPISpec(existing.GetApi().Spec, def.APISpec) {
-			res = &runtimev1.Resource{Resource: &runtimev1.Resource_Api{Api: &runtimev1.API{Spec: def.APISpec}}}
-		}
-	case parserpkg.ResourceKindConnector:
-		if existing == nil || !equalConnectorSpec(existing.GetConnector().Spec, def.ConnectorSpec) {
-			res = &runtimev1.Resource{Resource: &runtimev1.Resource_Connector{Connector: &runtimev1.ConnectorV2{Spec: def.ConnectorSpec}}}
-		}
-	default:
-		panic(fmt.Errorf("unknown resource type %q", def.Name.Kind))
-	}
+	res := newResourceIfModified(def, existing)
 
 	// Make refs for the resource meta
 	refs := make([]*runtimev1.ResourceName, 0, len(def.Refs))
@@ -640,21 +593,10 @@ func (r *ProjectParserReconciler) attemptRename(ctx context.Context, inst *drive
 	}
 
 	// Check spec is the same
+
 	switch def.Name.Kind {
-	case parserpkg.ResourceKindSource:
-		if !equalSourceSpec(existing.GetSource().Spec, def.SourceSpec) {
-			return false, nil
-		}
-	case parserpkg.ResourceKindModel:
-		if !equalModelSpec(existing.GetModel().Spec, def.ModelSpec) {
-			return false, nil
-		}
-	case parserpkg.ResourceKindMetricsView:
-		if !equalMetricsViewSpec(existing.GetMetricsView().Spec, def.MetricsViewSpec) {
-			return false, nil
-		}
-	case parserpkg.ResourceKindMigration:
-		if !equalMigrationSpec(existing.GetMigration().Spec, def.MigrationSpec) {
+	case parserpkg.ResourceKindSource, parserpkg.ResourceKindModel, parserpkg.ResourceKindMetricsView, parserpkg.ResourceKindMigration:
+		if newResourceIfModified(def, existing) != nil {
 			return false, nil
 		}
 	default:
@@ -696,50 +638,70 @@ func equalResourceNames(a, b []*runtimev1.ResourceName) bool {
 	return true
 }
 
-func equalSourceSpec(a, b *runtimev1.SourceSpec) bool {
-	return proto.Equal(a, b)
-}
+// newResourceIfModified creates a new resource if the given parser definition is different from the existing resource.
+func newResourceIfModified(def *parserpkg.Resource, existing *runtimev1.Resource) *runtimev1.Resource {
+	switch def.Name.Kind {
+	case parserpkg.ResourceKindSource:
+		if existing == nil || !proto.Equal(existing.GetSource().Spec, def.SourceSpec) {
+			return &runtimev1.Resource{Resource: &runtimev1.Resource_Source{Source: &runtimev1.Source{Spec: def.SourceSpec}}}
+		}
+	case parserpkg.ResourceKindModel:
+		if existing != nil { // Copy over the ephemeral trigger properties from the existing resource.
+			def.ModelSpec.Trigger = existing.GetModel().Spec.Trigger
+			def.ModelSpec.TriggerFull = existing.GetModel().Spec.TriggerFull
+		}
+		if existing == nil || !proto.Equal(existing.GetModel().Spec, def.ModelSpec) {
+			return &runtimev1.Resource{Resource: &runtimev1.Resource_Model{Model: &runtimev1.Model{Spec: def.ModelSpec}}}
+		}
+	case parserpkg.ResourceKindMetricsView:
+		if existing == nil || !proto.Equal(existing.GetMetricsView().Spec, def.MetricsViewSpec) {
+			return &runtimev1.Resource{Resource: &runtimev1.Resource_MetricsView{MetricsView: &runtimev1.MetricsView{Spec: def.MetricsViewSpec}}}
+		}
+	case parserpkg.ResourceKindExplore:
+		if existing == nil || !proto.Equal(existing.GetExplore().Spec, def.ExploreSpec) {
+			return &runtimev1.Resource{Resource: &runtimev1.Resource_Explore{Explore: &runtimev1.Explore{Spec: def.ExploreSpec}}}
+		}
+	case parserpkg.ResourceKindMigration:
+		if existing == nil || !proto.Equal(existing.GetMigration().Spec, def.MigrationSpec) {
+			return &runtimev1.Resource{Resource: &runtimev1.Resource_Migration{Migration: &runtimev1.Migration{Spec: def.MigrationSpec}}}
+		}
+	case parserpkg.ResourceKindReport:
+		if existing != nil { // Copy over the ephemeral trigger property from the existing resource.
+			def.ReportSpec.Trigger = existing.GetReport().Spec.Trigger
+		}
+		if existing == nil || !proto.Equal(existing.GetReport().Spec, def.ReportSpec) {
+			return &runtimev1.Resource{Resource: &runtimev1.Resource_Report{Report: &runtimev1.Report{Spec: def.ReportSpec}}}
+		}
+	case parserpkg.ResourceKindAlert:
+		if existing != nil { // Copy over the ephemeral trigger property from the existing resource.
+			def.AlertSpec.Trigger = existing.GetAlert().Spec.Trigger
+		}
+		if existing == nil || !proto.Equal(existing.GetAlert().Spec, def.AlertSpec) {
+			return &runtimev1.Resource{Resource: &runtimev1.Resource_Alert{Alert: &runtimev1.Alert{Spec: def.AlertSpec}}}
+		}
+	case parserpkg.ResourceKindTheme:
+		if existing == nil || !proto.Equal(existing.GetTheme().Spec, def.ThemeSpec) {
+			return &runtimev1.Resource{Resource: &runtimev1.Resource_Theme{Theme: &runtimev1.Theme{Spec: def.ThemeSpec}}}
+		}
+	case parserpkg.ResourceKindComponent:
+		if existing == nil || !proto.Equal(existing.GetComponent().Spec, def.ComponentSpec) {
+			return &runtimev1.Resource{Resource: &runtimev1.Resource_Component{Component: &runtimev1.Component{Spec: def.ComponentSpec}}}
+		}
+	case parserpkg.ResourceKindCanvas:
+		if existing == nil || !proto.Equal(existing.GetCanvas().Spec, def.CanvasSpec) {
+			return &runtimev1.Resource{Resource: &runtimev1.Resource_Canvas{Canvas: &runtimev1.Canvas{Spec: def.CanvasSpec}}}
+		}
+	case parserpkg.ResourceKindAPI:
+		if existing == nil || !proto.Equal(existing.GetApi().Spec, def.APISpec) {
+			return &runtimev1.Resource{Resource: &runtimev1.Resource_Api{Api: &runtimev1.API{Spec: def.APISpec}}}
+		}
+	case parserpkg.ResourceKindConnector:
+		if existing == nil || !proto.Equal(existing.GetConnector().Spec, def.ConnectorSpec) {
+			return &runtimev1.Resource{Resource: &runtimev1.Resource_Connector{Connector: &runtimev1.ConnectorV2{Spec: def.ConnectorSpec}}}
+		}
+	default:
+		panic(fmt.Errorf("unknown resource type %q", def.Name.Kind))
+	}
 
-func equalModelSpec(a, b *runtimev1.ModelSpec) bool {
-	return proto.Equal(a, b)
-}
-
-func equalMetricsViewSpec(a, b *runtimev1.MetricsViewSpec) bool {
-	return proto.Equal(a, b)
-}
-
-func equalExploreSpec(a, b *runtimev1.ExploreSpec) bool {
-	return proto.Equal(a, b)
-}
-
-func equalMigrationSpec(a, b *runtimev1.MigrationSpec) bool {
-	return proto.Equal(a, b)
-}
-
-func equalReportSpec(a, b *runtimev1.ReportSpec) bool {
-	return proto.Equal(a, b)
-}
-
-func equalAlertSpec(a, b *runtimev1.AlertSpec) bool {
-	return proto.Equal(a, b)
-}
-
-func equalThemeSpec(a, b *runtimev1.ThemeSpec) bool {
-	return proto.Equal(a, b)
-}
-
-func equalComponentSpec(a, b *runtimev1.ComponentSpec) bool {
-	return proto.Equal(a, b)
-}
-
-func equalCanvasSpec(a, b *runtimev1.CanvasSpec) bool {
-	return proto.Equal(a, b)
-}
-
-func equalAPISpec(a, b *runtimev1.APISpec) bool {
-	return proto.Equal(a, b)
-}
-
-func equalConnectorSpec(a, b *runtimev1.ConnectorSpec) bool {
-	return proto.Equal(a, b)
+	return nil
 }

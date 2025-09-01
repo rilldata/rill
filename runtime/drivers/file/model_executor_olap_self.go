@@ -10,10 +10,10 @@ import (
 	"os"
 	"time"
 
-	"github.com/apache/arrow/go/v15/arrow"
-	"github.com/apache/arrow/go/v15/arrow/array"
-	"github.com/apache/arrow/go/v15/arrow/memory"
-	"github.com/apache/arrow/go/v15/parquet/pqarrow"
+	"github.com/apache/arrow-go/v18/arrow"
+	"github.com/apache/arrow-go/v18/arrow/array"
+	"github.com/apache/arrow-go/v18/arrow/memory"
+	"github.com/apache/arrow-go/v18/parquet/pqarrow"
 	"github.com/c2h5oh/datasize"
 	"github.com/mitchellh/mapstructure"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -85,11 +85,11 @@ func (e *olapToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 	case drivers.FileFormatParquet:
 		err = writeParquet(res, fw)
 	case drivers.FileFormatCSV:
-		err = writeCSV(res, fw)
+		err = writeCSV(res, fw, outputProps.Headers)
 	case drivers.FileFormatJSON:
 		return nil, errors.New("json file output not currently supported")
 	case drivers.FileFormatXLSX:
-		err = writeXLSX(res, fw)
+		err = writeXLSX(res, fw, outputProps.Headers)
 	default:
 		return nil, fmt.Errorf("unsupported output format %q", outputProps.Format)
 	}
@@ -116,8 +116,16 @@ func (e *olapToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 	}, nil
 }
 
-func writeCSV(res *drivers.Result, fw io.Writer) error {
+func writeCSV(res *drivers.Result, fw io.Writer, headers []string) error {
 	w := csv.NewWriter(fw)
+
+	// Write headers first if they're provided
+	for _, line := range headers {
+		err := w.Write([]string{line})
+		if err != nil {
+			return err
+		}
+	}
 
 	strs := make([]string, len(res.Schema.Fields))
 	for i, f := range res.Schema.Fields {
@@ -185,7 +193,7 @@ func writeCSV(res *drivers.Result, fw io.Writer) error {
 	return nil
 }
 
-func writeXLSX(res *drivers.Result, fw io.Writer) error {
+func writeXLSX(res *drivers.Result, fw io.Writer, headers []string) error {
 	xf := excelize.NewFile()
 	defer func() { _ = xf.Close() }()
 
@@ -193,21 +201,39 @@ func writeXLSX(res *drivers.Result, fw io.Writer) error {
 	if err != nil {
 		return err
 	}
+	idx := 1
+
+	// Write headers first if they're provided
+	for _, line := range headers {
+		row := []any{line} // Each line is a separate row
+		cell, err := excelize.CoordinatesToCellName(1, idx)
+		if err != nil {
+			return err
+		}
+		if err := sw.SetRow(cell, row, excelize.RowOpts{Hidden: false}); err != nil {
+			return err
+		}
+		idx++ // Move to the next row
+	}
 
 	row := make([]any, len(res.Schema.Fields))
 	for i, f := range res.Schema.Fields {
 		row[i] = f.Name
 	}
-	if err := sw.SetRow("A1", row, excelize.RowOpts{Height: 45, Hidden: false}); err != nil {
+	cell, err := excelize.CoordinatesToCellName(1, idx)
+	if err != nil {
 		return err
 	}
+	if err := sw.SetRow(cell, row, excelize.RowOpts{Height: 25, Hidden: false}); err != nil {
+		return err
+	}
+	idx++
 
 	vals := make([]any, len(res.Schema.Fields))
 	for i := range vals {
 		vals[i] = new(any)
 	}
 
-	idx := 2 // 1-based, and +1 for headers
 	for res.Next() {
 		err := res.Scan(vals...)
 		if err != nil {

@@ -7,6 +7,7 @@
   import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
   import { modified } from "@rilldata/web-common/lib/actions/modified-click";
+  import { cellInspectorStore } from "../stores/cell-inspector-store";
   import type { Cell, HeaderGroup, Row } from "@tanstack/svelte-table";
   import { flexRender } from "@tanstack/svelte-table";
   import {
@@ -56,6 +57,7 @@
 
   $: hasRowDimension = rowDimensions.length > 0;
   $: hasExpandableRows = rowDimensions.length > 1;
+  $: hasMeasures = measures.length > 0;
   $: rowDimensionLabel = getRowNestedLabel(rowDimensions);
   $: rowDimensionName = rowDimensionLabel ? rowDimensionLabel : null;
 
@@ -231,6 +233,8 @@
   class:with-row-dimension={hasRowDimension}
   class:with-col-dimension={hasColumnDimension}
   class:with-expandable-rows={hasExpandableRows}
+  class:with-totals-row={!!totalsRow}
+  class:with-measures={hasMeasures}
   role="presentation"
   style:width="{totalLength + rowDimensionWidth}px"
   on:click={modified({ shift: onCellCopy, click: onCellClick })}
@@ -304,7 +308,7 @@
               : cell.column.columnDef.cell}
           {@const isActive = isCellActive(cell)}
           <td
-            class="ui-copy-number cell truncate"
+            class="ui-copy-number cell truncate group/cell"
             class:active-cell={isActive}
             class:interactive-cell={canShowDataViewer}
             class:border-r={shouldShowRightBorder(i)}
@@ -313,6 +317,20 @@
             data-columnid={cell.column.id}
             data-rowheader={i === 0 || undefined}
             class:totals-column={i > 0 && i <= measureCount}
+            on:mouseover={() => {
+              const value = cell.getValue();
+              if (value !== undefined && value !== null) {
+                // Always update the value in the store, but don't change visibility
+                cellInspectorStore.updateValue(String(value));
+              }
+            }}
+            on:focus={() => {
+              const value = cell.getValue();
+              if (value !== undefined && value !== null) {
+                // Always update the value in the store, but don't change visibility
+                cellInspectorStore.updateValue(String(value));
+              }
+            }}
           >
             {#if result?.component && result?.props}
               <svelte:component
@@ -410,12 +428,12 @@
 
   .with-row-dimension tr > th:first-of-type {
     @apply sticky left-0 z-20;
-    @apply bg-white;
+    @apply bg-surface;
   }
 
   .with-row-dimension tr > td:first-of-type {
     @apply sticky left-0 z-10;
-    @apply bg-white;
+    @apply bg-surface;
   }
 
   .with-row-dimension tr:hover > td:first-of-type {
@@ -427,18 +445,24 @@
   }
 
   /* The totals row */
-  tbody > tr:nth-of-type(2) {
-    @apply bg-white sticky z-20;
+  .with-totals-row tbody > tr:nth-of-type(2) {
+    @apply bg-surface sticky z-20;
     top: var(--total-header-height);
     height: calc(var(--row-height) + 2px);
   }
 
-  /* The totals row header */
-  .with-row-dimension tbody > tr:nth-of-type(2) > td:first-of-type {
+  /* The totals row header - only apply when there are actual measures and totals */
+  .with-row-dimension.with-totals-row.with-measures
+    tbody
+    > tr:nth-of-type(2)
+    > td:first-of-type {
     @apply font-semibold;
   }
 
-  .with-expandable-rows tbody > tr:nth-of-type(2) > td:first-of-type {
+  .with-expandable-rows.with-totals-row
+    tbody
+    > tr:nth-of-type(2)
+    > td:first-of-type {
     @apply pl-5;
   }
 

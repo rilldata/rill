@@ -2,189 +2,110 @@ package s3
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"math"
-	"net/http"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
-	"github.com/bmatcuk/doublestar/v4"
-	"github.com/c2h5oh/datasize"
-	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
-	rillblob "github.com/rilldata/rill/runtime/drivers/blob"
+	"github.com/rilldata/rill/runtime/pkg/blob"
 	"github.com/rilldata/rill/runtime/pkg/globutil"
-	"github.com/rilldata/rill/runtime/pkg/observability"
-	"go.uber.org/zap"
-	"gocloud.dev/blob"
 	"gocloud.dev/blob/s3blob"
 )
 
-type sourceProperties struct {
-	AWSRegion             string         `mapstructure:"region"`
-	S3Endpoint            string         `mapstructure:"endpoint"`
-	Path                  string         `mapstructure:"path"`
-	URI                   string         `mapstructure:"uri"`
-	GlobMaxTotalSize      int64          `mapstructure:"glob.max_total_size"`
-	GlobMaxObjectsMatched int            `mapstructure:"glob.max_objects_matched"`
-	GlobMaxObjectsListed  int64          `mapstructure:"glob.max_objects_listed"`
-	GlobPageSize          int            `mapstructure:"glob.page_size"`
-	Extract               map[string]any `mapstructure:"extract"`
-	BatchSize             string         `mapstructure:"batch_size"`
-	url                   *globutil.URL
-	extractPolicy         *rillblob.ExtractPolicy
-}
-
-func parseSourceProperties(props map[string]any) (*sourceProperties, error) {
-	conf := &sourceProperties{}
-	err := mapstructure.WeakDecode(props, conf)
-	if err != nil {
-		return nil, err
-	}
-
-	// Backwards compatibility for "uri" renamed to "path"
-	if conf.URI != "" {
-		conf.Path = conf.URI
-	}
-
-	if !doublestar.ValidatePattern(conf.Path) {
-		return nil, fmt.Errorf("glob pattern %s is invalid", conf.Path)
-	}
-
-	url, err := globutil.ParseBucketURL(conf.Path)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse path %q, %w", conf.Path, err)
-	}
-	conf.url = url
-
-	if url.Scheme != "s3" {
-		return nil, fmt.Errorf("invalid s3 path %q, should start with s3://", conf.Path)
-	}
-
-	conf.extractPolicy, err = rillblob.ParseExtractPolicy(conf.Extract)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse extract config: %w", err)
-	}
-
-	return conf, nil
-}
-
 // ListObjects implements drivers.ObjectStore.
-func (c *Connection) ListObjects(ctx context.Context, propsMap map[string]any) ([]drivers.ObjectStoreEntry, error) {
-	props, err := parseSourceProperties(propsMap)
+func (c *Connection) ListObjects(ctx context.Context, path string) ([]drivers.ObjectStoreEntry, error) {
+	url, err := c.parseBucketURL(path)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse config: %w", err)
+		return nil, fmt.Errorf("failed to parse path %q: %w", path, err)
 	}
 
-	creds, err := c.newCredentials()
-	if err != nil {
-		return nil, err
-	}
-
-	s3Bucket, err := c.openBucket(ctx, props, props.url.Host, creds)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open bucket %q: %w", props.url.Host, err)
-	}
-
-	bucket, err := rillblob.NewBucket(s3Bucket, c.logger)
+	bucket, err := c.openBucket(ctx, url.Host, false)
 	if err != nil {
 		return nil, err
 	}
 	defer bucket.Close()
 
-	return bucket.ListObjects(ctx, props.url.Path)
+	return bucket.ListObjects(ctx, url.Path)
 }
 
 // DownloadFiles implements drivers.ObjectStore.
-func (c *Connection) DownloadFiles(ctx context.Context, src map[string]any) (drivers.FileIterator, error) {
-	conf, err := parseSourceProperties(src)
+func (c *Connection) DownloadFiles(ctx context.Context, path string) (drivers.FileIterator, error) {
+	url, err := c.parseBucketURL(path)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse config: %w", err)
+		return nil, fmt.Errorf("failed to parse path %q: %w", path, err)
 	}
 
-	creds, err := c.newCredentials()
+	bucket, err := c.openBucket(ctx, url.Host, false)
 	if err != nil {
 		return nil, err
 	}
 
-	bucketObj, err := c.openBucket(ctx, conf, conf.url.Host, creds)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open bucket %q, %w", conf.url.Host, err)
-	}
-
-	var batchSize datasize.ByteSize
-	if conf.BatchSize == "-1" {
-		batchSize = math.MaxInt64 // download everything in one batch
-	} else {
-		batchSize, err = datasize.ParseString(conf.BatchSize)
-		if err != nil {
-			return nil, err
-		}
-	}
 	tempDir, err := c.storage.TempDir()
 	if err != nil {
 		return nil, err
 	}
-	// prepare fetch configs
-	opts := rillblob.Options{
-		GlobMaxTotalSize:      conf.GlobMaxTotalSize,
-		GlobMaxObjectsMatched: conf.GlobMaxObjectsMatched,
-		GlobMaxObjectsListed:  conf.GlobMaxObjectsListed,
-		GlobPageSize:          conf.GlobPageSize,
-		GlobPattern:           conf.url.Path,
-		ExtractPolicy:         conf.extractPolicy,
-		BatchSizeBytes:        int64(batchSize.Bytes()),
-		KeepFilesUntilClose:   conf.BatchSize == "-1",
-		RetainFiles:           c.config.RetainFiles,
-		TempDir:               tempDir,
-	}
 
-	it, err := rillblob.NewIterator(ctx, bucketObj, opts, c.logger)
-	if err != nil {
-		// TODO :: fix this for single file access. for single file first call only happens during download
-		var failureErr awserr.RequestFailure
-		if !errors.As(err, &failureErr) {
-			return nil, err
-		}
-
-		// aws returns StatusForbidden in cases like no creds passed, wrong creds passed and incorrect bucket
-		// r2 returns StatusBadRequest in all cases above
-		// we try again with anonymous credentials in case bucket is public
-		if (failureErr.StatusCode() == http.StatusForbidden || failureErr.StatusCode() == http.StatusBadRequest) && creds != credentials.AnonymousCredentials {
-			c.logger.Debug("s3 list objects failed, re-trying with anonymous credential", zap.Error(err), observability.ZapCtx(ctx))
-			creds = credentials.AnonymousCredentials
-			bucketObj, bucketErr := c.openBucket(ctx, conf, conf.url.Host, creds)
-			if bucketErr != nil {
-				return nil, fmt.Errorf("failed to open bucket %q, %w", conf.url.Host, bucketErr)
-			}
-
-			anonIt, anonErr := rillblob.NewIterator(ctx, bucketObj, opts, c.logger)
-			if anonErr == nil {
-				return anonIt, nil
-			}
-		}
-
-		// check again
-		if failureErr.StatusCode() == http.StatusForbidden || failureErr.StatusCode() == http.StatusBadRequest {
-			return nil, drivers.NewPermissionDeniedError(fmt.Sprintf("can't access remote err: %v", failureErr))
-		}
-		return nil, err
-	}
-
-	return it, err
+	return bucket.Download(ctx, &blob.DownloadOptions{
+		Glob:        url.Path,
+		TempDir:     tempDir,
+		CloseBucket: true,
+	})
 }
 
-func (c *Connection) openBucket(ctx context.Context, conf *sourceProperties, bucket string, creds *credentials.Credentials) (*blob.Bucket, error) {
-	sess, err := c.newSessionForBucket(ctx, bucket, conf.S3Endpoint, conf.AWSRegion, creds)
+// BucketRegion returns the region to use for the given bucket.
+func (c *Connection) BucketRegion(ctx context.Context, bucket string) (string, error) {
+	creds, err := c.newCredentials()
 	if err != nil {
-		return nil, fmt.Errorf("failed to start session: %w", err)
+		return "", err
 	}
 
-	return s3blob.OpenBucket(ctx, sess, bucket, nil)
+	sess, err := c.newSessionForBucket(ctx, bucket, c.config.Endpoint, c.config.Region, creds)
+	if err != nil {
+		return "", err
+	}
+
+	if sess.Config.Region != nil {
+		return *sess.Config.Region, nil
+	}
+	return "", fmt.Errorf("unable to get region")
+}
+
+func (c *Connection) parseBucketURL(path string) (*globutil.URL, error) {
+	url, err := globutil.ParseBucketURL(path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse path %q: %w", path, err)
+	}
+	if url.Scheme != "s3" {
+		return nil, fmt.Errorf("invalid S3 path %q: should start with s3://", path)
+	}
+	return url, nil
+}
+
+func (c *Connection) openBucket(ctx context.Context, bucket string, anonymous bool) (*blob.Bucket, error) {
+	var creds *credentials.Credentials
+	if anonymous {
+		creds = credentials.AnonymousCredentials
+	} else {
+		var err error
+		creds, err = c.newCredentials()
+		if err != nil {
+			return nil, fmt.Errorf("failed to create AWS credentials: %w", err)
+		}
+	}
+
+	sess, err := c.newSessionForBucket(ctx, bucket, c.config.Endpoint, c.config.Region, creds)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create AWS session: %w", err)
+	}
+
+	s3Bucket, err := s3blob.OpenBucket(ctx, sess, bucket, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open bucket %q: %w", bucket, err)
+	}
+
+	return blob.NewBucket(s3Bucket, c.logger)
 }
 
 func (c *Connection) newSessionForBucket(ctx context.Context, bucket, endpoint, region string, creds *credentials.Credentials) (*session.Session, error) {

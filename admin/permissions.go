@@ -2,6 +2,7 @@ package admin
 
 import (
 	"context"
+	"errors"
 
 	"github.com/rilldata/rill/admin/database"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
@@ -36,26 +37,29 @@ func (s *Service) OrganizationPermissionsForUser(ctx context.Context, orgID, use
 }
 
 // OrganizationPermissionsForService resolves organization permissions for a service.
-// A service currently gets full permissions on the org they belong to.
+// If the service has roles, it uses those roles to determine permissions. If no role is found, it falls back to the legacy behavior of giving full permissions to services in their org.
 func (s *Service) OrganizationPermissionsForService(ctx context.Context, orgID, serviceID string) (*adminv1.OrganizationPermissions, error) {
-	service, err := s.DB.FindService(ctx, serviceID)
+	// First check if the service has any roles
+	role, err := s.DB.ResolveOrganizationRoleForService(ctx, serviceID, orgID)
 	if err != nil {
-		return nil, err
+		if !errors.Is(err, database.ErrNotFound) {
+			return nil, err
+		}
 	}
 
-	// Services get full permissions on the org they belong to
-	if orgID == service.OrgID {
+	// If roles exist, use them to determine permissions
+	if role != nil {
 		return &adminv1.OrganizationPermissions{
-			Admin:            true,
-			Guest:            false,
-			ReadOrg:          true,
-			ManageOrg:        true,
-			ReadProjects:     true,
-			CreateProjects:   true,
-			ManageProjects:   true,
-			ReadOrgMembers:   true,
-			ManageOrgMembers: true,
-			ManageOrgAdmins:  true,
+			Admin:            role.Admin,
+			Guest:            role.Guest,
+			ReadOrg:          role.ReadOrg,
+			ManageOrg:        role.ManageOrg,
+			ReadProjects:     role.ReadProjects,
+			CreateProjects:   role.CreateProjects,
+			ManageProjects:   role.ManageProjects,
+			ReadOrgMembers:   role.ReadOrgMembers,
+			ManageOrgMembers: role.ManageOrgMembers,
+			ManageOrgAdmins:  role.ManageOrgAdmins,
 		}, nil
 	}
 
@@ -137,9 +141,10 @@ func (s *Service) ProjectPermissionsForUser(ctx context.Context, projectID, user
 	return composite, nil
 }
 
-// ProjectPermissionsService resolves project permissions for a service.
-// A service currently gets full permissions on all projects in the org they belong to.
+// ProjectPermissionsForService resolves project permissions for a service.
+// If the service has roles, it uses those roles to determine permissions. If no roles are found, then it falls back to just giving read permissions to project if the service is in the org.
 func (s *Service) ProjectPermissionsForService(ctx context.Context, projectID, serviceID string, orgPerms *adminv1.OrganizationPermissions) (*adminv1.ProjectPermissions, error) {
+	// ManageProjects permission on the org gives full access to all projects in the org (only org admins have this)
 	if orgPerms.ManageProjects {
 		return &adminv1.ProjectPermissions{
 			Admin:                      true,
@@ -165,6 +170,23 @@ func (s *Service) ProjectPermissionsForService(ctx context.Context, projectID, s
 			CreateBookmarks:            true,
 			ManageBookmarks:            true,
 		}, nil
+	}
+
+	// Check if the service has any roles
+	roles, err := s.DB.ResolveProjectRolesForService(ctx, serviceID, projectID)
+	if err != nil {
+		if !errors.Is(err, database.ErrNotFound) {
+			return nil, err
+		}
+	}
+
+	// If roles exist, use them to determine permissions
+	if len(roles) > 0 {
+		composite := &adminv1.ProjectPermissions{}
+		for _, role := range roles {
+			composite = UnionProjectRoles(composite, role)
+		}
+		return composite, nil
 	}
 
 	return &adminv1.ProjectPermissions{}, nil

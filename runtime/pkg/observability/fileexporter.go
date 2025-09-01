@@ -2,6 +2,7 @@ package observability
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -31,7 +32,7 @@ func NewFileExporter() (*FileExporter, error) {
 	// Setup lumberjack for log rotation
 	logWriter := &lumberjack.Logger{
 		Filename:   filepath, // File path
-		MaxSize:    30,       // Max file size in MB
+		MaxSize:    100,      // Max file size in MB
 		MaxBackups: 1,        // Keep 1 backup
 		MaxAge:     7,        // Keep logs for 7 days
 		Compress:   false,    // Do not Compress old log files
@@ -101,13 +102,13 @@ func SearchTracesFile(ctx context.Context, traceID, resourceName string) ([]byte
 		query = fmt.Sprintf(`
 			SELECT 
 				replace(traceID::VARCHAR, '-', '') AS traceID, 
-				tags::JSON AS tags, 
+				tags::JSON::BLOB AS tags, 
 				* EXCLUDE (traceID, tags)
 			FROM read_json_auto(%s)
 			WHERE traceID = (
 				SELECT traceID
 				FROM read_json_auto(%s)
-				WHERE name ILIKE '%%Reconcile%%' AND element_at(tags, 'name')[1] ILIKE ?
+				WHERE name ILIKE '%%Reconcile%%' AND json_extract_string(tags::JSON, '$.name') ILIKE ?
 				ORDER BY timestamp DESC
 				LIMIT 1
 			)
@@ -117,7 +118,7 @@ func SearchTracesFile(ctx context.Context, traceID, resourceName string) ([]byte
 		query = fmt.Sprintf(`
 			SELECT 
 				replace(traceID::VARCHAR, '-', '') AS traceID, 
-				tags::JSON AS tags, 
+				tags::JSON::BLOB AS tags, 
 				* EXCLUDE (traceID, tags) 
 			FROM 
 				read_json_auto(%s) 
@@ -153,7 +154,7 @@ func SearchTracesFile(ctx context.Context, traceID, resourceName string) ([]byte
 	}
 
 	if len(spans) == 0 {
-		return nil, fmt.Errorf("no traces found")
+		return nil, sql.ErrNoRows
 	}
 
 	data, err := json.Marshal(spans)

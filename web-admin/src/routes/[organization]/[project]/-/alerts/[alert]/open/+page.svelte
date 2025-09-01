@@ -2,17 +2,17 @@
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import { useAlert } from "@rilldata/web-admin/features/alerts/selectors";
-  import { mapQueryToDashboard } from "@rilldata/web-admin/features/dashboards/query-mappers/mapQueryToDashboard";
-  import {
-    getExploreName,
-    getExplorePageUrlSearchParams,
-  } from "@rilldata/web-admin/features/dashboards/query-mappers/utils.js";
   import CtaButton from "@rilldata/web-common/components/calls-to-action/CTAButton.svelte";
   import CtaContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
   import CtaLayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
   import CtaMessage from "@rilldata/web-common/components/calls-to-action/CTAMessage.svelte";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
+  import { mapQueryToDashboard } from "@rilldata/web-common/features/explore-mappers/map-to-explore";
+  import {
+    getExploreName,
+    getExplorePageUrlSearchParams,
+  } from "@rilldata/web-common/features/explore-mappers/utils";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
   $: ({ instanceId } = $runtime);
@@ -39,13 +39,13 @@
       | undefined) ??
     $alert.data?.resource?.alert?.spec?.queryArgsJson ??
     "";
-  $: dashboardStateForAlert = mapQueryToDashboard(
+  $: dashboardStateForAlert = mapQueryToDashboard({
     exploreName,
     queryName,
     queryArgsJson,
     executionTime,
-    $alert.data?.resource?.alert?.spec?.annotations ?? {},
-  );
+    annotations: $alert.data?.resource?.alert?.spec?.annotations ?? {},
+  });
 
   $: if ($alert.data?.resource?.alert?.spec && (!queryName || !queryArgsJson)) {
     goto(`/${organization}/${project}/-/alerts/${alertId}`);
@@ -57,7 +57,7 @@
 
   async function gotoExplorePage() {
     const url = new URL(
-      `/${organization}/${project}/explore/${exploreName}`,
+      `/${organization}/${project}/explore/${encodeURIComponent(exploreName)}`,
       window.location.origin,
     );
     url.search = (
@@ -68,11 +68,14 @@
     ).toString();
     return goto(url.toString());
   }
+
+  // When alert is loading we will have a "missing require field" error in dashboardStateForAlert so check loading for both queries.
+  $: loading = $alert.isPending || $dashboardStateForAlert?.isLoading;
 </script>
 
 <CtaLayoutContainer>
   <CtaContentContainer>
-    {#if $dashboardStateForAlert.isLoading}
+    {#if loading}
       <div class="h-36 mt-10">
         <Spinner status={EntityStatus.Running} size="7rem" duration={725} />
       </div>

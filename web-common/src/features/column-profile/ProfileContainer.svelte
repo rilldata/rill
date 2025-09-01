@@ -39,7 +39,6 @@
         flex
         space-between
         gap-2
-        transition-colors
         hover:bg-gray-100
         focus:bg-gray-100
         focus:ring-gray-500

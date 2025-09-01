@@ -18,6 +18,17 @@
 
   export let bgClass = "";
 
+  let isResizing = false;
+  let resizeSuppressTimeout;
+
+  function suppressClickAfterResize() {
+    isResizing = true;
+    clearTimeout(resizeSuppressTimeout);
+    resizeSuppressTimeout = setTimeout(() => {
+      isResizing = false;
+    }, 100);
+  }
+
   let positionClasses: string;
   $: {
     if (position === "top") {
@@ -35,7 +46,7 @@
       ? position === "left"
         ? ""
         : "border-b"
-      : "border-b border-b-1 border-r border-r-1 border border-gray-200 border-t-0 border-l-0 bg-gray-100");
+      : "border-b border-b-1 border-r border-r-1 border border-t-0 border-l-0 bg-gray-100");
 
   const borderClassesInnerDiv = isDimensionTable ? "" : "whitespace-nowrap";
 
@@ -53,9 +64,16 @@
   on:mouseleave={blur}
   on:focus={focus}
   on:blur={blur}
-  on:click={modified({ shift: onShiftClick, click: onClick })}
+  on:click={(e) => {
+    if (isResizing) {
+      e.stopPropagation();
+      return;
+    }
+    modified({ shift: onShiftClick, click: onClick })(e);
+  }}
   style:transform="translate{position === 'left' ? 'Y' : 'X'}({header.start}px)"
-  style:width="{header.size}px"
+  style:padding-right={position === "left" ? "0px" : "10px"}
+  style:width="{position === 'top-left' ? header.size + 1 : header.size}px"
   style:height="{position === 'left'
     ? config.rowHeight
     : config.columnHeaderHeight}px"
@@ -66,7 +84,7 @@
     class="
     ui-copy
     text-ellipsis overflow-hidden
-    {isDimensionTable ? (position === 'left' ? '' : 'px-1') : 'px-4'}
+    {isDimensionTable ? '' : 'px-4'}
     {borderClassesInnerDiv}
     {position === 'top' && `text-left`}
     {position === 'top-left' &&
@@ -75,14 +93,17 @@
   >
     <slot />
     {#if enableResize}
+      <!-- svelte-ignore a11y-click-events-have-key-events -->
       <div
         role="columnheader"
         tabindex="0"
         use:dragTableCell
         on:resize
+        on:resizeend={suppressClickAfterResize}
         on:dblclick={() => {
           dispatch("reset-column-width");
         }}
+        on:click|stopPropagation
         class="absolute top-0 right-0 cursor-col-resize grid place-items-end"
         style:padding-right="1.25px"
         style:width="12px"
@@ -91,7 +112,7 @@
         <!-- <div
           style:width="2px"
           style:height="34px"
-          class="border border-l border-gray-200"
+          class="border border-l"
         /> -->
       </div>
     {/if}

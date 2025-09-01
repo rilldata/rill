@@ -5,11 +5,10 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/bmatcuk/doublestar/v4"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
-	rillblob "github.com/rilldata/rill/runtime/drivers/blob"
 	"github.com/rilldata/rill/runtime/pkg/activity"
+	rillblob "github.com/rilldata/rill/runtime/pkg/blob"
 	"github.com/rilldata/rill/runtime/pkg/globutil"
 	"github.com/rilldata/rill/runtime/storage"
 	"go.uber.org/zap"
@@ -78,7 +77,7 @@ var _ drivers.Handle = &handle{}
 
 // Ping implements drivers.Handle.
 func (h *handle) Ping(ctx context.Context) error {
-	return drivers.ErrNotImplemented
+	return nil
 }
 
 // Driver implements drivers.Connection.
@@ -126,6 +125,11 @@ func (h *handle) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
 	return nil, false
 }
 
+// InformationSchema implements drivers.Handle.
+func (h *handle) AsInformationSchema() (drivers.InformationSchema, bool) {
+	return nil, false
+}
+
 // Migrate implements drivers.Connection.
 func (h *handle) Migrate(ctx context.Context) (err error) {
 	return nil
@@ -166,36 +170,11 @@ func (h *handle) AsNotifier(properties map[string]any) (drivers.Notifier, error)
 	return nil, drivers.ErrNotNotifier
 }
 
-type sourceProperties struct {
-	Path string `mapstructure:"path"`
-	url  *globutil.URL
-}
-
-func parseSourceProperties(propsMap map[string]any) (*sourceProperties, error) {
-	props := &sourceProperties{}
-	err := mapstructure.WeakDecode(propsMap, props)
-	if err != nil {
-		return nil, err
-	}
-
-	if !doublestar.ValidatePattern(props.Path) {
-		return nil, fmt.Errorf("glob pattern %s is invalid", props.Path)
-	}
-
-	url, err := globutil.ParseBucketURL(props.Path)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse path %q, %w", props.Path, err)
-	}
-	props.url = url
-
-	return props, nil
-}
-
 // ListObjects implements drivers.ObjectStore.
-func (h *handle) ListObjects(ctx context.Context, propsMap map[string]any) ([]drivers.ObjectStoreEntry, error) {
-	props, err := parseSourceProperties(propsMap)
+func (h *handle) ListObjects(ctx context.Context, path string) ([]drivers.ObjectStoreEntry, error) {
+	url, err := globutil.ParseBucketURL(path)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse propsig: %w", err)
+		return nil, fmt.Errorf("failed to parse path %q, %w", path, err)
 	}
 
 	bucket, err := rillblob.NewBucket(h.bucket, h.logger)
@@ -204,10 +183,10 @@ func (h *handle) ListObjects(ctx context.Context, propsMap map[string]any) ([]dr
 	}
 	defer bucket.Close()
 
-	return bucket.ListObjects(ctx, props.url.Path)
+	return bucket.ListObjects(ctx, url.Path)
 }
 
 // DownloadFiles implements drivers.ObjectStore.
-func (h *handle) DownloadFiles(ctx context.Context, src map[string]any) (drivers.FileIterator, error) {
+func (h *handle) DownloadFiles(ctx context.Context, path string) (drivers.FileIterator, error) {
 	return nil, errors.New("not implemented")
 }

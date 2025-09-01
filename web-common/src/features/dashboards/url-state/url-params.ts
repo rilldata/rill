@@ -1,4 +1,4 @@
-import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 
 export enum ExploreStateURLParams {
   WebView = "view",
@@ -21,8 +21,7 @@ export enum ExploreStateURLParams {
   SortType = "sort_type",
   SortDirection = "sort_dir",
 
-  LeaderboardMeasureCount = "leaderboard_measure_count",
-
+  LeaderboardMeasures = "leaderboard_measures",
   ExpandedMeasure = "measure",
   ChartType = "chart_type",
   Pin = "pin",
@@ -32,10 +31,11 @@ export enum ExploreStateURLParams {
   PivotTableMode = "table_mode",
 
   GzippedParams = "gzipped_state",
+  TemporaryFilters = "temp",
 }
 
 export const ExploreStateKeyToURLParamMap: Partial<
-  Record<keyof MetricsExplorerEntity, ExploreStateURLParams>
+  Record<keyof ExploreState, ExploreStateURLParams>
 > = {
   activePage: ExploreStateURLParams.WebView,
 
@@ -46,5 +46,5 @@ export const ExploreStateKeyToURLParamMap: Partial<
   leaderboardSortByMeasureName: ExploreStateURLParams.SortBy,
   dashboardSortType: ExploreStateURLParams.SortType,
   sortDirection: ExploreStateURLParams.SortDirection,
-  leaderboardMeasureCount: ExploreStateURLParams.LeaderboardMeasureCount,
+  leaderboardMeasureNames: ExploreStateURLParams.LeaderboardMeasures,
 };

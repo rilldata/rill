@@ -14,30 +14,16 @@ import (
 
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/filewatcher"
 )
-
-// Driver implements drivers.RepoStore.
-func (c *connection) Driver() string {
-	return c.driverName
-}
 
 // Root implements drivers.RepoStore.
 func (c *connection) Root(ctx context.Context) (string, error) {
 	return c.root, nil
 }
 
-// CommitHash implements drivers.RepoStore.
-func (c *connection) CommitHash(ctx context.Context) (string, error) {
-	return "", nil
-}
-
-// CommitTimestamp implements drivers.RepoStore.
-func (c *connection) CommitTimestamp(ctx context.Context) (time.Time, error) {
-	return time.Time{}, nil
-}
-
-// ListRecursive implements drivers.RepoStore.
-func (c *connection) ListRecursive(ctx context.Context, glob string, skipDirs bool) ([]drivers.DirEntry, error) {
+// ListGlob implements drivers.RepoStore.
+func (c *connection) ListGlob(ctx context.Context, glob string, skipDirs bool) ([]drivers.DirEntry, error) {
 	// Check that folder hasn't been moved
 	if err := c.checkRoot(); err != nil {
 		return nil, err
@@ -93,22 +79,8 @@ func (c *connection) Get(ctx context.Context, filePath string) (string, error) {
 	return string(b), nil
 }
 
-// Stat implements drivers.RepoStore.
-func (c *connection) Stat(ctx context.Context, filePath string) (*drivers.RepoObjectStat, error) {
-	filePath = filepath.Join(c.root, filePath)
-
-	info, err := os.Stat(filePath)
-	if err != nil {
-		return nil, err
-	}
-
-	return &drivers.RepoObjectStat{
-		LastUpdated: info.ModTime(),
-		IsDir:       info.IsDir(),
-	}, nil
-}
-
-func (c *connection) FileHash(ctx context.Context, paths []string) (string, error) {
+// Hash implements drivers.RepoStore.
+func (c *connection) Hash(ctx context.Context, paths []string) (string, error) {
 	hasher := md5.New()
 	for _, path := range paths {
 		path = filepath.Join(c.root, path)
@@ -127,6 +99,21 @@ func (c *connection) FileHash(ctx context.Context, paths []string) (string, erro
 		file.Close()
 	}
 	return hex.EncodeToString(hasher.Sum(nil)), nil
+}
+
+// Stat implements drivers.RepoStore.
+func (c *connection) Stat(ctx context.Context, filePath string) (*drivers.FileInfo, error) {
+	filePath = filepath.Join(c.root, filePath)
+
+	info, err := os.Stat(filePath)
+	if err != nil {
+		return nil, err
+	}
+
+	return &drivers.FileInfo{
+		LastUpdated: info.ModTime(),
+		IsDir:       info.IsDir(),
+	}, nil
 }
 
 // Put implements drivers.RepoStore.
@@ -152,7 +139,8 @@ func (c *connection) Put(ctx context.Context, filePath string, reader io.Reader)
 	return nil
 }
 
-func (c *connection) MakeDir(ctx context.Context, dirPath string) error {
+// MkdirAll implements drivers.RepoStore.
+func (c *connection) MkdirAll(ctx context.Context, dirPath string) error {
 	dirPath = filepath.Join(c.root, dirPath)
 
 	err := os.MkdirAll(dirPath, os.ModePerm)
@@ -169,7 +157,7 @@ func (c *connection) Rename(ctx context.Context, fromPath, toPath string) error 
 
 	fromPath = filepath.Join(c.root, fromPath)
 	if _, err := os.Stat(toPath); !strings.EqualFold(fromPath, toPath) && err == nil {
-		return drivers.ErrFileAlreadyExists
+		return os.ErrExist
 	}
 	err := os.Rename(fromPath, toPath)
 	if err != nil {
@@ -187,34 +175,42 @@ func (c *connection) Delete(ctx context.Context, filePath string, force bool) er
 	return os.Remove(filePath)
 }
 
-// Sync implements drivers.RepoStore.
-func (c *connection) Sync(ctx context.Context) error {
+// Watch implements drivers.RepoStore.
+func (c *connection) Watch(ctx context.Context, cb drivers.WatchCallback) error {
+	return c.watcher.Subscribe(ctx, func(events []filewatcher.WatchEvent) {
+		if len(events) == 0 {
+			return
+		}
+		watchEvents := make([]drivers.WatchEvent, 0, len(events))
+		for _, e := range events {
+			watchEvents = append(watchEvents, drivers.WatchEvent{
+				Type: e.Type,
+				Path: e.RelPath,
+				Dir:  e.Dir,
+			})
+		}
+		cb(watchEvents)
+	})
+}
+
+// Pull implements drivers.RepoStore.
+func (c *connection) Pull(ctx context.Context, discardChanges, forceHandshake bool) error {
+	// TODO: If its a Git repository, pull the current branch. Otherwise, this is a no-op.
 	return nil
 }
 
-// Watch implements drivers.RepoStore.
-func (c *connection) Watch(ctx context.Context, cb drivers.WatchCallback) error {
-	c.watcherMu.Lock()
-	if c.watcher == nil {
-		w, err := newWatcher(c.root, c.ignorePaths, c.logger)
-		if err != nil {
-			c.watcherMu.Unlock()
-			return err
-		}
-		c.watcher = w
-	}
-	c.watcherCount++
-	c.watcherMu.Unlock()
+// CommitAndPush commits local changes to the remote repository and pushes them.
+func (c *connection) CommitAndPush(ctx context.Context, message string, force bool) error {
+	// TODO: If its a Git repository, commit and push the changes with the given message to the current branch.
+	return nil
+}
 
-	defer func() {
-		c.watcherMu.Lock()
-		c.watcherCount--
-		if c.watcherCount == 0 {
-			c.watcher.close()
-			c.watcher = nil
-		}
-		c.watcherMu.Unlock()
-	}()
+// CommitHash implements drivers.RepoStore.
+func (c *connection) CommitHash(ctx context.Context) (string, error) {
+	return "", nil
+}
 
-	return c.watcher.subscribe(ctx, cb)
+// CommitTimestamp implements drivers.RepoStore.
+func (c *connection) CommitTimestamp(ctx context.Context) (time.Time, error) {
+	return time.Time{}, nil
 }

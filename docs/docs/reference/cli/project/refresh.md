@@ -16,7 +16,7 @@ rill project refresh [<project-name>] [flags]
       --project string         Project name
       --path string            Project directory (default ".")
       --local                  Target locally running Rill
-      --all                    Refresh all sources and models (default)
+      --all                    Refresh all resources except alerts and reports (default)
       --full                   Fully reload the targeted models (use with --all or --model)
       --model strings          Refresh a model
       --partition strings      Refresh a model partition (must set --model)

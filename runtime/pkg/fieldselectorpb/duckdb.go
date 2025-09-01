@@ -11,7 +11,7 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 
 	// Import the DuckDB driver
-	_ "github.com/marcboeker/go-duckdb"
+	_ "github.com/marcboeker/go-duckdb/v2"
 )
 
 // resolveDuckDBExpression implements Resolve for FieldSelector.duckdb_expression.

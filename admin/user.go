@@ -315,7 +315,7 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 }
 
 // CreateOrganizationForUser creates a new organization with the given name and description, and adds the user as an admin.
-func (s *Service) CreateOrganizationForUser(ctx context.Context, userID, email, orgName, description string) (*database.Organization, error) {
+func (s *Service) CreateOrganizationForUser(ctx context.Context, userID, email, orgName, displayName, description string) (*database.Organization, error) {
 	viewerProjectRole, err := s.DB.FindProjectRole(ctx, database.ProjectRoleNameViewer)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find viewer project role: %w", err)
@@ -330,10 +330,11 @@ func (s *Service) CreateOrganizationForUser(ctx context.Context, userID, email, 
 	defaultQuotas := s.Biller.DefaultQuotas()
 	org, err := s.DB.InsertOrganization(txCtx, &database.InsertOrganizationOptions{
 		Name:                                orgName,
-		DisplayName:                         "", // Populated later
+		DisplayName:                         displayName,
 		Description:                         description,
 		LogoAssetID:                         nil,
 		FaviconAssetID:                      nil,
+		ThumbnailAssetID:                    nil,
 		CustomDomain:                        "",
 		DefaultProjectRoleID:                &viewerProjectRole.ID,
 		QuotaProjects:                       deref(defaultQuotas.NumProjects, -1),

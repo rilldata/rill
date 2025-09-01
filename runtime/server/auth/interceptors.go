@@ -31,6 +31,13 @@ func GetClaims(ctx context.Context) Claims {
 	return claims
 }
 
+// WithClaims wraps a context with the given claims.
+// It mimics the result of parsing a JWT using a middleware. It should only be used in tests.
+// NOTE: We should remove this when the server tests support interceptors.
+func WithClaims(ctx context.Context, claims Claims) context.Context {
+	return context.WithValue(ctx, claimsContextKey{}, claims)
+}
+
 // UnaryServerInterceptor is a middleware for setting claims on runtime server requests.
 // The assigned claims can be retrieved using GetClaims. If the interceptor succeeds, a Claims value is guaranteed to be set on the ctx.
 // The claim parsing logic is as follows
@@ -154,10 +161,4 @@ func parseClaims(ctx context.Context, aud *Audience, authorizationHeader string)
 
 	ctx = context.WithValue(ctx, claimsContextKey{}, claims)
 	return ctx, nil
-}
-
-// WithOpen wraps a context with open claims. It's used for testing.
-// NOTE: We should remove this when the server tests support interceptors.
-func WithOpen(ctx context.Context) context.Context {
-	return context.WithValue(ctx, claimsContextKey{}, openClaims{})
 }

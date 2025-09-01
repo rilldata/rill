@@ -48,7 +48,12 @@ var Connectors = map[string]ConnectorAcquireFunc{
 	// clickhouse starts a ClickHouse test container with no tables initialized.
 	"clickhouse": func(t TestingT) map[string]string {
 		dsn := testclickhouse.Start(t)
-		return map[string]string{"dsn": dsn}
+		return map[string]string{"dsn": dsn, "mode": "readwrite"}
+	},
+	// clickhouse_cluster starts multiple test containers and configures them as a ClickHouse cluster.
+	"clickhouse_cluster": func(t TestingT) map[string]string {
+		dsn, cluster := testclickhouse.StartCluster(t)
+		return map[string]string{"dsn": dsn, "cluster": cluster, "mode": "readwrite"}
 	},
 	// Bigquery connector connects to a real bigquery cluster using the credentials json in RILL_RUNTIME_BIGQUERY_TEST_GOOGLE_APPLICATION_CREDENTIALS_JSON.
 	// The service account must have the following permissions:
@@ -81,8 +86,21 @@ var Connectors = map[string]ConnectorAcquireFunc{
 		}
 
 		dsn := os.Getenv("RILL_RUNTIME_SNOWFLAKE_TEST_DSN")
-		require.NotEmpty(t, dsn, "SNOWFLAKE test DSN not configured")
+		require.NotEmpty(t, dsn, "RILL_RUNTIME_SNOWFLAKE_TEST_DSN not configured")
 		return map[string]string{"dsn": dsn}
+	},
+	"motherduck": func(t TestingT) map[string]string {
+		// Load .env file at the repo root (if any)
+		_, currentFile, _, _ := goruntime.Caller(0)
+		envPath := filepath.Join(currentFile, "..", "..", "..", ".env")
+		_, err := os.Stat(envPath)
+		if err == nil {
+			require.NoError(t, godotenv.Load(envPath))
+		}
+
+		token := os.Getenv("RILL_RUNTIME_MOTHERDUCK_TEST_TOKEN")
+		require.NotEmpty(t, token, "RILL_RUNTIME_MOTHERDUCK_TEST_TOKEN not configured")
+		return map[string]string{"token": token}
 	},
 	// gcs connector uses an actual gcs bucket with data populated from testdata/init_data/azure.
 	"gcs": func(t TestingT) map[string]string {
@@ -162,6 +180,25 @@ var Connectors = map[string]ConnectorAcquireFunc{
 			"aws_secret_access_key": secretAccessKey,
 		}
 	},
+	// Redshift connector connects to an actual Redshift Serverless Service.
+	// The test dataset is pre-populated with table definitions in testdata/init_data/redshift_init_data.sql,
+	"redshift": func(t TestingT) map[string]string {
+		// Load .env file at the repo root (if any)
+		_, currentFile, _, _ := goruntime.Caller(0)
+		envPath := filepath.Join(currentFile, "..", "..", "..", ".env")
+		_, err := os.Stat(envPath)
+		if err == nil {
+			require.NoError(t, godotenv.Load(envPath))
+		}
+		accessKeyID := os.Getenv("RILL_RUNTIME_REDSHIFT_TEST_AWS_ACCESS_KEY_ID")
+		secretAccessKey := os.Getenv("RILL_RUNTIME_REDSHIFT_TEST_AWS_SECRET_ACCESS_KEY")
+		require.NotEmpty(t, accessKeyID, "RILL_RUNTIME_REDSHIFT_TEST_AWS_ACCESS_KEY_ID not configured")
+		require.NotEmpty(t, secretAccessKey, "RILL_RUNTIME_REDSHIFT_TEST_AWS_SECRET_ACCESS_KEY not configured")
+		return map[string]string{
+			"aws_access_key_id":     accessKeyID,
+			"aws_secret_access_key": secretAccessKey,
+		}
+	},
 	// druid connects to a real Druid cluster using the connection string in RILL_RUNTIME_DRUID_TEST_DSN.
 	// This usually uses the master.in cluster.
 	"druid": func(t TestingT) map[string]string {
@@ -228,7 +265,7 @@ var Connectors = map[string]ConnectorAcquireFunc{
 		port, err := mysqlContainer.MappedPort(ctx, "3306/tcp")
 		require.NoError(t, err)
 
-		dsn := fmt.Sprintf("mysql:mysql@tcp(%v:%v)/mysql", host, port.Port())
+		dsn := fmt.Sprintf("mysql://mysql:mysql@%v:%v/mysql", host, port.Port())
 		ip, err := mysqlContainer.ContainerIP(context.Background())
 		require.NoError(t, err)
 
@@ -304,7 +341,6 @@ func uploadDirectory(ctx context.Context, client *azblob.Client, containerName, 
 			return err
 		}
 
-		fmt.Printf("Uploaded: %s\n", blobName)
 		return nil
 	})
 }

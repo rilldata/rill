@@ -41,7 +41,16 @@ func JoinCmd(ch *cmdutil.Helper) *cobra.Command {
 				SuperuserForceAccess: true,
 			})
 			if err != nil {
-				return err
+				// Optimistically retry if the user is already a member (but might not be an admin).
+				_, retryErr := c.SetOrganizationMemberUserRole(cmd.Context(), &adminv1.SetOrganizationMemberUserRoleRequest{
+					Organization:         args[0],
+					Email:                me.User.Email,
+					Role:                 database.OrganizationRoleNameAdmin,
+					SuperuserForceAccess: true,
+				})
+				if retryErr != nil {
+					return err
+				}
 			}
 
 			return nil

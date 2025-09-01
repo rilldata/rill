@@ -12,18 +12,9 @@ import {
   prepareVirtualizedDimTableColumns,
 } from "../../dimension-table/dimension-table-utils";
 import { activeMeasureName, isValidPercentOfTotal } from "./active-measure";
-import { selectedDimensionValues } from "./dimension-filters";
 import { allMeasures, visibleMeasures } from "./measures";
 import { isTimeComparisonActive } from "./time-range";
 import type { DashboardDataSources } from "./types";
-
-export const selectedDimensionValueNames = (
-  dashData: DashboardDataSources,
-): string[] => {
-  const dimension = dashData.dashboard.selectedDimensionName;
-  if (!dimension) return [];
-  return selectedDimensionValues(dashData)(dimension);
-};
 
 export const primaryDimension = (
   dashData: DashboardDataSources,
@@ -119,11 +110,6 @@ export const dimensionTableSelectors = {
    * primary dimension.
    */
   primaryDimension,
-
-  /**
-   * gets the names of the selected dimension values for the primary dimension.
-   */
-  selectedDimensionValueNames,
 
   /**
    * A readable containaing a function that will prepare

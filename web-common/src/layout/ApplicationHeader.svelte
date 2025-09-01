@@ -11,7 +11,7 @@
   } from "@rilldata/web-common/features/dashboards/selectors.js";
   import DeployProjectCTA from "@rilldata/web-common/features/dashboards/workspace/DeployProjectCTA.svelte";
   import ExplorePreviewCTAs from "@rilldata/web-common/features/explores/ExplorePreviewCTAs.svelte";
-  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
   import { useProjectTitle } from "@rilldata/web-common/features/project/selectors";
   import { isDeployPage } from "@rilldata/web-common/layout/navigation/route-utils";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -19,6 +19,8 @@
   import { parseDocument } from "yaml";
   import InputWithConfirm from "../components/forms/InputWithConfirm.svelte";
   import { fileArtifacts } from "../features/entity-management/file-artifacts";
+
+  const { darkMode } = featureFlags;
 
   export let mode: string;
 
@@ -28,8 +30,6 @@
     params: { name: dashboardName },
     route,
   } = $page);
-
-  const { rillDevCloudFeatures } = featureFlags;
 
   $: ({ unsavedFiles } = fileArtifacts);
   $: ({ size: unsavedFileCount } = $unsavedFiles);
@@ -85,50 +85,50 @@
   }
 </script>
 
-<header>
-  <a href="/">
-    <Rill />
-  </a>
+<header class:border-b={!onDeployPage}>
+  {#if !onDeployPage}
+    <a href="/">
+      <Rill />
+    </a>
 
-  <span class="rounded-full px-2 border text-gray-800 bg-gray-50">
-    {mode}
-  </span>
+    <span class="rounded-full px-2 border text-gray-800 bg-gray-50">
+      {mode}
+    </span>
 
-  {#if mode === "Preview"}
-    {#if $exploresQuery?.data}
-      <Breadcrumbs {pathParts} {currentPath} />
+    {#if mode === "Preview"}
+      {#if $exploresQuery?.data}
+        <Breadcrumbs {pathParts} {currentPath} />
+      {/if}
+    {:else if mode === "Developer"}
+      <InputWithConfirm
+        size="md"
+        bumpDown
+        type="Project"
+        textClass="font-medium"
+        value={projectTitle}
+        onConfirm={submitTitleChange}
+        showIndicator={unsavedFileCount > 0}
+      />
     {/if}
-  {:else if mode === "Developer"}
-    <InputWithConfirm
-      size="md"
-      bumpDown
-      type="Project"
-      textClass="font-medium"
-      value={projectTitle}
-      onConfirm={submitTitleChange}
-      showIndicator={unsavedFileCount > 0}
-    />
   {/if}
 
-  <div class="ml-auto flex gap-x-2">
+  <div class="ml-auto flex gap-x-2 h-full w-fit items-center py-2">
     {#if mode === "Preview"}
       {#if route.id?.includes("explore")}
         <ExplorePreviewCTAs exploreName={dashboardName} />
       {/if}
     {/if}
-    {#if $rillDevCloudFeatures}
-      {#if !onDeployPage}
-        <DeployProjectCTA {hasValidDashboard} />
-      {/if}
-      <LocalAvatarButton />
+    {#if !onDeployPage}
+      <DeployProjectCTA {hasValidDashboard} />
     {/if}
+    <LocalAvatarButton darkMode={$darkMode} />
   </div>
 </header>
 
 <style lang="postcss">
   header {
     @apply w-full bg-surface box-border;
-    @apply flex gap-x-2 items-center px-4 border-b flex-none;
+    @apply flex gap-x-2 items-center px-4 flex-none;
     @apply h-11;
   }
 </style>

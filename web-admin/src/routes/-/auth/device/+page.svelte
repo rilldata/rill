@@ -93,7 +93,7 @@
     <div class="flex flex-col gap-y-4 w-[400px]">
       <CtaButton
         variant="primary"
-        on:click={() => {
+        onClick={() => {
           actionTaken = true;
           confirmUserCode();
         }}
@@ -101,7 +101,7 @@
       >
       <CtaButton
         variant="secondary"
-        on:click={() => {
+        onClick={() => {
           actionTaken = true;
           rejectUserCode();
         }}

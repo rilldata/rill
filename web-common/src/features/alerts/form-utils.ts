@@ -8,14 +8,21 @@ import {
 import { MeasureFilterType } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-options";
 import { mergeDimensionAndMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import type { DimensionThresholdFilter } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import {
+  mapSelectedComparisonTimeRangeToV1TimeRange,
+  mapSelectedTimeRangeToV1TimeRange,
+} from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers.ts";
+import type { FiltersState } from "@rilldata/web-common/features/dashboards/stores/Filters.ts";
+import type { TimeControlState } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
+import { getInitialScheduleFormValues } from "@rilldata/web-common/features/scheduled-reports/time-utils.ts";
 import type {
-  V1Expression,
+  V1ExploreSpec,
   V1MetricsViewAggregationRequest,
   V1Operation,
-  V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
-import * as yup from "yup";
+import type { ValidationErrors } from "sveltekit-superforms";
+import { yup, type ValidationAdapter } from "sveltekit-superforms/adapters";
+import { object, array, string } from "yup";
 
 export type AlertFormValues = {
   name: string;
@@ -26,31 +33,41 @@ export type AlertFormValues = {
   evaluationInterval: string;
   snooze: string;
   enableSlackNotification: boolean;
-  slackChannels: { channel: string }[];
-  slackUsers: { email: string }[];
+  slackChannels: string[];
+  slackUsers: string[];
   enableEmailNotification: boolean;
-  emailRecipients: { email: string }[];
+  emailRecipients: string[];
+  refreshWhenDataRefreshes: boolean;
   // The following fields are not editable in the form, but they're state that's used throughout the form, so
   // it's helpful to have them here. Also, in the future they may be editable in the form.
   metricsViewName: string;
   exploreName: string;
-  whereFilter: V1Expression;
-  dimensionsWithInlistFilter: string[];
-  dimensionThresholdFilters: Array<DimensionThresholdFilter>;
-  timeRange: V1TimeRange;
-  comparisonTimeRange: V1TimeRange | undefined;
-};
+} & ReturnType<typeof getInitialScheduleFormValues>;
 
 export function getAlertQueryArgsFromFormValues(
   formValues: AlertFormValues,
+  filtersArgs: FiltersState,
+  timeControlArgs: TimeControlState,
+  exploreSpec: V1ExploreSpec,
 ): V1MetricsViewAggregationRequest {
+  const timeRange = mapSelectedTimeRangeToV1TimeRange(
+    timeControlArgs.selectedTimeRange,
+    timeControlArgs.selectedTimezone,
+    exploreSpec,
+  );
+  const comparisonTimeRange = mapSelectedComparisonTimeRangeToV1TimeRange(
+    timeControlArgs.selectedComparisonTimeRange,
+    timeControlArgs.showTimeComparison,
+    timeRange,
+  );
+
   return {
     metricsView: formValues.metricsViewName,
     measures: [
       {
         name: formValues.measure,
       },
-      ...(formValues.comparisonTimeRange
+      ...(comparisonTimeRange
         ? [
             {
               name: formValues.measure + ComparisonDeltaAbsoluteSuffix,
@@ -78,8 +95,8 @@ export function getAlertQueryArgsFromFormValues(
       : [],
     where: sanitiseExpression(
       mergeDimensionAndMeasureFilters(
-        formValues.whereFilter,
-        formValues.dimensionThresholdFilters,
+        filtersArgs.whereFilter,
+        filtersArgs.dimensionThresholdFilters,
       ),
       undefined,
     ),
@@ -91,66 +108,58 @@ export function getAlertQueryArgsFromFormValues(
           .filter((e) => !!e),
       },
     }),
-    timeRange: {
-      isoDuration: formValues.timeRange.isoDuration,
-      timeZone: formValues.timeRange.timeZone,
-      roundToGrain: formValues.timeRange.roundToGrain,
-    },
+    timeRange,
     sort: [
       {
         name: formValues.measure,
         desc: true,
       },
     ],
-    ...(formValues.comparisonTimeRange
-      ? {
-          comparisonTimeRange: {
-            isoDuration: formValues.comparisonTimeRange.isoDuration,
-            isoOffset: formValues.comparisonTimeRange.isoOffset,
-          },
-        }
-      : {}),
+    comparisonTimeRange,
   };
 }
 
-export const alertFormValidationSchema = yup.object({
-  name: yup.string().required("Required"),
-  measure: yup.string().required("Required"),
-  criteria: yup.array().of(
-    yup.object().shape({
-      measure: yup.string().required("Required"),
-      operation: yup.string().required("Required"),
-      type: yup.string().required("Required"),
-      value1: yup
-        .number()
-        .required("Required")
-        .test((value, context) => {
-          const criteria = context.parent as MeasureFilterEntry;
-          if (
-            criteria.type === MeasureFilterType.PercentOfTotal &&
-            (value < 0 || value > 100)
-          ) {
-            return context.createError({
-              message: `${context.path} must be a value between 0 and 100.`,
-            });
-          }
-          return true;
-        }),
-    }),
-  ),
-  criteriaOperation: yup.string().required("Required"),
-  snooze: yup.string().required("Required"),
-  slackUsers: yup.array().of(
-    yup.object().shape({
-      email: yup.string().email("Invalid email"),
-    }),
-  ),
-  emailRecipients: yup.array().of(
-    yup.object().shape({
-      email: yup.string().email("Invalid email"),
-    }),
-  ),
-});
+export const alertFormValidationSchema = yup(
+  object({
+    name: string().required("Required"),
+    measure: string().required("Required"),
+    criteria: array().of(
+      object().shape({
+        measure: string().required("Required"),
+        operation: string().required("Required"),
+        type: string().required("Required"),
+        value1: string()
+          .required("Required")
+          .test((value, context) => {
+            // `number` doest allow for string representation of number with the superforms yup adapter.
+            // So we use `string` and check for NaN
+            // TODO: do a greater refactor changing the type of value1 in all the places to a number
+            const numValue = Number(value);
+            if (Number.isNaN(numValue)) {
+              return context.createError({
+                message: `${context.path} must be a valid number.`,
+              });
+            }
+
+            const criteria = context.parent as MeasureFilterEntry;
+            if (
+              criteria.type === MeasureFilterType.PercentOfTotal &&
+              (numValue < 0 || numValue > 100)
+            ) {
+              return context.createError({
+                message: `${context.path} must be a value between 0 and 100.`,
+              });
+            }
+            return true;
+          }),
+      }),
+    ),
+    criteriaOperation: string().required("Required"),
+    snooze: string().required("Required"),
+    slackUsers: array(string().email("Invalid email")),
+    emailRecipients: array(string().email("Invalid email")),
+  }),
+) as unknown as ValidationAdapter<AlertFormValues>;
 export const FieldsByTab: (keyof AlertFormValues)[][] = [
   ["measure"],
   ["criteria", "criteriaOperation"],
@@ -160,8 +169,10 @@ export const FieldsByTab: (keyof AlertFormValues)[][] = [
 export function checkIsTabValid(
   tabIndex: number,
   formValues: AlertFormValues,
-  errors: Record<string, string>,
+  errors: ValidationErrors<AlertFormValues> | undefined,
 ): boolean {
+  if (!errors) return true;
+
   let hasRequiredFields: boolean;
   let hasErrors: boolean;
 
@@ -179,32 +190,27 @@ export function checkIsTabValid(
         hasRequiredFields = false;
       }
     });
-    hasErrors =
-      typeof errors.criteria === "string"
-        ? !!errors.criteria
-        : (errors.criteria as Array<MeasureFilterEntry>).some(
-            (c) =>
-              c.measure !== "" ||
-              (c.operation as string) !== "" ||
-              c.measure !== "",
-          );
+    hasErrors = someCriteriaHasErrors(errors.criteria);
   } else if (tabIndex === 2) {
     // TODO: do better for >1 recipients
     hasRequiredFields =
-      formValues.name !== "" &&
-      formValues.snooze !== "" &&
-      formValues.emailRecipients[0].email !== "";
+      !formValues.name && !formValues.snooze && !!formValues.emailRecipients[0];
 
-    // There's a bug in how `svelte-forms-lib` types the `$errors` store for arrays.
-    // See: https://github.com/tjinauyeung/svelte-forms-lib/issues/154#issuecomment-1087331250
-    const recipientErrors = errors.emailRecipients as unknown as {
-      email: string;
-    }[];
-
-    hasErrors = !!errors.name || !!errors.snooze || !!recipientErrors[0].email;
+    hasErrors =
+      !!errors.name || !!errors.snooze || !!errors.emailRecipients?.[0]?.length;
   } else {
     throw new Error(`Unexpected tabIndex: ${tabIndex}`);
   }
 
   return hasRequiredFields && !hasErrors;
+}
+
+function someCriteriaHasErrors(
+  criteriaErrors: ValidationErrors<AlertFormValues>["criteria"],
+) {
+  if (!criteriaErrors) return false;
+  return Object.values(criteriaErrors).every((criteriaError) => {
+    if (!criteriaError) return false;
+    return Object.values(criteriaError).every((c: string[]) => !!c?.[0]);
+  });
 }

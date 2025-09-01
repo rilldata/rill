@@ -28,12 +28,12 @@
   </DropdownMenu.Trigger>
   <DropdownMenu.Content
     align="start"
-    class="flex flex-col min-w-[150px] max-w-[300px] min-h-[150px] max-h-[190px]"
+    class="flex flex-col min-w-[150px] max-w-[300px]"
   >
     <ViewAsUserPopover
       organization={$page.params.organization}
       project={$page.params.project}
-      on:select={() => (active = false)}
+      onSelectUser={() => (active = false)}
     />
   </DropdownMenu.Content>
 </DropdownMenu.Root>

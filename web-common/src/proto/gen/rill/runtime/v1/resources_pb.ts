@@ -5,7 +5,7 @@
 
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
 import { Message, proto3, protoInt64, Struct, Timestamp, Value } from "@bufbuild/protobuf";
-import { StructType } from "./schema_pb.js";
+import { StructType, Type } from "./schema_pb.js";
 import { TimeGrain } from "./time_grain_pb.js";
 import { Expression } from "./expression_pb.js";
 import { ExportFormat } from "./export_format_pb.js";
@@ -41,6 +41,38 @@ proto3.util.setEnumType(ReconcileStatus, "rill.runtime.v1.ReconcileStatus", [
   { no: 1, name: "RECONCILE_STATUS_IDLE" },
   { no: 2, name: "RECONCILE_STATUS_PENDING" },
   { no: 3, name: "RECONCILE_STATUS_RUNNING" },
+]);
+
+/**
+ * @generated from enum rill.runtime.v1.ModelChangeMode
+ */
+export enum ModelChangeMode {
+  /**
+   * @generated from enum value: MODEL_CHANGE_MODE_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: MODEL_CHANGE_MODE_RESET = 1;
+   */
+  RESET = 1,
+
+  /**
+   * @generated from enum value: MODEL_CHANGE_MODE_MANUAL = 2;
+   */
+  MANUAL = 2,
+
+  /**
+   * @generated from enum value: MODEL_CHANGE_MODE_PATCH = 3;
+   */
+  PATCH = 3,
+}
+// Retrieve enum metadata with: proto3.getEnumType(ModelChangeMode)
+proto3.util.setEnumType(ModelChangeMode, "rill.runtime.v1.ModelChangeMode", [
+  { no: 0, name: "MODEL_CHANGE_MODE_UNSPECIFIED" },
+  { no: 1, name: "MODEL_CHANGE_MODE_RESET" },
+  { no: 2, name: "MODEL_CHANGE_MODE_MANUAL" },
+  { no: 3, name: "MODEL_CHANGE_MODE_PATCH" },
 ]);
 
 /**
@@ -934,6 +966,18 @@ export class ModelSpec extends Message<ModelSpec> {
   outputProperties?: Struct;
 
   /**
+   * change_mode is the mode of change detection to use for the model.
+   *
+   * @generated from field: rill.runtime.v1.ModelChangeMode change_mode = 24;
+   */
+  changeMode = ModelChangeMode.UNSPECIFIED;
+
+  /**
+   * @generated from field: repeated rill.runtime.v1.ModelTest tests = 25;
+   */
+  tests: ModelTest[] = [];
+
+  /**
    * @generated from field: bool trigger = 9;
    */
   trigger = false;
@@ -973,6 +1017,8 @@ export class ModelSpec extends Message<ModelSpec> {
     { no: 17, name: "stage_properties", kind: "message", T: Struct },
     { no: 1, name: "output_connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 12, name: "output_properties", kind: "message", T: Struct },
+    { no: 24, name: "change_mode", kind: "enum", T: proto3.getEnumType(ModelChangeMode) },
+    { no: 25, name: "tests", kind: "message", T: ModelTest, repeated: true },
     { no: 9, name: "trigger", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 22, name: "trigger_full", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 23, name: "defined_as_source", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
@@ -1042,6 +1088,20 @@ export class ModelState extends Message<ModelState> {
   refsHash = "";
 
   /**
+   * test_hash is a hash of the model's tests current state. It is used to determine if the model's tests have changed.
+   *
+   * @generated from field: string test_hash = 27;
+   */
+  testHash = "";
+
+  /**
+   * test_errors contains the results of the model's tests.
+   *
+   * @generated from field: repeated string test_errors = 28;
+   */
+  testErrors: string[] = [];
+
+  /**
    * refreshed_on is the time the model was last executed.
    *
    * @generated from field: google.protobuf.Timestamp refreshed_on = 4;
@@ -1106,6 +1166,8 @@ export class ModelState extends Message<ModelState> {
     { no: 2, name: "result_table", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "spec_hash", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 9, name: "refs_hash", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 27, name: "test_hash", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 28, name: "test_errors", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 4, name: "refreshed_on", kind: "message", T: Timestamp },
     { no: 7, name: "incremental_state", kind: "message", T: Struct },
     { no: 8, name: "incremental_state_schema", kind: "message", T: StructType },
@@ -1129,6 +1191,55 @@ export class ModelState extends Message<ModelState> {
 
   static equals(a: ModelState | PlainMessage<ModelState> | undefined, b: ModelState | PlainMessage<ModelState> | undefined): boolean {
     return proto3.util.equals(ModelState, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.ModelTest
+ */
+export class ModelTest extends Message<ModelTest> {
+  /**
+   * @generated from field: string name = 1;
+   */
+  name = "";
+
+  /**
+   * @generated from field: string resolver = 2;
+   */
+  resolver = "";
+
+  /**
+   * @generated from field: google.protobuf.Struct resolver_properties = 3;
+   */
+  resolverProperties?: Struct;
+
+  constructor(data?: PartialMessage<ModelTest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ModelTest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "resolver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "resolver_properties", kind: "message", T: Struct },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ModelTest {
+    return new ModelTest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ModelTest {
+    return new ModelTest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ModelTest {
+    return new ModelTest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ModelTest | PlainMessage<ModelTest> | undefined, b: ModelTest | PlainMessage<ModelTest> | undefined): boolean {
+    return proto3.util.equals(ModelTest, a, b);
   }
 }
 
@@ -1180,6 +1291,13 @@ export class MetricsView extends Message<MetricsView> {
  */
 export class MetricsViewSpec extends Message<MetricsViewSpec> {
   /**
+   * name of parent metrics view, if this is a derived metrics view. If this is set then certain fields like table, connector, database*, model, dimensions, and measures will only be set in `state.valid_spec`.
+   *
+   * @generated from field: string parent = 30;
+   */
+  parent = "";
+
+  /**
    * Connector containing the table
    *
    * @generated from field: string connector = 1;
@@ -1229,6 +1347,13 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
   description = "";
 
   /**
+   * Extra context for LLM/AI features. Used to guide natural language question answering and routing.
+   *
+   * @generated from field: string ai_instructions = 28;
+   */
+  aiInstructions = "";
+
+  /**
    * Name of the primary time dimension, used for rendering time series
    *
    * @generated from field: string time_dimension = 5;
@@ -1263,6 +1388,27 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
    * @generated from field: repeated rill.runtime.v1.MetricsViewSpec.Measure measures = 7;
    */
   measures: MetricsViewSpec_Measure[] = [];
+
+  /**
+   * Dynamic selector for dimensions from parent metrics view. Will be processed during validation, so it will always be empty in `state.valid_spec`. Can only be used if parent is set.
+   *
+   * @generated from field: rill.runtime.v1.FieldSelector parent_dimensions = 31;
+   */
+  parentDimensions?: FieldSelector;
+
+  /**
+   * Dynamic selector for measures from parent metrics view. Will be processed during validation, so it will always be empty in `state.valid_spec`. Can only be used if parent is set.
+   *
+   * @generated from field: rill.runtime.v1.FieldSelector parent_measures = 32;
+   */
+  parentMeasures?: FieldSelector;
+
+  /**
+   * Annotations in the metrics view
+   *
+   * @generated from field: repeated rill.runtime.v1.MetricsViewSpec.Annotation annotations = 29;
+   */
+  annotations: MetricsViewSpec_Annotation[] = [];
 
   /**
    * Security for the metrics view
@@ -1310,6 +1456,7 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.MetricsViewSpec";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 30, name: "parent", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 1, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 21, name: "database", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 22, name: "database_schema", kind: "scalar", T: 9 /* ScalarType.STRING */ },
@@ -1317,11 +1464,15 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
     { no: 24, name: "model", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 28, name: "ai_instructions", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "time_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "smallest_time_grain", kind: "enum", T: proto3.getEnumType(TimeGrain) },
     { no: 20, name: "watermark_expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "dimensions", kind: "message", T: MetricsViewSpec_Dimension, repeated: true },
     { no: 7, name: "measures", kind: "message", T: MetricsViewSpec_Measure, repeated: true },
+    { no: 31, name: "parent_dimensions", kind: "message", T: FieldSelector },
+    { no: 32, name: "parent_measures", kind: "message", T: FieldSelector },
+    { no: 29, name: "annotations", kind: "message", T: MetricsViewSpec_Annotation, repeated: true },
     { no: 23, name: "security_rules", kind: "message", T: SecurityRule, repeated: true },
     { no: 12, name: "first_day_of_week", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 13, name: "first_month_of_year", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
@@ -1422,6 +1573,35 @@ export class MetricsViewSpec_Dimension extends Message<MetricsViewSpec_Dimension
    */
   uri = "";
 
+  /**
+   * Lookup fields for the dimension
+   *
+   * @generated from field: string lookup_table = 8;
+   */
+  lookupTable = "";
+
+  /**
+   * @generated from field: string lookup_key_column = 9;
+   */
+  lookupKeyColumn = "";
+
+  /**
+   * @generated from field: string lookup_value_column = 10;
+   */
+  lookupValueColumn = "";
+
+  /**
+   * @generated from field: string lookup_default_expression = 11;
+   */
+  lookupDefaultExpression = "";
+
+  /**
+   * The data type of the dimension. Only populated in ValidSpec.
+   *
+   * @generated from field: rill.runtime.v1.Type data_type = 12;
+   */
+  dataType?: Type;
+
   constructor(data?: PartialMessage<MetricsViewSpec_Dimension>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1437,6 +1617,11 @@ export class MetricsViewSpec_Dimension extends Message<MetricsViewSpec_Dimension
     { no: 6, name: "expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "unnest", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 7, name: "uri", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 8, name: "lookup_table", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 9, name: "lookup_key_column", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 10, name: "lookup_value_column", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 11, name: "lookup_default_expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 12, name: "data_type", kind: "message", T: Type },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec_Dimension {
@@ -1644,6 +1829,13 @@ export class MetricsViewSpec_Measure extends Message<MetricsViewSpec_Measure> {
    */
   treatNullsAs = "";
 
+  /**
+   * The data type of the measure. Only populated in ValidSpec.
+   *
+   * @generated from field: rill.runtime.v1.Type data_type = 15;
+   */
+  dataType?: Type;
+
   constructor(data?: PartialMessage<MetricsViewSpec_Measure>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1666,6 +1858,7 @@ export class MetricsViewSpec_Measure extends Message<MetricsViewSpec_Measure> {
     { no: 13, name: "format_d3_locale", kind: "message", T: Struct },
     { no: 6, name: "valid_percent_of_total", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 14, name: "treat_nulls_as", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 15, name: "data_type", kind: "message", T: Type },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec_Measure {
@@ -1682,6 +1875,120 @@ export class MetricsViewSpec_Measure extends Message<MetricsViewSpec_Measure> {
 
   static equals(a: MetricsViewSpec_Measure | PlainMessage<MetricsViewSpec_Measure> | undefined, b: MetricsViewSpec_Measure | PlainMessage<MetricsViewSpec_Measure> | undefined): boolean {
     return proto3.util.equals(MetricsViewSpec_Measure, a, b);
+  }
+}
+
+/**
+ * Annotations that can be applied to measures. Each annotation needs to have a model or a table defined.
+ * 1. The underlying model/table has to have a `time` and `description` columns.
+ * 2. Can additionally have `time_end` column to convert the annotation to range type annotation.
+ * 3. Can additionally have `duration` column, this is used to not query for annotations greater than selected grain in dashboard. Also forces `time` and `time_end` in UI to be truncated to selected grain.
+ *
+ * @generated from message rill.runtime.v1.MetricsViewSpec.Annotation
+ */
+export class MetricsViewSpec_Annotation extends Message<MetricsViewSpec_Annotation> {
+  /**
+   * @generated from field: string name = 1;
+   */
+  name = "";
+
+  /**
+   * Connector containing the table
+   *
+   * @generated from field: string connector = 2;
+   */
+  connector = "";
+
+  /**
+   * Name of the database where table is located (optional)
+   *
+   * @generated from field: string database = 3;
+   */
+  database = "";
+
+  /**
+   * Name of the database schema where table is located (optional)
+   *
+   * @generated from field: string database_schema = 4;
+   */
+  databaseSchema = "";
+
+  /**
+   * Name of the model that source of annotation
+   *
+   * @generated from field: string table = 5;
+   */
+  table = "";
+
+  /**
+   * Name of the model that source of annotation. Either table or model should be set.
+   *
+   * @generated from field: string model = 6;
+   */
+  model = "";
+
+  /**
+   * Measures to apply the annotation to. If `measures_selector` is set, this will only be set in `state.valid_spec`.
+   *
+   * @generated from field: repeated string measures = 7;
+   */
+  measures: string[] = [];
+
+  /**
+   * Dynamic selector for `measures`. Will be processed during validation, so it will always be empty in `state.valid_spec`.
+   *
+   * @generated from field: rill.runtime.v1.FieldSelector measures_selector = 8;
+   */
+  measuresSelector?: FieldSelector;
+
+  /**
+   * Signifies that the underlying table has `time_end` column. Will be used while querying to add additional filter.
+   *
+   * @generated from field: bool has_time_end = 10;
+   */
+  hasTimeEnd = false;
+
+  /**
+   * Signifies that the underlying table has `duration` column. Will be used while querying to add additional filter.
+   *
+   * @generated from field: bool has_duration = 11;
+   */
+  hasDuration = false;
+
+  constructor(data?: PartialMessage<MetricsViewSpec_Annotation>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.MetricsViewSpec.Annotation";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "database", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "database_schema", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "table", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "model", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 7, name: "measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 8, name: "measures_selector", kind: "message", T: FieldSelector },
+    { no: 10, name: "has_time_end", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 11, name: "has_duration", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec_Annotation {
+    return new MetricsViewSpec_Annotation().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewSpec_Annotation {
+    return new MetricsViewSpec_Annotation().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewSpec_Annotation {
+    return new MetricsViewSpec_Annotation().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: MetricsViewSpec_Annotation | PlainMessage<MetricsViewSpec_Annotation> | undefined, b: MetricsViewSpec_Annotation | PlainMessage<MetricsViewSpec_Annotation> | undefined): boolean {
+    return proto3.util.equals(MetricsViewSpec_Annotation, a, b);
   }
 }
 
@@ -1913,12 +2220,12 @@ export class MetricsViewState extends Message<MetricsViewState> {
   streaming = false;
 
   /**
-   * The last time the metrics view's underlying model was refreshed.
+   * The last time the metrics view's underlying data was refreshed.
    * This may be empty if the metrics view is based on an externally managed table.
    *
-   * @generated from field: google.protobuf.Timestamp model_refreshed_on = 3;
+   * @generated from field: google.protobuf.Timestamp data_refreshed_on = 3;
    */
-  modelRefreshedOn?: Timestamp;
+  dataRefreshedOn?: Timestamp;
 
   constructor(data?: PartialMessage<MetricsViewState>) {
     super();
@@ -1930,7 +2237,7 @@ export class MetricsViewState extends Message<MetricsViewState> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "valid_spec", kind: "message", T: MetricsViewSpec },
     { no: 2, name: "streaming", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 3, name: "model_refreshed_on", kind: "message", T: Timestamp },
+    { no: 3, name: "data_refreshed_on", kind: "message", T: Timestamp },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewState {
@@ -2118,6 +2425,13 @@ export class ExploreSpec extends Message<ExploreSpec> {
    */
   allowCustomTimeRange = false;
 
+  /**
+   * When true, it indicates that the explore was defined in a metrics view either explicitly or emitted because version was not set.
+   *
+   * @generated from field: bool defined_in_metrics_view = 21;
+   */
+  definedInMetricsView = false;
+
   constructor(data?: PartialMessage<ExploreSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2143,6 +2457,7 @@ export class ExploreSpec extends Message<ExploreSpec> {
     { no: 18, name: "banner", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 19, name: "lock_time_zone", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 20, name: "allow_custom_time_range", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 21, name: "defined_in_metrics_view", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ExploreSpec {
@@ -2167,9 +2482,20 @@ export class ExploreSpec extends Message<ExploreSpec> {
  */
 export class ExploreState extends Message<ExploreState> {
   /**
+   * Valid spec is a (potentially previous) version of the spec that is known to be valid.
+   * It is also guaranteed to have concrete dimensions and measures, i.e. if the spec has a `dimensions_selector` or `measures_selector`, they will be resolved to concrete fields.
+   *
    * @generated from field: rill.runtime.v1.ExploreSpec valid_spec = 1;
    */
   validSpec?: ExploreSpec;
+
+  /**
+   * The last time the underlying metrics view's data was refreshed.
+   * This may be empty if the data refresh time is not known, e.g. if the metrics view is based on an externally managed table.
+   *
+   * @generated from field: google.protobuf.Timestamp data_refreshed_on = 2;
+   */
+  dataRefreshedOn?: Timestamp;
 
   constructor(data?: PartialMessage<ExploreState>) {
     super();
@@ -2180,6 +2506,7 @@ export class ExploreState extends Message<ExploreState> {
   static readonly typeName = "rill.runtime.v1.ExploreState";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "valid_spec", kind: "message", T: ExploreSpec },
+    { no: 2, name: "data_refreshed_on", kind: "message", T: Timestamp },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ExploreState {
@@ -2407,9 +2734,21 @@ export class ExplorePreset extends Message<ExplorePreset> {
   exploreExpandedDimension?: string;
 
   /**
+   * Deprecated
+   *
    * @generated from field: optional uint32 explore_leaderboard_measure_count = 30;
    */
   exploreLeaderboardMeasureCount?: number;
+
+  /**
+   * @generated from field: repeated string explore_leaderboard_measures = 31;
+   */
+  exploreLeaderboardMeasures: string[] = [];
+
+  /**
+   * @generated from field: optional bool explore_leaderboard_show_context_for_all_measures = 32;
+   */
+  exploreLeaderboardShowContextForAllMeasures?: boolean;
 
   /**
    * @generated from field: optional string time_dimension_measure = 21;
@@ -2478,6 +2817,8 @@ export class ExplorePreset extends Message<ExplorePreset> {
     { no: 19, name: "explore_sort_type", kind: "enum", T: proto3.getEnumType(ExploreSortType), opt: true },
     { no: 20, name: "explore_expanded_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 30, name: "explore_leaderboard_measure_count", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
+    { no: 31, name: "explore_leaderboard_measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 32, name: "explore_leaderboard_show_context_for_all_measures", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 21, name: "time_dimension_measure", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 22, name: "time_dimension_chart_type", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 23, name: "time_dimension_pin", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
@@ -2842,6 +3183,11 @@ export class ReportSpec extends Message<ReportSpec> {
   exportFormat = ExportFormat.UNSPECIFIED;
 
   /**
+   * @generated from field: bool export_include_header = 16;
+   */
+  exportIncludeHeader = false;
+
+  /**
    * @generated from field: repeated rill.runtime.v1.Notifier notifiers = 11;
    */
   notifiers: Notifier[] = [];
@@ -2889,6 +3235,7 @@ export class ReportSpec extends Message<ReportSpec> {
     { no: 6, name: "query_args_json", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 7, name: "export_limit", kind: "scalar", T: 4 /* ScalarType.UINT64 */ },
     { no: 8, name: "export_format", kind: "enum", T: proto3.getEnumType(ExportFormat) },
+    { no: 16, name: "export_include_header", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 11, name: "notifiers", kind: "message", T: Notifier, repeated: true },
     { no: 10, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 12, name: "watermark_inherit", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
@@ -3918,9 +4265,19 @@ export class ComponentSpec extends Message<ComponentSpec> {
  */
 export class ComponentState extends Message<ComponentState> {
   /**
+   * Valid spec is a (potentially previous) version of the component's spec that is known to be valid.
+   *
    * @generated from field: rill.runtime.v1.ComponentSpec valid_spec = 1;
    */
   validSpec?: ComponentSpec;
+
+  /**
+   * The last time any underlying metrics view(s)'s data was refreshed.
+   * This may be empty if the data refresh time is not known, e.g. if the metrics view is based on an externally managed table.
+   *
+   * @generated from field: google.protobuf.Timestamp data_refreshed_on = 2;
+   */
+  dataRefreshedOn?: Timestamp;
 
   constructor(data?: PartialMessage<ComponentState>) {
     super();
@@ -3931,6 +4288,7 @@ export class ComponentState extends Message<ComponentState> {
   static readonly typeName = "rill.runtime.v1.ComponentState";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "valid_spec", kind: "message", T: ComponentSpec },
+    { no: 2, name: "data_refreshed_on", kind: "message", T: Timestamp },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ComponentState {
@@ -4202,9 +4560,19 @@ export class CanvasSpec extends Message<CanvasSpec> {
  */
 export class CanvasState extends Message<CanvasState> {
   /**
+   * Valid spec is a (potentially previous) version of the canvas's spec that is known to be valid.
+   *
    * @generated from field: rill.runtime.v1.CanvasSpec valid_spec = 1;
    */
   validSpec?: CanvasSpec;
+
+  /**
+   * The last time any underlying metrics view(s)'s data was refreshed.
+   * This may be empty if the data refresh time is not known, e.g. if the metrics view is based on an externally managed table.
+   *
+   * @generated from field: google.protobuf.Timestamp data_refreshed_on = 2;
+   */
+  dataRefreshedOn?: Timestamp;
 
   constructor(data?: PartialMessage<CanvasState>) {
     super();
@@ -4215,6 +4583,7 @@ export class CanvasState extends Message<CanvasState> {
   static readonly typeName = "rill.runtime.v1.CanvasState";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "valid_spec", kind: "message", T: CanvasSpec },
+    { no: 2, name: "data_refreshed_on", kind: "message", T: Timestamp },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CanvasState {
@@ -4475,14 +4844,24 @@ export class APISpec extends Message<APISpec> {
   openapiSummary = "";
 
   /**
-   * @generated from field: repeated google.protobuf.Struct openapi_parameters = 4;
+   * @generated from field: string openapi_parameters_json = 8;
    */
-  openapiParameters: Struct[] = [];
+  openapiParametersJson = "";
 
   /**
-   * @generated from field: google.protobuf.Struct openapi_response_schema = 5;
+   * @generated from field: string openapi_request_schema_json = 9;
    */
-  openapiResponseSchema?: Struct;
+  openapiRequestSchemaJson = "";
+
+  /**
+   * @generated from field: string openapi_response_schema_json = 10;
+   */
+  openapiResponseSchemaJson = "";
+
+  /**
+   * @generated from field: string openapi_defs_prefix = 11;
+   */
+  openapiDefsPrefix = "";
 
   /**
    * @generated from field: repeated rill.runtime.v1.SecurityRule security_rules = 6;
@@ -4505,8 +4884,10 @@ export class APISpec extends Message<APISpec> {
     { no: 1, name: "resolver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "resolver_properties", kind: "message", T: Struct },
     { no: 3, name: "openapi_summary", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "openapi_parameters", kind: "message", T: Struct, repeated: true },
-    { no: 5, name: "openapi_response_schema", kind: "message", T: Struct },
+    { no: 8, name: "openapi_parameters_json", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 9, name: "openapi_request_schema_json", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 10, name: "openapi_response_schema_json", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 11, name: "openapi_defs_prefix", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "security_rules", kind: "message", T: SecurityRule, repeated: true },
     { no: 7, name: "skip_nested_security", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);

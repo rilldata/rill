@@ -54,17 +54,12 @@ func (e *selfToGCSExecutor) Execute(ctx context.Context, opts *drivers.ModelExec
 }
 
 func (e *selfToGCSExecutor) export(ctx context.Context, props map[string]any, outputLocation string, format drivers.FileFormat) (string, error) {
-	conf, err := parseSourceProperties(props)
+	conf, err := e.c.parseSourceProperties(props)
 	if err != nil {
 		return "", err
 	}
 
-	opts, err := e.c.clientOption(ctx)
-	if err != nil {
-		return "", err
-	}
-
-	client, err := createClient(ctx, conf.ProjectID, opts)
+	client, err := e.c.createClient(ctx, conf.ProjectID)
 	if err != nil {
 		return "", err
 	}

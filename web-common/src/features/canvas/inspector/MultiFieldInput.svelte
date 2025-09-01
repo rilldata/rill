@@ -1,13 +1,14 @@
 <script lang="ts">
-  import { Chip } from "@rilldata/web-common/components/chip";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import type { SearchableFilterSelectableGroup } from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterSelectableItem";
   import SearchableMenuContent from "@rilldata/web-common/components/searchable-filter-menu/SearchableMenuContent.svelte";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import { PlusIcon } from "lucide-svelte";
+  import ChipDragList from "./ChipDragList.svelte";
   import { useMetricFieldData } from "./selectors";
   import type { FieldType } from "./types";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
   export let canvasName: string;
   export let metricName: string;
@@ -22,10 +23,10 @@
   // Local state for optimistic updates
   let localSelectedItems: string[] = selectedItems;
 
-  $: ctx = getCanvasStore(canvasName);
+  $: ({ instanceId } = $runtime);
 
+  $: ctx = getCanvasStore(canvasName, instanceId);
   $: fieldData = useMetricFieldData(ctx, metricName, types);
-
   $: selectableGroups = [
     ...(types.includes("measure")
       ? [
@@ -88,13 +89,6 @@
     localSelectedItems = Array.from(selectedProxy);
     onMultiSelect(localSelectedItems);
   }
-
-  function handleRemove(item: string) {
-    const selectedProxy = new Set(localSelectedItems);
-    selectedProxy.delete(item);
-    localSelectedItems = Array.from(selectedProxy);
-    onMultiSelect(localSelectedItems);
-  }
 </script>
 
 <div class="flex flex-col gap-y-2 pt-1">
@@ -128,19 +122,12 @@
   </DropdownMenu.Root>
 
   {#if selectedItems?.length > 0}
-    <div class="flex flex-col gap-1 mt-2">
-      {#each selectedItems as item, i (i)}
-        <Chip
-          removable
-          fullWidth
-          type={$fieldData.displayMap[item]?.type ?? "dimension"}
-          on:remove={() => handleRemove(item)}
-        >
-          <span class="font-bold truncate" slot="body">
-            {$fieldData.displayMap[item]?.label || item}
-          </span>
-        </Chip>
-      {/each}
+    <div class="mt-2">
+      <ChipDragList
+        items={selectedItems}
+        displayMap={$fieldData.displayMap}
+        onUpdate={onMultiSelect}
+      />
     </div>
   {/if}
 </div>

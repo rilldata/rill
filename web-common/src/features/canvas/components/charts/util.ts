@@ -1,118 +1,291 @@
-import BarChart from "@rilldata/web-common/components/icons/BarChart.svelte";
-import LineChart from "@rilldata/web-common/components/icons/LineChart.svelte";
-import StackedArea from "@rilldata/web-common/components/icons/StackedArea.svelte";
-import StackedBar from "@rilldata/web-common/components/icons/StackedBar.svelte";
-import StackedBarFull from "@rilldata/web-common/components/icons/StackedBarFull.svelte";
-import { getRillTheme } from "@rilldata/web-common/components/vega/vega-config";
-import { sanitizeValueForVega } from "@rilldata/web-common/features/templates/charts/utils";
-import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+import type { CartesianChartSpec } from "@rilldata/web-common/features/canvas/components/charts/cartesian-charts/CartesianChart";
+import type { HeatmapChartSpec } from "@rilldata/web-common/features/canvas/components/charts/heatmap-charts/HeatmapChart";
+import { COMPARIONS_COLORS } from "@rilldata/web-common/features/dashboards/config";
+import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
+import { adjustOffsetForZone } from "@rilldata/web-common/lib/convertTimestampPreview";
+import { timeGrainToDuration } from "@rilldata/web-common/lib/time/grains";
+import {
+  V1TimeGrain,
+  type V1MetricsViewAggregationResponseDataItem,
+  type V1MetricsViewAggregationSort,
+} from "@rilldata/web-common/runtime-client";
 import merge from "deepmerge";
 import type { Config } from "vega-lite";
-import { generateVLAreaChartSpec } from "./area/spec";
-import { generateVLBarChartSpec } from "./bar-chart/spec";
-import { generateVLLineChartSpec } from "./line-chart/spec";
-import type { ChartDataResult } from "./selector";
-import { generateVLStackedBarChartSpec } from "./stacked-bar/default";
-import { generateVLStackedBarNormalizedSpec } from "./stacked-bar/normalized";
-import type { ChartConfig, ChartMetadata, ChartType } from "./types";
+import { CHART_CONFIG, type ChartSpec } from "./";
+import type {
+  ChartDataResult,
+  ChartDomainValues,
+  ChartSortDirection,
+  ChartType,
+  FieldConfig,
+} from "./types";
 
+export function isFieldConfig(field: unknown): field is FieldConfig {
+  return (
+    typeof field === "object" &&
+    field !== null &&
+    "type" in field &&
+    "field" in field
+  );
+}
 export function generateSpec(
   chartType: ChartType,
-  chartConfig: ChartConfig,
+  rillChartSpec: ChartSpec,
   data: ChartDataResult,
 ) {
   if (data.isFetching || data.error) return {};
-  switch (chartType) {
-    case "bar_chart":
-      return generateVLBarChartSpec(chartConfig, data);
-    case "stacked_bar":
-      return generateVLStackedBarChartSpec(chartConfig, data);
-    case "stacked_bar_normalized":
-      return generateVLStackedBarNormalizedSpec(chartConfig, data);
-    case "line_chart":
-      return generateVLLineChartSpec(chartConfig, data);
-    case "area_chart":
-      return generateVLAreaChartSpec(chartConfig, data);
-  }
+  return CHART_CONFIG[chartType]?.generateSpec(rillChartSpec, data);
 }
 
-export const chartMetadata: ChartMetadata[] = [
-  { type: "line_chart", title: "Line", icon: LineChart },
-  { type: "bar_chart", title: "Bar", icon: BarChart },
-  { type: "stacked_bar", title: "Stacked Bar", icon: StackedBar },
-  {
-    type: "stacked_bar_normalized",
-    title: "Stacked Bar Normalized",
-    icon: StackedBarFull,
-  },
-  { type: "area_chart", title: "Stacked Area", icon: StackedArea },
-];
+export function mergedVlConfig(
+  userProvidedConfig: string | undefined,
+  specConfig: Config | undefined,
+): Config | undefined {
+  if (!userProvidedConfig) return specConfig;
 
-export function isChartLineLike(chartType: ChartType) {
-  return chartType === "line_chart" || chartType === "area_chart";
-}
-
-export function mergedVlConfig(config: string): Config {
-  const defaultConfig = getRillTheme(true);
+  const validSpecConfig = specConfig || {};
   let parsedConfig: Config;
 
   try {
-    parsedConfig = JSON.parse(config) as Config;
+    parsedConfig = JSON.parse(userProvidedConfig) as Config;
   } catch {
     console.warn("Invalid JSON config");
-    return defaultConfig;
+    return specConfig;
   }
 
-  const reverseArrayMerge = (
+  const replaceByClonedSource = (
     destinationArray: unknown[],
     sourceArray: unknown[],
-  ) => [...sourceArray, ...destinationArray];
+  ) => sourceArray;
 
-  return merge(defaultConfig, parsedConfig, { arrayMerge: reverseArrayMerge });
+  return merge(validSpecConfig, parsedConfig, {
+    arrayMerge: replaceByClonedSource,
+  });
 }
 
-export function getChartTitle(config: ChartConfig, data: ChartDataResult) {
-  const xLabel = config.x?.field
-    ? data.fields[config.x.field]?.displayName || config.x.field
-    : "";
-
-  const yLabel = config.y?.field
-    ? data.fields[config.y.field]?.displayName || config.y.field
-    : "";
-
-  const colorLabel =
-    typeof config.color === "object" && config.color?.field
-      ? data.fields[config.color.field]?.displayName || config.color.field
-      : "";
-
-  const preposition = xLabel === "Time" ? "over" : "per";
-
-  return colorLabel
-    ? `${yLabel} ${preposition} ${xLabel} split by ${colorLabel}`
-    : `${yLabel} ${preposition} ${xLabel}`;
+export interface FieldsByType {
+  measures: string[];
+  dimensions: string[];
+  timeDimensions: string[];
 }
 
-export const timeGrainToVegaTimeUnitMap: Record<V1TimeGrain, string> = {
-  [V1TimeGrain.TIME_GRAIN_MILLISECOND]: "yearmonthdatehoursminutesseconds",
-  [V1TimeGrain.TIME_GRAIN_SECOND]: "yearmonthdatehoursminutesseconds",
-  [V1TimeGrain.TIME_GRAIN_MINUTE]: "yearmonthdatehoursminutes",
-  [V1TimeGrain.TIME_GRAIN_HOUR]: "yearmonthdatehours",
-  [V1TimeGrain.TIME_GRAIN_DAY]: "yearmonthdate",
-  [V1TimeGrain.TIME_GRAIN_WEEK]: "yearweek",
-  [V1TimeGrain.TIME_GRAIN_MONTH]: "yearmonth",
-  [V1TimeGrain.TIME_GRAIN_QUARTER]: "yearquarter",
-  [V1TimeGrain.TIME_GRAIN_YEAR]: "year",
-  [V1TimeGrain.TIME_GRAIN_UNSPECIFIED]: "yearmonthdate",
+export function getFieldsByType(spec: ChartSpec): FieldsByType {
+  let measures: string[] = [];
+  const dimensions: string[] = [];
+  const timeDimensions: string[] = [];
+
+  // Recursively check all properties for FieldConfig objects
+  const checkFields = (obj: unknown): void => {
+    if (!obj || typeof obj !== "object") {
+      return;
+    }
+
+    // Check if current object is a FieldConfig with type and field
+    if (isFieldConfig(obj)) {
+      const type = obj.type as string;
+      const field = obj.field;
+
+      switch (type) {
+        case "quantitative":
+          measures.push(field);
+          break;
+        case "nominal":
+          dimensions.push(field);
+          break;
+        case "temporal":
+          timeDimensions.push(field);
+          break;
+      }
+      return;
+    }
+
+    Object.values(obj).forEach((value) => {
+      if (typeof value === "object" && value !== null) {
+        checkFields(value);
+      }
+    });
+  };
+
+  checkFields(spec);
+
+  if ("measures" in spec && Array.isArray(spec.measures)) {
+    measures = spec.measures;
+  }
+  return {
+    measures,
+    dimensions,
+    timeDimensions,
+  };
+}
+
+export function adjustDataForTimeZone(
+  data: V1MetricsViewAggregationResponseDataItem[] | undefined,
+  timeFields: string[],
+  timeGrain: V1TimeGrain,
+  selectedTimezone: string,
+) {
+  if (!data) return data;
+
+  return data.map((datum) => {
+    // Create a shallow copy of the datum to avoid mutating the original
+    const adjustedDatum = { ...datum };
+    timeFields.forEach((timeField) => {
+      adjustedDatum[timeField] = adjustOffsetForZone(
+        datum[timeField] as string,
+        selectedTimezone,
+        timeGrainToDuration(timeGrain),
+      );
+    });
+    return adjustedDatum;
+  });
+}
+
+/**
+ * Converts a Vega-style sort configuration to Rill's aggregation sort format.
+ */
+export function vegaSortToAggregationSort(
+  encoder: "x" | "y",
+  config: CartesianChartSpec | HeatmapChartSpec,
+  defaultSort: ChartSortDirection,
+): V1MetricsViewAggregationSort | undefined {
+  const encoderConfig = config[encoder];
+
+  if (!encoderConfig) {
+    return undefined;
+  }
+
+  let sort = encoderConfig.sort;
+
+  if (!sort || Array.isArray(sort)) {
+    sort = defaultSort;
+  }
+
+  let field: string | undefined;
+  let desc: boolean = false;
+
+  switch (sort) {
+    case "x":
+    case "-x":
+      field = config.x?.field;
+      desc = sort === "-x";
+      break;
+    case "y":
+    case "-y":
+      field = config.y?.field;
+      desc = sort === "-y";
+      break;
+    case "color":
+    case "-color":
+      field = isFieldConfig(config.color) ? config.color.field : undefined;
+      desc = sort === "-color";
+      break;
+    default:
+      return undefined;
+  }
+
+  if (!field) return undefined;
+
+  return {
+    name: field,
+    desc,
+  };
+}
+
+const allowedTimeDimensionDetailTypes = [
+  "line_chart",
+  "area_chart",
+  "stacked_bar",
+  "stacked_bar_normalized",
+  "bar_chart",
+];
+
+export const CanvasChartTypeToTDDChartType = {
+  line_chart: TDDChart.DEFAULT,
+  area_chart: TDDChart.STACKED_AREA,
+  stacked_bar: TDDChart.STACKED_BAR,
+  stacked_bar_normalized: TDDChart.STACKED_BAR,
+  bar_chart: TDDChart.GROUPED_BAR,
 };
 
-export function sanitizeFieldName(fieldName: string) {
-  const specialCharactersRemoved = sanitizeValueForVega(fieldName);
-  const sanitizedFieldName = specialCharactersRemoved.replace(" ", "__");
+export function getLinkStateForTimeDimensionDetail(
+  spec: ChartSpec,
+  type: ChartType,
+): {
+  canLink: boolean;
+  measureName?: string;
+  dimensionName?: string;
+} {
+  if (!allowedTimeDimensionDetailTypes.includes(type))
+    return {
+      canLink: false,
+    };
 
-  /**
-   * Add a prefix to the beginning of the field
-   * name to avoid variables starting with a special
-   * character or number.
-   */
-  return `rill_${sanitizedFieldName}`;
+  const hasXAxis = "x" in spec;
+  const hasYAxis = "y" in spec;
+  if (!hasXAxis || !hasYAxis)
+    return {
+      canLink: false,
+    };
+
+  const xAxis = spec.x;
+  const yAxis = spec.y;
+
+  if (isFieldConfig(xAxis) && isFieldConfig(yAxis)) {
+    const colorDimension = spec.color;
+    if (isFieldConfig(colorDimension)) {
+      return {
+        canLink: xAxis.type === "temporal",
+        measureName: yAxis.field,
+        dimensionName: colorDimension.field,
+      };
+    }
+
+    return {
+      canLink: xAxis.type === "temporal",
+      measureName: yAxis.field,
+    };
+  }
+  return {
+    canLink: false,
+  };
+}
+
+export function getColorForValues(
+  colorValues: string[] | undefined,
+  // if provided, use the colors for mentioned values
+  overrideColorMapping: { value: string; color: string }[] | undefined,
+): { value: string; color: string }[] | undefined {
+  if (!colorValues || colorValues.length === 0) return undefined;
+
+  const colorMapping = colorValues.map((value, index) => {
+    const overrideColor = overrideColorMapping?.find(
+      (mapping) => mapping.value === value,
+    );
+    return {
+      value,
+      color:
+        overrideColor?.color ||
+        COMPARIONS_COLORS[index % COMPARIONS_COLORS.length],
+    };
+  });
+
+  return colorMapping;
+}
+
+export function getColorMappingForChart(
+  chartSpec: ChartSpec,
+  domainValues: ChartDomainValues | undefined,
+): { value: string; color: string }[] | undefined {
+  if (!("color" in chartSpec) || !domainValues) return undefined;
+  const colorField = chartSpec.color;
+
+  let colorMapping: { value: string; color: string }[] | undefined;
+  if (isFieldConfig(colorField)) {
+    colorMapping = getColorForValues(
+      domainValues[colorField.field],
+      colorField.colorMapping,
+    );
+  }
+
+  return colorMapping;
 }

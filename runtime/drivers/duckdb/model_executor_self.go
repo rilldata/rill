@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"maps"
 	"net/url"
 	"strings"
 	"time"
@@ -44,7 +43,7 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 	if err := mapstructure.WeakDecode(opts.OutputProperties, outputProps); err != nil {
 		return nil, fmt.Errorf("failed to parse output properties: %w", err)
 	}
-	if err := outputProps.Validate(opts); err != nil {
+	if err := outputProps.validateAndApplyDefaults(opts, inputProps, outputProps); err != nil {
 		return nil, fmt.Errorf("invalid output properties: %w", err)
 	}
 
@@ -70,7 +69,11 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 	// We expect to remove this rewriting once all users start using GCS's s3 compatibility API support.
 	if scheme, secretSQL, ast, ok := objectStoreRef(ctx, inputProps, opts); ok {
 		if secretSQL != "" {
-			inputProps.PreExec = secretSQL
+			if inputProps.PreExec == "" {
+				inputProps.PreExec = secretSQL
+			} else {
+				inputProps.PreExec += ";" + secretSQL
+			}
 		} else if scheme == "gcs" {
 			// rewrite duckdb sql with locally downloaded files
 			handle, release, err := opts.Env.AcquireConnector(ctx, scheme)
@@ -78,10 +81,8 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 				return nil, err
 			}
 			defer release()
-			rawProps := maps.Clone(opts.InputProperties)
-			rawProps["path"] = ast.GetTableRefs()[0].Paths[0]
-			rawProps["batch_size"] = -1
-			deleteFiles, err := rewriteDuckDBSQL(ctx, inputProps, handle, rawProps, ast)
+			path := ast.GetTableRefs()[0].Paths[0]
+			deleteFiles, err := rewriteDuckDBSQL(ctx, inputProps, handle, path, ast)
 			if err != nil {
 				return nil, err
 			}
@@ -92,6 +93,19 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 				return nil, fmt.Errorf("invalid local path: %w", err)
 			}
 			inputProps.SQL = rewrittenSQL
+		}
+	}
+
+	// Add PreExec statements that create temporary secrets for object store connectors.
+	for _, connector := range e.c.config.secretConnectors() {
+		secretSQL, err := objectStoreSecretSQL(ctx, opts, connector, "", nil)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create secret for connector %q: %w", connector, err)
+		}
+		if inputProps.PreExec == "" {
+			inputProps.PreExec = secretSQL
+		} else {
+			inputProps.PreExec += ";" + secretSQL
 		}
 	}
 
@@ -156,6 +170,7 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 			ByName:       false,
 			Strategy:     outputProps.IncrementalStrategy,
 			UniqueKey:    outputProps.UniqueKey,
+			PartitionBy:  outputProps.PartitionBy,
 		}
 		if inputProps.InitQueries != "" {
 			insertTableOpts.InitQueries = []string{inputProps.InitQueries}
@@ -273,12 +288,7 @@ func objectStoreRef(ctx context.Context, props *ModelInputProperties, opts *driv
 			uri.Scheme = "gcs"
 		}
 		// for s3 and azure we can just set a duckdb secret and ingest data using duckdb's native support for s3 and azure
-		handle, release, err := opts.Env.AcquireConnector(ctx, uri.Scheme)
-		if err != nil {
-			return "", "", nil, false
-		}
-		defer release()
-		secretSQL, err := objectStoreSecretSQL(ctx, ref.Paths[0], opts.ModelName, opts.InputConnector, handle, opts.InputProperties)
+		secretSQL, err := objectStoreSecretSQL(ctx, opts, uri.Scheme, ref.Paths[0], opts.InputProperties)
 		if err != nil {
 			if errors.Is(err, errGCSUsesNativeCreds) {
 				return uri.Scheme, "", ast, true
@@ -294,14 +304,13 @@ func objectStoreRef(ctx context.Context, props *ModelInputProperties, opts *driv
 	return "", "", nil, false
 }
 
-func rewriteDuckDBSQL(ctx context.Context, props *ModelInputProperties, inputHandle drivers.Handle, rawProps map[string]any, ast *duckdbsql.AST) (release func(), retErr error) {
+func rewriteDuckDBSQL(ctx context.Context, props *ModelInputProperties, inputHandle drivers.Handle, path string, ast *duckdbsql.AST) (release func(), retErr error) {
 	fs, ok := inputHandle.AsObjectStore()
 	if !ok {
 		return nil, fmt.Errorf("internal error: expected object store connector")
 	}
 
-	var files []string
-	iter, err := fs.DownloadFiles(ctx, rawProps)
+	iter, err := fs.DownloadFiles(ctx, path)
 	if err != nil {
 		return nil, err
 	}
@@ -313,8 +322,13 @@ func rewriteDuckDBSQL(ctx context.Context, props *ModelInputProperties, inputHan
 			_ = iter.Close()
 		}
 	}()
+
+	// We want to batch all the files to avoid issues with schema compatibility and partition_overwrite inserts.
+	// If a user encounters performance issues, we should encourage them to use `partitions:` without `incremental:` to break ingestion into smaller batches.
+	iter.SetKeepFilesUntilClose()
+	var files []string
 	for {
-		localFiles, err := iter.Next()
+		localFiles, err := iter.Next(ctx)
 		if err != nil {
 			if errors.Is(err, io.EOF) {
 				break
@@ -322,6 +336,9 @@ func rewriteDuckDBSQL(ctx context.Context, props *ModelInputProperties, inputHan
 			return nil, err
 		}
 		files = append(files, localFiles...)
+	}
+	if len(files) == 0 {
+		return nil, drivers.ErrNoRows
 	}
 
 	// Rewrite the SQL

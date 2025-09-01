@@ -1,13 +1,13 @@
 <script lang="ts">
-  import { scale } from "svelte/transition";
   import { portal } from "@rilldata/web-common/lib/actions/portal";
   import type { NotificationMessage } from "@rilldata/web-common/lib/event-bus/events";
-  import Close from "../icons/Close.svelte";
-  import Check from "../icons/Check.svelte";
-  import Button from "../button/Button.svelte";
   import { onMount } from "svelte";
-  import WarningIcon from "../icons/WarningIcon.svelte";
+  import { scale } from "svelte/transition";
+  import Button from "../button/Button.svelte";
+  import Check from "../icons/Check.svelte";
+  import Close from "../icons/Close.svelte";
   import LoadingSpinner from "../icons/LoadingSpinner.svelte";
+  import WarningIcon from "../icons/WarningIcon.svelte";
   import { NOTIFICATION_TIMEOUT } from "./constants";
 
   export let location: "top" | "bottom" | "middle" = "bottom";
@@ -29,11 +29,12 @@
   use:portal
   transition:scale={{ duration: 200, start: 0.98, opacity: 0 }}
   class="{location} {justify}"
+  aria-label="Notification"
 >
   <div class="main-section">
     <div class="message-container" class:font-medium={detail}>
       {#if type === "success"}
-        <Check size="18px" className="text-white" />
+        <Check size="18px" className="text-gray-800" />
       {:else if type === "loading"}
         <LoadingSpinner size="18px" />
       {:else if type == "error"}
@@ -53,7 +54,7 @@
 
     {#if options?.persisted && type !== "loading"}
       <div class="px-2 py-2 border-l">
-        <Button on:click={onClose} square>
+        <Button onClick={onClose} square>
           <Close size="18px" color="#fff" />
         </Button>
       </div>
@@ -75,7 +76,7 @@
 
   aside {
     @apply absolute w-fit z-50 flex flex-col text-sm;
-    @apply bg-gray-900 text-gray-50 p-0 rounded-md shadow-lg;
+    @apply bg-gray-800 text-gray-200 p-0 rounded-md shadow-lg;
   }
 
   .main-section {

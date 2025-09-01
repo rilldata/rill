@@ -6,6 +6,7 @@
     overflowY?: string;
     overflowX?: string;
     minHeight?: string;
+    padding?: string;
   };
 
   let className: $$Props["class"] = undefined;
@@ -22,6 +23,7 @@
   export let overflowY: string = "auto";
   export let overflowX: string = "auto";
   export let minHeight: string = "0px";
+  export let padding: string = "4";
   export { className as class };
 </script>
 
@@ -37,10 +39,11 @@
   {strategy}
   {...$$restProps}
   class={cn(
-    "z-50 w-72 rounded-md border bg-popover p-4 text-popover-foreground shadow-md outline-none",
+    "z-50 w-72 rounded-md border bg-popover text-popover-foreground shadow-md outline-none",
     overflowY && `overflow-y-${overflowY}`,
     overflowX && `overflow-x-${overflowX}`,
     minHeight && `min-h-[${minHeight}]`,
+    padding && `p-${padding}`,
     className,
   )}
 >

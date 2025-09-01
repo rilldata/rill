@@ -2,9 +2,9 @@
   import type { NumberParts } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
   import Base from "./Base.svelte";
   import { PERC_DIFF, isPercDiff } from "./type-utils";
+
   export let isNull = false;
   export let inTable = false;
-  export let dark = false;
   export let showPosSign = false;
   export let color = "!text-gray-500";
   export let customStyle = "";
@@ -74,7 +74,6 @@
     ? 'ui-copy-number'
     : ''} w-full {customStyle} {inTable &&
     'block text-right'} pointer-events-none"
-  {dark}
 >
   <slot name="value">
     {#if isNoData}
