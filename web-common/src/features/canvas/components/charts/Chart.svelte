@@ -14,7 +14,7 @@
   import type { ChartSpec } from "./";
   import type { BaseChart } from "./BaseChart";
   import { getChartData } from "./selector";
-  import { generateSpec, isChartLineLike } from "./util";
+  import { generateSpec, getColorMappingForChart } from "./util";
   import { validateChartSchema } from "./validate";
 
   export let component: BaseChart<ChartSpec>;
@@ -74,6 +74,11 @@
     {},
   );
 
+  $: colorMapping = getColorMappingForChart(
+    chartSpec,
+    $chartQuery.domainValues,
+  );
+
   $: expressionFunctions = $measures.reduce((acc, measure) => {
     const fieldName = sanitizeFieldName(measure.name || "measure");
     return {
@@ -110,8 +115,10 @@
           bind:viewVL
           canvasDashboard
           data={{ "metrics-view": data }}
+          theme={themePreference === "dark" ? "dark" : "light"}
           {spec}
-          renderer={isChartLineLike(chartType) ? "svg" : "canvas"}
+          {colorMapping}
+          renderer="canvas"
           {expressionFunctions}
           config={getRillTheme(true, themePreference === "dark")}
         />

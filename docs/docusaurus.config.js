@@ -383,7 +383,7 @@ const config = {
           },
           {
             from: '/manage/account-management/billing',
-            to: '/other/account-management/billing'
+            to: '/other/plans'
           },
           {
             from: '/manage/granting/azure-storage-container',
@@ -405,7 +405,6 @@ const config = {
             from: '/manage/granting/',
             to: '/other/granting/'
           },
-
           {
             from: '/home/FAQ',
             to: '/other/FAQ'
@@ -433,6 +432,10 @@ const config = {
           {
             from: '/concepts/bi-as-code',
             to: '/home/concepts/bi-as-code'
+          },
+          {
+            from: '/integrate/custom-apis',
+            to: '/build/custom-apis'
           },
           // {
           //   from: '/old-page',

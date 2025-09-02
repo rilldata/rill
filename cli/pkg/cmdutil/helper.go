@@ -5,6 +5,7 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -14,17 +15,15 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
-	"github.com/rilldata/rill/cli/pkg/dotrillcloud"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/printer"
 	"github.com/rilldata/rill/cli/pkg/version"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	runtimeclient "github.com/rilldata/rill/runtime/client"
 	"github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 const (
@@ -35,6 +34,8 @@ const (
 	telemetryIntakeUser     = "data-modeler"
 	telemetryIntakePassword = "lkh8T90ozWJP/KxWnQ81PexRzpdghPdzuB0ly2/86TeUU8q/bKiVug==" // nolint:gosec // secret is safe for public use
 )
+
+var ErrNoMatchingProject = fmt.Errorf("no matching project found")
 
 type Helper struct {
 	*printer.Printer
@@ -322,46 +323,6 @@ func (h *Helper) CurrentUserID(ctx context.Context) (string, error) {
 	return userID, nil
 }
 
-// LoadProject loads the cloud project identified by the .rillcloud directory at the given path.
-// It returns an error if the caller is not authenticated.
-// If there is no .rillcloud directory, it returns a nil project an no error.
-func (h *Helper) LoadProject(ctx context.Context, path string) (*adminv1.Project, error) {
-	if !h.IsAuthenticated() {
-		return nil, fmt.Errorf("can't load project because you are not authenticated")
-	}
-
-	rc, err := dotrillcloud.GetAll(path, h.AdminURL())
-	if err != nil {
-		return nil, fmt.Errorf("failed to load .rillcloud: %w", err)
-	}
-	if rc == nil {
-		return nil, nil
-	}
-
-	c, err := h.Client()
-	if err != nil {
-		return nil, err
-	}
-
-	res, err := c.GetProjectByID(ctx, &adminv1.GetProjectByIDRequest{
-		Id: rc.ProjectID,
-	})
-	if err != nil {
-		// If the project doesn't exist, delete the local project metadata.
-		if s, ok := status.FromError(err); ok && s.Code() == codes.NotFound {
-			err = dotrillcloud.Delete(path, h.AdminURL())
-			if err != nil {
-				return nil, err
-			}
-		}
-
-		// We'll ignore the error, pretending no .rillcloud metadata was found
-		return nil, nil
-	}
-
-	return res.Project, nil
-}
-
 func (h *Helper) ProjectNamesByGitRemote(ctx context.Context, org, remote, subPath string) ([]string, error) {
 	c, err := h.Client()
 	if err != nil {
@@ -389,37 +350,90 @@ func (h *Helper) ProjectNamesByGitRemote(ctx context.Context, org, remote, subPa
 	return names, nil
 }
 
-func (h *Helper) InferProjectName(ctx context.Context, org, path string) (string, error) {
-	// Try loading the project from the .rillcloud directory
-	proj, err := h.LoadProject(ctx, path)
+// InferProjectName infers the project name from the given path.
+// If multiple projects are found, it prompts the user to select one.
+func (h *Helper) InferProjectName(ctx context.Context, org, pathToProject string) (string, error) {
+	projects, err := h.InferProjects(ctx, org, pathToProject)
 	if err != nil {
 		return "", err
 	}
-	if proj != nil {
-		return proj.Name, nil
+	if len(projects) == 1 {
+		return projects[0].Name, nil
 	}
 
-	// Verify projectPath is a Git repo with remote on Github
-	remote, err := gitutil.ExtractGitRemote(path, "", true)
-	if err != nil {
-		return "", err
+	var names []string
+	for _, p := range projects {
+		names = append(names, p.Name)
 	}
-	githubRemote, err := remote.Github()
-	if err != nil {
-		return "", err
-	}
-
-	// Fetch project names matching the Github URL
-	names, err := h.ProjectNamesByGitRemote(ctx, org, githubRemote, "")
-	if err != nil {
-		return "", err
-	}
-
-	if len(names) == 1 {
-		return names[0], nil
-	}
-
 	return SelectPrompt("Select project", names, "")
+}
+
+func (h *Helper) InferProjects(ctx context.Context, org, path string) ([]*adminv1.Project, error) {
+	path, err := fileutil.ExpandHome(path)
+	if err != nil {
+		return nil, err
+	}
+
+	path, err = filepath.Abs(path)
+	if err != nil {
+		return nil, err
+	}
+
+	// Build request
+	req := &adminv1.ListProjectsForFingerprintRequest{
+		DirectoryName: filepath.Base(path),
+	}
+
+	// extract subpath
+	repoRoot, subpath, err := gitutil.InferRepoRootAndSubpath(path)
+	if err == nil {
+		req.SubPath = subpath
+	}
+
+	// extract remotes
+	remote, err := gitutil.ExtractRemotes(repoRoot, false)
+	if err == nil {
+		for _, r := range remote {
+			if r.Name == "origin" {
+				// if origin is set, use it as the git remote
+				// rill managed projects are detected using directory name so it is fine to ignore __rill_remote
+				// this leaves an edge case where older rill managed projects did not set `directory_name`
+				// so if the directory had both `origin` and `__rill_remote` set rill managed projects would not be detected
+				req.GitRemote = r.URL
+				break
+			}
+		}
+		// if no remote is set, use the first one
+		if req.GitRemote == "" && len(remote) > 0 {
+			req.GitRemote = remote[0].URL
+		}
+	}
+	c, err := h.Client()
+	if err != nil {
+		return nil, err
+	}
+	resp, err := c.ListProjectsForFingerprint(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	if len(resp.Projects) == 0 {
+		return nil, ErrNoMatchingProject
+	}
+
+	if org == "" {
+		return resp.Projects, nil
+	}
+
+	orgFiltered := make([]*adminv1.Project, 0)
+	for _, p := range resp.Projects {
+		if p.OrgName == org {
+			orgFiltered = append(orgFiltered, p)
+		}
+	}
+	if len(orgFiltered) == 0 {
+		return nil, ErrNoMatchingProject
+	}
+	return orgFiltered, nil
 }
 
 // OpenRuntimeClient opens a client for the production deployment for the given project.

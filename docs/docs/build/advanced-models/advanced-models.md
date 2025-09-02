@@ -30,7 +30,7 @@ You can get started with an advanced model with the following code block:
 
 ```yaml
 #Model YAML
-#Reference documentation: https://docs.rilldata.com/reference/project-files/advanced-models
+#Reference documentation: https://docs.rilldata.com/reference/project-files/models
 
 type: model
 connector: duckdb
@@ -38,7 +38,7 @@ connector: duckdb
 sql: select * from <source>
 ```
 
-Please refer to [our reference documentation](../../reference/project-files/advanced-models) linked above for the available parameters to set in your model.
+Please refer to [our reference documentation](/reference/project-files/models) linked above for the available parameters to set in your model.
 
 :::note
 
@@ -79,8 +79,6 @@ post_exec: DETACH DATABASE IF EXISTS postgres_db # Note : this is not mandatory 
 
 ## Similar Considerations to Note
 
-1. As with normal SQL models, materialization will be disabled by default and depending on your use-case setting this parameter to true may improve performance. For more information, check out [our model materialization notes.](../../reference/project-files/models#model-materialization)
-
-
+1. As with normal SQL models, materialization will be disabled by default and depending on your use-case setting this parameter to true may improve performance. For more information, check out [our model materialization notes.](/build/models/#model-materialization)
 2. The `pre_exec` and `post_exec` statements are run for every model execution and thus should be made idempotent.
 A typical way is to use `IF NOT EXISTS` clauses for CREATE statements. Please refer to duckDB docs for exact definitions and verify if the statements are idempotent.

@@ -47,7 +47,10 @@ Rill Developer is your local development environment where you build and test yo
 
 ### Step 2: Connect Your Data
 
-Rill supports a wide range of data sources through our [connector library](/connect). For this tutorial, we'll use a sample dataset hosted on Google Cloud Storage.
+Rill supports a wide range of data sources through our [connector library](/connect). For this tutorial, we'll use a sample dataset hosted on Google Cloud Storage. Select Add Data in the dropdown, GCS, and use the following dataset:
+```
+gs://rilldata-public/auction_data.parquet
+```
 
 **What happens when you connect data:**
 - Rill automatically detects your data schema
@@ -81,6 +84,8 @@ Rill supports a wide range of data sources through our [connector library](/conn
 ### Step 3: Create Your First Dashboard
 
 Rill's AI-powered dashboard creation makes it easy to go from data to insights in seconds. The system automatically generates relevant visualizations and suggests key metrics based on your data.
+
+Select the model's side menu and select "Generate dashboard with AI". Watch as Rill configures your metrics view and creates an Explore dashboard. Once finished, you can navigate the different features of our [Explore dashboard](/explore).
 
 <div style={{ 
   position: "relative", 
