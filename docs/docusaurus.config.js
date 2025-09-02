@@ -410,7 +410,15 @@ const config = {
             to: '/get-started/concepts/cloud-vs-developer'
           },
           {
+            from: '/home/concepts/developerVsCloud',
+            to: '/get-started/concepts/cloud-vs-developer'
+          },
+          {
             from: '/concepts/OLAP',
+            to: '/get-started/concepts/OLAP'
+          },
+          {
+            from: '/home/concepts/OLAP',
             to: '/get-started/concepts/OLAP'
           },
           {
@@ -418,7 +426,15 @@ const config = {
             to: '/get-started/concepts/architecture'
           },
           {
+            from: '/home/concepts/architecture',
+            to: '/get-started/concepts/architecture'
+          },
+          {
             from: '/concepts/operational',
+            to: '/get-started/concepts/operational'
+          },
+          {
+            from: '/home/concepts/operational',
             to: '/get-started/concepts/operational'
           },
           {
@@ -426,7 +442,15 @@ const config = {
             to: '/get-started/concepts/metrics-layer'
           },
           {
+            from: '/home/concepts/metrics-layer',
+            to: '/get-started/concepts/metrics-layer'
+          },
+          {
             from: '/concepts/bi-as-code',
+            to: '/get-started/concepts/bi-as-code'
+          },
+          {
+            from: '/home/concepts/bi-as-code',
             to: '/get-started/concepts/bi-as-code'
           },
           {
