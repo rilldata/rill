@@ -12,6 +12,7 @@
   export let metricName: string;
   export let selectedItems: string[] = [];
   export let types: FieldType[] = ["measure", "dimension"];
+  export let excludedValues: string[] | undefined = undefined;
   export let onMultiSelect: (items: string[]) => void = () => {};
 
   let open = false;
@@ -34,6 +35,7 @@
     {metricName}
     {selectedItems}
     {types}
+    {excludedValues}
     {onMultiSelect}
     bind:open
     bind:searchValue

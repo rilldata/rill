@@ -75,7 +75,15 @@ export function generateVLMultiMetricChartSpec(
   const baseYEncoding = {
     field: valueField,
     type: "quantitative" as const,
-    title: null,
+    title: "Value",
+    axis: {
+      ...(!config.y?.showAxisTitle && { title: null }),
+    },
+    scale: {
+      ...(config.y?.zeroBasedOrigin !== true && { zero: false }),
+      ...(config.y?.min !== undefined && { domainMin: config.y.min }),
+      ...(config.y?.max !== undefined && { domainMax: config.y.max }),
+    },
   };
 
   const sumYEncoding = {

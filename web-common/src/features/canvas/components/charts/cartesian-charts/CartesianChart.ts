@@ -136,6 +136,8 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
         },
         defaultLegendOrientation: "top",
       };
+
+      inputParams.y.meta!.chartFieldInput!.excludedValues = [];
     } else {
       inputParams.color.meta!.chartFieldInput = {
         type: "dimension",
@@ -144,6 +146,11 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
         colorMappingSelector: { enable: true, values: this.customColorValues },
         nullSelector: true,
       };
+
+      // Exclude the main y field from multi-field selector
+      if (inputParams.y.meta?.chartFieldInput && config.y?.field) {
+        inputParams.y.meta.chartFieldInput.excludedValues = [config.y.field];
+      }
     }
 
     return inputParams;

@@ -11,6 +11,7 @@
   export let metricName: string;
   export let selectedItems: string[] = [];
   export let types: FieldType[];
+  export let excludedValues: string[] | undefined = undefined;
   export let onMultiSelect: (items: string[]) => void = () => {};
   export let open = false;
   export let searchValue = "";
@@ -23,14 +24,21 @@
   $: ({ instanceId } = $runtime);
 
   $: ctx = getCanvasStore(canvasName, instanceId);
-  $: fieldData = useMetricFieldData(ctx, metricName, types);
+  $: fieldData = useMetricFieldData(
+    ctx,
+    metricName,
+    types,
+    undefined,
+    searchValue,
+    excludedValues,
+  );
   $: selectableGroups = [
     ...(types.includes("measure")
       ? [
           <SearchableFilterSelectableGroup>{
             name: "measure",
             label: "MEASURES",
-            items: $fieldData.items
+            items: $fieldData.filteredItems
               .filter((item) => $fieldData.displayMap[item]?.type === "measure")
               .map((item) => ({
                 name: item,
@@ -44,7 +52,7 @@
           <SearchableFilterSelectableGroup>{
             name: "time",
             label: "TIME",
-            items: $fieldData.items
+            items: $fieldData.filteredItems
               .filter((item) => $fieldData.displayMap[item]?.type === "time")
               .map((item) => ({
                 name: item,
@@ -58,7 +66,7 @@
           <SearchableFilterSelectableGroup>{
             name: "dimension",
             label: "DIMENSIONS",
-            items: $fieldData.items
+            items: $fieldData.filteredItems
               .filter(
                 (item) => $fieldData.displayMap[item]?.type === "dimension",
               )

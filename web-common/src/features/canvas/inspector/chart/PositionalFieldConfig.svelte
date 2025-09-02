@@ -157,6 +157,7 @@
         metricName={metricsView}
         selectedItems={fieldConfig.fields}
         types={isDimension ? ["dimension"] : ["measure"]}
+        excludedValues={chartFieldInput?.excludedValues}
         onMultiSelect={handleMultiFieldUpdate}
       />
     {/if}
