@@ -126,11 +126,6 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
     if (sortSelector) {
       sortSelector.customSortItems = this.customSortXItems;
     }
-    const colorMappingSelector =
-      inputParams.color.meta?.chartFieldInput?.colorMappingSelector;
-    if (colorMappingSelector) {
-      colorMappingSelector.values = this.customColorValues;
-    }
 
     if (isMultiMeasure) {
       inputParams.color.meta!.chartFieldInput = {
@@ -141,9 +136,57 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
         },
         defaultLegendOrientation: "top",
       };
+    } else {
+      inputParams.color.meta!.chartFieldInput = {
+        type: "dimension",
+        defaultLegendOrientation: "top",
+        limitSelector: { defaultLimit: DEFAULT_SPLIT_LIMIT },
+        colorMappingSelector: { enable: true, values: this.customColorValues },
+        nullSelector: true,
+      };
     }
 
     return inputParams;
+  }
+
+  updateProperty(
+    key: keyof CartesianChartSpec,
+    value: CartesianChartSpec[keyof CartesianChartSpec],
+  ) {
+    const currentSpec = get(this.specStore);
+
+    if (key === "y") {
+      const updatedYField = value as FieldConfig;
+      const isMultiMeasure = isMultiFieldConfig(updatedYField);
+
+      if (isMultiMeasure) {
+        const newSpec = { ...currentSpec, [key]: updatedYField };
+        if (typeof currentSpec.color === "string" || !currentSpec.color) {
+          newSpec.color = {
+            type: "value",
+            field: "rill_measures", // dummy field for multi-measure mode
+            legendOrientation: "top",
+          };
+        }
+
+        this.setSpec(newSpec);
+        return;
+      } else if (!isMultiMeasure) {
+        const newSpec = { ...currentSpec, [key]: updatedYField };
+
+        if (
+          typeof currentSpec.color === "object" &&
+          currentSpec.color?.field === "rill_measures"
+        ) {
+          newSpec.color = "primary";
+        }
+
+        this.setSpec(newSpec);
+        return;
+      }
+    }
+
+    super.updateProperty(key, value);
   }
 
   createChartDataQuery(
