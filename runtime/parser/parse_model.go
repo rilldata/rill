@@ -234,9 +234,11 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 		r.ModelSpec.RefreshSchedule = schedule
 	}
 
-	// Parse retry options
+	// Parse retry options with reasonable defaults
 	if tmp.Retry.Attempts != nil {
 		r.ModelSpec.RetryAttempts = *tmp.Retry.Attempts
+	} else {
+		r.ModelSpec.RetryAttempts = 3
 	}
 
 	if tmp.Retry.Delay != nil {
@@ -245,13 +247,17 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 			return fmt.Errorf(`invalid retry delay: %w`, err)
 		}
 		r.ModelSpec.RetryDelay = uint32(duration.Seconds())
+	} else {
+		r.ModelSpec.RetryDelay = 5 // 5s default
 	}
 
 	if tmp.Retry.ExponentialBackoff != nil {
 		r.ModelSpec.RetryExponentialBackoff = *tmp.Retry.ExponentialBackoff
+	} else {
+		r.ModelSpec.RetryExponentialBackoff = true
 	}
 
-	// Set error matches if provided, otherwise keep defaults
+	// Set error matches if provided, otherwise use defaults
 	if len(tmp.Retry.IfErrorMatches) > 0 {
 		// Validate regex patterns
 		for _, pattern := range tmp.Retry.IfErrorMatches {
@@ -260,6 +266,8 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 			}
 		}
 		r.ModelSpec.RetryIfErrorMatches = tmp.Retry.IfErrorMatches
+	} else {
+		r.ModelSpec.RetryIfErrorMatches = []string{".*OvercommitTracker.*", ".*Bad Gateway.*", ".*Timeout.*"}
 	}
 
 	if timeout > 0 {

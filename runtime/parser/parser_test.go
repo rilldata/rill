@@ -261,11 +261,15 @@ schema: default
 			Name:  ResourceName{Kind: ResourceKindModel, Name: "m1"},
 			Paths: []string{"/models/m1.sql"},
 			ModelSpec: &runtimev1.ModelSpec{
-				RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
-				InputConnector:  "duckdb",
-				InputProperties: must(structpb.NewStruct(map[string]any{"sql": strings.TrimSpace(files["models/m1.sql"])})),
-				OutputConnector: "duckdb",
-				ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+				RefreshSchedule:         &runtimev1.Schedule{RefUpdate: true},
+				InputConnector:          "duckdb",
+				InputProperties:         must(structpb.NewStruct(map[string]any{"sql": strings.TrimSpace(files["models/m1.sql"])})),
+				OutputConnector:         "duckdb",
+				ChangeMode:              runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+				RetryAttempts:           3,
+				RetryDelay:              5,
+				RetryExponentialBackoff: true,
+				RetryIfErrorMatches:     []string{".*OvercommitTracker.*", ".*Bad Gateway.*", ".*Timeout.*"},
 			},
 		},
 		// model m2
@@ -274,12 +278,16 @@ schema: default
 			Refs:  []ResourceName{{Kind: ResourceKindModel, Name: "m1"}},
 			Paths: []string{"/models/m2.yaml", "/models/m2.sql"},
 			ModelSpec: &runtimev1.ModelSpec{
-				RefreshSchedule:  &runtimev1.Schedule{RefUpdate: true},
-				InputConnector:   "duckdb",
-				InputProperties:  must(structpb.NewStruct(map[string]any{"sql": strings.TrimSpace(files["models/m2.sql"])})),
-				OutputConnector:  "duckdb",
-				OutputProperties: must(structpb.NewStruct(map[string]any{"materialize": true})),
-				ChangeMode:       runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+				RefreshSchedule:         &runtimev1.Schedule{RefUpdate: true},
+				InputConnector:          "duckdb",
+				InputProperties:         must(structpb.NewStruct(map[string]any{"sql": strings.TrimSpace(files["models/m2.sql"])})),
+				OutputConnector:         "duckdb",
+				OutputProperties:        must(structpb.NewStruct(map[string]any{"materialize": true})),
+				ChangeMode:              runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+				RetryAttempts:           3,
+				RetryDelay:              5,
+				RetryExponentialBackoff: true,
+				RetryIfErrorMatches:     []string{".*OvercommitTracker.*", ".*Bad Gateway.*", ".*Timeout.*"},
 			},
 		},
 		// dashboard d1
@@ -354,14 +362,16 @@ schema: default
 			Refs:  []ResourceName{{Kind: ResourceKindModel, Name: "m2"}},
 			Paths: []string{"/custom/c2.sql"},
 			ModelSpec: &runtimev1.ModelSpec{
-				RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
-				InputConnector:  "duckdb",
-				InputProperties: must(structpb.NewStruct(map[string]any{
-					"sql": strings.TrimSpace(files["custom/c2.sql"]),
-				})),
-				OutputConnector:  "duckdb",
-				OutputProperties: must(structpb.NewStruct(map[string]any{"materialize": true})),
-				ChangeMode:       runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+				RefreshSchedule:         &runtimev1.Schedule{RefUpdate: true},
+				InputConnector:          "duckdb",
+				InputProperties:         must(structpb.NewStruct(map[string]any{"sql": strings.TrimSpace(files["custom/c2.sql"])})),
+				OutputConnector:         "duckdb",
+				OutputProperties:        must(structpb.NewStruct(map[string]any{"materialize": true})),
+				ChangeMode:              runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+				RetryAttempts:           3,
+				RetryDelay:              5,
+				RetryExponentialBackoff: true,
+				RetryIfErrorMatches:     []string{".*OvercommitTracker.*", ".*Bad Gateway.*", ".*Timeout.*"},
 			},
 		},
 		// postgres
@@ -482,11 +492,15 @@ SELECT * FROM foo
 		Name:  ResourceName{Kind: ResourceKindModel, Name: "m1"},
 		Paths: []string{"/models/m1.sql"},
 		ModelSpec: &runtimev1.ModelSpec{
-			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
-			InputConnector:  "duckdb",
-			InputProperties: must(structpb.NewStruct(map[string]any{"sql": "SELECT * FROM foo"})),
-			OutputConnector: "duckdb",
-			ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+			RefreshSchedule:         &runtimev1.Schedule{RefUpdate: true},
+			InputConnector:          "duckdb",
+			InputProperties:         must(structpb.NewStruct(map[string]any{"sql": "SELECT * FROM foo"})),
+			OutputConnector:         "duckdb",
+			ChangeMode:              runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+			RetryAttempts:           3,
+			RetryDelay:              5,
+			RetryExponentialBackoff: true,
+			RetryIfErrorMatches:     []string{".*OvercommitTracker.*", ".*Bad Gateway.*", ".*Timeout.*"},
 		},
 	}
 	diff, err = p.Reparse(ctx, m1.Paths)
@@ -592,11 +606,15 @@ SELECT 10
 		Name:  ResourceName{Kind: ResourceKindModel, Name: "m1"},
 		Paths: []string{"/models/m1.sql"},
 		ModelSpec: &runtimev1.ModelSpec{
-			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
-			InputConnector:  "duckdb",
-			InputProperties: must(structpb.NewStruct(map[string]any{"sql": "SELECT 10"})),
-			OutputConnector: "duckdb",
-			ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+			RefreshSchedule:         &runtimev1.Schedule{RefUpdate: true},
+			InputConnector:          "duckdb",
+			InputProperties:         must(structpb.NewStruct(map[string]any{"sql": "SELECT 10"})),
+			OutputConnector:         "duckdb",
+			ChangeMode:              runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+			RetryAttempts:           3,
+			RetryDelay:              5,
+			RetryExponentialBackoff: true,
+			RetryIfErrorMatches:     []string{".*OvercommitTracker.*", ".*Bad Gateway.*", ".*Timeout.*"},
 		},
 	}
 	p, err := Parse(ctx, repo, "", "", "duckdb")
@@ -657,22 +675,30 @@ SELECT * FROM m1
 		Name:  ResourceName{Kind: ResourceKindModel, Name: "m1"},
 		Paths: []string{"/models/m1.sql"},
 		ModelSpec: &runtimev1.ModelSpec{
-			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
-			InputConnector:  "duckdb",
-			InputProperties: must(structpb.NewStruct(map[string]any{"sql": "SELECT 10"})),
-			OutputConnector: "duckdb",
-			ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+			RefreshSchedule:         &runtimev1.Schedule{RefUpdate: true},
+			InputConnector:          "duckdb",
+			InputProperties:         must(structpb.NewStruct(map[string]any{"sql": "SELECT 10"})),
+			OutputConnector:         "duckdb",
+			ChangeMode:              runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+			RetryAttempts:           3,
+			RetryDelay:              5,
+			RetryExponentialBackoff: true,
+			RetryIfErrorMatches:     []string{".*OvercommitTracker.*", ".*Bad Gateway.*", ".*Timeout.*"},
 		},
 	}
 	m1Nested := &Resource{
 		Name:  ResourceName{Kind: ResourceKindModel, Name: "m1"},
 		Paths: []string{"/models/nested/m1.sql"},
 		ModelSpec: &runtimev1.ModelSpec{
-			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
-			InputConnector:  "duckdb",
-			InputProperties: must(structpb.NewStruct(map[string]any{"sql": "SELECT 20"})),
-			OutputConnector: "duckdb",
-			ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+			RefreshSchedule:         &runtimev1.Schedule{RefUpdate: true},
+			InputConnector:          "duckdb",
+			InputProperties:         must(structpb.NewStruct(map[string]any{"sql": "SELECT 20"})),
+			OutputConnector:         "duckdb",
+			ChangeMode:              runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+			RetryAttempts:           3,
+			RetryDelay:              5,
+			RetryExponentialBackoff: true,
+			RetryIfErrorMatches:     []string{".*OvercommitTracker.*", ".*Bad Gateway.*", ".*Timeout.*"},
 		},
 	}
 	m2 := &Resource{
@@ -680,11 +706,15 @@ SELECT * FROM m1
 		Paths: []string{"/models/m2.sql"},
 		Refs:  []ResourceName{{Kind: ResourceKindModel, Name: "m1"}},
 		ModelSpec: &runtimev1.ModelSpec{
-			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
-			InputConnector:  "duckdb",
-			InputProperties: must(structpb.NewStruct(map[string]any{"sql": "SELECT * FROM m1"})),
-			OutputConnector: "duckdb",
-			ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+			RefreshSchedule:         &runtimev1.Schedule{RefUpdate: true},
+			InputConnector:          "duckdb",
+			InputProperties:         must(structpb.NewStruct(map[string]any{"sql": "SELECT * FROM m1"})),
+			OutputConnector:         "duckdb",
+			ChangeMode:              runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+			RetryAttempts:           3,
+			RetryDelay:              5,
+			RetryExponentialBackoff: true,
+			RetryIfErrorMatches:     []string{".*OvercommitTracker.*", ".*Bad Gateway.*", ".*Timeout.*"},
 		},
 	}
 	p, err := Parse(ctx, repo, "", "", "duckdb")
@@ -715,11 +745,15 @@ func TestReparseRillYAML(t *testing.T) {
 		Name:  ResourceName{Kind: ResourceKindModel, Name: "m1"},
 		Paths: []string{"/models/m1.sql"},
 		ModelSpec: &runtimev1.ModelSpec{
-			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
-			InputConnector:  "duckdb",
-			InputProperties: must(structpb.NewStruct(map[string]any{"sql": "SELECT 10"})),
-			OutputConnector: "duckdb",
-			ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+			RefreshSchedule:         &runtimev1.Schedule{RefUpdate: true},
+			InputConnector:          "duckdb",
+			InputProperties:         must(structpb.NewStruct(map[string]any{"sql": "SELECT 10"})),
+			OutputConnector:         "duckdb",
+			ChangeMode:              runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+			RetryAttempts:           3,
+			RetryDelay:              5,
+			RetryExponentialBackoff: true,
+			RetryIfErrorMatches:     []string{".*OvercommitTracker.*", ".*Bad Gateway.*", ".*Timeout.*"},
 		},
 	}
 	perr := &runtimev1.ParseError{
@@ -776,11 +810,15 @@ func TestRefInferrence(t *testing.T) {
 		Name:  ResourceName{Kind: ResourceKindModel, Name: "foo"},
 		Paths: []string{"/models/foo.sql"},
 		ModelSpec: &runtimev1.ModelSpec{
-			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
-			InputConnector:  "duckdb",
-			InputProperties: must(structpb.NewStruct(map[string]any{"sql": "SELECT * FROM bar"})),
-			OutputConnector: "duckdb",
-			ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+			RefreshSchedule:         &runtimev1.Schedule{RefUpdate: true},
+			InputConnector:          "duckdb",
+			InputProperties:         must(structpb.NewStruct(map[string]any{"sql": "SELECT * FROM bar"})),
+			OutputConnector:         "duckdb",
+			ChangeMode:              runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+			RetryAttempts:           3,
+			RetryDelay:              5,
+			RetryExponentialBackoff: true,
+			RetryIfErrorMatches:     []string{".*OvercommitTracker.*", ".*Bad Gateway.*", ".*Timeout.*"},
 		},
 	}
 	ctx := context.Background()
@@ -800,11 +838,15 @@ func TestRefInferrence(t *testing.T) {
 		Name:  ResourceName{Kind: ResourceKindModel, Name: "bar"},
 		Paths: []string{"/models/bar.sql"},
 		ModelSpec: &runtimev1.ModelSpec{
-			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
-			InputConnector:  "duckdb",
-			InputProperties: must(structpb.NewStruct(map[string]any{"sql": "SELECT * FROM baz"})),
-			OutputConnector: "duckdb",
-			ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+			RefreshSchedule:         &runtimev1.Schedule{RefUpdate: true},
+			InputConnector:          "duckdb",
+			InputProperties:         must(structpb.NewStruct(map[string]any{"sql": "SELECT * FROM baz"})),
+			OutputConnector:         "duckdb",
+			ChangeMode:              runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+			RetryAttempts:           3,
+			RetryDelay:              5,
+			RetryExponentialBackoff: true,
+			RetryIfErrorMatches:     []string{".*OvercommitTracker.*", ".*Bad Gateway.*", ".*Timeout.*"},
 		},
 	}
 	putRepo(t, repo, map[string]string{
@@ -1119,11 +1161,15 @@ environment_overrides:
 		Name:  ResourceName{Kind: ResourceKindModel, Name: "m1"},
 		Paths: []string{"/m1.yaml"},
 		ModelSpec: &runtimev1.ModelSpec{
-			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
-			InputConnector:  "duckdb",
-			InputProperties: must(structpb.NewStruct(map[string]any{"sql": "SELECT 1"})),
-			OutputConnector: "duckdb",
-			ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+			RefreshSchedule:         &runtimev1.Schedule{RefUpdate: true},
+			InputConnector:          "duckdb",
+			InputProperties:         must(structpb.NewStruct(map[string]any{"sql": "SELECT 1"})),
+			OutputConnector:         "duckdb",
+			ChangeMode:              runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+			RetryAttempts:           3,
+			RetryDelay:              5,
+			RetryExponentialBackoff: true,
+			RetryIfErrorMatches:     []string{".*OvercommitTracker.*", ".*Bad Gateway.*", ".*Timeout.*"},
 		},
 	}
 
@@ -1131,11 +1177,15 @@ environment_overrides:
 		Name:  ResourceName{Kind: ResourceKindModel, Name: "m2"},
 		Paths: []string{"/m2.yaml"},
 		ModelSpec: &runtimev1.ModelSpec{
-			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
-			InputConnector:  "duckdb",
-			InputProperties: must(structpb.NewStruct(map[string]any{"sql": "SELECT 1"})),
-			OutputConnector: "duckdb",
-			ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+			RefreshSchedule:         &runtimev1.Schedule{RefUpdate: true},
+			InputConnector:          "duckdb",
+			InputProperties:         must(structpb.NewStruct(map[string]any{"sql": "SELECT 1"})),
+			OutputConnector:         "duckdb",
+			ChangeMode:              runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+			RetryAttempts:           3,
+			RetryDelay:              5,
+			RetryExponentialBackoff: true,
+			RetryIfErrorMatches:     []string{".*OvercommitTracker.*", ".*Bad Gateway.*", ".*Timeout.*"},
 		},
 	}
 
@@ -1143,11 +1193,15 @@ environment_overrides:
 		Name:  ResourceName{Kind: ResourceKindModel, Name: "m3"},
 		Paths: []string{"/m3.yaml"},
 		ModelSpec: &runtimev1.ModelSpec{
-			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
-			InputConnector:  "duckdb",
-			InputProperties: must(structpb.NewStruct(map[string]any{"sql": "SELECT 1"})),
-			OutputConnector: "duckdb",
-			ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+			RefreshSchedule:         &runtimev1.Schedule{RefUpdate: true},
+			InputConnector:          "duckdb",
+			InputProperties:         must(structpb.NewStruct(map[string]any{"sql": "SELECT 1"})),
+			OutputConnector:         "duckdb",
+			ChangeMode:              runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+			RetryAttempts:           3,
+			RetryDelay:              5,
+			RetryExponentialBackoff: true,
+			RetryIfErrorMatches:     []string{".*OvercommitTracker.*", ".*Bad Gateway.*", ".*Timeout.*"},
 		},
 	}
 
@@ -1155,11 +1209,15 @@ environment_overrides:
 		Name:  ResourceName{Kind: ResourceKindModel, Name: "m3"},
 		Paths: []string{"/m3.yaml"},
 		ModelSpec: &runtimev1.ModelSpec{
-			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
-			InputConnector:  "duckdb",
-			InputProperties: must(structpb.NewStruct(map[string]any{"sql": "SELECT 2"})),
-			OutputConnector: "duckdb",
-			ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+			RefreshSchedule:         &runtimev1.Schedule{RefUpdate: true},
+			InputConnector:          "duckdb",
+			InputProperties:         must(structpb.NewStruct(map[string]any{"sql": "SELECT 2"})),
+			OutputConnector:         "duckdb",
+			ChangeMode:              runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+			RetryAttempts:           3,
+			RetryDelay:              5,
+			RetryExponentialBackoff: true,
+			RetryIfErrorMatches:     []string{".*OvercommitTracker.*", ".*Bad Gateway.*", ".*Timeout.*"},
 		},
 	}
 
@@ -1183,10 +1241,10 @@ version: 1
 type: metrics_view
 table: t1
 dimensions:
-  - name: a
-    column: a
+  - name: foo
+    column: foo
 measures:
-  - name: b
+  - name: a
     expression: count(*)
 security:
   row_filter: true
@@ -1213,15 +1271,15 @@ security:
 				Table:       "t1",
 				DisplayName: "D1",
 				Dimensions: []*runtimev1.MetricsViewSpec_Dimension{
-					{Name: "a", DisplayName: "A", Column: "a"},
+					{Name: "foo", DisplayName: "Foo", Column: "foo"},
 				},
 				Measures: []*runtimev1.MetricsViewSpec_Measure{
-					{Name: "b", DisplayName: "B", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE},
+					{Name: "a", DisplayName: "A", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE},
 				},
 				SecurityRules: []*runtimev1.SecurityRule{
 					{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{
-						Condition: "",
-						Allow:     false,
+						Condition: "true",
+						Allow:     true,
 					}}},
 					{Rule: &runtimev1.SecurityRule_RowFilter{RowFilter: &runtimev1.SecurityRuleRowFilter{
 						Sql: "true",
@@ -1854,6 +1912,8 @@ select 3
 				RefreshSchedule:  &runtimev1.Schedule{RefUpdate: true},
 				DefinedAsSource:  true,
 				ChangeMode:       runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+				RetryAttempts:    3,
+				RetryDelay:       5,
 			},
 		},
 		// a1
@@ -2015,11 +2075,15 @@ refresh:
 		Name:  ResourceName{Kind: ResourceKindModel, Name: "m1"},
 		Paths: []string{"/m1.yaml"},
 		ModelSpec: &runtimev1.ModelSpec{
-			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true, Cron: "0 0 * * *"},
-			InputConnector:  "duckdb",
-			InputProperties: must(structpb.NewStruct(map[string]any{"sql": `SELECT 1`})),
-			OutputConnector: "duckdb",
-			ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+			RefreshSchedule:         &runtimev1.Schedule{RefUpdate: true, Cron: "0 0 * * *"},
+			InputConnector:          "duckdb",
+			InputProperties:         must(structpb.NewStruct(map[string]any{"sql": `SELECT 1`})),
+			OutputConnector:         "duckdb",
+			ChangeMode:              runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+			RetryAttempts:           3,
+			RetryDelay:              5,
+			RetryExponentialBackoff: true,
+			RetryIfErrorMatches:     []string{".*OvercommitTracker.*", ".*Bad Gateway.*", ".*Timeout.*"},
 		},
 	}
 
@@ -2027,11 +2091,15 @@ refresh:
 		Name:  ResourceName{Kind: ResourceKindModel, Name: "m2"},
 		Paths: []string{"/m2.yaml"},
 		ModelSpec: &runtimev1.ModelSpec{
-			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true, Cron: "0 0 * * *"},
-			InputConnector:  "duckdb",
-			InputProperties: must(structpb.NewStruct(map[string]any{"sql": `SELECT 1`})),
-			OutputConnector: "duckdb",
-			ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+			RefreshSchedule:         &runtimev1.Schedule{RefUpdate: true, Cron: "0 0 * * *"},
+			InputConnector:          "duckdb",
+			InputProperties:         must(structpb.NewStruct(map[string]any{"sql": `SELECT 1`})),
+			OutputConnector:         "duckdb",
+			ChangeMode:              runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+			RetryAttempts:           3,
+			RetryDelay:              5,
+			RetryExponentialBackoff: true,
+			RetryIfErrorMatches:     []string{".*OvercommitTracker.*", ".*Bad Gateway.*", ".*Timeout.*"},
 		},
 	}
 
@@ -2142,11 +2210,15 @@ metrics_view: missing
 			Name:  ResourceName{Kind: ResourceKindModel, Name: "m1"},
 			Paths: []string{"/models/m1.yaml"},
 			ModelSpec: &runtimev1.ModelSpec{
-				RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
-				InputConnector:  "duckdb",
-				InputProperties: must(structpb.NewStruct(map[string]any{"sql": `SELECT 1`})),
-				OutputConnector: "duckdb",
-				ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+				RefreshSchedule:         &runtimev1.Schedule{RefUpdate: true},
+				InputConnector:          "duckdb",
+				InputProperties:         must(structpb.NewStruct(map[string]any{"sql": "SELECT 1"})),
+				OutputConnector:         "duckdb",
+				ChangeMode:              runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+				RetryAttempts:           3,
+				RetryDelay:              5,
+				RetryExponentialBackoff: true,
+				RetryIfErrorMatches:     []string{".*OvercommitTracker.*", ".*Bad Gateway.*", ".*Timeout.*"},
 			},
 		},
 		{
@@ -2332,11 +2404,15 @@ tests:
 			Name:  ResourceName{Kind: ResourceKindModel, Name: "m1"},
 			Paths: []string{"/models/m1.yaml"},
 			ModelSpec: &runtimev1.ModelSpec{
-				RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
-				InputConnector:  "duckdb",
-				InputProperties: must(structpb.NewStruct(map[string]any{"sql": "SELECT * FROM range(5)"})),
-				OutputConnector: "duckdb",
-				ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+				RefreshSchedule:         &runtimev1.Schedule{RefUpdate: true},
+				InputConnector:          "duckdb",
+				InputProperties:         must(structpb.NewStruct(map[string]any{"sql": "SELECT * FROM range(5)"})),
+				OutputConnector:         "duckdb",
+				ChangeMode:              runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+				RetryAttempts:           3,
+				RetryDelay:              5,
+				RetryExponentialBackoff: true,
+				RetryIfErrorMatches:     []string{".*OvercommitTracker.*", ".*Bad Gateway.*", ".*Timeout.*"},
 				Tests: []*runtimev1.ModelTest{
 					{
 						Name:     "Test Row Count",

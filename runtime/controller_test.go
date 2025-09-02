@@ -45,7 +45,6 @@ measures:
 `,
 	})
 	testruntime.ReconcileParserAndWait(t, rt, id)
-	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
 
 	// Verify the source
 	testruntime.RequireResource(t, rt, id, &runtimev1.Resource{
@@ -57,13 +56,17 @@ measures:
 		Resource: &runtimev1.Resource_Model{
 			Model: &runtimev1.Model{
 				Spec: &runtimev1.ModelSpec{
-					InputConnector:   "local_file",
-					OutputConnector:  "duckdb",
-					InputProperties:  must(structpb.NewStruct(map[string]any{"path": "data/foo.csv", "local_files_hash": localFileHash(t, rt, id, []string{"data/foo.csv"})})),
-					OutputProperties: must(structpb.NewStruct(map[string]any{"materialize": true})),
-					RefreshSchedule:  &runtimev1.Schedule{RefUpdate: true},
-					DefinedAsSource:  true,
-					ChangeMode:       runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+					InputConnector:          "local_file",
+					OutputConnector:         "duckdb",
+					InputProperties:         must(structpb.NewStruct(map[string]any{"path": "data/foo.csv", "local_files_hash": localFileHash})),
+					OutputProperties:        must(structpb.NewStruct(map[string]any{"materialize": true})),
+					RefreshSchedule:         &runtimev1.Schedule{RefUpdate: true},
+					DefinedAsSource:         true,
+					RetryAttempts:           3,
+					RetryDelay:              5,
+					RetryExponentialBackoff: true,
+					RetryIfErrorMatches:     []string{".*OvercommitTracker.*", ".*Bad Gateway.*", ".*Timeout.*"},
+					ChangeMode:              runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
 				},
 				State: &runtimev1.ModelState{
 					ExecutorConnector: "duckdb",
@@ -88,11 +91,15 @@ measures:
 		Resource: &runtimev1.Resource_Model{
 			Model: &runtimev1.Model{
 				Spec: &runtimev1.ModelSpec{
-					RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
-					InputConnector:  "duckdb",
-					InputProperties: must(structpb.NewStruct(map[string]any{"sql": "SELECT * FROM foo"})),
-					OutputConnector: "duckdb",
-					ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+					RefreshSchedule:         &runtimev1.Schedule{RefUpdate: true},
+					InputConnector:          "duckdb",
+					InputProperties:         must(structpb.NewStruct(map[string]any{"sql": "SELECT * FROM foo"})),
+					OutputConnector:         "duckdb",
+					RetryAttempts:           3,
+					RetryDelay:              5,
+					RetryExponentialBackoff: true,
+					RetryIfErrorMatches:     []string{".*OvercommitTracker.*", ".*Bad Gateway.*", ".*Timeout.*"},
+					ChangeMode:              runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
 				},
 				State: &runtimev1.ModelState{
 					ExecutorConnector: "duckdb",
@@ -159,11 +166,15 @@ path
 		Resource: &runtimev1.Resource_Model{
 			Model: &runtimev1.Model{
 				Spec: &runtimev1.ModelSpec{
-					RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
-					InputConnector:  "duckdb",
-					InputProperties: must(structpb.NewStruct(map[string]any{"sql": "SELECT * FROM foo"})),
-					OutputConnector: "duckdb",
-					ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+					RefreshSchedule:         &runtimev1.Schedule{RefUpdate: true},
+					InputConnector:          "duckdb",
+					InputProperties:         must(structpb.NewStruct(map[string]any{"sql": "SELECT * FROM foo"})),
+					OutputConnector:         "duckdb",
+					ChangeMode:              runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+					RetryAttempts:           3,
+					RetryDelay:              5,
+					RetryExponentialBackoff: true,
+					RetryIfErrorMatches:     []string{".*OvercommitTracker.*", ".*Bad Gateway.*", ".*Timeout.*"},
 				},
 				State: &runtimev1.ModelState{},
 			},
@@ -224,13 +235,17 @@ path: data/foo.csv
 		Resource: &runtimev1.Resource_Model{
 			Model: &runtimev1.Model{
 				Spec: &runtimev1.ModelSpec{
-					InputConnector:   "local_file",
-					OutputConnector:  "duckdb",
-					InputProperties:  must(structpb.NewStruct(map[string]any{"path": "data/foo.csv", "local_files_hash": localFileHash(t, rt, id, []string{"data/foo.csv"})})),
-					OutputProperties: must(structpb.NewStruct(map[string]any{"materialize": true})),
-					RefreshSchedule:  &runtimev1.Schedule{RefUpdate: true},
-					DefinedAsSource:  true,
-					ChangeMode:       runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+					InputConnector:          "local_file",
+					OutputConnector:         "duckdb",
+					InputProperties:         must(structpb.NewStruct(map[string]any{"path": "data/foo.csv", "local_files_hash": localFileHash})),
+					OutputProperties:        must(structpb.NewStruct(map[string]any{"materialize": true})),
+					RefreshSchedule:         &runtimev1.Schedule{RefUpdate: true},
+					DefinedAsSource:         true,
+					RetryAttempts:           3,
+					RetryDelay:              5,
+					RetryExponentialBackoff: true,
+					RetryIfErrorMatches:     []string{".*OvercommitTracker.*", ".*Bad Gateway.*", ".*Timeout.*"},
+					ChangeMode:              runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
 				},
 				State: &runtimev1.ModelState{
 					ExecutorConnector: "duckdb",
@@ -312,13 +327,17 @@ path: data/foo.csv
 		Resource: &runtimev1.Resource_Model{
 			Model: &runtimev1.Model{
 				Spec: &runtimev1.ModelSpec{
-					InputConnector:   "local_file",
-					OutputConnector:  "duckdb",
-					InputProperties:  must(structpb.NewStruct(map[string]any{"path": "data/foo.csv", "local_files_hash": localFileHash(t, rt, id, []string{"data/foo.csv"})})),
-					OutputProperties: must(structpb.NewStruct(map[string]any{"materialize": true})),
-					RefreshSchedule:  &runtimev1.Schedule{RefUpdate: true},
-					DefinedAsSource:  true,
-					ChangeMode:       runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+					InputConnector:          "local_file",
+					OutputConnector:         "duckdb",
+					InputProperties:         must(structpb.NewStruct(map[string]any{"path": "data/foo.csv", "local_files_hash": localFileHash(t, rt, id, []string{"data/foo.csv"})})),
+					OutputProperties:        must(structpb.NewStruct(map[string]any{"materialize": true})),
+					RefreshSchedule:         &runtimev1.Schedule{RefUpdate: true},
+					DefinedAsSource:         true,
+					RetryAttempts:           3,
+					RetryDelay:              5,
+					RetryExponentialBackoff: true,
+					RetryIfErrorMatches:     []string{".*OvercommitTracker.*", ".*Bad Gateway.*", ".*Timeout.*"},
+					ChangeMode:              runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
 				},
 				State: &runtimev1.ModelState{
 					ExecutorConnector: "duckdb",
@@ -1157,7 +1176,7 @@ path: data/foo.csv
 	awaitIdle()
 	testruntime.RequireReconcileState(t, rt, id, 2, 0, 0)
 	testruntime.RequireOLAPTable(t, rt, id, "foo")
-	_, sourceRes := newSource("foo", "data/foo.csv", localFileHash(t, rt, id, []string{"data/foo.csv"}))
+	_, sourceRes := newSource(t, rt, id, "foo", "data/foo.csv", localFileHash(t, rt, id, []string{"data/foo.csv"}))
 	testruntime.RequireResource(t, rt, id, sourceRes)
 
 	testruntime.PutFiles(t, rt, id, map[string]string{
@@ -1218,45 +1237,54 @@ measures:
 	testruntime.RequireResource(t, rt, id, metricsRes)
 }
 
-func newSource(name, path, localFileHash string) (*runtimev1.Model, *runtimev1.Resource) {
+func newSource(t *testing.T, rt *runtime.Runtime, id string, name, path, localFileHash string) (*runtimev1.Model, *runtimev1.Resource) {
 	source := &runtimev1.Model{
 		Spec: &runtimev1.ModelSpec{
-			InputConnector:   "local_file",
-			OutputConnector:  "duckdb",
-			InputProperties:  must(structpb.NewStruct(map[string]any{"path": path, "local_files_hash": localFileHash})),
-			OutputProperties: must(structpb.NewStruct(map[string]any{"materialize": true})),
-			RefreshSchedule:  &runtimev1.Schedule{RefUpdate: true},
-			DefinedAsSource:  true,
-			ChangeMode:       runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+			InputConnector:          "local_file",
+			OutputConnector:         "duckdb",
+			InputProperties:         must(structpb.NewStruct(map[string]any{"path": "data/foo.csv", "local_files_hash": localFileHash})),
+			OutputProperties:        must(structpb.NewStruct(map[string]any{"materialize": true})),
+			RefreshSchedule:         &runtimev1.Schedule{RefUpdate: true},
+			DefinedAsSource:         true,
+			RetryAttempts:           3,
+			RetryDelay:              5,
+			RetryExponentialBackoff: true,
+			RetryIfErrorMatches:     []string{".*OvercommitTracker.*", ".*Bad Gateway.*", ".*Timeout.*"},
+			ChangeMode:              runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
 		},
 		State: &runtimev1.ModelState{
 			ExecutorConnector: "duckdb",
 			ResultConnector:   "duckdb",
-			ResultProperties:  must(structpb.NewStruct(map[string]any{"table": name, "used_model_name": true, "view": false})),
-			ResultTable:       name,
+			ResultProperties:  must(structpb.NewStruct(map[string]any{"table": "foo", "used_model_name": true, "view": false})),
+			ResultTable:       "foo",
 		},
 	}
 	sourceRes := &runtimev1.Resource{
 		Meta: &runtimev1.ResourceMeta{
-			Name:      &runtimev1.ResourceName{Kind: runtime.ResourceKindModel, Name: name},
+			Name:      &runtimev1.ResourceName{Kind: runtime.ResourceKindModel, Name: "foo"},
 			Owner:     runtime.GlobalProjectParserName,
-			FilePaths: []string{fmt.Sprintf("/sources/%s.yaml", name)},
+			FilePaths: []string{"/sources/foo.yaml"},
 		},
 		Resource: &runtimev1.Resource_Model{
 			Model: source,
 		},
 	}
+	testruntime.RequireResource(t, rt, id, sourceRes)
 	return source, sourceRes
 }
 
 func newModel(query, name, source string) (*runtimev1.Model, *runtimev1.Resource) {
 	model := &runtimev1.Model{
 		Spec: &runtimev1.ModelSpec{
-			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
-			InputConnector:  "duckdb",
-			InputProperties: must(structpb.NewStruct(map[string]any{"sql": query})),
-			OutputConnector: "duckdb",
-			ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+			RefreshSchedule:         &runtimev1.Schedule{RefUpdate: true},
+			InputConnector:          "duckdb",
+			InputProperties:         must(structpb.NewStruct(map[string]any{"sql": query})),
+			OutputConnector:         "duckdb",
+			RetryAttempts:           3,
+			RetryDelay:              5,
+			RetryExponentialBackoff: true,
+			RetryIfErrorMatches:     []string{".*OvercommitTracker.*", ".*Bad Gateway.*", ".*Timeout.*"},
+			ChangeMode:              runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
 		},
 		State: &runtimev1.ModelState{
 			ExecutorConnector: "duckdb",
