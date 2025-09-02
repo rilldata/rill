@@ -7,12 +7,6 @@ import {
 } from "@rilldata/web-common/lib/rpc";
 
 export default function initEmbedPublicAPI(): () => void {
-  const unsubscribe = page.subscribe(({ url }) => {
-    emitNotification("stateChange", {
-      state: removeEmbedParams(url.searchParams),
-    });
-  });
-
   registerRPCMethod("getState", () => {
     const { url } = get(page);
     return { state: removeEmbedParams(url.searchParams) };
@@ -30,6 +24,13 @@ export default function initEmbedPublicAPI(): () => void {
 
   emitNotification("ready");
 
+  // Keep this at the end so that RPC methods are already available and "ready" has been fired.
+  const unsubscribe = page.subscribe(({ url }) => {
+    emitNotification("stateChange", {
+      state: removeEmbedParams(url.searchParams),
+    });
+  });
+
   return unsubscribe;
 }
 
@@ -46,5 +47,5 @@ function removeEmbedParams(searchParams: URLSearchParams) {
   const cleanedParams = new URLSearchParams(searchParams);
   EmbedParams.forEach((param) => cleanedParams.delete(param));
   const search = cleanedParams.toString();
-  return search ? `?${search}` : "";
+  return decodeURIComponent(search);
 }
