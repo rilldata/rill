@@ -132,8 +132,10 @@ We understand the critical importance of AI and data in modern business intellig
 For visual learners, take a look at our various playlists that explains what Rill is and how to get the most out of it!
 
 <div align="center">
+
 [Getting Started with Rill Developer](https://www.youtube.com/watch?v=oQSok8Dy-D0) • [Exploring Data with Rill](https://www.youtube.com/watch?v=wTP46eOzoCk&list=PL_ZoDsg2yFKgi7ud_fOOD33AH8ONWQS7I&index=1)
  • [Data Talks on the Rocks](https://www.youtube.com/playlist?list=PL_ZoDsg2yFKgr_YEc4XOY0wlRLqzyR07q)
+ 
 </div>
 
 ## Production Examples
