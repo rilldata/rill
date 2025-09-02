@@ -8,8 +8,6 @@ sidebar_position: 00
 
 A metrics view is a `centralized framework` used to define and organize **key metrics and dimnesions** for your organization. Having a centralized layer allows an organization to easily manage and reuse calculations across various reports, dashboards, and data tools.
 
-<!-- <img src='/img/build/metrics-view/visual-metrics-editor.gif' class='rounded-gif' />
-<br /> -->
 
 <div style={{ textAlign: 'center' }}>
   <img src="/img/concepts/metrics-view/metrics-view-components.png" width="100%" style={{ borderRadius: '15px', padding: '20px' }} />
