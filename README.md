@@ -48,7 +48,7 @@ Unlike most BI tools, Rill comes with its own embedded in-memory database powere
 We also support bringing your own OLAP engine as a live connector with pushdown compute capabilities.
 
 <p align="center">
-  <img src="https://cdn.rilldata.com/docs/release-notes/release-060.gif" alt="Rill dashboard example" width="80%">
+  <img src="/docs/static/img/explore/dashboard101/multi-measure-select.png" alt="Rill dashboard example" width="80%">
 </p>
 
 ## Table of Contents
@@ -133,7 +133,7 @@ For visual learners, take a look at our various playlists that explains what Ril
 
 <div align="center">
 
-[![Rill Getting Started Video](https://i9.ytimg.com/vi_webp/xWymmKhqEf4/mq2.webp?sqp=CNi3yMUG-oaymwEmCMACELQB8quKqQMa8AEB-AH-CYAC0AWKAgwIABABGBMgJCh_MA8=&rs=AOn4CLBWzGwwnyEophYiL7UVWiIuLWx_7w)](https://www.youtube.com/watch?v=oQSok8Dy-D0)
+[![Rill Getting Started Playlist](/docs/static/img/rill-logo-light.svg)](https://www.youtube.com/watch?v=oQSok8Dy-D0)
 
 </div>
 
