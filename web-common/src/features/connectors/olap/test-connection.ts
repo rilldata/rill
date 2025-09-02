@@ -3,7 +3,9 @@ import {
   connectorServiceOLAPListTables,
   getConnectorServiceOLAPListTablesQueryKey,
   runtimeServiceGetResource,
+  runtimeServiceListResources,
 } from "../../../runtime-client";
+import { ResourceKind } from "../../entity-management/resource-selectors";
 import { humanReadableErrorMessage } from "../../sources/errors/errors";
 
 export interface TestConnectorResult {
@@ -50,21 +52,36 @@ export async function pollConnectorResource(
   instanceId: string,
   connectorName: string,
 ): Promise<TestConnectorResult> {
-  const maxAttempts = 10;
+  const maxAttempts = 15; // Increased from 10 to 15 for more time
   const pollInterval = 2000;
   const maxWaitTime = maxAttempts * pollInterval;
 
   // Wait for file reconciliation before checking resource
-  await new Promise((resolve) => setTimeout(resolve, 3000));
+  console.log("DEBUG: Waiting 3 seconds for resource creation...");
+  await new Promise((resolve) => setTimeout(resolve, 3000)); // Reduced since file is already reconciled
+
+  // Debug: List all connector resources to see what exists
+  try {
+    const allResources = await runtimeServiceListResources(instanceId, {
+      kind: ResourceKind.Connector,
+    });
+    console.log("All connector resources:", allResources.resources);
+  } catch (e) {
+    console.log("Failed to list resources:", e);
+  }
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
-      console.log(`Attempt ${attempt} of ${maxAttempts}`);
+      console.log(
+        `Attempt ${attempt} of ${maxAttempts}: Looking for connector "${connectorName}"`,
+      );
 
       const resource = await runtimeServiceGetResource(instanceId, {
-        "name.kind": "connector",
+        "name.kind": ResourceKind.Connector,
         "name.name": connectorName,
       });
+
+      console.log(`Found resource:`, resource);
 
       // If we get here, resource exists - check its status
       if (resource.resource?.meta?.reconcileError) {
