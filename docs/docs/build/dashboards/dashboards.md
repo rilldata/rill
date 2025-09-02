@@ -4,9 +4,30 @@ description: Create dashboards using source data and models with time, dimension
 sidebar_label: Create Explore Dashboards
 sidebar_position: 00
 ---
+<!-- <div style={{ 
+  position: "relative", 
+  width: "100%", 
+  paddingTop: "56.25%", 
+  borderRadius: "15px",  /* Softer corners */
+  boxShadow: "0px 4px 15px rgba(0, 0, 0, 0.2)"  /* Shadow effect */
+}}>
+  <iframe credentialless="true"
+    src="https://www.youtube.com/embed/zpESpZyK99Q?si=_pXdF3Lvz38Wo2dW"
+    frameBorder="0"
+    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+    allowFullScreen
+    style={{
+      position: "absolute",
+      top: 0,
+      left: 0,
+      width: "100%",
+      height: "100%",
+      borderRadius: "10px", 
+    }}
+  ></iframe>
+</div>
+<br/> -->
 
-<img src = '/img/build/dashboard/explore-dashboard.gif' class='rounded-gif' />
-<br />
 
 In Rill, Explore dashboards are used to visually understand your data with real-time filtering, based on the dimensions and measures defined in your metrics view. In the Explore dashboard YAML, you can define which measures and dimensions are visible, as well as the default view when a user sees your dashboard. 
 
@@ -63,12 +84,4 @@ dimensions:
     uri: true #if already set to the URL, also accepts SQL expressions
 ```
  <img src = '/img/build/dashboard/clickable-dimension.png' class='rounded-gif' />
-<br />
-
-
-### Multi-editor and external IDE support
-
-Rill Developer is meant to be developer friendly and has been built around the idea of keystroke-by-keystroke feedback when modeling your data, allowing live interactivity and a real-time feedback loop to iterate quickly (or make adjustments as necessary) with your models and dashboards. Additionally, Rill Developer supports "hot reloading", which means that you can keep two windows of Rill open at the same time and/or use a preferred editor, such as VSCode, side-by-side with the dashboard that you're actively developing!
-
-<img src = 'https://cdn.rilldata.com/docs/release-notes/36_hot_reload.gif' class='rounded-gif' />
 <br />
