@@ -186,7 +186,7 @@ func (r *sqlResolver) InferRequiredSecurityRules() []*runtimev1.SecurityRule {
 		})
 	}
 	// NOTE - not adding field level or row security rules since it requires full sql parsing logic
-	// and also direct columns in the underlying table can be referenced in the sql which may not be defined in the metrics view to which secruity applies
+	// and also direct columns in the underlying table can be referenced in the sql which may not be defined in the metrics view to which security applies
 	return rules
 }
 
