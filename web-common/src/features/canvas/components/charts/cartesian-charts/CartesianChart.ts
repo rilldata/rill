@@ -69,6 +69,7 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
           axisTitleSelector: true,
           originSelector: true,
           axisRangeSelector: true,
+          colorMappingSelector: { enable: false },
           multiFieldSelector: true,
         },
       },
@@ -95,6 +96,23 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
     super(resource, parent, path);
   }
 
+  getMeasureLabels(): string[] | undefined {
+    const config = get(this.specStore);
+    const metricsViewName = config.metrics_view;
+    const measuresStore =
+      this.parent.spec.getMeasuresForMetricView(metricsViewName);
+    const measures = get(measuresStore);
+
+    let measureDisplayNames: string[] | undefined;
+    if (isMultiFieldConfig(config.y)) {
+      measureDisplayNames = config.y.fields?.map((fieldName) => {
+        const measure = measures.find((m) => m.name === fieldName);
+        return measure?.displayName || fieldName;
+      });
+      return measureDisplayNames;
+    }
+  }
+
   getChartSpecificOptions(): Record<string, ComponentInputParam> {
     const inputParams = CartesianChartComponent.chartInputParams;
     const config = get(this.specStore);
@@ -110,6 +128,13 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
       inputParams.color.meta?.chartFieldInput?.colorMappingSelector;
     if (colorMappingSelector) {
       colorMappingSelector.values = this.customColorValues;
+    }
+
+    if (isMultiMeasure) {
+      inputParams.y.meta!.chartFieldInput!.colorMappingSelector = {
+        enable: true,
+        values: this.getMeasureLabels(),
+      };
     }
 
     return inputParams;
