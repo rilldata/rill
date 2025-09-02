@@ -7,9 +7,6 @@ sidebar_position: 11
 
 <!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->
 
-
-## Overview
-
 [DuckDB](https://duckdb.org/docs/) is an in-process SQL OLAP database management system designed for analytical workloads, aiming to be fast, reliable, and easy to integrate into data analysis applications. It supports standard SQL and operates directly on data in Pandas DataFrames, CSV files, and Parquet files, making it highly suitable for on-the-fly data analysis and machine learning projects. Rill supports natively connecting to and reading from a persisted DuckDB database that it has access to as a source by utilizing the [DuckDB Go driver](https://duckdb.org/docs/api/go.html).
 
 
@@ -21,7 +18,7 @@ As noted above, if you wish to connect to a persistent DuckDB database to read e
 
 If creating a new DuckDB source from the UI, you should provide the appropriate path to the DuckDB database file under **DB** and use the appropriate [DuckDB select statement](https://duckdb.org/docs/sql/statements/select.html) to read in the table under **SQL**:
 
-<img src='/img/reference/olap-engines/duckdb/duckdb.png' class='centered' />
+<img src='/img/connect/olap-engines/duckdb/duckdb.png' class='centered' />
 <br />
 
 :::warning RILL's DATA DIRECTORY 

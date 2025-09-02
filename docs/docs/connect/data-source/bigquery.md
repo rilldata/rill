@@ -7,11 +7,9 @@ sidebar_position: 10
 
 <!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->
 
-## Overview
-
 [Google BigQuery](https://cloud.google.com/bigquery/docs) is a fully managed, serverless data warehouse that enables scalable and cost-effective analysis of large datasets using SQL-like queries. It supports a highly scalable and flexible architecture, allowing users to analyze large amounts of data in real time, making it suitable for BI/ML applications. Rill supports natively connecting to and reading from BigQuery as a source by leveraging the [BigQuery SDK](https://cloud.google.com/bigquery/docs/reference/libraries).
 
-<img src='/img/reference/connectors/bigquery/bigquery.png' class='centered' />
+<img src='/img/connect/connectors/bigquery/bigquery.png' class='centered' />
 <br />
 
 ## Local credentials

@@ -6,12 +6,11 @@ sidebar_position: 0
 ---
 import LoomVideo from '@site/src/components/LoomVideo'; // Adjust the path as needed
 
-<LoomVideo loomId='b96143c386104576bcfe6cabe1038c38' />
-
-## Overview
-
 [ClickHouse](https://clickhouse.com/docs/en/intro) is an open-source, column-oriented OLAP database management system known for its ability to perform real-time analytical queries on large-scale datasets. Its architecture is optimized for high performance, leveraging columnar storage and advanced compression techniques to speed up data reads and significantly reduce storage costs. ClickHouse's efficiency in query execution, scalability, and ability to handle even petabytes of data make it an excellent choice for real-time analytic use cases.
 
+
+<LoomVideo loomId='b96143c386104576bcfe6cabe1038c38' />
+<br />
 Rill supports connecting to an existing ClickHouse instance and using it as an OLAP engine to power Rill dashboards built against [external tables](/home/concepts/OLAP#external-olap-tables). This is particularly useful when working with extremely large datasets (hundreds of GBs or even TB+ in size).
 
 :::note Supported Versions
@@ -26,7 +25,7 @@ After selecting "Add Data", select ClickHouse and fill in your connection parame
 
 
 
-<img src='/img/connect/connector/byob-clickhouse.png' class='rounded-gif' style={{width: '75%', display: 'block', margin: '0 auto'}} />
+<img src='/img/connect/olap-engines/clickhouse/byob-clickhouse.png' class='rounded-gif' style={{width: '75%', display: 'block', margin: '0 auto'}} />
 <br />
 
 
@@ -59,7 +58,7 @@ If you are facing issues related to DSN connection errors in your dashboards eve
 Rill is able to connect to ClickHouse using the [ClickHouse Go Driver](https://clickhouse.com/docs/en/integrations/go). An appropriate connection string (DSN) will need to be set through the `connector.clickhouse.dsn` property in Rill.
 
 
-<img src='/img/connect/connector/byob-clickhouse-dsn.png' class='rounded-gif' style={{width: '75%', display: 'block', margin: '0 auto'}} />
+<img src='/img/connect/olap-engines/clickhouse//byob-clickhouse-dsn.png' class='rounded-gif' style={{width: '75%', display: 'block', margin: '0 auto'}} />
 <br />
 
 
@@ -96,13 +95,13 @@ For more information about available DSN properties and setting an appropriate c
 
 If you are connecting to an existing [ClickHouse Cloud](https://clickhouse.com/cloud) instance, you can retrieve connection details about your instance by clicking on the `Connect` tab from within the admin settings navigation page. This will provide relevant information, such as the hostname, port, and username being used for your instance that you can then use to construct your DSN.
 
-<img src='/img/connect/connector/clickhouse-cloud.png' class='rounded-gif' />
+<img src='/img/connect/olap-engines/clickhouse/clickhouse-cloud.png' class='rounded-gif' />
 <br />
 
 Using the information in the ClickHouse UI, populate the parameters of your connection. As ClickHosue Cloud requires a secure connection, keep the SSL option checked.
 
 
-<img src='/img/connect/connector/clickhouse-ssl.png' class='rounded-gif' style={{width: '75%', display: 'block', margin: '0 auto'}}/>
+<img src='/img/connect/olap-engines/clickhouse/clickhouse-ssl.png' class='rounded-gif' style={{width: '75%', display: 'block', margin: '0 auto'}}/>
 <br />
 
 ### Connection String (DSN)
@@ -118,7 +117,7 @@ If you would like to connect Rill to an existing ClickHouse instance, please don
 
 ## Rill Managed ClickHouse
 
-<img src='/img/connect/connector/managed-clickhouse.png' class='rounded-gif' style={{width: '75%', display: 'block', margin: '0 auto'}}/>
+<img src='/img/connect/olap-engines/clickhouse/managed-clickhouse.png' class='rounded-gif' style={{width: '75%', display: 'block', margin: '0 auto'}}/>
 <br />
 
 

@@ -7,8 +7,6 @@ sidebar_position: 35
 
 Import data from files stored on your local machine into your Rill project.
 
-## Overview
-
 The Local File connector allows you to import data from CSV, JSON, Parquet, and other supported file formats directly from your local filesystem. This is perfect for working with local datasets, exports, or files you've downloaded.
 
 ## Adding a Local File Source

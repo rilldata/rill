@@ -7,8 +7,6 @@ sidebar_position: 50
 
 <!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->
 
-## Overview
-
 [PostgreSQL](https://www.postgresql.org/docs/current/intro-whatis.html) is an open-source object-relational database system known for its reliability, feature robustness, and performance. With support for advanced data types, full ACID compliance for transactional integrity, and an extensible architecture, PostgreSQL provides a highly scalable environment for managing diverse datasets, ranging from small applications to large-scale data warehouses. Its extensive SQL compliance, support for various programming languages, and strong community backing make it a versatile choice for a wide range of business intelligence and analytical applications. Rill supports natively connecting to and reading from PostgreSQL as a source by using either a [supported connection string](https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING) or [connection URI syntax](https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING-URIS).
 
 As an example of a connection string:
@@ -21,7 +19,7 @@ Using the same example, this would be an equivalent connection URI:
 postgresql://postgres_user:postgres_pass@localhost:5432/postgres_db
 ```
 
-<img src='/img/reference/connectors/postgres/postgresql.png' class='centered' />
+<img src='/img/connect/connectors/postgres/postgresql.png' class='centered' />
 <br />
 
 ## Local credentials
