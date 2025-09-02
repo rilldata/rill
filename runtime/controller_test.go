@@ -58,7 +58,7 @@ measures:
 				Spec: &runtimev1.ModelSpec{
 					InputConnector:          "local_file",
 					OutputConnector:         "duckdb",
-					InputProperties:         must(structpb.NewStruct(map[string]any{"path": "data/foo.csv", "local_files_hash": localFileHash})),
+					InputProperties:         must(structpb.NewStruct(map[string]any{"path": "data/foo.csv", "local_files_hash": localFileHash(t, rt, id, []string{"data/foo.csv"})})),
 					OutputProperties:        must(structpb.NewStruct(map[string]any{"materialize": true})),
 					RefreshSchedule:         &runtimev1.Schedule{RefUpdate: true},
 					DefinedAsSource:         true,
@@ -237,7 +237,7 @@ path: data/foo.csv
 				Spec: &runtimev1.ModelSpec{
 					InputConnector:          "local_file",
 					OutputConnector:         "duckdb",
-					InputProperties:         must(structpb.NewStruct(map[string]any{"path": "data/foo.csv", "local_files_hash": localFileHash})),
+					InputProperties:         must(structpb.NewStruct(map[string]any{"path": "data/foo.csv", "local_files_hash": localFileHash(t, rt, id, []string{"data/foo.csv"})})),
 					OutputProperties:        must(structpb.NewStruct(map[string]any{"materialize": true})),
 					RefreshSchedule:         &runtimev1.Schedule{RefUpdate: true},
 					DefinedAsSource:         true,
