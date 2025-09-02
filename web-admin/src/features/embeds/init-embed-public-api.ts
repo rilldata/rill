@@ -1,10 +1,13 @@
 import { goto } from "$app/navigation";
 import { page } from "$app/stores";
+import { Throttler } from "@rilldata/web-common/lib/throttler.ts";
 import { get } from "svelte/store";
 import {
   emitNotification,
   registerRPCMethod,
 } from "@rilldata/web-common/lib/rpc";
+
+const STATE_CHANGE_THROTTLE_TIMEOUT = 200;
 
 export default function initEmbedPublicAPI(): () => void {
   registerRPCMethod("getState", () => {
@@ -24,10 +27,19 @@ export default function initEmbedPublicAPI(): () => void {
 
   emitNotification("ready");
 
+  const stateChangeThrottler = new Throttler(
+    STATE_CHANGE_THROTTLE_TIMEOUT,
+    STATE_CHANGE_THROTTLE_TIMEOUT,
+  );
   // Keep this at the end so that RPC methods are already available and "ready" has been fired.
   const unsubscribe = page.subscribe(({ url }) => {
-    emitNotification("stateChange", {
-      state: removeEmbedParams(url.searchParams),
+    // Throttle the state change event.
+    // This avoids too many events being fired when state is changed quickly.
+    // This also avoids early events being fired just before dashboard is ready but is routed to.
+    stateChangeThrottler.throttle(() => {
+      emitNotification("stateChange", {
+        state: removeEmbedParams(url.searchParams),
+      });
     });
   });
 
