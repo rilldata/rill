@@ -530,6 +530,10 @@ func (a *AST) resolveMeasure(qm Measure, visible bool) (*runtimev1.MetricsViewSp
 			Expression:  expr,
 			Type:        runtimev1.MetricsViewSpec_MEASURE_TYPE_TIME_COMPARISON,
 			DisplayName: fmt.Sprintf("Comparison time for %s", qd.Name),
+			// adding data type - needed for proper handling while adding this field to ast as a dimension
+			DataType: &runtimev1.Type{
+				Code: runtimev1.Type_CODE_TIMESTAMP,
+			},
 		}, nil
 	}
 
@@ -1106,6 +1110,18 @@ func (a *AST) addTimeComparisonMeasure(n *SelectNode, m *runtimev1.MetricsViewSp
 	if err != nil {
 		return err
 	}
+
+	// This is mainly required for getting the correct data type for druid as it wraps all measures in ANY_VALUE in rewriteDruidGroups.
+	// However, wrapping timestamp in ANY_VALUE return unix epoch as string, anyway computed time is actually a dimension, but it's sent as a measure for convenience
+	if m.DataType != nil && m.DataType.Code == runtimev1.Type_CODE_TIMESTAMP {
+		n.DimFields = append(n.DimFields, FieldNode{
+			Name:        m.Name,
+			DisplayName: m.DisplayName,
+			Expr:        expr,
+		})
+		return nil
+	}
+
 	if n.Group {
 		// TODO: There's a risk of expr containing a window, which can't be wrapped by ANY_VALUE. Need to fix it by wrapping with a non-grouped SELECT. Doesn't matter until we implement addDerivedMeasureWithPer.
 		// TODO: Can a node with a comparison ever have Group==true?
