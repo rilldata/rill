@@ -72,7 +72,7 @@ We also support bringing your own OLAP engine as a live connector with pushdown 
 
 ## Rill's design principles:
 
-- **Lightning Fast** - Powered by SvelteKit & DuckDB for conversation-fast performance
+- **Lightning Fast** - Powered by SvelteKit & DuckDB for conversationally fast performance
 - **Universal Data Support** - Works with local and remote datasets (Parquet, CSV, S3, GCS, HTTPS, local)
 - **Automatic Profiling** - Build intuition about your dataset through automatic profiling
 - **Real-time Response** - Responds to each keystroke by re-profiling the resulting dataset
@@ -129,7 +129,7 @@ We understand the critical importance of AI and data in modern business intellig
 
 ## Learn More
 
-For visual learners, take a look at our various playlist that explains what Rill is and how to get the most out of it!
+For visual learners, take a look at our various playlists that explains what Rill is and how to get the most out of it!
 
 <div align="center">
 
@@ -172,7 +172,7 @@ A conversion dataset used by marketers, mobile developers, or product teams to a
 
 ### Kitchen-sink example
 
-A compilation of projects that deep dives into Rill's features using ClickHouse's GitHub commit information.
+A compilation of projects with deep dives into Rill's features using ClickHouse's GitHub commit information.
 
 - <a href="https://github.com/rilldata/rill-examples/tree/main/my-rill-tutorial">GitHub →</a><br />
 - <a href="/guides/rill-basics/launch">Walkthrough →</a><br />
