@@ -1,5 +1,5 @@
 <p align="center">
-    <a href="https://sulu.io/" target="_blank">
+    <a href="https://rilldata.com/" target="_blank">
         <img width="10%" src="https://cdn.prod.website-files.com/659ddac460dbacbdc813b204/660b0f85094eb576187342cf_rill_logo_sq_gradient.svg" alt="Rill logo">
     </a>
 </p>
