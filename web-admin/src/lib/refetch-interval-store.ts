@@ -82,12 +82,17 @@ export function createSmartRefetchInterval(
     return false;
   }
 
+  const resources = query.state.data.resources;
+
+  // If there are no resources at all, use a fixed refetch interval
+  // This handles the case during initial deployment creation when parser hasn't run yet
+  if (resources.length === 0) {
+    return INITIAL_REFETCH_INTERVAL;
+  }
+
   // Get or initialize state from WeakMap
   const currentState = queryRefetchStateMap.get(query) || {};
-  const updatedState = updateSmartRefetchMeta(
-    query.state.data.resources,
-    currentState,
-  );
+  const updatedState = updateSmartRefetchMeta(resources, currentState);
 
   // Store updated state in WeakMap
   queryRefetchStateMap.set(query, updatedState);
