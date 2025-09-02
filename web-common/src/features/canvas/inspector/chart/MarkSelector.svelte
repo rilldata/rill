@@ -1,10 +1,7 @@
 <script lang="ts">
   import FieldSwitcher from "@rilldata/web-common/components/forms/FieldSwitcher.svelte";
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
-  import {
-    RILL_INTERNAL_FIELD,
-    type FieldConfig,
-  } from "@rilldata/web-common/features/canvas/components/charts/types";
+  import { type FieldConfig } from "@rilldata/web-common/features/canvas/components/charts/types";
   import { isFieldConfig } from "@rilldata/web-common/features/canvas/components/charts/util";
   import SingleFieldInput from "@rilldata/web-common/features/canvas/inspector/fields/SingleFieldInput.svelte";
   import type { ComponentInputParam } from "@rilldata/web-common/features/canvas/inspector/types";
@@ -31,9 +28,7 @@
   $: chartFieldInput = config.meta?.chartFieldInput;
   $: colorMapConfig = chartFieldInput?.colorMappingSelector;
 
-  $: isValue =
-    isFieldConfig(markConfig) &&
-    markConfig.field.startsWith(RILL_INTERNAL_FIELD);
+  $: isValue = chartFieldInput?.type === "value";
 
   function updateFieldConfig(property: keyof FieldConfig, value: any) {
     if (typeof markConfig !== "string") {

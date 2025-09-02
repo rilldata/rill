@@ -11,6 +11,7 @@ import type { Transform } from "vega-lite/build/src/transform";
 import {
   buildHoverPointOverlay,
   buildHoverRuleLayer,
+  createColorEncoding,
   createConfigWithLegend,
   createMultiLayerBaseSpec,
   createPositionEncoding,
@@ -32,10 +33,7 @@ export function generateVLMultiMetricChartSpec(
   const valueField = "value";
 
   const spec = createMultiLayerBaseSpec();
-  const vegaConfig = createConfigWithLegend(config, {
-    field: measureField,
-    type: "nominal",
-  });
+  const vegaConfig = createConfigWithLegend(config, config.color);
 
   const measures = config.y?.fields || [];
 
@@ -64,10 +62,15 @@ export function generateVLMultiMetricChartSpec(
   };
 
   const baseColorEncoding = {
+    ...createColorEncoding(config.color, data),
     field: measureField,
-    type: "nominal" as const,
+    title: measureField,
     legend,
   };
+
+  if (typeof baseColorEncoding === "object" && "scale" in baseColorEncoding) {
+    baseColorEncoding.scale!.domain = measures;
+  }
 
   const baseYEncoding = {
     field: valueField,
@@ -104,7 +107,7 @@ export function generateVLMultiMetricChartSpec(
       {
         field: xField,
         title: data.fields[config.x.field]?.displayName || config.x.field,
-        type: config.x?.type,
+        type: config.x?.type === "value" ? "nominal" : config.x.type,
         ...(config.x.type === "temporal" && { format: "%b %d, %Y %H:%M" }),
       },
     ];

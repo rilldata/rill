@@ -16,8 +16,6 @@ import type { CreateQueryResult } from "@tanstack/svelte-query";
 import type { Color } from "chroma-js";
 import type { TimeUnit } from "vega-lite/build/src/timeunit";
 
-export const RILL_INTERNAL_FIELD = "_rill_internal_field";
-
 export type ChartType =
   | "bar_chart"
   | "line_chart"
@@ -102,7 +100,7 @@ export interface FieldConfig
     QuantitativeFieldConfig,
     MarkFieldConfig {
   field: string;
-  type: "quantitative" | "ordinal" | "nominal" | "temporal";
+  type: "quantitative" | "ordinal" | "nominal" | "temporal" | "value";
   showAxisTitle?: boolean; // Default is false
   timeUnit?: string; // For temporal fields
   fields?: string[]; // To support multi metric chart variants

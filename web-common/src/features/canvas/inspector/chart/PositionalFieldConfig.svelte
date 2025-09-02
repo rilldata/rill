@@ -1,13 +1,13 @@
 <script lang="ts">
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import type { FieldConfig } from "@rilldata/web-common/features/canvas/components/charts/types";
-  import MarkTypeToggle from "@rilldata/web-common/features/canvas/inspector/chart/field-config/MarkTypeToggle.svelte";
   import MultiPositionalFieldsInput from "@rilldata/web-common/features/canvas/inspector/fields/MultiPositionalFieldsInput.svelte";
   import SingleFieldInput from "@rilldata/web-common/features/canvas/inspector/fields/SingleFieldInput.svelte";
   import type { ComponentInputParam } from "@rilldata/web-common/features/canvas/inspector/types";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import FieldConfigPopover from "./field-config/FieldConfigPopover.svelte";
+  import MarkTypeToggle from "./field-config/MarkTypeToggle.svelte";
 
   export let key: string;
   export let config: ComponentInputParam;
@@ -139,10 +139,12 @@
   <div class="flex flex-col gap-y-2">
     {#if !hasMultipleMeasures}
       <SingleFieldInput
+        {canvasName}
         metricName={metricsView}
         id={`${key}-field`}
         type={isDimension ? "dimension" : "measure"}
         includeTime={!chartFieldInput?.hideTimeDimension}
+        excludedValues={chartFieldInput?.excludedValues}
         selectedItem={fieldConfig?.field}
         onSelect={async (field) => {
           updateFieldConfig(field);

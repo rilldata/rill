@@ -15,7 +15,6 @@ import merge from "deepmerge";
 import type { Config } from "vega-lite";
 import { CHART_CONFIG, type ChartSpec } from "./";
 import {
-  RILL_INTERNAL_FIELD,
   type ChartDataResult,
   type ChartDomainValues,
   type ChartSortDirection,
@@ -93,10 +92,6 @@ export function getFieldsByType(spec: ChartSpec): FieldsByType {
       const type = obj.type as string;
       const field = obj.field;
       const fields = obj.fields;
-
-      if (field.startsWith(RILL_INTERNAL_FIELD)) {
-        return;
-      }
 
       switch (type) {
         case "quantitative":

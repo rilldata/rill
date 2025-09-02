@@ -29,7 +29,7 @@ export type SortSelectorConfig = {
 };
 
 export type ChartFieldInput = {
-  type: FieldType;
+  type: FieldType | "value";
   excludedValues?: string[];
   axisTitleSelector?: boolean;
   hideTimeDimension?: boolean;

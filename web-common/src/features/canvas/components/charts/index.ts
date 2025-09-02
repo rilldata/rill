@@ -180,7 +180,7 @@ export const CHART_CONFIG: Record<ChartType, ChartMetadataConfig> = {
   },
   combo_chart: {
     title: "Combo",
-    icon: MultiChart,
+    icon: BarChart,
     component: ComboChartComponent,
     generateSpec: generateVLComboChartSpec,
   },

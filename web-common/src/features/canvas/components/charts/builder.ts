@@ -59,7 +59,7 @@ export function createPositionEncoding(
   field: FieldConfig | undefined,
   data: ChartDataResult,
 ): PositionFieldDef<Field> {
-  if (!field) return {};
+  if (!field || field.type === "value") return {};
   const metaData = data.fields[field.field];
   return {
     field: sanitizeValueForVega(field.field),
@@ -99,7 +99,7 @@ export function createColorEncoding(
     const baseEncoding: ColorDef<Field> = {
       field: sanitizeValueForVega(colorField.field),
       title: metaData?.displayName || colorField.field,
-      type: colorField.type,
+      type: colorField.type === "value" ? "nominal" : colorField.type,
       ...(metaData &&
         "timeUnit" in metaData && { timeUnit: metaData.timeUnit }),
       ...(colorValues?.length && { sort: colorValues }),
@@ -152,7 +152,7 @@ export function createOpacityEncoding(paramName: string) {
 }
 
 export function createOrderEncoding(field: FieldConfig | undefined) {
-  if (!field) return {};
+  if (!field || field.type === "value") return {};
   return {
     field: sanitizeValueForVega(field.field),
     type: field.type,
@@ -184,6 +184,7 @@ export function createDefaultTooltipEncoding(
     if (!field) continue;
 
     if (typeof field === "object") {
+      if (field.type === "value") continue;
       tooltip.push({
         field: sanitizeValueForVega(field.field),
         title: data.fields[field.field]?.displayName || field.field,
@@ -311,7 +312,7 @@ export function createCartesianMultiValueTooltipChannel(
     multiValueTooltipChannel.unshift({
       field: xField,
       title: data.fields[xConfig.field]?.displayName || xConfig.field,
-      type: xConfig?.type,
+      type: xConfig?.type === "value" ? "nominal" : xConfig.type,
       ...(xConfig.type === "temporal" && { format: "%b %d, %Y %H:%M" }),
     });
 

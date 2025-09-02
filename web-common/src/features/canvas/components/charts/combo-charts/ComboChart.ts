@@ -20,7 +20,6 @@ import type {
 } from "../../../stores/canvas-entity";
 import { BaseChart, type BaseChartConfig } from "../BaseChart";
 import {
-  RILL_INTERNAL_FIELD,
   type ChartDataQuery,
   type ChartFieldsMap,
   type FieldConfig,
@@ -95,10 +94,9 @@ export class ComboChartComponent extends BaseChart<ComboChartSpec> {
       meta: {
         type: "color",
         chartFieldInput: {
-          type: "measure",
+          type: "value",
           defaultLegendOrientation: "top",
           colorMappingSelector: { enable: true },
-          nullSelector: true,
         },
       },
     },
@@ -379,8 +377,8 @@ export class ComboChartComponent extends BaseChart<ComboChartSpec> {
         mark: "line",
       },
       color: {
-        type: "nominal",
-        field: `${RILL_INTERNAL_FIELD}_measures`, // This will be used for legend
+        type: "value",
+        field: "measures",
         legendOrientation: "top",
       },
     };
@@ -410,7 +408,9 @@ export class ComboChartComponent extends BaseChart<ComboChartSpec> {
           ? [...this.customSortXItems]
           : undefined;
     }
-    result[`${RILL_INTERNAL_FIELD}_measures`] = this.getMeasureLabels();
+    if (config.color?.field) {
+      result[config.color?.field] = this.getMeasureLabels();
+    }
     return result;
   }
 }

@@ -38,7 +38,7 @@
     bind:open
     bind:searchValue
   >
-    <svelte:fragment slot="trigger" let:open>
+    <svelte:fragment slot="trigger">
       <DropdownMenu.Trigger asChild let:builder>
         <div class="flex justify-between gap-x-2">
           <button

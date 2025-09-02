@@ -20,7 +20,11 @@ import type {
   ComponentPath,
 } from "../../../stores/canvas-entity";
 import { BaseChart, type BaseChartConfig } from "../BaseChart";
-import type { ChartDataQuery, ChartFieldsMap, FieldConfig } from "../types";
+import {
+  type ChartDataQuery,
+  type ChartFieldsMap,
+  type FieldConfig,
+} from "../types";
 import {
   isFieldConfig,
   isMultiFieldConfig,
@@ -114,11 +118,9 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
   }
 
   getChartSpecificOptions(): Record<string, ComponentInputParam> {
-    const inputParams = CartesianChartComponent.chartInputParams;
+    const inputParams = { ...CartesianChartComponent.chartInputParams };
     const config = get(this.specStore);
     const isMultiMeasure = isMultiFieldConfig(config.y);
-
-    inputParams.color.showInUI = !isMultiMeasure;
 
     const sortSelector = inputParams.x.meta?.chartFieldInput?.sortSelector;
     if (sortSelector) {
@@ -131,9 +133,13 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
     }
 
     if (isMultiMeasure) {
-      inputParams.y.meta!.chartFieldInput!.colorMappingSelector = {
-        enable: true,
-        values: this.getMeasureLabels(),
+      inputParams.color.meta!.chartFieldInput = {
+        type: "value",
+        colorMappingSelector: {
+          enable: true,
+          values: this.getMeasureLabels(),
+        },
+        defaultLegendOrientation: "top",
       };
     }
 
@@ -452,10 +458,14 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
     }
 
     if (isFieldConfig(config.color)) {
-      result[config.color.field] =
-        this.customColorValues.length > 0
-          ? [...this.customColorValues]
-          : undefined;
+      if (isMultiFieldConfig(config.y)) {
+        result[config.color.field] = this.getMeasureLabels();
+      } else {
+        result[config.color.field] =
+          this.customColorValues.length > 0
+            ? [...this.customColorValues]
+            : undefined;
+      }
     }
 
     return result;
