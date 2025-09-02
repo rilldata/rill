@@ -35,13 +35,13 @@ Time is one of the most powerful dimensions in analytics, and Rill dashboards ar
 Prefer video? Check out our [YouTube playlist](https://www.youtube.com/watch?v=wTP46eOzoCk&list=PL_ZoDsg2yFKgi7ud_fOOD33AH8ONWQS7I&index=1) for a quick start!
 
 
-
-<img src = '/img/explore/filters/time-filter.png' class='rounded-gif' />
-<br />
-
 ## Time Filters
 
 Let's take a look of the different types of time filters that are available in Rill.
+
+
+<img src = '/img/explore/filters/time-filter.png' class='rounded-gif' />
+<br />
 
 ### Comparison Time Ranges
 
@@ -65,12 +65,10 @@ For the latter, you can compare the full period looking with options like last 2
 
 For a specific view into your time series graph, you can interactively scrub directly on the time series graph. 
 
-
-<img src = '/img/explore/filters/scrub-graph.gif' class='rounded-gif' />
+<img src = '/img/explore/filters/scrub.png' class='rounded-gif' />
 <br />
 
 This allows the ability for a more detailed view into your time series without having to change the overall time series filter for quick access to measures. 
-
 
 
 :::tip _as of latest_

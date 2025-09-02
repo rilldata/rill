@@ -5,6 +5,9 @@ sidebar_position: 05
 ---
 
 
+After logging into [Rill Cloud](https://ui.rilldata.com), you should see all projects within your [organization](/manage/organization-management#organization) that is available and/or has been granted permissions to your user profile. Within each project, you'll then be able to access the corresponding individual dashboards that belong to a particular Rill project. 
+
+
 <div style={{ 
   position: "relative", 
   width: "100%", 
@@ -31,13 +34,6 @@ sidebar_position: 05
 
 Prefer video? Check out our [YouTube playlist](https://www.youtube.com/watch?v=wTP46eOzoCk&list=PL_ZoDsg2yFKgi7ud_fOOD33AH8ONWQS7I&index=1) for a quick start!
 
-
-## Overview
-
-After logging into [Rill Cloud](https://ui.rilldata.com), you should see all projects within your [organization](/manage/organization-management#organization) that is available and/or has been granted permissions to your user profile. Within each project, you'll then be able to access the corresponding individual dashboards that belong to a particular Rill project. 
-
-<img src = '/img/explore/dashboard101/rill-cloud-landing-page.png' class='rounded-gif' />
-<br />
 
 
 ## Navigating the Dashboard

@@ -5,6 +5,8 @@ sidebar_label: "Time Dimension Detail"
 sidebar_position: 25
 ---
 
+The Time Dimension Detail is a separate visualization accessed by clicking on any time series chart in Explore. Expanding the time series allows for more surface area to compare a larger number of dimensions trended over time. Additionally, you can create rapid pivot tables based on time across any dimension.
+
 <div style={{ 
   position: "relative", 
   width: "100%", 
@@ -31,10 +33,6 @@ sidebar_position: 25
 
 Prefer video? Check out our [YouTube playlist](https://www.youtube.com/watch?v=wTP46eOzoCk&list=PL_ZoDsg2yFKgi7ud_fOOD33AH8ONWQS7I&index=1) for a quick start!
 
-
-## Overview
-
-The Time Dimension Detail is a separate visualization accessed by clicking on any time series chart in Explore. Expanding the time series allows for more surface area to compare a larger number of dimensions trended over time. Additionally, you can create rapid pivot tables based on time across any dimension
 
 ## Time Dimension Detail (TDD)
 

@@ -42,15 +42,13 @@ graph LR;
 ## Deploying a project from Rill Developer
 Starting from **v0.48**, we have introduced the possibility to push dashboards _directly from Rill Developer to Rill Cloud_. On the dashboard page, you can select the `Deploy` button and follow the steps to deploy to Rill Cloud.
 
-<img src = '/img/deploy/existing-project/deploy-ui.gif' class='rounded-gif' />
-<br />
 
+<img src = '/img/deploy/existing-project/deploy.png' class='rounded-gif' />
+<br />
 Now that you project has been deployed to Rill Cloud, you will need to ensure that your users have access! Please refer to the [user management](../../manage/user-management.md) section. 
 
 If you make changes locally on Rill Developer, you will need to push the contents to Rill Cloud by selecting the `Deploy` button.
 
-<img src = '/img/deploy/existing-project/redeploy.gif' class='rounded-gif' />
-<br />
 
 :::tip On an older version of Rill?
 
