@@ -1,3 +1,4 @@
+import type { ColorMapping } from "@rilldata/web-common/features/canvas/inspector/types";
 import type {
   V1Expression,
   V1MetricsViewAggregationDimension,
@@ -15,6 +16,8 @@ import type { CreateQueryResult } from "@tanstack/svelte-query";
 import type { Color } from "chroma-js";
 import type { TimeUnit } from "vega-lite/build/src/timeunit";
 
+export const RILL_INTERNAL_FIELD = "_rill_internal_field";
+
 export type ChartType =
   | "bar_chart"
   | "line_chart"
@@ -24,7 +27,8 @@ export type ChartType =
   | "donut_chart"
   | "pie_chart"
   | "heatmap"
-  | "funnel_chart";
+  | "funnel_chart"
+  | "combo_chart";
 
 export type ChartDataQuery = CreateQueryResult<
   V1MetricsViewAggregationResponse,
@@ -80,7 +84,11 @@ interface NominalFieldConfig {
   showNull?: boolean;
   labelAngle?: number;
   legendOrientation?: ChartLegend;
-  colorMapping?: { value: string; color: string }[];
+  colorMapping?: ColorMapping;
+}
+
+interface MarkFieldConfig {
+  mark?: "bar" | "line";
 }
 
 interface QuantitativeFieldConfig {
@@ -91,7 +99,8 @@ interface QuantitativeFieldConfig {
 
 export interface FieldConfig
   extends NominalFieldConfig,
-    QuantitativeFieldConfig {
+    QuantitativeFieldConfig,
+    MarkFieldConfig {
   field: string;
   type: "quantitative" | "ordinal" | "nominal" | "temporal";
   showAxisTitle?: boolean; // Default is false

@@ -1,5 +1,7 @@
 import type { CartesianChartSpec } from "@rilldata/web-common/features/canvas/components/charts/cartesian-charts/CartesianChart";
+import type { ComboChartSpec } from "@rilldata/web-common/features/canvas/components/charts/combo-charts/ComboChart";
 import type { HeatmapChartSpec } from "@rilldata/web-common/features/canvas/components/charts/heatmap-charts/HeatmapChart";
+import type { ColorMapping } from "@rilldata/web-common/features/canvas/inspector/types";
 import { COMPARIONS_COLORS } from "@rilldata/web-common/features/dashboards/config";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
 import { adjustOffsetForZone } from "@rilldata/web-common/lib/convertTimestampPreview";
@@ -12,12 +14,13 @@ import {
 import merge from "deepmerge";
 import type { Config } from "vega-lite";
 import { CHART_CONFIG, type ChartSpec } from "./";
-import type {
-  ChartDataResult,
-  ChartDomainValues,
-  ChartSortDirection,
-  ChartType,
-  FieldConfig,
+import {
+  RILL_INTERNAL_FIELD,
+  type ChartDataResult,
+  type ChartDomainValues,
+  type ChartSortDirection,
+  type ChartType,
+  type FieldConfig,
 } from "./types";
 
 export function isFieldConfig(field: unknown): field is FieldConfig {
@@ -91,6 +94,10 @@ export function getFieldsByType(spec: ChartSpec): FieldsByType {
       const field = obj.field;
       const fields = obj.fields;
 
+      if (field.startsWith(RILL_INTERNAL_FIELD)) {
+        return;
+      }
+
       switch (type) {
         case "quantitative":
           measures.add(field);
@@ -157,7 +164,7 @@ export function adjustDataForTimeZone(
  */
 export function vegaSortToAggregationSort(
   encoder: "x" | "y",
-  config: CartesianChartSpec | HeatmapChartSpec,
+  config: CartesianChartSpec | HeatmapChartSpec | ComboChartSpec,
   defaultSort: ChartSortDirection,
 ): V1MetricsViewAggregationSort | undefined {
   const encoderConfig = config[encoder];
@@ -183,7 +190,11 @@ export function vegaSortToAggregationSort(
       break;
     case "y":
     case "-y":
-      field = config.y?.field;
+      if ("y" in config) {
+        field = config.y?.field;
+      } else if ("y1" in config) {
+        field = config.y1?.field;
+      }
       desc = sort === "-y";
       break;
     case "color":
@@ -265,8 +276,8 @@ export function getLinkStateForTimeDimensionDetail(
 export function getColorForValues(
   colorValues: string[] | undefined,
   // if provided, use the colors for mentioned values
-  overrideColorMapping: { value: string; color: string }[] | undefined,
-): { value: string; color: string }[] | undefined {
+  overrideColorMapping: ColorMapping | undefined,
+): ColorMapping | undefined {
   if (!colorValues || colorValues.length === 0) return undefined;
 
   const colorMapping = colorValues.map((value, index) => {
@@ -287,14 +298,15 @@ export function getColorForValues(
 export function getColorMappingForChart(
   chartSpec: ChartSpec,
   domainValues: ChartDomainValues | undefined,
-): { value: string; color: string }[] | undefined {
+): ColorMapping | undefined {
   if (!("color" in chartSpec) || !domainValues) return undefined;
   const colorField = chartSpec.color;
 
-  let colorMapping: { value: string; color: string }[] | undefined;
-  if (isFieldConfig(colorField)) {
+  let colorMapping: ColorMapping | undefined;
+  if (typeof colorField === "object") {
+    const fieldKey = colorField.field;
     colorMapping = getColorForValues(
-      domainValues[colorField.field],
+      domainValues[fieldKey],
       colorField.colorMapping,
     );
   }

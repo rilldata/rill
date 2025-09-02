@@ -1,6 +1,7 @@
 <script lang="ts">
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import type { FieldConfig } from "@rilldata/web-common/features/canvas/components/charts/types";
+  import MarkTypeToggle from "@rilldata/web-common/features/canvas/inspector/chart/field-config/MarkTypeToggle.svelte";
   import MultiPositionalFieldsInput from "@rilldata/web-common/features/canvas/inspector/fields/MultiPositionalFieldsInput.svelte";
   import SingleFieldInput from "@rilldata/web-common/features/canvas/inspector/fields/SingleFieldInput.svelte";
   import type { ComponentInputParam } from "@rilldata/web-common/features/canvas/inspector/types";
@@ -138,7 +139,6 @@
   <div class="flex flex-col gap-y-2">
     {#if !hasMultipleMeasures}
       <SingleFieldInput
-        {canvasName}
         metricName={metricsView}
         id={`${key}-field`}
         type={isDimension ? "dimension" : "measure"}
@@ -159,4 +159,13 @@
       />
     {/if}
   </div>
+
+  {#if chartFieldInput?.markTypeSelector}
+    <MarkTypeToggle
+      selectedMark={fieldConfig.mark}
+      onClick={(mark) => {
+        updateFieldProperty("mark", mark);
+      }}
+    />
+  {/if}
 </div>

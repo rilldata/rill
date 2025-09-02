@@ -1,7 +1,10 @@
 <script lang="ts">
   import FieldSwitcher from "@rilldata/web-common/components/forms/FieldSwitcher.svelte";
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
-  import type { FieldConfig } from "@rilldata/web-common/features/canvas/components/charts/types";
+  import {
+    RILL_INTERNAL_FIELD,
+    type FieldConfig,
+  } from "@rilldata/web-common/features/canvas/components/charts/types";
   import { isFieldConfig } from "@rilldata/web-common/features/canvas/components/charts/util";
   import SingleFieldInput from "@rilldata/web-common/features/canvas/inspector/fields/SingleFieldInput.svelte";
   import type { ComponentInputParam } from "@rilldata/web-common/features/canvas/inspector/types";
@@ -27,6 +30,10 @@
 
   $: chartFieldInput = config.meta?.chartFieldInput;
   $: colorMapConfig = chartFieldInput?.colorMappingSelector;
+
+  $: isValue =
+    isFieldConfig(markConfig) &&
+    markConfig.field.startsWith(RILL_INTERNAL_FIELD);
 
   function updateFieldConfig(property: keyof FieldConfig, value: any) {
     if (typeof markConfig !== "string") {
@@ -70,22 +77,32 @@
     {/if}
   </div>
 
-  <FieldSwitcher
-    small
-    fields={["One color", "Split by"]}
-    {selected}
-    onClick={(_, field) => {
-      if (field === "One color") {
-        selected = 0;
-        onChange(typeof markConfig === "string" ? markConfig : "primary");
-      } else if (field === "Split by") {
-        selected = 1;
-      }
-    }}
-  />
+  {#if !isValue}
+    <FieldSwitcher
+      small
+      fields={["One color", "Split by"]}
+      {selected}
+      onClick={(_, field) => {
+        if (field === "One color") {
+          selected = 0;
+          onChange(typeof markConfig === "string" ? markConfig : "primary");
+        } else if (field === "Split by") {
+          selected = 1;
+        }
+      }}
+    />
+  {/if}
 </div>
 
-{#if selected === 0}
+{#if isValue && colorMapConfig?.enable && typeof markConfig === "object"}
+  <div class="pt-2">
+    <ColorPaletteSelector
+      colorMapping={markConfig?.colorMapping}
+      onChange={updateFieldConfig}
+      {colorMapConfig}
+    />
+  </div>
+{:else if selected === 0}
   <div class="pt-2">
     <SingleColorSelector
       small
@@ -102,6 +119,7 @@
     metricName={metricsView}
     id={`${key}-field`}
     type="dimension"
+    excludedValues={chartFieldInput?.excludedValues}
     selectedItem={typeof markConfig === "string"
       ? undefined
       : markConfig?.field}
@@ -113,7 +131,7 @@
   {#if isFieldConfig(markConfig) && colorMapConfig?.enable}
     <div class="pt-2">
       <ColorPaletteSelector
-        fieldConfig={markConfig}
+        colorMapping={markConfig?.colorMapping}
         onChange={updateFieldConfig}
         {colorMapConfig}
       />

@@ -15,6 +15,7 @@
   export let includeTime = false;
   export let canvasName: string;
   export let searchableItems: string[] | undefined = undefined;
+  export let excludedValues: string[] | undefined = undefined;
   export let onSelect: (item: string, displayName: string) => void = () => {};
 
   let open = false;
@@ -34,6 +35,7 @@
     [type],
     searchableItems,
     searchValue,
+    excludedValues,
   );
 </script>
 
