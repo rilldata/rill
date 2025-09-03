@@ -529,6 +529,12 @@
         disabled={connector.name === "clickhouse"
           ? clickhouseSubmitting || clickhouseIsSubmitDisabled
           : submitting || isSubmitDisabled}
+        loading={connector.name === "clickhouse"
+          ? clickhouseSubmitting
+          : submitting}
+        loadingCopy={connector.name === "clickhouse"
+          ? "Connecting..."
+          : "Testing connection..."}
         form={connector.name === "clickhouse" ? clickhouseFormId : formId}
         submitForm
         type="primary"
