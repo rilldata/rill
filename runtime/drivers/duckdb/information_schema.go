@@ -10,6 +10,18 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/rduckdb"
 )
 
+func (c *connection) ListDatabaseSchemas(ctx context.Context) ([]*drivers.DatabaseSchemaInfo, error) {
+	return nil, nil
+}
+
+func (c *connection) ListTables(ctx context.Context, database, schema string) ([]*drivers.TableInfo, error) {
+	return nil, nil
+}
+
+func (c *connection) GetTable(ctx context.Context, database, schema, table string) (*drivers.TableMetadata, error) {
+	return nil, nil
+}
+
 func (c *connection) All(ctx context.Context, ilike string) ([]*drivers.OlapTable, error) {
 	// TODO: this bypasses the acquireMetaConn call in the original implementation. Fix this.
 	db, release, err := c.acquireDB()

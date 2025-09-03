@@ -15,6 +15,19 @@ import (
 // While querying druid does not support db name just use schema.table
 //
 // Since all user tables are in `druid` schema so we hardcode schema as `druid` and does not query database
+
+func (c *connection) ListDatabaseSchemas(ctx context.Context) ([]*drivers.DatabaseSchemaInfo, error) {
+	return nil, nil
+}
+
+func (c *connection) ListTables(ctx context.Context, database, schema string) ([]*drivers.TableInfo, error) {
+	return nil, nil
+}
+
+func (c *connection) GetTable(ctx context.Context, database, schema, table string) (*drivers.TableMetadata, error) {
+	return nil, nil
+}
+
 func (c *connection) All(ctx context.Context, like string) ([]*drivers.OlapTable, error) {
 	var likeClause string
 	var args []any
