@@ -57,10 +57,6 @@ export async function pollConnectorResource(
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
-      console.log(
-        `Attempt ${attempt} of ${maxAttempts}: Looking for connector "${connectorName}"`,
-      );
-
       const resource = await runtimeServiceGetResource(instanceId, {
         "name.kind": ResourceKind.Connector,
         "name.name": connectorName,
@@ -68,10 +64,6 @@ export async function pollConnectorResource(
 
       // If we get here, resource exists - check its status
       if (resource.resource?.meta?.reconcileError) {
-        console.log(
-          `Detected reconcile error, returning error response:`,
-          resource.resource.meta.reconcileError,
-        );
         return {
           success: false,
           error: "Connector configuration failed to reconcile",
@@ -99,14 +91,8 @@ export async function pollConnectorResource(
         details: `Connector is still reconciling after ${maxWaitTime / 1000} seconds. Current status: ${resource.resource?.meta?.reconcileStatus || "unknown"}`,
       };
     } catch (error) {
-      console.error(`Attempt ${attempt} failed:`, error);
-
       // Resource not found is expected initially after file creation
       if (error?.status === 404 || error?.response?.status === 404) {
-        console.log(
-          `Resource not found yet (attempt ${attempt}/${maxAttempts}), waiting...`,
-        );
-
         if (attempt === maxAttempts) {
           return {
             success: false,
