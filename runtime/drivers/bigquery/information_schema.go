@@ -10,51 +10,67 @@ import (
 	"google.golang.org/api/iterator"
 )
 
-func (c *Connection) ListDatabaseSchemas(ctx context.Context) ([]*drivers.DatabaseSchemaInfo, error) {
+func (c *Connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, pageToken string) ([]*drivers.DatabaseSchemaInfo, string, error) {
 	client, err := c.createClient(ctx, "")
 	if err != nil {
-		return nil, fmt.Errorf("failed to get BigQuery client: %w", err)
+		return nil, "", fmt.Errorf("failed to get BigQuery client: %w", err)
 	}
 	defer client.Close()
 
-	var allSchemas []*drivers.DatabaseSchemaInfo
 	it := client.Datasets(ctx)
+	pi := it.PageInfo()
+	if pageSize == 0 || pageSize > 1000 {
+		pageSize = 1000
+	}
+	pi.MaxSize = int(pageSize)
+	pi.Token = pageToken
+
+	var res []*drivers.DatabaseSchemaInfo
 	for {
 		ds, err := it.Next()
 		if err != nil {
 			if errors.Is(err, iterator.Done) {
 				break
 			}
-			return nil, fmt.Errorf("error listing datasets: %w", err)
+			return nil, "", fmt.Errorf("error listing datasets: %w", err)
 		}
-		allSchemas = append(allSchemas, &drivers.DatabaseSchemaInfo{
+		res = append(res, &drivers.DatabaseSchemaInfo{
 			Database:       ds.ProjectID,
 			DatabaseSchema: ds.DatasetID,
 		})
 	}
 
-	return allSchemas, nil
+	return res, pi.Token, nil
 }
 
-func (c *Connection) ListTables(ctx context.Context, database, databaseSchema string) ([]*drivers.TableInfo, error) {
+func (c *Connection) ListTables(ctx context.Context, database, databaseSchema string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
 	q := fmt.Sprintf(`
 	SELECT
 		table_name,
 		table_type
 	FROM `+"`%s.%s.INFORMATION_SCHEMA.TABLES`"+`
+	ORDER BY table_name
 	`, database, databaseSchema,
 	)
 
 	client, err := c.createClient(ctx, database)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get BigQuery client: %w", err)
+		return nil, "", fmt.Errorf("failed to get BigQuery client: %w", err)
 	}
 	defer client.Close()
 
 	cq := client.Query(q)
 	it, err := cq.Read(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to query INFORMATION_SCHEMA.TABLES: %w", err)
+		return nil, "", fmt.Errorf("failed to query INFORMATION_SCHEMA.TABLES: %w", err)
+	}
+
+	if pageSize == 0 || pageSize > 1000 {
+		pageSize = 1000
+	}
+	offset := 0
+	if pageToken != "" {
+		_, _ = fmt.Sscanf(pageToken, "offset:%d", &offset)
 	}
 
 	var res []*drivers.TableInfo
@@ -62,21 +78,42 @@ func (c *Connection) ListTables(ctx context.Context, database, databaseSchema st
 		TableName string `bigquery:"table_name"`
 		TableType string `bigquery:"table_type"`
 	}
-	for {
-		err := it.Next(&row)
-		if err != nil {
-			if errors.Is(err, iterator.Done) {
-				break
+
+	count := 0
+	for count < int(pageSize) {
+		if offset > 0 {
+			// Skip offset rows
+			var skip struct{}
+			for offset > 0 {
+				err := it.Next(&skip)
+				if errors.Is(err, iterator.Done) {
+					return res, "", nil
+				}
+				if err != nil {
+					return nil, "", fmt.Errorf("failed to iterate over tables: %w", err)
+				}
+				offset--
 			}
-			return nil, fmt.Errorf("failed to iterate over tables: %w", err)
+		}
+		err := it.Next(&row)
+		if errors.Is(err, iterator.Done) {
+			break
+		}
+		if err != nil {
+			return nil, "", fmt.Errorf("failed to iterate over tables: %w", err)
 		}
 		res = append(res, &drivers.TableInfo{
 			Name: row.TableName,
 			View: row.TableType == "VIEW",
 		})
+		count++
 	}
 
-	return res, nil
+	next := ""
+	if count >= int(pageSize) {
+		next = fmt.Sprintf("offset:%d", offset+count)
+	}
+	return res, next, nil
 }
 
 func (c *Connection) GetTable(ctx context.Context, database, databaseSchema, table string) (*drivers.TableMetadata, error) {

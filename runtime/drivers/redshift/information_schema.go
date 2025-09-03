@@ -11,7 +11,7 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
-func (c *Connection) ListDatabaseSchemas(ctx context.Context) ([]*drivers.DatabaseSchemaInfo, error) {
+func (c *Connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, pageToken string) ([]*drivers.DatabaseSchemaInfo, string, error) {
 	q := `
 	SELECT 
 		database_name, 
@@ -24,42 +24,47 @@ func (c *Connection) ListDatabaseSchemas(ctx context.Context) ([]*drivers.Databa
 
 	awsConfig, err := c.awsConfig(ctx, c.config.AWSRegion)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get AWS config: %w", err)
+		return nil, "", fmt.Errorf("failed to get AWS config: %w", err)
 	}
 
 	client := redshiftdata.NewFromConfig(awsConfig)
 
 	queryExecutionID, err := c.executeQuery(ctx, client, q, c.config.Database, c.config.Workgroup, c.config.ClusterIdentifier)
 	if err != nil {
-		return nil, fmt.Errorf("failed to list schemas: %w", err)
+		return nil, "", fmt.Errorf("failed to list schemas: %w", err)
 	}
 
 	result, err := client.GetStatementResult(ctx, &redshiftdata.GetStatementResultInput{
-		Id: aws.String(queryExecutionID),
+		Id:        aws.String(queryExecutionID),
+		NextToken: aws.String(pageToken),
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to get query results: %w", err)
+		return nil, "", fmt.Errorf("failed to get query results: %w", err)
 	}
 
 	var res []*drivers.DatabaseSchemaInfo
 	for _, record := range result.Records {
 		dbField, ok := record[0].(*types.FieldMemberStringValue)
 		if !ok {
-			return nil, fmt.Errorf("unexpected type for database_name field")
+			return nil, "", fmt.Errorf("unexpected type for database_name field")
 		}
 		schemaField, ok := record[1].(*types.FieldMemberStringValue)
 		if !ok {
-			return nil, fmt.Errorf("unexpected type for schema_name field")
+			return nil, "", fmt.Errorf("unexpected type for schema_name field")
 		}
 		res = append(res, &drivers.DatabaseSchemaInfo{
 			Database:       dbField.Value,
 			DatabaseSchema: schemaField.Value,
 		})
 	}
-	return res, nil
+	next := ""
+	if result.NextToken != nil {
+		next = *result.NextToken
+	}
+	return res, next, nil
 }
 
-func (c *Connection) ListTables(ctx context.Context, database, databaseSchema string) ([]*drivers.TableInfo, error) {
+func (c *Connection) ListTables(ctx context.Context, database, databaseSchema string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
 	q := fmt.Sprintf(`
 	SELECT
 		table_name,
@@ -71,39 +76,44 @@ func (c *Connection) ListTables(ctx context.Context, database, databaseSchema st
 
 	awsConfig, err := c.awsConfig(ctx, c.config.AWSRegion)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get AWS config: %w", err)
+		return nil, "", fmt.Errorf("failed to get AWS config: %w", err)
 	}
 
 	client := redshiftdata.NewFromConfig(awsConfig)
 
 	queryExecutionID, err := c.executeQuery(ctx, client, q, c.config.Database, c.config.Workgroup, c.config.ClusterIdentifier)
 	if err != nil {
-		return nil, fmt.Errorf("failed to list schemas: %w", err)
+		return nil, "", fmt.Errorf("failed to list schemas: %w", err)
 	}
 
 	result, err := client.GetStatementResult(ctx, &redshiftdata.GetStatementResultInput{
-		Id: aws.String(queryExecutionID),
+		Id:        aws.String(queryExecutionID),
+		NextToken: aws.String(pageToken),
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to get query results: %w", err)
+		return nil, "", fmt.Errorf("failed to get query results: %w", err)
 	}
 
 	var res []*drivers.TableInfo
 	for _, record := range result.Records {
 		nameField, ok := record[0].(*types.FieldMemberStringValue)
 		if !ok {
-			return nil, fmt.Errorf("unexpected type for table name field")
+			return nil, "", fmt.Errorf("unexpected type for table name field")
 		}
 		viewField, ok := record[1].(*types.FieldMemberBooleanValue)
 		if !ok {
-			return nil, fmt.Errorf("unexpected type for view field")
+			return nil, "", fmt.Errorf("unexpected type for view field")
 		}
 		res = append(res, &drivers.TableInfo{
 			Name: nameField.Value,
 			View: viewField.Value,
 		})
 	}
-	return res, nil
+	next := ""
+	if result.NextToken != nil {
+		next = *result.NextToken
+	}
+	return res, next, nil
 }
 
 func (c *Connection) GetTable(ctx context.Context, database, databaseSchema, table string) (*drivers.TableMetadata, error) {

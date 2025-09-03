@@ -2585,6 +2585,23 @@ func (m *ListDatabaseSchemasRequest) validate(all bool) error {
 
 	// no validation rules for Connector
 
+	if m.GetPageSize() != 0 {
+
+		if m.GetPageSize() > 100 {
+			err := ListDatabaseSchemasRequestValidationError{
+				field:  "PageSize",
+				reason: "value must be less than or equal to 100",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+	}
+
+	// no validation rules for PageToken
+
 	if len(errors) > 0 {
 		return ListDatabaseSchemasRequestMultiError(errors)
 	}
@@ -2686,6 +2703,8 @@ func (m *ListDatabaseSchemasResponse) validate(all bool) error {
 	}
 
 	var errors []error
+
+	// no validation rules for NextPageToken
 
 	for idx, item := range m.GetDatabaseSchemas() {
 		_, _ = idx, item
@@ -2938,6 +2957,23 @@ func (m *ListTablesRequest) validate(all bool) error {
 
 	// no validation rules for DatabaseSchema
 
+	if m.GetPageSize() != 0 {
+
+		if m.GetPageSize() > 100 {
+			err := ListTablesRequestValidationError{
+				field:  "PageSize",
+				reason: "value must be less than or equal to 100",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+	}
+
+	// no validation rules for PageToken
+
 	if len(errors) > 0 {
 		return ListTablesRequestMultiError(errors)
 	}
@@ -3039,6 +3075,8 @@ func (m *ListTablesResponse) validate(all bool) error {
 	}
 
 	var errors []error
+
+	// no validation rules for NextPageToken
 
 	for idx, item := range m.GetTables() {
 		_, _ = idx, item

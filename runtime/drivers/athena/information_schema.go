@@ -14,19 +14,23 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-func (c *Connection) ListDatabaseSchemas(ctx context.Context) ([]*drivers.DatabaseSchemaInfo, error) {
+func (c *Connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, pageToken string) ([]*drivers.DatabaseSchemaInfo, string, error) {
 	client, err := c.getClient(ctx)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	catalogs, err := c.listCatalogs(ctx, client)
 	if err != nil {
-		return nil, fmt.Errorf("failed to list catalogs: %w", err)
+		return nil, "", fmt.Errorf("failed to list catalogs: %w", err)
 	}
 	// if no catalogs query current catalog by passing empty string
 	if len(catalogs) == 0 {
-		return c.listSchemasForCatalog(ctx, client, "")
+		items, err := c.listSchemasForCatalog(ctx, client, "")
+		if err != nil {
+			return nil, "", err
+		}
+		return paginateSchemas(items, pageSize, pageToken)
 	}
 	var (
 		mu  sync.Mutex
@@ -48,12 +52,12 @@ func (c *Connection) ListDatabaseSchemas(ctx context.Context) ([]*drivers.Databa
 		})
 	}
 	if err := g.Wait(); err != nil {
-		return nil, err
+		return nil, "", err
 	}
-	return res, nil
+	return paginateSchemas(res, pageSize, pageToken)
 }
 
-func (c *Connection) ListTables(ctx context.Context, database, databaseSchema string) ([]*drivers.TableInfo, error) {
+func (c *Connection) ListTables(ctx context.Context, database, databaseSchema string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
 	q := fmt.Sprintf(`
 	SELECT
 		table_name,
@@ -64,19 +68,26 @@ func (c *Connection) ListTables(ctx context.Context, database, databaseSchema st
 
 	client, err := c.getClient(ctx)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	queryID, err := c.executeQuery(ctx, client, q, c.config.Workgroup, c.config.OutputLocation)
 	if err != nil {
-		return nil, fmt.Errorf("failed to execute table listing query: %w", err)
+		return nil, "", fmt.Errorf("failed to execute table listing query: %w", err)
 	}
 
-	results, err := client.GetQueryResults(ctx, &athena.GetQueryResultsInput{
-		QueryExecutionId: queryID,
-	})
+	input := &athena.GetQueryResultsInput{QueryExecutionId: queryID}
+	if pageSize == 0 || pageSize > 1000 {
+		pageSize = 1000
+	}
+	size := int32(pageSize)
+	input.MaxResults = &size
+	if pageToken != "" {
+		input.NextToken = &pageToken
+	}
+	results, err := client.GetQueryResults(ctx, input)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get query results: %w", err)
+		return nil, "", fmt.Errorf("failed to get query results: %w", err)
 	}
 	// first row is header of skipping it
 	tables := make([]*drivers.TableInfo, 0, len(results.ResultSet.Rows)-1)
@@ -90,7 +101,11 @@ func (c *Connection) ListTables(ctx context.Context, database, databaseSchema st
 		})
 	}
 
-	return tables, nil
+	next := ""
+	if results.NextToken != nil {
+		next = *results.NextToken
+	}
+	return tables, next, nil
 }
 
 func (c *Connection) GetTable(ctx context.Context, database, databaseSchema, table string) (*drivers.TableMetadata, error) {
@@ -208,6 +223,25 @@ func (c *Connection) listSchemasForCatalog(ctx context.Context, client *athena.C
 	}
 
 	return res, nil
+}
+
+func paginateSchemas(all []*drivers.DatabaseSchemaInfo, pageSize uint32, pageToken string) ([]*drivers.DatabaseSchemaInfo, string, error) {
+	if pageSize == 0 || pageSize > 1000 {
+		pageSize = 1000
+	}
+	offset := 0
+	if pageToken != "" {
+		_, _ = fmt.Sscanf(pageToken, "offset:%d", &offset)
+	}
+	end := offset + int(pageSize)
+	if end > len(all) {
+		end = len(all)
+	}
+	next := ""
+	if end < len(all) {
+		next = fmt.Sprintf("offset:%d", end)
+	}
+	return all[offset:end], next, nil
 }
 
 func sqlSafeName(name string) string {

@@ -18,18 +18,6 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-func (c *connection) ListDatabaseSchemas(ctx context.Context) ([]*drivers.DatabaseSchemaInfo, error) {
-	return nil, nil
-}
-
-func (c *connection) ListTables(ctx context.Context, database, schema string) ([]*drivers.TableInfo, error) {
-	return nil, nil
-}
-
-func (c *connection) GetTable(ctx context.Context, database, schema, table string) (*drivers.TableMetadata, error) {
-	return nil, nil
-}
-
 func (c *connection) All(ctx context.Context, like string) ([]*drivers.OlapTable, error) {
 	// query /tables endpoint, for each table name, query /tables/{tableName}/schema
 	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, c.schemaURL+"/tables", http.NoBody)

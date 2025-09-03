@@ -103,6 +103,15 @@ paths:
           in: query
           required: false
           type: string
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
+          in: query
+          required: false
+          type: string
       tags:
         - ConnectorService
   /v1/connectors/meta:
@@ -221,6 +230,15 @@ paths:
           required: false
           type: string
         - name: databaseSchema
+          in: query
+          required: false
+          type: string
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
           in: query
           required: false
           type: string
@@ -5109,6 +5127,8 @@ definitions:
   v1ListDatabaseSchemasResponse:
     type: object
     properties:
+      nextPageToken:
+        type: string
       databaseSchemas:
         type: array
         items:
@@ -5164,6 +5184,8 @@ definitions:
   v1ListTablesResponse:
     type: object
     properties:
+      nextPageToken:
+        type: string
       tables:
         type: array
         items:
