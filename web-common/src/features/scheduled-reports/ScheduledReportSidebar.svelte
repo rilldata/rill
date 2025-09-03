@@ -101,7 +101,6 @@
       enableSlackNotification: boolean(), // Needed to get the type for validation
       slackChannels: array().of(string()),
       slackUsers: array().of(string().email("Invalid email")),
-      columns: array().of(string()).min(1),
     }).test(
       "at-least-one-recipient",
       "At least one email recipient, slack user, or slack channel is required",
@@ -158,6 +157,7 @@
   ));
 
   $: generalErrors = $errors._errors?.[0] ?? $mutation.error?.message;
+  $: console.log($errors);
 
   async function handleSubmit(values: ReportValues) {
     const refreshCron = convertFormValuesToCronExpression(
@@ -226,11 +226,19 @@
       // showing error below
     }
   }
+
+  function handleCancel() {
+    if (props.mode === "create") {
+      return goto(`/${organization}/${project}/explore/${exploreName}`);
+    } else {
+      return goto(`/${organization}/${project}/-/reports/${reportName}`);
+    }
+  }
 </script>
 
 <form
   autocomplete="off"
-  class="h-full w-[500px] bg-surface flex-none flex flex-col border select-none rounded-[2px]"
+  class="max-h-fit w-[500px] bg-surface flex-none flex flex-col border select-none rounded-[2px]"
   id={FORM_ID}
   on:submit|preventDefault={submit}
   use:enhance
@@ -349,7 +357,7 @@
   </div>
 
   <div class="flex flex-col gap-y-3 mt-auto border-t px-5 pb-6 pt-3">
-    <Button>Cancel (TODO)</Button>
+    <Button onClick={handleCancel}>Cancel</Button>
     <Button
       disabled={$submitting}
       form={FORM_ID}
