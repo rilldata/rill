@@ -1,6 +1,8 @@
 <script lang="ts">
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import type { FieldConfig } from "@rilldata/web-common/features/canvas/components/charts/types";
+  import { isFieldConfig } from "@rilldata/web-common/features/canvas/components/charts/util";
+  import ColorPaletteSelector from "@rilldata/web-common/features/canvas/inspector/chart/field-config/ColorPaletteSelector.svelte";
   import MultiPositionalFieldsInput from "@rilldata/web-common/features/canvas/inspector/fields/MultiPositionalFieldsInput.svelte";
   import SingleFieldInput from "@rilldata/web-common/features/canvas/inspector/fields/SingleFieldInput.svelte";
   import type { ComponentInputParam } from "@rilldata/web-common/features/canvas/inspector/types";
@@ -27,6 +29,7 @@
 
   $: chartFieldInput = config.meta?.chartFieldInput;
   $: multiMetricSelector = chartFieldInput?.multiFieldSelector;
+  $: colorMapConfig = chartFieldInput?.colorMappingSelector;
 
   $: isDimension = chartFieldInput?.type === "dimension";
   $: hasMultipleMeasures = fieldConfig.fields && fieldConfig.fields.length > 1;
@@ -150,6 +153,15 @@
           updateFieldConfig(field);
         }}
       />
+      {#if isFieldConfig(fieldConfig) && colorMapConfig?.enable}
+        <div class="pt-2">
+          <ColorPaletteSelector
+            colorMapping={fieldConfig.colorMapping}
+            onChange={updateFieldProperty}
+            {colorMapConfig}
+          />
+        </div>
+      {/if}
     {/if}
     {#if multiMetricSelector}
       <MultiPositionalFieldsInput

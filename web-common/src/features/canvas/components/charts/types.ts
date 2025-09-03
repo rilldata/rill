@@ -50,8 +50,7 @@ export type ChartDataResult = {
 };
 
 export interface ChartDomainValues {
-  // key is the field name, value is the domain values
-  [key: string]: string[] | undefined;
+  [key: string]: string[] | number[] | undefined;
 }
 
 export interface TimeDimensionDefinition {
@@ -68,6 +67,8 @@ export type ChartSortDirectionOptions =
   | "-y"
   | "color"
   | "-color"
+  | "measure"
+  | "-measure"
   | "custom";
 
 export type ChartSortDirection =

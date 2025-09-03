@@ -268,6 +268,15 @@ export function getLinkStateForTimeDimensionDetail(
   };
 }
 
+export function isDomainStringArray(
+  values: string[] | number[] | undefined,
+): values is string[] {
+  return values
+    ? Array.isArray(values) &&
+        values.every((value) => typeof value === "string")
+    : false;
+}
+
 export function getColorForValues(
   colorValues: string[] | undefined,
   // if provided, use the colors for mentioned values
@@ -300,10 +309,10 @@ export function getColorMappingForChart(
   let colorMapping: ColorMapping | undefined;
   if (typeof colorField === "object") {
     const fieldKey = colorField.field;
-    colorMapping = getColorForValues(
-      domainValues[fieldKey],
-      colorField.colorMapping,
-    );
+    const colorValues = domainValues[fieldKey];
+    if (isDomainStringArray(colorValues)) {
+      colorMapping = getColorForValues(colorValues, colorField.colorMapping);
+    }
   }
 
   return colorMapping;
