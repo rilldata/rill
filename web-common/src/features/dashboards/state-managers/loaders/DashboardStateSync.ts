@@ -159,14 +159,16 @@ export class DashboardStateSync {
     // Get the updated url params. If we merged state other than the url we would need to navigate to it.
     const redirectUrl = this.getUrlForExploreState(initExploreState);
 
-    // Update session storage with the initial state
-    updateExploreSessionStore(
-      this.exploreName,
-      this.extraPrefix,
-      initExploreState,
-      exploreSpec,
-      timeControlsState,
-    );
+    if (!this.dataLoader.disableSessionStorage) {
+      // Update session storage with the initial state
+      updateExploreSessionStore(
+        this.exploreName,
+        this.extraPrefix,
+        initExploreState,
+        exploreSpec,
+        timeControlsState,
+      );
+    }
     if (!this.dataLoader.disableMostRecentDashboardState) {
       // Update "most recent explore state" with the initial state
       saveMostRecentPartialExploreState(
@@ -176,6 +178,7 @@ export class DashboardStateSync {
       );
     }
 
+    log("INIT", redirectUrl);
     // If the current url same as the new url then there is no need to do anything
     if (redirectUrl.search === pageState.url.search) {
       this.initialized = true;
@@ -255,13 +258,15 @@ export class DashboardStateSync {
     // Get the full updated state and save to session storage
     const updatedExploreState =
       get(metricsExplorerStore).entities[this.exploreName];
-    updateExploreSessionStore(
-      this.exploreName,
-      this.extraPrefix,
-      updatedExploreState,
-      exploreSpec,
-      timeControlsState,
-    );
+    if (!this.dataLoader.disableSessionStorage) {
+      updateExploreSessionStore(
+        this.exploreName,
+        this.extraPrefix,
+        updatedExploreState,
+        exploreSpec,
+        timeControlsState,
+      );
+    }
     if (!this.dataLoader.disableMostRecentDashboardState) {
       // Update "most recent explore state" with updated state from url
       saveMostRecentPartialExploreState(
@@ -271,6 +276,7 @@ export class DashboardStateSync {
       );
     }
 
+    log("URL", redirectUrl);
     this.updating = false;
     // If the url doesn't need to be changed further then we can skip the goto
     if (redirectUrl.search === pageState.url.search) {
@@ -306,14 +312,16 @@ export class DashboardStateSync {
     // Get the new url params for the updated state
     const newUrl = this.getUrlForExploreState(exploreState);
 
-    // Update the session storage with the new explore state.
-    updateExploreSessionStore(
-      this.exploreName,
-      this.extraPrefix,
-      exploreState,
-      exploreSpec,
-      timeControlsState,
-    );
+    if (!this.dataLoader.disableSessionStorage) {
+      // Update the session storage with the new explore state.
+      updateExploreSessionStore(
+        this.exploreName,
+        this.extraPrefix,
+        exploreState,
+        exploreSpec,
+        timeControlsState,
+      );
+    }
     if (!this.dataLoader.disableMostRecentDashboardState) {
       // Update "most recent explore state" with updated state.
       // Since we do not update the state per action we do it here as blanket update.
@@ -324,6 +332,7 @@ export class DashboardStateSync {
       );
     }
 
+    log("GOTO", newUrl);
     this.updating = false;
     // If the state didnt result in a new url then skip goto.
     // This avoids adding redundant urls to the history.
@@ -334,4 +343,12 @@ export class DashboardStateSync {
     // dashboard changed so we should update the url
     return goto(newUrl);
   }
+}
+
+function log(label: string, to: URL) {
+  const fromSearch = get(page).url.search;
+  const toSearch = to.search;
+  const equal = fromSearch === toSearch;
+
+  console.log(`${label}: ${fromSearch} =${equal ? "X" : "="}> ${toSearch}`);
 }

@@ -28,7 +28,7 @@ export type TransformerArgs<R extends TransformerProperties> = {
   metricsView: V1MetricsViewSpec;
   explore: V1ExploreSpec;
   timeRangeSummary: V1TimeRangeSummary;
-  executionTime: string;
+  executionTime?: string;
   annotations: Record<string, string>;
   forceOpenPivot: boolean;
 };

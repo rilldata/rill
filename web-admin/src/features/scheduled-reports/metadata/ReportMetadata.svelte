@@ -68,7 +68,7 @@
 
   let showEditReportDialog = false;
   function handleEditReport() {
-    showEditReportDialog = true;
+    void goto(`/${organization}/${project}/-/reports/${report}/edit`);
   }
 
   async function handleDeleteReport() {
