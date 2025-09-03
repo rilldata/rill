@@ -198,7 +198,10 @@
             }}
           >
             <Tooltip.Root>
-              <Tooltip.Trigger class="size-full flex justify-between ">
+              <Tooltip.Trigger
+                class="size-full flex justify-between"
+                id="{label}-tooltip-trigger"
+              >
                 {label}
               </Tooltip.Trigger>
 
