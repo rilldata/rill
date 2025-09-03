@@ -150,7 +150,12 @@ func (c *configProperties) validate() error {
 
 func (c *configProperties) resolveDSN() (string, error) {
 	if c.DSN != "" {
-		return c.DSN, nil
+		// Parse and fix DSN if it contains a private key
+		fixedDSN, err := fixDSNPrivateKey(c.DSN)
+		if err != nil {
+			return "", fmt.Errorf("failed to parse DSN: %w", err)
+		}
+		return fixedDSN, nil
 	}
 
 	if c.Account == "" || c.User == "" || c.Database == "" {
@@ -378,8 +383,15 @@ func parseRSAPrivateKey(keyStr string) (*rsa.PrivateKey, error) {
 		} else {
 			keyBytes = decoded
 		}
+	} else if decoded, err := base64.RawURLEncoding.DecodeString(keyStr); err == nil {
+		// 3. Try URL-safe Base64 without padding (Snowflake DSN format)
+		if block, _ := pem.Decode(decoded); block != nil {
+			keyBytes = block.Bytes
+		} else {
+			keyBytes = decoded
+		}
 	} else {
-		// 3. Fallback: maybe it's a raw PEM string (with BEGIN/END)
+		// 4. Fallback: maybe it's a raw PEM string (with BEGIN/END)
 		if block, _ := pem.Decode([]byte(keyStr)); block != nil {
 			keyBytes = block.Bytes
 		} else {
@@ -396,4 +408,89 @@ func parseRSAPrivateKey(keyStr string) (*rsa.PrivateKey, error) {
 	}
 
 	return nil, errors.New("failed to parse RSA private key not PKCS#8)")
+}
+
+// fixDSNPrivateKey parses a DSN and fixes the private key encoding if needed
+func fixDSNPrivateKey(dsn string) (string, error) {
+	// Check if DSN contains privateKey parameter
+	if !strings.Contains(dsn, "privateKey=") {
+		return dsn, nil
+	}
+
+	// Parse the DSN to extract and fix the private key
+	parts := strings.Split(dsn, "?")
+	if len(parts) != 2 {
+		return dsn, nil
+	}
+
+	base := parts[0]
+	params := parts[1]
+
+	// Parse query parameters
+	queryParams := strings.Split(params, "&")
+	var newParams []string
+
+	for _, param := range queryParams {
+		if strings.HasPrefix(param, "privateKey=") {
+			keyStr := strings.TrimPrefix(param, "privateKey=")
+			
+			// Try to parse the key to verify it's valid
+			privateKey, err := parseRSAPrivateKey(keyStr)
+			if err != nil {
+				// If parsing fails, try to convert it to the correct format
+				encodedKey, convErr := convertPrivateKeyToDSNFormat(keyStr)
+				if convErr != nil {
+					return "", fmt.Errorf("invalid private key in DSN: %w", err)
+				}
+				newParams = append(newParams, "privateKey="+encodedKey)
+			} else {
+				// Key is valid, convert to DSN format
+				encodedKey, err := encodePrivateKeyForDSN(privateKey)
+				if err != nil {
+					return "", fmt.Errorf("failed to encode private key for DSN: %w", err)
+				}
+				newParams = append(newParams, "privateKey="+encodedKey)
+			}
+		} else {
+			newParams = append(newParams, param)
+		}
+	}
+
+	return base + "?" + strings.Join(newParams, "&"), nil
+}
+
+// convertPrivateKeyToDSNFormat attempts to convert various private key formats to DSN-compatible format
+func convertPrivateKeyToDSNFormat(keyStr string) (string, error) {
+	var keyBytes []byte
+
+	// Try to decode from various formats
+	if decoded, err := base64.StdEncoding.DecodeString(keyStr); err == nil {
+		keyBytes = decoded
+	} else if decoded, err := base64.URLEncoding.DecodeString(keyStr); err == nil {
+		keyBytes = decoded
+	} else if block, _ := pem.Decode([]byte(keyStr)); block != nil {
+		keyBytes = block.Bytes
+	} else {
+		return "", errors.New("unable to decode private key")
+	}
+
+	// If it's PEM encoded, extract the DER bytes
+	if block, _ := pem.Decode(keyBytes); block != nil {
+		keyBytes = block.Bytes
+	}
+
+	// Encode in URL-safe base64 without padding (Snowflake DSN format)
+	return base64.RawURLEncoding.EncodeToString(keyBytes), nil
+}
+
+// encodePrivateKeyForDSN encodes an RSA private key in the format required for Snowflake DSN
+func encodePrivateKeyForDSN(key *rsa.PrivateKey) (string, error) {
+	// Marshal the key to PKCS#8 DER format
+	keyBytes, err := x509.MarshalPKCS8PrivateKey(key)
+	if err != nil {
+		return "", err
+	}
+
+	// Encode in URL-safe base64 without padding
+	return base64.RawURLEncoding.EncodeToString(keyBytes), nil
 }
