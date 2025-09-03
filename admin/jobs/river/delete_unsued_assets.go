@@ -1,4 +1,4 @@
-package worker
+package river
 
 import (
 	"context"
@@ -8,12 +8,23 @@ import (
 	"strings"
 
 	"cloud.google.com/go/storage"
+	"github.com/rilldata/rill/admin"
+	"github.com/riverqueue/river"
 	"golang.org/x/sync/errgroup"
 )
 
 const _unusedAssetsPageSize = 100
 
-func (w *Worker) deleteUnusedAssets(ctx context.Context) error {
+type DeleteUnusedAssetsArgs struct{}
+
+func (DeleteUnusedAssetsArgs) Kind() string { return "delete_unused_assets" }
+
+type DeleteUnusedAssetsWorker struct {
+	river.WorkerDefaults[DeleteUnusedAssetsArgs]
+	admin *admin.Service
+}
+
+func (w *DeleteUnusedAssetsWorker) Work(ctx context.Context, job *river.Job[DeleteUnusedAssetsArgs]) error {
 	for {
 		// 1. Fetch unused assets
 		assets, err := w.admin.DB.FindUnusedAssets(ctx, _unusedAssetsPageSize)

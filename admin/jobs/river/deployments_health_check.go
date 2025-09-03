@@ -1,4 +1,4 @@
-package worker
+package river
 
 import (
 	"context"
@@ -12,6 +12,7 @@ import (
 	"github.com/rilldata/rill/admin/database"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/observability"
+	"github.com/riverqueue/river"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
@@ -20,7 +21,17 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-func (w *Worker) deploymentsHealthCheck(ctx context.Context) error {
+type DeploymentsHealthCheckArgs struct{}
+
+func (DeploymentsHealthCheckArgs) Kind() string { return "deployments_health_check" }
+
+type DeploymentsHealthCheckWorker struct {
+	river.WorkerDefaults[DeploymentsHealthCheckArgs]
+	admin  *admin.Service
+	logger *zap.Logger
+}
+
+func (w *DeploymentsHealthCheckWorker) Work(ctx context.Context, job *river.Job[DeploymentsHealthCheckArgs]) error {
 	afterID := ""
 	limit := 100
 	seenHosts := map[string]bool{}
@@ -52,7 +63,7 @@ func (w *Worker) deploymentsHealthCheck(ctx context.Context) error {
 			}
 			seenHosts[d.RuntimeHost] = true
 			group.Go(func() error {
-				instances, ok := w.deploymentHealthCheck(cctx, d)
+				instances, ok := deploymentHealthCheck(cctx, w, d)
 				if ok {
 					mu.Lock()
 					actualInstances[d.RuntimeHost] = instances
@@ -108,7 +119,7 @@ func (w *Worker) deploymentsHealthCheck(ctx context.Context) error {
 	return nil
 }
 
-func (w *Worker) deploymentHealthCheck(ctx context.Context, d *database.Deployment) (instances []string, runtimeOK bool) {
+func deploymentHealthCheck(ctx context.Context, w *DeploymentsHealthCheckWorker, d *database.Deployment) (instances []string, runtimeOK bool) {
 	ctx, span := tracer.Start(ctx, "deploymentHealthCheck", trace.WithAttributes(attribute.String("project_id", d.ProjectID), attribute.String("deployment_id", d.ID)))
 	defer span.End()
 
@@ -227,7 +238,7 @@ func (w *Worker) deploymentHealthCheck(ctx context.Context, d *database.Deployme
 	return instances, true
 }
 
-func (w *Worker) annotationsForDeployment(ctx context.Context, d *database.Deployment) (*admin.DeploymentAnnotations, error) {
+func (w *DeploymentsHealthCheckWorker) annotationsForDeployment(ctx context.Context, d *database.Deployment) (*admin.DeploymentAnnotations, error) {
 	proj, err := w.admin.DB.FindProject(ctx, d.ProjectID)
 	if err != nil {
 		return nil, err

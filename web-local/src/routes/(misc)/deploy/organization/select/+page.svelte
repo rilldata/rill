@@ -2,7 +2,6 @@
   import { Button } from "@rilldata/web-common/components/button";
   import * as Dialog from "@rilldata/web-common/components/dialog";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
-  import { SelectSeparator } from "@rilldata/web-common/components/select";
   import CreateNewOrgForm from "@rilldata/web-common/features/organization/CreateNewOrgForm.svelte";
   import { CreateNewOrgFormId } from "@rilldata/web-common/features/organization/CreateNewOrgForm.svelte";
   import {
@@ -50,22 +49,11 @@
   ariaLabel="Select organization"
   placeholder="Select organization"
   options={orgOptions}
+  onAddNew={() => (isNewOrgDialogOpen = true)}
+  addNewLabel="+ Create organization"
   width={400}
   sameWidth
->
-  <div slot="additional-dropdown-content" let:close>
-    <SelectSeparator />
-    <button
-      on:click={() => {
-        isNewOrgDialogOpen = true;
-        close();
-      }}
-      class="w-full cursor-pointer select-none rounded-sm py-1.5 px-2 text-left hover:bg-accent"
-    >
-      + Create organization
-    </button>
-  </div>
-</Select>
+/>
 
 <Button
   wide
