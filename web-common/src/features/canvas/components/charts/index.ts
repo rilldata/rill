@@ -3,6 +3,7 @@ import Donut from "@rilldata/web-common/components/icons/Donut.svelte";
 import Funnel from "@rilldata/web-common/components/icons/Funnel.svelte";
 import Heatmap from "@rilldata/web-common/components/icons/Heatmap.svelte";
 import LineChart from "@rilldata/web-common/components/icons/LineChart.svelte";
+import MultiChart from "@rilldata/web-common/components/icons/MultiChart.svelte";
 import StackedArea from "@rilldata/web-common/components/icons/StackedArea.svelte";
 import StackedBar from "@rilldata/web-common/components/icons/StackedBar.svelte";
 import StackedBarFull from "@rilldata/web-common/components/icons/StackedBarFull.svelte";
@@ -180,7 +181,7 @@ export const CHART_CONFIG: Record<ChartType, ChartMetadataConfig> = {
   },
   combo_chart: {
     title: "Combo",
-    icon: BarChart,
+    icon: MultiChart,
     component: ComboChartComponent,
     generateSpec: generateVLComboChartSpec,
   },
