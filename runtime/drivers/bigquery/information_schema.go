@@ -18,16 +18,20 @@ func (c *Connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, p
 	}
 	defer client.Close()
 
-	it := client.Datasets(ctx)
-	pi := it.PageInfo()
 	if pageSize == 0 {
 		pageSize = drivers.DefaultPageSize
 	}
+	it := client.Datasets(ctx)
+	pi := it.PageInfo()
 	pi.MaxSize = int(pageSize)
 	pi.Token = pageToken
 
 	var res []*drivers.DatabaseSchemaInfo
+	count := 0
 	for {
+		if count >= int(pageSize) {
+			break
+		}
 		ds, err := it.Next()
 		if err != nil {
 			if errors.Is(err, iterator.Done) {
@@ -39,19 +43,34 @@ func (c *Connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, p
 			Database:       ds.ProjectID,
 			DatabaseSchema: ds.DatasetID,
 		})
+		count++
 	}
 
 	return res, pi.Token, nil
 }
 
 func (c *Connection) ListTables(ctx context.Context, database, databaseSchema string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
+	if pageSize == 0 {
+		pageSize = drivers.DefaultPageSize
+	}
+	offset := 0
+	if pageToken != "" {
+		var err error
+		offset, err = strconv.Atoi(pageToken)
+		if err != nil {
+			return nil, "", fmt.Errorf("invalid page token: %w", err)
+		}
+	}
+
 	q := fmt.Sprintf(`
 	SELECT
 		table_name,
 		table_type
 	FROM `+"`%s.%s.INFORMATION_SCHEMA.TABLES`"+`
 	ORDER BY table_name
-	`, database, databaseSchema,
+	LIMIT %d
+	OFFSET %d
+	`, database, databaseSchema, int(pageSize)+1, offset,
 	)
 
 	client, err := c.createClient(ctx, database)
@@ -66,40 +85,13 @@ func (c *Connection) ListTables(ctx context.Context, database, databaseSchema st
 		return nil, "", fmt.Errorf("failed to query INFORMATION_SCHEMA.TABLES: %w", err)
 	}
 
-	if pageSize == 0 {
-		pageSize = drivers.DefaultPageSize
-	}
-	offset := 0
-	if pageToken != "" {
-		var err error
-		offset, err = strconv.Atoi(pageToken)
-		if err != nil {
-			return nil, "", fmt.Errorf("invalid page token: %w", err)
-		}
-	}
-
 	var res []*drivers.TableInfo
 	var row struct {
 		TableName string `bigquery:"table_name"`
 		TableType string `bigquery:"table_type"`
 	}
 
-	count := 0
-	for count < int(pageSize) {
-		if offset > 0 {
-			// Skip offset rows
-			var skip struct{}
-			for offset > 0 {
-				err := it.Next(&skip)
-				if errors.Is(err, iterator.Done) {
-					return res, "", nil
-				}
-				if err != nil {
-					return nil, "", fmt.Errorf("failed to iterate over tables: %w", err)
-				}
-				offset--
-			}
-		}
+	for {
 		err := it.Next(&row)
 		if errors.Is(err, iterator.Done) {
 			break
@@ -111,12 +103,12 @@ func (c *Connection) ListTables(ctx context.Context, database, databaseSchema st
 			Name: row.TableName,
 			View: row.TableType == "VIEW",
 		})
-		count++
 	}
 
 	next := ""
-	if count >= int(pageSize) {
-		next = fmt.Sprintf("%d", offset+count)
+	if len(res) > int(pageSize) {
+		res = res[:pageSize]
+		next = fmt.Sprintf("%d", offset+int(pageSize))
 	}
 	return res, next, nil
 }
