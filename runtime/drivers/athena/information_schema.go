@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -77,8 +78,8 @@ func (c *Connection) ListTables(ctx context.Context, database, databaseSchema st
 	}
 
 	input := &athena.GetQueryResultsInput{QueryExecutionId: queryID}
-	if pageSize == 0 || pageSize > 1000 {
-		pageSize = 1000
+	if pageSize == 0 {
+		pageSize = drivers.DefaultPageSize
 	}
 	size := int32(pageSize)
 	input.MaxResults = &size
@@ -226,12 +227,16 @@ func (c *Connection) listSchemasForCatalog(ctx context.Context, client *athena.C
 }
 
 func paginateSchemas(all []*drivers.DatabaseSchemaInfo, pageSize uint32, pageToken string) ([]*drivers.DatabaseSchemaInfo, string, error) {
-	if pageSize == 0 || pageSize > 1000 {
-		pageSize = 1000
+	if pageSize == 0 {
+		pageSize = drivers.DefaultPageSize
 	}
 	offset := 0
 	if pageToken != "" {
-		_, _ = fmt.Sscanf(pageToken, "offset:%d", &offset)
+		var err error
+		offset, err = strconv.Atoi(pageToken)
+		if err != nil {
+			return nil, "", fmt.Errorf("invalid page token: %w", err)
+		}
 	}
 	end := offset + int(pageSize)
 	if end > len(all) {
@@ -239,7 +244,7 @@ func paginateSchemas(all []*drivers.DatabaseSchemaInfo, pageSize uint32, pageTok
 	}
 	next := ""
 	if end < len(all) {
-		next = fmt.Sprintf("offset:%d", end)
+		next = fmt.Sprintf("%d", end)
 	}
 	return all[offset:end], next, nil
 }

@@ -5127,13 +5127,13 @@ definitions:
   v1ListDatabaseSchemasResponse:
     type: object
     properties:
-      nextPageToken:
-        type: string
       databaseSchemas:
         type: array
         items:
           type: object
           $ref: '#/definitions/v1DatabaseSchemaInfo'
+      nextPageToken:
+        type: string
   v1ListExamplesResponse:
     type: object
     properties:
@@ -5184,13 +5184,13 @@ definitions:
   v1ListTablesResponse:
     type: object
     properties:
-      nextPageToken:
-        type: string
       tables:
         type: array
         items:
           type: object
           $ref: '#/definitions/v1TableInfo'
+      nextPageToken:
+        type: string
   v1Log:
     type: object
     properties:

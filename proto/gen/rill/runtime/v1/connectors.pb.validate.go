@@ -2704,8 +2704,6 @@ func (m *ListDatabaseSchemasResponse) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for NextPageToken
-
 	for idx, item := range m.GetDatabaseSchemas() {
 		_, _ = idx, item
 
@@ -2739,6 +2737,8 @@ func (m *ListDatabaseSchemasResponse) validate(all bool) error {
 		}
 
 	}
+
+	// no validation rules for NextPageToken
 
 	if len(errors) > 0 {
 		return ListDatabaseSchemasResponseMultiError(errors)
@@ -3076,8 +3076,6 @@ func (m *ListTablesResponse) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for NextPageToken
-
 	for idx, item := range m.GetTables() {
 		_, _ = idx, item
 
@@ -3111,6 +3109,8 @@ func (m *ListTablesResponse) validate(all bool) error {
 		}
 
 	}
+
+	// no validation rules for NextPageToken
 
 	if len(errors) > 0 {
 		return ListTablesResponseMultiError(errors)

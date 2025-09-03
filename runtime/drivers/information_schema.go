@@ -13,6 +13,11 @@ type InformationSchema interface {
 	GetTable(ctx context.Context, database, databaseSchema, table string) (*TableMetadata, error)
 }
 
+const (
+	// DefaultPageSize is the default page size used when pageSize is not defined
+	DefaultPageSize = 50
+)
+
 // SchemaInfo represents a schema in an information schema.
 type DatabaseSchemaInfo struct {
 	Database       string

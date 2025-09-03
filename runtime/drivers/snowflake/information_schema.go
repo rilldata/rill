@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/rilldata/rill/runtime/drivers"
@@ -44,12 +45,16 @@ func (c *connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, p
 			DatabaseSchema: schemaName,
 		})
 	}
-	if pageSize == 0 || pageSize > 1000 {
-		pageSize = 1000
+	if pageSize == 0 {
+		pageSize = drivers.DefaultPageSize
 	}
 	offset := 0
 	if pageToken != "" {
-		_, _ = fmt.Sscanf(pageToken, "offset:%d", &offset)
+		var err error
+		offset, err = strconv.Atoi(pageToken)
+		if err != nil {
+			return nil, "", fmt.Errorf("invalid page token: %w", err)
+		}
 	}
 	end := offset + int(pageSize)
 	if end > len(results) {
@@ -57,7 +62,7 @@ func (c *connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, p
 	}
 	next := ""
 	if end < len(results) {
-		next = fmt.Sprintf("offset:%d", end)
+		next = fmt.Sprintf("%d", end)
 	}
 	return results[offset:end], next, rows.Err()
 }
@@ -79,12 +84,16 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 	}
 	defer db.Close()
 
-	if pageSize == 0 || pageSize > 1000 {
-		pageSize = 1000
+	if pageSize == 0 {
+		pageSize = drivers.DefaultPageSize
 	}
 	offset := 0
 	if pageToken != "" {
-		_, _ = fmt.Sscanf(pageToken, "offset:%d", &offset)
+		var err error
+		offset, err = strconv.Atoi(pageToken)
+		if err != nil {
+			return nil, "", fmt.Errorf("invalid page token: %w", err)
+		}
 	}
 
 	rows, err := db.QueryxContext(ctx, q, databaseSchema, int(pageSize)+1, offset)
@@ -112,7 +121,7 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 	next := ""
 	if len(res) > int(pageSize) {
 		res = res[:pageSize]
-		next = fmt.Sprintf("offset:%d", offset+int(pageSize))
+		next = fmt.Sprintf("%d", offset+int(pageSize))
 	}
 	return res, next, nil
 }

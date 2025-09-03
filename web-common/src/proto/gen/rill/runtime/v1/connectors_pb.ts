@@ -1170,14 +1170,14 @@ export class ListDatabaseSchemasRequest extends Message<ListDatabaseSchemasReque
  */
 export class ListDatabaseSchemasResponse extends Message<ListDatabaseSchemasResponse> {
   /**
-   * @generated from field: string next_page_token = 1;
-   */
-  nextPageToken = "";
-
-  /**
-   * @generated from field: repeated rill.runtime.v1.DatabaseSchemaInfo database_schemas = 2;
+   * @generated from field: repeated rill.runtime.v1.DatabaseSchemaInfo database_schemas = 1;
    */
   databaseSchemas: DatabaseSchemaInfo[] = [];
+
+  /**
+   * @generated from field: string next_page_token = 2;
+   */
+  nextPageToken = "";
 
   constructor(data?: PartialMessage<ListDatabaseSchemasResponse>) {
     super();
@@ -1187,8 +1187,8 @@ export class ListDatabaseSchemasResponse extends Message<ListDatabaseSchemasResp
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.ListDatabaseSchemasResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "next_page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "database_schemas", kind: "message", T: DatabaseSchemaInfo, repeated: true },
+    { no: 1, name: "database_schemas", kind: "message", T: DatabaseSchemaInfo, repeated: true },
+    { no: 2, name: "next_page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListDatabaseSchemasResponse {
@@ -1323,14 +1323,14 @@ export class ListTablesRequest extends Message<ListTablesRequest> {
  */
 export class ListTablesResponse extends Message<ListTablesResponse> {
   /**
-   * @generated from field: string next_page_token = 1;
-   */
-  nextPageToken = "";
-
-  /**
-   * @generated from field: repeated rill.runtime.v1.TableInfo tables = 2;
+   * @generated from field: repeated rill.runtime.v1.TableInfo tables = 1;
    */
   tables: TableInfo[] = [];
+
+  /**
+   * @generated from field: string next_page_token = 2;
+   */
+  nextPageToken = "";
 
   constructor(data?: PartialMessage<ListTablesResponse>) {
     super();
@@ -1340,8 +1340,8 @@ export class ListTablesResponse extends Message<ListTablesResponse> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.ListTablesResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "next_page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "tables", kind: "message", T: TableInfo, repeated: true },
+    { no: 1, name: "tables", kind: "message", T: TableInfo, repeated: true },
+    { no: 2, name: "next_page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListTablesResponse {

@@ -1170,8 +1170,8 @@ export interface V1ListConversationsResponse {
 }
 
 export interface V1ListDatabaseSchemasResponse {
-  nextPageToken?: string;
   databaseSchemas?: V1DatabaseSchemaInfo[];
+  nextPageToken?: string;
 }
 
 export interface V1ListExamplesResponse {
@@ -1197,8 +1197,8 @@ export interface V1ListResourcesResponse {
 }
 
 export interface V1ListTablesResponse {
-  nextPageToken?: string;
   tables?: V1TableInfo[];
+  nextPageToken?: string;
 }
 
 export interface V1Log {

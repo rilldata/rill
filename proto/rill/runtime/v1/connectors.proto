@@ -230,8 +230,8 @@ message ListDatabaseSchemasRequest {
 }
 
 message ListDatabaseSchemasResponse {
-  string next_page_token = 1;
-  repeated DatabaseSchemaInfo database_schemas = 2;
+  repeated DatabaseSchemaInfo database_schemas = 1;
+  string next_page_token = 2;
 }
 
 message DatabaseSchemaInfo {
@@ -249,8 +249,8 @@ message ListTablesRequest {
 }
 
 message ListTablesResponse {
-  string next_page_token = 1;
-  repeated TableInfo tables = 2;
+  repeated TableInfo tables = 1;
+  string next_page_token = 2;
 }
 
 message TableInfo { 

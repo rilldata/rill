@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 
 	"cloud.google.com/go/bigquery"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -19,8 +20,8 @@ func (c *Connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, p
 
 	it := client.Datasets(ctx)
 	pi := it.PageInfo()
-	if pageSize == 0 || pageSize > 1000 {
-		pageSize = 1000
+	if pageSize == 0 {
+		pageSize = drivers.DefaultPageSize
 	}
 	pi.MaxSize = int(pageSize)
 	pi.Token = pageToken
@@ -65,12 +66,16 @@ func (c *Connection) ListTables(ctx context.Context, database, databaseSchema st
 		return nil, "", fmt.Errorf("failed to query INFORMATION_SCHEMA.TABLES: %w", err)
 	}
 
-	if pageSize == 0 || pageSize > 1000 {
-		pageSize = 1000
+	if pageSize == 0 {
+		pageSize = drivers.DefaultPageSize
 	}
 	offset := 0
 	if pageToken != "" {
-		_, _ = fmt.Sscanf(pageToken, "offset:%d", &offset)
+		var err error
+		offset, err = strconv.Atoi(pageToken)
+		if err != nil {
+			return nil, "", fmt.Errorf("invalid page token: %w", err)
+		}
 	}
 
 	var res []*drivers.TableInfo
@@ -111,7 +116,7 @@ func (c *Connection) ListTables(ctx context.Context, database, databaseSchema st
 
 	next := ""
 	if count >= int(pageSize) {
-		next = fmt.Sprintf("offset:%d", offset+count)
+		next = fmt.Sprintf("%d", offset+count)
 	}
 	return res, next, nil
 }

@@ -3,17 +3,22 @@ package postgres
 import (
 	"context"
 	"fmt"
+	"strconv"
 
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
 func (c *connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, pageToken string) ([]*drivers.DatabaseSchemaInfo, string, error) {
-	if pageSize == 0 || pageSize > 1000 {
-		pageSize = 1000
+	if pageSize == 0 {
+		pageSize = drivers.DefaultPageSize
 	}
 	offset := 0
 	if pageToken != "" {
-		_, _ = fmt.Sscanf(pageToken, "offset:%d", &offset)
+		var err error
+		offset, err = strconv.Atoi(pageToken)
+		if err != nil {
+			return nil, "", fmt.Errorf("invalid page token: %w", err)
+		}
 	}
 	q := `
 	SELECT
@@ -50,18 +55,22 @@ func (c *connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, p
 	next := ""
 	if len(schemas) > int(pageSize) {
 		schemas = schemas[:pageSize]
-		next = fmt.Sprintf("offset:%d", offset+int(pageSize))
+		next = fmt.Sprintf("%d", offset+int(pageSize))
 	}
 	return schemas, next, rows.Err()
 }
 
 func (c *connection) ListTables(ctx context.Context, database, databaseSchema string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
-	if pageSize == 0 || pageSize > 1000 {
-		pageSize = 1000
+	if pageSize == 0 {
+		pageSize = drivers.DefaultPageSize
 	}
 	offset := 0
 	if pageToken != "" {
-		_, _ = fmt.Sscanf(pageToken, "offset:%d", &offset)
+		var err error
+		offset, err = strconv.Atoi(pageToken)
+		if err != nil {
+			return nil, "", fmt.Errorf("invalid page token: %w", err)
+		}
 	}
 	q := `
 	SELECT
@@ -99,7 +108,7 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 	next := ""
 	if len(result) > int(pageSize) {
 		result = result[:pageSize]
-		next = fmt.Sprintf("offset:%d", offset+int(pageSize))
+		next = fmt.Sprintf("%d", offset+int(pageSize))
 	}
 	return result, next, rows.Err()
 }
