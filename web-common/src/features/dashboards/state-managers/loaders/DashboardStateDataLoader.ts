@@ -61,6 +61,7 @@ export class DashboardStateDataLoader {
     private readonly bookmarkOrTokenExploreState:
       | CompoundQueryResult<Partial<ExploreState> | null>
       | undefined,
+    public readonly disableSessionStorage: boolean,
     public readonly disableMostRecentDashboardState: boolean,
   ) {
     this.validSpecQuery = useExploreValidSpec(instanceId, exploreName);
@@ -298,7 +299,7 @@ export class DashboardStateDataLoader {
   }) {
     urlSearchParams = cleanEmbedUrlParams(urlSearchParams);
 
-    const skipSessionStorage = backButtonUsed;
+    const skipSessionStorage = this.disableSessionStorage || backButtonUsed;
     const exploreStateFromSessionStorage = skipSessionStorage
       ? null
       : getPartialExploreStateFromSessionStorage(

@@ -23,7 +23,11 @@ export type MapQueryResponse = {
   isFetching: boolean;
   isLoading: boolean;
   error: Error | null;
-  data?: { exploreState: ExploreState; exploreName: string };
+  data?: {
+    exploreState: ExploreState;
+    exploreName: string;
+    metricsViewName: string;
+  };
 };
 
 /**
@@ -41,11 +45,11 @@ export function mapQueryToDashboard({
   exploreName: string;
   queryName: string | undefined;
   queryArgsJson: string | undefined;
-  executionTime: string | undefined;
   annotations: Record<string, string>;
+  executionTime?: string;
   forceOpenPivot?: boolean;
 }): Readable<MapQueryResponse> {
-  if (!queryName || !queryArgsJson || !executionTime)
+  if (!queryName || !queryArgsJson)
     return readable({
       isFetching: false,
       isLoading: false,
@@ -55,13 +59,6 @@ export function mapQueryToDashboard({
   const queryRequestProperties: QueryRequests = convertRequestKeysToCamelCase(
     JSON.parse(queryArgsJson),
   );
-
-  if (!executionTime)
-    return readable({
-      isFetching: false,
-      isLoading: false,
-      error: new Error("Required parameters are missing."),
-    });
 
   let metricsViewName: string = "";
 
@@ -199,6 +196,7 @@ export function mapQueryToDashboard({
             data: {
               exploreState: newExploreState,
               exploreName,
+              metricsViewName,
             },
           });
         })

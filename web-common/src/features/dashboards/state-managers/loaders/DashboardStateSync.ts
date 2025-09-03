@@ -159,14 +159,16 @@ export class DashboardStateSync {
     // Get the updated url params. If we merged state other than the url we would need to navigate to it.
     const redirectUrl = this.getUrlForExploreState(initExploreState);
 
-    // Update session storage with the initial state
-    updateExploreSessionStore(
-      this.exploreName,
-      this.extraPrefix,
-      initExploreState,
-      exploreSpec,
-      timeControlsState,
-    );
+    if (!this.dataLoader.disableSessionStorage) {
+      // Update session storage with the initial state
+      updateExploreSessionStore(
+        this.exploreName,
+        this.extraPrefix,
+        initExploreState,
+        exploreSpec,
+        timeControlsState,
+      );
+    }
     if (!this.dataLoader.disableMostRecentDashboardState) {
       // Update "most recent explore state" with the initial state
       saveMostRecentPartialExploreState(
@@ -255,13 +257,15 @@ export class DashboardStateSync {
     // Get the full updated state and save to session storage
     const updatedExploreState =
       get(metricsExplorerStore).entities[this.exploreName];
-    updateExploreSessionStore(
-      this.exploreName,
-      this.extraPrefix,
-      updatedExploreState,
-      exploreSpec,
-      timeControlsState,
-    );
+    if (!this.dataLoader.disableSessionStorage) {
+      updateExploreSessionStore(
+        this.exploreName,
+        this.extraPrefix,
+        updatedExploreState,
+        exploreSpec,
+        timeControlsState,
+      );
+    }
     if (!this.dataLoader.disableMostRecentDashboardState) {
       // Update "most recent explore state" with updated state from url
       saveMostRecentPartialExploreState(
@@ -306,14 +310,16 @@ export class DashboardStateSync {
     // Get the new url params for the updated state
     const newUrl = this.getUrlForExploreState(exploreState);
 
-    // Update the session storage with the new explore state.
-    updateExploreSessionStore(
-      this.exploreName,
-      this.extraPrefix,
-      exploreState,
-      exploreSpec,
-      timeControlsState,
-    );
+    if (!this.dataLoader.disableSessionStorage) {
+      // Update the session storage with the new explore state.
+      updateExploreSessionStore(
+        this.exploreName,
+        this.extraPrefix,
+        exploreState,
+        exploreSpec,
+        timeControlsState,
+      );
+    }
     if (!this.dataLoader.disableMostRecentDashboardState) {
       // Update "most recent explore state" with updated state.
       // Since we do not update the state per action we do it here as blanket update.
