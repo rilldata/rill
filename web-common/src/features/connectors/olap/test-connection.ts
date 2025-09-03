@@ -3,7 +3,6 @@ import {
   connectorServiceOLAPListTables,
   getConnectorServiceOLAPListTablesQueryKey,
   runtimeServiceGetResource,
-  runtimeServiceListResources,
 } from "../../../runtime-client";
 import { ResourceKind } from "../../entity-management/resource-selectors";
 import { humanReadableErrorMessage } from "../../sources/errors/errors";
@@ -52,23 +51,9 @@ export async function pollConnectorResource(
   instanceId: string,
   connectorName: string,
 ): Promise<TestConnectorResult> {
-  const maxAttempts = 15; // Increased from 10 to 15 for more time
+  const maxAttempts = 15;
   const pollInterval = 2000;
   const maxWaitTime = maxAttempts * pollInterval;
-
-  // Wait for file reconciliation before checking resource
-  console.log("DEBUG: Waiting 3 seconds for resource creation...");
-  await new Promise((resolve) => setTimeout(resolve, 3000)); // Reduced since file is already reconciled
-
-  // Debug: List all connector resources to see what exists
-  try {
-    const allResources = await runtimeServiceListResources(instanceId, {
-      kind: ResourceKind.Connector,
-    });
-    console.log("All connector resources:", allResources.resources);
-  } catch (e) {
-    console.log("Failed to list resources:", e);
-  }
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
@@ -81,10 +66,12 @@ export async function pollConnectorResource(
         "name.name": connectorName,
       });
 
-      console.log(`Found resource:`, resource);
-
       // If we get here, resource exists - check its status
       if (resource.resource?.meta?.reconcileError) {
+        console.log(
+          `Detected reconcile error, returning error response:`,
+          resource.resource.meta.reconcileError,
+        );
         return {
           success: false,
           error: "Connector configuration failed to reconcile",
@@ -92,6 +79,7 @@ export async function pollConnectorResource(
         };
       }
 
+      // Check if the resource is idle
       if (
         resource.resource?.meta?.reconcileStatus === "RECONCILE_STATUS_IDLE"
       ) {

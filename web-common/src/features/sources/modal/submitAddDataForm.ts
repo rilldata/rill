@@ -173,7 +173,7 @@ export async function submitAddConnectorForm(
     throw new Error(errorMessage);
   }
 
-  // Test the connection to the OLAP database (only for OLAP_ENGINES connectors)
+  // Test the connection to the OLAP_ENGINES connectors
   // If the connection test fails, rollback the changes
   if (OLAP_ENGINES.includes(connector.name as string)) {
     const result = await testOLAPConnector(
@@ -192,28 +192,8 @@ export async function submitAddConnectorForm(
       };
     }
   } else {
-    // Non-OLAP connectors: Verify file creation, then poll resource status
-
-    // Step 1: Verify the connector file was created successfully
-    try {
-      await runtimeServiceGetFile(instanceId, { path: newConnectorFilePath });
-      console.log(`Connector file verified: ${newConnectorFilePath}`);
-    } catch (error) {
-      await rollbackConnectorChanges(
-        instanceId,
-        newConnectorFilePath,
-        originalEnvBlob,
-      );
-      throw {
-        message: "Failed to create connector file",
-        details:
-          error?.response?.data?.message ||
-          error?.message ||
-          "File creation failed",
-      };
-    }
-
-    // Step 2: Poll for the connector resource status
+    // Poll for the non-OLAP connectors resource status
+    // If the resource status is not reconciled, rollback the changes
     const result = await pollConnectorResource(
       instanceId,
       connector.name as string,
