@@ -23,6 +23,8 @@ import {
   createQueryServiceMetricsViewTimeRange,
   V1ExploreComparisonMode,
   V1TimeGrain,
+  type V1MetricsView,
+  type V1ResolveCanvasResponse,
 } from "@rilldata/web-common/runtime-client";
 import {
   runtime,
@@ -42,7 +44,6 @@ import {
 } from "../../dashboards/time-controls/new-time-controls";
 import { type CanvasResponse } from "../selector";
 import type { SearchParamsStore } from "./canvas-entity";
-import { keepPreviousData } from "@tanstack/svelte-query";
 
 export class TimeControls {
   /**
@@ -63,10 +64,90 @@ export class TimeControls {
   interval: Writable<Interval> = writable(
     Interval.fromDateTimes(DateTime.fromJSDate(new Date(0)), DateTime.now()),
   );
-  hasTimeSeries: Readable<boolean>;
+  hasTimeSeries = writable(false);
   timeRangeStateStore: Writable<TimeRangeState | undefined> =
     writable(undefined);
+  timeRangeOptions = writable<string[]>([]);
   comparisonRangeStateStore: Readable<ComparisonTimeRangeState | undefined>;
+  defaultTimeRange: Writable<string | undefined> = writable(undefined);
+
+  checkIfHasTimeSeries(response: CanvasResponse) {
+    const currentValue = get(this.hasTimeSeries);
+    let metricsViews = response.metricsViews || {};
+
+    const metricsViewName = getComponentMetricsViewFromSpec(
+      this.componentName,
+      response,
+    );
+    if (metricsViewName && metricsViews[metricsViewName]) {
+      metricsViews = {
+        [metricsViewName]: metricsViews[metricsViewName],
+      };
+    }
+    const newValue = Object.keys(metricsViews).some((metricView) => {
+      const metricsViewSpec = metricsViews[metricView]?.state?.validSpec;
+      return Boolean(metricsViewSpec?.timeDimension);
+    });
+
+    if (currentValue !== newValue) {
+      this.hasTimeSeries.set(newValue);
+    }
+  }
+
+  checkAndSetMinTimeGrain(response: CanvasResponse) {
+    const currentValue = get(this.minTimeGrain);
+    const minTimeGrain = deriveMinTimeGrain(this.componentName, response);
+
+    if (currentValue === minTimeGrain) return;
+
+    this.minTimeGrain.set(minTimeGrain);
+  }
+
+  checkAndSetFirstDayOfWeek(response: CanvasResponse) {
+    // TODO: figure out a better way of handling this property
+    // when it's not consistent across all metrics views - bgh
+    const firstMetricsViewName = Object.keys(response.metricsViews)?.[0];
+    const firstDayOfWeekOfFirstMetricsView =
+      response.metricsViews[firstMetricsViewName]?.state?.validSpec
+        ?.firstDayOfWeek;
+
+    if (!firstMetricsViewName) return;
+
+    Settings.defaultWeekSettings = {
+      firstDay: normalizeWeekday(firstDayOfWeekOfFirstMetricsView),
+      weekend: [6, 7],
+      minimalDays: 4,
+    };
+  }
+
+  checkAndSetDefaultTimeRange(response: CanvasResponse) {
+    const currentValue = get(this.defaultTimeRange);
+    const defaultTimeRange = response.canvas?.defaultPreset?.timeRange;
+
+    if (currentValue === defaultTimeRange) return;
+
+    this.defaultTimeRange.set(defaultTimeRange);
+  }
+
+  checkAndSetTimeRangeOptions(response: CanvasResponse) {
+    // const currentValue = get(this.timeRangeOptions);
+    const timeRangeOptions = response.canvas?.timeRanges ?? [];
+
+    const ranges = timeRangeOptions.map(({ range }) => range).filter(Boolean);
+
+    this.timeRangeOptions.set(ranges as string[]);
+  }
+
+  primaryMetricsView: Writable<string | undefined> = writable(undefined);
+
+  checkAndSetPrimaryMetricsView(response: CanvasResponse) {
+    const currentValue = get(this.primaryMetricsView);
+    const firstMetricsViewName = Object.keys(response.metricsViews)?.[0];
+
+    if (currentValue === firstMetricsViewName) return;
+
+    this.primaryMetricsView.set(firstMetricsViewName);
+  }
 
   constructor(
     private specStore: CanvasSpecResponseStore,
@@ -80,28 +161,54 @@ export class TimeControls {
     this.selectedTimezone = writable("UTC");
     this.componentName = componentName;
 
-    this.hasTimeSeries = derived(specStore, (spec) => {
-      let metricsViews = spec?.data?.metricsViews || {};
+    this.specStore.subscribe((spec) => {
+      const response = spec?.data;
+      if (!response) return;
 
-      const metricsViewName = getComponentMetricsViewFromSpec(
-        componentName,
-        spec?.data,
-      );
-      if (metricsViewName && metricsViews[metricsViewName]) {
-        metricsViews = {
-          [metricsViewName]: metricsViews[metricsViewName],
-        };
-      }
-      return Object.keys(metricsViews).some((metricView) => {
-        const metricsViewSpec = metricsViews[metricView]?.state?.validSpec;
-        return Boolean(metricsViewSpec?.timeDimension);
-      });
+      this.checkIfHasTimeSeries(response);
+      this.checkAndSetMinTimeGrain(response);
+      this.checkAndSetFirstDayOfWeek(response);
+      this.checkAndSetPrimaryMetricsView(response);
+      this.checkAndSetDefaultTimeRange(response);
+      this.checkAndSetTimeRangeOptions(response);
     });
 
+    // this.hasTimeSeries = derived(specStore, (spec) => {
+    //   let metricsViews = response.metricsViews || {};
+
+    //   const metricsViewName = getComponentMetricsViewFromSpec(
+    //     componentName,
+    //     spec?.data,
+    //   );
+    //   if (metricsViewName && metricsViews[metricsViewName]) {
+    //     metricsViews = {
+    //       [metricsViewName]: metricsViews[metricsViewName],
+    //     };
+    //   }
+    //   return Object.keys(metricsViews).some((metricView) => {
+    //     const metricsViewSpec = metricsViews[metricView]?.state?.validSpec;
+    //     return Boolean(metricsViewSpec?.timeDimension);
+    //   });
+    // });
+
     const listener = derived(
-      [specStore, this.allTimeRange, this.searchParamsStore, this.minTimeGrain],
-      async ([spec, allTimeRange, searchParams, minTimeGrain]) => {
-        if (!spec?.data || !allTimeRange) {
+      [
+        this.allTimeRange,
+        this.searchParamsStore,
+        this.minTimeGrain,
+        this.primaryMetricsView,
+        this.defaultTimeRange,
+        this.timeRangeOptions,
+      ],
+      async ([
+        allTimeRange,
+        searchParams,
+        minTimeGrain,
+        primaryMetricsView,
+        defaultTimeRange,
+        timeRangeOptions,
+      ]) => {
+        if (!allTimeRange || !primaryMetricsView) {
           return undefined;
         }
 
@@ -116,28 +223,25 @@ export class TimeControls {
         // Component does not have local time range
         if (this.componentName && !timeRange) return;
 
-        // TODO: figure out a better way of handling this property
-        // when it's not consistent across all metrics views - bgh
-        const firstMetricsViewName = Object.keys(spec.data.metricsViews)?.[0];
-        const firstDayOfWeekOfFirstMetricsView =
-          spec.data.metricsViews[firstMetricsViewName]?.state?.validSpec
-            ?.firstDayOfWeek;
+        // // TODO: figure out a better way of handling this property
+        // // when it's not consistent across all metrics views - bgh
+        // const firstMetricsViewName = Object.keys(spec.data.metricsViews)?.[0];
+        // const firstDayOfWeekOfFirstMetricsView =
+        //   spec.data.metricsViews[firstMetricsViewName]?.state?.validSpec
+        //     ?.firstDayOfWeek;
 
-        if (!firstMetricsViewName) return;
+        // if (!firstMetricsViewName) return;
 
-        Settings.defaultWeekSettings = {
-          firstDay: normalizeWeekday(firstDayOfWeekOfFirstMetricsView),
-          weekend: [6, 7],
-          minimalDays: 4,
-        };
+        // Settings.defaultWeekSettings = {
+        //   firstDay: normalizeWeekday(firstDayOfWeekOfFirstMetricsView),
+        //   weekend: [6, 7],
+        //   minimalDays: 4,
+        // };
 
-        const { defaultPreset, timeRanges } = spec.data?.canvas || {};
+        // const { defaultPreset, timeRanges } = spec.data?.canvas || {};
 
         const finalRange: string =
-          timeRange ||
-          defaultPreset?.timeRange ||
-          (timeRanges?.[0] as string | undefined) ||
-          "PT24H";
+          timeRange || defaultTimeRange || timeRangeOptions[0] || "PT24H";
 
         let interval: Interval;
         let grain: V1TimeGrain | undefined;
@@ -150,7 +254,7 @@ export class TimeControls {
           const result = await deriveInterval(
             finalRange,
             allTimeRange,
-            firstMetricsViewName,
+            primaryMetricsView,
             timeZone,
           );
 
@@ -177,8 +281,8 @@ export class TimeControls {
 
         this.showTimeComparison.set(showTimeComparison);
 
-        const defaultTimeRange = isoDurationToFullTimeRange(
-          defaultPreset?.timeRange,
+        const derivedDefaultRange = isoDurationToFullTimeRange(
+          defaultTimeRange,
           allTimeRange.start.toJSDate(),
           allTimeRange.end.toJSDate(),
           timeZone,
@@ -192,7 +296,7 @@ export class TimeControls {
           selectedTimeRange,
           undefined, // scrub not present in canvas yet
           timeZone,
-          defaultTimeRange,
+          derivedDefaultRange,
           minTimeGrain,
         );
 
@@ -239,53 +343,63 @@ export class TimeControls {
     );
 
     if (!componentName) {
-      this.specStore.subscribe((spec) => {
-        if (!spec?.data) return;
-        const defaultPreset = spec.data?.canvas?.defaultPreset;
-        const timeRanges = spec?.data?.canvas?.timeRanges;
+      const test = derived(
+        [
+          this.specStore,
+          this.selectedTimezone,
+          this.allTimeRange,
+          this.minTimeGrain,
+        ],
+        ([spec, selectedTimezone, allTimeRange, minTimeGrain]) => {
+          if (!spec?.data) return;
+          const defaultPreset = spec.data?.canvas?.defaultPreset;
+          const timeRanges = spec?.data?.canvas?.timeRanges;
 
-        const minTimeGrain = deriveMinTimeGrain(this.componentName, spec?.data);
+          // const minTimeGrain = deriveMinTimeGrain(
+          //   this.componentName,
+          //   spec?.data,
+          // );
 
-        this.minTimeGrain.set(minTimeGrain);
+          // this.minTimeGrain.set(minTimeGrain);
 
-        const defaultRange = defaultPreset?.timeRange;
+          const defaultRange = defaultPreset?.timeRange;
 
-        const allTimeRange = get(this.allTimeRange);
-        const selectedTimezone = get(this.selectedTimezone);
+          if (!allTimeRange) return;
 
-        if (!allTimeRange) return;
+          const initialRange = isoDurationToFullTimeRange(
+            defaultPreset?.timeRange,
+            allTimeRange?.start.toJSDate(),
+            allTimeRange?.end.toJSDate(),
+            selectedTimezone,
+          );
 
-        const initialRange = isoDurationToFullTimeRange(
-          defaultPreset?.timeRange,
-          allTimeRange.start.toJSDate(),
-          allTimeRange.end.toJSDate(),
-          selectedTimezone,
-        );
+          const didSet = this.set.range(
+            initialRange.name ?? fallbackInitialRanges[minTimeGrain] ?? "PT24H",
+            true,
+          );
 
-        const didSet = this.set.range(
-          initialRange.name ?? fallbackInitialRanges[minTimeGrain] ?? "PT24H",
-          true,
-        );
+          const newComparisonRange = getComparisonTimeRange(
+            timeRanges,
+            {
+              start: allTimeRange.start.toJSDate(),
+              end: allTimeRange.end.toJSDate(),
+            },
+            { name: defaultRange } as DashboardTimeControls,
+            undefined,
+          );
 
-        const newComparisonRange = getComparisonTimeRange(
-          timeRanges,
-          {
-            start: allTimeRange.start.toJSDate(),
-            end: allTimeRange.end.toJSDate(),
-          },
-          { name: defaultRange } as DashboardTimeControls,
-          undefined,
-        );
+          if (
+            newComparisonRange?.name &&
+            didSet &&
+            defaultPreset?.comparisonMode ===
+              V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME
+          ) {
+            this.set.comparison(newComparisonRange.name, true);
+          }
+        },
+      );
 
-        if (
-          newComparisonRange?.name &&
-          didSet &&
-          defaultPreset?.comparisonMode ===
-            V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME
-        ) {
-          this.set.comparison(newComparisonRange.name, true);
-        }
-      });
+      test.subscribe(() => {});
     }
   }
 
@@ -325,19 +439,18 @@ export class TimeControls {
                 !!metricsViews[metricView]?.state?.validSpec?.timeDimension,
               staleTime: Infinity,
               gcTime: Infinity,
-              placeholderData: keepPreviousData,
-              refetchOnMount: false,
             },
           },
           queryClient,
         );
       });
 
-      return derived(timeRangeQueries, (timeRanges) => {
+      return derived(timeRangeQueries, (timeRanges, querySet) => {
         const isFetching = timeRanges.some((q) => q.isFetching);
 
         if (isFetching) {
-          return cachedInterval;
+          querySet(cachedInterval);
+          return;
         }
 
         let start: DateTime | undefined;
@@ -350,6 +463,7 @@ export class TimeControls {
             const minDateTime = DateTime.fromISO(min);
             start = start ? DateTime.min(start, minDateTime) : minDateTime;
           }
+
           if (max) {
             const maxDateTime = DateTime.fromISO(max);
             end = end ? DateTime.max(end, maxDateTime) : maxDateTime;
@@ -360,15 +474,15 @@ export class TimeControls {
           const interval = Interval.fromDateTimes(start, end);
           if (interval.isValid) {
             cachedInterval = interval;
-            // querySet(interval);
-            return interval;
+            querySet(interval);
+            return;
           } else {
-            // querySet(cachedInterval);
-            return cachedInterval;
+            querySet(cachedInterval);
+            return;
           }
         } else {
-          // querySet(cachedInterval);
-          return cachedInterval;
+          querySet(cachedInterval);
+          return;
         }
       }).subscribe(set);
     });
