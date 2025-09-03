@@ -38,6 +38,7 @@ import { getFiltersForOtherDimensions } from "../selectors";
 import type { ExploreState } from "web-common/src/features/dashboards/stores/explore-state";
 import type { DimensionTableRow } from "./dimension-table-types";
 import type { DimensionTableConfig } from "./DimensionTableConfig";
+import { formatDimensionValue } from "../leaderboard/leaderboard-utils";
 
 /** Returns an updated filter set for a given dimension on search */
 export function updateFilterOnSearch(
@@ -450,6 +451,7 @@ export function prepareDimensionTableRows(
   addDeltas: boolean,
   addPercentOfTotal: boolean,
   unfilteredTotal: number | { [key: string]: number },
+  dimensionDataType?: { code?: string },
 ): DimensionTableRow[] {
   if (!queryRows || !queryRows.length) return [];
 
@@ -475,7 +477,7 @@ export function prepareDimensionTableRows(
         ]);
 
       const rowOut: DimensionTableRow = Object.fromEntries([
-        [dimensionColumn, row[dimensionColumn] as string],
+        [dimensionColumn, formatDimensionValue(row[dimensionColumn], dimensionDataType)],
         ...rawVals,
         ...formattedVals,
       ]);
