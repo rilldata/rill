@@ -1253,9 +1253,10 @@ func (r *ModelReconciler) executeSingle(ctx context.Context, executor *wrappedMo
 
 	var finalResult *drivers.ModelResult
 	var stageDuration time.Duration
+	attempt := 0
 
 	_, err = runner.RunCtx(ctx, func(ctx context.Context) (driver.Rows, retrier.Action, error) {
-		// Stage step (if any)
+		attempt++
 		var stageResult *drivers.ModelResult
 		var err error
 
@@ -1300,7 +1301,27 @@ func (r *ModelReconciler) executeSingle(ctx context.Context, executor *wrappedMo
 			TempDir:              tempDir,
 		})
 		if err != nil {
-			return nil, retryActionFromError(err, mdl.Spec.RetryIfErrorMatches), err
+			action := retryActionFromError(err, mdl.Spec.RetryIfErrorMatches)
+
+			r.C.Logger.Info("Model execution error encountered",
+				zap.String("model", self.Meta.Name.Name),
+				zap.Int("attempt", attempt),
+				zap.String("error", err.Error()),
+				zap.Strings("retry_patterns", mdl.Spec.RetryIfErrorMatches),
+				zap.Int("retry_action", int(action)),
+				observability.ZapCtx(ctx))
+
+			if action == retrier.Retry {
+				// Calculate the actual backoff duration for this attempt
+				actualBackoff := backoff
+				if mdl.Spec.RetryExponentialBackoff {
+					for i := 1; i < attempt; i++ {
+						actualBackoff *= 2
+					}
+				}
+			}
+
+			return nil, action, err
 		}
 		finalResult.ExecDuration += stageDuration
 		return nil, retrier.Succeed, nil
@@ -1700,14 +1721,13 @@ func (r *ModelReconciler) execModelTest(ctx context.Context, test *runtimev1.Mod
 
 // retryActionFromError maps an error to a retrier.Action based on the provided error patterns.
 func retryActionFromError(err error, patterns []string) retrier.Action {
-	// If there's no error or no patterns, consider it a success.
 	if err == nil || len(patterns) == 0 {
 		return retrier.Succeed
 	}
 
 	errStr := err.Error()
 	for _, pattern := range patterns {
-		if matched, _ := regexp.MatchString(pattern, errStr); matched {
+		if matched, regexErr := regexp.MatchString(pattern, errStr); regexErr == nil && matched {
 			return retrier.Retry
 		}
 	}
