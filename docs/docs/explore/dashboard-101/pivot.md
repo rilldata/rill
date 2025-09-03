@@ -5,6 +5,14 @@ sidebar_label: "Pivot and Flat Tables"
 sidebar_position: 30
 ---
 
+
+Rill's multi-dimensional pivot provides lightning-fast, Excel-style pivot tables across multiple dimensions, time granularities, and metrics. The interface allows users to drag and drop any combination of fields for quick comparison and report generation. While the Explore view is great for data discovery, the Pivot view serves other use cases like:
+
+- Regular reporting: Monthly financial reports, campaign reporting, client reports
+- Time analysis: Dimensions by time columns for daily or weekly comparisons 
+- Data export: Scheduled exports for generating CSVs for external analysis (_coming soon_)
+
+
 <div style={{ 
   position: "relative", 
   width: "100%", 
@@ -31,13 +39,6 @@ sidebar_position: 30
 
 Prefer video? Check out our [YouTube playlist](https://www.youtube.com/watch?v=wTP46eOzoCk&list=PL_ZoDsg2yFKgi7ud_fOOD33AH8ONWQS7I&index=1) for a quick start!
 
-## Overview
-
-Rill's multi-dimensional pivot provides lightning-fast, Excel-style pivot tables across multiple dimensions, time granularities, and metrics. The interface allows users to drag and drop any combination of fields for quick comparison and report generation. While the Explore view is great for data discovery, the Pivot view serves other use cases like:
-
-- Regular reporting: Monthly financial reports, campaign reporting, client reports
-- Time analysis: Dimensions by time columns for daily or weekly comparisons 
-- Data export: Scheduled exports for generating CSVs for external analysis (_coming soon_)
 
 ## Using Rill's Pivot View
 

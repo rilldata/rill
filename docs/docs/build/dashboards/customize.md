@@ -87,7 +87,7 @@ defaults:
 
 ### Default Comparison Modes
 
-It is also possible to set up a default comparison mode for your dashboard. In Rill, we support both [time comparison](/explore/filters/#time-comparisons) and [dimension comparison.](/explore/filters/#filter-by-dimensions) Note that only one of these comparisons can be set as default. 
+It is also possible to set up a default comparison mode for your dashboard. In Rill, we support both [time comparison](/explore/filters#comparison-time-ranges) and [dimension comparison.](/explore/filters/#filter-by-dimensions) Note that only one of these comparisons can be set as default. 
 
 ```yaml
 defaults:
@@ -100,7 +100,7 @@ defaults:
 ## Row Access Policies
 ### Security
 
-Defining security policies for your data is crucial for security. For more information on this, please refer to our [Dashboard Access Policies](/manage/security.md).
+Defining security policies for your data is crucial for security. For more information on this, please refer to our [Data Access Policies](/build/metrics-view/security). Check our [examples](/build/metrics-view/security#examples) for frequently used patterns.
 
 ## Changing Themes & Colors
 
