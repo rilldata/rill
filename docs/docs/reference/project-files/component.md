@@ -1,7 +1,7 @@
 ---
 note: GENERATED. DO NOT EDIT.
 title: Component YAML
-sidebar_position: 34
+sidebar_position: 40
 ---
 
 Defines a reusable dashboard component that can be embedded in canvas dashboards
@@ -39,21 +39,3 @@ _[object]_ - Output variable that the component produces
   - **`type`** - _[string]_ - Data type of the variable (e.g., string, number, boolean) _(required)_
 
   - **`value`** - _[string, number, boolean, object, array]_ - Default value for the variable. Can be any valid JSON value type 
-
-## Common Properties
-
-### `name`
-
-_[string]_ - Name is usually inferred from the filename, but can be specified manually. 
-
-### `refs`
-
-_[array of string]_ - List of resource references 
-
-### `dev`
-
-_[object]_ - Overrides any properties in development environment. 
-
-### `prod`
-
-_[object]_ - Overrides any properties in production environment. 

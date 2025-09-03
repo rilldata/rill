@@ -24,6 +24,8 @@
     { label: "Y-axis descending", value: "-y" },
     { label: "Color ascending", value: "color" },
     { label: "Color descending", value: "-color" },
+    { label: "Measure ascending", value: "measure" },
+    { label: "Measure descending", value: "-measure" },
     { label: "Custom", value: "custom" },
   ];
 

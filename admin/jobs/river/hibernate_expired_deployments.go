@@ -1,14 +1,26 @@
-package worker
+package river
 
 import (
 	"context"
 
+	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/runtime/pkg/observability"
+	"github.com/riverqueue/river"
 	"go.uber.org/zap"
 )
 
-func (w *Worker) hibernateExpiredDeployments(ctx context.Context) error {
+type HibernateExpiredDeploymentsArgs struct{}
+
+func (HibernateExpiredDeploymentsArgs) Kind() string { return "hibernate_expired_deployments" }
+
+type HibernateExpiredDeploymentsWorker struct {
+	river.WorkerDefaults[HibernateExpiredDeploymentsArgs]
+	admin  *admin.Service
+	logger *zap.Logger
+}
+
+func (w *HibernateExpiredDeploymentsWorker) Work(ctx context.Context, job *river.Job[HibernateExpiredDeploymentsArgs]) error {
 	depls, err := w.admin.DB.FindExpiredDeployments(ctx)
 	if err != nil {
 		return err
@@ -34,7 +46,7 @@ func (w *Worker) hibernateExpiredDeployments(ctx context.Context) error {
 	return nil
 }
 
-func (w *Worker) hibernateExpiredDeployment(ctx context.Context, depl *database.Deployment) error {
+func (w *HibernateExpiredDeploymentsWorker) hibernateExpiredDeployment(ctx context.Context, depl *database.Deployment) error {
 	proj, err := w.admin.DB.FindProject(ctx, depl.ProjectID)
 	if err != nil {
 		return err

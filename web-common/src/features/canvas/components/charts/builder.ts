@@ -13,6 +13,7 @@ import type {
 } from "@rilldata/web-common/features/canvas/components/charts/types";
 import {
   getColorForValues,
+  isDomainStringArray,
   isFieldConfig,
   mergedVlConfig,
 } from "@rilldata/web-common/features/canvas/components/charts/util";
@@ -109,10 +110,10 @@ export function createColorEncoding(
     // but it's not supported by Vega-Lite yet
     // https://github.com/vega/vega-lite/issues/9497
 
-    const colorMapping = getColorForValues(
-      colorValues,
-      colorField.colorMapping,
-    );
+    let colorMapping: { value: string; color: string }[] | undefined;
+    if (isDomainStringArray(colorValues)) {
+      colorMapping = getColorForValues(colorValues, colorField.colorMapping);
+    }
 
     if (colorMapping?.length) {
       const domain = colorMapping.map((mapping) => mapping.value);
