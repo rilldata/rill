@@ -2,7 +2,7 @@
 title: "Fixed Metrics"
 description: Tips & Tricks for Metric Formatting
 sidebar_label: "Fixed Metrics"
-sidebar_position: 04
+sidebar_position: 35
 ---
 
 Some metrics may be at a different level of granularity where a sum across the metric is no longer accurate. As an example, perhaps you have a campaign with a daily budget of $5000 across five line items. Summing the `daily_budget` column would give an inaccurate total of $25,000 budget per day. For those familiar with Tableau, this is referred to as a `FIXED metric`. 
