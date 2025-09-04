@@ -259,7 +259,7 @@ function formatTimePartOfTimeRange(
 
   if (hasSameTime) {
     const onDayBoundary = start.startOf("day").equals(start);
-    const showTimePart = !onDayBoundary || grainOrder < hourGrainOrder;
+    const showTimePart = !onDayBoundary || grainOrder <= hourGrainOrder;
     const formattedTime = start.toLocaleString(format).replace(/\s/g, "");
     return showTimePart ? ` (${formattedTime})` : "";
   }

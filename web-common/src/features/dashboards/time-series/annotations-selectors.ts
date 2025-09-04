@@ -1,8 +1,7 @@
 import type { Annotation } from "@rilldata/web-common/components/data-graphic/marks/annotations.ts";
 import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors.ts";
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config.ts";
-
-import { prettyFormatTimeRange } from "@rilldata/web-common/lib/time/ranges/formatter.ts";
+import { prettyFormatTimeRangeV2 } from "@rilldata/web-common/lib/time/ranges/formatter.ts";
 import {
   getOffset,
   getStartOfPeriod,
@@ -11,11 +10,11 @@ import {
   type DashboardTimeControls,
   Period,
   TimeOffsetType,
-  TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types.ts";
 import {
   getQueryServiceMetricsViewAnnotationsQueryOptions,
   type V1MetricsViewAnnotationsResponseAnnotation,
+  V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
 import { createQuery } from "@tanstack/svelte-query";
 import { derived, type Readable } from "svelte/store";
@@ -75,6 +74,7 @@ export function getAnnotationsForMeasure({
         convertV1AnnotationsResponseItemToAnnotation(
           a,
           selectedPeriod,
+          selectedTimeRange?.interval ?? V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
           selectedTimezone,
         ),
       ) ?? [];
@@ -86,6 +86,7 @@ export function getAnnotationsForMeasure({
 function convertV1AnnotationsResponseItemToAnnotation(
   annotation: V1MetricsViewAnnotationsResponseAnnotation,
   period: Period | undefined,
+  selectedTimeGrain: V1TimeGrain,
   selectedTimezone: string,
 ) {
   let startTime = new Date(annotation.time as string);
@@ -105,10 +106,10 @@ function convertV1AnnotationsResponseItemToAnnotation(
     }
   }
 
-  const formattedTimeOrRange = prettyFormatTimeRange(
+  const formattedTimeOrRange = prettyFormatTimeRangeV2(
     startTime,
     endTime ?? startTime,
-    TimeRangePreset.CUSTOM,
+    selectedTimeGrain,
     selectedTimezone,
   );
 
