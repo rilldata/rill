@@ -1,13 +1,16 @@
 ---
-title: "Performance Optimization"
-description: Performance Optimization
-sidebar_label: "Performance Optimization"
-sidebar_position: 20
+title: Troubleshooting Performance in Rill
+description: Dev/Prod Setup
+sidebar_label: Optimize Performance in Rill
+sidebar_position: 10
 ---
 
-## Overview
 
 On this page, we've gathered a running list of recommendations and general guidelines to ensure your experience of using Rill remains performant and optimized. These best practices will help to ensure your dashboards remain performant, and that things continue to "just work" (for both Rill Developer and Rill Cloud), even as the size of your underlying data and deployment continues to grow. These best practices and guidelines will also continue to evolve but please don't hesitate to [reach out](/contact) if you start facing any bottlenecks or have further questions about ways to improve the Rill experience!
+
+If you're looking for connector specific optimization see, [Dev/Prod Connector Environments](/connect/templating).
+
+If you're looking for model specific optimization see, [Performance Optimization](/build/models/performance).
 
 :::info Working with very large data from the get go?
 
@@ -23,7 +26,7 @@ Depending on the complexity of your underlying models and the size of the data m
 
 By default, models will be materialized as views (in DuckDB). This allows for a dynamic and highly interactive experience when modeling, such as keystroke-by-keystroke profiling. However, since views are logical in nature, as the complexity and size of your data models continue grow (especially if the underlying data is very large), this can start to significantly impact performance as these complex queries will need to be continuously re-executed along with a number of profiling queries that the Rill runtime will send in the backend. 
 
-In such scenarios, we recommend [materializing these models as tables](/build/models/#model-materialization). However, there are some tradeoffs to consider.
+In such scenarios, we recommend [materializing these models as tables.](/build/models/performance#model-performance) However, there are some tradeoffs to consider.
 - **Pros:** Materializing a model will generally ensure significantly improved performance for downstream dependent models and dashboards. 
 - **Cons:** Enabling materialization for a model can severely impact or break the "keystroke-by-keystroke" experience and these models may also take longer to update (because the results are being written to a table vs remaining a view). It can also lead to _degraded_ performance for very specific operations, such as when you need to perform cross joins.
 
@@ -32,6 +35,49 @@ In such scenarios, we recommend [materializing these models as tables](/build/mo
 We strongly recommend materializing final models that are being used directly in dashboards to ensure this data is served more quickly. 
 
 :::
+
+
+## Refreshing Source Models
+
+Another area to review when your data source starts getting larger is the ingestion performance. By default, when refreshing a [source model](/build/models/source-models) in Rill, it drops and re-ingests the entire table/file. When your data is small, this isn't an issue, but it's not appropriate for larger datasets. In these cases, we recommend using [partitions and incremental models](/build/models/incremental-partitioned-models).
+
+### Partitioned Models
+
+Partitioned models divide your data into logical segments based on specific criteria, typically time-based columns like dates. This approach allows you to selectively refresh a partition where you know data has been altered.
+
+
+Example partition configuration:
+```yaml
+partitions:
+    glob:
+      path: 'gs://my-bucket/**/*.parquet'
+```
+
+### Incremental Models
+
+Incremental models only process new or changed data since the last refresh, rather than reprocessing the entire dataset. This dramatically improves performance for large datasets:
+
+- **Faster Refresh Times**: Process only delta changes instead of full datasets
+- **Reduced Resource Usage**: Lower CPU, memory, and storage requirements
+- **Frequent Updates**: Enable near real-time data updates without performance degradation
+- **Cost Efficiency**: Minimize compute costs for large-scale data processing
+
+```yaml
+type: model
+incremental: true
+
+partitions:
+  glob:
+    path: gs://rilldata-public/github-analytics/Clickhouse/2024/*/*
+    partition: directory
+  
+sql: |
+  SELECT * 
+     FROM read_parquet('{{ .partition.uri }}/commits_*.parquet') 
+    WHERE '{{ .partition.uri }}' IS NOT NULL
+```
+
+By combining partitioning and incremental processing, you'll significantly reduce model refresh times and ensure your dashboards display the most current information.
 
 ## Local Development / Rill Developer
 
@@ -42,10 +88,33 @@ When used in conjunction, Rill Developer and Rill Cloud are meant to serve two d
 As a general rule of thumb, we strongly recommend working with a segment of the data for modeling purposes as part of your local development workflow. This becomes increasingly important as the size of your source data grows in size, which will help ensure that your developer experience remains optimal in Rill Developer. With Rill Developer, it's best to work with a "dev partition" to help validate that the model logic is correct and producing results as expected. Then, once finalized, you can push to Rill Cloud for primary dashboard consumption (including analysis and sharing as necessary).
 
 There are a few ways to achieve this:
-1. Limiting the source data to a smaller time range (e.g. one week's worth of data instead of the full year)
-2. Creating intermediate staging models from your source data, either through statistical sampling or by applying a raw limit, which will then serve as the starting point for your actual downstream models / modeling
-3. Use data from a dev / staging environment
+- Defining an [**environment-specific database/cluster**](/connect/templating#environment-specific-connectors) to connect to between development and production
+- Pointing to [**different source data endpoints/databases**](/connect/templating#environment-specific-data-source-location) between your development and production environments
+- Working with a [**sample or subset of data**](/build/models/templating#inline-sql-templating) during local development (but making sure the full dataset is being used in production dashboards)
+- Applying [**filters or other if/else predefined logic**](/build/models/templating#inline-sql-templating) to run different SQL whether a model is being run locally or in production
 
+#### Environment-Specific Connectors
+
+The most common use case for connector templating is defining separate databases for your development and production operations. This approach gives you the freedom to experiment, test, and iterate on your models without the risk of accidentally modifying or corrupting your production data.
+
+Example: Here's how you can configure a ClickHouse connector to use different environments:
+```yaml
+type: connector
+driver: clickhouse
+
+dev:
+  dsn: "clickhouse://user:password@localhost:9000/dev_database" # ClickHouse connection DSN  
+
+# Production environment configuration
+prod:
+  host: "{{ .env.connector.clickhouse.host }}"
+  port: "{{ .env.connector.clickhouse.port }}"
+  database: "{{ .env.connector.clickhouse.database }}"
+  username: "{{ .env.connector.clickhouse.username }}"
+  password: "{{ .env.connector.clickhouse.password }}"
+  ssl: true
+  cluster: "{{ .env.connector.clickhouse.cluster }}"
+```
 #### Limiting the source data to a smaller time range
 
 There are different ways this can be achieved and the method also depends heavily on the data source being used. For example, assuming we had a [S3 source](/connect/data-source/s3.md) that was well partitioned by year and month (and written into a partitioned bucket), the recommended pattern would be to leverage the `path` [source property](/reference/project-files/sources.md) and a glob pattern to limit the size of the ingestion in your development environment. Something like (as your `source.yaml`):
@@ -57,7 +126,7 @@ dev:
   path: s3://bucket/path/year=2023/month=12/**/*.parquet
 ```
 
-By leveraging the [environment YAML syntax](/build/models/environments.md), this ensures that only data from December 2023 will be read in from this S3 source when using Rill Developer locally while the full range of data will still be used in production (on Rill Cloud). However, if this data was **not** partitioned, then we could simply leverage DuckDB's ability to read from S3 files directly and _apply a filter post-download_ on the source. Taking this same example and using some [templating](/connect/templating), the `source.yaml` could be rewritten to something like the following:
+By leveraging the [environment YAML syntax](/build/models/templating.md), this ensures that only data from December 2023 will be read in from this S3 source when using Rill Developer locally while the full range of data will still be used in production (on Rill Cloud). However, if this data was **not** partitioned, then we could simply leverage DuckDB's ability to read from S3 files directly and _apply a filter post-download_ on the source. Taking this same example and using some [templating](/connect/templating), the `source.yaml` could be rewritten to something like the following:
 ```yaml
 type: source
 connector: "duckdb"
@@ -66,7 +135,7 @@ sql: SELECT * FROM read_parquet('s3://bucket/path/*.parquet') {{ if dev }} where
 
 #### Creating intermediate staging models
 
-Another option would be to create intermediate staging models from your sources, either through [statistical sampling](https://duckdb.org/docs/sql/samples.html) or by applying a [raw limit](https://duckdb.org/docs/sql/query_syntax/limit.html), to reduce the size of your models in development. For example, with [templating](/connect/templating) and [environments](/build/models/environments.md), this `model.sql` applies a five percent sample to a source:
+Another option would be to create intermediate staging models from your sources, either through [statistical sampling](https://duckdb.org/docs/sql/samples.html) or by applying a [raw limit](https://duckdb.org/docs/sql/query_syntax/limit.html), to reduce the size of your models in development. For example, with [templating](/connect/templating) and [environments](/build/models/templating.md), this `model.sql` applies a five percent sample to a source:
 
 ```sql
 -- @materialize
