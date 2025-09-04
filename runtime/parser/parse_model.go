@@ -223,6 +223,45 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 		node.Refs = append(node.Refs, refs...)
 	}
 
+	// Parse retry options with reasonable defaults
+	var retryAttempts uint32
+	if tmp.Retry.Attempts != nil {
+		retryAttempts = *tmp.Retry.Attempts
+	} else {
+		retryAttempts = 3
+	}
+
+	var retryDelay uint32
+	if tmp.Retry.Delay != nil {
+		duration, err := time.ParseDuration(*tmp.Retry.Delay)
+		if err != nil {
+			return fmt.Errorf(`invalid retry delay: %w`, err)
+		}
+		retryDelay = uint32(duration.Seconds())
+	} else {
+		retryDelay = 5 // 5s default
+	}
+
+	var retryExponentialBackoff bool
+	if tmp.Retry.ExponentialBackoff != nil {
+		retryExponentialBackoff = *tmp.Retry.ExponentialBackoff
+	} else {
+		retryExponentialBackoff = true
+	}
+
+	var retryIfErrorMatches []string
+	if len(tmp.Retry.IfErrorMatches) > 0 {
+		// Validate regex patterns
+		for _, pattern := range tmp.Retry.IfErrorMatches {
+			if _, err := regexp.Compile(pattern); err != nil {
+				return fmt.Errorf("invalid regex pattern '%s': %w", pattern, err)
+			}
+		}
+		retryIfErrorMatches = tmp.Retry.IfErrorMatches
+	} else {
+		retryIfErrorMatches = []string{".*OvercommitTracker.*", ".*Bad Gateway.*", ".*Timeout.*"}
+	}
+
 	// Insert the model
 	r, err := p.insertResource(ResourceKindModel, node.Name, node.Paths, node.Refs...)
 	if err != nil {
@@ -234,41 +273,10 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 		r.ModelSpec.RefreshSchedule = schedule
 	}
 
-	// Parse retry options with reasonable defaults
-	if tmp.Retry.Attempts != nil {
-		r.ModelSpec.RetryAttempts = *tmp.Retry.Attempts
-	} else {
-		r.ModelSpec.RetryAttempts = 3
-	}
-
-	if tmp.Retry.Delay != nil {
-		duration, err := time.ParseDuration(*tmp.Retry.Delay)
-		if err != nil {
-			return fmt.Errorf(`invalid retry delay: %w`, err)
-		}
-		r.ModelSpec.RetryDelay = uint32(duration.Seconds())
-	} else {
-		r.ModelSpec.RetryDelay = 5 // 5s default
-	}
-
-	if tmp.Retry.ExponentialBackoff != nil {
-		r.ModelSpec.RetryExponentialBackoff = *tmp.Retry.ExponentialBackoff
-	} else {
-		r.ModelSpec.RetryExponentialBackoff = true
-	}
-
-	// Set error matches if provided, otherwise use defaults
-	if len(tmp.Retry.IfErrorMatches) > 0 {
-		// Validate regex patterns
-		for _, pattern := range tmp.Retry.IfErrorMatches {
-			if _, err := regexp.Compile(pattern); err != nil {
-				return fmt.Errorf("invalid regex pattern '%s': %w", pattern, err)
-			}
-		}
-		r.ModelSpec.RetryIfErrorMatches = tmp.Retry.IfErrorMatches
-	} else {
-		r.ModelSpec.RetryIfErrorMatches = []string{".*OvercommitTracker.*", ".*Bad Gateway.*", ".*Timeout.*"}
-	}
+	r.ModelSpec.RetryAttempts = retryAttempts
+	r.ModelSpec.RetryDelay = retryDelay
+	r.ModelSpec.RetryExponentialBackoff = retryExponentialBackoff
+	r.ModelSpec.RetryIfErrorMatches = retryIfErrorMatches
 
 	if timeout > 0 {
 		r.ModelSpec.TimeoutSeconds = uint32(timeout.Seconds())
