@@ -305,8 +305,6 @@
 
     try {
       if (formType === "source") {
-        // TODO: add test connection here
-        // TODO: should only make this to AddDataForm for DUCKDB_REWRITE_CONNECTORS
         await submitAddSourceForm(queryClient, connector, values);
       } else {
         await submitAddConnectorForm(queryClient, connector, values);
