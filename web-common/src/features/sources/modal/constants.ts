@@ -13,6 +13,7 @@ export const CONNECTION_TAB_OPTIONS: { value: string; label: string }[] = [
 
 export const OLAP_ENGINES = ["clickhouse", "druid", "pinot"];
 
+// pre-defined order for sources
 export const SOURCES = [
   "athena",
   "azure",
