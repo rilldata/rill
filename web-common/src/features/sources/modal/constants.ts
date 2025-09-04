@@ -11,7 +11,6 @@ export const CONNECTION_TAB_OPTIONS: { value: string; label: string }[] = [
   { value: "dsn", label: "Enter connection string" },
 ];
 
-// Connectors that get rewritten to DuckDB
 const DUCKDB_REWRITE_CONNECTORS = [
   "s3",
   "gcs",
@@ -23,8 +22,7 @@ const DUCKDB_REWRITE_CONNECTORS = [
 
 export const OLAP_ENGINES = ["clickhouse", "druid", "pinot"];
 
-// FIXME: rename non-olap connectors to A_BETTER_NAME
-export const NON_OLAP_CONNECTORS = [
+const SQL_CONNECTORS = [
   "bigquery",
   "athena",
   "redshift",
@@ -36,8 +34,6 @@ export const NON_OLAP_CONNECTORS = [
   "salesforce",
 ];
 
-// sources: ImplementsObjectStore, ImplementsFileStore,
-// connectors: ImplementsOLAP, ImplementsWarehouse, ImplementsSQLStore
-export const SOURCES = [...DUCKDB_REWRITE_CONNECTORS, ...NON_OLAP_CONNECTORS];
+export const SOURCES = [...DUCKDB_REWRITE_CONNECTORS, ...SQL_CONNECTORS];
 
 export const ALL_CONNECTORS = [...SOURCES, ...OLAP_ENGINES];
