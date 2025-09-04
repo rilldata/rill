@@ -692,11 +692,11 @@ func (p *securityEngine) resolveTransitiveAccessRuleForReport(ctx context.Contex
 	})
 
 	// deny everything except the report itself, themes, explore, canvas and metrics view
-	var condition strings.Builder
+	var denyCondition strings.Builder
 	// self report
-	condition.WriteString(fmt.Sprintf("('{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s)", ResourceKindReport, duckdbsql.EscapeStringValue(strings.ToLower(res.Meta.Name.Name))))
+	denyCondition.WriteString(fmt.Sprintf("('{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s)", ResourceKindReport, duckdbsql.EscapeStringValue(strings.ToLower(res.Meta.Name.Name))))
 	// all themes
-	condition.WriteString(fmt.Sprintf(" OR '{{.self.kind}}'='%s'", ResourceKindTheme))
+	denyCondition.WriteString(fmt.Sprintf(" OR '{{.self.kind}}'='%s'", ResourceKindTheme))
 
 	if spec.QueryName != "" {
 		initializer, ok := ResolverInitializers["legacy_metrics"]
@@ -723,7 +723,17 @@ func (p *securityEngine) resolveTransitiveAccessRuleForReport(ctx context.Contex
 		mvName := ""
 		refs := resolver.Refs()
 		for _, ref := range refs {
-			condition.WriteString(fmt.Sprintf(" OR ('{{.self.kind}}'=%s AND '{{lower .self.name}}'=%s)", duckdbsql.EscapeStringValue(ref.Kind), duckdbsql.EscapeStringValue(strings.ToLower(ref.Name))))
+			// allow access to the referenced resource
+			rules = append(rules, &runtimev1.SecurityRule{
+				Rule: &runtimev1.SecurityRule_Access{
+					Access: &runtimev1.SecurityRuleAccess{
+						Condition: fmt.Sprintf("'{{.self.kind}}'=%s AND '{{lower .self.name}}'=%s", duckdbsql.EscapeStringValue(ref.Kind), duckdbsql.EscapeStringValue(strings.ToLower(ref.Name))),
+						Allow:     true,
+					},
+				},
+			})
+			// add to deny condition
+			denyCondition.WriteString(fmt.Sprintf(" OR ('{{.self.kind}}'=%s AND '{{lower .self.name}}'=%s)", duckdbsql.EscapeStringValue(ref.Kind), duckdbsql.EscapeStringValue(strings.ToLower(ref.Name))))
 			if ref.Kind == ResourceKindMetricsView {
 				mvName = ref.Name
 			}
@@ -755,17 +765,17 @@ func (p *securityEngine) resolveTransitiveAccessRuleForReport(ctx context.Contex
 		}
 
 		if explore != "" {
-			condition.WriteString(fmt.Sprintf(" OR ('{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s)", ResourceKindExplore, duckdbsql.EscapeStringValue(strings.ToLower(explore))))
+			denyCondition.WriteString(fmt.Sprintf(" OR ('{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s)", ResourceKindExplore, duckdbsql.EscapeStringValue(strings.ToLower(explore))))
 		}
 		if canvas != "" {
-			condition.WriteString(fmt.Sprintf(" OR ('{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s)", ResourceKindCanvas, duckdbsql.EscapeStringValue(strings.ToLower(canvas))))
+			denyCondition.WriteString(fmt.Sprintf(" OR ('{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s)", ResourceKindCanvas, duckdbsql.EscapeStringValue(strings.ToLower(canvas))))
 		}
 	}
 
 	rules = append(rules, &runtimev1.SecurityRule{
 		Rule: &runtimev1.SecurityRule_Access{
 			Access: &runtimev1.SecurityRuleAccess{
-				Condition: fmt.Sprintf("NOT (%s)", condition.String()),
+				Condition: fmt.Sprintf("NOT (%s)", denyCondition.String()),
 				Allow:     false,
 			},
 		},
@@ -799,11 +809,11 @@ func (p *securityEngine) resolveTransitiveAccessRuleForAlert(ctx context.Context
 
 	var mvName string
 	// deny everything except the alert itself and themes
-	var condition strings.Builder
+	var denyCondition strings.Builder
 	// self alert
-	condition.WriteString(fmt.Sprintf("('{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s)", ResourceKindAlert, duckdbsql.EscapeStringValue(strings.ToLower(res.Meta.Name.Name))))
+	denyCondition.WriteString(fmt.Sprintf("('{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s)", ResourceKindAlert, duckdbsql.EscapeStringValue(strings.ToLower(res.Meta.Name.Name))))
 	// all themes
-	condition.WriteString(fmt.Sprintf(" OR '{{.self.kind}}'='%s'", ResourceKindTheme))
+	denyCondition.WriteString(fmt.Sprintf(" OR '{{.self.kind}}'='%s'", ResourceKindTheme))
 
 	if spec.QueryName != "" {
 		initializer, ok := ResolverInitializers["legacy_metrics"]
@@ -826,10 +836,20 @@ func (p *securityEngine) resolveTransitiveAccessRuleForAlert(ctx context.Context
 		defer resolver.Close()
 		rules = append(rules, resolver.InferRequiredSecurityRules()...)
 
-		// add refs to deny condition, relying on resolveRules to add the corresponding allow rules
+		// add refs to deny condition
 		refs := resolver.Refs()
 		for _, ref := range refs {
-			condition.WriteString(fmt.Sprintf(" OR ('{{.self.kind}}'=%s AND '{{lower .self.name}}'=%s)", duckdbsql.EscapeStringValue(ref.Kind), duckdbsql.EscapeStringValue(strings.ToLower(ref.Name))))
+			// allow access to the referenced resource
+			rules = append(rules, &runtimev1.SecurityRule{
+				Rule: &runtimev1.SecurityRule_Access{
+					Access: &runtimev1.SecurityRuleAccess{
+						Condition: fmt.Sprintf("'{{.self.kind}}'=%s AND '{{lower .self.name}}'=%s", duckdbsql.EscapeStringValue(ref.Kind), duckdbsql.EscapeStringValue(strings.ToLower(ref.Name))),
+						Allow:     true,
+					},
+				},
+			})
+			// add to deny condition
+			denyCondition.WriteString(fmt.Sprintf(" OR ('{{.self.kind}}'=%s AND '{{lower .self.name}}'=%s)", duckdbsql.EscapeStringValue(ref.Kind), duckdbsql.EscapeStringValue(strings.ToLower(ref.Name))))
 			if ref.Kind == ResourceKindMetricsView {
 				mvName = ref.Name
 			}
@@ -857,7 +877,7 @@ func (p *securityEngine) resolveTransitiveAccessRuleForAlert(ctx context.Context
 		// add refs to deny condition, relying on resolveRules to add the corresponding allow rules
 		refs := resolver.Refs()
 		for _, ref := range refs {
-			condition.WriteString(fmt.Sprintf(" OR ('{{.self.kind}}'=%s AND '{{lower .self.name}}'=%s)", duckdbsql.EscapeStringValue(ref.Kind), duckdbsql.EscapeStringValue(strings.ToLower(ref.Name))))
+			denyCondition.WriteString(fmt.Sprintf(" OR ('{{.self.kind}}'=%s AND '{{lower .self.name}}'=%s)", duckdbsql.EscapeStringValue(ref.Kind), duckdbsql.EscapeStringValue(strings.ToLower(ref.Name))))
 		}
 	}
 
@@ -887,16 +907,16 @@ func (p *securityEngine) resolveTransitiveAccessRuleForAlert(ctx context.Context
 	}
 
 	if explore != "" {
-		condition.WriteString(fmt.Sprintf(" OR ('{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s)", ResourceKindExplore, duckdbsql.EscapeStringValue(strings.ToLower(explore))))
+		denyCondition.WriteString(fmt.Sprintf(" OR ('{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s)", ResourceKindExplore, duckdbsql.EscapeStringValue(strings.ToLower(explore))))
 	}
 	if canvas != "" {
-		condition.WriteString(fmt.Sprintf(" OR ('{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s)", ResourceKindCanvas, duckdbsql.EscapeStringValue(strings.ToLower(canvas))))
+		denyCondition.WriteString(fmt.Sprintf(" OR ('{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s)", ResourceKindCanvas, duckdbsql.EscapeStringValue(strings.ToLower(canvas))))
 	}
 
 	rules = append(rules, &runtimev1.SecurityRule{
 		Rule: &runtimev1.SecurityRule_Access{
 			Access: &runtimev1.SecurityRuleAccess{
-				Condition: fmt.Sprintf("NOT (%s)", condition.String()),
+				Condition: fmt.Sprintf("NOT (%s)", denyCondition.String()),
 				Allow:     false,
 			},
 		},
@@ -945,18 +965,18 @@ func (p *securityEngine) resolveTransitiveAccessRuleForExplore(res *runtimev1.Re
 	}
 
 	// deny everything except the explore, mv and themes
-	var condition strings.Builder
+	var denyCondition strings.Builder
 	// self canvas
-	condition.WriteString(fmt.Sprintf("('{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s)", ResourceKindExplore, duckdbsql.EscapeStringValue(strings.ToLower(res.Meta.Name.Name))))
+	denyCondition.WriteString(fmt.Sprintf("('{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s)", ResourceKindExplore, duckdbsql.EscapeStringValue(strings.ToLower(res.Meta.Name.Name))))
 	// underlying mv
-	condition.WriteString(fmt.Sprintf(" OR ('{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s)", ResourceKindMetricsView, duckdbsql.EscapeStringValue(strings.ToLower(spec.MetricsView))))
+	denyCondition.WriteString(fmt.Sprintf(" OR ('{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s)", ResourceKindMetricsView, duckdbsql.EscapeStringValue(strings.ToLower(spec.MetricsView))))
 	// all themes
-	condition.WriteString(fmt.Sprintf(" OR '{{.self.kind}}'='%s'", ResourceKindTheme))
+	denyCondition.WriteString(fmt.Sprintf(" OR '{{.self.kind}}'='%s'", ResourceKindTheme))
 
 	rules = append(rules, &runtimev1.SecurityRule{
 		Rule: &runtimev1.SecurityRule_Access{
 			Access: &runtimev1.SecurityRuleAccess{
-				Condition: fmt.Sprintf("NOT (%s)", condition.String()),
+				Condition: fmt.Sprintf("NOT (%s)", denyCondition.String()),
 				Allow:     false,
 			},
 		},
