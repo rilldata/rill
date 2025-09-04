@@ -56,13 +56,13 @@ measures:
 		Resource: &runtimev1.Resource_Model{
 			Model: &runtimev1.Model{
 				Spec: &runtimev1.ModelSpec{
-					InputConnector:          "local_file",
-					OutputConnector:         "duckdb",
-					InputProperties:         must(structpb.NewStruct(map[string]any{"path": "data/foo.csv", "local_files_hash": localFileHash(t, rt, id, []string{"data/foo.csv"})})),
-					OutputProperties:        must(structpb.NewStruct(map[string]any{"materialize": true})),
-					RefreshSchedule:         &runtimev1.Schedule{RefUpdate: true},
-					DefinedAsSource:         true,
-					ChangeMode:              runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+					InputConnector:   "local_file",
+					OutputConnector:  "duckdb",
+					InputProperties:  must(structpb.NewStruct(map[string]any{"path": "data/foo.csv", "local_files_hash": localFileHash(t, rt, id, []string{"data/foo.csv"})})),
+					OutputProperties: must(structpb.NewStruct(map[string]any{"materialize": true})),
+					RefreshSchedule:  &runtimev1.Schedule{RefUpdate: true},
+					DefinedAsSource:  true,
+					ChangeMode:       runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
 				},
 				State: &runtimev1.ModelState{
 					ExecutorConnector: "duckdb",
@@ -87,11 +87,11 @@ measures:
 		Resource: &runtimev1.Resource_Model{
 			Model: &runtimev1.Model{
 				Spec: &runtimev1.ModelSpec{
-					RefreshSchedule:         &runtimev1.Schedule{RefUpdate: true},
-					InputConnector:          "duckdb",
-					InputProperties:         must(structpb.NewStruct(map[string]any{"sql": "SELECT * FROM foo"})),
-					OutputConnector:         "duckdb",
-					ChangeMode:              runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+					RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
+					InputConnector:  "duckdb",
+					InputProperties: must(structpb.NewStruct(map[string]any{"sql": "SELECT * FROM foo"})),
+					OutputConnector: "duckdb",
+					ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
 				},
 				State: &runtimev1.ModelState{
 					ExecutorConnector: "duckdb",
@@ -158,11 +158,11 @@ path
 		Resource: &runtimev1.Resource_Model{
 			Model: &runtimev1.Model{
 				Spec: &runtimev1.ModelSpec{
-					RefreshSchedule:         &runtimev1.Schedule{RefUpdate: true},
-					InputConnector:          "duckdb",
-					InputProperties:         must(structpb.NewStruct(map[string]any{"sql": "SELECT * FROM foo"})),
-					OutputConnector:         "duckdb",
-					ChangeMode:              runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+					RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
+					InputConnector:  "duckdb",
+					InputProperties: must(structpb.NewStruct(map[string]any{"sql": "SELECT * FROM foo"})),
+					OutputConnector: "duckdb",
+					ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
 				},
 				State: &runtimev1.ModelState{},
 			},
@@ -223,13 +223,13 @@ path: data/foo.csv
 		Resource: &runtimev1.Resource_Model{
 			Model: &runtimev1.Model{
 				Spec: &runtimev1.ModelSpec{
-					InputConnector:          "local_file",
-					OutputConnector:         "duckdb",
-					InputProperties:         must(structpb.NewStruct(map[string]any{"path": "data/foo.csv", "local_files_hash": localFileHash(t, rt, id, []string{"data/foo.csv"})})),
-					OutputProperties:        must(structpb.NewStruct(map[string]any{"materialize": true})),
-					RefreshSchedule:         &runtimev1.Schedule{RefUpdate: true},
-					DefinedAsSource:         true,
-					ChangeMode:              runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+					InputConnector:   "local_file",
+					OutputConnector:  "duckdb",
+					InputProperties:  must(structpb.NewStruct(map[string]any{"path": "data/foo.csv", "local_files_hash": localFileHash(t, rt, id, []string{"data/foo.csv"})})),
+					OutputProperties: must(structpb.NewStruct(map[string]any{"materialize": true})),
+					RefreshSchedule:  &runtimev1.Schedule{RefUpdate: true},
+					DefinedAsSource:  true,
+					ChangeMode:       runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
 				},
 				State: &runtimev1.ModelState{
 					ExecutorConnector: "duckdb",
@@ -311,13 +311,13 @@ path: data/foo.csv
 		Resource: &runtimev1.Resource_Model{
 			Model: &runtimev1.Model{
 				Spec: &runtimev1.ModelSpec{
-					InputConnector:          "local_file",
-					OutputConnector:         "duckdb",
-					InputProperties:         must(structpb.NewStruct(map[string]any{"path": "data/foo.csv", "local_files_hash": localFileHash(t, rt, id, []string{"data/foo.csv"})})),
-					OutputProperties:        must(structpb.NewStruct(map[string]any{"materialize": true})),
-					RefreshSchedule:         &runtimev1.Schedule{RefUpdate: true},
-					DefinedAsSource:         true,
-					ChangeMode:              runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+					InputConnector:   "local_file",
+					OutputConnector:  "duckdb",
+					InputProperties:  must(structpb.NewStruct(map[string]any{"path": "data/foo.csv", "local_files_hash": localFileHash(t, rt, id, []string{"data/foo.csv"})})),
+					OutputProperties: must(structpb.NewStruct(map[string]any{"materialize": true})),
+					RefreshSchedule:  &runtimev1.Schedule{RefUpdate: true},
+					DefinedAsSource:  true,
+					ChangeMode:       runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
 				},
 				State: &runtimev1.ModelState{
 					ExecutorConnector: "duckdb",
@@ -1220,13 +1220,13 @@ measures:
 func newSource(t *testing.T, rt *runtime.Runtime, id string, name, path, localFileHash string) (*runtimev1.Model, *runtimev1.Resource) {
 	source := &runtimev1.Model{
 		Spec: &runtimev1.ModelSpec{
-			InputConnector:          "local_file",
-			OutputConnector:         "duckdb",
-			InputProperties:         must(structpb.NewStruct(map[string]any{"path": "data/foo.csv", "local_files_hash": localFileHash})),
-			OutputProperties:        must(structpb.NewStruct(map[string]any{"materialize": true})),
-			RefreshSchedule:         &runtimev1.Schedule{RefUpdate: true},
-			DefinedAsSource:         true,
-			ChangeMode:              runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+			InputConnector:   "local_file",
+			OutputConnector:  "duckdb",
+			InputProperties:  must(structpb.NewStruct(map[string]any{"path": "data/foo.csv", "local_files_hash": localFileHash})),
+			OutputProperties: must(structpb.NewStruct(map[string]any{"materialize": true})),
+			RefreshSchedule:  &runtimev1.Schedule{RefUpdate: true},
+			DefinedAsSource:  true,
+			ChangeMode:       runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
 		},
 		State: &runtimev1.ModelState{
 			ExecutorConnector: "duckdb",
@@ -1252,11 +1252,11 @@ func newSource(t *testing.T, rt *runtime.Runtime, id string, name, path, localFi
 func newModel(query, name, source string) (*runtimev1.Model, *runtimev1.Resource) {
 	model := &runtimev1.Model{
 		Spec: &runtimev1.ModelSpec{
-			RefreshSchedule:         &runtimev1.Schedule{RefUpdate: true},
-			InputConnector:          "duckdb",
-			InputProperties:         must(structpb.NewStruct(map[string]any{"sql": query})),
-			OutputConnector:         "duckdb",
-			ChangeMode:              runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
+			InputConnector:  "duckdb",
+			InputProperties: must(structpb.NewStruct(map[string]any{"sql": query})),
+			OutputConnector: "duckdb",
+			ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
 		},
 		State: &runtimev1.ModelState{
 			ExecutorConnector: "duckdb",
