@@ -96,6 +96,7 @@ export const prepareDimTableRows =
       isTimeComparisonActive(dashData),
       isValidPercentOfTotal(dashData),
       unfilteredTotal,
+      dimension?.dataType,
     );
   };
 

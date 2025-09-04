@@ -7,6 +7,7 @@ import {
   V1MetricsViewComparisonMeasureType as ApiSortType,
   type V1MetricsViewAggregationResponseDataItem,
   type V1MetricsViewComparisonValue,
+  TypeCode,
 } from "@rilldata/web-common/runtime-client";
 import { SortType } from "../proto-state/derived-types";
 import { DashboardState_LeaderboardSortType } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
@@ -66,15 +67,47 @@ export const URI_DIMENSION_SUFFIX = "__rill_uri";
 const finiteOrNull = (v: unknown): number | null =>
   Number.isFinite(v) ? (v as number) : null;
 
+/**
+ * Converts a dimension value to a string, properly handling JSON objects and other complex types
+ */
+export function formatDimensionValue(value: unknown, dataType?: { code?: string }): string {
+  if (value === null || value === undefined) {
+    return "";
+  }
+  
+  // If it's already a string, return as-is
+  if (typeof value === "string") {
+    return value;
+  }
+  
+  // Handle JSON and struct types by stringifying them
+  if (dataType?.code === TypeCode.CODE_JSON || 
+      dataType?.code === TypeCode.CODE_STRUCT ||
+      dataType?.code === TypeCode.CODE_MAP ||
+      dataType?.code === TypeCode.CODE_ARRAY ||
+      typeof value === "object") {
+    try {
+      return JSON.stringify(value);
+    } catch {
+      // Fallback to string conversion if JSON.stringify fails
+      return String(value);
+    }
+  }
+  
+  // For all other types, convert to string
+  return String(value);
+}
+
 export function cleanUpComparisonValue(
   v: V1MetricsViewAggregationResponseDataItem,
   dimensionName: string,
   measureNames: string[],
   totals: Record<string, number | null>,
   selectedIndex: number,
+  dimensionDataType?: { code?: string },
 ): LeaderboardItemData {
   const cleanValue: LeaderboardItemData = {
-    dimensionValue: v[dimensionName] as string,
+    dimensionValue: formatDimensionValue(v[dimensionName], dimensionDataType),
     uri:
       (v[dimensionName + URI_DIMENSION_SUFFIX] as string | undefined | null) ||
       null,
@@ -165,6 +198,7 @@ export function prepareLeaderboardItemData(
   // The totals of the measures for the current period,
   // or null if the measure is not valid_percent_of_total
   totals: Record<string, number | null>,
+  dimensionDataType?: { code?: string },
 ) {
   if (values?.length === 0 || !values) {
     return {
@@ -181,7 +215,7 @@ export function prepareLeaderboardItemData(
   for (const value of values) {
     if (aboveTheFold.length === numberAboveTheFold) break;
 
-    const dimensionValue = value[dimensionName] as string;
+    const dimensionValue = formatDimensionValue(value[dimensionName], dimensionDataType);
 
     belowTheFoldValues.delete(dimensionValue);
 
