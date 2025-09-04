@@ -1260,6 +1260,10 @@ func (r *ModelReconciler) executeSingle(ctx context.Context, executor *wrappedMo
 			}
 			stageDuration = stageResult.ExecDuration
 			inputProps = stageResult.Properties
+
+			// Drop the stage result after the final step has executed.
+			// We do this using the same ctx, which means we may leak data in the staging connector in case of context cancellations.
+			// This is acceptable since the staging connector is assumed to be configured for temporary data.
 			defer func() {
 				if err := executor.stageResultManager.Delete(ctx, stageResult); err != nil {
 					r.C.Logger.Warn("Failed to clean up staged model output", zap.String("model", self.Meta.Name.Name), zap.Error(err), observability.ZapCtx(ctx))
@@ -1376,7 +1380,8 @@ func (r *ModelReconciler) executeWithRetry(ctx context.Context, self *runtimev1.
 	return finalResult, lastErr
 }
 
-// wrappedModelExecutor wraps one or two model executors for staged execution.
+// wrappedModelExecutor is a ModelExecutor wraps one or two ModelExecutors. It is used to execute a model with a staging connector.
+// If the model does not require a staging connector, the wrappedModelExecutor will only wrap the final executor.
 type wrappedModelExecutor struct {
 	finalConnector     string
 	final              drivers.ModelExecutor
