@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -59,13 +60,27 @@ func (c *Connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, p
 }
 
 func (c *Connection) ListTables(ctx context.Context, database, databaseSchema string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
+	if pageSize == 0 {
+		pageSize = drivers.DefaultPageSize
+	}
+	offset := 0
+	if pageToken != "" {
+		var err error
+		offset, err = strconv.Atoi(pageToken)
+		if err != nil {
+			return nil, "", fmt.Errorf("invalid page token: %w", err)
+		}
+	}
 	q := fmt.Sprintf(`
 	SELECT
 		table_name,
 		table_type
 	FROM %s.information_schema.tables
-	WHERE table_schema = %s
-	`, sqlSafeName(database), escapeStringValue(databaseSchema))
+	WHERE table_schema = %s 
+	ORDER BY table_name
+	OFFSET %d
+	LIMIT %d 
+	`, sqlSafeName(database), escapeStringValue(databaseSchema), offset, pageSize+1)
 
 	client, err := c.getClient(ctx)
 	if err != nil {
@@ -78,35 +93,27 @@ func (c *Connection) ListTables(ctx context.Context, database, databaseSchema st
 	}
 
 	input := &athena.GetQueryResultsInput{QueryExecutionId: queryID}
-	if pageSize == 0 {
-		pageSize = drivers.DefaultPageSize
-	}
-	size := int32(pageSize)
-	input.MaxResults = &size
-	if pageToken != "" {
-		input.NextToken = &pageToken
-	}
 	results, err := client.GetQueryResults(ctx, input)
 	if err != nil {
 		return nil, "", fmt.Errorf("failed to get query results: %w", err)
 	}
 	// first row is header of skipping it
-	tables := make([]*drivers.TableInfo, 0, len(results.ResultSet.Rows)-1)
+	res := make([]*drivers.TableInfo, 0, len(results.ResultSet.Rows)-1)
 	for _, row := range results.ResultSet.Rows[1:] {
 		if len(row.Data) < 2 || row.Data[0].VarCharValue == nil || row.Data[1].VarCharValue == nil {
 			continue
 		}
-		tables = append(tables, &drivers.TableInfo{
+		res = append(res, &drivers.TableInfo{
 			Name: *row.Data[0].VarCharValue,
 			View: strings.EqualFold(*row.Data[1].VarCharValue, "VIEW"),
 		})
 	}
-
 	next := ""
-	if results.NextToken != nil {
-		next = *results.NextToken
+	if len(res) > int(pageSize) {
+		res = res[:pageSize]
+		next = strconv.Itoa(offset + int(pageSize))
 	}
-	return tables, next, nil
+	return res, next, nil
 }
 
 func (c *Connection) GetTable(ctx context.Context, database, databaseSchema, table string) (*drivers.TableMetadata, error) {
@@ -226,7 +233,14 @@ func (c *Connection) listSchemasForCatalog(ctx context.Context, client *athena.C
 	return res, nil
 }
 
-func paginateSchemas(all []*drivers.DatabaseSchemaInfo, pageSize uint32, pageToken string) ([]*drivers.DatabaseSchemaInfo, string, error) {
+func paginateSchemas(res []*drivers.DatabaseSchemaInfo, pageSize uint32, pageToken string) ([]*drivers.DatabaseSchemaInfo, string, error) {
+	// sort by database and schema befor paginating
+	sort.Slice(res, func(i, j int) bool {
+		if res[i].Database == res[j].Database {
+			return res[i].DatabaseSchema < res[j].DatabaseSchema
+		}
+		return res[i].Database < res[j].Database
+	})
 	if pageSize == 0 {
 		pageSize = drivers.DefaultPageSize
 	}
@@ -239,14 +253,14 @@ func paginateSchemas(all []*drivers.DatabaseSchemaInfo, pageSize uint32, pageTok
 		}
 	}
 	end := offset + int(pageSize)
-	if end > len(all) {
-		end = len(all)
+	if end > len(res) {
+		end = len(res)
 	}
 	next := ""
-	if end < len(all) {
+	if end < len(res) {
 		next = fmt.Sprintf("%d", end)
 	}
-	return all[offset:end], next, nil
+	return res[offset:end], next, nil
 }
 
 func sqlSafeName(name string) string {

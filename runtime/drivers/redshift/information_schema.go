@@ -3,6 +3,7 @@ package redshift
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -12,7 +13,18 @@ import (
 )
 
 func (c *Connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, pageToken string) ([]*drivers.DatabaseSchemaInfo, string, error) {
-	q := `
+	if pageSize == 0 {
+		pageSize = drivers.DefaultPageSize
+	}
+	offset := 0
+	if pageToken != "" {
+		var err error
+		offset, err = strconv.Atoi(pageToken)
+		if err != nil {
+			return nil, "", fmt.Errorf("invalid page token: %w", err)
+		}
+	}
+	q := fmt.Sprintf(`
 	SELECT 
 		database_name, 
 		schema_name 
@@ -20,7 +32,9 @@ func (c *Connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, p
 	WHERE schema_name NOT IN ('information_schema', 'pg_catalog') OR schema_name = current_schema()
 	GROUP BY database_name, schema_name 
 	ORDER BY database_name, schema_name
-	`
+	LIMIT %d 
+	OFFSET %d
+	`, pageSize+1, offset)
 
 	awsConfig, err := c.awsConfig(ctx, c.config.AWSRegion)
 	if err != nil {
@@ -35,8 +49,7 @@ func (c *Connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, p
 	}
 
 	result, err := client.GetStatementResult(ctx, &redshiftdata.GetStatementResultInput{
-		Id:        aws.String(queryExecutionID),
-		NextToken: aws.String(pageToken),
+		Id: aws.String(queryExecutionID),
 	})
 	if err != nil {
 		return nil, "", fmt.Errorf("failed to get query results: %w", err)
@@ -58,21 +71,35 @@ func (c *Connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, p
 		})
 	}
 	next := ""
-	if result.NextToken != nil {
-		next = *result.NextToken
+	if len(res) > int(pageSize) {
+		res = res[:pageSize]
+		next = strconv.Itoa(offset + int(pageSize))
 	}
 	return res, next, nil
 }
 
 func (c *Connection) ListTables(ctx context.Context, database, databaseSchema string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
+	if pageSize == 0 {
+		pageSize = drivers.DefaultPageSize
+	}
+	offset := 0
+	if pageToken != "" {
+		var err error
+		offset, err = strconv.Atoi(pageToken)
+		if err != nil {
+			return nil, "", fmt.Errorf("invalid page token: %w", err)
+		}
+	}
 	q := fmt.Sprintf(`
 	SELECT
 		table_name,
 		CASE WHEN table_type = 'VIEW' THEN true ELSE false END AS view
 	FROM svv_all_tables
 	WHERE database_name = %s AND schema_name = %s 
-	ORDER BY table_name;
-	`, escapeStringValue(database), escapeStringValue(databaseSchema))
+	ORDER BY table_name
+	LIMIT %d 
+	OFFSET %d
+	`, escapeStringValue(database), escapeStringValue(databaseSchema), pageSize+1, offset)
 
 	awsConfig, err := c.awsConfig(ctx, c.config.AWSRegion)
 	if err != nil {
@@ -87,8 +114,7 @@ func (c *Connection) ListTables(ctx context.Context, database, databaseSchema st
 	}
 
 	result, err := client.GetStatementResult(ctx, &redshiftdata.GetStatementResultInput{
-		Id:        aws.String(queryExecutionID),
-		NextToken: aws.String(pageToken),
+		Id: aws.String(queryExecutionID),
 	})
 	if err != nil {
 		return nil, "", fmt.Errorf("failed to get query results: %w", err)
@@ -110,8 +136,9 @@ func (c *Connection) ListTables(ctx context.Context, database, databaseSchema st
 		})
 	}
 	next := ""
-	if result.NextToken != nil {
-		next = *result.NextToken
+	if len(res) > int(pageSize) {
+		res = res[:pageSize]
+		next = strconv.Itoa(offset + int(pageSize))
 	}
 	return res, next, nil
 }

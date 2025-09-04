@@ -68,22 +68,6 @@ func (c *connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, p
 }
 
 func (c *connection) ListTables(ctx context.Context, database, databaseSchema string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
-	q := fmt.Sprintf(`
-		SELECT
-			table_name,
-			CASE WHEN table_type = 'VIEW' THEN true ELSE false END AS view
-		FROM %s.INFORMATION_SCHEMA.TABLES
-		WHERE table_schema = ?
-		ORDER BY table_name
-		LIMIT ? OFFSET ?
-	`, sqlSafeName(database))
-
-	db, err := c.getDB()
-	if err != nil {
-		return nil, "", err
-	}
-	defer db.Close()
-
 	if pageSize == 0 {
 		pageSize = drivers.DefaultPageSize
 	}
@@ -95,8 +79,23 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 			return nil, "", fmt.Errorf("invalid page token: %w", err)
 		}
 	}
+	q := fmt.Sprintf(`
+		SELECT
+			table_name,
+			CASE WHEN table_type = 'VIEW' THEN true ELSE false END AS view
+		FROM %s.INFORMATION_SCHEMA.TABLES
+		WHERE table_schema = ?
+		ORDER BY table_name
+		LIMIT ? 
+		OFFSET ?
+	`, sqlSafeName(database))
 
-	rows, err := db.QueryxContext(ctx, q, databaseSchema, int(pageSize)+1, offset)
+	db, err := c.getDB()
+	if err != nil {
+		return nil, "", err
+	}
+	defer db.Close()
+	rows, err := db.QueryxContext(ctx, q, databaseSchema, pageSize+1, offset)
 	if err != nil {
 		return nil, "", err
 	}
@@ -121,7 +120,7 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 	next := ""
 	if len(res) > int(pageSize) {
 		res = res[:pageSize]
-		next = fmt.Sprintf("%d", offset+int(pageSize))
+		next = strconv.Itoa(offset + int(pageSize))
 	}
 	return res, next, nil
 }

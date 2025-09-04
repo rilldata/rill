@@ -108,7 +108,7 @@ func (c *Connection) ListTables(ctx context.Context, database, databaseSchema st
 	next := ""
 	if len(res) > int(pageSize) {
 		res = res[:pageSize]
-		next = fmt.Sprintf("%d", offset+int(pageSize))
+		next = strconv.Itoa(offset + int(pageSize))
 	}
 	return res, next, nil
 }

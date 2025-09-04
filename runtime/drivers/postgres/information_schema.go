@@ -27,7 +27,8 @@ func (c *connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, p
 	FROM pg_namespace 
 	WHERE has_schema_privilege(nspname, 'USAGE') AND ((nspname NOT IN ('pg_catalog', 'information_schema', 'pg_toast') AND nspname NOT LIKE 'pg_temp_%' AND nspname NOT LIKE 'pg_toast_temp_%') OR nspname = current_schema())
 	ORDER BY nspname
-	LIMIT $1 OFFSET $2
+	LIMIT $1 
+	OFFSET $2
 	`
 	db, err := c.getDB()
 	if err != nil {
@@ -55,7 +56,7 @@ func (c *connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, p
 	next := ""
 	if len(schemas) > int(pageSize) {
 		schemas = schemas[:pageSize]
-		next = fmt.Sprintf("%d", offset+int(pageSize))
+		next = strconv.Itoa(offset + int(pageSize))
 	}
 	return schemas, next, rows.Err()
 }
@@ -79,7 +80,8 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 	FROM information_schema.tables 
 	WHERE table_schema = $1
 	ORDER BY table_name
-	LIMIT $2 OFFSET $3
+	LIMIT $2 
+	OFFSET $3
 	`
 	db, err := c.getDB()
 	if err != nil {
@@ -108,7 +110,7 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 	next := ""
 	if len(result) > int(pageSize) {
 		result = result[:pageSize]
-		next = fmt.Sprintf("%d", offset+int(pageSize))
+		next = strconv.Itoa(offset + int(pageSize))
 	}
 	return result, next, rows.Err()
 }

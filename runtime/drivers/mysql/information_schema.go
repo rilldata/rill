@@ -26,7 +26,8 @@ func (c *connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, p
 	FROM information_schema.schemata
 	WHERE schema_name not in ('information_schema', 'performance_schema', 'sys') OR schema_name = DATABASE()
 	ORDER BY schema_name
-	LIMIT ? OFFSET ?
+	LIMIT ? 
+	OFFSET ?
 	`
 
 	db, err := c.getDB()
@@ -60,7 +61,7 @@ func (c *connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, p
 	next := ""
 	if len(res) > int(pageSize) {
 		res = res[:pageSize]
-		next = fmt.Sprintf("%d", offset+int(pageSize))
+		next = strconv.Itoa(offset + int(pageSize))
 	}
 	return res, next, nil
 }
@@ -84,7 +85,8 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 	FROM information_schema.tables
 	WHERE table_schema = ?
 	ORDER BY table_name
-	LIMIT ? OFFSET ?
+	LIMIT ? 
+	OFFSET ?
 	`
 
 	db, err := c.getDB()
@@ -119,7 +121,7 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 	next := ""
 	if len(result) > int(pageSize) {
 		result = result[:pageSize]
-		next = fmt.Sprintf("%d", offset+int(pageSize))
+		next = strconv.Itoa(offset + int(pageSize))
 	}
 	return result, next, nil
 }
