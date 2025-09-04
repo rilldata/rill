@@ -857,8 +857,8 @@ Example commands to generate and encode:
 # Generate a 2048-bit unencrypted PKCS#8 private key
 openssl genrsa 2048 | openssl pkcs8 -topk8 -inform PEM -out rsa_key.p8 -nocrypt
 
-# Encode it in base64 URL-safe format for Snowflake
-cat rsa_key.p8 | base64 | tr '+/' '-_' | tr -d '='
+# Convert URL safe format for Snowflake
+cat rsa_key.p8 | grep -v "\----" | tr -d '\n' | tr '+/' '-_' | tr -d '='
 ```
 See: https://docs.snowflake.com/en/user-guide/key-pair-auth
 :::
