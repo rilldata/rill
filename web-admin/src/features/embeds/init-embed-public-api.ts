@@ -1,106 +1,18 @@
 import { goto } from "$app/navigation";
 import { page } from "$app/stores";
-import { getCleanedUrlParamsForGoto } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params";
-import { getRillDefaultExploreUrlParams } from "@rilldata/web-common/features/dashboards/url-state/get-rill-default-explore-url-params";
-import { derived, get, type Readable } from "svelte/store";
-import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-import {
-  getTimeControlState,
-  type TimeControlState,
-} from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
+import { Throttler } from "@rilldata/web-common/lib/throttler.ts";
+import { get } from "svelte/store";
 import {
   emitNotification,
   registerRPCMethod,
 } from "@rilldata/web-common/lib/rpc";
 
+const STATE_CHANGE_THROTTLE_TIMEOUT = 200;
+
 export default function initEmbedPublicAPI(): () => void {
-  const { validSpecStore, dashboardStore, timeRangeSummaryStore } =
-    getStateManagers();
-
-  const cachedRillDefaultParamsStore = derived(
-    [validSpecStore, timeRangeSummaryStore],
-    ([$validSpecStore, $timeRangeSummaryStore]) => {
-      const exploreSpec = $validSpecStore.data?.explore ?? {};
-      const metricsViewSpec = $validSpecStore.data?.metricsView ?? {};
-
-      const rillDefaultExploreParams = getRillDefaultExploreUrlParams(
-        metricsViewSpec,
-        exploreSpec,
-        $timeRangeSummaryStore.data?.timeRangeSummary,
-      );
-      return rillDefaultExploreParams;
-    },
-  );
-
-  const derivedState: Readable<string> = derived(
-    [
-      validSpecStore,
-      dashboardStore,
-      timeRangeSummaryStore,
-      cachedRillDefaultParamsStore,
-    ],
-    ([
-      $validSpecStore,
-      $dashboardStore,
-      $timeRangeSummaryStore,
-      $cachedRillDefaultParams,
-    ]) => {
-      const exploreSpec = $validSpecStore.data?.explore ?? {};
-      const metricsViewSpec = $validSpecStore.data?.metricsView ?? {};
-
-      let timeControlsState: TimeControlState | undefined = undefined;
-      if (metricsViewSpec && exploreSpec && $dashboardStore) {
-        timeControlsState = getTimeControlState(
-          metricsViewSpec,
-          exploreSpec,
-          $timeRangeSummaryStore.data?.timeRangeSummary,
-          $dashboardStore,
-        );
-      }
-
-      return decodeURIComponent(
-        // It doesnt make sense to send default params, so clean them based on rill opinionated defaults.
-        getCleanedUrlParamsForGoto(
-          exploreSpec,
-          $dashboardStore,
-          timeControlsState,
-          $cachedRillDefaultParams,
-        ).toString(),
-      );
-    },
-  );
-
-  const unsubscribe = derivedState.subscribe((stateString) => {
-    emitNotification("stateChange", { state: stateString });
-  });
-
   registerRPCMethod("getState", () => {
-    const validSpec = get(validSpecStore);
-    const dashboard = get(dashboardStore);
-    const timeSummary = get(timeRangeSummaryStore).data;
-    const cachedRillDefaultParams = get(cachedRillDefaultParamsStore);
-
-    const exploreSpec = validSpec.data?.explore ?? {};
-    const metricsViewSpec = validSpec.data?.metricsView ?? {};
-
-    let timeControlsState: TimeControlState | undefined = undefined;
-    if (metricsViewSpec && exploreSpec && dashboard) {
-      timeControlsState = getTimeControlState(
-        metricsViewSpec,
-        exploreSpec,
-        timeSummary?.timeRangeSummary,
-        dashboard,
-      );
-    }
-    const stateString = decodeURIComponent(
-      getCleanedUrlParamsForGoto(
-        exploreSpec,
-        dashboard,
-        timeControlsState,
-        cachedRillDefaultParams,
-      ).toString(),
-    );
-    return { state: stateString };
+    const { url } = get(page);
+    return { state: removeEmbedParams(url.searchParams) };
   });
 
   registerRPCMethod("setState", (state: string) => {
@@ -115,5 +27,37 @@ export default function initEmbedPublicAPI(): () => void {
 
   emitNotification("ready");
 
+  const stateChangeThrottler = new Throttler(
+    STATE_CHANGE_THROTTLE_TIMEOUT,
+    STATE_CHANGE_THROTTLE_TIMEOUT,
+  );
+  // Keep this at the end so that RPC methods are already available and "ready" has been fired.
+  const unsubscribe = page.subscribe(({ url }) => {
+    // Throttle the state change event.
+    // This avoids too many events being fired when state is changed quickly.
+    // This also avoids early events being fired just before dashboard is ready but is routed to.
+    stateChangeThrottler.throttle(() => {
+      emitNotification("stateChange", {
+        state: removeEmbedParams(url.searchParams),
+      });
+    });
+  });
+
   return unsubscribe;
+}
+
+const EmbedParams = [
+  "instance_id",
+  "runtime_host",
+  "access_token",
+  "resource",
+  "type",
+  "kind",
+  "navigation",
+];
+function removeEmbedParams(searchParams: URLSearchParams) {
+  const cleanedParams = new URLSearchParams(searchParams);
+  EmbedParams.forEach((param) => cleanedParams.delete(param));
+  const search = cleanedParams.toString();
+  return decodeURIComponent(search);
 }

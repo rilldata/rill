@@ -25,8 +25,8 @@ import {
 import { makeSufficientlyQualifiedTableName } from "./connectors-utils";
 
 const YAML_MODEL_TEMPLATE = `type: model
-connector: {{ connector }}
-materialize: true
+materialize: true\n
+connector: {{ connector }}\n
 sql: {{ sql }}{{ dev_section }}
 `;
 
@@ -305,7 +305,7 @@ export async function createYamlModelFromTable(
   // NOTE: Redshift does not support LIMIT clauses in its UNLOAD data exports.
   const shouldIncludeDevSection = driverName !== "redshift";
   const devSection = shouldIncludeDevSection
-    ? `\ndev:\n  sql: ${selectStatement} limit 10000`
+    ? `\n\ndev:\n  sql: ${selectStatement} limit 10000`
     : "";
 
   const yamlContent = YAML_MODEL_TEMPLATE.replace("{{ connector }}", connector)

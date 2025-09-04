@@ -11,8 +11,8 @@ export class Throttler {
     callback: () => void | Promise<void>,
     useShortTimeout = false,
   ) {
-    this.cancel();
     this.callback = callback;
+    if (this.timer) return;
 
     this.timer = setTimeout(
       () => {
@@ -28,8 +28,6 @@ export class Throttler {
   }
 
   public cancel() {
-    if (!this.timer) return;
-
     clearTimeout(this.timer);
     this.timer = undefined;
   }
