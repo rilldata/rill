@@ -1,14 +1,9 @@
 <script lang="ts">
   import { Button } from "@rilldata/web-common/components/button";
   import Github from "@rilldata/web-common/components/icons/Github.svelte";
-  import InfoCircle from "@rilldata/web-common/components/icons/InfoCircle.svelte";
-  import * as Tooltip from "@rilldata/web-common/components/tooltip-v2";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types.ts";
-  import {
-    getCreateProjectRoute,
-    getDeployRouteForProject,
-  } from "@rilldata/web-common/features/project/deploy/route-utils.ts";
+  import { getDeployRouteForProject } from "@rilldata/web-common/features/project/deploy/route-utils.ts";
   import { createLocalServiceGitStatus } from "@rilldata/web-common/runtime-client/local-service.ts";
   import GithubRepoDetails from "@rilldata/web-common/features/project/GithubRepoDetails.svelte";
   import type { PageData } from "./$types";
@@ -18,6 +13,9 @@
 
   const gitStatusQuery = createLocalServiceGitStatus();
   const deployUrl = getDeployRouteForProject(orgParam);
+
+  $: ({ isPending, data: statusData } = $gitStatusQuery);
+  $: linkDisabled = isPending || !$deployUrl;
 </script>
 
 <div class="text-xl flex flex-col gap-y-4 items-center">
@@ -27,13 +25,13 @@
 <div class="text-base text-gray-500">
   We’ve detected a self-managed GitHub repo associated with this project:
 </div>
-{#if $gitStatusQuery.isPending}
+{#if isPending}
   <Spinner status={EntityStatus.Running} size="2rem" duration={725} />
 {:else}
   <GithubRepoDetails
-    gitRemote={$gitStatusQuery.data?.githubUrl ?? ""}
-    branch={$gitStatusQuery.data?.branch ?? ""}
-    subpath={$gitStatusQuery.data?.subpath ?? ""}
+    gitRemote={statusData?.githubUrl ?? ""}
+    branch={statusData?.branch ?? ""}
+    subpath={statusData?.subpath ?? ""}
   />
 {/if}
 <div class="text-base text-gray-500">
@@ -41,27 +39,19 @@
   to authenticate and install Rill
 </div>
 
-<Button wide type="primary" href={$deployUrl}>Link to this repo</Button>
+<Button
+  wide
+  type="primary"
+  href={$deployUrl}
+  loading={linkDisabled}
+  disabled={linkDisabled}>Link to this repo</Button
+>
 
 <Button
   wide
   type="ghost"
-  href={getCreateProjectRoute(orgParam)}
+  onClick={() => window.close()}
   class="-mt-2 flex flex-row items-center"
 >
-  <span>I'll do it later</span>
-  <Tooltip.Root>
-    <Tooltip.Trigger>
-      <InfoCircle />
-    </Tooltip.Trigger>
-    <Tooltip.Content
-      side="right"
-      sideOffset={8}
-      class="w-80 bg-gray-700 dark:bg-gray-900 shadow-md text-surface"
-    >
-      Choosing not to link to this repo can create a scenario where your Rill
-      Cloud project will be out of sync with your self-managed Git repo. You can
-      always link to this repo from the Project Status page in Rill Cloud.
-    </Tooltip.Content>
-  </Tooltip.Root>
+  Cancel
 </Button>

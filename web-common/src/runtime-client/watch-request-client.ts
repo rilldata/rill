@@ -41,8 +41,7 @@ export class WatchRequestClient<Res extends WatchResponse> {
   private stream: AsyncGenerator<StreamingFetchResponse<Res>> | undefined;
   private eventSource: EventSource | undefined;
   private useSSE: boolean = false;
-  // private outOfFocusThrottler = new Throttler(120000, 20000);
-  private outOfFocusThrottler = new Throttler(10000, 1000);
+  private outOfFocusThrottler = new Throttler(120000, 20000);
   public retryAttempts = writable(0);
   private reconnectTimeout: ReturnType<typeof setTimeout> | undefined;
   private retryTimeout: ReturnType<typeof setTimeout> | undefined;

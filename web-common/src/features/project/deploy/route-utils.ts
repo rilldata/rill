@@ -30,10 +30,6 @@ export function getSelectProjectRoute() {
   return `/deploy/project/select`;
 }
 
-export function getOverwriteProjectRoute(orgName: string) {
-  return `/deploy/project/overwrite?org=${orgName}`;
-}
-
 export function getDeployUsingGithubRoute(orgName: string) {
   return `/deploy/project/github?org=${orgName}`;
 }
@@ -77,12 +73,16 @@ export function getDeployRouteForProject(orgName: string) {
   return derived(
     [createLocalServiceGitStatus(), getLocalGitRepoStatus(), page],
     ([$gitStatus, $localGitRepoStatus, $page]) => {
+      if ($gitStatus.isPending) return "";
+
       const hasLocalGitRepo = Boolean(
         $gitStatus.data?.githubUrl && !$gitStatus.data?.managedGit,
       );
       // Use the rill-managed deploy method if the project folder is not connected to git.
       if (!hasLocalGitRepo) return getCreateProjectRoute(orgName);
       const deployRoute = getCreateProjectRoute(orgName, true);
+
+      if ($localGitRepoStatus.isPending) return "";
 
       // Already have access so deploy using git
       const hasRepoAccess = Boolean($localGitRepoStatus.data?.hasAccess);
