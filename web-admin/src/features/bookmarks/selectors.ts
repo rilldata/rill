@@ -23,7 +23,8 @@ import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-import { prettyFormatTimeRange } from "@rilldata/web-common/lib/time/ranges";
+
+import { prettyFormatTimeRange } from "@rilldata/web-common/lib/time/ranges/formatter.ts";
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import {
   createQueryServiceMetricsViewSchema,
@@ -180,9 +181,10 @@ export function getPrettySelectedTimeRange(
         timeRangeSummary,
         metricsExplorerEntity,
       ]);
-      if (!timeRangeState.ready) return "";
+      if (!timeRangeState.ready || !timeRangeState.selectedTimeRange?.start)
+        return "";
       return prettyFormatTimeRange(
-        timeRangeState.selectedTimeRange?.start,
+        timeRangeState.selectedTimeRange.start,
         timeRangeState.selectedTimeRange?.end,
         timeRangeState.selectedTimeRange?.name,
         metricsExplorerEntity?.selectedTimezone,

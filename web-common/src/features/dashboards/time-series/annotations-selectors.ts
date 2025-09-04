@@ -1,7 +1,8 @@
 import type { Annotation } from "@rilldata/web-common/components/data-graphic/marks/annotations.ts";
 import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors.ts";
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config.ts";
-import { prettyFormatTimeRange } from "@rilldata/web-common/lib/time/ranges";
+
+import { prettyFormatTimeRange } from "@rilldata/web-common/lib/time/ranges/formatter.ts";
 import {
   getOffset,
   getStartOfPeriod,
