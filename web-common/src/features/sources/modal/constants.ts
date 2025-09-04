@@ -17,7 +17,6 @@ export const CONNECTION_TAB_OPTIONS: { value: string; label: string }[] = [
   { value: "dsn", label: "Enter connection string" },
 ];
 
-// Connectors that get rewritten to DuckDB
 const DUCKDB_REWRITE_CONNECTORS = [
   "s3",
   "gcs",
