@@ -1,8 +1,8 @@
 <script lang="ts">
   import {
-    getGitUrlFromRemote,
     getRepoNameFromGitRemote,
-  } from "@rilldata/web-common/features/project/github-utils";
+    getGitUrlFromRemote,
+  } from "@rilldata/web-common/features/project/deploy/github-utils";
 
   export let gitRemote: string;
 

@@ -50,6 +50,7 @@
   export let onRemove: () => void;
   export let onApplyInList: (values: string[]) => void;
   export let onSelect: (value: string) => void;
+  export let onMultiSelect: (values: string[]) => void;
   export let onApplyContainsMode: (inputText: string) => void = () => {};
   export let onToggleFilterMode: () => void;
   export let isUrlTooLongAfterInListFilter: (
@@ -325,14 +326,14 @@
     const proxyValues = new Set(selectedValuesProxy);
 
     // Apply all changes
-    [...currentValues, ...proxyValues].forEach((value) => {
-      const wasSelected = currentValues.has(value);
-      const isSelected = proxyValues.has(value);
+    onMultiSelect(
+      [...currentValues, ...proxyValues].filter((value) => {
+        const wasSelected = currentValues.has(value);
+        const isSelected = proxyValues.has(value);
 
-      if (wasSelected !== isSelected) {
-        onSelect(value);
-      }
-    });
+        return wasSelected !== isSelected;
+      }),
+    );
 
     // Handle exclude mode toggle
     if (curExcludeMode !== excludeMode) {

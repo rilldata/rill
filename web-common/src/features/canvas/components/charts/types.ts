@@ -12,6 +12,7 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
+import type { Color } from "chroma-js";
 import type { TimeUnit } from "vega-lite/build/src/timeunit";
 
 export type ChartType =
@@ -22,7 +23,9 @@ export type ChartType =
   | "stacked_bar_normalized"
   | "donut_chart"
   | "pie_chart"
-  | "heatmap";
+  | "heatmap"
+  | "funnel_chart"
+  | "multi_metric_chart";
 
 export type ChartDataQuery = CreateQueryResult<
   V1MetricsViewAggregationResponse,
@@ -41,13 +44,12 @@ export type ChartDataResult = {
   isFetching: boolean;
   fields: ChartFieldsMap;
   error?: HTTPError | null;
+  theme: { primary: Color; secondary: Color };
   domainValues?: ChartDomainValues;
 };
 
 export interface ChartDomainValues {
-  xValues?: string[];
-  colorValues?: string[];
-  yValues?: string[];
+  [key: string]: string[] | number[] | undefined;
 }
 
 export interface TimeDimensionDefinition {
@@ -64,6 +66,8 @@ export type ChartSortDirectionOptions =
   | "-y"
   | "color"
   | "-color"
+  | "measure"
+  | "-measure"
   | "custom";
 
 export type ChartSortDirection =

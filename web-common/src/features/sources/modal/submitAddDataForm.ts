@@ -31,13 +31,18 @@ import { ResourceKind } from "../../entity-management/resource-selectors";
 import { EntityType } from "../../entity-management/types";
 import { EMPTY_PROJECT_TITLE } from "../../welcome/constants";
 import { isProjectInitialized } from "../../welcome/is-project-initialized";
-import { compileSourceYAML, maybeRewriteToDuckDb } from "../sourceUtils";
+import { compileSourceYAML, prepareSourceFormData } from "../sourceUtils";
+import { OLAP_ENGINES } from "./constants";
 
 interface AddDataFormValues {
   // name: string; // Commenting out until we add user-provided names for Connectors
   [key: string]: unknown;
 }
 
+/**
+ * Handles submission for sources, including those that get rewritten to DuckDB
+ * (GCS, S3, Azure, etc.) and actual source files.
+ */
 export async function submitAddSourceForm(
   queryClient: QueryClient,
   connector: V1ConnectorDriver,
@@ -46,7 +51,7 @@ export async function submitAddSourceForm(
   const instanceId = get(runtime).instanceId;
   await beforeSubmitForm(instanceId);
 
-  const [rewrittenConnector, rewrittenFormValues] = maybeRewriteToDuckDb(
+  const [rewrittenConnector, rewrittenFormValues] = prepareSourceFormData(
     connector,
     formValues,
   );
@@ -60,7 +65,7 @@ export async function submitAddSourceForm(
     path: newSourceFilePath,
     blob: compileSourceYAML(rewrittenConnector, rewrittenFormValues),
     create: true,
-    createOnly: false, // The modal might be opened from a YAML file with placeholder text, so the file might already exist
+    createOnly: false,
   });
 
   // Create or update the `.env` file
@@ -79,7 +84,10 @@ export async function submitAddSourceForm(
   await goto(`/files/${newSourceFilePath}`);
 }
 
-export async function submitAddOLAPConnectorForm(
+/**
+ * Handles submission for all connector types: ImplementsOLAP, ImplementsWarehouse, ImplementsSQLStore
+ */
+export async function submitAddConnectorForm(
   queryClient: QueryClient,
   connector: V1ConnectorDriver,
   formValues: AddDataFormValues,
@@ -167,19 +175,24 @@ export async function submitAddOLAPConnectorForm(
     throw new Error(errorMessage);
   }
 
-  // Test the connection to the OLAP database
+  // Test the connection to the OLAP database (only for OLAP_ENGINES connectors)
   // If the connection test fails, rollback the changes
-  const result = await testOLAPConnector(instanceId, connector.name as string);
-  if (!result.success) {
-    await rollbackConnectorChanges(
+  if (OLAP_ENGINES.includes(connector.name as string)) {
+    const result = await testOLAPConnector(
       instanceId,
-      newConnectorFilePath,
-      originalEnvBlob,
+      connector.name as string,
     );
-    throw {
-      message: result.error || "Unable to establish a connection",
-      details: result.details,
-    };
+    if (!result.success) {
+      await rollbackConnectorChanges(
+        instanceId,
+        newConnectorFilePath,
+        originalEnvBlob,
+      );
+      throw {
+        message: result.error || "Unable to establish a connection",
+        details: result.details,
+      };
+    }
   }
 
   /**
@@ -187,13 +200,18 @@ export async function submitAddOLAPConnectorForm(
    * Update the project configuration and navigate to the new connector
    */
 
-  // Update the `rill.yaml` file
-  await runtimeServicePutFile(instanceId, {
-    path: "rill.yaml",
-    blob: await updateRillYAMLWithOlapConnector(queryClient, newConnectorName),
-    create: true,
-    createOnly: false,
-  });
+  // Update the `rill.yaml` file only for actual OLAP connectors (ClickHouse, Druid, Pinot)
+  if (OLAP_ENGINES.includes(connector.name as string)) {
+    await runtimeServicePutFile(instanceId, {
+      path: "rill.yaml",
+      blob: await updateRillYAMLWithOlapConnector(
+        queryClient,
+        newConnectorName,
+      ),
+      create: true,
+      createOnly: false,
+    });
+  }
 
   // Go to the new connector file
   await goto(`/files/${newConnectorFilePath}`);

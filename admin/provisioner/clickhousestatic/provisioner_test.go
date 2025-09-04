@@ -213,7 +213,7 @@ func TestClickHouseStaticEnvVarNotSet(t *testing.T) {
 	require.NoError(t, err)
 	_, err = New(specJSON, nil, zap.NewNop())
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "environment variable NONEXISTENT_CLICKHOUSE_DSN is not set or empty")
+	require.Contains(t, err.Error(), "environment variable \"NONEXISTENT_CLICKHOUSE_DSN\" is not set or empty")
 }
 
 func TestClickHouseStaticEnvVarEmpty(t *testing.T) {
@@ -231,7 +231,7 @@ func TestClickHouseStaticEnvVarEmpty(t *testing.T) {
 	require.NoError(t, err)
 	_, err = New(specJSON, nil, zap.NewNop())
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "environment variable EMPTY_CLICKHOUSE_DSN is not set or empty")
+	require.Contains(t, err.Error(), "environment variable \"EMPTY_CLICKHOUSE_DSN\" is not set or empty")
 }
 
 func TestClickHouseStaticHumanReadableNaming(t *testing.T) {
@@ -279,8 +279,8 @@ func TestClickHouseStaticHumanReadableNaming(t *testing.T) {
 	opts := &provisioner.ResourceOptions{
 		Args: nil,
 		Annotations: map[string]string{
-			"org":     "Acme-Corp",
-			"project": "My-Project",
+			"organization_name": "Acme-Corp",
+			"project_name":      "My-Project",
 		},
 		RillVersion: "dev",
 	}
@@ -294,9 +294,8 @@ func TestClickHouseStaticHumanReadableNaming(t *testing.T) {
 	opts2, err := clickhouse.ParseDSN(cfg.DSN)
 	require.NoError(t, err)
 	// Check that the database name follows the expected format
-	expectedID := strings.ReplaceAll(resourceID, "-", "")
-	expectedDBName := fmt.Sprintf("rill_acme_corp_my_project_%s", expectedID)
-	expectedUser := fmt.Sprintf("rill_%s", expectedID) // User name remains UUID format
+	expectedUser := fmt.Sprintf("rill_%s", nonAlphanumericRegexp.ReplaceAllString(resourceID, ""))
+	expectedDBName := generateDatabaseName(resourceID, opts.Annotations)
 
 	require.Equal(t, expectedDBName, opts2.Auth.Database)
 	require.Equal(t, expectedUser, opts2.Auth.Username)
@@ -377,9 +376,8 @@ func TestClickHouseStaticFallbackNaming(t *testing.T) {
 	opts2, err := clickhouse.ParseDSN(cfg.DSN)
 	require.NoError(t, err)
 	// Check that the database name follows the fallback format
-	expectedID := strings.ReplaceAll(resourceID, "-", "")
-	expectedDBName := fmt.Sprintf("rill_%s", expectedID)
-	expectedUser := fmt.Sprintf("rill_%s", expectedID) // User name always uses UUID format
+	expectedUser := fmt.Sprintf("rill_%s", nonAlphanumericRegexp.ReplaceAllString(resourceID, ""))
+	expectedDBName := generateDatabaseName(resourceID, opts.Annotations)
 
 	require.Equal(t, expectedDBName, opts2.Auth.Database)
 	require.Equal(t, expectedUser, opts2.Auth.Username)
@@ -401,29 +399,56 @@ func TestClickHouseStaticFallbackNaming(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestSanitizeName(t *testing.T) {
+func TestGenerateDatabaseName(t *testing.T) {
 	tests := []struct {
-		input    string
-		expected string
+		name        string
+		id          string
+		annotations map[string]string
+		expected    string
 	}{
-		{"", ""},
-		{"simple", "simple"},
-		{"Simple", "simple"},
-		{"UPPERCASE", "uppercase"},
-		{"with-dashes", "with_dashes"},
-		{"with spaces", "with_spaces"},
-		{"with@special!chars", "withspecialchars"},
-		{"mixed-Case_Name", "mixed_case_name"},
-		{"123numbers", "123numbers"},
-		{"_underscore_", "_underscore_"},
-		{"Acme-Corp", "acme_corp"},
-		{"My-Project", "my_project"},
+		{
+			name:        "with org and project",
+			id:          "77cf2b72_65ab_4bbe_a10e_627bcff4915e",
+			annotations: map[string]string{"organization_name": "rilldata", "project_name": "dev-project-1"},
+			expected:    "rill_rilldata_devproject1_77cf2b7265ab4bbea10e627bcff4915e",
+		},
+		{
+			name:        "with org only",
+			id:          "12345",
+			annotations: map[string]string{"organization_name": "acme-corp"},
+			expected:    "rill_acmecorp_12345",
+		},
+		{
+			name:        "with project only",
+			id:          "12345",
+			annotations: map[string]string{"project_name": "my-project"},
+			expected:    "rill_myproject_12345",
+		},
+		{
+			name:        "no annotations",
+			id:          "12345",
+			annotations: map[string]string{},
+			expected:    "rill_12345",
+		},
+		{
+			name:        "nil annotations",
+			id:          "12345",
+			annotations: nil,
+			expected:    "rill_12345",
+		},
+		{
+			name:        "long name truncated",
+			id:          "very_long_resource_id_that_will_cause_truncation_12345678",
+			annotations: map[string]string{"organization_name": "very_long_organization_name", "project_name": "very_long_project_name"},
+			expected:    "rill_verylongorganizationname_verylongprojectname_verylongresou",
+		},
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.input, func(t *testing.T) {
-			result := sanitizeName(tt.input)
+		t.Run(tt.name, func(t *testing.T) {
+			result := generateDatabaseName(tt.id, tt.annotations)
 			require.Equal(t, tt.expected, result)
+			require.LessOrEqual(t, len(result), 63, "database name should not exceed 63 characters")
 		})
 	}
 }

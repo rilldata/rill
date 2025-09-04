@@ -8,13 +8,13 @@
   import TableMenuItems from "./TableMenuItems.svelte";
   import TableSchema from "./TableSchema.svelte";
   import UnsupportedTypesIndicator from "./UnsupportedTypesIndicator.svelte";
-  import {
-    makeFullyQualifiedTableName,
-    makeTablePreviewHref,
-  } from "../olap/olap-config";
   import { useIsModelingSupportedForConnectorOLAP as useIsModelingSupportedForConnector } from "../selectors";
   import { runtime } from "../../../runtime-client/runtime-store";
   import type { ConnectorExplorerStore } from "./connector-explorer-store";
+  import {
+    makeFullyQualifiedTableName,
+    makeTablePreviewHref,
+  } from "../connectors-utils";
 
   export let instanceId: string;
   export let driver: string;
@@ -26,6 +26,7 @@
   export let store: ConnectorExplorerStore;
   export let useNewAPI: boolean = false;
   export let showGenerateMetricsAndDashboard: boolean = false;
+  export let showGenerateModel: boolean = false;
 
   let contextMenuOpen = false;
 
@@ -105,7 +106,7 @@
       />
     {/if}
 
-    {#if allowContextMenu && (showGenerateMetricsAndDashboard || isModelingSupported)}
+    {#if allowContextMenu && (showGenerateMetricsAndDashboard || isModelingSupported || showGenerateModel)}
       <DropdownMenu.Root bind:open={contextMenuOpen}>
         <DropdownMenu.Trigger asChild let:builder>
           <ContextButton
@@ -130,6 +131,7 @@
             {databaseSchema}
             {table}
             {showGenerateMetricsAndDashboard}
+            {showGenerateModel}
             {isModelingSupported}
           />
         </DropdownMenu.Content>

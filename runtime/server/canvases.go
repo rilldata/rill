@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -42,6 +43,17 @@ func (s *Server) ResolveCanvas(ctx context.Context, req *runtimev1.ResolveCanvas
 		}
 		return nil, status.Error(codes.Internal, err.Error())
 	}
+
+	// Check if the user has access to the canvas
+	res, access, err := s.runtime.ApplySecurityPolicy(req.InstanceId, auth.GetClaims(ctx).SecurityClaims(), res)
+	if err != nil {
+		return nil, fmt.Errorf("failed to apply security policy: %w", err)
+	}
+	if !access {
+		return nil, status.Errorf(codes.PermissionDenied, "user does not have access to canvas %q", req.Canvas)
+	}
+
+	// Exit early if the canvas is not valid
 	spec := res.GetCanvas().State.ValidSpec
 	if spec == nil {
 		return &runtimev1.ResolveCanvasResponse{
@@ -165,6 +177,20 @@ func (s *Server) ResolveCanvas(ctx context.Context, req *runtimev1.ResolveCanvas
 		referencedMetricsViews[mvName] = mv
 	}
 
+	// Apply security policies to the metrics views.
+	for name, mv := range referencedMetricsViews {
+		mv, access, err := s.runtime.ApplySecurityPolicy(req.InstanceId, auth.GetClaims(ctx).SecurityClaims(), mv)
+		if err != nil {
+			return nil, fmt.Errorf("failed to apply security policy: %w", err)
+		}
+		if !access {
+			delete(referencedMetricsViews, name)
+			continue
+		}
+		referencedMetricsViews[name] = mv
+	}
+
+	// Return the response
 	return &runtimev1.ResolveCanvasResponse{
 		Canvas:                 res,
 		ResolvedComponents:     components,

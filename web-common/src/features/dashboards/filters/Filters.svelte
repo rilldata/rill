@@ -64,7 +64,7 @@
     validSpecStore,
     actions: {
       dimensionsFilter: {
-        toggleDimensionValueSelection,
+        toggleMultipleDimensionValueSelections,
         applyDimensionInListMode,
         applyDimensionContainsMode,
         removeDimensionFilter,
@@ -128,7 +128,11 @@
   $: exploreState = useExploreState($exploreName);
   $: activeTimeZone = $exploreState?.selectedTimezone;
 
-  $: selectedRangeAlias = selectedTimeRange?.name;
+  $: selectedRangeAlias =
+    selectedTimeRange?.name === TimeRangePreset.CUSTOM
+      ? `${selectedTimeRange.start.toISOString()},${selectedTimeRange.end.toISOString()}`
+      : selectedTimeRange?.name;
+
   $: activeTimeGrain = selectedTimeRange?.interval;
   $: defaultTimeRange = exploreSpec.defaultPreset?.timeRange;
 
@@ -456,7 +460,9 @@
                 onRemove={() => removeDimensionFilter(name)}
                 onToggleFilterMode={() => toggleDimensionFilterMode(name)}
                 onSelect={(value) =>
-                  toggleDimensionValueSelection(name, value, true)}
+                  toggleMultipleDimensionValueSelections(name, [value], true)}
+                onMultiSelect={(values) =>
+                  toggleMultipleDimensionValueSelections(name, values, true)}
                 onApplyInList={(values) =>
                   applyDimensionInListMode(name, values)}
                 onApplyContainsMode={(searchText) =>

@@ -24,6 +24,8 @@
     { label: "Y-axis descending", value: "-y" },
     { label: "Color ascending", value: "color" },
     { label: "Color descending", value: "-color" },
+    { label: "Measure ascending", value: "measure" },
+    { label: "Measure descending", value: "-measure" },
     { label: "Custom", value: "custom" },
   ];
 
@@ -38,9 +40,15 @@
     : (sortConfig?.defaultSort ?? "x");
 
   $: customSortDraggableItems = sortConfig?.customSortItems?.map((item) => ({
-    id: item,
+    id: sanitizeItemId(item),
     value: item,
   }));
+
+  function sanitizeItemId(item: string | null) {
+    if (item === null) return "null-item";
+    if (item === "") return "<empty-string>";
+    return item;
+  }
 
   function handleReorder(data: {
     items: { id: string; value: string }[];

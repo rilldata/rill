@@ -16,10 +16,19 @@ In Rill, your metrics view is defined by _metric definitions_. Metric definition
 
 
 :::tip
-Starting in version 0.50, the metrics view has been separated from the dashboard. This allows for a cleaner, more accessible metrics layer and the ability to build various dashboards and components on top of a single metrics layer. For more information on why we decided to do this, please refer to the following: [Why separate the dashboard and metrics layer](/concepts/metrics-layer)
+Starting in version 0.50, the metrics view has been separated from the dashboard. This allows for a cleaner, more accessible metrics layer and the ability to build various dashboards and components on top of a single metrics layer. For more information on why we decided to do this, please refer to the following: [Why separate the dashboard and metrics layer](/home/concepts/metrics-layer)
 
 For migration steps, see [Migrations](/other/v50-dashboard-changes#how-to-migrate-your-current-dashboards).
 :::
+
+
+## Creating Metric Views with AI
+
+In order to streamline the process and get to a dashboard as quickly as possible, we've added the "Create Metrics with AI" and "Create Dashboard with AI" options! This will pass your schema to OpenAI to suggest measure and dimensions to get started with Rill. You can define you own OpenAI key by creating a [connector file](/reference/project-files/connectors#openapi). If you want to disable AI from your environment, please set the following in the `rill.yaml`.
+```yaml
+features:
+  ai: false
+```
 
 ## Creating valid metrics
 
@@ -99,3 +108,4 @@ Rill Developer is meant to be developer-friendly and has been built around the i
 
 <img src = 'https://cdn.rilldata.com/docs/release-notes/36_hot_reload.gif' class='rounded-gif' />
 <br />
+

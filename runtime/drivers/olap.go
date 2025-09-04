@@ -263,6 +263,19 @@ func (d Dialect) RequiresCastForLike() bool {
 	return d == DialectClickHouse
 }
 
+func (d Dialect) SupportsRegexMatch() bool {
+	return d == DialectDruid
+}
+
+func (d Dialect) GetRegexMatchFunction() string {
+	switch d {
+	case DialectDruid:
+		return "REGEXP_LIKE"
+	default:
+		panic(fmt.Sprintf("unsupported dialect %q for regex match", d))
+	}
+}
+
 // EscapeTable returns an esacped fully qualified table name
 func (d Dialect) EscapeTable(db, schema, table string) string {
 	if d == DialectDuckDB {
@@ -335,7 +348,7 @@ func (d Dialect) LateralUnnest(expr, tableAlias, colName string) (tbl string, tu
 	}
 	if d == DialectClickHouse {
 		// using `LEFT ARRAY JOIN` instead of just `ARRAY JOIN` as it includes empty arrays in the result set with zero values
-		return fmt.Sprintf("LEFT ARRAY JOIN %s as %s", expr, colName), false, false, nil
+		return fmt.Sprintf("LEFT ARRAY JOIN %s as %s", expr, d.EscapeIdentifier(colName)), false, false, nil
 	}
 	return fmt.Sprintf(`LATERAL UNNEST(%s) %s(%s)`, expr, tableAlias, d.EscapeIdentifier(colName)), true, false, nil
 }
@@ -542,13 +555,13 @@ func (d Dialect) IntervalSubtract(tsExpr, unitExpr string, grain runtimev1.TimeG
 	case DialectClickHouse, DialectDruid, DialectDuckDB:
 		return fmt.Sprintf("(%s - INTERVAL (%s) %s)", tsExpr, unitExpr, d.ConvertToDateTruncSpecifier(grain)), nil
 	case DialectPinot:
-		return fmt.Sprintf("(dateAdd('%s', -1 * %s, %s))", d.ConvertToDateTruncSpecifier(grain), unitExpr, tsExpr), nil
+		return fmt.Sprintf("CAST((dateAdd('%s', -1 * %s, %s)) AS TIMESTAMP)", d.ConvertToDateTruncSpecifier(grain), unitExpr, tsExpr), nil
 	default:
 		return "", fmt.Errorf("unsupported dialect %q", d)
 	}
 }
 
-func (d Dialect) SelectTimeRangeBins(start, end time.Time, grain runtimev1.TimeGrain, alias string) (string, []any, error) {
+func (d Dialect) SelectTimeRangeBins(start, end time.Time, grain runtimev1.TimeGrain, alias string, tz *time.Location) (string, []any, error) {
 	var args []any
 	switch d {
 	case DialectDuckDB:
@@ -557,7 +570,7 @@ func (d Dialect) SelectTimeRangeBins(start, end time.Time, grain runtimev1.TimeG
 		// format - SELECT c1 AS "alias" FROM VALUES(toDateTime('2021-01-01 00:00:00'), toDateTime('2021-01-01 00:00:00'),...)
 		var sb strings.Builder
 		sb.WriteString(fmt.Sprintf("SELECT c1 AS %s FROM VALUES(", d.EscapeIdentifier(alias)))
-		for t := start; t.Before(end); t = timeutil.OffsetTime(t, timeutil.TimeGrainFromAPI(grain), 1, time.UTC) {
+		for t := start; t.Before(end); t = timeutil.OffsetTime(t, timeutil.TimeGrainFromAPI(grain), 1, tz) {
 			if t != start {
 				sb.WriteString(", ")
 			}
@@ -566,7 +579,7 @@ func (d Dialect) SelectTimeRangeBins(start, end time.Time, grain runtimev1.TimeG
 		}
 		sb.WriteString(")")
 		return sb.String(), args, nil
-	case DialectDruid:
+	case DialectDruid, DialectPinot:
 		// generate select like - SELECT * FROM (
 		//  VALUES
 		//  (CAST('2006-01-02T15:04:05Z' AS TIMESTAMP)),
@@ -574,7 +587,7 @@ func (d Dialect) SelectTimeRangeBins(start, end time.Time, grain runtimev1.TimeG
 		// ) t (time)
 		var sb strings.Builder
 		sb.WriteString("SELECT * FROM (VALUES ")
-		for t := start; t.Before(end); t = timeutil.OffsetTime(t, timeutil.TimeGrainFromAPI(grain), 1, time.UTC) {
+		for t := start; t.Before(end); t = timeutil.OffsetTime(t, timeutil.TimeGrainFromAPI(grain), 1, tz) {
 			if t != start {
 				sb.WriteString(", ")
 			}

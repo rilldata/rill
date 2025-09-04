@@ -780,6 +780,11 @@ export class RedeployProjectRequest extends Message<RedeployProjectRequest> {
    */
   rearchive = false;
 
+  /**
+   * @generated from field: bool create_managed_repo = 4;
+   */
+  createManagedRepo = false;
+
   constructor(data?: PartialMessage<RedeployProjectRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -791,6 +796,7 @@ export class RedeployProjectRequest extends Message<RedeployProjectRequest> {
     { no: 1, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "reupload", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 3, name: "rearchive", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 4, name: "create_managed_repo", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RedeployProjectRequest {

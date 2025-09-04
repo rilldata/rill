@@ -16,15 +16,20 @@
   import { runtime } from "../../../runtime-client/runtime-store";
   import { featureFlags } from "../../feature-flags";
   import { useCreateMetricsViewFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
-  import { createModelFromTable } from "../olap/createModel";
-  const { ai } = featureFlags;
+  import {
+    createSqlModelFromTable,
+    createYamlModelFromTable,
+  } from "../code-utils";
 
   export let connector: string;
   export let database: string = "";
   export let databaseSchema: string = "";
   export let table: string;
   export let showGenerateMetricsAndDashboard: boolean = false;
+  export let showGenerateModel: boolean = false;
   export let isModelingSupported: boolean | undefined = false;
+
+  const { ai } = featureFlags;
 
   $: ({ instanceId } = $runtime);
   $: createMetricsViewFromTable = useCreateMetricsViewFromTableUIAction(
@@ -48,16 +53,12 @@
     MetricsEventSpace.LeftPanel,
   );
 
-  async function handleCreateModel() {
+  async function handleCreateModel(
+    modelCreationFn: () => Promise<[string, string]>,
+  ) {
     try {
       const previousActiveEntity = getScreenNameFromPage();
-      const [newModelPath, newModelName] = await createModelFromTable(
-        queryClient,
-        connector,
-        database,
-        databaseSchema,
-        table,
-      );
+      const [newModelPath, newModelName] = await modelCreationFn();
       await goto(`/files${newModelPath}`);
       await behaviourEvent?.fireNavigationEvent(
         newModelName,
@@ -70,12 +71,36 @@
       console.error(err);
     }
   }
+
+  async function handleCreateModelFromTable() {
+    if (isModelingSupported) {
+      await handleCreateModel(() =>
+        createSqlModelFromTable(
+          queryClient,
+          connector,
+          database,
+          databaseSchema,
+          table,
+        ),
+      );
+    } else if (showGenerateModel) {
+      await handleCreateModel(() =>
+        createYamlModelFromTable(
+          queryClient,
+          connector,
+          database,
+          databaseSchema,
+          table,
+        ),
+      );
+    }
+  }
 </script>
 
-{#if isModelingSupported}
-  <NavigationMenuItem on:click={handleCreateModel}>
+{#if isModelingSupported || showGenerateModel}
+  <NavigationMenuItem on:click={handleCreateModelFromTable}>
     <Model slot="icon" />
-    Create new model
+    Create model
   </NavigationMenuItem>
 {/if}
 

@@ -31,15 +31,18 @@
     dimensions = getDimensionsForMetricView(metricsViewName);
   }
 
-  $: whereFilters = localFilters.whereFilter;
-  $: dimensionThresholdFilters = localFilters.dimensionThresholdFilters;
-  $: dimensionsWithInlistFilter = localFilters.dimensionsWithInlistFilter;
-  $: selectedTimeRange = localTimeControls.selectedTimeRange;
-  $: showTimeComparison = localTimeControls.showTimeComparison;
+  $: ({ showTimeComparison, timeRangeStateStore } = localTimeControls);
+
+  $: selectedTimeRange = $timeRangeStateStore?.selectedTimeRange;
+
+  $: ({ whereFilter, dimensionThresholdFilters, dimensionsWithInlistFilter } =
+    localFilters);
+
   $: displayTimeRange = {
     ...$timeAndFilterStore.timeRange,
-    isoDuration: $selectedTimeRange?.name,
+    isoDuration: selectedTimeRange?.name,
   };
+
   $: displayComparisonTimeRange = $timeAndFilterStore.comparisonTimeRange;
 
   $: hasTimeFilters = "time_filters" in $specStore && $specStore.time_filters;
@@ -56,13 +59,13 @@
       measures={$measures}
       dimensionThresholdFilters={$dimensionThresholdFilters}
       dimensionsWithInlistFilter={$dimensionsWithInlistFilter}
-      filters={$whereFilters}
+      filters={$whereFilter}
       displayComparisonTimeRange={$showTimeComparison
         ? displayComparisonTimeRange
         : undefined}
       displayTimeRange={hasTimeFilters ? displayTimeRange : undefined}
-      queryTimeStart={$selectedTimeRange?.start?.toISOString()}
-      queryTimeEnd={$selectedTimeRange?.end?.toISOString()}
+      queryTimeStart={selectedTimeRange?.start?.toISOString()}
+      queryTimeEnd={selectedTimeRange?.end?.toISOString()}
       hasBoldTimeRange={false}
       chipLayout="scroll"
     />

@@ -16,10 +16,14 @@
     type SuperValidated,
   } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
-  import { inferSourceName } from "../sourceUtils";
+  import {
+    inferSourceName,
+    prepareSourceFormData,
+    compileSourceYAML,
+  } from "../sourceUtils";
   import { humanReadableErrorMessage } from "../errors/errors";
   import {
-    submitAddOLAPConnectorForm,
+    submitAddConnectorForm,
     submitAddSourceForm,
   } from "./submitAddDataForm";
   import type { AddDataFormType, ConnectorType } from "./types";
@@ -82,13 +86,13 @@
   // SuperForms are not meant to have dynamic schemas, so we use a different form instance for the DSN form
   const hasDsnFormOption =
     isConnectorForm &&
-    connector.configProperties?.some((property) => property.key === "dsn");
+    connector.configProperties?.some((property) => property.key === "dsn") &&
+    connector.configProperties?.some((property) => property.key !== "dsn");
   const dsnFormId = `add-data-${connector.name}-dsn-form`;
   const dsnProperties =
     connector.configProperties?.filter((property) => property.key === "dsn") ??
     [];
 
-  // FIXME: APP-209
   const filteredDsnProperties = dsnProperties;
   const dsnYupSchema = yup(dsnSchema);
   const {
@@ -117,10 +121,18 @@
   let clickhouseParamsForm;
   let clickhouseDsnForm;
 
-  // TODO: move to utils.ts
+  // Helper function to check if connector only has DSN (no tabs)
+  function hasOnlyDsn() {
+    return (
+      isConnectorForm &&
+      connector.configProperties?.some((property) => property.key === "dsn") &&
+      !connector.configProperties?.some((property) => property.key !== "dsn")
+    );
+  }
+
   // Compute disabled state for the submit button
   $: isSubmitDisabled = (() => {
-    if (connectionTab === "dsn") {
+    if (hasOnlyDsn() || connectionTab === "dsn") {
       // DSN form: check required DSN properties
       for (const property of dsnProperties) {
         if (property.required) {
@@ -143,52 +155,112 @@
     }
   })();
 
-  $: formId = connectionTab === "dsn" ? dsnFormId : paramsFormId;
-  $: submitting = connectionTab === "dsn" ? $dsnSubmitting : $paramsSubmitting;
+  $: formId = (() => {
+    if (hasOnlyDsn() || connectionTab === "dsn") {
+      return dsnFormId;
+    } else {
+      return paramsFormId;
+    }
+  })();
+
+  $: submitting = (() => {
+    if (hasOnlyDsn() || connectionTab === "dsn") {
+      return $dsnSubmitting;
+    } else {
+      return $paramsSubmitting;
+    }
+  })();
 
   // Reset errors when form is modified
-  $: if (connectionTab === "dsn") {
-    if ($dsnTainted) dsnError = null;
-  } else {
-    if ($paramsTainted) paramsError = null;
-  }
+  $: (() => {
+    if (hasOnlyDsn() || connectionTab === "dsn") {
+      if ($dsnTainted) dsnError = null;
+    } else {
+      if ($paramsTainted) paramsError = null;
+    }
+  })();
 
   // Emit the submitting state to the parent
   $: dispatch("submitting", { submitting });
 
-  // ClickHouse requires special handling because it supports both managed and self-managed modes:
-  // - When managed=true: uses sourceProperties and minimal configuration
-  // - When managed=false: uses configProperties and full connection details
-  // - The form state is managed by the child AddClickHouseForm component
-  // - Other connectors use a simpler single-form approach
-  $: yamlPreview = (() => {
-    if (connector.name === "clickhouse") {
-      // Use the value of the child form state for clickhouse
-      const values =
-        connectionTab === "dsn" ? $clickhouseDsnForm : $clickhouseParamsForm;
-      return compileConnectorYAML(
-        connector,
-        {
-          ...values,
-          managed: clickhouseManaged,
+  function getClickHouseYamlPreview(
+    values: Record<string, unknown>,
+    managed: boolean,
+  ) {
+    return compileConnectorYAML(
+      connector,
+      {
+        ...values,
+        managed,
+      },
+      {
+        fieldFilter: (property) => {
+          // When in DSN mode, don't filter out noPrompt properties
+          // because the DSN field itself might have noPrompt: true
+          if (hasOnlyDsn() || connectionTab === "dsn") {
+            return true; // Show all DSN properties
+          }
+          return !property.noPrompt;
         },
-        {
-          fieldFilter: (property) => !property.noPrompt,
-          orderedProperties:
-            connectionTab === "dsn"
-              ? filteredDsnProperties
-              : filteredParamsProperties,
-        },
-      );
-    } else {
-      const values = connectionTab === "dsn" ? $dsnForm : $paramsForm;
-      return compileConnectorYAML(connector, values, {
-        fieldFilter: (property) => !property.noPrompt,
         orderedProperties:
           connectionTab === "dsn"
             ? filteredDsnProperties
             : filteredParamsProperties,
-      });
+      },
+    );
+  }
+
+  function getConnectorYamlPreview(values: Record<string, unknown>) {
+    return compileConnectorYAML(connector, values, {
+      fieldFilter: (property) => {
+        // When in DSN mode, don't filter out noPrompt properties
+        // because the DSN field itself might have noPrompt: true
+        if (hasOnlyDsn() || connectionTab === "dsn") {
+          return true; // Show all DSN properties
+        }
+        return !property.noPrompt;
+      },
+      orderedProperties:
+        hasOnlyDsn() || connectionTab === "dsn"
+          ? filteredDsnProperties
+          : filteredParamsProperties,
+    });
+  }
+
+  function getSourceYamlPreview(values: Record<string, unknown>) {
+    const [rewrittenConnector, rewrittenFormValues] = prepareSourceFormData(
+      connector,
+      values,
+    );
+
+    // Check if the connector was rewritten to DuckDB
+    const isRewrittenToDuckDb = rewrittenConnector.name === "duckdb";
+
+    if (isRewrittenToDuckDb) {
+      return compileSourceYAML(rewrittenConnector, rewrittenFormValues);
+    } else {
+      return getConnectorYamlPreview(rewrittenFormValues);
+    }
+  }
+
+  $: yamlPreview = (() => {
+    // ClickHouse special case
+    if (connector.name === "clickhouse") {
+      // Reactive form values
+      const values =
+        connectionTab === "dsn" ? $clickhouseDsnForm : $clickhouseParamsForm;
+      return getClickHouseYamlPreview(values, clickhouseManaged);
+    }
+
+    const values =
+      hasOnlyDsn() || connectionTab === "dsn" ? $dsnForm : $paramsForm;
+
+    if (isConnectorForm) {
+      // Connector form
+      return getConnectorYamlPreview(values);
+    } else {
+      // Source form
+      return getSourceYamlPreview(values);
     }
   })();
 
@@ -235,7 +307,7 @@
       if (formType === "source") {
         await submitAddSourceForm(queryClient, connector, values);
       } else {
-        await submitAddOLAPConnectorForm(queryClient, connector, values);
+        await submitAddConnectorForm(queryClient, connector, values);
       }
       onClose();
     } catch (e) {
@@ -287,7 +359,6 @@
       {#if connector.name === "clickhouse"}
         <AddClickHouseForm
           {connector}
-          {formType}
           {onClose}
           setError={(error, details) => {
             clickhouseError = error;
@@ -378,6 +449,30 @@
             </form>
           </TabsContent>
         </Tabs>
+      {:else if isConnectorForm && connector.configProperties?.some((property) => property.key === "dsn")}
+        <!-- Connector with only DSN - show DSN form directly -->
+        <form
+          id={dsnFormId}
+          class="pb-5 flex-grow overflow-y-auto"
+          use:dsnEnhance
+          on:submit|preventDefault={dsnSubmit}
+        >
+          {#each filteredDsnProperties as property (property.key)}
+            {@const propertyKey = property.key ?? ""}
+            <div class="py-1.5 first:pt-0 last:pb-0">
+              <Input
+                id={propertyKey}
+                label={property.displayName}
+                placeholder={property.placeholder}
+                secret={property.secret}
+                hint={property.hint}
+                errors={$dsnErrors[propertyKey]}
+                bind:value={$dsnForm[propertyKey]}
+                alwaysShowError
+              />
+            </div>
+          {/each}
+        </form>
       {:else}
         <form
           id={paramsFormId}
@@ -468,10 +563,12 @@
     {#if dsnError || paramsError || clickhouseError}
       <SubmissionError
         message={clickhouseError ??
-          (connectionTab === "dsn" ? dsnError : paramsError) ??
+          (hasOnlyDsn() || connectionTab === "dsn" ? dsnError : paramsError) ??
           ""}
         details={clickhouseErrorDetails ??
-          (connectionTab === "dsn" ? dsnErrorDetails : paramsErrorDetails) ??
+          (hasOnlyDsn() || connectionTab === "dsn"
+            ? dsnErrorDetails
+            : paramsErrorDetails) ??
           ""}
       />
     {/if}
