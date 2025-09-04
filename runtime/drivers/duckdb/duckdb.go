@@ -66,6 +66,7 @@ var spec = drivers.Spec{
 			DisplayName: "SQL",
 			Description: "Query to extract data from DuckDB.",
 			Placeholder: "select * from table;",
+			NoPrompt:    true,
 		},
 		{
 			Key:         "name",
@@ -85,49 +86,31 @@ var motherduckSpec = drivers.Spec{
 	DocsURL:     "https://docs.rilldata.com/connect/olap/motherduck",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
-			Key:    "token",
-			Type:   drivers.StringPropertyType,
-			Secret: true,
-		},
-		{
-			Key:  "db",
-			Type: drivers.StringPropertyType,
-		},
-	},
-	SourceProperties: []*drivers.PropertySpec{
-		{
-			Key:         "dsn",
-			Type:        drivers.StringPropertyType,
-			Required:    true,
-			DisplayName: "MotherDuck Connection String",
-			Placeholder: "md:motherduck.db",
-		},
-		{
-			Key:         "sql",
-			Type:        drivers.StringPropertyType,
-			Required:    true,
-			DisplayName: "SQL",
-			Description: "Query to extract data from MotherDuck.",
-			Placeholder: "select * from table;",
-		},
-		{
 			Key:         "token",
 			Type:        drivers.StringPropertyType,
 			Required:    true,
 			DisplayName: "Access token",
 			Description: "MotherDuck access token",
-			Placeholder: "your.access_token.here",
+			Placeholder: "your_access_token",
 			Secret:      true,
 		},
 		{
-			Key:         "name",
+			Key:         "path",
 			Type:        drivers.StringPropertyType,
-			DisplayName: "Source name",
-			Description: "The name of the source",
-			Placeholder: "my_new_source",
 			Required:    true,
+			DisplayName: "MotherDuck Connection String",
+			Placeholder: "md:my_db",
+		},
+		{
+			Key:         "schema_name",
+			Type:        drivers.StringPropertyType,
+			Required:    true,
+			DisplayName: "Schema name",
+			Placeholder: "your_schema_name",
+			Hint:        "Set the default schema used by the MotherDuck database",
 		},
 	},
+	ImplementsOLAP: true,
 }
 
 type Driver struct {
