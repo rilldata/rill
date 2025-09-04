@@ -27,7 +27,7 @@ func (silentLogger) Info(args ...any) {
 var spec = drivers.Spec{
 	DisplayName: "Salesforce",
 	Description: "Connect to Salesforce.",
-	DocsURL:     "https://docs.rilldata.com/reference/connectors/salesforce",
+	DocsURL:     "https://docs.rilldata.com/connect/data-source/salesforce",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:    "username",
@@ -64,6 +64,7 @@ var spec = drivers.Spec{
 			DisplayName: "SOQL",
 			Description: "SOQL Query to extract data from Salesforce.",
 			Placeholder: "SELECT Id, CreatedDate, Name FROM Opportunity",
+			Hint:        "Write a SOQL query to retrieve data from your Salesforce object. For example: SELECT Id, Name FROM Opportunity.",
 		},
 		{
 			Key:         "sobject",
@@ -72,6 +73,7 @@ var spec = drivers.Spec{
 			DisplayName: "SObject",
 			Description: "SObject to query in Salesforce.",
 			Placeholder: "Opportunity",
+			Hint:        "Enter the name of the Salesforce object you want to query (e.g., Opportunity, Lead, Account).",
 		},
 		{
 			Key:         "queryAll",
@@ -79,6 +81,7 @@ var spec = drivers.Spec{
 			Required:    false,
 			DisplayName: "Query All",
 			Description: "Include deleted and archived records",
+			Hint:        "Include soft-deleted records (records in the Recycle Bin) in your query results.",
 		},
 		{
 			Key:         "username",
@@ -86,14 +89,14 @@ var spec = drivers.Spec{
 			DisplayName: "Salesforce Username",
 			Required:    false,
 			Placeholder: "user@example.com",
-			Hint:        "Either set this or pass --env connector.salesforce.username=... to rill start",
+			Hint:        "Your Salesforce username (usually an email address). Required for username-password authentication.",
 		},
 		{
 			Key:         "password",
 			Type:        drivers.StringPropertyType,
 			DisplayName: "Salesforce Password",
 			Required:    false,
-			Hint:        "Either set this or pass --env connector.salesforce.password=... to rill start",
+			Hint:        "Your Salesforce password, optionally followed by a security token if required.",
 			Secret:      true,
 		},
 		{
@@ -101,7 +104,7 @@ var spec = drivers.Spec{
 			Type:        drivers.StringPropertyType,
 			DisplayName: "JWT Key for Authentication",
 			Required:    false,
-			Hint:        "Either set this or pass --env connector.salesforce.key=... to rill start",
+			Hint:        "Paste your JWT private key for token-based authentication. Used with Connected App and Client ID.",
 			Secret:      true,
 		},
 		{
@@ -109,9 +112,8 @@ var spec = drivers.Spec{
 			Type:        drivers.StringPropertyType,
 			DisplayName: "Login Endpoint",
 			Required:    false,
-			Default:     "login.salesforce.com",
 			Placeholder: "login.salesforce.com",
-			Hint:        "Either set this or pass --env connector.salesforce.endpoint=... to rill start",
+			Hint:        "The Salesforce login URL (e.g., login.salesforce.com or test.salesforce.com for sandboxes).",
 		},
 		{
 			Key:         "client_id",
@@ -119,7 +121,8 @@ var spec = drivers.Spec{
 			DisplayName: "Connected App Client Id",
 			Required:    false,
 			Default:     defaultClientID,
-			Hint:        "Either set this or pass --env connector.salesforce.client_id=... to rill start",
+			Hint:        "The client ID (consumer key) from your Salesforce Connected App. Required for JWT authentication.",
+			NoPrompt:    true,
 		},
 		{
 			Key:         "name",
@@ -128,6 +131,7 @@ var spec = drivers.Spec{
 			Description: "The name of the source",
 			Placeholder: "my_new_source",
 			Required:    true,
+			Hint:        "A name for your data source in Rill. Used to identify this connection in your project.",
 		},
 	},
 	ImplementsWarehouse: true,

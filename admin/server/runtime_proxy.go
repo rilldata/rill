@@ -95,6 +95,7 @@ func (s *Server) runtimeProxyForOrgAndProject(w http.ResponseWriter, r *http.Req
 			runtimeauth.ReadObjects,
 			runtimeauth.ReadMetrics,
 			runtimeauth.ReadAPI,
+			runtimeauth.UseAI,
 		}
 		if permissions.ManageProject {
 			instancePermissions = append(instancePermissions, runtimeauth.EditTrigger)

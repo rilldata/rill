@@ -177,6 +177,7 @@ func (r *Runtime) UpdateInstanceWithRillYAML(ctx context.Context, instanceID str
 	inst.FeatureFlags = rillYAML.FeatureFlags
 	inst.PublicPaths = rillYAML.PublicPaths
 	inst.AIInstructions = rillYAML.AIInstructions
+	inst.ProjectAIConnector = rillYAML.AIConnector
 	return r.EditInstance(ctx, inst, restartController)
 }
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
+	"net/http"
 	"net/url"
 	"os"
 	"strings"
@@ -14,14 +15,13 @@ import (
 	"github.com/kelseyhightower/envconfig"
 	"github.com/redis/go-redis/v9"
 	"github.com/rilldata/rill/admin"
-	"github.com/rilldata/rill/admin/ai"
 	"github.com/rilldata/rill/admin/billing"
 	"github.com/rilldata/rill/admin/billing/payment"
 	"github.com/rilldata/rill/admin/jobs/river"
 	"github.com/rilldata/rill/admin/server"
-	"github.com/rilldata/rill/admin/worker"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/pkg/ai"
 	"github.com/rilldata/rill/runtime/pkg/debugserver"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
@@ -234,7 +234,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			// Init AI client
 			var aiClient ai.Client
 			if conf.OpenAIAPIKey != "" {
-				aiClient, err = ai.NewOpenAI(conf.OpenAIAPIKey)
+				aiClient, err = ai.NewOpenAI(conf.OpenAIAPIKey, nil)
 				if err != nil {
 					logger.Fatal("error creating OpenAI client", zap.Error(err))
 				}
@@ -370,18 +370,34 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			// Init and run worker
 			if runWorker || runJobs {
-				wkr := worker.New(logger, adm, jobs)
 				if runWorker {
-					group.Go(func() error { return wkr.Run(cctx) })
+					group.Go(func() error { return jobs.Work(cctx) })
 					if !runServer {
 						// If we're not running the server, lets start a http server with /ping endpoint for health checks
-						group.Go(func() error { return worker.StartPingServer(cctx, conf.HTTPPort) })
+						mux := http.NewServeMux()
+						mux.HandleFunc("/ping", func(w http.ResponseWriter, r *http.Request) {
+							w.WriteHeader(http.StatusOK)
+							_, err := w.Write([]byte("pong"))
+							if err != nil {
+								panic(err)
+							}
+						})
+						group.Go(func() error {
+							return graceful.ServeHTTP(cctx, mux, graceful.ServeOptions{Port: conf.HTTPPort})
+						})
 					}
 				}
+
 				if runJobs {
 					for _, job := range conf.Jobs {
 						job := job
-						group.Go(func() error { return wkr.RunJob(cctx, job) })
+						group.Go(func() error {
+							_, err := jobs.EnqueueByKind(cmd.Context(), job)
+							if err != nil {
+								return err
+							}
+							return nil
+						})
 					}
 				}
 			}

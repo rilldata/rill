@@ -4,6 +4,7 @@ import {
   MeasureFilterOperation,
   MeasureFilterType,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-options";
+import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types.ts";
 import type { V1MetricsViewSpec } from "@rilldata/web-common/runtime-client";
 import { describe, expect, it } from "vitest";
 
@@ -20,6 +21,7 @@ describe("generateAlertName", () => {
   const TestCases: {
     title: string;
     formValues: Partial<AlertFormValues>;
+    selectedComparisonTimeRange: DashboardTimeControls | undefined;
     expected: string;
   }[] = [
     {
@@ -36,6 +38,7 @@ describe("generateAlertName", () => {
           },
         ],
       },
+      selectedComparisonTimeRange: undefined,
       expected: "Total records value alert",
     },
     {
@@ -51,10 +54,10 @@ describe("generateAlertName", () => {
             value2: "",
           },
         ],
-        comparisonTimeRange: {
-          isoOffset: "rill-PW",
-        },
       },
+      selectedComparisonTimeRange: {
+        name: "rill-PW",
+      } as DashboardTimeControls,
       expected: "Total records change vs previous week alert",
     },
     {
@@ -70,18 +73,27 @@ describe("generateAlertName", () => {
             value2: "",
           },
         ],
-        comparisonTimeRange: {
-          isoOffset: "rill-PM",
-        },
       },
+      selectedComparisonTimeRange: {
+        name: "rill-PM",
+      } as DashboardTimeControls,
       expected: "Total records % change vs previous month alert",
     },
   ];
 
-  for (const { title, formValues, expected } of TestCases) {
+  for (const {
+    title,
+    formValues,
+    selectedComparisonTimeRange,
+    expected,
+  } of TestCases) {
     it(title, () => {
       expect(
-        generateAlertName(formValues as AlertFormValues, MetricsView),
+        generateAlertName(
+          formValues as AlertFormValues,
+          selectedComparisonTimeRange,
+          MetricsView,
+        ),
       ).toEqual(expected);
     });
   }

@@ -25,6 +25,7 @@
     filter: MeasureFilterEntry;
   }) => void;
   export let allDimensions: MetricsViewSpecDimension[];
+  export let side: "top" | "right" | "bottom" | "left" = "bottom";
 
   const initialValues = {
     dimension: dimensionName,
@@ -114,7 +115,12 @@
   }}
 />
 
-<Popover.Content align="start" class="p-2 px-3 w-[250px]" strategy="fixed">
+<Popover.Content
+  align="start"
+  {side}
+  class="p-2 px-3 w-[250px]"
+  strategy="fixed"
+>
   <form
     use:enhance
     autocomplete="off"

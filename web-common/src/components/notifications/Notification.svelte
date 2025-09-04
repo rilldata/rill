@@ -29,6 +29,7 @@
   use:portal
   transition:scale={{ duration: 200, start: 0.98, opacity: 0 }}
   class="{location} {justify}"
+  aria-label="Notification"
 >
   <div class="main-section">
     <div class="message-container" class:font-medium={detail}>
@@ -75,7 +76,7 @@
 
   aside {
     @apply absolute w-fit z-50 flex flex-col text-sm;
-    @apply bg-popover text-gray-800 p-0 rounded-md shadow-lg;
+    @apply bg-gray-800 text-gray-200 p-0 rounded-md shadow-lg;
   }
 
   .main-section {

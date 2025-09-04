@@ -12,7 +12,7 @@ sidebar_position: 00
 Deploying dashboards from Rill Developer allows you to share dashboards with other users, leverage [Rill Cloud capabilities](../../explore/dashboard-101), [embed Rill](/integrate/embedding.md) into other applications, and more!
 
 :::tip Configure credentials
-Cloud datastores will typically require service keys to access data. Make sure to you create the necessary key for your service account and either add these credetials to your `.env` file directly or deploy your project and then run ```rill env configure``` with the correct credentials. For more details, please refer to our [connector documentation](/build/credentials/credentials.md).
+Cloud datastores will typically require service keys to access data. Make sure you create the necessary key for your service account and either add these credentials to your `.env` file directly or deploy your project and then run ```rill env configure``` with the correct credentials. For more details, please refer to our [connector documentation](/connect/credentials).
 :::
 
 The flow diagram below shows two options for deploying an existing project. 
@@ -60,7 +60,7 @@ You can easily check the version of Rill that you are using in Rill Developer by
 rill --version
 ```
 
-If you are on an older version of Rill, it is **strongly recommended** to [upgrade](home/install.md#upgrade-to-the-newest-version-of-rill-developer) to the latest version.
+If you are on an older version of Rill, it is **strongly recommended** to [upgrade]/home/install#upgrade-to-the-newest-version-of-rill-developer) to the latest version.
 
 :::
 
@@ -128,7 +128,7 @@ Your project can be accessed at: https://ui.rilldata.com/Rill_Learn/my-rill-tuto
 Opening project in browser...
 ```
 
-If you have not already [configured your connections' credentials](https://docs.rilldata.com/build/credentials/), you will be reminded here which connections are required.
+If you have not already [configured your connections' credentials](https://docs.rilldata.com/connect/credentials), you will be reminded here which connections are required.
 
 **First deployment**
 
@@ -191,7 +191,7 @@ Once completed, you will see the following the in the status page. Note that the
 
 ## Continuous Deployment 
 
-Whether you decide to manage your Rill projects using GitHub or re-running `rill project deploy`, Rill should automatically detect changes that you have pushed locally and update your deployed project accordingly. Depending on the changes, this may results in a project reconcile to occur. If you are experiencing some issues with the project after pushing changes to the CLI, please refer the the project's status page for more information or you can run via the CLI:
+Whether you decide to manage your Rill projects using GitHub or re-running `rill project deploy`, Rill should automatically detect changes that you have pushed locally and update your deployed project accordingly. Depending on the changes, this may result in a project reconciliation. If you are experiencing some issues with the project after pushing changes to the CLI, please refer to the project's status page for more information or you can run via the CLI:
 
 ```
 rill project status

@@ -38,6 +38,8 @@ type Instance struct {
 	AdminConnector string
 	// Driver name for the AI service (optional)
 	AIConnector string
+	// ProjectAIConnector is an override of AIConnector that may be set in rill.yaml.
+	ProjectAIConnector string
 	// Driver name for catalog
 	CatalogConnector string
 	// CreatedOn is when the instance was created
@@ -105,7 +107,18 @@ func (i *Instance) ResolveOLAPConnector() string {
 	if i.ProjectOLAPConnector != "" {
 		return i.ProjectOLAPConnector
 	}
-	return i.OLAPConnector
+	if i.OLAPConnector != "" {
+		return i.OLAPConnector
+	}
+	// Fallback to duckdb for backwards compatibility with projects that don't specify an OLAP connector
+	return "duckdb"
+}
+
+func (i *Instance) ResolveAIConnector() string {
+	if i.ProjectAIConnector != "" {
+		return i.ProjectAIConnector
+	}
+	return i.AIConnector
 }
 
 // ResolveVariables returns the final resolved variables

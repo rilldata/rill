@@ -101,8 +101,6 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 		Slots:       proj.ProdSlots,
 		Version:     proj.ProdVersion,
 		Variables:   nil,
-		OLAPDriver:  proj.ProdOLAPDriver,
-		OLAPDSN:     proj.ProdOLAPDSN,
 	})
 	if err != nil {
 		return nil, err
@@ -113,6 +111,7 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 		Name:                 proj.Name,
 		Description:          proj.Description,
 		Public:               proj.Public,
+		DirectoryName:        proj.DirectoryName,
 		ArchiveAssetID:       proj.ArchiveAssetID,
 		GitRemote:            proj.GitRemote,
 		GithubInstallationID: proj.GithubInstallationID,
@@ -331,8 +330,6 @@ func (s *Service) RedeployProject(ctx context.Context, proj *database.Project, p
 		Slots:       proj.ProdSlots,
 		Version:     proj.ProdVersion,
 		Variables:   vars,
-		OLAPDriver:  proj.ProdOLAPDriver,
-		OLAPDSN:     proj.ProdOLAPDSN,
 	})
 	if err != nil {
 		return nil, err
@@ -343,6 +340,7 @@ func (s *Service) RedeployProject(ctx context.Context, proj *database.Project, p
 		Name:                 proj.Name,
 		Description:          proj.Description,
 		Public:               proj.Public,
+		DirectoryName:        proj.DirectoryName,
 		Provisioner:          proj.Provisioner,
 		ArchiveAssetID:       proj.ArchiveAssetID,
 		GitRemote:            proj.GitRemote,
@@ -393,6 +391,7 @@ func (s *Service) HibernateProject(ctx context.Context, proj *database.Project) 
 		Name:                 proj.Name,
 		Description:          proj.Description,
 		Public:               proj.Public,
+		DirectoryName:        proj.DirectoryName,
 		Provisioner:          proj.Provisioner,
 		ArchiveAssetID:       proj.ArchiveAssetID,
 		GitRemote:            proj.GitRemote,

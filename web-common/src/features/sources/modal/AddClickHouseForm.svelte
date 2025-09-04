@@ -1,43 +1,52 @@
 <script lang="ts">
-  import { Button } from "@rilldata/web-common/components/button";
   import InformationalField from "@rilldata/web-common/components/forms/InformationalField.svelte";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
-  import SubmissionError from "@rilldata/web-common/components/forms/SubmissionError.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import {
     ConnectorDriverPropertyType,
     type V1ConnectorDriver,
   } from "@rilldata/web-common/runtime-client";
   import { createEventDispatcher } from "svelte";
-  import { slide } from "svelte/transition";
   import {
     defaults,
     superForm,
     type SuperValidated,
   } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
-  import { ButtonGroup, SubButton } from "../../../components/button-group";
+  import Tabs from "@rilldata/web-common/components/forms/Tabs.svelte";
+  import { TabsContent } from "@rilldata/web-common/components/tabs";
   import { inferSourceName } from "../sourceUtils";
   import { humanReadableErrorMessage } from "../errors/errors";
-  import {
-    submitAddOLAPConnectorForm,
-    submitAddSourceForm,
-  } from "./submitAddDataForm";
-  import type { AddDataFormType } from "./types";
+  import { submitAddConnectorForm } from "./submitAddDataForm";
+  import type { ConnectorType } from "./types";
   import { dsnSchema, getYupSchema } from "./yupSchemas";
   import Checkbox from "@rilldata/web-common/components/forms/Checkbox.svelte";
-
-  const FORM_TRANSITION_DURATION = 150;
-  const dispatch = createEventDispatcher();
+  import { isEmpty, normalizeErrors } from "./utils";
+  import { CONNECTOR_TYPE_OPTIONS, CONNECTION_TAB_OPTIONS } from "./constants";
+  import ConnectorTypeSelector from "@rilldata/web-common/components/forms/ConnectorTypeSelector.svelte";
+  import { getInitialFormValuesFromProperties } from "../sourceUtils";
 
   export let connector: V1ConnectorDriver;
-  export let formType: AddDataFormType;
-  export let onBack: () => void;
+  export let formId: string;
+  export let submitting: boolean;
+  export let isSubmitDisabled: boolean;
+  export let managed: boolean;
   export let onClose: () => void;
+  export let setError: (
+    error: string | null,
+    details?: string,
+  ) => void = () => {};
+  export let connectionTab: ConnectorType = "parameters";
+  export { paramsForm, dsnForm };
+
+  const dispatch = createEventDispatcher();
 
   // Always include 'managed' in the schema for ClickHouse
   const clickhouseSchema = yup(getYupSchema["clickhouse"]);
-  const paramsFormId = `add-data-${connector.name}-form`;
+  const initialFormValues = getInitialFormValuesFromProperties(
+    connector.configProperties ?? [],
+  );
+  const paramsFormId = `add-clickhouse-data-${connector.name}-form`;
   const {
     form: paramsForm,
     errors: paramsErrors,
@@ -45,7 +54,7 @@
     tainted: paramsTainted,
     submit: paramsSubmit,
     submitting: paramsSubmitting,
-  } = superForm(defaults(clickhouseSchema), {
+  } = superForm(initialFormValues, {
     SPA: true,
     validators: clickhouseSchema,
     onUpdate: handleOnUpdate,
@@ -54,10 +63,7 @@
   let paramsError: string | null = null;
   let paramsErrorDetails: string | undefined = undefined;
 
-  // DSN form
-  let useDsn = false;
-
-  const dsnFormId = `add-data-${connector.name}-dsn-form`;
+  const dsnFormId = `add-clickhouse-data-${connector.name}-dsn-form`;
   const dsnProperties =
     connector.configProperties?.filter((property) => property.key === "dsn") ??
     [];
@@ -78,17 +84,17 @@
   let dsnError: string | null = null;
   let dsnErrorDetails: string | undefined = undefined;
 
-  // Managed toggle
-  $: submitting = useDsn ? $dsnSubmitting : $paramsSubmitting;
-  $: formId = useDsn ? dsnFormId : paramsFormId;
+  $: managed = $paramsForm.managed;
+  $: submitting = connectionTab === "dsn" ? $dsnSubmitting : $paramsSubmitting;
+  $: formId = connectionTab === "dsn" ? dsnFormId : paramsFormId;
 
-  // Reset useDsn if switching to Rill-managed
+  // Reset connectionTab if switching to Rill-managed
   $: if ($paramsForm.managed) {
-    useDsn = false;
+    connectionTab = "parameters";
   }
 
   // Reset errors when form is modified
-  $: if (useDsn) {
+  $: if (connectionTab === "dsn") {
     if ($dsnTainted) dsnError = null;
   } else {
     if ($paramsTainted) paramsError = null;
@@ -97,8 +103,20 @@
   // Emit the submitting state to the parent
   $: dispatch("submitting", { submitting });
 
-  function handleConnectionTypeChange(e: CustomEvent<any>): void {
-    useDsn = e.detail === "dsn";
+  let prevManaged = $paramsForm.managed;
+  $: {
+    // Switching to managed: strip all but managed
+    if ($paramsForm.managed && Object.keys($paramsForm).length > 1) {
+      paramsForm.update(() => ({ managed: true }), { taint: false });
+      resetError();
+    }
+    // Switching to self-managed: restore defaults
+    else if (prevManaged && !$paramsForm.managed) {
+      paramsForm.update(() => ({ ...initialFormValues, managed: false }), {
+        taint: false,
+      });
+    }
+    prevManaged = $paramsForm.managed;
   }
 
   function onStringInputChange(event: Event) {
@@ -134,11 +152,7 @@
     if (!event.form.valid) return;
     const values = event.form.data;
     try {
-      if (formType === "source") {
-        await submitAddSourceForm(queryClient, connector, values);
-      } else {
-        await submitAddOLAPConnectorForm(queryClient, connector, values);
-      }
+      await submitAddConnectorForm(queryClient, connector, values);
       onClose();
     } catch (e) {
       let error: string;
@@ -163,12 +177,14 @@
         error = "Unknown error";
         details = undefined;
       }
-      if (useDsn) {
+      if (connectionTab === "dsn") {
         dsnError = error;
         dsnErrorDetails = details;
+        setError(dsnError, dsnErrorDetails);
       } else {
         paramsError = error;
         paramsErrorDetails = details;
+        setError(paramsError, paramsErrorDetails);
       }
     }
   }
@@ -176,57 +192,157 @@
   $: properties = $paramsForm.managed
     ? (connector.sourceProperties ?? [])
     : (connector.configProperties?.filter((p) =>
-        !useDsn ? p.key !== "dsn" : true,
+        connectionTab !== "dsn" ? p.key !== "dsn" : true,
       ) ?? []);
-  $: filteredProperties = properties.filter((property) => !property.noPrompt);
+  $: filteredProperties = properties.filter(
+    (property) => !property.noPrompt && property.key !== "managed",
+  );
+
+  // TODO: move to utils.ts
+  // Compute disabled state for the submit button
+  // Refer to `runtime/drivers/clickhouse/clickhouse.go` for the required
+  // Account for the managed property and the dsn property can be either true or false
+  $: isSubmitDisabled = (() => {
+    if ($paramsForm.managed) {
+      // Managed form: only check required properties where property.key === 'managed' or property.key is not 'managed'
+      for (const property of filteredProperties) {
+        if (
+          property.required &&
+          (property.key === "managed" || property.key !== "managed")
+        ) {
+          const key = String(property.key);
+          const value = $paramsForm[key];
+          if (isEmpty(value) || $paramsErrors[key]?.length) return true;
+        }
+      }
+      return false;
+    } else if (connectionTab === "dsn") {
+      // Self-managed DSN form
+      for (const property of dsnProperties) {
+        if (property.required) {
+          const key = String(property.key);
+          const value = $dsnForm[key];
+          if (isEmpty(value) || $dsnErrors[key]?.length) return true;
+        }
+      }
+      return false;
+    } else {
+      // Self-managed parameters form: only check required properties where property.key !== 'managed'
+      for (const property of filteredProperties) {
+        if (property.required && property.key !== "managed") {
+          const key = String(property.key);
+          const value = $paramsForm[key];
+          if (isEmpty(value) || $paramsErrors[key]?.length) return true;
+        }
+      }
+      return false;
+    }
+  })();
+
+  function resetError() {
+    paramsError = null;
+    paramsErrorDetails = undefined;
+    dsnError = null;
+    dsnErrorDetails = undefined;
+    setError(null, undefined);
+  }
 </script>
 
 <div class="h-full w-full flex flex-col">
-  <!-- Managed toggle -->
-  <div class="pt-3">
-    <div class="text-sm font-medium mb-2">Connector type</div>
-    <select id="managed" bind:value={$paramsForm.managed} class="form-select">
-      <option value={true}>Rill-managed ClickHouse</option>
-      <option value={false}>Self-managed ClickHouse</option>
-    </select>
+  <div>
+    <ConnectorTypeSelector
+      bind:value={$paramsForm.managed}
+      options={CONNECTOR_TYPE_OPTIONS}
+    />
+    {#if $paramsForm.managed}
+      <div class="mt-2">
+        <InformationalField
+          description="This option uses ClickHouse as an OLAP engine with Rill-managed infrastructure. No additional configuration is required - Rill will handle the setup and management of your ClickHouse instance."
+        />
+      </div>
+    {/if}
   </div>
 
-  <!-- Connection method selector -->
   {#if !$paramsForm.managed}
-    <div class="py-3">
-      <div class="text-sm font-medium mb-2">Connection method</div>
-      <ButtonGroup
-        selected={[useDsn ? "dsn" : "parameters"]}
-        on:subbutton-click={handleConnectionTypeChange}
-      >
-        <SubButton value="parameters" ariaLabel="Enter parameters">
-          <span class="px-2">Enter parameters</span>
-        </SubButton>
-        <SubButton value="dsn" ariaLabel="Use connection string">
-          <span class="px-2">Enter connection string</span>
-        </SubButton>
-      </ButtonGroup>
-    </div>
-  {/if}
-
-  <!-- Parameters form -->
-  {#if !useDsn}
-    <!-- Form 1: Individual parameters -->
-    {#if paramsError}
-      <SubmissionError message={paramsError} details={paramsErrorDetails} />
-    {/if}
+    <Tabs bind:value={connectionTab} options={CONNECTION_TAB_OPTIONS}>
+      <TabsContent value="parameters">
+        <form
+          id={paramsFormId}
+          class="pb-5 flex-grow overflow-y-auto"
+          use:paramsEnhance
+          on:submit|preventDefault={paramsSubmit}
+        >
+          {#each filteredProperties as property (property.key)}
+            {@const propertyKey = property.key ?? ""}
+            <div class="py-1.5 first:pt-0 last:pb-0">
+              {#if property.type === ConnectorDriverPropertyType.TYPE_STRING || property.type === ConnectorDriverPropertyType.TYPE_NUMBER}
+                <Input
+                  id={propertyKey}
+                  label={property.displayName}
+                  placeholder={property.placeholder}
+                  optional={!property.required}
+                  secret={property.secret}
+                  hint={property.hint}
+                  errors={normalizeErrors($paramsErrors[propertyKey])}
+                  bind:value={$paramsForm[propertyKey]}
+                  onInput={(_, e) => onStringInputChange(e)}
+                  alwaysShowError
+                />
+              {:else if property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN}
+                <Checkbox
+                  id={propertyKey}
+                  bind:checked={$paramsForm[propertyKey]}
+                  label={property.displayName}
+                  hint={property.hint}
+                  optional={!property.required}
+                />
+              {:else if property.type === ConnectorDriverPropertyType.TYPE_INFORMATIONAL}
+                <InformationalField
+                  description={property.description}
+                  hint={property.hint}
+                  href={property.docsUrl}
+                />
+              {/if}
+            </div>
+          {/each}
+        </form>
+      </TabsContent>
+      <TabsContent value="dsn">
+        <form
+          id={dsnFormId}
+          class="pb-5 flex-grow overflow-y-auto"
+          use:dsnEnhance
+          on:submit|preventDefault={dsnSubmit}
+        >
+          {#each dsnProperties as property (property.key)}
+            {@const propertyKey = property.key ?? ""}
+            <div class="py-1.5 first:pt-0 last:pb-0">
+              <Input
+                id={propertyKey}
+                label={property.displayName}
+                placeholder={property.placeholder}
+                secret={property.secret}
+                hint={property.hint}
+                errors={normalizeErrors($dsnErrors[propertyKey])}
+                bind:value={$dsnForm[propertyKey]}
+                alwaysShowError
+              />
+            </div>
+          {/each}
+        </form>
+      </TabsContent>
+    </Tabs>
+  {:else}
+    <!-- Only managed form -->
     <form
       id={paramsFormId}
       class="pb-5 flex-grow overflow-y-auto"
       use:paramsEnhance
       on:submit|preventDefault={paramsSubmit}
-      transition:slide={{ duration: FORM_TRANSITION_DURATION }}
     >
       {#each filteredProperties as property (property.key)}
         {@const propertyKey = property.key ?? ""}
-        {@const label =
-          property.displayName + (property.required ? "" : " (optional)")}
-        <div class="py-1.5">
+        <div class="py-1.5 first:pt-0 last:pb-0">
           {#if property.type === ConnectorDriverPropertyType.TYPE_STRING || property.type === ConnectorDriverPropertyType.TYPE_NUMBER}
             <Input
               id={propertyKey}
@@ -235,7 +351,7 @@
               optional={!property.required}
               secret={property.secret}
               hint={property.hint}
-              errors={$paramsErrors[propertyKey]}
+              errors={normalizeErrors($paramsErrors[propertyKey])}
               bind:value={$paramsForm[propertyKey]}
               onInput={(_, e) => onStringInputChange(e)}
               alwaysShowError
@@ -244,8 +360,9 @@
             <Checkbox
               id={propertyKey}
               bind:checked={$paramsForm[propertyKey]}
-              {label}
+              label={property.displayName}
               hint={property.hint}
+              optional={!property.required}
             />
           {:else if property.type === ConnectorDriverPropertyType.TYPE_INFORMATIONAL}
             <InformationalField
@@ -257,48 +374,5 @@
         </div>
       {/each}
     </form>
-  {:else}
-    <!-- Connection string form -->
-    {#if dsnError}
-      <SubmissionError message={dsnError} details={dsnErrorDetails} />
-    {/if}
-    <form
-      id={dsnFormId}
-      class="pb-5 flex-grow overflow-y-auto"
-      use:dsnEnhance
-      on:submit|preventDefault={dsnSubmit}
-      transition:slide={{ duration: FORM_TRANSITION_DURATION }}
-    >
-      {#each dsnProperties as property (property.key)}
-        {@const propertyKey = property.key ?? ""}
-        <div class="py-1.5">
-          <Input
-            id={propertyKey}
-            label={property.displayName}
-            placeholder={property.placeholder}
-            secret={property.secret}
-            hint={property.hint}
-            errors={$dsnErrors[propertyKey]}
-            bind:value={$dsnForm[propertyKey]}
-            alwaysShowError
-          />
-        </div>
-      {/each}
-    </form>
   {/if}
-
-  <div class="flex items-center space-x-2 ml-auto">
-    <Button onClick={onBack} type="secondary">Back</Button>
-    <Button disabled={submitting} form={formId} submitForm type="primary">
-      {#if formType === "connector"}
-        {#if submitting}
-          Testing connection...
-        {:else}
-          Connect
-        {/if}
-      {:else}
-        Add data
-      {/if}
-    </Button>
-  </div>
 </div>

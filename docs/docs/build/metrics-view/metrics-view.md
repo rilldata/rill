@@ -16,16 +16,25 @@ In Rill, your metrics view is defined by _metric definitions_. Metric definition
 
 
 :::tip
-Starting in version 0.50, metrics view has been separated from dashboard. This allows for a cleaner, more accessible metrics layer and the ability to build various dashboards and components on top of a single metrics layer. For more information on why we decided to do this, please refer to the following: [Why separate the dashboard and metrics layer](/concepts/metrics-layer)
+Starting in version 0.50, the metrics view has been separated from the dashboard. This allows for a cleaner, more accessible metrics layer and the ability to build various dashboards and components on top of a single metrics layer. For more information on why we decided to do this, please refer to the following: [Why separate the dashboard and metrics layer](/home/concepts/metrics-layer)
 
 For migration steps, see [Migrations](/other/v50-dashboard-changes#how-to-migrate-your-current-dashboards).
 :::
+
+
+## Creating Metric Views with AI
+
+In order to streamline the process and get to a dashboard as quickly as possible, we've added the "Create Metrics with AI" and "Create Dashboard with AI" options! This will pass your schema to OpenAI to suggest measure and dimensions to get started with Rill. You can define you own OpenAI key by creating a [connector file](/reference/project-files/connectors#openapi). If you want to disable AI from your environment, please set the following in the `rill.yaml`.
+```yaml
+features:
+  ai: false
+```
 
 ## Creating valid metrics
 
 ### Timeseries
 
-Your timeseries must be a column from your data model of [type](https://duckdb.org/docs/sql/data_types/timestamp) `TIMESTAMP`, `TIME`, or `DATE` type. If your source has a date in a different format, you can apply [time functions](https://duckdb.org/docs/sql/functions/timestamp) to transform these fields into valid timeseries types.
+Your timeseries must be a column from your data model of [type](https://duckdb.org/docs/sql/data_types/timestamp) `TIMESTAMP`, `TIME`, or `DATE`. If your source has a date in a different format, you can apply [time functions](https://duckdb.org/docs/sql/functions/timestamp) to transform these fields into valid timeseries types.
 
 ### Measures
 
@@ -46,7 +55,7 @@ You can also add labels, descriptions, and your choice of number formatting to c
 
 ### Dimensions
 
-Dimensions are used for exploring segments and filtering. Valid dimensions can be any type and are selected using the drop-down menu. You can also add labels and descriptions to your dimensions to customize how they are shown.
+Dimensions are used for exploring segments and filtering. Valid dimensions can be any type and are selected using the drop-down menu. You can also add labels and descriptions to your dimensions to customize how they are displayed.
 
 
 ## Updating the Metrics View
@@ -61,7 +70,7 @@ Whether you prefer the UI or YAML artifacts, Rill supports both methods for upda
 When you add a metrics definition using the UI, a code definition will automatically be created as a YAML file in your Rill project within the metrics directory by default. 
 
 ### Using YAML
-You can also create metrics definitions more directly by creating the artifact yourself.
+You can also create metrics definitions directly by creating the artifact yourself.
 
 In your Rill project directory, after the `metrics-view.yaml` file is created in the `metrics` directory, its configuration or definition can be updated as needed by updating the YAML file directly, using the following template as an example:
 
@@ -95,7 +104,8 @@ For more information about available metrics view properties, feel free to check
 
 ## Multi-editor and external IDE support
 
-Rill Developer is meant to be developer friendly and has been built around the idea of keystroke-by-keystroke feedback when modeling your data, allowing live interactivity and a real-time feedback loop to iterate quickly (or make adjustments as necessary) with your models and dashboards. Additionally, Rill Developer supports "hot reloading", which means that you can keep two windows of Rill open at the same time and/or use a preferred editor, such as VSCode, side-by-side with the dashboard that you're actively developing!
+Rill Developer is meant to be developer-friendly and has been built around the idea of real-time feedback when modeling your data, allowing live interactivity and a real-time feedback loop to iterate quickly (or make adjustments as necessary) with your models and dashboards. Additionally, Rill Developer supports "hot reloading", which means that you can keep two windows of Rill open at the same time and/or use a preferred editor, such as VS Code, side-by-side with the dashboard that you're actively developing!
 
 <img src = 'https://cdn.rilldata.com/docs/release-notes/36_hot_reload.gif' class='rounded-gif' />
 <br />
+

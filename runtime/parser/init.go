@@ -15,10 +15,31 @@ func IsInit(ctx context.Context, repo drivers.RepoStore, instanceID string) bool
 }
 
 // InitEmpty initializes an empty project
-func InitEmpty(ctx context.Context, repo drivers.RepoStore, instanceID, displayName string) error {
-	mockUsersInfo := "# These are example mock users to test your security policies.\n# Learn more: https://docs.rilldata.com/manage/security"
-	mockUsers := "mock_users:\n- email: john@yourcompany.com\n- email: jane@partnercompany.com"
-	rillYAML := fmt.Sprintf("compiler: %s\n\ndisplay_name: %q\n\n%s\n%s", Version, displayName, mockUsersInfo, mockUsers)
+func InitEmpty(ctx context.Context, repo drivers.RepoStore, instanceID, displayName, olap string) error {
+	// If display name doesn't start with a letter, quote it
+	if !isAlphabetic(displayName[0]) {
+		displayName = fmt.Sprintf("%q", displayName)
+	}
+
+	// If olap is not specified we can default to duckdb
+	if olap == "" {
+		olap = "duckdb"
+	}
+
+	rillYAML := fmt.Sprintf(`compiler: %s
+
+display_name: %s
+
+# The project's default OLAP connector.
+# Learn more: https://docs.rilldata.com/reference/olap-engines
+olap_connector: %s
+
+# These are example mock users to test your security policies.
+# Learn more: https://docs.rilldata.com/manage/security
+mock_users:
+- email: john@yourcompany.com
+- email: jane@partnercompany.com
+`, Version, displayName, olap)
 
 	err := repo.Put(ctx, "rill.yaml", strings.NewReader(rillYAML))
 	if err != nil {
@@ -36,5 +57,22 @@ func InitEmpty(ctx context.Context, repo drivers.RepoStore, instanceID, displayN
 		return err
 	}
 
+	// Only create connector files for non-DuckDB OLAP engines or when explicitly requested
+	// This allows DuckDB-based projects to go through the welcome page for user-guided initialization
+	if olap != "duckdb" {
+		connector := "type: connector\ndriver: duckdb"
+		if olap == "clickhouse" {
+			connector = "type: connector\ndriver: clickhouse\nmanaged: true"
+		}
+
+		err = repo.Put(ctx, fmt.Sprintf("connectors/%s.yaml", olap), strings.NewReader(connector))
+		if err != nil {
+			return err
+		}
+	}
 	return nil
+}
+
+func isAlphabetic(c byte) bool {
+	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
 }

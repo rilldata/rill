@@ -10,17 +10,25 @@ cli-only:
 cli: cli.prepare
 	go build -o rill cli/main.go 
 
+KEEP_DIRS := rill-openrtb-prog-ads rill-github-analytics rill-cost-monitoring
+
 .PHONY: cli.prepare
 cli.prepare:
+	@set -e; \
+	rm -rf runtime/pkg/examples/embed/dist || true; \
+	mkdir -p runtime/pkg/examples/embed/dist; \
+	# Create a temp dir (GNU mktemp first, then BSD/macOS fallback)
+	TMP_CLONE_DIR=$$(mktemp -d 2>/dev/null || mktemp -d -t rill-examples); \
+	trap 'rm -rf "$$TMP_CLONE_DIR"' EXIT; \
+	git clone --quiet --depth=1 https://github.com/rilldata/rill-examples.git "$$TMP_CLONE_DIR"; \
+	for d in $(KEEP_DIRS); do \
+		cp -R "$$TMP_CLONE_DIR/$$d" runtime/pkg/examples/embed/dist/; \
+	done
 	npm install
 	npm run build
 	rm -rf cli/pkg/web/embed/dist || true
 	mkdir -p cli/pkg/web/embed/dist
 	cp -r web-local/build/* cli/pkg/web/embed/dist
-	rm -rf runtime/pkg/examples/embed/dist || true
-	mkdir -p runtime/pkg/examples/embed/dist
-	git clone --quiet https://github.com/rilldata/rill-examples.git runtime/pkg/examples/embed/dist
-	rm -rf runtime/pkg/examples/embed/dist/.git
 	go run scripts/embed_duckdb_ext/main.go
 
 .PHONY: coverage.go
@@ -38,10 +46,10 @@ coverage.go:
 docs.generate:
 	# Temporarily replaces ~/.rill/config.yaml to avoid including user-defined defaults in generated docs.
 	# Sets version to the latest tag to simulate a production build, where certain commands are hidden.
-	rm -rf docs/docs/reference/cli docs/docs/reference/yaml
+	rm -rf docs/docs/reference/cli docs/docs/reference/project-files/
 	if [ -f ~/.rill/config.yaml ]; then mv ~/.rill/config.yaml ~/.rill/config.yaml.tmp; fi;
 	go run -ldflags="-X main.Version=$(shell git describe --tags `git rev-list --tags --max-count=1`)" ./cli docs generate-cli docs/docs/reference/cli/
-	go run -ldflags="-X main.Version=$(shell git describe --tags `git rev-list --tags --max-count=1`)" ./cli docs generate-project docs/docs/hidden/yaml
+	go run -ldflags="-X main.Version=$(shell git describe --tags `git rev-list --tags --max-count=1`)" ./cli docs generate-project docs/docs/reference/project-files/
 	if [ -f ~/.rill/config.yaml.tmp ]; then mv ~/.rill/config.yaml.tmp ~/.rill/config.yaml; fi;
 
 .PHONY: proto.generate

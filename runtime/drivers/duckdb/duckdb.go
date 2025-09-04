@@ -38,7 +38,7 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "DuckDB",
 	Description: "DuckDB SQL connector.",
-	DocsURL:     "https://docs.rilldata.com/reference/connectors/motherduck",
+	DocsURL:     "https://docs.rilldata.com/connect/olap/motherduck",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:         "path",
@@ -49,13 +49,13 @@ var spec = drivers.Spec{
 			Placeholder: "/path/to/main.db",
 		},
 	},
-	// Important: Any edits to the below properties must be accompanied by changes to the client-side form validation schemas.
+	// NOTE: reinstated SourceProperties to address https://github.com/rilldata/rill/pull/7726#discussion_r2271449022
 	SourceProperties: []*drivers.PropertySpec{
 		{
-			Key:         "db",
+			Key:         "path",
 			Type:        drivers.StringPropertyType,
 			Required:    true,
-			DisplayName: "DB",
+			DisplayName: "Path",
 			Description: "Path to DuckDB database",
 			Placeholder: "/path/to/duckdb.db",
 		},
@@ -82,7 +82,7 @@ var spec = drivers.Spec{
 var motherduckSpec = drivers.Spec{
 	DisplayName: "MotherDuck",
 	Description: "MotherDuck SQL connector.",
-	DocsURL:     "https://docs.rilldata.com/reference/connectors/motherduck",
+	DocsURL:     "https://docs.rilldata.com/connect/olap/motherduck",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:    "token",
@@ -465,6 +465,18 @@ func (c *connection) reopenDB(ctx context.Context) error {
 		connInitQueries []string
 	)
 
+	if c.driverName == "motherduck" {
+		dbInitQueries = append(dbInitQueries,
+			"INSTALL 'motherduck'",
+			"LOAD 'motherduck'",
+		)
+		if c.config.Token != "" {
+			dbInitQueries = append(dbInitQueries,
+				fmt.Sprintf("SET motherduck_token = '%s'", c.config.Token),
+			)
+		}
+	}
+
 	// Add custom InitSQL queries before any other (e.g. to override the extensions repository)
 	// BootQueries is deprecated. Use InitSQL instead. Retained for backward compatibility.
 	if c.config.BootQueries != "" {
@@ -517,6 +529,7 @@ func (c *connection) reopenDB(ctx context.Context) error {
 			Path:               c.config.Path,
 			Attach:             c.config.Attach,
 			DBName:             c.config.DatabaseName,
+			SchemaName:         c.config.SchemaName,
 			LocalDataDir:       dataDir,
 			LocalCPU:           c.config.CPU,
 			LocalMemoryLimitGB: c.config.MemoryLimitGB,

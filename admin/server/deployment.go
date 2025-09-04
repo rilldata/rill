@@ -227,6 +227,7 @@ func (s *Server) GetDeployment(ctx context.Context, req *adminv1.GetDeploymentRe
 		runtimeauth.ReadObjects,
 		runtimeauth.ReadMetrics,
 		runtimeauth.ReadAPI,
+		runtimeauth.UseAI,
 	}
 	if depl.Environment == "dev" {
 		instancePermissions = append(instancePermissions,
@@ -365,8 +366,6 @@ func (s *Server) CreateDeployment(ctx context.Context, req *adminv1.CreateDeploy
 		Slots:       slots,
 		Version:     proj.ProdVersion,
 		Variables:   vars,
-		OLAPDriver:  "",
-		OLAPDSN:     "",
 	})
 	if err != nil {
 		return nil, err
@@ -378,6 +377,7 @@ func (s *Server) CreateDeployment(ctx context.Context, req *adminv1.CreateDeploy
 			Name:                 proj.Name,
 			Description:          proj.Description,
 			Public:               proj.Public,
+			DirectoryName:        proj.DirectoryName,
 			Provisioner:          proj.Provisioner,
 			ArchiveAssetID:       proj.ArchiveAssetID,
 			GitRemote:            proj.GitRemote,
@@ -458,8 +458,6 @@ func (s *Server) StartDeployment(ctx context.Context, req *adminv1.StartDeployme
 		Slots:       slots,
 		Version:     proj.ProdVersion,
 		Variables:   vars,
-		OLAPDriver:  "",
-		OLAPDSN:     "",
 	})
 	if err != nil {
 		return nil, err
@@ -615,6 +613,7 @@ func (s *Server) GetDeploymentCredentials(ctx context.Context, req *adminv1.GetD
 				runtimeauth.ReadObjects,
 				runtimeauth.ReadMetrics,
 				runtimeauth.ReadAPI,
+				runtimeauth.UseAI,
 			},
 		},
 		Attributes: attr,
@@ -709,6 +708,7 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 				runtimeauth.ReadObjects,
 				runtimeauth.ReadMetrics,
 				runtimeauth.ReadAPI,
+				runtimeauth.UseAI,
 			},
 		},
 		Attributes: attr,

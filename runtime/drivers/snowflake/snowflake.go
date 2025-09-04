@@ -8,6 +8,7 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/mitchellh/mapstructure"
@@ -26,41 +27,70 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "Snowflake",
 	Description: "Connect to Snowflake.",
-	DocsURL:     "https://docs.rilldata.com/reference/connectors/snowflake",
+	DocsURL:     "https://docs.rilldata.com/connect/data-source/snowflake",
 	ConfigProperties: []*drivers.PropertySpec{
-		{
-			Key:    "dsn",
-			Type:   drivers.StringPropertyType,
-			Secret: true,
-		},
-	},
-	// Important: Any edits to the below properties must be accompanied by changes to the client-side form validation schemas.
-	SourceProperties: []*drivers.PropertySpec{
-		{
-			Key:         "sql",
-			Type:        drivers.StringPropertyType,
-			Required:    true,
-			DisplayName: "SQL",
-			Description: "Query to extract data from Snowflake.",
-			Placeholder: "select * from table",
-		},
 		{
 			Key:         "dsn",
 			Type:        drivers.StringPropertyType,
 			DisplayName: "Snowflake Connection String",
 			Required:    false,
-			DocsURL:     "https://docs.rilldata.com/reference/connectors/snowflake",
+			DocsURL:     "https://docs.rilldata.com/connect/data-source/snowflake",
 			Placeholder: "<username>@<account_identifier>/<database>/<schema>?warehouse=<warehouse>&role=<role>&authenticator=SNOWFLAKE_JWT&privateKey=<privateKey_base64_url_encoded>",
-			Hint:        "Can be configured here or by setting the 'connector.snowflake.dsn' environment variable (using '.env' or '--env')",
+			Hint:        "Can be configured here or by setting the 'connector.snowflake.dsn' environment variable (using '.env' or '--env').",
 			Secret:      true,
 		},
 		{
-			Key:         "name",
+			Key:         "account",
 			Type:        drivers.StringPropertyType,
-			DisplayName: "Source name",
-			Description: "The name of the source",
-			Placeholder: "my_new_source",
+			DisplayName: "Account Identifier",
 			Required:    true,
+			Placeholder: "your_account_identifier",
+			Hint:        "To find your Snowflake account identifier, look at your Snowflake account URL. The account identifier is everything before .snowflakecomputing.com",
+		},
+		{
+			Key:         "user",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Username",
+			Required:    true,
+			Placeholder: "your_username",
+			Hint:        "Your Snowflake database username",
+		},
+		{
+			Key:         "password",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Password",
+			Required:    true,
+			Placeholder: "your_password",
+			Hint:        "Your Snowflake database password. This will be stored securely and used to authenticate your connection.",
+			Secret:      true,
+		},
+		{
+			Key:         "database",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Database",
+			Placeholder: "your_database",
+			Hint:        "The name of the Snowflake database you want to connect to. This database must exist in your Snowflake account and you must have access permissions to it.",
+		},
+		{
+			Key:         "schema",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Schema",
+			Placeholder: "your_schema",
+			Hint:        "The schema within the database to use as the default. If not specified, Snowflake will use the PUBLIC schema or your user's default schema.",
+		},
+		{
+			Key:         "warehouse",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Warehouse",
+			Placeholder: "your_warehouse",
+			Hint:        "The compute warehouse to use for running queries. If not specified, Snowflake will use your default warehouse. The warehouse must be running or have auto-resume enabled.",
+		},
+		{
+			Key:         "role",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Role",
+			Placeholder: "your_role",
+			Hint:        "The Snowflake role to use (defaults to your default role if not specified)",
 		},
 	},
 	ImplementsWarehouse: true,
@@ -83,43 +113,78 @@ type configProperties struct {
 	Extras             map[string]any `mapstructure:",remain"`
 }
 
-func (cp configProperties) resolveDSN() (string, error) {
-	if cp.DSN != "" {
-		return cp.DSN, nil
+func (c *configProperties) validate() error {
+	var set []string
+	if c.Account != "" {
+		set = append(set, "account")
+	}
+	if c.User != "" {
+		set = append(set, "user")
+	}
+	if c.Database != "" {
+		set = append(set, "database")
+	}
+	if c.Password != "" {
+		set = append(set, "password")
+	}
+	if c.Schema != "" {
+		set = append(set, "schema")
+	}
+	if c.Warehouse != "" {
+		set = append(set, "warehouse")
+	}
+	if c.Role != "" {
+		set = append(set, "role")
+	}
+	if c.Authenticator != "" {
+		set = append(set, "authenticator")
+	}
+	if c.PrivateKey != "" {
+		set = append(set, "privateKey")
+	}
+	if c.DSN != "" && len(set) > 0 {
+		return fmt.Errorf("snowflake: Only one of 'dsn' or [%s] can be set", strings.Join(set, ", "))
+	}
+	return nil
+}
+
+func (c *configProperties) resolveDSN() (string, error) {
+	if c.DSN != "" {
+		return c.DSN, nil
 	}
 
-	if cp.Account == "" || cp.User == "" || cp.Database == "" {
+	if c.Account == "" || c.User == "" || c.Database == "" {
 		return "", errors.New("missing required fields: account, user, or database")
 	}
 
-	if cp.Password == "" && cp.PrivateKey == "" {
+	if c.Password == "" && c.PrivateKey == "" {
 		return "", errors.New("either password or privateKey must be provided")
 	}
 
 	cfg := &gosnowflake.Config{
-		Account:   cp.Account,
-		User:      cp.User,
-		Password:  cp.Password,
-		Database:  cp.Database,
-		Schema:    cp.Schema,
-		Warehouse: cp.Warehouse,
-		Role:      cp.Role,
+		Account:   c.Account,
+		User:      c.User,
+		Password:  c.Password,
+		Database:  c.Database,
+		Schema:    c.Schema,
+		Warehouse: c.Warehouse,
+		Role:      c.Role,
 		Params:    map[string]*string{},
 	}
 
-	if cp.PrivateKey != "" {
-		privateKey, err := parseRSAPrivateKey(cp.PrivateKey)
+	if c.PrivateKey != "" {
+		privateKey, err := parseRSAPrivateKey(c.PrivateKey)
 		if err != nil {
 			return "", err
 		}
 		cfg.PrivateKey = privateKey
 		cfg.Authenticator = gosnowflake.AuthTypeJwt
-	} else if cp.Authenticator != "" {
-		cfg.Params["authenticator"] = &cp.Authenticator
+	} else if c.Authenticator != "" {
+		cfg.Params["authenticator"] = &c.Authenticator
 	}
 
 	// Apply extra params
-	for k, v := range cp.Extras {
+	for k, v := range c.Extras {
 		switch val := v.(type) {
 		case string:
 			cfg.Params[k] = &val
@@ -140,6 +205,9 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 	conf := &configProperties{}
 	err := mapstructure.WeakDecode(config, conf)
 	if err != nil {
+		return nil, err
+	}
+	if err := conf.validate(); err != nil {
 		return nil, err
 	}
 

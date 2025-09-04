@@ -26,6 +26,7 @@ import type {
 
 import type {
   RpcStatus,
+  RuntimeServiceCompleteBody,
   RuntimeServiceCreateDirectoryBody,
   RuntimeServiceCreateTriggerBody,
   RuntimeServiceDeleteFileParams,
@@ -34,6 +35,7 @@ import type {
   RuntimeServiceGenerateMetricsViewFileBody,
   RuntimeServiceGenerateRendererBody,
   RuntimeServiceGenerateResolverBody,
+  RuntimeServiceGetConversationParams,
   RuntimeServiceGetExploreParams,
   RuntimeServiceGetFileParams,
   RuntimeServiceGetInstanceParams,
@@ -56,6 +58,7 @@ import type {
   RuntimeServiceWatchResourcesParams,
   V1AnalyzeConnectorsResponse,
   V1AnalyzeVariablesResponse,
+  V1CompleteResponse,
   V1CreateDirectoryResponse,
   V1CreateInstanceRequest,
   V1CreateInstanceResponse,
@@ -66,6 +69,7 @@ import type {
   V1GenerateMetricsViewFileResponse,
   V1GenerateRendererResponse,
   V1GenerateResolverResponse,
+  V1GetConversationResponse,
   V1GetExploreResponse,
   V1GetFileResponse,
   V1GetInstanceResponse,
@@ -77,6 +81,7 @@ import type {
   V1IssueDevJWTRequest,
   V1IssueDevJWTResponse,
   V1ListConnectorDriversResponse,
+  V1ListConversationsResponse,
   V1ListExamplesResponse,
   V1ListFilesResponse,
   V1ListInstancesResponse,
@@ -993,6 +998,309 @@ export const createRuntimeServiceEditInstance = <
 
   return createMutation(mutationOptions, queryClient);
 };
+/**
+ * @summary Complete runs a language model completion (LLM chat) using the configured AI connector.
+ */
+export const runtimeServiceComplete = (
+  instanceId: string,
+  runtimeServiceCompleteBody: RuntimeServiceCompleteBody,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1CompleteResponse>({
+    url: `/v1/instances/${instanceId}/ai/complete`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: runtimeServiceCompleteBody,
+    signal,
+  });
+};
+
+export const getRuntimeServiceCompleteMutationOptions = <
+  TError = ErrorType<RpcStatus>,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof runtimeServiceComplete>>,
+    TError,
+    { instanceId: string; data: RuntimeServiceCompleteBody },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof runtimeServiceComplete>>,
+  TError,
+  { instanceId: string; data: RuntimeServiceCompleteBody },
+  TContext
+> => {
+  const mutationKey = ["runtimeServiceComplete"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof runtimeServiceComplete>>,
+    { instanceId: string; data: RuntimeServiceCompleteBody }
+  > = (props) => {
+    const { instanceId, data } = props ?? {};
+
+    return runtimeServiceComplete(instanceId, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RuntimeServiceCompleteMutationResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceComplete>>
+>;
+export type RuntimeServiceCompleteMutationBody = RuntimeServiceCompleteBody;
+export type RuntimeServiceCompleteMutationError = ErrorType<RpcStatus>;
+
+/**
+ * @summary Complete runs a language model completion (LLM chat) using the configured AI connector.
+ */
+export const createRuntimeServiceComplete = <
+  TError = ErrorType<RpcStatus>,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof runtimeServiceComplete>>,
+      TError,
+      { instanceId: string; data: RuntimeServiceCompleteBody },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof runtimeServiceComplete>>,
+  TError,
+  { instanceId: string; data: RuntimeServiceCompleteBody },
+  TContext
+> => {
+  const mutationOptions = getRuntimeServiceCompleteMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
+/**
+ * @summary ListConversations lists all AI chat conversations for an instance.
+ */
+export const runtimeServiceListConversations = (
+  instanceId: string,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1ListConversationsResponse>({
+    url: `/v1/instances/${instanceId}/ai/conversations`,
+    method: "GET",
+    signal,
+  });
+};
+
+export const getRuntimeServiceListConversationsQueryKey = (
+  instanceId: string,
+) => {
+  return [`/v1/instances/${instanceId}/ai/conversations`] as const;
+};
+
+export const getRuntimeServiceListConversationsQueryOptions = <
+  TData = Awaited<ReturnType<typeof runtimeServiceListConversations>>,
+  TError = ErrorType<RpcStatus>,
+>(
+  instanceId: string,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof runtimeServiceListConversations>>,
+        TError,
+        TData
+      >
+    >;
+  },
+) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getRuntimeServiceListConversationsQueryKey(instanceId);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof runtimeServiceListConversations>>
+  > = ({ signal }) => runtimeServiceListConversations(instanceId, signal);
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!instanceId,
+    ...queryOptions,
+  } as CreateQueryOptions<
+    Awaited<ReturnType<typeof runtimeServiceListConversations>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type RuntimeServiceListConversationsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceListConversations>>
+>;
+export type RuntimeServiceListConversationsQueryError = ErrorType<RpcStatus>;
+
+/**
+ * @summary ListConversations lists all AI chat conversations for an instance.
+ */
+
+export function createRuntimeServiceListConversations<
+  TData = Awaited<ReturnType<typeof runtimeServiceListConversations>>,
+  TError = ErrorType<RpcStatus>,
+>(
+  instanceId: string,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof runtimeServiceListConversations>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getRuntimeServiceListConversationsQueryOptions(
+    instanceId,
+    options,
+  );
+
+  const query = createQuery(queryOptions, queryClient) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+/**
+ * @summary GetConversation returns a specific AI chat conversation.
+ */
+export const runtimeServiceGetConversation = (
+  instanceId: string,
+  conversationId: string,
+  params?: RuntimeServiceGetConversationParams,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1GetConversationResponse>({
+    url: `/v1/instances/${instanceId}/ai/conversations/${conversationId}`,
+    method: "GET",
+    params,
+    signal,
+  });
+};
+
+export const getRuntimeServiceGetConversationQueryKey = (
+  instanceId: string,
+  conversationId: string,
+  params?: RuntimeServiceGetConversationParams,
+) => {
+  return [
+    `/v1/instances/${instanceId}/ai/conversations/${conversationId}`,
+    ...(params ? [params] : []),
+  ] as const;
+};
+
+export const getRuntimeServiceGetConversationQueryOptions = <
+  TData = Awaited<ReturnType<typeof runtimeServiceGetConversation>>,
+  TError = ErrorType<RpcStatus>,
+>(
+  instanceId: string,
+  conversationId: string,
+  params?: RuntimeServiceGetConversationParams,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof runtimeServiceGetConversation>>,
+        TError,
+        TData
+      >
+    >;
+  },
+) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getRuntimeServiceGetConversationQueryKey(
+      instanceId,
+      conversationId,
+      params,
+    );
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof runtimeServiceGetConversation>>
+  > = ({ signal }) =>
+    runtimeServiceGetConversation(instanceId, conversationId, params, signal);
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!(instanceId && conversationId),
+    ...queryOptions,
+  } as CreateQueryOptions<
+    Awaited<ReturnType<typeof runtimeServiceGetConversation>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type RuntimeServiceGetConversationQueryResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceGetConversation>>
+>;
+export type RuntimeServiceGetConversationQueryError = ErrorType<RpcStatus>;
+
+/**
+ * @summary GetConversation returns a specific AI chat conversation.
+ */
+
+export function createRuntimeServiceGetConversation<
+  TData = Awaited<ReturnType<typeof runtimeServiceGetConversation>>,
+  TError = ErrorType<RpcStatus>,
+>(
+  instanceId: string,
+  conversationId: string,
+  params?: RuntimeServiceGetConversationParams,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof runtimeServiceGetConversation>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getRuntimeServiceGetConversationQueryOptions(
+    instanceId,
+    conversationId,
+    params,
+    options,
+  );
+
+  const query = createQuery(queryOptions, queryClient) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
 /**
  * @summary AnalyzeConnectors scans all the project files and returns information about all referenced connectors.
  */

@@ -1,5 +1,5 @@
+import { getContext, hasContext, setContext } from "svelte";
 import { get, writable } from "svelte/store";
-import { setContext, getContext, hasContext } from "svelte";
 
 export function pruneProps<T extends object>(props: T): T {
   return Object.keys(props).reduce((next, prop) => {
@@ -30,7 +30,7 @@ function addDerivations(store, derivations) {
 export function cascadingContextStore<Props extends object, StoreValue>(
   namespace: string,
   props: Props,
-  derivations = {}
+  derivations = {},
 ) {
   // check to see if namespace exists.
   const hasParentCascade = hasContext(namespace);

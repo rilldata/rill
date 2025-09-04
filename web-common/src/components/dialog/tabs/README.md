@@ -3,7 +3,9 @@
 This directory contains special-purpose tabs used for multi-panel, multi-step dialogs.
 
 ## Unique Features
+
 These tabs are unique in that they:
+
 - Have a fixed height & width
 - Include a number next to each tab
 - Are not clickable

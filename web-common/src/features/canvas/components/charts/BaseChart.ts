@@ -1,6 +1,10 @@
 import { BaseCanvasComponent } from "@rilldata/web-common/features/canvas/components/BaseCanvasComponent";
 import { CHART_CONFIG } from "@rilldata/web-common/features/canvas/components/charts";
 import {
+  CanvasChartTypeToTDDChartType,
+  getLinkStateForTimeDimensionDetail,
+} from "@rilldata/web-common/features/canvas/components/charts/util";
+import {
   commonOptions,
   createComponent,
   getFilterOptions,
@@ -30,6 +34,7 @@ import type {
 import Chart from "./Chart.svelte";
 import type {
   ChartDataQuery,
+  ChartDomainValues,
   ChartFieldsMap,
   ChartType,
   CommonChartProperties,
@@ -93,6 +98,12 @@ export abstract class BaseChart<
 
   abstract chartTitle(fields: ChartFieldsMap): string;
 
+  getChartDomainValues(): ChartDomainValues {
+    // Default implementation returns empty metadata
+    // Subclasses can override to provide specific metadata
+    return {};
+  }
+
   protected getDefaultFieldConfig(): Partial<FieldConfig> {
     return {
       showAxisTitle: true,
@@ -108,13 +119,27 @@ export abstract class BaseChart<
     );
 
     const timeGrain = get(this.timeAndFilterStore)?.timeGrain;
+    const tddLink = getLinkStateForTimeDimensionDetail(spec, this.type);
 
     return {
       whereFilter: dimensionFilters,
       dimensionThresholdFilters,
       showTimeComparison: false,
-      activePage: DashboardState_ActivePage.PIVOT,
+      activePage: tddLink.canLink
+        ? DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL
+        : DashboardState_ActivePage.PIVOT,
       pivot: getPivotStateFromChartSpec(spec, timeGrain),
+      ...(tddLink.canLink &&
+        tddLink.measureName && {
+          tdd: {
+            expandedMeasureName: tddLink.measureName,
+            pinIndex: 0,
+            chartType: CanvasChartTypeToTDDChartType[this.type],
+          },
+        }),
+      ...(tddLink.dimensionName && {
+        selectedComparisonDimension: tddLink.dimensionName,
+      }),
     };
   }
 

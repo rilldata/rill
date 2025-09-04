@@ -75,16 +75,6 @@ func TimeGrainToAPI(tg TimeGrain) runtimev1.TimeGrain {
 	return runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED
 }
 
-func MinGrain(grain1, grain2 TimeGrain) TimeGrain {
-	if grain1 == TimeGrainUnspecified {
-		return grain2
-	}
-	if grain2 == TimeGrainUnspecified {
-		return grain1
-	}
-	return min(grain1, grain2)
-}
-
 func TruncateTime(tm time.Time, tg TimeGrain, tz *time.Location, firstDay, firstMonth int) time.Time {
 	switch tg {
 	case TimeGrainUnspecified:
@@ -161,15 +151,6 @@ func TruncateTime(tm time.Time, tg TimeGrain, tz *time.Location, firstDay, first
 	return tm
 }
 
-func CeilTime(start time.Time, tg TimeGrain, tz *time.Location, firstDay, firstMonth int) time.Time {
-	truncated := TruncateTime(start, tg, tz, firstDay, firstMonth)
-	if start.Equal(truncated) {
-		return start
-	}
-
-	return OffsetTime(truncated, tg, 1)
-}
-
 func ApproximateBins(start, end time.Time, tg TimeGrain) int {
 	switch tg {
 	case TimeGrainUnspecified:
@@ -197,22 +178,23 @@ func ApproximateBins(start, end time.Time, tg TimeGrain) int {
 	return -1
 }
 
-func OffsetTime(tm time.Time, tg TimeGrain, n int) time.Time {
+func OffsetTime(tm time.Time, tg TimeGrain, n int, tz *time.Location) time.Time {
+	tm = tm.In(tz)
+
 	switch tg {
 	case TimeGrainUnspecified:
-		return tm
 	case TimeGrainMillisecond:
-		return tm.Add(time.Duration(n) * time.Millisecond)
+		tm = tm.Add(time.Duration(n) * time.Millisecond)
 	case TimeGrainSecond:
-		return tm.Add(time.Duration(n) * time.Second)
+		tm = tm.Add(time.Duration(n) * time.Second)
 	case TimeGrainMinute:
-		return tm.Add(time.Duration(n) * time.Minute)
+		tm = tm.Add(time.Duration(n) * time.Minute)
 	case TimeGrainHour:
-		return tm.Add(time.Duration(n) * time.Hour)
+		tm = tm.Add(time.Duration(n) * time.Hour)
 	case TimeGrainDay:
-		return tm.AddDate(0, 0, n)
+		tm = tm.AddDate(0, 0, n)
 	case TimeGrainWeek:
-		return tm.AddDate(0, 0, n*7)
+		tm = tm.AddDate(0, 0, n*7)
 	case TimeGrainMonth, TimeGrainQuarter, TimeGrainYear:
 		// Offset with correction for different days in months
 
@@ -235,10 +217,10 @@ func OffsetTime(tm time.Time, tg TimeGrain, n int) time.Time {
 		// Get the max days possible for the month in the year.
 		maxDays := daysInMonth(offsetFirstDay.Year(), int(offsetFirstDay.Month()))
 		// Take the min of max-days or day from `tm`
-		return offsetFirstDay.AddDate(0, 0, min(maxDays-1, tm.Day()-1))
+		tm = offsetFirstDay.AddDate(0, 0, min(maxDays-1, tm.Day()-1))
 	}
 
-	return tm
+	return tm.In(time.UTC)
 }
 
 var daysForMonths = []int{31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31}

@@ -1,16 +1,18 @@
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import { createInExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { getTimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-import { PreviousCompleteRangeMap } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers";
+import {
+  mapV1TimeRangeToSelectedComparisonTimeRange,
+  mapV1TimeRangeToSelectedTimeRange,
+  PreviousCompleteRangeMap,
+} from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers";
 import { convertPartialExploreStateToUrlParams } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params";
 import {
   type ExploreLinkError,
   ExploreLinkErrorType,
 } from "@rilldata/web-common/features/explore-mappers/types";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-import { isoDurationToFullTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import {
-  type DashboardTimeControls,
   TimeComparisonOption,
   TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types";
@@ -48,12 +50,17 @@ export function fillTimeRange(
   executionTime: string,
 ) {
   if (reqTimeRange) {
-    exploreState.selectedTimeRange = getSelectedTimeRange(
+    exploreState.selectedTimeRange = mapV1TimeRangeToSelectedTimeRange(
       reqTimeRange,
       timeRangeSummary,
-      reqTimeRange.isoDuration ?? "",
       executionTime,
     );
+    if (
+      exploreState.selectedTimeRange?.start &&
+      exploreState.selectedTimeRange?.end
+    ) {
+      exploreState.selectedTimeRange.name = TimeRangePreset.CUSTOM;
+    }
   }
 
   if (reqComparisonTimeRange) {
@@ -69,21 +76,12 @@ export function fillTimeRange(
         end: undefined as unknown as Date,
       };
     } else {
-      exploreState.selectedComparisonTimeRange = getSelectedTimeRange(
-        reqComparisonTimeRange,
-        timeRangeSummary,
-        reqComparisonTimeRange.isoOffset,
-        executionTime,
-      );
-      // temporary fix to not lead to an uncaught error.
-      // TODO: we should a single custom label when we move to rill-time syntax
-      if (
-        exploreState.selectedComparisonTimeRange?.name ===
-        TimeRangePreset.CUSTOM
-      ) {
-        exploreState.selectedComparisonTimeRange.name =
-          TimeComparisonOption.CUSTOM;
-      }
+      exploreState.selectedComparisonTimeRange =
+        mapV1TimeRangeToSelectedComparisonTimeRange(
+          reqComparisonTimeRange,
+          timeRangeSummary,
+          executionTime,
+        );
     }
 
     if (exploreState.selectedComparisonTimeRange) {
@@ -92,45 +90,6 @@ export function fillTimeRange(
     }
     exploreState.showTimeComparison = true;
   }
-}
-
-export function getSelectedTimeRange(
-  timeRange: V1TimeRange,
-  timeRangeSummary: V1TimeRangeSummary,
-  duration: string | undefined,
-  executionTime: string,
-): DashboardTimeControls | undefined {
-  let selectedTimeRange: DashboardTimeControls;
-
-  const fullRangeKey = `${timeRange.isoDuration ?? ""}_${timeRange.isoOffset ?? ""}_${timeRange.roundToGrain ?? ""}`;
-  if (fullRangeKey in PreviousCompleteRangeReverseMap) {
-    duration = PreviousCompleteRangeReverseMap[fullRangeKey];
-  }
-
-  if (timeRange.start && timeRange.end) {
-    selectedTimeRange = {
-      name: TimeRangePreset.CUSTOM,
-      start: new Date(timeRange.start),
-      end: new Date(timeRange.end),
-    };
-  } else if (duration && timeRangeSummary.min) {
-    selectedTimeRange = isoDurationToFullTimeRange(
-      duration,
-      new Date(timeRangeSummary.min),
-      new Date(executionTime),
-    );
-    // Convert the range to a custom one with resolved start and end.
-    // This retains the resolved range with `executionTime` incorporated into the range.
-    // TODO: Once we have rill-time do `<syntax> as of <executionTime>` as time range.
-    //       Note we need to have the new drop down out of feature flag as well.
-    selectedTimeRange.name = TimeRangePreset.CUSTOM;
-  } else {
-    return undefined;
-  }
-
-  selectedTimeRange.interval = timeRange.roundToGrain;
-
-  return selectedTimeRange;
 }
 
 const ExploreNameRegex = /\/explore\/((?:[\w-]|%[0-9A-Fa-f]{2})+)/;

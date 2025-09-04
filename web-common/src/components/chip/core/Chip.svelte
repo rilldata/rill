@@ -68,6 +68,7 @@
           on:mouseleave={blurOnRemove}
           on:blur={blurOnRemove}
           on:click|stopPropagation={() => dispatch("remove")}
+          type="button"
         >
           <CancelCircle size="16px" />
         </button>
@@ -84,6 +85,7 @@
         on:mousedown
         aria-label={`Open ${label}`}
         class="text-inherit w-full select-none flex items-center justify-between gap-x-1 px-0.5"
+        type="button"
       >
         <slot name="body" />
 

@@ -259,7 +259,7 @@ func (f *fileIterator) Next(ctx context.Context) ([]string, error) {
 			mu.Lock()
 			defer mu.Unlock()
 
-			for _, rec := range *records {
+			for i, rec := range *records {
 				if writer.RowGroupTotalBytesWritten() >= rowGroupBufferSize {
 					writer.NewBufferedRowGroup()
 					f.logger.Debug(
@@ -270,8 +270,13 @@ func (f *fileIterator) Next(ctx context.Context) ([]string, error) {
 					)
 				}
 				if err := writer.WriteBuffered(rec); err != nil {
+					// Release current and remaining records to avoid memory leak
+					for j := i; j < len(*records); j++ {
+						(*records)[j].Release()
+					}
 					return err
 				}
+				rec.Release()
 			}
 			batchesLeft--
 			f.totalRecords += int64(b.GetRowCount())

@@ -32,6 +32,7 @@ import (
 	_ "github.com/rilldata/rill/runtime/drivers/file"
 	_ "github.com/rilldata/rill/runtime/drivers/gcs"
 	_ "github.com/rilldata/rill/runtime/drivers/https"
+	_ "github.com/rilldata/rill/runtime/drivers/mock/ai"
 	_ "github.com/rilldata/rill/runtime/drivers/postgres"
 	_ "github.com/rilldata/rill/runtime/drivers/redshift"
 	_ "github.com/rilldata/rill/runtime/drivers/s3"
@@ -333,7 +334,7 @@ func NewInstanceWithClickhouseProject(t TestingT, withCluster bool) (*runtime.Ru
 	_, currentFile, _, _ := goruntime.Caller(0)
 	projectPath := filepath.Join(currentFile, "..", "testdata", "ad_bids_clickhouse")
 
-	olapConfig := map[string]string{"dsn": dsn}
+	olapConfig := map[string]string{"dsn": dsn, "mode": "readwrite"}
 	if withCluster {
 		olapConfig["cluster"] = cluster
 		olapConfig["log_queries"] = "true"

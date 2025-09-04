@@ -127,7 +127,8 @@ func (c *Connection) unload(ctx context.Context, client *athena.Client, sourcePr
 		return err
 	}
 
-	return c.executeQuery(ctx, client, finalSQL, sourceProperties.ResolveWorkgroup(c.config), outputLocation)
+	_, err = c.executeQuery(ctx, client, finalSQL, sourceProperties.ResolveWorkgroup(c.config), outputLocation)
+	return err
 }
 
 func parseSourceProperties(props map[string]any) (*sourceProperties, error) {

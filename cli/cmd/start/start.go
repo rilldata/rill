@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/joho/godotenv"
+	"github.com/rilldata/rill/cli/cmd/env"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/local"
@@ -17,8 +18,6 @@ import (
 
 // StartCmd represents the start command
 func StartCmd(ch *cmdutil.Helper) *cobra.Command {
-	var olapDriver string
-	var olapDSN string
 	var httpPort int
 	var grpcPort int
 	var verbose bool
@@ -104,6 +103,16 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				projectPath = "."
 			}
 
+			// Always attempt to pull env for any valid Rill project (after projectPath is set)
+			if ch.IsAuthenticated() {
+				if local.IsProjectInit(projectPath) {
+					err := env.PullVars(cmd.Context(), ch, projectPath, "", environment, false)
+					if err != nil && !errors.Is(err, cmdutil.ErrNoMatchingProject) {
+						ch.PrintfWarn("Warning: failed to pull environment credentials: %v\n", err)
+					}
+				}
+			}
+
 			// Check that projectPath doesn't have an excessive number of files.
 			// Note: Relies on ListGlob enforcing drivers.RepoListLimit.
 			if _, err := os.Stat(projectPath); err == nil {
@@ -162,8 +171,6 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				Debug:          debug,
 				Reset:          reset,
 				Environment:    environment,
-				OlapDriver:     olapDriver,
-				OlapDSN:        olapDSN,
 				ProjectPath:    projectPath,
 				LogFormat:      parsedLogFormat,
 				Variables:      envVarsMap,
@@ -210,17 +217,6 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 
 	// Deprecated support for "--readonly". Projects should be shared via Rill Cloud.
 	if err := startCmd.Flags().MarkHidden("readonly"); err != nil {
-		panic(err)
-	}
-
-	// We have deprecated the ability configure the OLAP database via the CLI. This should now be done via rill.yaml.
-	// Keeping these for backwards compatibility for a while.
-	startCmd.Flags().StringVar(&olapDSN, "db", local.DefaultOLAPDSN, "Database DSN")
-	startCmd.Flags().StringVar(&olapDriver, "db-driver", local.DefaultOLAPDriver, "Database driver")
-	if err := startCmd.Flags().MarkHidden("db"); err != nil {
-		panic(err)
-	}
-	if err := startCmd.Flags().MarkHidden("db-driver"); err != nil {
 		panic(err)
 	}
 

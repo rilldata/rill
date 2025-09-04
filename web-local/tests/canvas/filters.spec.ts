@@ -28,8 +28,14 @@ test.describe("canvas time filters", () => {
       .getByRole("complementary", { name: "Inspector Panel" })
       .getByLabel("Select time range")
       .click();
-    await page.getByText("Last 7 Days").click();
-    await page.getByRole("button", { name: "Comparing", exact: true }).click();
+    await page.getByRole("menuitem", { name: "Last 7 Days" }).click();
+
+    await page.waitForTimeout(500);
+
+    await page
+      .getByRole("complementary", { name: "Inspector Panel" })
+      .getByLabel("Toggle time comparison")
+      .click();
 
     await expect(
       page.getByText("Total records 7,863 -15 ~0% vs previous week"),
@@ -49,11 +55,7 @@ test.describe("canvas time filters", () => {
     await page.getByLabel("/dashboards").click();
     await gotoNavEntry(page, "/dashboards/AdBids_metrics_canvas.yaml");
 
-    await page
-      .locator("#AdBids_metrics_canvas--component-0-0 div")
-      .filter({ hasText: "Total records 1,122 -5 ~0% vs previous day" })
-      .first()
-      .click();
+    await page.getByText("Total records 1,122 -5 ~0% vs previous day").click();
 
     await page.getByRole("button", { name: "Options" }).click();
     await page.getByRole("button", { name: "Add filter button" }).click();
@@ -66,7 +68,11 @@ test.describe("canvas time filters", () => {
       .click();
     await page.getByLabel("domain results").getByText("msn.com").click();
 
-    await page.getByRole("button", { name: "Open domain filter" }).click();
+    // Close the dropdown to apply the selections (Select mode applies on close)
+    await page
+      .getByRole("button", { name: "Open domain filter" })
+      .first()
+      .click();
 
     await expect(page.locator(".kpi-wrapper").getByText("797")).toBeVisible();
 
@@ -82,6 +88,12 @@ test.describe("canvas time filters", () => {
       .click();
     await page.getByRole("menuitem", { name: "Domain" }).click();
     await page.getByLabel("domain results").getByText("msn.com").click();
+
+    // Close the dropdown to apply the selection (Select mode applies on close)
+    await page
+      .getByRole("complementary", { name: "Inspector Panel" })
+      .getByRole("button", { name: "Open domain filter" })
+      .click();
 
     await expect(page.getByText("375")).toBeVisible();
   });

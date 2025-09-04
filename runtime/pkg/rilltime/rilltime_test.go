@@ -301,6 +301,7 @@ func TestEval_IsoTimeRanges(t *testing.T) {
 	testCases := []testCase{
 		{"2025-02-20T01:23:45Z to 2025-07-15T02:34:50Z", "2025-02-20T01:23:45Z", "2025-07-15T02:34:50Z", timeutil.TimeGrainSecond, 1, 1},
 		{"2025-02-20T01:23:45Z / 2025-07-15T02:34:50Z", "2025-02-20T01:23:45Z", "2025-07-15T02:34:50Z", timeutil.TimeGrainSecond, 1, 1},
+		{"2025-02-20T01:23:45Z,2025-07-15T02:34:50Z", "2025-02-20T01:23:45Z", "2025-07-15T02:34:50Z", timeutil.TimeGrainSecond, 1, 1},
 
 		{"2025-02-20T01:23", "2025-02-20T01:23:00Z", "2025-02-20T01:24:00Z", timeutil.TimeGrainSecond, 1, 1},
 		{"2025-02-20T01", "2025-02-20T01:00:00Z", "2025-02-20T02:00:00Z", timeutil.TimeGrainMinute, 1, 1},
@@ -365,6 +366,25 @@ func Test_KatmanduTimezone(t *testing.T) {
 		{"W1 as of watermark tz Asia/Kathmandu", "2025-04-27T18:15:00Z", "2025-05-04T18:15:00Z", timeutil.TimeGrainDay, 1, 1},
 		{"W1 as of -2M as of watermark", "2025-03-02T18:15:00Z", "2025-03-09T18:15:00Z", timeutil.TimeGrainDay, 1, 1},
 		{"W1 as of -1Y as of watermark", "2024-04-28T18:15:00Z", "2024-05-05T18:15:00Z", timeutil.TimeGrainDay, 1, 1},
+	}
+
+	runTests(t, testCases, now, minTime, maxTime, watermark, tz)
+}
+
+func Test_TimeNewYorkTimezone(t *testing.T) {
+	tz, err := time.LoadLocation("America/New_York")
+	require.NoError(t, err)
+
+	testCases := []testCase{
+		// Cases of time moving forward due to daylight savings
+		{"D3 of M11 as of 2024", "2024-11-03T04:00:00Z", "2024-11-04T05:00:00Z", timeutil.TimeGrainHour, 1, 1},
+		{"3D as of 2024-11-04", "2024-11-01T04:00:00Z", "2024-11-04T05:00:00Z", timeutil.TimeGrainDay, 1, 1},
+		{"2M as of 2024-12", "2024-10-01T04:00:00Z", "2024-12-01T05:00:00Z", timeutil.TimeGrainMonth, 1, 1},
+
+		// Cases of time moving backwards due to daylight savings
+		{"D10 of M3 as of 2024", "2024-03-10T05:00:00Z", "2024-03-11T04:00:00Z", timeutil.TimeGrainHour, 1, 1},
+		{"3D as of 2024-03-11", "2024-03-08T05:00:00Z", "2024-03-11T04:00:00Z", timeutil.TimeGrainDay, 1, 1},
+		{"2M as of 2024-04", "2024-02-01T05:00:00Z", "2024-04-01T04:00:00Z", timeutil.TimeGrainMonth, 1, 1},
 	}
 
 	runTests(t, testCases, now, minTime, maxTime, watermark, tz)

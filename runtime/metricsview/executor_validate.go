@@ -10,7 +10,9 @@ import (
 	"sync"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/fieldselectorpb"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -53,9 +55,14 @@ func (r *ValidateMetricsViewResult) Error() error {
 }
 
 // ValidateAndNormalizeMetricsView validates the dimensions and measures in the executor's metrics view and returns a ValidateMetricsViewResult
-// It also populates the schema of the metrics view if all dimensions and measures are valid.
+// It also inherits properties from parent metrics view and populates the schema of the metrics view if all dimensions and measures are valid.
 // Note - Beware that it modifies the metrics view spec in place to populate the dimension and measure types.
 func (e *Executor) ValidateAndNormalizeMetricsView(ctx context.Context) (*ValidateMetricsViewResult, error) {
+	err := e.resolveParentMetricsView(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve parent metrics view: %w", err)
+	}
+
 	// Create the result
 	res := &ValidateMetricsViewResult{}
 
@@ -126,6 +133,12 @@ func (e *Executor) ValidateAndNormalizeMetricsView(ctx context.Context) (*Valida
 		e.validateIndividualDimensionsAndMeasures(ctx, t, mv, cols, res)
 	}
 
+	// Check and rewrite annotations
+	err = e.validateAndNormalizeAnnotations(ctx, mv, res)
+	if err != nil {
+		return res, err
+	}
+
 	// Pinot does have any native support for time shift using time grain specifiers
 	if e.olap.Dialect() == drivers.DialectPinot && (mv.FirstDayOfWeek > 1 || mv.FirstMonthOfYear > 1) {
 		res.OtherErrs = append(res.OtherErrs, fmt.Errorf("time shift not supported for Pinot dialect, so FirstDayOfWeek and FirstMonthOfYear should be 1"))
@@ -146,6 +159,126 @@ func (e *Executor) ValidateAndNormalizeMetricsView(ctx context.Context) (*Valida
 	}
 
 	return res, nil
+}
+
+// resolves the parent metrics view and inherits all its dimensions and measures unless they are overridden in the current metrics view.
+func (e *Executor) resolveParentMetricsView(ctx context.Context) error {
+	if e.metricsView.Parent == "" {
+		// No parent metrics view to normalize
+		return nil
+	}
+	// Resolve the parent metrics view
+	ctrl, err := e.rt.Controller(ctx, e.instanceID)
+	if err != nil {
+		return fmt.Errorf("failed to get controller: %w", err)
+	}
+	// deep copy of parent metrics view that will be modified
+	res, err := ctrl.Get(ctx, &runtimev1.ResourceName{
+		Name: e.metricsView.Parent,
+		Kind: runtime.ResourceKindMetricsView,
+	}, false)
+	if err != nil {
+		return fmt.Errorf("failed to get parent metrics view %q: %w", e.metricsView.Parent, err)
+	}
+	if res.GetMetricsView() == nil {
+		return fmt.Errorf("parent resource %q is not a metrics view", e.metricsView.Parent)
+	}
+	if res.GetMetricsView().State.ValidSpec == nil {
+		return fmt.Errorf("parent metrics view %q is invalid", e.metricsView.Parent)
+	}
+	parent := res.GetMetricsView().State.ValidSpec
+
+	e.metricsView.Connector = parent.Connector
+	e.metricsView.Database = parent.Database
+	e.metricsView.DatabaseSchema = parent.DatabaseSchema
+	e.metricsView.Table = parent.Table
+	e.metricsView.Model = parent.Model
+	e.metricsView.CacheEnabled = parent.CacheEnabled
+	e.metricsView.CacheKeySql = parent.CacheKeySql
+	e.metricsView.CacheKeyTtlSeconds = parent.CacheKeyTtlSeconds
+
+	// Override the dimensions and measures in the normalized metrics view if defined in the current metrics view.
+	names := make([]string, 0, len(parent.Dimensions))
+	for _, d := range parent.Dimensions {
+		names = append(names, d.Name)
+	}
+	names, err = fieldselectorpb.Resolve(e.metricsView.ParentDimensions, names)
+	if err != nil {
+		return fmt.Errorf("failed to resolve parent dimensions selector: %w", err)
+	}
+	filteredDims := make([]*runtimev1.MetricsViewSpec_Dimension, 0, len(parent.Dimensions))
+	for _, d := range parent.Dimensions {
+		if slices.Contains(names, d.Name) {
+			filteredDims = append(filteredDims, d)
+		}
+	}
+	e.metricsView.Dimensions = filteredDims
+
+	names = make([]string, 0, len(parent.Measures))
+	for _, m := range parent.Measures {
+		names = append(names, m.Name)
+	}
+	names, err = fieldselectorpb.Resolve(e.metricsView.ParentMeasures, names)
+	if err != nil {
+		return fmt.Errorf("failed to resolve parent measures selector: %w", err)
+	}
+	filteredMeasures := make([]*runtimev1.MetricsViewSpec_Measure, 0, len(parent.Measures))
+	for _, m := range parent.Measures {
+		if slices.Contains(names, m.Name) {
+			filteredMeasures = append(filteredMeasures, m)
+		}
+	}
+	e.metricsView.Measures = filteredMeasures
+
+	// set selectors to nil now that they are resolved
+	e.metricsView.ParentDimensions = nil
+	e.metricsView.ParentMeasures = nil
+
+	hasAccessRule := false
+	for _, rule := range e.metricsView.SecurityRules {
+		if rule.GetAccess() != nil {
+			hasAccessRule = true
+			break
+		}
+	}
+	// append all parent security rules to the metrics view, except access if its already defined in the metrics view
+	for _, rule := range parent.SecurityRules {
+		if rule.GetAccess() != nil && hasAccessRule {
+			continue // skip access rules if already defined in the metrics view
+		}
+		e.metricsView.SecurityRules = append(e.metricsView.SecurityRules, rule)
+	}
+
+	// If the metrics view doesn't have a time dimension, use the parent's time dimension
+	if e.metricsView.TimeDimension == "" {
+		e.metricsView.TimeDimension = parent.TimeDimension
+	}
+	// If the metrics view doesn't have a watermark expression, use the parent's watermark expression
+	if e.metricsView.WatermarkExpression == "" {
+		e.metricsView.WatermarkExpression = parent.WatermarkExpression
+	}
+	// If the metrics view doesn't have a first day of week, use the parent's first day of week
+	if e.metricsView.FirstDayOfWeek == 0 {
+		e.metricsView.FirstDayOfWeek = parent.FirstDayOfWeek
+	}
+	// If the metrics view doesn't have a first month of year, use the parent's first month of year
+	if e.metricsView.FirstMonthOfYear == 0 {
+		e.metricsView.FirstMonthOfYear = parent.FirstMonthOfYear
+	}
+	// If the metrics view has a smallest time grain, make sure it is greater than or equal to the parent's smallest time grain.
+	if e.metricsView.SmallestTimeGrain != runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
+		if e.metricsView.SmallestTimeGrain < parent.SmallestTimeGrain {
+			return fmt.Errorf("invalid smallest time grain %s in metrics view %q, must be greater than or equal to parent metrics view smallest time grain %s", e.metricsView.SmallestTimeGrain, e.metricsView.Parent, parent.SmallestTimeGrain)
+		}
+	} else {
+		e.metricsView.SmallestTimeGrain = parent.SmallestTimeGrain
+	}
+	// If the metrics view doesn't have ai instructions, use the parent's ai instructions
+	if e.metricsView.AiInstructions == "" {
+		e.metricsView.AiInstructions = parent.AiInstructions
+	}
+
+	return nil
 }
 
 // validateAllDimensionsAndMeasures validates all dimensions and measures with one query. It returns an error if any of the expressions are invalid.
@@ -267,6 +400,94 @@ func (e *Executor) validateIndividualDimensionsAndMeasures(ctx context.Context, 
 	slices.SortFunc(res.MeasureErrs, func(a, b IndexErr) int { return a.Idx - b.Idx })
 }
 
+// validateAndNormalizeAnnotations validates the annotations by checking the model/table defined with expected columns.
+// Rewrites the annotations to use the resolved table name from the defined model.
+// Resolves the measure selector and stores the resolved measures in the annotation.
+func (e *Executor) validateAndNormalizeAnnotations(ctx context.Context, mv *runtimev1.MetricsViewSpec, res *ValidateMetricsViewResult) error {
+	allMeasures := make([]string, 0, len(mv.Measures))
+	for _, m := range mv.Measures {
+		allMeasures = append(allMeasures, m.Name)
+	}
+
+	// Get the controller used for getting the annotation's model
+	ct, err := e.rt.Controller(ctx, e.instanceID)
+	if err != nil {
+		return fmt.Errorf("failed to get controller: %w", err)
+	}
+
+	// Different models could be in the same or different connector. Maintain a map to reuse connections.
+	olaps := make(map[string]drivers.OLAPStore)
+	olapReleases := make([]func(), 0)
+	for _, annotation := range mv.Annotations {
+		// Resolve the measures selector
+		annotation.Measures, err = fieldselectorpb.ResolveFields(annotation.Measures, annotation.MeasuresSelector, allMeasures)
+		if err != nil {
+			res.OtherErrs = append(res.OtherErrs, fmt.Errorf("invalid measures for annotation %q: %w", annotation.Name, err))
+		}
+		annotation.MeasuresSelector = nil
+
+		if annotation.Model != "" {
+			res, err := ct.Get(ctx, &runtimev1.ResourceName{Name: annotation.Model, Kind: runtime.ResourceKindModel}, false)
+			if err == nil && res.GetModel().State.ResultTable != "" {
+				annotation.Table = res.GetModel().State.ResultTable
+				annotation.Connector = res.GetModel().State.ResultConnector
+			} else {
+				annotation.Table = annotation.Model
+			}
+		}
+
+		// Get the connector for the model either from the map or acquire a new one
+		olap, ok := olaps[annotation.Connector]
+		if !ok {
+			var release func()
+			olap, release, err = e.rt.OLAP(ctx, e.instanceID, annotation.Connector)
+			if err != nil {
+				res.OtherErrs = append(res.OtherErrs, fmt.Errorf("failed to acquire connection to table %q for annotation %q: %w", annotation.Table, annotation.Name, err))
+				break // other connections might fail as well
+			}
+			olapReleases = append(olapReleases, release)
+		}
+
+		// Get the table schema
+		tableSchema, err := olap.InformationSchema().Lookup(ctx, annotation.Database, annotation.DatabaseSchema, annotation.Table)
+		if err != nil {
+			res.OtherErrs = append(res.OtherErrs, fmt.Errorf("failed to get table details %q for annotation %q: %w", annotation.Table, annotation.Name, err))
+			continue
+		}
+
+		// Validate the table for required columns and save metadata about optional columns. This metadata will be used during querying the table.
+		var hasTime, hasDesc bool
+		for _, field := range tableSchema.Schema.Fields {
+			switch field.Name {
+			case "time":
+				hasTime = true
+
+			case "time_end":
+				annotation.HasTimeEnd = true
+
+			case "duration":
+				annotation.HasDuration = true
+
+			case "description":
+				hasDesc = true
+			}
+		}
+
+		if !hasTime {
+			res.OtherErrs = append(res.OtherErrs, fmt.Errorf(`table %q for annotation %q does not have the required "time" column`, annotation.Table, annotation.Name))
+		}
+		if !hasDesc {
+			res.OtherErrs = append(res.OtherErrs, fmt.Errorf(`table %q for annotation %q does not have the required "description" column`, annotation.Table, annotation.Name))
+		}
+	}
+
+	for _, release := range olapReleases {
+		release()
+	}
+
+	return nil
+}
+
 // validateTimeDimension validates the time dimension in the metrics view.
 func (e *Executor) validateTimeDimension(ctx context.Context, t *drivers.OlapTable, tableSchema map[string]*runtimev1.StructType_Field, res *ValidateMetricsViewResult) {
 	if e.metricsView.TimeDimension == "" {
@@ -285,17 +506,19 @@ func (e *Executor) validateTimeDimension(ctx context.Context, t *drivers.OlapTab
 			res.TimeDimensionErr = fmt.Errorf("failed to validate time dimension %q: %w", e.metricsView.TimeDimension, err)
 			return
 		}
-		// Validate time dimension type with a query
-		rows, err := e.olap.Query(ctx, &drivers.Statement{
-			Query: fmt.Sprintf("SELECT %s FROM %s LIMIT 0", expr, dialect.EscapeTable(t.Database, t.DatabaseSchema, t.Name)),
-		})
+
+		query := fmt.Sprintf("SELECT %s FROM %s LIMIT 0", expr, dialect.EscapeTable(t.Database, t.DatabaseSchema, t.Name))
+		schema, err := e.olap.QuerySchema(ctx, query, nil)
 		if err != nil {
 			res.TimeDimensionErr = fmt.Errorf("failed to validate time dimension %q: %w", e.metricsView.TimeDimension, err)
 			return
 		}
-		rows.Close() // Close rows immediately
+		if len(schema.Fields) == 0 {
+			res.TimeDimensionErr = fmt.Errorf("time dimension %q is not a column in table %q or defined in metrics view", e.metricsView.TimeDimension, e.metricsView.Table)
+			return
+		}
+		typeCode := schema.Fields[0].Type.Code
 
-		typeCode := rows.Schema.Fields[0].Type.Code
 		if typeCode != runtimev1.Type_CODE_TIMESTAMP && typeCode != runtimev1.Type_CODE_DATE && !(e.olap.Dialect() == drivers.DialectPinot && typeCode == runtimev1.Type_CODE_INT64) {
 			res.TimeDimensionErr = fmt.Errorf("time dimension %q is not a TIMESTAMP column, got %s", e.metricsView.TimeDimension, typeCode)
 		}
@@ -352,7 +575,7 @@ func (e *Executor) validateMeasure(ctx context.Context, t *drivers.OlapTable, m 
 	return err
 }
 
-// validateSchema validates that the metrics view's measures are numeric.
+// validateSchema validates that the metrics view's measures are numeric. Also populates the DataType field of each measure and dimension in the metrics view.
 func (e *Executor) validateSchema(ctx context.Context, res *ValidateMetricsViewResult) error {
 	// Resolve the schema of the metrics view's dimensions and measures
 	schema, err := e.Schema(ctx)

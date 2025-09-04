@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -19,7 +20,10 @@ import (
 	exec "golang.org/x/sys/execabs"
 )
 
-var ErrGitRemoteNotFound = errors.New("no git remotes found")
+var (
+	ErrGitRemoteNotFound = errors.New("no git remotes found")
+	ErrNotAGitRepository = errors.New("not a git repository")
+)
 
 type Config struct {
 	Remote            string
@@ -263,6 +267,13 @@ func CommitAndForcePush(ctx context.Context, projectPath string, config *Config,
 	if err != nil {
 		return err
 	}
+
+	if config.Username == "" {
+		// If no credentials are provided we assume that is user's self managed repo and auth is already set in git
+		// go-git does not support pushing to a private repo without auth so we will trigger the git command directly
+		return RunGitPush(ctx, projectPath, config.RemoteName(), config.DefaultBranch, true)
+	}
+
 	pushOpts := &git.PushOptions{
 		RemoteName: config.RemoteName(),
 		RemoteURL:  config.Remote,
@@ -371,4 +382,33 @@ func SetRemote(path string, config *Config) error {
 		URLs: []string{config.Remote},
 	})
 	return err
+}
+
+func IsGitRepo(path string) bool {
+	_, err := git.PlainOpen(path)
+	return err == nil
+}
+
+// InferRepoRootAndSubpath infers the root of the Git repository and the subpath from the given path.
+// Since the extraction stops at first .git directory it means that if a subpath in a github monorepo is deployed as a rill managed project it will prevent the subpath from being inferred.
+// This means :
+// - user will need to explicitly set the subpath if they want to connect this to Github.
+// - When finding matching projects it will only list the rill managed projects for that subpath.
+func InferRepoRootAndSubpath(path string) (string, string, error) {
+	// check if is a git repository
+	repoRoot, err := InferGitRepoRoot(path)
+	if err != nil {
+		return "", "", err
+	}
+
+	// infer subpath if it exists
+	subPath, err := filepath.Rel(repoRoot, path)
+	if err != nil {
+		// should never happen because repoRoot is detected from path
+		return "", "", err
+	}
+	if subPath != "." {
+		return repoRoot, subPath, nil
+	}
+	return repoRoot, "", nil
 }

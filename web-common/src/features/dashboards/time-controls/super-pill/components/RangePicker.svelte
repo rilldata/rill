@@ -17,14 +17,14 @@
   export let interval: Interval<true>;
   export let zone: string;
   export let showDefaultItem: boolean;
-  export let grain: string;
   export let minDate: DateTime | undefined = undefined;
   export let maxDate: DateTime | undefined = undefined;
   export let showFullRange: boolean;
+  export let allowCustomTimeRange = true;
   export let defaultTimeRange: NamedRange | ISODurationString | undefined;
+  export let side: "top" | "right" | "bottom" | "left" = "bottom";
   export let onSelectRange: (range: NamedRange | ISODurationString) => void;
   export let applyCustomRange: (range: Interval<true>) => void;
-  export let allowCustomTimeRange = true;
 
   let firstVisibleMonth: DateTime<true> = interval.start;
   let open = false;
@@ -48,17 +48,19 @@
       use:builder.action
       class="flex gap-x-1"
       aria-label="Select time range"
+      type="button"
     >
       <b class="mr-1 line-clamp-1 flex-none">{getRangeLabel(selected)}</b>
+
       {#if interval.isValid && showFullRange}
-        <RangeDisplay {interval} {grain} />
+        <RangeDisplay {interval} />
       {/if}
       <span class="flex-none transition-transform" class:-rotate-180={open}>
         <CaretDownIcon />
       </span>
     </button>
   </DropdownMenu.Trigger>
-  <DropdownMenu.Content align="start" class="p-0 overflow-hidden">
+  <DropdownMenu.Content align="start" {side} class="p-0 overflow-hidden">
     <div class="flex">
       <div class="flex flex-col w-48 p-1">
         <TimeRangeMenu
@@ -91,8 +93,3 @@
     </div>
   </DropdownMenu.Content>
 </DropdownMenu.Root>
-
-<style lang="postcss">
-  button {
-  }
-</style>

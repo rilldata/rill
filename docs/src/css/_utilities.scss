@@ -1,0 +1,149 @@
+/* =========================
+   Utility Classes
+   ========================= */
+
+.rounded-gif {
+  border-radius: 0.625rem; /* 10px */
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  width: 100%;
+  box-shadow: 0.25rem 0.25rem 0.625rem rgba(0, 0, 0, 0.2); 
+}
+
+.centered {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+} 
+
+/* =========================
+   Search Bar Custom Styles
+   ========================= */
+.DocSearch-Button {
+  background: transparent !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 8px !important;
+  padding: 8px 12px !important;
+  width: 250px !important; /* Adjust this value to change width */
+  min-width: 150px !important; /* Minimum width */
+  margin-left: 10px !important;
+  height: 40px !important;
+  &:hover {
+    border-color: var(--ifm-color-primary) !important;
+    background: rgba(53, 36, 199, 0.05) !important;
+  }
+}
+
+@media (max-width: 600px) {
+  .DocSearch-Button {
+    width: 100% !important;
+    min-width: 0 !important;
+    margin-left: 0 !important;
+    height: 36px !important;
+    box-sizing: border-box;
+  }
+}
+
+/* =========================
+   Release Notes Navbar Visibility
+   ========================= */
+.navbar__items--right .navbar-release-notes-mobile {
+  display: none !important;
+}
+@media (max-width: 996px) {
+  .navbar__items--right .navbar-release-notes-mobile {
+    display: flex !important;
+    width: 100%;
+    justify-content: flex-start;
+  }
+} 
+
+@media (max-width: 996px) {
+  /* Make custom HTML navbar items look like menu__link in mobile menu */
+  .menu__list .navbar-icon-link {
+    display: block !important;
+    width: 100% !important;
+    padding: 2.5px 9px !important;
+    color: var(--ifm-menu-color) !important;
+    font-size: var(--default-font) !important;
+    text-decoration: none !important;
+    border-radius: 4px;
+    margin: 0;
+    background: none;
+    box-shadow: none;
+  }
+} 
+
+/* =========================
+   Navbar Icon Link Styles
+   ========================= */
+.navbar-icon-link {
+  color: var(--ifm-menu-color) !important;
+  text-decoration: none !important;
+  background: none;
+  box-shadow: none;
+  transition: color 0.2s;
+}
+.navbar-icon-link:hover,
+.navbar-icon-link:focus {
+  color: var(--ifm-menu-color-active) !important;
+  text-decoration: none !important;
+} 
+
+/* =========================
+   Custom Breadcrumb Styling
+   ========================= */
+.breadcrumbs {
+  margin-bottom: 1.5rem;
+  padding: 0.75rem 0;
+  font-size: 0.875rem;
+  --ifm-breadcrumb-separator: '/';
+}
+
+.breadcrumbs__item {
+  display: inline-flex;
+  align-items: center;
+  color: var(--ifm-color-emphasis-600);
+  
+  &:not(:last-child)::after {
+    content: '/';
+    color: var(--ifm-color-emphasis-400);
+
+    color: #000;
+    display: inline-flex;
+    align-items: center;
+    vertical-align: middle;
+  }
+}
+
+.breadcrumbs__link {
+  color: var(--ifm-color-emphasis-700);
+  text-decoration: none;
+  padding: 0.125rem 0rem;
+
+  &:hover {
+    color: var(--ifm-color-primary);
+    background-color: transparent !important;
+    text-decoration: none;
+  }
+}
+
+.breadcrumbs__item--active {
+  background-color: transparent;
+}
+
+.breadcrumbs__item--active .breadcrumbs__link {
+  color: var(--ifm-color-emphasis-800);
+  cursor: default;
+  font-weight: bold;
+}
+
+/* Dark mode specific fixes */
+[data-theme='dark'] .breadcrumbs__item--active .breadcrumbs__link {
+  background-color: transparent !important;
+  
+  &:hover {
+    background-color: transparent !important;
+  }
+} 

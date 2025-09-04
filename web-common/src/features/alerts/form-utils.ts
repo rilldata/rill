@@ -8,12 +8,17 @@ import {
 import { MeasureFilterType } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-options";
 import { mergeDimensionAndMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import type { DimensionThresholdFilter } from "@rilldata/web-common/features/dashboards/stores/explore-state";
+import {
+  mapSelectedComparisonTimeRangeToV1TimeRange,
+  mapSelectedTimeRangeToV1TimeRange,
+} from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers.ts";
+import type { FiltersState } from "@rilldata/web-common/features/dashboards/stores/Filters.ts";
+import type { TimeControlState } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
+import { getInitialScheduleFormValues } from "@rilldata/web-common/features/scheduled-reports/time-utils.ts";
 import type {
-  V1Expression,
+  V1ExploreSpec,
   V1MetricsViewAggregationRequest,
   V1Operation,
-  V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
 import type { ValidationErrors } from "sveltekit-superforms";
 import { yup, type ValidationAdapter } from "sveltekit-superforms/adapters";
@@ -32,27 +37,37 @@ export type AlertFormValues = {
   slackUsers: string[];
   enableEmailNotification: boolean;
   emailRecipients: string[];
+  refreshWhenDataRefreshes: boolean;
   // The following fields are not editable in the form, but they're state that's used throughout the form, so
   // it's helpful to have them here. Also, in the future they may be editable in the form.
   metricsViewName: string;
   exploreName: string;
-  whereFilter: V1Expression;
-  dimensionsWithInlistFilter: string[];
-  dimensionThresholdFilters: Array<DimensionThresholdFilter>;
-  timeRange: V1TimeRange;
-  comparisonTimeRange: V1TimeRange | undefined;
-};
+} & ReturnType<typeof getInitialScheduleFormValues>;
 
 export function getAlertQueryArgsFromFormValues(
   formValues: AlertFormValues,
+  filtersArgs: FiltersState,
+  timeControlArgs: TimeControlState,
+  exploreSpec: V1ExploreSpec,
 ): V1MetricsViewAggregationRequest {
+  const timeRange = mapSelectedTimeRangeToV1TimeRange(
+    timeControlArgs.selectedTimeRange,
+    timeControlArgs.selectedTimezone,
+    exploreSpec,
+  );
+  const comparisonTimeRange = mapSelectedComparisonTimeRangeToV1TimeRange(
+    timeControlArgs.selectedComparisonTimeRange,
+    timeControlArgs.showTimeComparison,
+    timeRange,
+  );
+
   return {
     metricsView: formValues.metricsViewName,
     measures: [
       {
         name: formValues.measure,
       },
-      ...(formValues.comparisonTimeRange
+      ...(comparisonTimeRange
         ? [
             {
               name: formValues.measure + ComparisonDeltaAbsoluteSuffix,
@@ -80,8 +95,8 @@ export function getAlertQueryArgsFromFormValues(
       : [],
     where: sanitiseExpression(
       mergeDimensionAndMeasureFilters(
-        formValues.whereFilter,
-        formValues.dimensionThresholdFilters,
+        filtersArgs.whereFilter,
+        filtersArgs.dimensionThresholdFilters,
       ),
       undefined,
     ),
@@ -93,25 +108,14 @@ export function getAlertQueryArgsFromFormValues(
           .filter((e) => !!e),
       },
     }),
-    timeRange: {
-      isoDuration: formValues.timeRange.isoDuration,
-      timeZone: formValues.timeRange.timeZone,
-      roundToGrain: formValues.timeRange.roundToGrain,
-    },
+    timeRange,
     sort: [
       {
         name: formValues.measure,
         desc: true,
       },
     ],
-    ...(formValues.comparisonTimeRange
-      ? {
-          comparisonTimeRange: {
-            isoDuration: formValues.comparisonTimeRange.isoDuration,
-            isoOffset: formValues.comparisonTimeRange.isoOffset,
-          },
-        }
-      : {}),
+    comparisonTimeRange,
   };
 }
 
@@ -207,6 +211,6 @@ function someCriteriaHasErrors(
   if (!criteriaErrors) return false;
   return Object.values(criteriaErrors).every((criteriaError) => {
     if (!criteriaError) return false;
-    return Object.values(criteriaError).every((c: string[]) => !c?.length);
+    return Object.values(criteriaError).every((c: string[]) => !!c?.[0]);
   });
 }

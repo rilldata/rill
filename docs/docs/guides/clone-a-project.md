@@ -1,7 +1,7 @@
 ---
 title: "Clone a Project - Quick Start"
 sidebar_label: "Clone an existing Project"
-sidebar_position: 2
+sidebar_position: 3
 hide_table_of_contents: false
 
 tags:
@@ -26,7 +26,7 @@ curl https://rill.sh | sh
 
 
 ## Step 1: Clone the Repository
-Depending on if your project is synced to GitHub or not, select the correct clone method. If you are unsure, please see the Status page in the project.
+Depending on whether your project is synced to GitHub or not, select the correct clone method. If you are unsure, please see the Status page in the project.
 
 ### From GitHub
 <img src = '/img/tutorials/rill-advanced/github-pushed-changes.png' class='rounded-gif' />
@@ -34,7 +34,7 @@ Depending on if your project is synced to GitHub or not, select the correct clon
 
 ```bash
 # Clone the repository
-git clone https://github.com/username/rill-project.git #replace username and rill-project with your actual URL
+git clone https://github.com/username/rill-project.git # Replace 'username' and 'rill-project' with your actual URL
 cd <project-name>
 ```
 
@@ -71,7 +71,7 @@ A typical Rill project contains:
 
 ## Step 3: Set Up Environment Variables
 
-If you cloned the project via GitHub, you will need to run the following command to bring down the environmental variables to your local machine.
+If you cloned the project via GitHub, you will need to run the following command to bring down the environment variables to your local machine.
 
 ```bash
 rill env pull
@@ -83,7 +83,7 @@ Updated .env file with cloud credentials from project "your-project-here".
 ```
 
 ## Step 4: Check your Source YAML before starting Rill
-We want to check to see if any `{{if dev}} ... {{end}}` parameters have been set in your source ingestion. If not, when you start Rill, this will initiate a full ingestion of your data, which might take some time and depending on the source location could incur costs (IE: Snowflake, BigQuery). However, if your data is not that large, it may be safe to start Rill without these guard rails. 
+We want to check to see if any `{{if dev}} ... {{end}}` parameters have been set in your source ingestion. If not, when you start Rill, this will initiate a full ingestion of your data, which might take some time and, depending on the source location, could incur costs (e.g., Snowflake, BigQuery). However, if your data is not that large, it may be safe to start Rill without these guardrails. 
 
 ## Step 5: Start Rill Developer
 
@@ -110,13 +110,13 @@ Once your sources and models have built and you are able to explore your dashboa
 
 :::warning Changes to sources and models
 
-Changes to sources and models will initiate a full refresh of the source, unless otherwise indicated via `patch_mode`. We highly recommend reviewing the changes to ensure that you do not push unwanted changed to your production environment. 
+Changes to sources and models will initiate a full refresh of the source, unless otherwise indicated via `patch_mode`. We highly recommend reviewing the changes to ensure that you do not push unwanted changes to your production environment. 
 :::
 
 ### via git
-For projects that were cloned via git, you'll need to run the required git commands to add, commit and push changes. Keep in mind the basic git practices about merging files to main without having an approval process.
+For projects that were cloned via git, you'll need to run the required git commands to add, commit, and push changes. Keep in mind the basic git practices about merging files to main without having an approval process.
 
 
 ### via Rill Update Button
 
-For projects clones via the CLI, the underlying connection to the deployment will also be brought locally so that when the button to "Deploy" is now to "Update" the existing deployment. Keep into consideration the warning above about changes to sources and models. 
+For projects cloned via the CLI, the underlying connection to the deployment will also be brought locally so that when the button to "Deploy" is now "Update" the existing deployment. Keep in mind the warning above about changes to sources and models. 
