@@ -224,29 +224,24 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 	}
 
 	// Parse retry options with reasonable defaults
-	var retryAttempts uint32
+	var retryAttempts *uint32
 	if tmp.Retry.Attempts != nil {
-		retryAttempts = *tmp.Retry.Attempts
-	} else {
-		retryAttempts = 3
+		retryAttempts = tmp.Retry.Attempts
 	}
 
-	var retryDelay uint32
+	var retryDelay *uint32
 	if tmp.Retry.Delay != nil {
 		duration, err := time.ParseDuration(*tmp.Retry.Delay)
 		if err != nil {
 			return fmt.Errorf(`invalid retry delay: %w`, err)
 		}
-		retryDelay = uint32(duration.Seconds())
-	} else {
-		retryDelay = 5 // 5s default
+		delay := uint32(duration.Seconds())
+		retryDelay = &delay
 	}
 
-	var retryExponentialBackoff bool
+	var retryExponentialBackoff *bool
 	if tmp.Retry.ExponentialBackoff != nil {
-		retryExponentialBackoff = *tmp.Retry.ExponentialBackoff
-	} else {
-		retryExponentialBackoff = true
+		retryExponentialBackoff = tmp.Retry.ExponentialBackoff
 	}
 
 	var retryIfErrorMatches []string
@@ -258,8 +253,6 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 			}
 		}
 		retryIfErrorMatches = tmp.Retry.IfErrorMatches
-	} else {
-		retryIfErrorMatches = []string{".*OvercommitTracker.*", ".*Bad Gateway.*", ".*Timeout.*"}
 	}
 
 	// Insert the model

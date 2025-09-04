@@ -1221,6 +1221,29 @@ func (r *ModelReconciler) executePartition(ctx context.Context, catalog drivers.
 
 // executeSingle executes a single step of a model. Passing a previous result, incremental state, and/or a partition is optional.
 func (r *ModelReconciler) executeSingle(ctx context.Context, executor *wrappedModelExecutor, self *runtimev1.Resource, mdl *runtimev1.Model, prevResult *drivers.ModelResult, incrementalRun bool, incrementalState map[string]any, partitionKey string, partitionData map[string]any) (*drivers.ModelResult, error) {
+	// Apply defaults for retry options
+	var defaultAttempts uint32 = 3
+	var defaultDelay uint32 = 5
+	defaultExponentialBackoff := true
+	defaultIfErrorMatches := []string{".*OvercommitTracker.*", ".*Bad Gateway.*", ".*Timeout.*"}
+
+	retryAttempts := mdl.Spec.RetryAttempts
+	if retryAttempts == nil {
+		retryAttempts = &defaultAttempts
+	}
+	retryDelay := mdl.Spec.RetryDelay
+	if retryDelay == nil {
+		retryDelay = &defaultDelay
+	}
+	retryExponentialBackoff := mdl.Spec.RetryExponentialBackoff
+	if retryExponentialBackoff == nil {
+		retryExponentialBackoff = &defaultExponentialBackoff
+	}
+	retryIfErrorMatches := mdl.Spec.RetryIfErrorMatches
+	if len(retryIfErrorMatches) == 0 {
+		retryIfErrorMatches = defaultIfErrorMatches
+	}
+
 	// Resolve templating in the input and output props
 	inputProps, err := r.resolveTemplatedProps(ctx, self, incrementalState, partitionData, mdl.Spec.InputConnector, mdl.Spec.InputProperties.AsMap())
 	if err != nil {
@@ -1236,7 +1259,7 @@ func (r *ModelReconciler) executeSingle(ctx context.Context, executor *wrappedMo
 		return nil, err
 	}
 
-	attempts := int(mdl.Spec.RetryAttempts)
+	attempts := int(*retryAttempts)
 	if attempts == 0 {
 		attempts = 1
 	}
@@ -1244,7 +1267,7 @@ func (r *ModelReconciler) executeSingle(ctx context.Context, executor *wrappedMo
 	if maxRetries < 0 {
 		maxRetries = 0
 	}
-	backoff := time.Duration(mdl.Spec.RetryDelay) * time.Second
+	backoff := time.Duration(*retryDelay) * time.Second
 	if backoff == 0 {
 		backoff = 5 * time.Second
 	}
@@ -1263,7 +1286,7 @@ func (r *ModelReconciler) executeSingle(ctx context.Context, executor *wrappedMo
 		if executor.stage != nil {
 			stageProps, err := r.resolveTemplatedProps(ctx, self, incrementalState, partitionData, mdl.Spec.StageConnector, mdl.Spec.StageProperties.AsMap())
 			if err != nil {
-				return nil, retryActionFromError(err, mdl.Spec.RetryIfErrorMatches), err
+				return nil, retryActionFromError(err, retryIfErrorMatches), err
 			}
 			stageResult, err = executor.stage.Execute(ctx, &drivers.ModelExecuteOptions{
 				ModelExecutorOptions: executor.stageOpts,
@@ -1278,7 +1301,7 @@ func (r *ModelReconciler) executeSingle(ctx context.Context, executor *wrappedMo
 				TempDir:              tempDir,
 			})
 			if err != nil {
-				return nil, retryActionFromError(err, mdl.Spec.RetryIfErrorMatches), err
+				return nil, retryActionFromError(err, retryIfErrorMatches), err
 			}
 			stageDuration = stageResult.ExecDuration
 			inputProps = stageResult.Properties
@@ -1301,20 +1324,20 @@ func (r *ModelReconciler) executeSingle(ctx context.Context, executor *wrappedMo
 			TempDir:              tempDir,
 		})
 		if err != nil {
-			action := retryActionFromError(err, mdl.Spec.RetryIfErrorMatches)
+			action := retryActionFromError(err, retryIfErrorMatches)
 
 			r.C.Logger.Info("Model execution error encountered",
 				zap.String("model", self.Meta.Name.Name),
 				zap.Int("attempt", attempt),
 				zap.String("error", err.Error()),
-				zap.Strings("retry_patterns", mdl.Spec.RetryIfErrorMatches),
+				zap.Strings("retry_patterns", retryIfErrorMatches),
 				zap.Int("retry_action", int(action)),
 				observability.ZapCtx(ctx))
 
 			if action == retrier.Retry {
 				// Calculate the actual backoff duration for this attempt
 				actualBackoff := backoff
-				if mdl.Spec.RetryExponentialBackoff {
+				if *retryExponentialBackoff {
 					for i := 1; i < attempt; i++ {
 						actualBackoff *= 2
 					}
