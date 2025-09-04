@@ -30,12 +30,19 @@ const DUCKDB_REWRITE_CONNECTORS = [
 export const NON_OLAP_CONNECTORS = [
   "bigquery",
   "athena",
-  "redshift",
+  "azure",
+  "bigquery",
   "duckdb",
   "postgres",
   "mysql",
-  "snowflake",
+  "postgres",
+  "redshift",
+  "s3",
   "salesforce",
+  "snowflake",
+  "sqlite",
+  "https",
+  "local_file",
 ];
 
 export const OLAP_ENGINES = ["clickhouse", "motherduck", "druid", "pinot"];
