@@ -11,29 +11,24 @@ export const CONNECTION_TAB_OPTIONS: { value: string; label: string }[] = [
   { value: "dsn", label: "Enter connection string" },
 ];
 
-const DUCKDB_REWRITE_CONNECTORS = [
-  "s3",
-  "gcs",
-  "https",
-  "azure",
-  "local_file",
-  "sqlite",
-];
-
 export const OLAP_ENGINES = ["clickhouse", "druid", "pinot"];
 
-const SQL_CONNECTORS = [
-  "bigquery",
+export const SOURCES = [
   "athena",
-  "redshift",
+  "azure",
+  "bigquery",
   "duckdb",
+  "gcs",
   "motherduck",
-  "postgres",
   "mysql",
-  "snowflake",
+  "postgres",
+  "redshift",
+  "s3",
   "salesforce",
+  "snowflake",
+  "sqlite",
+  "https",
+  "local_file",
 ];
-
-export const SOURCES = [...DUCKDB_REWRITE_CONNECTORS, ...SQL_CONNECTORS];
 
 export const ALL_CONNECTORS = [...SOURCES, ...OLAP_ENGINES];
