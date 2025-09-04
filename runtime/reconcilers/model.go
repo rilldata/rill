@@ -1221,6 +1221,13 @@ func (r *ModelReconciler) executePartition(ctx context.Context, catalog drivers.
 
 // executeSingle executes a single step of a model. Passing a previous result, incremental state, and/or a partition is optional.
 func (r *ModelReconciler) executeSingle(ctx context.Context, executor *wrappedModelExecutor, self *runtimev1.Resource, mdl *runtimev1.Model, prevResult *drivers.ModelResult, incrementalRun bool, incrementalState map[string]any, partitionKey string, partitionData map[string]any) (*drivers.ModelResult, error) {
+	return r.executeWithRetry(ctx, mdl, func(ctx context.Context) (*drivers.ModelResult, error) {
+		return r.execute(ctx, executor, self, mdl, prevResult, incrementalRun, incrementalState, partitionKey, partitionData)
+	})
+}
+
+// executeWithRetry applies retry logic around the provided execution function.
+func (r *ModelReconciler) executeWithRetry(ctx context.Context, mdl *runtimev1.Model, executeFunc func(context.Context) (*drivers.ModelResult, error)) (*drivers.ModelResult, error) {
 	// Apply defaults for retry options
 	var defaultAttempts uint32 = 3
 	var defaultDelay uint32 = 5
@@ -1244,21 +1251,6 @@ func (r *ModelReconciler) executeSingle(ctx context.Context, executor *wrappedMo
 		retryIfErrorMatches = defaultIfErrorMatches
 	}
 
-	// Resolve templating in the input and output props
-	inputProps, err := r.resolveTemplatedProps(ctx, self, incrementalState, partitionData, mdl.Spec.InputConnector, mdl.Spec.InputProperties.AsMap())
-	if err != nil {
-		return nil, err
-	}
-	outputProps, err := r.resolveTemplatedProps(ctx, self, incrementalState, partitionData, mdl.Spec.OutputConnector, mdl.Spec.OutputProperties.AsMap())
-	if err != nil {
-		return nil, err
-	}
-
-	tempDir, err := r.C.Runtime.TempDir(r.C.InstanceID)
-	if err != nil {
-		return nil, err
-	}
-
 	attempts := int(*retryAttempts)
 	if attempts == 0 {
 		attempts = 1
@@ -1275,59 +1267,17 @@ func (r *ModelReconciler) executeSingle(ctx context.Context, executor *wrappedMo
 	runner := retrier.NewRetrier(maxRetries, backoff, nil)
 
 	var finalResult *drivers.ModelResult
-	var stageDuration time.Duration
 	attempt := 0
 
-	_, err = runner.RunCtx(ctx, func(ctx context.Context) (driver.Rows, retrier.Action, error) {
+	_, err := runner.RunCtx(ctx, func(ctx context.Context) (driver.Rows, retrier.Action, error) {
 		attempt++
-		var stageResult *drivers.ModelResult
-		var err error
 
-		if executor.stage != nil {
-			stageProps, err := r.resolveTemplatedProps(ctx, self, incrementalState, partitionData, mdl.Spec.StageConnector, mdl.Spec.StageProperties.AsMap())
-			if err != nil {
-				return nil, retryActionFromError(err, retryIfErrorMatches), err
-			}
-			stageResult, err = executor.stage.Execute(ctx, &drivers.ModelExecuteOptions{
-				ModelExecutorOptions: executor.stageOpts,
-				InputProperties:      inputProps,
-				OutputProperties:     stageProps,
-				Priority:             0,
-				Incremental:          mdl.Spec.Incremental,
-				IncrementalRun:       incrementalRun,
-				PartitionRun:         partitionKey != "",
-				PartitionKey:         partitionKey,
-				PreviousResult:       prevResult,
-				TempDir:              tempDir,
-			})
-			if err != nil {
-				return nil, retryActionFromError(err, retryIfErrorMatches), err
-			}
-			stageDuration = stageResult.ExecDuration
-			inputProps = stageResult.Properties
-			defer func() {
-				_ = executor.stageResultManager.Delete(ctx, stageResult)
-			}()
-		}
-
-		// Final step
-		finalResult, err = executor.final.Execute(ctx, &drivers.ModelExecuteOptions{
-			ModelExecutorOptions: executor.finalOpts,
-			InputProperties:      inputProps,
-			OutputProperties:     outputProps,
-			Priority:             0,
-			Incremental:          mdl.Spec.Incremental,
-			IncrementalRun:       incrementalRun,
-			PartitionRun:         partitionKey != "",
-			PartitionKey:         partitionKey,
-			PreviousResult:       prevResult,
-			TempDir:              tempDir,
-		})
+		res, err := executeFunc(ctx)
 		if err != nil {
 			action := retryActionFromError(err, retryIfErrorMatches)
 
 			r.C.Logger.Info("Model execution error encountered",
-				zap.String("model", self.Meta.Name.Name),
+				zap.String("model", "model_name_placeholder"), // TODO: get model name
 				zap.Int("attempt", attempt),
 				zap.String("error", err.Error()),
 				zap.Strings("retry_patterns", retryIfErrorMatches),
@@ -1346,17 +1296,82 @@ func (r *ModelReconciler) executeSingle(ctx context.Context, executor *wrappedMo
 
 			return nil, action, err
 		}
-		finalResult.ExecDuration += stageDuration
+		finalResult = res
 		return nil, retrier.Succeed, nil
+	})
+	return finalResult, err
+}
+
+// execute performs the actual execution logic without retry handling.
+func (r *ModelReconciler) execute(ctx context.Context, executor *wrappedModelExecutor, self *runtimev1.Resource, mdl *runtimev1.Model, prevResult *drivers.ModelResult, incrementalRun bool, incrementalState map[string]any, partitionKey string, partitionData map[string]any) (*drivers.ModelResult, error) {
+	// Resolve templating in the input and output props
+	inputProps, err := r.resolveTemplatedProps(ctx, self, incrementalState, partitionData, mdl.Spec.InputConnector, mdl.Spec.InputProperties.AsMap())
+	if err != nil {
+		return nil, err
+	}
+	outputProps, err := r.resolveTemplatedProps(ctx, self, incrementalState, partitionData, mdl.Spec.OutputConnector, mdl.Spec.OutputProperties.AsMap())
+	if err != nil {
+		return nil, err
+	}
+
+	tempDir, err := r.C.Runtime.TempDir(r.C.InstanceID)
+	if err != nil {
+		return nil, err
+	}
+
+	var finalResult *drivers.ModelResult
+	var stageDuration time.Duration
+
+	// Stage execution (if applicable)
+	if executor.stage != nil {
+		stageProps, err := r.resolveTemplatedProps(ctx, self, incrementalState, partitionData, mdl.Spec.StageConnector, mdl.Spec.StageProperties.AsMap())
+		if err != nil {
+			return nil, err
+		}
+		stageResult, err := executor.stage.Execute(ctx, &drivers.ModelExecuteOptions{
+			ModelExecutorOptions: executor.stageOpts,
+			InputProperties:      inputProps,
+			OutputProperties:     stageProps,
+			Priority:             0,
+			Incremental:          mdl.Spec.Incremental,
+			IncrementalRun:       incrementalRun,
+			PartitionRun:         partitionKey != "",
+			PartitionKey:         partitionKey,
+			PreviousResult:       prevResult,
+			TempDir:              tempDir,
+		})
+		if err != nil {
+			return nil, err
+		}
+		stageDuration = stageResult.ExecDuration
+		inputProps = stageResult.Properties
+		defer func() {
+			_ = executor.stageResultManager.Delete(ctx, stageResult)
+		}()
+	}
+
+	// Final execution
+	finalResult, err = executor.final.Execute(ctx, &drivers.ModelExecuteOptions{
+		ModelExecutorOptions: executor.finalOpts,
+		InputProperties:      inputProps,
+		OutputProperties:     outputProps,
+		Priority:             0,
+		Incremental:          mdl.Spec.Incremental,
+		IncrementalRun:       incrementalRun,
+		PartitionRun:         partitionKey != "",
+		PartitionKey:         partitionKey,
+		PreviousResult:       prevResult,
+		TempDir:              tempDir,
 	})
 	if err != nil {
 		return nil, err
 	}
+	finalResult.ExecDuration += stageDuration
+
 	return finalResult, nil
 }
 
-// wrappedModelExecutor is a ModelExecutor wraps one or two ModelExecutors. It is used to execute a model with a staging connector.
-// If the model does not require a staging connector, the wrappedModelExecutor will only wrap the final executor.
+// wrappedModelExecutor wraps one or two model executors for staged execution.
 type wrappedModelExecutor struct {
 	finalConnector     string
 	final              drivers.ModelExecutor
