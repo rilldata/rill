@@ -27,16 +27,6 @@ Check [here](https://www.rilldata.com/case-studies) to see examples of use cases
 
 :::
 
-
-## BI-As-Code 
-
-BI-as-code is a modern approach to business intelligence that treats analytics assets as code, bringing the same benefits of version control, collaboration, and automation that software development teams have enjoyed for years. With Rill, you can define your entire analytics stack—from data models to dashboards—using code, while still maintaining the flexibility to make UI-based adjustments when needed.
-
-<div style={{ textAlign: 'center' }}>
-  <img src="/img/concepts/metrics-view/metrics-view-components.png" style={{ width: '100%', borderRadius: '15px', padding: '20px' }} />
-</div>
-
-
 ## What is a Metrics Layer?
 
 A metrics layer is a `centralized framework` used to define and organize **key metrics** for your organization. Having a centralized layer allows an organization to easily manage and reuse calculations across various reports, dashboards, and data tools. As Rill continues to grow, we decided to separate the metrics layer from the dashboard configuration.

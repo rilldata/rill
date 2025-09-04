@@ -4,8 +4,6 @@ sidebar_label: Why Use Rill?
 sidebar_position: 00
 ---
 
-
-
 Rill's strategy for fast dashboards is threefold:
 
 1) *Define metrics & dimensions up front*, and use these definitions to automatically aggregate and prune the raw tables. This modest modeling pain yields massive gains: the data footprint of aggregated metrics is typically 10–100x smaller than the underlying raw events in data lakes or warehouses.
@@ -34,7 +32,9 @@ The distinction between operational and business intelligence is analogous to th
 
 Ultimately, the output of both operational and business intelligence is decisions. Operational intelligence fuels fast, frequent decisions on real-time and near-time data by hands-on operators. Business intelligence drives complex decisions that occur daily or weekly, on fairly complete data sets. 
 
-![operationalcomparison](/img/concepts/operational/comparison.png)
+
+<img src = '/img/concepts/operational/comparison.png' class='rounded-gif' />
+<br />
 
 ### Why Operational BI requires new tools
 
@@ -48,3 +48,33 @@ Analytics technology stacks can be thought of as data flowing into a three-layer
 In the diagram below we illustrate two common examples for technologies used in operational and business intelligence stacks.
 
 ![operationalbi](/img/concepts/operational/operational.png)
+
+
+
+## BI-As-Code 
+
+BI-as-code is a modern approach to business intelligence that treats analytics assets as code, bringing the same benefits of version control, collaboration, and automation that software development teams have enjoyed for years. With Rill, you can define your entire analytics stack—from data models to dashboards—using code, while still maintaining the flexibility to make UI-based adjustments when needed.
+
+<div style={{ textAlign: 'center' }}>
+  <img src="/img/concepts/metrics-view/metrics-view-components.png" style={{ width: '100%', borderRadius: '15px', padding: '20px' }} />
+</div>
+
+
+This means that Rill projects can be completely generated via code agents that can be provided context on your specific use case and you can integrate Rill into your workflow to create and/or update your visualization via natural language.
+
+### AI-Powered Analytics Development
+
+Rill's BI-as-code approach enables powerful AI integration that transforms how analytics are created and maintained:
+
+**Code Agent Integration**
+- **Automated Project Generation**: AI agents can analyze your data schema and business requirements to automatically generate complete Rill projects
+- **Context-Aware Development**: Provide your AI agent with specific use cases, data sources, and business metrics to create tailored analytics solutions
+- **Intelligent Code Generation**: Agents can write SQL models, define metrics views, and configure dashboards based on your data structure and analytical needs
+
+**Natural Language Workflows**
+- **Conversational Analytics**: Create and modify dashboards through natural language commands like "Show me revenue trends by region" or "Modify the defaule view to show last quarter data"
+- **Iterative Refinement**: Use natural language to refine existing visualizations: "Make this dashboard show monthly data instead of daily" or "Add a comparison with last year"
+- **Business User Friendly**: Non-technical team members can request changes and new analyses without writing code or learning complex interfaces
+
+
+This AI-powered approach democratizes analytics development while maintaining the rigor and control that engineering teams require, enabling faster iteration and broader participation in data-driven decision making. 
