@@ -11,10 +11,11 @@
   } from "@rilldata/web-common/components/alert-dialog/index.js";
   import { Button } from "@rilldata/web-common/components/button/index.js";
   import DeployIcon from "@rilldata/web-common/components/icons/DeployIcon.svelte";
+  import { getDeployRoute } from "@rilldata/web-common/features/project/deploy/route-utils.ts";
 
   export let open: boolean;
 
-  $: deployCTAUrl = `${$page.url.protocol}//${$page.url.host}/deploy`;
+  $: deployCTAUrl = getDeployRoute($page);
 </script>
 
 <AlertDialog bind:open>
@@ -47,7 +48,7 @@
           <Button
             onClick={() => (open = false)}
             type="primary"
-            href={deployCTAUrl}
+            href={$deployCTAUrl}
             target="_blank"
           >
             Continue

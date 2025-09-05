@@ -8,7 +8,7 @@ export const DeployingDashboardUrlParam = "deploying_dashboard";
 export function maybeSetDeployingDashboard(url: URL) {
   const deployingDashboard = url.searchParams.get(DeployingDashboardUrlParam);
   if (!deployingDashboard) {
-    // Remove item to ensure stale dashboard name is not used.
+    // Remove item to ensure a stale dashboard name is not used.
     sessionStorage.removeItem(deployingDashboardKey);
   } else {
     sessionStorage.setItem(deployingDashboardKey, deployingDashboard);

@@ -110,7 +110,7 @@
 
     // do not show the confirmation dialog for successive deploys
     void behaviourEvent?.fireDeployEvent(BehaviourEventAction.DeployIntent);
-    window.open(deployPageUrl, "_blank");
+    window.open($deployPageUrl, "_blank");
   }
 
   async function handleForceFetchRemoteCommits() {

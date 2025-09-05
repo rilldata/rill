@@ -36,7 +36,7 @@ export function useDeployingDashboards(
           ? isValidDashboard(dashboard)
           : false;
 
-        if (!hasValidDashboard) {
+        if (!hasValidDashboard || !dashboard?.meta?.name?.name) {
           return {
             redirectToDashboardUrl: null,
             dashboardsReconciling: getDashboardsReconciling(
@@ -72,7 +72,9 @@ function getDashboard(
 ): V1Resource | undefined {
   let dashboard: V1Resource | undefined;
   if (dashboardName) {
-    dashboard = dashboards.find((res) => res.meta.name.name === dashboardName);
+    dashboard = dashboards.find(
+      (res) => res.meta?.name?.name === dashboardName,
+    );
   } else {
     dashboard =
       dashboards.find((res) => res.canvas?.state?.validSpec) ??
@@ -88,7 +90,7 @@ function getDashboardsReconciling(
 ) {
   if (dashboardName) {
     const dashboard = dashboards.find(
-      (res) => res.meta.name.name === dashboardName,
+      (res) => res.meta?.name?.name === dashboardName,
     );
     return dashboard ? isResourceReconciling(dashboard) : false;
   } else {
@@ -102,7 +104,7 @@ function getDashboardsErrored(
 ) {
   if (dashboardName) {
     const dashboard = dashboards.find(
-      (res) => res.meta.name.name === dashboardName,
+      (res) => res.meta?.name?.name === dashboardName,
     );
     return dashboard ? hasErrored(dashboard) : false;
   } else {
