@@ -4,6 +4,7 @@ import {
   createInExpression,
   createLikeExpression,
   createAndExpression,
+  sanitiseExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
@@ -26,6 +27,9 @@ type DimensionSearchArgs = {
  *
  * 1. For Select and Contains mode, it returns the result from the search text using a `like` filter.
  * 2. For InList mode, it returns values from selection that is actually in the data source.
+ *
+ * Uses a "below the fold" strategy similar to leaderboards to ensure selected values
+ * always appear in results, even if they're not in the top 250.
  */
 export function useDimensionSearch(
   instanceId: string,
@@ -48,7 +52,8 @@ export function useDimensionSearch(
     additionalFilter,
   });
 
-  const queries = metricsViewNames.map((mvName) =>
+  // Main query: Get top 250 results (above the fold)
+  const mainQueries = metricsViewNames.map((mvName) =>
     createQueryServiceMetricsViewAggregation(
       instanceId,
       mvName,
@@ -67,14 +72,68 @@ export function useDimensionSearch(
     ),
   );
 
-  return getCompoundQuery(queries, (responses) => {
-    const values = responses
-      .filter((r) => !!r?.data)
-      .map((r) => r!.data!.map((i) => i[dimensionName]))
-      .flat();
-    const dedupedValues = new Set(values);
-    return [...dedupedValues] as string[];
-  });
+  // Below the fold query: Ensure selected values are included (for InList mode)
+  const belowFoldQueries =
+    mode === DimensionFilterMode.InList && values.length > 0
+      ? metricsViewNames.map((mvName) =>
+          createQueryServiceMetricsViewAggregation(
+            instanceId,
+            mvName,
+            {
+              dimensions: [{ name: dimensionName }],
+              timeRange: { start: timeStart, end: timeEnd },
+              where: sanitiseExpression(
+                createAndExpression([
+                  createInExpression(dimensionName, values),
+                  ...(additionalFilter ? [additionalFilter] : []),
+                ]),
+                undefined,
+              ),
+              sort: [{ name: dimensionName }],
+            },
+            {
+              query: { enabled },
+            },
+            queryClient,
+          ),
+        )
+      : [];
+
+  return getCompoundQuery(
+    [...mainQueries, ...belowFoldQueries],
+    (responses) => {
+      // Split responses into main and below-fold results
+      const mainResponses = responses.slice(0, metricsViewNames.length);
+      const belowFoldResponses = responses.slice(metricsViewNames.length);
+
+      // Get main results (above the fold)
+      const mainValues = mainResponses
+        .filter((r) => !!r?.data)
+        .map((r) => r!.data!.map((i) => i[dimensionName]))
+        .flat();
+
+      // Get below-fold results (selected values that might not be in top 250)
+      const belowFoldValues = belowFoldResponses
+        .filter((r) => !!r?.data)
+        .map((r) => r!.data!.map((i) => i[dimensionName]))
+        .flat();
+
+      // Merge results: main results first, then any selected values not already included
+      const mainSet = new Set(mainValues);
+      const actualBelowFoldValues = belowFoldValues.filter(
+        (value) => !mainSet.has(value),
+      );
+      const combinedValues = [...mainValues, ...actualBelowFoldValues];
+
+      const dedupedValues = new Set(combinedValues);
+      const result = [...dedupedValues] as string[];
+
+      // Attach metadata about which values are below-fold for the UI
+      (result as any).__belowFoldValues = actualBelowFoldValues;
+
+      return result;
+    },
+  );
 }
 
 /**
