@@ -46,7 +46,7 @@ To use Rill with OpenAI's ChatGPT, you'll need to follow the same steps as above
 
 ## Step 3: Start Querying your Agent about your Rill metrics.
 
-A below is an example chat with Claude using our MCP server to get information on the commit history for one of our demo projects.
+Below is an example chat with Claude using our MCP server to get information on the commit history for one of our demo projects.
 
 <img src='/img/explore/mcp/mcp-main.gif' class='rounded-gif'/>
 <br />
