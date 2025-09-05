@@ -13,7 +13,6 @@
   import SuperPill from "@rilldata/web-common/features/dashboards/time-controls/super-pill/SuperPill.svelte";
   import { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
   import { DateTime, Interval } from "luxon";
-  import { flip } from "svelte/animate";
   import { fly } from "svelte/transition";
   import CanvasComparisonPill from "./CanvasComparisonPill.svelte";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -47,6 +46,7 @@
         allDimensionFilterItems,
         allMeasureFilterItems,
         measureHasFilter,
+        defaultFilterProperties,
       },
       spec: { canvasSpec, allDimensions, allSimpleMeasures },
       timeControls: {
@@ -83,6 +83,8 @@
   $: allDimensionFilters = $allDimensionFilterItems;
 
   $: allMeasureFilters = $allMeasureFilterItems;
+
+  $: defaultProperties = $defaultFilterProperties;
 
   // hasFilter only checks for complete filters and excludes temporary ones
   $: hasFilters =
@@ -198,39 +200,43 @@
             (d) => d.name === name || d.column === name,
           )}
           {@const dimensionName = dimension?.name || dimension?.column}
-          <div animate:flip={{ duration: 200 }}>
-            {#if dimensionName && metricsViewNames?.length}
-              <DimensionFilter
-                {metricsViewNames}
-                {readOnly}
-                {name}
-                {label}
-                {mode}
-                {selectedValues}
-                {inputText}
-                {timeStart}
-                {timeEnd}
-                openOnMount={justAdded}
-                timeControlsReady={!!$timeRangeStateStore}
-                excludeMode={!isInclude}
-                whereFilter={$whereFilter}
-                onRemove={() => removeDimensionFilter(name)}
-                onToggleFilterMode={() => toggleDimensionFilterMode(name)}
-                onSelect={(value) =>
-                  toggleMultipleDimensionValueSelections(name, [value], true)}
-                onMultiSelect={(values) =>
-                  toggleMultipleDimensionValueSelections(name, values, true)}
-                onApplyInList={(values) =>
-                  applyDimensionInListMode(name, values)}
-                onApplyContainsMode={(searchText) =>
-                  applyDimensionContainsMode(name, searchText)}
-              />
-            {/if}
-          </div>
+          {@const properties = defaultProperties.get(name)}
+          {#if dimensionName && metricsViewNames?.length && !properties?.hidden}
+            <DimensionFilter
+              {readOnly}
+              locked={properties?.locked}
+              removable={!properties?.unremovable}
+              {metricsViewNames}
+              {name}
+              {label}
+              limit={properties?.limit}
+              {mode}
+              {selectedValues}
+              {inputText}
+              {timeStart}
+              {timeEnd}
+              openOnMount={justAdded}
+              timeControlsReady={!!$timeRangeStateStore}
+              excludeMode={!isInclude}
+              whereFilter={$whereFilter}
+              onRemove={() => removeDimensionFilter(name)}
+              onToggleFilterMode={() => toggleDimensionFilterMode(name)}
+              onSelect={(value) =>
+                toggleMultipleDimensionValueSelections(name, [value], true)}
+              onMultiSelect={(values) =>
+                toggleMultipleDimensionValueSelections(name, values, true)}
+              onApplyInList={(values) => applyDimensionInListMode(name, values)}
+              onApplyContainsMode={(searchText) =>
+                applyDimensionContainsMode(name, searchText)}
+            />
+          {/if}
         {/each}
         {#each allMeasureFilters as { name, label, dimensionName, filter, dimensions: dimensionsForMeasure } (name)}
-          <div animate:flip={{ duration: 200 }}>
+          {@const properties = defaultProperties.get(name)}
+          {#if !properties?.hidden}
             <MeasureFilter
+              locked={properties?.locked}
+              removable={!properties?.unremovable}
               allDimensions={dimensionsForMeasure || $allDimensions}
               {name}
               {label}
@@ -240,7 +246,7 @@
               onApply={({ dimension, oldDimension, filter }) =>
                 handleMeasureFilterApply(dimension, name, oldDimension, filter)}
             />
-          </div>
+          {/if}
         {/each}
       {/if}
 
@@ -252,7 +258,7 @@
           measureHasFilter={$measureHasFilter}
           setTemporaryFilterName={(n) => {
             justAdded = true;
-            setTemporaryFilterName(n);
+            setTemporaryFilterName(n, true);
           }}
         />
         <!-- if filters are present, place a chip at the end of the flex container 

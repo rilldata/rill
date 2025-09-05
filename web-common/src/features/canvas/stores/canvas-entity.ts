@@ -132,7 +132,12 @@ export class CanvasEntity {
       undefined,
       this.name,
     );
-    this.filters = new Filters(this.spec, searchParamsStore);
+    this.filters = new Filters(
+      this.spec,
+      searchParamsStore,
+      this.specStore,
+      undefined,
+    );
 
     searchParamsStore.subscribe((searchParams) => {
       const themeFromUrl = searchParams.get("theme");
