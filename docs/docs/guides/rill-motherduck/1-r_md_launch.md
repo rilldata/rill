@@ -4,7 +4,7 @@ sidebar_label: "1. Launch Rill Developer"
 sidebar_position: 3
 hide_table_of_contents: false
 tags:
-  - OLAP:ClickHouse
+  - OLAP:MotherDuck
   - Tutorial
 ---
 
@@ -16,13 +16,13 @@ curl https://rill.sh | sh
 ```
 
 You need a MotherDuck token to connect to your MotherDuck database. 
-Check our MotherDuck's documentation on [how to generate an access token](https://motherduck.com/docs/key-tasks/authenticating-and-connecting-to-motherduck/authenticating-to-motherduck/#authentication-using-an-access-token).
+Check MotherDuck's documentation on [how to generate an access token](https://motherduck.com/docs/key-tasks/authenticating-and-connecting-to-motherduck/authenticating-to-motherduck/#authentication-using-an-access-token).
 
 
 :::
 ## Start Rill Developer
 
-```yaml
+```bash
 rill start my-rill-motherduck
 ```
 
@@ -32,7 +32,7 @@ After running the command, Rill Developer should automatically open in your defa
 localhost:9009
 ``` 
 
-You should see the following webpage appear. 
+You should see the following webpage appear: 
 
 <img src = '/img/tutorials/rill-basics/new-rill-project.png' class='rounded-gif' />
 <br />

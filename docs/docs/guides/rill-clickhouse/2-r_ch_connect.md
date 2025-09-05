@@ -13,8 +13,8 @@ import TabItem from '@theme/TabItem';
 
 ## Default OLAP connection and Connect to ClickHouse
 
-Within Rill you can set the default OLAP connection on the [project level](https://docs.rilldata.com/reference/project-files/rill-yaml) or the [dashboard level](https://docs.rilldata.com/reference/project-files/explore-dashboards). 
-For this course, we will set it up on the project level so all of our dashboards will be based on our ClickHouse table.
+Within Rill, you can set the default OLAP connection on the [project level](https://docs.rilldata.com/reference/project-files/rill-yaml) or the [dashboard level](https://docs.rilldata.com/reference/project-files/explore-dashboards). 
+For this tutorial, we will set it up on the project level so all of our dashboards will be based on our ClickHouse table.
 
 :::tip
 You have two options for your ClickHouse server:
@@ -26,12 +26,12 @@ Depending what you choose, the contents of your connection will change and I rec
 :::
 
 ### Connect to ClickHouse
-We can create the clickhouse connection by selection `+Add Data` > `ClickHouse` and fill in the components on the UI.
+We can create the clickhouse connection by selecting `+Add Data` > `ClickHouse` and fill in the components on the UI.
 
 <img src = '/img/tutorials/ch/clickhouse-connector.png' class='rounded-gif' />
 <br />
 :::tip
-You can obtain the credentials from your ClickHouse Cloud account by clicking the `Connect` button in the left panel.:
+You can obtain the credentials from your ClickHouse Cloud account by clicking the `Connect` button in the left panel:
 
 <img src = '/img/tutorials/ch/clickhouse-cloud-credential.png' class='rounded-gif' />
 <br />
@@ -46,7 +46,7 @@ Once this is created, a `clickhouse.yaml` file will appear in the `connectors` f
 compiler: rillv1
 
 title: "Rill and ClickHouse Project"
-olap_connector: clickhouse #automatically added
+olap_connector: clickhouse # automatically added
 ```
 
 Example for a locally running ClickHouse server:
@@ -66,7 +66,7 @@ dsn: "clickhouse://localhost:9000"
 Please see our documentation to find the DSN for [your ClickHouse Cloud instance](https://docs.rilldata.com/connect/olap/clickhouse#connecting-to-clickhouse-cloud). 
 
 ### How to pass the credentials to Rill
-There are a few way to define the credentials within Rill.
+There are a few ways to define the credentials within Rill.
 
 <Tabs>
 <TabItem value="yaml" label="via yaml" default>
@@ -112,7 +112,7 @@ port: '{{ .env.port }}'
 
 
   <TabItem value="env" label="via .env">
-There's a few way to generate the .env file. Making a source that requires credentials will automatically generate it. Else, you can create it using `touch .env` in the rill directory.
+There are a few ways to generate the .env file. Making a source that requires credentials will automatically generate it. Else, you can create it using `touch .env` in the rill directory.
 
 ```yaml
 connector.clickhouse.host="localhost"

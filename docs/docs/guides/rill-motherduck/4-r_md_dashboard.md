@@ -8,13 +8,13 @@ tags:
   - Tutorial
 ---
 
-When you're ready, you can create the visualization on top of the metric layer. Let's select `Create Explore dashboard`. This will create a simple dashboards/rill_auction_data_metrics_explore.yaml file that reads in all the dimensions and measures. For more information on the available key-pairs, please refer to the [reference documentation.](https://docs.rilldata.com/reference/project-files/explore-dashboards)
+When you're ready, you can create the visualization on top of the metrics layer. Let's select `Create Explore dashboard`. This will create a simple `dashboards/rill_auction_data_metrics_explore.yaml` file that reads in all the dimensions and measures. For more information on the available key-pairs, please refer to the [reference documentation](https://docs.rilldata.com/reference/project-files/explore-dashboards).
 
 ---
 
 ### What can we do in Rill?
 
-Rill provides a powerful and intuitive slice-and-dice explore dashboard that transforms your raw data into actionable business decisions. With its analytical capabilities, you can drill down into specific dimensions, compare metrics across different segments, and uncover hidden patterns that drive informed decision-making. The interactive interface allows you to pivot, filter, and aggregate your data on-the-fly, giving you the flexibility to explore your MotherDuck tables from every possible angle and extract meaningful insights that can directly impact your business outcomes.
+Rill provides a powerful and intuitive slice-and-dice explore dashboard that transforms your raw data into actionable business insights. With its analytical capabilities, you can drill down into specific dimensions, compare metrics across different segments, and uncover hidden patterns that drive informed decision-making. The interactive interface allows you to pivot, filter, and aggregate your data on-the-fly. This gives you the flexibility to explore your MotherDuck tables from every possible angle and extract meaningful insights that can directly impact your business outcomes.
 
 ### [Compare dimension values](/explore/dashboard-101/)
 <img src = '/img/tutorials/md/MotherDuck-compare.png' class='rounded-gif' />

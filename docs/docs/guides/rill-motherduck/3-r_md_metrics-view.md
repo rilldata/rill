@@ -8,7 +8,7 @@ tags:
   - Tutorial
 ---
 
-You'll need to use a table that exists in your database. In this tutorial, we'll be using `rill_auction_data`.
+You'll need to use a table that exists in your MotherDuck database. In this tutorial, we'll be using `rill_auction_data`.
 
 :::note
 Don't have any good dataset to use? See [Ingest into MotherDuck](./r_md_ingest.md) to ingest directly into MotherDuck from Rill.
@@ -16,14 +16,14 @@ Don't have any good dataset to use? See [Ingest into MotherDuck](./r_md_ingest.m
 
 ### Create metrics view
 
-Let's create a metrics view based on the table via the `Generate metrics via AI`.
+Let's create a metrics view based on the table using the `Generate metrics via AI` feature.
 
 <img src = '/img/tutorials/md/MotherDuck-metrics-ai.png' class='rounded-gif' />
 <br />
 
 ### What are we looking at?
 
-This is our metrics view, where we can define measures and dimensions to be used on dashboards.  
+This is our metrics view, where we can define measures and dimensions to be used in dashboards.  
 
 ```yaml
 # Metrics view YAML
@@ -35,7 +35,7 @@ type: metrics_view
 
 display_name: Auction Data Raw Metrics
 connector: motherduck
-model: auction_data_raw
+table: auction_data_raw
 timeseries: __time
 
 
@@ -53,10 +53,10 @@ While we go into more details in our [Rill Basics course](/guides/rill-basics/da
 
 ---
 
-`timeseries` - This is our time column that is used on as our x-axis for graphs.
+`timeseries` - This is our time column that is used as our x-axis for graphs.
 
-`connector` - this is our manually defined MotherDuck connector
+`connector` - This is our manually defined MotherDuck connector
 
-`dimensions` - These are our categorical columns that we can use on the dashboard to filter and slice;
+`dimensions` - These are our categorical columns that we can use in the dashboard to filter and slice
 
 `measures` - These are our numerical aggregates defined in the metrics layer. We can see functions such as MAX(), COUNT(), and AVG() used on the underlying table.

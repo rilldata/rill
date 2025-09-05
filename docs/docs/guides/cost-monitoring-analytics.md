@@ -148,7 +148,7 @@ measures:
   - display_name: "Total Revenue"
     expression: SUM(revenue)
     name: total_revenue
-    description: The sum of revenue
+    description: "The sum of revenue"
     format_preset: currency_usd
   - display_name: "Net Revenue"
     expression: "SUM(revenue) - SUM(cost)"

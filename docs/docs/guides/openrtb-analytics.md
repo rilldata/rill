@@ -33,7 +33,7 @@ rill-openrtb-prog-ads/
 ├── rill.yaml                           # Project configuration
 ├── sources/                            # Data source definitions
 │   ├── auction_data_raw.yaml           # Ad impression data
-│   └── bids_data_raw.yaml.yaml         # Bid request/response data
+│   └── bids_data_raw.yaml              # Bid request/response data
 ├── models/                             # SQL transformations
 │   ├── auction_data_model.sql          # Workaround SQL to keep data up to date
 │   └── bids_data_model.sql             # Workaround SQL to keep data up to date

@@ -8,19 +8,19 @@ tags:
   - Tutorial
 ---
 
-## Importing your own Data into MotherDuck 
+## Importing Your Own Data into MotherDuck 
 
 
 
 Since both Rill and MotherDuck are based on DuckDB, the read/write capabilities work without having to enable any feature flags.
 
-Simple use the Rill UI to connect to a data source and define the output to MotherDuck.
+Simply use the Rill UI to connect to a data source and define the output to MotherDuck.
 
 <img src = '/img/build/connect/sources.png' class='rounded-gif' />
 <br />
 
 
-## Ingestion directly from GCS to MotherDuck
+## Ingestion Directly from GCS to MotherDuck
 
 
 ```yaml
@@ -38,9 +38,9 @@ output:
   connector: motherduck
 ```
 
-## Ingestion directly from BigQuery to MotherDuck
+## Ingestion Directly from BigQuery to MotherDuck
 
-In the below example, we are importing data from Big Query directly to MotherDuck using GCS as an intermediate stage.
+In the example below, we are importing data from BigQuery directly to MotherDuck using GCS as an intermediate stage.
 
 
 ```yaml

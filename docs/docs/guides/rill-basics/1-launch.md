@@ -19,12 +19,12 @@ curl https://rill.sh | sh
 
 :::
 
-The goal of this six-part tutorial is to get started with Rill and deploy your project to Rill Cloud. Upon deployment, your [30-day trial will start](/other/plans#trial-plan). Each course will build upon the previous one, allowing you to have a fully functioning project with many of our advanced features. This tutorial can be used in tandem with our documentation to ensure you have up-to-date information.
+The goal of this six-part tutorial is to get started with Rill and deploy your project to Rill Cloud. Upon deployment, your [30-day trial will start](/other/plans#trial-plan). Each tutorial will build upon the previous one, allowing you to have a fully functioning project with many of our advanced features. This tutorial can be used in tandem with our documentation to ensure you have up-to-date information.
 
 
 ## Start Rill Developer
 
-```yaml
+```bash
 rill start my-rill-tutorial
 ```
 
@@ -62,7 +62,7 @@ Let's go ahead and select `Start with an empty project`. If you want to skip the
 <details>
   <summary>Where am I in the terminal?</summary>
   
-    You can use the `pwd` command to see which directory you are in within the terminal. <br />
+    You can use the `pwd` command to see which directory you are in the terminal. <br />
     If this is not where you'd like to make the directory, use the `cd` command to change directories.
 
 </details>
