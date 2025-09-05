@@ -82,7 +82,8 @@
     }
   }
 
-  $: hideTruncationSelector = parsedTime?.interval instanceof RillIsoInterval;
+  $: hideTruncationSelector =
+    parsedTime?.interval instanceof RillIsoInterval || parsedTime?.isOldFormat;
 
   $: usingLegacyTime = isUsingLegacyTime(timeString);
 
