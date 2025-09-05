@@ -97,6 +97,10 @@ func (rs *arrowRecordReader) Schema() *arrow.Schema {
 
 // Record returns the current record. Call Next before consuming another record.
 func (rs *arrowRecordReader) Record() arrow.Record {
+	return rs.RecordBatch()
+}
+
+func (rs *arrowRecordReader) RecordBatch() arrow.RecordBatch {
 	return rs.cur
 }
 
