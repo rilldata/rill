@@ -1682,6 +1682,7 @@ export type AdminServiceConnectProjectToGithubBody = {
   branch?: string;
   subpath?: string;
   force?: boolean;
+  create?: boolean;
 };
 
 export type AdminServiceGetDeploymentCredentialsBodyAttributes = {

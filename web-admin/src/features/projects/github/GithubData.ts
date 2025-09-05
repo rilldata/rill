@@ -1,74 +1,92 @@
 import {
   adminServiceListGithubUserRepos,
   createAdminServiceGetGithubUserStatus,
+  createAdminServiceListGithubUserOrgs,
   createAdminServiceListGithubUserRepos,
   getAdminServiceGetGithubUserStatusQueryKey,
   getAdminServiceListGithubUserReposQueryKey,
+  getAdminServiceListGithubUserReposQueryOptions,
   type RpcStatus,
 } from "@rilldata/web-admin/client";
 import { PopupWindow } from "@rilldata/web-common/lib/openPopupWindow";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
+import { createQuery } from "@tanstack/svelte-query";
 import { getContext, setContext } from "svelte";
-import { derived, get, writable } from "svelte/store";
+import { derived, get, type Readable, writable } from "svelte/store";
+
+export type GithubSelectionType = "new" | "pull" | "push";
 
 /**
  * Contains information about user connection to github and list of repos currently connected.
  */
 export class GithubData {
-  public readonly repoSelectionOpen = writable(false);
+  public readonly selectionType = writable<GithubSelectionType>("new");
   public readonly githubConnectionFailed = writable(false);
 
   public readonly userStatus = createAdminServiceGetGithubUserStatus(
     undefined,
     queryClient,
   );
-  public readonly userRepos = derived(
-    [this.userStatus, this.repoSelectionOpen],
-    ([userStatus, repoSelectionOpen], set) =>
-      createAdminServiceListGithubUserRepos(
-        {
-          query: {
-            // do not run it when user gets to status page, only when repo selection is open
-            enabled: !!userStatus.data?.hasAccess && repoSelectionOpen,
-          },
-        },
-        queryClient,
-      ).subscribe(set),
-  ) as ReturnType<
-    typeof createAdminServiceListGithubUserRepos<
-      Awaited<ReturnType<typeof adminServiceListGithubUserRepos>>,
-      RpcStatus
-    >
+  public readonly userOrgs: ReturnType<
+    typeof createAdminServiceListGithubUserOrgs
+  >;
+  public readonly userRepos: ReturnType<
+    typeof createAdminServiceListGithubUserRepos
   >;
 
   private userPromptWindow = new PopupWindow();
 
-  public readonly status = derived(
-    [this.userStatus, this.userRepos],
-    ([userStatus, userRepos]) => {
-      if (userStatus.isFetching || userRepos.isFetching) {
+  public readonly status: Readable<{
+    isFetching: boolean;
+    error: RpcStatus | undefined;
+  }>;
+
+  public constructor() {
+    const userOrgsOpts = derived(
+      [this.userStatus, this.selectionType],
+      ([userStatus, selectionType]) =>
+        getAdminServiceListGithubUserReposQueryOptions({
+          query: {
+            // do not run it when user gets to status page, only when repo selection is open
+            enabled: !!userStatus.data?.hasAccess && selectionType === "new",
+          },
+        }),
+    );
+    this.userOrgs = createQuery(userOrgsOpts) as ReturnType<
+      typeof createAdminServiceListGithubUserOrgs
+    >;
+
+    const userReposOpts = derived(
+      [this.userStatus, this.selectionType],
+      ([userStatus, selectionType]) =>
+        getAdminServiceListGithubUserReposQueryOptions({
+          query: {
+            // do not run it when user gets to status page, only when repo selection is open
+            enabled: !!userStatus.data?.hasAccess && selectionType !== "new",
+          },
+        }),
+    );
+    this.userRepos = createQuery(userReposOpts) as ReturnType<
+      typeof createAdminServiceListGithubUserRepos
+    >;
+
+    this.status = derived(
+      [this.userStatus, this.userRepos],
+      ([userStatus, userRepos]) => {
+        if (userStatus.isFetching || userRepos.isFetching) {
+          return {
+            isFetching: true,
+            error: undefined,
+          };
+        }
+
         return {
-          isFetching: true,
-          error: undefined,
+          isFetching: false,
+          error: userStatus.error ?? userRepos.error,
         };
-      }
-
-      return {
-        isFetching: false,
-        error: userStatus.error ?? userRepos.error,
-      };
-    },
-  );
-
-  /**
-   * Marks the repo selection dialog to be opened.
-   * If user doesn't have access, opens grant access page.
-   */
-  public async startRepoSelection() {
-    this.repoSelectionOpen.set(true);
-
-    return this.ensureGithubAccess();
+      },
+    );
   }
 
   /**
@@ -117,7 +135,7 @@ export class GithubData {
       this.githubConnectionFailed.set(false);
 
       // else refetch the list of repos
-      await queryClient.refetchQueries({
+      await queryClient.resetQueries({
         queryKey: getAdminServiceListGithubUserReposQueryKey(),
       });
     }
