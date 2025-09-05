@@ -199,18 +199,19 @@ func (s *Server) ListDatabaseSchemas(ctx context.Context, req *runtimev1.ListDat
 		return nil, fmt.Errorf("driver: information schema not implemented")
 	}
 
-	schemas, err := is.ListDatabaseSchemas(ctx)
+	items, next, err := is.ListDatabaseSchemas(ctx, req.PageSize, req.PageToken)
 	if err != nil {
 		return nil, err
 	}
-	res := make([]*runtimev1.DatabaseSchemaInfo, len(schemas))
-	for i, schema := range schemas {
+	res := make([]*runtimev1.DatabaseSchemaInfo, len(items))
+	for i, schema := range items {
 		res[i] = &runtimev1.DatabaseSchemaInfo{
 			Database:       schema.Database,
 			DatabaseSchema: schema.DatabaseSchema,
 		}
 	}
 	return &runtimev1.ListDatabaseSchemasResponse{
+		NextPageToken:   next,
 		DatabaseSchemas: res,
 	}, nil
 }
@@ -227,19 +228,20 @@ func (s *Server) ListTables(ctx context.Context, req *runtimev1.ListTablesReques
 		return nil, fmt.Errorf("driver: information schema not implemented")
 	}
 
-	tables, err := is.ListTables(ctx, req.Database, req.DatabaseSchema)
+	items, next, err := is.ListTables(ctx, req.Database, req.DatabaseSchema, req.PageSize, req.PageToken)
 	if err != nil {
 		return nil, err
 	}
-	res := make([]*runtimev1.TableInfo, len(tables))
-	for i, table := range tables {
+	res := make([]*runtimev1.TableInfo, len(items))
+	for i, table := range items {
 		res[i] = &runtimev1.TableInfo{
 			Name: table.Name,
 			View: table.View,
 		}
 	}
 	return &runtimev1.ListTablesResponse{
-		Tables: res,
+		NextPageToken: next,
+		Tables:        res,
 	}, nil
 }
 

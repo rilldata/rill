@@ -2,28 +2,43 @@ package mysql
 
 import (
 	"context"
+	"fmt"
+	"strconv"
 
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
-func (c *connection) ListDatabaseSchemas(ctx context.Context) ([]*drivers.DatabaseSchemaInfo, error) {
+func (c *connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, pageToken string) ([]*drivers.DatabaseSchemaInfo, string, error) {
+	if pageSize == 0 {
+		pageSize = drivers.DefaultPageSize
+	}
+	offset := 0
+	if pageToken != "" {
+		var err error
+		offset, err = strconv.Atoi(pageToken)
+		if err != nil {
+			return nil, "", fmt.Errorf("invalid page token: %w", err)
+		}
+	}
 	q := `
 	SELECT
 		schema_name
 	FROM information_schema.schemata
 	WHERE schema_name not in ('information_schema', 'performance_schema', 'sys') OR schema_name = DATABASE()
 	ORDER BY schema_name
+	LIMIT ? 
+	OFFSET ?
 	`
 
 	db, err := c.getDB()
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	defer db.Close()
 
-	rows, err := db.QueryxContext(ctx, q)
+	rows, err := db.QueryxContext(ctx, q, int(pageSize)+1, offset)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	defer rows.Close()
 
@@ -31,7 +46,7 @@ func (c *connection) ListDatabaseSchemas(ctx context.Context) ([]*drivers.Databa
 	for rows.Next() {
 		var schema string
 		if err := rows.Scan(&schema); err != nil {
-			return nil, err
+			return nil, "", err
 		}
 		res = append(res, &drivers.DatabaseSchemaInfo{
 			Database:       "",
@@ -40,13 +55,29 @@ func (c *connection) ListDatabaseSchemas(ctx context.Context) ([]*drivers.Databa
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
-	return res, nil
+	next := ""
+	if len(res) > int(pageSize) {
+		res = res[:pageSize]
+		next = strconv.Itoa(offset + int(pageSize))
+	}
+	return res, next, nil
 }
 
-func (c *connection) ListTables(ctx context.Context, database, databaseSchema string) ([]*drivers.TableInfo, error) {
+func (c *connection) ListTables(ctx context.Context, database, databaseSchema string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
+	if pageSize == 0 {
+		pageSize = drivers.DefaultPageSize
+	}
+	offset := 0
+	if pageToken != "" {
+		var err error
+		offset, err = strconv.Atoi(pageToken)
+		if err != nil {
+			return nil, "", fmt.Errorf("invalid page token: %w", err)
+		}
+	}
 	q := `
 	SELECT
 		table_name,
@@ -54,17 +85,19 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 	FROM information_schema.tables
 	WHERE table_schema = ?
 	ORDER BY table_name
+	LIMIT ? 
+	OFFSET ?
 	`
 
 	db, err := c.getDB()
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	defer db.Close()
 
-	rows, err := db.QueryxContext(ctx, q, databaseSchema)
+	rows, err := db.QueryxContext(ctx, q, databaseSchema, int(pageSize)+1, offset)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	defer rows.Close()
 
@@ -73,7 +106,7 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 		var name string
 		var typ bool
 		if err := rows.Scan(&name, &typ); err != nil {
-			return nil, err
+			return nil, "", err
 		}
 		result = append(result, &drivers.TableInfo{
 			Name: name,
@@ -82,10 +115,15 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
-	return result, nil
+	next := ""
+	if len(result) > int(pageSize) {
+		result = result[:pageSize]
+		next = strconv.Itoa(offset + int(pageSize))
+	}
+	return result, next, nil
 }
 
 func (c *connection) GetTable(ctx context.Context, database, databaseSchema, table string) (*drivers.TableMetadata, error) {
