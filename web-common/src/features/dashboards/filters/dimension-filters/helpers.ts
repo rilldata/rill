@@ -50,7 +50,11 @@ export function getItemLists(
   correctedSearchResults: string[],
   selectedValues: string[],
   curSearchText: string,
-): { checkedItems: string[]; uncheckedItems: string[] } {
+): {
+  checkedItems: string[];
+  uncheckedItems: string[];
+  belowFoldItems: string[];
+} {
   if (mode === DimensionFilterMode.Select && correctedSearchResults) {
     return {
       checkedItems: curSearchText
@@ -61,11 +65,27 @@ export function getItemLists(
       uncheckedItems: correctedSearchResults.filter(
         (item) => !selectedValues.includes(item),
       ),
+      belowFoldItems: [],
     };
+  }
+
+  // For InList mode, identify items that are "below the fold"
+  // These are selected values that came from the supplementary below-fold query
+  const belowFoldItems: string[] = [];
+  if (mode === DimensionFilterMode.InList && correctedSearchResults) {
+    // Extract below-fold metadata attached by the query function
+    const belowFoldMetadata = (correctedSearchResults as any).__belowFoldValues;
+    if (Array.isArray(belowFoldMetadata)) {
+      belowFoldItems.push(...belowFoldMetadata);
+    }
   }
 
   return {
     checkedItems: [],
-    uncheckedItems: correctedSearchResults ?? [],
+    uncheckedItems:
+      correctedSearchResults?.filter(
+        (item) => !belowFoldItems.includes(item),
+      ) ?? [],
+    belowFoldItems,
   };
 }

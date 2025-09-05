@@ -147,7 +147,7 @@
   $: searchResultCountText = enableSearchCountQuery
     ? curMode === DimensionFilterMode.Contains
       ? `${allSearchResultsCount} results`
-      : `${allSearchResultsCount} of ${searchedBulkValues.length} matched`
+      : `${allSearchResultsCount} of ${searchedBulkValues.length} matched${belowFoldItems.length > 0 ? ` (${belowFoldItems.length} selected)` : ""}`
     : "0 results";
 
   $: searchPlaceholder = getSearchPlaceholder(curMode);
@@ -177,7 +177,7 @@
 
   // Split results into checked and unchecked for better UX (like SelectionDropdown)
   // Use actual selectedValues (not proxy) so items only sort after dropdown closes
-  $: ({ checkedItems, uncheckedItems } = getItemLists(
+  $: ({ checkedItems, uncheckedItems, belowFoldItems } = getItemLists(
     curMode,
     correctedSearchResults ?? [],
     selectedValues,
@@ -202,6 +202,7 @@
       case DimensionFilterMode.InList:
         curMode = DimensionFilterMode.InList;
         curSearchText = mergeDimensionSearchValues(selectedValues);
+        searchedBulkValues = selectedValues; // Ensure searchedBulkValues includes existing selections
         break;
 
       case DimensionFilterMode.Contains:
@@ -225,7 +226,11 @@
       }
       return;
     }
-    searchedBulkValues = values;
+
+    // When switching to InList mode, include both existing selected values and new search values
+    // This ensures the below-fold query can find existing selected values that might not be in top 250
+    const allRelevantValues = [...new Set([...selectedValues, ...values])];
+    searchedBulkValues = allRelevantValues;
     curMode = DimensionFilterMode.InList;
     inListTooLong = isUrlTooLongAfterInListFilter(values);
   }
@@ -537,14 +542,60 @@
                 {/if}
               </span>
             </svelte:component>
-          {:else}
-            <!-- Show "no results" only if both checked and unchecked are empty -->
+          {/each}
+
+          <!-- Below the fold items (selected values not in top results) -->
+          {#if belowFoldItems.length > 0}
+            <DropdownMenu.Separator />
+            <DropdownMenu.Label
+              class="pb-0 text-[10px] text-gray-500 uppercase"
+            >
+              Selected values
+            </DropdownMenu.Label>
+            {#each belowFoldItems as name (name)}
+              {@const selected = effectiveSelectedValues.includes(name)}
+              {@const label = name ?? "null"}
+
+              <svelte:component
+                this={curMode === DimensionFilterMode.Select
+                  ? DropdownMenu.CheckboxItem
+                  : DropdownMenu.Item}
+                class="text-xs cursor-pointer {curMode !==
+                DimensionFilterMode.Select
+                  ? 'pl-3'
+                  : ''} bg-blue-50 dark:bg-blue-900/20"
+                role="menuitem"
+                checked={curMode === DimensionFilterMode.Select && selected}
+                showXForSelected={curExcludeMode}
+                disabled={curMode !== DimensionFilterMode.Select}
+                on:click={() => handleItemClick(name)}
+              >
+                <span class="flex items-center gap-1">
+                  <span>
+                    {#if label.length > 240}
+                      {label.slice(0, 240)}...
+                    {:else}
+                      {label}
+                    {/if}
+                  </span>
+                  <span
+                    class="text-[10px] text-blue-600 dark:text-blue-400 font-medium"
+                  >
+                    SELECTED
+                  </span>
+                </span>
+              </svelte:component>
+            {/each}
+          {/if}
+
+          <!-- Show "no results" only if all lists are empty -->
+          {#if uncheckedItems.length === 0 && belowFoldItems.length === 0}
             {#if curMode !== DimensionFilterMode.Select || checkedItems.length === 0}
               <div class="ui-copy-disabled text-center p-2 w-full">
                 no results
               </div>
             {/if}
-          {/each}
+          {/if}
         </DropdownMenu.Group>
       {/if}
     </div>
