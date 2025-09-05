@@ -1,5 +1,6 @@
 import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config";
-import { prettyFormatTimeRange } from "@rilldata/web-common/lib/time/ranges";
+
+import { prettyFormatTimeRange } from "@rilldata/web-common/lib/time/ranges/formatter.ts";
 import { humaniseISODuration } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import type { V1TimeRange } from "@rilldata/web-common/runtime-client";
 import { Duration, Interval } from "luxon";
