@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"regexp"
 	"slices"
 	"strings"
 	"time"
@@ -223,12 +222,6 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 		node.Refs = append(node.Refs, refs...)
 	}
 
-	// Parse retry options with reasonable defaults
-	var retryAttempts *uint32
-	if tmp.Retry.Attempts != nil {
-		retryAttempts = tmp.Retry.Attempts
-	}
-
 	var retryDelay *uint32
 	if tmp.Retry.Delay != nil {
 		duration, err := time.ParseDuration(*tmp.Retry.Delay)
@@ -237,22 +230,6 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 		}
 		delay := uint32(duration.Seconds())
 		retryDelay = &delay
-	}
-
-	var retryExponentialBackoff *bool
-	if tmp.Retry.ExponentialBackoff != nil {
-		retryExponentialBackoff = tmp.Retry.ExponentialBackoff
-	}
-
-	var retryIfErrorMatches []string
-	if len(tmp.Retry.IfErrorMatches) > 0 {
-		// Validate regex patterns
-		for _, pattern := range tmp.Retry.IfErrorMatches {
-			if _, err := regexp.Compile(pattern); err != nil {
-				return fmt.Errorf("invalid regex pattern '%s': %w", pattern, err)
-			}
-		}
-		retryIfErrorMatches = tmp.Retry.IfErrorMatches
 	}
 
 	// Insert the model
@@ -266,10 +243,10 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 		r.ModelSpec.RefreshSchedule = schedule
 	}
 
-	r.ModelSpec.RetryAttempts = retryAttempts
-	r.ModelSpec.RetryDelay = retryDelay
-	r.ModelSpec.RetryExponentialBackoff = retryExponentialBackoff
-	r.ModelSpec.RetryIfErrorMatches = retryIfErrorMatches
+	r.ModelSpec.RetryAttempts = tmp.Retry.Attempts
+	r.ModelSpec.RetryDelaySeconds = retryDelay
+	r.ModelSpec.RetryExponentialBackoff = tmp.Retry.ExponentialBackoff
+	r.ModelSpec.RetryIfErrorMatches = tmp.Retry.IfErrorMatches
 
 	if timeout > 0 {
 		r.ModelSpec.TimeoutSeconds = uint32(timeout.Seconds())

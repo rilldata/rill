@@ -45,6 +45,7 @@ measures:
 `,
 	})
 	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
 
 	// Verify the source
 	testruntime.RequireResource(t, rt, id, &runtimev1.Resource{
@@ -1156,7 +1157,7 @@ path: data/foo.csv
 	awaitIdle()
 	testruntime.RequireReconcileState(t, rt, id, 2, 0, 0)
 	testruntime.RequireOLAPTable(t, rt, id, "foo")
-	_, sourceRes := newSource(t, rt, id, "foo", "data/foo.csv", localFileHash(t, rt, id, []string{"data/foo.csv"}))
+	_, sourceRes := newSource("foo", "data/foo.csv", localFileHash(t, rt, id, []string{"data/foo.csv"}))
 	testruntime.RequireResource(t, rt, id, sourceRes)
 
 	testruntime.PutFiles(t, rt, id, map[string]string{
@@ -1217,12 +1218,12 @@ measures:
 	testruntime.RequireResource(t, rt, id, metricsRes)
 }
 
-func newSource(t *testing.T, rt *runtime.Runtime, id string, name, path, localFileHash string) (*runtimev1.Model, *runtimev1.Resource) {
+func newSource(name, path, localFileHash string) (*runtimev1.Model, *runtimev1.Resource) {
 	source := &runtimev1.Model{
 		Spec: &runtimev1.ModelSpec{
 			InputConnector:   "local_file",
 			OutputConnector:  "duckdb",
-			InputProperties:  must(structpb.NewStruct(map[string]any{"path": "data/foo.csv", "local_files_hash": localFileHash})),
+			InputProperties:  must(structpb.NewStruct(map[string]any{"path": path, "local_files_hash": localFileHash})),
 			OutputProperties: must(structpb.NewStruct(map[string]any{"materialize": true})),
 			RefreshSchedule:  &runtimev1.Schedule{RefUpdate: true},
 			DefinedAsSource:  true,
@@ -1231,21 +1232,20 @@ func newSource(t *testing.T, rt *runtime.Runtime, id string, name, path, localFi
 		State: &runtimev1.ModelState{
 			ExecutorConnector: "duckdb",
 			ResultConnector:   "duckdb",
-			ResultProperties:  must(structpb.NewStruct(map[string]any{"table": "foo", "used_model_name": true, "view": false})),
-			ResultTable:       "foo",
+			ResultProperties:  must(structpb.NewStruct(map[string]any{"table": name, "used_model_name": true, "view": false})),
+			ResultTable:       name,
 		},
 	}
 	sourceRes := &runtimev1.Resource{
 		Meta: &runtimev1.ResourceMeta{
-			Name:      &runtimev1.ResourceName{Kind: runtime.ResourceKindModel, Name: "foo"},
+			Name:      &runtimev1.ResourceName{Kind: runtime.ResourceKindModel, Name: name},
 			Owner:     runtime.GlobalProjectParserName,
-			FilePaths: []string{"/sources/foo.yaml"},
+			FilePaths: []string{fmt.Sprintf("/sources/%s.yaml", name)},
 		},
 		Resource: &runtimev1.Resource_Model{
 			Model: source,
 		},
 	}
-	testruntime.RequireResource(t, rt, id, sourceRes)
 	return source, sourceRes
 }
 

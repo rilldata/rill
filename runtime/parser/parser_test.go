@@ -354,9 +354,11 @@ schema: default
 			Refs:  []ResourceName{{Kind: ResourceKindModel, Name: "m2"}},
 			Paths: []string{"/custom/c2.sql"},
 			ModelSpec: &runtimev1.ModelSpec{
-				RefreshSchedule:  &runtimev1.Schedule{RefUpdate: true},
-				InputConnector:   "duckdb",
-				InputProperties:  must(structpb.NewStruct(map[string]any{"sql": strings.TrimSpace(files["custom/c2.sql"])})),
+				RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
+				InputConnector:  "duckdb",
+				InputProperties: must(structpb.NewStruct(map[string]any{
+					"sql": strings.TrimSpace(files["custom/c2.sql"]),
+				})),
 				OutputConnector:  "duckdb",
 				OutputProperties: must(structpb.NewStruct(map[string]any{"materialize": true})),
 				ChangeMode:       runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
@@ -1181,10 +1183,10 @@ version: 1
 type: metrics_view
 table: t1
 dimensions:
-  - name: foo
-    column: foo
-measures:
   - name: a
+    column: a
+measures:
+  - name: b
     expression: count(*)
 security:
   row_filter: true
@@ -1211,10 +1213,10 @@ security:
 				Table:       "t1",
 				DisplayName: "D1",
 				Dimensions: []*runtimev1.MetricsViewSpec_Dimension{
-					{Name: "foo", DisplayName: "Foo", Column: "foo"},
+					{Name: "a", DisplayName: "A", Column: "a"},
 				},
 				Measures: []*runtimev1.MetricsViewSpec_Measure{
-					{Name: "a", DisplayName: "A", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE},
+					{Name: "b", DisplayName: "B", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE},
 				},
 				SecurityRules: []*runtimev1.SecurityRule{
 					{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{
@@ -2142,7 +2144,7 @@ metrics_view: missing
 			ModelSpec: &runtimev1.ModelSpec{
 				RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
 				InputConnector:  "duckdb",
-				InputProperties: must(structpb.NewStruct(map[string]any{"sql": "SELECT 1"})),
+				InputProperties: must(structpb.NewStruct(map[string]any{"sql": `SELECT 1`})),
 				OutputConnector: "duckdb",
 				ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
 			},

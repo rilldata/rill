@@ -1235,7 +1235,6 @@ func (r *ModelReconciler) executeSingle(ctx context.Context, executor *wrappedMo
 	}
 
 	return r.executeWithRetry(ctx, self, mdl, func(ctx context.Context) (*drivers.ModelResult, error) {
-		var finalResult *drivers.ModelResult
 		var stageDuration time.Duration
 		// Stage execution (if applicable)
 		if executor.stage != nil {
@@ -1259,6 +1258,8 @@ func (r *ModelReconciler) executeSingle(ctx context.Context, executor *wrappedMo
 				return nil, err
 			}
 			stageDuration = stageResult.ExecDuration
+
+			// We change the inputProps to be the result properties of the stage step
 			inputProps = stageResult.Properties
 
 			// Drop the stage result after the final step has executed.
@@ -1272,7 +1273,7 @@ func (r *ModelReconciler) executeSingle(ctx context.Context, executor *wrappedMo
 		}
 
 		// Final execution
-		finalResult, err = executor.final.Execute(ctx, &drivers.ModelExecuteOptions{
+		finalResult, err := executor.final.Execute(ctx, &drivers.ModelExecuteOptions{
 			ModelExecutorOptions: executor.finalOpts,
 			InputProperties:      inputProps,
 			OutputProperties:     outputProps,
@@ -1305,7 +1306,7 @@ func (r *ModelReconciler) executeWithRetry(ctx context.Context, self *runtimev1.
 	if retryAttempts == nil {
 		retryAttempts = &defaultAttempts
 	}
-	retryDelay := mdl.Spec.RetryDelay
+	retryDelay := mdl.Spec.RetryDelaySeconds
 	if retryDelay == nil {
 		retryDelay = &defaultDelay
 	}
@@ -1325,9 +1326,6 @@ func (r *ModelReconciler) executeWithRetry(ctx context.Context, self *runtimev1.
 
 	// maxRetries is not used, so remove its assignment
 	backoff := time.Duration(*retryDelay) * time.Second
-	if backoff == 0 {
-		backoff = 5 * time.Second
-	}
 
 	var finalResult *drivers.ModelResult
 	var lastErr error

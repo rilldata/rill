@@ -1710,7 +1710,7 @@ export interface V1ModelSpec {
   outputProperties?: V1ModelSpecOutputProperties;
   /** retry is optional. */
   retryAttempts?: number;
-  retryDelay?: number;
+  retryDelaySeconds?: number;
   retryExponentialBackoff?: boolean;
   retryIfErrorMatches?: string[];
   changeMode?: V1ModelChangeMode;

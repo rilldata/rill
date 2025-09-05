@@ -2538,8 +2538,8 @@ func (m *ModelSpec) validate(all bool) error {
 		// no validation rules for RetryAttempts
 	}
 
-	if m.RetryDelay != nil {
-		// no validation rules for RetryDelay
+	if m.RetryDelaySeconds != nil {
+		// no validation rules for RetryDelaySeconds
 	}
 
 	if m.RetryExponentialBackoff != nil {

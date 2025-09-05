@@ -6123,7 +6123,7 @@ definitions:
         type: integer
         format: int64
         description: retry is optional.
-      retryDelay:
+      retryDelaySeconds:
         type: integer
         format: int64
       retryExponentialBackoff:

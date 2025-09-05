@@ -973,9 +973,9 @@ export class ModelSpec extends Message<ModelSpec> {
   retryAttempts?: number;
 
   /**
-   * @generated from field: optional uint32 retry_delay = 27;
+   * @generated from field: optional uint32 retry_delay_seconds = 27;
    */
-  retryDelay?: number;
+  retryDelaySeconds?: number;
 
   /**
    * @generated from field: optional bool retry_exponential_backoff = 28;
@@ -1040,7 +1040,7 @@ export class ModelSpec extends Message<ModelSpec> {
     { no: 1, name: "output_connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 12, name: "output_properties", kind: "message", T: Struct },
     { no: 26, name: "retry_attempts", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
-    { no: 27, name: "retry_delay", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
+    { no: 27, name: "retry_delay_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
     { no: 28, name: "retry_exponential_backoff", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 29, name: "retry_if_error_matches", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 24, name: "change_mode", kind: "enum", T: proto3.getEnumType(ModelChangeMode) },
