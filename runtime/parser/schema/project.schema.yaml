@@ -791,22 +791,86 @@ definitions:
             driver:
               type: string
               description: Refers to the driver type and must be driver `snowflake`
+              const: snowflake
+            account:
+              type: string
+              description: Snowflake account identifier. To find your Snowflake account identifier, look at your Snowflake account URL. The account identifier is everything before .snowflakecomputing.com
+            user:
+              type: string
+              description: Username for the Snowflake connection.
+            password:
+              type: string
+              description: Password for the Snowflake connection. _(deprecated, use privateKey instead)_
+            privateKey:
+              type: string
+              description: |
+                Private key for JWT authentication.
+                :::tip
+                Private key must be generated as a **PKCS#8 (nocrypt) key**, since the Snowflake Go driver
+                only supports unencrypted private keys. After generating, it must be **base64 URL encoded**.
+
+                Example commands to generate and encode:
+
+                ```bash
+                # Generate a 2048-bit unencrypted PKCS#8 private key
+                openssl genrsa 2048 | openssl pkcs8 -topk8 -inform PEM -out rsa_key.p8 -nocrypt
+
+                # Convert URL safe format for Snowflake
+                cat rsa_key.p8 | grep -v "\----" | tr -d '\n' | tr '+/' '-_' | tr -d '='
+                ```
+                See: https://docs.snowflake.com/en/user-guide/key-pair-auth
+                :::
+            authenticator:
+              type: string
+              description: Optional authenticator type (e.g., SNOWFLAKE_JWT).
+            database:
+              type: string
+              description: Name of the Snowflake database.
+            schema:
+              type: string
+              description: Schema within the database to use.
+            warehouse:
+              type: string
+              description: Compute warehouse to use for queries.
+            role:
+              type: string
+              description: Snowflake role to use.
             dsn:
               type: string
-              description: DSN (Data Source Name) for the Snowflake connection
+              description: |
+                DSN (Data Source Name) for the Snowflake connection.
+
+                This is intended for **advanced configuration** where you want to specify
+                properties that are not explicitly defined above.  
+                It can only be used when the other connection fields (account, user, password,
+                database, schema, warehouse, role, authenticator, privateKey) are **not used**.
+
+                For details on private key generation and encoding, see the `privateKey` property.
             parallel_fetch_limit:
               type: integer
-              description: Maximum number of concurrent fetches during query execution
+              description: Maximum number of concurrent fetches during query execution.
           examples:
-            - # Example: Snowflake connector configuration
-              type: connector                                  # Must be `connector` (required)
-              driver: snowflake                                # Must be `snowflake` _(required)_
+          - # Example: Snowflake connector basic configuration
+              type: connector  
+              driver: snowflake
 
-              dsn: "tcp://localhost:9000"                     # DSN for the Snowflake connection  
-              parallel_fetch_limit: 100                        # Maximum number of concurrent fetches during query execution
+              account: my_account_identifier
+              user: my_user
+              privateKey: '{{ .env.SNOWFLAKE_PRIVATE_KEY }}' # define SNOWFLAKE_PRIVATE_KEY in .env file
+              database: my_db
+              schema: my_schema
+              warehouse: my_wh
+              role: my_role
+              parallel_fetch_limit: 2
+          - # Example: Snowflake connector advance configuration
+              type: connector
+              driver: snowflake
+              
+              dsn: '{{ .env.SNOWFLAKE_DSN }}' # define SNOWFLAKE_DSN in .env file like SNOWFLAKE_DSN='my_username@my_account/my_db/my_schema?warehouse=my_wh&role=my_role&authenticator=SNOWFLAKE_JWT&privateKey=my_private_key'
+              parallel_fetch_limit: 2
           required:
-            - driver
-            - dsn
+          - type
+          - driver
         - type: object
           title: SQLite
           properties:
