@@ -450,7 +450,7 @@ definitions:
           properties:
             driver:
               type: string
-              description: Refers to the driver type and must be driver `duckdb`
+              description: Refers to the driver type and must be driver `motherduck`
               const: duckdb
             path:
               type: string
@@ -458,21 +458,23 @@ definitions:
             schema_name: 
               type: string
               description: Define your schema if not main, uses main by default
+            token:
+              type: string
+              description: MotherDuck token
             init_sql:
               type: string
               description: SQL executed during database initialization.
           examples:
             - # Example: MotherDuck connector configuration
               type: connector                                  # Must be `connector` (required)
-              driver: duckdb                               # Must be `motherduck` _(required)_
-
+              driver: motherduck                               # Must be `motherduck` _(required)_
+              token: '{{ .env.connector.motherduck.token }}'    # Set the MotherDuck token from your .env file _(required)_
               path: "md:my_database"                           # Path to your MD database  
               schema_name: "my_schema"                        # Define your schema if not main, uses main by default  
-              init_sql: "INSTALL 'motherduck'; LOAD 'motherduck'; SET motherduck_token='{{ .env.motherduck_token }}';"  # Install and load the MotherDuck extension                                 
           required:
             - driver
             - path
-            - init_sql
+            - token
         - type: object
           title: MySQL
           properties:
