@@ -5,8 +5,6 @@ sidebar_label: Druid
 sidebar_position: 05
 ---
 
-## Overview
-
 [Apache Druid](https://druid.apache.org/docs/latest/design/) is an open-source, high-performance OLAP engine designed for real-time analytics on large datasets. It excels in analytical workloads due to its columnar storage format, which enables fast data aggregation, querying, and filtering. Druid is particularly well-suited for use cases that require interactive exploration of large-scale data, real-time data ingestion, and fast query responses, making it a popular choice for applications in business intelligence, user behavior analytics, and financial analysis.
 
 Rill supports connecting to an existing Druid cluster and using it as an OLAP engine to power Rill dashboards built against [external tables](/home/concepts/OLAP#external-olap-tables). This is particularly useful when working with extremely large datasets (hundreds of GBs or even TB+ in size).
@@ -19,7 +17,7 @@ When using Rill for local development, there are a few options to configure Rill
 For more information on supported parameters, see our [Druid connector YAML reference docs](/reference/project-files/connectors#druid).
 
 
-<img src='/img/reference/olap-engines/druid/druid-parameters.png' class='rounded-gif' />
+<img src='/img/connect/olap-engines/druid/druid-parameters.png' class='rounded-gif' style={{width: '75%', display: 'block', margin: '0 auto'}} />
 <br />
 
 ```yaml
@@ -50,7 +48,7 @@ If you are facing issues related to DSN connection errors in your dashboards eve
 :::
 ## Connection string (DSN)
 
-<img src='/img/reference/olap-engines/druid/druid-dsn.png' class='rounded-gif' />
+<img src='/img/connect/olap-engines/druid/druid-dsn.png' class='rounded-gif' style={{width: '75%', display: 'block', margin: '0 auto'}} />
 <br />
 
 Rill connects to Druid using the [HTTP API](https://druid.apache.org/docs/latest/api-reference/sql-api) and requires a connection string of the following format: `http://<user>:<password>@<host>:<port>/druid/v2/sql`. If `user` or `password` contain special characters, they should be URL encoded (i.e., `p@ssword` -> `p%40ssword`). This should be set in the `connector.druid.dsn` property in Rill.

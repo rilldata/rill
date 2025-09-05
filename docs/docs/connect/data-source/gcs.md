@@ -7,10 +7,9 @@ sidebar_position: 15
 
 <!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->
 
-## Overview
 [Google Cloud Storage (GCS)](https://cloud.google.com/storage/docs/introduction) is a scalable, fully managed, and highly reliable object storage service offered by Google Cloud, designed to store and access data from anywhere in the world. It provides a secure and cost-effective way to store data, including common data storage formats such as CSV and Parquet. Rill supports natively connecting to GCS using the provided [Google Cloud Storage URI](https://cloud.google.com/bigquery/docs/cloud-storage-transfer-overview#google-cloud-storage-uri) of your bucket to retrieve and read files.
 
-<img src='/img/reference/connectors/gcs/gcs.png' class='centered' />
+<img src='/img/connect/connectors/gcs/gcs.png' class='centered' />
 <br />
 
 ## Rill Developer (Local credentials)

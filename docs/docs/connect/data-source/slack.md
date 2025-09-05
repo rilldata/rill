@@ -7,8 +7,6 @@ sidebar_position: 70
 
 <!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->
 
-## Overview
-
 [Slack](https://slack.com/) is a popular messaging platform that allows teams to communicate and collaborate in real-time. 
 Rill supports sending notifications to Slack channels using the [Slack API](https://api.slack.com/). 
 This can be useful for sending alerts and reports to your team members. 

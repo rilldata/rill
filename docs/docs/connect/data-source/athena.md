@@ -7,11 +7,9 @@ sidebar_position: 0
 
 <!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->
 
-## Overview
-
 [Amazon Athena](https://docs.aws.amazon.com/athena/) is an interactive query service that makes it easy to analyze data directly in Amazon S3 using standard SQL. It is serverless, so there is no infrastructure to manage, and you pay only for the queries you run, making it cost-effective for a wide range of data analysis tasks. Athena is designed for quick, ad-hoc querying of large datasets, enabling businesses to easily integrate it into their analytics and business intelligence tools for immediate insights from their data stored in S3. Rill supports natively connecting to and reading from Athena as a source by leveraging the [AWS SDK for Go](https://aws.github.io/aws-sdk-go-v2/docs/).
 
-<img src='/img/reference/connectors/athena/athena.png' class='centered' />
+<img src='/img/connect/connectors/athena/athena.png' class='centered' />
 <br />
 
 ## Local credentials

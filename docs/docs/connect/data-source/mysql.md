@@ -7,8 +7,6 @@ sidebar_position: 45
 
 <!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->
 
-## Overview
-
 [MySQL](https://dev.mysql.com/doc/refman/8.0/en/introduction.html) is an open-source relational database management system (RDBMS) known for its reliability, performance, and ease of use. It is widely used for a variety of applications, from small to large enterprise projects, supporting structured data storage, retrieval, and management with SQL queries. MySQL offers a comprehensive ecosystem with support for advanced features such as replication, transactions, and full-text indexing, making it a versatile choice for integrating with BI tools. Rill supports natively connecting to and reading from MySQL as a source by using the [Go MySQL Driver](https://github.com/go-sql-driver/mysql).
 
 When connecting to MySQL, an appropriate Data Source Name (DSN) must be specified in the connector's configuration using the following syntax:
@@ -21,7 +19,7 @@ When connecting to MySQL, an appropriate Data Source Name (DSN) must be specifie
 - **hostname** and **port** should correspond to the respective IP address/hostname and port (default 3306) of your MySQL database
 - **database_name** should correspond to the database in MySQL that you are using
 
-<img src='/img/reference/connectors/mysql/mysql.png' class='centered' />
+<img src='/img/connect/connectors/mysql/mysql.png' class='centered' />
 <br />
 
 ## Local credentials

@@ -5,8 +5,6 @@ sidebar_label: Using Multiple OLAP Engines
 sidebar_position: 50
 ---
 
-## Overview
-
 If you have access to another OLAP engine (such as [ClickHouse](/connect/olap/clickhouse) or [Druid](/connect/olap/druid), you have the option to either:
 - Create dedicated projects that are powered by one specific OLAP engine (default)
 - Use different OLAP engines _in the same project_ to power separate dashboards

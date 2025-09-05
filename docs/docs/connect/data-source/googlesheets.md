@@ -5,8 +5,6 @@ sidebar_label: Google Sheets
 sidebar_position: 20
 ---
 
-### Google Sheets
-
 Rill can read from any HTTP(S) URL endpoint that produces a valid data file in a supported format. For example, to bring in data from [Google Sheets](https://www.google.com/sheets/about/) as a CSV file directly into Rill as a source ([leveraging the direct download link syntax](https://www.highviewapps.com/blog/how-to-create-a-csv-or-excel-direct-download-link-in-google-sheets/)), you can create a `source_name.yaml` file in the `sources` directory of your Rill project with the following content. 
 
 :::note Prerequisite 
@@ -27,7 +25,7 @@ Make sure to replace `SPREADSHEET_ID` and `SHEET_ID` with the ID of your spreads
 
 :::
 
-<img src='/img/reference/connectors/googlesheets/googlesheets.png' class='rounded-gif' />
+<img src='/img/connect/connectors/googlesheets/googlesheets.png' class='rounded-gif' />
 <br />
 
 :::tip `gsheets` DuckDB Community Extension

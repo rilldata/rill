@@ -5,8 +5,6 @@ sidebar_label: Pinot
 sidebar_position: 20
 ---
 
-## Overview
-
 [Apache Pinot](https://docs.pinot.apache.org/) is a real-time distributed OLAP datastore purpose-built for low-latency, high-throughput analytics, and is perfect for user-facing analytical workloads.
 
 Rill supports connecting to an existing Pinot cluster and using it as an OLAP engine to power Rill dashboards built against [external tables](/home/concepts/OLAP#external-olap-tables).
@@ -19,7 +17,7 @@ When using Rill for local development, there are a few options to configure Rill
 For more information on supported parameters, see our [Pinot connector YAML reference docs](/reference/project-files/connectors#pinot).
 
 
-<img src='/img/reference/olap-engines/pinot/pinot-parameters.png' class='rounded-gif' />
+<img src='/img/connect/olap-engines/pinot/pinot-parameters.png' class='rounded-gif' style={{width: '75%', display: 'block', margin: '0 auto'}} />
 <br />
 
 1. You can set `connector.pinot.dsn` in your project's `.env` file or try pulling existing credentials locally using `rill env pull` if the project has already been deployed to Rill Cloud.
@@ -34,7 +32,7 @@ If you are facing issues related to DSN connection errors in your dashboards eve
 
 Rill connects to Pinot using the [Pinot Golang Client](https://docs.pinot.apache.org/users/clients/golang) and requires a connection string of the following format: `http://<user>:<password>@<broker_host>:<port>?controller=<controller_host>:<port>`. If `user` or `password` contain special characters, they should be URL encoded (i.e., `p@ssword` -> `p%40ssword`). This should be set in the `connector.pinot.dsn` property in Rill.
 
-<img src='/img/reference/olap-engines/pinot/pinot-dsn.png' class='rounded-gif' />
+<img src='/img/connect/olap-engines/pinot/pinot-dsn.png' class='rounded-gif' style={{width: '75%', display: 'block', margin: '0 auto'}} />
 <br />
 
 As an example, this typically looks like:

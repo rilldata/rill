@@ -7,8 +7,6 @@ sidebar_position: 25
 
 Import data from remote sources accessible via HTTP or HTTPS URLs into your Rill project.
 
-## Overview
-
 The HTTPS connector allows you to import data from publicly accessible files hosted on web servers, CDNs, or cloud storage services. This is perfect for working with datasets that are regularly updated or shared publicly.
 
 ## Adding an HTTPS Source
