@@ -463,7 +463,7 @@ headers:
 
 ### `driver`
 
-_[string]_ - Refers to the driver type and must be driver `duckdb` _(required)_
+_[string]_ - Refers to the driver type and must be driver `motherduck` _(required)_
 
 ### `path`
 
@@ -473,17 +473,21 @@ _[string]_ - Path to your MD database _(required)_
 
 _[string]_ - Define your schema if not main, uses main by default 
 
+### `token`
+
+_[string]_ - MotherDuck token _(required)_
+
 ### `init_sql`
 
-_[string]_ - SQL executed during database initialization. _(required)_
+_[string]_ - SQL executed during database initialization. 
 
 ```yaml
 # Example: MotherDuck connector configuration
 type: connector # Must be `connector` (required)
-driver: duckdb # Must be `motherduck` _(required)_
+driver: motherduck # Must be `motherduck` _(required)_
+token: '{{ .env.connector.motherduck.token }}' # Set the MotherDuck token from your .env file _(required)_
 path: "md:my_database" # Path to your MD database  
 schema_name: "my_schema" # Define your schema if not main, uses main by default  
-init_sql: "INSTALL 'motherduck'; LOAD 'motherduck'; SET motherduck_token='{{ .env.motherduck_token }}';" # Install and load the MotherDuck extension                                 
 ```
 
 ## MySQL
