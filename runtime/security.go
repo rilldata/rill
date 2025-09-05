@@ -11,6 +11,9 @@ import (
 	"sync"
 
 	"github.com/hashicorp/golang-lru/simplelru"
+	tidbparser "github.com/pingcap/tidb/pkg/parser"
+	"github.com/pingcap/tidb/pkg/parser/ast"
+	"github.com/pingcap/tidb/pkg/parser/mysql"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers/slack"
 	"github.com/rilldata/rill/runtime/parser"
@@ -19,6 +22,9 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/encoding/protojson"
+
+	// need to import parser driver as well
+	_ "github.com/pingcap/tidb/pkg/parser/test_driver"
 )
 
 var ErrForbidden = errors.New("action not allowed")
@@ -658,6 +664,12 @@ func (p *securityEngine) expandRules(ctx context.Context, instanceID string, cla
 				return nil, fmt.Errorf("failed to resolve transitive access rule for explore: %w", err)
 			}
 			rules = append(rules, resolvedRules...)
+		case *runtimev1.Resource_Canvas:
+			resolvedRules, err := p.resolveTransitiveAccessRuleForCanvas(ctx, instanceID, res)
+			if err != nil {
+				return nil, fmt.Errorf("failed to resolve transitive access rule for canvas: %w", err)
+			}
+			rules = append(rules, resolvedRules...)
 		default:
 			return nil, fmt.Errorf("transitive access rule for resource kind %q is not supported", res.Meta.Name.Kind)
 		}
@@ -985,6 +997,188 @@ func (p *securityEngine) resolveTransitiveAccessRuleForExplore(res *runtimev1.Re
 	return rules, nil
 }
 
+func (p *securityEngine) resolveTransitiveAccessRuleForCanvas(ctx context.Context, instanceID string, res *runtimev1.Resource) ([]*runtimev1.SecurityRule, error) {
+	var rules []*runtimev1.SecurityRule
+
+	canvas := res.GetCanvas()
+	if canvas == nil {
+		return nil, fmt.Errorf("resource is not a canvas")
+	}
+
+	spec := canvas.GetState().GetValidSpec()
+	if spec == nil {
+		spec = canvas.GetSpec() // Fallback to spec if ValidSpec is not available
+	}
+	if spec == nil {
+		return nil, fmt.Errorf("canvas spec is nil")
+	}
+
+	// explicitly allow access to the canvas itself
+	rules = append(rules, &runtimev1.SecurityRule{
+		Rule: &runtimev1.SecurityRule_Access{
+			Access: &runtimev1.SecurityRuleAccess{
+				Condition: fmt.Sprintf("'{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s", ResourceKindCanvas, duckdbsql.EscapeStringValue(strings.ToLower(res.Meta.Name.Name))),
+				Allow:     true,
+			},
+		},
+	})
+
+	// deny everything except the canvas itself, themes, and components
+	var denyCondition strings.Builder
+	// self canvas
+	denyCondition.WriteString(fmt.Sprintf("('{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s)", ResourceKindCanvas, duckdbsql.EscapeStringValue(strings.ToLower(res.Meta.Name.Name))))
+	// all themes
+	denyCondition.WriteString(fmt.Sprintf(" OR '{{.self.kind}}'='%s'", ResourceKindTheme))
+
+	// Get controller to fetch components
+	ctr, err := p.rt.Controller(ctx, instanceID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get controller: %w", err)
+	}
+
+	// Collect all component names referenced by the canvas
+	componentNames := make(map[string]bool)
+	for _, row := range spec.Rows {
+		for _, item := range row.Items {
+			componentNames[item.Component] = true
+		}
+	}
+
+	// for deduplicating and combing fields for metrics view referenced by multiple components
+	mvSecInfoCache := make(map[string]*metricsViewSecurityInfo)
+	seenRefs := make(map[string]bool) // optional optimization to avoid adding access rule and deny condition multiple times for the same resource
+
+	// Process each component
+	for componentName := range componentNames {
+		// Allow access to the component itself
+		rules = append(rules, &runtimev1.SecurityRule{
+			Rule: &runtimev1.SecurityRule_Access{
+				Access: &runtimev1.SecurityRuleAccess{
+					Condition: fmt.Sprintf("'{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s", ResourceKindComponent, duckdbsql.EscapeStringValue(strings.ToLower(componentName))),
+					Allow:     true,
+				},
+			},
+		})
+
+		// Add to deny condition
+		denyCondition.WriteString(fmt.Sprintf(" OR ('{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s)", ResourceKindComponent, duckdbsql.EscapeStringValue(strings.ToLower(componentName))))
+
+		// Get component resource
+		componentRef := &runtimev1.ResourceName{
+			Kind: ResourceKindComponent,
+			Name: componentName,
+		}
+		componentRes, err := ctr.Get(ctx, componentRef, false)
+		if err != nil {
+			// If component is not found, skip it but still allow access to the component name
+			continue
+		}
+
+		// Get component spec to extract renderer properties
+		componentSpec := componentRes.GetComponent().State.ValidSpec
+		if componentSpec == nil {
+			componentSpec = componentRes.GetComponent().Spec
+		}
+
+		// Allow access to metrics views referenced by this component and create field/row filter rules
+		for _, ref := range componentRes.Meta.Refs {
+			_, seen := seenRefs[fmt.Sprintf("%s:%s", ref.Kind, strings.ToLower(ref.Name))]
+			if !seen {
+				// allow access to the referenced resource
+				rules = append(rules, &runtimev1.SecurityRule{
+					Rule: &runtimev1.SecurityRule_Access{
+						Access: &runtimev1.SecurityRuleAccess{
+							Condition: fmt.Sprintf("'{{.self.kind}}'=%s AND '{{lower .self.name}}'=%s", duckdbsql.EscapeStringValue(ref.Kind), duckdbsql.EscapeStringValue(strings.ToLower(ref.Name))),
+							Allow:     true,
+						},
+					},
+				})
+				// add to deny condition
+				denyCondition.WriteString(fmt.Sprintf(" OR ('{{.self.kind}}'=%s AND '{{lower .self.name}}'=%s)", duckdbsql.EscapeStringValue(ref.Kind), duckdbsql.EscapeStringValue(strings.ToLower(ref.Name))))
+			}
+			seenRefs[fmt.Sprintf("%s:%s", ref.Kind, strings.ToLower(ref.Name))] = true
+
+			// handle metrics view
+			if ref.Kind == ResourceKindMetricsView && componentSpec.RendererProperties != nil {
+				mvSecInfo, exists := mvSecInfoCache[ref.Name]
+				if !exists {
+					mvSecInfo = &metricsViewSecurityInfo{fieldSet: make(map[string]bool)}
+					mvSecInfoCache[ref.Name] = mvSecInfo
+				}
+
+				// Extract renderer properties
+				rendererProps := componentSpec.RendererProperties.AsMap()
+
+				// Extract fields using the comprehensive helper method that handles all renderer types
+				fields, err := extractFieldsFromRendererProperties(componentSpec.Renderer, rendererProps)
+				if err != nil {
+					return nil, fmt.Errorf("failed to extract fields from renderer properties for component %q: %w", componentName, err)
+				}
+				for _, field := range fields {
+					mvSecInfo.fieldSet[field] = true
+				}
+
+				// Parse dimension_filters and create row filter rule
+				if dimFilter, ok := rendererProps["dimension_filters"].(string); ok && dimFilter != "" {
+					mvSecInfo.rowFilters = append(mvSecInfo.rowFilters, fmt.Sprintf("(%s)", dimFilter))
+
+					// Extract fields from dimension_filters SQL expression
+					dimFilterFields := extractFieldsFromSQLFilter(dimFilter)
+					for _, field := range dimFilterFields {
+						mvSecInfo.fieldSet[field] = true
+					}
+				}
+			}
+		}
+	}
+
+	// add field access and row filter rules for each metrics view
+	for mvName, mvSecInfo := range mvSecInfoCache {
+		// Create field access rule if we have fields
+		if len(mvSecInfo.fieldSet) > 0 {
+			fields := make([]string, 0, len(mvSecInfo.fieldSet))
+			for f := range mvSecInfo.fieldSet {
+				fields = append(fields, f)
+			}
+			rules = append(rules, &runtimev1.SecurityRule{
+				Rule: &runtimev1.SecurityRule_FieldAccess{
+					FieldAccess: &runtimev1.SecurityRuleFieldAccess{
+						Condition: fmt.Sprintf("'{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s", ResourceKindMetricsView, duckdbsql.EscapeStringValue(strings.ToLower(mvName))),
+						Fields:    fields,
+						Allow:     true,
+					},
+				},
+			})
+		}
+
+		// Create row filter rule if we have row filters
+		if len(mvSecInfo.rowFilters) > 0 {
+			// Combine multiple row filters with OR
+			rowFilter := strings.Join(mvSecInfo.rowFilters, " OR ")
+			rules = append(rules, &runtimev1.SecurityRule{
+				Rule: &runtimev1.SecurityRule_RowFilter{
+					RowFilter: &runtimev1.SecurityRuleRowFilter{
+						Condition: fmt.Sprintf("'{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s", ResourceKindMetricsView, duckdbsql.EscapeStringValue(strings.ToLower(mvName))),
+						Sql:       rowFilter,
+					},
+				},
+			})
+		}
+	}
+
+	// Add deny rule for everything else
+	rules = append(rules, &runtimev1.SecurityRule{
+		Rule: &runtimev1.SecurityRule_Access{
+			Access: &runtimev1.SecurityRuleAccess{
+				Condition: fmt.Sprintf("NOT (%s)", denyCondition.String()),
+				Allow:     false,
+			},
+		},
+	})
+
+	return rules, nil
+}
+
 // computeCacheKey computes a cache key for a resolved security policy.
 func computeCacheKey(instanceID, environment string, claims *SecurityClaims, r *runtimev1.Resource) (string, error) {
 	hash := md5.New()
@@ -1013,4 +1207,159 @@ func computeCacheKey(instanceID, environment string, claims *SecurityClaims, r *
 		return "", err
 	}
 	return hex.EncodeToString(hash.Sum(nil)), nil
+}
+
+// extractFieldsFromRendererProperties extracts field names from renderer properties based on the renderer type, can contain duplicate fields
+// Depending on the component, fields will be named differently - Also there can be computed time dimension like <time_dim>_rill_TIME_GRAIN_<GRAIN>
+//
+//		"leaderboard" - "dimensions" and "measures"
+//		"kpi_grid" - "dimensions" and "measures"
+//		"table" - "columns" (can have computed time dim)
+//		"pivot" - "row_dimensions", "col_dimensions" and "measures" (row/col can have computed time dim)
+//		"heatmap" - "color"."field", "x"."field" and "y"."field"
+//	 	"multi_metric_chart" - "measures" and "x"."field"
+//		"funnel_chart" - "stage"."field", "measure"."field"
+//		"donut_chart" - "color"."field", "measure"."field"
+//		"bar_chart" - "color"."field", "x"."field" and "y"."field"
+//		"line_chart" - "color"."field", "x"."field" and "y"."field"
+//		"area_chart" - "color"."field", "x"."field" and "y"."field"
+//		"stacked_bar" - "color"."field", "x"."field" and "y"."field"
+//		"stacked_bar_normalized" - "color"."field", "x"."field" and "y"."field"
+func extractFieldsFromRendererProperties(renderer string, rendererProps map[string]any) ([]string, error) {
+	switch renderer {
+	case "leaderboard", "kpi_grid", "table", "pivot", "heatmap", "multi_metric_chart", "bar_chart", "line_chart", "area_chart", "stacked_bar", "stacked_bar_normalized", "funnel_chart", "donut_chart":
+	default:
+		return nil, fmt.Errorf("unknown renderer type %q", renderer)
+	}
+
+	var fields []string
+
+	// Try common array fields
+	arrayFields := []string{"dimensions", "measures", "columns", "row_dimensions", "col_dimensions"}
+	for _, key := range arrayFields {
+		if arr, ok := rendererProps[key]; ok {
+			rawFields := extractFieldsFromArray(arr)
+			for _, field := range rawFields {
+				fields = append(fields, extractDimension(field))
+			}
+		}
+	}
+
+	// Try common nested object fields
+	objectFields := []string{"color", "x", "y", "stage", "measure"}
+	for _, key := range objectFields {
+		if obj, ok := rendererProps[key].(map[string]interface{}); ok {
+			if field, ok := obj["field"].(string); ok && field != "" {
+				fields = append(fields, extractDimension(field))
+			}
+		}
+	}
+
+	return fields, nil
+}
+
+// extractFieldsFromArray extracts field names from string array
+func extractFieldsFromArray(arr interface{}) []string {
+	var fields []string
+	if arrSlice, ok := arr.([]interface{}); ok {
+		for _, item := range arrSlice {
+			if str, ok := item.(string); ok {
+				fields = append(fields, str)
+			}
+		}
+	}
+	return fields
+}
+
+// extractDimension return the dimension or extracts the base time dimension from computed time field if present
+// example - from "<time_dim>_rill_TIME_GRAIN_<GRAIN>" extracts "<time_dim>"
+func extractDimension(field string) string {
+	if strings.Contains(field, "_rill_TIME_GRAIN_") {
+		parts := strings.Split(field, "_rill_TIME_GRAIN_")
+		if len(parts) > 0 {
+			return parts[0]
+		}
+	}
+	return field
+}
+
+// extractFieldsFromSQLFilter parses a SQL filter and extracts field names directly during parsing
+// This is a simplified version of metricssqlparser.ParseSQLFilter that only collects field names to avoid circular dependency issues
+func extractFieldsFromSQLFilter(sqlFilter string) []string {
+	if sqlFilter == "" {
+		return nil
+	}
+
+	p := tidbparser.New()
+	p.SetSQLMode(mysql.ModeANSI | mysql.ModeANSIQuotes)
+	sql := "SELECT * FROM tbl WHERE " + sqlFilter
+	stmtNodes, _, err := p.ParseSQL(sql)
+	if err != nil {
+		return nil
+	}
+
+	if len(stmtNodes) != 1 {
+		return nil
+	}
+
+	stmt, ok := stmtNodes[0].(*ast.SelectStmt)
+	if !ok {
+		return nil
+	}
+
+	fields := make(map[string]bool)
+	extractFieldsFromNode(stmt.Where, fields)
+
+	var result []string
+	for field := range fields {
+		if field != "" {
+			result = append(result, field)
+		}
+	}
+
+	return result
+}
+
+// extractFieldsFromNode recursively extracts field names from AST nodes
+func extractFieldsFromNode(node ast.Node, fields map[string]bool) {
+	if node == nil {
+		return
+	}
+
+	switch n := node.(type) {
+	case *ast.ColumnNameExpr:
+		if n.Name != nil && n.Name.Schema.String() == "" && n.Name.Table.String() == "" {
+			fields[n.Name.Name.O] = true
+		}
+	case *ast.BinaryOperationExpr:
+		extractFieldsFromNode(n.L, fields)
+		extractFieldsFromNode(n.R, fields)
+	case *ast.IsNullExpr:
+		extractFieldsFromNode(n.Expr, fields)
+	case *ast.IsTruthExpr:
+		extractFieldsFromNode(n.Expr, fields)
+	case *ast.ParenthesesExpr:
+		extractFieldsFromNode(n.Expr, fields)
+	case *ast.PatternInExpr:
+		extractFieldsFromNode(n.Expr, fields)
+		for _, expr := range n.List {
+			extractFieldsFromNode(expr, fields)
+		}
+	case *ast.PatternLikeOrIlikeExpr:
+		extractFieldsFromNode(n.Expr, fields)
+		extractFieldsFromNode(n.Pattern, fields)
+	case *ast.BetweenExpr:
+		extractFieldsFromNode(n.Expr, fields)
+		extractFieldsFromNode(n.Left, fields)
+		extractFieldsFromNode(n.Right, fields)
+	case *ast.FuncCallExpr:
+		for _, arg := range n.Args {
+			extractFieldsFromNode(arg, fields)
+		}
+	}
+}
+
+type metricsViewSecurityInfo struct {
+	fieldSet   map[string]bool
+	rowFilters []string
 }
