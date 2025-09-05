@@ -1,14 +1,9 @@
 <script lang="ts">
   import { createAdminServiceGetProject } from "@rilldata/web-admin/client";
   import { useDashboardsLastUpdated } from "@rilldata/web-admin/features/dashboards/listing/selectors";
-  import DisconnectProjectConfirmDialog from "@rilldata/web-admin/features/projects/github/DisconnectProjectConfirmDialog.svelte";
   import NewGithubConnectionDialog from "@rilldata/web-admin/features/projects/github/NewGithubConnectionDialog.svelte";
   import { useGithubLastSynced } from "@rilldata/web-admin/features/projects/selectors";
-  import { Button, IconButton } from "@rilldata/web-common/components/button";
-  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
-  import DisconnectIcon from "@rilldata/web-common/components/icons/DisconnectIcon.svelte";
   import Github from "@rilldata/web-common/components/icons/Github.svelte";
-  import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
   import {
     getRepoNameFromGitRemote,
     getGitUrlFromRemote,
@@ -37,23 +32,10 @@
   // Github last synced might not always be available for projects not updated since we added commitedOn
   // So fallback to old way of approximating the last updated.
   $: lastUpdated = $githubLastSynced.data ?? $dashboardsLastUpdated;
-
-  let hovered = false;
-  let editDropdownOpen = false;
-  let disconnectConfirmOpen = false;
-
-  function disconnectGithubConnect() {
-    disconnectConfirmOpen = true;
-  }
 </script>
 
 {#if $proj.data}
-  <div
-    class="flex flex-col gap-y-1 max-w-[400px]"
-    on:mouseenter={() => (hovered = true)}
-    on:mouseleave={() => (hovered = false)}
-    role="region"
-  >
+  <div class="flex flex-col gap-y-1 max-w-[400px]">
     <span
       class="uppercase text-gray-500 font-semibold text-[10px] leading-none"
     >
@@ -71,34 +53,6 @@
           >
             {repoName}
           </a>
-          <DropdownMenu.Root bind:open={editDropdownOpen}>
-            <DropdownMenu.Trigger>
-              <IconButton>
-                {#if hovered || editDropdownOpen}
-                  <ThreeDot size="16px" />
-                {/if}
-              </IconButton>
-            </DropdownMenu.Trigger>
-            <DropdownMenu.Content align="start">
-              <!-- Disabling for now, until we figure out how to do this right -->
-              <!--              <DropdownMenu.Item class="px-1 py-1">-->
-              <!--                <Button onClick={editGithubConnection} type="text" compact>-->
-              <!--                  <div class="flex flex-row items-center gap-x-2">-->
-              <!--                    <EditIcon size="14px" />-->
-              <!--                    <span class="text-xs">Edit</span>-->
-              <!--                  </div>-->
-              <!--                </Button>-->
-              <!--              </DropdownMenu.Item>-->
-              <DropdownMenu.Item class="px-1 py-1">
-                <Button onClick={disconnectGithubConnect} type="text" compact>
-                  <div class="flex flex-row items-center gap-x-2">
-                    <DisconnectIcon size="14px" />
-                    <span class="text-xs">Disconnect</span>
-                  </div>
-                </Button>
-              </DropdownMenu.Item>
-            </DropdownMenu.Content>
-          </DropdownMenu.Root>
         </div>
         {#if subpath}
           <div class="flex items-center">
@@ -141,9 +95,3 @@
     </div>
   </div>
 {/if}
-
-<DisconnectProjectConfirmDialog
-  bind:open={disconnectConfirmOpen}
-  {organization}
-  {project}
-/>

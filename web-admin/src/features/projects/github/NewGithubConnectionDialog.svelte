@@ -1,16 +1,7 @@
 <script lang="ts">
-  import {
-    createAdminServiceConnectProjectToGithub,
-    createAdminServiceUpdateProject,
-  } from "@rilldata/web-admin/client";
-  import { getRpcErrorMessage } from "@rilldata/web-admin/components/errors/error-utils.ts";
+  import { createAdminServiceConnectProjectToGithub } from "@rilldata/web-admin/client";
   import { GithubAccessManager } from "@rilldata/web-admin/features/projects/github/GithubAccessManager.ts";
-  import { type GithubSelectionType } from "@rilldata/web-admin/features/projects/github/GithubData.ts";
-  import GithubOverwriteConfirmDialog from "@rilldata/web-admin/features/projects/github/GithubOverwriteConfirmDialog.svelte";
-  import {
-    getGithubUserOrgs,
-    getGithubUserRepos,
-  } from "@rilldata/web-admin/features/projects/github/selectors.ts";
+  import { getGithubUserOrgs } from "@rilldata/web-admin/features/projects/github/selectors.ts";
   import { Button } from "@rilldata/web-common/components/button";
   import * as Collapsible from "@rilldata/web-common/components/collapsible";
   import * as Dialog from "@rilldata/web-common/components/dialog";
@@ -21,7 +12,6 @@
   import Github from "@rilldata/web-common/components/icons/Github.svelte";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics.ts";
   import { BehaviourEventAction } from "@rilldata/web-common/metrics/service/BehaviourEventTypes.ts";
-  import { derived } from "svelte/store";
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
   import { object, string } from "yup";
@@ -36,79 +26,27 @@
   const { githubConnectionFailed, userStatus } = githubAccessManager;
 
   const connectProjectToGithub = createAdminServiceConnectProjectToGithub();
-  const updateProject = createAdminServiceUpdateProject();
-  $: mutationStatus = derived(
-    [connectProjectToGithub, updateProject],
-    ([$connect, $update]) => {
-      return {
-        error: $connect.error ?? $update.error,
-        isPending: $connect.isPending || $update.isPending,
-      };
-    },
-  );
-  $: ({ error, isPending } = $mutationStatus);
+  $: ({ error, isPending } = $connectProjectToGithub);
 
-  let isNewRepoType = false;
-  let isPushRepoType = false;
-  let remote = "";
   let advancedOpened = false;
-  let showOverwriteConfirmation = false;
 
   const githubUserOrgs = getGithubUserOrgs();
-  $: githubUserRepos = getGithubUserRepos(!isNewRepoType);
-
-  const GithubSelectionTypeOptions = [
-    {
-      label: "Push project to a new GitHub repo",
-      buttonLabel: "Create and push changes",
-      value: "new",
-    },
-    {
-      label: "Pull changes from existing GitHub repo",
-      buttonLabel: "Pull changes",
-      value: "pull",
-    },
-    {
-      label: "Push changes to existing GitHub repo",
-      buttonLabel: "Overwrite",
-      value: "push",
-    },
-  ];
-  let selectedTypeOption = GithubSelectionTypeOptions[0];
 
   const initialValues: {
-    type: GithubSelectionType;
     org: string;
     name: string;
-    repo: string;
     branch: string;
     subpath: string;
   } = {
-    type: "new",
     org: "",
     name: project, // Initialize repo name with project name
-    repo: "",
     branch: "main",
     subpath: "",
   };
   const schema = yup(
     object({
-      type: string().required(),
-      org: string().when("type", {
-        is: "new",
-        then: (schema) => schema.required("Org is required"),
-        otherwise: (schema) => schema.notRequired(),
-      }),
-      name: string().when("type", {
-        is: "new",
-        then: (schema) => schema.required("Repo name is required"),
-        otherwise: (schema) => schema.notRequired(),
-      }),
-      repo: string().when("type", {
-        is: "new",
-        then: (schema) => schema.notRequired(),
-        otherwise: (schema) => schema.required("Repo is required"),
-      }),
+      org: string().required("Org is required"),
+      name: string().required("Repo name is required"),
       branch: string().required("Branch is required"),
       subpath: string(),
     }),
@@ -124,42 +62,21 @@
         if (!form.valid) return;
         const values = form.data;
 
-        if (isNewRepoType || isPushRepoType) {
-          await $connectProjectToGithub.mutateAsync({
-            project: project,
-            organization: organization,
-            data: {
-              remote,
-              branch: values.branch,
-              subpath: values.subpath,
-              create: isNewRepoType,
-              // We always show the confirmation so we can force push.
-              force: true,
-            },
-          });
-        } else {
-          await $updateProject.mutateAsync({
-            name: project,
-            organizationName: organization,
-            data: {
-              gitRemote: remote,
-              prodBranch: values.branch,
-              subpath: values.subpath,
-            },
-          });
-        }
+        const remote = `https://github.com/${values.org}/${values.name}.git`;
+
+        await $connectProjectToGithub.mutateAsync({
+          project: project,
+          organization: organization,
+          data: {
+            remote,
+            branch: values.branch,
+            subpath: values.subpath,
+            create: true,
+          },
+        });
       },
     },
   );
-
-  $: isNewRepoType = $form.type === "new";
-  $: isPushRepoType = $form.type === "push";
-  $: remote = isNewRepoType
-    ? `https://github.com/${$form.org}/${$form.name}.git`
-    : $form.repo;
-  $: selectedTypeOption = GithubSelectionTypeOptions.find(
-    (o) => o.value === $form.type,
-  )!;
 
   $: disableSubmit = isPending || $githubConnectionFailed;
 
@@ -171,15 +88,6 @@
         is_fresh_connection: true,
       },
     );
-  }
-
-  function onSelectedRepoChange(newRemote: string) {
-    const repo = $githubUserRepos.data?.rawRepos?.find(
-      (r) => r.remote === newRemote,
-    );
-    if (!repo?.defaultBranch) return;
-
-    $form.branch = repo.defaultBranch;
   }
 
   function resetDialog() {
@@ -225,50 +133,25 @@
         use:enhance
         class="flex flex-col gap-y-3"
       >
-        <Input
-          bind:value={$form.type}
-          errors={$errors?.type}
-          id="type"
-          label="Connection type"
-          capitalizeLabel={false}
+        <Select
+          bind:value={$form.org}
+          id="org"
+          label="Repository org"
+          options={$githubUserOrgs.data ?? []}
+          optionsLoading={$githubUserOrgs.isFetching}
           sameWidth
-          options={GithubSelectionTypeOptions}
+          enableSearch
+          onAddNew={() => githubAccessManager.reselectRepos()}
+          addNewLabel="+ Connect other orgs"
         />
 
-        {#if isNewRepoType}
-          <Select
-            bind:value={$form.org}
-            id="org"
-            label="Repository org"
-            options={$githubUserOrgs.data ?? []}
-            optionsLoading={$githubUserOrgs.isFetching}
-            sameWidth
-            enableSearch
-            onAddNew={() => githubAccessManager.reselectRepos()}
-            addNewLabel="+ Connect other orgs"
-          />
-
-          <Input
-            bind:value={$form.name}
-            errors={$errors?.name}
-            id="name"
-            label="Repository name"
-            capitalizeLabel={false}
-          />
-        {:else}
-          <Select
-            bind:value={$form.repo}
-            id="name"
-            label="Repository"
-            sameWidth
-            options={$githubUserRepos.data?.repoOptions ?? []}
-            optionsLoading={$githubUserRepos.isFetching}
-            enableSearch
-            onChange={(newRepo) => onSelectedRepoChange(newRepo)}
-            onAddNew={() => githubAccessManager.reselectRepos()}
-            addNewLabel="+ Connect other repos"
-          />
-        {/if}
+        <Input
+          bind:value={$form.name}
+          errors={$errors?.name}
+          id="name"
+          label="Repository name"
+          capitalizeLabel={false}
+        />
 
         <Collapsible.Root bind:open={advancedOpened}>
           <Collapsible.Trigger asChild let:builder>
@@ -301,12 +184,6 @@
           </Collapsible.Content>
         </Collapsible.Root>
 
-        {#if isPushRepoType}
-          <div class="text-sm text-muted-foreground">
-            Project will replace contents of this repo.
-          </div>
-        {/if}
-
         {#if error?.message}
           <div class="text-red-500 text-sm py-px">
             {error.message}
@@ -336,36 +213,15 @@
       >
         Cancel
       </Button>
-      {#if isNewRepoType}
-        <Button
-          form={FORM_ID}
-          submitForm
-          type="primary"
-          loading={disableSubmit}
-          disabled={disableSubmit}
-        >
-          {selectedTypeOption.buttonLabel}
-        </Button>
-      {:else}
-        <Button
-          type="primary"
-          loading={disableSubmit}
-          disabled={disableSubmit}
-          onClick={() => (showOverwriteConfirmation = true)}
-        >
-          {selectedTypeOption.buttonLabel}
-        </Button>
-      {/if}
+      <Button
+        form={FORM_ID}
+        submitForm
+        type="primary"
+        loading={disableSubmit}
+        disabled={disableSubmit}
+      >
+        Push project to a new GitHub repo
+      </Button>
     </Dialog.Footer>
   </Dialog.Content>
 </Dialog.Root>
-
-<GithubOverwriteConfirmDialog
-  bind:open={showOverwriteConfirmation}
-  loading={isPending}
-  error={getRpcErrorMessage(error)}
-  githubRemote={remote}
-  subpath={$form.subpath}
-  type={isPushRepoType ? "push" : "pull"}
-  onConfirm={() => void submit()}
-/>
