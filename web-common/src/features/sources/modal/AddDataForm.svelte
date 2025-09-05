@@ -355,7 +355,7 @@
   >
     <div
       class="flex flex-col flex-grow {connector.name === 'clickhouse'
-        ? 'max-h-[40rem] min-h-[40rem]'
+        ? 'max-h-[38.5rem] min-h-[38.5rem]'
         : 'max-h-[34.5rem] min-h-[34.5rem]'} overflow-y-auto p-6"
     >
       {#if connector.name === "clickhouse"}
