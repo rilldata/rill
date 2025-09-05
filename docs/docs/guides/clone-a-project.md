@@ -82,6 +82,11 @@ If you cloned the project via the Rill CLI, you should see the following in the 
 Updated .env file with cloud credentials from project "your-project-here".
 ```
 
+:::tip Admin of your project?
+
+As an admin, when running `rill start`, we'll automatically retrieve your credentials for you. No need for extra steps.
+
+:::
 ## Step 4: Check your Source YAML before starting Rill
 We want to check to see if any `{{if dev}} ... {{end}}` parameters have been set in your source ingestion. If not, when you start Rill, this will initiate a full ingestion of your data, which might take some time and, depending on the source location, could incur costs (e.g., Snowflake, BigQuery). However, if your data is not that large, it may be safe to start Rill without these guardrails. 
 
