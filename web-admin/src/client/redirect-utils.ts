@@ -24,8 +24,12 @@ export function redirectToLogout() {
   window.location.href = buildLogoutUrl();
 }
 
-export function redirectToGithubLogin(remote: string) {
-  window.location.href = buildGithubLoginUrl(remote);
+export function redirectToGithubLogin(
+  remote: string,
+  redirect: string | null,
+  mode: "auth" | "connect",
+) {
+  window.location.href = buildGithubLoginUrl(remote, redirect, mode);
 }
 
 function buildLoginUrl() {
@@ -43,10 +47,23 @@ function buildLogoutUrl() {
   return u.toString();
 }
 
-function buildGithubLoginUrl(remote: string) {
+function buildGithubLoginUrl(
+  remote: string,
+  redirect: string | null,
+  mode: "auth" | "connect",
+) {
   const u = new URL(ADMIN_URL);
-  u.pathname = appendPath(u.pathname, "github/auth/login");
+  switch (mode) {
+    case "auth":
+      u.pathname = appendPath(u.pathname, "github/auth/login");
+      break;
+    case "connect":
+      u.pathname = appendPath(u.pathname, "github/connect");
+  }
   u.searchParams.set("remote", remote);
+  if (redirect) {
+    u.searchParams.set("redirect", redirect);
+  }
   return u.toString();
 }
 

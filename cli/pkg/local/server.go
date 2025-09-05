@@ -380,8 +380,13 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 			return nil, fmt.Errorf("rill git app should be installed/authorized by user before deploying, please visit %s", userStatus.GrantAccessUrl)
 		}
 
+		gitPath, subPath, err := gitutil.InferRepoRootAndSubpath(s.app.ProjectPath)
+		if err != nil {
+			return nil, err
+		}
+
 		// check if project is a git repo
-		remote, err := gitutil.ExtractGitRemote(s.app.ProjectPath, "", false)
+		remote, err := gitutil.ExtractGitRemote(gitPath, "", false)
 		if err != nil {
 			if errors.Is(err, gitutil.ErrGitRemoteNotFound) || errors.Is(err, git.ErrRepositoryNotExists) {
 				return nil, errors.New("project is not a valid git repository or not connected to a remote")
@@ -395,7 +400,7 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 
 		// check if there are uncommitted changes
 		// ignore errors since check is best effort and can fail in multiple cases
-		syncStatus, _ := gitutil.GetSyncStatus(s.app.ProjectPath, "", remote.Name)
+		syncStatus, _ := gitutil.GetSyncStatus(gitPath, "", remote.Name)
 		if syncStatus == gitutil.SyncStatusModified || syncStatus == gitutil.SyncStatusAhead {
 			return nil, errors.New("project has uncommitted changes")
 		}
@@ -421,7 +426,7 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 			Public:           false,
 			DirectoryName:    directoryName,
 			GitRemote:        githubRemote,
-			Subpath:          "",
+			Subpath:          subPath,
 			ProdBranch:       repoStatus.DefaultBranch,
 		}
 	}
