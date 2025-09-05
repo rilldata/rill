@@ -1,9 +1,11 @@
+import { DeployingDashboardUrlParam } from "@rilldata/web-common/features/project/deploy/utils.ts";
+
 export const load = ({ url: { searchParams } }) => {
   const deploying = searchParams.get("deploying");
-  const deployingName = searchParams.get("deploying_name");
+  const deployingDashboard = searchParams.get(DeployingDashboardUrlParam);
 
   return {
     deploying,
-    deployingName,
+    deployingDashboard,
   };
 };

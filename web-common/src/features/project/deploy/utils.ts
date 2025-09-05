@@ -1,11 +1,20 @@
-const deployingNameKey = "rill:app:deployingName";
+const deployingDashboardKey = "rill:app:deployingDashboard";
+export const DeployingDashboardUrlParam = "deploying_dashboard";
 
-export function maybeSetDeployingName(url: URL) {
-  const deployingName = url.searchParams.get("deploying_name");
-  if (!deployingName) return;
-  sessionStorage.setItem(deployingNameKey, deployingName);
+/**
+ * Sets the deploying dashboard name from url to session storage if present.
+ * This prevents having to pass through the param during deploy flow. We could be going through different routes there.
+ */
+export function maybeSetDeployingDashboard(url: URL) {
+  const deployingDashboard = url.searchParams.get(DeployingDashboardUrlParam);
+  if (!deployingDashboard) {
+    // Remove item to ensure stale dashboard name is not used.
+    sessionStorage.removeItem(deployingDashboardKey);
+  } else {
+    sessionStorage.setItem(deployingDashboardKey, deployingDashboard);
+  }
 }
 
-export function getDeployingName() {
-  return sessionStorage.getItem(deployingNameKey);
+export function getDeployingDashboard() {
+  return sessionStorage.getItem(deployingDashboardKey);
 }
