@@ -8,13 +8,13 @@ sidebar_position: 01
 Incremental models help with the ingestion of large datasets, as they allow a dataset to be broken down into smaller sections to ingest, rather than reading the entire dataset at once. Unlike [standard SQL models](../models/models.md) that are created via a .sql file, incremental models are defined in a YAML file and are used when a large dataset needs to be incrementally ingested to improve ingestion costs and time. 
 
 :::note Take a look at the Reference!
-If you are unsure what are the required parameters, please review the [reference page for Advanced Models](/reference/project-files/advanced-models).
+If you are unsure what are the required parameters, please review the [reference page for Advanced Models](/reference/project-files/models).
 :::
 
 
 Rill supports incremental models on either cloud storage or data warehouses but the parameters to set these up will be different. Cloud storage requires the `glob` parameter while data warehouses will need to use `sql`. 
 
-See [our reference documentation](/reference/project-files/advanced-models) for more information.
+See [our reference documentation](/reference/project-files/models) for more information.
 
 :::tip Need help with getting Incremental Models set up?
 Please [reach out to us](/contact) if you have any questions regarding incremental modeling! 
