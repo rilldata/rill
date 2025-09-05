@@ -11,7 +11,7 @@
   } from "@rilldata/web-common/lib/time/types";
   import { DateTime, Interval } from "luxon";
 
-  export let allTimeRange: TimeRange;
+  export let allTimeRange: Interval<true> | undefined;
   export let selectedTimeRange: DashboardTimeControls | undefined;
   export let selectedComparisonTimeRange: DashboardTimeControls | undefined;
   export let showFullRange = true;
@@ -27,7 +27,7 @@
         DateTime.fromJSDate(selectedTimeRange.start).setZone(activeTimeZone),
         DateTime.fromJSDate(selectedTimeRange.end).setZone(activeTimeZone),
       )
-    : Interval.fromDateTimes(allTimeRange.start, allTimeRange.end);
+    : allTimeRange;
 
   $: activeTimeGrain = selectedTimeRange?.interval;
 
@@ -82,10 +82,10 @@
       </Label>
     </div>
   </button>
-  {#if activeTimeGrain && interval.isValid}
+  {#if activeTimeGrain && interval?.isValid}
     <Comparison
-      maxDate={DateTime.fromJSDate(allTimeRange.end)}
-      minDate={DateTime.fromJSDate(allTimeRange.start)}
+      maxDate={allTimeRange?.end}
+      minDate={allTimeRange?.start}
       timeComparisonOptionsState={comparisonOptions}
       selectedComparison={selectedComparisonTimeRange}
       showComparison={showTimeComparison}
