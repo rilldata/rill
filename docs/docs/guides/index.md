@@ -19,12 +19,13 @@ Here at Rill, we believe in business-speed visual analytics. Gone are the days o
 Follow along, refer to the inline linked documentation, and explore our product to make the most out of these guides! Please reach out to ask any questions or provide feedback on our Community Slack or Discord!
 
 - [**Source to Published Dashboard**](/guides/rill-basics/launch) Learn the basics, understand the core concepts of Rill, and deploy to Cloud!
-- [**Visualize ClickHouse tables in Rill**](/guides/rill-clickhouse) For our friends from **ClickHouse**, we have created a dedicated course using ClickHouse!- [**Rill + MotherDuck:**](/guides/rill-motherduck) For our friends from **MotherDuck**, we have created a dedicated course using MotherDuck!
+- [**Visualize ClickHouse tables in Rill**](/guides/rill-clickhouse) For our friends from **ClickHouse**, we have created a dedicated course using ClickHouse!
 - [**Rill + MotherDuck:**](/guides/rill-motherduck) For our friends from **MotherDuck**, we have created a dedicated course using MotherDuck!
 - [**Clone a Project**](/guides/clone-a-project) Step-by-step guide to clone an already deployed instance from Rill Cloud to your local machine
 - [**GA4 Analytics:**](/guides/) Import your GA4 data from Bigquery and get quick insights into your web traffic
 - [**GitHub Analytics**](/guides/github-analytics) Analyze your own GitHub repository by modifying the Python file, download_commits.py
 - [**Cost Monitoring Analytics**](/guides/cost-monitoring-analytics) Analyze your cost and usage data
+- [**Visualize and Analyze your logs**](/guides/visualize-logging) Analyze web application logs, system logs, and infrastructure metrics to track performance, errors, and user behavior 
 - [**OpenRTB Analytics**](/guides/openrtb-analytics) Analyze real-time bidding data to track impressions, bids, wins and more
 - [**Set Up MCP**](/guides/setting-up-mcp) Configure Model Context Protocol (MCP) to enable natural language queries with Claude integration
 
