@@ -156,7 +156,7 @@ func (s *Server) ListProjectsForFingerprint(ctx context.Context, req *adminv1.Li
 	}
 	userID := claims.OwnerID()
 
-	// check if rill mgd remote was transfered
+	// check if rill mgd remote was transferred
 	// we do not support transfers from self hosted git repos so no need to check for that
 	rillMgdRemote := req.RillMgdGitRemote
 	transfer, err := s.admin.DB.FindGitRepoTransfer(ctx, rillMgdRemote)

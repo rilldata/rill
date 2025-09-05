@@ -4,7 +4,6 @@ import (
 	"github.com/rilldata/rill/cli/cmd/auth"
 	"github.com/rilldata/rill/cli/cmd/project"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/local"
 	"github.com/spf13/cobra"
 )
@@ -30,20 +29,6 @@ func DeployCmd(ch *cmdutil.Helper) *cobra.Command {
 			err := opts.ValidateAndApplyDefaults(cmd.Context(), ch)
 			if err != nil {
 				return err
-			}
-			// push to existing project
-			if opts.PushToProject != nil {
-				if opts.PushToProject.ManagedGitId != "" {
-					return ch.GitHelper(ch.Org, opts.ProjectName(), opts.LocalProjectPath()).PushToManagedRepo(cmd.Context())
-				} else if opts.PushToProject.GitRemote != "" {
-					config := &gitutil.Config{
-						Remote:        opts.PushToProject.GitRemote,
-						DefaultBranch: opts.PushToProject.ProdBranch,
-					}
-					return gitutil.CommitAndForcePush(cmd.Context(), opts.LocalProjectPath(), config, "", nil)
-				}
-				// tarball based projects need to be migrated to rill managed projects
-				// handled separately in DeployWithUploadFlow
 			}
 
 			if !opts.Managed && !opts.ArchiveUpload && !opts.Github {

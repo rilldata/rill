@@ -81,15 +81,11 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 	localGitPath := opts.GitPath
 	localProjectPath := opts.LocalProjectPath()
 
-	if opts.PushToProject != nil {
-		config := &gitutil.Config{
-			Remote:        opts.PushToProject.GitRemote,
-			DefaultBranch: opts.PushToProject.ProdBranch,
-		}
-		return gitutil.CommitAndForcePush(ctx, localProjectPath, config, "", nil)
+	if opts.pushToProject != nil {
+		return redeployProject(ctx, ch, opts)
 	}
 
-	if opts.RemoteURL == "" {
+	if opts.remoteURL == "" {
 		// first check if user wants to create a github repo
 		ch.Print("No git remote was found.\n")
 		ok, confirmErr := cmdutil.ConfirmPrompt("Do you want to create a Github repository?", "", true)
@@ -111,7 +107,7 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 		if err != nil {
 			return err
 		}
-		opts.RemoteURL, err = remote.Github()
+		opts.remoteURL, err = remote.Github()
 		opts.RemoteName = remote.Name
 		if err != nil {
 			return err
@@ -129,13 +125,13 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 	}
 
 	// Extract Github account and repo name from the gitRemote
-	ghAccount, ghRepo, ok := gitutil.SplitGithubRemote(opts.RemoteURL)
+	ghAccount, ghRepo, ok := gitutil.SplitGithubRemote(opts.remoteURL)
 	if !ok {
-		return fmt.Errorf("remote %q is not a valid github.com remote", opts.RemoteURL)
+		return fmt.Errorf("remote %q is not a valid github.com remote", opts.remoteURL)
 	}
 
 	// Run flow for access to the Github remote (if necessary)
-	ghRes, err := githubFlow(ctx, ch, opts.RemoteURL)
+	ghRes, err := githubFlow(ctx, ch, opts.remoteURL)
 	if err != nil {
 		return fmt.Errorf("failed Github flow: %w", err)
 	}
@@ -173,7 +169,7 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 		ProdBranch:       opts.ProdBranch,
 		Public:           opts.Public,
 		DirectoryName:    filepath.Base(localProjectPath),
-		GitRemote:        opts.RemoteURL,
+		GitRemote:        opts.remoteURL,
 	})
 	if err != nil {
 		if s, ok := status.FromError(err); ok && s.Code() == codes.PermissionDenied {
