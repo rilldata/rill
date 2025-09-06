@@ -14,15 +14,19 @@ type mdToSelfInputProps struct {
 	Token string `mapstructure:"motherduck_token"`
 	DB    string `mapstructure:"db"`
 	DSN   string `mapstructure:"dsn"`
+	Path  string `mapstructure:"path"`
 }
 
 type mdConfigProps struct {
 	Token           string `mapstructure:"token"`
+	Path            string `mapstructure:"path"`
 	AllowHostAccess bool   `mapstructure:"allow_host_access"`
 }
 
 func (p *mdToSelfInputProps) resolveDSN() string {
-	if p.DSN != "" {
+	if p.Path != "" {
+		return p.Path
+	} else if p.DSN != "" {
 		return p.DSN
 	}
 	return p.DB
@@ -32,8 +36,8 @@ func (p *mdToSelfInputProps) Validate() error {
 	if p.SQL == "" {
 		return fmt.Errorf("missing property 'sql'")
 	}
-	if p.DSN != "" && p.DB != "" {
-		return fmt.Errorf("cannot set both 'dsn' and 'db'")
+	if p.DSN != "" && p.DB != "" && p.Path != "" {
+		return fmt.Errorf("can only set one of 'dsn', 'db' and 'Path'")
 	}
 	return nil
 }
@@ -79,10 +83,18 @@ func (e *mdToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExecu
 		return nil, fmt.Errorf("no motherduck token found. Refer to this documentation for instructions: https://docs.rilldata.com/connect/olap/motherduck")
 	}
 
+	var path string
+	dsn := inputProps.resolveDSN()
+	if dsn != "" {
+		path = dsn
+	} else {
+		path = mdConfig.Path
+	}
+
 	clone := *opts
 	m := &ModelInputProperties{
 		SQL:         inputProps.SQL,
-		InitQueries: fmt.Sprintf("INSTALL 'motherduck'; LOAD 'motherduck'; SET motherduck_token=%s; ATTACH %s;", safeSQLString(token), safeSQLString(inputProps.resolveDSN())),
+		InitQueries: fmt.Sprintf("INSTALL 'motherduck'; LOAD 'motherduck'; SET motherduck_token=%s; ATTACH %s;", safeSQLString(token), safeSQLString(path)),
 	}
 	var props map[string]any
 	err = mapstructure.Decode(m, &props)
