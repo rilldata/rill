@@ -32,6 +32,12 @@ type ModelYAML struct {
 		Connector  string         `yaml:"connector"`
 		Properties map[string]any `yaml:",inline" mapstructure:",remain"`
 	} `yaml:"stage"`
+	Retry struct {
+		Attempts           *uint32  `yaml:"attempts" mapstructure:"attempts"`
+		Delay              *string  `yaml:"delay"`
+		ExponentialBackoff *bool    `yaml:"exponential_backoff" mapstructure:"exponential_backoff"`
+		IfErrorMatches     []string `yaml:"if_error_matches" mapstructure:"if_error_matches"`
+	}
 	Output ModelOutputYAML `yaml:"output"`
 	Tests  []struct {
 		Name     string `yaml:"name"`
@@ -216,6 +222,16 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 		node.Refs = append(node.Refs, refs...)
 	}
 
+	var retryDelay *uint32
+	if tmp.Retry.Delay != nil {
+		duration, err := time.ParseDuration(*tmp.Retry.Delay)
+		if err != nil {
+			return fmt.Errorf(`invalid retry delay: %w`, err)
+		}
+		delay := uint32(duration.Seconds())
+		retryDelay = &delay
+	}
+
 	// Insert the model
 	r, err := p.insertResource(ResourceKindModel, node.Name, node.Paths, node.Refs...)
 	if err != nil {
@@ -226,6 +242,11 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 	if schedule != nil {
 		r.ModelSpec.RefreshSchedule = schedule
 	}
+
+	r.ModelSpec.RetryAttempts = tmp.Retry.Attempts
+	r.ModelSpec.RetryDelaySeconds = retryDelay
+	r.ModelSpec.RetryExponentialBackoff = tmp.Retry.ExponentialBackoff
+	r.ModelSpec.RetryIfErrorMatches = tmp.Retry.IfErrorMatches
 
 	if timeout > 0 {
 		r.ModelSpec.TimeoutSeconds = uint32(timeout.Seconds())

@@ -2534,6 +2534,18 @@ func (m *ModelSpec) validate(all bool) error {
 
 	// no validation rules for DefinedAsSource
 
+	if m.RetryAttempts != nil {
+		// no validation rules for RetryAttempts
+	}
+
+	if m.RetryDelaySeconds != nil {
+		// no validation rules for RetryDelaySeconds
+	}
+
+	if m.RetryExponentialBackoff != nil {
+		// no validation rules for RetryExponentialBackoff
+	}
+
 	if len(errors) > 0 {
 		return ModelSpecMultiError(errors)
 	}
