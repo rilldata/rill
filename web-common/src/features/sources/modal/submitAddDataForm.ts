@@ -22,7 +22,10 @@ import {
   updateDotEnvWithSecrets,
   updateRillYAMLWithOlapConnector,
 } from "../../connectors/code-utils";
-import { testOLAPConnector } from "../../connectors/olap/test-connection";
+import {
+  testOLAPConnector,
+  pollConnectorResource,
+} from "../../connectors/olap/test-connection";
 import { runtimeServicePutFileAndWaitForReconciliation } from "../../entity-management/actions";
 import { getFileAPIPathFromNameAndType } from "../../entity-management/entity-mappers";
 import { fileArtifacts } from "../../entity-management/file-artifacts";
@@ -39,10 +42,7 @@ interface AddDataFormValues {
   [key: string]: unknown;
 }
 
-/**
- * Handles submission for sources, including those that get rewritten to DuckDB
- * (GCS, S3, Azure, etc.) and actual source files.
- */
+// Source YAML - `type: model`
 export async function submitAddSourceForm(
   queryClient: QueryClient,
   connector: V1ConnectorDriver,
@@ -84,9 +84,7 @@ export async function submitAddSourceForm(
   await goto(`/files/${newSourceFilePath}`);
 }
 
-/**
- * Handles submission for all connector types: ImplementsOLAP, ImplementsWarehouse, ImplementsSQLStore
- */
+// Connector YAML - `type: connector`
 export async function submitAddConnectorForm(
   queryClient: QueryClient,
   connector: V1ConnectorDriver,
@@ -175,7 +173,7 @@ export async function submitAddConnectorForm(
     throw new Error(errorMessage);
   }
 
-  // Test the connection to the OLAP database (only for OLAP_ENGINES connectors)
+  // Test the connection to the OLAP_ENGINES connectors
   // If the connection test fails, rollback the changes
   if (OLAP_ENGINES.includes(connector.name as string)) {
     const result = await testOLAPConnector(
@@ -190,6 +188,25 @@ export async function submitAddConnectorForm(
       );
       throw {
         message: result.error || "Unable to establish a connection",
+        details: result.details,
+      };
+    }
+  } else {
+    // Poll for the non-OLAP connectors resource status
+    // If the resource status is not reconciled, rollback the changes
+    const result = await pollConnectorResource(
+      instanceId,
+      connector.name as string,
+    );
+
+    if (!result.success) {
+      await rollbackConnectorChanges(
+        instanceId,
+        newConnectorFilePath,
+        originalEnvBlob,
+      );
+      throw {
+        message: result.error || "Connector configuration failed to reconcile",
         details: result.details,
       };
     }

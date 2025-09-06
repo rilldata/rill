@@ -11,24 +11,25 @@ export const CONNECTION_TAB_OPTIONS: { value: string; label: string }[] = [
   { value: "dsn", label: "Enter connection string" },
 ];
 
+export const OLAP_ENGINES = ["clickhouse", "druid", "pinot"];
+
+// pre-defined order for sources
 export const SOURCES = [
-  "gcs",
-  "s3",
+  "athena",
   "azure",
   "bigquery",
-  "athena",
-  "redshift",
   "duckdb",
+  "gcs",
   "motherduck",
-  "postgres",
   "mysql",
-  "sqlite",
-  "snowflake",
+  "postgres",
+  "redshift",
+  "s3",
   "salesforce",
-  "local_file",
+  "snowflake",
+  "sqlite",
   "https",
+  "local_file",
 ];
-
-export const OLAP_ENGINES = ["clickhouse", "druid", "pinot"];
 
 export const ALL_CONNECTORS = [...SOURCES, ...OLAP_ENGINES];

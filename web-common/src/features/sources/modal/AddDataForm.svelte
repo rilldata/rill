@@ -336,8 +336,8 @@
         details = undefined;
       }
 
-      // Keep error state for each form
-      if (connectionTab === "dsn") {
+      // Keep error state for each form - match the display logic
+      if (hasOnlyDsn() || connectionTab === "dsn") {
         dsnError = error;
         dsnErrorDetails = details;
       } else {
@@ -527,6 +527,12 @@
         disabled={connector.name === "clickhouse"
           ? clickhouseSubmitting || clickhouseIsSubmitDisabled
           : submitting || isSubmitDisabled}
+        loading={connector.name === "clickhouse"
+          ? clickhouseSubmitting
+          : submitting}
+        loadingCopy={connector.name === "clickhouse"
+          ? "Connecting..."
+          : "Testing connection..."}
         form={connector.name === "clickhouse" ? clickhouseFormId : formId}
         submitForm
         type="primary"
@@ -547,7 +553,7 @@
           {#if submitting}
             Testing connection...
           {:else}
-            Connect
+            Test and Connect
           {/if}
         {:else}
           Add data
