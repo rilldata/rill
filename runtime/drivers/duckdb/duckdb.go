@@ -48,6 +48,16 @@ var spec = drivers.Spec{
 			Description: "Path to external DuckDB database.",
 			Placeholder: "/path/to/main.db",
 		},
+		{
+			Key:         "mode",
+			Type:        drivers.StringPropertyType,
+			Required:    false,
+			DisplayName: "Mode",
+			Description: "Set the mode for the DuckDB connection. By default, it is set to 'read' which allows only read operations. Set to 'readwrite' to enable model creation and table mutations.",
+			Placeholder: modeReadOnly,
+			Default:     modeReadOnly,
+			NoPrompt:    true,
+		},
 	},
 	// NOTE: reinstated SourceProperties to address https://github.com/rilldata/rill/pull/7726#discussion_r2271449022
 	SourceProperties: []*drivers.PropertySpec{
@@ -92,6 +102,16 @@ var motherduckSpec = drivers.Spec{
 		{
 			Key:  "db",
 			Type: drivers.StringPropertyType,
+		},
+		{
+			Key:         "mode",
+			Type:        drivers.StringPropertyType,
+			Required:    false,
+			DisplayName: "Mode",
+			Description: "Set the mode for the DuckDB connection. By default, it is set to 'read' which allows only read operations. Set to 'readwrite' to enable model creation and table mutations.",
+			Placeholder: modeReadOnly,
+			Default:     modeReadOnly,
+			NoPrompt:    true,
 		},
 	},
 	SourceProperties: []*drivers.PropertySpec{
@@ -384,6 +404,11 @@ func (c *connection) AsObjectStore() (drivers.ObjectStore, bool) {
 
 // AsModelExecutor implements drivers.Handle.
 func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
+	if opts.OutputHandle == c && c.config.Mode != modeReadWrite {
+		c.logger.Warn("Model execution is disabled. To enable modeling on this DuckDB database, set 'mode: readwrite' in your connector configuration. WARNING: This will allow Rill to create and overwrite tables in your database.")
+		return nil, false
+	}
+
 	if opts.InputHandle == c && opts.OutputHandle == c {
 		return &selfToSelfExecutor{c}, true
 	}
@@ -422,6 +447,10 @@ func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecu
 
 // AsModelManager implements drivers.Handle.
 func (c *connection) AsModelManager(instanceID string) (drivers.ModelManager, bool) {
+	if c.config.Mode != modeReadWrite {
+		c.logger.Warn("Model execution is disabled. To enable modeling on this DuckDB database, set 'mode: readwrite' in your connector configuration. WARNING: This will allow Rill to create and overwrite tables in your database.")
+		return nil, false
+	}
 	return c, true
 }
 
