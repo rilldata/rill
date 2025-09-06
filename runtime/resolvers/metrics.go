@@ -6,11 +6,13 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strings"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/metricsview"
+	"github.com/rilldata/rill/runtime/pkg/duckdbsql"
 	"github.com/rilldata/rill/runtime/pkg/mapstructureutil"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
@@ -155,6 +157,60 @@ func (r *metricsResolver) ResolveInteractive(ctx context.Context) (runtime.Resol
 
 func (r *metricsResolver) ResolveExport(ctx context.Context, w io.Writer, opts *runtime.ResolverExportOptions) error {
 	return errors.New("not implemented")
+}
+
+func (r *metricsResolver) InferRequiredSecurityRules() []*runtimev1.SecurityRule {
+	var rules []*runtimev1.SecurityRule
+
+	// allow explicit access to the references
+	for _, ref := range r.Refs() {
+		rules = append(rules, &runtimev1.SecurityRule{
+			Rule: &runtimev1.SecurityRule_Access{
+				Access: &runtimev1.SecurityRuleAccess{
+					Condition: fmt.Sprintf("'{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s", ref.Kind, duckdbsql.EscapeStringValue(strings.ToLower(ref.Name))),
+					Allow:     true,
+				},
+			},
+		})
+	}
+
+	if r.query.Where != nil {
+		rules = append(rules, &runtimev1.SecurityRule{
+			Rule: &runtimev1.SecurityRule_RowFilter{
+				RowFilter: &runtimev1.SecurityRuleRowFilter{
+					Expression: metricsview.ExpressionToProto(r.query.Where),
+				},
+			},
+		})
+	}
+
+	// Extract accessible fields from the query
+	var fields []string
+	// Add dimensions
+	for _, dim := range r.query.Dimensions {
+		fields = append(fields, dim.Name)
+	}
+	// Add measures
+	for _, meas := range r.query.Measures {
+		fields = append(fields, meas.Name)
+	}
+	// Add time dimension if present
+	if r.query.TimeRange != nil && r.query.TimeRange.TimeDimension != "" {
+		fields = append(fields, r.query.TimeRange.TimeDimension)
+	}
+
+	if len(fields) > 0 {
+		rules = append(rules, &runtimev1.SecurityRule{
+			Rule: &runtimev1.SecurityRule_FieldAccess{
+				FieldAccess: &runtimev1.SecurityRuleFieldAccess{
+					Fields: fields,
+					Allow:  true,
+				},
+			},
+		})
+	}
+
+	return rules
 }
 
 // fieldsFromQuery returns metadata for only those dimensions and measures present in the query, preserving query order.

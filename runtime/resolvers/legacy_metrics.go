@@ -6,16 +6,21 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strings"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/pkg/duckdbsql"
 	"github.com/rilldata/rill/runtime/pkg/formatter"
 	"github.com/rilldata/rill/runtime/pkg/mapstructureutil"
 	"github.com/rilldata/rill/runtime/queries"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 func init() {
@@ -28,6 +33,8 @@ type legacyMetricsResolver struct {
 	query           runtime.Query
 	args            *legacyMetricsResolverArgs
 	metricsViewName string
+	fields          []string
+	rowFilter       string
 	logger          *zap.Logger
 }
 
@@ -75,12 +82,20 @@ func newLegacyMetrics(ctx context.Context, opts *runtime.ResolverOptions) (runti
 		return nil, fmt.Errorf("failed to build query: %w", err)
 	}
 
+	// Extract fields and row filter from the query using the queries.SecurityFromQuery helper
+	rowFilter, fields, err := queries.SecurityFromQuery(props.QueryName, props.QueryArgsJSON)
+	if err != nil {
+		return nil, fmt.Errorf("failed to extract accessible fields: %w", err)
+	}
+
 	return &legacyMetricsResolver{
 		runtime:         opts.Runtime,
 		instanceID:      opts.InstanceID,
 		query:           q,
 		args:            args,
 		metricsViewName: metricsViewName,
+		fields:          fields,
+		rowFilter:       rowFilter,
 		logger:          opts.Runtime.Logger,
 	}, nil
 }
@@ -184,6 +199,51 @@ func (r *legacyMetricsResolver) ResolveInteractive(ctx context.Context) (runtime
 
 func (r *legacyMetricsResolver) ResolveExport(ctx context.Context, w io.Writer, opts *runtime.ResolverExportOptions) error {
 	return errors.New("not implemented")
+}
+
+func (r *legacyMetricsResolver) InferRequiredSecurityRules() []*runtimev1.SecurityRule {
+	var rules []*runtimev1.SecurityRule
+
+	// allow explicit access to the references
+	for _, ref := range r.Refs() {
+		rules = append(rules, &runtimev1.SecurityRule{
+			Rule: &runtimev1.SecurityRule_Access{
+				Access: &runtimev1.SecurityRuleAccess{
+					Condition: fmt.Sprintf("'{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s", ref.Kind, duckdbsql.EscapeStringValue(strings.ToLower(ref.Name))),
+					Allow:     true,
+				},
+			},
+		})
+	}
+
+	if r.rowFilter != "" {
+		expr := &runtimev1.Expression{}
+		err := protojson.Unmarshal([]byte(r.rowFilter), expr)
+		if err != nil {
+			panic(status.Errorf(codes.Internal, "failed to parse row filter expression: %v", err))
+		}
+
+		rules = append(rules, &runtimev1.SecurityRule{
+			Rule: &runtimev1.SecurityRule_RowFilter{
+				RowFilter: &runtimev1.SecurityRuleRowFilter{
+					Expression: expr,
+				},
+			},
+		})
+	}
+
+	if len(r.fields) > 0 {
+		rules = append(rules, &runtimev1.SecurityRule{
+			Rule: &runtimev1.SecurityRule_FieldAccess{
+				FieldAccess: &runtimev1.SecurityRuleFieldAccess{
+					Fields: r.fields,
+					Allow:  true,
+				},
+			},
+		})
+	}
+
+	return rules
 }
 
 func (r *legacyMetricsResolver) formatMetricsViewAggregationResult(row map[string]interface{}, q *queries.MetricsViewAggregation, measures []*runtimev1.MetricsViewSpec_Measure) map[string]any {

@@ -11,38 +11,21 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func (h *Handle) GetReportMetadata(ctx context.Context, reportName, ownerID, explore, canvas, webOpenMode, whereFilterJSON string, accessibleFields, emailRecipients []string, anonRecipients bool, executionTime time.Time) (*drivers.ReportMetadata, error) {
-	var resources []*adminv1.ResourceName
-	resources = append(resources, &adminv1.ResourceName{
-		Type: runtime.ResourceKindReport,
-		Name: reportName,
-	})
-
-	if explore != "" {
-		resources = append(resources, &adminv1.ResourceName{
-			Type: runtime.ResourceKindExplore,
-			Name: explore,
-		})
-	}
-
-	if canvas != "" {
-		resources = append(resources, &adminv1.ResourceName{
-			Type: runtime.ResourceKindCanvas,
-			Name: canvas,
-		})
-	}
-
+func (h *Handle) GetReportMetadata(ctx context.Context, reportName, ownerID, webOpenMode string, emailRecipients []string, anonRecipients bool, executionTime time.Time) (*drivers.ReportMetadata, error) {
 	res, err := h.admin.GetReportMeta(ctx, &adminv1.GetReportMetaRequest{
-		ProjectId:        h.config.ProjectID,
-		Report:           reportName,
-		OwnerId:          ownerID,
-		EmailRecipients:  emailRecipients,
-		AnonRecipients:   anonRecipients,
-		ExecutionTime:    timestamppb.New(executionTime),
-		Resources:        resources,
-		WebOpenMode:      webOpenMode,
-		WhereFilterJson:  whereFilterJSON,
-		AccessibleFields: accessibleFields,
+		ProjectId:       h.config.ProjectID,
+		Report:          reportName,
+		OwnerId:         ownerID,
+		EmailRecipients: emailRecipients,
+		AnonRecipients:  anonRecipients,
+		ExecutionTime:   timestamppb.New(executionTime),
+		Resources: []*adminv1.ResourceName{
+			{
+				Type: runtime.ResourceKindReport,
+				Name: reportName,
+			},
+		},
+		WebOpenMode: webOpenMode,
 	})
 	if err != nil {
 		return nil, err
@@ -63,11 +46,14 @@ func (h *Handle) GetReportMetadata(ctx context.Context, reportName, ownerID, exp
 	}, nil
 }
 
-func (h *Handle) GetAlertMetadata(ctx context.Context, alertName string, annotations map[string]string, queryForUserID, queryForUserEmail string) (*drivers.AlertMetadata, error) {
+func (h *Handle) GetAlertMetadata(ctx context.Context, alertName, ownerID string, emailRecipients []string, anonRecipients bool, annotations map[string]string, queryForUserID, queryForUserEmail string) (*drivers.AlertMetadata, error) {
 	req := &adminv1.GetAlertMetaRequest{
-		ProjectId:   h.config.ProjectID,
-		Alert:       alertName,
-		Annotations: annotations,
+		ProjectId:       h.config.ProjectID,
+		Alert:           alertName,
+		Annotations:     annotations,
+		OwnerId:         ownerID,
+		EmailRecipients: emailRecipients,
+		AnonRecipients:  anonRecipients,
 	}
 
 	if queryForUserID != "" {
@@ -81,9 +67,17 @@ func (h *Handle) GetAlertMetadata(ctx context.Context, alertName string, annotat
 		return nil, err
 	}
 
+	recipientURLs := make(map[string]drivers.AlertURLs)
+	for email, urls := range res.RecipientUrls {
+		recipientURLs[email] = drivers.AlertURLs{
+			OpenURL:        urls.OpenUrl,
+			EditURL:        urls.EditUrl,
+			UnsubscribeURL: urls.UnsubscribeUrl,
+		}
+	}
+
 	meta := &drivers.AlertMetadata{
-		OpenURL: res.OpenUrl,
-		EditURL: res.EditUrl,
+		RecipientURLs: recipientURLs,
 	}
 
 	if res.QueryForAttributes != nil {

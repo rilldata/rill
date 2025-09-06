@@ -1613,6 +1613,54 @@ func (c *connection) InsertReportToken(ctx context.Context, opts *database.Inser
 	return res, nil
 }
 
+func (c *connection) FindAlertTokens(ctx context.Context, alertName string) ([]*database.AlertToken, error) {
+	var res []*database.AlertToken
+	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT * FROM alert_tokens WHERE alert_name=$1`, alertName)
+	if err != nil {
+		return nil, parseErr("alert tokens", err)
+	}
+	return res, nil
+}
+
+func (c *connection) FindAlertTokensWithSecret(ctx context.Context, alertName string) ([]*database.AlertTokenWithSecret, error) {
+	var res []*alertTokenWithSecretDTO
+	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT t.*, m.secret as magic_auth_token_secret, m.secret_encryption_key_id FROM alert_tokens t JOIN magic_auth_tokens m ON t.magic_auth_token_id=m.id WHERE t.alert_name=$1`, alertName)
+	if err != nil {
+		return nil, parseErr("alert tokens", err)
+	}
+
+	ret := make([]*database.AlertTokenWithSecret, len(res))
+	for i, dto := range res {
+		ret[i], err = c.alertTokenWithSecretFromDTO(dto)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return ret, nil
+}
+
+func (c *connection) FindAlertTokenForMagicAuthToken(ctx context.Context, magicAuthTokenID string) (*database.AlertToken, error) {
+	res := &database.AlertToken{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, `SELECT * FROM alert_tokens WHERE magic_auth_token_id=$1`, magicAuthTokenID).StructScan(res)
+	if err != nil {
+		return nil, parseErr("alert token", err)
+	}
+	return res, nil
+}
+
+func (c *connection) InsertAlertToken(ctx context.Context, opts *database.InsertAlertTokenOptions) (*database.AlertToken, error) {
+	if err := database.Validate(opts); err != nil {
+		return nil, err
+	}
+
+	res := &database.AlertToken{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO alert_tokens (alert_name, recipient_email, magic_auth_token_id) VALUES ($1, $2, $3) RETURNING *`, opts.AlertName, opts.RecipientEmail, opts.MagicAuthTokenID).StructScan(res)
+	if err != nil {
+		return nil, parseErr("alert token", err)
+	}
+	return res, nil
+}
+
 func (c *connection) FindDeviceAuthCodeByDeviceCode(ctx context.Context, deviceCode string) (*database.DeviceAuthCode, error) {
 	authCode := &database.DeviceAuthCode{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM device_auth_codes WHERE device_code = $1", deviceCode).StructScan(authCode)
@@ -3101,9 +3149,10 @@ func (c *connection) magicAuthTokenFromDTO(dto *magicAuthTokenDTO, fetchSecret b
 // magicAuthTokenWithUserDTO wraps database.MagicAuthTokenWithUser, using the pgtype package to handly types that pgx can't read directly into their native Go types.
 type magicAuthTokenWithUserDTO struct {
 	*database.MagicAuthTokenWithUser
-	Attributes pgtype.JSON      `db:"attributes"`
-	Fields     pgtype.TextArray `db:"fields"`
-	Resources  pgtype.JSONB     `db:"resources"`
+	Attributes               pgtype.JSON      `db:"attributes"`
+	Fields                   pgtype.TextArray `db:"fields"`
+	Resources                pgtype.JSONB     `db:"resources"`
+	TransitiveAccessResource *pgtype.JSONB    `db:"transitive_access_resource"`
 }
 
 func (c *connection) magicAuthTokenWithUserFromDTO(dto *magicAuthTokenWithUserDTO) (*database.MagicAuthTokenWithUser, error) {
@@ -3143,6 +3192,23 @@ func (c *connection) reportTokenWithSecretFromDTO(dto *reportTokenWithSecretDTO)
 	}
 	dto.ReportTokenWithSecret.MagicAuthTokenSecret = decrypted
 	return dto.ReportTokenWithSecret, nil
+}
+
+type alertTokenWithSecretDTO struct {
+	*database.AlertTokenWithSecret
+	SecretEncryptionKeyID string `db:"secret_encryption_key_id"`
+}
+
+func (c *connection) alertTokenWithSecretFromDTO(dto *alertTokenWithSecretDTO) (*database.AlertTokenWithSecret, error) {
+	if dto.SecretEncryptionKeyID == "" {
+		return dto.AlertTokenWithSecret, nil
+	}
+	decrypted, err := c.decrypt(dto.AlertTokenWithSecret.MagicAuthTokenSecret, dto.SecretEncryptionKeyID)
+	if err != nil {
+		return nil, err
+	}
+	dto.AlertTokenWithSecret.MagicAuthTokenSecret = decrypted
+	return dto.AlertTokenWithSecret, nil
 }
 
 type organizationInviteDTO struct {

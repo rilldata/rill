@@ -37,8 +37,6 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 		attribute.Bool("args.anon_recipients", req.AnonRecipients),
 		attribute.String("args.owner_id", req.OwnerId),
 		attribute.String("args.web_open_mode", req.WebOpenMode),
-		attribute.String("args.where_filter_json", req.WhereFilterJson),
-		attribute.StringSlice("args.accessible_fields", req.AccessibleFields),
 	)
 
 	proj, err := s.admin.DB.FindProject(ctx, req.ProjectId)
@@ -73,8 +71,8 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 		recipients = append(recipients, "")
 	}
 
-	filterJSON := req.WhereFilterJson
-	accessibleFields := req.AccessibleFields
+	filterJSON := req.WhereFilterJson        // nolint:staticcheck // only needed for backwards compatibility during rollout otherwise update runtimes will always send empty string
+	accessibleFields := req.AccessibleFields // nolint:staticcheck // only needed for backwards compatibility during rollout otherwise update runtimes will always send nil
 	if webOpenMode != WebOpenModeFiltered {
 		// If web open mode is not filtered, we don't need to apply where filter or accessible fields
 		filterJSON = ""

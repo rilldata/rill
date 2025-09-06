@@ -2159,6 +2159,7 @@ export interface V1SecurityRule {
   access?: V1SecurityRuleAccess;
   fieldAccess?: V1SecurityRuleFieldAccess;
   rowFilter?: V1SecurityRuleRowFilter;
+  transitiveAccess?: V1SecurityRuleTransitiveAccess;
 }
 
 export interface V1SecurityRuleAccess {
@@ -2177,6 +2178,10 @@ export interface V1SecurityRuleRowFilter {
   condition?: string;
   sql?: string;
   expression?: V1Expression;
+}
+
+export interface V1SecurityRuleTransitiveAccess {
+  resource?: V1ResourceName;
 }
 
 export interface V1Source {

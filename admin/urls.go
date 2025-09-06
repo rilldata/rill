@@ -328,13 +328,25 @@ func (u *URLs) ReportEdit(org, project, report string) string {
 }
 
 // AlertOpen returns the URL for opening an alert in the frontend.
-func (u *URLs) AlertOpen(org, project, alert string) string {
-	return urlutil.MustJoinURL(u.Frontend(), org, project, "-", "alerts", alert, "open")
+func (u *URLs) AlertOpen(org, project, alert, token string) string {
+	openURL := urlutil.MustJoinURL(u.Frontend(), org, project, "-", "alerts", alert, "open")
+	if token != "" {
+		openURL += fmt.Sprintf("?token=%s", token)
+	}
+	return openURL
 }
 
 // AlertEdit returns the URL for editing an alert in the frontend.
 func (u *URLs) AlertEdit(org, project, alert string) string {
 	return urlutil.MustJoinURL(u.Frontend(), org, project, "-", "alerts", alert)
+}
+
+// AlertUnsubscribe returns the URL for unsubscribing from an alert.
+func (u *URLs) AlertUnsubscribe(org, project, alert, token string) string {
+	if token != "" {
+		return urlutil.MustWithQuery(urlutil.MustJoinURL(u.Frontend(), org, project, "-", "alerts", alert, "unsubscribe"), map[string]string{"token": token})
+	}
+	return urlutil.MustJoinURL(u.Frontend(), org, project, "-", "alerts", alert, "unsubscribe")
 }
 
 // Billing returns the landing page url that optionally shows the upgrade modal.

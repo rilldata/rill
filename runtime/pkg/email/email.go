@@ -92,6 +92,7 @@ func (c *Client) SendAlertStatus(opts *drivers.AlertStatus) error {
 			IsRecover:           opts.IsRecover,
 			OpenLink:            template.URL(opts.OpenLink),
 			EditLink:            template.URL(opts.EditLink),
+			UnsubscribeLink:     template.URL(opts.UnsubscribeLink),
 		})
 	case runtimev1.AssertionStatus_ASSERTION_STATUS_FAIL:
 		return c.sendAlertFail(opts, &alertFailData{
@@ -100,6 +101,7 @@ func (c *Client) SendAlertStatus(opts *drivers.AlertStatus) error {
 			FailRow:             opts.FailRow,
 			OpenLink:            template.URL(opts.OpenLink),
 			EditLink:            template.URL(opts.EditLink),
+			UnsubscribeLink:     template.URL(opts.UnsubscribeLink),
 		})
 	case runtimev1.AssertionStatus_ASSERTION_STATUS_ERROR:
 		return c.sendAlertStatus(opts, &alertStatusData{
@@ -109,6 +111,7 @@ func (c *Client) SendAlertStatus(opts *drivers.AlertStatus) error {
 			ErrorMessage:        opts.ExecutionError,
 			OpenLink:            template.URL(opts.EditLink), // NOTE: Using edit link here since for errors, we don't want to open a dashboard, but rather the alert itself
 			EditLink:            template.URL(opts.EditLink),
+			UnsubscribeLink:     template.URL(opts.UnsubscribeLink),
 		})
 	default:
 		return fmt.Errorf("unknown assertion status: %v", opts.Status)
@@ -121,6 +124,7 @@ type alertFailData struct {
 	FailRow             map[string]any
 	OpenLink            template.URL
 	EditLink            template.URL
+	UnsubscribeLink     template.URL
 }
 
 func (c *Client) sendAlertFail(opts *drivers.AlertStatus, data *alertFailData) error {
@@ -145,6 +149,7 @@ type alertStatusData struct {
 	ErrorMessage        string
 	OpenLink            template.URL
 	EditLink            template.URL
+	UnsubscribeLink     template.URL
 }
 
 func (c *Client) sendAlertStatus(opts *drivers.AlertStatus, data *alertStatusData) error {
