@@ -96,12 +96,22 @@ func (e *Executor) Summary(ctx context.Context) (*SummaryResult, error) {
 	}
 
 	timeDimensionSummaries := make([]DimensionSummary, 0, len(timeDimensions)+1)
+	if !defaultTimeDimFound && defaultTimeDimName != "" && e.security.CanAccessField(defaultTimeDimName) {
+		timeDimensions = append(timeDimensions, &runtimev1.MetricsViewSpec_Dimension{
+			Name:     defaultTimeDimName,
+			DataType: &runtimev1.Type{Code: runtimev1.Type_CODE_TIMESTAMP},
+		})
+	}
 
-	// Process each time dimension found in the dimensions list
 	for _, dim := range timeDimensions {
-		timeRange, err := e.Timestamps(ctx, dim.Name)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get time range for dimension %s: %w", dim.Name, err)
+		var timeRange TimestampsResult
+		if dim.Name == defaultTimeDimName {
+			timeRange = defaultTimeRange
+		} else {
+			timeRange, err = e.Timestamps(ctx, dim.Name)
+			if err != nil {
+				return nil, fmt.Errorf("failed to get time range for dimension %s: %w", dim.Name, err)
+			}
 		}
 
 		var dataType string
@@ -120,24 +130,6 @@ func (e *Executor) Summary(ctx context.Context) (*SummaryResult, error) {
 		}
 		if !timeRange.Max.IsZero() {
 			summary.MaxValue = timeRange.Max
-		}
-
-		timeDimensionSummaries = append(timeDimensionSummaries, summary)
-	}
-
-	// Include default time dimension if it wasn't found in explicit dimensions
-	if !defaultTimeDimFound && defaultTimeDimName != "" && e.security.CanAccessField(defaultTimeDimName) {
-		summary := DimensionSummary{
-			Name:     defaultTimeDimName,
-			DataType: "TIMESTAMP", // Assume timestamp for default time dimension
-		}
-
-		// Only populate min/max if we have time data
-		if !defaultTimeRange.Min.IsZero() {
-			summary.MinValue = defaultTimeRange.Min
-		}
-		if !defaultTimeRange.Max.IsZero() {
-			summary.MaxValue = defaultTimeRange.Max
 		}
 
 		timeDimensionSummaries = append(timeDimensionSummaries, summary)
@@ -197,9 +189,10 @@ func (e *Executor) Summary(ctx context.Context) (*SummaryResult, error) {
 	// Use a recent time window with proper timestamp formatting
 	// Use the default time dimension for filtering to ensure it's likely indexed
 	var whereClause string
+	var args []any
 	if defaultTimeDimName != "" && !defaultTimeRange.Max.IsZero() {
-		dimensionTimeRange := defaultTimeRange.Max.Add(-DefaultSampleTimeWindow)
-		whereClause = fmt.Sprintf("WHERE %s >= '%s'", timeDimExpr, dimensionTimeRange.Format(time.RFC3339))
+		whereClause = fmt.Sprintf("WHERE %s >= ?", timeDimExpr)
+		args = []any{defaultTimeRange.Max.Add(-DefaultSampleTimeWindow)}
 	} else {
 		whereClause = "" // No time filtering if no default time dimension
 	}
@@ -219,6 +212,7 @@ func (e *Executor) Summary(ctx context.Context) (*SummaryResult, error) {
 
 	rows, err := e.olap.Query(ctx, &drivers.Statement{
 		Query:            sql,
+		Args:             args,
 		Priority:         e.priority,
 		ExecutionTimeout: defaultExecutionTimeout,
 	})
@@ -287,7 +281,7 @@ func createDefaultTimeDimensionSummary(defaultTimeDimName string, timeRange Time
 
 	if defaultTimeDimName != "" {
 		summary.Name = defaultTimeDimName
-		summary.DataType = "TIMESTAMP"
+		summary.DataType = runtimev1.Type_CODE_TIMESTAMP.String()
 
 		// Only populate min/max values if we have time data
 		if !timeRange.Min.IsZero() {
