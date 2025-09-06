@@ -69,10 +69,14 @@ export function getItemLists(
     };
   }
 
-  // For InList mode, identify items that are "below the fold"
+  // For InList and Select modes, identify items that are "below the fold"
   // These are selected values that came from the supplementary below-fold query
   const belowFoldItems: string[] = [];
-  if (mode === DimensionFilterMode.InList && correctedSearchResults) {
+  if (
+    (mode === DimensionFilterMode.InList ||
+      mode === DimensionFilterMode.Select) &&
+    correctedSearchResults
+  ) {
     // Extract below-fold metadata attached by the query function
     const belowFoldMetadata = (correctedSearchResults as any).__belowFoldValues;
     if (Array.isArray(belowFoldMetadata)) {

@@ -72,9 +72,10 @@ export function useDimensionSearch(
     ),
   );
 
-  // Below the fold query: Ensure selected values are included (for InList mode)
+  // Below the fold query: Ensure selected values are included (for both InList and Select modes)
   const belowFoldQueries =
-    mode === DimensionFilterMode.InList && values.length > 0
+    (mode === DimensionFilterMode.InList && values.length > 0) ||
+    (mode === DimensionFilterMode.Select && values.length > 0)
       ? metricsViewNames.map((mvName) =>
           createQueryServiceMetricsViewAggregation(
             instanceId,
@@ -125,10 +126,32 @@ export function useDimensionSearch(
       );
       const combinedValues = [...mainValues, ...actualBelowFoldValues];
 
+      console.log(
+        "Debug - Main values:",
+        mainValues.length,
+        mainValues.slice(0, 5),
+      );
+      console.log(
+        "Debug - Below-fold values:",
+        belowFoldValues.length,
+        belowFoldValues,
+      );
+      console.log(
+        "Debug - Actual below-fold (not in main):",
+        actualBelowFoldValues,
+      );
+      console.log("Debug - Combined values:", combinedValues.length);
+      console.log("Debug - Input values for below-fold query:", values);
+      console.log("Debug - Mode:", mode);
+      console.log(
+        "Debug - Below-fold queries created:",
+        belowFoldQueries.length,
+      );
+
       const dedupedValues = new Set(combinedValues);
       const result = [...dedupedValues] as string[];
 
-      // Attach metadata about which values are below-fold for the UI
+      // Attach metadata for potential UI use
       (result as any).__belowFoldValues = actualBelowFoldValues;
 
       return result;
