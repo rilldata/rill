@@ -17,11 +17,8 @@
   import { TabsContent } from "@rilldata/web-common/components/tabs";
   import { inferSourceName } from "../sourceUtils";
   import { humanReadableErrorMessage } from "../errors/errors";
-  import {
-    submitAddOLAPConnectorForm,
-    submitAddSourceForm,
-  } from "./submitAddDataForm";
-  import type { AddDataFormType, ConnectorType } from "./types";
+  import { submitAddConnectorForm } from "./submitAddDataForm";
+  import type { ConnectorType } from "./types";
   import { dsnSchema, getYupSchema } from "./yupSchemas";
   import Checkbox from "@rilldata/web-common/components/forms/Checkbox.svelte";
   import { isEmpty, normalizeErrors } from "./utils";
@@ -30,7 +27,6 @@
   import { getInitialFormValuesFromProperties } from "../sourceUtils";
 
   export let connector: V1ConnectorDriver;
-  export let formType: AddDataFormType;
   export let formId: string;
   export let submitting: boolean;
   export let isSubmitDisabled: boolean;
@@ -156,11 +152,7 @@
     if (!event.form.valid) return;
     const values = event.form.data;
     try {
-      if (formType === "source") {
-        await submitAddSourceForm(queryClient, connector, values);
-      } else {
-        await submitAddOLAPConnectorForm(queryClient, connector, values);
-      }
+      await submitAddConnectorForm(queryClient, connector, values);
       onClose();
     } catch (e) {
       let error: string;
@@ -263,9 +255,11 @@
       options={CONNECTOR_TYPE_OPTIONS}
     />
     {#if $paramsForm.managed}
-      <InformationalField
-        description="This option uses ClickHouse as an OLAP engine with Rill-managed infrastructure. No additional configuration is required - Rill will handle the setup and management of your ClickHouse instance."
-      />
+      <div class="mt-2">
+        <InformationalField
+          description="This option uses ClickHouse as an OLAP engine with Rill-managed infrastructure. No additional configuration is required - Rill will handle the setup and management of your ClickHouse instance."
+        />
+      </div>
     {/if}
   </div>
 
@@ -274,7 +268,7 @@
       <TabsContent value="parameters">
         <form
           id={paramsFormId}
-          class="pb-5 flex-grow overflow-y-auto"
+          class="flex-grow overflow-y-auto"
           use:paramsEnhance
           on:submit|preventDefault={paramsSubmit}
         >
@@ -316,7 +310,7 @@
       <TabsContent value="dsn">
         <form
           id={dsnFormId}
-          class="pb-5 flex-grow overflow-y-auto"
+          class="flex-grow overflow-y-auto"
           use:dsnEnhance
           on:submit|preventDefault={dsnSubmit}
         >
@@ -342,7 +336,7 @@
     <!-- Only managed form -->
     <form
       id={paramsFormId}
-      class="pb-5 flex-grow overflow-y-auto"
+      class="flex-grow overflow-y-auto"
       use:paramsEnhance
       on:submit|preventDefault={paramsSubmit}
     >

@@ -4,7 +4,7 @@ import type {
 } from "@rilldata/web-common/features/canvas/components/charts/types";
 import type { ComponentAlignment } from "@rilldata/web-common/features/canvas/components/types";
 
-type NativeInputTypes = "text" | "number" | "boolean" | "textArea";
+type NativeInputTypes = "text" | "number" | "boolean" | "textArea" | "select";
 type SemanticInputTypes = "metrics" | "measure" | "dimension" | "multi_fields";
 type ChartInputTypes = "positional" | "mark" | "tooltip" | "config";
 type CustomInputTypes = "rill_time" | "sparkline" | "comparison_options";
@@ -29,7 +29,8 @@ export type SortSelectorConfig = {
 };
 
 export type ChartFieldInput = {
-  type: FieldType;
+  type: FieldType | "value";
+  excludedValues?: string[];
   axisTitleSelector?: boolean;
   hideTimeDimension?: boolean;
   originSelector?: boolean;
@@ -39,6 +40,11 @@ export type ChartFieldInput = {
   nullSelector?: boolean;
   labelAngleSelector?: boolean;
   axisRangeSelector?: boolean;
+  multiFieldSelector?: boolean;
+  /**
+   * For combo charts individual field can be a bar or line chart.
+   */
+  markTypeSelector?: boolean;
   /**
    * The default legend position for the chart.
    * If this key is not specified, legend selector will not be shown.
@@ -59,6 +65,8 @@ export interface ComponentInputParam {
     [key: string]: any;
   };
 }
+
+export type ColorMapping = { value: string; color: string }[];
 
 export interface FilterInputParam {
   type: FilterInputTypes;

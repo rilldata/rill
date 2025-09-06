@@ -11,7 +11,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func (h *Handle) GetReportMetadata(ctx context.Context, reportName, ownerID, explore, canvas, webOpenMode string, emailRecipients []string, anonRecipients bool, executionTime time.Time) (*drivers.ReportMetadata, error) {
+func (h *Handle) GetReportMetadata(ctx context.Context, reportName, ownerID, explore, canvas, webOpenMode, whereFilterJSON string, accessibleFields, emailRecipients []string, anonRecipients bool, executionTime time.Time) (*drivers.ReportMetadata, error) {
 	var resources []*adminv1.ResourceName
 	resources = append(resources, &adminv1.ResourceName{
 		Type: runtime.ResourceKindReport,
@@ -33,14 +33,16 @@ func (h *Handle) GetReportMetadata(ctx context.Context, reportName, ownerID, exp
 	}
 
 	res, err := h.admin.GetReportMeta(ctx, &adminv1.GetReportMetaRequest{
-		ProjectId:       h.config.ProjectID,
-		Report:          reportName,
-		OwnerId:         ownerID,
-		EmailRecipients: emailRecipients,
-		AnonRecipients:  anonRecipients,
-		ExecutionTime:   timestamppb.New(executionTime),
-		Resources:       resources,
-		WebOpenMode:     webOpenMode,
+		ProjectId:        h.config.ProjectID,
+		Report:           reportName,
+		OwnerId:          ownerID,
+		EmailRecipients:  emailRecipients,
+		AnonRecipients:   anonRecipients,
+		ExecutionTime:    timestamppb.New(executionTime),
+		Resources:        resources,
+		WebOpenMode:      webOpenMode,
+		WhereFilterJson:  whereFilterJSON,
+		AccessibleFields: accessibleFields,
 	})
 	if err != nil {
 		return nil, err

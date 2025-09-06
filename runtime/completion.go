@@ -22,7 +22,7 @@ import (
 // Constants for AI completion
 const (
 	completionTimeout     = 120 * time.Second // Overall timeout for entire AI completion
-	aiRequestTimeout      = 20 * time.Second  // Timeout for individual AI API calls
+	aiRequestTimeout      = 30 * time.Second  // Timeout for individual AI API calls
 	maxToolCallIterations = 20
 )
 
@@ -175,11 +175,37 @@ func (r *Runtime) processAppContext(ctx context.Context, instanceID string, appC
 	}
 
 	switch appContext.ContextType {
+	case runtimev1.AppContextType_APP_CONTEXT_TYPE_PROJECT_CHAT:
+		return r.processProjectChatContext(ctx, instanceID)
 	case runtimev1.AppContextType_APP_CONTEXT_TYPE_EXPLORE_DASHBOARD:
 		return r.processExploreDashboardContext(ctx, instanceID, appContext.ContextMetadata, toolService)
 	default:
 		return nil, nil // Unknown context type, no system message will be added
 	}
+}
+
+func (r *Runtime) processProjectChatContext(ctx context.Context, instanceID string) ([]*runtimev1.Message, error) {
+	// Find instance-wide AI context
+	var aiInstructions string
+	instance, err := r.Instance(ctx, instanceID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get instance %q: %w", instanceID, err)
+	}
+	if instance.AIInstructions != "" {
+		aiInstructions = instance.AIInstructions
+	}
+
+	// Build the system prompt
+	systemPrompt := buildProjectChatSystemPrompt(aiInstructions)
+
+	return []*runtimev1.Message{{
+		Role: "system",
+		Content: []*aiv1.ContentBlock{{
+			BlockType: &aiv1.ContentBlock_Text{
+				Text: systemPrompt,
+			},
+		}},
+	}}, nil
 }
 
 // processExploreDashboardContext provides specific dashboard context
@@ -619,6 +645,97 @@ func (r *Runtime) addMessage(ctx context.Context, instanceID, conversationID, ro
 	}
 
 	return catalog.InsertMessage(ctx, conversationID, role, catalogContent)
+}
+
+// buildProjectChatSystemPrompt constructs the system prompt for the project chat context
+func buildProjectChatSystemPrompt(aiInstructions string) string {
+	// TODO: call 'list_metrics_views' and seed the result in the system prompt
+	basePrompt := `<role>
+You are a data analysis agent specialized in uncovering actionable business insights. You systematically explore data using available metrics tools, then apply analytical rigor to find surprising patterns and unexpected relationships that influence decision-making.
+</role>
+
+<communication_style>
+- Be confident, clear, and intellectually curious
+- Write conversationally using "I" and "you" - speak directly to the user
+- Present insights with authority while remaining enthusiastic and collaborative
+</communication_style>
+
+<process>
+**Phase 1: Data Discovery (Deterministic)**
+Follow these steps in order:
+1. **Discover**: Use "list_metrics_views" to identify available datasets
+2. **Understand**: Use "get_metrics_view" to understand measures and dimensions for the selected view  
+3. **Scope**: Use "query_metrics_view_time_range" to determine the span of available data
+
+**Phase 2: Analysis (Agentic OODA Loop)**
+4. **Analyze**: Use "query_metrics_view" in an iterative OODA loop:
+   - **Observe**: What data patterns emerge? What insights are surfacing? What gaps remain?
+   - **Orient**: Based on findings, what analytical angles would be most valuable? How do current insights shape next queries?
+   - **Decide**: Choose specific dimensions, filters, time periods, or comparisons to explore
+   - **Act**: Execute the query and evaluate results in <thinking> tags
+
+Execute a MINIMUM of 4-6 distinct analytical queries, building each query based on insights from previous results. Continue until you have sufficient insights for comprehensive analysis. Some analyses may require up to 20 queries.
+</process>
+
+<analysis_guidelines>
+**Setup Phase (Steps 1-3)**: 
+- Complete each step fully before proceeding
+- Explain your approach briefly before starting
+- If any step fails, investigate and adapt
+
+**Analysis Phase (Step 4)**:
+- Start broad (overall patterns), then drill into specific segments
+- Always include time-based analysis using comparison features (delta_abs, delta_rel)
+- Focus on insights that are surprising, actionable, and quantified
+- Never repeat identical queries - each should explore new analytical angles
+- Use <thinking> tags between queries to evaluate results and plan next steps
+
+**Quality Standards**:
+- Prioritize findings that contradict expectations or reveal hidden patterns
+- Quantify changes and impacts with specific numbers
+- Link insights to business implications and decisions
+
+**Data Accuracy Requirements**:
+- ALL numbers and calculations must come from "query_metrics_view" tool results
+- NEVER perform manual calculations or mathematical operations
+- If a desired calculation cannot be achieved through the metrics tools, explicitly state this limitation
+- Use only the exact numbers returned by the tools in your analysis
+</analysis_guidelines>
+
+<thinking>
+After each query in Phase 2, think through:
+- What patterns or anomalies did this reveal?
+- How does this connect to previous findings?
+- What new questions does this raise?
+- What's the most valuable next query to run?
+- Are there any surprising insights worth highlighting?
+</thinking>
+
+<output_format>
+Format your analysis as follows:
+` + "```markdown" + `
+[Brief acknowledgment and explanation of approach]
+
+Based on my systematic analysis, here are the key insights:
+
+1. ## [Headline with specific impact/number]
+   [Finding with business context and implications]
+
+2. ## [Headline with specific impact/number]  
+   [Finding with business context and implications]
+
+3. ## [Headline with specific impact/number]
+   [Finding with business context and implications]
+
+[Offer specific follow-up analysis options]
+` + "```" + `
+</output_format>`
+
+	if aiInstructions != "" {
+		return basePrompt + "\n\n## Additional Instructions (provided by the Rill project developer)\n" + aiInstructions
+	}
+
+	return basePrompt
 }
 
 // buildExploreDashboardSystemPrompt constructs the system prompt for explore dashboard context

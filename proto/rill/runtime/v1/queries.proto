@@ -547,7 +547,7 @@ message MetricsViewComparisonRequest {
   string instance_id = 1;
   string metrics_view_name = 2 [(validate.rules).string.min_len = 1];
   // Required
-  MetricsViewAggregationDimension dimension = 3;
+  MetricsViewAggregationDimension dimension = 3 [(validate.rules).message.required = true];
   // Required
   repeated MetricsViewAggregationMeasure measures = 4 [(validate.rules).repeated.min_items = 1];
   // Measures that should be compared
@@ -868,8 +868,8 @@ message MetricsViewAnnotationsResponse {
     optional google.protobuf.Timestamp time_end = 2;
     // User defined description of the annotation applies. Maps to `description` column from the table.
     string description = 3;
-    // Optional. Minimum grain this annotation is displayed for. Maps to `grain` column from the table.
-    optional string grain = 4;
+    // Optional. Minimum duration this annotation is displayed for. Maps to `duration` column from the table.
+    optional string duration = 4;
     // Any other fields are captured here. Will be used in predicates in the future.
     google.protobuf.Struct additional_fields = 5;
     // List of measure names that this annotation applies to. If empty, no restrictions apply.

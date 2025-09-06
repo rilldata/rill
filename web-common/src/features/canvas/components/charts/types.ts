@@ -1,3 +1,4 @@
+import type { ColorMapping } from "@rilldata/web-common/features/canvas/inspector/types";
 import type {
   V1Expression,
   V1MetricsViewAggregationDimension,
@@ -12,6 +13,7 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
+import type { Color } from "chroma-js";
 import type { TimeUnit } from "vega-lite/build/src/timeunit";
 
 export type ChartType =
@@ -22,7 +24,9 @@ export type ChartType =
   | "stacked_bar_normalized"
   | "donut_chart"
   | "pie_chart"
-  | "heatmap";
+  | "heatmap"
+  | "funnel_chart"
+  | "combo_chart";
 
 export type ChartDataQuery = CreateQueryResult<
   V1MetricsViewAggregationResponse,
@@ -41,13 +45,12 @@ export type ChartDataResult = {
   isFetching: boolean;
   fields: ChartFieldsMap;
   error?: HTTPError | null;
+  theme: { primary: Color; secondary: Color };
   domainValues?: ChartDomainValues;
 };
 
 export interface ChartDomainValues {
-  xValues?: string[];
-  colorValues?: string[];
-  yValues?: string[];
+  [key: string]: string[] | number[] | undefined;
 }
 
 export interface TimeDimensionDefinition {
@@ -64,6 +67,8 @@ export type ChartSortDirectionOptions =
   | "-y"
   | "color"
   | "-color"
+  | "measure"
+  | "-measure"
   | "custom";
 
 export type ChartSortDirection =
@@ -78,7 +83,11 @@ interface NominalFieldConfig {
   showNull?: boolean;
   labelAngle?: number;
   legendOrientation?: ChartLegend;
-  colorMapping?: { value: string; color: string }[];
+  colorMapping?: ColorMapping;
+}
+
+interface MarkFieldConfig {
+  mark?: "bar" | "line";
 }
 
 interface QuantitativeFieldConfig {
@@ -89,11 +98,13 @@ interface QuantitativeFieldConfig {
 
 export interface FieldConfig
   extends NominalFieldConfig,
-    QuantitativeFieldConfig {
+    QuantitativeFieldConfig,
+    MarkFieldConfig {
   field: string;
-  type: "quantitative" | "ordinal" | "nominal" | "temporal";
+  type: "quantitative" | "ordinal" | "nominal" | "temporal" | "value";
   showAxisTitle?: boolean; // Default is false
   timeUnit?: string; // For temporal fields
+  fields?: string[]; // To support multi metric chart variants
 }
 
 export interface CommonChartProperties {

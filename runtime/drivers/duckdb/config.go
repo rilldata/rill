@@ -46,9 +46,14 @@ type config struct {
 	// Attach allows user to pass a full ATTACH statement to attach a DuckDB database.
 	// Example YAML syntax : attach: "'ducklake:metadata.ducklake' AS my_ducklake(DATA_PATH 'datafiles1')"
 	Attach string `mapstructure:"attach"`
+	// Token is the authentication token used for MotherDuck.
+	Token string `mapstructure:"token"`
 	// DatabaseName is the name of the attached DuckDB database specified in the Path.
 	// This is usually not required but can be set if our auto detection of name fails.
 	DatabaseName string `mapstructure:"database_name"`
+	// SchemaName can be set to switch the default schema used by the DuckDB database.
+	// Only applicable for the generic rduckdb implementation.
+	SchemaName string `mapstructure:"schema_name"`
 }
 
 func newConfig(cfgMap map[string]any) (*config, error) {

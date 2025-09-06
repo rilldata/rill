@@ -39,6 +39,7 @@ export function getAnnotationsForMeasure({
   const annotationsQueryOptions = derived(
     exploreValidSpec,
     (exploreValidSpec) => {
+      const metricsViewSpec = exploreValidSpec.data?.metricsView;
       const exploreSpec = exploreValidSpec.data?.explore;
       const metricsViewName = exploreSpec?.metricsView ?? "";
 
@@ -55,7 +56,10 @@ export function getAnnotationsForMeasure({
         },
         {
           query: {
-            enabled: !!metricsViewName && !!selectedTimeRange,
+            enabled:
+              !!metricsViewSpec?.annotations?.length &&
+              !!metricsViewName &&
+              !!selectedTimeRange,
           },
         },
       );
@@ -87,7 +91,7 @@ function convertV1AnnotationsResponseItemToAnnotation(
   let endTime = annotation.timeEnd ? new Date(annotation.timeEnd) : undefined;
 
   // Only truncate start and ceil end when there is a grain column in the annotation.
-  if (period && annotation.grain) {
+  if (period && annotation.duration) {
     startTime = getStartOfPeriod(startTime, period, selectedTimezone);
     if (endTime) {
       endTime = getOffset(

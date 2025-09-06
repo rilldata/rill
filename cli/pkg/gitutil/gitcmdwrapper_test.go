@@ -101,6 +101,47 @@ func TestGitPull(t *testing.T) {
 	require.Empty(t, output, "unexpected output from GitPull with remote changes")
 }
 
+func TestInferGitRepoRoot_InRepoRoot(t *testing.T) {
+	tempDir, _ := setupTestRepository(t)
+
+	root, err := InferGitRepoRoot(tempDir)
+	require.NoError(t, err, "InferGitRepoRoot failed on repo root")
+	assertPathsEqual(t, root, tempDir)
+}
+
+func TestInferGitRepoRoot_InNestedDir(t *testing.T) {
+	tempDir, _ := setupTestRepository(t)
+
+	nested := filepath.Join(tempDir, "nested", "deep")
+	err := os.MkdirAll(nested, 0o755)
+	require.NoError(t, err, "failed to create nested directories")
+
+	root, err := InferGitRepoRoot(nested)
+	require.NoError(t, err, "InferGitRepoRoot failed on nested path")
+	assertPathsEqual(t, root, tempDir)
+}
+
+func TestInferGitRepoRoot_NotRepo(t *testing.T) {
+	dir := t.TempDir()
+
+	root, err := InferGitRepoRoot(dir)
+	require.Error(t, err, ErrNotAGitRepository)
+	require.Equal(t, "", root, "expected empty root for error case")
+}
+
+// Helper: compare canonicalized paths
+func assertPathsEqual(t *testing.T, p1, p2 string) {
+	t.Helper()
+	p1 = filepath.Clean(p1)
+	p2 = filepath.Clean(p2)
+	if r1, err := filepath.EvalSymlinks(p1); err == nil {
+		p1 = r1
+	}
+	if r2, err := filepath.EvalSymlinks(p2); err == nil {
+		p2 = r2
+	}
+	require.Equal(t, p1, p2)
+}
 func setupTestRepository(t *testing.T) (string, string) {
 	tempDir := t.TempDir()
 

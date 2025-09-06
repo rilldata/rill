@@ -4,7 +4,6 @@
   import { Axis } from "@rilldata/web-common/components/data-graphic/guides";
   import { bisectData } from "@rilldata/web-common/components/data-graphic/utils";
   import DashboardMetricsDraggableList from "@rilldata/web-common/components/menu/DashboardMetricsDraggableList.svelte";
-  import { ComparisonDeltaPreviousSuffix } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
   import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
   import ReplacePivotDialog from "@rilldata/web-common/features/dashboards/pivot/ReplacePivotDialog.svelte";
   import { splitPivotChips } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
@@ -142,6 +141,9 @@
   }
 
   $: totals = $timeSeriesDataStore.total as { [key: string]: number };
+  $: totalsComparisons = $timeSeriesDataStore.comparisonTotal as {
+    [key: string]: number;
+  };
 
   // When changing the timeseries query and the cache is empty, $timeSeriesQuery.data?.data is
   // temporarily undefined as results are fetched.
@@ -373,12 +375,12 @@
                 checkRight
                 role="menuitem"
                 checked={option === activeTimeGrain}
-                class="text-xs cursor-pointer capitalize"
+                class="text-xs cursor-pointer"
                 on:click={() => {
                   metricsExplorerStore.setTimeGrain(exploreName, option);
                 }}
               >
-                {TIME_GRAIN[option].label}
+                {V1TimeGrainToDateTimeUnit[option]}
               </DropdownMenu.CheckboxItem>
             {/each}
           </DropdownMenu.Content>
@@ -435,10 +437,9 @@
       <!-- FIXME: this is pending the remaining state work for show/hide measures and dimensions -->
       {#each renderedMeasures as measure, i (measure.name)}
         <!-- FIXME: I can't select the big number by the measure id. -->
-
         {@const bigNum = measure.name ? totals?.[measure.name] : null}
         {@const comparisonValue = measure.name
-          ? totals?.[measure.name + ComparisonDeltaPreviousSuffix]
+          ? totalsComparisons?.[measure.name]
           : undefined}
         {@const isValidPercTotal = measure.name
           ? $isMeasureValidPercentOfTotal(measure.name)

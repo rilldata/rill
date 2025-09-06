@@ -5736,6 +5736,17 @@ func (m *MetricsViewComparisonRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
+	if m.GetDimension() == nil {
+		err := MetricsViewComparisonRequestValidationError{
+			field:  "Dimension",
+			reason: "value is required",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
 	if all {
 		switch v := interface{}(m.GetDimension()).(type) {
 		case interface{ ValidateAll() error }:
@@ -16562,8 +16573,8 @@ func (m *MetricsViewAnnotationsResponse_Annotation) validate(all bool) error {
 
 	}
 
-	if m.Grain != nil {
-		// no validation rules for Grain
+	if m.Duration != nil {
+		// no validation rules for Duration
 	}
 
 	if len(errors) > 0 {

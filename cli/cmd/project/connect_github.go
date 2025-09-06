@@ -15,7 +15,6 @@ import (
 	"github.com/rilldata/rill/cli/cmd/org"
 	"github.com/rilldata/rill/cli/pkg/browser"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/dotrillcloud"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/local"
 	"github.com/rilldata/rill/cli/pkg/printer"
@@ -41,6 +40,7 @@ func GitPushCmd(ch *cmdutil.Helper) *cobra.Command {
 			if len(args) > 0 {
 				opts.GitPath = args[0]
 			}
+			opts.Github = true
 			return ConnectGithubFlow(cmd.Context(), ch, opts)
 		},
 	}
@@ -48,7 +48,7 @@ func GitPushCmd(ch *cmdutil.Helper) *cobra.Command {
 	deployCmd.Flags().SortFlags = false
 	deployCmd.Flags().StringVar(&opts.GitPath, "path", ".", "Path to project repository (default: current directory)") // This can also be a remote .git URL (undocumented feature)
 	deployCmd.Flags().StringVar(&opts.SubPath, "subpath", "", "Relative path to project in the repository (for monorepos)")
-	deployCmd.Flags().StringVar(&opts.RemoteName, "remote", "", "Remote name (default: first Git remote)")
+	deployCmd.Flags().StringVar(&opts.RemoteName, "remote", "origin", "Remote name (default: origin)")
 	deployCmd.Flags().StringVar(&ch.Org, "org", ch.Org, "Org to deploy project in")
 	deployCmd.Flags().StringVar(&opts.Name, "name", "", "Project name (default: Git repo name)")
 	deployCmd.Flags().StringVar(&opts.Description, "description", "", "Project description")
@@ -95,6 +95,10 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 	var localProjectPath string
 	var err error
 	if isLocalGitPath {
+		err = opts.ValidatePathAndSetupGit(ch)
+		if err != nil {
+			return err
+		}
 		// If it's a local path, we need to do some extra validation and rewrites.
 		localGitPath, localProjectPath, err = ValidateLocalProject(ch, opts.GitPath, opts.SubPath)
 		if err != nil {
@@ -106,32 +110,18 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 	}
 
 	if ch.Org != "" {
-		adminClient, err := ch.Client()
-		if err != nil {
+		projects, err := ch.InferProjects(ctx, ch.Org, localProjectPath)
+		if err != nil && !errors.Is(err, cmdutil.ErrNoMatchingProject) {
 			return err
 		}
-
 		var proj *adminv1.Project
-
-		if opts.Name == "" {
-			// Try loading the project from the .rillcloud directory
-			proj, err = ch.LoadProject(ctx, localProjectPath)
-			if err != nil {
-				return err
-			}
-		} else {
-			projResp, err := adminClient.GetProject(ctx, &adminv1.GetProjectRequest{OrganizationName: ch.Org, Name: opts.Name})
-			if err != nil {
-				if st, ok := status.FromError(err); !ok || st.Code() != codes.NotFound {
-					return err
-				}
-			}
-			if projResp != nil {
-				proj = projResp.Project
+		for _, p := range projects {
+			if p.GitRemote != "" && p.ManagedGitId == "" {
+				proj = p
+				break
 			}
 		}
-
-		if proj != nil && proj.GitRemote != "" {
+		if proj != nil {
 			ch.PrintfError("Found existing project. But it is already connected to a Github repository.\nPlease visit %s to update the Github repository.\n", proj.FrontendUrl)
 			return nil
 		}
@@ -233,6 +223,10 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 		}
 	}
 
+	var dirName string
+	if localProjectPath != "" {
+		dirName = filepath.Base(localProjectPath)
+	}
 	// Create the project (automatically deploys prod branch)
 	res, err := createProjectFlow(ctx, ch, &adminv1.CreateProjectRequest{
 		OrganizationName: ch.Org,
@@ -244,6 +238,7 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 		Subpath:          opts.SubPath,
 		ProdBranch:       opts.ProdBranch,
 		Public:           opts.Public,
+		DirectoryName:    dirName,
 		GitRemote:        gitRemote,
 	})
 	if err != nil {
@@ -252,23 +247,6 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 			return nil
 		}
 		return fmt.Errorf("create project failed with error %w", err)
-	}
-
-	if localProjectPath != "" {
-		err = dotrillcloud.SetAll(localProjectPath, ch.AdminURL(), &dotrillcloud.Config{
-			ProjectID: res.Project.Id,
-		})
-		if err != nil {
-			return err
-		}
-		author, err := ch.GitSignature(ctx, localGitPath)
-		if err != nil {
-			return err
-		}
-		err = gitutil.CommitAndForcePush(ctx, localGitPath, &gitutil.Config{Remote: gitRemote, DefaultBranch: opts.ProdBranch}, "Autocommit .rillcloud directory", author)
-		if err != nil {
-			return fmt.Errorf("failed to push .rillcloud directory to remote: %w", err)
-		}
 	}
 
 	// Success!

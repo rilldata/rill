@@ -70,6 +70,8 @@ const CHART_TYPES = [
   "donut_chart",
   "pie_chart",
   "heatmap",
+  "funnel_chart",
+  "combo_chart",
 ] as const;
 const NON_CHART_TYPES = [
   "markdown",

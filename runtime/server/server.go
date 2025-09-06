@@ -291,7 +291,8 @@ func timeoutSelector(fullMethodName string) time.Duration {
 		return time.Minute * 59 // Not 60 to avoid forced timeout on ingress
 	}
 
-	if strings.HasPrefix(fullMethodName, "/rill.runtime.v1.QueryService") {
+	if strings.HasPrefix(fullMethodName, "/rill.runtime.v1.QueryService") ||
+		strings.HasPrefix(fullMethodName, "/rill.runtime.v1.ConnectorService") {
 		return time.Minute * 5
 	}
 
@@ -305,6 +306,10 @@ func timeoutSelector(fullMethodName string) time.Duration {
 
 	if fullMethodName == runtimev1.RuntimeService_WatchLogs_FullMethodName {
 		return time.Minute * 30
+	}
+
+	if fullMethodName == runtimev1.RuntimeService_Complete_FullMethodName {
+		return time.Minute * 2 // Match the completionTimeout from runtime/completion.go
 	}
 
 	return time.Second * 30

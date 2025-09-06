@@ -11,7 +11,7 @@ sidebar_position: 00
 In Rill, Explore dashboards are used to visually understand your data with real-time filtering, based on the dimensions and measures defined in your metrics view. In the Explore dashboard YAML, you can define which measures and dimensions are visible, as well as the default view when a user sees your dashboard. 
 
 :::tip
-Starting in version 0.50, metrics views have been separated from Explore dashboards. This allows for a cleaner, more accessible metrics layer and the ability to build various dashboards and components on top of a single metrics view. For more information on what a metrics view is please see: [What is a Metrics View?](/concepts/metrics-layer)
+Starting in version 0.50, metrics views have been separated from Explore dashboards. This allows for a cleaner, more accessible metrics layer and the ability to build various dashboards and components on top of a single metrics view. For more information on what a metrics view is please see: [What is a Metrics View?](/home/concepts/metrics-layer)
 
 For migration steps, see [Migrations](/other/v50-dashboard-changes#how-to-migrate-your-current-dashboards).
 :::
@@ -47,14 +47,14 @@ For more details about available configurations and properties, check our [Dashb
 :::
 
 ### Preview a Dashboard in Rill Developer
-Once a dashboard is ready to preview, before [deploying to Rill Cloud](/deploy/deploy-dashboard/), you can preview the dashboard in Rill Developer. Especially if you are setting up [dashboard policies](/manage/security), it is recommended to preview and test the dashboard before deploying.
+Once a dashboard is ready to preview, before [deploying to Rill Cloud](/deploy/deploy-dashboard), you can preview the dashboard in Rill Developer. Especially if you are setting up [dashboard policies](/manage/security), it is recommended to preview and test the dashboard before deploying.
 
 <img src = '/img/build/dashboard/preview-dashboard.png' class='rounded-gif' />
 <br />
 
 
 ### Clickable Dimension Links 
-Adding an additional parameter to your dimension in the [metrics view](/build/metrics-view/) can allow for clickable links directly from the dashboard.
+Adding an additional parameter to your dimension in the [metrics view](/build/metrics-view) can allow for clickable links directly from the dashboard.
 
 ```yaml
 dimensions:
