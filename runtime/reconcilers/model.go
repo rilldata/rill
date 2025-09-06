@@ -1234,14 +1234,17 @@ func (r *ModelReconciler) executeSingle(ctx context.Context, executor *wrappedMo
 		return nil, err
 	}
 
+	// Execute the stage step if configured
 	return r.executeWithRetry(ctx, self, mdl, func(ctx context.Context) (*drivers.ModelResult, error) {
 		var stageDuration time.Duration
-		// Stage execution (if applicable)
 		if executor.stage != nil {
+			// Also resolve templating in the stage props
 			stageProps, err := r.resolveTemplatedProps(ctx, self, incrementalState, partitionData, mdl.Spec.StageConnector, mdl.Spec.StageProperties.AsMap())
 			if err != nil {
 				return nil, err
 			}
+
+			// Execute the stage step
 			stageResult, err := executor.stage.Execute(ctx, &drivers.ModelExecuteOptions{
 				ModelExecutorOptions: executor.stageOpts,
 				InputProperties:      inputProps,
@@ -1266,13 +1269,14 @@ func (r *ModelReconciler) executeSingle(ctx context.Context, executor *wrappedMo
 			// We do this using the same ctx, which means we may leak data in the staging connector in case of context cancellations.
 			// This is acceptable since the staging connector is assumed to be configured for temporary data.
 			defer func() {
-				if err := executor.stageResultManager.Delete(ctx, stageResult); err != nil {
+				err := executor.stageResultManager.Delete(ctx, stageResult)
+				if err != nil {
 					r.C.Logger.Warn("Failed to clean up staged model output", zap.String("model", self.Meta.Name.Name), zap.Error(err), observability.ZapCtx(ctx))
 				}
 			}()
 		}
 
-		// Final execution
+		// Execute the final step
 		finalResult, err := executor.final.Execute(ctx, &drivers.ModelExecuteOptions{
 			ModelExecutorOptions: executor.finalOpts,
 			InputProperties:      inputProps,
