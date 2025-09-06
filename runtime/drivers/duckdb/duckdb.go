@@ -48,6 +48,16 @@ var spec = drivers.Spec{
 			Description: "Path to external DuckDB database.",
 			Placeholder: "/path/to/main.db",
 		},
+		{
+			Key:         "mode",
+			Type:        drivers.StringPropertyType,
+			Required:    false,
+			DisplayName: "Mode",
+			Description: "Set the mode for the DuckDB connection. By default, it is set to 'read' which allows only read operations. Set to 'readwrite' to enable model creation and table mutations.",
+			Placeholder: modeReadOnly,
+			Default:     modeReadOnly,
+			NoPrompt:    true,
+		},
 	},
 	// Important: Any edits to the below properties must be accompanied by changes to the client-side form validation schemas.
 	SourceProperties: []*drivers.PropertySpec{
@@ -163,18 +173,6 @@ func (d Driver) Open(instanceID string, cfgMap map[string]any, st *storage.Clien
 	olapSemSize := cfg.PoolSize - 1
 	if olapSemSize < 1 {
 		olapSemSize = 1
-	}
-
-	// Set the mode for the connection
-	if cfg.Mode == "" {
-		// The default mode depends on the connection type:
-		// - For generic connections (Motherduck/DuckLake with Path/Attach), default to "read"
-		// - For connections using the embedded DuckDB, default to "readwrite" to maintain compatibility
-		if cfg.Path != "" || cfg.Attach != "" {
-			cfg.Mode = modeReadOnly
-		} else {
-			cfg.Mode = modeReadWrite
-		}
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())

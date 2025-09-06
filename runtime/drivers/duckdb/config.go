@@ -65,6 +65,18 @@ func newConfig(cfgMap map[string]any) (*config, error) {
 		return nil, fmt.Errorf("invalid mode '%s': must be 'read' or 'readwrite'", cfg.Mode)
 	}
 
+	// Set the mode for the connection
+	if cfg.Mode == "" {
+		// The default mode depends on the connection type:
+		// - For generic connections (Motherduck/DuckLake with Path/Attach), default to "read"
+		// - For connections using the embedded DuckDB, default to "readwrite" to maintain compatibility
+		if cfg.Path != "" || cfg.Attach != "" {
+			cfg.Mode = modeReadOnly
+		} else {
+			cfg.Mode = modeReadWrite
+		}
+	}
+
 	// Set pool size
 	poolSize := cfg.PoolSize
 	if poolSize == 0 && cfg.CPU != 0 {
