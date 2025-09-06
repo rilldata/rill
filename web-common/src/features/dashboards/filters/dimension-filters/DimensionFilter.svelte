@@ -92,7 +92,10 @@
     name,
     {
       mode: curMode,
-      values: searchedBulkValues,
+      values:
+        curMode === DimensionFilterMode.Select
+          ? selectedValues
+          : searchedBulkValues,
       searchText: curSearchText,
       timeStart,
       timeEnd,
@@ -589,12 +592,10 @@
           {/if}
 
           <!-- Show "no results" only if all lists are empty -->
-          {#if uncheckedItems.length === 0 && belowFoldItems.length === 0}
-            {#if curMode !== DimensionFilterMode.Select || checkedItems.length === 0}
-              <div class="ui-copy-disabled text-center p-2 w-full">
-                no results
-              </div>
-            {/if}
+          {#if uncheckedItems.length === 0 && belowFoldItems.length === 0 && (curMode !== DimensionFilterMode.Select || checkedItems.length === 0)}
+            <div class="ui-copy-disabled text-center p-2 w-full">
+              no results
+            </div>
           {/if}
         </DropdownMenu.Group>
       {/if}
