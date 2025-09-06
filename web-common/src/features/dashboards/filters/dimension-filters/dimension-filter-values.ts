@@ -126,28 +126,6 @@ export function useDimensionSearch(
       );
       const combinedValues = [...mainValues, ...actualBelowFoldValues];
 
-      console.log(
-        "Debug - Main values:",
-        mainValues.length,
-        mainValues.slice(0, 5),
-      );
-      console.log(
-        "Debug - Below-fold values:",
-        belowFoldValues.length,
-        belowFoldValues,
-      );
-      console.log(
-        "Debug - Actual below-fold (not in main):",
-        actualBelowFoldValues,
-      );
-      console.log("Debug - Combined values:", combinedValues.length);
-      console.log("Debug - Input values for below-fold query:", values);
-      console.log("Debug - Mode:", mode);
-      console.log(
-        "Debug - Below-fold queries created:",
-        belowFoldQueries.length,
-      );
-
       const dedupedValues = new Set(combinedValues);
       const result = [...dedupedValues] as string[];
 
