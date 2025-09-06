@@ -127,12 +127,7 @@ export function useDimensionSearch(
       const combinedValues = [...mainValues, ...actualBelowFoldValues];
 
       const dedupedValues = new Set(combinedValues);
-      const result = [...dedupedValues] as string[];
-
-      // Attach metadata for potential UI use
-      (result as any).__belowFoldValues = actualBelowFoldValues;
-
-      return result;
+      return [...dedupedValues] as string[];
     },
   );
 }
