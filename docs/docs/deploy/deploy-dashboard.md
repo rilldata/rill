@@ -1,12 +1,10 @@
 ---
-title: Deploy Dashboards 
+title: Publish Dashboards to Rill Cloud
 sidebar_label: Deploy Dashboards 
-sidebar_position: 00
+sidebar_position: 15
 ---
 
 <!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->
-
-## Overview
 
 
 Deploying dashboards from Rill Developer allows you to share dashboards with other users, leverage [Rill Cloud capabilities](../../explore/dashboard-101), [embed Rill](/integrate/embedding.md) into other applications, and more!
@@ -45,7 +43,7 @@ Starting from **v0.48**, we have introduced the possibility to push dashboards _
 
 <img src = '/img/deploy/existing-project/deploy.png' class='rounded-gif' />
 <br />
-Now that you project has been deployed to Rill Cloud, you will need to ensure that your users have access! Please refer to the [user management](../../manage/user-management.md) section. 
+Now that you project has been deployed to Rill Cloud, you will need to ensure that your users have access! Please refer to the [user management](../manage/user-management.md) section. 
 
 If you make changes locally on Rill Developer, you will need to push the contents to Rill Cloud by selecting the `Deploy` button.
 
@@ -199,7 +197,7 @@ Likewise, if using the UI by selecting the `Deploy` button, Rill will detect the
 
 :::tip Interested in using Gitlab?
 
-Check out our documentation on deploying a [Rill project using Gitlab](deploy-from-cli.md)!
+Check out our documentation on deploying a [Rill project using Gitlab](deploy-from-cli)!
 
 :::
 
