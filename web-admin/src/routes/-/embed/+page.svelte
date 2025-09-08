@@ -7,12 +7,14 @@
   import ExploreEmbed, {
     EmbedStorageNamespacePrefix,
   } from "@rilldata/web-admin/features/embeds/ExploreEmbed.svelte";
+  import initEmbedPublicAPI from "@rilldata/web-admin/features/embeds/init-embed-public-api.ts";
   import TopNavigationBarEmbed from "@rilldata/web-admin/features/embeds/TopNavigationBarEmbed.svelte";
   import UnsupportedKind from "@rilldata/web-admin/features/embeds/UnsupportedKind.svelte";
   import { clearExploreSessionStore } from "@rilldata/web-common/features/dashboards/state-managers/loaders/explore-web-view-store";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import type { V1ResourceName } from "@rilldata/web-common/runtime-client";
+  import { onMount } from "svelte";
 
   // Embedded dashboards communicate directly with the project runtime and do not communicate with the admin server.
   // One by-product of this is that they have no access to control plane features like alerts, bookmarks, and scheduled reports.
@@ -69,6 +71,10 @@
     // To understand why we set `activeResource=null` here, see the comment above
     activeResource = null;
   }
+
+  onMount(() => {
+    return initEmbedPublicAPI();
+  });
 </script>
 
 <svelte:head>
