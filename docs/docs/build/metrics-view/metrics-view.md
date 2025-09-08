@@ -23,7 +23,7 @@ In Rill, your metrics view is defined by _metric definitions_. Metric definition
 ## Creating Metrics Views with AI
 
 :::tip
-Starting in version 0.50, the metrics view has been separated from the dashboard. This allows for a cleaner, more accessible metrics layer and the ability to build various dashboards and components on top of a single metrics layer. For more information on why we decided to do this, please refer to the following: [Why separate the dashboard and metrics layer](/get-started/concepts/metrics-layer)
+Starting in version 0.50, the metrics view has been separated from the dashboard. This allows for a cleaner, more accessible metrics layer and the ability to build various dashboards and components on top of a single metrics layer. For more information on why we decided to do this, please refer to the following: [Why separate the dashboard and metrics layer](/build/metrics-view)
 
 For migration steps, see [Migrations](/other/v50-dashboard-changes#how-to-migrate-your-current-dashboards).
 :::

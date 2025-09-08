@@ -420,7 +420,7 @@ const config = {
           },
           {
             from: '/concepts/OLAP',
-            to: '/get-started/concepts/OLAP'
+            to: '/connect/olap#what-is-olap'
           },
           {
             from: '/home/concepts/OLAP',
@@ -444,11 +444,7 @@ const config = {
           },
           {
             from: '/concepts/metrics-layer',
-            to: '/get-started/concepts/metrics-layer'
-          },
-          {
-            from: '/home/concepts/metrics-layer',
-            to: '/get-started/concepts/metrics-layer'
+            to: '/build/metrics-view'
           },
           {
             from: '/concepts/bi-as-code',
@@ -459,14 +455,6 @@ const config = {
             to: '/get-started/concepts/bi-as-code'
           },
           {
-            from: '/home/concepts/metrics-layer',
-            to: '/build/metrics-view'
-          },
-          {
-            from: '/home/concepts/OLAP',
-            to: '/connect/olap#what-is-olap'
-          },
-          {
             from: '/build/advanced-models/',
             to: '/build/models/'
           },
@@ -485,26 +473,6 @@ const config = {
           {
             from: '/home/concepts/metrics-layer',
             to: '/build/metrics-view'
-          },
-          {
-            from: '/home/concepts/OLAP',
-            to: '/connect/olap#what-is-olap'
-          },
-          {
-            from: '/build/advanced-models/',
-            to: '/build/models/'
-          },
-          {
-            from: '/build/advanced-models/incremental-models',
-            to: '/build/models/incremental-models'
-          },
-          {
-            from: '/build/advanced-models/partitions',
-            to: '/build/models/partitioned-models'
-          },
-          {
-            from: '/build/advanced-models/staging',
-            to: '/build/models/staging-models'
           },
           {
             from: '/integrate/custom-apis',

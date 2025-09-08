@@ -7,7 +7,7 @@ sidebar_position: 20
 
 [Apache Pinot](https://docs.pinot.apache.org/) is a real-time distributed OLAP datastore purpose-built for low-latency, high-throughput analytics, and is perfect for user-facing analytical workloads.
 
-Rill supports connecting to an existing Pinot cluster via a "live connector" and using it as an OLAP engine  built against [external tables](/get-started/concepts/OLAP#external-olap-tables) to power Rill dashboards. This is particularly useful when working with extremely large datasets (hundreds of GBs or even TB+ in size).
+Rill supports connecting to an existing Pinot cluster via a "live connector" and using it as an OLAP engine  built against [external tables](/connect/olap#external-olap-tables) to power Rill dashboards. This is particularly useful when working with extremely large datasets (hundreds of GBs or even TB+ in size).
 
 
 ## Configuring Rill Developer with Pinot
