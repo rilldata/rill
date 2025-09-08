@@ -17,7 +17,6 @@ Policies are based on user attributes such as **email address**, **domain**, or 
 ## How Does It Work?
 
 Access policies are defined in the **metrics view** and/or **[dashboard YAML](/build/dashboards/#define-dashboard-access)**.  
-
 There are three types of rules:
 
  **General Access:** (`access`) A boolean expression deciding if a user can access the metrics view
@@ -98,12 +97,31 @@ security:
 
 :::tip Access Policy Behavior
 
-When combining access policies from project defaults and object-specific policies, remember that the object level policies will overwrite the project level ones. 
-
-
-Access policies in metrics views and dashboards will be combined using a logical AND, so if a user doesn’t pass both, they won’t get access to the dashboard.
+When combining access policies from project defaults and object-specific policies, remember that the object level policies will overwrite the project level ones. Dashboard and metrics ciew policies are binary logically ANDed.
  
 <!-- Not behaving as you're expecting? See our [troubleshooting guide.](/build/debugging/dashboard-access) -->
+
+:::
+
+## Dashboard Access
+
+Dashboards also have an `access` key that can add additional security to the metrics view. Both [explore](/build/dashboards/#define-dashboard-access) and [canvas](/build/canvas/#define-dashboard-access) dashboards can set the following:
+
+```yaml
+security:
+  access: true
+```
+
+This will logically AND with your metrics view's access so ensure that a user who needs access to the dashboard passes **both** conditions.
+
+:::tip complicated set-ups
+
+Access Policies can get quite complicated as your use case grows and having to navigate mulitple files to figure out why a user is able to or unable to access certain dashboards. 
+
+A few recommendations:
+1. Only change project level access if absolutely necessary. (They get overwritten by object level security)
+2. Dashboard access is controlled in the metrics view, only add extra policies on the dashboard if absolutely necessary as this gets logically ANDed with the metrics view anyway.
+3. Solve project access issues higher up in the [user](/manage/user-management) / [usergroup](/manage/usergroup-management) settings, and keep default project security rules.
 
 :::
 
@@ -188,9 +206,9 @@ security:
 If the `security` section is defined and `access` is not, then `access` will default to `false`, meaning that it won't be accessible to anyone and users will need to be invited individually.
 :::
 
-### Restrict data access to specific user groups
+### Restrict dashboard access to specific user groups
 
-Group membership can be utilized to specify which users have access to a specific metrics view (using the templating function `has`). For example:
+Group membership can be utilized to specify which users have access to a specific dashboard (using the templating function `has`). For example:
 ```yaml
 security:
   access: '{{ has "partners" .user.groups }}'
@@ -210,7 +228,7 @@ security:
 The `row_filter` value needs to be valid SQL syntax for a `WHERE` clause. It will be injected into every SQL query used to render the dashboard.
 :::
 
-### Conditionally hide a metrics view dimension or measure
+### Conditionally hide a dashboard dimension or measure
 
 You can include or exclude dimensions and measures based on a boolean expression. For example, to exclude dimensions named `ssn` and `id` for users whose email domain is not `example.com`:
 

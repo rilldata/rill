@@ -7,6 +7,7 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
   export let resource: V1Resource;
+  export let navigationEnabled: boolean = true;
 
   $: ({ instanceId } = $runtime);
 
@@ -30,7 +31,13 @@
     filtersEnabled={canvas?.spec?.filtersEnabled}
   >
     {#each rows as row, rowIndex (rowIndex)}
-      <StaticCanvasRow {row} {rowIndex} {components} {maxWidth} />
+      <StaticCanvasRow
+        {row}
+        {rowIndex}
+        {components}
+        {maxWidth}
+        {navigationEnabled}
+      />
     {:else}
       <div class="size-full flex items-center justify-center">
         <p class="text-lg text-gray-500">No components added</p>

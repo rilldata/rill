@@ -68,6 +68,7 @@
         $context.exploreName,
         $context.organization,
         $context.project,
+        isEmbedded,
       );
       await goto(exploreURL);
     } catch (error) {
@@ -87,10 +88,7 @@
   }
 
   $: canNavigate =
-    $exploreAvailability.isAvailable &&
-    !isNavigating &&
-    !!exploreState &&
-    !isEmbedded;
+    $exploreAvailability.isAvailable && !isNavigating && !!exploreState;
 </script>
 
 {#if $exploreAvailability.isAvailable}
