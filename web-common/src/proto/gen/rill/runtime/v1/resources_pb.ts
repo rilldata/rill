@@ -4806,29 +4806,29 @@ export class CanvasDimensionFilter extends Message<CanvasDimensionFilter> {
   values: string[] = [];
 
   /**
-   * @generated from field: optional uint32 limit = 3;
+   * @generated from field: uint32 limit = 3;
    */
-  limit?: number;
+  limit = 0;
 
   /**
-   * @generated from field: optional bool removable = 4;
+   * @generated from field: bool removable = 4;
    */
-  removable?: boolean;
+  removable = false;
 
   /**
-   * @generated from field: optional bool locked = 5;
+   * @generated from field: bool locked = 5;
    */
-  locked?: boolean;
+  locked = false;
 
   /**
-   * @generated from field: optional bool hidden = 6;
+   * @generated from field: bool hidden = 6;
    */
-  hidden?: boolean;
+  hidden = false;
 
   /**
-   * @generated from field: optional bool exclude = 7;
+   * @generated from field: bool exclude = 7;
    */
-  exclude?: boolean;
+  exclude = false;
 
   /**
    * @generated from field: string mode = 8;
@@ -4845,11 +4845,11 @@ export class CanvasDimensionFilter extends Message<CanvasDimensionFilter> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "dimension", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "values", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 3, name: "limit", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
-    { no: 4, name: "removable", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
-    { no: 5, name: "locked", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
-    { no: 6, name: "hidden", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
-    { no: 7, name: "exclude", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
+    { no: 3, name: "limit", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 4, name: "removable", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 5, name: "locked", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 6, name: "hidden", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 7, name: "exclude", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 8, name: "mode", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
@@ -4885,29 +4885,29 @@ export class CanvasMeasureFilter extends Message<CanvasMeasureFilter> {
   values: number[] = [];
 
   /**
-   * @generated from field: optional bool removable = 3;
+   * @generated from field: bool removable = 3;
    */
-  removable?: boolean;
+  removable = false;
 
   /**
-   * @generated from field: optional string by_dimension = 4;
+   * @generated from field: string by_dimension = 4;
    */
-  byDimension?: string;
+  byDimension = "";
 
   /**
-   * @generated from field: optional string operator = 5;
+   * @generated from field: string operator = 5;
    */
-  operator?: string;
+  operator = "";
 
   /**
-   * @generated from field: optional bool locked = 6;
+   * @generated from field: bool locked = 6;
    */
-  locked?: boolean;
+  locked = false;
 
   /**
-   * @generated from field: optional bool hidden = 7;
+   * @generated from field: bool hidden = 7;
    */
-  hidden?: boolean;
+  hidden = false;
 
   constructor(data?: PartialMessage<CanvasMeasureFilter>) {
     super();
@@ -4919,11 +4919,11 @@ export class CanvasMeasureFilter extends Message<CanvasMeasureFilter> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "measure", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "values", kind: "scalar", T: 13 /* ScalarType.UINT32 */, repeated: true },
-    { no: 3, name: "removable", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
-    { no: 4, name: "by_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
-    { no: 5, name: "operator", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
-    { no: 6, name: "locked", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
-    { no: 7, name: "hidden", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
+    { no: 3, name: "removable", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 4, name: "by_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "operator", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "locked", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 7, name: "hidden", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CanvasMeasureFilter {

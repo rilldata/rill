@@ -800,22 +800,22 @@ message CanvasPreset {
 message CanvasDimensionFilter {
   string dimension = 1;
   repeated string values = 2;
-  optional uint32 limit = 3;
-  optional bool removable = 4;
-  optional bool locked = 5;
-  optional bool hidden = 6;
-  optional bool exclude = 7;
+  uint32 limit = 3;
+  bool removable = 4;
+  bool locked = 5;
+  bool hidden = 6;
+  bool exclude = 7;
   string mode = 8;
 }
 
 message CanvasMeasureFilter {
   string measure = 1;
   repeated uint32 values = 2;
-  optional bool removable = 3;
-  optional string by_dimension = 4;
-  optional string operator = 5;
-  optional bool locked = 6;
-  optional bool hidden = 7;
+  bool removable = 3;
+  string by_dimension = 4;
+  string operator = 5;
+  bool locked = 6;
+  bool hidden = 7;
 }
 
 message CanvasDefaultFilters {

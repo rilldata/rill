@@ -10511,27 +10511,17 @@ func (m *CanvasDimensionFilter) validate(all bool) error {
 
 	// no validation rules for Dimension
 
+	// no validation rules for Limit
+
+	// no validation rules for Removable
+
+	// no validation rules for Locked
+
+	// no validation rules for Hidden
+
+	// no validation rules for Exclude
+
 	// no validation rules for Mode
-
-	if m.Limit != nil {
-		// no validation rules for Limit
-	}
-
-	if m.Removable != nil {
-		// no validation rules for Removable
-	}
-
-	if m.Locked != nil {
-		// no validation rules for Locked
-	}
-
-	if m.Hidden != nil {
-		// no validation rules for Hidden
-	}
-
-	if m.Exclude != nil {
-		// no validation rules for Exclude
-	}
 
 	if len(errors) > 0 {
 		return CanvasDimensionFilterMultiError(errors)
@@ -10637,25 +10627,15 @@ func (m *CanvasMeasureFilter) validate(all bool) error {
 
 	// no validation rules for Measure
 
-	if m.Removable != nil {
-		// no validation rules for Removable
-	}
+	// no validation rules for Removable
 
-	if m.ByDimension != nil {
-		// no validation rules for ByDimension
-	}
+	// no validation rules for ByDimension
 
-	if m.Operator != nil {
-		// no validation rules for Operator
-	}
+	// no validation rules for Operator
 
-	if m.Locked != nil {
-		// no validation rules for Locked
-	}
+	// no validation rules for Locked
 
-	if m.Hidden != nil {
-		// no validation rules for Hidden
-	}
+	// no validation rules for Hidden
 
 	if len(errors) > 0 {
 		return CanvasMeasureFilterMultiError(errors)
