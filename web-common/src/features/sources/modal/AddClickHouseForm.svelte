@@ -334,48 +334,50 @@
             {@const isPortField = propertyKey === "port"}
             {@const isSSLField = propertyKey === "ssl"}
 
-            <!-- Skip SSL field for ClickHouse Cloud since it's always enabled -->
-            {#if !(connectorType === "clickhouse-cloud" && isSSLField)}
-              <div class="py-1.5 first:pt-0 last:pb-0">
-                {#if property.type === ConnectorDriverPropertyType.TYPE_STRING || property.type === ConnectorDriverPropertyType.TYPE_NUMBER}
-                  <Input
-                    id={propertyKey}
-                    label={property.displayName}
-                    placeholder={property.placeholder}
-                    optional={!property.required}
-                    secret={property.secret}
-                    hint={property.hint}
-                    errors={normalizeErrors($paramsErrors[propertyKey])}
-                    bind:value={$paramsForm[propertyKey]}
-                    onInput={(_, e) => onStringInputChange(e)}
-                    alwaysShowError
-                    disabled={connectorType === "clickhouse-cloud" &&
-                      isPortField}
-                  />
-                {:else if property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN}
-                  <Checkbox
-                    id={propertyKey}
-                    bind:checked={$paramsForm[propertyKey]}
-                    label={property.displayName}
-                    hint={property.hint}
-                    optional={!property.required}
-                  />
-                {:else if property.type === ConnectorDriverPropertyType.TYPE_INFORMATIONAL}
-                  <InformationalField
-                    description={property.description}
-                    hint={property.hint}
-                    href={property.docsUrl}
-                  />
-                {/if}
+            <div class="py-1.5 first:pt-0 last:pb-0">
+              {#if property.type === ConnectorDriverPropertyType.TYPE_STRING || property.type === ConnectorDriverPropertyType.TYPE_NUMBER}
+                <Input
+                  id={propertyKey}
+                  label={property.displayName}
+                  placeholder={property.placeholder}
+                  optional={!property.required}
+                  secret={property.secret}
+                  hint={property.hint}
+                  errors={normalizeErrors($paramsErrors[propertyKey])}
+                  bind:value={$paramsForm[propertyKey]}
+                  onInput={(_, e) => onStringInputChange(e)}
+                  alwaysShowError
+                  disabled={connectorType === "clickhouse-cloud" && isPortField}
+                />
+              {:else if property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN}
+                <Checkbox
+                  id={propertyKey}
+                  bind:checked={$paramsForm[propertyKey]}
+                  label={property.displayName}
+                  hint={property.hint}
+                  optional={!property.required}
+                  disabled={connectorType === "clickhouse-cloud" && isSSLField}
+                />
+              {:else if property.type === ConnectorDriverPropertyType.TYPE_INFORMATIONAL}
+                <InformationalField
+                  description={property.description}
+                  hint={property.hint}
+                  href={property.docsUrl}
+                />
+              {/if}
 
-                <!-- Show info about fixed values for ClickHouse Cloud -->
-                {#if connectorType === "clickhouse-cloud" && isPortField}
-                  <div class="mt-1 text-xs text-gray-600">
-                    Port is fixed to 8443 for ClickHouse Cloud (HTTPS)
-                  </div>
-                {/if}
-              </div>
-            {/if}
+              <!-- Show info about fixed values for ClickHouse Cloud -->
+              {#if connectorType === "clickhouse-cloud" && isPortField}
+                <div class="mt-1 text-xs text-gray-600">
+                  Port is fixed to 8443 for ClickHouse Cloud (HTTPS)
+                </div>
+              {/if}
+              {#if connectorType === "clickhouse-cloud" && isSSLField}
+                <div class="mt-1 text-xs text-gray-600">
+                  SSL is always enabled for ClickHouse Cloud
+                </div>
+              {/if}
+            </div>
           {/each}
         </form>
       </TabsContent>
