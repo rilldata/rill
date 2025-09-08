@@ -40,7 +40,6 @@
   import Calendar from "@rilldata/web-common/components/icons/Calendar.svelte";
   import {
     constructAsOfString,
-    isUsingLegacyTime,
     constructNewString,
   } from "../../new-time-controls";
   import PrimaryRangeTooltip from "./PrimaryRangeTooltip.svelte";
@@ -77,21 +76,19 @@
     try {
       parsedTime = parseRillTime(timeString);
     } catch {
-      // This is not necessarily an error as the parser does not work with Legacy syntax
       parsedTime = undefined;
     }
   }
 
-  $: hideTruncationSelector =
-    parsedTime?.interval instanceof RillIsoInterval || parsedTime?.isOldFormat;
+  $: hideTruncationSelector = parsedTime?.interval instanceof RillIsoInterval;
 
-  $: usingLegacyTime = isUsingLegacyTime(timeString);
+  $: usingLegacyTime = parsedTime?.isOldFormat;
 
   $: snapToEnd = usingLegacyTime ? true : !!parsedTime?.asOfLabel?.offset;
   $: ref = usingLegacyTime ? "latest" : (parsedTime?.asOfLabel?.label ?? "now");
 
   $: truncationGrain = usingLegacyTime
-    ? timeString?.startsWith("rill")
+    ? timeString?.startsWith("rill") && !timeString.endsWith("C")
       ? V1TimeGrain.TIME_GRAIN_DAY
       : getSmallestGrainFromISODuration(timeString ?? "PT1M")
     : parsedTime?.asOfLabel?.snap

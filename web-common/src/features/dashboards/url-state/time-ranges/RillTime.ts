@@ -47,7 +47,9 @@ export class RillTime {
       interval instanceof RillShorthandInterval ||
       interval instanceof RillPeriodToGrainInterval;
     this.rangeGrain = this.interval.getGrain();
-    this.isOldFormat = interval instanceof RillLegacyIsoInterval;
+    this.isOldFormat =
+      interval instanceof RillLegacyIsoInterval ||
+      interval instanceof RillLegacyDaxInterval;
   }
 
   public withGrain(grain: string) {
