@@ -220,6 +220,7 @@ func (p *Provisioner) Provision(ctx context.Context, r *provisioner.Resource, op
 	dsn.User = url.UserPassword(user, password)
 	dsn.Path = "/" + dbName
 	cfg.DSN = dsn.String()
+	cfg.Cluster = p.spec.Cluster
 
 	// Optionally build a write DSN.
 	if p.spec.WriteDSN != "" {
