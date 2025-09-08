@@ -54,7 +54,7 @@ For projects configured with [multiple OLAP engines](/connect/olap/multiple-olap
 select from clickhouse_table
 ```
 
-### Working with Pivots
+## Working with Pivots
 
 Pivots deserve their own section, as using the [Pivot](https://duckdb.org/docs/sql/statements/pivot) statement while modeling requires special consideration. Notably, there are a few existing DuckDB limitations to consider:
 - DuckDB's [SQL to JSON serializer](https://duckdb.org/docs/extensions/json.html#serializing-and-deserializing-sql-to-json-and-vice-versa) doesn't support `PIVOT` without the `IN` [filter](https://duckdb.org/docs/sql/statements/pivot#in-filter-for-on-clause)
