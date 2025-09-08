@@ -14,7 +14,7 @@
   import Tooltip from "../../../components/tooltip/Tooltip.svelte";
   import TooltipContent from "../../../components/tooltip/TooltipContent.svelte";
   import TableIcon from "../../canvas/icons/TableIcon.svelte";
-  import FieldSwitcher from "@rilldata/web-common/components/forms/FieldSwitcher.svelte";
+  import { ButtonGroup, SubButton } from "@rilldata/web-common/components/button-group";
   import ExportMenu from "../../exports/ExportMenu.svelte";
   import { featureFlags } from "../../feature-flags";
   import { getStateManagers } from "../state-managers/state-managers";
@@ -115,14 +115,34 @@
     <PivotPanel size="18px" open={showPanels} colorClass="fill-theme-800" />
   </Button>
 
-  <div class="flex items-center gap-x-1">
-    <FieldSwitcher
-      fields={["Pivot", "Flat"]}
-      selected={$isFlat ? 1 : 0}
-      onClick={(index, field) => {
-        togglePivotType(index === 0 ? "nest" : "flat");
+  <div class="flex items-center gap-x-1 pointer-events-auto">
+    <ButtonGroup
+      selected={$isFlat ? ["flat"] : ["pivot"]}
+      on:subbutton-click={(event) => {
+        togglePivotType(event.detail === "pivot" ? "nest" : "flat");
       }}
-    />
+    >
+      <SubButton
+        value="pivot"
+        tooltips={{
+          selected: "Currently showing pivot view",
+          unselected: "Switch to pivot view"
+        }}
+      >
+        <Pivot size="16px" />
+        Pivot
+      </SubButton>
+      <SubButton
+        value="flat"
+        tooltips={{
+          selected: "Currently showing flat view", 
+          unselected: "Switch to flat view"
+        }}
+      >
+        <TableIcon size="16px" />
+        Flat
+      </SubButton>
+    </ButtonGroup>
 
     <!-- <Button
     compact
