@@ -18,9 +18,10 @@ export async function generateExploreLink(
     // Build base URL
     let url: URL;
     if (isEmbed) {
-      url = new URL(window.location.href);
-      url.searchParams.set("resource", exploreName);
-      url.searchParams.set("type", ResourceKind.Explore);
+      url = new URL(
+        `/-/embed/explore/${encodeURIComponent(exploreName)}`,
+        window.location.origin,
+      );
     } else if (organization && project) {
       url = new URL(
         `/${organization}/${project}/explore/${encodeURIComponent(exploreName)}`,

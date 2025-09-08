@@ -205,7 +205,7 @@ test.describe("Embeds", () => {
       frame.getByRole("menu", { name: "Select time range" }),
     ).not.toBeVisible();
 
-    // Go to the ` Programmatic Ads Auction ` dashboard using the breadcrumbs
+    // Go to the `Programmatic Ads Auction` dashboard using the breadcrumbs
     await frame.getByLabel("Breadcrumb dropdown").click();
     await frame
       .getByRole("menuitem", { name: "Programmatic Ads Auction", exact: true })
@@ -213,7 +213,7 @@ test.describe("Embeds", () => {
     // Time range is still the default
     await expect(frame.getByText("Last 7 Days")).toBeVisible();
 
-    // Go back to the ` Programmatic Ads Bids ` dashboard using the breadcrumbs
+    // Go back to the `Programmatic Ads Bids` dashboard using the breadcrumbs
     await frame.getByLabel("Breadcrumb dropdown").click();
     await frame
       .getByRole("menuitem", { name: "Programmatic Ads Bids" })
@@ -225,14 +225,14 @@ test.describe("Embeds", () => {
     await frame.getByText("Home").click();
     // Check that the dashboards are listed
     await expect(
-      frame.getByRole("button", { name: "Programmatic Ads Auction" }).first(),
+      frame.getByRole("link", { name: "Programmatic Ads Auction" }).first(),
     ).toBeVisible();
     await expect(
-      frame.getByRole("button", { name: "Programmatic Ads Bids" }),
+      frame.getByRole("link", { name: "Programmatic Ads Bids" }),
     ).toBeVisible();
 
     // Go to `Programmatic Ads Auction` using the links on home
-    await frame.getByRole("button", { name: "Programmatic Ads Bids" }).click();
+    await frame.getByRole("link", { name: "Programmatic Ads Bids" }).click();
     // Old selection has persisted
     await expect(frame.getByText("Last 14 Days")).toBeVisible();
   });

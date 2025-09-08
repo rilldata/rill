@@ -1,25 +1,15 @@
-import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
-
 export class EmbedStore {
   public readonly instanceId: string;
   public readonly runtimeHost: string;
   public readonly accessToken: string;
   public readonly navigationEnabled: boolean;
 
+  public readonly exploreSeen = new Set<string>();
+
   private static _instance: EmbedStore | null = null;
 
   public static init(url: URL) {
     this._instance = new EmbedStore(url);
-    const resource = url.searchParams.get("resource");
-    if (!resource) {
-      return "/-/embed";
-    }
-
-    const type =
-      url.searchParams.get("type") === ResourceKind.Canvas
-        ? "canvas"
-        : "explore";
-    return `/-/embed/${type}/${resource}`;
   }
 
   public static getInstance() {
