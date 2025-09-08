@@ -107,5 +107,8 @@
     "yaml": "^2.4.5",
     "yup": "^1.4.0"
   },
-  "type": "module"
+  "type": "module",
+  "dependencies": {
+    "vega-embed": "^7.0.2"
+  }
 }
