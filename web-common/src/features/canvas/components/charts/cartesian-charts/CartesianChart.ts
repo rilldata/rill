@@ -20,8 +20,16 @@ import type {
   ComponentPath,
 } from "../../../stores/canvas-entity";
 import { BaseChart, type BaseChartConfig } from "../BaseChart";
-import type { ChartDataQuery, ChartFieldsMap, FieldConfig } from "../types";
-import { isFieldConfig, vegaSortToAggregationSort } from "../util";
+import {
+  type ChartDataQuery,
+  type ChartFieldsMap,
+  type FieldConfig,
+} from "../types";
+import {
+  isFieldConfig,
+  isMultiFieldConfig,
+  vegaSortToAggregationSort,
+} from "../util";
 
 export type CartesianChartSpec = BaseChartConfig & {
   x?: FieldConfig;
@@ -65,6 +73,8 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
           axisTitleSelector: true,
           originSelector: true,
           axisRangeSelector: true,
+          colorMappingSelector: { enable: false },
+          multiFieldSelector: true,
         },
       },
     },
@@ -72,6 +82,7 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
     color: {
       type: "mark",
       label: "Color",
+      showInUI: true,
       meta: {
         type: "color",
         chartFieldInput: {
@@ -89,18 +100,100 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
     super(resource, parent, path);
   }
 
+  getMeasureLabels(): string[] | undefined {
+    const config = get(this.specStore);
+    const metricsViewName = config.metrics_view;
+    const measuresStore =
+      this.parent.spec.getMeasuresForMetricView(metricsViewName);
+    const measures = get(measuresStore);
+
+    let measureDisplayNames: string[] | undefined;
+    if (isMultiFieldConfig(config.y)) {
+      measureDisplayNames = config.y.fields?.map((fieldName) => {
+        const measure = measures.find((m) => m.name === fieldName);
+        return measure?.displayName || fieldName;
+      });
+      return measureDisplayNames;
+    }
+  }
+
   getChartSpecificOptions(): Record<string, ComponentInputParam> {
-    const inputParams = CartesianChartComponent.chartInputParams;
+    const inputParams = { ...CartesianChartComponent.chartInputParams };
+    const config = get(this.specStore);
+    const isMultiMeasure = isMultiFieldConfig(config.y);
+
     const sortSelector = inputParams.x.meta?.chartFieldInput?.sortSelector;
     if (sortSelector) {
       sortSelector.customSortItems = this.customSortXItems;
     }
-    const colorMappingSelector =
-      inputParams.color.meta?.chartFieldInput?.colorMappingSelector;
-    if (colorMappingSelector) {
-      colorMappingSelector.values = this.customColorValues;
+
+    if (isMultiMeasure) {
+      inputParams.color.meta!.chartFieldInput = {
+        type: "value",
+        colorMappingSelector: {
+          enable: true,
+          values: this.getMeasureLabels(),
+        },
+        defaultLegendOrientation: "top",
+      };
+
+      inputParams.y.meta!.chartFieldInput!.excludedValues = [];
+    } else {
+      inputParams.color.meta!.chartFieldInput = {
+        type: "dimension",
+        defaultLegendOrientation: "top",
+        limitSelector: { defaultLimit: DEFAULT_SPLIT_LIMIT },
+        colorMappingSelector: { enable: true, values: this.customColorValues },
+        nullSelector: true,
+      };
+
+      // Exclude the main y field from multi-field selector
+      if (inputParams.y.meta?.chartFieldInput && config.y?.field) {
+        inputParams.y.meta.chartFieldInput.excludedValues = [config.y.field];
+      }
     }
+
     return inputParams;
+  }
+
+  updateProperty(
+    key: keyof CartesianChartSpec,
+    value: CartesianChartSpec[keyof CartesianChartSpec],
+  ) {
+    const currentSpec = get(this.specStore);
+
+    if (key === "y") {
+      const updatedYField = value as FieldConfig;
+      const isMultiMeasure = isMultiFieldConfig(updatedYField);
+
+      if (isMultiMeasure) {
+        const newSpec = { ...currentSpec, [key]: updatedYField };
+        if (typeof currentSpec.color === "string" || !currentSpec.color) {
+          newSpec.color = {
+            type: "value",
+            field: "rill_measures", // dummy field for multi-measure mode
+            legendOrientation: "top",
+          };
+        }
+
+        this.setSpec(newSpec);
+        return;
+      } else if (!isMultiMeasure) {
+        const newSpec = { ...currentSpec, [key]: updatedYField };
+
+        if (
+          typeof currentSpec.color === "object" &&
+          currentSpec.color?.field === "rill_measures"
+        ) {
+          newSpec.color = "primary";
+        }
+
+        this.setSpec(newSpec);
+        return;
+      }
+    }
+
+    super.updateProperty(key, value);
   }
 
   createChartDataQuery(
@@ -109,11 +202,21 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
   ): ChartDataQuery {
     const config = get(this.specStore);
 
+    const isMultiMeasure = isMultiFieldConfig(config.y);
+
     let measures: V1MetricsViewAggregationMeasure[] = [];
     let dimensions: V1MetricsViewAggregationDimension[] = [];
 
-    if (config.y?.type === "quantitative" && config.y?.field) {
-      measures = [{ name: config.y?.field }];
+    if (isMultiMeasure) {
+      const measuresSet = new Set(config.y?.fields);
+      if (config.y?.type === "quantitative" && config.y?.field) {
+        measuresSet.add(config.y.field);
+      }
+      measures = Array.from(measuresSet).map((name) => ({ name }));
+    } else {
+      if (config.y?.type === "quantitative" && config.y?.field) {
+        measures = [{ name: config.y.field }];
+      }
     }
 
     let xAxisSort: V1MetricsViewAggregationSort | undefined;
@@ -126,13 +229,32 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
 
     if (config.x?.type === "nominal" && dimensionName) {
       limit = config.x.limit ?? 100;
-      xAxisSort = vegaSortToAggregationSort("x", config, DEFAULT_SORT);
+      if (isMultiMeasure) {
+        const sort = config.x?.sort;
+        if (sort === "y" || sort === "-y") {
+          // Use first measure for y-based sorts
+          const firstMeasure = config.y?.fields?.[0];
+          if (firstMeasure) {
+            xAxisSort = {
+              name: firstMeasure,
+              desc: sort === "-y",
+            };
+          }
+        } else if (sort === "x" || sort === "-x") {
+          xAxisSort = {
+            name: dimensionName,
+            desc: sort === "-x",
+          };
+        }
+      } else {
+        xAxisSort = vegaSortToAggregationSort("x", config, DEFAULT_SORT);
+      }
       dimensions = [{ name: dimensionName }];
     } else if (config.x?.type === "temporal" && dimensionName) {
       dimensions = [{ name: dimensionName }];
     }
 
-    if (typeof config.color === "object" && config.color?.field) {
+    if (isFieldConfig(config.color) && !isMultiMeasure) {
       colorDimensionName = config.color.field;
       colorLimit = config.color.limit ?? DEFAULT_SPLIT_LIMIT;
       dimensions = [...dimensions, { name: colorDimensionName }];
@@ -345,20 +467,33 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
 
   chartTitle(fields: ChartFieldsMap) {
     const config = get(this.specStore);
-    const { x, y, color } = config;
-    const xLabel = x?.field ? fields[x.field]?.displayName || x.field : "";
-    const yLabel = y?.field ? fields[y.field]?.displayName || y.field : "";
+    const isMultiMeasure = isMultiFieldConfig(config.y);
 
-    const colorLabel =
-      typeof color === "object" && color?.field
-        ? fields[color.field]?.displayName || color.field
+    if (isMultiMeasure) {
+      const xLabel = config.x?.field
+        ? fields[config.x.field]?.displayName || config.x.field
         : "";
+      const measuresLabel = (config.y?.fields || [])
+        .map((m) => fields[m]?.displayName || m)
+        .join(", ");
+      const preposition = xLabel === "Time" ? "over" : "by";
+      return `${measuresLabel} ${preposition} ${xLabel}`;
+    } else {
+      const { x, y, color } = config;
+      const xLabel = x?.field ? fields[x.field]?.displayName || x.field : "";
+      const yLabel = y?.field ? fields[y.field]?.displayName || y.field : "";
 
-    const preposition = xLabel === "Time" ? "over" : "per";
+      const colorLabel =
+        typeof color === "object" && color?.field
+          ? fields[color.field]?.displayName || color.field
+          : "";
 
-    return colorLabel
-      ? `${yLabel} ${preposition} ${xLabel} split by ${colorLabel}`
-      : `${yLabel} ${preposition} ${xLabel}`;
+      const preposition = xLabel === "Time" ? "over" : "per";
+
+      return colorLabel
+        ? `${yLabel} ${preposition} ${xLabel} split by ${colorLabel}`
+        : `${yLabel} ${preposition} ${xLabel}`;
+    }
   }
 
   getChartDomainValues() {
@@ -373,10 +508,14 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
     }
 
     if (isFieldConfig(config.color)) {
-      result[config.color.field] =
-        this.customColorValues.length > 0
-          ? [...this.customColorValues]
-          : undefined;
+      if (isMultiFieldConfig(config.y)) {
+        result[config.color.field] = this.getMeasureLabels();
+      } else {
+        result[config.color.field] =
+          this.customColorValues.length > 0
+            ? [...this.customColorValues]
+            : undefined;
+      }
     }
 
     return result;

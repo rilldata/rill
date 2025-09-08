@@ -26,7 +26,7 @@ _[object]_ - OpenAPI specification for the API endpoint
 
 ### `security`
 
-_[object]_ - Defines [security rules and access control policies](/manage/security) for resources 
+_[object]_ - Defines [security rules and access control policies](/build/metrics-view/security) for resources 
 
   - **`access`** - _[oneOf]_ - Expression indicating if the user should be granted access to the dashboard. If not defined, it will resolve to false and the dashboard won't be accessible to anyone. Needs to be a valid SQL expression that evaluates to a boolean. 
 
@@ -75,11 +75,25 @@ _[object]_ - Defines [security rules and access control policies](/manage/securi
 _[boolean]_ - Flag to control security inheritance 
 
 ## One of Properties Options
+- [Properties](#properties)
+  - [`type`](#type)
+  - [`openapi`](#openapi)
+  - [`security`](#security)
+  - [`skip_nested_security`](#skip_nested_security)
+- [One of Properties Options](#one-of-properties-options)
 - [SQL Query](#sql-query)
+  - [`sql`](#sql)
+  - [`connector`](#connector)
 - [Metrics View Query](#metrics-view-query)
+  - [`metrics_sql`](#metrics_sql)
 - [Custom API Call](#custom-api-call)
+  - [`api`](#api)
+  - [`args`](#args)
 - [File Glob Query](#file-glob-query)
+  - [`glob`](#glob)
+  - [`connector`](#connector-1)
 - [Resource Status Check](#resource-status-check)
+  - [`resource_status`](#resource_status)
 
 ## SQL Query
 
