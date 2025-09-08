@@ -31,6 +31,8 @@
   import EditableCanvasRow from "./EditableCanvasRow.svelte";
   import { onDestroy } from "svelte";
   import type { BaseCanvasComponent } from "./components/BaseCanvasComponent";
+  import * as AlertDialog from "@rilldata/web-common/components/alert-dialog";
+  import Button from "@rilldata/web-common/components/button/Button.svelte";
 
   const activelyEditing = writable(false);
 
@@ -61,6 +63,7 @@
   let dragItemPosition = { top: 0, left: 0 };
   let dragItemDimensions = { width: 0, height: 0 };
   let openSidebarAfterSelection = false;
+  let pendingComponentDelete: string | undefined = undefined;
 
   $: ({ instanceId } = $runtime);
   $: metricsViews = Object.entries(canvasData?.metricsViews ?? {});
@@ -419,10 +422,8 @@
         e.target.tagName !== "TEXTAREA" &&
         !e.target.isContentEditable)
     ) {
-      const component = components.get(selected);
-      if (!component) return;
-
-      deleteComponent(component);
+      console.log("what");
+      pendingComponentDelete = selected;
     }
   }}
 />
@@ -546,6 +547,57 @@
       selected
     />
   </div>
+{/if}
+
+{#if pendingComponentDelete !== undefined}
+  <AlertDialog.Root
+    open
+    onOpenChange={(open) => {
+      if (!open) pendingComponentDelete = undefined;
+    }}
+  >
+    <AlertDialog.Content>
+      <AlertDialog.Title>Delete widget?</AlertDialog.Title>
+
+      <AlertDialog.Description>
+        Are you sure you want to delete this widget? This action cannot be
+        undone.
+      </AlertDialog.Description>
+
+      <AlertDialog.Footer>
+        <AlertDialog.Cancel asChild let:builder>
+          <Button
+            large
+            builders={[builder]}
+            type="secondary"
+            onClick={() => {
+              pendingComponentDelete = undefined;
+            }}
+          >
+            Cancel
+          </Button>
+        </AlertDialog.Cancel>
+
+        <AlertDialog.Action asChild let:builder>
+          <Button
+            large
+            builders={[builder]}
+            type="primary"
+            danger
+            onClick={() => {
+              if (!pendingComponentDelete) return;
+              const component = components.get(pendingComponentDelete);
+              if (!component) return;
+              deleteComponent(component);
+              pendingComponentDelete = undefined;
+            }}
+          >
+            Delete
+          </Button>
+        </AlertDialog.Action>
+      </AlertDialog.Footer>
+    </AlertDialog.Content>
+  </AlertDialog.Root>
 {/if}
 
 <style lang="postcss">
