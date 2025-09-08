@@ -97,7 +97,7 @@ security:
 
 :::tip Access Policy Behavior
 
-When combining access policies from project defaults and object-specific policies, remember that the object level policies will overwrite the project level ones. Dashboard and metrics ciew policies are binary logically ANDed.
+When combining access policies from project defaults and object-specific policies, remember that the object level policies will overwrite the project level ones. Dashboard and metrics view policies are binary logically ANDed.
  
 <!-- Not behaving as you're expecting? See our [troubleshooting guide.](/build/debugging/dashboard-access) -->
 
@@ -116,7 +116,7 @@ This will logically AND with your metrics view's access so ensure that a user wh
 
 :::tip complicated set-ups
 
-Access Policies can get quite complicated as your use case grows and having to navigate mulitple files to figure out why a user is able to or unable to access certain dashboards. 
+Access Policies can get quite complicated as your use case grows and having to navigate multiple files to figure out why a user is able to or unable to access certain dashboards. 
 
 A few recommendations:
 1. Only change project level access if absolutely necessary. (They get overwritten by object level security)
@@ -182,7 +182,7 @@ This is useful if you want to apply specific rules to the metrics view for metri
 
 :::tip complicated set-ups
 
-Access Policies can get quite complicated as your use case grows and having to navigate mulitple files to figure out why a user is able to or unable to access certain dashboards. 
+Access Policies can get quite complicated as your use case grows and having to navigate multiple files to figure out why a user is able to or unable to access certain dashboards. 
 
 A few recommendations:
 1. Only change project level access if absolutely necessary. (They get overwritten by object level security)

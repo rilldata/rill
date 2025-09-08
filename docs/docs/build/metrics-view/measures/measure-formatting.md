@@ -1,7 +1,7 @@
 ---
-title: "Formatting your Measures!"
+title: "Formatting your Measures"
 description: Tips & Tricks for Metric Formatting
-sidebar_label: "Metric Formatting"
+sidebar_label: "Measure Formatting"
 sidebar_position: 15
 ---
 
@@ -15,7 +15,7 @@ When creating your measures in Rill, you have the option to pick from a preset o
 Using `format_d3` to control the format of a measure in the metrics view allows for further customization. 
 
 :::tip Invalid format Strings
-If an invalid format string is supplied, measures will be formatted with `format_preset: humanize`. If neither `format_preset` nor `format_d3` is supplied, measures will be formatted with the `humanize` preset).
+If an invalid format string is supplied, measures will be formatted with `format_preset: humanize`. If neither `format_preset` nor `format_d3` is supplied, measures will be formatted with the `humanize` preset.
 
 :::
 

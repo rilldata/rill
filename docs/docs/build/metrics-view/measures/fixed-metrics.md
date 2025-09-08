@@ -24,7 +24,7 @@ expression: |
                     })
                 ) a
             )
- ```
+```
 
 :::note 
 

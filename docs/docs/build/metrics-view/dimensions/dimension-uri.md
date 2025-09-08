@@ -5,7 +5,7 @@ sidebar_label: "Clickable Dimension Links"
 sidebar_position: 50
 ---
 
-Adding an additional parmater to the dimension allows you to click directly on a link in the dimension leaderboard to navigate to the displayed value.
+You can make dimension values clickable by adding a `uri` parameter to your dimension configuration. This enables users to click directly on dimension values in the dashboard to navigate to external URLs, making your dashboards more interactive and useful for data exploration.
 
  <img src = '/img/build/dashboard/clickable-dimension.png' class='rounded-gif' />
 <br />
@@ -14,10 +14,10 @@ Adding an additional parmater to the dimension allows you to click directly on a
 dimensions:
   - display_name: Company Url
     column: Company URL
-    uri: true #if already set to the URL, also accepts SQL expressions
+    uri: true # if already set to the URL, also accepts SQL expressions
 ```
 
-A bit more complex example is using an `expression` and create the URL dynamically.
+For more advanced use cases, you can use an `expression` to dynamically generate URLs based on your data.
 
 ```yaml
 dimensions:

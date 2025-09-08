@@ -101,4 +101,4 @@ Benefits of dynamic lookups include:
 - Historical continuity for dimensions that change frequently without reprocessing the entire dataset
 - Time savings, because there is no dataset reprocessing required to complete the update
 - Dynamic lookups are kept separate from the dataset. Thus, any human errors introduced in the lookup do not impact the underlying dataset
-- Ability for users to create new dimension tables from metadata associated with a dimension table. For example, account ownership can change during the course of a quarter. In such cases, a dynam
+- Ability for users to create new dimension tables from metadata associated with a dimension table. For example, account ownership can change during the course of a quarter. In such cases, a dynamic lookup ensures that the most current ownership information is always available without requiring data reprocessing.

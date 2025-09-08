@@ -6,7 +6,7 @@ sidebar_position: 00
 ---
 
 
-A metrics view is a `centralized framework` used to define and organize **key metrics and dimnesions** for your organization. Having a centralized layer allows an organization to easily manage and reuse calculations across various reports, dashboards, and data tools.
+A metrics view is a 'centralized framework' used to define and organize **key metrics and dimensions** for your organization. Having a centralized layer allows an organization to easily manage and reuse calculations across various reports, dashboards, and data tools.
 
 
 <div style={{ textAlign: 'center' }}>
@@ -21,19 +21,6 @@ In Rill, your metrics view is defined by _metric definitions_. Metric definition
 * _**dimensions**_ - Categorical columns from your data model whose values are shown in _leaderboards_ and allow you to look at segments or attributes of your data (and filter/slice accordingly).
 
 ## Creating a Metrics view
-
-When creating a metrics view in Rill, you can either use the visual metrics editor or YAML.
-
-### Using the Visual Metrics Editor
-
-<img src='/img/build/metrics-view/visual-metrics-editor.png' class='rounded-gif' />
-<br />
-
-When you add a metrics definition using the UI, a code definition will automatically be created as a YAML file in your Rill project within the metrics directory by default.
-
-### Using YAML
-
-You can also create metrics definitions directly by creating the artifact yourself.
 
 In your Rill project directory, after the `metrics-view.yaml` file is created in the `metrics` directory, its configuration or definition can be updated as needed by updating the YAML file directly, using the following template as an example:
 
@@ -63,6 +50,15 @@ measures:
 For more information about available metrics view properties, feel free to check our [reference YAML documentation](/reference/project-files/metrics-views).
 
 :::
+
+### Using the Visual Metrics Editor
+
+When you add a metrics definition using the UI, a code definition will automatically be created as a YAML file in your Rill project within the metrics directory by default.
+
+<img src='/img/build/metrics-view/visual-metrics-editor.png' class='rounded-gif' />
+<br />
+
+
 
 ### Creating a Metrics View with AI
 

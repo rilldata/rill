@@ -76,5 +76,5 @@ Similar to the above case statements, you can use the filter expression to filte
     format_preset: humanize
     valid_percent_of_total: true
 ```
-    ## Demo
+## Demo
 [See this project live in our demo!](https://ui.rilldata.com/demo/rill-kaggle-elec-consumption/explore/household_power_consumption_metrics_explore)

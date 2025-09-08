@@ -16,7 +16,7 @@ Using [DuckDB aggregate function](https://duckdb.org/docs/stable/sql/functions/a
 :::tip Not on DuckDB?
 If you are using a different OLAP engine to power your dashboard, simply use the correct function for quantile calculation. 
 
-IE: [ClickHouse quantile](https://clickhouse.com/docs/sql-reference/aggregate-functions/reference/quantile), [Pinot percentile](https://docs.pinot.apache.org/configuration-reference/functions/percentile)
+E.g.: [ClickHouse quantile](https://clickhouse.com/docs/sql-reference/aggregate-functions/reference/quantile), [Pinot percentile](https://docs.pinot.apache.org/configuration-reference/functions/percentile)
 :::
 Please review the reference documentation, [here.](/reference/project-files/metrics-views)
 

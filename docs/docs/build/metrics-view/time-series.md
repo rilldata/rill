@@ -7,18 +7,10 @@ sidebar_position: 03
 
 Time is the most critical dimension in analytics and powers our dashboards. Understanding not just the "what," but how metrics evolve over hours, days, and months provides the narrative arc for decision-making.
 
-## What is a Time Series?
-
-A **time series** is a sequence of data points recorded at regular or irregular intervals, always tied to a timestamp. 
-- **Daily** revenue trends
-- **Hourly** error counts
-- **Weekly** active users
-
-Without a well-defined time series, analyses can drift, losing alignment across dimensions.
 
 ## Defining Your Time Series Column
 
-Your time series must be a column from your data model of [type](https://duckdb.org/docs/sql/data_types/timestamp) `TIMESTAMP`, `TIME`, or `DATE`. If your source has a date in a different format, you can apply [time functions](https://duckdb.org/docs/sql/functions/timestamp) to transform these fields into valid time series types.
+Your time series must be a column from your data model of type `TIMESTAMP`, `TIME`, or `DATE`. If your source has a date in a different format, you can apply time functions to transform these fields into valid time series types. The specific functions available depend on your OLAP engine.
 
 ```yaml
 # Metrics View YAML
@@ -71,84 +63,3 @@ smallest_time_grain: day
 
 <!-- Valid until new time picker -->
 It is not possible to set a limit for largest time grain and based on your selection of time range, certain grains will be unavailable to select. IE: minute or second grain at "Last 24 hours".
-
-## Time Series Transformation
-
-While metrics views handle time configuration, you can also transform time data at the [model level](/build/models) using SQL functions. Since both metrics views and models are powered by the underlying [OLAP engine](/connect/olap), similar functions can be applied to modify your time series dynamically.
-
-:::note Query-time vs Model processing
-
-There are benefits to pre-procesing the data in the model layer but for some quick processing this can be done in the metrics view.
-
-**Query-time processing** (in metrics views):
-- Flexible and dynamic
-- No storage overhead
-- Slightly slower for complex calculations
-
-**Model-level processing** (in SQL models):
-- Pre-computed and optimized
-- Faster query performance
-- Requires model refresh for updates
-
-:::
-
-### DuckDB Time Functions
-
-DuckDB provides a comprehensive toolkit for temporal data manipulation:
-
-- **`DATE_TRUNC`**: Normalize timestamps to consistent intervals (day, week, month, quarter, year)
-- **`EXTRACT`**: Extract specific time components (year, quarter, month, day of week, hour)
-- **`LAG/LEAD`**: Reference prior or future rows for period-over-period comparisons
-- **`DATE_ADD/DATE_SUB`**: Perform date arithmetic for dynamic time ranges
-- **`STRFTME`**: Extract strings from a time column.
-
-<!-- 
-```yaml
-  - name: day_of_week
-    expression: STRFTIME(last_login, '%A')
-``` -->
-
-For comprehensive documentation on all available time functions, see the [DuckDB time functions documentation](https://duckdb.org/docs/stable/sql/functions/timestamp.html).
-
-### Time Aggregation (Roll-ups)
-
-Roll-ups aggregate granular events into coarser intervals. For example, if your data arrives hourly but daily analysis suffices:
-
-```sql
-SELECT DATE_TRUNC('day', timestamp_column) AS time_series_column,
-        ...  
-FROM your_model
-```
-
-**Benefits of roll-ups:**
-- **Storage efficiency**: Reduces data volume while preserving analytical value
-- **Query performance**: Faster aggregations on pre-computed time buckets
-
-
-
-<!-- ### Example
-
-Heatmaps
-- **Day of Week + Hour of Day**: Perfect for heat maps showing activity patterns
-
-<img src='/img/build/metrics-view/heatmap.png' class='rounded-gif' />
-<br />
-
-Example of creating a day-of-week and hour-of-day dimension for heat maps:
-
-```sql
-SELECT 
-    EXTRACT(dow FROM timestamp_column) AS day_of_week,
-    EXTRACT(hour FROM timestamp_column) AS hour_of_day,
-    ...
-FROM your_model
-``` 
-
-```yaml
-dimensions:
-    - name: day_of_week
-      expression: EXTRACT(dow FROM timestamp_column)
-    - name: hour_of_day
-      expression: EXTRACT(hour FROM timestamp_column)
-```
- -->
