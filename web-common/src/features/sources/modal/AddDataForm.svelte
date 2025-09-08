@@ -354,7 +354,9 @@
     class="add-data-form-panel flex-1 flex flex-col min-w-0 md:pr-0 pr-0 relative"
   >
     <div
-      class="flex flex-col flex-grow max-h-[552px] min-h-[552px] overflow-y-auto p-6"
+      class="flex flex-col flex-grow {connector.name === 'clickhouse'
+        ? 'max-h-[38.5rem] min-h-[38.5rem]'
+        : 'max-h-[34.5rem] min-h-[34.5rem]'} overflow-y-auto p-6"
     >
       {#if connector.name === "clickhouse"}
         <AddClickHouseForm

@@ -24,7 +24,7 @@ export const initialHeights: Record<CanvasComponentType, number> = {
   heatmap: 320,
   custom_chart: 320,
   funnel_chart: 320,
-  multi_metric_chart: 320,
+  combo_chart: 320,
   markdown: 40,
   kpi_grid: 128,
   image: 80,

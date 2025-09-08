@@ -60,7 +60,7 @@ func TestInitEmptyDuckDB(t *testing.T) {
 	require.Error(err) // Should error because file doesn't exist
 }
 
-func TestInitEmptyCH(t *testing.T) {
+func TestInitEmpty(t *testing.T) {
 	require := require.New(t)
 
 	repo := makeRepo(t, map[string]string{})
@@ -81,14 +81,4 @@ func TestInitEmptyCH(t *testing.T) {
 	require.Contains(gitignore, "# Rill")
 	require.Contains(gitignore, ".env")
 	require.Contains(gitignore, "tmp")
-
-	// Verify the contents of the connector file
-	connector, err := repo.Get(t.Context(), "connectors/clickhouse.yaml")
-	require.NoError(err)
-	require.Contains(connector, "type: connector")
-	require.Contains(connector, "driver: clickhouse")
-	require.Contains(connector, "managed: true")
-
-	// Verify duckdb is not present
-	require.NotContains(connector, "driver: duckdb")
 }

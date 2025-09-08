@@ -268,7 +268,7 @@
       <TabsContent value="parameters">
         <form
           id={paramsFormId}
-          class="pb-5 flex-grow overflow-y-auto"
+          class="flex-grow overflow-y-auto"
           use:paramsEnhance
           on:submit|preventDefault={paramsSubmit}
         >
@@ -310,7 +310,7 @@
       <TabsContent value="dsn">
         <form
           id={dsnFormId}
-          class="pb-5 flex-grow overflow-y-auto"
+          class="flex-grow overflow-y-auto"
           use:dsnEnhance
           on:submit|preventDefault={dsnSubmit}
         >
@@ -336,7 +336,7 @@
     <!-- Only managed form -->
     <form
       id={paramsFormId}
-      class="pb-5 flex-grow overflow-y-auto"
+      class="flex-grow overflow-y-auto"
       use:paramsEnhance
       on:submit|preventDefault={paramsSubmit}
     >

@@ -14,9 +14,9 @@
   import MetricsSQLInput from "./chart/MetricsSQLInput.svelte";
   import PositionalFieldConfig from "./chart/PositionalFieldConfig.svelte";
   import ComparisonInput from "./ComparisonInput.svelte";
+  import MultiFieldInput from "./fields/MultiFieldInput.svelte";
+  import SingleFieldInput from "./fields/SingleFieldInput.svelte";
   import MetricSelectorDropdown from "./MetricSelectorDropdown.svelte";
-  import MultiFieldInput from "./MultiFieldInput.svelte";
-  import SingleFieldInput from "./SingleFieldInput.svelte";
   import SparklineInput from "./SparklineInput.svelte";
   import TableTypeSelector from "./TableTypeSelector.svelte";
   import type { AllKeys, ComponentInputParam } from "./types";

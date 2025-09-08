@@ -28,16 +28,12 @@ When using MotherDuck for local development, you can connect using your MotherDu
 # Connector YAML
 # Reference documentation: https://docs.rilldata.com/reference/project-files/connectors
 
-type: connector                                  # Must be `connector` (required)
-driver: duckdb                                   # Must be `duckdb` _(required)_
+type: connector 
+driver: motherduck 
 
-
-path: "md:my_db"                                # Path to your MD database
-
-init_sql: |                                     # SQL executed during database initialization.
-  INSTALL 'motherduck';                         -- Install motherduck extension
-  LOAD 'motherduck';                            -- Load the extensions
-  SET motherduck_token= '{{ .env.connector.motherduck.access_token }}' -- Define the motherduck token
+token: '{{ .env.connector.motherduck.token }}'
+path: "md:my_database"
+schema_name: "my_schema" 
 ```
 
 :::tip Dont have an .env file?
@@ -45,7 +41,7 @@ init_sql: |                                     # SQL executed during database i
 If it's your first time running Rill, a .env file wont exist yet. Either make a blank file and rename to .env and add your token or run `touch .env` from the project directory in the CLI.
 
 ```
-connector.motherduck.access_token="TOKEN_HERE"
+connector.motherduck.token="TOKEN_HERE"
 ```
 
 :::

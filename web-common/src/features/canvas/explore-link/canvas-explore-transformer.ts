@@ -91,7 +91,16 @@ export function getPivotStateFromChartSpec(
 
       let chipType: PivotChipType;
       let id: string;
-      if (fieldConfig.type === "quantitative") {
+      if (fieldConfig.fields?.length) {
+        columns.push(
+          ...fieldConfig.fields.map((f) => ({
+            id: f,
+            title: f,
+            type: PivotChipType.Measure,
+          })),
+        );
+        continue;
+      } else if (fieldConfig.type === "quantitative") {
         id = fieldConfig.field;
         chipType = PivotChipType.Measure;
       } else if (fieldConfig.type === "temporal") {
