@@ -143,13 +143,13 @@ func (p *Provisioner) Provision(ctx context.Context, r *provisioner.Resource, op
 	}
 
 	// Idempotently create the schema
-	_, err = p.ch.ExecContext(ctx, fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s %s COMMENT ?", dbName, p.onCluster()), string(annotationsJSON))
+	_, err = p.ch.ExecContext(ctx, fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s %s COMMENT ?", escapeSQLIdentifier(dbName), p.onCluster()), string(annotationsJSON))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create clickhouse database: %w", err)
 	}
 
 	// Idempotently create the user.
-	_, err = p.ch.ExecContext(ctx, fmt.Sprintf("CREATE USER IF NOT EXISTS %s %s IDENTIFIED WITH sha256_password BY ? DEFAULT DATABASE %s GRANTEES NONE", user, p.onCluster(), dbName), password)
+	_, err = p.ch.ExecContext(ctx, fmt.Sprintf("CREATE USER IF NOT EXISTS %s %s IDENTIFIED WITH sha256_password BY ? DEFAULT DATABASE %s GRANTEES NONE", escapeSQLIdentifier(user), p.onCluster(), escapeSQLIdentifier(dbName)), password)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create clickhouse user: %w", err)
 	}
@@ -157,7 +157,7 @@ func (p *Provisioner) Provision(ctx context.Context, r *provisioner.Resource, op
 	// When creating the user, the password assignment is not idempotent (if there are two concurrent invocations, we don't know which password was used).
 	// By adding the password separately, we ensure all passwords will work.
 	// NOTE: Requires ClickHouse 24.9 or later.
-	_, err = p.ch.ExecContext(ctx, fmt.Sprintf("ALTER USER %s %s ADD IDENTIFIED WITH sha256_password BY ?", user, p.onCluster()), password)
+	_, err = p.ch.ExecContext(ctx, fmt.Sprintf("ALTER USER %s %s ADD IDENTIFIED WITH sha256_password BY ?", escapeSQLIdentifier(user), p.onCluster()), password)
 	if err != nil {
 		return nil, fmt.Errorf("failed to add password for clickhouse user: %w", err)
 	}
@@ -179,7 +179,7 @@ func (p *Provisioner) Provision(ctx context.Context, r *provisioner.Resource, op
 			SHOW DICTIONARIES,
 			dictGet
 		ON %s.* TO %s
-	`, p.onCluster(), dbName, user))
+	`, p.onCluster(), escapeSQLIdentifier(dbName), escapeSQLIdentifier(user)))
 	if err != nil {
 		return nil, fmt.Errorf("failed to grant privileges to clickhouse user: %w", err)
 	}
@@ -187,7 +187,7 @@ func (p *Provisioner) Provision(ctx context.Context, r *provisioner.Resource, op
 	// Grant access to system.parts for reporting disk usage.
 	// NOTE 1: ClickHouse automatically adds row filters to restrict result to tables the user has access to.
 	// NOTE 2: We do not need to explicitly grant access to system.tables and system.columns because ClickHouse adds those implicitly.
-	_, err = p.ch.ExecContext(ctx, fmt.Sprintf("GRANT %s SELECT ON system.parts TO %s", p.onCluster(), user))
+	_, err = p.ch.ExecContext(ctx, fmt.Sprintf("GRANT %s SELECT ON system.parts TO %s", p.onCluster(), escapeSQLIdentifier(user)))
 	if err != nil {
 		return nil, fmt.Errorf("failed to grant system privileges to clickhouse user: %w", err)
 	}
@@ -203,7 +203,7 @@ func (p *Provisioner) Provision(ctx context.Context, r *provisioner.Resource, op
 			S3,
 			AZURE
 		ON *.* TO %s
-	`, p.onCluster(), user))
+	`, p.onCluster(), escapeSQLIdentifier(user)))
 	if err != nil {
 		return nil, fmt.Errorf("failed to grant global privileges to clickhouse user: %w", err)
 	}
@@ -327,18 +327,37 @@ func newPassword() string {
 func generateDatabaseName(resourceID string, annotations map[string]string) string {
 	name := "rill"
 	if org, ok := annotations["organization_name"]; ok {
-		name += "_" + nonAlphanumericRegexp.ReplaceAllString(org, "")
+		cleaned := nonAlphanumericRegexp.ReplaceAllString(org, "")
+		if cleaned != "" {
+			name += "_" + cleaned
+		}
 	}
 	if proj, ok := annotations["project_name"]; ok {
-		name += "_" + nonAlphanumericRegexp.ReplaceAllString(proj, "")
+		cleaned := nonAlphanumericRegexp.ReplaceAllString(proj, "")
+		if cleaned != "" {
+			name += "_" + cleaned
+		}
 	}
-	name += "_" + nonAlphanumericRegexp.ReplaceAllString(resourceID, "")
-	// Optionally, trim to 63 chars and remove trailing underscores if needed
+	cleaned := nonAlphanumericRegexp.ReplaceAllString(resourceID, "")
+	if cleaned != "" {
+		name += "_" + cleaned
+	}
+
+	// Ensure the name is lowercase and within limits
+	name = strings.ToLower(name)
+
+	// Trim to 63 chars and remove trailing underscores if needed
 	if len(name) > 63 {
 		name = name[:63]
 	}
 	name = strings.TrimRight(name, "_")
-	return strings.ToLower(name)
+
+	// Ensure name starts with a letter (ClickHouse requirement)
+	if name == "" || !((name[0] >= 'a' && name[0] <= 'z') || (name[0] >= 'A' && name[0] <= 'Z')) {
+		name = "rill_" + name
+	}
+
+	return name
 }
 
 func escapeSQLIdentifier(ident string) string {
