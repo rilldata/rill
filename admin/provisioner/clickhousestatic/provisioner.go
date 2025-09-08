@@ -266,13 +266,13 @@ func (p *Provisioner) Deprovision(ctx context.Context, r *provisioner.Resource) 
 	}
 
 	// Drop the database
-	_, err = p.ch.ExecContext(ctx, fmt.Sprintf("DROP DATABASE IF EXISTS %s %s", opts.Auth.Database, p.onCluster()))
+	_, err = p.ch.ExecContext(ctx, fmt.Sprintf("DROP DATABASE IF EXISTS %s %s", escapeSQLIdentifier(opts.Auth.Database), p.onCluster()))
 	if err != nil {
 		return fmt.Errorf("failed to drop clickhouse database: %w", err)
 	}
 
 	// Drop the user
-	_, err = p.ch.ExecContext(ctx, fmt.Sprintf("DROP USER IF EXISTS %s %s", opts.Auth.Username, p.onCluster()))
+	_, err = p.ch.ExecContext(ctx, fmt.Sprintf("DROP USER IF EXISTS %s %s", escapeSQLIdentifier(opts.Auth.Username), p.onCluster()))
 	if err != nil {
 		return fmt.Errorf("failed to drop clickhouse user: %w", err)
 	}
@@ -311,7 +311,7 @@ func (p *Provisioner) pingWithResourceDSN(ctx context.Context, dsn string) error
 // onCluster returns the ON CLUSTER clause if a cluster is configured, otherwise returns an empty string.
 func (p *Provisioner) onCluster() string {
 	if p.spec.Cluster != "" {
-		return fmt.Sprintf("ON CLUSTER %s", p.spec.Cluster)
+		return fmt.Sprintf("ON CLUSTER %s", escapeSQLIdentifier(p.spec.Cluster))
 	}
 	return ""
 }
@@ -341,4 +341,11 @@ func generateDatabaseName(resourceID string, annotations map[string]string) stri
 	}
 	name = strings.TrimRight(name, "_")
 	return strings.ToLower(name)
+}
+
+func escapeSQLIdentifier(ident string) string {
+	if ident == "" {
+		return ident
+	}
+	return fmt.Sprintf("\"%s\"", strings.ReplaceAll(ident, "\"", "\"\"")) // nolint:gocritic // Because SQL escaping is different
 }
