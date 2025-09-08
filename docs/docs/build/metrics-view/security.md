@@ -49,7 +49,7 @@ When a user loads a dashboard, the policies are resolved in two phases:
 Typical use cases include:
 
 - [**Granting or Restricting Access**](#restrict-data-access-to-users-matching-specific-criteria) to data and, as a result, dashboards
-- [**Hiding specific dimensions and measures**](#conditionally-hide-a-metrics-view-dimension-or-measure) from specific groups of users, creating a tailored dashboard experience
+- [**Hiding specific dimensions and measures**](#conditionally-hide-a-dashboard-dimension-or-measure) from specific groups of users, creating a tailored dashboard experience
 - [**Restricting Access to Internal users**](#hide-dimensions-or-measures-for-members-of-a-certain-group) of your organization, allowing specific dashboards to be viewed by internal users only
 - [**Partner-filtered Dashboards**](#show-only-data-from-the-users-own-domain) where external users can only access the subset of their data
 - [**Embedded**](#advanced-example-custom-attributes-embed-dashboards) use cases, passing custom attributes to Rill

@@ -505,35 +505,37 @@ const config = {
           {
             from: '/build/metrics-view/advanced-expressions/windows',
             to: '/build/metrics-view/measures/windows'
-          }
-            from: '/deploy/performance',
-          to: '/guides/performance'
           },
-      {
-        from: '/home/install',
-        to: '/get-started/install'
-      },
-      {
-        from: '/home/get-started',
-        to: '/get-started/quickstart'
-      },
-      // {
-      //   from: '/old-page',
-      //   to: '/new-page',
-      // }
-    ],
+
+          {
+            from: '/deploy/performance',
+            to: '/guides/performance'
+          },
+          {
+            from: '/home/install',
+            to: '/get-started/install'
+          },
+          {
+            from: '/home/get-started',
+            to: '/get-started/quickstart'
+          },
+          // {
+          //   from: '/old-page',
+          //   to: '/new-page',
+          // }
+        ],
       },
     ],
   ],
 
-// Configure Mermaid for diagrams
-themes: ['@docusaurus/theme-mermaid'],
+  // Configure Mermaid for diagrams
+  themes: ['@docusaurus/theme-mermaid'],
   markdown: {
-  mermaid: true,
+    mermaid: true,
   },
-stylesheets: [
-  "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
-],
+  stylesheets: [
+    "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+  ],
 };
 
 module.exports = config;
