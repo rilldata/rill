@@ -39,8 +39,8 @@ type CanvasYAML struct {
 			Dimensions []struct {
 				Dimension string    `yaml:"dimension"`
 				Values    *[]string `yaml:"values"`
-				Limit     *int      `yaml:"limit"`     // Limit for the number of values
-				Removable *bool     `yaml:"removable"` // Flag to indicate if the filter can be removed
+				Limit     *int      `yaml:"limit"`
+				Removable *bool     `yaml:"removable"`
 				Locked    *bool     `yaml:"locked"`
 				Hidden    *bool     `yaml:"hidden"`
 				Mode      string    `yaml:"mode"` // select, in_list, contains
@@ -49,9 +49,9 @@ type CanvasYAML struct {
 			Measures []struct {
 				Measure     string    `yaml:"measure"`
 				ByDimension *string   `yaml:"by_dimension"`
-				Operator    *string   `yaml:"operator"` // Optional operator for the measure filter (e.g., "equals", "greater_than")
+				Operator    *string   `yaml:"operator"` // Optional operator for the measure filter (e.g., "eq", "gt", "lt", etc.)
 				Values      *[]string `yaml:"values"`
-				Removable   *bool     `yaml:"removable"` // Flag to indicate if the filter can be removed
+				Removable   *bool     `yaml:"removable"`
 				Locked      *bool     `yaml:"locked"`
 				Hidden      *bool     `yaml:"hidden"`
 			} `yaml:"measures"`
@@ -264,8 +264,9 @@ func (p *Parser) parseCanvas(node *Node) error {
 					Dimension: dimFilter.Dimension,
 				}
 
+				filter.Exclude = false
 				if dimFilter.Exclude != nil {
-					filter.Exclude = dimFilter.Exclude
+					filter.Exclude = *dimFilter.Exclude
 				}
 
 				if !isValidCanvasDimensionFilterMode(dimFilter.Mode) {
@@ -287,27 +288,30 @@ func (p *Parser) parseCanvas(node *Node) error {
 
 				if dimFilter.Limit != nil {
 					limit := uint32(*dimFilter.Limit)
-					filter.Limit = &limit
+					filter.Limit = limit
 
 					if filter.Values != nil && uint32(len(filter.Values)) > limit {
 						return fmt.Errorf("dimension filter %q has too many values (max: %d)", dimFilter.Dimension, limit)
 					}
 				}
 
+				filter.Removable = true
 				if dimFilter.Removable != nil {
-					filter.Removable = dimFilter.Removable
+					filter.Removable = *dimFilter.Removable
 				}
 
+				filter.Locked = false
 				if dimFilter.Locked != nil {
 					if *dimFilter.Locked && (filter.Values == nil || uint32(len(filter.Values)) == 0) {
 						return fmt.Errorf("dimension filter %q must have at least one value when locked", dimFilter.Dimension)
 					}
 
-					filter.Locked = dimFilter.Locked
+					filter.Locked = *dimFilter.Locked
 				}
 
+				filter.Hidden = false
 				if dimFilter.Hidden != nil {
-					filter.Hidden = dimFilter.Hidden
+					filter.Hidden = *dimFilter.Hidden
 				}
 
 				dimensionFilters[i] = filter
@@ -333,12 +337,13 @@ func (p *Parser) parseCanvas(node *Node) error {
 					filter.Values = values
 				}
 
+				filter.Removable = true
 				if measureFilter.Removable != nil {
-					filter.Removable = measureFilter.Removable
+					filter.Removable = *measureFilter.Removable
 				}
 
 				if measureFilter.ByDimension != nil {
-					filter.ByDimension = measureFilter.ByDimension
+					filter.ByDimension = *measureFilter.ByDimension
 				}
 
 				if measureFilter.Operator != nil {
@@ -347,20 +352,22 @@ func (p *Parser) parseCanvas(node *Node) error {
 						return fmt.Errorf("invalid operator %q for measure filter %q", *measureFilter.Operator, measureFilter.Measure)
 					}
 
-					filter.Operator = measureFilter.Operator
+					filter.Operator = *measureFilter.Operator
 				}
 
+				filter.Locked = false
 				if measureFilter.Locked != nil {
 
 					if *measureFilter.Locked && (measureFilter.Operator == nil || filter.Values == nil || len(filter.Values) == 0 || measureFilter.ByDimension == nil) {
 						return fmt.Errorf("measure filter %q must have all fields set when locked", measureFilter.Measure)
 					}
 
-					filter.Locked = measureFilter.Locked
+					filter.Locked = *measureFilter.Locked
 				}
 
+				filter.Hidden = false
 				if measureFilter.Hidden != nil {
-					filter.Hidden = measureFilter.Hidden
+					filter.Hidden = *measureFilter.Hidden
 				}
 				measureFilters[i] = filter
 			}
