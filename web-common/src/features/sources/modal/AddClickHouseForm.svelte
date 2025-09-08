@@ -323,11 +323,8 @@
         />
       </div>
     {:else if connectorType === "clickhouse-cloud"}
-      <div class="my-4">
-        <InformationalField
-          description="Connect to your ClickHouse Cloud instance. SSL is automatically enabled and port is set to 8443 (HTTPS). You'll need your host, username, password, and database from the ClickHouse Cloud console."
-        />
-      </div>
+      <!-- FIXME -->
+      <div class="my-4"></div>
     {/if}
   </div>
 
