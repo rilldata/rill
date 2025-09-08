@@ -97,11 +97,8 @@
       ? paramsFormId
       : dsnFormId;
 
-  // Reset connectionTab if switching to Rill-managed or ClickHouse Cloud
-  $: if (
-    connectorType === "rill-managed" ||
-    connectorType === "clickhouse-cloud"
-  ) {
+  // Reset connectionTab if switching to Rill-managed
+  $: if (connectorType === "rill-managed") {
     connectionTab = "parameters";
   }
 
@@ -240,11 +237,9 @@
     if (connectorType === "rill-managed") {
       return connector.sourceProperties ?? [];
     } else if (connectorType === "clickhouse-cloud") {
-      // ClickHouse Cloud: only show specific properties
+      // ClickHouse Cloud: show all config properties except dsn (same as self-hosted)
       return (connector.configProperties ?? []).filter((p) =>
-        ["host", "port", "username", "password", "database"].includes(
-          p.key ?? "",
-        ),
+        connectionTab !== "dsn" ? p.key !== "dsn" : true,
       );
     } else {
       // Self-managed: show all config properties except dsn
@@ -322,13 +317,10 @@
           description="This option uses ClickHouse as an OLAP engine with Rill-managed infrastructure. No additional configuration is required - Rill will handle the setup and management of your ClickHouse instance."
         />
       </div>
-    {:else if connectorType === "clickhouse-cloud"}
-      <!-- FIXME -->
-      <div class="my-4"></div>
     {/if}
   </div>
 
-  {#if connectorType === "self-hosted"}
+  {#if connectorType === "self-hosted" || connectorType === "clickhouse-cloud"}
     <Tabs bind:value={connectionTab} options={CONNECTION_TAB_OPTIONS}>
       <TabsContent value="parameters">
         <form
@@ -339,36 +331,51 @@
         >
           {#each filteredProperties as property (property.key)}
             {@const propertyKey = property.key ?? ""}
-            <div class="py-1.5 first:pt-0 last:pb-0">
-              {#if property.type === ConnectorDriverPropertyType.TYPE_STRING || property.type === ConnectorDriverPropertyType.TYPE_NUMBER}
-                <Input
-                  id={propertyKey}
-                  label={property.displayName}
-                  placeholder={property.placeholder}
-                  optional={!property.required}
-                  secret={property.secret}
-                  hint={property.hint}
-                  errors={normalizeErrors($paramsErrors[propertyKey])}
-                  bind:value={$paramsForm[propertyKey]}
-                  onInput={(_, e) => onStringInputChange(e)}
-                  alwaysShowError
-                />
-              {:else if property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN}
-                <Checkbox
-                  id={propertyKey}
-                  bind:checked={$paramsForm[propertyKey]}
-                  label={property.displayName}
-                  hint={property.hint}
-                  optional={!property.required}
-                />
-              {:else if property.type === ConnectorDriverPropertyType.TYPE_INFORMATIONAL}
-                <InformationalField
-                  description={property.description}
-                  hint={property.hint}
-                  href={property.docsUrl}
-                />
-              {/if}
-            </div>
+            {@const isPortField = propertyKey === "port"}
+            {@const isSSLField = propertyKey === "ssl"}
+
+            <!-- Skip SSL field for ClickHouse Cloud since it's always enabled -->
+            {#if !(connectorType === "clickhouse-cloud" && isSSLField)}
+              <div class="py-1.5 first:pt-0 last:pb-0">
+                {#if property.type === ConnectorDriverPropertyType.TYPE_STRING || property.type === ConnectorDriverPropertyType.TYPE_NUMBER}
+                  <Input
+                    id={propertyKey}
+                    label={property.displayName}
+                    placeholder={property.placeholder}
+                    optional={!property.required}
+                    secret={property.secret}
+                    hint={property.hint}
+                    errors={normalizeErrors($paramsErrors[propertyKey])}
+                    bind:value={$paramsForm[propertyKey]}
+                    onInput={(_, e) => onStringInputChange(e)}
+                    alwaysShowError
+                    disabled={connectorType === "clickhouse-cloud" &&
+                      isPortField}
+                  />
+                {:else if property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN}
+                  <Checkbox
+                    id={propertyKey}
+                    bind:checked={$paramsForm[propertyKey]}
+                    label={property.displayName}
+                    hint={property.hint}
+                    optional={!property.required}
+                  />
+                {:else if property.type === ConnectorDriverPropertyType.TYPE_INFORMATIONAL}
+                  <InformationalField
+                    description={property.description}
+                    hint={property.hint}
+                    href={property.docsUrl}
+                  />
+                {/if}
+
+                <!-- Show info about fixed values for ClickHouse Cloud -->
+                {#if connectorType === "clickhouse-cloud" && isPortField}
+                  <div class="mt-1 text-xs text-gray-600">
+                    Port is fixed to 8443 for ClickHouse Cloud (HTTPS)
+                  </div>
+                {/if}
+              </div>
+            {/if}
           {/each}
         </form>
       </TabsContent>
@@ -397,62 +404,6 @@
         </form>
       </TabsContent>
     </Tabs>
-  {:else if connectorType === "clickhouse-cloud"}
-    <!-- ClickHouse Cloud: show parameters form directly without tabs -->
-    <form
-      id={paramsFormId}
-      class="pb-5 flex-grow overflow-y-auto"
-      use:paramsEnhance
-      on:submit|preventDefault={paramsSubmit}
-    >
-      {#each filteredProperties as property (property.key)}
-        {@const propertyKey = property.key ?? ""}
-        {@const isPortField = propertyKey === "port"}
-        {@const isSSLField = propertyKey === "ssl"}
-
-        <!-- Skip SSL field for ClickHouse Cloud since it's always enabled -->
-        {#if !isSSLField}
-          <div class="py-1.5 first:pt-0 last:pb-0">
-            {#if property.type === ConnectorDriverPropertyType.TYPE_STRING || property.type === ConnectorDriverPropertyType.TYPE_NUMBER}
-              <Input
-                id={propertyKey}
-                label={property.displayName}
-                placeholder={property.placeholder}
-                optional={!property.required}
-                secret={property.secret}
-                hint={property.hint}
-                errors={normalizeErrors($paramsErrors[propertyKey])}
-                bind:value={$paramsForm[propertyKey]}
-                onInput={(_, e) => onStringInputChange(e)}
-                alwaysShowError
-                disabled={isPortField}
-              />
-            {:else if property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN}
-              <Checkbox
-                id={propertyKey}
-                bind:checked={$paramsForm[propertyKey]}
-                label={property.displayName}
-                hint={property.hint}
-                optional={!property.required}
-              />
-            {:else if property.type === ConnectorDriverPropertyType.TYPE_INFORMATIONAL}
-              <InformationalField
-                description={property.description}
-                hint={property.hint}
-                href={property.docsUrl}
-              />
-            {/if}
-
-            <!-- Show info about fixed values for ClickHouse Cloud -->
-            {#if isPortField}
-              <div class="mt-1 text-xs text-gray-600">
-                Port is fixed to 8443 for ClickHouse Cloud (HTTPS)
-              </div>
-            {/if}
-          </div>
-        {/if}
-      {/each}
-    </form>
   {:else}
     <!-- Only managed form -->
     <form
