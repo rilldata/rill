@@ -452,3 +452,108 @@ func TestGenerateDatabaseName(t *testing.T) {
 		})
 	}
 }
+
+func TestClickHouseStaticGlobalPrivileges(t *testing.T) {
+	container, err := testcontainersclickhouse.Run(
+		context.Background(),
+		"clickhouse/clickhouse-server:24.11.1.2557",
+		// Add a user config file that enables access management for the "default" user
+		testcontainers.CustomizeRequestOption(func(req *testcontainers.GenericContainerRequest) error {
+			req.Files = append(req.Files, testcontainers.ContainerFile{
+				Reader:            strings.NewReader(`<clickhouse><users><default><access_management>1</access_management></default></users></clickhouse>`),
+				ContainerFilePath: "/etc/clickhouse-server/users.d/default.xml",
+				FileMode:          0o755,
+			})
+			return nil
+		}),
+	)
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		err := container.Terminate(context.Background())
+		require.NoError(t, err)
+	})
+	host, err := container.Host(context.Background())
+	require.NoError(t, err)
+	port, err := container.MappedPort(context.Background(), "9000/tcp")
+	require.NoError(t, err)
+
+	// Create the provisioner without cluster configuration (tests global CLUSTER privilege)
+	specJSON, err := json.Marshal(&Spec{DSN: fmt.Sprintf("clickhouse://default:default@%v:%v", host, port.Port())})
+	require.NoError(t, err)
+	p, err := New(specJSON, nil, zap.NewNop())
+	require.NoError(t, err)
+
+	// Provision a resource
+	r, db := provisionClickHouse(t, p)
+	defer db.Close()
+
+	// Test that the user can perform DDL operations (which require cluster privileges)
+	// This should work with our global CLUSTER privilege grant
+	_, err = db.Exec("CREATE TABLE test_table (id UInt64, name String) ENGINE = MergeTree ORDER BY id")
+	require.NoError(t, err, "User should be able to create tables with global CLUSTER privilege")
+
+	_, err = db.Exec("INSERT INTO test_table VALUES (1, 'test')")
+	require.NoError(t, err, "User should be able to insert data")
+
+	// Verify the table was created and data inserted
+	rows, err := db.Query("SELECT id, name FROM test_table")
+	require.NoError(t, err)
+	defer rows.Close()
+
+	var count int
+	for rows.Next() {
+		var id uint64
+		var name string
+		err = rows.Scan(&id, &name)
+		require.NoError(t, err)
+		require.Equal(t, uint64(1), id)
+		require.Equal(t, "test", name)
+		count++
+	}
+	require.Equal(t, 1, count, "Should have one row in the table")
+
+	// Test SHOW TABLES privilege (granted globally)
+	rows, err = db.Query("SHOW TABLES")
+	require.NoError(t, err, "User should be able to show tables with global privileges")
+	defer rows.Close()
+
+	found := false
+	for rows.Next() {
+		var tableName string
+		err = rows.Scan(&tableName)
+		require.NoError(t, err)
+		if tableName == "test_table" {
+			found = true
+		}
+	}
+	require.True(t, found, "test_table should be visible in SHOW TABLES")
+
+	// Test SHOW DATABASES privilege (granted globally)
+	rows, err = db.Query("SHOW DATABASES")
+	require.NoError(t, err, "User should be able to show databases with global privileges")
+	defer rows.Close()
+
+	// Get the database name from the DSN
+	dsnParsed, err := clickhouse.ParseDSN(r.Config["dsn"].(string))
+	require.NoError(t, err)
+	dbName := dsnParsed.Auth.Database
+
+	found = false
+	for rows.Next() {
+		var databaseName string
+		err = rows.Scan(&databaseName)
+		require.NoError(t, err)
+		if databaseName == dbName {
+			found = true
+		}
+	}
+	require.True(t, found, "User's database should be visible in SHOW DATABASES")
+
+	// Clean up
+	_, err = db.Exec("DROP TABLE test_table")
+	require.NoError(t, err)
+
+	// Deprovision the resource
+	err = p.Deprovision(context.Background(), r)
+	require.NoError(t, err)
+}
