@@ -424,7 +424,6 @@ const config = {
           },
           {
             from: '/home/concepts/OLAP',
-            to: '/get-started/concepts/OLAP'
             to: '/connect/olap#what-is-olap'
           },
           {
