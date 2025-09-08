@@ -13,11 +13,11 @@ rill start my-rill-project
 ```
 
 <h3 align="center">
-  <a href="https://docs.rilldata.com/get-started/get-started">Quickstart</a>
+  <a href="https://docs.rilldata.com/get-started/quickstart">Quickstart</a>
   <span> · </span>
   <a href="https://docs.rilldata.com/get-started/install">Install</a>
   <span> · </span>
-  <a href="https://docs.rilldata.com/get-started/get-started#example-projects">Example Projects</a>
+  <a href="https://docs.rilldata.com/#examples">Example Projects</a>
   <span> · </span>
   <a href="https://discord.gg/TatjVY32">Community</a>
   <span> · </span>
