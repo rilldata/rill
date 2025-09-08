@@ -53,6 +53,7 @@ require (
 	github.com/gocarina/gocsv v0.0.0-20231116093920-b87c2d0e983a
 	github.com/golang-jwt/jwt/v4 v4.5.2
 	github.com/google/go-github/v71 v71.0.0
+	github.com/google/jsonschema-go v0.2.0
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/securecookie v1.1.1
 	github.com/gorilla/sessions v1.2.1
@@ -87,7 +88,7 @@ require (
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/rs/cors v1.11.1
 	github.com/santhosh-tekuri/jsonschema/v5 v5.3.1
-	github.com/sashabaranov/go-openai v1.24.0
+	github.com/sashabaranov/go-openai v1.41.1
 	github.com/slack-go/slack v0.12.5
 	github.com/snowflakedb/gosnowflake v1.15.0
 	github.com/spf13/cobra v1.9.1
@@ -164,7 +165,6 @@ require (
 	github.com/ForceCLI/inflect v0.0.0-20130829110746-cc00b5ad7a6a // indirect
 	github.com/ViViDboarder/gotifier v0.0.0-20140619195515-0f19f3d7c54c // indirect
 	github.com/go-jose/go-jose/v4 v4.0.5 // indirect
-	github.com/google/jsonschema-go v0.2.0 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/oasdiff/yaml v0.0.0-20250309154309-f31be36b4037 // indirect
 	github.com/oasdiff/yaml3 v0.0.0-20250309153720-d2182401db90 // indirect

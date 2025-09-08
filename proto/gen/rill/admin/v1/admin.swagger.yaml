@@ -4717,6 +4717,9 @@ definitions:
           type: object
           $ref: '#/definitions/v1Tool'
         title: Optional list of tools that the AI can use during completion
+      outputJsonSchema:
+        type: string
+        title: Optional output JSON schema
   v1CompleteResponse:
     type: object
     properties:

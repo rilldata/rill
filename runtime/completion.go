@@ -492,7 +492,7 @@ func (r *Runtime) executeAICompletion(ctx context.Context, instanceID string, al
 	}
 
 	// Get final response from AI without tools
-	res, err := ai.Complete(ctx, completionMessages, []*aiv1.Tool{}) // No tools provided
+	res, err := ai.Complete(ctx, completionMessages, []*aiv1.Tool{}, nil) // No tools provided
 	if err != nil {
 		return nil, err
 	}
