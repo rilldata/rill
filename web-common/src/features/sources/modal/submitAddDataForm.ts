@@ -24,7 +24,7 @@ import {
 } from "../../connectors/code-utils";
 import {
   testOLAPConnector,
-  pollConnectorResource,
+  testNonOLAPConnector,
 } from "../../connectors/olap/test-connection";
 import { runtimeServicePutFileAndWaitForReconciliation } from "../../entity-management/actions";
 import { getFileAPIPathFromNameAndType } from "../../entity-management/entity-mappers";
@@ -176,43 +176,26 @@ export async function submitAddConnectorForm(
     throw new Error(errorMessage);
   }
 
-  // Test the connection to the OLAP_ENGINES connectors
+  // Test the connection for both OLAP and non-OLAP connectors
   // If the connection test fails, rollback the changes
+  let result;
   if (OLAP_ENGINES.includes(connector.name as string)) {
-    const result = await testOLAPConnector(
-      instanceId,
-      connector.name as string,
-    );
-    if (!result.success) {
-      await rollbackConnectorChanges(
-        instanceId,
-        newConnectorFilePath,
-        originalEnvBlob,
-      );
-      throw {
-        message: result.error || "Unable to establish a connection",
-        details: result.details,
-      };
-    }
+    result = await testOLAPConnector(instanceId, connector.name as string);
   } else {
-    // Poll for the non-OLAP connectors resource status
-    // If the resource status is not reconciled, rollback the changes
-    const result = await pollConnectorResource(
-      instanceId,
-      connector.name as string,
-    );
+    // Test non-OLAP connectors using ListDatabaseSchemas
+    result = await testNonOLAPConnector(instanceId, connector.name as string);
+  }
 
-    if (!result.success) {
-      await rollbackConnectorChanges(
-        instanceId,
-        newConnectorFilePath,
-        originalEnvBlob,
-      );
-      throw {
-        message: result.error || "Connector configuration failed to reconcile",
-        details: result.details,
-      };
-    }
+  if (!result.success) {
+    await rollbackConnectorChanges(
+      instanceId,
+      newConnectorFilePath,
+      originalEnvBlob,
+    );
+    throw {
+      message: result.error || "Unable to establish a connection",
+      details: result.details,
+    };
   }
 
   /**
