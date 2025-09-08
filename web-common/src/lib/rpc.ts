@@ -33,6 +33,7 @@ const methods: JSONRPCMethods = {
 };
 
 async function handleRPCMessage(event: MessageEvent<JSONRPCRequest>) {
+  console.log("handleRPCMessage", event);
   if (typeof event.data !== "object" || event.data === null) {
     return sendError(null, JSONRPC_ERRORS.INVALID_REQUEST);
   }

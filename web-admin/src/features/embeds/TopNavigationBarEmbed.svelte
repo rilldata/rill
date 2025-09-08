@@ -9,10 +9,7 @@
     V1Resource,
     V1ResourceName,
   } from "@rilldata/web-common/runtime-client";
-  import { createEventDispatcher } from "svelte";
   import LastRefreshedDate from "../dashboards/listing/LastRefreshedDate.svelte";
-
-  const dispatch = createEventDispatcher();
 
   export let instanceId: string;
   export let activeResource: V1ResourceName;
@@ -42,6 +39,7 @@
           (isExplore
             ? explore?.state?.validSpec?.displayName
             : canvas?.state?.validSpec?.displayName) || name,
+        href: `/-/embed/${isExplore ? "explore" : "canvas"}/${name}`,
       });
     },
     new Map(),
@@ -55,7 +53,6 @@
     if (!resource) {
       throw new Error(`Resource not found: ${name}`);
     }
-    dispatch("select-resource", resource.meta.name);
   }
 </script>
 
@@ -65,10 +62,9 @@
       <ol class="flex items-center pl-4">
         {#if !onProjectPage}
           <div class="flex gap-x-2">
-            <button
-              class="text-gray-500 hover:text-gray-600"
-              on:click={() => dispatch("go-home")}>Home</button
-            >
+            <a class="text-gray-500 hover:text-gray-600" href="/-/embed">
+              Home
+            </a>
             <span class="text-gray-600">/</span>
           </div>
         {/if}
@@ -85,7 +81,6 @@
             <BreadcrumbItem
               options={breadcrumbOptions}
               current={currentResourceName}
-              onSelect={onSelectResource}
               isCurrentPage
               isEmbedded
             />

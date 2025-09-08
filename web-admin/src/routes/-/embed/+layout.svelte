@@ -1,17 +1,37 @@
 <script lang="ts">
   import { page } from "$app/stores";
+  import initEmbedPublicAPI from "@rilldata/web-admin/features/embeds/init-embed-public-api.ts";
+  import TopNavigationBarEmbed from "@rilldata/web-admin/features/embeds/TopNavigationBarEmbed.svelte";
+  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
   import { onMount } from "svelte";
   import RuntimeProvider from "@rilldata/web-common/runtime-client/RuntimeProvider.svelte";
   import { createIframeRPCHandler } from "@rilldata/web-common/lib/rpc";
+  import type { PageData } from "./$types";
 
-  const instanceId = $page.url.searchParams.get("instance_id");
-  const runtimeHost = $page.url.searchParams.get("runtime_host");
-  const accessToken = $page.url.searchParams.get("access_token");
+  export let data: PageData;
+  const { instanceId, runtimeHost, accessToken, navigationEnabled } = data;
+
+  $: activeResource = {
+    kind: $page.route.id?.includes("explore")
+      ? ResourceKind.Explore
+      : ResourceKind.Canvas,
+    name: $page.params.name,
+  };
 
   onMount(() => {
     createIframeRPCHandler();
+
+    return initEmbedPublicAPI();
   });
 </script>
+
+<svelte:head>
+  {#if activeResource}
+    <title>{activeResource.name} - Rill</title>
+  {:else}
+    <title>Rill</title>
+  {/if}
+</svelte:head>
 
 <RuntimeProvider
   host={runtimeHost}
@@ -19,5 +39,9 @@
   jwt={accessToken}
   authContext="embed"
 >
+  {#if navigationEnabled}
+    <TopNavigationBarEmbed {instanceId} {activeResource} />
+  {/if}
+
   <slot />
 </RuntimeProvider>
