@@ -45,17 +45,6 @@ var spec = drivers.Spec{
 			Type:        drivers.StringPropertyType,
 			Required:    true,
 			DisplayName: "Path",
-			Description: "Path to external DuckDB database.",
-			Placeholder: "/path/to/main.db",
-		},
-	},
-	// NOTE: reinstated SourceProperties to address https://github.com/rilldata/rill/pull/7726#discussion_r2271449022
-	SourceProperties: []*drivers.PropertySpec{
-		{
-			Key:         "path",
-			Type:        drivers.StringPropertyType,
-			Required:    true,
-			DisplayName: "Path",
 			Description: "Path to DuckDB database",
 			Placeholder: "/path/to/duckdb.db",
 		},
@@ -66,7 +55,6 @@ var spec = drivers.Spec{
 			DisplayName: "SQL",
 			Description: "Query to extract data from DuckDB.",
 			Placeholder: "select * from table;",
-			NoPrompt:    true,
 		},
 		{
 			Key:         "name",
