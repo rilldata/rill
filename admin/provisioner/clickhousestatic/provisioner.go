@@ -210,7 +210,7 @@ func (p *Provisioner) Provision(ctx context.Context, r *provisioner.Resource, op
 		globalPrivileges = append(globalPrivileges, "CLUSTER")
 	}
 
-	_, err = p.ch.ExecContext(ctx, fmt.Sprintf(`GRANT %s %s ON *.* TO %s`, p.onCluster(), strings.Join(globalPrivileges, ",\n\t\t\t"), user))
+	_, err = p.ch.ExecContext(ctx, fmt.Sprintf(`GRANT %s %s ON *.* TO %s`, p.onCluster(), strings.Join(globalPrivileges, ", "), user))
 	if err != nil {
 		return nil, fmt.Errorf("failed to grant global privileges to clickhouse user: %w", err)
 	}
