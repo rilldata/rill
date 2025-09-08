@@ -347,21 +347,17 @@ func (p *Parser) parseCanvas(node *Node) error {
 				}
 
 				if measureFilter.Operator != nil {
-
 					if !isValidMeasureFilterOperator(measureFilter.Operator) {
 						return fmt.Errorf("invalid operator %q for measure filter %q", *measureFilter.Operator, measureFilter.Measure)
 					}
-
 					filter.Operator = *measureFilter.Operator
 				}
 
 				filter.Locked = false
 				if measureFilter.Locked != nil {
-
 					if *measureFilter.Locked && (measureFilter.Operator == nil || filter.Values == nil || len(filter.Values) == 0 || measureFilter.ByDimension == nil) {
 						return fmt.Errorf("measure filter %q must have all fields set when locked", measureFilter.Measure)
 					}
-
 					filter.Locked = *measureFilter.Locked
 				}
 
