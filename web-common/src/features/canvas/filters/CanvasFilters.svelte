@@ -42,7 +42,6 @@
         setTemporaryFilterName,
         clearAllFilters,
         dimensionHasFilter,
-        temporaryFilters,
         allDimensionFilterItems,
         allMeasureFilterItems,
         measureHasFilter,
@@ -91,7 +90,6 @@
   $: defaultProperties = $defaultFilterProperties;
 
   // hasFilter only checks for complete filters and excludes temporary ones
-  $: console.log({ defaultProperties });
   $: hasClearableFilters =
     Array.from(allDimensionFilters.keys()).some(
       (name) => !defaultProperties.get(name)?.locked,
