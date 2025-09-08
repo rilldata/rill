@@ -277,7 +277,7 @@
     container.scrollTo({ top: scrollTop, left: scrollLeft });
   }
 
-  function togglePin(e: MouseEvent & { currentTarget: HTMLButtonElement }) {
+  function togglePin(e: PointerEvent & { currentTarget: HTMLButtonElement }) {
     const index = Number(e.currentTarget.dataset.index);
     if (pinnedColumns.has(index)) {
       let found = false;
