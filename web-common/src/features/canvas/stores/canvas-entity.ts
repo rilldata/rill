@@ -80,6 +80,38 @@ export class CanvasEntity {
   unsubscriber: Unsubscriber;
   lastVisitedState: Writable<string | null> = writable(null);
 
+  urlListener = (url: URL) => {
+    const { searchParams } = url;
+
+    const themeFromUrl = searchParams.get("theme");
+    if (themeFromUrl) {
+      this.processAndSetTheme(themeFromUrl, undefined).catch(console.error);
+    }
+
+    this.filters.onUrlChange(searchParams);
+    this.timeControls.onUrlChange(searchParams);
+  };
+
+  searchParamsCallback = (
+    key: string,
+    value: string | undefined,
+    checkIfSet = false,
+  ) => {
+    const url = get(page).url;
+
+    if (checkIfSet && url.searchParams.has(key)) return false;
+
+    if (value === undefined || value === null || value === "") {
+      url.searchParams.delete(key);
+    } else {
+      url.searchParams.set(key, value);
+    }
+
+    this.lastVisitedState.set(url.searchParams.toString());
+    goto(url.toString(), { replaceState: true }).catch(console.error);
+    return true;
+  };
+
   constructor(
     name: string,
     private instanceId: string,
@@ -97,56 +129,25 @@ export class CanvasEntity {
 
     this.name = name;
 
-    const searchParamsStore: SearchParamsStore = (() => {
-      return {
-        subscribe: derived(page, ({ url: { searchParams } }) => searchParams)
-          .subscribe,
-        set: (key: string, value: string | undefined, checkIfSet = false) => {
-          const url = get(page).url;
-
-          if (checkIfSet && url.searchParams.has(key)) return false;
-
-          if (value === undefined || value === null || value === "") {
-            url.searchParams.delete(key);
-          } else {
-            url.searchParams.set(key, value);
-          }
-          goto(url.toString(), { replaceState: true }).catch(console.error);
-          return true;
-        },
-        clearAll: () => {
-          const url = get(page).url;
-          url.searchParams.forEach((_, key) => {
-            url.searchParams.delete(key);
-          });
-
-          goto(url.toString(), { replaceState: true }).catch(console.error);
-        },
-      };
-    })();
-
     this.spec = new CanvasResolvedSpec(this.specStore);
     this.timeControls = new TimeControls(
       this.specStore,
-      searchParamsStore,
+      this.searchParamsCallback,
       undefined,
       this.name,
     );
     this.filters = new Filters(
       this.spec,
-      searchParamsStore,
+      this.searchParamsCallback,
       this.specStore,
       undefined,
     );
 
-    searchParamsStore.subscribe((searchParams) => {
-      const themeFromUrl = searchParams.get("theme");
-      if (themeFromUrl) {
-        this.processAndSetTheme(themeFromUrl, undefined).catch(console.error);
-      }
-    });
-
     this.unsubscriber = this.specStore.subscribe((spec) => {
+      if (!spec.data) return;
+
+      this.filters.onSpecChange(spec.data);
+
       const filePath = spec.data?.filePath;
       const theme = spec.data?.canvas?.theme;
       const embeddedTheme = spec.data?.canvas?.embeddedTheme;
@@ -186,10 +187,6 @@ export class CanvasEntity {
   // Not currently being used
   unsubscribe = () => {
     // this.unsubscriber();
-  };
-
-  saveSnapshot = (filterState: string) => {
-    this.lastVisitedState.set(filterState);
   };
 
   restoreSnapshot = async () => {

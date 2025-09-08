@@ -4,17 +4,19 @@
   import { getCanvasStore } from "./state-managers/state-managers";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { page } from "$app/stores";
+
   export let maxWidth: number;
   export let clientWidth = 0;
   export let showGrabCursor = false;
   export let filtersEnabled: boolean | undefined;
   export let canvasName: string;
+
   export let onClick: () => void = () => {};
 
   $: ({ instanceId } = $runtime);
 
   $: ({
-    canvasEntity: { saveSnapshot, restoreSnapshot },
+    canvasEntity: { restoreSnapshot, urlListener },
   } = getCanvasStore(canvasName, instanceId));
 
   let contentRect = new DOMRectReadOnly(0, 0, 0, 0);
@@ -25,13 +27,16 @@
     await restoreSnapshot();
   });
 
+  $: if (urlListener) {
+    urlListener($page.url);
+  }
+
   onDestroy(() => {
     // Temporary fix for embed scenario.
     // TODO: cleanup when we move embed to a route based navigation
     const url = new URL($page.url);
     url.searchParams.delete("resource");
     url.searchParams.delete("type");
-    saveSnapshot(url.searchParams.toString());
   });
 </script>
 

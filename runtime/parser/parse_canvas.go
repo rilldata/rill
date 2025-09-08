@@ -15,6 +15,8 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+
+
 type CanvasYAML struct {
 	commonYAML           `yaml:",inline"`       // Not accessed here, only setting it so we can use KnownFields for YAML parsing
 	DisplayName          string                 `yaml:"display_name"`
@@ -25,6 +27,7 @@ type CanvasYAML struct {
 	GapY                 uint32                 `yaml:"gap_y"`
 	Theme                yaml.Node              `yaml:"theme"` // Name (string) or inline theme definition (map)
 	AllowCustomTimeRange *bool                  `yaml:"allow_custom_time_range"`
+	AllowFilterAdd	     *bool                  `yaml:"allow_filter_add"` // Deprecated: use security rules instead
 	TimeRanges           []ExploreTimeRangeYAML `yaml:"time_ranges"`
 	TimeZones            []string               `yaml:"time_zones"`
 	Filters              struct {
@@ -42,6 +45,8 @@ type CanvasYAML struct {
 				Removable *bool     `yaml:"removable"` // Flag to indicate if the filter can be removed
 				Locked    *bool     `yaml:"locked"`
 				Hidden    *bool     `yaml:"hidden"`
+				Mode      string    `yaml:"mode"` // select, in_list, contains
+				Exclude   *bool     `yaml:"exclude"`
 			} `yaml:"dimensions"`
 			Measures []struct {
 				Measure     string    `yaml:"measure"`
@@ -92,6 +97,13 @@ func (p *Parser) parseCanvas(node *Node) error {
 	if tmp.AllowCustomTimeRange != nil {
 		allowCustomTimeRange = *tmp.AllowCustomTimeRange
 	}
+
+	// Set default for AllowFilterAdd to true if not provided
+	allowFilterAdd := true
+	if tmp.AllowFilterAdd != nil {
+		allowFilterAdd = *tmp.AllowFilterAdd
+	}
+
 
 	// Parse theme if present.
 	// If it returns a themeSpec, it will be inserted as a separate resource later in this function.
@@ -254,9 +266,28 @@ func (p *Parser) parseCanvas(node *Node) error {
 				filter := &runtimev1.CanvasDimensionFilter{
 					Dimension: dimFilter.Dimension,
 				}
+
+				if dimFilter.Exclude != nil {
+					filter.Exclude = dimFilter.Exclude
+				}
+			
+				if !isValidCanvasDimensionFilterMode(dimFilter.Mode) {
+					return fmt.Errorf("invalid mode %q for dimension filter %q", dimFilter.Mode, dimFilter.Dimension)
+				}
+				
+				if dimFilter.Mode != "" {
+					filter.Mode = dimFilter.Mode
+				} else {
+					filter.Mode = "select"
+				}
+
 				if dimFilter.Values != nil {
+					if filter.Mode == "contains" && len(*dimFilter.Values) != 1 {
+						return fmt.Errorf("dimension filter %q with mode 'contains' must have exactly one value", dimFilter.Dimension)
+					}
 					filter.Values = *dimFilter.Values
 				}
+
 				if dimFilter.Limit != nil {
 					limit := uint32(*dimFilter.Limit)
 					filter.Limit = &limit
@@ -265,6 +296,7 @@ func (p *Parser) parseCanvas(node *Node) error {
 						return fmt.Errorf("dimension filter %q has too many values (max: %d)", dimFilter.Dimension, limit)
 					}
 				}
+
 				if dimFilter.Removable != nil {
 					filter.Removable = dimFilter.Removable
 				}
@@ -280,6 +312,7 @@ func (p *Parser) parseCanvas(node *Node) error {
 				if dimFilter.Hidden != nil {
 					filter.Hidden = dimFilter.Hidden
 				}
+
 				dimensionFilters[i] = filter
 			}
 
@@ -377,6 +410,7 @@ func (p *Parser) parseCanvas(node *Node) error {
 	r.CanvasSpec.GapY = tmp.GapY
 	r.CanvasSpec.Theme = themeName
 	r.CanvasSpec.AllowCustomTimeRange = allowCustomTimeRange
+	r.CanvasSpec.AllowFilterAdd = allowFilterAdd
 	r.CanvasSpec.TimeRanges = timeRanges
 	r.CanvasSpec.TimeZones = tmp.TimeZones
 	r.CanvasSpec.FiltersEnabled = true
@@ -487,6 +521,18 @@ func isValidMeasureFilterOperator(op *string) bool {
 	}
 	switch *op {
 	case "eq", "neq", "gt", "gte", "lt", "lte", "bt", "nbt":
+		return true
+	default:
+		return false
+	}
+}
+
+func isValidCanvasDimensionFilterMode(mode string) bool {
+	if mode == "" {
+		return true
+	}
+	switch mode {
+	case "select", "in_list", "contains":
 		return true
 	default:
 		return false

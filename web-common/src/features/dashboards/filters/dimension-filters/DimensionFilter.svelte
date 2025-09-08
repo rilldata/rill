@@ -178,6 +178,8 @@
     inListTooLong,
   );
 
+  $: limitIsOne = limit === 1;
+
   // Split results into checked and unchecked for better UX (like SelectionDropdown)
   // Use actual selectedValues (not proxy) so items only sort after dropdown closes
   $: ({ checkedItems, uncheckedItems } = getItemLists(
@@ -350,9 +352,14 @@
     if (curMode === DimensionFilterMode.Select) {
       // Update proxy instead of calling onSelect immediately
       if (selectedValuesProxy.includes(name)) {
+        if (limitIsOne) return;
         selectedValuesProxy = selectedValuesProxy.filter((v) => v !== name);
       } else {
-        selectedValuesProxy = [...selectedValuesProxy, name];
+        if (limitIsOne) {
+          selectedValuesProxy = [name];
+        } else {
+          selectedValuesProxy = [...selectedValuesProxy, name];
+        }
       }
     } else {
       onSelect(name);
@@ -500,7 +507,7 @@
                 role="menuitem"
                 checked={selected}
                 showXForSelected={curExcludeMode}
-                disabled={!selected && atLimit}
+                disabled={!selected && atLimit && !limitIsOne}
                 on:click={() => handleItemClick(name)}
               >
                 <span>
@@ -536,7 +543,7 @@
               checked={curMode === DimensionFilterMode.Select && selected}
               showXForSelected={curExcludeMode}
               disabled={curMode !== DimensionFilterMode.Select ||
-                (!selected && atLimit)}
+                (!selected && atLimit && !limitIsOne)}
               on:click={() => handleItemClick(name)}
             >
               <span>

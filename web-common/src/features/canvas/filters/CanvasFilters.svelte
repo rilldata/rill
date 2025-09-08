@@ -64,14 +64,18 @@
 
   $: activeTimeZone = $selectedTimezone;
 
+  $: ({
+    allowFilterAdd,
+    defaultPreset: { timeRange: defaultTimeRange } = {},
+    timeZones: availableTimeZones = [],
+    timeRanges = [],
+  } = $canvasSpec || {});
+
   $: selectedComparisonTimeRange =
     $comparisonRangeStateStore?.selectedComparisonTimeRange;
 
   $: selectedRangeAlias = selectedTimeRange?.name;
   $: activeTimeGrain = selectedTimeRange?.interval;
-  $: defaultTimeRange = $canvasSpec?.defaultPreset?.timeRange;
-  $: availableTimeZones = $canvasSpec?.timeZones ?? [];
-  $: timeRanges = $canvasSpec?.timeRanges ?? [];
 
   $: interval = selectedTimeRange
     ? Interval.fromDateTimes(
@@ -87,9 +91,12 @@
   $: defaultProperties = $defaultFilterProperties;
 
   // hasFilter only checks for complete filters and excludes temporary ones
-  $: hasFilters =
-    allDimensionFilters.size + allMeasureFilters.length >
-    $temporaryFilters.size;
+  $: console.log({ defaultProperties });
+  $: hasClearableFilters =
+    Array.from(allDimensionFilters.keys()).some(
+      (name) => !defaultProperties.get(name)?.locked,
+    ) ||
+    allMeasureFilters.some(({ name }) => !defaultProperties.get(name)?.locked);
 
   $: isComplexFilter = isExpressionUnsupported($whereFilter);
 
@@ -251,19 +258,21 @@
       {/if}
 
       {#if !readOnly}
-        <FilterButton
-          allDimensions={$allDimensions}
-          filteredSimpleMeasures={$allSimpleMeasures}
-          dimensionHasFilter={$dimensionHasFilter}
-          measureHasFilter={$measureHasFilter}
-          setTemporaryFilterName={(n) => {
-            justAdded = true;
-            setTemporaryFilterName(n, true);
-          }}
-        />
+        {#if allowFilterAdd}
+          <FilterButton
+            allDimensions={$allDimensions}
+            filteredSimpleMeasures={$allSimpleMeasures}
+            dimensionHasFilter={$dimensionHasFilter}
+            measureHasFilter={$measureHasFilter}
+            setTemporaryFilterName={(n) => {
+              justAdded = true;
+              setTemporaryFilterName(n, true);
+            }}
+          />
+        {/if}
         <!-- if filters are present, place a chip at the end of the flex container 
       that enables clearing all filters -->
-        {#if hasFilters}
+        {#if hasClearableFilters}
           <Button type="text" onClick={clearAllFilters}>Clear filters</Button>
         {/if}
       {/if}

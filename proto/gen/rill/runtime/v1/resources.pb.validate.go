@@ -9861,6 +9861,8 @@ func (m *CanvasSpec) validate(all bool) error {
 
 	}
 
+	// no validation rules for AllowFilterAdd
+
 	if len(errors) > 0 {
 		return CanvasSpecMultiError(errors)
 	}
@@ -10509,6 +10511,8 @@ func (m *CanvasDimensionFilter) validate(all bool) error {
 
 	// no validation rules for Dimension
 
+	// no validation rules for Mode
+
 	if m.Limit != nil {
 		// no validation rules for Limit
 	}
@@ -10523,6 +10527,10 @@ func (m *CanvasDimensionFilter) validate(all bool) error {
 
 	if m.Hidden != nil {
 		// no validation rules for Hidden
+	}
+
+	if m.Exclude != nil {
+		// no validation rules for Exclude
 	}
 
 	if len(errors) > 0 {

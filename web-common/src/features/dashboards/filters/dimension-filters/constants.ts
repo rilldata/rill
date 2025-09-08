@@ -4,6 +4,12 @@ export enum DimensionFilterMode {
   InList = "InList",
 }
 
+export const dimensionFilterModeMap = {
+  select: DimensionFilterMode.Select,
+  contains: DimensionFilterMode.Contains,
+  in_list: DimensionFilterMode.InList,
+};
+
 export const DimensionFilterModeOptions = [
   {
     value: DimensionFilterMode.Select,

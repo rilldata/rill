@@ -25,11 +25,7 @@ import type {
   ComparisonTimeRangeState,
   TimeRangeState,
 } from "../../dashboards/time-controls/time-control-store";
-import type {
-  CanvasEntity,
-  ComponentPath,
-  SearchParamsStore,
-} from "../stores/canvas-entity";
+import type { CanvasEntity, ComponentPath } from "../stores/canvas-entity";
 import { Filters } from "../stores/filters";
 import { TimeControls } from "../stores/time-control";
 import { ExploreStateURLParams } from "../../dashboards/url-state/url-params";
@@ -46,6 +42,9 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
   localFilters: Filters;
   // Widget specific time filters
   localTimeControls: TimeControls;
+
+  timeSearchParams: URLSearchParams;
+  filterSearchParams: URLSearchParams;
 
   abstract type: CanvasComponentType;
   // Component responsible for DOM rendering
@@ -78,98 +77,61 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
     this.resource.set(resource);
     this.id = resource.meta?.name?.name as string;
 
-    const yamlTimeFilterStore: SearchParamsStore = (() => {
-      const store = derived(this.specStore, (spec) => {
-        return new URLSearchParams(spec?.["time_filters"] ?? "");
-      });
-      return {
-        subscribe: store.subscribe,
-        set: (key: string, value: string | undefined) => {
-          const searchParams = get(store);
-
-          if (value === undefined || value === null || value === "") {
-            searchParams.delete(key);
-          } else {
-            searchParams.set(key, value);
-          }
-
-          this.updateProperty(
-            "time_filters" as AllKeys<T>,
-            searchParams.toString() as T[AllKeys<T>],
-          );
-          return true;
-        },
-        clearAll: () => {
-          const searchParams = get(store);
-
-          searchParams.forEach((_, key) => {
-            searchParams.delete(key);
-          });
-
-          this.updateProperty(
-            "time_filters" as AllKeys<T>,
-            searchParams.toString() as T[AllKeys<T>],
-          );
-        },
-      };
-    })();
-
-    const yamlDimensionFilterStore: SearchParamsStore = (() => {
-      const store = derived(this.specStore, (spec) => {
-        const dimensionFiltersString = spec?.["dimension_filters"] ?? "";
-        const searchParams = new URLSearchParams();
-
-        if (dimensionFiltersString) {
-          searchParams.set(
-            ExploreStateURLParams.Filters,
-            dimensionFiltersString,
-          );
-        }
-
-        return searchParams;
-      });
-      return {
-        subscribe: store.subscribe,
-        set: (key: string, value: string) => {
-          const searchParams = get(store);
-
-          searchParams.set(key, value);
-
-          this.updateProperty(
-            "dimension_filters" as AllKeys<T>,
-            value as T[AllKeys<T>],
-          );
-
-          return true;
-        },
-        clearAll: () => {
-          const searchParams = get(store);
-
-          searchParams.forEach((_, key) => {
-            searchParams.delete(key);
-          });
-
-          this.updateProperty(
-            "dimension_filters" as AllKeys<T>,
-            searchParams.toString() as T[AllKeys<T>],
-          );
-        },
-      };
-    })();
-
     this.localTimeControls = new TimeControls(
       this.parent.specStore,
-      yamlTimeFilterStore,
+      (key: string, value: string | undefined) => {
+        const searchParams = this.timeSearchParams;
+
+        if (value === undefined || value === null || value === "") {
+          searchParams.delete(key);
+        } else {
+          searchParams.set(key, value);
+        }
+
+        this.updateProperty(
+          "time_filters" as AllKeys<T>,
+          searchParams.toString() as T[AllKeys<T>],
+        );
+        return true;
+      },
       this.id,
       this.parent.name,
     );
 
     this.localFilters = new Filters(
       this.parent.spec,
-      yamlDimensionFilterStore,
+      (key: string, value: string) => {
+        const searchParams = this.filterSearchParams;
+
+        searchParams.set(key, value);
+
+        this.updateProperty(
+          "dimension_filters" as AllKeys<T>,
+          value as T[AllKeys<T>],
+        );
+
+        return true;
+      },
       undefined,
       this.id,
     );
+
+    this.specStore.subscribe((spec) => {
+      this.timeSearchParams = new URLSearchParams(spec?.["time_filters"] ?? "");
+
+      const dimensionFiltersString = spec?.["dimension_filters"] ?? "";
+      this.filterSearchParams = new URLSearchParams();
+
+      if (dimensionFiltersString) {
+        this.filterSearchParams.set(
+          ExploreStateURLParams.Filters,
+          dimensionFiltersString,
+        );
+      }
+
+      this.localFilters.onUrlChange(this.filterSearchParams);
+      this.localTimeControls.onUrlChange(this.timeSearchParams);
+    });
   }
 
   update(resource: V1Resource, path: ComponentPath) {

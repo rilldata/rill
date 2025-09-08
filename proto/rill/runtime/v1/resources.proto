@@ -753,6 +753,7 @@ message CanvasSpec {
   repeated CanvasRow rows = 18;
   // Security rules to apply for access to the canvas.
   repeated SecurityRule security_rules = 6;
+  bool allow_filter_add = 19;
 }
 
 message CanvasState {
@@ -803,6 +804,8 @@ message CanvasDimensionFilter {
   optional bool removable = 4;
   optional bool locked = 5;
   optional bool hidden = 6;
+  optional bool exclude = 7;
+  string mode = 8;
 }
 
 message CanvasMeasureFilter {

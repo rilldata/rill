@@ -401,6 +401,8 @@ export interface V1CanvasDimensionFilter {
   removable?: boolean;
   locked?: boolean;
   hidden?: boolean;
+  exclude?: boolean;
+  mode?: string;
 }
 
 export interface V1CanvasItem {
@@ -475,6 +477,7 @@ The values should be valid IANA location identifiers. */
   rows?: V1CanvasRow[];
   /** Security rules to apply for access to the canvas. */
   securityRules?: V1SecurityRule[];
+  allowFilterAdd?: boolean;
 }
 
 export interface V1CanvasState {
