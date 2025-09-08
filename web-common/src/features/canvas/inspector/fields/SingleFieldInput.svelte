@@ -4,8 +4,8 @@
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import Search from "@rilldata/web-common/components/search/Search.svelte";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
-  import { useMetricFieldData } from "./selectors";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useMetricFieldData } from "../selectors";
 
   export let metricName: string;
   export let label: string | undefined = undefined;
@@ -15,6 +15,7 @@
   export let includeTime = false;
   export let canvasName: string;
   export let searchableItems: string[] | undefined = undefined;
+  export let excludedValues: string[] | undefined = undefined;
   export let onSelect: (item: string, displayName: string) => void = () => {};
 
   let open = false;
@@ -34,6 +35,7 @@
     [type],
     searchableItems,
     searchValue,
+    excludedValues,
   );
 </script>
 
