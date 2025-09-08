@@ -44,6 +44,19 @@ export class CircularChartComponent extends BaseChart<CircularChartSpec> {
   totalsValue: number | undefined = undefined;
 
   static chartInputParams: Record<string, ComponentInputParam> = {
+    measure: {
+      type: "positional",
+      label: "Measure",
+      meta: {
+        chartFieldInput: {
+          type: "measure",
+        },
+      },
+    },
+    innerRadius: {
+      type: "number",
+      label: "Inner Radius (%)",
+    },
     color: {
       type: "positional",
       label: "Color",
@@ -62,19 +75,6 @@ export class CircularChartComponent extends BaseChart<CircularChartSpec> {
           colorMappingSelector: { enable: true },
         },
       },
-    },
-    measure: {
-      type: "positional",
-      label: "Measure",
-      meta: {
-        chartFieldInput: {
-          type: "measure",
-        },
-      },
-    },
-    innerRadius: {
-      type: "number",
-      label: "Inner Radius (%)",
     },
   };
 
