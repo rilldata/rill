@@ -373,6 +373,11 @@ const config = {
             from: '/reference/connectors/https',
             to: '/connect/data-source/https'
           },
+          // ADvand Model Redirects
+          {
+            from: '/reference/project-files/advanced-models',
+            to: '/reference/project-files/models'
+          },
           {
             from: '/deploy/templating',
             to: '/connect/templating'

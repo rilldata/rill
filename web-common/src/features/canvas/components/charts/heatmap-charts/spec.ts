@@ -129,7 +129,10 @@ export function generateVLHeatmapSpec(
 
         text: {
           field: config.color?.field ? config.color.field : undefined,
-          type: config.color?.type || "quantitative",
+          type:
+            config.color?.type === "value"
+              ? "nominal"
+              : config.color?.type || "quantitative",
           ...(config.color?.type === "quantitative" &&
             config.color?.field && {
               formatType: sanitizeFieldName(config.color.field),

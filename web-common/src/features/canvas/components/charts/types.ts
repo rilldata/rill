@@ -1,3 +1,4 @@
+import type { ColorMapping } from "@rilldata/web-common/features/canvas/inspector/types";
 import type {
   V1Expression,
   V1MetricsViewAggregationDimension,
@@ -25,7 +26,7 @@ export type ChartType =
   | "pie_chart"
   | "heatmap"
   | "funnel_chart"
-  | "multi_metric_chart";
+  | "combo_chart";
 
 export type ChartDataQuery = CreateQueryResult<
   V1MetricsViewAggregationResponse,
@@ -49,8 +50,7 @@ export type ChartDataResult = {
 };
 
 export interface ChartDomainValues {
-  // key is the field name, value is the domain values
-  [key: string]: string[] | undefined;
+  [key: string]: string[] | number[] | undefined;
 }
 
 export interface TimeDimensionDefinition {
@@ -67,6 +67,8 @@ export type ChartSortDirectionOptions =
   | "-y"
   | "color"
   | "-color"
+  | "measure"
+  | "-measure"
   | "custom";
 
 export type ChartSortDirection =
@@ -81,7 +83,11 @@ interface NominalFieldConfig {
   showNull?: boolean;
   labelAngle?: number;
   legendOrientation?: ChartLegend;
-  colorMapping?: { value: string; color: string }[];
+  colorMapping?: ColorMapping;
+}
+
+interface MarkFieldConfig {
+  mark?: "bar" | "line";
 }
 
 interface QuantitativeFieldConfig {
@@ -92,11 +98,13 @@ interface QuantitativeFieldConfig {
 
 export interface FieldConfig
   extends NominalFieldConfig,
-    QuantitativeFieldConfig {
+    QuantitativeFieldConfig,
+    MarkFieldConfig {
   field: string;
-  type: "quantitative" | "ordinal" | "nominal" | "temporal";
+  type: "quantitative" | "ordinal" | "nominal" | "temporal" | "value";
   showAxisTitle?: boolean; // Default is false
   timeUnit?: string; // For temporal fields
+  fields?: string[]; // To support multi metric chart variants
 }
 
 export interface CommonChartProperties {
