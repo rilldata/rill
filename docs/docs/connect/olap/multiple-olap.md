@@ -5,8 +5,6 @@ sidebar_label: Using Multiple OLAP Engines
 sidebar_position: 50
 ---
 
-## Overview
-
 If you have access to another OLAP engine (such as [ClickHouse](/connect/olap/clickhouse) or [Druid](/connect/olap/druid), you have the option to either:
 - Create dedicated projects that are powered by one specific OLAP engine (default)
 - Use different OLAP engines _in the same project_ to power separate dashboards
@@ -68,7 +66,7 @@ For more information about available configurations for `rill.yaml`, please see 
 
 ### Setting the OLAP Engine in the metrics view YAML
 
-For each metrics view that is using a separate OLAP engine (other than the default), you'll want to set the `connector` and `table` properties in the underlying [metrics view YAML](/reference/project-files/metrics-views) configuration to the OLAP engine and corresponding [external table](/get-started/concepts/OLAP#external-olap-tables) that exists in your OLAP store, respectively.
+For each metrics view that is using a separate OLAP engine (other than the default), you'll want to set the `connector` and `table` properties in the underlying [metrics view YAML](/reference/project-files/metrics-views) configuration to the OLAP engine and corresponding [external table](/connect/olap#external-olap-tables) that exists in your OLAP store, respectively.
 
 ```yaml
 type: metrics_view

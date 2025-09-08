@@ -2750,7 +2750,7 @@ definitions:
         description: 'If true, allows the schedule to run in development mode.'
   security_policy_properties:
     type: object
-    description: Defines [security rules and access control policies](/manage/security) for resources
+    description: Defines [security rules and access control policies](/build/metrics-view/security) for resources
     properties:
       access:
         oneOf:
@@ -2846,7 +2846,7 @@ definitions:
             - type
   dashboard_security_policy_properties:
     type: object
-    description: Defines [security rules and access control policies](/manage/security) for dashboards (without row filtering)
+    description: Defines [security rules and access control policies](/build/metrics-view/security) for dashboards (without row filtering)
     properties:
       access:
         oneOf:

@@ -209,7 +209,7 @@ const config = {
           },
           {
             from: '/develop/security',
-            to: '/manage/security'
+            to: '/build/metrics-view/security'
           },
           {
             from: '/deploy/credentials/',
@@ -257,7 +257,7 @@ const config = {
           },
           {
             from: '/deploy/source-refresh',
-            to: '/build/models/source-refresh'
+            to: '/build/models/data-refresh'
           },
           {
             from: '/reference/templating',
@@ -420,11 +420,11 @@ const config = {
           },
           {
             from: '/concepts/OLAP',
-            to: '/get-started/concepts/OLAP'
+            to: '/connect/olap#what-is-olap'
           },
           {
             from: '/home/concepts/OLAP',
-            to: '/get-started/concepts/OLAP'
+            to: '/connect/olap#what-is-olap'
           },
           {
             from: '/concepts/architecture',
@@ -444,11 +444,7 @@ const config = {
           },
           {
             from: '/concepts/metrics-layer',
-            to: '/get-started/concepts/metrics-layer'
-          },
-          {
-            from: '/home/concepts/metrics-layer',
-            to: '/get-started/concepts/metrics-layer'
+            to: '/build/metrics-view'
           },
           {
             from: '/concepts/bi-as-code',
@@ -459,8 +455,32 @@ const config = {
             to: '/get-started/concepts/bi-as-code'
           },
           {
+            from: '/build/advanced-models/',
+            to: '/build/models/'
+          },
+          {
+            from: '/build/advanced-models/incremental-models',
+            to: '/build/models/incremental-models'
+          },
+          {
+            from: '/build/advanced-models/partitions',
+            to: '/build/models/partitioned-models'
+          },
+          {
+            from: '/build/advanced-models/staging',
+            to: '/build/models/staging-models'
+          },
+          {
+            from: '/home/concepts/metrics-layer',
+            to: '/build/metrics-view'
+          },
+          {
             from: '/integrate/custom-apis',
             to: '/build/custom-apis'
+          },
+          {
+            from: '/deploy/performance',
+            to: '/guides/performance'
           },
           {
             from: '/home/install',
