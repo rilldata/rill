@@ -45,7 +45,6 @@
             {connector}
             {database}
             {store}
-            useNewAPI={shouldUseNewAPI}
           />
         {/each}
       </ol>

@@ -24,7 +24,6 @@
   export let table: string;
   export let hasUnsupportedDataTypes: boolean = false;
   export let store: ConnectorExplorerStore;
-  export let useNewAPI: boolean = false;
   export let showGenerateMetricsAndDashboard: boolean = false;
   export let showGenerateModel: boolean = false;
 
@@ -50,15 +49,13 @@
   );
   $: tableId = `${connector}-${fullyQualifiedTableName}`;
 
-  // Only generate preview href for OLAP connectors (legacy API)
-  $: href = !useNewAPI
-    ? makeTablePreviewHref(driver, connector, database, databaseSchema, table)
-    : undefined;
+  // Generate preview href for OLAP connectors
+  $: href = makeTablePreviewHref(driver, connector, database, databaseSchema, table);
 
   $: open = href ? $page.url.pathname === href : false;
 
-  // For new API, don't allow navigation until we implement table preview for non-OLAP
-  $: element = allowNavigateToTable && !useNewAPI ? "a" : "button";
+  // Always use anchor element for table navigation
+  $: element = allowNavigateToTable ? "a" : "button";
 </script>
 
 <li aria-label={tableId} class="table-entry group" class:open>
@@ -83,7 +80,7 @@
     <svelte:element
       this={element}
       class="clickable-text"
-      {...allowNavigateToTable && !useNewAPI && href ? { href } : {}}
+      {...allowNavigateToTable && href ? { href } : {}}
       role="menuitem"
       tabindex="0"
       on:click={() => {
@@ -96,7 +93,7 @@
       </span>
     </svelte:element>
 
-    {#if hasUnsupportedDataTypes && !useNewAPI}
+    {#if hasUnsupportedDataTypes}
       <UnsupportedTypesIndicator
         {instanceId}
         {connector}
@@ -140,7 +137,7 @@
   </div>
 
   {#if allowShowSchema && showSchema}
-    <TableSchema {connector} {database} {databaseSchema} {table} {useNewAPI} />
+    <TableSchema {connector} {database} {databaseSchema} {table} />
   {/if}
 </li>
 
