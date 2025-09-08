@@ -193,18 +193,24 @@ func (p *Provisioner) Provision(ctx context.Context, r *provisioner.Resource, op
 	}
 
 	// Grant some additional global privileges to the user
-	_, err = p.ch.ExecContext(ctx, fmt.Sprintf(`
-		GRANT %s
-			CLUSTER,
-			URL,
-			REMOTE,
-			MONGO,
-			MYSQL,
-			POSTGRES,
-			S3,
-			AZURE
-		ON *.* TO %s
-	`, p.onCluster(), user))
+	globalPrivileges := []string{
+		"URL",
+		"REMOTE",
+		"MONGO",
+		"MYSQL",
+		"POSTGRES",
+		"S3",
+		"AZURE",
+	}
+
+	// If cluster is configured, grant specific cluster privileges instead of global CLUSTER
+	if p.spec.Cluster != "" {
+		globalPrivileges = append(globalPrivileges, fmt.Sprintf("SHOW TABLES ON CLUSTER %s", escapeSQLIdentifier(p.spec.Cluster)), fmt.Sprintf("SHOW DATABASES ON CLUSTER %s", escapeSQLIdentifier(p.spec.Cluster)))
+	} else {
+		globalPrivileges = append(globalPrivileges, "CLUSTER")
+	}
+
+	_, err = p.ch.ExecContext(ctx, fmt.Sprintf(`GRANT %s %s ON *.* TO %s`, p.onCluster(), strings.Join(globalPrivileges, ",\n\t\t\t"), user))
 	if err != nil {
 		return nil, fmt.Errorf("failed to grant global privileges to clickhouse user: %w", err)
 	}
