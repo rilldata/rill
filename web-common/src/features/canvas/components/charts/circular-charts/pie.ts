@@ -47,8 +47,8 @@ export function generateVLPieChartSpec(
   data: ChartDataResult,
 ): VisualizationSpec {
   const totalValue = data.domainValues?.["total"]?.[0];
-  const hasInnerRadius = config.innerRadius && config.innerRadius > 0;
-  const shouldShowTotal = hasInnerRadius && totalValue !== undefined;
+  const shouldShowTotal =
+    totalValue !== undefined && config.measure?.showTotal === true;
 
   const measureMetaData = config.measure && data.fields[config.measure.field];
 
