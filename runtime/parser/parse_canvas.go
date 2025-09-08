@@ -15,8 +15,6 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-
-
 type CanvasYAML struct {
 	commonYAML           `yaml:",inline"`       // Not accessed here, only setting it so we can use KnownFields for YAML parsing
 	DisplayName          string                 `yaml:"display_name"`
@@ -27,7 +25,7 @@ type CanvasYAML struct {
 	GapY                 uint32                 `yaml:"gap_y"`
 	Theme                yaml.Node              `yaml:"theme"` // Name (string) or inline theme definition (map)
 	AllowCustomTimeRange *bool                  `yaml:"allow_custom_time_range"`
-	AllowFilterAdd	     *bool                  `yaml:"allow_filter_add"` // Deprecated: use security rules instead
+	AllowFilterAdd       *bool                  `yaml:"allow_filter_add"` // Deprecated: use security rules instead
 	TimeRanges           []ExploreTimeRangeYAML `yaml:"time_ranges"`
 	TimeZones            []string               `yaml:"time_zones"`
 	Filters              struct {
@@ -103,7 +101,6 @@ func (p *Parser) parseCanvas(node *Node) error {
 	if tmp.AllowFilterAdd != nil {
 		allowFilterAdd = *tmp.AllowFilterAdd
 	}
-
 
 	// Parse theme if present.
 	// If it returns a themeSpec, it will be inserted as a separate resource later in this function.
@@ -270,11 +267,11 @@ func (p *Parser) parseCanvas(node *Node) error {
 				if dimFilter.Exclude != nil {
 					filter.Exclude = dimFilter.Exclude
 				}
-			
+
 				if !isValidCanvasDimensionFilterMode(dimFilter.Mode) {
 					return fmt.Errorf("invalid mode %q for dimension filter %q", dimFilter.Mode, dimFilter.Dimension)
 				}
-				
+
 				if dimFilter.Mode != "" {
 					filter.Mode = dimFilter.Mode
 				} else {
@@ -291,7 +288,7 @@ func (p *Parser) parseCanvas(node *Node) error {
 				if dimFilter.Limit != nil {
 					limit := uint32(*dimFilter.Limit)
 					filter.Limit = &limit
-			
+
 					if filter.Values != nil && uint32(len(filter.Values)) > limit {
 						return fmt.Errorf("dimension filter %q has too many values (max: %d)", dimFilter.Dimension, limit)
 					}
