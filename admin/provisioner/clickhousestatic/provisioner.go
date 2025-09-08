@@ -201,13 +201,12 @@ func (p *Provisioner) Provision(ctx context.Context, r *provisioner.Resource, op
 		"POSTGRES",
 		"S3",
 		"AZURE",
+		"CLUSTER", // Always grant CLUSTER privilege for DDL operations
 	}
 
-	// If cluster is configured, grant specific cluster privileges instead of global CLUSTER
+	// If cluster is configured, also grant specific cluster privileges
 	if p.spec.Cluster != "" {
 		globalPrivileges = append(globalPrivileges, fmt.Sprintf("SHOW TABLES ON CLUSTER %s", escapeSQLIdentifier(p.spec.Cluster)), fmt.Sprintf("SHOW DATABASES ON CLUSTER %s", escapeSQLIdentifier(p.spec.Cluster)))
-	} else {
-		globalPrivileges = append(globalPrivileges, "CLUSTER")
 	}
 
 	_, err = p.ch.ExecContext(ctx, fmt.Sprintf(`GRANT %s %s ON *.* TO %s`, p.onCluster(), strings.Join(globalPrivileges, ", "), user))
