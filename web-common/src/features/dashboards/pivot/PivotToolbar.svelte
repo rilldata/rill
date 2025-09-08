@@ -14,6 +14,7 @@
   import Tooltip from "../../../components/tooltip/Tooltip.svelte";
   import TooltipContent from "../../../components/tooltip/TooltipContent.svelte";
   import TableIcon from "../../canvas/icons/TableIcon.svelte";
+  import FieldSwitcher from "@rilldata/web-common/components/forms/FieldSwitcher.svelte";
   import ExportMenu from "../../exports/ExportMenu.svelte";
   import { featureFlags } from "../../feature-flags";
   import { getStateManagers } from "../state-managers/state-managers";
@@ -115,22 +116,13 @@
   </Button>
 
   <div class="flex items-center gap-x-1">
-    <Tooltip location="bottom" alignment="start" distance={8}>
-      <Button
-        type="toolbar"
-        onClick={() => togglePivotType($isFlat ? "nest" : "flat")}
-      >
-        {#if $isFlat}
-          <TableIcon size="16px" />
-        {:else}
-          <Pivot size="16px" />
-        {/if}
-        <span>{$isFlat ? "Flat table" : "Pivot table"}</span>
-      </Button>
-      <TooltipContent slot="tooltip-content">
-        {$isFlat ? "Switch to a pivot table" : "Switch to a flat table"}
-      </TooltipContent>
-    </Tooltip>
+    <FieldSwitcher
+      fields={["Pivot", "Flat"]}
+      selected={$isFlat ? 1 : 0}
+      onClick={(index, field) => {
+        togglePivotType(index === 0 ? "nest" : "flat");
+      }}
+    />
 
     <!-- <Button
     compact
