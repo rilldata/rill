@@ -4,7 +4,7 @@ sidebar_label: Publish
 sidebar_position: 0
 ---
 
-Rill Developer is a great tool for building, testing, and viewing your data locally, but once you're ready to share your findings, you'll need to publish the dashboard to Rill Cloud! To understand the differences, see [Rill Developer vs Rill Cloud](/home/concepts/cloud-vs-developer).
+Rill Developer is a great tool for building, testing, and viewing your data locally, but once you're ready to share your findings, you'll need to publish the dashboard to Rill Cloud! To understand the differences, see [Rill Developer vs Rill Cloud](/get-started/concepts/cloud-vs-developer).
 
 ### Credentials
 - [**Deployment Credentials**](/deploy/deploy-credentials) - Confirm deployment credentials based on your deployment environment

@@ -18,7 +18,7 @@ This guide will help you get started with an existing Rill project by cloning it
 
 Before you begin, make sure you have:
 
-- **Rill CLI** installed ([Installation Guide](/home/install))
+- **Rill CLI** installed ([Installation Guide](/get-started/install))
 ```bash
 curl https://rill.sh | sh
 ```

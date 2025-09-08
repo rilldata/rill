@@ -19,7 +19,16 @@ In Rill, your metrics view is defined by _metric definitions_. Metric definition
 * _**measures**_ - Numerical aggregates of columns from your data model shown on the y-axis of the line charts and the "big number" summaries.
 * _**dimensions**_ - Categorical columns from your data model whose values are shown in _leaderboards_ and allow you to look at segments or attributes of your data (and filter/slice accordingly).
 
+
 ## Creating Metrics Views with AI
+
+:::tip
+Starting in version 0.50, the metrics view has been separated from the dashboard. This allows for a cleaner, more accessible metrics layer and the ability to build various dashboards and components on top of a single metrics layer. For more information on why we decided to do this, please refer to the following: [Why separate the dashboard and metrics layer](/get-started/concepts/metrics-layer)
+
+For migration steps, see [Migrations](/other/v50-dashboard-changes#how-to-migrate-your-current-dashboards).
+:::
+
+
 
 In order to streamline the process and get to a dashboard as quickly as possible, we've added the "Create Metrics with AI" and "Create Dashboard with AI" options! This will pass your schema to OpenAI to suggest measure and dimensions to get started with Rill. You can define you own OpenAI key by creating a [connector file](/reference/project-files/connectors#openapi). If you want to disable AI from your environment, please set the following in the `rill.yaml`.
 
