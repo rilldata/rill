@@ -337,7 +337,7 @@ func (s *Server) RevokeRepresentativeAuthTokens(ctx context.Context, req *adminv
 	claims := auth.GetClaims(ctx)
 
 	if !claims.Superuser(ctx) {
-		return nil, status.Error(codes.PermissionDenied, "only superusers can search users by email")
+		return nil, status.Error(codes.PermissionDenied, "only superusers can manage representative auth tokens")
 	}
 
 	// Error if authenticated as anything other than a user

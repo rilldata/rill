@@ -28,7 +28,7 @@ func OpenCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 			if representingUser == "" {
-				return errors.New("no representing user configured, please assume a user first")
+				return errors.New("please assume a user first")
 			}
 			qry := map[string]string{
 				"representing_user": representingUser,

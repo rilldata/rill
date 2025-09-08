@@ -110,7 +110,7 @@ func (a *Authenticator) RegisterEndpoints(mux *http.ServeMux, limiter ratelimit.
 	observability.MuxHandle(inner, "/auth/logout", middleware.Check(checkLimit("/auth/logout"), http.HandlerFunc(a.authLogout)))
 	observability.MuxHandle(inner, "/auth/logout/provider", middleware.Check(checkLimit("/auth/logout/provider"), http.HandlerFunc(a.authLogoutProvider)))
 	observability.MuxHandle(inner, "/auth/logout/callback", middleware.Check(checkLimit("/auth/logout/callback"), http.HandlerFunc(a.authLogoutCallback)))
-	observability.MuxHandle(inner, "/auth/assume-open", middleware.Check(checkLimit("/auth/assume-open"), http.HandlerFunc(a.authAssumeOpen)))
+	observability.MuxHandle(inner, "/auth/assume-open", a.HTTPMiddleware(middleware.Check(checkLimit("/auth/assume-open"), http.HandlerFunc(a.authAssumeOpen)))) // NOTE: Uses auth middleware
 	observability.MuxHandle(inner, "/auth/oauth/device_authorization", middleware.Check(checkLimit("/auth/oauth/device_authorization"), http.HandlerFunc(a.handleDeviceCodeRequest)))
 	observability.MuxHandle(inner, "/auth/oauth/device", a.HTTPMiddleware(middleware.Check(checkLimit("/auth/oauth/device"), http.HandlerFunc(a.handleUserCodeConfirmation))))   // NOTE: Uses auth middleware
 	observability.MuxHandle(inner, "/auth/oauth/authorize", a.HTTPMiddleware(middleware.Check(checkLimit("/auth/oauth/authorize"), http.HandlerFunc(a.handleAuthorizeRequest)))) // NOTE: Uses auth middleware
@@ -435,15 +435,13 @@ func (a *Authenticator) authAssumeOpen(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	ctx := r.Context()
-	// Validate token against database
-	validated, err := a.admin.ValidateAuthToken(ctx, authToken)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	claims := GetClaims(ctx)
+	if claims == nil {
+		internalServerError(w, fmt.Errorf("did not find any claims, %w", errors.New("server error")))
 		return
 	}
-	claims := newAuthTokenClaims(validated, a.admin)
 	if claims.OwnerType() != OwnerTypeUser {
-		http.Error(w, "not authenticated as a user", http.StatusUnauthorized)
+		http.Error(w, "not authenticated as a user", http.StatusBadRequest)
 		return
 	}
 	// only superuser can do assume open
@@ -463,7 +461,7 @@ func (a *Authenticator) authAssumeOpen(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("user with email %q not found", representEmail), http.StatusBadRequest)
 		return
 	}
-	mdl, ok := validated.TokenModel().(*database.UserAuthToken)
+	mdl, ok := claims.AuthTokenModel().(*database.UserAuthToken)
 	if !ok {
 		http.Error(w, "invalid user auth token model", http.StatusBadRequest)
 		return
@@ -487,7 +485,7 @@ func (a *Authenticator) authAssumeOpen(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Issue a new token for the representing user.
-	// We use mdl.UserID here instead of validated.OwnerID() because OwnerID() could return the representing user's ID if the token is already an assumed token.
+	// We use mdl.UserID here instead of claims.OwnerID() because OwnerID() could return the representing user's ID if the token is already an assumed token.
 	newAuthToken, err := a.admin.IssueUserAuthToken(r.Context(), mdl.UserID, database.AuthClientIDRillSupport, fmt.Sprintf("Support for %s", representEmail), representingUserID, ttl)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("failed to issue API token: %s", err), http.StatusInternalServerError)
