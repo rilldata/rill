@@ -17,6 +17,7 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/observability"
+	"github.com/rilldata/rill/runtime/pkg/pagination"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
@@ -308,7 +309,7 @@ func (s *Server) GetModelPartitions(ctx context.Context, req *runtimev1.GetModel
 	var beforeExecutedOn time.Time
 	afterKey := ""
 	if req.PageToken != "" {
-		err := unmarshalPageToken(req.PageToken, &beforeExecutedOn, &afterKey)
+		err := pagination.UnmarshalPageToken(req.PageToken, &beforeExecutedOn, &afterKey)
 		if err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "failed to parse page token: %v", err)
 		}
@@ -320,13 +321,14 @@ func (s *Server) GetModelPartitions(ctx context.Context, req *runtimev1.GetModel
 	}
 	defer release()
 
+	_defaultPageSize := 100
 	opts := &drivers.FindModelPartitionsOptions{
 		ModelID:          partitionsModelID,
 		WherePending:     req.Pending,
 		WhereErrored:     req.Errored,
 		BeforeExecutedOn: beforeExecutedOn,
 		AfterKey:         afterKey,
-		Limit:            validPageSize(req.PageSize),
+		Limit:            pagination.ValidPageSize(req.PageSize, _defaultPageSize),
 	}
 
 	partitions, err := catalog.FindModelPartitions(ctx, opts)
@@ -335,9 +337,9 @@ func (s *Server) GetModelPartitions(ctx context.Context, req *runtimev1.GetModel
 	}
 
 	var nextPageToken string
-	if len(partitions) == validPageSize(req.PageSize) {
+	if len(partitions) == pagination.ValidPageSize(req.PageSize, _defaultPageSize) {
 		last := partitions[len(partitions)-1]
-		nextPageToken = marshalPageToken(last.Index, last.Key)
+		nextPageToken = pagination.MarshalPageToken(last.Index, last.Key)
 	}
 
 	return &runtimev1.GetModelPartitionsResponse{

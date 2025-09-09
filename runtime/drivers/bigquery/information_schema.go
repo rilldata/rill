@@ -4,10 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strconv"
 
 	"cloud.google.com/go/bigquery"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/pagination"
 	"google.golang.org/api/iterator"
 )
 
@@ -17,19 +17,22 @@ func (c *Connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, p
 		return nil, "", fmt.Errorf("failed to get BigQuery client: %w", err)
 	}
 	defer client.Close()
-
-	if pageSize == 0 {
-		pageSize = drivers.DefaultPageSize
-	}
+	limit := pagination.ValidPageSize(pageSize, drivers.DefaultPageSize)
 	it := client.Datasets(ctx)
 	pi := it.PageInfo()
-	pi.MaxSize = int(pageSize)
-	pi.Token = pageToken
+	pi.MaxSize = limit
+	if pageToken != "" {
+		var startAfter string
+		if err := pagination.UnmarshalPageToken(pageToken, &startAfter); err != nil {
+			return nil, "", fmt.Errorf("invalid page token: %w", err)
+		}
+		pi.Token = startAfter
+	}
 
 	var res []*drivers.DatabaseSchemaInfo
 	count := 0
 	for {
-		if count >= int(pageSize) {
+		if count >= limit {
 			break
 		}
 		ds, err := it.Next()
@@ -46,32 +49,40 @@ func (c *Connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, p
 		count++
 	}
 
-	return res, pi.Token, nil
+	return res, pagination.MarshalPageToken(pi.Token), nil
 }
 
 func (c *Connection) ListTables(ctx context.Context, database, databaseSchema string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
-	if pageSize == 0 {
-		pageSize = drivers.DefaultPageSize
-	}
-	offset := 0
-	if pageToken != "" {
-		var err error
-		offset, err = strconv.Atoi(pageToken)
-		if err != nil {
-			return nil, "", fmt.Errorf("invalid page token: %w", err)
-		}
-	}
-
+	limit := pagination.ValidPageSize(pageSize, drivers.DefaultPageSize)
 	q := fmt.Sprintf(`
 	SELECT
 		table_name,
 		table_type
-	FROM `+"`%s.%s.INFORMATION_SCHEMA.TABLES`"+`
-	ORDER BY table_name
-	LIMIT %d
-	OFFSET %d
-	`, database, databaseSchema, int(pageSize)+1, offset,
-	)
+		FROM `+"`%s.%s.INFORMATION_SCHEMA.TABLES`"+`
+	`, database, databaseSchema)
+
+	var args []bigquery.QueryParameter
+	if pageToken != "" {
+		var startAfter string
+		if err := pagination.UnmarshalPageToken(pageToken, &startAfter); err != nil {
+			return nil, "", fmt.Errorf("invalid page token: %w", err)
+		}
+		q += `
+		WHERE table_name > @startAfter
+		ORDER BY table_name
+		LIMIT @limit
+		`
+		args = append(args,
+			bigquery.QueryParameter{Name: "startAfter", Value: startAfter},
+			bigquery.QueryParameter{Name: "limit", Value: limit + 1},
+		)
+	} else {
+		q += `
+		ORDER BY table_name
+		LIMIT @limit
+		`
+		args = append(args, bigquery.QueryParameter{Name: "limit", Value: limit + 1})
+	}
 
 	client, err := c.createClient(ctx, database)
 	if err != nil {
@@ -80,6 +91,8 @@ func (c *Connection) ListTables(ctx context.Context, database, databaseSchema st
 	defer client.Close()
 
 	cq := client.Query(q)
+	cq.Parameters = args
+
 	it, err := cq.Read(ctx)
 	if err != nil {
 		return nil, "", fmt.Errorf("failed to query INFORMATION_SCHEMA.TABLES: %w", err)
@@ -106,9 +119,9 @@ func (c *Connection) ListTables(ctx context.Context, database, databaseSchema st
 	}
 
 	next := ""
-	if len(res) > int(pageSize) {
-		res = res[:pageSize]
-		next = strconv.Itoa(offset + int(pageSize))
+	if len(res) > limit {
+		res = res[:limit]
+		next = pagination.MarshalPageToken(res[len(res)-1].Name)
 	}
 	return res, next, nil
 }

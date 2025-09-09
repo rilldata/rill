@@ -13,6 +13,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/athena/types"
 	"github.com/aws/smithy-go"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/pagination"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -60,27 +61,24 @@ func (c *Connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, p
 }
 
 func (c *Connection) ListTables(ctx context.Context, database, databaseSchema string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
-	if pageSize == 0 {
-		pageSize = drivers.DefaultPageSize
-	}
-	offset := 0
+	limit := pagination.ValidPageSize(pageSize, drivers.DefaultPageSize)
+	condFilter := ""
 	if pageToken != "" {
-		var err error
-		offset, err = strconv.Atoi(pageToken)
-		if err != nil {
+		var startAfter string
+		if err := pagination.UnmarshalPageToken(pageToken, &startAfter); err != nil {
 			return nil, "", fmt.Errorf("invalid page token: %w", err)
 		}
+		condFilter = fmt.Sprintf("AND table_name > %s", escapeStringValue(startAfter))
 	}
 	q := fmt.Sprintf(`
 	SELECT
 		table_name,
 		table_type
 	FROM %s.information_schema.tables
-	WHERE table_schema = %s 
+	WHERE table_schema = %s %s 
 	ORDER BY table_name
-	OFFSET %d
 	LIMIT %d 
-	`, sqlSafeName(database), escapeStringValue(databaseSchema), offset, pageSize+1)
+	`, sqlSafeName(database), escapeStringValue(databaseSchema), condFilter, limit+1)
 
 	client, err := c.getClient(ctx)
 	if err != nil {
@@ -109,22 +107,22 @@ func (c *Connection) ListTables(ctx context.Context, database, databaseSchema st
 		})
 	}
 	next := ""
-	if len(res) > int(pageSize) {
-		res = res[:pageSize]
-		next = strconv.Itoa(offset + int(pageSize))
+	if len(res) > limit {
+		res = res[:limit]
+		next = pagination.MarshalPageToken(res[len(res)-1].Name)
 	}
 	return res, next, nil
 }
 
 func (c *Connection) GetTable(ctx context.Context, database, databaseSchema, table string) (*drivers.TableMetadata, error) {
 	q := fmt.Sprintf(`
-	SELECT
-		column_name,
-		data_type
-	FROM %s.information_schema.columns
-	WHERE table_schema = %s AND table_name = %s
-	ORDER BY ordinal_position
-	`, sqlSafeName(database), escapeStringValue(databaseSchema), escapeStringValue(table))
+SELECT
+	column_name,
+	data_type
+FROM %s.information_schema.columns
+WHERE table_schema = %s AND table_name = %s
+ORDER BY ordinal_position
+`, sqlSafeName(database), escapeStringValue(databaseSchema), escapeStringValue(table))
 
 	client, err := c.getClient(ctx)
 	if err != nil {
@@ -241,26 +239,20 @@ func paginateSchemas(res []*drivers.DatabaseSchemaInfo, pageSize uint32, pageTok
 		}
 		return res[i].Database < res[j].Database
 	})
-	if pageSize == 0 {
-		pageSize = drivers.DefaultPageSize
-	}
-	offset := 0
+	limit := pagination.ValidPageSize(pageSize, drivers.DefaultPageSize)
+	start := 0
 	if pageToken != "" {
 		var err error
-		offset, err = strconv.Atoi(pageToken)
+		start, err = strconv.Atoi(pageToken)
 		if err != nil {
 			return nil, "", fmt.Errorf("invalid page token: %w", err)
 		}
 	}
-	end := offset + int(pageSize)
-	if end > len(res) {
-		end = len(res)
+	end := start + limit
+	if end >= len(res) {
+		return res[start:], "", nil
 	}
-	next := ""
-	if end < len(res) {
-		next = fmt.Sprintf("%d", end)
-	}
-	return res[offset:end], next, nil
+	return res[start:end], fmt.Sprintf("%d", end), nil
 }
 
 func sqlSafeName(name string) string {

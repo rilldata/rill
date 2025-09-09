@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/pagination"
 )
 
 func (c *connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, pageToken string) ([]*drivers.DatabaseSchemaInfo, string, error) {
@@ -27,7 +28,7 @@ func (c *connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, p
 	}
 	defer rows.Close()
 
-	var results []*drivers.DatabaseSchemaInfo
+	var res []*drivers.DatabaseSchemaInfo
 	var schemaName, dbName string
 	var createdOn, kind, sn any
 	for rows.Next() {
@@ -40,62 +41,63 @@ func (c *connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, p
 			continue
 		}
 
-		results = append(results, &drivers.DatabaseSchemaInfo{
+		res = append(res, &drivers.DatabaseSchemaInfo{
 			Database:       dbName,
 			DatabaseSchema: schemaName,
 		})
 	}
-	if pageSize == 0 {
-		pageSize = drivers.DefaultPageSize
-	}
-	offset := 0
+
+	limit := pagination.ValidPageSize(pageSize, drivers.DefaultPageSize)
+	start := 0
 	if pageToken != "" {
 		var err error
-		offset, err = strconv.Atoi(pageToken)
+		start, err = strconv.Atoi(pageToken)
 		if err != nil {
 			return nil, "", fmt.Errorf("invalid page token: %w", err)
 		}
 	}
-	end := offset + int(pageSize)
-	if end > len(results) {
-		end = len(results)
+	end := start + limit
+	if end >= len(res) {
+		return res[start:], "", rows.Err()
 	}
-	next := ""
-	if end < len(results) {
-		next = fmt.Sprintf("%d", end)
-	}
-	return results[offset:end], next, rows.Err()
+	return res[start:end], fmt.Sprintf("%d", end), rows.Err()
 }
 
 func (c *connection) ListTables(ctx context.Context, database, databaseSchema string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
-	if pageSize == 0 {
-		pageSize = drivers.DefaultPageSize
-	}
-	offset := 0
-	if pageToken != "" {
-		var err error
-		offset, err = strconv.Atoi(pageToken)
-		if err != nil {
-			return nil, "", fmt.Errorf("invalid page token: %w", err)
-		}
-	}
+	limit := pagination.ValidPageSize(pageSize, drivers.DefaultPageSize)
+
 	q := fmt.Sprintf(`
 		SELECT
 			table_name,
 			CASE WHEN table_type = 'VIEW' THEN true ELSE false END AS view
 		FROM %s.INFORMATION_SCHEMA.TABLES
-		WHERE table_schema = ?
+		WHERE table_schema = ?`, sqlSafeName(database))
+	var args []any
+	args = append(args, databaseSchema)
+	if pageToken != "" {
+		var startAfter string
+		if err := pagination.UnmarshalPageToken(pageToken, &startAfter); err != nil {
+			return nil, "", fmt.Errorf("invalid page token: %w", err)
+		}
+		q += `	AND table_name > ?
 		ORDER BY table_name
-		LIMIT ? 
-		OFFSET ?
-	`, sqlSafeName(database))
+		LIMIT ?
+		`
+		args = append(args, startAfter, limit+1)
+	} else {
+		q += `
+		ORDER BY table_name
+		LIMIT ?
+		`
+		args = append(args, limit+1)
+	}
 
 	db, err := c.getDB()
 	if err != nil {
 		return nil, "", err
 	}
 	defer db.Close()
-	rows, err := db.QueryxContext(ctx, q, databaseSchema, pageSize+1, offset)
+	rows, err := db.QueryxContext(ctx, q, args...)
 	if err != nil {
 		return nil, "", err
 	}
@@ -118,9 +120,9 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 	}
 
 	next := ""
-	if len(res) > int(pageSize) {
-		res = res[:pageSize]
-		next = strconv.Itoa(offset + int(pageSize))
+	if len(res) > limit {
+		res = res[:limit]
+		next = pagination.MarshalPageToken(res[len(res)-1].Name)
 	}
 	return res, next, nil
 }

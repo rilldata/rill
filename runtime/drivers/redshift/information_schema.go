@@ -3,38 +3,36 @@ package redshift
 import (
 	"context"
 	"fmt"
-	"strconv"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/redshiftdata"
 	"github.com/aws/aws-sdk-go-v2/service/redshiftdata/types"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/pagination"
 )
 
 func (c *Connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, pageToken string) ([]*drivers.DatabaseSchemaInfo, string, error) {
-	if pageSize == 0 {
-		pageSize = drivers.DefaultPageSize
-	}
-	offset := 0
+	limit := pagination.ValidPageSize(pageSize, drivers.DefaultPageSize)
+
+	condFilter := ""
 	if pageToken != "" {
-		var err error
-		offset, err = strconv.Atoi(pageToken)
-		if err != nil {
+		var tokDB, tokSchema string
+		if err := pagination.UnmarshalPageToken(pageToken, &tokDB, &tokSchema); err != nil {
 			return nil, "", fmt.Errorf("invalid page token: %w", err)
 		}
+		condFilter = fmt.Sprintf(" AND (database_name > %s OR (database_name = %s AND schema_name > %s))", escapeStringValue(tokDB), escapeStringValue(tokDB), escapeStringValue(tokSchema))
 	}
 	q := fmt.Sprintf(`
 	SELECT 
 		database_name, 
 		schema_name 
 	FROM svv_all_tables 
-	WHERE schema_name NOT IN ('information_schema', 'pg_catalog') OR schema_name = current_schema()
+	WHERE (schema_name NOT IN ('information_schema', 'pg_catalog') OR schema_name = current_schema()) %s
 	GROUP BY database_name, schema_name 
 	ORDER BY database_name, schema_name
 	LIMIT %d 
-	OFFSET %d
-	`, pageSize+1, offset)
+	`, condFilter, limit+1)
 
 	awsConfig, err := c.awsConfig(ctx, c.config.AWSRegion)
 	if err != nil {
@@ -71,35 +69,34 @@ func (c *Connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, p
 		})
 	}
 	next := ""
-	if len(res) > int(pageSize) {
-		res = res[:pageSize]
-		next = strconv.Itoa(offset + int(pageSize))
+	if len(res) > limit {
+		res = res[:limit]
+		last := res[len(res)-1]
+		next = pagination.MarshalPageToken(last.Database, last.DatabaseSchema)
 	}
 	return res, next, nil
 }
 
 func (c *Connection) ListTables(ctx context.Context, database, databaseSchema string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
-	if pageSize == 0 {
-		pageSize = drivers.DefaultPageSize
-	}
-	offset := 0
+	limit := pagination.ValidPageSize(pageSize, drivers.DefaultPageSize)
+
+	condFilter := ""
 	if pageToken != "" {
-		var err error
-		offset, err = strconv.Atoi(pageToken)
-		if err != nil {
+		var startAfter string
+		if err := pagination.UnmarshalPageToken(pageToken, &startAfter); err != nil {
 			return nil, "", fmt.Errorf("invalid page token: %w", err)
 		}
+		condFilter = fmt.Sprintf("AND table_name > %s", escapeStringValue(startAfter))
 	}
 	q := fmt.Sprintf(`
 	SELECT
 		table_name,
 		CASE WHEN table_type = 'VIEW' THEN true ELSE false END AS view
 	FROM svv_all_tables
-	WHERE database_name = %s AND schema_name = %s 
+	WHERE database_name = %s AND schema_name = %s %s 
 	ORDER BY table_name
 	LIMIT %d 
-	OFFSET %d
-	`, escapeStringValue(database), escapeStringValue(databaseSchema), pageSize+1, offset)
+	`, escapeStringValue(database), escapeStringValue(databaseSchema), condFilter, limit+1)
 
 	awsConfig, err := c.awsConfig(ctx, c.config.AWSRegion)
 	if err != nil {
@@ -136,9 +133,9 @@ func (c *Connection) ListTables(ctx context.Context, database, databaseSchema st
 		})
 	}
 	next := ""
-	if len(res) > int(pageSize) {
-		res = res[:pageSize]
-		next = strconv.Itoa(offset + int(pageSize))
+	if len(res) > limit {
+		res = res[:limit]
+		next = pagination.MarshalPageToken(res[len(res)-1].Name)
 	}
 	return res, next, nil
 }
@@ -146,13 +143,13 @@ func (c *Connection) ListTables(ctx context.Context, database, databaseSchema st
 func (c *Connection) GetTable(ctx context.Context, database, databaseSchema, table string) (*drivers.TableMetadata, error) {
 	// Query to get column name and data type
 	q := fmt.Sprintf(`
-	SELECT 
-		column_name, 
-		data_type
-	FROM svv_all_columns
-	WHERE database_name = %s AND schema_name = %s AND table_name = %s
-	ORDER BY ordinal_position;
-	`, escapeStringValue(database), escapeStringValue(databaseSchema), escapeStringValue(table))
+SELECT 
+	column_name, 
+	data_type
+FROM svv_all_columns
+WHERE database_name = %s AND schema_name = %s AND table_name = %s
+ORDER BY ordinal_position;
+`, escapeStringValue(database), escapeStringValue(databaseSchema), escapeStringValue(table))
 
 	awsConfig, err := c.awsConfig(ctx, c.config.AWSRegion)
 	if err != nil {

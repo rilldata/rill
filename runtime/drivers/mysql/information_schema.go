@@ -3,32 +3,34 @@ package mysql
 import (
 	"context"
 	"fmt"
-	"strconv"
 
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/pagination"
 )
 
 func (c *connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, pageToken string) ([]*drivers.DatabaseSchemaInfo, string, error) {
-	if pageSize == 0 {
-		pageSize = drivers.DefaultPageSize
-	}
-	offset := 0
-	if pageToken != "" {
-		var err error
-		offset, err = strconv.Atoi(pageToken)
-		if err != nil {
-			return nil, "", fmt.Errorf("invalid page token: %w", err)
-		}
-	}
+	limit := pagination.ValidPageSize(pageSize, drivers.DefaultPageSize)
+
 	q := `
 	SELECT
 		schema_name
 	FROM information_schema.schemata
-	WHERE schema_name not in ('information_schema', 'performance_schema', 'sys') OR schema_name = DATABASE()
-	ORDER BY schema_name
-	LIMIT ? 
-	OFFSET ?
+	WHERE (schema_name NOT IN ('information_schema', 'performance_schema', 'sys') OR schema_name = DATABASE())
 	`
+	args := []any{}
+	if pageToken != "" {
+		var startAfter string
+		if err := pagination.UnmarshalPageToken(pageToken, &startAfter); err != nil {
+			return nil, "", fmt.Errorf("invalid page token: %w", err)
+		}
+		q += "	AND schema_name > ?"
+		args = append(args, startAfter)
+	}
+	q += `
+	ORDER BY schema_name 
+	LIMIT ?
+	`
+	args = append(args, limit+1)
 
 	db, err := c.getDB()
 	if err != nil {
@@ -36,7 +38,7 @@ func (c *connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, p
 	}
 	defer db.Close()
 
-	rows, err := db.QueryxContext(ctx, q, int(pageSize)+1, offset)
+	rows, err := db.QueryxContext(ctx, q, args...)
 	if err != nil {
 		return nil, "", err
 	}
@@ -59,35 +61,37 @@ func (c *connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, p
 	}
 
 	next := ""
-	if len(res) > int(pageSize) {
-		res = res[:pageSize]
-		next = strconv.Itoa(offset + int(pageSize))
+	if len(res) > limit {
+		res = res[:limit]
+		next = pagination.MarshalPageToken(res[len(res)-1].DatabaseSchema)
 	}
 	return res, next, nil
 }
 
 func (c *connection) ListTables(ctx context.Context, database, databaseSchema string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
-	if pageSize == 0 {
-		pageSize = drivers.DefaultPageSize
-	}
-	offset := 0
-	if pageToken != "" {
-		var err error
-		offset, err = strconv.Atoi(pageToken)
-		if err != nil {
-			return nil, "", fmt.Errorf("invalid page token: %w", err)
-		}
-	}
+	limit := pagination.ValidPageSize(pageSize, drivers.DefaultPageSize)
+
 	q := `
 	SELECT
 		table_name,
 		CASE WHEN table_type = 'VIEW' THEN true ELSE false END AS view
 	FROM information_schema.tables
 	WHERE table_schema = ?
-	ORDER BY table_name
-	LIMIT ? 
-	OFFSET ?
 	`
+	args := []any{databaseSchema}
+	if pageToken != "" {
+		var startAfter string
+		if err := pagination.UnmarshalPageToken(pageToken, &startAfter); err != nil {
+			return nil, "", fmt.Errorf("invalid page token: %w", err)
+		}
+		q += "	AND table_name > ?"
+		args = append(args, startAfter)
+	}
+	q += `
+	ORDER BY table_name 
+	LIMIT ?
+	`
+	args = append(args, limit+1)
 
 	db, err := c.getDB()
 	if err != nil {
@@ -95,20 +99,20 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 	}
 	defer db.Close()
 
-	rows, err := db.QueryxContext(ctx, q, databaseSchema, int(pageSize)+1, offset)
+	rows, err := db.QueryxContext(ctx, q, args...)
 	if err != nil {
 		return nil, "", err
 	}
 	defer rows.Close()
 
-	var result []*drivers.TableInfo
+	var res []*drivers.TableInfo
 	for rows.Next() {
 		var name string
 		var typ bool
 		if err := rows.Scan(&name, &typ); err != nil {
 			return nil, "", err
 		}
-		result = append(result, &drivers.TableInfo{
+		res = append(res, &drivers.TableInfo{
 			Name: name,
 			View: typ,
 		})
@@ -119,11 +123,11 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 	}
 
 	next := ""
-	if len(result) > int(pageSize) {
-		result = result[:pageSize]
-		next = strconv.Itoa(offset + int(pageSize))
+	if len(res) > limit {
+		res = res[:limit]
+		next = pagination.MarshalPageToken(res[len(res)-1].Name)
 	}
-	return result, next, nil
+	return res, next, nil
 }
 
 func (c *connection) GetTable(ctx context.Context, database, databaseSchema, table string) (*drivers.TableMetadata, error) {

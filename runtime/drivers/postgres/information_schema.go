@@ -3,116 +3,131 @@ package postgres
 import (
 	"context"
 	"fmt"
-	"strconv"
 
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/pagination"
 )
 
 func (c *connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, pageToken string) ([]*drivers.DatabaseSchemaInfo, string, error) {
-	if pageSize == 0 {
-		pageSize = drivers.DefaultPageSize
-	}
-	offset := 0
-	if pageToken != "" {
-		var err error
-		offset, err = strconv.Atoi(pageToken)
-		if err != nil {
-			return nil, "", fmt.Errorf("invalid page token: %w", err)
-		}
-	}
+	limit := pagination.ValidPageSize(pageSize, drivers.DefaultPageSize)
+
 	q := `
 	SELECT
 		current_database() AS database_name,
 		nspname 
 	FROM pg_namespace 
 	WHERE has_schema_privilege(nspname, 'USAGE') AND ((nspname NOT IN ('pg_catalog', 'information_schema', 'pg_toast') AND nspname NOT LIKE 'pg_temp_%' AND nspname NOT LIKE 'pg_toast_temp_%') OR nspname = current_schema())
-	ORDER BY nspname
-	LIMIT $1 
-	OFFSET $2
 	`
+	var args []any
+	if pageToken != "" {
+		var startAfter string
+		if err := pagination.UnmarshalPageToken(pageToken, &startAfter); err != nil {
+			return nil, "", fmt.Errorf("invalid page token: %w", err)
+		}
+		q += `	AND nspname > $1
+		ORDER BY nspname
+		LIMIT $2
+		`
+		args = append(args, startAfter, limit+1)
+	} else {
+		q += `
+		ORDER BY nspname
+		LIMIT $1
+		`
+		args = append(args, limit+1)
+	}
+
 	db, err := c.getDB()
 	if err != nil {
 		return nil, "", err
 	}
 	defer db.Close()
 
-	rows, err := db.QueryxContext(ctx, q, int(pageSize)+1, offset)
+	rows, err := db.QueryxContext(ctx, q, args...)
 	if err != nil {
 		return nil, "", err
 	}
 	defer rows.Close()
 
-	var schemas []*drivers.DatabaseSchemaInfo
+	var res []*drivers.DatabaseSchemaInfo
 	var database, schema string
 	for rows.Next() {
 		if err := rows.Scan(&database, &schema); err != nil {
 			return nil, "", err
 		}
-		schemas = append(schemas, &drivers.DatabaseSchemaInfo{
+		res = append(res, &drivers.DatabaseSchemaInfo{
 			Database:       database,
 			DatabaseSchema: schema,
 		})
 	}
 	next := ""
-	if len(schemas) > int(pageSize) {
-		schemas = schemas[:pageSize]
-		next = strconv.Itoa(offset + int(pageSize))
+	if len(res) > limit {
+		res = res[:limit]
+		next = pagination.MarshalPageToken(res[len(res)-1].DatabaseSchema)
 	}
-	return schemas, next, rows.Err()
+	return res, next, rows.Err()
 }
 
 func (c *connection) ListTables(ctx context.Context, database, databaseSchema string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
-	if pageSize == 0 {
-		pageSize = drivers.DefaultPageSize
-	}
-	offset := 0
-	if pageToken != "" {
-		var err error
-		offset, err = strconv.Atoi(pageToken)
-		if err != nil {
-			return nil, "", fmt.Errorf("invalid page token: %w", err)
-		}
-	}
+	limit := pagination.ValidPageSize(pageSize, drivers.DefaultPageSize)
+
 	q := `
 	SELECT
 		table_name,
 		table_type = 'VIEW' AS is_view
 	FROM information_schema.tables 
 	WHERE table_schema = $1
-	ORDER BY table_name
-	LIMIT $2 
-	OFFSET $3
 	`
+	var args []any
+	args = append(args, databaseSchema)
+	if pageToken != "" {
+		var startAfter string
+		if err := pagination.UnmarshalPageToken(pageToken, &startAfter); err != nil {
+			return nil, "", fmt.Errorf("invalid page token: %w", err)
+		}
+		q += `	AND table_name > $2
+		ORDER BY table_name
+		LIMIT $3 
+		`
+		args = append(args, startAfter, limit+1)
+	} else {
+		q += `
+		ORDER BY table_name
+		LIMIT $2 
+		`
+		args = append(args, limit+1)
+	}
+
 	db, err := c.getDB()
 	if err != nil {
 		return nil, "", err
 	}
 	defer db.Close()
 
-	rows, err := db.QueryxContext(ctx, q, databaseSchema, int(pageSize)+1, offset)
+	rows, err := db.QueryxContext(ctx, q, args...)
 	if err != nil {
 		return nil, "", err
 	}
 	defer rows.Close()
 
-	var result []*drivers.TableInfo
+	var res []*drivers.TableInfo
 	var name string
 	var isView bool
 	for rows.Next() {
 		if err := rows.Scan(&name, &isView); err != nil {
 			return nil, "", err
 		}
-		result = append(result, &drivers.TableInfo{
+		res = append(res, &drivers.TableInfo{
 			Name: name,
 			View: isView,
 		})
 	}
 	next := ""
-	if len(result) > int(pageSize) {
-		result = result[:pageSize]
-		next = strconv.Itoa(offset + int(pageSize))
+	if len(res) > limit {
+		res = res[:limit]
+		next = pagination.MarshalPageToken(res[len(res)-1].Name)
 	}
-	return result, next, rows.Err()
+	return res, next, rows.Err()
 }
 
 func (c *connection) GetTable(ctx context.Context, database, databaseSchema, table string) (*drivers.TableMetadata, error) {
