@@ -5,6 +5,8 @@ sidebar_label: "Alerts"
 sidebar_position: 40
 ---
 
+Alerting is a key element for any BI or analytics workflow. Because Rill's dashboards are typically built off of raw or near-raw data, we expose alerting on a wide range of filters and depth, including high cardinality fields. Alerts are accessible from any dashboard via the upper-right alarm bell icon and can be used to create context-based triggers or alerts to bring you back to an analysis if an alert is triggered. This allows the analyst or end user to then dive deeper and use Rill dashboards to interactively explore their data as needed.
+
 <div style={{ 
   position: "relative", 
   width: "100%", 
@@ -29,16 +31,6 @@ sidebar_position: 40
 </div>
 <br/>
 Prefer video? Check out our [YouTube playlist](https://www.youtube.com/watch?v=wTP46eOzoCk&list=PL_ZoDsg2yFKgi7ud_fOOD33AH8ONWQS7I&index=1) for a quick start!
-
-
-## Overview
-
-Alerting is a key element for any BI or analytics workflow. Because Rill's dashboards are typically built off of raw or near-raw data, we expose alerting on a wide range of filters and depth, including high cardinality fields. Alerts are accessible from any dashboard via the upper-right alarm bell icon and can be used to create context-based triggers or alerts to bring you back to an analysis if an alert is triggered. This allows the analyst or end user to then dive deeper and use Rill dashboards to interactively explore their data as needed.
-
-
-<img src = '/img/explore/alerts/alerts.gif' class='rounded-gif' />
-<br />
-
 
 ## Setting and managing alerts
 
