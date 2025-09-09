@@ -6178,6 +6178,19 @@ definitions:
         type: string
       outputProperties:
         type: object
+      retryAttempts:
+        type: integer
+        format: int64
+        description: retry is optional.
+      retryDelaySeconds:
+        type: integer
+        format: int64
+      retryExponentialBackoff:
+        type: boolean
+      retryIfErrorMatches:
+        type: array
+        items:
+          type: string
       changeMode:
         $ref: '#/definitions/v1ModelChangeMode'
         description: change_mode is the mode of change detection to use for the model.

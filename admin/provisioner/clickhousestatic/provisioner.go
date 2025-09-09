@@ -195,6 +195,7 @@ func (p *Provisioner) Provision(ctx context.Context, r *provisioner.Resource, op
 	// Grant some additional global privileges to the user
 	_, err = p.ch.ExecContext(ctx, fmt.Sprintf(`
 		GRANT %s
+			CLUSTER,
 			URL,
 			REMOTE,
 			MONGO,
@@ -219,6 +220,7 @@ func (p *Provisioner) Provision(ctx context.Context, r *provisioner.Resource, op
 	dsn.User = url.UserPassword(user, password)
 	dsn.Path = "/" + dbName
 	cfg.DSN = dsn.String()
+	cfg.Cluster = p.spec.Cluster
 
 	// Optionally build a write DSN.
 	if p.spec.WriteDSN != "" {
