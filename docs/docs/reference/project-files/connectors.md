@@ -255,9 +255,10 @@ _[string]_ - Cluster name, required for running distributed queries
 
 _[boolean]_ - Controls whether to log raw SQL queries 
 
-### `settings_override`
+### `query_settings_override`
 
-_[string]_ - override the default settings used in queries. example `readonly = 1, session_timezone = 'UTC'` 
+_[string]_ - override the default settings used in queries. Changing the default settings can lead to incorrect query results and is generally not recommended. If you need to add settings, append them to the defaults:  
+`cast_keep_nullable = 1, join_use_nulls = 1, session_timezone = 'UTC', prefer_global_in_and_join = 1, insert_distributed_sync = 1, <your additional settings>`
 
 ### `embed_port`
 

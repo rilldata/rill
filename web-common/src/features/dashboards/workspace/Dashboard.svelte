@@ -1,4 +1,5 @@
 <script lang="ts">
+  import CellInspector from "@rilldata/web-common/components/CellInspector.svelte";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
   import PivotDisplay from "@rilldata/web-common/features/dashboards/pivot/PivotDisplay.svelte";
   import TabBar from "@rilldata/web-common/features/dashboards/tab-bar/TabBar.svelte";
@@ -9,7 +10,6 @@
   import { useExploreState } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { DashboardState_ActivePage } from "../../../proto/gen/rill/ui/v1/dashboard_pb";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import CellInspector from "@rilldata/web-common/components/CellInspector.svelte";
   import MeasuresContainer from "../big-number/MeasuresContainer.svelte";
   import DimensionDisplay from "../dimension-table/DimensionDisplay.svelte";
   import Filters from "../filters/Filters.svelte";
@@ -212,11 +212,11 @@
   {/if}
 
   <CellInspector />
-</article>
 
-{#if (isRillDeveloper || $cloudDataViewer) && !showTimeDimensionDetail && !mockUserHasNoAccess}
-  <RowsViewerAccordion {metricsViewName} {exploreName} />
-{/if}
+  {#if (isRillDeveloper || $cloudDataViewer) && !showTimeDimensionDetail && !mockUserHasNoAccess}
+    <RowsViewerAccordion {metricsViewName} {exploreName} />
+  {/if}
+</article>
 
 <style lang="postcss">
   .left-shift {
