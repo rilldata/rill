@@ -149,14 +149,14 @@ function getDefaultComparisonTimeRangeName(
     timezone,
   );
 
-  const comparisonTimeRangeNmae = getValidComparisonOption(
+  const comparisonTimeRangeName = getValidComparisonOption(
     exploreSpec.timeRanges,
     timeRange,
     undefined,
     allTimeRange,
   );
 
-  return comparisonTimeRangeNmae;
+  return comparisonTimeRangeName;
 }
 
 function getExploreViewStateFromYAMLConfig(
@@ -184,6 +184,9 @@ function getExploreViewStateFromYAMLConfig(
 
   if (defaultPreset.exploreSortBy) {
     exploreViewState.leaderboardSortByMeasureName = defaultPreset.exploreSortBy;
+  } else if (exploreViewState.visibleMeasures?.length) {
+    exploreViewState.leaderboardSortByMeasureName =
+      exploreViewState.visibleMeasures[0];
   }
 
   if ("exploreSortAsc" in defaultPreset) {
@@ -201,6 +204,10 @@ function getExploreViewStateFromYAMLConfig(
   if (defaultPreset.exploreLeaderboardMeasures?.length) {
     exploreViewState.leaderboardMeasureNames =
       defaultPreset.exploreLeaderboardMeasures;
+  } else if (exploreViewState.leaderboardSortByMeasureName) {
+    exploreViewState.leaderboardMeasureNames = [
+      exploreViewState.leaderboardSortByMeasureName,
+    ];
   }
 
   if (defaultPreset.exploreLeaderboardShowContextForAllMeasures !== undefined) {

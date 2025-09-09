@@ -4,10 +4,7 @@
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import CreateNewOrgForm from "@rilldata/web-common/features/organization/CreateNewOrgForm.svelte";
   import { CreateNewOrgFormId } from "@rilldata/web-common/features/organization/CreateNewOrgForm.svelte";
-  import {
-    getCreateProjectRoute,
-    getOverwriteProjectRoute,
-  } from "@rilldata/web-common/features/project/deploy/route-utils.ts";
+  import { getDeployOrGithubRouteGetter } from "@rilldata/web-common/features/project/deploy/route-utils.ts";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
   import { createLocalServiceGetCurrentUser } from "@rilldata/web-common/runtime-client/local-service.ts";
 
@@ -16,8 +13,9 @@
   let selectedOrg = "";
   let isNewOrgDialogOpen = false;
 
-  $: createProjectUrl = getCreateProjectRoute(selectedOrg);
-  $: overwriteProjectUrl = getOverwriteProjectRoute(selectedOrg);
+  const deployRouteGetter = getDeployOrGithubRouteGetter();
+  $: ({ isLoading, getter: deployRouteGetterFunc } = $deployRouteGetter);
+  $: createProjectUrl = deployRouteGetterFunc(selectedOrg);
 
   $: orgOptions =
     $user.data?.rillUserOrgs?.map((o) => ({ value: o, label: o })) ?? [];
@@ -53,17 +51,14 @@
   sameWidth
 />
 
-<Button wide type="primary" href={createProjectUrl} disabled={!selectedOrg}>
-  Deploy as a new project
-</Button>
 <Button
   wide
-  type="ghost"
-  href={overwriteProjectUrl}
-  disabled={!selectedOrg}
-  class="-mt-2"
+  type="primary"
+  href={createProjectUrl}
+  loading={isLoading}
+  disabled={!selectedOrg || isLoading}
 >
-  Or overwrite an existing project
+  Deploy as a new project
 </Button>
 
 <Dialog.Root bind:open={isNewOrgDialogOpen}>
