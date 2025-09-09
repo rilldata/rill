@@ -22,10 +22,7 @@ import {
   updateDotEnvWithSecrets,
   updateRillYAMLWithOlapConnector,
 } from "../../connectors/code-utils";
-import {
-  testOLAPConnector,
-  testNonOLAPConnector,
-} from "../../connectors/olap/test-connection";
+import { testOLAPConnector } from "../../connectors/olap/test-connection";
 import { runtimeServicePutFileAndWaitForReconciliation } from "../../entity-management/actions";
 import { getFileAPIPathFromNameAndType } from "../../entity-management/entity-mappers";
 import { fileArtifacts } from "../../entity-management/file-artifacts";
@@ -181,9 +178,6 @@ export async function submitAddConnectorForm(
   let result;
   if (OLAP_ENGINES.includes(connector.name as string)) {
     result = await testOLAPConnector(instanceId, connector.name as string);
-  } else {
-    // Test non-OLAP connectors using ListDatabaseSchemas
-    result = await testNonOLAPConnector(instanceId, connector.name as string);
   }
 
   if (!result.success) {
