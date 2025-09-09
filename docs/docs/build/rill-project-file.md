@@ -2,7 +2,7 @@
 title: "Rill Project File"
 description: For documenting required migrations
 sidebar_label: "Rill Project File"
-sidebar_position: 45
+sidebar_position: 55
 ---
 
 

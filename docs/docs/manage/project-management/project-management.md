@@ -5,7 +5,7 @@ sidebar_label: "Project Management"
 sidebar_position: 20
 ---
 
-Once an organization is created, you can populate it with projects. Each project is connected to a [single GitHub repository](https://docs.rilldata.com/deploy/deploy-dashboard/#syncing-your-github-repository) and has its own set or sources, models, metric views, and explore dashboards. A defined object in a project cannot be shared to another project. 
+Once an organization is created, you can populate it with projects. Each project is connected to a [single GitHub repository](/deploy/deploy-dashboard#syncing-your-github-repository) and has its own set or sources, models, metric views, and explore dashboards. A defined object in a project cannot be shared to another project. 
 
 ## Project
 
@@ -50,7 +50,7 @@ From there, you can follow the same steps as [above](#connect-to-github-reposito
 
 
 ### Deploying from a branch other than `main`
-If you have already [setup your connection to GitHub](/deploy/deploy-dashboard/#syncing-your-github-repository), you can edit the branch from where the project is deployed from.
+If you have already [setup your connection to GitHub](/deploy/deploy-dashboard#syncing-your-github-repository), you can edit the branch from where the project is deployed from.
 
 <img src = '/img/manage/project-management/main-branch.png' class='rounded-gif' />
 <br />

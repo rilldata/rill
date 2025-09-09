@@ -43,7 +43,7 @@ You can easily check the version of Rill that you are using in Rill Developer by
 rill --version
 ```
 
-If you are on an older version of Rill, it is **strongly recommended** to [upgrade](home/install.md#upgrade-to-the-newest-version-of-rill-developer) to the latest version.
+If you are on an older version of Rill, it is **strongly recommended** to [upgrade](/get-started/install.md#upgrade-to-the-newest-version-of-rill-developer) to the latest version.
 
 :::
 
@@ -157,7 +157,7 @@ Once completed, you will see the following in the status page. Note that the Git
 
 
 
-## Detecting Changes from GitHub
+## Detecting Changes
 
 If you decide to manage your Rill projects using GitHub, Rill will automatically detect changes that you have pushed locally and update your deployed project accordingly. Depending on the changes, this may result in a project reconciliation. If you are experiencing issues with the project after pushing changes via the CLI, please refer to the project's status page for more information, or you can run via the CLI:
 
