@@ -1,7 +1,7 @@
 <script lang="ts">
   import { createAdminServiceGetProject } from "@rilldata/web-admin/client";
   import { useDashboardsLastUpdated } from "@rilldata/web-admin/features/dashboards/listing/selectors";
-  import NewGithubConnectionDialog from "@rilldata/web-admin/features/projects/github/NewGithubConnectionDialog.svelte";
+  import GithubConnectionDialog from "@rilldata/web-admin/features/projects/github/GithubConnectionDialog.svelte";
   import { useGithubLastSynced } from "@rilldata/web-admin/features/projects/selectors";
   import Github from "@rilldata/web-common/components/icons/Github.svelte";
   import {
@@ -90,7 +90,7 @@
             Learn more ->
           </a>
         </span>
-        <NewGithubConnectionDialog {organization} {project} />
+        <GithubConnectionDialog {organization} {project} />
       {/if}
     </div>
   </div>

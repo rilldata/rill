@@ -359,7 +359,7 @@ func (s *Server) ConnectProjectToGithub(ctx context.Context, req *adminv1.Connec
 		}
 
 		err = s.createRepo(ctx, client, org, repo, req.Branch)
-		if err != nil {
+		if err != nil && (!strings.Contains(err.Error(), "name already exists on this account") || req.Subpath == "") {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 	}
@@ -1230,7 +1230,7 @@ func (s *Server) pushToGit(ctx context.Context, copyData func(projPath string) e
 	})
 	if err != nil {
 		if !errors.Is(err, transport.ErrEmptyRemoteRepository) {
-			return fmt.Errorf("failed to init git repo: %w", err)
+			return fmt.Errorf("failed to clone git repo: %w", err)
 		}
 
 		empty = true

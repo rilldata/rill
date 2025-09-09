@@ -1,5 +1,6 @@
 <script lang="ts">
   import { createAdminServiceConnectProjectToGithub } from "@rilldata/web-admin/client";
+  import { extractGithubConnectError } from "@rilldata/web-admin/features/projects/github/github-errors.ts";
   import { GithubAccessManager } from "@rilldata/web-admin/features/projects/github/GithubAccessManager.ts";
   import { getGithubUserOrgs } from "@rilldata/web-admin/features/projects/github/selectors.ts";
   import { Button } from "@rilldata/web-common/components/button";
@@ -27,6 +28,7 @@
 
   const connectProjectToGithub = createAdminServiceConnectProjectToGithub();
   $: ({ error, isPending } = $connectProjectToGithub);
+  $: parsedError = error ? extractGithubConnectError(error as any) : null;
 
   let advancedOpened = false;
 
@@ -80,16 +82,6 @@
 
   $: disableSubmit = isPending || $githubConnectionFailed;
 
-  function onConnectToGithub() {
-    void githubAccessManager.ensureGithubAccess();
-    behaviourEvent?.fireGithubIntentEvent(
-      BehaviourEventAction.GithubConnectStart,
-      {
-        is_fresh_connection: true,
-      },
-    );
-  }
-
   function resetDialog() {
     reset();
     advancedOpened = false;
@@ -108,7 +100,7 @@
       type="primary"
       class="w-fit mt-1"
       loading={$userStatus.isFetching}
-      onClick={onConnectToGithub}
+      onClick={() => void githubAccessManager.ensureGithubAccess()}
     >
       <Github className="w-4 h-4" fill="white" />
       Connect to GitHub
@@ -121,88 +113,88 @@
         <div class="flex flex-col gap-y-1">
           <Dialog.Title>Connect to github</Dialog.Title>
           <Dialog.Description>
-            Connect this project to a new or existing repo.
+            Connect this project to a new repo.
           </Dialog.Description>
         </div>
       </div>
     </Dialog.Header>
-    <Dialog.Description>
-      <form
-        id={FORM_ID}
-        on:submit|preventDefault={submit}
-        use:enhance
-        class="flex flex-col gap-y-3"
-      >
-        <Select
-          bind:value={$form.org}
-          id="org"
-          label="Repository org"
-          options={$githubUserOrgs.data ?? []}
-          optionsLoading={$githubUserOrgs.isFetching}
-          sameWidth
-          enableSearch
-          onAddNew={() => githubAccessManager.reselectRepos()}
-          addNewLabel="+ Connect other orgs"
-        />
 
-        <Input
-          bind:value={$form.name}
-          errors={$errors?.name}
-          id="name"
-          label="Repository name"
-          capitalizeLabel={false}
-        />
+    <form
+      id={FORM_ID}
+      on:submit|preventDefault={submit}
+      use:enhance
+      class="flex flex-col gap-y-3"
+    >
+      <Select
+        bind:value={$form.org}
+        id="org"
+        label="Repository org"
+        options={$githubUserOrgs.data ?? []}
+        optionsLoading={$githubUserOrgs.isFetching}
+        sameWidth
+        enableSearch
+        onAddNew={() => githubAccessManager.reselectOrgs()}
+        addNewLabel="+ Connect other orgs"
+      />
 
-        <Collapsible.Root bind:open={advancedOpened}>
-          <Collapsible.Trigger asChild let:builder>
-            <Button builders={[builder]} type="text">
-              {#if advancedOpened}
-                <CaretDownFilledIcon size="12px" />
-              {:else}
-                <CaretRightFilledIcon size="12px" />
-              {/if}
-              <span class="text-sm">Advanced options</span>
-            </Button>
-          </Collapsible.Trigger>
-          <Collapsible.Content class="flex flex-col gap-y-2">
-            <Input
-              bind:value={$form.branch}
-              errors={$errors?.branch}
-              id="branch"
-              label="Branch"
-              capitalizeLabel={false}
-            />
+      <Input
+        bind:value={$form.name}
+        errors={$errors?.name}
+        id="name"
+        label="Repository name"
+        capitalizeLabel={false}
+      />
 
-            <Input
-              bind:value={$form.subpath}
-              errors={$errors?.subpath}
-              id="subpath"
-              label="Subpath"
-              capitalizeLabel={false}
-              optional
-            />
-          </Collapsible.Content>
-        </Collapsible.Root>
+      <Collapsible.Root bind:open={advancedOpened}>
+        <Collapsible.Trigger asChild let:builder>
+          <Button builders={[builder]} type="text">
+            {#if advancedOpened}
+              <CaretDownFilledIcon size="12px" />
+            {:else}
+              <CaretRightFilledIcon size="12px" />
+            {/if}
+            <span class="text-sm">Advanced options</span>
+          </Button>
+        </Collapsible.Trigger>
+        <Collapsible.Content class="flex flex-col gap-y-2">
+          <Input
+            bind:value={$form.branch}
+            errors={$errors?.branch}
+            id="branch"
+            label="Branch"
+            capitalizeLabel={false}
+          />
 
-        {#if error?.message}
-          <div class="text-red-500 text-sm py-px">
-            {error.message}
-          </div>
-        {/if}
+          <Input
+            bind:value={$form.subpath}
+            errors={$errors?.subpath}
+            id="subpath"
+            label="Subpath"
+            capitalizeLabel={false}
+            optional
+          />
+        </Collapsible.Content>
+      </Collapsible.Root>
 
-        {#if $githubConnectionFailed}
-          <div class="text-red-500 text-sm py-px">
-            <div>Failed to connect to GitHub. Please try again.</div>
-            <Button
-              type="secondary"
-              onClick={() => githubAccessManager.ensureGithubAccess()}
-            >
-              Reconnect
-            </Button>
-          </div>
-        {/if}
-      </form>
-    </Dialog.Description>
+      {#if parsedError?.message}
+        <div class="text-red-500 text-sm py-px">
+          {parsedError.message}
+        </div>
+      {/if}
+
+      {#if $githubConnectionFailed}
+        <div class="text-red-500 text-sm py-px">
+          <div>Failed to connect to GitHub. Please try again.</div>
+          <Button
+            type="secondary"
+            onClick={() => githubAccessManager.ensureGithubAccess()}
+          >
+            Reconnect
+          </Button>
+        </div>
+      {/if}
+    </form>
+
     <Dialog.Footer>
       <Button
         onClick={() => {
@@ -220,7 +212,7 @@
         loading={disableSubmit}
         disabled={disableSubmit}
       >
-        Push project to a new GitHub repo
+        Create and push changes
       </Button>
     </Dialog.Footer>
   </Dialog.Content>
