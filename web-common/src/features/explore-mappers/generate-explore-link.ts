@@ -1,5 +1,4 @@
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
-import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
 import { createLinkError } from "@rilldata/web-common/features/explore-mappers/explore-validation";
 import { ExploreLinkErrorType } from "@rilldata/web-common/features/explore-mappers/types";
 import { getExplorePageUrlSearchParams } from "@rilldata/web-common/features/explore-mappers/utils";
