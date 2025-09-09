@@ -35,7 +35,7 @@
       <OrganizationHero {title} />
       <span>
         This organization has no projects yet. <a
-          href="https://docs.rilldata.com/home/get-started"
+          href="https://docs.rilldata.com/"
           target="_blank"
           rel="noreferrer noopener">See docs</a
         >

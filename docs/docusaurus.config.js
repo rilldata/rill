@@ -103,7 +103,7 @@ const config = {
         items: [
           {
             type: "doc",
-            docId: "home/home",
+            docId: "get-started/get-started",
             position: "left",
             label: "Docs",
           },
@@ -189,11 +189,7 @@ const config = {
         redirects: [
           {
             from: '/install',
-            to: '/home/install',
-          },
-          {
-            from: '/get-started',
-            to: '/home/get-started',
+            to: '/get-started/install',
           },
           {
             from: '/home/example-repository',
@@ -213,7 +209,7 @@ const config = {
           },
           {
             from: '/develop/security',
-            to: '/manage/security'
+            to: '/build/metrics-view/security'
           },
           {
             from: '/deploy/credentials/',
@@ -261,7 +257,7 @@ const config = {
           },
           {
             from: '/deploy/source-refresh',
-            to: '/build/models/source-refresh'
+            to: '/build/models/data-refresh'
           },
           {
             from: '/reference/templating',
@@ -269,7 +265,7 @@ const config = {
           },
           {
             from: '/example-projects',
-            to: '/home/get-started#example-projects-repository'
+            to: '/#examples'
           },
           {
             from: '/integration/embedding',
@@ -416,31 +412,83 @@ const config = {
           },
           {
             from: '/concepts/developerVsCloud',
-            to: '/home/concepts/cloud-vs-developer'
+            to: '/get-started/concepts/cloud-vs-developer'
+          },
+          {
+            from: '/home/concepts/developerVsCloud',
+            to: '/get-started/concepts/cloud-vs-developer'
           },
           {
             from: '/concepts/OLAP',
-            to: '/home/concepts/OLAP'
+            to: '/connect/olap#what-is-olap'
+          },
+          {
+            from: '/home/concepts/OLAP',
+            to: '/connect/olap#what-is-olap'
           },
           {
             from: '/concepts/architecture',
-            to: '/home/concepts/architecture'
+            to: '/get-started/concepts/architecture'
+          },
+          {
+            from: '/home/concepts/architecture',
+            to: '/get-started/concepts/architecture'
           },
           {
             from: '/concepts/operational',
-            to: '/home/concepts/operational'
+            to: '/get-started/concepts/operational'
+          },
+          {
+            from: '/home/concepts/operational',
+            to: '/get-started/concepts/operational'
           },
           {
             from: '/concepts/metrics-layer',
-            to: '/home/concepts/metrics-layer'
+            to: '/build/metrics-view'
           },
           {
             from: '/concepts/bi-as-code',
-            to: '/home/concepts/bi-as-code'
+            to: '/get-started/concepts/bi-as-code'
+          },
+          {
+            from: '/home/concepts/bi-as-code',
+            to: '/get-started/concepts/bi-as-code'
+          },
+          {
+            from: '/build/advanced-models/',
+            to: '/build/models/'
+          },
+          {
+            from: '/build/advanced-models/incremental-models',
+            to: '/build/models/incremental-models'
+          },
+          {
+            from: '/build/advanced-models/partitions',
+            to: '/build/models/partitioned-models'
+          },
+          {
+            from: '/build/advanced-models/staging',
+            to: '/build/models/staging-models'
+          },
+          {
+            from: '/home/concepts/metrics-layer',
+            to: '/build/metrics-view'
           },
           {
             from: '/integrate/custom-apis',
             to: '/build/custom-apis'
+          },
+          {
+            from: '/deploy/performance',
+            to: '/guides/performance'
+          },
+          {
+            from: '/home/install',
+            to: '/get-started/install'
+          },
+          {
+            from: '/home/get-started',
+            to: '/get-started/quickstart'
           },
           // {
           //   from: '/old-page',

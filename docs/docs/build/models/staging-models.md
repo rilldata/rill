@@ -1,14 +1,15 @@
 ---
 title: Staging Models
-description: C
+description: When the source ingestion is not directly supported, use staging models
 sidebar_label: Staging Models
-sidebar_position: 10
+sidebar_position: 35
 ---
-As the name suggests, a staging model is one that uses a staging platform to ingest data from one source to another output that is not directly supported. An example of this is ingesting from Snowflake to ClickHouse. In order to support our users' varying setups, we've devised staging models. 
 
+As the name suggests, a staging model is one that uses a staging platform to ingest data from one source to another output that is not directly supported. An example of this is ingesting from Snowflake to ClickHouse. In order to support our users' varying setups, we've devised staging models.
 
 ## When to use a Staging Model?
-Staging models are required for situations where the input and output types are not directly supported. However, by using a staging platform that is supported by both platforms, it allows a user to temporarily write data to the staging platform and ingest directly to the output platform.
+
+Staging models are required for situations where the input and output types are not directly supported. However, by using a staging platform that is supported by both platforms, it allows users to temporarily write data to the staging platform and ingest directly to the output platform.
 
 :::note Supported Paths
 Staging Models are in ongoing development. While we do have support for the following, please [reach out to us](/contact) if you have any specific requirements.
@@ -19,7 +20,7 @@ Staging Models are in ongoing development. While we do have support for the foll
 :::
 
 ### Example 
-Let's expand further on the Snowflake to ClickHouse example. 
+Let's expand further on the Snowflake to ClickHouse example.
 ```mermaid
   sequenceDiagram
     Snowflake->>Staging (S3): write data to temporary Staging
