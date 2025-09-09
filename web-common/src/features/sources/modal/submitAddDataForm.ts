@@ -173,23 +173,24 @@ export async function submitAddConnectorForm(
     throw new Error(errorMessage);
   }
 
-  // Test the connection for both OLAP and non-OLAP connectors
+  // Test the connection to the OLAP connectors
   // If the connection test fails, rollback the changes
-  let result;
   if (OLAP_ENGINES.includes(connector.name as string)) {
-    result = await testOLAPConnector(instanceId, connector.name as string);
-  }
-
-  if (!result.success) {
-    await rollbackConnectorChanges(
+    const result = await testOLAPConnector(
       instanceId,
-      newConnectorFilePath,
-      originalEnvBlob,
+      connector.name as string,
     );
-    throw {
-      message: result.error || "Unable to establish a connection",
-      details: result.details,
-    };
+    if (!result.success) {
+      await rollbackConnectorChanges(
+        instanceId,
+        newConnectorFilePath,
+        originalEnvBlob,
+      );
+      throw {
+        message: result.error || "Unable to establish a connection",
+        details: result.details,
+      };
+    }
   }
 
   /**
