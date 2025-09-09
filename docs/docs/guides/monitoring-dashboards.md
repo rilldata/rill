@@ -239,14 +239,8 @@ This guide demonstrates how Rill transforms raw infrastructure metrics into acti
 
 The combination of Prometheus (collection), Thanos (storage), ClickHouse (analytics), and Rill (visualization) provides a complete observability platform that scales from startups to enterprise.
 
-## Next Steps
-
-1. **Set up the basic stack** using the provided Docker Compose
-2. **Import sample metrics** or connect your existing Prometheus
-3. **Build your first dashboard** using the infrastructure health model
-4. **Expand with application-specific** metrics and business KPIs
-5. **Implement alerting** and automated responses
-6. **Scale to production** with high availability and clustering
+<img src='/img/guides/monitoring/prometheus-explore.png' class='rounded-gif' />
+<br />
 
 ## Resources
 

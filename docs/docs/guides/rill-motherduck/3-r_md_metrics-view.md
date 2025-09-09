@@ -18,7 +18,7 @@ Don't have any good dataset to use? See [Ingest into MotherDuck](./r_md_ingest.m
 
 Let's create a metrics view based on the table using the `Generate metrics via AI` feature.
 
-<img src = '/img/tutorials/md/MotherDuck-metrics-ai.png' class='rounded-gif' />
+<img src = '/img/guides/md/MotherDuck-metrics-ai.png' class='rounded-gif' />
 <br />
 
 ### What are we looking at?

@@ -23,7 +23,7 @@ Once completed, you will have a basic understanding of how to use Rill Developer
 
 :::tip Direct Ingestion into MotherDuck via Rill
 
-While we won't go over it directly in this tutorial, you can use Rill as an ingestor into MotherDuck. See the list of our [supported connectors](/build/connect) for more information.
+While we won't go over it directly in this tutorial, you can use Rill as an ingestor into MotherDuck. See the list of our [supported connectors](/connect) for more information.
 
 :::
 

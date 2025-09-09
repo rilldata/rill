@@ -22,7 +22,7 @@ Select the `Deploy` button in the top right corner of a dashboard.
 
 Steps to deploy to Rill Cloud:
 1. Select the `Deploy` button.
-2. Select `continue` on the [free trial UI](/other/account-management/billing#trial-plan).
+2. Select `continue` on the [free trial UI](/other/plans#trial-plan).
 3. Select `continue` on user invites.
 4. You will be navigated to the /status page of your deployed project.
 

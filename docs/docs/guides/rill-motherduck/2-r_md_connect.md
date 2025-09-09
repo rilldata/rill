@@ -14,31 +14,27 @@ Within Rill, you can set the default OLAP connection on the [project level](http
 For this tutorial, we will set it up on the project level so all of our dashboards will be based on our MotherDuck table.
 
 ### Connect to MotherDuck
-We can create the MotherDuck connection by modifying the connectors/duckdb.yaml:
+We can create the MotherDuck connection by using the UI to add a MotherDuck live connector.
+
+
 
 
 ```yaml
 type: connector
-driver: duckdb
+driver: motherduck
 
 path: "md:my_db"
-
-init_sql: |
-  INSTALL 'motherduck';
-  LOAD 'motherduck';
-  SET motherduck_token= '{{.env.connector.motherduck.token}}'
+token: '{{ .env.connector.motherduck.token }}'
+schema_name: "main" 
 ```
 
-<img src = '/img/tutorials/md/MotherDuck-connector.png' class='rounded-gif' />
-<br />
+<!-- <img src = '/img/guides/md/MotherDuck-connector.png' class='rounded-gif' />
+<br /> -->
 
-:::tip Change the connector name
-While not necessary, you can change the name to motherduck.yaml to make it clear which connector is in use.
 
-:::
 ### Rill Project Default
 
-By default, Rill explicitly sets the project OLAP_connector to duckdb. This is based on the connector filename. If you make any changes to the filename, don't forget to change the name in your rill.yaml file.
+By default, Rill explicitly sets the project OLAP_connector to DuckDB. When creating a new live connector, the `olap_connector` key will automatically get updated.
 
 ```yaml
 compiler: rillv1
@@ -62,7 +58,7 @@ connector.motherduck.token="eyJhb....SAMPLETOKEN"
 
 You'll see a change in the bottom left connector panel that gives you a look into your MotherDuck tables. 
 
-<img src = '/img/tutorials/md/MotherDuck-confirm.png' class='rounded-gif' />
+<img src = '/img/guides/md/MotherDuck-confirm.png' class='rounded-gif' />
 <br />
 
 :::tip Using a different schema?

@@ -17,12 +17,12 @@ If this is the first time you have deployed a project onto Rill Cloud, you will 
 
 Select the `Deploy` button in the top right corner of the dashboard.
 
-<img src = '/img/tutorials/md/MotherDuck-deploy.png' class='rounded-gif' />
+<img src = '/img/guides/md/MotherDuck-deploy.png' class='rounded-gif' />
 <br />
 
 Steps to deploy to Rill Cloud:
 1. Select the `Deploy` button.
-2. Select `Continue` on the [free trial UI](/other/account-management/billing#trial-plan).
+2. Select `Continue` on the [free trial UI](/other/plans#trial-plan).
 3. Select `Continue` on user invites.
 4. You'll be navigated to the dashboard home page.
 

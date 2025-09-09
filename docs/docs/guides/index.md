@@ -25,14 +25,13 @@ Follow along, refer to the inline linked documentation, and explore our product 
 - [**GA4 Analytics:**](/guides/) Import your GA4 data from Bigquery and get quick insights into your web traffic
 - [**GitHub Analytics**](/guides/github-analytics) Analyze your own GitHub repository by modifying the Python file, download_commits.py
 - [**Cost Monitoring Analytics**](/guides/cost-monitoring-analytics) Analyze your cost and usage data
-- [**Visualize and Analyze your logs**](/guides/visualize-logging) Analyze web application logs, system logs, and infrastructure metrics to track performance, errors, and user behavior 
+- [**Infrastructure Monitoring**](/guides/monitoring-dashboards) Setup Rill on top of your infrastructure monitoring
 - [**OpenRTB Analytics**](/guides/openrtb-analytics) Analyze real-time bidding data to track impressions, bids, wins and more
 - [**Set Up MCP**](/guides/setting-up-mcp) Configure Model Context Protocol (MCP) to enable natural language queries with Claude integration
 
-
+<!-- - [**Visualize and Analyze your logs**](/guides/visualize-logging) Analyze web application logs, system logs, and infrastructure metrics to track performance, errors, and user behavior  -->
 <!-- - **Explore the Various Guides:** Explore the various guides on how to use Rill to the maximum capability and get the most out of our platform! -->
 
-<!-- - [**Logging Analytics:**](/guides/) text --> 
 
 Each section is crafted to ensure a smooth and comprehensive learning experience. Happy learning!
 

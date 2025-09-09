@@ -10,9 +10,7 @@ tags:
 
 ## Importing Your Own Data into MotherDuck 
 
-
-
-Since both Rill and MotherDuck are based on DuckDB, the read/write capabilities work without having to enable any feature flags.
+Since Rill's ingestion capabilities are built on top of DuckDB, you can use Rill to ingest data from different sources directly into MotherDuck.
 
 Simply use the Rill UI to connect to a data source and define the output to MotherDuck.
 
