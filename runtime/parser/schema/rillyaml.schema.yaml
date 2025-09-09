@@ -1,5 +1,5 @@
 $schema: 'http://json-schema.org/draft-07/schema#'
-$id: rillyaml.schema.yaml
+id: rill-yaml.schema.yaml
 title: Project YAML
 type: object
 description: The `rill.yaml` file contains metadata about your project.
@@ -26,7 +26,7 @@ allOf:
     description: |
       Rill allows you to specify the default OLAP engine to use in your project via `rill.yaml`.
       :::info Curious about OLAP Engines?
-      Please see our reference documentation on [OLAP Engines](/docs/connect/olap).
+      Please see our reference documentation on [OLAP Engines](/connect/olap).
       :::
     type: object
     properties:
@@ -38,7 +38,7 @@ allOf:
   - title: Project-wide defaults
     type: object
     description: |
-      In `rill.yaml`, project-wide defaults can be specified for a resource type within a project. Unless otherwise specified, _individual resources will inherit any defaults_ that have been specified in `rill.yaml`. For available properties that can be configured, please refer to the YAML specification for each individual resource type - [model](model.md), [metrics_view](metrics-view.md), and [explore](explore.md)
+      In `rill.yaml`, project-wide defaults can be specified for a resource type within a project. Unless otherwise specified, _individual resources will inherit any defaults_ that have been specified in `rill.yaml`. For available properties that can be configured, please refer to the YAML specification for each individual resource type - [model](models.md), [metrics_view](metrics-views.md), and [explore](explore-dashboards.md)
 
       :::note Use plurals when specifying project-wide defaults
       In your `rill.yaml`, the top level property for the resource type needs to be **plural**, such as `models`, `metrics_views` and `explores`.
@@ -46,7 +46,7 @@ allOf:
 
       :::info Hierarchy of inheritance and property overrides
       As a general rule of thumb, properties that have been specified at a more _granular_ level will supercede or override higher level properties that have been inherited. Therefore, in order of inheritance, Rill will prioritize properties in the following order:
-      1. Individual [models](model.md)/[metrics_views](metrics-view.md)/[explore](explore.md) object level properties (e.g. `model.yaml` or `explore.yaml`)
+      1. Individual [models](models.md)/[metrics_views](metrics-views.md)/[explore](explore-dashboards.md) object level properties (e.g. `models.yaml` or `explore-dashboards.yaml`)
       2. [Environment](/docs/build/models/environments.md) level properties (e.g. a specific property that have been set for `dev`)
       3. [Project-wide defaults](#project-wide-defaults) for a specific property and resource type
       :::
@@ -62,7 +62,7 @@ allOf:
         description: Defines project-wide default settings for explores. Unless overridden, individual explores will inherit these defaults. 
         examples:
         - # For example, the following YAML configuration below will set a project-wide default for:
-          # Models - Configure a [source refresh](/build/build/models/source-refresh.md).
+          # Models - Configure a [source refresh](/build/build/models/data-refresh.md).
           # Metrics View - Set the [first day of the week](metrics-view.md) for timeseries aggregations to be Sunday along with setting the smallest_time_grain.
           # Explore Dashboards - Set the [default](explore-dashboards.md) values when a user opens a dashboard, and available time zones and/or time ranges.
           models:
@@ -112,7 +112,7 @@ allOf:
       ```bash
       variable=xyz
       ```
-      Similar to how [connector credentials can be pushed / pulled](/build/credentials/credentials.md#pulling-credentials-and-variables-from-a-deployed-project-on-rill-cloud) from local to cloud or vice versa, project variables set locally in Rill Developer can be pushed to Rill Cloud and/or pulled back to your local instance from your deployed project by using the `rill env push` and `rill env pull` commands respectively.
+      Similar to how [connector credentials can be pushed / pulled](/connect/credentials.md#pulling-credentials-and-variables-from-a-deployed-project-on-rill-cloud) from local to cloud or vice versa, project variables set locally in Rill Developer can be pushed to Rill Cloud and/or pulled back to your local instance from your deployed project by using the `rill env push` and `rill env pull` commands respectively.
       :::
     type: object
     properties:
@@ -147,7 +147,7 @@ allOf:
           type: string
   - title: Testing access policies
     description: |
-      During development, it is always a good idea to check if your [access policies](/manage/security.md) are behaving the way you designed them to before pushing these changes into production. You can set mock users which enables a drop down in the dashboard preview to view as a specific user. 
+      During development, it is always a good idea to check if your [access policies](/build/metrics-view/security) are behaving the way you designed them to before pushing these changes into production. You can set mock users which enables a drop down in the dashboard preview to view as a specific user. 
       :::info The View as selector is not visible in my dashboard, why?
       This feature is _only_ enabled when you have set a security policy on the dashboard. By default, the dashboard and it's contents is viewable by every user.
       :::
@@ -165,6 +165,11 @@ allOf:
             groups:
               - partners
           - email: anon@unknown.com
+          - email: embed@rilldata.com
+            name: embed
+            custom_variable_1: Value_1
+            custom_variable_2: Value_2
+            
         items:
           type: object
           properties:

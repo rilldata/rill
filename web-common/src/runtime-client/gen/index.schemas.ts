@@ -1708,6 +1708,11 @@ export interface V1ModelSpec {
   stageProperties?: V1ModelSpecStageProperties;
   outputConnector?: string;
   outputProperties?: V1ModelSpecOutputProperties;
+  /** retry is optional. */
+  retryAttempts?: number;
+  retryDelaySeconds?: number;
+  retryExponentialBackoff?: boolean;
+  retryIfErrorMatches?: string[];
   changeMode?: V1ModelChangeMode;
   tests?: V1ModelTest[];
   trigger?: boolean;
@@ -2552,6 +2557,7 @@ export type RuntimeServiceRenameFileBody = {
 
 export type RuntimeServiceUnpackEmptyBody = {
   displayName?: string;
+  olap?: string;
   force?: boolean;
 };
 

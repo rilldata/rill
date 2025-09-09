@@ -2,6 +2,7 @@
 title: "Set up MCP and more!"
 sidebar_label: "MCP Setup and Customization"
 hide_table_of_contents: false
+sidebar_position: 20
 tags:
     - Quickstart
     - Tutorial
@@ -35,7 +36,14 @@ Depending on your client application, paste the config from step 1.
 - [Cursor Documentation](https://docs.cursor.com/context/model-context-protocol)
 - [Windsurf Documentation](https://docs.windsurf.com/windsurf/cascade/mcp)
 
+### Working with OpenAI's ChatGPT
 
+To use Rill with OpenAI's ChatGPT, you'll need to follow the same steps as above to set up your MCP connection. Once that's done, you can start querying your Rill metrics directly from ChatGPT interfaces.
+
+- Import your remote MCP servers directly in [ChatGPT settings](https://chatgpt.com/#settings) or in the desktop application navigate to settings by clicking on your profile picture in the bottom left corner.
+- Connect your server in the Connectors tab. You may have to add the server as a source with the create button.
+
+> Note: You may need at least the `Plus` plan to access connectors.
 
 ## Step 3: Start Querying your Agent about your Rill metrics.
 

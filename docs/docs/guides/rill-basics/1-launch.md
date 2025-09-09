@@ -11,7 +11,7 @@ tags:
   - Getting Started
 ---
 :::note prerequisites
-You need to [install Rill](https://docs.rilldata.com/home/install). 
+You need to [install Rill](https://docs.rilldata.com/get-started/install). 
 
 ```bash
 curl https://rill.sh | sh
@@ -19,7 +19,7 @@ curl https://rill.sh | sh
 
 :::
 
-The goal of this six-part tutorial is to get started with Rill and deploy your project to Rill Cloud. Upon deployment, your [30-day trial will start](/other/account-management/billing#trial-plan). Each course will build upon the previous one, allowing you to have a fully functioning project with many of our advanced features. This tutorial can be used in tandem with our documentation to ensure you have up-to-date information.
+The goal of this six-part tutorial is to get started with Rill and deploy your project to Rill Cloud. Upon deployment, your [30-day trial will start](/other/plans#trial-plan). Each course will build upon the previous one, allowing you to have a fully functioning project with many of our advanced features. This tutorial can be used in tandem with our documentation to ensure you have up-to-date information.
 
 
 ## Start Rill Developer
@@ -29,7 +29,7 @@ rill start my-rill-tutorial
 ```
 
 :::tip
-While we support macOS and Linux, you can also get Rill Developer running on a [Windows machine via WSL](https://docs.rilldata.com/home/install#rill-on-windows-using-wsl). If you are having any issues installing or starting Rill, please see our [installation page](https://docs.rilldata.com/home/install). 
+While we support macOS and Linux, you can also get Rill Developer running on a [Windows machine via WSL](https://docs.rilldata.com/get-started/install#rill-on-windows-using-wsl). If you are having any issues installing or starting Rill, please see our [installation page](https://docs.rilldata.com/get-started/install). 
 
 :::
 
@@ -51,7 +51,7 @@ localhost:9009
 Welcome to Rill Developer!
 
 :::note What is Rill Developer? 
-Rill Developer is used to develop your Rill project, as editing in Rill Cloud is not yet available. In Rill Developer, you will create connections to your source files, perform last-mile ETL, define metrics in the metrics layer, and finally create a dashboard. For more details on the differences between Rill Developer and Rill Cloud, see our documentation [here](/home/concepts/cloud-vs-developer)
+Rill Developer is used to develop your Rill project, as editing in Rill Cloud is not yet available. In Rill Developer, you will create connections to your source files, perform last-mile ETL, define metrics in the metrics layer, and finally create a dashboard. For more details on the differences between Rill Developer and Rill Cloud, see our documentation [here](/get-started/concepts/cloud-vs-developer)
 :::
 
 <img src = '/img/tutorials/rill-basics/new-rill-project.png' class='rounded-gif' />

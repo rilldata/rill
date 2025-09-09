@@ -15,7 +15,7 @@ import (
 
 // testCtx provides authentication context for testing
 func testCtx() context.Context {
-	return auth.WithOpen(context.Background())
+	return auth.WithClaims(context.Background(), auth.NewOpenClaims())
 }
 
 func newMCPTestServer(t *testing.T) (*Server, string) {
@@ -62,8 +62,6 @@ func TestMCPListTools(t *testing.T) {
 		"get_metrics_view",
 		"query_metrics_view",
 		"query_metrics_view_summary",
-		"search",
-		"fetch",
 	}
 
 	require.Len(t, tools, len(expectedToolNames))

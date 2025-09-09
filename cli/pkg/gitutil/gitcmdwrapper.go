@@ -148,6 +148,40 @@ func RunGitPull(ctx context.Context, path string, discardLocal bool, remote, rem
 	return "", nil
 }
 
+func RunGitPush(ctx context.Context, path, remoteName, branchName string, force bool) error {
+	var cmd *exec.Cmd
+	if force {
+		cmd = exec.CommandContext(ctx, "git", "-C", path, "push", "--force", remoteName, branchName)
+	} else {
+		cmd = exec.CommandContext(ctx, "git", "-C", path, "push", remoteName, branchName)
+	}
+	if err := cmd.Run(); err != nil {
+		var execErr *exec.ExitError
+		if errors.As(err, &execErr) {
+			return fmt.Errorf("git push failed: %s", string(execErr.Stderr))
+		}
+		return fmt.Errorf("git push failed: %w", err)
+	}
+	return nil
+}
+
+func InferGitRepoRoot(path string) (string, error) {
+	cmd := exec.Command("git", "-C", path, "rev-parse", "--show-toplevel")
+	data, err := cmd.Output()
+	if err != nil {
+		var execErr *exec.ExitError
+		if !errors.As(err, &execErr) {
+			return "", err
+		}
+		errStr := strings.TrimSpace(string(execErr.Stderr))
+		if strings.Contains(errStr, "not a git repository") {
+			return "", ErrNotAGitRepository
+		}
+		return "", errors.New(string(execErr.Stderr))
+	}
+	return strings.TrimSpace(string(data)), nil
+}
+
 // countCommitsAhead counts the number of commits in `from` branch not present in `to` branch.
 func countCommitsAhead(path, to, from string) (int32, error) {
 	cmd := exec.Command("git", "-C", path, "rev-list", "--count", fmt.Sprintf("%s..%s", to, from))

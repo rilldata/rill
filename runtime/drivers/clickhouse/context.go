@@ -2,7 +2,6 @@ package clickhouse
 
 import (
 	"context"
-	"log"
 	"maps"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
@@ -32,22 +31,18 @@ func connFromContext(ctx context.Context) *sqlx.Conn {
 // sessionAwareContext sets a session_id in context which is used to tie queries to a certain session.
 // This is used to use certain session aware features like temporary tables.
 func (c *Connection) sessionAwareContext(ctx context.Context) context.Context {
-	log.Printf("sessionAwareContext called with protocol: %v", c.opts.Protocol)
-	if c.opts.Protocol == clickhouse.HTTP {
-		log.Printf("Using HTTP protocol, creating session settings")
-		var settings map[string]any
-		if len(c.opts.Settings) == 0 {
-			settings = make(map[string]any)
-		} else {
-			settings = maps.Clone(c.opts.Settings)
-		}
-		settings["session_id"] = uuid.New().String()
-		log.Printf("ClickHouse session settings: %+v", settings)
-		return clickhouse.Context(ctx, clickhouse.WithSettings(settings))
+	if c.opts.Protocol == clickhouse.Native {
+		// native protocol already has session context
+		return ctx
 	}
-	log.Printf("Using native protocol, no session settings needed")
-	// native protocol already has session context
-	return ctx
+	var settings map[string]any
+	if len(c.opts.Settings) == 0 {
+		settings = make(map[string]any)
+	} else {
+		settings = maps.Clone(c.opts.Settings)
+	}
+	settings["session_id"] = uuid.New().String()
+	return clickhouse.Context(ctx, clickhouse.WithSettings(settings))
 }
 
 // contextWithQueryID adds the current trace ID as a query ID to the context.

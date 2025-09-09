@@ -58,11 +58,6 @@ func (s *Server) newMCPServer() *server.MCPServer {
 		server.WithInstructions(mcpInstructions),
 	)
 
-	// OpenAi Required tools
-	// To work with ChatGPT Connectors or deep research: https://platform.openai.com/docs/mcp#create-an-mcp-server
-	mcpServer.AddTool(s.mcpSearch())
-	mcpServer.AddTool(s.mcpFetch())
-
 	// Rill capabilities
 	mcpServer.AddTool(s.mcpListMetricsViews())
 	mcpServer.AddTool(s.mcpGetMetricsView())
@@ -367,58 +362,6 @@ Example: Get the top 10 demographic segments (by country, gender, and age group)
 		}
 
 		return mcp.NewToolResultText(string(data)), nil
-	}
-
-	return tool, handler
-}
-
-type searchResult struct {
-	ID    string `json:"id"`
-	Title string `json:"title"`
-	Text  string `json:"text"`
-	URL   string `json:"url"`
-}
-
-type fetchResult struct {
-	ID       string         `json:"id"`
-	Title    string         `json:"title"`
-	Text     string         `json:"text"`
-	URL      string         `json:"url"`
-	Metadata map[string]any `json:"metadata"`
-}
-
-// mcpSearch returns a list of potentially relevant search results from the data set exposed by the MCP server.
-func (s *Server) mcpSearch() (mcp.Tool, server.ToolHandlerFunc) {
-	tool := mcp.NewTool("search",
-		mcp.WithDescription("Search for information (unimplemented)"),
-		mcp.WithString("query",
-			mcp.Required(),
-			mcp.Description("Search query"),
-		),
-	)
-
-	handler := func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		results := []searchResult{}
-
-		return mcpNewToolResultJSON(results)
-	}
-
-	return tool, handler
-}
-
-// mcpFetch is used to retrieve the full contents of a search result document or item
-func (s *Server) mcpFetch() (mcp.Tool, server.ToolHandlerFunc) {
-	tool := mcp.NewTool("fetch",
-		mcp.WithDescription("Fetch information by unique ID (unimplemented)"),
-		mcp.WithString("id",
-			mcp.Required(),
-			mcp.Description("Unique ID of the document to fetch"),
-		),
-	)
-
-	handler := func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		result := fetchResult{}
-		return mcpNewToolResultJSON(result)
 	}
 
 	return tool, handler

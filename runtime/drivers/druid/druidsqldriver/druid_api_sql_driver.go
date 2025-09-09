@@ -457,6 +457,7 @@ type DruidQueryContext struct {
 	EnableTimeBoundaryPlanning bool   `json:"enableTimeBoundaryPlanning"`
 	UseCache                   *bool  `json:"useCache,omitempty"`
 	PopulateCache              *bool  `json:"populateCache,omitempty"`
+	Priority                   int    `json:"priority,omitempty"`
 }
 
 type DruidParameter struct {
@@ -482,9 +483,11 @@ func newDruidRequest(query string, args []driver.NamedValue, queryCfg *QueryConf
 		}
 	}
 	var useCache, populateCache *bool
+	priority := 0
 	if queryCfg != nil {
 		useCache = queryCfg.UseCache
 		populateCache = queryCfg.PopulateCache
+		priority = queryCfg.Priority
 	}
 	return &DruidRequest{
 		Query:          query,
@@ -497,6 +500,7 @@ func newDruidRequest(query string, args []driver.NamedValue, queryCfg *QueryConf
 			EnableTimeBoundaryPlanning: true,
 			UseCache:                   useCache,
 			PopulateCache:              populateCache,
+			Priority:                   priority,
 		},
 	}
 }
@@ -512,6 +516,7 @@ func (s *stmt) Query(args []driver.Value) (driver.Rows, error) {
 type QueryConfig struct {
 	UseCache      *bool
 	PopulateCache *bool
+	Priority      int
 }
 
 type queryCfgCtxKey struct{}

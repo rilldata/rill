@@ -9,7 +9,7 @@ Creating user groups in Rill allows administrators to easily grant permission to
 ## Managing User groups Permissions
 There are two ways to set up user groups in Rill.
 
-1. Administrator via Rill Cloud (Coming soon!)
+1. Administrator via Rill Cloud
 2. Administrator via CLI 
 
 ### How to Manage User Groups in Rill Cloud

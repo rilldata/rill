@@ -40,7 +40,6 @@
   import Calendar from "@rilldata/web-common/components/icons/Calendar.svelte";
   import {
     constructAsOfString,
-    isUsingLegacyTime,
     constructNewString,
   } from "../../new-time-controls";
   import PrimaryRangeTooltip from "./PrimaryRangeTooltip.svelte";
@@ -58,6 +57,7 @@
   export let allowCustomTimeRange = true;
   export let availableTimeZones: string[];
   export let lockTimeZone = false;
+  export let showFullRange = true;
   export let onSelectTimeZone: (timeZone: string) => void;
   export let onSelectRange: (range: string) => void;
   export let onTimeGrainSelect: (grain: V1TimeGrain) => void;
@@ -76,20 +76,19 @@
     try {
       parsedTime = parseRillTime(timeString);
     } catch {
-      // This is not necessarily an error as the parser does not work with Legacy syntax
       parsedTime = undefined;
     }
   }
 
   $: hideTruncationSelector = parsedTime?.interval instanceof RillIsoInterval;
 
-  $: usingLegacyTime = isUsingLegacyTime(timeString);
+  $: usingLegacyTime = parsedTime?.isOldFormat;
 
   $: snapToEnd = usingLegacyTime ? true : !!parsedTime?.asOfLabel?.offset;
   $: ref = usingLegacyTime ? "latest" : (parsedTime?.asOfLabel?.label ?? "now");
 
   $: truncationGrain = usingLegacyTime
-    ? timeString?.startsWith("rill")
+    ? timeString?.startsWith("rill") && !timeString.endsWith("C")
       ? V1TimeGrain.TIME_GRAIN_DAY
       : getSmallestGrainFromISODuration(timeString ?? "PT1M")
     : parsedTime?.asOfLabel?.snap
@@ -224,12 +223,12 @@
     }
   }}
 >
-  <Popover.Trigger asChild let:builder id="super-pill-trigger">
+  <Popover.Trigger asChild let:builder id="super-pill-trigger-{context}">
     <Tooltip.Root openDelay={800}>
       <Tooltip.Trigger
         asChild
         let:builder={tooltipBuilder}
-        id="super-pill-trigger"
+        id="super-pill-trigger-{context}"
       >
         <button
           use:builderActions={{ builders: [builder, tooltipBuilder] }}
@@ -247,13 +246,15 @@
             </b>
           {/if}
 
-          <RangeDisplay {interval} />
+          {#if showFullRange}
+            <RangeDisplay {interval} />
 
-          <div
-            class="font-bold bg-gray-100 rounded-[2px] p-1 py-0 text-gray-600 text-[11px]"
-          >
-            {zoneAbbreviation}
-          </div>
+            <div
+              class="font-bold bg-gray-100 rounded-[2px] p-1 py-0 text-gray-600 text-[11px]"
+            >
+              {zoneAbbreviation}
+            </div>
+          {/if}
 
           <span class="flex-none transition-transform" class:-rotate-180={open}>
             <CaretDownIcon />

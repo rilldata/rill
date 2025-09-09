@@ -8,9 +8,9 @@ import {
 import { makeDotEnvConnectorKey } from "../connectors/code-utils";
 import { sanitizeEntityName } from "../entity-management/name-utils";
 
-// Helper text that we put at the top of every Source YAML file
-const TOP_OF_FILE = `# Source YAML
-# Reference documentation: https://docs.rilldata.com/reference/project-files/sources
+// Helper text that we put at the top of every Model YAML file
+const SOURCE_MODEL_FILE_TOP = `# Model YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/models
 
 type: model
 materialize: true`;
@@ -36,6 +36,7 @@ export function compileSourceYAML(
   // Compile key value pairs
   const compiledKeyValues = Object.keys(formValues)
     .filter((key) => {
+      // For source files, exclude user-provided name since we use connector type
       if (key === "name") return false;
       const value = formValues[key];
       if (value === undefined) return false;
@@ -48,10 +49,7 @@ export function compileSourceYAML(
 
       const isSecretProperty = secretPropertyKeys.includes(key);
       if (isSecretProperty) {
-        // In Source YAML, explictly referencing `.env` secrets is not yet supported
-        // For now, `.env` secrets are implicitly referenced
-        return;
-
+        // For source files, we include secret properties
         return `${key}: "{{ .env.${makeDotEnvConnectorKey(
           connector.name as string,
           key,
@@ -75,16 +73,14 @@ export function compileSourceYAML(
     })
     .join("\n");
 
-  // Return the compiled YAML
   return (
-    `${TOP_OF_FILE}\n\nconnector: "${connector.name}"\n` + compiledKeyValues
+    `${SOURCE_MODEL_FILE_TOP}\n\nconnector: ${connector.name}\n\n` +
+    compiledKeyValues
   );
 }
 
 export function compileLocalFileSourceYAML(path: string) {
-  return `${TOP_OF_FILE}\n\nconnector: "duckdb"\nsql: "${buildDuckDbQuery(
-    path,
-  )}"`;
+  return `${SOURCE_MODEL_FILE_TOP}\n\nconnector: duckdb\nsql: "${buildDuckDbQuery(path)}"`;
 }
 
 function buildDuckDbQuery(path: string): string {
@@ -202,6 +198,37 @@ export function maybeRewriteToDuckDb(
   }
 
   return [connectorCopy, formValues];
+}
+
+/**
+ * Process form data for sources, including DuckDB rewrite logic and placeholder handling.
+ * This serves as a single source of truth for both preview and submission.
+ */
+export function prepareSourceFormData(
+  connector: V1ConnectorDriver,
+  formValues: Record<string, unknown>,
+): [V1ConnectorDriver, Record<string, unknown>] {
+  // Create a copy of form values to avoid mutating the original
+  const processedValues = { ...formValues };
+
+  // Handle placeholder values for required source properties
+  if (connector.sourceProperties) {
+    for (const prop of connector.sourceProperties) {
+      if (prop.key && prop.required && !(prop.key in processedValues)) {
+        if (prop.placeholder) {
+          processedValues[prop.key] = prop.placeholder;
+        }
+      }
+    }
+  }
+
+  // Apply DuckDB rewrite logic
+  const [rewrittenConnector, rewrittenFormValues] = maybeRewriteToDuckDb(
+    connector,
+    processedValues,
+  );
+
+  return [rewrittenConnector, rewrittenFormValues];
 }
 
 export function getFileExtension(source: V1Source): string {

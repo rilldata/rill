@@ -26,7 +26,7 @@ postgresql://postgres_user:postgres_pass@localhost:5432/postgres_db
 
 ## Local credentials
 
-When using Rill Developer on your local machine, you will need to provide your credentials via a connector file. We would recommend not using plain text to create your file and instead use the `.env` file. For more details on your connector, see [connector YAML](/reference/project-files/connectors#postgresql) for more details.
+When using Rill Developer on your local machine, you will need to provide your credentials via a connector file. We would recommend not using plain text to create your file and instead use the `.env` file. For more details on your connector, see [connector YAML](/reference/project-files/connectors/#postgres) for more details.
 
 :::tip Updating the project environmental variable
 
@@ -39,6 +39,12 @@ rill env pull
 Or, if its your first deployment, Rill will automatically deploy the .env into your Rill project.
 
 :::
+
+## Separating Dev and Prod Environments
+
+When ingesting data locally, consider setting parameters in your connector file to limit how much data is retrieved, since costs can scale with the data source. This also helps other developers clone the project and iterate quickly by reducing ingestion time.
+
+For more details, see our [Dev/Prod setup docs](/connect/templating).
 
 ## Cloud deployment
 

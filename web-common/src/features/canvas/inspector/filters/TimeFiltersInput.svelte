@@ -89,6 +89,7 @@
   {#if localFiltersEnabled}
     <div class="flex flex-row flex-wrap pt-2 gap-y-1.5 items-center">
       <SuperPill
+        context="filters-input"
         allTimeRange={$allTimeRange}
         {selectedRangeAlias}
         showPivot={!showGrain}

@@ -2,7 +2,7 @@
 title: "Connect to your Data"
 description: Import local files or remote data sources
 sidebar_label: "Connectors"
-sidebar_position: 00
+sidebar_position: 0
 toc_max_heading_level: 3
 className: connect-connect
 ---
@@ -17,20 +17,15 @@ Rill offers flexible connection strategies to fit different data architectures a
 
 - ### _[Rill Managed OLAP + Data Ingestion (Default)](/connect/data-source)_:
   
-  Use Rill's embedded **ClickHouse / DuckDB** (depending on size of data) as the OLAP engine and ingest data from external sources.  Full Rill functionality with some caveats depending which embedded engine you select. 
+  Use Rill's embedded **ClickHouse / DuckDB** (depending on size of data) as the OLAP engine and ingest data from external sources. Full Rill functionality is available with [some caveats](/connect/data-source#managed-olap-engine-caveats) depending on which embedded engine you select.
  
       :::tip Rill Defaults with DuckDB
-      When starting Rill for the first time, Rill will autopopulate the connector with a `duckdb.yaml`. To use ClickHouse, create a managed ClickHouse connector, `clickhouse.yaml` with `managed: true`. For more information, see our [ClickHouse](/connect/olap/clickhouse) docs.
-
+      When starting Rill for the first time, Rill will auto-populate the connector with a `duckdb.yaml`. To use ClickHouse, create a managed ClickHouse connector by selecting "Add Data", then ClickHouse, and finally "Rill-managed ClickHouse" in the UI. For more information, see [Rill Managed ClickHouse](/connect/olap/clickhouse#rill-managed-clickhouse).
       :::
 
 - ### _[Bring Your Own OLAP (BYO OLAP)](/connect/olap)_: 
   
-  Large-scale datasets (100GB+) or existing OLAP infrastructure Connect to existing **ClickHouse**, **Druid**, **Pinot**, or **MotherDuck** instances. Use Rill's "live connectors" to ingest data directly into your OLAP engines.
-
-    :::note Modeling on BYO-OLAP
-    Some modeling features may be limited depending on the engine.
-    :::
+  For large-scale datasets (100GB+) or existing [OLAP infrastructure](/connect/olap#what-is-olap), connect to existing **ClickHouse**, **Druid**, **Pinot**, or **MotherDuck** instances. Use Rill's "live connectors" to ingest data directly into your OLAP engines.
 
 ## OLAP Engines
 
@@ -87,7 +82,7 @@ Rill is continually evaluating additional OLAP engines that can be added. For a 
 :::
 
 
-## Data Warehouse
+## Data Warehouses
 
 ### Athena
 ### BigQuery
@@ -166,9 +161,11 @@ Rill is continually evaluating additional OLAP engines that can be added. For a 
 
 ## Object Storage
 
-### Azure
-### Google Cloud Storage
 ### Amazon S3
+### Google Cloud Storage
+### Microsoft Azure Blob Storage
+
+
 
 <div className="connector-icon-grid">
 
@@ -180,6 +177,15 @@ Rill is continually evaluating additional OLAP engines that can be added. For a 
     linkLabel="Learn more"
     referenceLink="s3"
   />
+    <ConnectorIcon
+    icon={<img src="/img/connect/icons/Logo-GCS.svg" alt="Google Cloud Storage" />}
+    header="Google Cloud Storage"
+    content="Google Cloud Storage provides scalable object storage and data lakes."
+    link="/connect/data-source/gcs"
+    linkLabel="Learn more"
+    referenceLink="gcs"
+  />
+
   <ConnectorIcon
     icon={<img src="/img/connect/icons/Logo-Azure.svg" alt="Microsoft Azure" />}
     header="Azure"
@@ -188,26 +194,27 @@ Rill is continually evaluating additional OLAP engines that can be added. For a 
     linkLabel="Learn more"
     referenceLink="azure"
   />
-  <ConnectorIcon
-    icon={<img src="/img/connect/icons/Logo-GCS.svg" alt="Google Cloud Storage" />}
-    header="Google Cloud Storage"
-    content="Google Cloud Storage for scalable object storage and data lakes."
-    link="/connect/data-source/gcs"
-    linkLabel="Learn more"
-    referenceLink="gcs"
-  />
 
 
 </div>
 
 ## Other Data Connectors
 
+### Google Sheets
 ### HTTPS
 ### Local File
 ### Salesforce
 
 
 <div className="connector-icon-grid">
+
+  <ConnectorIcon
+    icon={<img src="/img/connect/icons/Logo-Sheets.svg" alt="Google Sheets" className="sheets-icon" />}
+    header="Google Sheets"
+    content="Connect to public Google Sheets to read data from spreadsheets with support for multiple sheets."
+    link="/connect/data-source/googlesheets"
+    linkLabel="Learn more"
+  />
   <ConnectorIcon
     icon={<p className="https-icon">https:// </p>}
     header="HTTPS"
@@ -216,7 +223,6 @@ Rill is continually evaluating additional OLAP engines that can be added. For a 
     linkLabel="Learn more"
     referenceLink="https"
   />
-
   <ConnectorIcon
     icon={<img src="/img/connect/icons/Logo-Local.svg" alt="Local File" />}
     header="Local File"
@@ -234,13 +240,6 @@ Rill is continually evaluating additional OLAP engines that can be added. For a 
     referenceLink="salesforce"
   />
 
-  <ConnectorIcon
-    icon={<img src="/img/connect/icons/Logo-Sheets.svg" alt="Google Sheets" className="sheets-icon" />}
-    header="Google Sheets"
-    content="Connect to public Google Sheets to read data from spreadsheets with support for multiple sheets."
-    link="/connect/data-source/googlesheets"
-    linkLabel="Learn more"
-  />
 </div>
 
 :::tip Missing a connector?
@@ -249,11 +248,19 @@ We're constantly adding new data connectors. If you don't see what you need, [le
 
 ## Other Integrations
 
-### Google Sheets
+### Open AI
 ### Slack
 
-<div className="connector-icon-grid">
 
+<div className="connector-icon-grid">
+  <ConnectorIcon
+    icon={<img src="/img/connect/icons/Logo-AI.svg" alt="AI" className="sheets-icon" />}
+    header="AI"
+    content="Define your own OpenAI Connector and define your own API key."
+    link="/build/metrics-view/#creating-metric-views-with-ai"
+    linkLabel="Learn more"
+    referenceLink="ai"
+  />
   <ConnectorIcon
     icon={<img src="/img/connect/icons/Logo-Slack.svg" alt="Slack" className="sheets-icon" />}
     header="Slack"
@@ -262,14 +269,6 @@ We're constantly adding new data connectors. If you don't see what you need, [le
     linkLabel="Learn more"
     referenceLink="slack"
   />
-
-  <ConnectorIcon
-    icon={<img src="/img/connect/icons/Logo-AI.svg" alt="AI" className="sheets-icon" />}
-    header="AI"
-    content="Define your own OpenAI Connector and define your own API key."
-    link="/build/metrics-view/#creating-metrics-with-ai"
-    linkLabel="Learn more"
-    referenceLink="ai"
-  />
 </div>
+
 
