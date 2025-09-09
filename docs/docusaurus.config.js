@@ -493,6 +493,18 @@ const config = {
             from: '/deploy/performance',
             to: '/guides/performance'
           },
+          {
+            from: '/deploy/deploy-dashboard/github-101',
+            to: '/deploy/github-101'
+          },
+          {
+            from: '/deploy/deploy-dashboard/deploy-from-cli',
+            to: '/deploy/deploy-from-cli'
+          },
+          {
+            from: '/deploy/deploy-dashboard/deploy-dashboard',
+            to: '/deploy/deploy-dashboard'
+          },
           // {
           //   from: '/old-page',
           //   to: '/new-page',
