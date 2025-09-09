@@ -291,6 +291,8 @@ export function toggleDimensionFilterValue(
   } else if (!skipToggling) {
     expr.cond.exprs.splice(inIdx, 1);
     return inIdx;
+  } else {
+    return -1;
   }
 }
 
