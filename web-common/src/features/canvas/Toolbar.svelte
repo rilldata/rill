@@ -12,6 +12,7 @@
   export let onDuplicate: () => void;
   export let editable = false;
   export let component: BaseCanvasComponent;
+  export let navigationEnabled: boolean = true;
 
   // Component types that support link to explore functionality
   const EXPLORE_SUPPORTED_TYPES = [
@@ -29,7 +30,9 @@
     "heatmap",
   ] as const;
 
-  $: showExplore = EXPLORE_SUPPORTED_TYPES.includes(component.type as any);
+  $: showExplore =
+    navigationEnabled &&
+    EXPLORE_SUPPORTED_TYPES.includes(component.type as any);
   $: exploreComponent = showExplore
     ? (component as BaseCanvasComponent<ComponentWithMetricsView>)
     : null;
