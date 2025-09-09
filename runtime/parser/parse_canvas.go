@@ -25,7 +25,7 @@ type CanvasYAML struct {
 	GapY                 uint32                 `yaml:"gap_y"`
 	Theme                yaml.Node              `yaml:"theme"` // Name (string) or inline theme definition (map)
 	AllowCustomTimeRange *bool                  `yaml:"allow_custom_time_range"`
-	AllowFilterAdd       *bool                  `yaml:"allow_filter_add"` 
+	AllowFilterAdd       *bool                  `yaml:"allow_filter_add"`
 	TimeRanges           []ExploreTimeRangeYAML `yaml:"time_ranges"`
 	TimeZones            []string               `yaml:"time_zones"`
 	Filters              struct {
