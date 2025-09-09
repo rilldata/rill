@@ -385,7 +385,9 @@ func SetRemote(path string, config *Config) error {
 }
 
 func IsGitRepo(path string) bool {
-	_, err := git.PlainOpen(path)
+	_, err := git.PlainOpenWithOptions(path, &git.PlainOpenOptions{
+		DetectDotGit: true,
+	})
 	return err == nil
 }
 
