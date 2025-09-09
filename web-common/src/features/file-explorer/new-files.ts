@@ -40,10 +40,10 @@ export function getPathForNewResourceFile(
   const allNames =
     newKind === ResourceKind.Source || newKind === ResourceKind.Model
       ? // sources and models share the name
-      [
-        ...fileArtifacts.getNamesForKind(ResourceKind.Source),
-        ...fileArtifacts.getNamesForKind(ResourceKind.Model),
-      ]
+        [
+          ...fileArtifacts.getNamesForKind(ResourceKind.Source),
+          ...fileArtifacts.getNamesForKind(ResourceKind.Model),
+        ]
       : fileArtifacts.getNamesForKind(newKind);
 
   const { folderName, extension } = ResourceKindMap[newKind];
