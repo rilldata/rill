@@ -16,3 +16,4 @@ ai_connector: mock_ai
 
 features:
 - chat
+- cloudDataViewer
