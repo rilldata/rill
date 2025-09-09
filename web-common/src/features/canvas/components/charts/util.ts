@@ -1,5 +1,7 @@
 import type { CartesianChartSpec } from "@rilldata/web-common/features/canvas/components/charts/cartesian-charts/CartesianChart";
+import type { ComboChartSpec } from "@rilldata/web-common/features/canvas/components/charts/combo-charts/ComboChart";
 import type { HeatmapChartSpec } from "@rilldata/web-common/features/canvas/components/charts/heatmap-charts/HeatmapChart";
+import type { ColorMapping } from "@rilldata/web-common/features/canvas/inspector/types";
 import { COMPARIONS_COLORS } from "@rilldata/web-common/features/dashboards/config";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
 import { adjustOffsetForZone } from "@rilldata/web-common/lib/convertTimestampPreview";
@@ -12,12 +14,12 @@ import {
 import merge from "deepmerge";
 import type { Config } from "vega-lite";
 import { CHART_CONFIG, type ChartSpec } from "./";
-import type {
-  ChartDataResult,
-  ChartDomainValues,
-  ChartSortDirection,
-  ChartType,
-  FieldConfig,
+import {
+  type ChartDataResult,
+  type ChartDomainValues,
+  type ChartSortDirection,
+  type ChartType,
+  type FieldConfig,
 } from "./types";
 
 export function isFieldConfig(field: unknown): field is FieldConfig {
@@ -28,6 +30,11 @@ export function isFieldConfig(field: unknown): field is FieldConfig {
     "field" in field
   );
 }
+
+export function isMultiFieldConfig(field: unknown): field is FieldConfig {
+  return isFieldConfig(field) && !!field.fields && field.fields.length > 0;
+}
+
 export function generateSpec(
   chartType: ChartType,
   rillChartSpec: ChartSpec,
@@ -70,9 +77,9 @@ export interface FieldsByType {
 }
 
 export function getFieldsByType(spec: ChartSpec): FieldsByType {
-  let measures: string[] = [];
-  const dimensions: string[] = [];
-  const timeDimensions: string[] = [];
+  const measures = new Set<string>();
+  const dimensions = new Set<string>();
+  const timeDimensions = new Set<string>();
 
   // Recursively check all properties for FieldConfig objects
   const checkFields = (obj: unknown): void => {
@@ -84,16 +91,26 @@ export function getFieldsByType(spec: ChartSpec): FieldsByType {
     if (isFieldConfig(obj)) {
       const type = obj.type as string;
       const field = obj.field;
+      const fields = obj.fields;
 
       switch (type) {
         case "quantitative":
-          measures.push(field);
+          measures.add(field);
+          if (fields) {
+            fields.forEach((f) => measures.add(f));
+          }
           break;
         case "nominal":
-          dimensions.push(field);
+          dimensions.add(field);
+          if (fields) {
+            fields.forEach((f) => dimensions.add(f));
+          }
           break;
         case "temporal":
-          timeDimensions.push(field);
+          timeDimensions.add(field);
+          if (fields) {
+            fields.forEach((f) => timeDimensions.add(f));
+          }
           break;
       }
       return;
@@ -108,13 +125,10 @@ export function getFieldsByType(spec: ChartSpec): FieldsByType {
 
   checkFields(spec);
 
-  if ("measures" in spec && Array.isArray(spec.measures)) {
-    measures = spec.measures;
-  }
   return {
-    measures,
-    dimensions,
-    timeDimensions,
+    measures: Array.from(measures),
+    dimensions: Array.from(dimensions),
+    timeDimensions: Array.from(timeDimensions),
   };
 }
 
@@ -145,7 +159,7 @@ export function adjustDataForTimeZone(
  */
 export function vegaSortToAggregationSort(
   encoder: "x" | "y",
-  config: CartesianChartSpec | HeatmapChartSpec,
+  config: CartesianChartSpec | HeatmapChartSpec | ComboChartSpec,
   defaultSort: ChartSortDirection,
 ): V1MetricsViewAggregationSort | undefined {
   const encoderConfig = config[encoder];
@@ -171,7 +185,11 @@ export function vegaSortToAggregationSort(
       break;
     case "y":
     case "-y":
-      field = config.y?.field;
+      if ("y" in config) {
+        field = config.y?.field;
+      } else if ("y1" in config) {
+        field = config.y1?.field;
+      }
       desc = sort === "-y";
       break;
     case "color":
@@ -262,8 +280,8 @@ export function isDomainStringArray(
 export function getColorForValues(
   colorValues: string[] | undefined,
   // if provided, use the colors for mentioned values
-  overrideColorMapping: { value: string; color: string }[] | undefined,
-): { value: string; color: string }[] | undefined {
+  overrideColorMapping: ColorMapping | undefined,
+): ColorMapping | undefined {
   if (!colorValues || colorValues.length === 0) return undefined;
 
   const colorMapping = colorValues.map((value, index) => {
@@ -284,13 +302,14 @@ export function getColorForValues(
 export function getColorMappingForChart(
   chartSpec: ChartSpec,
   domainValues: ChartDomainValues | undefined,
-): { value: string; color: string }[] | undefined {
+): ColorMapping | undefined {
   if (!("color" in chartSpec) || !domainValues) return undefined;
   const colorField = chartSpec.color;
 
-  let colorMapping: { value: string; color: string }[] | undefined;
-  if (isFieldConfig(colorField)) {
-    const colorValues = domainValues[colorField.field];
+  let colorMapping: ColorMapping | undefined;
+  if (typeof colorField === "object") {
+    const fieldKey = colorField.field;
+    const colorValues = domainValues[fieldKey];
     if (isDomainStringArray(colorValues)) {
       colorMapping = getColorForValues(colorValues, colorField.colorMapping);
     }

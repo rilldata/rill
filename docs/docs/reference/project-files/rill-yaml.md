@@ -55,7 +55,7 @@ In your `rill.yaml`, the top level property for the resource type needs to be **
 :::info Hierarchy of inheritance and property overrides
 As a general rule of thumb, properties that have been specified at a more _granular_ level will supercede or override higher level properties that have been inherited. Therefore, in order of inheritance, Rill will prioritize properties in the following order:
 1. Individual [models](models.md)/[metrics_views](metrics-views.md)/[explore](explore-dashboards.md) object level properties (e.g. `models.yaml` or `explore-dashboards.yaml`)
-2. [Environment](/docs/build/models/environments.md) level properties (e.g. a specific property that have been set for `dev`)
+2. [Environment](/docs/build/models/templating.md) level properties (e.g. a specific property that have been set for `dev`)
 3. [Project-wide defaults](#project-wide-defaults) for a specific property and resource type
 :::
 
@@ -162,7 +162,7 @@ ignore_paths:
 
 ## Testing access policies
 
-During development, it is always a good idea to check if your [access policies](/manage/security.md) are behaving the way you designed them to before pushing these changes into production. You can set mock users which enables a drop down in the dashboard preview to view as a specific user. 
+During development, it is always a good idea to check if your [access policies](/build/metrics-view/security.md) are behaving the way you designed them to before pushing these changes into production. You can set mock users which enables a drop down in the dashboard preview to view as a specific user. 
 :::info The View as selector is not visible in my dashboard, why?
 This feature is _only_ enabled when you have set a security policy on the dashboard. By default, the dashboard and it's contents is viewable by every user.
 :::

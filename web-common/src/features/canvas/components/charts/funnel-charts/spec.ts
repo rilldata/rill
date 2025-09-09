@@ -144,7 +144,7 @@ export function generateVLFunnelChartSpec(
       },
       color: {
         field: colorField,
-        type: colorType,
+        type: colorType === "value" ? "nominal" : colorType,
         legend: null,
       },
     },
@@ -191,7 +191,10 @@ export function generateVLFunnelChartSpec(
       },
       text: {
         field: config.measure?.field,
-        type: config.measure?.type || "quantitative",
+        type:
+          config.measure?.type === "value"
+            ? "nominal"
+            : config.measure?.type || "quantitative",
         ...(config.measure?.type === "quantitative" &&
           config.measure?.field && {
             formatType: sanitizeFieldName(config.measure.field),
