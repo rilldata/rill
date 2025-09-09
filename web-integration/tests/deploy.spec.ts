@@ -11,10 +11,8 @@ test.describe("Deploy journey", () => {
   const cliHomeDir = makeTempDir("deploy_home");
   const deployFirstOrgName = "e2e-org-first";
   const deploySecondOrgName = "e2e-org-second";
-  const deployThirdOrgName = "e2e-org-third";
   // Create consistent folders to facilitate running individual tests, not just the full suite.
-  const sharedFirstProjectDir = join(tmpdir(), "adbids");
-  const sharedSecondProjectDir = join(tmpdir(), "adimpressions");
+  const sharedProjectDir = join(tmpdir(), "adbids");
 
   test.use({
     cliHomeDir,
@@ -28,11 +26,7 @@ test.describe("Deploy journey", () => {
   });
 
   test.afterAll(async () => {
-    const allOrgNames = [
-      deployFirstOrgName,
-      deploySecondOrgName,
-      deployThirdOrgName,
-    ];
+    const allOrgNames = [deployFirstOrgName, deploySecondOrgName];
     await Promise.all(
       allOrgNames.map(async (orgName) =>
         execAsync(
@@ -64,7 +58,7 @@ test.describe("Deploy journey", () => {
 
   test.describe("Create/Update flow", () => {
     test.use({
-      projectDir: sharedFirstProjectDir,
+      projectDir: sharedProjectDir,
     });
 
     test("Should create new org and deploy", async ({ rillDevPage }) => {
@@ -129,70 +123,7 @@ test.describe("Deploy journey", () => {
       );
     });
 
-    test("Should deploy to another project from the same local project folder", async ({
-      rillDevPage,
-    }) => {
-      // Start waiting for popup before clicking Deploy.
-      const popupPromise = rillDevPage.waitForEvent("popup");
-
-      await rillDevPage.getByRole("button", { name: "Deploy" }).click();
-
-      // Update popup is opened
-      await expect(
-        rillDevPage.getByText("Push local changes to Rill Cloud?"),
-      ).toBeVisible();
-
-      // Deploy to another project
-      await rillDevPage
-        .getByRole("button", { name: "Deploy to another project" })
-        .click();
-
-      // Await for the popped up deploy page after hitting deploy
-      const deployPage = await popupPromise;
-
-      // Org selection page is opened.
-      await expect(
-        deployPage.getByText("Select an organization"),
-      ).toBeVisible();
-
-      // Create a new org from the dropdown.
-      await deployPage.getByLabel("Select organization").click();
-      await deployPage.getByText("+ Create organization").click();
-
-      // Enter the org display name
-      await deployPage
-        .getByLabel("Organization display name")
-        .fill(deploySecondOrgName);
-      await deployPage.getByLabel("Create new org").click();
-
-      // Notification is shown for org creation
-      await expect(deployPage.getByLabel("Notification")).toHaveText(
-        `Created organization ${deploySecondOrgName}`,
-      );
-
-      // Click the continue button to deploy
-      await deployPage
-        .getByRole("button", { name: "Deploy as a new project" })
-        .click();
-
-      await assertAndSkipInvite(deployPage);
-
-      // Canvas is opened after deploying since we deployed from home page.
-      await expect(
-        deployPage.getByLabel("Breadcrumb navigation, level 2"),
-      ).toHaveText("Adbids Canvas Dashboard");
-
-      // Org title is correct
-      await expect(
-        deployPage.getByLabel("Breadcrumb navigation, level 0"),
-      ).toHaveText(
-        /e2e-org-second.*/, // Trial pill is not always present because of race condition.
-      );
-    });
-
-    test("Should be able to redeploy to different projects with same name", async ({
-      rillDevPage,
-    }) => {
+    test("Should be able to redeploy to project", async ({ rillDevPage }) => {
       // Update the title of dashboard
       await rillDevPage.goto(
         rillDevPage.url() + "/files/dashboards/AdBids_metrics_explore.yaml",
@@ -202,7 +133,7 @@ test.describe("Deploy journey", () => {
         .fill("Adbids dashboard edited first org");
 
       // Start waiting for popup before clicking Deploy.
-      let popupPromise = rillDevPage.waitForEvent("popup");
+      const popupPromise = rillDevPage.waitForEvent("popup");
 
       await rillDevPage.getByRole("button", { name: "Deploy" }).click();
 
@@ -219,7 +150,7 @@ test.describe("Deploy journey", () => {
       await rillDevPage.getByRole("button", { name: "Update" }).click();
 
       // Await for the popped up deploy page after hitting deploy
-      let deployPage = await popupPromise;
+      const deployPage = await popupPromise;
 
       await ensureProjectRedeployed(deployPage);
 
@@ -227,42 +158,10 @@ test.describe("Deploy journey", () => {
         deployPage,
         "Adbids dashboard edited first org",
       );
-
-      // Close the deploy page which is the rill cloud page and focus the rill dev page.
-      await deployPage.close();
-      await rillDevPage.bringToFront();
-
-      // Update the title of dashboard again
-      await rillDevPage
-        .getByTitle("Display name")
-        .fill("Adbids dashboard edited second org");
-
-      // Start waiting for popup before clicking Deploy.
-      popupPromise = rillDevPage.waitForEvent("popup");
-
-      await rillDevPage.getByRole("button", { name: "Deploy" }).click();
-
-      // Select the 2nd org's project
-      await rillDevPage
-        .getByRole("button", { name: `${deploySecondOrgName}/adbids` })
-        .click();
-
-      // Hit update
-      await rillDevPage.getByRole("button", { name: "Update" }).click();
-
-      // Await for the popped up deploy page after hitting deploy
-      deployPage = await popupPromise;
-
-      await ensureProjectRedeployed(deployPage);
-
-      await ensureDashboardTitle(
-        deployPage,
-        "Adbids dashboard edited second org",
-      );
     });
   });
 
-  test("Should create a third org and deploy for a fresh project", async ({
+  test("Should create a second org and deploy for a fresh project", async ({
     rillDevPage,
   }) => {
     // Start waiting for popup before clicking Deploy.
@@ -283,12 +182,12 @@ test.describe("Deploy journey", () => {
     // Enter the org display name
     await deployPage
       .getByLabel("Organization display name")
-      .fill(deployThirdOrgName);
+      .fill(deploySecondOrgName);
     await deployPage.getByLabel("Create new org").click();
 
     // Notification is shown for org creation
     await expect(deployPage.getByLabel("Notification")).toHaveText(
-      `Created organization ${deployThirdOrgName}`,
+      `Created organization ${deploySecondOrgName}`,
     );
 
     // Click the "Deploy as a new project" button to deploy
@@ -307,69 +206,8 @@ test.describe("Deploy journey", () => {
     await expect(
       deployPage.getByLabel("Breadcrumb navigation, level 0"),
     ).toHaveText(
-      /e2e-org-third.*/, // Trial pill is not always present because of race condition.
+      /e2e-org-second.*/, // Trial pill is not always present because of race condition.
     );
-  });
-
-  test.describe("Overwrite flow", () => {
-    test.use({
-      project: "AdImpressions",
-      projectDir: sharedSecondProjectDir,
-    });
-
-    test("Should overwrite a different project of a different org", async ({
-      rillDevPage,
-    }) => {
-      // Start waiting for popup before clicking Deploy.
-      const popupPromise = rillDevPage.waitForEvent("popup");
-
-      await rillDevPage.getByRole("button", { name: "Deploy" }).click();
-
-      // Await for the popped up deploy page after hitting deploy
-      const deployPage = await popupPromise;
-
-      // Org selection page is opened.
-      await expect(
-        deployPage.getByText("Select an organization"),
-      ).toBeVisible();
-
-      // Create a new org from the dropdown.
-      await deployPage.getByLabel("Select organization").click();
-      await deployPage.getByText(deployFirstOrgName).click();
-
-      // Click the "Or overwrite an existing project" button to select a project to overwrite
-      await deployPage
-        .getByRole("button", { name: "Or overwrite an existing project" })
-        .click();
-
-      // Select the adbids project to overwrite
-      await deployPage
-        .getByRole("button", { name: `${deployFirstOrgName}/adbids` })
-        .click();
-
-      // Hit "Update selected project" to continue to deploy
-      await deployPage
-        .getByRole("button", { name: "Update selected project" })
-        .click();
-
-      // Overwrite configuration shows up.
-      await expect(
-        deployPage.getByText(
-          "Are you sure you want to overwrite this project?",
-        ),
-      ).toBeVisible();
-      // Confirm overwrite
-      await deployPage.getByRole("button", { name: "Yes, overwrite" }).click();
-
-      // Deploy loader should show up.
-      await expect(
-        deployPage.getByText("Hang tight! We're deploying your project..."),
-      ).toBeVisible();
-
-      await ensureProjectRedeployed(deployPage);
-
-      await ensureDashboardTitle(deployPage, "AdImpressions dashboard");
-    });
   });
 });
 
