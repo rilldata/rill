@@ -17,6 +17,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/rilldata/rill/runtime/pkg/httputil"
@@ -342,6 +343,9 @@ func mapGRPCError(err error) error {
 	}
 	if errors.Is(err, runtime.ErrForbidden) {
 		return ErrForbidden
+	}
+	if errors.Is(err, drivers.ErrResourceNotFound) {
+		return status.Error(codes.NotFound, err.Error())
 	}
 	return err
 }

@@ -757,7 +757,7 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 							msg.EditLink = recipientURLs.EditURL
 							msg.UnsubscribeLink = recipientURLs.UnsubscribeURL
 						} else {
-							// Fallback to default URLs (for internal users)
+							// Note: adminMeta may not always be available (if outside of cloud) or no links sent for this recipient. In those cases, we leave the links blank (no clickthrough available).
 							msg.OpenLink = ""
 							msg.EditLink = ""
 							msg.UnsubscribeLink = ""

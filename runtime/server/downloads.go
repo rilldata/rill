@@ -53,7 +53,7 @@ func (s *Server) ExportReport(ctx context.Context, req *runtimev1.ExportReportRe
 		return nil, status.Errorf(codes.Internal, "failed to get report: %s", err.Error())
 	}
 
-	r, access, err := s.runtime.ApplySecurityPolicy(req.InstanceId, auth.GetClaims(ctx).SecurityClaims(), res)
+	r, access, err := s.runtime.ApplySecurityPolicy(ctx, req.InstanceId, auth.GetClaims(ctx).SecurityClaims(), res)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}

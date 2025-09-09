@@ -166,7 +166,7 @@ func (q *query) parseFrom(ctx context.Context, node *ast.TableRefsClause) error 
 		return fmt.Errorf("metrics view %q is not valid: (status: %q, error: %q)", mv.Meta.GetName(), mv.Meta.ReconcileStatus, mv.Meta.ReconcileError)
 	}
 	q.metricsViewSpec = spec
-	security, err := q.controller.Runtime.ResolveSecurity(q.instanceID, q.claims, mv)
+	security, err := q.controller.Runtime.ResolveSecurity(ctx, q.instanceID, q.claims, mv)
 	if err != nil {
 		return fmt.Errorf("metrics sql: failed to resolve security: %w", err)
 	}

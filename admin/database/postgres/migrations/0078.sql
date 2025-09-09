@@ -1,9 +1,16 @@
-CREATE TABLE alert_tokens (
-    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
-    alert_name TEXT NOT NULL,
-    recipient_email TEXT NOT NULL,
-    magic_auth_token_id UUID NOT NULL REFERENCES magic_auth_tokens (id) ON DELETE CASCADE
-);
+-- Rename reports_token table to notification_tokens
+ALTER TABLE reports_token RENAME TO notification_tokens;
 
-CREATE INDEX alert_tokens_alert_name_idx ON alert_tokens (alert_name);
-CREATE INDEX alert_tokens_magic_auth_token_id_idx ON alert_tokens (magic_auth_token_id);
+-- Add new columns for general resource support with temporary defaults for migration
+ALTER TABLE notification_tokens ADD COLUMN resource_kind TEXT DEFAULT '' NOT NULL;
+ALTER TABLE notification_tokens ADD COLUMN resource_name TEXT DEFAULT '' NOT NULL;
+
+-- Migrate existing data: copy report_name to resource_name
+UPDATE notification_tokens SET resource_kind = 'rill.runtime.v1.Report', resource_name = report_name;
+
+-- Drop the old report_name column
+ALTER TABLE notification_tokens DROP COLUMN report_name;
+
+-- Remove the temporary defaults since these should be required fields
+ALTER TABLE notification_tokens ALTER COLUMN resource_kind DROP DEFAULT;
+ALTER TABLE notification_tokens ALTER COLUMN resource_name DROP DEFAULT;

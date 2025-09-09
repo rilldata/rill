@@ -155,7 +155,7 @@ func TestCompile(t *testing.T) {
 		},
 	}
 
-	clm, err := rt.ResolveSecurity(instanceID, claims, mv)
+	clm, err := rt.ResolveSecurity(t.Context(), instanceID, claims, mv)
 	require.NoError(t, err)
 
 	for _, test := range passTests {

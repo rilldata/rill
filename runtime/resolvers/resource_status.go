@@ -129,6 +129,6 @@ func (r *resourceStatusResolver) ResolveExport(ctx context.Context, w io.Writer,
 	return errors.New("not implemented")
 }
 
-func (r *resourceStatusResolver) InferRequiredSecurityRules() []*runtimev1.SecurityRule {
+func (r *resourceStatusResolver) InferRequiredSecurityRules() ([]*runtimev1.SecurityRule, error) {
 	panic("not implemented")
 }

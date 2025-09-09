@@ -311,9 +311,13 @@ func (s *Server) UnsubscribeReport(ctx context.Context, req *adminv1.Unsubscribe
 	}
 
 	if claims.OwnerType() == auth.OwnerTypeMagicAuthToken {
-		reportTkn, err := s.admin.DB.FindReportTokenForMagicAuthToken(ctx, claims.OwnerID())
+		reportTkn, err := s.admin.DB.FindNotificationTokenForMagicAuthToken(ctx, claims.OwnerID())
 		if err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "failed to find report token: %s", err.Error())
+			return nil, status.Errorf(codes.InvalidArgument, "failed to find notification token: %s", err.Error())
+		}
+
+		if reportTkn.ResourceKind != runtime.ResourceKindReport || reportTkn.ResourceName != req.Name {
+			return nil, status.Error(codes.InvalidArgument, "token is not valid for this report")
 		}
 
 		if reportTkn.RecipientEmail == "" {
@@ -689,8 +693,9 @@ func (s *Server) createMagicTokens(ctx context.Context, orgID, projectID, report
 
 		emailTokens[email] = tkn.Token().String()
 
-		_, err = s.admin.DB.InsertReportToken(cctx, &database.InsertReportTokenOptions{
-			ReportName:       reportName,
+		_, err = s.admin.DB.InsertNotificationToken(cctx, &database.InsertNotificationTokenOptions{
+			ResourceKind:     runtime.ResourceKindReport,
+			ResourceName:     reportName,
 			RecipientEmail:   email,
 			MagicAuthTokenID: tkn.Token().ID.String(),
 		})

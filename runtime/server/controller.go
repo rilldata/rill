@@ -73,7 +73,7 @@ func (s *Server) ListResources(ctx context.Context, req *runtimev1.ListResources
 	i := 0
 	for i < len(rs) {
 		r := rs[i]
-		r, access, err := s.runtime.ApplySecurityPolicy(req.InstanceId, auth.GetClaims(ctx).SecurityClaims(), r)
+		r, access, err := s.runtime.ApplySecurityPolicy(ctx, req.InstanceId, auth.GetClaims(ctx).SecurityClaims(), r)
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
@@ -114,7 +114,7 @@ func (s *Server) WatchResources(req *runtimev1.WatchResourcesRequest, ss runtime
 		}
 
 		for _, r := range rs {
-			r, access, err := s.runtime.ApplySecurityPolicy(req.InstanceId, auth.GetClaims(ss.Context()).SecurityClaims(), r)
+			r, access, err := s.runtime.ApplySecurityPolicy(ss.Context(), req.InstanceId, auth.GetClaims(ss.Context()).SecurityClaims(), r)
 			if err != nil {
 				return status.Error(codes.InvalidArgument, err.Error())
 			}
@@ -136,7 +136,7 @@ func (s *Server) WatchResources(req *runtimev1.WatchResourcesRequest, ss runtime
 		if r != nil { // r is nil for deletion events
 			var access bool
 			var err error
-			r, access, err = s.runtime.ApplySecurityPolicy(req.InstanceId, auth.GetClaims(ss.Context()).SecurityClaims(), r)
+			r, access, err = s.runtime.ApplySecurityPolicy(ss.Context(), req.InstanceId, auth.GetClaims(ss.Context()).SecurityClaims(), r)
 			if err != nil {
 				s.logger.Info("failed to apply security policy", zap.String("name", n.Name), zap.Error(err))
 				return
@@ -191,7 +191,7 @@ func (s *Server) GetResource(ctx context.Context, req *runtimev1.GetResourceRequ
 		return &runtimev1.GetResourceResponse{Resource: r}, nil
 	}
 
-	r, access, err := s.runtime.ApplySecurityPolicy(req.InstanceId, auth.GetClaims(ctx).SecurityClaims(), r)
+	r, access, err := s.runtime.ApplySecurityPolicy(ctx, req.InstanceId, auth.GetClaims(ctx).SecurityClaims(), r)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -228,7 +228,7 @@ func (s *Server) GetExplore(ctx context.Context, req *runtimev1.GetExploreReques
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	e, access, err := s.runtime.ApplySecurityPolicy(req.InstanceId, auth.GetClaims(ctx).SecurityClaims(), e)
+	e, access, err := s.runtime.ApplySecurityPolicy(ctx, req.InstanceId, auth.GetClaims(ctx).SecurityClaims(), e)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -252,7 +252,7 @@ func (s *Server) GetExplore(ctx context.Context, req *runtimev1.GetExploreReques
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	m, access, err = s.runtime.ApplySecurityPolicy(req.InstanceId, auth.GetClaims(ctx).SecurityClaims(), m)
+	m, access, err = s.runtime.ApplySecurityPolicy(ctx, req.InstanceId, auth.GetClaims(ctx).SecurityClaims(), m)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -292,7 +292,7 @@ func (s *Server) GetModelPartitions(ctx context.Context, req *runtimev1.GetModel
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	r, access, err := s.runtime.ApplySecurityPolicy(req.InstanceId, auth.GetClaims(ctx).SecurityClaims(), r)
+	r, access, err := s.runtime.ApplySecurityPolicy(ctx, req.InstanceId, auth.GetClaims(ctx).SecurityClaims(), r)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}

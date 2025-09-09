@@ -68,7 +68,7 @@ func newMetrics(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Res
 		return nil, fmt.Errorf("metrics view %q is invalid", res.Meta.Name.Name)
 	}
 
-	security, err := opts.Runtime.ResolveSecurity(opts.InstanceID, opts.Claims, res)
+	security, err := opts.Runtime.ResolveSecurity(ctx, opts.InstanceID, opts.Claims, res)
 	if err != nil {
 		return nil, err
 	}
@@ -159,7 +159,7 @@ func (r *metricsResolver) ResolveExport(ctx context.Context, w io.Writer, opts *
 	return errors.New("not implemented")
 }
 
-func (r *metricsResolver) InferRequiredSecurityRules() []*runtimev1.SecurityRule {
+func (r *metricsResolver) InferRequiredSecurityRules() ([]*runtimev1.SecurityRule, error) {
 	var rules []*runtimev1.SecurityRule
 
 	// allow explicit access to the references
@@ -210,7 +210,7 @@ func (r *metricsResolver) InferRequiredSecurityRules() []*runtimev1.SecurityRule
 		})
 	}
 
-	return rules
+	return rules, nil
 }
 
 // fieldsFromQuery returns metadata for only those dimensions and measures present in the query, preserving query order.

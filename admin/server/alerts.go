@@ -311,9 +311,13 @@ func (s *Server) UnsubscribeAlert(ctx context.Context, req *adminv1.UnsubscribeA
 
 	var slackEmail string
 	if claims.OwnerType() == auth.OwnerTypeMagicAuthToken {
-		alertTkn, err := s.admin.DB.FindAlertTokenForMagicAuthToken(ctx, claims.OwnerID())
+		alertTkn, err := s.admin.DB.FindNotificationTokenForMagicAuthToken(ctx, claims.OwnerID())
 		if err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "failed to find alert token: %s", err.Error())
+			return nil, status.Errorf(codes.InvalidArgument, "failed to find notification token: %s", err.Error())
+		}
+
+		if alertTkn.ResourceKind != runtime.ResourceKindAlert || alertTkn.ResourceName != req.Name {
+			return nil, status.Error(codes.InvalidArgument, "token is not valid for this alert")
 		}
 
 		if alertTkn.RecipientEmail == "" {
@@ -739,8 +743,9 @@ func (s *Server) createMagicTokensAlert(ctx context.Context, projectID, alertNam
 
 		emailTokens[email] = tkn.Token().String()
 
-		_, err = s.admin.DB.InsertAlertToken(cctx, &database.InsertAlertTokenOptions{
-			AlertName:        alertName,
+		_, err = s.admin.DB.InsertNotificationToken(cctx, &database.InsertNotificationTokenOptions{
+			ResourceKind:     runtime.ResourceKindAlert,
+			ResourceName:     alertName,
 			RecipientEmail:   email,
 			MagicAuthTokenID: tkn.Token().ID.String(),
 		})

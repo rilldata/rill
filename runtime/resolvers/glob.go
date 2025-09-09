@@ -215,7 +215,7 @@ func (r *globResolver) ResolveExport(ctx context.Context, w io.Writer, opts *run
 	return errors.New("not implemented")
 }
 
-func (r *globResolver) InferRequiredSecurityRules() []*runtimev1.SecurityRule {
+func (r *globResolver) InferRequiredSecurityRules() ([]*runtimev1.SecurityRule, error) {
 	panic("not implemented")
 }
 

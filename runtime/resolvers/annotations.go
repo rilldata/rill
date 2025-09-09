@@ -47,7 +47,7 @@ func newAnnotationsResolver(ctx context.Context, opts *runtime.ResolverOptions) 
 		return nil, fmt.Errorf("metrics view %q is invalid", res.Meta.Name.Name)
 	}
 
-	security, err := opts.Runtime.ResolveSecurity(opts.InstanceID, opts.Claims, res)
+	security, err := opts.Runtime.ResolveSecurity(ctx, opts.InstanceID, opts.Claims, res)
 	if err != nil {
 		return nil, err
 	}
@@ -136,6 +136,6 @@ func (r *annotationsResolver) ResolveExport(ctx context.Context, w io.Writer, op
 	return errors.New("not implemented")
 }
 
-func (r *annotationsResolver) InferRequiredSecurityRules() []*runtimev1.SecurityRule {
+func (r *annotationsResolver) InferRequiredSecurityRules() ([]*runtimev1.SecurityRule, error) {
 	panic("not implemented")
 }

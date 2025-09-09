@@ -343,7 +343,7 @@ message SecurityRuleRowFilter {
 }
 
 message SecurityRuleTransitiveAccess {
-  ResourceName resource = 1; // this rules resolves to rules that provides access to whatever is needed to access this resource. Currently only used for reports and alerts.
+  ResourceName resource = 1; // this rules resolves to rules that provides access to whatever is needed to access this resource.
 }
 
 message MetricsViewState {

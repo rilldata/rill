@@ -329,11 +329,10 @@ func (u *URLs) ReportEdit(org, project, report string) string {
 
 // AlertOpen returns the URL for opening an alert in the frontend.
 func (u *URLs) AlertOpen(org, project, alert, token string) string {
-	openURL := urlutil.MustJoinURL(u.Frontend(), org, project, "-", "alerts", alert, "open")
 	if token != "" {
-		openURL += fmt.Sprintf("?token=%s", token)
+		return urlutil.MustWithQuery(urlutil.MustJoinURL(u.Frontend(), org, project, "-", "alerts", alert, "open"), map[string]string{"token": token})
 	}
-	return openURL
+	return urlutil.MustJoinURL(u.Frontend(), org, project, "-", "alerts", alert, "open")
 }
 
 // AlertEdit returns the URL for editing an alert in the frontend.

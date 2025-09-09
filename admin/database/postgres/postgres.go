@@ -1565,25 +1565,25 @@ func (c *connection) DeleteExpiredMagicAuthTokens(ctx context.Context, retention
 	return parseErr("magic auth token", err)
 }
 
-func (c *connection) FindReportTokens(ctx context.Context, reportName string) ([]*database.ReportToken, error) {
-	var res []*database.ReportToken
-	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT * FROM report_tokens WHERE report_name=$1`, reportName)
+func (c *connection) FindNotificationTokens(ctx context.Context, resourceKind, resourceName string) ([]*database.NotificationToken, error) {
+	var res []*database.NotificationToken
+	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT * FROM notification_tokens WHERE resource_kind=$1 AND resource_name=$2`, resourceKind, resourceName)
 	if err != nil {
-		return nil, parseErr("report tokens", err)
+		return nil, parseErr("notification tokens", err)
 	}
 	return res, nil
 }
 
-func (c *connection) FindReportTokensWithSecret(ctx context.Context, reportName string) ([]*database.ReportTokenWithSecret, error) {
-	var res []*reportTokenWithSecretDTO
-	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT t.*, m.secret as magic_auth_token_secret, m.secret_encryption_key_id FROM report_tokens t JOIN magic_auth_tokens m ON t.magic_auth_token_id=m.id WHERE t.report_name=$1`, reportName)
+func (c *connection) FindNotificationTokensWithSecret(ctx context.Context, resourceKind, resourceName string) ([]*database.NotificationTokenWithSecret, error) {
+	var res []*notificationTokenWithSecretDTO
+	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT t.*, m.secret as magic_auth_token_secret, m.secret_encryption_key_id FROM notification_tokens t JOIN magic_auth_tokens m ON t.magic_auth_token_id=m.id WHERE t.resource_kind=$1 AND t.resource_name=$2`, resourceKind, resourceName)
 	if err != nil {
-		return nil, parseErr("report tokens", err)
+		return nil, parseErr("notification tokens", err)
 	}
 
-	ret := make([]*database.ReportTokenWithSecret, len(res))
+	ret := make([]*database.NotificationTokenWithSecret, len(res))
 	for i, dto := range res {
-		ret[i], err = c.reportTokenWithSecretFromDTO(dto)
+		ret[i], err = c.notificationTokenWithSecretFromDTO(dto)
 		if err != nil {
 			return nil, err
 		}
@@ -1591,72 +1591,24 @@ func (c *connection) FindReportTokensWithSecret(ctx context.Context, reportName 
 	return ret, nil
 }
 
-func (c *connection) FindReportTokenForMagicAuthToken(ctx context.Context, magicAuthTokenID string) (*database.ReportToken, error) {
-	res := &database.ReportToken{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, `SELECT * FROM report_tokens WHERE magic_auth_token_id=$1`, magicAuthTokenID).StructScan(res)
+func (c *connection) FindNotificationTokenForMagicAuthToken(ctx context.Context, magicAuthTokenID string) (*database.NotificationToken, error) {
+	res := &database.NotificationToken{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, `SELECT * FROM notification_tokens WHERE magic_auth_token_id=$1`, magicAuthTokenID).StructScan(res)
 	if err != nil {
-		return nil, parseErr("report token", err)
+		return nil, parseErr("notification token", err)
 	}
 	return res, nil
 }
 
-func (c *connection) InsertReportToken(ctx context.Context, opts *database.InsertReportTokenOptions) (*database.ReportToken, error) {
+func (c *connection) InsertNotificationToken(ctx context.Context, opts *database.InsertNotificationTokenOptions) (*database.NotificationToken, error) {
 	if err := database.Validate(opts); err != nil {
 		return nil, err
 	}
 
-	res := &database.ReportToken{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO report_tokens (report_name, recipient_email, magic_auth_token_id) VALUES ($1, $2, $3) RETURNING *`, opts.ReportName, opts.RecipientEmail, opts.MagicAuthTokenID).StructScan(res)
+	res := &database.NotificationToken{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO notification_tokens (resource_kind, resource_name, recipient_email, magic_auth_token_id) VALUES ($1, $2, $3, $4) RETURNING *`, opts.ResourceKind, opts.ResourceName, opts.RecipientEmail, opts.MagicAuthTokenID).StructScan(res)
 	if err != nil {
-		return nil, parseErr("report token", err)
-	}
-	return res, nil
-}
-
-func (c *connection) FindAlertTokens(ctx context.Context, alertName string) ([]*database.AlertToken, error) {
-	var res []*database.AlertToken
-	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT * FROM alert_tokens WHERE alert_name=$1`, alertName)
-	if err != nil {
-		return nil, parseErr("alert tokens", err)
-	}
-	return res, nil
-}
-
-func (c *connection) FindAlertTokensWithSecret(ctx context.Context, alertName string) ([]*database.AlertTokenWithSecret, error) {
-	var res []*alertTokenWithSecretDTO
-	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT t.*, m.secret as magic_auth_token_secret, m.secret_encryption_key_id FROM alert_tokens t JOIN magic_auth_tokens m ON t.magic_auth_token_id=m.id WHERE t.alert_name=$1`, alertName)
-	if err != nil {
-		return nil, parseErr("alert tokens", err)
-	}
-
-	ret := make([]*database.AlertTokenWithSecret, len(res))
-	for i, dto := range res {
-		ret[i], err = c.alertTokenWithSecretFromDTO(dto)
-		if err != nil {
-			return nil, err
-		}
-	}
-	return ret, nil
-}
-
-func (c *connection) FindAlertTokenForMagicAuthToken(ctx context.Context, magicAuthTokenID string) (*database.AlertToken, error) {
-	res := &database.AlertToken{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, `SELECT * FROM alert_tokens WHERE magic_auth_token_id=$1`, magicAuthTokenID).StructScan(res)
-	if err != nil {
-		return nil, parseErr("alert token", err)
-	}
-	return res, nil
-}
-
-func (c *connection) InsertAlertToken(ctx context.Context, opts *database.InsertAlertTokenOptions) (*database.AlertToken, error) {
-	if err := database.Validate(opts); err != nil {
-		return nil, err
-	}
-
-	res := &database.AlertToken{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO alert_tokens (alert_name, recipient_email, magic_auth_token_id) VALUES ($1, $2, $3) RETURNING *`, opts.AlertName, opts.RecipientEmail, opts.MagicAuthTokenID).StructScan(res)
-	if err != nil {
-		return nil, parseErr("alert token", err)
+		return nil, parseErr("notification token", err)
 	}
 	return res, nil
 }
@@ -3149,10 +3101,9 @@ func (c *connection) magicAuthTokenFromDTO(dto *magicAuthTokenDTO, fetchSecret b
 // magicAuthTokenWithUserDTO wraps database.MagicAuthTokenWithUser, using the pgtype package to handly types that pgx can't read directly into their native Go types.
 type magicAuthTokenWithUserDTO struct {
 	*database.MagicAuthTokenWithUser
-	Attributes               pgtype.JSON      `db:"attributes"`
-	Fields                   pgtype.TextArray `db:"fields"`
-	Resources                pgtype.JSONB     `db:"resources"`
-	TransitiveAccessResource *pgtype.JSONB    `db:"transitive_access_resource"`
+	Attributes pgtype.JSON      `db:"attributes"`
+	Fields     pgtype.TextArray `db:"fields"`
+	Resources  pgtype.JSONB     `db:"resources"`
 }
 
 func (c *connection) magicAuthTokenWithUserFromDTO(dto *magicAuthTokenWithUserDTO) (*database.MagicAuthTokenWithUser, error) {
@@ -3177,38 +3128,21 @@ func (c *connection) magicAuthTokenWithUserFromDTO(dto *magicAuthTokenWithUserDT
 	return dto.MagicAuthTokenWithUser, nil
 }
 
-type reportTokenWithSecretDTO struct {
-	*database.ReportTokenWithSecret
+type notificationTokenWithSecretDTO struct {
+	*database.NotificationTokenWithSecret
 	SecretEncryptionKeyID string `db:"secret_encryption_key_id"`
 }
 
-func (c *connection) reportTokenWithSecretFromDTO(dto *reportTokenWithSecretDTO) (*database.ReportTokenWithSecret, error) {
+func (c *connection) notificationTokenWithSecretFromDTO(dto *notificationTokenWithSecretDTO) (*database.NotificationTokenWithSecret, error) {
 	if dto.SecretEncryptionKeyID == "" {
-		return dto.ReportTokenWithSecret, nil
+		return dto.NotificationTokenWithSecret, nil
 	}
-	decrypted, err := c.decrypt(dto.ReportTokenWithSecret.MagicAuthTokenSecret, dto.SecretEncryptionKeyID)
+	decrypted, err := c.decrypt(dto.NotificationTokenWithSecret.MagicAuthTokenSecret, dto.SecretEncryptionKeyID)
 	if err != nil {
 		return nil, err
 	}
-	dto.ReportTokenWithSecret.MagicAuthTokenSecret = decrypted
-	return dto.ReportTokenWithSecret, nil
-}
-
-type alertTokenWithSecretDTO struct {
-	*database.AlertTokenWithSecret
-	SecretEncryptionKeyID string `db:"secret_encryption_key_id"`
-}
-
-func (c *connection) alertTokenWithSecretFromDTO(dto *alertTokenWithSecretDTO) (*database.AlertTokenWithSecret, error) {
-	if dto.SecretEncryptionKeyID == "" {
-		return dto.AlertTokenWithSecret, nil
-	}
-	decrypted, err := c.decrypt(dto.AlertTokenWithSecret.MagicAuthTokenSecret, dto.SecretEncryptionKeyID)
-	if err != nil {
-		return nil, err
-	}
-	dto.AlertTokenWithSecret.MagicAuthTokenSecret = decrypted
-	return dto.AlertTokenWithSecret, nil
+	dto.NotificationTokenWithSecret.MagicAuthTokenSecret = decrypted
+	return dto.NotificationTokenWithSecret, nil
 }
 
 type organizationInviteDTO struct {

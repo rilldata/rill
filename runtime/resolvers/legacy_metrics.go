@@ -33,8 +33,6 @@ type legacyMetricsResolver struct {
 	query           runtime.Query
 	args            *legacyMetricsResolverArgs
 	metricsViewName string
-	fields          []string
-	rowFilter       string
 	logger          *zap.Logger
 }
 
@@ -82,20 +80,12 @@ func newLegacyMetrics(ctx context.Context, opts *runtime.ResolverOptions) (runti
 		return nil, fmt.Errorf("failed to build query: %w", err)
 	}
 
-	// Extract fields and row filter from the query using the queries.SecurityFromQuery helper
-	rowFilter, fields, err := queries.SecurityFromQuery(props.QueryName, props.QueryArgsJSON)
-	if err != nil {
-		return nil, fmt.Errorf("failed to extract accessible fields: %w", err)
-	}
-
 	return &legacyMetricsResolver{
 		runtime:         opts.Runtime,
 		instanceID:      opts.InstanceID,
 		query:           q,
 		args:            args,
 		metricsViewName: metricsViewName,
-		fields:          fields,
-		rowFilter:       rowFilter,
 		logger:          opts.Runtime.Logger,
 	}, nil
 }
@@ -201,7 +191,13 @@ func (r *legacyMetricsResolver) ResolveExport(ctx context.Context, w io.Writer, 
 	return errors.New("not implemented")
 }
 
-func (r *legacyMetricsResolver) InferRequiredSecurityRules() []*runtimev1.SecurityRule {
+func (r *legacyMetricsResolver) InferRequiredSecurityRules() ([]*runtimev1.SecurityRule, error) {
+	// Extract fields and row filter from the query using the queries.SecurityFromQuery helper
+	rowFilter, fields, err := queries.SecurityFromRuntimeQuery(r.query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to extract accessible fields: %w", err)
+	}
+
 	var rules []*runtimev1.SecurityRule
 
 	// allow explicit access to the references
@@ -216,9 +212,9 @@ func (r *legacyMetricsResolver) InferRequiredSecurityRules() []*runtimev1.Securi
 		})
 	}
 
-	if r.rowFilter != "" {
+	if rowFilter != "" {
 		expr := &runtimev1.Expression{}
-		err := protojson.Unmarshal([]byte(r.rowFilter), expr)
+		err := protojson.Unmarshal([]byte(rowFilter), expr)
 		if err != nil {
 			panic(status.Errorf(codes.Internal, "failed to parse row filter expression: %v", err))
 		}
@@ -232,18 +228,18 @@ func (r *legacyMetricsResolver) InferRequiredSecurityRules() []*runtimev1.Securi
 		})
 	}
 
-	if len(r.fields) > 0 {
+	if len(fields) > 0 {
 		rules = append(rules, &runtimev1.SecurityRule{
 			Rule: &runtimev1.SecurityRule_FieldAccess{
 				FieldAccess: &runtimev1.SecurityRuleFieldAccess{
-					Fields: r.fields,
+					Fields: fields,
 					Allow:  true,
 				},
 			},
 		})
 	}
 
-	return rules
+	return rules, nil
 }
 
 func (r *legacyMetricsResolver) formatMetricsViewAggregationResult(row map[string]interface{}, q *queries.MetricsViewAggregation, measures []*runtimev1.MetricsViewSpec_Measure) map[string]any {

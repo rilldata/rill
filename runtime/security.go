@@ -201,20 +201,19 @@ func newSecurityEngine(cacheSize int, logger *zap.Logger, rt *Runtime) *security
 }
 
 // resolveSecurity resolves the security rules for a given resource and user context.
-func (p *securityEngine) resolveSecurity(instanceID, environment string, vars map[string]string, claims *SecurityClaims, r *runtimev1.Resource) (*ResolvedSecurity, error) {
+func (p *securityEngine) resolveSecurity(ctx context.Context, instanceID, environment string, vars map[string]string, claims *SecurityClaims, r *runtimev1.Resource) (*ResolvedSecurity, error) {
 	// If security checks are skipped, return open access
 	if claims.SkipChecks {
 		return ResolvedSecurityOpen, nil
 	}
 
-	rules, err := p.expandRules(context.Background(), instanceID, claims)
+	expandedRules, err := p.expandRules(ctx, instanceID, claims)
 	if err != nil {
 		return nil, fmt.Errorf("failed to expand security rules: %w", err)
 	}
-	claims.AdditionalRules = rules
 
 	// Combine rules with any contained in the resource itself
-	rules = p.resolveRules(claims, r)
+	rules := p.resolveRules(claims, expandedRules, r)
 
 	// Exit early if all rules are nil
 	var validRule bool
@@ -300,8 +299,7 @@ func (p *securityEngine) resolveSecurity(instanceID, environment string, vars ma
 
 // resolveRules combines the provided rules with built-in rules and rules declared in the resource itself.
 // NOTE: The default behavior is to deny access unless there is a rule that grants it (and no other rule explicitly denies it).
-func (p *securityEngine) resolveRules(claims *SecurityClaims, r *runtimev1.Resource) []*runtimev1.SecurityRule {
-	rules := claims.AdditionalRules
+func (p *securityEngine) resolveRules(claims *SecurityClaims, rules []*runtimev1.SecurityRule, r *runtimev1.Resource) []*runtimev1.SecurityRule {
 	switch r.Meta.Name.Kind {
 	// Admins and creators/recipients can access an alert.
 	case ResourceKindAlert:
@@ -729,9 +727,12 @@ func (p *securityEngine) resolveTransitiveAccessRuleForReport(ctx context.Contex
 			return nil, err
 		}
 		defer resolver.Close()
-		rules = append(rules, resolver.InferRequiredSecurityRules()...)
+		inferred, err := resolver.InferRequiredSecurityRules()
+		if err != nil {
+			return nil, err
+		}
+		rules = append(rules, inferred...)
 
-		// add refs to deny condition, relying on resolveRules to add the corresponding allow rules
 		mvName := ""
 		refs := resolver.Refs()
 		for _, ref := range refs {
@@ -846,9 +847,12 @@ func (p *securityEngine) resolveTransitiveAccessRuleForAlert(ctx context.Context
 			return nil, err
 		}
 		defer resolver.Close()
-		rules = append(rules, resolver.InferRequiredSecurityRules()...)
+		inferred, err := resolver.InferRequiredSecurityRules()
+		if err != nil {
+			return nil, err
+		}
+		rules = append(rules, inferred...)
 
-		// add refs to deny condition
 		refs := resolver.Refs()
 		for _, ref := range refs {
 			// allow access to the referenced resource
@@ -884,11 +888,24 @@ func (p *securityEngine) resolveTransitiveAccessRuleForAlert(ctx context.Context
 			return nil, err
 		}
 		defer resolver.Close()
-		rules = append(rules, resolver.InferRequiredSecurityRules()...)
+		inferred, err := resolver.InferRequiredSecurityRules()
+		if err != nil {
+			return nil, err
+		}
+		rules = append(rules, inferred...)
 
-		// add refs to deny condition, relying on resolveRules to add the corresponding allow rules
 		refs := resolver.Refs()
 		for _, ref := range refs {
+			// allow access to the referenced resource
+			rules = append(rules, &runtimev1.SecurityRule{
+				Rule: &runtimev1.SecurityRule_Access{
+					Access: &runtimev1.SecurityRuleAccess{
+						Condition: fmt.Sprintf("'{{.self.kind}}'=%s AND '{{lower .self.name}}'=%s", duckdbsql.EscapeStringValue(ref.Kind), duckdbsql.EscapeStringValue(strings.ToLower(ref.Name))),
+						Allow:     true,
+					},
+				},
+			})
+			// add to deny condition
 			denyCondition.WriteString(fmt.Sprintf(" OR ('{{.self.kind}}'=%s AND '{{lower .self.name}}'=%s)", duckdbsql.EscapeStringValue(ref.Kind), duckdbsql.EscapeStringValue(strings.ToLower(ref.Name))))
 		}
 	}

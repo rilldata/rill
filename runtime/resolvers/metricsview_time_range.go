@@ -71,7 +71,7 @@ func newMetricsViewTimeRangeResolver(ctx context.Context, opts *runtime.Resolver
 		return nil, fmt.Errorf("no time dimension specified for metrics view %q", tr.MetricsView)
 	}
 
-	security, err := opts.Runtime.ResolveSecurity(opts.InstanceID, opts.Claims, res)
+	security, err := opts.Runtime.ResolveSecurity(ctx, opts.InstanceID, opts.Claims, res)
 	if err != nil {
 		return nil, err
 	}
@@ -146,7 +146,7 @@ func (r *metricsViewTimeRangeResolver) ResolveExport(ctx context.Context, w io.W
 	return errors.New("not implemented")
 }
 
-func (r *metricsViewTimeRangeResolver) InferRequiredSecurityRules() []*runtimev1.SecurityRule {
+func (r *metricsViewTimeRangeResolver) InferRequiredSecurityRules() ([]*runtimev1.SecurityRule, error) {
 	panic("not implemented")
 }
 

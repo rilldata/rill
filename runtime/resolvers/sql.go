@@ -172,22 +172,9 @@ func (r *sqlResolver) ResolveExport(ctx context.Context, w io.Writer, opts *runt
 	}
 }
 
-func (r *sqlResolver) InferRequiredSecurityRules() []*runtimev1.SecurityRule {
-	var rules []*runtimev1.SecurityRule
-	// allow explicit access to the references
-	for _, ref := range r.Refs() {
-		rules = append(rules, &runtimev1.SecurityRule{
-			Rule: &runtimev1.SecurityRule_Access{
-				Access: &runtimev1.SecurityRuleAccess{
-					Condition: fmt.Sprintf("'{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s", ref.Kind, duckdbsql.EscapeStringValue(strings.ToLower(ref.Name))),
-					Allow:     true,
-				},
-			},
-		})
-	}
-	// NOTE - not adding field level or row security rules since it requires full sql parsing logic
-	// and also direct columns in the underlying table can be referenced in the sql which may not be defined in the metrics view to which security applies
-	return rules
+func (r *sqlResolver) InferRequiredSecurityRules() ([]*runtimev1.SecurityRule, error) {
+	// NOTE - This is the regular SQL resolver, not metrics SQL. So the only refs would be to models, which don't have security policies / access checks
+	return nil, nil
 }
 
 func (r *sqlResolver) generalExport(ctx context.Context, w io.Writer, filename string, opts *runtime.ExportOptions) error {
