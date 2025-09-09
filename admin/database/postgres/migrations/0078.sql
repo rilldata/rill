@@ -1,5 +1,5 @@
 -- Rename reports_token table to notification_tokens
-ALTER TABLE reports_token RENAME TO notification_tokens;
+ALTER TABLE report_tokens RENAME TO notification_tokens;
 
 -- Add new columns for general resource support with temporary defaults for migration
 ALTER TABLE notification_tokens ADD COLUMN resource_kind TEXT DEFAULT '' NOT NULL;
