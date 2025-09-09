@@ -40,10 +40,10 @@ export function getPathForNewResourceFile(
   const allNames =
     newKind === ResourceKind.Source || newKind === ResourceKind.Model
       ? // sources and models share the name
-        [
-          ...fileArtifacts.getNamesForKind(ResourceKind.Source),
-          ...fileArtifacts.getNamesForKind(ResourceKind.Model),
-        ]
+      [
+        ...fileArtifacts.getNamesForKind(ResourceKind.Source),
+        ...fileArtifacts.getNamesForKind(ResourceKind.Model),
+      ]
       : fileArtifacts.getNamesForKind(newKind);
 
   const { folderName, extension } = ResourceKindMap[newKind];
@@ -153,8 +153,8 @@ SELECT 'Hello, World!' AS Greeting`;
 version: 1
 type: metrics_view
 
-model: # Choose a model to underpin your metrics
-timeseries: # Choose a timestamp column (if any) from your model
+model: # Choose a model to underpin your metrics view
+timeseries: # Choose a timestamp column (if any) from your model 
 
 dimensions:
 measures:

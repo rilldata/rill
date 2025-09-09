@@ -484,11 +484,11 @@ const config = {
           },
           {
             from: '/build/metrics-view/advanced-expressions/fixed-metrics',
-            to: '/build/metrics-view/measures/fixed-metrics'
+            to: '/build/metrics-view/measures/fixed-measures'
           },
           {
             from: '/build/metrics-view/advanced-expressions/metric-formatting',
-            to: '/build/metrics-view/measures/metric-formatting'
+            to: '/build/metrics-view/measures/measure-formatting'
           },
           {
             from: '/build/metrics-view/advanced-expressions/quantiles',

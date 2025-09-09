@@ -6,7 +6,7 @@ sidebar_position: 00
 ---
 
 
-A metrics view is a 'centralized framework' used to define and organize **key metrics and dimensions** for your organization. Having a centralized layer allows an organization to easily manage and reuse calculations across various reports, dashboards, and data tools.
+A metrics view is a 'centralized framework' used to define and organize **key measures and dimensions** for your organization. Having a centralized layer allows an organization to easily manage and reuse calculations across various reports, dashboards, and data tools.
 
 
 <div style={{ textAlign: 'center' }}>
@@ -15,10 +15,10 @@ A metrics view is a 'centralized framework' used to define and organize **key me
 
 
 In Rill, your metrics view is defined by _metric definitions_. Metric definitions are composed of:
-* _**model**_ - A data model creating a One Big Table that will power the metrics view.
-* _**timeseries**_ - A column from your model that will underlie x-axis data in the line charts. Time will be truncated into different time periods.
-* _**measures**_ - Numerical aggregates of columns from your data model shown on the y-axis of the line charts and the "big number" summaries.
-* _**dimensions**_ - Categorical columns from your data model whose values are shown in _leaderboards_ and allow you to look at segments or attributes of your data (and filter/slice accordingly).
+* _**model/table**_ - A data model created with the concept of [One Big Table](/build/models/models-101#one-big-table-and-dashboarding) that will power the metrics view.
+* _**timeseries**_ - A column from your model that will underlie x-axis data in Rill's Explore dashboards and Canvas dashboards. Time can be truncated into different time periods.
+* _**measures**_ - Numerical aggregates of columns from your data model shown on the y-axis of the explore charts and canvas components and the "big number" summaries.
+* _**dimensions**_ - Categorical columns from your data model whose values are shown in _leaderboards_ in explore dashboard and allow you to look at segments or attributes of your data (and filter/slice accordingly) as well as selectable axis in Canvas dashboard components.
 
 ## Creating a Metrics view
 
@@ -31,7 +31,7 @@ In your Rill project directory, after the `metrics-view.yaml` file is created in
 version: 1
 type: metrics_view
 
-model: example_model # Choose a table to underpin your metrics
+model: example_model # Choose a table to underpin your metrics view
 timeseries: timestamp_column # Choose a timestamp column (if any) from your table
 
 dimensions:
@@ -100,11 +100,11 @@ As an example, if you have a table of sales events with the sales price and cust
 * Number of orders with order value more than $100: `count(*) FILTER (WHERE order_val > 100)`
 
 You can also add labels, descriptions, and your choice of number formatting to customize how they are shown. See our dedicated examples and pages for the following advanced measures!
-- **[Metric Formatting](/build/metrics-view/measures/metric-formatting)**
+- **[Metric Formatting](/build/metrics-view/measures/measure-formatting)**
 - **[Case Statements and Filters](/build/metrics-view/measures/case-statements)**
 - **[Referencing Measures](/build/metrics-view/measures/referencing)**
 - **[Quantiles](/build/metrics-view/measures/quantiles)**
-- **[Fixed Metrics](/build/metrics-view/measures/fixed-metrics)**
+- **[Fixed Metrics](/build/metrics-view/measures/fixed-measures)**
 - **[Window Functions](/build/metrics-view/measures/windows)**
 
   

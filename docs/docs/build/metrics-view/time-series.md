@@ -7,6 +7,12 @@ sidebar_position: 03
 
 Time is the most critical dimension in analytics and powers our dashboards. Understanding not just the "what," but how metrics evolve over hours, days, and months provides the narrative arc for decision-making.
 
+:::tip new rill time
+
+We are currently QAing a new time picker that will replace the currnet time series in Rill. If you're interested, [contact us](/contact)!
+
+:::
+
 
 ## Defining Your Time Series Column
 

@@ -1,7 +1,7 @@
 ---
-title: "Fixed Metrics"
+title: "Fixed Measures"
 description: Tips & Tricks for Metric Formatting
-sidebar_label: "Fixed Metrics"
+sidebar_label: "Fixed Measures"
 sidebar_position: 35
 ---
 

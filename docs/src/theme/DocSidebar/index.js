@@ -19,10 +19,8 @@ export default function DocSidebarWrapper(props) {
         .theme-doc-layout {
           grid-template-columns: 1fr !important;
         }
-        .theme-doc-main {
-          margin-left: 0 !important;
-          max-width: 100% !important;
-          width: 100% !important;
+        [class^="docRoot"] {
+          --doc-sidebar-width: 0 !important;
         }
       `;
       document.head.appendChild(style);
