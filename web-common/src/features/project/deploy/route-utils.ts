@@ -1,4 +1,5 @@
 import { page } from "$app/stores";
+import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
 import { getLocalGitRepoStatus } from "@rilldata/web-common/features/project/selectors.ts";
 import { createLocalServiceGitStatus } from "@rilldata/web-common/runtime-client/local-service.ts";
 import { derived } from "svelte/store";
@@ -48,17 +49,22 @@ export function getSelectOrganizationRoute() {
  * 2. If the project is a github repo then returns {@link getDeployUsingGithubRoute} that prompts the user for using either github/deploy.
  */
 export function getDeployOrGithubRouteGetter() {
-  return derived(createLocalServiceGitStatus(), ($gitStatus) => {
-    const hasLocalGitRepo = Boolean(
-      $gitStatus.data?.githubUrl && !$gitStatus.data?.managedGit,
-    );
-    return {
-      isLoading: $gitStatus.isPending,
-      getter: hasLocalGitRepo
-        ? getDeployUsingGithubRoute
-        : getCreateProjectRoute,
-    };
-  });
+  return derived(
+    [createLocalServiceGitStatus(), featureFlags.legacyArchiveDeploy],
+    ([$gitStatus, legacyArchiveDeploy]) => {
+      const hasLocalGitRepo = Boolean(
+        $gitStatus.data?.githubUrl && !$gitStatus.data?.managedGit,
+      );
+      // For E2E we cannot use github just yet. So do not show the git path for that case.
+      const shouldUseGit = !legacyArchiveDeploy && hasLocalGitRepo;
+      return {
+        isLoading: $gitStatus.isPending,
+        getter: shouldUseGit
+          ? getDeployUsingGithubRoute
+          : getCreateProjectRoute,
+      };
+    },
+  );
 }
 
 /**

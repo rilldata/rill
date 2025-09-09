@@ -6,12 +6,12 @@
   import { getDeployOrGithubRouteGetter } from "@rilldata/web-common/features/project/deploy/route-utils.ts";
 
   const deployRouteGetter = getDeployOrGithubRouteGetter();
-  $: ({ isLoading, getter } = $deployRouteGetter);
+  $: ({ isLoading, getter: deployRouteGetterFunc } = $deployRouteGetter);
 
   function selectOrg(orgName: string) {
     // This navigation gets cancelled if we do not have `setTimeout` here.
     // TODO: investigate why
-    setTimeout(() => void goto(getter(orgName)));
+    setTimeout(() => void goto(deployRouteGetterFunc(orgName)));
   }
 </script>
 
