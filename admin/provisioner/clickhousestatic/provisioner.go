@@ -195,6 +195,7 @@ func (p *Provisioner) Provision(ctx context.Context, r *provisioner.Resource, op
 	// Grant some additional global privileges to the user
 	_, err = p.ch.ExecContext(ctx, fmt.Sprintf(`
 		GRANT %s
+			CLUSTER,
 			URL,
 			REMOTE,
 			MONGO,
