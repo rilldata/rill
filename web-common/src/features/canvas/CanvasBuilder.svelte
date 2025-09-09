@@ -31,6 +31,7 @@
   import EditableCanvasRow from "./EditableCanvasRow.svelte";
   import { onDestroy } from "svelte";
   import type { BaseCanvasComponent } from "./components/BaseCanvasComponent";
+  import ReconcilingSpinner from "../entity-management/ReconcilingSpinner.svelte";
 
   const activelyEditing = writable(false);
 
@@ -47,6 +48,7 @@
       specStore,
       unsubscribe,
       _rows,
+      firstLoad,
     },
   } = getCanvasStore(canvasName, instanceId));
 
@@ -494,28 +496,34 @@
       }}
     />
   {:else}
-    <RowWrapper
-      gridTemplate="12fr"
-      zIndex={0}
-      {maxWidth}
-      id="add-component-row"
-    >
-      <ItemWrapper zIndex={0}>
-        {#if defaultMetrics}
-          <AddComponentDropdown
-            componentForm
-            onMouseEnter={() => {
-              if (timeout) clearTimeout(timeout);
-            }}
-            onItemClick={(type) => {
-              initializeRow(specCanvasRows.length, type);
-            }}
-          />
-        {:else if canvasData}
-          <ComponentError error="No valid metrics view in project" />
-        {/if}
-      </ItemWrapper>
-    </RowWrapper>
+    {#if $firstLoad}
+      <div class="h-72 flex items-center justify-center">
+        <ReconcilingSpinner />
+      </div>
+    {:else}
+      <RowWrapper
+        gridTemplate="12fr"
+        zIndex={0}
+        {maxWidth}
+        id="add-component-row"
+      >
+        <ItemWrapper type="table" zIndex={0}>
+          {#if defaultMetrics}
+            <AddComponentDropdown
+              componentForm
+              onMouseEnter={() => {
+                if (timeout) clearTimeout(timeout);
+              }}
+              onItemClick={(type) => {
+                initializeRow(specCanvasRows.length, type);
+              }}
+            />
+          {:else if canvasData}
+            <ComponentError error="No valid metrics view in project" />
+          {/if}
+        </ItemWrapper>
+      </RowWrapper>
+    {/if}
   {/each}
 </CanvasDashboardWrapper>
 
