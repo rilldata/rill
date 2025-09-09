@@ -1,5 +1,8 @@
 import type { CanvasResolvedSpec } from "@rilldata/web-common/features/canvas/stores/spec";
-import { DimensionFilterMode } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/constants";
+import {
+  DimensionFilterMode,
+  dimensionFilterModeMap,
+} from "@rilldata/web-common/features/dashboards/filters/dimension-filters/constants";
 import { getFiltersFromText } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/dimension-search-text-utils";
 import {
   getDimensionDisplayName,
@@ -30,6 +33,7 @@ import {
 import { convertExpressionToFilterParam } from "@rilldata/web-common/features/dashboards/url-state/filters/converters";
 import type {
   MetricsViewSpecDimension,
+  V1CanvasPreset,
   V1Expression,
 } from "@rilldata/web-common/runtime-client";
 import {
@@ -44,11 +48,22 @@ import {
   type Writable,
 } from "svelte/store";
 import { ExploreStateURLParams } from "../../dashboards/url-state/url-params";
-import type { SearchParamsStore } from "./canvas-entity";
 import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
+import type { CanvasSpecResponseStore } from "../types";
+import {
+  OperationShortHandMap,
+  MeasureFilterType,
+} from "../../dashboards/filters/measure-filters/measure-filter-options";
+import type { CanvasResponse } from "../selector";
+
+type FilterProperties = {
+  hidden?: boolean;
+  locked?: boolean;
+  unremovable?: boolean;
+  limit?: number;
+};
 
 export class Filters {
-  private spec: CanvasResolvedSpec;
   // -------------------
   // STORES (writable)
   // -------------------
@@ -79,20 +94,26 @@ export class Filters {
   >;
   includedDimensionValues: Readable<(dimensionName: string) => unknown[]>;
   hasAtLeastOneDimensionFilter: Readable<() => boolean>;
-  filterText: Readable<string>;
   allDimensions: Readable<Map<string, MetricsViewSpecDimension>>;
   allMeasures: Readable<Map<string, MetricsViewSpecMeasure>>;
   temporaryFilters = writable<Set<string>>(new Set());
+  defaultFilterProperties = writable<Map<string, FilterProperties>>(new Map());
+  firstPass = true;
+  searchParamsStore = writable<URLSearchParams>(new URLSearchParams());
 
   constructor(
-    spec: CanvasResolvedSpec,
-    public searchParamsStore: SearchParamsStore,
+    private spec: CanvasResolvedSpec,
+    public searchParamsCallback: (
+      key: string,
+      value: string | undefined,
+      checkIfSet?: boolean,
+    ) => boolean,
+    private specStore?: CanvasSpecResponseStore,
     public componentName?: string,
   ) {
     // -----------------------------
     // Initialize writable stores
     // -----------------------------
-    this.spec = spec;
     this.dimensionFilterExcludeMode = writable(new Map<string, boolean>());
 
     this.whereFilter = writable({
@@ -309,18 +330,219 @@ export class Filters {
         };
       },
     );
+  }
 
-    this.searchParamsStore.subscribe((searchParams) => {
-      const filterText = searchParams.get(ExploreStateURLParams.Filters);
-      if (!this.componentName) {
-        const tempFilters = searchParams.get(
-          ExploreStateURLParams.TemporaryFilters,
-        );
-        this.temporaryFilters.set(new Set(tempFilters?.split(",") ?? []));
-      }
+  onSpecChange(response: CanvasResponse) {
+    const defaultPreset = response.canvas?.defaultPreset;
 
-      this.setFiltersFromText(filterText ?? "");
+    if (!defaultPreset) return;
+
+    const { dimensionMap, measureMap, defaultFilterProperties } =
+      this.processDefaults(defaultPreset);
+
+    this.setDefaults(dimensionMap, measureMap, defaultFilterProperties);
+
+    this.firstPass = false;
+  }
+
+  private filterText = writable("");
+
+  onUrlChange = (searchParams: URLSearchParams) => {
+    const filterText = searchParams.get(ExploreStateURLParams.Filters);
+    if (!this.componentName) {
+      const tempFilters = searchParams.get(
+        ExploreStateURLParams.TemporaryFilters,
+      );
+      this.temporaryFilters.set(new Set(tempFilters?.split(",") ?? []));
+    }
+
+    this.filterText.set(filterText ?? "");
+
+    this.setFiltersFromText(filterText ?? "");
+  };
+
+  setDefaults = (
+    dimensionMap: Map<string, DimensionFilterItem>,
+    measureMap: Map<string, MeasureFilterItem>,
+    defaultFilterProperties: Map<string, FilterProperties>,
+    maintainUrlState = true,
+  ) => {
+    const finalDimensions = new Map<string, DimensionFilterItem>();
+    const finalMeasures = new Map<string, MeasureFilterItem>();
+
+    const filterText = get(this.filterText);
+
+    const { expr, dimensionsWithInlistFilter } = getFiltersFromText(filterText);
+
+    const allDimensions = get(this.allDimensions);
+    const allMeasures = get(this.allMeasures);
+
+    const urlMeasureFilters = this.getMeasureFilters(
+      allMeasures,
+      splitWhereFilter(expr).dimensionThresholdFilters,
+    );
+
+    const urlDimensionFilters = getDimensionFiltersMap(
+      allDimensions,
+      splitWhereFilter(expr).dimensionFilters,
+      dimensionsWithInlistFilter,
+    );
+
+    urlDimensionFilters.forEach((dimensionFilter) => {
+      dimensionFilter.metricsViewNames =
+        this.spec.getMetricsViewNamesForDimension(dimensionFilter.name);
     });
+
+    dimensionMap.forEach((defaultDimensionItem, dimension) => {
+      const urlFilter = urlDimensionFilters.get(dimension);
+
+      if (
+        !urlFilter ||
+        (urlFilter &&
+          (defaultFilterProperties.get(dimension)?.locked || !this.firstPass))
+      ) {
+        finalDimensions.set(dimension, defaultDimensionItem);
+      }
+    });
+
+    measureMap.forEach((defaultMeasureItem, measure) => {
+      const urlFilter = urlMeasureFilters.find((mf) => mf.name === measure);
+      if (
+        !urlFilter ||
+        (urlFilter &&
+          (defaultFilterProperties.get(measure)?.locked || !this.firstPass))
+      ) {
+        finalMeasures.set(measure, defaultMeasureItem);
+      }
+    });
+
+    if (maintainUrlState) {
+      urlDimensionFilters.forEach((urlDimensionItem, dimension) => {
+        if (!finalDimensions.has(dimension)) {
+          finalDimensions.set(dimension, urlDimensionItem);
+        }
+      });
+
+      urlMeasureFilters.forEach((urlMeasureItem) => {
+        if (!finalMeasures.has(urlMeasureItem.name)) {
+          finalMeasures.set(urlMeasureItem.name, urlMeasureItem);
+        }
+      });
+    }
+
+    const { whereFilter, dimensionsWithInListFilter } =
+      constructWhereFilterFromMeasureAndDimensionFilters(
+        Array.from(finalDimensions.values()),
+        Array.from(finalMeasures.values()),
+      );
+
+    const { dimensionFilters, dimensionThresholdFilters } =
+      splitWhereFilter(whereFilter);
+
+    this.searchParamsCallback(
+      ExploreStateURLParams.Filters,
+      getFilterParam(
+        dimensionFilters,
+        dimensionThresholdFilters,
+        dimensionsWithInListFilter,
+      ),
+    );
+  };
+
+  private processDefaults(defaultPreset: V1CanvasPreset | undefined) {
+    const defaultFilterProperties = new Map<string, FilterProperties>();
+    const dimensionMap: Map<string, DimensionFilterItem> = new Map();
+    const measureMap: Map<string, MeasureFilterItem> = new Map();
+
+    if (!defaultPreset)
+      return { dimensionMap, measureMap, defaultFilterProperties };
+
+    defaultPreset?.filters?.dimensions?.forEach(
+      ({
+        dimension,
+        hidden,
+        removable,
+        locked,
+        values,
+        limit,
+        mode,
+        exclude,
+      }) => {
+        if (!dimension) return;
+
+        const properties: FilterProperties = {
+          hidden,
+          locked,
+          unremovable: removable === false,
+          limit,
+        };
+
+        defaultFilterProperties.set(dimension, properties);
+
+        if (!values?.length) {
+          this.setTemporaryFilterName(dimension);
+        } else {
+          dimensionMap.set(dimension, {
+            mode: dimensionFilterModeMap[mode ?? "select"],
+            name: dimension,
+            label: dimension,
+            inputText: mode === "contains" ? values[0] : undefined,
+            selectedValues: values?.length ? values : [],
+            isInclude: !exclude,
+          });
+        }
+      },
+    );
+
+    defaultPreset?.filters?.measures?.forEach(
+      ({
+        measure,
+        hidden,
+        locked,
+        removable,
+        byDimension,
+        operator,
+        values,
+      }) => {
+        if (!measure) return;
+
+        const properties = {
+          hidden,
+          locked,
+          unremovable: removable === false,
+        };
+
+        defaultFilterProperties.set(measure, properties);
+
+        const operation = OperationShortHandMap.get(operator ?? "");
+
+        if (!byDimension || !operation) {
+          this.setTemporaryFilterName(measure);
+          return;
+        }
+
+        measureMap.set(measure, {
+          dimensionName: byDimension,
+          name: measure,
+          label: measure,
+          filter: {
+            measure,
+            operation,
+            type: MeasureFilterType.Value,
+            value1: values?.[0]?.toString() ?? "",
+            value2: values?.[1]?.toString() ?? "",
+          },
+        });
+      },
+    );
+
+    this.defaultFilterProperties.set(defaultFilterProperties);
+
+    return {
+      dimensionMap,
+      measureMap,
+      defaultFilterProperties,
+    };
   }
 
   private getMeasureFilters = (
@@ -389,7 +611,7 @@ export class Filters {
       dimThresholdFilter.filters.splice(exprIdx, 1, filter);
     }
 
-    this.searchParamsStore.set(
+    this.searchParamsCallback(
       ExploreStateURLParams.Filters,
       getFilterParam(
         get(this.whereFilter),
@@ -411,7 +633,7 @@ export class Filters {
     if (!filters.length) {
       dtfs.splice(dimIdx, 1);
     }
-    this.searchParamsStore.set(
+    this.searchParamsCallback(
       ExploreStateURLParams.Filters,
       getFilterParam(
         get(this.whereFilter),
@@ -429,7 +651,7 @@ export class Filters {
       if (this.componentName) {
         this.temporaryFilters.set(tempFilters);
       } else {
-        this.searchParamsStore.set(
+        this.searchParamsCallback(
           ExploreStateURLParams.TemporaryFilters,
           Array.from(tempFilters).join(","),
         );
@@ -456,6 +678,7 @@ export class Filters {
     dimensionValues: string[],
     keepPillVisible?: boolean,
     isExclusiveFilter?: boolean,
+    skipToggling?: boolean,
   ) => {
     this.checkTemporaryFilter(dimensionName);
 
@@ -471,6 +694,7 @@ export class Filters {
     const wasLikeFilter =
       expr?.cond?.op === V1Operation.OPERATION_LIKE ||
       expr?.cond?.op === V1Operation.OPERATION_NLIKE;
+
     if (!expr?.cond?.exprs || wasLikeFilter) {
       expr = createInExpression(dimensionName, [], isExclude);
       wf.cond?.exprs?.push(expr);
@@ -480,6 +704,7 @@ export class Filters {
     const wasInListFilter = get(this.dimensionsWithInlistFilter).includes(
       dimensionName,
     );
+
     if (wasInListFilter) {
       this.dimensionsWithInlistFilter.update((dimensionsWithInlistFilter) =>
         dimensionsWithInlistFilter.filter((d) => d !== dimensionName),
@@ -487,7 +712,12 @@ export class Filters {
     }
 
     dimensionValues.forEach((dimensionValue) => {
-      toggleDimensionFilterValue(expr, dimensionValue, !!isExclusiveFilter);
+      toggleDimensionFilterValue(
+        expr,
+        dimensionValue,
+        !!isExclusiveFilter,
+        skipToggling,
+      );
     });
 
     if (expr?.cond?.exprs?.length === 1) {
@@ -498,7 +728,7 @@ export class Filters {
       }
     }
 
-    this.searchParamsStore.set(
+    this.searchParamsCallback(
       ExploreStateURLParams.Filters,
       getFilterParam(
         wf,
@@ -525,7 +755,7 @@ export class Filters {
     } else {
       wf.cond!.exprs![exprIndex] = expr;
     }
-    this.searchParamsStore.set(
+    this.searchParamsCallback(
       ExploreStateURLParams.Filters,
       getFilterParam(
         wf,
@@ -552,7 +782,7 @@ export class Filters {
     } else {
       wf.cond!.exprs![exprIndex] = expr;
     }
-    this.searchParamsStore.set(
+    this.searchParamsCallback(
       ExploreStateURLParams.Filters,
       getFilterParam(
         wf,
@@ -576,7 +806,7 @@ export class Filters {
     if (exprIdx === -1) return;
     wf.cond.exprs[exprIdx] = negateExpression(wf.cond.exprs[exprIdx]);
 
-    this.searchParamsStore.set(
+    this.searchParamsCallback(
       ExploreStateURLParams.Filters,
       getFilterParam(
         wf,
@@ -593,7 +823,7 @@ export class Filters {
     if (exprIdx === undefined || exprIdx === -1) return;
     wf.cond?.exprs?.splice(exprIdx, 1);
 
-    this.searchParamsStore.set(
+    this.searchParamsCallback(
       ExploreStateURLParams.Filters,
       getFilterParam(
         wf,
@@ -612,7 +842,7 @@ export class Filters {
       wf.cond?.exprs?.push(
         createInExpression(dimensionName, values, isExclude),
       );
-      this.searchParamsStore.set(
+      this.searchParamsCallback(
         ExploreStateURLParams.Filters,
         getFilterParam(
           wf,
@@ -627,7 +857,7 @@ export class Filters {
     const oldValues = getValuesInExpression(expr);
     const newValues = values.filter((v) => !oldValues.includes(v));
     expr.cond.exprs.push(...newValues.map((v) => ({ val: v })));
-    this.searchParamsStore.set(
+    this.searchParamsCallback(
       ExploreStateURLParams.Filters,
       getFilterParam(
         wf,
@@ -657,7 +887,7 @@ export class Filters {
     } else {
       wf.cond?.exprs?.splice(exprIdx, 1);
     }
-    this.searchParamsStore.set(
+    this.searchParamsCallback(
       ExploreStateURLParams.Filters,
       getFilterParam(
         wf,
@@ -677,10 +907,19 @@ export class Filters {
 
   clearAllFilters = () => {
     this.temporaryFilters.set(new Set());
-    this.searchParamsStore.set(ExploreStateURLParams.Filters, undefined);
+
+    if (!this.specStore) return;
+    const defaultPreset = get(this.specStore).data?.canvas?.defaultPreset;
+
+    const { dimensionMap, measureMap, defaultFilterProperties } =
+      this.processDefaults(defaultPreset);
+
+    this.setDefaults(dimensionMap, measureMap, defaultFilterProperties, false);
   };
 
-  setTemporaryFilterName = (name: string) => {
+  setTemporaryFilterName = (name: string, overwrite = false) => {
+    const tempFilters = get(this.temporaryFilters);
+
     if (this.componentName) {
       this.temporaryFilters.update((tempFilters) => {
         if (tempFilters.has(name)) {
@@ -689,7 +928,27 @@ export class Filters {
         return tempFilters.add(name);
       });
     } else {
-      this.searchParamsStore.set(ExploreStateURLParams.TemporaryFilters, name);
+      if (overwrite) {
+        const defaultFilterProperties = get(this.defaultFilterProperties);
+
+        const filtered = Array.from(tempFilters).filter((t) => {
+          return defaultFilterProperties.get(t)?.unremovable;
+        });
+
+        filtered.push(name);
+
+        this.searchParamsCallback(
+          ExploreStateURLParams.TemporaryFilters,
+          filtered.join(","),
+        );
+      } else {
+        tempFilters.add(name);
+
+        this.searchParamsCallback(
+          ExploreStateURLParams.TemporaryFilters,
+          Array.from(tempFilters).join(","),
+        );
+      }
     }
   };
 
@@ -719,4 +978,83 @@ function getFilterParam(
     mergedFilters,
     dimensionsWithInlistFilter,
   );
+}
+
+function constructWhereFilterFromMeasureAndDimensionFilters(
+  dimensionFilters: DimensionFilterItem[],
+  measureFilters: MeasureFilterItem[],
+): { whereFilter: V1Expression; dimensionsWithInListFilter: string[] } {
+  const dimensionExprs: V1Expression[] = [];
+  const dimensionsWithInListFilter: string[] = [];
+
+  for (const dimensionFilter of dimensionFilters) {
+    if (
+      dimensionFilter.mode === DimensionFilterMode.Select &&
+      dimensionFilter.selectedValues.length > 0
+    ) {
+      dimensionExprs.push(
+        createInExpression(
+          dimensionFilter.name,
+          dimensionFilter.selectedValues,
+          !dimensionFilter.isInclude,
+        ),
+      );
+    } else if (
+      dimensionFilter.mode === DimensionFilterMode.Contains &&
+      (dimensionFilter.selectedValues.length > 0 || dimensionFilter.inputText)
+    ) {
+      dimensionExprs.push(
+        createLikeExpression(
+          dimensionFilter.name,
+          dimensionFilter.inputText
+            ? `${dimensionFilter.inputText}`
+            : `${dimensionFilter.selectedValues[0]}`,
+          !dimensionFilter.isInclude,
+        ),
+      );
+    } else if (
+      dimensionFilter.mode === DimensionFilterMode.InList &&
+      dimensionFilter.selectedValues.length > 0
+    ) {
+      dimensionsWithInListFilter.push(dimensionFilter.name);
+      dimensionExprs.push(
+        createInExpression(
+          dimensionFilter.name,
+          dimensionFilter.selectedValues,
+          !dimensionFilter.isInclude,
+        ),
+      );
+    }
+  }
+
+  const dimensionFilterExpression = createAndExpression(dimensionExprs);
+
+  const dimensionThresholdFilters: DimensionThresholdFilter[] = [];
+  const measureFiltersByDimension = new Map<string, MeasureFilterEntry[]>();
+
+  for (const measureFilter of measureFilters) {
+    if (measureFilter.filter && measureFilter.dimensionName) {
+      if (!measureFiltersByDimension.has(measureFilter.dimensionName)) {
+        measureFiltersByDimension.set(measureFilter.dimensionName, []);
+      }
+      measureFiltersByDimension
+        .get(measureFilter.dimensionName)!
+        .push(measureFilter.filter);
+    }
+  }
+
+  for (const [dimensionName, filters] of measureFiltersByDimension) {
+    dimensionThresholdFilters.push({
+      name: dimensionName,
+      filters,
+    });
+  }
+
+  return {
+    whereFilter: mergeDimensionAndMeasureFilters(
+      dimensionFilterExpression,
+      dimensionThresholdFilters,
+    ),
+    dimensionsWithInListFilter,
+  };
 }

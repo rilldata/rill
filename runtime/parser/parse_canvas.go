@@ -25,6 +25,7 @@ type CanvasYAML struct {
 	GapY                 uint32                 `yaml:"gap_y"`
 	Theme                yaml.Node              `yaml:"theme"` // Name (string) or inline theme definition (map)
 	AllowCustomTimeRange *bool                  `yaml:"allow_custom_time_range"`
+	AllowFilterAdd       *bool                  `yaml:"allow_filter_add"`
 	TimeRanges           []ExploreTimeRangeYAML `yaml:"time_ranges"`
 	TimeZones            []string               `yaml:"time_zones"`
 	Filters              struct {
@@ -34,6 +35,27 @@ type CanvasYAML struct {
 		TimeRange           string `yaml:"time_range"`
 		ComparisonMode      string `yaml:"comparison_mode"`
 		ComparisonDimension string `yaml:"comparison_dimension"`
+		Filters             *struct {
+			Dimensions []struct {
+				Dimension string    `yaml:"dimension"`
+				Values    *[]string `yaml:"values"`
+				Limit     *int      `yaml:"limit"`
+				Removable *bool     `yaml:"removable"`
+				Locked    *bool     `yaml:"locked"`
+				Hidden    *bool     `yaml:"hidden"`
+				Mode      string    `yaml:"mode"` // select, in_list, contains
+				Exclude   *bool     `yaml:"exclude"`
+			} `yaml:"dimensions"`
+			Measures []struct {
+				Measure     string    `yaml:"measure"`
+				ByDimension *string   `yaml:"by_dimension"`
+				Operator    *string   `yaml:"operator"` // Optional operator for the measure filter (e.g., "eq", "gt", "lt", etc.)
+				Values      *[]string `yaml:"values"`
+				Removable   *bool     `yaml:"removable"`
+				Locked      *bool     `yaml:"locked"`
+				Hidden      *bool     `yaml:"hidden"`
+			} `yaml:"measures"`
+		} `yaml:"filters"`
 	} `yaml:"defaults"`
 	Variables []*ComponentVariableYAML `yaml:"variables"`
 	Rows      []*struct {
@@ -72,6 +94,12 @@ func (p *Parser) parseCanvas(node *Node) error {
 	allowCustomTimeRange := true
 	if tmp.AllowCustomTimeRange != nil {
 		allowCustomTimeRange = *tmp.AllowCustomTimeRange
+	}
+
+	// Set default for AllowFilterAdd to true if not provided
+	allowFilterAdd := true
+	if tmp.AllowFilterAdd != nil {
+		allowFilterAdd = *tmp.AllowFilterAdd
 	}
 
 	// Parse theme if present.
@@ -227,10 +255,130 @@ func (p *Parser) parseCanvas(node *Node) error {
 			return errors.New("can only set comparison_dimension when comparison_mode is 'dimension'")
 		}
 
+		var canvasFilters *runtimev1.CanvasDefaultFilters
+		if tmp.Defaults.Filters != nil {
+			// Parse dimension filters
+			dimensionFilters := make([]*runtimev1.CanvasDimensionFilter, len(tmp.Defaults.Filters.Dimensions))
+			for i, dimFilter := range tmp.Defaults.Filters.Dimensions {
+				filter := &runtimev1.CanvasDimensionFilter{
+					Dimension: dimFilter.Dimension,
+				}
+
+				filter.Exclude = false
+				if dimFilter.Exclude != nil {
+					filter.Exclude = *dimFilter.Exclude
+				}
+
+				if !isValidCanvasDimensionFilterMode(dimFilter.Mode) {
+					return fmt.Errorf("invalid mode %q for dimension filter %q", dimFilter.Mode, dimFilter.Dimension)
+				}
+
+				if dimFilter.Mode != "" {
+					filter.Mode = dimFilter.Mode
+				} else {
+					filter.Mode = "select"
+				}
+
+				if dimFilter.Values != nil {
+					if filter.Mode == "contains" && len(*dimFilter.Values) != 1 {
+						return fmt.Errorf("dimension filter %q with mode 'contains' must have exactly one value", dimFilter.Dimension)
+					}
+					filter.Values = *dimFilter.Values
+				}
+
+				if dimFilter.Limit != nil {
+					limit := uint32(*dimFilter.Limit)
+					filter.Limit = limit
+
+					if filter.Values != nil && uint32(len(filter.Values)) > limit {
+						return fmt.Errorf("dimension filter %q has too many values (max: %d)", dimFilter.Dimension, limit)
+					}
+				}
+
+				filter.Removable = true
+				if dimFilter.Removable != nil {
+					filter.Removable = *dimFilter.Removable
+				}
+
+				filter.Locked = false
+				if dimFilter.Locked != nil {
+					if *dimFilter.Locked && (filter.Values == nil || uint32(len(filter.Values)) == 0) {
+						return fmt.Errorf("dimension filter %q must have at least one value when locked", dimFilter.Dimension)
+					}
+
+					filter.Locked = *dimFilter.Locked
+				}
+
+				filter.Hidden = false
+				if dimFilter.Hidden != nil {
+					filter.Hidden = *dimFilter.Hidden
+				}
+
+				dimensionFilters[i] = filter
+			}
+
+			// Parse measure filters
+			measureFilters := make([]*runtimev1.CanvasMeasureFilter, len(tmp.Defaults.Filters.Measures))
+			for i, measureFilter := range tmp.Defaults.Filters.Measures {
+				filter := &runtimev1.CanvasMeasureFilter{
+					Measure: measureFilter.Measure,
+				}
+				if measureFilter.Values != nil {
+					// Convert string values to uint32 values for measure filters
+					values := make([]uint32, 0, len(*measureFilter.Values))
+					for j, val := range *measureFilter.Values {
+						// Parse string values as uint32 numbers for measure filters
+						parsed, err := strconv.ParseUint(val, 10, 32)
+						if err != nil {
+							return fmt.Errorf("invalid measure filter value %q at index %d: must be a valid number: %w", val, j, err)
+						}
+						values = append(values, uint32(parsed))
+					}
+					filter.Values = values
+				}
+
+				filter.Removable = true
+				if measureFilter.Removable != nil {
+					filter.Removable = *measureFilter.Removable
+				}
+
+				if measureFilter.ByDimension != nil {
+					filter.ByDimension = *measureFilter.ByDimension
+				}
+
+				if measureFilter.Operator != nil {
+					if !isValidMeasureFilterOperator(measureFilter.Operator) {
+						return fmt.Errorf("invalid operator %q for measure filter %q", *measureFilter.Operator, measureFilter.Measure)
+					}
+					filter.Operator = *measureFilter.Operator
+				}
+
+				filter.Locked = false
+				if measureFilter.Locked != nil {
+					if *measureFilter.Locked && (measureFilter.Operator == nil || filter.Values == nil || len(filter.Values) == 0 || measureFilter.ByDimension == nil) {
+						return fmt.Errorf("measure filter %q must have all fields set when locked", measureFilter.Measure)
+					}
+					filter.Locked = *measureFilter.Locked
+				}
+
+				filter.Hidden = false
+				if measureFilter.Hidden != nil {
+					filter.Hidden = *measureFilter.Hidden
+				}
+				measureFilters[i] = filter
+			}
+
+			canvasFilters = &runtimev1.CanvasDefaultFilters{
+				Dimensions: dimensionFilters,
+				Measures:   measureFilters,
+			}
+		}
+
 		defaultPreset = &runtimev1.CanvasPreset{
 			TimeRange:           pointerIfNotEmpty(tmp.Defaults.TimeRange),
 			ComparisonMode:      mode,
 			ComparisonDimension: pointerIfNotEmpty(tmp.Defaults.ComparisonDimension),
+			Filters:             canvasFilters,
 		}
 	}
 
@@ -262,6 +410,7 @@ func (p *Parser) parseCanvas(node *Node) error {
 	r.CanvasSpec.GapY = tmp.GapY
 	r.CanvasSpec.Theme = themeName
 	r.CanvasSpec.AllowCustomTimeRange = allowCustomTimeRange
+	r.CanvasSpec.AllowFilterAdd = allowFilterAdd
 	r.CanvasSpec.TimeRanges = timeRanges
 	r.CanvasSpec.TimeZones = tmp.TimeZones
 	r.CanvasSpec.FiltersEnabled = true
@@ -364,4 +513,28 @@ func pointerIfNotEmpty(v string) *string {
 		return nil
 	}
 	return &v
+}
+
+func isValidMeasureFilterOperator(op *string) bool {
+	if op == nil {
+		return false
+	}
+	switch *op {
+	case "eq", "neq", "gt", "gte", "lt", "lte", "bt", "nbt":
+		return true
+	default:
+		return false
+	}
+}
+
+func isValidCanvasDimensionFilterMode(mode string) bool {
+	if mode == "" {
+		return true
+	}
+	switch mode {
+	case "select", "in_list", "contains":
+		return true
+	default:
+		return false
+	}
 }
