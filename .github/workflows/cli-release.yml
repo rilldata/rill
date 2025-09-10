@@ -168,7 +168,7 @@ jobs:
         if: always() && (env.PUBLISH_NIGHTLY == 'true' || env.PUBLISH_RELEASE == 'true')
         with:
           status: ${{ job.status }}
-          notification_title: "{workflow} has {status_message}"
+          notification_title: "Nightly - ${{ env.PUBLISH_NIGHTLY }} / Release - ${{ env.PUBLISH_RELEASE }} "
           message_format: "{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}>"
           footer: "Linked Repo <{repo_url}|{repo}>"
           notify_when: "failure"
