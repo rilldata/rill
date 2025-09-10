@@ -1,6 +1,6 @@
 ---
 title: "Quantiles"
-description: Tips & Tricks for Metric Formatting
+description: Tips & Tricks for Measure Quantiles
 sidebar_label: "Quantiles"
 sidebar_position: 30
 ---

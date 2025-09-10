@@ -1,6 +1,6 @@
 ---
 title: "Referencing Measures"
-description: Tips & Tricks for Metric Formatting
+description: Tips & Tricks for Referencing Measure
 sidebar_label: "Referencing Measures"
 sidebar_position: 25
 ---

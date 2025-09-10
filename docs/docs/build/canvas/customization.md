@@ -69,7 +69,7 @@ defaults:
   comparison_mode: time
 ```
 
-## Dashboard  Access Policies
+## Dashboard Access Policies
 
 Defining security policies for your data is crucial. For more information, please refer to our [Data Access Policies](/build/metrics-view/security). Check our [examples](/build/metrics-view/security#examples) for frequently used patterns.
 

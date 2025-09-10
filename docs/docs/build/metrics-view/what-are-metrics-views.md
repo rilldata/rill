@@ -100,11 +100,11 @@ As an example, if you have a table of sales events with the sales price and cust
 * Number of orders with order value more than $100: `count(*) FILTER (WHERE order_val > 100)`
 
 You can also add labels, descriptions, and your choice of number formatting to customize how they are shown. See our dedicated examples and pages for the following advanced measures!
-- **[Metric Formatting](/build/metrics-view/measures/measure-formatting)**
+- **[Measure Formatting](/build/metrics-view/measures/measure-formatting)**
 - **[Case Statements and Filters](/build/metrics-view/measures/case-statements)**
 - **[Referencing Measures](/build/metrics-view/measures/referencing)**
 - **[Quantiles](/build/metrics-view/measures/quantiles)**
-- **[Fixed Metrics](/build/metrics-view/measures/fixed-measures)**
+- **[Fixed Measures](/build/metrics-view/measures/fixed-measures)**
 - **[Window Functions](/build/metrics-view/measures/windows)**
 
   

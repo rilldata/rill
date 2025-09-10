@@ -1,6 +1,6 @@
 ---
 title: "Window Functions"
-description: Tips & Tricks for Metric Formatting
+description: Tips & Tricks for Window Measures
 sidebar_label: "Window Functions"
 sidebar_position: 40
 ---

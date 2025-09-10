@@ -1,6 +1,6 @@
 ---
 title: "Case Statements and Filters"
-description: Tips & Tricks for Metric Formatting
+description: Tips & Tricks for Measure Formatting
 sidebar_label: "Case Statements and Filters"
 sidebar_position: 20
 ---
