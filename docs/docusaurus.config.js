@@ -412,11 +412,11 @@ const config = {
           },
           {
             from: '/concepts/developerVsCloud',
-            to: '/get-started/concepts/cloud-vs-developer'
+            to: '/deploy/cloud-vs-developer'
           },
           {
             from: '/home/concepts/developerVsCloud',
-            to: '/get-started/concepts/cloud-vs-developer'
+            to: '/deploy/cloud-vs-developer'
           },
           {
             from: '/concepts/OLAP',

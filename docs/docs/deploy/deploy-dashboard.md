@@ -9,10 +9,11 @@ sidebar_position: 15
 
 Deploying dashboards from Rill Developer allows you to share dashboards with other users, leverage [Rill Cloud capabilities](../../explore/dashboard-101), [embed Rill](/integrate/embedding.md) into other applications, and more! Simply click the Deploy button in Rill Developer and follow the steps!
 
-<img src = '/img/deploy/existing-project/deploy.png' class='rounded-gif' />
+<img src = '/img/deploy/deploy.png' class='rounded-gif' />
 <br />
-:::tip Configure credentials
-Cloud datastores will typically require service keys to access data. Make sure you create the necessary key for your service account and either add these credentials to your `.env` file directly or deploy your project and then run ```rill env configure``` with the correct credentials. For more details, please refer to our [connector documentation](/connect/credentials).
+:::tip First time deploying?
+
+First-time deployments to Rill Cloud include a [30-day free trial](/other/plans#trial-plan). You'll have access to the full platform during this time and can upgrade to a [Team plan](/other/plans#upgrading-to-team-plan) at any time.
 :::
 
 ## First Deploy to Rill Cloud 

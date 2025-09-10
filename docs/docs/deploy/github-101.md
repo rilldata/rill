@@ -5,8 +5,6 @@ sidebar_label: "GitHub Basics"
 sidebar_position: 20
 ---
 
-## Overview
-
 :::info New to Git?
 This page makes the deploy process easier for those who are less familiar with GitHub by walking you through the steps to use the UI rather than the GitHub command line interface. Much simpler for those who prefer a graphic interface!
 :::

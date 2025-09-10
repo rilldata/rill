@@ -5,8 +5,6 @@ sidebar_label: Managing Project Errors
 sidebar_position: 25
 ---
 
-## Overview
-
 Rill projects can go into an error state for many reasons, such as a malformed YAML file, missing credentials for a connector, or a breaking change in a data type.
 Regardless of the error, Rill Cloud takes various steps to surface, manage, and contain errors:
 
@@ -20,6 +18,7 @@ There are times where you'll need to check downstream objects to find the true c
 
 If you have already created YAML alerts, when deploying to Rill Cloud for the first time, you'll get a notification if there are any [resource level errors](/build/alerts#project-status-alerts). 
 
+You'll receive something similar to the below via email or slack, depending on your notify settings.
 ```
 Project resource Status Alert
 Your alert triggered for Thu, 06 Feb 2025 23:28:00 UTC. The first row that matched your alert criteria is:
@@ -31,23 +30,30 @@ Your alert triggered for Thu, 06 Feb 2025 23:28:00 UTC. The first row that match
 
 This will give you a good idea of what object has an issue, and you can browse the [status page](/manage/project-management#checking-deployment-status) for more information.
 
-## Credential Errors
+## Credentials Errors
 
-If this is a first deployment, there is a potential for credentials being incorrect in your prod environment. If this is the case, you'll need to check your settings page under [environmental variables.](/manage/project-management/variables-and-credentials)
+If this is a first deployment or your credentials expired, your source models may fail to load. Some common error messages are:
+```
+HTTP 401: Unauthorized
+HTTP 403: Forbidden
 
-If you want to reconfigure your credentials from the CLI, run `rill env configure`.
+Insufficient privileges to operate on table 'SCHEMA.TABLE'
+Invalid username or password
+
+Access Denied: BigQuery BigQuery: Permission denied for table
+Invalid credentials provided
+```
+If these or similar errors are seen in your project's [status page](/manage/project-management/variables-and-credentials), you will need to make changes to your credentials. This can be done in your [project's setting page]/manage/project-management/variables-and-credentials) or via the CLI running `rill env configure`.
 
 
 ## Model Errors
 
 Model errors typically occur when there are issues with data processing, SQL syntax, or data type mismatches. Most of these errors will have surfaced in Rill Developer but a few possible issues after deploying to Rill Cloud are:
 
-1. **Prod vs dev environment** - The environment you are looking for your data in prod doesn't exist
+1. **Prod vs dev environment** - The prod parameters in your YAML files dont exist.
 2. **Timeouts, OOM** - Assuming the data in prod is a lot larger, timeouts and OOM issues can occur. [Contact us](/contact) if you see any related error messages.
-3. **Incorrect credentials** - Since you likely didn't test the prod credentials, it's possible that this is incorrect.
 
 To troubleshoot model errors:
-
 1. Check the model's status in the project status page
 2. Review the error message for specific details about what failed
 3. Verify that all referenced tables and views exist and are accessible in prod environment 
@@ -61,7 +67,7 @@ If after going through the above steps, you are still unable to resolve the issu
 Metrics view and dashboard errors often stem from issues with the underlying models or configuration problems. Common issues include:
 
 - **Model Dependencies:** Dashboards failing because their underlying models have errors
-- **Missing Dimensions/Measures:** References to fields that don't exist in the source model
+- **Missing Dimensions/Measures:** References to fields that don't exist in the underlying model
 
 To resolve metrics view and dashboard errors:
 
