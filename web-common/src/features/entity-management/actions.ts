@@ -8,6 +8,7 @@ import { fileIsMainEntity } from "@rilldata/web-common/features/entity-managemen
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 import {
   runtimeServiceDeleteFile,
+  runtimeServiceGetResource,
   runtimeServicePutFile,
   runtimeServiceRenameFile,
   type RuntimeServicePutFileBody,
@@ -23,6 +24,7 @@ import {
   getProjectParserVersion,
   waitForProjectParserVersion,
 } from "./project-parser";
+import { ResourceKind } from "./resource-selectors";
 
 export async function runtimeServicePutFileAndWaitForReconciliation(
   instanceId: string,
@@ -36,6 +38,77 @@ export async function runtimeServicePutFileAndWaitForReconciliation(
     instanceId,
     projectParserStartingVersion + 1,
   );
+}
+
+export async function runtimeServicePutConnectorFileAndWaitForReconciliation(
+  instanceId: string,
+  runtimeServicePutFileBody: RuntimeServicePutFileBody,
+  connectorName: string,
+) {
+  const projectParserStartingVersion = getProjectParserVersion(instanceId);
+
+  await runtimeServicePutFile(instanceId, runtimeServicePutFileBody);
+
+  await waitForProjectParserVersion(
+    instanceId,
+    projectParserStartingVersion + 1,
+  );
+
+  // Now check the specific connector resource reconcile status
+  // The parser version increment means files were processed, but individual resources
+  // might still be reconciling or have failed to reconcile
+  const maxAttempts = 10; // 20 seconds total (2s * 10)
+  const pollInterval = 2000; // 2 seconds
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const resource = await runtimeServiceGetResource(instanceId, {
+        "name.kind": ResourceKind.Connector,
+        "name.name": connectorName,
+      });
+
+      // Check if there's a reconcile error
+      if (resource.resource?.meta?.reconcileError) {
+        throw new Error(
+          `Connector configuration failed to reconcile: ${resource.resource.meta.reconcileError}`,
+        );
+      }
+
+      // Check the reconcile status
+      const reconcileStatus = resource.resource?.meta?.reconcileStatus;
+      if (reconcileStatus === "RECONCILE_STATUS_IDLE") {
+        return; // Success!
+      }
+
+      // Still reconciling, continue polling
+      if (attempt < maxAttempts) {
+        await new Promise((resolve) => setTimeout(resolve, pollInterval));
+        continue;
+      }
+
+      // Last attempt and still not idle
+      throw new Error(
+        `Connector reconciliation timeout. Current status: ${reconcileStatus || "unknown"}`,
+      );
+    } catch (error) {
+      // Resource not found could mean it was deleted due to reconcile failure
+      if (error?.status === 404 || error?.response?.status === 404) {
+        if (attempt >= 3) {
+          // After 6 seconds, assume reconcile failure
+          throw new Error(
+            `Connector configuration failed to reconcile and was automatically deleted. This usually indicates a connection or configuration error.`,
+          );
+        }
+
+        // Wait and try again
+        await new Promise((resolve) => setTimeout(resolve, pollInterval));
+        continue;
+      }
+
+      // Re-throw other errors
+      throw error;
+    }
+  }
 }
 
 export async function renameFileArtifact(
