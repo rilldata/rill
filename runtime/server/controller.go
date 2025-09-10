@@ -321,14 +321,14 @@ func (s *Server) GetModelPartitions(ctx context.Context, req *runtimev1.GetModel
 	}
 	defer release()
 
-	_defaultPageSize := 100
+	defaultPageSize := 100
 	opts := &drivers.FindModelPartitionsOptions{
 		ModelID:          partitionsModelID,
 		WherePending:     req.Pending,
 		WhereErrored:     req.Errored,
 		BeforeExecutedOn: beforeExecutedOn,
 		AfterKey:         afterKey,
-		Limit:            pagination.ValidPageSize(req.PageSize, _defaultPageSize),
+		Limit:            pagination.ValidPageSize(req.PageSize, defaultPageSize),
 	}
 
 	partitions, err := catalog.FindModelPartitions(ctx, opts)
@@ -337,7 +337,7 @@ func (s *Server) GetModelPartitions(ctx context.Context, req *runtimev1.GetModel
 	}
 
 	var nextPageToken string
-	if len(partitions) == pagination.ValidPageSize(req.PageSize, _defaultPageSize) {
+	if len(partitions) == pagination.ValidPageSize(req.PageSize, defaultPageSize) {
 		last := partitions[len(partitions)-1]
 		nextPageToken = pagination.MarshalPageToken(last.Index, last.Key)
 	}
