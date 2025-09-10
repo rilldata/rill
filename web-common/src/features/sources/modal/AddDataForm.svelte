@@ -337,6 +337,9 @@
         error = humanReadable;
         details =
           humanReadable !== originalMessage ? originalMessage : undefined;
+      } else if (e?.message) {
+        error = e.message;
+        details = undefined;
       } else {
         error = "Unknown error";
         details = undefined;
