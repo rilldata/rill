@@ -151,6 +151,32 @@
         },
       );
     }
+    // Switching from ClickHouse Cloud to self-hosted: restore defaults
+    else if (
+      prevConnectorType === "clickhouse-cloud" &&
+      connectorType === "self-hosted"
+    ) {
+      paramsForm.update(() => ({ ...initialFormValues, managed: false }), {
+        taint: false,
+      });
+    }
+    // Switching from self-hosted to ClickHouse Cloud: set ClickHouse Cloud defaults
+    else if (
+      prevConnectorType === "self-hosted" &&
+      connectorType === "clickhouse-cloud"
+    ) {
+      paramsForm.update(
+        () => ({
+          ...initialFormValues,
+          managed: false,
+          port: "8443",
+          ssl: true,
+        }),
+        {
+          taint: false,
+        },
+      );
+    }
     prevConnectorType = connectorType;
   }
 
@@ -364,18 +390,6 @@
                   hint={property.hint}
                   href={property.docsUrl}
                 />
-              {/if}
-
-              <!-- Show info about fixed values for ClickHouse Cloud -->
-              {#if connectorType === "clickhouse-cloud" && isPortField}
-                <div class="mt-1 text-xs text-gray-600">
-                  Port is fixed to 8443 for ClickHouse Cloud (HTTPS)
-                </div>
-              {/if}
-              {#if connectorType === "clickhouse-cloud" && isSSLField}
-                <div class="mt-1 text-xs text-gray-600">
-                  SSL is always enabled for ClickHouse Cloud
-                </div>
               {/if}
             </div>
           {/each}
