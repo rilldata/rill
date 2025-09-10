@@ -22,7 +22,10 @@ import {
   updateDotEnvWithSecrets,
   updateRillYAMLWithOlapConnector,
 } from "../../connectors/code-utils";
-import { testOLAPConnector } from "../../connectors/olap/test-connection";
+import {
+  testOLAPConnector,
+  pollConnectorReconcileStatus,
+} from "../../connectors/olap/test-connection";
 import { runtimeServicePutFileAndWaitForReconciliation } from "../../entity-management/actions";
 import { getFileAPIPathFromNameAndType } from "../../entity-management/entity-mappers";
 import { fileArtifacts } from "../../entity-management/file-artifacts";
@@ -86,6 +89,7 @@ export async function submitAddConnectorForm(
   queryClient: QueryClient,
   connector: V1ConnectorDriver,
   formValues: AddDataFormValues,
+  onStatusUpdate?: (status: string) => void,
 ): Promise<void> {
   const instanceId = get(runtime).instanceId;
   await beforeSubmitForm(instanceId);
@@ -173,24 +177,27 @@ export async function submitAddConnectorForm(
     throw new Error(errorMessage);
   }
 
-  // Test the connection to the OLAP connectors
+  // Test the connection for both OLAP and non-OLAP connectors
   // If the connection test fails, rollback the changes
+  let result;
   if (OLAP_ENGINES.includes(connector.name as string)) {
-    const result = await testOLAPConnector(
+    // For OLAP connectors, use the API test
+    result = await testOLAPConnector(instanceId, connector.name as string);
+  } else {
+    // For non-OLAP connectors, poll the reconcile status
+    result = await pollConnectorReconcileStatus(instanceId, newConnectorName);
+  }
+
+  if (!result.success) {
+    await rollbackConnectorChanges(
       instanceId,
-      connector.name as string,
+      newConnectorFilePath,
+      originalEnvBlob,
     );
-    if (!result.success) {
-      await rollbackConnectorChanges(
-        instanceId,
-        newConnectorFilePath,
-        originalEnvBlob,
-      );
-      throw {
-        message: result.error || "Unable to establish a connection",
-        details: result.details,
-      };
-    }
+    throw {
+      message: result.error || "Unable to establish a connection",
+      details: result.details,
+    };
   }
 
   /**
