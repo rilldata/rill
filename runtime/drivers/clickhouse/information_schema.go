@@ -10,6 +10,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/pagination"
 )
 
 func (c *Connection) All(ctx context.Context, like string, pageSize uint32, pageToken string) ([]*drivers.OlapTable, string, error) {
@@ -23,6 +24,16 @@ func (c *Connection) All(ctx context.Context, like string, pageSize uint32, page
 	if like != "" {
 		likeClause = "AND (LOWER(T.name) LIKE LOWER(?) OR CONCAT(T.database, '.', T.name) LIKE LOWER(?))"
 		args = []any{like, like}
+	}
+
+	// Add pagination clause
+	if pageToken != "" {
+		var startAfterSchema, startAfterName string
+		if err := pagination.UnmarshalPageToken(pageToken, &startAfterSchema, &startAfterName); err != nil {
+			return nil, "", fmt.Errorf("invalid page token: %w", err)
+		}
+		likeClause += " AND (T.database > ? OR (T.database = ? AND T.name > ?))"
+		args = append(args, startAfterSchema, startAfterSchema, startAfterName)
 	}
 
 	var dbFilter string
@@ -58,7 +69,11 @@ func (c *Connection) All(ctx context.Context, like string, pageSize uint32, page
 		WHERE (%s)
 		%s
 		ORDER BY SCHEMA, NAME, TABLE_TYPE, ORDINAL_POSITION
+		LIMIT ?
 	`, dbFilter, likeClause)
+
+	limit := pagination.ValidPageSize(pageSize, drivers.DefaultPageSize)
+	args = append(args, limit+1)
 
 	rows, err := conn.QueryxContext(ctx, q, args...)
 	if err != nil {
@@ -70,7 +85,15 @@ func (c *Connection) All(ctx context.Context, like string, pageSize uint32, page
 	if err != nil {
 		return nil, "", err
 	}
-	return tables, "", nil
+
+	next := ""
+	if len(tables) > limit {
+		tables = tables[:limit]
+		lastTable := tables[len(tables)-1]
+		next = pagination.MarshalPageToken(lastTable.DatabaseSchema, lastTable.Name)
+	}
+
+	return tables, next, nil
 }
 
 func (c *Connection) Lookup(ctx context.Context, db, schema, name string) (*drivers.OlapTable, error) {

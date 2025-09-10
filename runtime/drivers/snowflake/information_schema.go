@@ -58,9 +58,19 @@ func (c *connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, p
 	}
 	end := start + limit
 	if end >= len(res) {
-		return res[start:], "", rows.Err()
+		end = len(res)
 	}
-	return res[start:end], fmt.Sprintf("%d", end), rows.Err()
+
+	if start >= len(res) {
+		return []*drivers.DatabaseSchemaInfo{}, "", rows.Err()
+	}
+
+	next := ""
+	if end < len(res) {
+		next = fmt.Sprintf("%d", end)
+	}
+
+	return res[start:end], next, rows.Err()
 }
 
 func (c *connection) ListTables(ctx context.Context, database, databaseSchema string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {

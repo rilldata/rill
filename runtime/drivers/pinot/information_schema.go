@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/c2h5oh/datasize"
@@ -14,6 +15,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/observability"
+	"github.com/rilldata/rill/runtime/pkg/pagination"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 )
@@ -50,15 +52,42 @@ func (c *connection) All(ctx context.Context, like string, pageSize uint32, page
 		}
 	}
 
-	tables := make([]*drivers.OlapTable, 0, len(tablesResp.Tables))
-	// fetch table schemas in parallel with concurrency of 5
-	g, ctx := errgroup.WithContext(ctx)
-	g.SetLimit(5)
+	// Filter table names first
+	filteredTables := make([]string, 0)
 	for _, tableName := range tablesResp.Tables {
 		if likeRegexp != nil && !likeRegexp.MatchString(tableName) {
 			continue
 		}
+		filteredTables = append(filteredTables, tableName)
+	}
 
+	limit := pagination.ValidPageSize(pageSize, drivers.DefaultPageSize)
+	startIndex := 0
+
+	if pageToken != "" {
+		var err error
+		startIndex, err = strconv.Atoi(pageToken)
+		if err != nil {
+			return nil, "", fmt.Errorf("invalid page token: %w", err)
+		}
+	}
+
+	endIndex := startIndex + limit
+	if endIndex >= len(filteredTables) {
+		endIndex = len(filteredTables)
+	}
+
+	if startIndex >= len(filteredTables) {
+		return []*drivers.OlapTable{}, "", nil
+	}
+
+	paginatedTables := filteredTables[startIndex:endIndex]
+
+	tables := make([]*drivers.OlapTable, 0, len(paginatedTables))
+	// fetch table schemas in parallel with concurrency of 5
+	g, ctx := errgroup.WithContext(ctx)
+	g.SetLimit(5)
+	for _, tableName := range paginatedTables {
 		tableName := tableName
 		g.Go(func() error {
 			table, err := c.Lookup(ctx, "", "", tableName)
@@ -74,7 +103,12 @@ func (c *connection) All(ctx context.Context, like string, pageSize uint32, page
 		return nil, "", err
 	}
 
-	return tables, "", nil
+	next := ""
+	if endIndex < len(filteredTables) {
+		next = strconv.Itoa(endIndex)
+	}
+
+	return tables, next, nil
 }
 
 func (c *connection) Lookup(ctx context.Context, db, schema, name string) (*drivers.OlapTable, error) {

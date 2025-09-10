@@ -7,6 +7,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/pagination"
 )
 
 // In druid there are multiple schemas but all user tables are in druid schema.
@@ -23,6 +24,16 @@ func (c *connection) All(ctx context.Context, like string, pageSize uint32, page
 		args = []any{like}
 	}
 
+	// Add pagination clause
+	if pageToken != "" {
+		var startAfterName string
+		if err := pagination.UnmarshalPageToken(pageToken, &startAfterName); err != nil {
+			return nil, "", fmt.Errorf("invalid page token: %w", err)
+		}
+		likeClause += " AND T.TABLE_NAME > ?"
+		args = append(args, startAfterName)
+	}
+
 	q := fmt.Sprintf(`
 		SELECT
 			T.TABLE_SCHEMA AS SCHEMA,
@@ -36,7 +47,11 @@ func (c *connection) All(ctx context.Context, like string, pageSize uint32, page
 		WHERE T.TABLE_SCHEMA = 'druid'
 		%s
 		ORDER BY SCHEMA, NAME, TABLE_TYPE, C.ORDINAL_POSITION
+		LIMIT ?
 	`, likeClause)
+
+	limit := pagination.ValidPageSize(pageSize, drivers.DefaultPageSize)
+	args = append(args, limit+1)
 
 	rows, err := c.db.QueryxContext(ctx, q, args...)
 	if err != nil {
@@ -48,7 +63,15 @@ func (c *connection) All(ctx context.Context, like string, pageSize uint32, page
 	if err != nil {
 		return nil, "", err
 	}
-	return tables, "", nil
+
+	next := ""
+	if len(tables) > limit {
+		tables = tables[:limit]
+		lastTable := tables[len(tables)-1]
+		next = pagination.MarshalPageToken(lastTable.Name)
+	}
+
+	return tables, next, nil
 }
 
 func (c *connection) Lookup(ctx context.Context, db, schema, name string) (*drivers.OlapTable, error) {

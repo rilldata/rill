@@ -18,7 +18,7 @@ func (c *connection) All(ctx context.Context, ilike string, pageSize uint32, pag
 	}
 	defer func() { _ = release() }()
 
-	rows, err := db.Schema(ctx, ilike, "")
+	rows, nextToken, err := db.Schema(ctx, ilike, "", pageSize, pageToken)
 	if err != nil {
 		return nil, "", c.checkErr(err)
 	}
@@ -28,7 +28,7 @@ func (c *connection) All(ctx context.Context, ilike string, pageSize uint32, pag
 		return nil, "", err
 	}
 
-	return tables, "", nil
+	return tables, nextToken, nil
 }
 
 func (c *connection) Lookup(ctx context.Context, _, _, name string) (*drivers.OlapTable, error) {
@@ -39,7 +39,7 @@ func (c *connection) Lookup(ctx context.Context, _, _, name string) (*drivers.Ol
 	}
 	defer func() { _ = release() }()
 
-	rows, err := db.Schema(ctx, "", name)
+	rows, _, err := db.Schema(ctx, "", name, 0, "")
 	if err != nil {
 		return nil, c.checkErr(err)
 	}
