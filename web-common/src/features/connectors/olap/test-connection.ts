@@ -2,9 +2,7 @@ import { queryClient } from "../../../lib/svelte-query/globalQueryClient";
 import {
   connectorServiceOLAPListTables,
   getConnectorServiceOLAPListTablesQueryKey,
-  runtimeServiceGetResource,
 } from "../../../runtime-client";
-import { ResourceKind } from "../../entity-management/resource-selectors";
 import { humanReadableErrorMessage } from "../../sources/errors/errors";
 
 export interface TestConnectorResult {
