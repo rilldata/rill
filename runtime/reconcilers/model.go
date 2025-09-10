@@ -819,8 +819,7 @@ func (r *ModelReconciler) syncPartitions(ctx context.Context, mdl *runtimev1.Mod
 	}
 	defer release()
 
-	// Build ModelPartition objects indexed by their Key
-	partitions := make(map[string]drivers.ModelPartition, len(rows))
+	partitions := make([]drivers.ModelPartition, 0, len(rows))
 	for i, row := range rows {
 		// If a watermark field is configured, we extract and remove it from the map.
 		// It is necessary to remove it to ensure the key is deterministic.
@@ -857,7 +856,7 @@ func (r *ModelReconciler) syncPartitions(ctx context.Context, mdl *runtimev1.Mod
 			return fmt.Errorf("failed to hash partition row at index %d: %w", i, err)
 		}
 
-		partitions[key] = drivers.ModelPartition{
+		partitions = append(partitions, drivers.ModelPartition{
 			Key:        key,
 			DataJSON:   rowJSON,
 			Index:      startIdx + i,
@@ -865,46 +864,45 @@ func (r *ModelReconciler) syncPartitions(ctx context.Context, mdl *runtimev1.Mod
 			ExecutedOn: nil,
 			Error:      "",
 			Elapsed:    0,
-		}
+		})
 	}
 
 	// Find those partitions that already exist in the catalog
 	keys := make([]string, 0, len(partitions))
-	for key := range partitions {
-		keys = append(keys, key)
+	for _, partition := range partitions {
+		keys = append(keys, partition.Key)
 	}
 	existing, err := catalog.FindModelPartitionsByKeys(ctx, mdl.State.PartitionsModelId, keys)
 	if err != nil {
 		return fmt.Errorf("failed to find existing partitions: %w", err)
 	}
 
-	// Handle the existing partitions by skipping or updating them.
-	// We remove the handled partitions from the partitions map. The ones that remain are new and should be inserted.
+	handled := make(map[string]drivers.ModelPartition, len(existing))
 	for _, old := range existing {
-		// Pop the matching partition from the map
-		partition := partitions[old.Key]
-		delete(partitions, old.Key)
-
-		// If the watermark hasn't advanced, there's nothing to do
-		if partition.Watermark == nil {
-			continue
-		}
-		if old.Watermark != nil && !old.Watermark.Before(*partition.Watermark) {
-			continue
-		}
-
-		// Update the partition (the new partition's ExecutedOn will be nil, so it will be marked for execution).
-		err = catalog.UpdateModelPartition(ctx, mdl.State.PartitionsModelId, partition)
-		if err != nil {
-			return fmt.Errorf("failed to update existing partition: %w", err)
-		}
+		handled[old.Key] = old
 	}
 
-	// The remaining partitions are new and should be inserted
 	for _, partition := range partitions {
-		err = catalog.InsertModelPartition(ctx, mdl.State.PartitionsModelId, partition)
-		if err != nil {
-			return fmt.Errorf("failed to insert new partition: %w", err)
+		old, exists := handled[partition.Key]
+		if exists {
+			// Handle the existing partitions by skipping or updating them
+			// If the watermark hasn't advanced, there's nothing to do
+			if partition.Watermark == nil {
+				continue
+			}
+			if old.Watermark != nil && !old.Watermark.Before(*partition.Watermark) {
+				continue
+			}
+			// Update the partition (the new partition's ExecutedOn will be nil, so it will be marked for execution).
+			err = catalog.UpdateModelPartition(ctx, mdl.State.PartitionsModelId, partition)
+			if err != nil {
+				return fmt.Errorf("failed to update existing partition: %w", err)
+			}
+		} else {
+			err = catalog.InsertModelPartition(ctx, mdl.State.PartitionsModelId, partition)
+			if err != nil {
+				return fmt.Errorf("failed to insert new partition: %w", err)
+			}
 		}
 	}
 	return nil
