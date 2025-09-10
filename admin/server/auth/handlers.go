@@ -23,10 +23,11 @@ import (
 )
 
 const (
-	cookieName             = "auth"
-	cookieFieldState       = "state"
-	cookieFieldRedirect    = "redirect"
-	cookieFieldAccessToken = "access_token"
+	cookieName                  = "auth"
+	cookieFieldState            = "state"
+	cookieFieldRedirect         = "redirect"
+	cookieFieldCustomDomainFlow = "custom_domain_flow"
+	cookieFieldAccessToken      = "access_token"
 )
 
 // RegisterEndpoints adds HTTP endpoints for auth.
@@ -55,8 +56,8 @@ const (
 //     - Set a cookie with state=XXX
 //     - If a redirect URL is provided, store it in the cookie
 //
-//  2. Redirect to <canonical-domain>/auth/login?redirect=https://<custom-domain>/auth/custom-domain-callback?state=XXX
-//     - Set a cookie with state=YYY
+//  2. Redirect to <canonical-domain>/auth/login?redirect=https://<custom-domain>/auth/custom-domain-callback?state=XXX&custom_domain_flow=true
+//     - Set a cookie with state=YYY and custom_domain_flow=true
 //
 //  3. Redirect to Auth0 /login?state=YYY
 //     - User completes login
@@ -161,6 +162,11 @@ func (a *Authenticator) authStart(w http.ResponseWriter, r *http.Request, signup
 		sess.Values[cookieFieldRedirect] = redirect
 	}
 
+	customDomainFlow := r.URL.Query().Get("custom_domain_flow")
+	if b, err := strconv.ParseBool(customDomainFlow); err == nil && b {
+		sess.Values[cookieFieldCustomDomainFlow] = true
+	}
+
 	// Save cookie
 	if err := sess.Save(r, w); err != nil {
 		http.Error(w, fmt.Sprintf("failed to save session: %s", err), http.StatusInternalServerError)
@@ -170,8 +176,8 @@ func (a *Authenticator) authStart(w http.ResponseWriter, r *http.Request, signup
 	// Redirect to <canonical-domain>/auth/login (custom domain flow)
 	if a.admin.URLs.IsCustomDomain(r.Host) {
 		// Redirect to canonical domain with custom domain callback as redirect
-		customCallbackURL := a.admin.URLs.External() + "/auth/custom-domain-callback?state=" + state
-		canonicalLoginURL := a.admin.URLs.AuthLogin(customCallbackURL)
+		customCallbackURL := a.admin.URLs.WithCustomDomain(r.Host).AuthCustomDomainCallback(state)
+		canonicalLoginURL := a.admin.URLs.AuthLogin(customCallbackURL, true)
 		http.Redirect(w, r, canonicalLoginURL, http.StatusTemporaryRedirect)
 		return
 	}
@@ -302,13 +308,9 @@ func (a *Authenticator) authLoginCallback(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	redirectURL, err := url.Parse(redirect)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("failed to parse redirect URL: %s", err), http.StatusInternalServerError)
-		return
-	}
-
-	if a.admin.URLs.IsCustomDomain(redirectURL.Hostname()) {
+	customDomainFlow, ok := sess.Values[cookieFieldCustomDomainFlow].(bool)
+	delete(sess.Values, cookieFieldRedirect)
+	if ok && customDomainFlow {
 		// save the cookies
 		if err := sess.Save(r, w); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
