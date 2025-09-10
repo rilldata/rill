@@ -65,6 +65,7 @@ var spec = drivers.Spec{
 			Required:    true,
 		},
 	},
+	ImplementsOLAP: true,
 }
 
 var motherduckSpec = drivers.Spec{
