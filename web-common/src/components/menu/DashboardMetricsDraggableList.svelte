@@ -205,7 +205,7 @@
                       `Unknown ${type === "measure" ? "measure" : "dimension"}`}
                   </span>
                   <button
-                    class="ml-auto hover:bg-slate-200 p-2 rounded-sm active:bg-slate-300"
+                    class="ml-auto hover:bg-slate-200 p-1 rounded-sm active:bg-slate-300"
                     on:click|stopPropagation={() => removeSelectedItem(index)}
                     on:mousedown|stopPropagation={() => {
                       // NO-OP
