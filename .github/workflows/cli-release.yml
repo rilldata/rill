@@ -146,8 +146,8 @@ jobs:
         uses: goreleaser/goreleaser-action@v6
         with:
           distribution: goreleaser-pro
-          version: '~> v2'
-          args: release --verbose ${{ env.NIGHTLY }}
+          version: '~> v2.11'
+          args: release ${{ env.NIGHTLY }}
         env:
           CGO_ENABLED: 1
           GITHUB_TOKEN: ${{ secrets.GORELEASER_ACCESS_TOKEN }}

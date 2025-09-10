@@ -77,12 +77,12 @@ dockers:
   - image_templates:
       - rilldata/rill:latest
       - rilldata/rill:{{ .Tag }}
-    skip_build: "{{ if .IsNightly }}true{{ else }}false{{ end }}"
-    skip_push: "{{ if .IsNightly }}true{{ else }}false{{ end }}"
+    skip_build: "{{ .IsNightly }}"
+    skip_push: "{{ .IsNightly }}"
   - image_templates:
       - rilldata/rill:nightly
-    skip_build: "{{ if .IsRelease }}true{{ else }}false{{ end }}"
-    skip_push: "{{ if .IsRelease }}true{{ else }}false{{ end }}"
+    skip_build: "{{ .IsRelease }}"
+    skip_push: "{{ .IsRelease }}"
 
 nightly:
   version_template: "{{ incminor .Version }}-nightly"
