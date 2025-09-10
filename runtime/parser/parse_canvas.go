@@ -383,11 +383,6 @@ func (p *Parser) parseCanvas(node *Node) error {
 				Dimensions: dimensionFilters,
 				Measures:   measureFilters,
 			}
-
-			// Validate that all referenced dimensions and measures exist in metrics views
-			if err := p.validateCanvasFiltersAgainstMetricsViews(canvasFilters); err != nil {
-				return err
-			}
 		}
 
 		defaultPreset = &runtimev1.CanvasPreset{
@@ -555,54 +550,3 @@ func isValidCanvasDimensionFilterMode(mode string) bool {
 	}
 }
 
-// validates that all dimensions and measures referenced
-// in the canvas default filters exist in at least one metrics view.
-func (p *Parser) validateCanvasFiltersAgainstMetricsViews(filters *runtimev1.CanvasDefaultFilters) error {
-	if filters == nil {
-		return nil
-	}
-
-	allDimensions := make(map[string]bool)
-	allMeasures := make(map[string]bool)
-
-	for _, resource := range p.Resources {
-		if resource.Name.Kind == ResourceKindMetricsView && resource.MetricsViewSpec != nil {
-
-			for _, dim := range resource.MetricsViewSpec.Dimensions {
-				if dim.Name != "" {
-					allDimensions[dim.Name] = true
-				}
-			}
-
-			for _, measure := range resource.MetricsViewSpec.Measures {
-				if measure.Name != "" {
-					allMeasures[measure.Name] = true
-				}
-			}
-		}
-	}
-
-	for _, dimFilter := range filters.Dimensions {
-		if dimFilter.Dimension != "" {
-			if !allDimensions[dimFilter.Dimension] {
-				return fmt.Errorf("dimension filter references unknown dimension %q - dimension must exist in at least one metrics view", dimFilter.Dimension)
-			}
-		}
-	}
-
-	for _, measureFilter := range filters.Measures {
-		if measureFilter.Measure != "" {
-			if !allMeasures[measureFilter.Measure] {
-				return fmt.Errorf("measure filter references unknown measure %q - measure must exist in at least one metrics view", measureFilter.Measure)
-			}
-		}
-
-		if measureFilter.ByDimension != "" {
-			if !allDimensions[measureFilter.ByDimension] {
-				return fmt.Errorf("measure filter %q references unknown by_dimension %q - dimension must exist in at least one metrics view", measureFilter.Measure, measureFilter.ByDimension)
-			}
-		}
-	}
-
-	return nil
-}

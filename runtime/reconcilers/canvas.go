@@ -113,6 +113,9 @@ func (r *CanvasReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 	if validateErr == nil {
 		validateErr = r.validateMetricsViewTimeConsistency(ctx, components)
 	}
+	if validateErr == nil {
+		validateErr = r.validateCanvasFiltersAgainstMetricsViews(ctx, c.Spec)
+	}
 
 	// Capture the valid spec in the state
 	if validateErr == nil {
@@ -212,6 +215,72 @@ func (r *CanvasReconciler) validateMetricsViewTimeConsistency(ctx context.Contex
 				} else if firstMonthOfYear != mvSpec.FirstMonthOfYear {
 					return status.Errorf(codes.InvalidArgument, "metrics views %q and %q have inconsistent first_month_of_year", firstViewName, mvName)
 				}
+			}
+		}
+	}
+
+	return nil
+}
+
+// validateCanvasFiltersAgainstMetricsViews validates that all dimensions and measures
+// referenced in the canvas default filters exist in at least one metrics view.
+func (r *CanvasReconciler) validateCanvasFiltersAgainstMetricsViews(ctx context.Context, spec *runtimev1.CanvasSpec) error {
+	if spec == nil || spec.DefaultPreset == nil || spec.DefaultPreset.Filters == nil {
+		return nil
+	}
+
+	filters := spec.DefaultPreset.Filters
+
+	allDimensions := make(map[string]bool)
+	allMeasures := make(map[string]bool)
+
+	resources, err := r.C.List(ctx, runtime.ResourceKindMetricsView, "", false)
+	if err != nil {
+		return fmt.Errorf("failed to list metrics views: %w", err)
+	}
+
+	for _, resource := range resources {
+		mv := resource.GetMetricsView()
+		if mv == nil || mv.State.ValidSpec == nil {
+			continue
+		}
+
+		spec := mv.State.ValidSpec
+
+	
+		for _, dim := range spec.Dimensions {
+			if dim.Name != "" {
+				allDimensions[dim.Name] = true
+			}
+		}
+
+	
+		for _, measure := range spec.Measures {
+			if measure.Name != "" {
+				allMeasures[measure.Name] = true
+			}
+		}
+	}
+
+	for _, dimFilter := range filters.Dimensions {
+		if dimFilter.Dimension != "" {
+			if !allDimensions[dimFilter.Dimension] {
+				return fmt.Errorf("dimension filter references unknown dimension %q - dimension must exist in at least one metrics view", dimFilter.Dimension)
+			}
+		}
+	}
+
+	
+	for _, measureFilter := range filters.Measures {
+		if measureFilter.Measure != "" {
+			if !allMeasures[measureFilter.Measure] {
+				return fmt.Errorf("measure filter references unknown measure %q - measure must exist in at least one metrics view", measureFilter.Measure)
+			}
+		}
+
+		if measureFilter.ByDimension != "" {
+			if !allDimensions[measureFilter.ByDimension] {
+				return fmt.Errorf("measure filter %q references unknown by_dimension %q - dimension must exist in at least one metrics view", measureFilter.Measure, measureFilter.ByDimension)
 			}
 		}
 	}
