@@ -25,7 +25,7 @@ Rill offers flexible connection strategies to fit different data architectures a
 
 - ### _[Bring Your Own OLAP (BYO OLAP)](/connect/olap)_: 
   
-  For large-scale datasets (100GB+) or existing OLAP infrastructure, connect to existing **ClickHouse**, **Druid**, **Pinot**, or **MotherDuck** instances. Use Rill's "live connectors" to ingest data directly into your OLAP engines.
+  For large-scale datasets (100GB+) or existing [OLAP infrastructure](/connect/olap#what-is-olap), connect to existing **ClickHouse**, **Druid**, **Pinot**, or **MotherDuck** instances. Use Rill's "live connectors" to ingest data directly into your OLAP engines.
 
 ## OLAP Engines
 
@@ -257,7 +257,7 @@ We're constantly adding new data connectors. If you don't see what you need, [le
     icon={<img src="/img/connect/icons/Logo-AI.svg" alt="AI" className="sheets-icon" />}
     header="AI"
     content="Define your own OpenAI Connector and define your own API key."
-    link="/build/metrics-view/#creating-metrics-with-ai"
+    link="/build/metrics-view/#creating-metric-views-with-ai"
     linkLabel="Learn more"
     referenceLink="ai"
   />
