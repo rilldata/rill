@@ -334,7 +334,6 @@ export class Filters {
   }
 
   onSpecChange(response: CanvasResponse) {
-    console.log("spec change");
     const defaultPreset = response.canvas?.defaultPreset;
 
     if (!defaultPreset) return;
@@ -357,13 +356,6 @@ export class Filters {
   }
 
   onUrlChange = (searchParams: URLSearchParams) => {
-    if (!this.componentName) {
-      console.log({
-        searchParams: searchParams.toString(),
-        cn: this.componentName,
-      });
-    }
-
     const filterText = searchParams.get(ExploreStateURLParams.Filters);
 
     if (!this.componentName) {
@@ -371,10 +363,6 @@ export class Filters {
         ExploreStateURLParams.TemporaryFilters,
       );
       this.temporaryFilters.set(new Set(tempFilters?.split(",") ?? []));
-    }
-
-    if (!this.componentName) {
-      console.log("overwriting", { filterText });
     }
 
     this.filterText.set(filterText ?? "");
