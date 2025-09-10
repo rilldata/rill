@@ -5,6 +5,7 @@
   import { getCanvasStore } from "./state-managers/state-managers";
   import StaticCanvasRow from "./StaticCanvasRow.svelte";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { page } from "$app/stores";
 
   export let resource: V1Resource;
   export let navigationEnabled: boolean = true;
@@ -18,8 +19,10 @@
   $: maxWidth = canvas?.spec?.maxWidth || DEFAULT_DASHBOARD_WIDTH;
 
   $: ({
-    canvasEntity: { components, _rows },
+    canvasEntity: { components, _rows, urlListener },
   } = getCanvasStore(canvasName, instanceId));
+
+  $: urlListener($page.url);
 
   $: rows = $_rows;
 </script>

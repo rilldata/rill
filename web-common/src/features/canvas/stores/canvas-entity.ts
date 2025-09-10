@@ -27,7 +27,7 @@ import {
   type Unsubscriber,
   type Writable,
 } from "svelte/store";
-import { parseDocument } from "yaml";
+import { parseDocument, YAMLMap } from "yaml";
 import type { FileArtifact } from "../../entity-management/file-artifact";
 import { fileArtifacts } from "../../entity-management/file-artifacts";
 import { ResourceKind } from "../../entity-management/resource-selectors";
@@ -44,6 +44,8 @@ import { Filters } from "./filters";
 import { Grid } from "./grid";
 import { CanvasResolvedSpec } from "./spec";
 import { TimeControls } from "./time-control";
+import { yaml } from "@codemirror/lang-yaml";
+import { ReverseOperationShortHandMap } from "../../dashboards/filters/measure-filters/measure-filter-options";
 
 // Store for managing URL search parameters
 // Which may be in the URL or in the Canvas YAML
@@ -110,6 +112,101 @@ export class CanvasEntity {
     this.lastVisitedState.set(url.searchParams.toString());
     goto(url.toString(), { replaceState: true }).catch(console.error);
     return true;
+  };
+
+  convertStateToDefault = () => {
+    const allDimensions = get(this.spec.allDimensions);
+    const allMeasures = get(this.spec.allSimpleMeasures);
+    const dimensionFilterItems = get(this.filters.dimensionFilterItems);
+    const measureFilterItems = get(this.filters.measureFilterItems);
+    const temporaryFilters = get(this.filters.temporaryFilters);
+    const timeRange = get(this.timeControls.timeRangeStateStore)
+      ?.selectedTimeRange?.name;
+    const comparisonOn = get(this.timeControls.showTimeComparison);
+
+    const yamlDimensions: YAMLMap[] = [];
+    const yamlMeasures: YAMLMap[] = [];
+
+    dimensionFilterItems.forEach((item) => {
+      const yamlMap = new YAMLMap();
+
+      if (!item.isInclude) {
+        yamlMap.set("exclude", true);
+      }
+
+      yamlMap.set("dimension", item.name);
+
+      if (item.mode === "Select") {
+        yamlMap.set("values", item.selectedValues);
+      } else if (item.mode === "Contains") {
+        const trimmed = item.inputText
+          ?.split("%")
+          .map((v) => v.trim())
+          .filter((v) => v.length > 0);
+
+        yamlMap.set("values", trimmed);
+        yamlMap.set("mode", "contains");
+      } else if (item.mode === "InList") {
+        yamlMap.set("mode", "in_list");
+        yamlMap.set("values", item.selectedValues);
+      }
+
+      yamlDimensions.push(yamlMap);
+    });
+
+    measureFilterItems.forEach((item) => {
+      const yamlMap = new YAMLMap();
+      yamlMap.set("by_dimension", item.dimensionName);
+      yamlMap.set("measure", item.filter?.measure);
+      if (item.filter?.operation) {
+        yamlMap.set(
+          "operator",
+          ReverseOperationShortHandMap.get(item.filter?.operation),
+        );
+      }
+      yamlMap.set(
+        "values",
+        [item.filter?.value1, item.filter?.value2]
+          .filter((v) => v !== undefined && v !== null && v !== "")
+          .map((v) => Number(v)),
+      );
+
+      yamlMeasures.push(yamlMap);
+    });
+
+    temporaryFilters.forEach((name) => {
+      const yamlMap = new YAMLMap();
+      if (allDimensions.find((d) => d.name === name)) {
+        yamlMap.set("dimension", name);
+        yamlDimensions.push(yamlMap);
+      } else if (allMeasures.find((m) => m.name === name)) {
+        yamlMap.set("measure", name);
+        yamlMeasures.push(yamlMap);
+      }
+    });
+
+    if (this.fileArtifact) {
+      const yamlContent = get(this.fileArtifact.remoteContent);
+
+      const parsed = parseDocument(yamlContent ?? "");
+
+      parsed.setIn(["defaults", "filters", "dimensions"], yamlDimensions);
+      parsed.setIn(["defaults", "filters", "measures"], yamlMeasures);
+
+      if (timeRange) {
+        parsed.setIn(["defaults", "time_range"], timeRange);
+      } else {
+        parsed.deleteIn(["defaults", "time_range"]);
+      }
+
+      if (comparisonOn) {
+        parsed.setIn(["defaults", "comparison_mode"], "time");
+      } else {
+        parsed.deleteIn(["defaults", "comparison_mode"]);
+      }
+
+      this.fileArtifact.updateEditorContent(parsed.toString(), false, true);
+    }
   };
 
   constructor(

@@ -246,6 +246,7 @@
               {name}
               {label}
               {dimensionName}
+              removeOnOutsideClick={false}
               {filter}
               onRemove={() => removeMeasureFilter(dimensionName, name)}
               onApply={({ dimension, oldDimension, filter }) =>
@@ -264,7 +265,7 @@
             measureHasFilter={$measureHasFilter}
             setTemporaryFilterName={(n) => {
               justAdded = true;
-              setTemporaryFilterName(n, true);
+              setTemporaryFilterName(n, false);
             }}
           />
         {/if}

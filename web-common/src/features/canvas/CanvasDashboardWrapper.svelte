@@ -10,26 +10,21 @@
   export let showGrabCursor = false;
   export let filtersEnabled: boolean | undefined;
   export let canvasName: string;
-
   export let onClick: () => void = () => {};
-
-  $: ({ instanceId } = $runtime);
-
-  $: ({
-    canvasEntity: { restoreSnapshot, urlListener },
-  } = getCanvasStore(canvasName, instanceId));
-
-  let contentRect = new DOMRectReadOnly(0, 0, 0, 0);
-
-  $: ({ width: clientWidth } = contentRect);
 
   onMount(async () => {
     await restoreSnapshot();
   });
 
-  $: if (urlListener) {
-    urlListener($page.url);
-  }
+  let contentRect = new DOMRectReadOnly(0, 0, 0, 0);
+
+  $: ({ instanceId } = $runtime);
+
+  $: ({
+    canvasEntity: { restoreSnapshot },
+  } = getCanvasStore(canvasName, instanceId));
+
+  $: ({ width: clientWidth } = contentRect);
 
   onDestroy(() => {
     // Temporary fix for embed scenario.

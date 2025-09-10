@@ -1624,6 +1624,7 @@ theme:
 				Theme:                "t1",
 				FiltersEnabled:       true,
 				AllowCustomTimeRange: true,
+				AllowFilterAdd:       true,
 			},
 		},
 		{

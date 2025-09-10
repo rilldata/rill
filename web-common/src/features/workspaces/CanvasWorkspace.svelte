@@ -24,6 +24,7 @@
   import CanvasBuilder from "../canvas/CanvasBuilder.svelte";
   import DelayedSpinner from "../entity-management/DelayedSpinner.svelte";
   import { useCanvas } from "../canvas/selector";
+  import { page } from "$app/stores";
 
   export let fileArtifact: FileArtifact;
 
@@ -41,8 +42,10 @@
   } = fileArtifact);
 
   $: ({
-    canvasEntity: { _rows },
+    canvasEntity: { _rows, urlListener },
   } = getCanvasStore(canvasName, instanceId));
+
+  $: urlListener($page.url);
 
   $: resourceQuery = getResource(queryClient, instanceId);
 

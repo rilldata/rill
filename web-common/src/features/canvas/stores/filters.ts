@@ -100,6 +100,7 @@ export class Filters {
   defaultFilterProperties = writable<Map<string, FilterProperties>>(new Map());
   firstPass = true;
   searchParamsStore = writable<URLSearchParams>(new URLSearchParams());
+  private filterText = writable("");
 
   constructor(
     private spec: CanvasResolvedSpec,
@@ -333,27 +334,47 @@ export class Filters {
   }
 
   onSpecChange(response: CanvasResponse) {
+    console.log("spec change");
     const defaultPreset = response.canvas?.defaultPreset;
 
     if (!defaultPreset) return;
 
-    const { dimensionMap, measureMap, defaultFilterProperties } =
-      this.processDefaults(defaultPreset);
+    const {
+      dimensionMap,
+      measureMap,
+      defaultFilterProperties,
+      temporaryFilters,
+    } = this.processDefaults(defaultPreset);
 
-    this.setDefaults(dimensionMap, measureMap, defaultFilterProperties);
+    this.setDefaults(
+      dimensionMap,
+      measureMap,
+      defaultFilterProperties,
+      temporaryFilters,
+    );
 
     this.firstPass = false;
   }
 
-  private filterText = writable("");
-
   onUrlChange = (searchParams: URLSearchParams) => {
+    if (!this.componentName) {
+      console.log({
+        searchParams: searchParams.toString(),
+        cn: this.componentName,
+      });
+    }
+
     const filterText = searchParams.get(ExploreStateURLParams.Filters);
+
     if (!this.componentName) {
       const tempFilters = searchParams.get(
         ExploreStateURLParams.TemporaryFilters,
       );
       this.temporaryFilters.set(new Set(tempFilters?.split(",") ?? []));
+    }
+
+    if (!this.componentName) {
+      console.log("overwriting", { filterText });
     }
 
     this.filterText.set(filterText ?? "");
@@ -365,11 +386,11 @@ export class Filters {
     dimensionMap: Map<string, DimensionFilterItem>,
     measureMap: Map<string, MeasureFilterItem>,
     defaultFilterProperties: Map<string, FilterProperties>,
+    temporaryFilters: Set<string>,
     maintainUrlState = true,
   ) => {
     const finalDimensions = new Map<string, DimensionFilterItem>();
     const finalMeasures = new Map<string, MeasureFilterItem>();
-
     const filterText = get(this.filterText);
 
     const { expr, dimensionsWithInlistFilter } = getFiltersFromText(filterText);
@@ -447,15 +468,31 @@ export class Filters {
         dimensionsWithInListFilter,
       ),
     );
+
+    this.searchParamsCallback(
+      ExploreStateURLParams.TemporaryFilters,
+      temporaryFilters.size
+        ? Array.from(temporaryFilters).join(",")
+        : undefined,
+    );
   };
 
   private processDefaults(defaultPreset: V1CanvasPreset | undefined) {
+    const allDimensions = get(this.allDimensions);
+    const allMeasures = get(this.allMeasures);
+
     const defaultFilterProperties = new Map<string, FilterProperties>();
     const dimensionMap: Map<string, DimensionFilterItem> = new Map();
     const measureMap: Map<string, MeasureFilterItem> = new Map();
+    const temporaryFilters = new Set<string>();
 
     if (!defaultPreset)
-      return { dimensionMap, measureMap, defaultFilterProperties };
+      return {
+        dimensionMap,
+        measureMap,
+        defaultFilterProperties,
+        temporaryFilters,
+      };
 
     defaultPreset?.filters?.dimensions?.forEach(
       ({
@@ -468,7 +505,7 @@ export class Filters {
         mode,
         exclude,
       }) => {
-        if (!dimension) return;
+        if (!dimension || !allDimensions.has(dimension)) return;
 
         const properties: FilterProperties = {
           hidden,
@@ -480,7 +517,7 @@ export class Filters {
         defaultFilterProperties.set(dimension, properties);
 
         if (!values?.length) {
-          this.setTemporaryFilterName(dimension);
+          temporaryFilters.add(dimension);
         } else {
           dimensionMap.set(dimension, {
             mode: dimensionFilterModeMap[mode ?? "select"],
@@ -504,7 +541,7 @@ export class Filters {
         operator,
         values,
       }) => {
-        if (!measure) return;
+        if (!measure || !allMeasures.has(measure)) return;
 
         const properties = {
           hidden,
@@ -517,7 +554,7 @@ export class Filters {
         const operation = OperationShortHandMap.get(operator ?? "");
 
         if (!byDimension || !operation) {
-          this.setTemporaryFilterName(measure);
+          temporaryFilters.add(measure);
           return;
         }
 
@@ -542,6 +579,7 @@ export class Filters {
       dimensionMap,
       measureMap,
       defaultFilterProperties,
+      temporaryFilters,
     };
   }
 
@@ -911,10 +949,20 @@ export class Filters {
     if (!this.specStore) return;
     const defaultPreset = get(this.specStore).data?.canvas?.defaultPreset;
 
-    const { dimensionMap, measureMap, defaultFilterProperties } =
-      this.processDefaults(defaultPreset);
+    const {
+      dimensionMap,
+      measureMap,
+      defaultFilterProperties,
+      temporaryFilters,
+    } = this.processDefaults(defaultPreset);
 
-    this.setDefaults(dimensionMap, measureMap, defaultFilterProperties, false);
+    this.setDefaults(
+      dimensionMap,
+      measureMap,
+      defaultFilterProperties,
+      temporaryFilters,
+      false,
+    );
   };
 
   setTemporaryFilterName = (name: string, overwrite = false) => {

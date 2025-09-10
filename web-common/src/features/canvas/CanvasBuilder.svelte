@@ -47,8 +47,11 @@
       specStore,
       unsubscribe,
       _rows,
+      // urlListener,
     },
   } = getCanvasStore(canvasName, instanceId));
+
+  // $: urlListener($page.url);
 
   $: layoutRows = $_rows;
 

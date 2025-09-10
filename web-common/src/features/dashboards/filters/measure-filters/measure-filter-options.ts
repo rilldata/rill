@@ -30,6 +30,12 @@ export const OperationShortHandMap: Map<string, MeasureFilterOperation> =
     ["nbt", MeasureFilterOperation.NotBetween],
   ]);
 
+export const ReverseOperationShortHandMap: Map<MeasureFilterOperation, string> =
+  new Map();
+for (const [key, value] of OperationShortHandMap) {
+  ReverseOperationShortHandMap.set(value, key);
+}
+
 export const MeasureFilterToProtoOperation = {
   [MeasureFilterOperation.Equals]: V1Operation.OPERATION_EQ,
   [MeasureFilterOperation.NotEquals]: V1Operation.OPERATION_NEQ,

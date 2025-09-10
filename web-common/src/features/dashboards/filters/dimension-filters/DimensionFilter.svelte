@@ -109,11 +109,13 @@
       ),
     },
   );
+
   $: ({
     data: searchResults,
     error: errorFromSearchResults,
     isFetching: isFetchingFromSearchResults,
   } = $searchResultsQuery);
+
   $: correctedSearchResults = enableSearchQuery ? searchResults : [];
 
   $: enableSearchCountQuery =
@@ -142,11 +144,13 @@
       ),
     },
   );
+
   $: ({
     data: allSearchResultsCount,
     error: errorFromAllSearchResultsCount,
     isFetching: isFetchingFromAllSearchResultsCount,
   } = $allSearchResultsCountQuery);
+
   $: searchResultCountText = enableSearchCountQuery
     ? curMode === DimensionFilterMode.Contains
       ? `${allSearchResultsCount} results`

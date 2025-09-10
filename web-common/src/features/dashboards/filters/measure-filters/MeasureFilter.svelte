@@ -17,6 +17,7 @@
   export let locked = false;
   export let removable = true;
   export let onRemove: () => void;
+  export let removeOnOutsideClick = true;
   export let onApply: (params: {
     dimension: string;
     oldDimension: string;
@@ -31,7 +32,7 @@
 <Popover.Root
   bind:open
   onOpenChange={(open) => {
-    if (!open && !filter) {
+    if (!open && !filter && removeOnOutsideClick) {
       onRemove();
     }
   }}
