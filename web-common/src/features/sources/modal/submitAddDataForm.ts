@@ -130,7 +130,7 @@ export async function submitAddConnectorForm(
       });
       throw {
         message: error.message || "Unable to establish a connection",
-        details: error.message,
+        details: (error as any).details || error.message,
       };
     }
   } else {

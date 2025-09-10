@@ -69,9 +69,9 @@ export async function runtimeServicePutConnectorFileAndWaitForReconciliation(
 
       // Check if there's a reconcile error
       if (resource.resource?.meta?.reconcileError) {
-        throw new Error(
-          `Connector configuration failed to reconcile: ${resource.resource.meta.reconcileError}`,
-        );
+        const error = new Error("Connector configuration failed to reconcile");
+        (error as any).details = resource.resource.meta.reconcileError;
+        throw error;
       }
 
       // Check the reconcile status
