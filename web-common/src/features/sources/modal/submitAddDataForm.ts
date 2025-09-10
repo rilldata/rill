@@ -110,7 +110,7 @@ export async function submitAddConnectorForm(
     EntityType.Connector,
   );
 
-  // For non-OLAP connectors, use the enhanced reconciliation function
+  // For non-OLAP connectors, wait for connector reconciliation first
   if (!OLAP_ENGINES.includes(connector.name as string)) {
     try {
       await runtimeServicePutConnectorFileAndWaitForReconciliation(
