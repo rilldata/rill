@@ -53,6 +53,7 @@ export async function pollConnectorReconcileStatus(
   const maxAttempts = 15; // 30 seconds total (2s * 15)
   const pollInterval = 2000; // 2 seconds
   const maxWaitTime = maxAttempts * pollInterval;
+  const failureDetectionAttempts = 3; // Check for failure after 6 seconds
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
@@ -90,13 +91,17 @@ export async function pollConnectorReconcileStatus(
         details: `Connector is still reconciling after ${maxWaitTime / 1000} seconds. Current status: ${reconcileStatus || "unknown"}`,
       };
     } catch (error) {
-      // Resource not found is expected initially after file creation
+      // Resource not found could mean:
+      // 1. Resource hasn't been created yet (expected initially)
+      // 2. Resource was deleted due to reconcile failure
       if (error?.status === 404 || error?.response?.status === 404) {
-        if (attempt === maxAttempts) {
+        // If we've waited long enough and still getting 404, it likely means
+        // the resource was deleted due to reconcile failure
+        if (attempt >= failureDetectionAttempts) {
           return {
             success: false,
-            error: "Connector resource was never created",
-            details: `The connector "${connectorName}" file was created but the runtime never processed it into a resource. This may indicate a configuration error or runtime issue.`,
+            error: "Connector configuration failed to reconcile",
+            details: `The connector "${connectorName}" was created but failed to reconcile and was automatically deleted. This usually indicates a connection or configuration error.`,
           };
         }
 

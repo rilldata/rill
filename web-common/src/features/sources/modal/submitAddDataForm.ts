@@ -89,7 +89,6 @@ export async function submitAddConnectorForm(
   queryClient: QueryClient,
   connector: V1ConnectorDriver,
   formValues: AddDataFormValues,
-  onStatusUpdate?: (status: string) => void,
 ): Promise<void> {
   const instanceId = get(runtime).instanceId;
   await beforeSubmitForm(instanceId);
@@ -118,6 +117,25 @@ export async function submitAddConnectorForm(
     create: true,
     createOnly: false,
   });
+
+  // For non-OLAP connectors, wait for connector reconciliation first
+  if (!OLAP_ENGINES.includes(connector.name as string)) {
+    const result = await pollConnectorReconcileStatus(
+      instanceId,
+      newConnectorName,
+    );
+    if (!result.success) {
+      // We need to get the original .env blob for rollback, but we haven't created it yet
+      // So we'll just delete the connector file
+      await runtimeServiceDeleteFile(instanceId, {
+        path: newConnectorFilePath,
+      });
+      throw {
+        message: result.error || "Unable to establish a connection",
+        details: result.details,
+      };
+    }
+  }
 
   // Check for an existing `.env` file
   // Store the original `.env` blob so we can restore it in case of errors
@@ -177,27 +195,24 @@ export async function submitAddConnectorForm(
     throw new Error(errorMessage);
   }
 
-  // Test the connection for both OLAP and non-OLAP connectors
-  // If the connection test fails, rollback the changes
-  let result;
+  // Test the connection for OLAP connectors only
+  // Non-OLAP connectors are already tested above
   if (OLAP_ENGINES.includes(connector.name as string)) {
-    // For OLAP connectors, use the API test
-    result = await testOLAPConnector(instanceId, connector.name as string);
-  } else {
-    // For non-OLAP connectors, poll the reconcile status
-    result = await pollConnectorReconcileStatus(instanceId, newConnectorName);
-  }
-
-  if (!result.success) {
-    await rollbackConnectorChanges(
+    const result = await testOLAPConnector(
       instanceId,
-      newConnectorFilePath,
-      originalEnvBlob,
+      connector.name as string,
     );
-    throw {
-      message: result.error || "Unable to establish a connection",
-      details: result.details,
-    };
+    if (!result.success) {
+      await rollbackConnectorChanges(
+        instanceId,
+        newConnectorFilePath,
+        originalEnvBlob,
+      );
+      throw {
+        message: result.error || "Unable to establish a connection",
+        details: result.details,
+      };
+    }
   }
 
   /**
