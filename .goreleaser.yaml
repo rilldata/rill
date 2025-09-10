@@ -73,16 +73,13 @@ changelog:
 checksum:
   name_template: checksums.txt
 
-dockers:
-  - image_templates:
-      - rilldata/rill:latest
-      - rilldata/rill:{{ .Tag }}
-    skip_build: "{{ .IsNightly }}"
-    skip_push: "{{ .IsNightly }}"
-  - image_templates:
-      - rilldata/rill:nightly
-    skip_build: "{{ .IsRelease }}"
-    skip_push: "{{ .IsRelease }}"
+dockers_v2:
+  - images:
+      - rilldata/rill
+    tags:
+      - "{{ if .IsNightly }}nightly{{ end }}"
+      - "{{ if .IsRelease }}latest{{ end }}"
+      - "{{ if .IsRelease }}{{ .Tag }}{{ end }}"
 
 nightly:
   version_template: "{{ incminor .Version }}-nightly"
