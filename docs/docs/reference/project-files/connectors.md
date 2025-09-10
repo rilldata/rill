@@ -255,9 +255,10 @@ _[string]_ - Cluster name, required for running distributed queries
 
 _[boolean]_ - Controls whether to log raw SQL queries 
 
-### `settings_override`
+### `query_settings_override`
 
-_[string]_ - override the default settings used in queries. example `readonly = 1, session_timezone = 'UTC'` 
+_[string]_ - override the default settings used in queries. Changing the default settings can lead to incorrect query results and is generally not recommended. If you need to add settings, append them to the defaults:  
+`cast_keep_nullable = 1, join_use_nulls = 1, session_timezone = 'UTC', prefer_global_in_and_join = 1, insert_distributed_sync = 1, <your additional settings>`
 
 ### `embed_port`
 
@@ -463,7 +464,7 @@ headers:
 
 ### `driver`
 
-_[string]_ - Refers to the driver type and must be driver `duckdb` _(required)_
+_[string]_ - Refers to the driver type and must be driver `motherduck` _(required)_
 
 ### `path`
 
@@ -473,17 +474,21 @@ _[string]_ - Path to your MD database _(required)_
 
 _[string]_ - Define your schema if not main, uses main by default 
 
+### `token`
+
+_[string]_ - MotherDuck token _(required)_
+
 ### `init_sql`
 
-_[string]_ - SQL executed during database initialization. _(required)_
+_[string]_ - SQL executed during database initialization. 
 
 ```yaml
 # Example: MotherDuck connector configuration
 type: connector # Must be `connector` (required)
-driver: duckdb # Must be `motherduck` _(required)_
+driver: motherduck # Must be `motherduck` _(required)_
+token: '{{ .env.connector.motherduck.token }}' # Set the MotherDuck token from your .env file _(required)_
 path: "md:my_database" # Path to your MD database  
 schema_name: "my_schema" # Define your schema if not main, uses main by default  
-init_sql: "INSTALL 'motherduck'; LOAD 'motherduck'; SET motherduck_token='{{ .env.motherduck_token }}';" # Install and load the MotherDuck extension                                 
 ```
 
 ## MySQL

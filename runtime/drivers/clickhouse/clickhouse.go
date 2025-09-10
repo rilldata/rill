@@ -196,8 +196,7 @@ type configProperties struct {
 
 func (c *configProperties) validate() error {
 	if c.Managed {
-		// In managed mode, clear all connection-related properties
-		c.DSN = ""
+		// In managed mode, clear connection properties but preserve provisioner DSN
 		c.Username = ""
 		c.Password = ""
 		c.Host = ""

@@ -257,9 +257,9 @@ definitions:
             log_queries:
               type: boolean
               description: Controls whether to log raw SQL queries
-            settings_override:
+            query_settings_override:
               type: string
-              description: override the default settings used in queries. example `readonly = 1, session_timezone = 'UTC'`
+              description: "override the default settings used in queries. Changing the default settings can lead to incorrect query results and is generally not recommended. If you need to add settings, append them to the defaults - `cast_keep_nullable = 1, join_use_nulls = 1, session_timezone = 'UTC', prefer_global_in_and_join = 1, insert_distributed_sync = 1, <your additional settings>`"
             embed_port:
               type: integer
               description: Port to run ClickHouse locally (0 for random port)
@@ -450,7 +450,7 @@ definitions:
           properties:
             driver:
               type: string
-              description: Refers to the driver type and must be driver `duckdb`
+              description: Refers to the driver type and must be driver `motherduck`
               const: duckdb
             path:
               type: string
@@ -458,21 +458,23 @@ definitions:
             schema_name: 
               type: string
               description: Define your schema if not main, uses main by default
+            token:
+              type: string
+              description: MotherDuck token
             init_sql:
               type: string
               description: SQL executed during database initialization.
           examples:
             - # Example: MotherDuck connector configuration
               type: connector                                  # Must be `connector` (required)
-              driver: duckdb                               # Must be `motherduck` _(required)_
-
+              driver: motherduck                               # Must be `motherduck` _(required)_
+              token: '{{ .env.connector.motherduck.token }}'    # Set the MotherDuck token from your .env file _(required)_
               path: "md:my_database"                           # Path to your MD database  
               schema_name: "my_schema"                        # Define your schema if not main, uses main by default  
-              init_sql: "INSTALL 'motherduck'; LOAD 'motherduck'; SET motherduck_token='{{ .env.motherduck_token }}';"  # Install and load the MotherDuck extension                                 
           required:
             - driver
             - path
-            - init_sql
+            - token
         - type: object
           title: MySQL
           properties:
@@ -2748,7 +2750,7 @@ definitions:
         description: 'If true, allows the schedule to run in development mode.'
   security_policy_properties:
     type: object
-    description: Defines [security rules and access control policies](/manage/security) for resources
+    description: Defines [security rules and access control policies](/build/metrics-view/security) for resources
     properties:
       access:
         oneOf:
@@ -2844,7 +2846,7 @@ definitions:
             - type
   dashboard_security_policy_properties:
     type: object
-    description: Defines [security rules and access control policies](/manage/security) for dashboards (without row filtering)
+    description: Defines [security rules and access control policies](/build/metrics-view/security) for dashboards (without row filtering)
     properties:
       access:
         oneOf:
