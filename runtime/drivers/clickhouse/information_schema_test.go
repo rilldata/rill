@@ -58,7 +58,7 @@ func testInformationSchemaAll(t *testing.T, conn drivers.Handle) {
 	})
 	require.NoError(t, err)
 
-	tables, err := olap.InformationSchema().All(context.Background(), "")
+	tables, _, err := olap.InformationSchema().All(context.Background(), "", 50, "")
 	require.NoError(t, err)
 	require.Equal(t, 5, len(tables))
 
@@ -98,12 +98,12 @@ func testInformationSchemaAllLike(t *testing.T, conn drivers.Handle) {
 	})
 	require.NoError(t, err)
 
-	tables, err := olap.InformationSchema().All(context.Background(), "%odel")
+	tables, _, err := olap.InformationSchema().All(context.Background(), "%odel", 50, "")
 	require.NoError(t, err)
 	require.Equal(t, 1, len(tables))
 	require.Equal(t, "model", tables[0].Name)
 
-	tables, err = olap.InformationSchema().All(context.Background(), "other.%ar")
+	tables, _, err = olap.InformationSchema().All(context.Background(), "other.%ar", 50, "")
 	require.NoError(t, err)
 	require.Equal(t, 1, len(tables))
 	require.Equal(t, "bar", tables[0].Name)
@@ -112,12 +112,12 @@ func testInformationSchemaAllLike(t *testing.T, conn drivers.Handle) {
 func testInformationSchemaSystemAllLike(t *testing.T, conn drivers.Handle) {
 	olap, _ := conn.AsOLAP("")
 
-	tables, err := olap.InformationSchema().All(context.Background(), "query_log")
+	tables, _, err := olap.InformationSchema().All(context.Background(), "query_log", 50, "")
 	require.NoError(t, err)
 	require.Equal(t, 1, len(tables))
 	require.Equal(t, "query_log", tables[0].Name)
 
-	tables, err = olap.InformationSchema().All(context.Background(), "other.%ar")
+	tables, _, err = olap.InformationSchema().All(context.Background(), "other.%ar", 50, "")
 	require.NoError(t, err)
 	require.Equal(t, 1, len(tables))
 	require.Equal(t, "bar", tables[0].Name)

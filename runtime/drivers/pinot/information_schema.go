@@ -18,19 +18,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-func (c *connection) ListDatabaseSchemas(ctx context.Context) ([]*drivers.DatabaseSchemaInfo, error) {
-	return nil, nil
-}
-
-func (c *connection) ListTables(ctx context.Context, database, schema string) ([]*drivers.TableInfo, error) {
-	return nil, nil
-}
-
-func (c *connection) GetTable(ctx context.Context, database, schema, table string) (*drivers.TableMetadata, error) {
-	return nil, nil
-}
-
-func (c *connection) All(ctx context.Context, like string) ([]*drivers.OlapTable, error) {
+func (c *connection) All(ctx context.Context, like string, pageSize uint32, pageToken string) ([]*drivers.OlapTable, string, error) {
 	// query /tables endpoint, for each table name, query /tables/{tableName}/schema
 	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, c.schemaURL+"/tables", http.NoBody)
 	for k, v := range c.headers {
@@ -39,18 +27,18 @@ func (c *connection) All(ctx context.Context, like string) ([]*drivers.OlapTable
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+		return nil, "", fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
 
 	var tablesResp pinotTables
 	err = json.NewDecoder(resp.Body).Decode(&tablesResp)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	// Poor man's conversion of a SQL ILIKE pattern to a Go regexp.
@@ -58,7 +46,7 @@ func (c *connection) All(ctx context.Context, like string) ([]*drivers.OlapTable
 	if like != "" {
 		likeRegexp, err = regexp.Compile(fmt.Sprintf("(?i)^%s$", strings.ReplaceAll(like, "%", ".*")))
 		if err != nil {
-			return nil, fmt.Errorf("failed to convert like pattern to regexp: %w", err)
+			return nil, "", fmt.Errorf("failed to convert like pattern to regexp: %w", err)
 		}
 	}
 
@@ -83,10 +71,10 @@ func (c *connection) All(ctx context.Context, like string) ([]*drivers.OlapTable
 		})
 	}
 	if err := g.Wait(); err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
-	return tables, nil
+	return tables, "", nil
 }
 
 func (c *connection) Lookup(ctx context.Context, db, schema, name string) (*drivers.OlapTable, error) {

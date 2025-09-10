@@ -22,7 +22,7 @@ func TestInformationSchemaAll(t *testing.T) {
 	_, err = conn.createTableAsSelect(context.Background(), "source", "select 4, 5, 6", &createTableOptions{})
 	require.NoError(t, err)
 
-	tables, err := olap.InformationSchema().All(context.Background(), "")
+	tables, _, err := olap.InformationSchema().All(context.Background(), "", 50, "")
 	require.NoError(t, err)
 	require.Equal(t, 4, len(tables))
 
@@ -50,12 +50,12 @@ func TestInformationSchemaAllLike(t *testing.T) {
 	_, err := conn.createTableAsSelect(context.Background(), "model", "select 1, 2, 3", opts)
 	require.NoError(t, err)
 
-	tables, err := olap.InformationSchema().All(context.Background(), "%odel")
+	tables, _, err := olap.InformationSchema().All(context.Background(), "%odel", 50, "")
 	require.NoError(t, err)
 	require.Equal(t, 1, len(tables))
 	require.Equal(t, "model", tables[0].Name)
 
-	tables, err = olap.InformationSchema().All(context.Background(), "%model%")
+	tables, _, err = olap.InformationSchema().All(context.Background(), "%model%", 50, "")
 	require.NoError(t, err)
 	require.Equal(t, 1, len(tables))
 	require.Equal(t, "model", tables[0].Name)

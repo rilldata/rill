@@ -12,25 +12,12 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
-func (c *Connection) ListDatabaseSchemas(ctx context.Context) ([]*drivers.DatabaseSchemaInfo, error) {
-	return nil, nil
-}
-
-func (c *Connection) ListTables(ctx context.Context, database, schema string) ([]*drivers.TableInfo, error) {
-	return nil, nil
-}
-
-func (c *Connection) GetTable(ctx context.Context, database, schema, table string) (*drivers.TableMetadata, error) {
-	return nil, nil
-}
-
-func (c *Connection) All(ctx context.Context, like string) ([]*drivers.OlapTable, error) {
+func (c *Connection) All(ctx context.Context, like string, pageSize uint32, pageToken string) ([]*drivers.OlapTable, string, error) {
 	conn, release, err := c.acquireMetaConn(ctx)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	defer func() { _ = release() }()
-
 	var likeClause string
 	var args []any
 	if like != "" {
@@ -75,15 +62,15 @@ func (c *Connection) All(ctx context.Context, like string) ([]*drivers.OlapTable
 
 	rows, err := conn.QueryxContext(ctx, q, args...)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	defer rows.Close()
 
 	tables, err := scanTables(rows)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
-	return tables, nil
+	return tables, "", nil
 }
 
 func (c *Connection) Lookup(ctx context.Context, db, schema, name string) (*drivers.OlapTable, error) {
