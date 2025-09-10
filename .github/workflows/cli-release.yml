@@ -126,7 +126,7 @@ jobs:
           if [[ ${{ env.PUBLISH_NIGHTLY }} == 'true' ]]; then
             BUCKET_DIR=nightly
             LATEST_TAG=$(git describe --tags $(git rev-list --tags --max-count=1) | sed 's/r/v/')
-            echo "NIGHTLY='--nightly --snapshot'" >> $GITHUB_ENV
+            echo "NIGHTLY=--nightly" >> $GITHUB_ENV
             echo "GORELEASER_CURRENT_TAG=$(echo ${LATEST_TAG})" >> $GITHUB_ENV
           else
             echo "NIGHTLY=" >> $GITHUB_ENV
@@ -147,7 +147,7 @@ jobs:
         with:
           distribution: goreleaser-pro
           version: '~> v2'
-          args: release ${{ env.NIGHTLY }}
+          args: release --verbose ${{ env.NIGHTLY }}
         env:
           CGO_ENABLED: 1
           GITHUB_TOKEN: ${{ secrets.GORELEASER_ACCESS_TOKEN }}
