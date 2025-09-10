@@ -176,6 +176,9 @@ type configProperties struct {
 	// QuerySettingsOverride overrides the default query settings used for OLAP SELECT queries.
 	// Use cases include disabling settings or setting `readonly = 1` when using read-only user.
 	QuerySettingsOverride string `mapstructure:"query_settings_override"`
+	// QuerySettings are set on each read query. QuerySettingsOverride takes precedence over these settings and if set these are ignored./
+	// Each setting must be separated by a comma. Example `max_threads = 8, max_memory_usage = 10000000000`
+	QuerySettings string `mapstructure:"query_settings"`
 	// EmbedPort is the port to run Clickhouse locally (0 is random port).
 	EmbedPort int `mapstructure:"embed_port"`
 	// CanScaleToZero indicates if the underlying Clickhouse service may scale to zero when idle.
