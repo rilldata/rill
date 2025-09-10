@@ -1,0 +1,56 @@
+name: AI Evals
+
+on:
+  workflow_dispatch:  # Manual trigger
+    inputs:
+      model:
+        description: 'OpenAI model to use for evals'
+        required: false
+        default: 'gpt-4o'
+        type: choice
+        options:
+        - 'gpt-4o'
+        - 'gpt-4o-mini'
+        - 'gpt-4-turbo'
+  pull_request:
+    paths:
+      - 'runtime/completion.go'
+      - 'runtime/server/chat_eval_test.go'
+      - 'runtime/server/EVALS.md'
+      - 'runtime/testruntime/testdata/openrtb/**'
+      - '.github/workflows/evals.yml'
+
+jobs:
+  evals:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Run AI Evals
+        env:
+          OPENAI_API_KEY: ${{ secrets.RILL_ADMIN_OPENAI_API_KEY }}
+          EVAL_MODEL: ${{ github.event.inputs.model || 'gpt-4o' }}
+        run: |
+          echo "Running AI evals with model: $EVAL_MODEL"
+          go test -tags=evals ./runtime/server/ -run TestProjectPromptEvals -v -timeout=5m
+
+      - name: Comment PR with results
+        if: github.event_name == 'pull_request' && failure()
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '⚠️ AI evals failed on this PR. Please review the test results and ensure prompt changes maintain quality.'
+            })
