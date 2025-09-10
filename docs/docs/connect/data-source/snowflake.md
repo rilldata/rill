@@ -99,7 +99,7 @@ After generating the private key, you need to convert it into a URL-safe Base64 
 
 ```bash
 # Convert URL safe format for DSN
-cat rsa_key.p8 | grep -v "\----" | tr -d '\n' | tr '+/' '-_' | tr -d '='
+cat rsa_key.p8 | grep -v "\----" | tr -d '\n' | tr '+/' '-_'
 ```
 
 > Note: When copying the output, do not include the trailing % character that may appear in your terminal.
