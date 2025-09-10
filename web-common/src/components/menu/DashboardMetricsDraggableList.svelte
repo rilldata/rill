@@ -41,8 +41,10 @@
     .map(([id]) => ({ id: id! }));
 
   // Filter hidden items based on search
-  $: filteredHiddenItems = hiddenDraggableItems.filter(item => 
-    searchText === "" || item.id.toLowerCase().includes(searchText.toLowerCase())
+  $: filteredHiddenItems = hiddenDraggableItems.filter(
+    (item) =>
+      searchText === "" ||
+      item.id.toLowerCase().includes(searchText.toLowerCase()),
   );
 
   function handleSelectedReorder(data: {
@@ -78,11 +80,15 @@
   }
 
   // Simple click handler that works around DraggableList interference
-  function handleSpanClick(event: MouseEvent, itemId: string, isShown: boolean) {
+  function handleSpanClick(
+    event: MouseEvent,
+    itemId: string,
+    isShown: boolean,
+  ) {
     // Always prevent event bubbling to avoid conflicts with DraggableList
     event.preventDefault();
     event.stopPropagation();
-    
+
     // Toggle the item's visibility
     if (isShown) {
       // Hide the item (move from shown to hidden)
@@ -98,7 +104,11 @@
   }
 
   // Function to handle clicks on the draggable item container (shown items only)
-  function handleDraggableItemClick(event: MouseEvent, item: { id: string }, index: number) {
+  function handleDraggableItemClick(
+    _event: MouseEvent,
+    _item: { id: string },
+    _index: number,
+  ) {
     // This is mainly a fallback - our span click handlers should take precedence
     // Don't do anything here for shown items since spans handle the clicks
   }
@@ -182,18 +192,20 @@
                     size="16px"
                     className="text-gray-400 pointer-events-none"
                   />
-                  <span 
+                  <!-- svelte-ignore a11y-click-events-have-key-events -->
+                  <span
                     class="truncate flex-1 text-left cursor-pointer"
                     on:click={(event) => handleSpanClick(event, item.id, true)}
                     role="button"
                     tabindex="0"
-                    aria-label="Click to hide {itemData?.displayName ?? item.id}"
+                    aria-label="Click to hide {itemData?.displayName ??
+                      item.id}"
                   >
                     {itemData?.displayName ??
                       `Unknown ${type === "measure" ? "measure" : "dimension"}`}
                   </span>
                   <button
-                    class="ml-auto hover:bg-slate-200 p-1 rounded-sm active:bg-slate-300"
+                    class="ml-auto hover:bg-slate-200 p-2 rounded-sm active:bg-slate-300"
                     on:click|stopPropagation={() => removeSelectedItem(index)}
                     on:mousedown|stopPropagation={() => {
                       // NO-OP
@@ -226,7 +238,8 @@
                 size="16px"
                 className="text-gray-400 pointer-events-none"
               />
-              <span 
+              <!-- svelte-ignore a11y-click-events-have-key-events -->
+              <span
                 class="truncate flex-1 text-left cursor-pointer"
                 on:click={(event) => handleSpanClick(event, item.id, true)}
                 role="button"
@@ -258,8 +271,12 @@
         <span class="flex-none h-px bg-slate-200 w-full" />
         <div class="hidden-section flex flex-col flex-1 min-h-0 p-1.5 pt-0">
           <!-- Hidden items header -->
-          <div class="flex-none flex py-1.5 justify-between px-2 sticky top-0 from-popover from-80% to-transparent bg-gradient-to-b">
-            <h3 class="uppercase text-xs text-gray-500 font-semibold from-popover from-80% to-transparent bg-gradient-to-b">
+          <div
+            class="flex-none flex py-1.5 justify-between px-2 sticky top-0 from-popover from-80% to-transparent bg-gradient-to-b"
+          >
+            <h3
+              class="uppercase text-xs text-gray-500 font-semibold from-popover from-80% to-transparent bg-gradient-to-b"
+            >
               Hidden {type === "measure" ? "Measures" : "Dimensions"}
             </h3>
             <button
@@ -271,7 +288,11 @@
           </div>
 
           <!-- Hidden items list - no dragging needed, just click to show -->
-          <div class="flex flex-col overflow-y-auto p-1.5" style:min-height="auto" style:max-height="200px">
+          <div
+            class="flex flex-col overflow-y-auto p-1.5"
+            style:min-height="auto"
+            style:max-height="200px"
+          >
             {#if filteredHiddenItems.length === 0}
               <div class="px-2 py-2 text-xs text-gray-500">
                 {searchText
@@ -281,16 +302,20 @@
             {:else}
               {#each filteredHiddenItems as item, index (item.id)}
                 {@const itemData = allItemsMap.get(item.id)}
-                <div 
+                <div
                   class="w-full flex gap-x-1 justify-between items-center py-1 hover:bg-slate-50 rounded-sm min-h-7"
                   style:height="28px"
                 >
                   {#if itemData?.description}
                     <Tooltip.Root openDelay={200} portal="body">
-                      <Tooltip.Trigger class="w-full flex gap-x-1 justify-between items-center">
-                        <span 
+                      <Tooltip.Trigger
+                        class="w-full flex gap-x-1 justify-between items-center"
+                      >
+                        <!-- svelte-ignore a11y-click-events-have-key-events -->
+                        <span
                           class="truncate flex-1 text-left cursor-pointer"
-                          on:click={(event) => handleSpanClick(event, item.id, false)}
+                          on:click={(event) =>
+                            handleSpanClick(event, item.id, false)}
                           role="button"
                           tabindex="0"
                           aria-label="Click to show {itemData.displayName}"
@@ -299,32 +324,43 @@
                         </span>
                         <button
                           class="hover:bg-slate-200 p-1 rounded-sm active:bg-slate-300"
-                          on:click|stopPropagation={() => handleHiddenItemClick({ item, index })}
+                          on:click|stopPropagation={() =>
+                            handleHiddenItemClick({ item, index })}
                           aria-label="Toggle visibility"
                           data-testid="toggle-visibility-button"
                         >
                           <EyeOffIcon size="14px" color="#9ca3af" />
                         </button>
                       </Tooltip.Trigger>
-                      <Tooltip.Content side="right" sideOffset={12} class="z-popover">
-                        <div class="bg-gray-800 text-gray-50 rounded p-2 pt-1 pb-1 shadow-md pointer-events-none z-50">
+                      <Tooltip.Content
+                        side="right"
+                        sideOffset={12}
+                        class="z-popover"
+                      >
+                        <div
+                          class="bg-gray-800 text-gray-50 rounded p-2 pt-1 pb-1 shadow-md pointer-events-none z-50"
+                        >
                           {itemData.description}
                         </div>
                       </Tooltip.Content>
                     </Tooltip.Root>
                   {:else}
-                    <span 
+                    <!-- svelte-ignore a11y-click-events-have-key-events -->
+                    <span
                       class="truncate flex-1 text-left cursor-pointer"
-                      on:click={(event) => handleSpanClick(event, item.id, false)}
+                      on:click={(event) =>
+                        handleSpanClick(event, item.id, false)}
                       role="button"
                       tabindex="0"
-                      aria-label="Click to show {itemData?.displayName ?? item.id}"
+                      aria-label="Click to show {itemData?.displayName ??
+                        item.id}"
                     >
                       {itemData?.displayName}
                     </span>
                     <button
                       class="hover:bg-slate-200 p-1 rounded-sm active:bg-slate-300"
-                      on:click|stopPropagation={() => handleHiddenItemClick({ item, index })}
+                      on:click|stopPropagation={() =>
+                        handleHiddenItemClick({ item, index })}
                       aria-label="Toggle visibility"
                       data-testid="toggle-visibility-button"
                     >
