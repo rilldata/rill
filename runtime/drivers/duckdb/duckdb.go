@@ -38,8 +38,8 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "DuckDB",
 	Description: "DuckDB SQL connector.",
-	DocsURL:     "https://docs.rilldata.com/connect/olap/motherduck",
-	ConfigProperties: []*drivers.PropertySpec{
+	DocsURL:     "https://docs.rilldata.com/connect/olap/duckdb",
+	SourceProperties: []*drivers.PropertySpec{
 		{
 			Key:         "path",
 			Type:        drivers.StringPropertyType,
@@ -65,7 +65,6 @@ var spec = drivers.Spec{
 			Required:    true,
 		},
 	},
-	ImplementsOLAP: true,
 }
 
 var motherduckSpec = drivers.Spec{
