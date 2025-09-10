@@ -405,7 +405,6 @@
           search={curMode === DimensionFilterMode.Contains
             ? curSearchText
             : undefined}
-          mode={curMode}
         />
       </Chip>
       <div slot="tooltip-content" transition:fly={{ duration: 100, y: 4 }}>

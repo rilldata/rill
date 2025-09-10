@@ -84,6 +84,5 @@
     search={mode === DimensionFilterMode.Contains
       ? sanitisedSearchText
       : undefined}
-    {mode}
   />
 </Chip>

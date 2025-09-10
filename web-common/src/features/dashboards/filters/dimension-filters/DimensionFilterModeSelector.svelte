@@ -22,6 +22,6 @@
   onChange={handleModeChange}
   {size}
   {disabled}
-  minWidth={82}
+  minWidth={110}
   forcedTriggerStyle="rounded-r-none"
 />
