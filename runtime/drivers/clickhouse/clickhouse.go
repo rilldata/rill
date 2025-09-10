@@ -131,7 +131,7 @@ var spec = drivers.Spec{
 			Required:    false,
 			DisplayName: "SSL",
 			Description: "Use SSL to connect to the ClickHouse server",
-			Hint:        "Enable SSL for secure connections",
+			Hint:        "Enable SSL for secure connections. For ClickHouse Cloud, SSL is always enabled.",
 			Default:     "true",
 		},
 	},
