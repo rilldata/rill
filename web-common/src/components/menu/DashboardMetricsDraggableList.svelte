@@ -64,8 +64,8 @@
     onSelectedChange(newSelectedItems);
   }
 
-  function removeSelectedItem(index: number) {
-    const newSelectedItems = selectedItems.filter((_, i) => i !== index);
+  function removeSelectedItem(itemId: string) {
+    const newSelectedItems = selectedItems.filter((id) => id !== itemId);
     onSelectedChange(newSelectedItems);
   }
 
@@ -94,7 +94,7 @@
       // Hide the item (move from shown to hidden)
       const itemIndex = selectedItems.indexOf(itemId);
       if (itemIndex !== -1 && selectedItems.length > 1) {
-        removeSelectedItem(itemIndex);
+        removeSelectedItem(itemId);
       }
     } else {
       // Show the item (move from hidden to shown)
@@ -104,11 +104,10 @@
   }
 
   // Function to handle clicks on the draggable item container (shown items only)
-  function handleDraggableItemClick(
-    _event: MouseEvent,
-    _item: { id: string },
-    _index: number,
-  ) {
+  function handleDraggableItemClick(_data: {
+    item: { id: string };
+    index: number;
+  }) {
     // This is mainly a fallback - our span click handlers should take precedence
     // Don't do anything here for shown items since spans handle the clicks
   }
@@ -206,7 +205,7 @@
                   </span>
                   <button
                     class="ml-auto hover:bg-slate-200 p-1 rounded-sm active:bg-slate-300"
-                    on:click|stopPropagation={() => removeSelectedItem(index)}
+                    on:click|stopPropagation={() => removeSelectedItem(item.id)}
                     on:mousedown|stopPropagation={() => {
                       // NO-OP
                     }}
@@ -251,7 +250,7 @@
               </span>
               <button
                 class="ml-auto hover:bg-slate-200 p-1 rounded-sm active:bg-slate-300"
-                on:click|stopPropagation={() => removeSelectedItem(index)}
+                on:click|stopPropagation={() => removeSelectedItem(item.id)}
                 on:mousedown|stopPropagation={() => {
                   // NO-OP
                 }}
