@@ -5,7 +5,7 @@ sidebar_label: Create Canvas Dashboards
 sidebar_position: 05
 ---
 
-<!-- <div style={{ 
+<div style={{ 
   position: "relative", 
   width: "100%", 
   paddingTop: "56.25%", 
@@ -27,7 +27,7 @@ sidebar_position: 05
     }}
   ></iframe>
 </div>
-<br/> -->
+<br/>
 ----
 While Rill's signature **[Explore dashboards](/build/dashboards/dashboards.md)** let you slice, dice, and interact with your data in our suggested layout, **Canvas dashboards** let you define your own visualizations of data from multiple [metrics views](/build/metrics-view/metrics-view.md) and arrange them into your preferred layout. 
 

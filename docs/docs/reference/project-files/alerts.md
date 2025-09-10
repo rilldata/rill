@@ -177,7 +177,7 @@ display_name: Data lags by more than 1 day
 # Check the alert every hour.
 refresh:
     cron: 0 * * * *
-# Query that returns non-empty results if the metrics lag by more than 1 day.
+# Query that returns non-empty results if the measures lag by more than 1 day.
 data:
     sql: |-
         SELECT  *

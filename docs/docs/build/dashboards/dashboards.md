@@ -4,7 +4,7 @@ description: Create dashboards using source data and models with time, dimension
 sidebar_label: Create Explore Dashboards
 sidebar_position: 00
 ---
-<!-- <div style={{ 
+<div style={{ 
   position: "relative", 
   width: "100%", 
   paddingTop: "56.25%", 
@@ -26,7 +26,7 @@ sidebar_position: 00
     }}
   ></iframe>
 </div>
-<br/> -->
+<br/>
 
 
 In Rill, Explore dashboards are used to visually understand your data with real-time filtering, based on the dimensions and measures defined in your metrics view. In the Explore dashboard YAML, you can define which measures and dimensions are visible, as well as the default view when a user sees your dashboard.

@@ -11,7 +11,7 @@ description: |
 
   :::
 
-  Projects can simply be rehydrated from Rill project files into an explorable data application as long as there is sufficient access and credentials to the source data - figuring out the dependencies, pulling down data, & validating your model queries and metrics configurations. The result is a set of functioning exploratory dashboards.
+  Projects can simply be rehydrated from Rill project files into an explorable data application as long as there is sufficient access and credentials to the source data - figuring out the dependencies, pulling down data, & validating your model queries and metrics view configurations. The result is a set of functioning exploratory dashboards.
 
   You can see a few different example projects by visiting our [example github repository](https://github.com/rilldata/rill-examples).
 
@@ -1653,7 +1653,7 @@ definitions:
             description: Refers to the timestamp column from your model that will underlie x-axis data in the line charts. If not specified, the line charts will not appear
           watermark:
             type: string
-            description: A SQL expression that tells us the max timestamp that the metrics are considered valid for. Usually does not need to be overwritten
+            description: A SQL expression that tells us the max timestamp that the measures are considered valid for. Usually does not need to be overwritten
           smallest_time_grain:
             type: string
             description: 'Refers to the smallest time granularity the user is allowed to view. The valid values are: millisecond, second, minute, hour, day, week, month, quarter, year'
@@ -2022,7 +2022,7 @@ definitions:
     title: Explore Dashboard YAML
     id: explore-dashboards
     type: object
-    description: Explore dashboards provide an interactive way to explore data with predefined metrics and dimensions.
+    description: Explore dashboards provide an interactive way to explore data with predefined measures and dimensions.
     allOf:
       - title: Properties
         type: object
@@ -2180,7 +2180,7 @@ definitions:
         # Check the alert every hour.
         refresh:
           cron: 0 * * * *
-        # Query that returns non-empty results if the metrics lag by more than 1 day.
+        # Query that returns non-empty results if the measures lag by more than 1 day.
         data:
           sql: |-
             SELECT  *

@@ -99,7 +99,6 @@ security:
 
 When combining access policies from project defaults and object-specific policies, remember that the object level policies will overwrite the project level ones. Dashboard and metrics view policies are binary logically ANDed.
  
-<!-- Not behaving as you're expecting? See our [troubleshooting guide.](/build/debugging/dashboard-access) -->
 
 :::
 

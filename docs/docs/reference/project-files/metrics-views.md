@@ -54,7 +54,7 @@ _[string]_ - Refers to the timestamp column from your model that will underlie x
 
 ### `watermark`
 
-_[string]_ - A SQL expression that tells us the max timestamp that the metrics are considered valid for. Usually does not need to be overwritten 
+_[string]_ - A SQL expression that tells us the max timestamp that the measures are considered valid for. Usually does not need to be overwritten 
 
 ### `smallest_time_grain`
 

@@ -5,7 +5,7 @@ sidebar_label: "Quantiles"
 sidebar_position: 30
 ---
 
-In addition to common aggregates, you may wish to look at the value of a metric within a certain band or quantile. In the example below, we can measure the P95 of a given measure using `QUANTILE_CONT`.
+In addition to common aggregates, you may wish to look at the value of a measure within a certain band or quantile. In the example below, we can measure the P95 of a given measure using `QUANTILE_CONT`.
 
 <img src = '/img/build/metrics-view/examples/percentile-visual.png' class='rounded-gif' />
 <br />
