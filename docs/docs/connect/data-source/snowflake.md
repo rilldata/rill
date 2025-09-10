@@ -73,7 +73,7 @@ If you've already configured credentials locally (in your `<RILL_PROJECT_DIRECTO
 
 ### Using keypair authentication
 
-Rill supports using keypair authentication for enhanced security when connecting to Snowflake,as an alternative to password-based authentication, which Snowflake has deprecated.. Per the [Snowflake Go Driver](https://github.com/snowflakedb/gosnowflake) specifications, this requires the following changes to the dsn:
+Rill supports using keypair authentication for enhanced security when connecting to Snowflake,as an alternative to password-based authentication, which Snowflake has deprecated. Per the [Snowflake Go Driver](https://github.com/snowflakedb/gosnowflake) specifications, this requires the following changes to the dsn:
 - Remove the password  
 - Add `authenticator=SNOWFLAKE_JWT`  
 - Add `privateKey=<privateKey_url_safe>` 
@@ -86,7 +86,7 @@ Rill supports using keypair authentication for enhanced security when connecting
 
 Please refer to the [Snowflake documentation](https://docs.snowflake.com/en/user-guide/key-pair-auth) on how to configure an unencrypted private key to use in Rill.
 
-Snowflake Go Driver only supports **unencrypted PKCS#8 keys**. Make sure to include the `-nocrypt` flag, as encrypted keys are not supported. You can generate one using: 
+The Snowflake Go Driver only supports **unencrypted PKCS#8 keys**. Make sure to include the `-nocrypt` flag, as encrypted keys are not supported. You can generate one using: 
 
 ```bash
 # Generate a 2048-bit unencrypted PKCS#8 private key
