@@ -87,6 +87,7 @@ jobs:
         with:
           path: rill
           destination: prod-cdn.rilldata.com/rill/nightly/binaries/${{ matrix.platform }}/
+          process_gcloudignore: false
           headers: |-
             cache-control: no-store
 
@@ -96,6 +97,7 @@ jobs:
         with:
           path: rill
           destination: prod-cdn.rilldata.com/rill/${{ github.ref_name }}/binaries/${{ matrix.platform }}/
+          process_gcloudignore: false
           headers: |-
             cache-control: no-store
 
@@ -124,7 +126,7 @@ jobs:
           if [[ ${{ env.PUBLISH_NIGHTLY }} == 'true' ]]; then
             BUCKET_DIR=nightly
             LATEST_TAG=$(git describe --tags $(git rev-list --tags --max-count=1) | sed 's/r/v/')
-            echo "NIGHTLY=--nightly" >> $GITHUB_ENV
+            echo "NIGHTLY='--nightly --snapshot'" >> $GITHUB_ENV
             echo "GORELEASER_CURRENT_TAG=$(echo ${LATEST_TAG})" >> $GITHUB_ENV
           else
             echo "NIGHTLY=" >> $GITHUB_ENV
@@ -163,7 +165,7 @@ jobs:
 
       - name: Notify Slack
         uses: ravsamhq/notify-slack-action@v2
-        if: env.PUBLISH_NIGHTLY == 'true' || env.PUBLISH_RELEASE == 'true'
+        if: always() && (env.PUBLISH_NIGHTLY == 'true' || env.PUBLISH_RELEASE == 'true')
         with:
           status: ${{ job.status }}
           notification_title: "{workflow} has {status_message}"
