@@ -19,13 +19,21 @@ export const load = ({ url }) => {
     throw redirect(307, `/-/embed/${type}/${resource}`);
   }
 
-  const { instanceId, runtimeHost, accessToken, navigationEnabled } =
-    embedStore;
+  const {
+    instanceId,
+    runtimeHost,
+    accessToken,
+    missingRequireParams,
+    navigationEnabled,
+    visibleExplores,
+  } = embedStore;
 
   return {
     instanceId,
     runtimeHost,
     accessToken,
+    missingRequireParams,
     navigationEnabled,
+    visibleExplores,
   };
 };

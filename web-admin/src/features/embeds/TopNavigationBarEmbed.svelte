@@ -40,20 +40,11 @@
             ? explore?.state?.validSpec?.displayName
             : canvas?.state?.validSpec?.displayName) || name,
         href: `/-/embed/${isExplore ? "explore" : "canvas"}/${name}`,
+        preloadData: false,
       });
     },
     new Map(),
   );
-
-  function onSelectResource(name: string) {
-    // Because the breadcrumb only returns the identifying name, we need to look up the V1ResourceName (name + kind)
-    const resource = dashboards?.find(
-      (listing) => listing.meta.name.name.toLowerCase() === name,
-    );
-    if (!resource) {
-      throw new Error(`Resource not found: ${name}`);
-    }
-  }
 </script>
 
 <div class="flex items-center w-full pr-4 py-1" class:border-b={!onProjectPage}>
@@ -74,7 +65,6 @@
             <TwoTieredBreadcrumbItem
               options={breadcrumbOptions}
               current={currentResourceName}
-              onSelect={onSelectResource}
               isCurrentPage
             />
           {:else}
