@@ -98,7 +98,7 @@
       <svelte:fragment slot="description">
         <span class="text-sm text-slate-600">
           Slack has not been configured for this project. Read the <a
-            href="https://docs.rilldata.com/explore/alerts/slack"
+            href="https://docs.rilldata.com/explore/alerts#configuring-slack-targets"
             target="_blank"
           >
             docs

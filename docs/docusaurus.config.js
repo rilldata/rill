@@ -490,6 +490,10 @@ const config = {
             from: '/home/get-started',
             to: '/get-started/quickstart'
           },
+          {
+            from: '/explore/alerts/slack',
+            to: '/explore/alerts#configuring-slack-targets'
+          },
           // {
           //   from: '/old-page',
           //   to: '/new-page',
