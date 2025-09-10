@@ -1,8 +1,6 @@
-import {
-  prettyFormatTimeRange,
-  prettyFormatTimeRangeV2,
-} from "@rilldata/web-common/lib/time/ranges/formatter.ts";
+import { prettyFormatTimeRange } from "@rilldata/web-common/lib/time/ranges/formatter.ts";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+import { DateTime, Interval } from "luxon";
 import { describe, expect, it } from "vitest";
 
 describe("prettyFormatTimeRange", () => {
@@ -12,13 +10,13 @@ describe("prettyFormatTimeRange", () => {
         test: "Non-zero minute, minute grain",
         time: "2025-09-04T08:10:20.000Z",
         grain: V1TimeGrain.TIME_GRAIN_MINUTE,
-        formattedTime: "Sep 4, 2025 (1:55PM)",
+        formattedTime: "Sep 4, 2025 (1:55:20PM)",
       },
       {
         test: "Non-zero minute, hour grain",
         time: "2025-09-04T08:10:20.000Z",
         grain: V1TimeGrain.TIME_GRAIN_HOUR,
-        formattedTime: "Sep 4, 2025 (1:55PM)",
+        formattedTime: "Sep 4, 2025 (1:55:20PM)",
       },
 
       {
@@ -112,19 +110,13 @@ describe("prettyFormatTimeRange", () => {
 
     for (const { test, time, grain, formattedTime } of singlePointTestCases) {
       it(test, () => {
-        const oldFormat = prettyFormatTimeRange(
-          new Date(time),
-          new Date(time),
-          undefined,
-          "Asia/Kathmandu",
-        );
-        const newFormat = prettyFormatTimeRangeV2(
-          new Date(time),
-          new Date(time),
+        const newFormat = prettyFormatTimeRange(
+          Interval.fromDateTimes(
+            DateTime.fromISO(time).setZone("Asia/Kathmandu"),
+            DateTime.fromISO(time).setZone("Asia/Kathmandu"),
+          ),
           grain,
-          "Asia/Kathmandu",
         );
-        console.log(`${test}\nOld: ${oldFormat}\nNew: ${newFormat}\n`);
         expect(newFormat).toEqual(formattedTime);
       });
     }
@@ -137,14 +129,14 @@ describe("prettyFormatTimeRange", () => {
         start: "2025-09-01T08:10:20.000Z",
         end: "2025-09-01T16:15:30.000Z",
         grain: V1TimeGrain.TIME_GRAIN_MINUTE,
-        formattedTime: "Sep 1, 2025 (1:55PM-10:00PM)",
+        formattedTime: "Sep 1, 2025 (1:55:20PM-10:00:30PM)",
       },
       {
         test: "Different days, full time difference",
         start: "2025-09-01T08:10:20.000Z",
         end: "2025-09-04T16:15:30.000Z",
         grain: V1TimeGrain.TIME_GRAIN_MINUTE,
-        formattedTime: "Sep 1 - 4, 2025 (1:55PM-10:00PM)",
+        formattedTime: "Sep 1 – 4, 2025 (1:55:20PM-10:00:30PM)",
       },
       {
         test: "Same day, hour difference, minute grain",
@@ -172,7 +164,7 @@ describe("prettyFormatTimeRange", () => {
         start: "2025-09-01T11:00:00.000Z",
         end: "2025-09-04T21:00:00.000Z",
         grain: V1TimeGrain.TIME_GRAIN_DAY,
-        formattedTime: "Sep 1 - 5, 2025 (4:45PM-2:45AM)",
+        formattedTime: "Sep 1 – 5, 2025 (4:45PM-2:45AM)",
       },
 
       {
@@ -180,14 +172,14 @@ describe("prettyFormatTimeRange", () => {
         start: "2025-09-01T18:15:00.000Z",
         end: "2025-09-04T18:15:00.000Z",
         grain: V1TimeGrain.TIME_GRAIN_DAY,
-        formattedTime: "Sep 2 - 5, 2025",
+        formattedTime: "Sep 2 – 5, 2025",
       },
       {
         test: "Same month, days difference, same time not at midnight",
         start: "2025-09-01T10:15:00.000Z",
         end: "2025-09-04T10:15:00.000Z",
         grain: V1TimeGrain.TIME_GRAIN_DAY,
-        formattedTime: "Sep 1 - 4, 2025 (4PM)",
+        formattedTime: "Sep 1 – 4, 2025 (4PM)",
       },
 
       {
@@ -195,35 +187,35 @@ describe("prettyFormatTimeRange", () => {
         start: "2025-08-31T18:15:00.000Z",
         end: "2025-10-31T18:15:00.000Z",
         grain: V1TimeGrain.TIME_GRAIN_DAY,
-        formattedTime: "Sep 1 - Nov 1, 2025",
+        formattedTime: "Sep 1 – Nov 1, 2025",
       },
       {
         test: "Same year different months, week grain",
         start: "2025-08-31T18:15:00.000Z",
         end: "2025-10-31T18:15:00.000Z",
         grain: V1TimeGrain.TIME_GRAIN_WEEK,
-        formattedTime: "Sep 1 - Nov 1, 2025",
+        formattedTime: "Sep 1 – Nov 1, 2025",
       },
       {
         test: "Same year different months, month grain",
         start: "2025-08-31T18:15:00.000Z",
         end: "2025-10-31T18:15:00.000Z",
         grain: V1TimeGrain.TIME_GRAIN_MONTH,
-        formattedTime: "Sep - Nov 2025",
+        formattedTime: "Sep – Nov 2025",
       },
       {
         test: "Same year different months, non-1st day, month grain",
         start: "2025-09-04T18:15:00.000Z",
         end: "2025-11-04T18:15:00.000Z",
         grain: V1TimeGrain.TIME_GRAIN_MONTH,
-        formattedTime: "Sep 5 - Nov 5, 2025",
+        formattedTime: "Sep 5 – Nov 5, 2025",
       },
       {
         test: "Same year different months, time not at midnight, month grain",
         start: "2025-09-01T08:45:00.000Z",
         end: "2025-11-01T08:45:00.000Z",
         grain: V1TimeGrain.TIME_GRAIN_MONTH,
-        formattedTime: "Sep - Nov 2025 (2:30PM)",
+        formattedTime: "Sep – Nov 2025 (2:30PM)",
       },
 
       {
@@ -231,14 +223,14 @@ describe("prettyFormatTimeRange", () => {
         start: "2024-08-31T18:15:00.000Z",
         end: "2025-10-31T18:15:00.000Z",
         grain: V1TimeGrain.TIME_GRAIN_DAY,
-        formattedTime: "Sep 1, 2024 - Nov 1, 2025",
+        formattedTime: "Sep 1, 2024 – Nov 1, 2025",
       },
       {
         test: "Different years and months with same day and time, month grain",
         start: "2024-08-31T18:15:00.000Z",
         end: "2025-10-31T18:15:00.000Z",
         grain: V1TimeGrain.TIME_GRAIN_MONTH,
-        formattedTime: "Sep 2024 - Nov 2025",
+        formattedTime: "Sep 2024 – Nov 2025",
       },
 
       {
@@ -246,47 +238,39 @@ describe("prettyFormatTimeRange", () => {
         start: "2024-10-31T18:15:00.000Z",
         end: "2025-10-31T18:15:00.000Z",
         grain: V1TimeGrain.TIME_GRAIN_DAY,
-        formattedTime: "Nov 1, 2024 - 2025",
+        formattedTime: "Nov 1, 2024 – Nov 1, 2025",
       },
       {
         test: "Different years everything else same, month grain",
         start: "2024-10-31T18:15:00.000Z",
         end: "2025-10-31T18:15:00.000Z",
         grain: V1TimeGrain.TIME_GRAIN_MONTH,
-        formattedTime: "Nov 2024 - 2025",
+        formattedTime: "Nov 2024 – Nov 2025",
       },
       {
         test: "Different years everything else same and non-jan month, year grain",
         start: "2024-10-31T18:15:00.000Z",
         end: "2025-10-31T18:15:00.000Z",
         grain: V1TimeGrain.TIME_GRAIN_YEAR,
-        formattedTime: "Nov 2024 - 2025",
+        formattedTime: "Nov 2024 – Nov 2025",
       },
       {
         test: "Different years everything else same and jan month, year grain",
         start: "2023-12-31T18:15:00.000Z",
         end: "2024-12-31T18:15:00.000Z",
         grain: V1TimeGrain.TIME_GRAIN_YEAR,
-        formattedTime: "2024 - 2025",
+        formattedTime: "2024 – 2025",
       },
     ];
 
     twoPointsTestCases.forEach(({ test, start, end, grain, formattedTime }) => {
       it(test, () => {
-        const oldFormat = prettyFormatTimeRange(
-          new Date(start),
-          new Date(end),
-          undefined,
-          "Asia/Kathmandu",
+        const interval = Interval.fromDateTimes(
+          DateTime.fromISO(start).setZone("Asia/Kathmandu"),
+          DateTime.fromISO(end).setZone("Asia/Kathmandu"),
         );
-        const newFormat = prettyFormatTimeRangeV2(
-          new Date(start),
-          new Date(end),
-          grain,
-          "Asia/Kathmandu",
-        );
-        console.log(`${test}\nOld: ${oldFormat}\nNew: ${newFormat}\n`);
-        expect(newFormat).toEqual(formattedTime);
+        const actualFormattedTime = prettyFormatTimeRange(interval, grain);
+        expect(actualFormattedTime).toEqual(formattedTime);
       });
     });
   });

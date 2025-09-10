@@ -31,11 +31,13 @@ import {
   type V1ExploreSpec,
   type V1MetricsViewSpec,
   type V1StructType,
+  V1TimeGrain,
   type V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
 import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 import type { QueryClient } from "@tanstack/query-core";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
+import { DateTime, Interval } from "luxon";
 import { derived, get, type Readable } from "svelte/store";
 
 export type BookmarkEntry = {
@@ -181,13 +183,23 @@ export function getPrettySelectedTimeRange(
         timeRangeSummary,
         metricsExplorerEntity,
       ]);
-      if (!timeRangeState.ready || !timeRangeState.selectedTimeRange?.start)
+      if (
+        !timeRangeState.ready ||
+        !timeRangeState.selectedTimeRange?.start ||
+        !timeRangeState.selectedTimeRange?.end
+      )
         return "";
       return prettyFormatTimeRange(
-        timeRangeState.selectedTimeRange.start,
-        timeRangeState.selectedTimeRange?.end,
-        timeRangeState.selectedTimeRange?.name,
-        metricsExplorerEntity?.selectedTimezone,
+        Interval.fromDateTimes(
+          DateTime.fromJSDate(timeRangeState.selectedTimeRange.start).setZone(
+            metricsExplorerEntity?.selectedTimezone ?? "UTC",
+          ),
+          DateTime.fromJSDate(timeRangeState.selectedTimeRange.end).setZone(
+            metricsExplorerEntity?.selectedTimezone ?? "UTC",
+          ),
+        ),
+        timeRangeState.selectedTimeRange?.interval ??
+          V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
       );
     },
   );

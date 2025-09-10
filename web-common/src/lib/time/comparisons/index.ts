@@ -1,9 +1,11 @@
 import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config";
-
 import { prettyFormatTimeRange } from "@rilldata/web-common/lib/time/ranges/formatter.ts";
 import { humaniseISODuration } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
-import type { V1TimeRange } from "@rilldata/web-common/runtime-client";
-import { Duration, Interval } from "luxon";
+import {
+  V1TimeGrain,
+  type V1TimeRange,
+} from "@rilldata/web-common/runtime-client";
+import { DateTime, Duration, Interval } from "luxon";
 import { getTimeWidth, transformDate } from "../transforms";
 import {
   type RelativeTimeTransformation,
@@ -251,10 +253,11 @@ export function getComparisonLabel(comparisonTimeRange: V1TimeRange) {
     comparisonTimeRange.isoOffset === TimeRangePreset.CUSTOM
   ) {
     return prettyFormatTimeRange(
-      new Date(comparisonTimeRange.start ?? ""),
-      new Date(comparisonTimeRange.end ?? ""),
-      TimeRangePreset.CUSTOM,
-      "UTC", // TODO
+      Interval.fromDateTimes(
+        DateTime.fromISO(comparisonTimeRange.start ?? "").setZone("UTC"),
+        DateTime.fromISO(comparisonTimeRange.end ?? "").setZone("UTC"),
+      ),
+      V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
     );
   }
   switch (true) {
