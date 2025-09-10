@@ -22,11 +22,11 @@ import {
   updateDotEnvWithSecrets,
   updateRillYAMLWithOlapConnector,
 } from "../../connectors/code-utils";
+import { testOLAPConnector } from "../../connectors/olap/test-connection";
 import {
-  testOLAPConnector,
-  pollConnectorReconcileStatus,
-} from "../../connectors/olap/test-connection";
-import { runtimeServicePutFileAndWaitForReconciliation } from "../../entity-management/actions";
+  runtimeServicePutFileAndWaitForReconciliation,
+  runtimeServicePutConnectorFileAndWaitForReconciliation,
+} from "../../entity-management/actions";
 import { getFileAPIPathFromNameAndType } from "../../entity-management/entity-mappers";
 import { fileArtifacts } from "../../entity-management/file-artifacts";
 import { getName } from "../../entity-management/name-utils";
@@ -109,32 +109,40 @@ export async function submitAddConnectorForm(
     newConnectorName,
     EntityType.Connector,
   );
-  await runtimeServicePutFile(instanceId, {
-    path: newConnectorFilePath,
-    blob: compileConnectorYAML(connector, formValues, {
-      connectorInstanceName: newConnectorName,
-    }),
-    create: true,
-    createOnly: false,
-  });
 
-  // For non-OLAP connectors, wait for connector reconciliation first
+  // For non-OLAP connectors, use the enhanced reconciliation function
   if (!OLAP_ENGINES.includes(connector.name as string)) {
-    const result = await pollConnectorReconcileStatus(
-      instanceId,
-      newConnectorName,
-    );
-    if (!result.success) {
-      // We need to get the original .env blob for rollback, but we haven't created it yet
-      // So we'll just delete the connector file
+    try {
+      await runtimeServicePutConnectorFileAndWaitForReconciliation(
+        instanceId,
+        {
+          path: newConnectorFilePath,
+          blob: compileConnectorYAML(connector, formValues, {
+            connectorInstanceName: newConnectorName,
+          }),
+          create: true,
+          createOnly: false,
+        },
+        newConnectorName,
+      );
+    } catch (error) {
+      // The connector file was already created, so we need to delete it
       await runtimeServiceDeleteFile(instanceId, {
         path: newConnectorFilePath,
       });
       throw {
-        message: result.error || "Unable to establish a connection",
-        details: result.details,
+        message: error.message || "Unable to establish a connection",
+        details: error.message,
       };
     }
+  } else {
+    // For OLAP connectors, just create the file (will be tested later)
+    await runtimeServicePutFile(instanceId, {
+      path: newConnectorFilePath,
+      blob: compileConnectorYAML(connector, formValues),
+      create: true,
+      createOnly: false,
+    });
   }
 
   // Check for an existing `.env` file
