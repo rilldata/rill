@@ -1,6 +1,7 @@
 <script lang="ts">
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
+  import { DimensionFilterMode } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/constants";
 
   export let label: string;
   export let values: string[];
@@ -11,8 +12,11 @@
   export let smallChip = false;
   export let labelMaxWidth = "160px";
   export let valueMaxWidth = "320px";
+  export let mode: DimensionFilterMode | undefined = undefined;
 
   $: whatsLeft = values.length - show;
+  $: isInListMode = mode === DimensionFilterMode.InList;
+  $: isContainsMode = mode === DimensionFilterMode.Contains;
 </script>
 
 <div class="flex gap-x-2 items-center">
@@ -23,19 +27,19 @@
     {label}
   </span>
 
-  {#if search}
+  {#if isContainsMode || search}
     <span>Contains</span>
     {#if loading}
       <Spinner status={EntityStatus.Running} size="10px" />
     {:else}
-      <span class="italic">{search} ({matchedCount})</span>
+      <span class="italic">{search} ({matchedCount ?? 0})</span>
     {/if}
-  {:else if matchedCount !== undefined}
+  {:else if isInListMode || matchedCount !== undefined}
     <span>In list</span>
     {#if loading}
       <Spinner status={EntityStatus.Running} size="10px" />
     {:else}
-      <span class="italic">({matchedCount} of {values.length})</span>
+      <span class="italic">({matchedCount ?? 0} of {values.length})</span>
     {/if}
   {:else}
     {#if !smallChip}
