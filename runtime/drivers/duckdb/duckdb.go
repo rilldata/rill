@@ -41,10 +41,10 @@ var spec = drivers.Spec{
 	DocsURL:     "https://docs.rilldata.com/connect/olap/duckdb",
 	SourceProperties: []*drivers.PropertySpec{
 		{
-			Key:         "path",
+			Key:         "db",
 			Type:        drivers.StringPropertyType,
 			Required:    true,
-			DisplayName: "Path",
+			DisplayName: "DB",
 			Description: "Path to DuckDB database",
 			Placeholder: "/path/to/duckdb.db",
 		},
