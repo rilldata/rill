@@ -192,7 +192,7 @@ func (c *Connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecu
 			}, nil
 		}
 	}
-	return nil, drivers.ErrCannotExecuteModels
+	return nil, drivers.ErrNotImplemented
 }
 
 // AsModelManager implements drivers.Handle.

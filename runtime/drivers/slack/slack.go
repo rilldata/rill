@@ -154,7 +154,7 @@ func (h *handle) AsWarehouse() (drivers.Warehouse, bool) {
 }
 
 func (h *handle) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, error) {
-	return nil, drivers.ErrCannotExecuteModels
+	return nil, drivers.ErrNotImplemented
 }
 
 // AsModelManager implements drivers.Handle.

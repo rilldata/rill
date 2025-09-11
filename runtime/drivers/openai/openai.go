@@ -161,7 +161,7 @@ func (o *openai) AsInformationSchema() (drivers.InformationSchema, bool) {
 
 // AsModelExecutor implements drivers.Handle.
 func (o *openai) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, error) {
-	return nil, drivers.ErrCannotExecuteModels
+	return nil, drivers.ErrNotImplemented
 }
 
 // AsModelManager implements drivers.Handle.

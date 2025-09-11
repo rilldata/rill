@@ -192,7 +192,7 @@ func (h *Handle) AsWarehouse() (drivers.Warehouse, bool) {
 
 // AsModelExecutor implements drivers.Handle.
 func (h *Handle) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, error) {
-	return nil, drivers.ErrCannotExecuteModels
+	return nil, drivers.ErrNotImplemented
 }
 
 // AsModelManager implements drivers.Handle.

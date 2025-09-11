@@ -22,8 +22,6 @@ var ErrStorageLimitExceeded = fmt.Errorf("connectors: exceeds storage limit")
 // ErrNotNotifier indicates the driver cannot be used as a Notifier.
 var ErrNotNotifier = errors.New("driver: not a notifier")
 
-var ErrCannotExecuteModels = errors.New("driver: connector is not capable of executing models")
-
 // Drivers is a registry of drivers.
 var Drivers = make(map[string]Driver)
 

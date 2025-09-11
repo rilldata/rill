@@ -70,12 +70,12 @@ func (e *Executor) executeExport(ctx context.Context, format drivers.FileFormat,
 
 	me, err := ic.AsModelExecutor(e.instanceID, opts)
 	if err != nil {
-		if !errors.Is(err, drivers.ErrCannotExecuteModels) {
+		if !errors.Is(err, drivers.ErrNotImplemented) {
 			return "", err
 		}
 		me, err = oc.AsModelExecutor(e.instanceID, opts)
 		if err != nil {
-			if !errors.Is(err, drivers.ErrCannotExecuteModels) {
+			if !errors.Is(err, drivers.ErrNotImplemented) {
 				return "", err
 			}
 			return "", fmt.Errorf("cannot execute export: input connector %q and output connector %q are not compatible", opts.InputConnector, opts.OutputConnector)

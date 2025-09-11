@@ -224,7 +224,7 @@ func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecu
 			return &olapToSelfExecutor{c, olap}, nil
 		}
 	}
-	return nil, drivers.ErrCannotExecuteModels
+	return nil, drivers.ErrNotImplemented
 }
 
 // AsModelManager implements drivers.Handle.

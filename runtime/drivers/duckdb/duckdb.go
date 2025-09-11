@@ -410,14 +410,14 @@ func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecu
 		if opts.OutputHandle.Driver() == "file" {
 			outputProps := &file.ModelOutputProperties{}
 			if err := mapstructure.WeakDecode(opts.PreliminaryOutputProperties, outputProps); err != nil {
-				return nil, drivers.ErrCannotExecuteModels
+				return nil, drivers.ErrNotImplemented
 			}
 			if supportsExportFormat(outputProps.Format, outputProps.Headers) {
 				return &selfToFileExecutor{c}, nil
 			}
 		}
 	}
-	return nil, drivers.ErrCannotExecuteModels
+	return nil, drivers.ErrNotImplemented
 }
 
 // AsModelManager implements drivers.Handle.
