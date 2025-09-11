@@ -9,10 +9,7 @@
     V1Resource,
     V1ResourceName,
   } from "@rilldata/web-common/runtime-client";
-  import { createEventDispatcher } from "svelte";
   import LastRefreshedDate from "../dashboards/listing/LastRefreshedDate.svelte";
-
-  const dispatch = createEventDispatcher();
 
   export let instanceId: string;
   export let activeResource: V1ResourceName;
@@ -42,21 +39,12 @@
           (isExplore
             ? explore?.state?.validSpec?.displayName
             : canvas?.state?.validSpec?.displayName) || name,
+        href: `/-/embed/${isExplore ? "explore" : "canvas"}/${name}`,
+        preloadData: false,
       });
     },
     new Map(),
   );
-
-  function onSelectResource(name: string) {
-    // Because the breadcrumb only returns the identifying name, we need to look up the V1ResourceName (name + kind)
-    const resource = dashboards?.find(
-      (listing) => listing.meta.name.name.toLowerCase() === name,
-    );
-    if (!resource) {
-      throw new Error(`Resource not found: ${name}`);
-    }
-    dispatch("select-resource", resource.meta.name);
-  }
 </script>
 
 <div class="flex items-center w-full pr-4 py-1" class:border-b={!onProjectPage}>
@@ -65,10 +53,9 @@
       <ol class="flex items-center pl-4">
         {#if !onProjectPage}
           <div class="flex gap-x-2">
-            <button
-              class="text-gray-500 hover:text-gray-600"
-              on:click={() => dispatch("go-home")}>Home</button
-            >
+            <a class="text-gray-500 hover:text-gray-600" href="/-/embed">
+              Home
+            </a>
             <span class="text-gray-600">/</span>
           </div>
         {/if}
@@ -78,14 +65,12 @@
             <TwoTieredBreadcrumbItem
               options={breadcrumbOptions}
               current={currentResourceName}
-              onSelect={onSelectResource}
               isCurrentPage
             />
           {:else}
             <BreadcrumbItem
               options={breadcrumbOptions}
               current={currentResourceName}
-              onSelect={onSelectResource}
               isCurrentPage
               isEmbedded
             />

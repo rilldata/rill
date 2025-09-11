@@ -14,11 +14,19 @@
   $: currentConversationStore = chat.getCurrentConversation();
   $: currentConversation = $currentConversationStore;
   $: getConversationQuery = currentConversation.getConversationQuery();
+
+  // Loading states
   $: isSendingMessageStore = currentConversation.isSendingMessage;
   $: isConversationLoading =
     !!$getConversationQuery.isLoading && !$isSendingMessageStore;
-  $: conversationQueryError = currentConversation.getConversationQueryError();
   $: isResponseLoading = $isSendingMessageStore;
+
+  // Error handling
+  $: sendMessageErrorStore = currentConversation.errorMessage;
+  $: conversationQueryError = currentConversation.getConversationQueryError();
+  $: hasError = $conversationQueryError || $sendMessageErrorStore;
+
+  // Data
   $: messages = $getConversationQuery.data?.conversation?.messages ?? [];
 
   // Auto-scroll to bottom when messages change or loading state changes
@@ -46,10 +54,14 @@
     <div class="chat-loading">
       <DelayedSpinner isLoading={isConversationLoading} size="24px" />
     </div>
-  {:else if $conversationQueryError}
+  {:else if hasError}
     <div class="chat-error">
       <AlertCircle size="1.2em" />
-      Unable to load conversation: {$conversationQueryError}
+      {#if $conversationQueryError}
+        Unable to load conversation: {$conversationQueryError}
+      {:else if $sendMessageErrorStore}
+        {$sendMessageErrorStore}
+      {/if}
     </div>
   {:else if messages.length === 0}
     <div class="chat-empty">

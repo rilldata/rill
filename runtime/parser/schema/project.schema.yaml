@@ -257,9 +257,12 @@ definitions:
             log_queries:
               type: boolean
               description: Controls whether to log raw SQL queries
-            settings_override:
+            query_settings_override:
               type: string
-              description: override the default settings used in queries. example `readonly = 1, session_timezone = 'UTC'`
+              description: "override the default settings used in queries. Changing the default settings can lead to incorrect query results and is generally not recommended. If you need to add settings, use `query_settings`"
+            query_settings:
+              type: string
+              description: "query settings to be set on dashboard queries. `query_settings_override` takes precedence over these settings and if set these are ignored. Each setting must be separated by a comma. Example `max_threads = 8, max_memory_usage = 10000000000`"
             embed_port:
               type: integer
               description: Port to run ClickHouse locally (0 for random port)
@@ -818,7 +821,7 @@ definitions:
                 openssl genrsa 2048 | openssl pkcs8 -topk8 -inform PEM -out rsa_key.p8 -nocrypt
 
                 # Convert URL safe format for Snowflake
-                cat rsa_key.p8 | grep -v "\----" | tr -d '\n' | tr '+/' '-_' | tr -d '='
+                cat rsa_key.p8 | grep -v "\----" | tr -d '\n' | tr '+/' '-_'
                 ```
                 See: https://docs.snowflake.com/en/user-guide/key-pair-auth
                 :::

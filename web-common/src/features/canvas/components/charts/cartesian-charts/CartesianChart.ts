@@ -413,6 +413,7 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
             sort: xAxisSort ? [xAxisSort] : undefined,
             where: combinedWhere,
             timeRange,
+            fillMissing: config.x?.type === "temporal",
             limit: hasColorDimension || !limit ? "5000" : limit?.toString(),
           },
           {
