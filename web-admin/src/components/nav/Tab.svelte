@@ -26,7 +26,7 @@
         // Get position relative to the nav container's parent (the div with border-b)
         const navElement = entry.target.parentElement;
         const containerElement = navElement?.parentElement;
-        
+
         if (containerElement) {
           const containerRect = containerElement.getBoundingClientRect();
           const targetRect = entry.target.getBoundingClientRect();
@@ -35,7 +35,7 @@
           // Fallback to original calculation
           left = entry.target.offsetLeft;
         }
-        
+
         size = entry.target.clientWidth;
       }
     }
