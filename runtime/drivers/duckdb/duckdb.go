@@ -383,41 +383,41 @@ func (c *connection) AsObjectStore() (drivers.ObjectStore, bool) {
 }
 
 // AsModelExecutor implements drivers.Handle.
-func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
+func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, error) {
 	if opts.InputHandle == c && opts.OutputHandle == c {
-		return &selfToSelfExecutor{c}, true
+		return &selfToSelfExecutor{c}, nil
 	}
 	if opts.OutputHandle == c {
 		if w, ok := opts.InputHandle.AsWarehouse(); ok {
-			return &warehouseToSelfExecutor{c, w}, true
+			return &warehouseToSelfExecutor{c, w}, nil
 		}
 		if f, ok := opts.InputHandle.AsFileStore(); ok && opts.InputConnector == "local_file" {
-			return &localFileToSelfExecutor{c, f}, true
+			return &localFileToSelfExecutor{c, f}, nil
 		}
 		switch opts.InputHandle.Driver() {
 		case "mysql", "postgres":
-			return &sqlStoreToSelfExecutor{c}, true
+			return &sqlStoreToSelfExecutor{c}, nil
 		case "https":
-			return &httpsToSelfExecutor{c}, true
+			return &httpsToSelfExecutor{c}, nil
 		case "motherduck":
-			return &mdToSelfExecutor{c}, true
+			return &mdToSelfExecutor{c}, nil
 		}
 		if _, ok := opts.InputHandle.AsObjectStore(); ok {
-			return &objectStoreToSelfExecutor{c}, true
+			return &objectStoreToSelfExecutor{c}, nil
 		}
 	}
 	if opts.InputHandle == c {
 		if opts.OutputHandle.Driver() == "file" {
 			outputProps := &file.ModelOutputProperties{}
 			if err := mapstructure.WeakDecode(opts.PreliminaryOutputProperties, outputProps); err != nil {
-				return nil, false
+				return nil, drivers.ErrNotImplemented
 			}
 			if supportsExportFormat(outputProps.Format, outputProps.Headers) {
-				return &selfToFileExecutor{c}, true
+				return &selfToFileExecutor{c}, nil
 			}
 		}
 	}
-	return nil, false
+	return nil, drivers.ErrNotImplemented
 }
 
 // AsModelManager implements drivers.Handle.
