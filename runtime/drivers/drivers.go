@@ -22,6 +22,8 @@ var ErrStorageLimitExceeded = fmt.Errorf("connectors: exceeds storage limit")
 // ErrNotNotifier indicates the driver cannot be used as a Notifier.
 var ErrNotNotifier = errors.New("driver: not a notifier")
 
+var ErrCannotExecuteModels = errors.New("driver: connector is not capable of executing models")
+
 // Drivers is a registry of drivers.
 var Drivers = make(map[string]Driver)
 
@@ -133,7 +135,7 @@ type Handle interface {
 	// Since models may move data between connectors, the model executor can be seem as a "meta driver" that uses handles on other connectors.
 	// The provided options provides both an input connector and an output connector. One or both of these will be the receiver itself.
 	// It should return false if the handle is not capable of executing a model between the provided input and output connectors.
-	AsModelExecutor(instanceID string, opts *ModelExecutorOptions) (ModelExecutor, bool)
+	AsModelExecutor(instanceID string, opts *ModelExecutorOptions) (ModelExecutor, error)
 
 	// AsModelManager returns a ModelManager for managing model results produced by a ModelExecutor.
 	// This is different from the ModelExecutor since sometimes, the model's input connector executes and writes the model result to the output connector.

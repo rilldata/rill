@@ -146,8 +146,8 @@ func (h *handle) AsObjectStore() (drivers.ObjectStore, bool) {
 }
 
 // AsModelExecutor implements drivers.Handle.
-func (h *handle) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
-	return nil, false
+func (h *handle) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, error) {
+	return nil, drivers.ErrCannotExecuteModels
 }
 
 // AsModelManager implements drivers.Handle.

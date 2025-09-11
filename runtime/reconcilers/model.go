@@ -1508,10 +1508,13 @@ func (r *ModelReconciler) acquireExecutorInner(ctx context.Context, opts *driver
 		opts.InputHandle = ic
 		opts.OutputHandle = ic
 
-		e, ok := ic.AsModelExecutor(r.C.InstanceID, opts)
-		if !ok {
+		e, err := ic.AsModelExecutor(r.C.InstanceID, opts)
+		if err != nil {
 			ir()
-			return "", nil, nil, fmt.Errorf("connector %q is not capable of executing models", opts.InputConnector)
+			if errors.Is(err, drivers.ErrCannotExecuteModels) {
+				return "", nil, nil, fmt.Errorf("connector %q is not capable of executing models", opts.InputConnector)
+			}
+			return "", nil, nil, err
 		}
 
 		return opts.InputConnector, e, ir, nil
@@ -1527,14 +1530,23 @@ func (r *ModelReconciler) acquireExecutorInner(ctx context.Context, opts *driver
 	opts.OutputHandle = oc
 
 	executorName := opts.InputConnector
-	e, ok := ic.AsModelExecutor(r.C.InstanceID, opts)
-	if !ok {
-		executorName = opts.OutputConnector
-		e, ok = oc.AsModelExecutor(r.C.InstanceID, opts)
-		if !ok {
+	e, err := ic.AsModelExecutor(r.C.InstanceID, opts)
+	if err != nil {
+		if !errors.Is(err, drivers.ErrCannotExecuteModels) {
+			// found another error, return it
 			ir()
 			or()
-			return "", nil, nil, fmt.Errorf("cannot execute model: input connector %q and output connector %q are not compatible", opts.InputConnector, opts.OutputConnector)
+			return "", nil, nil, err
+		}
+		executorName = opts.OutputConnector
+		e, err = oc.AsModelExecutor(r.C.InstanceID, opts)
+		if err != nil {
+			ir()
+			or()
+			if errors.Is(err, drivers.ErrCannotExecuteModels) {
+				return "", nil, nil, fmt.Errorf("cannot execute model: input connector %q and output connector %q are not compatible", opts.InputConnector, opts.OutputConnector)
+			}
+			return "", nil, nil, err
 		}
 	}
 
