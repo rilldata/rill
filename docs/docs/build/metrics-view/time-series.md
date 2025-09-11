@@ -2,17 +2,10 @@
 title: Time Series in Metrics Views
 description: "Configure time-based dimensions and aggregations for comprehensive temporal analysis"
 sidebar_label: Time Series
-sidebar_position: 03
+sidebar_position: 07
 ---
 
 Time is the most critical dimension in analytics and powers our dashboards. Understanding not just the "what," but how metrics evolve over hours, days, and months provides the narrative arc for decision-making.
-
-:::tip new rill time
-
-We are currently QAing a new time picker that will replace the currnet time series in Rill. If you're interested, [contact us](/contact)!
-
-:::
-
 
 ## Defining Your Time Series Column
 
@@ -67,5 +60,8 @@ smallest_time_grain: day
 ```
 
 
-<!-- Valid until new time picker -->
-It is not possible to set a limit for largest time grain and based on your selection of time range, certain grains will be unavailable to select. IE: minute or second grain at "Last 24 hours".
+:::note Time Grain Availability
+
+The time picker automatically adjusts available time grains based on your selected time range. For example, when viewing "Last 24 hours," only day, and hour grains are available, while "Last 30 days" offers day, week, and month grains. This ensures meaningful time-based analysis appropriate to your data range.
+
+:::

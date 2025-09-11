@@ -28,6 +28,11 @@ You can edit these files in any IDE, and Rill will automatically detect changes 
 
 You can also use IDEs with integrated AI agents like Cursor or WindSurf to accelerate your Rill development workflow.
 
+
+### Best Practices When Using AI Agents
+
+When working with AI agents, start with clear prompts that specify your Rill version, database engine, and project context. Always review generated code thoroughly rather than copying and pasting without understanding the logic. Test changes incrementally by validating small modifications before implementing larger ones. Cross-reference all parameters and syntax with official Rill documentation to ensure accuracy. Remember to treat AI-generated code as a starting template to refine rather than final production code.
+
 :::warning AI Agent Limitations
 
 **Important**: AI agents can hallucinate parameters, functions, and syntax that don't exist in Rill or your underlying database engine. Always verify:
@@ -37,7 +42,3 @@ You can also use IDEs with integrated AI agents like Cursor or WindSurf to accel
 - Generated code in a development environment before production use
 
 :::
-
-### Best Practices When Using AI Agents
-
-When working with AI agents, start with clear prompts that specify your Rill version, database engine, and project context. Always review generated code thoroughly rather than copying and pasting without understanding the logic. Test changes incrementally by validating small modifications before implementing larger ones. Cross-reference all parameters and syntax with official Rill documentation to ensure accuracy. Remember to treat AI-generated code as a starting template to refine rather than final production code.

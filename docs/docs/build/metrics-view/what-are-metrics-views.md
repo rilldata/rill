@@ -15,18 +15,22 @@ A metrics view is a 'centralized framework' used to define and organize **key me
 
 
 In Rill, your metrics view is defined by _metric definitions_. Metric definitions are composed of:
-* _**model/table**_ - A data model created with the concept of [One Big Table](/build/models/models-101#one-big-table-and-dashboarding) that will power the metrics view.
+* _**model/table**_ - A data model or underlying table created with the concept of [One Big Table](/build/models/models-101#one-big-table-and-dashboarding) that will power the metrics view.
 * _**timeseries**_ - A column from your model that will underlie x-axis data in Rill's Explore dashboards and Canvas dashboards. Time can be truncated into different time periods.
 * _**measures**_ - Numerical aggregates of columns from your data model shown on the y-axis of the explore charts and canvas components and the "big number" summaries.
 * _**dimensions**_ - Categorical columns from your data model whose values are shown in _leaderboards_ in explore dashboard and allow you to look at segments or attributes of your data (and filter/slice accordingly) as well as selectable axis in Canvas dashboard components.
 
 ## Creating a Metrics view
 
-In your Rill project directory, after the `metrics-view.yaml` file is created in the `metrics` directory, its configuration or definition can be updated as needed by updating the YAML file directly, using the following template as an example:
+Once your model or underlying is ready to visualize, you'll need to create a metrics view to define your measures and dimensions. This can be done in a few ways. Either create a blank YAML file, use the Add metrics view button, or "Generate Metrics with AI" from the model.
+
+### Create a Metrics view with Code
+Copy the below into a blank YAML or use the Add -> metrics view to create a blank metrics view. Here you can start to define dimensions and measures as seen below.
+
 
 ```yaml
 # Metrics View YAML
-# Reference documentation: https://docs.rilldata.com/reference/project-files/metrics_views
+# Reference documentation: https://docs.rilldata.com/reference/project-files/metrics-views
 
 version: 1
 type: metrics_view

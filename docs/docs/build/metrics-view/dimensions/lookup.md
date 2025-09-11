@@ -15,7 +15,7 @@ The lookup function is dependent on the type of [OLAP engine](/connect/olap) tha
 
 ## ClickHouse Lookups
 
-ClickHouse provides powerful dictionary functions for lookup operations through a several different dictGet functions. Note that the table needs to be defined as a dictionary. 
+ClickHouse provides powerful dictionary functions for lookup operations through a several different `dictGet` functions. Note that the table needs to be defined as a dictionary. 
 
 ```yaml
 dimensions:
@@ -45,7 +45,7 @@ dimensions:
 
 ## Druid Lookups
 
-For those looking to add ID to name mappings with Druid (as an OLAP engine), you can utilize expressions in your **Dimension** settings. Simply use the lookup function and provide the name of the lookup and ID, i.e. `lookup(city_id, 'cities')`. Be sure to include the lookup table name in single quotes.
+For those looking to add ID to name mappings with Druid (as an OLAP engine), you can utilize expressions in your **Dimension** settings. Simply use the `lookup` function and provide the name of the lookup and ID, i.e. `lookup(city_id, 'cities')`. Be sure to include the lookup table name in single quotes.
 
 ```yaml
 dimensions:
