@@ -72,6 +72,7 @@ func NewOpenAI(apiKey string, opts *Options) (Client, error) {
 	return &openAI{
 		client: c,
 		apiKey: apiKey,
+		opts:   opts,
 	}, nil
 }
 
