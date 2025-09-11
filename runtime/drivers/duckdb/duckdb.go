@@ -404,9 +404,6 @@ func (c *connection) AsObjectStore() (drivers.ObjectStore, bool) {
 
 // AsModelExecutor implements drivers.Handle.
 func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, error) {
-	if opts.OutputHandle != c {
-		return nil, drivers.ErrNotImplemented
-	}
 	if c.config.Mode != modeReadWrite {
 		return nil, fmt.Errorf("model execution is disabled. To enable modeling on this ClickHouse database, set 'mode: readwrite' in your connector configuration. WARNING: This will allow Rill to create and overwrite tables in your database")
 	}
