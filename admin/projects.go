@@ -95,12 +95,7 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 		ProjectID:   proj.ID,
 		OwnerUserID: nil,
 		Environment: "prod",
-		Annotations: s.NewDeploymentAnnotations(org, proj),
 		Branch:      proj.ProdBranch,
-		Provisioner: proj.Provisioner,
-		Slots:       proj.ProdSlots,
-		Version:     proj.ProdVersion,
-		Variables:   nil,
 	})
 	if err != nil {
 		return nil, err
@@ -203,10 +198,9 @@ func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opt
 	annotations := s.NewDeploymentAnnotations(org, proj)
 
 	err = s.UpdateDeploymentsForProject(ctx, proj, &UpdateDeploymentOptions{
-		Annotations:     annotations,
-		Branch:          opts.ProdBranch,
-		Version:         opts.ProdVersion,
-		EvictCachedRepo: true,
+		Annotations: annotations,
+		Branch:      opts.ProdBranch,
+		Version:     opts.ProdVersion,
 	})
 	if err != nil {
 		return nil, err
@@ -261,10 +255,9 @@ func (s *Service) UpdateProjectVariables(ctx context.Context, project *database.
 	annotations := s.NewDeploymentAnnotations(org, project)
 
 	err = s.UpdateDeploymentsForProject(ctx, project, &UpdateDeploymentOptions{
-		Annotations:     annotations,
-		Branch:          project.ProdBranch,
-		Version:         project.ProdVersion,
-		EvictCachedRepo: true,
+		Annotations: annotations,
+		Branch:      project.ProdBranch,
+		Version:     project.ProdVersion,
 	})
 	if err != nil {
 		return err
@@ -287,10 +280,9 @@ func (s *Service) UpdateOrgDeploymentAnnotations(ctx context.Context, org *datab
 
 		for _, proj := range projs {
 			err := s.UpdateDeploymentsForProject(ctx, proj, &UpdateDeploymentOptions{
-				Annotations:     s.NewDeploymentAnnotations(org, proj),
-				Branch:          proj.ProdBranch,
-				Version:         proj.ProdVersion,
-				EvictCachedRepo: false,
+				Annotations: s.NewDeploymentAnnotations(org, proj),
+				Branch:      proj.ProdBranch,
+				Version:     proj.ProdVersion,
 			})
 			if err != nil {
 				return err
@@ -309,27 +301,12 @@ func (s *Service) UpdateOrgDeploymentAnnotations(ctx context.Context, org *datab
 
 // RedeployProject de-provisions and re-provisions a project's prod deployment.
 func (s *Service) RedeployProject(ctx context.Context, proj *database.Project, prevDepl *database.Deployment) (*database.Project, error) {
-	org, err := s.DB.FindOrganization(ctx, proj.OrganizationID)
-	if err != nil {
-		return nil, err
-	}
-
-	vars, err := s.ResolveVariables(ctx, proj.ID, "prod", false)
-	if err != nil {
-		return nil, err
-	}
-
 	// Provision new deployment
 	newDepl, err := s.CreateDeployment(ctx, &CreateDeploymentOptions{
 		ProjectID:   proj.ID,
 		OwnerUserID: nil,
 		Environment: "prod",
-		Annotations: s.NewDeploymentAnnotations(org, proj),
 		Branch:      proj.ProdBranch,
-		Provisioner: proj.Provisioner,
-		Slots:       proj.ProdSlots,
-		Version:     proj.ProdVersion,
-		Variables:   vars,
 	})
 	if err != nil {
 		return nil, err

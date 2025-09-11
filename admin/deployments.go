@@ -26,12 +26,7 @@ type CreateDeploymentOptions struct {
 	ProjectID   string
 	OwnerUserID *string
 	Environment string
-	Annotations DeploymentAnnotations
 	Branch      string
-	Provisioner string
-	Slots       int
-	Version     string
-	Variables   map[string]string
 }
 
 func (s *Service) CreateDeployment(ctx context.Context, opts *CreateDeploymentOptions) (*database.Deployment, error) {
@@ -51,14 +46,8 @@ func (s *Service) CreateDeployment(ctx context.Context, opts *CreateDeploymentOp
 		return nil, err
 	}
 
-	// Initialize the deployment (by provisioning a runtime and creating an instance on it)
-	depl, err = s.StartDeployment(ctx, depl, &StartDeploymentOptions{
-		Annotations: opts.Annotations,
-		Provisioner: opts.Provisioner,
-		Slots:       opts.Slots,
-		Version:     opts.Version,
-		Variables:   opts.Variables,
-	})
+	// Trigger reconcile deployment job
+	err = s.triggerReconcileJob(ctx, depl.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -66,37 +55,16 @@ func (s *Service) CreateDeployment(ctx context.Context, opts *CreateDeploymentOp
 	return depl, nil
 }
 
-type StartDeploymentOptions struct {
-	Annotations DeploymentAnnotations
-	Provisioner string
-	Slots       int
-	Version     string
-	Variables   map[string]string
-}
-
-func (s *Service) StartDeployment(ctx context.Context, depl *database.Deployment, opts *StartDeploymentOptions) (*database.Deployment, error) {
+func (s *Service) StartDeployment(ctx context.Context, depl *database.Deployment) (*database.Deployment, error) {
 	// Update the deployment status to pending
-	_, err := s.DB.UpdateDeploymentStatus(ctx, depl.ID, database.DeploymentStatusPending, "Provisioning...")
+	depl1, err := s.DB.UpdateDeploymentStatus(ctx, depl.ID, database.DeploymentStatusPending, "Provisioning...")
 	if err != nil {
 		return nil, err
 	}
 
-	// Initialize the deployment (by provisioning a runtime and creating an instance on it)
-	err = s.startDeploymentInner(ctx, depl, opts)
+	// Trigger reconcile deployment job
+	err = s.triggerReconcileJob(ctx, depl.ID)
 	if err != nil {
-		// Mark deployment error
-		ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
-		defer cancel()
-		_, err2 := s.DB.UpdateDeploymentStatus(ctx, depl.ID, database.DeploymentStatusError, fmt.Sprintf("Failed to provision runtime: %v", err))
-		s.Logger.Error("start deployment: failed to provision runtime", zap.String("project_id", depl.ProjectID), zap.String("deployment_id", depl.ID), zap.Error(err), observability.ZapCtx(ctx))
-		// TODO: The validate_deployments job will tear it down, but we should consider starting a background job to do so immediately.
-		return nil, errors.Join(err, err2)
-	}
-
-	// Mark deployment ready
-	depl1, err := s.DB.UpdateDeploymentStatus(ctx, depl.ID, database.DeploymentStatusOK, "")
-	if err != nil {
-		// NOTE: Unlikely case – we'll leave it pending in this case, the user can reset.
 		return nil, err
 	}
 
@@ -104,19 +72,14 @@ func (s *Service) StartDeployment(ctx context.Context, depl *database.Deployment
 }
 
 func (s *Service) StopDeployment(ctx context.Context, depl *database.Deployment) error {
-	// Stop the deployment by tearing down its runtime instance and resources.
-	err := s.stopDeploymentInner(ctx, depl)
+	// Update the deployment status to stopping
+	_, err := s.DB.UpdateDeploymentStatus(ctx, depl.ID, database.DeploymentStatusStopping, "Stopping...")
 	if err != nil {
-		// Mark deployment error
-		ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
-		defer cancel()
-		_, err2 := s.DB.UpdateDeploymentStatus(ctx, depl.ID, database.DeploymentStatusError, fmt.Sprintf("Failed to stop deployment: %v", err))
-		s.Logger.Error("stop deployment: failed to stop deployment", zap.String("project_id", depl.ProjectID), zap.String("deployment_id", depl.ID), zap.Error(err), observability.ZapCtx(ctx))
-		return errors.Join(err, err2)
+		return err
 	}
 
-	// Update the deployment status to stopped
-	_, err = s.DB.UpdateDeploymentStatus(ctx, depl.ID, database.DeploymentStatusStopped, "")
+	// Trigger reconcile deployment job
+	err = s.triggerReconcileJob(ctx, depl.ID)
 	if err != nil {
 		return err
 	}
@@ -124,9 +87,33 @@ func (s *Service) StopDeployment(ctx context.Context, depl *database.Deployment)
 	return nil
 }
 
+func (s *Service) TeardownDeployment(ctx context.Context, depl *database.Deployment) error {
+	// Update the deployment status to deleting
+	_, err := s.DB.UpdateDeploymentStatus(ctx, depl.ID, database.DeploymentStatusDeleting, "Deleting...")
+	if err != nil {
+		return err
+	}
+
+	// Trigger reconcile deployment job
+	err = s.triggerReconcileJob(ctx, depl.ID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+type StartDeploymentInnerOptions struct {
+	Annotations DeploymentAnnotations
+	Provisioner string
+	Slots       int
+	Version     string
+	Variables   map[string]string
+}
+
 // startDeploymentInner provisions a runtime and initializes an instance on it.
-// The implementation is idempotent, enabling it to be moved to a retryable background job in the future.
-func (s *Service) startDeploymentInner(ctx context.Context, depl *database.Deployment, opts *StartDeploymentOptions) error {
+// The implementation is idempotent, enabling it to be called from a retryable background job.
+func (s *Service) StartDeploymentInner(ctx context.Context, depl *database.Deployment, opts *StartDeploymentInnerOptions) error {
 	// Validate the desired runtime version.
 	// This is usually "latest", which the provisioner internally may resolve to an actual version.
 	runtimeVersion := opts.Version
@@ -234,8 +221,8 @@ func (s *Service) startDeploymentInner(ctx context.Context, depl *database.Deplo
 }
 
 // stopDeploymentInner stops a deployment by tearing down its runtime instance and resources.
-// The implementation is idempotent, enabling it to be moved to a retryable background job in the future.
-func (s *Service) stopDeploymentInner(ctx context.Context, depl *database.Deployment) error {
+// The implementation is idempotent, enabling it to be called from a retryable background job.
+func (s *Service) StopDeploymentInner(ctx context.Context, depl *database.Deployment) error {
 	// Connect to the deployment's runtime and delete the instance
 	rt, err := s.OpenRuntimeClient(depl)
 	if err != nil {
@@ -398,22 +385,6 @@ func (s *Service) UpdateDeployment(ctx context.Context, d *database.Deployment, 
 	return nil
 }
 
-func (s *Service) TeardownDeployment(ctx context.Context, depl *database.Deployment) error {
-	// Stop runtime instance and resources.
-	err := s.stopDeploymentInner(ctx, depl)
-	if err != nil {
-		return err
-	}
-
-	// Delete the deployment
-	err = s.DB.DeleteDeployment(ctx, depl.ID)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (s *Service) CheckProvisionerResource(ctx context.Context, pr *database.ProvisionerResource, annotations DeploymentAnnotations) error {
 	// Find the provisioner
 	p, ok := s.ProvisionerSet[pr.Provisioner]
@@ -554,6 +525,20 @@ type provisionRuntimeOptions struct {
 	Slots        int
 	Version      string
 	Annotations  map[string]string
+}
+
+func (s *Service) triggerReconcileJob(ctx context.Context, deploymentID string) error {
+	// Trigger reconcile deployment job
+	_, err := s.Jobs.ReconcileDeployment(ctx, deploymentID)
+	if err != nil {
+		// If the job fails to be added, we update the deployment status to error.
+		ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+		defer cancel()
+		_, err2 := s.DB.UpdateDeploymentStatus(ctx, deploymentID, database.DeploymentStatusError, fmt.Sprintf("Failed to Trigger reconcile deployment job: %v", err))
+		s.Logger.Error("failed to schedule reconcile deployment job", zap.String("deployment_id", deploymentID), zap.Error(err), observability.ZapCtx(ctx))
+		return errors.Join(err, err2)
+	}
+	return nil
 }
 
 func (s *Service) provisionRuntime(ctx context.Context, opts *provisionRuntimeOptions) (*database.ProvisionerResource, error) {
