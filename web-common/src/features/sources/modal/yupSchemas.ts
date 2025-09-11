@@ -37,6 +37,11 @@ export const getYupSchema = {
 
   duckdb: yup.object().shape({
     path: yup.string().required("Path is required"),
+    sql: yup.string().required("SQL is required"),
+    name: yup
+      .string()
+      .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
+      .required("Source name is required"),
   }),
 
   motherduck: yup.object().shape({
