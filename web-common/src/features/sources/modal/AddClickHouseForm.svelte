@@ -381,7 +381,9 @@
                   bind:checked={$paramsForm[propertyKey]}
                   label={property.displayName}
                   hint={property.hint}
-                  optional={!property.required}
+                  optional={connectorType === "clickhouse-cloud" && isSSLField
+                    ? false
+                    : !property.required}
                   disabled={connectorType === "clickhouse-cloud" && isSSLField}
                 />
               {:else if property.type === ConnectorDriverPropertyType.TYPE_INFORMATIONAL}
