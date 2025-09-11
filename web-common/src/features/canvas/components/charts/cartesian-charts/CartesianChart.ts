@@ -286,7 +286,7 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
             where: topNWhere,
             timeRange,
             limit: limit?.toString(),
-            fillMissing: config.x?.type === "temporal",
+            // fillMissing: config.x?.type === "temporal",
           },
           {
             query: {
