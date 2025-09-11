@@ -385,7 +385,9 @@ func SetRemote(path string, config *Config) error {
 }
 
 func IsGitRepo(path string) bool {
-	_, err := git.PlainOpen(path)
+	_, err := git.PlainOpenWithOptions(path, &git.PlainOpenOptions{
+		DetectDotGit: true,
+	})
 	return err == nil
 }
 
@@ -407,8 +409,18 @@ func InferRepoRootAndSubpath(path string) (string, string, error) {
 		// should never happen because repoRoot is detected from path
 		return "", "", err
 	}
-	if subPath != "." {
-		return repoRoot, subPath, nil
+	if subPath == "." || subPath == "" {
+		// no subpath
+		return repoRoot, "", nil
 	}
-	return repoRoot, "", nil
+	// check if subpath is in .gitignore
+	ignored, err := isGitIgnored(repoRoot, subPath)
+	if err != nil {
+		return "", "", err
+	}
+	if ignored {
+		// if subpath is ignored this is not a valid git path
+		return "", "", ErrNotAGitRepository
+	}
+	return repoRoot, subPath, nil
 }

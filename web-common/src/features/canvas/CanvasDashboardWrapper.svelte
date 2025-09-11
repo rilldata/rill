@@ -26,12 +26,7 @@
   });
 
   onDestroy(() => {
-    // Temporary fix for embed scenario.
-    // TODO: cleanup when we move embed to a route based navigation
-    const url = new URL($page.url);
-    url.searchParams.delete("resource");
-    url.searchParams.delete("type");
-    saveSnapshot(url.searchParams.toString());
+    saveSnapshot($page.url.searchParams.toString());
   });
 </script>
 
