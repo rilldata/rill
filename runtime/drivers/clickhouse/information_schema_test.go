@@ -3,6 +3,8 @@ package clickhouse
 import (
 	"context"
 	"fmt"
+	"path/filepath"
+	goruntime "runtime"
 	"testing"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -10,7 +12,6 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/storage"
 	"github.com/stretchr/testify/require"
-	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/clickhouse"
 	"go.uber.org/zap"
 )
@@ -21,11 +22,14 @@ func TestInformationSchema(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	clickHouseContainer, err := clickhouse.RunContainer(ctx,
-		testcontainers.WithImage("clickhouse/clickhouse-server:latest"),
+	_, currentFile, _, _ := goruntime.Caller(0)
+	testdataPath := filepath.Join(currentFile, "..", "testclickhouse", "testdata")
+
+	clickHouseContainer, err := clickhouse.Run(ctx,
+		"clickhouse/clickhouse-server:latest",
 		clickhouse.WithUsername("clickhouse"),
 		clickhouse.WithPassword("clickhouse"),
-		clickhouse.WithConfigFile("../../testruntime/testdata/clickhouse-config.xml"),
+		clickhouse.WithConfigFile(filepath.Join(testdataPath, "clickhouse-config.xml")),
 	)
 	require.NoError(t, err)
 	t.Cleanup(func() {
@@ -49,16 +53,13 @@ func TestInformationSchema(t *testing.T) {
 		testInformationSchemaSystemAllLike(t, conn)
 	})
 	t.Run("testInformationSchemaLookup", func(t *testing.T) { testInformationSchemaLookup(t, conn) })
+	t.Run("testInformationSchemaPagination", func(t *testing.T) { testInformationSchemaPagination(t, conn) })
+	t.Run("testInformationSchemaPaginationWithLike", func(t *testing.T) { testInformationSchemaPaginationWithLike(t, conn) })
 }
 
 func testInformationSchemaAll(t *testing.T, conn drivers.Handle) {
 	olap, _ := conn.AsOLAP("")
-	err := olap.Exec(context.Background(), &drivers.Statement{
-		Query: "CREATE OR REPLACE VIEW model as (select 1, 2, 3)",
-	})
-	require.NoError(t, err)
-
-	tables, _, err := olap.InformationSchema().All(context.Background(), "", 50, "")
+	tables, _, err := olap.InformationSchema().All(context.Background(), "", 0, "")
 	require.NoError(t, err)
 	require.Equal(t, 5, len(tables))
 
@@ -93,17 +94,12 @@ func testInformationSchemaAll(t *testing.T, conn drivers.Handle) {
 
 func testInformationSchemaAllLike(t *testing.T, conn drivers.Handle) {
 	olap, _ := conn.AsOLAP("")
-	err := olap.Exec(context.Background(), &drivers.Statement{
-		Query: "CREATE OR REPLACE VIEW model as (select 1, 2, 3)",
-	})
-	require.NoError(t, err)
-
-	tables, _, err := olap.InformationSchema().All(context.Background(), "%odel", 50, "")
+	tables, _, err := olap.InformationSchema().All(context.Background(), "%odel", 0, "")
 	require.NoError(t, err)
 	require.Equal(t, 1, len(tables))
 	require.Equal(t, "model", tables[0].Name)
 
-	tables, _, err = olap.InformationSchema().All(context.Background(), "other.%ar", 50, "")
+	tables, _, err = olap.InformationSchema().All(context.Background(), "other.%ar", 0, "")
 	require.NoError(t, err)
 	require.Equal(t, 1, len(tables))
 	require.Equal(t, "bar", tables[0].Name)
@@ -112,12 +108,12 @@ func testInformationSchemaAllLike(t *testing.T, conn drivers.Handle) {
 func testInformationSchemaSystemAllLike(t *testing.T, conn drivers.Handle) {
 	olap, _ := conn.AsOLAP("")
 
-	tables, _, err := olap.InformationSchema().All(context.Background(), "query_log", 50, "")
+	tables, _, err := olap.InformationSchema().All(context.Background(), "query_log", 0, "")
 	require.NoError(t, err)
 	require.Equal(t, 1, len(tables))
 	require.Equal(t, "query_log", tables[0].Name)
 
-	tables, _, err = olap.InformationSchema().All(context.Background(), "other.%ar", 50, "")
+	tables, _, err = olap.InformationSchema().All(context.Background(), "other.%ar", 0, "")
 	require.NoError(t, err)
 	require.Equal(t, 1, len(tables))
 	require.Equal(t, "bar", tables[0].Name)
@@ -126,12 +122,6 @@ func testInformationSchemaSystemAllLike(t *testing.T, conn drivers.Handle) {
 func testInformationSchemaLookup(t *testing.T, conn drivers.Handle) {
 	olap, _ := conn.AsOLAP("")
 	ctx := context.Background()
-
-	err := olap.Exec(ctx, &drivers.Statement{
-		Query: "CREATE OR REPLACE VIEW model as (select 1, 2, 3)",
-	})
-	require.NoError(t, err)
-
 	table, err := olap.InformationSchema().Lookup(ctx, "", "", "foo")
 	require.NoError(t, err)
 	require.Equal(t, "foo", table.Name)
@@ -152,11 +142,84 @@ func testInformationSchemaLookup(t *testing.T, conn drivers.Handle) {
 	require.Equal(t, false, table.IsDefaultDatabaseSchema)
 }
 
+func testInformationSchemaPagination(t *testing.T, conn drivers.Handle) {
+	olap, _ := conn.AsOLAP("")
+	ctx := context.Background()
+
+	pageSize := 2
+
+	// Test first page
+	tables1, nextToken1, err := olap.InformationSchema().All(ctx, "", uint32(pageSize), "")
+	require.NoError(t, err)
+	require.Equal(t, pageSize, len(tables1))
+	require.NotEmpty(t, nextToken1)
+
+	// Test second page
+	tables2, nextToken2, err := olap.InformationSchema().All(ctx, "", uint32(pageSize), nextToken1)
+	require.NoError(t, err)
+	require.Equal(t, pageSize, len(tables2))
+	require.NotEmpty(t, nextToken2)
+
+	// Test third page
+	tables3, nextToken3, err := olap.InformationSchema().All(ctx, "", uint32(pageSize), nextToken2)
+	require.NoError(t, err)
+	require.Equal(t, 1, len(tables3))
+	require.Empty(t, nextToken3)
+
+	// Test with page size 0
+	tables, nextToken, err := olap.InformationSchema().All(ctx, "", 0, "")
+	require.NoError(t, err)
+	require.Equal(t, 5, len(tables))
+	require.Empty(t, nextToken)
+
+	// Test with page size larger than total results
+	tables, nextToken, err = olap.InformationSchema().All(ctx, "", 1000, "")
+	require.NoError(t, err)
+	require.Equal(t, 5, len(tables))
+	require.Empty(t, nextToken)
+}
+
+func testInformationSchemaPaginationWithLike(t *testing.T, conn drivers.Handle) {
+	olap, _ := conn.AsOLAP("")
+	ctx := context.Background()
+
+	pageSize := 1
+
+	// Test first page
+	tables1, nextToken1, err := olap.InformationSchema().All(ctx, "%ba%", uint32(pageSize), "")
+	require.NoError(t, err)
+	require.Equal(t, pageSize, len(tables1))
+	require.NotEmpty(t, nextToken1)
+
+	// Test second page
+	tables2, nextToken2, err := olap.InformationSchema().All(ctx, "%ba%", uint32(pageSize), nextToken1)
+	require.NoError(t, err)
+	require.Equal(t, pageSize, len(tables2))
+	require.Empty(t, nextToken2)
+
+	// Test with page size 0
+	tables, nextToken, err := olap.InformationSchema().All(ctx, "%ba%", 0, "")
+	require.NoError(t, err)
+	require.Equal(t, 2, len(tables))
+	require.Empty(t, nextToken)
+
+	// Test with page size larger than total results
+	tables, nextToken, err = olap.InformationSchema().All(ctx, "%ba%", 1000, "")
+	require.NoError(t, err)
+	require.Equal(t, 2, len(tables))
+	require.Empty(t, nextToken)
+}
+
 func prepareConn(t *testing.T, conn drivers.Handle) {
 	olap, ok := conn.AsOLAP("")
 	require.True(t, ok)
 
 	err := olap.Exec(context.Background(), &drivers.Statement{
+		Query: "CREATE OR REPLACE VIEW model as (select 1, 2, 3)",
+	})
+	require.NoError(t, err)
+
+	err = olap.Exec(context.Background(), &drivers.Statement{
 		Query: "CREATE TABLE foo(bar VARCHAR, baz INTEGER) engine=MergeTree ORDER BY tuple()",
 	})
 	require.NoError(t, err)
