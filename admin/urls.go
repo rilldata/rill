@@ -78,7 +78,7 @@ func (u *URLs) WithCustomDomain(domain string) *URLs {
 	}
 }
 
-// WithCustomDomainFromURL attempts to infer a custom domain from a redirect URL.
+// WithCustomDomainFromRedirectURL attempts to infer a custom domain from a redirect URL.
 // If it succeeds, it passes the custom domain to WithCustomDomain and returns the result.
 // If it does not detect a custom domain in the redirect URL, or the redirect URL is invalid, it fails silently by returning itself unchanged.
 func (u *URLs) WithCustomDomainFromRedirectURL(redirectURL string) *URLs {
@@ -106,6 +106,15 @@ func (u *URLs) IsHTTPS() bool {
 	return u.https
 }
 
+// IsCustomDomain returns true if the given domain is a custom domain.
+func (u *URLs) IsCustomDomain(domain string) bool {
+	externalURL, err := url.Parse(u.external)
+	if err != nil {
+		panic(fmt.Errorf("failed to parse external domain %q: %w", u.external, err))
+	}
+	return !strings.EqualFold(externalURL.Host, domain)
+}
+
 // External returns the external URL for the admin service.
 func (u *URLs) External() string {
 	if u.custom != "" {
@@ -124,10 +133,18 @@ func (u *URLs) Frontend() string {
 }
 
 // AuthLogin returns the URL that starts the redirects to the auth service for login.
-func (u *URLs) AuthLogin(redirect string) string {
+func (u *URLs) AuthLogin(redirect string, customDomainFlow bool) string {
 	res := urlutil.MustJoinURL(u.external, "/auth/login") // NOTE: Always using the primary external URL.
+	q := map[string]string{}
 	if redirect != "" {
-		res = urlutil.MustWithQuery(res, map[string]string{"redirect": redirect})
+		q["redirect"] = redirect
+	}
+	if customDomainFlow {
+		q["custom_domain_flow"] = "true"
+	}
+
+	if len(q) > 0 {
+		res = urlutil.MustWithQuery(res, q)
 	}
 	return res
 }
@@ -135,6 +152,15 @@ func (u *URLs) AuthLogin(redirect string) string {
 // AuthLoginCallback returns the URL for the OAuth2 callback.
 func (u *URLs) AuthLoginCallback() string {
 	return urlutil.MustJoinURL(u.external, "/auth/callback") // NOTE: Always using the primary external URL.
+}
+
+// AuthCustomDomainCallback returns the URL with state for custom domain callback
+func (u *URLs) AuthCustomDomainCallback(state string) string {
+	res := urlutil.MustJoinURL(u.External(), "/auth/custom-domain-callback") // NOTE: Uses custom domain
+	if state != "" {
+		res = urlutil.MustWithQuery(res, map[string]string{"state": state})
+	}
+	return res
 }
 
 // AuthLogout returns the URL that starts the logout redirects.
