@@ -32,7 +32,7 @@ import (
 
 // TestProjectPromptEvals tests the project-level chat prompt behavior using MCP tools
 func TestProjectPromptEvals(t *testing.T) {
-	// Load .env file at the repo root (if any) - following pattern from other tests
+	// Load .env file at the repo root (if any)
 	_, currentFile, _, _ := goruntime.Caller(0)
 	envPath := filepath.Join(currentFile, "..", "..", "..", ".env")
 	_, err := os.Stat(envPath)
@@ -140,16 +140,15 @@ func TestProjectPromptEvals(t *testing.T) {
 }
 
 // setupEvalServer creates a test server with real OpenAI connector and OpenRTB project
-// Follows the same pattern as NewInstanceForDruidProject and other external connector tests
 func setupEvalServer(t *testing.T) (*Server, string) {
 	rt := testruntime.New(t, true)
 	ctx := context.Background()
 
-	// Use the OpenRTB test project path (following NewInstanceForProject pattern)
+	// Use the OpenRTB test project path
 	_, currentFile, _, _ := goruntime.Caller(0)
 	projectPath := filepath.Join(currentFile, "..", "..", "testruntime", "testdata", "openrtb")
 
-	// Create instance with OpenAI connector (following NewInstanceForDruidProject pattern)
+	// Create instance with OpenAI connector
 	inst := &drivers.Instance{
 		Environment:      "test",
 		OLAPConnector:    "duckdb",
@@ -203,7 +202,7 @@ func setupEvalServer(t *testing.T) (*Server, string) {
 	return server, inst.ID
 }
 
-// evalTestCtx provides authentication context for testing (renamed to avoid conflict with mcp_test.go)
+// evalTestCtx provides authentication context for testing
 func evalTestCtx() context.Context {
 	return auth.WithClaims(context.Background(), auth.NewOpenClaims())
 }
@@ -287,9 +286,6 @@ func getOpenAIAPIKey() string {
 	// Fall back to standard OpenAI environment variable
 	return os.Getenv("OPENAI_API_KEY")
 }
-
-// Note: Model selection handled by OpenAI driver defaults (gpt-4o)
-// If you need to override the model in the future, add it to the connector config
 
 func extractResponseText(messages []*runtimev1.Message) string {
 	var parts []string
