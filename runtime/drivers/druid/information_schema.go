@@ -17,10 +17,10 @@ import (
 //
 // Since all user tables are in `druid` schema so we hardcode schema as `druid` and does not query database
 func (c *connection) All(ctx context.Context, like string, pageSize uint32, pageToken string) ([]*drivers.OlapTable, string, error) {
-	var likeClause string
+	var filter string
 	var args []any
 	if like != "" {
-		likeClause = "AND LOWER(T.TABLE_NAME) LIKE LOWER(?)"
+		filter = " AND LOWER(T.TABLE_NAME) LIKE LOWER(?)"
 		args = []any{like}
 	}
 
@@ -30,28 +30,32 @@ func (c *connection) All(ctx context.Context, like string, pageSize uint32, page
 		if err := pagination.UnmarshalPageToken(pageToken, &startAfterName); err != nil {
 			return nil, "", fmt.Errorf("invalid page token: %w", err)
 		}
-		likeClause += " AND T.TABLE_NAME > ?"
+		filter += " AND T.TABLE_NAME > ?"
 		args = append(args, startAfterName)
 	}
+	limit := pagination.ValidPageSize(pageSize, drivers.DefaultPageSize)
 
 	q := fmt.Sprintf(`
 		SELECT
-			T.TABLE_SCHEMA AS SCHEMA,
-			T.TABLE_NAME AS NAME,
-			T.TABLE_TYPE AS TABLE_TYPE, 
+			LT.TABLE_SCHEMA AS SCHEMA,
+			LT.TABLE_NAME AS NAME,
+			LT.TABLE_TYPE AS TABLE_TYPE, 
 			C.COLUMN_NAME AS COLUMNS,
 			C.DATA_TYPE AS COLUMN_TYPE,
 			C.IS_NULLABLE = 'YES' AS IS_NULLABLE
-		FROM INFORMATION_SCHEMA.TABLES T 
-		JOIN INFORMATION_SCHEMA.COLUMNS C ON T.TABLE_SCHEMA = C.TABLE_SCHEMA AND T.TABLE_NAME = C.TABLE_NAME
-		WHERE T.TABLE_SCHEMA = 'druid'
-		%s
+		FROM (
+			SELECT
+				T.TABLE_SCHEMA,
+				T.TABLE_NAME,
+				T.TABLE_TYPE
+			FROM INFORMATION_SCHEMA.TABLES T
+			WHERE T.TABLE_SCHEMA = 'druid' %s
+			ORDER BY TABLE_SCHEMA, TABLE_NAME, TABLE_TYPE
+			LIMIT %d
+		) LT
+		JOIN INFORMATION_SCHEMA.COLUMNS C ON LT.TABLE_SCHEMA = C.TABLE_SCHEMA AND LT.TABLE_NAME = C.TABLE_NAME		
 		ORDER BY SCHEMA, NAME, TABLE_TYPE, C.ORDINAL_POSITION
-		LIMIT ?
-	`, likeClause)
-
-	limit := pagination.ValidPageSize(pageSize, drivers.DefaultPageSize)
-	args = append(args, limit+1)
+	`, filter, (limit + 1))
 
 	rows, err := c.db.QueryxContext(ctx, q, args...)
 	if err != nil {
