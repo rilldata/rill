@@ -258,8 +258,8 @@ func TestDuckDBModeEnforcement(t *testing.T) {
 			InputHandle:  handle,
 			OutputHandle: handle,
 		}
-		executor, ok := handle.AsModelExecutor("test", opts)
-		require.False(t, ok)
+		executor, err := handle.AsModelExecutor("test", opts)
+		require.ErrorContains(t, err, "model execution is disabled")
 		require.Nil(t, executor)
 
 		// Test AsModelManager
@@ -281,8 +281,8 @@ func TestDuckDBModeEnforcement(t *testing.T) {
 			InputHandle:  handle,
 			OutputHandle: handle,
 		}
-		executor, ok := handle.AsModelExecutor("test", opts)
-		require.True(t, ok)
+		executor, err := handle.AsModelExecutor("test", opts)
+		require.NoError(t, err)
 		require.NotNil(t, executor)
 
 		// Test AsModelManager
