@@ -65,6 +65,8 @@ type globProps struct {
 	Connector string `mapstructure:"connector"`
 	// Path is the glob pattern to match.
 	Path string `mapstructure:"path"`
+	// Pattern is an optional date pattern to extract date components from partition paths (e.g., "YYYY/MM/DD/HH").
+	Pattern string `mapstructure:"pattern"`
 	// Partition defines if and how to group the files that match the glob into partitions.
 	Partition globPartitionType `mapstructure:"partition"`
 	// RollupFiles is a flag to roll up and include the files in each partition in the output.
@@ -125,6 +127,7 @@ func newGlob(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolv
 		span.SetAttributes(
 			attribute.String("connector", props.Connector),
 			attribute.String("path", props.Path),
+			attribute.String("pattern", props.Pattern),
 			attribute.String("partition", string(props.Partition)),
 			attribute.Bool("rollup_files", props.RollupFiles),
 			attribute.String("transform_sql", props.TransformSQL),
@@ -242,12 +245,159 @@ func (r *globResolver) buildFilesResult(entries []drivers.ObjectStoreEntry) []ma
 // hivePartitionRegex is a regex that matches Hive-style partition values in a path.
 var hivePartitionRegex = regexp.MustCompile(`/([^/\?]+)=([^/\n\?]*)`)
 
+// dateComponent represents a parsed date component from a pattern
+type dateComponent struct {
+	Type     string // "year", "month", "day", "hour"
+	Position int    // position in the path where this component starts
+	Length   int    // length of the component
+}
+
+// parseDatePattern parses a date pattern like "YYYY/MM/DD/HH" or "y=YYYY/m=MM/d=DD"
+// and returns a compiled pattern that can be used to extract date components from paths.
+func parseDatePattern(pattern string) ([]dateComponent, *regexp.Regexp, error) {
+	if pattern == "" {
+		return nil, nil, nil
+	}
+
+	// Build a regex pattern and track the components
+	var components []dateComponent
+	regexPattern := "^"
+	pos := 0
+
+	for i := 0; i < len(pattern); {
+		switch {
+		case strings.HasPrefix(pattern[i:], "YYYY"):
+			components = append(components, dateComponent{Type: "year", Position: pos, Length: 4})
+			regexPattern += `(\d{4})`
+			pos += 4
+			i += 4
+		case strings.HasPrefix(pattern[i:], "MM"):
+			components = append(components, dateComponent{Type: "month", Position: pos, Length: 2})
+			regexPattern += `(\d{2})`
+			pos += 2
+			i += 2
+		case strings.HasPrefix(pattern[i:], "DD"):
+			components = append(components, dateComponent{Type: "day", Position: pos, Length: 2})
+			regexPattern += `(\d{2})`
+			pos += 2
+			i += 2
+		case strings.HasPrefix(pattern[i:], "HH"):
+			components = append(components, dateComponent{Type: "hour", Position: pos, Length: 2})
+			regexPattern += `(\d{2})`
+			pos += 2
+			i += 2
+		default:
+			// Literal character
+			char := pattern[i]
+			regexPattern += regexp.QuoteMeta(string(char))
+			pos++
+			i++
+		}
+	}
+
+	regex, err := regexp.Compile(regexPattern)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to compile date pattern regex: %w", err)
+	}
+
+	return components, regex, nil
+}
+
+// extractDateFromPath extracts date components from a path using the given pattern.
+// Returns the extracted date values and a formatted date string.
+func extractDateFromPath(path, basePath, pattern string) (map[string]string, string, string, error) {
+	if pattern == "" {
+		return nil, "", "", nil
+	}
+
+	components, regex, err := parseDatePattern(pattern)
+	if err != nil {
+		return nil, "", "", err
+	}
+
+	if regex == nil {
+		return nil, "", "", nil
+	}
+
+	// Try to match the pattern directly in the path
+	// First, let's split the path into parts and try to match from the end
+	pathParts := strings.Split(path, "/")
+	
+	// Try different approaches to match the pattern
+	var matches []string
+	
+	// Approach 1: Try the full path
+	matches = regex.FindStringSubmatch(path)
+	
+	// Approach 2: If that fails, try just the last parts of the path that could match the pattern
+	if len(matches) == 0 {
+		// Count the number of path components needed for the pattern
+		expectedParts := strings.Count(pattern, "/") + 1
+		if len(pathParts) >= expectedParts {
+			// Take the last expectedParts components
+			relevantParts := pathParts[len(pathParts)-expectedParts:]
+			testPath := strings.Join(relevantParts, "/")
+			matches = regex.FindStringSubmatch(testPath)
+		}
+	}
+	
+	// Approach 3: Try without any base prefix, starting from after first directory
+	if len(matches) == 0 && len(pathParts) > 1 {
+		testPath := strings.Join(pathParts[1:], "/")
+		matches = regex.FindStringSubmatch(testPath)
+	}
+
+	if len(matches) != len(components)+1 {
+		// Return nil values instead of error when pattern doesn't match
+		return nil, "", "", nil
+	}
+
+	// Extract the date components
+	dateValues := make(map[string]string)
+	var year, month, day string
+
+	for i, component := range components {
+		value := matches[i+1]
+		dateValues[component.Type] = value
+
+		switch component.Type {
+		case "year":
+			year = value
+		case "month":
+			month = value
+		case "day":
+			day = value
+		case "hour":
+			// hour is captured in dateValues but not used for day_path construction
+		}
+	}
+
+	// Build the day_path and date strings
+	var dayPath string
+	var dateStr string
+
+	if year != "" && month != "" && day != "" {
+		// For day_path, we want to include the base prefix plus the date parts
+		if len(pathParts) > 0 {
+			baseParts := []string{pathParts[0]}  // Keep the first part (like "data" or "pmp")
+			dayPath = fmt.Sprintf("%s/%s/%s/%s", baseParts[0], year, month, day)
+		} else {
+			dayPath = fmt.Sprintf("%s/%s/%s", year, month, day)
+		}
+		dateStr = fmt.Sprintf("%s-%s-%s", year, month, day)
+	}
+
+	return dateValues, dayPath, dateStr, nil
+}
+
 // buildPartitioned builds a result consisting of one row per partition.
 // It groups the files by directory.
 // Each row is a map with the keys "uri", "path", "updated_on", "files" if RollupFiles is true, and the Hive partition columns if requested.
+// If a pattern is specified, it also extracts date components and adds "day_path" and "date" columns.
 func (r *globResolver) buildPartitionedResult(entries []drivers.ObjectStoreEntry, parseHivePartitions bool) []map[string]any {
 	// Group the entries by directory
 	rows := make(map[string]map[string]any)
+	
 	for _, entry := range entries {
 		if entry.IsDir {
 			continue
@@ -278,6 +428,26 @@ func (r *globResolver) buildPartitionedResult(entries []drivers.ObjectStoreEntry
 				for _, match := range hivePartitionRegex.FindAllStringSubmatch(dir, -1) {
 					row[match[1]] = match[2]
 				}
+			}
+
+			// Extract and add pattern-based date components
+			if r.props.Pattern != "" {
+				dateValues, dayPath, dateStr, err := extractDateFromPath(dir, "", r.props.Pattern)
+				// Only add date components if parsing was successful, but don't fail if parsing fails
+				if err == nil && dateValues != nil {
+					// Add individual date components
+					for key, value := range dateValues {
+						row[key] = value
+					}
+					// Add computed day_path and date
+					if dayPath != "" {
+						row["day_path"] = dayPath
+					}
+					if dateStr != "" {
+						row["date"] = dateStr
+					}
+				}
+				// If parsing fails, we still keep the partition without date info
 			}
 		} else {
 			// Add to files slice of the existing row
