@@ -31,7 +31,6 @@ import { parseDocument } from "yaml";
 import type { FileArtifact } from "../../entity-management/file-artifact";
 import { fileArtifacts } from "../../entity-management/file-artifacts";
 import { ResourceKind } from "../../entity-management/resource-selectors";
-import { updateThemeVariables } from "../../themes/actions";
 import type { BaseCanvasComponent } from "../components/BaseCanvasComponent";
 import type { CanvasComponentType, ComponentSpec } from "../components/types";
 import {
@@ -77,6 +76,7 @@ export class CanvasEntity {
   // Tracks whether the canvas been loaded (and rows processed) for the first time
   firstLoad = true;
   theme: Writable<{ primary?: Color; secondary?: Color }> = writable({});
+  themeSpec: Writable<V1ThemeSpec | undefined> = writable(undefined);
   unsubscriber: Unsubscriber;
   lastVisitedState: Writable<string | null> = writable(null);
 
@@ -137,7 +137,7 @@ export class CanvasEntity {
     searchParamsStore.subscribe((searchParams) => {
       const themeFromUrl = searchParams.get("theme");
       if (themeFromUrl) {
-        this.processAndSetTheme(themeFromUrl, undefined).catch(console.error);
+        this.processTheme(themeFromUrl, undefined).catch(console.error);
       }
     });
 
@@ -146,7 +146,7 @@ export class CanvasEntity {
       const theme = spec.data?.canvas?.theme;
       const embeddedTheme = spec.data?.canvas?.embeddedTheme;
 
-      this.processAndSetTheme(theme, embeddedTheme).catch(console.error);
+      this.processTheme(theme, embeddedTheme).catch(console.error);
 
       if (!filePath) {
         return;
@@ -292,7 +292,7 @@ export class CanvasEntity {
     this.firstLoad = false;
   };
 
-  processAndSetTheme = async (
+  processTheme = async (
     themeName: string | undefined,
     embeddedTheme: V1ThemeSpec | undefined,
   ) => {
@@ -316,6 +316,8 @@ export class CanvasEntity {
       themeSpec = embeddedTheme;
     }
 
+    this.themeSpec.set(themeSpec);
+
     this.theme.set({
       primary: themeSpec?.primaryColorRaw
         ? chroma(themeSpec.primaryColorRaw)
@@ -324,8 +326,6 @@ export class CanvasEntity {
         ? chroma(themeSpec.secondaryColorRaw)
         : chroma(`hsl(${defaultSecondaryColors[500]})`),
     });
-
-    updateThemeVariables(themeSpec);
   };
 
   generateId = (row: number | undefined, column: number | undefined) => {
