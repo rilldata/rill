@@ -19,6 +19,9 @@ allOf:
       features:
         type: object
         description: Optional feature flags. Can be specified as a map of feature names to booleans.
+      ai_connector:
+        type: string
+        description: Specifies the default AI connector for the project. Defaults to Rill's internal AI connector if not set.
       ai_instructions:
         type: string
         description: Extra instructions for LLM/AI features. Used to guide natural language question answering and routing.

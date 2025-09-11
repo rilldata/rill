@@ -24,6 +24,10 @@ _[string]_ - A brief description of the project
 
 _[object]_ - Optional feature flags. Can be specified as a map of feature names to booleans. 
 
+### `ai_connector`
+
+_[string]_ - Specifies the default AI connector for the project. Defaults to Rill's internal AI connector if not set. 
+
 ### `ai_instructions`
 
 _[string]_ - Extra instructions for LLM/AI features. Used to guide natural language question answering and routing. 
