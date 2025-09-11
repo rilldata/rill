@@ -33,6 +33,7 @@ Models can also be cross-referenced with each other to produce the final output 
 - Unnesting and merging complex data types
 - Combining multiple sources with data cleansing or transformation requirements
 
+
 ## Data Preview and Validation
 
 ### Table Preview
