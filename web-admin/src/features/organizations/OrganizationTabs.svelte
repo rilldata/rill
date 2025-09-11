@@ -51,10 +51,9 @@
     </nav>
 
     {#if $width && $position}
-      <!-- Add 17px to account for nav's px-[17px] left padding -->
       <span
         style:width="{$width}px"
-        style:transform="translateX({$position + 17}px)"
+        style:transform="translateX({$position}px)"
       />
     {/if}
   {/if}
