@@ -75,7 +75,7 @@ export class CanvasEntity {
   parsedContent: Readable<ReturnType<typeof parseDocument>>;
   specStore: CanvasSpecResponseStore;
   // Tracks whether the canvas been loaded (and rows processed) for the first time
-  firstLoad = true;
+  firstLoad = writable(true);
   theme: Writable<{ primary?: Color; secondary?: Color }> = writable({});
   unsubscriber: Unsubscriber;
   lastVisitedState: Writable<string | null> = writable(null);
@@ -289,7 +289,7 @@ export class CanvasEntity {
     if ((!didUpdateRowCount && createdNewComponent) || this.firstLoad) {
       this._rows.refresh();
     }
-    this.firstLoad = false;
+    this.firstLoad.set(false);
   };
 
   processAndSetTheme = async (
