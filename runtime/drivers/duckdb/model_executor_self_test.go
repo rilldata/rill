@@ -54,8 +54,8 @@ func TestDuckDBToDuckDBTransfer(t *testing.T) {
 		},
 	}
 
-	me, ok := duckDB.AsModelExecutor("default", opts)
-	require.True(t, ok)
+	me, err := duckDB.AsModelExecutor("default", opts)
+	require.NoError(t, err)
 
 	execOpts := &drivers.ModelExecuteOptions{
 		ModelExecutorOptions: opts,
