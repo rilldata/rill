@@ -16467,8 +16467,6 @@ export class BillingPlan extends Message<BillingPlan> {
   quotas?: Quotas;
 
   /**
-   * TODO expose pricing information
-   *
    * @generated from field: bool public = 8;
    */
   public = false;

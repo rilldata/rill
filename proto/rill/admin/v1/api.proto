@@ -14,53 +14,53 @@ service AdminService {
     option (google.api.http) = {get: "/v1/ping"};
   }
 
-  // ListOrganizations lists all the organizations currently managed by the admin
+  // ListOrganizations lists all the orgs currently managed by the admin
   rpc ListOrganizations(ListOrganizationsRequest) returns (ListOrganizationsResponse) {
-    option (google.api.http) = {get: "/v1/organizations"};
+    option (google.api.http) = {get: "/v1/orgs"};
   }
 
-  // GetOrganization returns information about a specific organization
+  // GetOrganization returns information about a specific org
   rpc GetOrganization(GetOrganizationRequest) returns (GetOrganizationResponse) {
-    option (google.api.http) = {get: "/v1/organizations/{name}"};
+    option (google.api.http) = {get: "/v1/orgs/{name}"};
   }
 
   // GetOrganizationNameForDomain finds the org name for a custom domain.
   // If the application detects it is running on a non-default domain, it can use this to find the org to present.
   // It can be called without being authenticated.
   rpc GetOrganizationNameForDomain(GetOrganizationNameForDomainRequest) returns (GetOrganizationNameForDomainResponse) {
-    option (google.api.http) = {get: "/v1/organization-for-domain/{domain}"};
+    option (google.api.http) = {get: "/v1/orgs-for-domain/{domain}"};
   }
 
-  // CreateOrganization creates a new organization
+  // CreateOrganization creates a new org
   rpc CreateOrganization(CreateOrganizationRequest) returns (CreateOrganizationResponse) {
     option (google.api.http) = {
-      post: "/v1/organizations",
+      post: "/v1/orgs",
       body: "*"
     };
   }
 
-  // DeleteOrganization deletes an organizations
+  // DeleteOrganization deletes an org
   rpc DeleteOrganization(DeleteOrganizationRequest) returns (DeleteOrganizationResponse) {
-    option (google.api.http) = {delete: "/v1/organizations/{name}"};
+    option (google.api.http) = {delete: "/v1/orgs/{name}"};
   }
 
-  // UpdateOrganization deletes an organizations
+  // UpdateOrganization updates an org
   rpc UpdateOrganization(UpdateOrganizationRequest) returns (UpdateOrganizationResponse) {
     option (google.api.http) = {
-      patch: "/v1/organizations/{name}",
+      patch: "/v1/orgs/{name}",
       body: "*"
     };
   }
 
-  // ListProjectsForOrganization lists all the projects currently available for given organizations.
+  // ListProjectsForOrganization lists all the projects currently available for given orgs.
   rpc ListProjectsForOrganization(ListProjectsForOrganizationRequest) returns (ListProjectsForOrganizationResponse) {
-    option (google.api.http) = {get: "/v1/organizations/{organization_name}/projects"};
+    option (google.api.http) = {get: "/v1/orgs/{organization_name}/projects"};
   }
 
-  // ListProjectsForOrganizationAndUser lists all the projects that an organization member user has access to.
+  // ListProjectsForOrganizationAndUser lists all the projects that an org member user has access to.
   // It does not include projects that the user has access to through a usergroup.
   rpc ListProjectsForOrganizationAndUser(ListProjectsForOrganizationAndUserRequest) returns (ListProjectsForOrganizationAndUserResponse) {
-    option (google.api.http) = {get: "/v1/organizations/{organization}/projects-for-user"};
+    option (google.api.http) = {get: "/v1/orgs/{organization}/projects-for-user"};
   }
 
   // ListProjectsForFingerprint lists all projects the current user has access to that match the provided local project details.
@@ -71,7 +71,7 @@ service AdminService {
 
   // GetProject returns information about a specific project
   rpc GetProject(GetProjectRequest) returns (GetProjectResponse) {
-    option (google.api.http) = {get: "/v1/organizations/{organization_name}/projects/{name}"};
+    option (google.api.http) = {get: "/v1/orgs/{organization_name}/projects/{name}"};
   }
 
   // ListProjectsForUserByName returns projects matching a name accessible by the logged in user
@@ -92,33 +92,33 @@ service AdminService {
   // CreateProject creates a new project
   rpc CreateProject(CreateProjectRequest) returns (CreateProjectResponse) {
     option (google.api.http) = {
-      post: "/v1/organizations/{organization_name}/projects",
+      post: "/v1/orgs/{organization_name}/projects",
       body: "*"
     };
   }
 
-  // DeleteProject deletes an project
+  // DeleteProject deletes a project
   rpc DeleteProject(DeleteProjectRequest) returns (DeleteProjectResponse) {
-    option (google.api.http) = {delete: "/v1/organizations/{organization_name}/projects/{name}"};
+    option (google.api.http) = {delete: "/v1/orgs/{organization_name}/projects/{name}"};
   }
 
   // UpdateProject updates a project
   rpc UpdateProject(UpdateProjectRequest) returns (UpdateProjectResponse) {
     option (google.api.http) = {
-      patch: "/v1/organizations/{organization_name}/projects/{name}",
+      patch: "/v1/orgs/{organization_name}/projects/{name}",
       body: "*"
     };
   }
 
   // GetProjectVariables returns project variables.
   rpc GetProjectVariables(GetProjectVariablesRequest) returns (GetProjectVariablesResponse) {
-    option (google.api.http) = {get: "/v1/organizations/{organization}/projects/{project}/variables"};
+    option (google.api.http) = {get: "/v1/orgs/{organization}/projects/{project}/variables"};
   }
 
   // UpdateProjectVariables updates variables for a project.
   rpc UpdateProjectVariables(UpdateProjectVariablesRequest) returns (UpdateProjectVariablesResponse) {
     option (google.api.http) = {
-      put: "/v1/organizations/{organization}/projects/{project}/variables",
+      put: "/v1/orgs/{organization}/projects/{project}/variables",
       body: "*"
     };
   }
@@ -126,7 +126,7 @@ service AdminService {
   // CreateAsset returns a one time signed URL using which any asset can be uploaded.
   rpc CreateAsset(CreateAssetRequest) returns (CreateAssetResponse) {
     option (google.api.http) = {
-      post: "/v1/organizations/{organization_name}/create_asset",
+      post: "/v1/orgs/{organization_name}/create_asset",
       body: "*"
     };
   }
@@ -135,25 +135,25 @@ service AdminService {
   // If the project currently has another production deployment, the old deployment will be deprovisioned.
   // This RPC can be used to redeploy a project that has been hibernated.
   rpc RedeployProject(RedeployProjectRequest) returns (RedeployProjectResponse) {
-    option (google.api.http) = {post: "/v1/organizations/{organization}/projects/{project}/redeploy"};
+    option (google.api.http) = {post: "/v1/orgs/{organization}/projects/{project}/redeploy"};
   }
 
   // HibernateProject hibernates a project by tearing down its deployments.
   rpc HibernateProject(HibernateProjectRequest) returns (HibernateProjectResponse) {
-    option (google.api.http) = {post: "/v1/organizations/{organization}/projects/{project}/hibernate"};
+    option (google.api.http) = {post: "/v1/orgs/{organization}/projects/{project}/hibernate"};
   }
 
   // ListDeployments lists deployments for a project.
   rpc ListDeployments(ListDeploymentsRequest) returns (ListDeploymentsResponse) {
     option (google.api.http) = {
-      get: "/v1/organizations/{organization_name}/projects/{project_name}/deployments"
+      get: "/v1/orgs/{organization_name}/projects/{project_name}/deployments"
     };
   }
 
   // CreateDeployment creates a new deployment for a project.
   rpc CreateDeployment(CreateDeploymentRequest) returns (CreateDeploymentResponse) {
     option (google.api.http) = {
-      post: "/v1/organizations/{organization_name}/projects/{project_name}/deployments",
+      post: "/v1/orgs/{organization_name}/projects/{project_name}/deployments",
       body: "*"
     };
   }
@@ -232,93 +232,93 @@ service AdminService {
 
   // ListOrganizationMemberUsers lists all the org members
   rpc ListOrganizationMemberUsers(ListOrganizationMemberUsersRequest) returns (ListOrganizationMemberUsersResponse) {
-    option (google.api.http) = {get: "/v1/organizations/{organization}/members"};
+    option (google.api.http) = {get: "/v1/orgs/{organization}/members"};
   }
 
   // ListOrganizationInvites lists all the org invites
   rpc ListOrganizationInvites(ListOrganizationInvitesRequest) returns (ListOrganizationInvitesResponse) {
-    option (google.api.http) = {get: "/v1/organizations/{organization}/invites"};
+    option (google.api.http) = {get: "/v1/orgs/{organization}/invites"};
   }
 
-  // AddOrganizationMemberUser adds a user to the organization
+  // AddOrganizationMemberUser adds a user to the org
   rpc AddOrganizationMemberUser(AddOrganizationMemberUserRequest) returns (AddOrganizationMemberUserResponse) {
     option (google.api.http) = {
-      post: "/v1/organizations/{organization}/members",
+      post: "/v1/orgs/{organization}/members",
       body: "*"
     };
   }
 
-  // RemoveOrganizationMemberUser removes member from the organization
+  // RemoveOrganizationMemberUser removes member from the org
   rpc RemoveOrganizationMemberUser(RemoveOrganizationMemberUserRequest) returns (RemoveOrganizationMemberUserResponse) {
-    option (google.api.http) = {delete: "/v1/organizations/{organization}/members/{email}"};
+    option (google.api.http) = {delete: "/v1/orgs/{organization}/members/{email}"};
   }
 
-  // LeaveOrganization removes the current user from the organization
+  // LeaveOrganization removes the current user from the org
   rpc LeaveOrganization(LeaveOrganizationRequest) returns (LeaveOrganizationResponse) {
-    option (google.api.http) = {delete: "/v1/organizations/{organization}/members/current"};
+    option (google.api.http) = {delete: "/v1/orgs/{organization}/members/current"};
   }
 
   // SetOrganizationMemberUserRole sets the role for the member
   rpc SetOrganizationMemberUserRole(SetOrganizationMemberUserRoleRequest) returns (SetOrganizationMemberUserRoleResponse) {
     option (google.api.http) = {
-      put: "/v1/organizations/{organization}/members/{email}",
+      put: "/v1/orgs/{organization}/members/{email}",
       body: "*"
     };
   }
 
   // ListProjectMemberUsers lists all the project members
   rpc ListProjectMemberUsers(ListProjectMemberUsersRequest) returns (ListProjectMemberUsersResponse) {
-    option (google.api.http) = {get: "/v1/organizations/{organization}/projects/{project}/members"};
+    option (google.api.http) = {get: "/v1/orgs/{organization}/projects/{project}/members"};
   }
 
   // ListProjectInvites lists all the project invites
   rpc ListProjectInvites(ListProjectInvitesRequest) returns (ListProjectInvitesResponse) {
-    option (google.api.http) = {get: "/v1/organizations/{organization}/projects/{project}/invites"};
+    option (google.api.http) = {get: "/v1/orgs/{organization}/projects/{project}/invites"};
   }
 
   // AddProjectMemberUser adds a member to the project
   rpc AddProjectMemberUser(AddProjectMemberUserRequest) returns (AddProjectMemberUserResponse) {
     option (google.api.http) = {
-      post: "/v1/organizations/{organization}/projects/{project}/members",
+      post: "/v1/orgs/{organization}/projects/{project}/members",
       body: "*"
     };
   }
 
   // RemoveProjectMemberUser removes member from the project
   rpc RemoveProjectMemberUser(RemoveProjectMemberUserRequest) returns (RemoveProjectMemberUserResponse) {
-    option (google.api.http) = {delete: "/v1/organizations/{organization}/projects/{project}/members/{email}"};
+    option (google.api.http) = {delete: "/v1/orgs/{organization}/projects/{project}/members/{email}"};
   }
 
   // SetProjectMemberUserRole sets the role for the member
   rpc SetProjectMemberUserRole(SetProjectMemberUserRoleRequest) returns (SetProjectMemberUserRoleResponse) {
     option (google.api.http) = {
-      put: "/v1/organizations/{organization}/projects/{project}/members/{email}",
+      put: "/v1/orgs/{organization}/projects/{project}/members/{email}",
       body: "*"
     };
   }
 
-  // ListUsergroupsForOrganizationAndUser lists the user groups that an organization member user has access to.
+  // ListUsergroupsForOrganizationAndUser lists the user groups that an org member user has access to.
   rpc ListUsergroupsForOrganizationAndUser(ListUsergroupsForOrganizationAndUserRequest) returns (ListUsergroupsForOrganizationAndUserResponse) {
-    option (google.api.http) = {get: "/v1/organizations/{organization}/usergroups-for-user"};
+    option (google.api.http) = {get: "/v1/orgs/{organization}/usergroups-for-user"};
   }
 
-  // CreateUsergroup creates a user group in the organization
+  // CreateUsergroup creates a user group in the org
   rpc CreateUsergroup(CreateUsergroupRequest) returns (CreateUsergroupResponse) {
     option (google.api.http) = {
-      post: "/v1/organizations/{organization}/usergroups",
+      post: "/v1/orgs/{organization}/usergroups",
       body: "*"
     };
   }
 
   // GetUsergroups returns the user group details
   rpc GetUsergroup(GetUsergroupRequest) returns (GetUsergroupResponse) {
-    option (google.api.http) = {get: "/v1/organizations/{organization}/usergroups/{usergroup}"};
+    option (google.api.http) = {get: "/v1/orgs/{organization}/usergroups/{usergroup}"};
   }
 
   // RenameUsergroup renames the user group
   rpc RenameUsergroup(RenameUsergroupRequest) returns (RenameUsergroupResponse) {
     option (google.api.http) = {
-      post: "/v1/organizations/{organization}/usergroups/{usergroup}",
+      post: "/v1/orgs/{organization}/usergroups/{usergroup}",
       body: "*"
     };
   }
@@ -326,30 +326,30 @@ service AdminService {
   // EditUsergroup renames the user group
   rpc EditUsergroup(EditUsergroupRequest) returns (EditUsergroupResponse) {
     option (google.api.http) = {
-      put: "/v1/organizations/{organization}/usergroups/{usergroup}",
+      put: "/v1/orgs/{organization}/usergroups/{usergroup}",
       body: "*"
     };
   }
 
   // ListOrganizationMemberUsergroups lists the org's user groups
   rpc ListOrganizationMemberUsergroups(ListOrganizationMemberUsergroupsRequest) returns (ListOrganizationMemberUsergroupsResponse) {
-    option (google.api.http) = {get: "/v1/organizations/{organization}/usergroups"};
+    option (google.api.http) = {get: "/v1/orgs/{organization}/usergroups"};
   }
 
   // ListProjectMemberUsergroups lists the project's user groups
   rpc ListProjectMemberUsergroups(ListProjectMemberUsergroupsRequest) returns (ListProjectMemberUsergroupsResponse) {
-    option (google.api.http) = {get: "/v1/organizations/{organization}/project/{project}/usergroups"};
+    option (google.api.http) = {get: "/v1/orgs/{organization}/project/{project}/usergroups"};
   }
 
-  // DeleteUsergroup deletes the user group from the organization
+  // DeleteUsergroup deletes the user group from the org
   rpc DeleteUsergroup(DeleteUsergroupRequest) returns (DeleteUsergroupResponse) {
-    option (google.api.http) = {delete: "/v1/organizations/{organization}/usergroups/{usergroup}"};
+    option (google.api.http) = {delete: "/v1/orgs/{organization}/usergroups/{usergroup}"};
   }
 
   // AddOrganizationMemberUsergroupRole adds the role for the user group
   rpc AddOrganizationMemberUsergroup(AddOrganizationMemberUsergroupRequest) returns (AddOrganizationMemberUsergroupResponse) {
     option (google.api.http) = {
-      post: "/v1/organizations/{organization}/usergroups/{usergroup}/role",
+      post: "/v1/orgs/{organization}/usergroups/{usergroup}/role",
       body: "*"
     };
   }
@@ -357,20 +357,20 @@ service AdminService {
   // SetOrganizationMemberUsergroupRole sets the role for the user group
   rpc SetOrganizationMemberUsergroupRole(SetOrganizationMemberUsergroupRoleRequest) returns (SetOrganizationMemberUsergroupRoleResponse) {
     option (google.api.http) = {
-      put: "/v1/organizations/{organization}/usergroups/{usergroup}/role",
+      put: "/v1/orgs/{organization}/usergroups/{usergroup}/role",
       body: "*"
     };
   }
 
-  // RemoveOrganizationMemberUsergroup revokes the organization-level role for the user group
+  // RemoveOrganizationMemberUsergroup revokes the org-level role for the user group
   rpc RemoveOrganizationMemberUsergroup(RemoveOrganizationMemberUsergroupRequest) returns (RemoveOrganizationMemberUsergroupResponse) {
-    option (google.api.http) = {delete: "/v1/organizations/{organization}/usergroups/{usergroup}/role"};
+    option (google.api.http) = {delete: "/v1/orgs/{organization}/usergroups/{usergroup}/role"};
   }
 
   // AddProjectMemberUsergroupRole adds the role for the user group
   rpc AddProjectMemberUsergroup(AddProjectMemberUsergroupRequest) returns (AddProjectMemberUsergroupResponse) {
     option (google.api.http) = {
-      post: "/v1/organizations/{organization}/projects/{project}/usergroups/{usergroup}/roles",
+      post: "/v1/orgs/{organization}/projects/{project}/usergroups/{usergroup}/roles",
       body: "*"
     };
   }
@@ -378,7 +378,7 @@ service AdminService {
   // SetProjectMemberUsergroupRole sets the role for the user group
   rpc SetProjectMemberUsergroupRole(SetProjectMemberUsergroupRoleRequest) returns (SetProjectMemberUsergroupRoleResponse) {
     option (google.api.http) = {
-      put: "/v1/organizations/{organization}/projects/{project}/usergroups/{usergroup}/roles",
+      put: "/v1/orgs/{organization}/projects/{project}/usergroups/{usergroup}/roles",
       body: "*"
     };
   }
@@ -386,26 +386,26 @@ service AdminService {
   // RemoveProjectMemberUsergroup revokes the project-level role for the user group
   rpc RemoveProjectMemberUsergroup(RemoveProjectMemberUsergroupRequest) returns (RemoveProjectMemberUsergroupResponse) {
     option (google.api.http) = {
-      delete: "/v1/organizations/{organization}/projects/{project}/usergroups/{usergroup}/roles",
+      delete: "/v1/orgs/{organization}/projects/{project}/usergroups/{usergroup}/roles",
     };
   }
 
   // AddUsergroupMemberUser adds a member to the user group
   rpc AddUsergroupMemberUser(AddUsergroupMemberUserRequest) returns (AddUsergroupMemberUserResponse) {
     option (google.api.http) = {
-      put: "/v1/organizations/{organization}/usergroups/{usergroup}/members/{email}",
+      put: "/v1/orgs/{organization}/usergroups/{usergroup}/members/{email}",
       body: "*"
     };
   }
 
   // ListUsergroupMemberUsers lists all the user group members
   rpc ListUsergroupMemberUsers(ListUsergroupMemberUsersRequest) returns (ListUsergroupMemberUsersResponse) {
-    option (google.api.http) = {get: "/v1/organizations/{organization}/usergroups/{usergroup}/members"};
+    option (google.api.http) = {get: "/v1/orgs/{organization}/usergroups/{usergroup}/members"};
   }
 
   // RemoveUsergroupMemberUser removes member from the user group
   rpc RemoveUsergroupMemberUser(RemoveUsergroupMemberUserRequest) returns (RemoveUsergroupMemberUserResponse) {
-    option (google.api.http) = {delete: "/v1/organizations/{organization}/usergroups/{usergroup}/members/{email}"};
+    option (google.api.http) = {delete: "/v1/orgs/{organization}/usergroups/{usergroup}/members/{email}"};
   }
 
   // GetUser returns user by email
@@ -420,7 +420,7 @@ service AdminService {
     };
   }
 
-  // DeleteUser deletes the user from the organization by email
+  // DeleteUser deletes the user from the org by email
   rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse) {
     option (google.api.http) = {delete: "/v1/users/{email}"};
   }
@@ -481,15 +481,15 @@ service AdminService {
   // Replaces the contents of the remote repo with the contents of the project.
   rpc ConnectProjectToGithub(ConnectProjectToGithubRequest) returns (ConnectProjectToGithubResponse) {
     option (google.api.http) = {
-      post: "/v1/organizations/{organization}/projects/{project}/connect-to-github",
+      post: "/v1/orgs/{organization}/projects/{project}/connect-to-github",
       body: "*"
     };
   }
 
-  // CreateManagedGitRepo creates a new rill managed git repo for the organization.
+  // CreateManagedGitRepo creates a new rill managed git repo for the org.
   rpc CreateManagedGitRepo(CreateManagedGitRepoRequest) returns (CreateManagedGitRepoResponse) {
     option (google.api.http) = {
-      put: "/v1/organizations/{organization}/create-managed-git-repo",
+      put: "/v1/orgs/{organization}/create-managed-git-repo",
       body: "*"
     };
   }
@@ -498,32 +498,32 @@ service AdminService {
   rpc DisconnectProjectFromGithub(DisconnectProjectFromGithubRequest) returns (DisconnectProjectFromGithubResponse) {
     option (google.api.http) = {
       // the path is still called `upload-assets` for backward compatibility
-      post: "/v1/organizations/{organization}/projects/{project}/upload-assets",
+      post: "/v1/orgs/{organization}/projects/{project}/upload-assets",
       body: "*"
     };
   }
 
   // GetCloneCredentials returns credentials and other details for a project's Git repository or archive path if git repo is not configured.
   rpc GetCloneCredentials(GetCloneCredentialsRequest) returns (GetCloneCredentialsResponse) {
-    option (google.api.http) = {get: "/v1/organizations/{organization}/projects/{project}/clone-credentials"};
+    option (google.api.http) = {get: "/v1/orgs/{organization}/projects/{project}/clone-credentials"};
   }
 
   // CreateWhitelistedDomain adds a domain to the whitelist
   rpc CreateWhitelistedDomain(CreateWhitelistedDomainRequest) returns (CreateWhitelistedDomainResponse) {
     option (google.api.http) = {
-      post: "/v1/organizations/{organization}/whitelisted",
+      post: "/v1/orgs/{organization}/whitelisted",
       body: "*"
     };
   }
 
   // RemoveWhitelistedDomain removes a domain from the whitelist list
   rpc RemoveWhitelistedDomain(RemoveWhitelistedDomainRequest) returns (RemoveWhitelistedDomainResponse) {
-    option (google.api.http) = {delete: "/v1/organizations/{organization}/whitelisted/{domain}"};
+    option (google.api.http) = {delete: "/v1/orgs/{organization}/whitelisted/{domain}"};
   }
 
-  // ListWhitelistedDomains lists all the whitelisted domains for the organization
+  // ListWhitelistedDomains lists all the whitelisted domains for the org
   rpc ListWhitelistedDomains(ListWhitelistedDomainsRequest) returns (ListWhitelistedDomainsResponse) {
-    option (google.api.http) = {get: "/v1/organizations/{organization}/whitelisted"};
+    option (google.api.http) = {get: "/v1/orgs/{organization}/whitelisted"};
   }
 
   // GetUsersByEmail returns users by email
@@ -533,7 +533,7 @@ service AdminService {
 
   // SearchProjectUsers returns users who has access to to a project (including org members that have access through a usergroup)
   rpc SearchProjectUsers(SearchProjectUsersRequest) returns (SearchProjectUsersResponse) {
-    option (google.api.http) = {get: "/v1/organizations/{organization}/projects/{project}/users/search"};
+    option (google.api.http) = {get: "/v1/orgs/{organization}/projects/{project}/users/search"};
   }
 
   // ListSuperusers lists all the superusers
@@ -545,7 +545,7 @@ service AdminService {
   // DEPRECATED: Clients should call GetDeployment instead.
   rpc GetDeploymentCredentials(GetDeploymentCredentialsRequest) returns (GetDeploymentCredentialsResponse) {
     option (google.api.http) = {
-      post: "/v1/organizations/{organization}/projects/{project}/credentials",
+      post: "/v1/orgs/{organization}/projects/{project}/credentials",
       body: "*"
     };
   }
@@ -553,7 +553,7 @@ service AdminService {
   // GetIFrame returns the iframe URL for the given project
   rpc GetIFrame(GetIFrameRequest) returns (GetIFrameResponse) {
     option (google.api.http) = {
-      post: "/v1/organizations/{organization}/projects/{project}/iframe",
+      post: "/v1/orgs/{organization}/projects/{project}/iframe",
       body: "*"
     };
   }
@@ -582,33 +582,33 @@ service AdminService {
   // SudoUpdateOrganizationQuotas update the quotas available for orgs
   rpc SudoUpdateOrganizationQuotas(SudoUpdateOrganizationQuotasRequest) returns (SudoUpdateOrganizationQuotasResponse) {
     option (google.api.http) = {
-      patch: "/v1/superuser/quotas/organization",
+      patch: "/v1/superuser/quotas/orgs",
       body: "*"
     };
   }
 
-  // SudoUpdateOrganizationBillingCustomer update the billing customer for the organization
+  // SudoUpdateOrganizationBillingCustomer update the billing customer for the org
   rpc SudoUpdateOrganizationBillingCustomer(SudoUpdateOrganizationBillingCustomerRequest) returns (SudoUpdateOrganizationBillingCustomerResponse) {
     option (google.api.http) = {
-      patch: "/v1/superuser/organization/billing/customer_id",
+      patch: "/v1/superuser/org/billing/customer_id",
       body: "*"
     };
   }
 
-  // SudoExtendTrial extends the trial period for an organization
+  // SudoExtendTrial extends the trial period for an org
   rpc SudoExtendTrial(SudoExtendTrialRequest) returns (SudoExtendTrialResponse) {
     option (google.api.http) = {
-      post: "/v1/superuser/organization/trial/extend",
+      post: "/v1/superuser/org/trial/extend",
       body: "*"
     };
   }
 
-  // SudoUpdateOrganizationCustomDomain updates the custom domain for an organization.
+  // SudoUpdateOrganizationCustomDomain updates the custom domain for an org.
   // It only updates the custom domain in the database, which is used to ensure correct redirects.
   // The DNS records and ingress TLS must be configured separately.
   rpc SudoUpdateOrganizationCustomDomain(SudoUpdateOrganizationCustomDomainRequest) returns (SudoUpdateOrganizationCustomDomainResponse) {
     option (google.api.http) = {
-      patch: "/v1/superuser/organization/custom-domain",
+      patch: "/v1/superuser/org/custom-domain",
       body: "*"
     };
   }
@@ -630,10 +630,10 @@ service AdminService {
     };
   }
 
-  // SudoDeleteOrganizationBillingIssue deletes a billing issue of a type for the organization
+  // SudoDeleteOrganizationBillingIssue deletes a billing issue of a type for the org
   rpc SudoDeleteOrganizationBillingIssue(SudoDeleteOrganizationBillingIssueRequest) returns (SudoDeleteOrganizationBillingIssueResponse) {
     option (google.api.http) = {
-      delete: "/v1/superuser/organizations/{organization}/billing/issues/{type}",
+      delete: "/v1/superuser/orgs/{organization}/billing/issues/{type}",
     };
   }
 
@@ -648,92 +648,92 @@ service AdminService {
   // CreateProjectWhitelistedDomain adds a domain to the project's whitelisted
   rpc CreateProjectWhitelistedDomain(CreateProjectWhitelistedDomainRequest) returns (CreateProjectWhitelistedDomainResponse) {
     option (google.api.http) = {
-      post: "/v1/organizations/{organization}/projects/{project}/whitelisted",
+      post: "/v1/orgs/{organization}/projects/{project}/whitelisted",
       body: "*"
     };
   }
 
   // RemoveProjectWhitelistedDomain removes a domain from the project's whitelisted
   rpc RemoveProjectWhitelistedDomain(RemoveProjectWhitelistedDomainRequest) returns (RemoveProjectWhitelistedDomainResponse) {
-    option (google.api.http) = {delete: "/v1/organizations/{organization}/projects/{project}/whitelisted/{domain}"};
+    option (google.api.http) = {delete: "/v1/orgs/{organization}/projects/{project}/whitelisted/{domain}"};
   }
 
   // ListWhitelistedDomains lists all the whitelisted domains of the project
   rpc ListProjectWhitelistedDomains(ListProjectWhitelistedDomainsRequest) returns (ListProjectWhitelistedDomainsResponse) {
-    option (google.api.http) = {get: "/v1/organizations/{organization}/projects/{project}/whitelisted"};
+    option (google.api.http) = {get: "/v1/orgs/{organization}/projects/{project}/whitelisted"};
   }
 
-  // ListService returns all the services per organization
+  // ListService returns all the services per org
   rpc ListServices(ListServicesRequest) returns (ListServicesResponse) {
-    option (google.api.http) = {get: "/v1/organizations/{organization_name}/services"};
+    option (google.api.http) = {get: "/v1/orgs/{organization_name}/services"};
   }
 
-  // ListProjectMemberServices returns all the services for the project for an organization
+  // ListProjectMemberServices returns all the services for the project for an org
   rpc ListProjectMemberServices(ListProjectMemberServicesRequest) returns (ListProjectMemberServicesResponse) {
-    option (google.api.http) = {get: "/v1/organizations/{organization_name}/projects/{project_name}/services"};
+    option (google.api.http) = {get: "/v1/orgs/{organization_name}/projects/{project_name}/services"};
   }
 
-  // CreateService creates a new service per organization
+  // CreateService creates a new service per org
   rpc CreateService(CreateServiceRequest) returns (CreateServiceResponse) {
     option (google.api.http) = {
-      post: "/v1/organizations/{organization_name}/services",
+      post: "/v1/orgs/{organization_name}/services",
       body: "*"
     };
   }
 
   // GetService returns information about a specific service
   rpc GetService(GetServiceRequest) returns (GetServiceResponse) {
-    option (google.api.http) = {get: "/v1/organizations/{organization_name}/services/{name}"};
+    option (google.api.http) = {get: "/v1/orgs/{organization_name}/services/{name}"};
   }
 
-  // UpdateService updates a service per organization
+  // UpdateService updates a service per org
   rpc UpdateService(UpdateServiceRequest) returns (UpdateServiceResponse) {
     option (google.api.http) = {
-      patch: "/v1/organizations/{organization_name}/services/{name}",
+      patch: "/v1/orgs/{organization_name}/services/{name}",
       body: "*"
     };
   }
 
-  // SetOrganizationMemberServiceRole sets or updates the role of the service in the organization
+  // SetOrganizationMemberServiceRole sets or updates the role of the service in the org
   rpc SetOrganizationMemberServiceRole(SetOrganizationMemberServiceRoleRequest) returns (SetOrganizationMemberServiceRoleResponse) {
     option (google.api.http) = {
-      put: "/v1/organizations/{organization_name}/services/{name}/role",
+      put: "/v1/orgs/{organization_name}/services/{name}/role",
       body: "*"
     };
   }
 
-  // RemoveOrganizationMemberService removes the organization role for the service
+  // RemoveOrganizationMemberService removes the org role for the service
   rpc RemoveOrganizationMemberService(RemoveOrganizationMemberServiceRequest) returns (RemoveOrganizationMemberServiceResponse) {
-    option (google.api.http) = {delete: "/v1/organizations/{organization_name}/services/{name}/role"};
+    option (google.api.http) = {delete: "/v1/orgs/{organization_name}/services/{name}/role"};
   }
 
   // SetProjectMemberServiceRole updates the project role for the service
   rpc SetProjectMemberServiceRole(SetProjectMemberServiceRoleRequest) returns (SetProjectMemberServiceRoleResponse) {
     option (google.api.http) = {
-      put: "/v1/organizations/{organization_name}/projects/{project_name}/services/{name}/role",
+      put: "/v1/orgs/{organization_name}/projects/{project_name}/services/{name}/role",
       body: "*"
     };
   }
 
   // RemoveProjectMemberService removes the service from the project
   rpc RemoveProjectMemberService(RemoveProjectMemberServiceRequest) returns (RemoveProjectMemberServiceResponse) {
-    option (google.api.http) = {delete: "/v1/organizations/{organization_name}/projects/{project_name}/services/{name}"};
+    option (google.api.http) = {delete: "/v1/orgs/{organization_name}/projects/{project_name}/services/{name}"};
   }
 
-  // DeleteService deletes a service per organization
+  // DeleteService deletes a service per org
   rpc DeleteService(DeleteServiceRequest) returns (DeleteServiceResponse) {
-    option (google.api.http) = {delete: "/v1/organizations/{organization_name}/services/{name}"};
+    option (google.api.http) = {delete: "/v1/orgs/{organization_name}/services/{name}"};
   }
 
   // ListServiceAuthTokens lists all the service auth tokens
   rpc ListServiceAuthTokens(ListServiceAuthTokensRequest) returns (ListServiceAuthTokensResponse) {
-    option (google.api.http) = {get: "/v1/organizations/{organization_name}/services/{service_name}/tokens"};
+    option (google.api.http) = {get: "/v1/orgs/{organization_name}/services/{service_name}/tokens"};
   }
 
   // IssueServiceAuthToken issues an access token for a service
   rpc IssueServiceAuthToken(IssueServiceAuthTokenRequest) returns (IssueServiceAuthTokenResponse) {
     option (google.api.http) = {
-      post: "/v1/organizations/{organization_name}/services/{service_name}/tokens",
+      post: "/v1/orgs/{organization_name}/services/{service_name}/tokens",
       body: "*"
     };
   }
@@ -746,14 +746,14 @@ service AdminService {
   // IssueMagicAuthToken creates a "magic" auth token that provides limited access to a specific filtered dashboard in a specific project.
   rpc IssueMagicAuthToken(IssueMagicAuthTokenRequest) returns (IssueMagicAuthTokenResponse) {
     option (google.api.http) = {
-      post: "/v1/organizations/{organization}/projects/{project}/tokens/magic",
+      post: "/v1/orgs/{organization}/projects/{project}/tokens/magic",
       body: "*"
     };
   }
 
   // ListMagicAuthTokens lists all the magic auth tokens for a specific project.
   rpc ListMagicAuthTokens(ListMagicAuthTokensRequest) returns (ListMagicAuthTokensResponse) {
-    option (google.api.http) = {get: "/v1/organizations/{organization}/projects/{project}/tokens/magic"};
+    option (google.api.http) = {get: "/v1/orgs/{organization}/projects/{project}/tokens/magic"};
   }
 
   // GetCurrentMagicAuthToken returns information about the current magic auth token.
@@ -834,7 +834,7 @@ service AdminService {
   // CreateReport adds a virtual file for a report, triggers a reconcile, and waits for the report to be added to the runtime catalog
   rpc CreateReport(CreateReportRequest) returns (CreateReportResponse) {
     option (google.api.http) = {
-      post: "/v1/organizations/{organization}/projects/{project}/reports",
+      post: "/v1/orgs/{organization}/projects/{project}/reports",
       body: "*"
     };
   }
@@ -842,7 +842,7 @@ service AdminService {
   // EditReport edits a virtual file for a UI-managed report, triggers a reconcile, and waits for the report to be updated in the runtime
   rpc EditReport(EditReportRequest) returns (EditReportResponse) {
     option (google.api.http) = {
-      put: "/v1/organizations/{organization}/projects/{project}/reports/{name}",
+      put: "/v1/orgs/{organization}/projects/{project}/reports/{name}",
       body: "*"
     };
   }
@@ -850,20 +850,20 @@ service AdminService {
   // UnsubscribeReport removes the calling user from a reports recipients list
   rpc UnsubscribeReport(UnsubscribeReportRequest) returns (UnsubscribeReportResponse) {
     option (google.api.http) = {
-      post: "/v1/organizations/{organization}/projects/{project}/reports/{name}/unsubscribe",
+      post: "/v1/orgs/{organization}/projects/{project}/reports/{name}/unsubscribe",
       body: "*"
     };
   }
 
   // DeleteReport deletes the virtual file for a UI-managed report, triggers a reconcile, and waits for the report to be deleted in the runtime
   rpc DeleteReport(DeleteReportRequest) returns (DeleteReportResponse) {
-    option (google.api.http) = {delete: "/v1/organizations/{organization}/projects/{project}/reports/{name}"};
+    option (google.api.http) = {delete: "/v1/orgs/{organization}/projects/{project}/reports/{name}"};
   }
 
   // TriggerReport triggers an ad-hoc report run
   rpc TriggerReport(TriggerReportRequest) returns (TriggerReportResponse) {
     option (google.api.http) = {
-      post: "/v1/organizations/{organization}/projects/{project}/reports/{name}/trigger",
+      post: "/v1/orgs/{organization}/projects/{project}/reports/{name}/trigger",
       body: "*"
     };
   }
@@ -871,7 +871,7 @@ service AdminService {
   // GenerateReportYAML generates YAML for a scheduled report to be copied into a project's Git repository
   rpc GenerateReportYAML(GenerateReportYAMLRequest) returns (GenerateReportYAMLResponse) {
     option (google.api.http) = {
-      post: "/v1/organizations/{organization}/projects/{project}/reports/-/yaml",
+      post: "/v1/orgs/{organization}/projects/{project}/reports/-/yaml",
       body: "*"
     };
   }
@@ -879,7 +879,7 @@ service AdminService {
   // CreateAlert adds a virtual file for an alert, triggers a reconcile, and waits for the alert to be added to the runtime catalog
   rpc CreateAlert(CreateAlertRequest) returns (CreateAlertResponse) {
     option (google.api.http) = {
-      post: "/v1/organizations/{organization}/projects/{project}/alerts",
+      post: "/v1/orgs/{organization}/projects/{project}/alerts",
       body: "*"
     };
   }
@@ -887,7 +887,7 @@ service AdminService {
   // EditAlert edits a virtual file for a UI-managed alert, triggers a reconcile, and waits for the alert to be updated in the runtime
   rpc EditAlert(EditAlertRequest) returns (EditAlertResponse) {
     option (google.api.http) = {
-      put: "/v1/organizations/{organization}/projects/{project}/alerts/{name}",
+      put: "/v1/orgs/{organization}/projects/{project}/alerts/{name}",
       body: "*"
     };
   }
@@ -895,20 +895,20 @@ service AdminService {
   // UnsubscribeAlert removes the calling user from a alert's recipients list
   rpc UnsubscribeAlert(UnsubscribeAlertRequest) returns (UnsubscribeAlertResponse) {
     option (google.api.http) = {
-      post: "/v1/organizations/{organization}/projects/{project}/alerts/{name}/unsubscribe",
+      post: "/v1/orgs/{organization}/projects/{project}/alerts/{name}/unsubscribe",
       body: "*"
     };
   }
 
   // DeleteAlert deletes the virtual file for a UI-managed alert, triggers a reconcile, and waits for the alert to be deleted in the runtime
   rpc DeleteAlert(DeleteAlertRequest) returns (DeleteAlertResponse) {
-    option (google.api.http) = {delete: "/v1/organizations/{organization}/projects/{project}/alerts/{name}"};
+    option (google.api.http) = {delete: "/v1/orgs/{organization}/projects/{project}/alerts/{name}"};
   }
 
   // GenerateAlertYAML generates YAML for an alert to be copied into a project's Git repository
   rpc GenerateAlertYAML(GenerateAlertYAMLRequest) returns (GenerateAlertYAMLResponse) {
     option (google.api.http) = {
-      post: "/v1/organizations/{organization}/projects/{project}/alerts/-/yaml",
+      post: "/v1/orgs/{organization}/projects/{project}/alerts/-/yaml",
       body: "*"
     };
   }
@@ -916,41 +916,41 @@ service AdminService {
   // GenerateAlertYAML generates YAML for an alert to be copied into a project's Git repository
   rpc GetAlertYAML(GetAlertYAMLRequest) returns (GetAlertYAMLResponse) {
     option (google.api.http) = {
-      get: "/v1/organizations/{organization}/projects/{project}/alerts/{name}/yaml",
+      get: "/v1/orgs/{organization}/projects/{project}/alerts/{name}/yaml",
     };
   }
 
-  // GetBillingSubscription lists the subscription for the organization
+  // GetBillingSubscription lists the subscription for the org
   rpc GetBillingSubscription(GetBillingSubscriptionRequest) returns (GetBillingSubscriptionResponse) {
-    option (google.api.http) = {get: "/v1/organizations/{organization}/billing/subscriptions"};
+    option (google.api.http) = {get: "/v1/orgs/{organization}/billing/subscriptions"};
   }
 
-  // UpdateBillingSubscription updates the billing plan for the organization
+  // UpdateBillingSubscription updates the billing plan for the org
   rpc UpdateBillingSubscription(UpdateBillingSubscriptionRequest) returns (UpdateBillingSubscriptionResponse) {
     option (google.api.http) = {
-      patch: "/v1/organizations/{organization}/billing/subscriptions",
+      patch: "/v1/orgs/{organization}/billing/subscriptions",
       body: "*"
     };
   }
 
-  // CancelBillingSubscription cancels the billing subscription for the organization
+  // CancelBillingSubscription cancels the billing subscription for the org
   rpc CancelBillingSubscription(CancelBillingSubscriptionRequest) returns (CancelBillingSubscriptionResponse) {
     option (google.api.http) = {
-      delete: "/v1/organizations/{organization}/billing/subscriptions",
+      delete: "/v1/orgs/{organization}/billing/subscriptions",
     };
   }
 
-  // RenewBillingSubscription renews the billing plan for the organization once cancelled
+  // RenewBillingSubscription renews the billing plan for the org once cancelled
   rpc RenewBillingSubscription(RenewBillingSubscriptionRequest) returns (RenewBillingSubscriptionResponse) {
     option (google.api.http) = {
-      post: "/v1/organizations/{organization}/billing/subscriptions/renew",
+      post: "/v1/orgs/{organization}/billing/subscriptions/renew",
       body: "*"
     };
   }
 
   // GetPaymentsPortalURL returns the URL for the billing session to collect payment method
   rpc GetPaymentsPortalURL(GetPaymentsPortalURLRequest) returns (GetPaymentsPortalURLResponse) {
-    option (google.api.http) = {get: "/v1/organizations/{organization}/billing/payments/portal-url"};
+    option (google.api.http) = {get: "/v1/orgs/{organization}/billing/payments/portal-url"};
   }
 
   // ListPublicBillingPlans lists all public billing plans
@@ -958,7 +958,7 @@ service AdminService {
     option (google.api.http) = {get: "/v1/billing/plans"};
   }
 
-  // GetBillingProjectCredentials returns credentials for the configured cloud metrics project filtered by request organization
+  // GetBillingProjectCredentials returns credentials for the configured cloud metrics project filtered by request org
   rpc GetBillingProjectCredentials(GetBillingProjectCredentialsRequest) returns (GetBillingProjectCredentialsResponse) {
     option (google.api.http) = {
       post: "/v1/billing/metrics-project-credentials",
@@ -968,7 +968,7 @@ service AdminService {
 
   rpc RequestProjectAccess(RequestProjectAccessRequest) returns (RequestProjectAccessResponse) {
     option (google.api.http) = {
-      post: "/v1/organizations/{organization}/projects/{project}/request-access",
+      post: "/v1/orgs/{organization}/projects/{project}/request-access",
       body: "*"
     };
   }
@@ -991,9 +991,9 @@ service AdminService {
     };
   }
 
-  // ListOrganizationBillingIssues lists all the billing issues for the organization
+  // ListOrganizationBillingIssues lists all the billing issues for the org
   rpc ListOrganizationBillingIssues(ListOrganizationBillingIssuesRequest) returns (ListOrganizationBillingIssuesResponse) {
-    option (google.api.http) = {get: "/v1/organizations/{organization}/billing/issues"};
+    option (google.api.http) = {get: "/v1/orgs/{organization}/billing/issues"};
   }
 }
 
@@ -3039,7 +3039,6 @@ message BillingPlan {
   bool default = 6;
   Quotas quotas = 7;
   bool public = 8;
-  // TODO expose pricing information
 }
 
 message Quotas {

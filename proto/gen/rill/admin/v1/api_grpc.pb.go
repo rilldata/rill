@@ -176,23 +176,23 @@ const (
 type AdminServiceClient interface {
 	// Ping returns information about the server
 	Ping(ctx context.Context, in *PingRequest, opts ...grpc.CallOption) (*PingResponse, error)
-	// ListOrganizations lists all the organizations currently managed by the admin
+	// ListOrganizations lists all the orgs currently managed by the admin
 	ListOrganizations(ctx context.Context, in *ListOrganizationsRequest, opts ...grpc.CallOption) (*ListOrganizationsResponse, error)
-	// GetOrganization returns information about a specific organization
+	// GetOrganization returns information about a specific org
 	GetOrganization(ctx context.Context, in *GetOrganizationRequest, opts ...grpc.CallOption) (*GetOrganizationResponse, error)
 	// GetOrganizationNameForDomain finds the org name for a custom domain.
 	// If the application detects it is running on a non-default domain, it can use this to find the org to present.
 	// It can be called without being authenticated.
 	GetOrganizationNameForDomain(ctx context.Context, in *GetOrganizationNameForDomainRequest, opts ...grpc.CallOption) (*GetOrganizationNameForDomainResponse, error)
-	// CreateOrganization creates a new organization
+	// CreateOrganization creates a new org
 	CreateOrganization(ctx context.Context, in *CreateOrganizationRequest, opts ...grpc.CallOption) (*CreateOrganizationResponse, error)
-	// DeleteOrganization deletes an organizations
+	// DeleteOrganization deletes an org
 	DeleteOrganization(ctx context.Context, in *DeleteOrganizationRequest, opts ...grpc.CallOption) (*DeleteOrganizationResponse, error)
-	// UpdateOrganization deletes an organizations
+	// UpdateOrganization updates an org
 	UpdateOrganization(ctx context.Context, in *UpdateOrganizationRequest, opts ...grpc.CallOption) (*UpdateOrganizationResponse, error)
-	// ListProjectsForOrganization lists all the projects currently available for given organizations.
+	// ListProjectsForOrganization lists all the projects currently available for given orgs.
 	ListProjectsForOrganization(ctx context.Context, in *ListProjectsForOrganizationRequest, opts ...grpc.CallOption) (*ListProjectsForOrganizationResponse, error)
-	// ListProjectsForOrganizationAndUser lists all the projects that an organization member user has access to.
+	// ListProjectsForOrganizationAndUser lists all the projects that an org member user has access to.
 	// It does not include projects that the user has access to through a usergroup.
 	ListProjectsForOrganizationAndUser(ctx context.Context, in *ListProjectsForOrganizationAndUserRequest, opts ...grpc.CallOption) (*ListProjectsForOrganizationAndUserResponse, error)
 	// ListProjectsForFingerprint lists all projects the current user has access to that match the provided local project details.
@@ -208,7 +208,7 @@ type AdminServiceClient interface {
 	SearchProjectNames(ctx context.Context, in *SearchProjectNamesRequest, opts ...grpc.CallOption) (*SearchProjectNamesResponse, error)
 	// CreateProject creates a new project
 	CreateProject(ctx context.Context, in *CreateProjectRequest, opts ...grpc.CallOption) (*CreateProjectResponse, error)
-	// DeleteProject deletes an project
+	// DeleteProject deletes a project
 	DeleteProject(ctx context.Context, in *DeleteProjectRequest, opts ...grpc.CallOption) (*DeleteProjectResponse, error)
 	// UpdateProject updates a project
 	UpdateProject(ctx context.Context, in *UpdateProjectRequest, opts ...grpc.CallOption) (*UpdateProjectResponse, error)
@@ -254,11 +254,11 @@ type AdminServiceClient interface {
 	ListOrganizationMemberUsers(ctx context.Context, in *ListOrganizationMemberUsersRequest, opts ...grpc.CallOption) (*ListOrganizationMemberUsersResponse, error)
 	// ListOrganizationInvites lists all the org invites
 	ListOrganizationInvites(ctx context.Context, in *ListOrganizationInvitesRequest, opts ...grpc.CallOption) (*ListOrganizationInvitesResponse, error)
-	// AddOrganizationMemberUser adds a user to the organization
+	// AddOrganizationMemberUser adds a user to the org
 	AddOrganizationMemberUser(ctx context.Context, in *AddOrganizationMemberUserRequest, opts ...grpc.CallOption) (*AddOrganizationMemberUserResponse, error)
-	// RemoveOrganizationMemberUser removes member from the organization
+	// RemoveOrganizationMemberUser removes member from the org
 	RemoveOrganizationMemberUser(ctx context.Context, in *RemoveOrganizationMemberUserRequest, opts ...grpc.CallOption) (*RemoveOrganizationMemberUserResponse, error)
-	// LeaveOrganization removes the current user from the organization
+	// LeaveOrganization removes the current user from the org
 	LeaveOrganization(ctx context.Context, in *LeaveOrganizationRequest, opts ...grpc.CallOption) (*LeaveOrganizationResponse, error)
 	// SetOrganizationMemberUserRole sets the role for the member
 	SetOrganizationMemberUserRole(ctx context.Context, in *SetOrganizationMemberUserRoleRequest, opts ...grpc.CallOption) (*SetOrganizationMemberUserRoleResponse, error)
@@ -272,9 +272,9 @@ type AdminServiceClient interface {
 	RemoveProjectMemberUser(ctx context.Context, in *RemoveProjectMemberUserRequest, opts ...grpc.CallOption) (*RemoveProjectMemberUserResponse, error)
 	// SetProjectMemberUserRole sets the role for the member
 	SetProjectMemberUserRole(ctx context.Context, in *SetProjectMemberUserRoleRequest, opts ...grpc.CallOption) (*SetProjectMemberUserRoleResponse, error)
-	// ListUsergroupsForOrganizationAndUser lists the user groups that an organization member user has access to.
+	// ListUsergroupsForOrganizationAndUser lists the user groups that an org member user has access to.
 	ListUsergroupsForOrganizationAndUser(ctx context.Context, in *ListUsergroupsForOrganizationAndUserRequest, opts ...grpc.CallOption) (*ListUsergroupsForOrganizationAndUserResponse, error)
-	// CreateUsergroup creates a user group in the organization
+	// CreateUsergroup creates a user group in the org
 	CreateUsergroup(ctx context.Context, in *CreateUsergroupRequest, opts ...grpc.CallOption) (*CreateUsergroupResponse, error)
 	// GetUsergroups returns the user group details
 	GetUsergroup(ctx context.Context, in *GetUsergroupRequest, opts ...grpc.CallOption) (*GetUsergroupResponse, error)
@@ -286,13 +286,13 @@ type AdminServiceClient interface {
 	ListOrganizationMemberUsergroups(ctx context.Context, in *ListOrganizationMemberUsergroupsRequest, opts ...grpc.CallOption) (*ListOrganizationMemberUsergroupsResponse, error)
 	// ListProjectMemberUsergroups lists the project's user groups
 	ListProjectMemberUsergroups(ctx context.Context, in *ListProjectMemberUsergroupsRequest, opts ...grpc.CallOption) (*ListProjectMemberUsergroupsResponse, error)
-	// DeleteUsergroup deletes the user group from the organization
+	// DeleteUsergroup deletes the user group from the org
 	DeleteUsergroup(ctx context.Context, in *DeleteUsergroupRequest, opts ...grpc.CallOption) (*DeleteUsergroupResponse, error)
 	// AddOrganizationMemberUsergroupRole adds the role for the user group
 	AddOrganizationMemberUsergroup(ctx context.Context, in *AddOrganizationMemberUsergroupRequest, opts ...grpc.CallOption) (*AddOrganizationMemberUsergroupResponse, error)
 	// SetOrganizationMemberUsergroupRole sets the role for the user group
 	SetOrganizationMemberUsergroupRole(ctx context.Context, in *SetOrganizationMemberUsergroupRoleRequest, opts ...grpc.CallOption) (*SetOrganizationMemberUsergroupRoleResponse, error)
-	// RemoveOrganizationMemberUsergroup revokes the organization-level role for the user group
+	// RemoveOrganizationMemberUsergroup revokes the org-level role for the user group
 	RemoveOrganizationMemberUsergroup(ctx context.Context, in *RemoveOrganizationMemberUsergroupRequest, opts ...grpc.CallOption) (*RemoveOrganizationMemberUsergroupResponse, error)
 	// AddProjectMemberUsergroupRole adds the role for the user group
 	AddProjectMemberUsergroup(ctx context.Context, in *AddProjectMemberUsergroupRequest, opts ...grpc.CallOption) (*AddProjectMemberUsergroupResponse, error)
@@ -310,7 +310,7 @@ type AdminServiceClient interface {
 	GetUser(ctx context.Context, in *GetUserRequest, opts ...grpc.CallOption) (*GetUserResponse, error)
 	// GetCurrentUser returns the currently authenticated user (if any)
 	GetCurrentUser(ctx context.Context, in *GetCurrentUserRequest, opts ...grpc.CallOption) (*GetCurrentUserResponse, error)
-	// DeleteUser deletes the user from the organization by email
+	// DeleteUser deletes the user from the org by email
 	DeleteUser(ctx context.Context, in *DeleteUserRequest, opts ...grpc.CallOption) (*DeleteUserResponse, error)
 	// ListUserAuthTokens lists the current user's auth tokens.
 	// You can optionally pass "current" instead of the user ID to list the current user's tokens.
@@ -337,7 +337,7 @@ type AdminServiceClient interface {
 	// Connects a rill managed project to github.
 	// Replaces the contents of the remote repo with the contents of the project.
 	ConnectProjectToGithub(ctx context.Context, in *ConnectProjectToGithubRequest, opts ...grpc.CallOption) (*ConnectProjectToGithubResponse, error)
-	// CreateManagedGitRepo creates a new rill managed git repo for the organization.
+	// CreateManagedGitRepo creates a new rill managed git repo for the org.
 	CreateManagedGitRepo(ctx context.Context, in *CreateManagedGitRepoRequest, opts ...grpc.CallOption) (*CreateManagedGitRepoResponse, error)
 	// Converts a project connected to github to a rill managed project.
 	DisconnectProjectFromGithub(ctx context.Context, in *DisconnectProjectFromGithubRequest, opts ...grpc.CallOption) (*DisconnectProjectFromGithubResponse, error)
@@ -347,7 +347,7 @@ type AdminServiceClient interface {
 	CreateWhitelistedDomain(ctx context.Context, in *CreateWhitelistedDomainRequest, opts ...grpc.CallOption) (*CreateWhitelistedDomainResponse, error)
 	// RemoveWhitelistedDomain removes a domain from the whitelist list
 	RemoveWhitelistedDomain(ctx context.Context, in *RemoveWhitelistedDomainRequest, opts ...grpc.CallOption) (*RemoveWhitelistedDomainResponse, error)
-	// ListWhitelistedDomains lists all the whitelisted domains for the organization
+	// ListWhitelistedDomains lists all the whitelisted domains for the org
 	ListWhitelistedDomains(ctx context.Context, in *ListWhitelistedDomainsRequest, opts ...grpc.CallOption) (*ListWhitelistedDomainsResponse, error)
 	// GetUsersByEmail returns users by email
 	SearchUsers(ctx context.Context, in *SearchUsersRequest, opts ...grpc.CallOption) (*SearchUsersResponse, error)
@@ -368,11 +368,11 @@ type AdminServiceClient interface {
 	SudoUpdateUserQuotas(ctx context.Context, in *SudoUpdateUserQuotasRequest, opts ...grpc.CallOption) (*SudoUpdateUserQuotasResponse, error)
 	// SudoUpdateOrganizationQuotas update the quotas available for orgs
 	SudoUpdateOrganizationQuotas(ctx context.Context, in *SudoUpdateOrganizationQuotasRequest, opts ...grpc.CallOption) (*SudoUpdateOrganizationQuotasResponse, error)
-	// SudoUpdateOrganizationBillingCustomer update the billing customer for the organization
+	// SudoUpdateOrganizationBillingCustomer update the billing customer for the org
 	SudoUpdateOrganizationBillingCustomer(ctx context.Context, in *SudoUpdateOrganizationBillingCustomerRequest, opts ...grpc.CallOption) (*SudoUpdateOrganizationBillingCustomerResponse, error)
-	// SudoExtendTrial extends the trial period for an organization
+	// SudoExtendTrial extends the trial period for an org
 	SudoExtendTrial(ctx context.Context, in *SudoExtendTrialRequest, opts ...grpc.CallOption) (*SudoExtendTrialResponse, error)
-	// SudoUpdateOrganizationCustomDomain updates the custom domain for an organization.
+	// SudoUpdateOrganizationCustomDomain updates the custom domain for an org.
 	// It only updates the custom domain in the database, which is used to ensure correct redirects.
 	// The DNS records and ingress TLS must be configured separately.
 	SudoUpdateOrganizationCustomDomain(ctx context.Context, in *SudoUpdateOrganizationCustomDomainRequest, opts ...grpc.CallOption) (*SudoUpdateOrganizationCustomDomainResponse, error)
@@ -380,7 +380,7 @@ type AdminServiceClient interface {
 	SudoUpdateAnnotations(ctx context.Context, in *SudoUpdateAnnotationsRequest, opts ...grpc.CallOption) (*SudoUpdateAnnotationsResponse, error)
 	// SudoIssueRuntimeManagerToken returns a runtime JWT with full manager permissions for a runtime.
 	SudoIssueRuntimeManagerToken(ctx context.Context, in *SudoIssueRuntimeManagerTokenRequest, opts ...grpc.CallOption) (*SudoIssueRuntimeManagerTokenResponse, error)
-	// SudoDeleteOrganizationBillingIssue deletes a billing issue of a type for the organization
+	// SudoDeleteOrganizationBillingIssue deletes a billing issue of a type for the org
 	SudoDeleteOrganizationBillingIssue(ctx context.Context, in *SudoDeleteOrganizationBillingIssueRequest, opts ...grpc.CallOption) (*SudoDeleteOrganizationBillingIssueResponse, error)
 	// SudoTriggerBillingRepair triggers billing repair jobs for orgs that doesn't have billing info and puts them on trial
 	SudoTriggerBillingRepair(ctx context.Context, in *SudoTriggerBillingRepairRequest, opts ...grpc.CallOption) (*SudoTriggerBillingRepairResponse, error)
@@ -390,25 +390,25 @@ type AdminServiceClient interface {
 	RemoveProjectWhitelistedDomain(ctx context.Context, in *RemoveProjectWhitelistedDomainRequest, opts ...grpc.CallOption) (*RemoveProjectWhitelistedDomainResponse, error)
 	// ListWhitelistedDomains lists all the whitelisted domains of the project
 	ListProjectWhitelistedDomains(ctx context.Context, in *ListProjectWhitelistedDomainsRequest, opts ...grpc.CallOption) (*ListProjectWhitelistedDomainsResponse, error)
-	// ListService returns all the services per organization
+	// ListService returns all the services per org
 	ListServices(ctx context.Context, in *ListServicesRequest, opts ...grpc.CallOption) (*ListServicesResponse, error)
-	// ListProjectMemberServices returns all the services for the project for an organization
+	// ListProjectMemberServices returns all the services for the project for an org
 	ListProjectMemberServices(ctx context.Context, in *ListProjectMemberServicesRequest, opts ...grpc.CallOption) (*ListProjectMemberServicesResponse, error)
-	// CreateService creates a new service per organization
+	// CreateService creates a new service per org
 	CreateService(ctx context.Context, in *CreateServiceRequest, opts ...grpc.CallOption) (*CreateServiceResponse, error)
 	// GetService returns information about a specific service
 	GetService(ctx context.Context, in *GetServiceRequest, opts ...grpc.CallOption) (*GetServiceResponse, error)
-	// UpdateService updates a service per organization
+	// UpdateService updates a service per org
 	UpdateService(ctx context.Context, in *UpdateServiceRequest, opts ...grpc.CallOption) (*UpdateServiceResponse, error)
-	// SetOrganizationMemberServiceRole sets or updates the role of the service in the organization
+	// SetOrganizationMemberServiceRole sets or updates the role of the service in the org
 	SetOrganizationMemberServiceRole(ctx context.Context, in *SetOrganizationMemberServiceRoleRequest, opts ...grpc.CallOption) (*SetOrganizationMemberServiceRoleResponse, error)
-	// RemoveOrganizationMemberService removes the organization role for the service
+	// RemoveOrganizationMemberService removes the org role for the service
 	RemoveOrganizationMemberService(ctx context.Context, in *RemoveOrganizationMemberServiceRequest, opts ...grpc.CallOption) (*RemoveOrganizationMemberServiceResponse, error)
 	// SetProjectMemberServiceRole updates the project role for the service
 	SetProjectMemberServiceRole(ctx context.Context, in *SetProjectMemberServiceRoleRequest, opts ...grpc.CallOption) (*SetProjectMemberServiceRoleResponse, error)
 	// RemoveProjectMemberService removes the service from the project
 	RemoveProjectMemberService(ctx context.Context, in *RemoveProjectMemberServiceRequest, opts ...grpc.CallOption) (*RemoveProjectMemberServiceResponse, error)
-	// DeleteService deletes a service per organization
+	// DeleteService deletes a service per org
 	DeleteService(ctx context.Context, in *DeleteServiceRequest, opts ...grpc.CallOption) (*DeleteServiceResponse, error)
 	// ListServiceAuthTokens lists all the service auth tokens
 	ListServiceAuthTokens(ctx context.Context, in *ListServiceAuthTokensRequest, opts ...grpc.CallOption) (*ListServiceAuthTokensResponse, error)
@@ -468,25 +468,25 @@ type AdminServiceClient interface {
 	GenerateAlertYAML(ctx context.Context, in *GenerateAlertYAMLRequest, opts ...grpc.CallOption) (*GenerateAlertYAMLResponse, error)
 	// GenerateAlertYAML generates YAML for an alert to be copied into a project's Git repository
 	GetAlertYAML(ctx context.Context, in *GetAlertYAMLRequest, opts ...grpc.CallOption) (*GetAlertYAMLResponse, error)
-	// GetBillingSubscription lists the subscription for the organization
+	// GetBillingSubscription lists the subscription for the org
 	GetBillingSubscription(ctx context.Context, in *GetBillingSubscriptionRequest, opts ...grpc.CallOption) (*GetBillingSubscriptionResponse, error)
-	// UpdateBillingSubscription updates the billing plan for the organization
+	// UpdateBillingSubscription updates the billing plan for the org
 	UpdateBillingSubscription(ctx context.Context, in *UpdateBillingSubscriptionRequest, opts ...grpc.CallOption) (*UpdateBillingSubscriptionResponse, error)
-	// CancelBillingSubscription cancels the billing subscription for the organization
+	// CancelBillingSubscription cancels the billing subscription for the org
 	CancelBillingSubscription(ctx context.Context, in *CancelBillingSubscriptionRequest, opts ...grpc.CallOption) (*CancelBillingSubscriptionResponse, error)
-	// RenewBillingSubscription renews the billing plan for the organization once cancelled
+	// RenewBillingSubscription renews the billing plan for the org once cancelled
 	RenewBillingSubscription(ctx context.Context, in *RenewBillingSubscriptionRequest, opts ...grpc.CallOption) (*RenewBillingSubscriptionResponse, error)
 	// GetPaymentsPortalURL returns the URL for the billing session to collect payment method
 	GetPaymentsPortalURL(ctx context.Context, in *GetPaymentsPortalURLRequest, opts ...grpc.CallOption) (*GetPaymentsPortalURLResponse, error)
 	// ListPublicBillingPlans lists all public billing plans
 	ListPublicBillingPlans(ctx context.Context, in *ListPublicBillingPlansRequest, opts ...grpc.CallOption) (*ListPublicBillingPlansResponse, error)
-	// GetBillingProjectCredentials returns credentials for the configured cloud metrics project filtered by request organization
+	// GetBillingProjectCredentials returns credentials for the configured cloud metrics project filtered by request org
 	GetBillingProjectCredentials(ctx context.Context, in *GetBillingProjectCredentialsRequest, opts ...grpc.CallOption) (*GetBillingProjectCredentialsResponse, error)
 	RequestProjectAccess(ctx context.Context, in *RequestProjectAccessRequest, opts ...grpc.CallOption) (*RequestProjectAccessResponse, error)
 	GetProjectAccessRequest(ctx context.Context, in *GetProjectAccessRequestRequest, opts ...grpc.CallOption) (*GetProjectAccessRequestResponse, error)
 	ApproveProjectAccess(ctx context.Context, in *ApproveProjectAccessRequest, opts ...grpc.CallOption) (*ApproveProjectAccessResponse, error)
 	DenyProjectAccess(ctx context.Context, in *DenyProjectAccessRequest, opts ...grpc.CallOption) (*DenyProjectAccessResponse, error)
-	// ListOrganizationBillingIssues lists all the billing issues for the organization
+	// ListOrganizationBillingIssues lists all the billing issues for the org
 	ListOrganizationBillingIssues(ctx context.Context, in *ListOrganizationBillingIssuesRequest, opts ...grpc.CallOption) (*ListOrganizationBillingIssuesResponse, error)
 }
 
@@ -1994,23 +1994,23 @@ func (c *adminServiceClient) ListOrganizationBillingIssues(ctx context.Context, 
 type AdminServiceServer interface {
 	// Ping returns information about the server
 	Ping(context.Context, *PingRequest) (*PingResponse, error)
-	// ListOrganizations lists all the organizations currently managed by the admin
+	// ListOrganizations lists all the orgs currently managed by the admin
 	ListOrganizations(context.Context, *ListOrganizationsRequest) (*ListOrganizationsResponse, error)
-	// GetOrganization returns information about a specific organization
+	// GetOrganization returns information about a specific org
 	GetOrganization(context.Context, *GetOrganizationRequest) (*GetOrganizationResponse, error)
 	// GetOrganizationNameForDomain finds the org name for a custom domain.
 	// If the application detects it is running on a non-default domain, it can use this to find the org to present.
 	// It can be called without being authenticated.
 	GetOrganizationNameForDomain(context.Context, *GetOrganizationNameForDomainRequest) (*GetOrganizationNameForDomainResponse, error)
-	// CreateOrganization creates a new organization
+	// CreateOrganization creates a new org
 	CreateOrganization(context.Context, *CreateOrganizationRequest) (*CreateOrganizationResponse, error)
-	// DeleteOrganization deletes an organizations
+	// DeleteOrganization deletes an org
 	DeleteOrganization(context.Context, *DeleteOrganizationRequest) (*DeleteOrganizationResponse, error)
-	// UpdateOrganization deletes an organizations
+	// UpdateOrganization updates an org
 	UpdateOrganization(context.Context, *UpdateOrganizationRequest) (*UpdateOrganizationResponse, error)
-	// ListProjectsForOrganization lists all the projects currently available for given organizations.
+	// ListProjectsForOrganization lists all the projects currently available for given orgs.
 	ListProjectsForOrganization(context.Context, *ListProjectsForOrganizationRequest) (*ListProjectsForOrganizationResponse, error)
-	// ListProjectsForOrganizationAndUser lists all the projects that an organization member user has access to.
+	// ListProjectsForOrganizationAndUser lists all the projects that an org member user has access to.
 	// It does not include projects that the user has access to through a usergroup.
 	ListProjectsForOrganizationAndUser(context.Context, *ListProjectsForOrganizationAndUserRequest) (*ListProjectsForOrganizationAndUserResponse, error)
 	// ListProjectsForFingerprint lists all projects the current user has access to that match the provided local project details.
@@ -2026,7 +2026,7 @@ type AdminServiceServer interface {
 	SearchProjectNames(context.Context, *SearchProjectNamesRequest) (*SearchProjectNamesResponse, error)
 	// CreateProject creates a new project
 	CreateProject(context.Context, *CreateProjectRequest) (*CreateProjectResponse, error)
-	// DeleteProject deletes an project
+	// DeleteProject deletes a project
 	DeleteProject(context.Context, *DeleteProjectRequest) (*DeleteProjectResponse, error)
 	// UpdateProject updates a project
 	UpdateProject(context.Context, *UpdateProjectRequest) (*UpdateProjectResponse, error)
@@ -2072,11 +2072,11 @@ type AdminServiceServer interface {
 	ListOrganizationMemberUsers(context.Context, *ListOrganizationMemberUsersRequest) (*ListOrganizationMemberUsersResponse, error)
 	// ListOrganizationInvites lists all the org invites
 	ListOrganizationInvites(context.Context, *ListOrganizationInvitesRequest) (*ListOrganizationInvitesResponse, error)
-	// AddOrganizationMemberUser adds a user to the organization
+	// AddOrganizationMemberUser adds a user to the org
 	AddOrganizationMemberUser(context.Context, *AddOrganizationMemberUserRequest) (*AddOrganizationMemberUserResponse, error)
-	// RemoveOrganizationMemberUser removes member from the organization
+	// RemoveOrganizationMemberUser removes member from the org
 	RemoveOrganizationMemberUser(context.Context, *RemoveOrganizationMemberUserRequest) (*RemoveOrganizationMemberUserResponse, error)
-	// LeaveOrganization removes the current user from the organization
+	// LeaveOrganization removes the current user from the org
 	LeaveOrganization(context.Context, *LeaveOrganizationRequest) (*LeaveOrganizationResponse, error)
 	// SetOrganizationMemberUserRole sets the role for the member
 	SetOrganizationMemberUserRole(context.Context, *SetOrganizationMemberUserRoleRequest) (*SetOrganizationMemberUserRoleResponse, error)
@@ -2090,9 +2090,9 @@ type AdminServiceServer interface {
 	RemoveProjectMemberUser(context.Context, *RemoveProjectMemberUserRequest) (*RemoveProjectMemberUserResponse, error)
 	// SetProjectMemberUserRole sets the role for the member
 	SetProjectMemberUserRole(context.Context, *SetProjectMemberUserRoleRequest) (*SetProjectMemberUserRoleResponse, error)
-	// ListUsergroupsForOrganizationAndUser lists the user groups that an organization member user has access to.
+	// ListUsergroupsForOrganizationAndUser lists the user groups that an org member user has access to.
 	ListUsergroupsForOrganizationAndUser(context.Context, *ListUsergroupsForOrganizationAndUserRequest) (*ListUsergroupsForOrganizationAndUserResponse, error)
-	// CreateUsergroup creates a user group in the organization
+	// CreateUsergroup creates a user group in the org
 	CreateUsergroup(context.Context, *CreateUsergroupRequest) (*CreateUsergroupResponse, error)
 	// GetUsergroups returns the user group details
 	GetUsergroup(context.Context, *GetUsergroupRequest) (*GetUsergroupResponse, error)
@@ -2104,13 +2104,13 @@ type AdminServiceServer interface {
 	ListOrganizationMemberUsergroups(context.Context, *ListOrganizationMemberUsergroupsRequest) (*ListOrganizationMemberUsergroupsResponse, error)
 	// ListProjectMemberUsergroups lists the project's user groups
 	ListProjectMemberUsergroups(context.Context, *ListProjectMemberUsergroupsRequest) (*ListProjectMemberUsergroupsResponse, error)
-	// DeleteUsergroup deletes the user group from the organization
+	// DeleteUsergroup deletes the user group from the org
 	DeleteUsergroup(context.Context, *DeleteUsergroupRequest) (*DeleteUsergroupResponse, error)
 	// AddOrganizationMemberUsergroupRole adds the role for the user group
 	AddOrganizationMemberUsergroup(context.Context, *AddOrganizationMemberUsergroupRequest) (*AddOrganizationMemberUsergroupResponse, error)
 	// SetOrganizationMemberUsergroupRole sets the role for the user group
 	SetOrganizationMemberUsergroupRole(context.Context, *SetOrganizationMemberUsergroupRoleRequest) (*SetOrganizationMemberUsergroupRoleResponse, error)
-	// RemoveOrganizationMemberUsergroup revokes the organization-level role for the user group
+	// RemoveOrganizationMemberUsergroup revokes the org-level role for the user group
 	RemoveOrganizationMemberUsergroup(context.Context, *RemoveOrganizationMemberUsergroupRequest) (*RemoveOrganizationMemberUsergroupResponse, error)
 	// AddProjectMemberUsergroupRole adds the role for the user group
 	AddProjectMemberUsergroup(context.Context, *AddProjectMemberUsergroupRequest) (*AddProjectMemberUsergroupResponse, error)
@@ -2128,7 +2128,7 @@ type AdminServiceServer interface {
 	GetUser(context.Context, *GetUserRequest) (*GetUserResponse, error)
 	// GetCurrentUser returns the currently authenticated user (if any)
 	GetCurrentUser(context.Context, *GetCurrentUserRequest) (*GetCurrentUserResponse, error)
-	// DeleteUser deletes the user from the organization by email
+	// DeleteUser deletes the user from the org by email
 	DeleteUser(context.Context, *DeleteUserRequest) (*DeleteUserResponse, error)
 	// ListUserAuthTokens lists the current user's auth tokens.
 	// You can optionally pass "current" instead of the user ID to list the current user's tokens.
@@ -2155,7 +2155,7 @@ type AdminServiceServer interface {
 	// Connects a rill managed project to github.
 	// Replaces the contents of the remote repo with the contents of the project.
 	ConnectProjectToGithub(context.Context, *ConnectProjectToGithubRequest) (*ConnectProjectToGithubResponse, error)
-	// CreateManagedGitRepo creates a new rill managed git repo for the organization.
+	// CreateManagedGitRepo creates a new rill managed git repo for the org.
 	CreateManagedGitRepo(context.Context, *CreateManagedGitRepoRequest) (*CreateManagedGitRepoResponse, error)
 	// Converts a project connected to github to a rill managed project.
 	DisconnectProjectFromGithub(context.Context, *DisconnectProjectFromGithubRequest) (*DisconnectProjectFromGithubResponse, error)
@@ -2165,7 +2165,7 @@ type AdminServiceServer interface {
 	CreateWhitelistedDomain(context.Context, *CreateWhitelistedDomainRequest) (*CreateWhitelistedDomainResponse, error)
 	// RemoveWhitelistedDomain removes a domain from the whitelist list
 	RemoveWhitelistedDomain(context.Context, *RemoveWhitelistedDomainRequest) (*RemoveWhitelistedDomainResponse, error)
-	// ListWhitelistedDomains lists all the whitelisted domains for the organization
+	// ListWhitelistedDomains lists all the whitelisted domains for the org
 	ListWhitelistedDomains(context.Context, *ListWhitelistedDomainsRequest) (*ListWhitelistedDomainsResponse, error)
 	// GetUsersByEmail returns users by email
 	SearchUsers(context.Context, *SearchUsersRequest) (*SearchUsersResponse, error)
@@ -2186,11 +2186,11 @@ type AdminServiceServer interface {
 	SudoUpdateUserQuotas(context.Context, *SudoUpdateUserQuotasRequest) (*SudoUpdateUserQuotasResponse, error)
 	// SudoUpdateOrganizationQuotas update the quotas available for orgs
 	SudoUpdateOrganizationQuotas(context.Context, *SudoUpdateOrganizationQuotasRequest) (*SudoUpdateOrganizationQuotasResponse, error)
-	// SudoUpdateOrganizationBillingCustomer update the billing customer for the organization
+	// SudoUpdateOrganizationBillingCustomer update the billing customer for the org
 	SudoUpdateOrganizationBillingCustomer(context.Context, *SudoUpdateOrganizationBillingCustomerRequest) (*SudoUpdateOrganizationBillingCustomerResponse, error)
-	// SudoExtendTrial extends the trial period for an organization
+	// SudoExtendTrial extends the trial period for an org
 	SudoExtendTrial(context.Context, *SudoExtendTrialRequest) (*SudoExtendTrialResponse, error)
-	// SudoUpdateOrganizationCustomDomain updates the custom domain for an organization.
+	// SudoUpdateOrganizationCustomDomain updates the custom domain for an org.
 	// It only updates the custom domain in the database, which is used to ensure correct redirects.
 	// The DNS records and ingress TLS must be configured separately.
 	SudoUpdateOrganizationCustomDomain(context.Context, *SudoUpdateOrganizationCustomDomainRequest) (*SudoUpdateOrganizationCustomDomainResponse, error)
@@ -2198,7 +2198,7 @@ type AdminServiceServer interface {
 	SudoUpdateAnnotations(context.Context, *SudoUpdateAnnotationsRequest) (*SudoUpdateAnnotationsResponse, error)
 	// SudoIssueRuntimeManagerToken returns a runtime JWT with full manager permissions for a runtime.
 	SudoIssueRuntimeManagerToken(context.Context, *SudoIssueRuntimeManagerTokenRequest) (*SudoIssueRuntimeManagerTokenResponse, error)
-	// SudoDeleteOrganizationBillingIssue deletes a billing issue of a type for the organization
+	// SudoDeleteOrganizationBillingIssue deletes a billing issue of a type for the org
 	SudoDeleteOrganizationBillingIssue(context.Context, *SudoDeleteOrganizationBillingIssueRequest) (*SudoDeleteOrganizationBillingIssueResponse, error)
 	// SudoTriggerBillingRepair triggers billing repair jobs for orgs that doesn't have billing info and puts them on trial
 	SudoTriggerBillingRepair(context.Context, *SudoTriggerBillingRepairRequest) (*SudoTriggerBillingRepairResponse, error)
@@ -2208,25 +2208,25 @@ type AdminServiceServer interface {
 	RemoveProjectWhitelistedDomain(context.Context, *RemoveProjectWhitelistedDomainRequest) (*RemoveProjectWhitelistedDomainResponse, error)
 	// ListWhitelistedDomains lists all the whitelisted domains of the project
 	ListProjectWhitelistedDomains(context.Context, *ListProjectWhitelistedDomainsRequest) (*ListProjectWhitelistedDomainsResponse, error)
-	// ListService returns all the services per organization
+	// ListService returns all the services per org
 	ListServices(context.Context, *ListServicesRequest) (*ListServicesResponse, error)
-	// ListProjectMemberServices returns all the services for the project for an organization
+	// ListProjectMemberServices returns all the services for the project for an org
 	ListProjectMemberServices(context.Context, *ListProjectMemberServicesRequest) (*ListProjectMemberServicesResponse, error)
-	// CreateService creates a new service per organization
+	// CreateService creates a new service per org
 	CreateService(context.Context, *CreateServiceRequest) (*CreateServiceResponse, error)
 	// GetService returns information about a specific service
 	GetService(context.Context, *GetServiceRequest) (*GetServiceResponse, error)
-	// UpdateService updates a service per organization
+	// UpdateService updates a service per org
 	UpdateService(context.Context, *UpdateServiceRequest) (*UpdateServiceResponse, error)
-	// SetOrganizationMemberServiceRole sets or updates the role of the service in the organization
+	// SetOrganizationMemberServiceRole sets or updates the role of the service in the org
 	SetOrganizationMemberServiceRole(context.Context, *SetOrganizationMemberServiceRoleRequest) (*SetOrganizationMemberServiceRoleResponse, error)
-	// RemoveOrganizationMemberService removes the organization role for the service
+	// RemoveOrganizationMemberService removes the org role for the service
 	RemoveOrganizationMemberService(context.Context, *RemoveOrganizationMemberServiceRequest) (*RemoveOrganizationMemberServiceResponse, error)
 	// SetProjectMemberServiceRole updates the project role for the service
 	SetProjectMemberServiceRole(context.Context, *SetProjectMemberServiceRoleRequest) (*SetProjectMemberServiceRoleResponse, error)
 	// RemoveProjectMemberService removes the service from the project
 	RemoveProjectMemberService(context.Context, *RemoveProjectMemberServiceRequest) (*RemoveProjectMemberServiceResponse, error)
-	// DeleteService deletes a service per organization
+	// DeleteService deletes a service per org
 	DeleteService(context.Context, *DeleteServiceRequest) (*DeleteServiceResponse, error)
 	// ListServiceAuthTokens lists all the service auth tokens
 	ListServiceAuthTokens(context.Context, *ListServiceAuthTokensRequest) (*ListServiceAuthTokensResponse, error)
@@ -2286,25 +2286,25 @@ type AdminServiceServer interface {
 	GenerateAlertYAML(context.Context, *GenerateAlertYAMLRequest) (*GenerateAlertYAMLResponse, error)
 	// GenerateAlertYAML generates YAML for an alert to be copied into a project's Git repository
 	GetAlertYAML(context.Context, *GetAlertYAMLRequest) (*GetAlertYAMLResponse, error)
-	// GetBillingSubscription lists the subscription for the organization
+	// GetBillingSubscription lists the subscription for the org
 	GetBillingSubscription(context.Context, *GetBillingSubscriptionRequest) (*GetBillingSubscriptionResponse, error)
-	// UpdateBillingSubscription updates the billing plan for the organization
+	// UpdateBillingSubscription updates the billing plan for the org
 	UpdateBillingSubscription(context.Context, *UpdateBillingSubscriptionRequest) (*UpdateBillingSubscriptionResponse, error)
-	// CancelBillingSubscription cancels the billing subscription for the organization
+	// CancelBillingSubscription cancels the billing subscription for the org
 	CancelBillingSubscription(context.Context, *CancelBillingSubscriptionRequest) (*CancelBillingSubscriptionResponse, error)
-	// RenewBillingSubscription renews the billing plan for the organization once cancelled
+	// RenewBillingSubscription renews the billing plan for the org once cancelled
 	RenewBillingSubscription(context.Context, *RenewBillingSubscriptionRequest) (*RenewBillingSubscriptionResponse, error)
 	// GetPaymentsPortalURL returns the URL for the billing session to collect payment method
 	GetPaymentsPortalURL(context.Context, *GetPaymentsPortalURLRequest) (*GetPaymentsPortalURLResponse, error)
 	// ListPublicBillingPlans lists all public billing plans
 	ListPublicBillingPlans(context.Context, *ListPublicBillingPlansRequest) (*ListPublicBillingPlansResponse, error)
-	// GetBillingProjectCredentials returns credentials for the configured cloud metrics project filtered by request organization
+	// GetBillingProjectCredentials returns credentials for the configured cloud metrics project filtered by request org
 	GetBillingProjectCredentials(context.Context, *GetBillingProjectCredentialsRequest) (*GetBillingProjectCredentialsResponse, error)
 	RequestProjectAccess(context.Context, *RequestProjectAccessRequest) (*RequestProjectAccessResponse, error)
 	GetProjectAccessRequest(context.Context, *GetProjectAccessRequestRequest) (*GetProjectAccessRequestResponse, error)
 	ApproveProjectAccess(context.Context, *ApproveProjectAccessRequest) (*ApproveProjectAccessResponse, error)
 	DenyProjectAccess(context.Context, *DenyProjectAccessRequest) (*DenyProjectAccessResponse, error)
-	// ListOrganizationBillingIssues lists all the billing issues for the organization
+	// ListOrganizationBillingIssues lists all the billing issues for the org
 	ListOrganizationBillingIssues(context.Context, *ListOrganizationBillingIssuesRequest) (*ListOrganizationBillingIssuesResponse, error)
 	mustEmbedUnimplementedAdminServiceServer()
 }

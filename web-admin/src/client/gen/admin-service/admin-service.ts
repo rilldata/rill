@@ -268,7 +268,7 @@ type AwaitedInput<T> = PromiseLike<T> | T;
 type Awaited<O> = O extends AwaitedInput<infer T> ? T : never;
 
 /**
- * @summary GetBillingProjectCredentials returns credentials for the configured cloud metrics project filtered by request organization
+ * @summary GetBillingProjectCredentials returns credentials for the configured cloud metrics project filtered by request org
  */
 export const adminServiceGetBillingProjectCredentials = (
   v1GetBillingProjectCredentialsRequest: V1GetBillingProjectCredentialsRequest,
@@ -336,7 +336,7 @@ export type AdminServiceGetBillingProjectCredentialsQueryResult = NonNullable<
 export type AdminServiceGetBillingProjectCredentialsQueryError = RpcStatus;
 
 /**
- * @summary GetBillingProjectCredentials returns credentials for the configured cloud metrics project filtered by request organization
+ * @summary GetBillingProjectCredentials returns credentials for the configured cloud metrics project filtered by request org
  */
 
 export function createAdminServiceGetBillingProjectCredentials<
@@ -1481,6 +1481,187 @@ export function createAdminServiceGetCurrentMagicAuthToken<
 }
 
 /**
+ * @summary ListOrganizations lists all the orgs currently managed by the admin
+ */
+export const adminServiceListOrganizations = (
+  params?: AdminServiceListOrganizationsParams,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1ListOrganizationsResponse>({
+    url: `/v1/orgs`,
+    method: "GET",
+    params,
+    signal,
+  });
+};
+
+export const getAdminServiceListOrganizationsQueryKey = (
+  params?: AdminServiceListOrganizationsParams,
+) => {
+  return [`/v1/orgs`, ...(params ? [params] : [])] as const;
+};
+
+export const getAdminServiceListOrganizationsQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminServiceListOrganizations>>,
+  TError = RpcStatus,
+>(
+  params?: AdminServiceListOrganizationsParams,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof adminServiceListOrganizations>>,
+        TError,
+        TData
+      >
+    >;
+  },
+) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getAdminServiceListOrganizationsQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceListOrganizations>>
+  > = ({ signal }) => adminServiceListOrganizations(params, signal);
+
+  return { queryKey, queryFn, ...queryOptions } as CreateQueryOptions<
+    Awaited<ReturnType<typeof adminServiceListOrganizations>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type AdminServiceListOrganizationsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceListOrganizations>>
+>;
+export type AdminServiceListOrganizationsQueryError = RpcStatus;
+
+/**
+ * @summary ListOrganizations lists all the orgs currently managed by the admin
+ */
+
+export function createAdminServiceListOrganizations<
+  TData = Awaited<ReturnType<typeof adminServiceListOrganizations>>,
+  TError = RpcStatus,
+>(
+  params?: AdminServiceListOrganizationsParams,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof adminServiceListOrganizations>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getAdminServiceListOrganizationsQueryOptions(
+    params,
+    options,
+  );
+
+  const query = createQuery(queryOptions, queryClient) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+/**
+ * @summary CreateOrganization creates a new org
+ */
+export const adminServiceCreateOrganization = (
+  v1CreateOrganizationRequest: V1CreateOrganizationRequest,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1CreateOrganizationResponse>({
+    url: `/v1/orgs`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: v1CreateOrganizationRequest,
+    signal,
+  });
+};
+
+export const getAdminServiceCreateOrganizationMutationOptions = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceCreateOrganization>>,
+    TError,
+    { data: V1CreateOrganizationRequest },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof adminServiceCreateOrganization>>,
+  TError,
+  { data: V1CreateOrganizationRequest },
+  TContext
+> => {
+  const mutationKey = ["adminServiceCreateOrganization"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceCreateOrganization>>,
+    { data: V1CreateOrganizationRequest }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return adminServiceCreateOrganization(data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminServiceCreateOrganizationMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceCreateOrganization>>
+>;
+export type AdminServiceCreateOrganizationMutationBody =
+  V1CreateOrganizationRequest;
+export type AdminServiceCreateOrganizationMutationError = RpcStatus;
+
+/**
+ * @summary CreateOrganization creates a new org
+ */
+export const createAdminServiceCreateOrganization = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceCreateOrganization>>,
+      TError,
+      { data: V1CreateOrganizationRequest },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof adminServiceCreateOrganization>>,
+  TError,
+  { data: V1CreateOrganizationRequest },
+  TContext
+> => {
+  const mutationOptions =
+    getAdminServiceCreateOrganizationMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
+/**
  * @summary GetOrganizationNameForDomain finds the org name for a custom domain.
 If the application detects it is running on a non-default domain, it can use this to find the org to present.
 It can be called without being authenticated.
@@ -1490,7 +1671,7 @@ export const adminServiceGetOrganizationNameForDomain = (
   signal?: AbortSignal,
 ) => {
   return httpClient<V1GetOrganizationNameForDomainResponse>({
-    url: `/v1/organization-for-domain/${domain}`,
+    url: `/v1/orgs-for-domain/${domain}`,
     method: "GET",
     signal,
   });
@@ -1499,7 +1680,7 @@ export const adminServiceGetOrganizationNameForDomain = (
 export const getAdminServiceGetOrganizationNameForDomainQueryKey = (
   domain: string,
 ) => {
-  return [`/v1/organization-for-domain/${domain}`] as const;
+  return [`/v1/orgs-for-domain/${domain}`] as const;
 };
 
 export const getAdminServiceGetOrganizationNameForDomainQueryOptions = <
@@ -1584,188 +1765,7 @@ export function createAdminServiceGetOrganizationNameForDomain<
 }
 
 /**
- * @summary ListOrganizations lists all the organizations currently managed by the admin
- */
-export const adminServiceListOrganizations = (
-  params?: AdminServiceListOrganizationsParams,
-  signal?: AbortSignal,
-) => {
-  return httpClient<V1ListOrganizationsResponse>({
-    url: `/v1/organizations`,
-    method: "GET",
-    params,
-    signal,
-  });
-};
-
-export const getAdminServiceListOrganizationsQueryKey = (
-  params?: AdminServiceListOrganizationsParams,
-) => {
-  return [`/v1/organizations`, ...(params ? [params] : [])] as const;
-};
-
-export const getAdminServiceListOrganizationsQueryOptions = <
-  TData = Awaited<ReturnType<typeof adminServiceListOrganizations>>,
-  TError = RpcStatus,
->(
-  params?: AdminServiceListOrganizationsParams,
-  options?: {
-    query?: Partial<
-      CreateQueryOptions<
-        Awaited<ReturnType<typeof adminServiceListOrganizations>>,
-        TError,
-        TData
-      >
-    >;
-  },
-) => {
-  const { query: queryOptions } = options ?? {};
-
-  const queryKey =
-    queryOptions?.queryKey ?? getAdminServiceListOrganizationsQueryKey(params);
-
-  const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof adminServiceListOrganizations>>
-  > = ({ signal }) => adminServiceListOrganizations(params, signal);
-
-  return { queryKey, queryFn, ...queryOptions } as CreateQueryOptions<
-    Awaited<ReturnType<typeof adminServiceListOrganizations>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> };
-};
-
-export type AdminServiceListOrganizationsQueryResult = NonNullable<
-  Awaited<ReturnType<typeof adminServiceListOrganizations>>
->;
-export type AdminServiceListOrganizationsQueryError = RpcStatus;
-
-/**
- * @summary ListOrganizations lists all the organizations currently managed by the admin
- */
-
-export function createAdminServiceListOrganizations<
-  TData = Awaited<ReturnType<typeof adminServiceListOrganizations>>,
-  TError = RpcStatus,
->(
-  params?: AdminServiceListOrganizationsParams,
-  options?: {
-    query?: Partial<
-      CreateQueryOptions<
-        Awaited<ReturnType<typeof adminServiceListOrganizations>>,
-        TError,
-        TData
-      >
-    >;
-  },
-  queryClient?: QueryClient,
-): CreateQueryResult<TData, TError> & {
-  queryKey: DataTag<QueryKey, TData, TError>;
-} {
-  const queryOptions = getAdminServiceListOrganizationsQueryOptions(
-    params,
-    options,
-  );
-
-  const query = createQuery(queryOptions, queryClient) as CreateQueryResult<
-    TData,
-    TError
-  > & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  query.queryKey = queryOptions.queryKey;
-
-  return query;
-}
-
-/**
- * @summary CreateOrganization creates a new organization
- */
-export const adminServiceCreateOrganization = (
-  v1CreateOrganizationRequest: V1CreateOrganizationRequest,
-  signal?: AbortSignal,
-) => {
-  return httpClient<V1CreateOrganizationResponse>({
-    url: `/v1/organizations`,
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    data: v1CreateOrganizationRequest,
-    signal,
-  });
-};
-
-export const getAdminServiceCreateOrganizationMutationOptions = <
-  TError = RpcStatus,
-  TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceCreateOrganization>>,
-    TError,
-    { data: V1CreateOrganizationRequest },
-    TContext
-  >;
-}): CreateMutationOptions<
-  Awaited<ReturnType<typeof adminServiceCreateOrganization>>,
-  TError,
-  { data: V1CreateOrganizationRequest },
-  TContext
-> => {
-  const mutationKey = ["adminServiceCreateOrganization"];
-  const { mutation: mutationOptions } = options
-    ? options.mutation &&
-      "mutationKey" in options.mutation &&
-      options.mutation.mutationKey
-      ? options
-      : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey } };
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof adminServiceCreateOrganization>>,
-    { data: V1CreateOrganizationRequest }
-  > = (props) => {
-    const { data } = props ?? {};
-
-    return adminServiceCreateOrganization(data);
-  };
-
-  return { mutationFn, ...mutationOptions };
-};
-
-export type AdminServiceCreateOrganizationMutationResult = NonNullable<
-  Awaited<ReturnType<typeof adminServiceCreateOrganization>>
->;
-export type AdminServiceCreateOrganizationMutationBody =
-  V1CreateOrganizationRequest;
-export type AdminServiceCreateOrganizationMutationError = RpcStatus;
-
-/**
- * @summary CreateOrganization creates a new organization
- */
-export const createAdminServiceCreateOrganization = <
-  TError = RpcStatus,
-  TContext = unknown,
->(
-  options?: {
-    mutation?: CreateMutationOptions<
-      Awaited<ReturnType<typeof adminServiceCreateOrganization>>,
-      TError,
-      { data: V1CreateOrganizationRequest },
-      TContext
-    >;
-  },
-  queryClient?: QueryClient,
-): CreateMutationResult<
-  Awaited<ReturnType<typeof adminServiceCreateOrganization>>,
-  TError,
-  { data: V1CreateOrganizationRequest },
-  TContext
-> => {
-  const mutationOptions =
-    getAdminServiceCreateOrganizationMutationOptions(options);
-
-  return createMutation(mutationOptions, queryClient);
-};
-/**
- * @summary GetOrganization returns information about a specific organization
+ * @summary GetOrganization returns information about a specific org
  */
 export const adminServiceGetOrganization = (
   name: string,
@@ -1773,7 +1773,7 @@ export const adminServiceGetOrganization = (
   signal?: AbortSignal,
 ) => {
   return httpClient<V1GetOrganizationResponse>({
-    url: `/v1/organizations/${name}`,
+    url: `/v1/orgs/${name}`,
     method: "GET",
     params,
     signal,
@@ -1784,7 +1784,7 @@ export const getAdminServiceGetOrganizationQueryKey = (
   name: string,
   params?: AdminServiceGetOrganizationParams,
 ) => {
-  return [`/v1/organizations/${name}`, ...(params ? [params] : [])] as const;
+  return [`/v1/orgs/${name}`, ...(params ? [params] : [])] as const;
 };
 
 export const getAdminServiceGetOrganizationQueryOptions = <
@@ -1831,7 +1831,7 @@ export type AdminServiceGetOrganizationQueryResult = NonNullable<
 export type AdminServiceGetOrganizationQueryError = RpcStatus;
 
 /**
- * @summary GetOrganization returns information about a specific organization
+ * @summary GetOrganization returns information about a specific org
  */
 
 export function createAdminServiceGetOrganization<
@@ -1870,11 +1870,11 @@ export function createAdminServiceGetOrganization<
 }
 
 /**
- * @summary DeleteOrganization deletes an organizations
+ * @summary DeleteOrganization deletes an org
  */
 export const adminServiceDeleteOrganization = (name: string) => {
   return httpClient<V1DeleteOrganizationResponse>({
-    url: `/v1/organizations/${name}`,
+    url: `/v1/orgs/${name}`,
     method: "DELETE",
   });
 };
@@ -1923,7 +1923,7 @@ export type AdminServiceDeleteOrganizationMutationResult = NonNullable<
 export type AdminServiceDeleteOrganizationMutationError = RpcStatus;
 
 /**
- * @summary DeleteOrganization deletes an organizations
+ * @summary DeleteOrganization deletes an org
  */
 export const createAdminServiceDeleteOrganization = <
   TError = RpcStatus,
@@ -1950,14 +1950,14 @@ export const createAdminServiceDeleteOrganization = <
   return createMutation(mutationOptions, queryClient);
 };
 /**
- * @summary UpdateOrganization deletes an organizations
+ * @summary UpdateOrganization updates an org
  */
 export const adminServiceUpdateOrganization = (
   name: string,
   adminServiceUpdateOrganizationBody: AdminServiceUpdateOrganizationBody,
 ) => {
   return httpClient<V1UpdateOrganizationResponse>({
-    url: `/v1/organizations/${name}`,
+    url: `/v1/orgs/${name}`,
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     data: adminServiceUpdateOrganizationBody,
@@ -2009,7 +2009,7 @@ export type AdminServiceUpdateOrganizationMutationBody =
 export type AdminServiceUpdateOrganizationMutationError = RpcStatus;
 
 /**
- * @summary UpdateOrganization deletes an organizations
+ * @summary UpdateOrganization updates an org
  */
 export const createAdminServiceUpdateOrganization = <
   TError = RpcStatus,
@@ -2036,7 +2036,7 @@ export const createAdminServiceUpdateOrganization = <
   return createMutation(mutationOptions, queryClient);
 };
 /**
- * @summary ListOrganizationBillingIssues lists all the billing issues for the organization
+ * @summary ListOrganizationBillingIssues lists all the billing issues for the org
  */
 export const adminServiceListOrganizationBillingIssues = (
   organization: string,
@@ -2044,7 +2044,7 @@ export const adminServiceListOrganizationBillingIssues = (
   signal?: AbortSignal,
 ) => {
   return httpClient<V1ListOrganizationBillingIssuesResponse>({
-    url: `/v1/organizations/${organization}/billing/issues`,
+    url: `/v1/orgs/${organization}/billing/issues`,
     method: "GET",
     params,
     signal,
@@ -2056,7 +2056,7 @@ export const getAdminServiceListOrganizationBillingIssuesQueryKey = (
   params?: AdminServiceListOrganizationBillingIssuesParams,
 ) => {
   return [
-    `/v1/organizations/${organization}/billing/issues`,
+    `/v1/orgs/${organization}/billing/issues`,
     ...(params ? [params] : []),
   ] as const;
 };
@@ -2106,7 +2106,7 @@ export type AdminServiceListOrganizationBillingIssuesQueryResult = NonNullable<
 export type AdminServiceListOrganizationBillingIssuesQueryError = RpcStatus;
 
 /**
- * @summary ListOrganizationBillingIssues lists all the billing issues for the organization
+ * @summary ListOrganizationBillingIssues lists all the billing issues for the org
  */
 
 export function createAdminServiceListOrganizationBillingIssues<
@@ -2153,7 +2153,7 @@ export const adminServiceGetPaymentsPortalURL = (
   signal?: AbortSignal,
 ) => {
   return httpClient<V1GetPaymentsPortalURLResponse>({
-    url: `/v1/organizations/${organization}/billing/payments/portal-url`,
+    url: `/v1/orgs/${organization}/billing/payments/portal-url`,
     method: "GET",
     params,
     signal,
@@ -2165,7 +2165,7 @@ export const getAdminServiceGetPaymentsPortalURLQueryKey = (
   params?: AdminServiceGetPaymentsPortalURLParams,
 ) => {
   return [
-    `/v1/organizations/${organization}/billing/payments/portal-url`,
+    `/v1/orgs/${organization}/billing/payments/portal-url`,
     ...(params ? [params] : []),
   ] as const;
 };
@@ -2254,7 +2254,7 @@ export function createAdminServiceGetPaymentsPortalURL<
 }
 
 /**
- * @summary GetBillingSubscription lists the subscription for the organization
+ * @summary GetBillingSubscription lists the subscription for the org
  */
 export const adminServiceGetBillingSubscription = (
   organization: string,
@@ -2262,7 +2262,7 @@ export const adminServiceGetBillingSubscription = (
   signal?: AbortSignal,
 ) => {
   return httpClient<V1GetBillingSubscriptionResponse>({
-    url: `/v1/organizations/${organization}/billing/subscriptions`,
+    url: `/v1/orgs/${organization}/billing/subscriptions`,
     method: "GET",
     params,
     signal,
@@ -2274,7 +2274,7 @@ export const getAdminServiceGetBillingSubscriptionQueryKey = (
   params?: AdminServiceGetBillingSubscriptionParams,
 ) => {
   return [
-    `/v1/organizations/${organization}/billing/subscriptions`,
+    `/v1/orgs/${organization}/billing/subscriptions`,
     ...(params ? [params] : []),
   ] as const;
 };
@@ -2324,7 +2324,7 @@ export type AdminServiceGetBillingSubscriptionQueryResult = NonNullable<
 export type AdminServiceGetBillingSubscriptionQueryError = RpcStatus;
 
 /**
- * @summary GetBillingSubscription lists the subscription for the organization
+ * @summary GetBillingSubscription lists the subscription for the org
  */
 
 export function createAdminServiceGetBillingSubscription<
@@ -2363,14 +2363,14 @@ export function createAdminServiceGetBillingSubscription<
 }
 
 /**
- * @summary CancelBillingSubscription cancels the billing subscription for the organization
+ * @summary CancelBillingSubscription cancels the billing subscription for the org
  */
 export const adminServiceCancelBillingSubscription = (
   organization: string,
   params?: AdminServiceCancelBillingSubscriptionParams,
 ) => {
   return httpClient<V1CancelBillingSubscriptionResponse>({
-    url: `/v1/organizations/${organization}/billing/subscriptions`,
+    url: `/v1/orgs/${organization}/billing/subscriptions`,
     method: "DELETE",
     params,
   });
@@ -2429,7 +2429,7 @@ export type AdminServiceCancelBillingSubscriptionMutationResult = NonNullable<
 export type AdminServiceCancelBillingSubscriptionMutationError = RpcStatus;
 
 /**
- * @summary CancelBillingSubscription cancels the billing subscription for the organization
+ * @summary CancelBillingSubscription cancels the billing subscription for the org
  */
 export const createAdminServiceCancelBillingSubscription = <
   TError = RpcStatus,
@@ -2462,14 +2462,14 @@ export const createAdminServiceCancelBillingSubscription = <
   return createMutation(mutationOptions, queryClient);
 };
 /**
- * @summary UpdateBillingSubscription updates the billing plan for the organization
+ * @summary UpdateBillingSubscription updates the billing plan for the org
  */
 export const adminServiceUpdateBillingSubscription = (
   organization: string,
   adminServiceUpdateBillingSubscriptionBodyBody: AdminServiceUpdateBillingSubscriptionBodyBody,
 ) => {
   return httpClient<V1UpdateBillingSubscriptionResponse>({
-    url: `/v1/organizations/${organization}/billing/subscriptions`,
+    url: `/v1/orgs/${organization}/billing/subscriptions`,
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     data: adminServiceUpdateBillingSubscriptionBodyBody,
@@ -2527,7 +2527,7 @@ export type AdminServiceUpdateBillingSubscriptionMutationBody =
 export type AdminServiceUpdateBillingSubscriptionMutationError = RpcStatus;
 
 /**
- * @summary UpdateBillingSubscription updates the billing plan for the organization
+ * @summary UpdateBillingSubscription updates the billing plan for the org
  */
 export const createAdminServiceUpdateBillingSubscription = <
   TError = RpcStatus,
@@ -2557,7 +2557,7 @@ export const createAdminServiceUpdateBillingSubscription = <
   return createMutation(mutationOptions, queryClient);
 };
 /**
- * @summary RenewBillingSubscription renews the billing plan for the organization once cancelled
+ * @summary RenewBillingSubscription renews the billing plan for the org once cancelled
  */
 export const adminServiceRenewBillingSubscription = (
   organization: string,
@@ -2565,7 +2565,7 @@ export const adminServiceRenewBillingSubscription = (
   signal?: AbortSignal,
 ) => {
   return httpClient<V1RenewBillingSubscriptionResponse>({
-    url: `/v1/organizations/${organization}/billing/subscriptions/renew`,
+    url: `/v1/orgs/${organization}/billing/subscriptions/renew`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
     data: adminServiceUpdateBillingSubscriptionBodyBody,
@@ -2624,7 +2624,7 @@ export type AdminServiceRenewBillingSubscriptionMutationBody =
 export type AdminServiceRenewBillingSubscriptionMutationError = RpcStatus;
 
 /**
- * @summary RenewBillingSubscription renews the billing plan for the organization once cancelled
+ * @summary RenewBillingSubscription renews the billing plan for the org once cancelled
  */
 export const createAdminServiceRenewBillingSubscription = <
   TError = RpcStatus,
@@ -2654,14 +2654,14 @@ export const createAdminServiceRenewBillingSubscription = <
   return createMutation(mutationOptions, queryClient);
 };
 /**
- * @summary CreateManagedGitRepo creates a new rill managed git repo for the organization.
+ * @summary CreateManagedGitRepo creates a new rill managed git repo for the org.
  */
 export const adminServiceCreateManagedGitRepo = (
   organization: string,
   adminServiceCreateManagedGitRepoBody: AdminServiceCreateManagedGitRepoBody,
 ) => {
   return httpClient<V1CreateManagedGitRepoResponse>({
-    url: `/v1/organizations/${organization}/create-managed-git-repo`,
+    url: `/v1/orgs/${organization}/create-managed-git-repo`,
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     data: adminServiceCreateManagedGitRepoBody,
@@ -2713,7 +2713,7 @@ export type AdminServiceCreateManagedGitRepoMutationBody =
 export type AdminServiceCreateManagedGitRepoMutationError = RpcStatus;
 
 /**
- * @summary CreateManagedGitRepo creates a new rill managed git repo for the organization.
+ * @summary CreateManagedGitRepo creates a new rill managed git repo for the org.
  */
 export const createAdminServiceCreateManagedGitRepo = <
   TError = RpcStatus,
@@ -2748,7 +2748,7 @@ export const adminServiceListOrganizationInvites = (
   signal?: AbortSignal,
 ) => {
   return httpClient<V1ListOrganizationInvitesResponse>({
-    url: `/v1/organizations/${organization}/invites`,
+    url: `/v1/orgs/${organization}/invites`,
     method: "GET",
     params,
     signal,
@@ -2760,7 +2760,7 @@ export const getAdminServiceListOrganizationInvitesQueryKey = (
   params?: AdminServiceListOrganizationInvitesParams,
 ) => {
   return [
-    `/v1/organizations/${organization}/invites`,
+    `/v1/orgs/${organization}/invites`,
     ...(params ? [params] : []),
   ] as const;
 };
@@ -2963,7 +2963,7 @@ export const adminServiceListOrganizationMemberUsers = (
   signal?: AbortSignal,
 ) => {
   return httpClient<V1ListOrganizationMemberUsersResponse>({
-    url: `/v1/organizations/${organization}/members`,
+    url: `/v1/orgs/${organization}/members`,
     method: "GET",
     params,
     signal,
@@ -2975,7 +2975,7 @@ export const getAdminServiceListOrganizationMemberUsersQueryKey = (
   params?: AdminServiceListOrganizationMemberUsersParams,
 ) => {
   return [
-    `/v1/organizations/${organization}/members`,
+    `/v1/orgs/${organization}/members`,
     ...(params ? [params] : []),
   ] as const;
 };
@@ -3173,7 +3173,7 @@ export function createAdminServiceListOrganizationMemberUsers<
 }
 
 /**
- * @summary AddOrganizationMemberUser adds a user to the organization
+ * @summary AddOrganizationMemberUser adds a user to the org
  */
 export const adminServiceAddOrganizationMemberUser = (
   organization: string,
@@ -3181,7 +3181,7 @@ export const adminServiceAddOrganizationMemberUser = (
   signal?: AbortSignal,
 ) => {
   return httpClient<V1AddOrganizationMemberUserResponse>({
-    url: `/v1/organizations/${organization}/members`,
+    url: `/v1/orgs/${organization}/members`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
     data: adminServiceAddOrganizationMemberUserBody,
@@ -3234,7 +3234,7 @@ export type AdminServiceAddOrganizationMemberUserMutationBody =
 export type AdminServiceAddOrganizationMemberUserMutationError = RpcStatus;
 
 /**
- * @summary AddOrganizationMemberUser adds a user to the organization
+ * @summary AddOrganizationMemberUser adds a user to the org
  */
 export const createAdminServiceAddOrganizationMemberUser = <
   TError = RpcStatus,
@@ -3261,14 +3261,14 @@ export const createAdminServiceAddOrganizationMemberUser = <
   return createMutation(mutationOptions, queryClient);
 };
 /**
- * @summary RemoveOrganizationMemberUser removes member from the organization
+ * @summary RemoveOrganizationMemberUser removes member from the org
  */
 export const adminServiceRemoveOrganizationMemberUser = (
   organization: string,
   email: string,
 ) => {
   return httpClient<V1RemoveOrganizationMemberUserResponse>({
-    url: `/v1/organizations/${organization}/members/${email}`,
+    url: `/v1/orgs/${organization}/members/${email}`,
     method: "DELETE",
   });
 };
@@ -3318,7 +3318,7 @@ export type AdminServiceRemoveOrganizationMemberUserMutationResult =
 export type AdminServiceRemoveOrganizationMemberUserMutationError = RpcStatus;
 
 /**
- * @summary RemoveOrganizationMemberUser removes member from the organization
+ * @summary RemoveOrganizationMemberUser removes member from the org
  */
 export const createAdminServiceRemoveOrganizationMemberUser = <
   TError = RpcStatus,
@@ -3353,7 +3353,7 @@ export const adminServiceSetOrganizationMemberUserRole = (
   adminServiceSetOrganizationMemberUserRoleBody: AdminServiceSetOrganizationMemberUserRoleBody,
 ) => {
   return httpClient<V1SetOrganizationMemberUserRoleResponse>({
-    url: `/v1/organizations/${organization}/members/${email}`,
+    url: `/v1/orgs/${organization}/members/${email}`,
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     data: adminServiceSetOrganizationMemberUserRoleBody,
@@ -3453,11 +3453,11 @@ export const createAdminServiceSetOrganizationMemberUserRole = <
   return createMutation(mutationOptions, queryClient);
 };
 /**
- * @summary LeaveOrganization removes the current user from the organization
+ * @summary LeaveOrganization removes the current user from the org
  */
 export const adminServiceLeaveOrganization = (organization: string) => {
   return httpClient<V1LeaveOrganizationResponse>({
-    url: `/v1/organizations/${organization}/members/current`,
+    url: `/v1/orgs/${organization}/members/current`,
     method: "DELETE",
   });
 };
@@ -3506,7 +3506,7 @@ export type AdminServiceLeaveOrganizationMutationResult = NonNullable<
 export type AdminServiceLeaveOrganizationMutationError = RpcStatus;
 
 /**
- * @summary LeaveOrganization removes the current user from the organization
+ * @summary LeaveOrganization removes the current user from the org
  */
 export const createAdminServiceLeaveOrganization = <
   TError = RpcStatus,
@@ -3542,7 +3542,7 @@ export const adminServiceListProjectMemberUsergroups = (
   signal?: AbortSignal,
 ) => {
   return httpClient<V1ListProjectMemberUsergroupsResponse>({
-    url: `/v1/organizations/${organization}/project/${project}/usergroups`,
+    url: `/v1/orgs/${organization}/project/${project}/usergroups`,
     method: "GET",
     params,
     signal,
@@ -3555,7 +3555,7 @@ export const getAdminServiceListProjectMemberUsergroupsQueryKey = (
   params?: AdminServiceListProjectMemberUsergroupsParams,
 ) => {
   return [
-    `/v1/organizations/${organization}/project/${project}/usergroups`,
+    `/v1/orgs/${organization}/project/${project}/usergroups`,
     ...(params ? [params] : []),
   ] as const;
 };
@@ -3656,7 +3656,7 @@ export function createAdminServiceListProjectMemberUsergroups<
 }
 
 /**
- * @summary ListProjectsForOrganizationAndUser lists all the projects that an organization member user has access to.
+ * @summary ListProjectsForOrganizationAndUser lists all the projects that an org member user has access to.
 It does not include projects that the user has access to through a usergroup.
  */
 export const adminServiceListProjectsForOrganizationAndUser = (
@@ -3665,7 +3665,7 @@ export const adminServiceListProjectsForOrganizationAndUser = (
   signal?: AbortSignal,
 ) => {
   return httpClient<V1ListProjectsForOrganizationAndUserResponse>({
-    url: `/v1/organizations/${organization}/projects-for-user`,
+    url: `/v1/orgs/${organization}/projects-for-user`,
     method: "GET",
     params,
     signal,
@@ -3677,7 +3677,7 @@ export const getAdminServiceListProjectsForOrganizationAndUserQueryKey = (
   params?: AdminServiceListProjectsForOrganizationAndUserParams,
 ) => {
   return [
-    `/v1/organizations/${organization}/projects-for-user`,
+    `/v1/orgs/${organization}/projects-for-user`,
     ...(params ? [params] : []),
   ] as const;
 };
@@ -3740,7 +3740,7 @@ export type AdminServiceListProjectsForOrganizationAndUserQueryError =
   RpcStatus;
 
 /**
- * @summary ListProjectsForOrganizationAndUser lists all the projects that an organization member user has access to.
+ * @summary ListProjectsForOrganizationAndUser lists all the projects that an org member user has access to.
 It does not include projects that the user has access to through a usergroup.
  */
 
@@ -3794,7 +3794,7 @@ export const adminServiceCreateAlert = (
   signal?: AbortSignal,
 ) => {
   return httpClient<V1CreateAlertResponse>({
-    url: `/v1/organizations/${organization}/projects/${project}/alerts`,
+    url: `/v1/orgs/${organization}/projects/${project}/alerts`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
     data: adminServiceCreateAlertBodyBody,
@@ -3902,7 +3902,7 @@ export const adminServiceGenerateAlertYAML = (
   signal?: AbortSignal,
 ) => {
   return httpClient<V1GenerateAlertYAMLResponse>({
-    url: `/v1/organizations/${organization}/projects/${project}/alerts/-/yaml`,
+    url: `/v1/orgs/${organization}/projects/${project}/alerts/-/yaml`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
     data: adminServiceCreateAlertBodyBody,
@@ -4010,7 +4010,7 @@ export const adminServiceDeleteAlert = (
   name: string,
 ) => {
   return httpClient<V1DeleteAlertResponse>({
-    url: `/v1/organizations/${organization}/projects/${project}/alerts/${name}`,
+    url: `/v1/orgs/${organization}/projects/${project}/alerts/${name}`,
     method: "DELETE",
   });
 };
@@ -4094,7 +4094,7 @@ export const adminServiceEditAlert = (
   adminServiceCreateAlertBodyBody: AdminServiceCreateAlertBodyBody,
 ) => {
   return httpClient<V1EditAlertResponse>({
-    url: `/v1/organizations/${organization}/projects/${project}/alerts/${name}`,
+    url: `/v1/orgs/${organization}/projects/${project}/alerts/${name}`,
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     data: adminServiceCreateAlertBodyBody,
@@ -4206,7 +4206,7 @@ export const adminServiceUnsubscribeAlert = (
   signal?: AbortSignal,
 ) => {
   return httpClient<V1UnsubscribeAlertResponse>({
-    url: `/v1/organizations/${organization}/projects/${project}/alerts/${name}/unsubscribe`,
+    url: `/v1/orgs/${organization}/projects/${project}/alerts/${name}/unsubscribe`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
     data: adminServiceTriggerReconcileBodyBody,
@@ -4320,7 +4320,7 @@ export const adminServiceGetAlertYAML = (
   signal?: AbortSignal,
 ) => {
   return httpClient<V1GetAlertYAMLResponse>({
-    url: `/v1/organizations/${organization}/projects/${project}/alerts/${name}/yaml`,
+    url: `/v1/orgs/${organization}/projects/${project}/alerts/${name}/yaml`,
     method: "GET",
     signal,
   });
@@ -4332,7 +4332,7 @@ export const getAdminServiceGetAlertYAMLQueryKey = (
   name: string,
 ) => {
   return [
-    `/v1/organizations/${organization}/projects/${project}/alerts/${name}/yaml`,
+    `/v1/orgs/${organization}/projects/${project}/alerts/${name}/yaml`,
   ] as const;
 };
 
@@ -4432,7 +4432,7 @@ export const adminServiceGetCloneCredentials = (
   signal?: AbortSignal,
 ) => {
   return httpClient<V1GetCloneCredentialsResponse>({
-    url: `/v1/organizations/${organization}/projects/${project}/clone-credentials`,
+    url: `/v1/orgs/${organization}/projects/${project}/clone-credentials`,
     method: "GET",
     params,
     signal,
@@ -4445,7 +4445,7 @@ export const getAdminServiceGetCloneCredentialsQueryKey = (
   params?: AdminServiceGetCloneCredentialsParams,
 ) => {
   return [
-    `/v1/organizations/${organization}/projects/${project}/clone-credentials`,
+    `/v1/orgs/${organization}/projects/${project}/clone-credentials`,
     ...(params ? [params] : []),
   ] as const;
 };
@@ -4547,7 +4547,7 @@ export const adminServiceConnectProjectToGithub = (
   signal?: AbortSignal,
 ) => {
   return httpClient<V1ConnectProjectToGithubResponse>({
-    url: `/v1/organizations/${organization}/projects/${project}/connect-to-github`,
+    url: `/v1/orgs/${organization}/projects/${project}/connect-to-github`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
     data: adminServiceConnectProjectToGithubBody,
@@ -4658,7 +4658,7 @@ export const adminServiceGetDeploymentCredentials = (
   signal?: AbortSignal,
 ) => {
   return httpClient<V1GetDeploymentCredentialsResponse>({
-    url: `/v1/organizations/${organization}/projects/${project}/credentials`,
+    url: `/v1/orgs/${organization}/projects/${project}/credentials`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
     data: adminServiceGetDeploymentCredentialsBody,
@@ -4672,7 +4672,7 @@ export const getAdminServiceGetDeploymentCredentialsQueryKey = (
   adminServiceGetDeploymentCredentialsBody: AdminServiceGetDeploymentCredentialsBody,
 ) => {
   return [
-    `/v1/organizations/${organization}/projects/${project}/credentials`,
+    `/v1/orgs/${organization}/projects/${project}/credentials`,
     adminServiceGetDeploymentCredentialsBody,
   ] as const;
 };
@@ -4783,7 +4783,7 @@ export const adminServiceHibernateProject = (
   signal?: AbortSignal,
 ) => {
   return httpClient<V1HibernateProjectResponse>({
-    url: `/v1/organizations/${organization}/projects/${project}/hibernate`,
+    url: `/v1/orgs/${organization}/projects/${project}/hibernate`,
     method: "POST",
     params,
     signal,
@@ -4890,7 +4890,7 @@ export const adminServiceGetIFrame = (
   signal?: AbortSignal,
 ) => {
   return httpClient<V1GetIFrameResponse>({
-    url: `/v1/organizations/${organization}/projects/${project}/iframe`,
+    url: `/v1/orgs/${organization}/projects/${project}/iframe`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
     data: adminServiceGetIFrameBody,
@@ -4981,7 +4981,7 @@ export const adminServiceListProjectInvites = (
   signal?: AbortSignal,
 ) => {
   return httpClient<V1ListProjectInvitesResponse>({
-    url: `/v1/organizations/${organization}/projects/${project}/invites`,
+    url: `/v1/orgs/${organization}/projects/${project}/invites`,
     method: "GET",
     params,
     signal,
@@ -4994,7 +4994,7 @@ export const getAdminServiceListProjectInvitesQueryKey = (
   params?: AdminServiceListProjectInvitesParams,
 ) => {
   return [
-    `/v1/organizations/${organization}/projects/${project}/invites`,
+    `/v1/orgs/${organization}/projects/${project}/invites`,
     ...(params ? [params] : []),
   ] as const;
 };
@@ -5095,7 +5095,7 @@ export const adminServiceListProjectMemberUsers = (
   signal?: AbortSignal,
 ) => {
   return httpClient<V1ListProjectMemberUsersResponse>({
-    url: `/v1/organizations/${organization}/projects/${project}/members`,
+    url: `/v1/orgs/${organization}/projects/${project}/members`,
     method: "GET",
     params,
     signal,
@@ -5108,7 +5108,7 @@ export const getAdminServiceListProjectMemberUsersQueryKey = (
   params?: AdminServiceListProjectMemberUsersParams,
 ) => {
   return [
-    `/v1/organizations/${organization}/projects/${project}/members`,
+    `/v1/orgs/${organization}/projects/${project}/members`,
     ...(params ? [params] : []),
   ] as const;
 };
@@ -5213,7 +5213,7 @@ export const adminServiceAddProjectMemberUser = (
   signal?: AbortSignal,
 ) => {
   return httpClient<V1AddProjectMemberUserResponse>({
-    url: `/v1/organizations/${organization}/projects/${project}/members`,
+    url: `/v1/orgs/${organization}/projects/${project}/members`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
     data: adminServiceAddProjectMemberUserBody,
@@ -5321,7 +5321,7 @@ export const adminServiceRemoveProjectMemberUser = (
   email: string,
 ) => {
   return httpClient<V1RemoveProjectMemberUserResponse>({
-    url: `/v1/organizations/${organization}/projects/${project}/members/${email}`,
+    url: `/v1/orgs/${organization}/projects/${project}/members/${email}`,
     method: "DELETE",
   });
 };
@@ -5406,7 +5406,7 @@ export const adminServiceSetProjectMemberUserRole = (
   adminServiceSetProjectMemberUserRoleBodyBody: AdminServiceSetProjectMemberUserRoleBodyBody,
 ) => {
   return httpClient<V1SetProjectMemberUserRoleResponse>({
-    url: `/v1/organizations/${organization}/projects/${project}/members/${email}`,
+    url: `/v1/orgs/${organization}/projects/${project}/members/${email}`,
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     data: adminServiceSetProjectMemberUserRoleBodyBody,
@@ -5526,7 +5526,7 @@ export const adminServiceRedeployProject = (
   signal?: AbortSignal,
 ) => {
   return httpClient<V1RedeployProjectResponse>({
-    url: `/v1/organizations/${organization}/projects/${project}/redeploy`,
+    url: `/v1/orgs/${organization}/projects/${project}/redeploy`,
     method: "POST",
     params,
     signal,
@@ -5635,7 +5635,7 @@ export const adminServiceCreateReport = (
   signal?: AbortSignal,
 ) => {
   return httpClient<V1CreateReportResponse>({
-    url: `/v1/organizations/${organization}/projects/${project}/reports`,
+    url: `/v1/orgs/${organization}/projects/${project}/reports`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
     data: adminServiceCreateReportBodyBody,
@@ -5743,7 +5743,7 @@ export const adminServiceGenerateReportYAML = (
   signal?: AbortSignal,
 ) => {
   return httpClient<V1GenerateReportYAMLResponse>({
-    url: `/v1/organizations/${organization}/projects/${project}/reports/-/yaml`,
+    url: `/v1/orgs/${organization}/projects/${project}/reports/-/yaml`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
     data: adminServiceCreateReportBodyBody,
@@ -5757,7 +5757,7 @@ export const getAdminServiceGenerateReportYAMLQueryKey = (
   adminServiceCreateReportBodyBody: AdminServiceCreateReportBodyBody,
 ) => {
   return [
-    `/v1/organizations/${organization}/projects/${project}/reports/-/yaml`,
+    `/v1/orgs/${organization}/projects/${project}/reports/-/yaml`,
     adminServiceCreateReportBodyBody,
   ] as const;
 };
@@ -5866,7 +5866,7 @@ export const adminServiceDeleteReport = (
   name: string,
 ) => {
   return httpClient<V1DeleteReportResponse>({
-    url: `/v1/organizations/${organization}/projects/${project}/reports/${name}`,
+    url: `/v1/orgs/${organization}/projects/${project}/reports/${name}`,
     method: "DELETE",
   });
 };
@@ -5950,7 +5950,7 @@ export const adminServiceEditReport = (
   adminServiceCreateReportBodyBody: AdminServiceCreateReportBodyBody,
 ) => {
   return httpClient<V1EditReportResponse>({
-    url: `/v1/organizations/${organization}/projects/${project}/reports/${name}`,
+    url: `/v1/orgs/${organization}/projects/${project}/reports/${name}`,
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     data: adminServiceCreateReportBodyBody,
@@ -6063,7 +6063,7 @@ export const adminServiceTriggerReport = (
   signal?: AbortSignal,
 ) => {
   return httpClient<V1TriggerReportResponse>({
-    url: `/v1/organizations/${organization}/projects/${project}/reports/${name}/trigger`,
+    url: `/v1/orgs/${organization}/projects/${project}/reports/${name}/trigger`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
     data: adminServiceTriggerReconcileBodyBody,
@@ -6177,7 +6177,7 @@ export const adminServiceUnsubscribeReport = (
   signal?: AbortSignal,
 ) => {
   return httpClient<V1UnsubscribeReportResponse>({
-    url: `/v1/organizations/${organization}/projects/${project}/reports/${name}/unsubscribe`,
+    url: `/v1/orgs/${organization}/projects/${project}/reports/${name}/unsubscribe`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
     data: adminServiceUnsubscribeReportBody,
@@ -6288,7 +6288,7 @@ export const adminServiceRequestProjectAccess = (
   signal?: AbortSignal,
 ) => {
   return httpClient<V1RequestProjectAccessResponse>({
-    url: `/v1/organizations/${organization}/projects/${project}/request-access`,
+    url: `/v1/orgs/${organization}/projects/${project}/request-access`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
     data: adminServiceSetProjectMemberUserRoleBodyBody,
@@ -6394,7 +6394,7 @@ export const adminServiceListMagicAuthTokens = (
   signal?: AbortSignal,
 ) => {
   return httpClient<V1ListMagicAuthTokensResponse>({
-    url: `/v1/organizations/${organization}/projects/${project}/tokens/magic`,
+    url: `/v1/orgs/${organization}/projects/${project}/tokens/magic`,
     method: "GET",
     params,
     signal,
@@ -6407,7 +6407,7 @@ export const getAdminServiceListMagicAuthTokensQueryKey = (
   params?: AdminServiceListMagicAuthTokensParams,
 ) => {
   return [
-    `/v1/organizations/${organization}/projects/${project}/tokens/magic`,
+    `/v1/orgs/${organization}/projects/${project}/tokens/magic`,
     ...(params ? [params] : []),
   ] as const;
 };
@@ -6618,7 +6618,7 @@ export const adminServiceIssueMagicAuthToken = (
   signal?: AbortSignal,
 ) => {
   return httpClient<V1IssueMagicAuthTokenResponse>({
-    url: `/v1/organizations/${organization}/projects/${project}/tokens/magic`,
+    url: `/v1/orgs/${organization}/projects/${project}/tokens/magic`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
     data: adminServiceIssueMagicAuthTokenBody,
@@ -6727,7 +6727,7 @@ export const adminServiceDisconnectProjectFromGithub = (
   signal?: AbortSignal,
 ) => {
   return httpClient<V1DisconnectProjectFromGithubResponse>({
-    url: `/v1/organizations/${organization}/projects/${project}/upload-assets`,
+    url: `/v1/orgs/${organization}/projects/${project}/upload-assets`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
     data: adminServiceTriggerReconcileBodyBody,
@@ -6835,7 +6835,7 @@ export const adminServiceRemoveProjectMemberUsergroup = (
   usergroup: string,
 ) => {
   return httpClient<V1RemoveProjectMemberUsergroupResponse>({
-    url: `/v1/organizations/${organization}/projects/${project}/usergroups/${usergroup}/roles`,
+    url: `/v1/orgs/${organization}/projects/${project}/usergroups/${usergroup}/roles`,
     method: "DELETE",
   });
 };
@@ -6926,7 +6926,7 @@ export const adminServiceAddProjectMemberUsergroup = (
   signal?: AbortSignal,
 ) => {
   return httpClient<V1AddProjectMemberUsergroupResponse>({
-    url: `/v1/organizations/${organization}/projects/${project}/usergroups/${usergroup}/roles`,
+    url: `/v1/orgs/${organization}/projects/${project}/usergroups/${usergroup}/roles`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
     data: adminServiceSetProjectMemberUserRoleBodyBody,
@@ -7045,7 +7045,7 @@ export const adminServiceSetProjectMemberUsergroupRole = (
   adminServiceSetProjectMemberUserRoleBodyBody: AdminServiceSetProjectMemberUserRoleBodyBody,
 ) => {
   return httpClient<V1SetProjectMemberUsergroupRoleResponse>({
-    url: `/v1/organizations/${organization}/projects/${project}/usergroups/${usergroup}/roles`,
+    url: `/v1/orgs/${organization}/projects/${project}/usergroups/${usergroup}/roles`,
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     data: adminServiceSetProjectMemberUserRoleBodyBody,
@@ -7164,7 +7164,7 @@ export const adminServiceSearchProjectUsers = (
   signal?: AbortSignal,
 ) => {
   return httpClient<V1SearchProjectUsersResponse>({
-    url: `/v1/organizations/${organization}/projects/${project}/users/search`,
+    url: `/v1/orgs/${organization}/projects/${project}/users/search`,
     method: "GET",
     params,
     signal,
@@ -7177,7 +7177,7 @@ export const getAdminServiceSearchProjectUsersQueryKey = (
   params?: AdminServiceSearchProjectUsersParams,
 ) => {
   return [
-    `/v1/organizations/${organization}/projects/${project}/users/search`,
+    `/v1/orgs/${organization}/projects/${project}/users/search`,
     ...(params ? [params] : []),
   ] as const;
 };
@@ -7278,7 +7278,7 @@ export const adminServiceGetProjectVariables = (
   signal?: AbortSignal,
 ) => {
   return httpClient<V1GetProjectVariablesResponse>({
-    url: `/v1/organizations/${organization}/projects/${project}/variables`,
+    url: `/v1/orgs/${organization}/projects/${project}/variables`,
     method: "GET",
     params,
     signal,
@@ -7291,7 +7291,7 @@ export const getAdminServiceGetProjectVariablesQueryKey = (
   params?: AdminServiceGetProjectVariablesParams,
 ) => {
   return [
-    `/v1/organizations/${organization}/projects/${project}/variables`,
+    `/v1/orgs/${organization}/projects/${project}/variables`,
     ...(params ? [params] : []),
   ] as const;
 };
@@ -7391,7 +7391,7 @@ export const adminServiceUpdateProjectVariables = (
   adminServiceUpdateProjectVariablesBody: AdminServiceUpdateProjectVariablesBody,
 ) => {
   return httpClient<V1UpdateProjectVariablesResponse>({
-    url: `/v1/organizations/${organization}/projects/${project}/variables`,
+    url: `/v1/orgs/${organization}/projects/${project}/variables`,
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     data: adminServiceUpdateProjectVariablesBody,
@@ -7498,7 +7498,7 @@ export const adminServiceListProjectWhitelistedDomains = (
   signal?: AbortSignal,
 ) => {
   return httpClient<V1ListProjectWhitelistedDomainsResponse>({
-    url: `/v1/organizations/${organization}/projects/${project}/whitelisted`,
+    url: `/v1/orgs/${organization}/projects/${project}/whitelisted`,
     method: "GET",
     signal,
   });
@@ -7508,9 +7508,7 @@ export const getAdminServiceListProjectWhitelistedDomainsQueryKey = (
   organization: string,
   project: string,
 ) => {
-  return [
-    `/v1/organizations/${organization}/projects/${project}/whitelisted`,
-  ] as const;
+  return [`/v1/orgs/${organization}/projects/${project}/whitelisted`] as const;
 };
 
 export const getAdminServiceListProjectWhitelistedDomainsQueryOptions = <
@@ -7606,7 +7604,7 @@ export const adminServiceCreateProjectWhitelistedDomain = (
   signal?: AbortSignal,
 ) => {
   return httpClient<V1CreateProjectWhitelistedDomainResponse>({
-    url: `/v1/organizations/${organization}/projects/${project}/whitelisted`,
+    url: `/v1/orgs/${organization}/projects/${project}/whitelisted`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
     data: adminServiceCreateProjectWhitelistedDomainBodyBody,
@@ -7719,7 +7717,7 @@ export const adminServiceRemoveProjectWhitelistedDomain = (
   domain: string,
 ) => {
   return httpClient<V1RemoveProjectWhitelistedDomainResponse>({
-    url: `/v1/organizations/${organization}/projects/${project}/whitelisted/${domain}`,
+    url: `/v1/orgs/${organization}/projects/${project}/whitelisted/${domain}`,
     method: "DELETE",
   });
 };
@@ -7808,7 +7806,7 @@ export const adminServiceListOrganizationMemberUsergroups = (
   signal?: AbortSignal,
 ) => {
   return httpClient<V1ListOrganizationMemberUsergroupsResponse>({
-    url: `/v1/organizations/${organization}/usergroups`,
+    url: `/v1/orgs/${organization}/usergroups`,
     method: "GET",
     params,
     signal,
@@ -7820,7 +7818,7 @@ export const getAdminServiceListOrganizationMemberUsergroupsQueryKey = (
   params?: AdminServiceListOrganizationMemberUsergroupsParams,
 ) => {
   return [
-    `/v1/organizations/${organization}/usergroups`,
+    `/v1/orgs/${organization}/usergroups`,
     ...(params ? [params] : []),
   ] as const;
 };
@@ -7922,7 +7920,7 @@ export function createAdminServiceListOrganizationMemberUsergroups<
 }
 
 /**
- * @summary CreateUsergroup creates a user group in the organization
+ * @summary CreateUsergroup creates a user group in the org
  */
 export const adminServiceCreateUsergroup = (
   organization: string,
@@ -7930,7 +7928,7 @@ export const adminServiceCreateUsergroup = (
   signal?: AbortSignal,
 ) => {
   return httpClient<V1CreateUsergroupResponse>({
-    url: `/v1/organizations/${organization}/usergroups`,
+    url: `/v1/orgs/${organization}/usergroups`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
     data: adminServiceCreateUsergroupBodyBody,
@@ -7983,7 +7981,7 @@ export type AdminServiceCreateUsergroupMutationBody =
 export type AdminServiceCreateUsergroupMutationError = RpcStatus;
 
 /**
- * @summary CreateUsergroup creates a user group in the organization
+ * @summary CreateUsergroup creates a user group in the org
  */
 export const createAdminServiceCreateUsergroup = <
   TError = RpcStatus,
@@ -8010,7 +8008,7 @@ export const createAdminServiceCreateUsergroup = <
   return createMutation(mutationOptions, queryClient);
 };
 /**
- * @summary ListUsergroupsForOrganizationAndUser lists the user groups that an organization member user has access to.
+ * @summary ListUsergroupsForOrganizationAndUser lists the user groups that an org member user has access to.
  */
 export const adminServiceListUsergroupsForOrganizationAndUser = (
   organization: string,
@@ -8018,7 +8016,7 @@ export const adminServiceListUsergroupsForOrganizationAndUser = (
   signal?: AbortSignal,
 ) => {
   return httpClient<V1ListUsergroupsForOrganizationAndUserResponse>({
-    url: `/v1/organizations/${organization}/usergroups-for-user`,
+    url: `/v1/orgs/${organization}/usergroups-for-user`,
     method: "GET",
     params,
     signal,
@@ -8030,7 +8028,7 @@ export const getAdminServiceListUsergroupsForOrganizationAndUserQueryKey = (
   params?: AdminServiceListUsergroupsForOrganizationAndUserParams,
 ) => {
   return [
-    `/v1/organizations/${organization}/usergroups-for-user`,
+    `/v1/orgs/${organization}/usergroups-for-user`,
     ...(params ? [params] : []),
   ] as const;
 };
@@ -8095,7 +8093,7 @@ export type AdminServiceListUsergroupsForOrganizationAndUserQueryError =
   RpcStatus;
 
 /**
- * @summary ListUsergroupsForOrganizationAndUser lists the user groups that an organization member user has access to.
+ * @summary ListUsergroupsForOrganizationAndUser lists the user groups that an org member user has access to.
  */
 
 export function createAdminServiceListUsergroupsForOrganizationAndUser<
@@ -8148,7 +8146,7 @@ export const adminServiceGetUsergroup = (
   signal?: AbortSignal,
 ) => {
   return httpClient<V1GetUsergroupResponse>({
-    url: `/v1/organizations/${organization}/usergroups/${usergroup}`,
+    url: `/v1/orgs/${organization}/usergroups/${usergroup}`,
     method: "GET",
     params,
     signal,
@@ -8161,7 +8159,7 @@ export const getAdminServiceGetUsergroupQueryKey = (
   params?: AdminServiceGetUsergroupParams,
 ) => {
   return [
-    `/v1/organizations/${organization}/usergroups/${usergroup}`,
+    `/v1/orgs/${organization}/usergroups/${usergroup}`,
     ...(params ? [params] : []),
   ] as const;
 };
@@ -8253,14 +8251,14 @@ export function createAdminServiceGetUsergroup<
 }
 
 /**
- * @summary DeleteUsergroup deletes the user group from the organization
+ * @summary DeleteUsergroup deletes the user group from the org
  */
 export const adminServiceDeleteUsergroup = (
   organization: string,
   usergroup: string,
 ) => {
   return httpClient<V1DeleteUsergroupResponse>({
-    url: `/v1/organizations/${organization}/usergroups/${usergroup}`,
+    url: `/v1/orgs/${organization}/usergroups/${usergroup}`,
     method: "DELETE",
   });
 };
@@ -8309,7 +8307,7 @@ export type AdminServiceDeleteUsergroupMutationResult = NonNullable<
 export type AdminServiceDeleteUsergroupMutationError = RpcStatus;
 
 /**
- * @summary DeleteUsergroup deletes the user group from the organization
+ * @summary DeleteUsergroup deletes the user group from the org
  */
 export const createAdminServiceDeleteUsergroup = <
   TError = RpcStatus,
@@ -8345,7 +8343,7 @@ export const adminServiceRenameUsergroup = (
   signal?: AbortSignal,
 ) => {
   return httpClient<V1RenameUsergroupResponse>({
-    url: `/v1/organizations/${organization}/usergroups/${usergroup}`,
+    url: `/v1/orgs/${organization}/usergroups/${usergroup}`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
     data: adminServiceCreateUsergroupBodyBody,
@@ -8453,7 +8451,7 @@ export const adminServiceEditUsergroup = (
   adminServiceEditUsergroupBody: AdminServiceEditUsergroupBody,
 ) => {
   return httpClient<V1EditUsergroupResponse>({
-    url: `/v1/organizations/${organization}/usergroups/${usergroup}`,
+    url: `/v1/orgs/${organization}/usergroups/${usergroup}`,
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     data: adminServiceEditUsergroupBody,
@@ -8560,7 +8558,7 @@ export const adminServiceListUsergroupMemberUsers = (
   signal?: AbortSignal,
 ) => {
   return httpClient<V1ListUsergroupMemberUsersResponse>({
-    url: `/v1/organizations/${organization}/usergroups/${usergroup}/members`,
+    url: `/v1/orgs/${organization}/usergroups/${usergroup}/members`,
     method: "GET",
     params,
     signal,
@@ -8573,7 +8571,7 @@ export const getAdminServiceListUsergroupMemberUsersQueryKey = (
   params?: AdminServiceListUsergroupMemberUsersParams,
 ) => {
   return [
-    `/v1/organizations/${organization}/usergroups/${usergroup}/members`,
+    `/v1/orgs/${organization}/usergroups/${usergroup}/members`,
     ...(params ? [params] : []),
   ] as const;
 };
@@ -8682,7 +8680,7 @@ export const adminServiceRemoveUsergroupMemberUser = (
   email: string,
 ) => {
   return httpClient<V1RemoveUsergroupMemberUserResponse>({
-    url: `/v1/organizations/${organization}/usergroups/${usergroup}/members/${email}`,
+    url: `/v1/orgs/${organization}/usergroups/${usergroup}/members/${email}`,
     method: "DELETE",
   });
 };
@@ -8771,7 +8769,7 @@ export const adminServiceAddUsergroupMemberUser = (
   adminServiceTriggerReconcileBodyBody: AdminServiceTriggerReconcileBodyBody,
 ) => {
   return httpClient<V1AddUsergroupMemberUserResponse>({
-    url: `/v1/organizations/${organization}/usergroups/${usergroup}/members/${email}`,
+    url: `/v1/orgs/${organization}/usergroups/${usergroup}/members/${email}`,
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     data: adminServiceTriggerReconcileBodyBody,
@@ -8880,14 +8878,14 @@ export const createAdminServiceAddUsergroupMemberUser = <
   return createMutation(mutationOptions, queryClient);
 };
 /**
- * @summary RemoveOrganizationMemberUsergroup revokes the organization-level role for the user group
+ * @summary RemoveOrganizationMemberUsergroup revokes the org-level role for the user group
  */
 export const adminServiceRemoveOrganizationMemberUsergroup = (
   organization: string,
   usergroup: string,
 ) => {
   return httpClient<V1RemoveOrganizationMemberUsergroupResponse>({
-    url: `/v1/organizations/${organization}/usergroups/${usergroup}/role`,
+    url: `/v1/orgs/${organization}/usergroups/${usergroup}/role`,
     method: "DELETE",
   });
 };
@@ -8941,7 +8939,7 @@ export type AdminServiceRemoveOrganizationMemberUsergroupMutationError =
   RpcStatus;
 
 /**
- * @summary RemoveOrganizationMemberUsergroup revokes the organization-level role for the user group
+ * @summary RemoveOrganizationMemberUsergroup revokes the org-level role for the user group
  */
 export const createAdminServiceRemoveOrganizationMemberUsergroup = <
   TError = RpcStatus,
@@ -8977,7 +8975,7 @@ export const adminServiceAddOrganizationMemberUsergroup = (
   signal?: AbortSignal,
 ) => {
   return httpClient<V1AddOrganizationMemberUsergroupResponse>({
-    url: `/v1/organizations/${organization}/usergroups/${usergroup}/role`,
+    url: `/v1/orgs/${organization}/usergroups/${usergroup}/role`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
     data: adminServiceSetProjectMemberUserRoleBodyBody,
@@ -9090,7 +9088,7 @@ export const adminServiceSetOrganizationMemberUsergroupRole = (
   adminServiceSetProjectMemberUserRoleBodyBody: AdminServiceSetProjectMemberUserRoleBodyBody,
 ) => {
   return httpClient<V1SetOrganizationMemberUsergroupRoleResponse>({
-    url: `/v1/organizations/${organization}/usergroups/${usergroup}/role`,
+    url: `/v1/orgs/${organization}/usergroups/${usergroup}/role`,
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     data: adminServiceSetProjectMemberUserRoleBodyBody,
@@ -9199,14 +9197,14 @@ export const createAdminServiceSetOrganizationMemberUsergroupRole = <
   return createMutation(mutationOptions, queryClient);
 };
 /**
- * @summary ListWhitelistedDomains lists all the whitelisted domains for the organization
+ * @summary ListWhitelistedDomains lists all the whitelisted domains for the org
  */
 export const adminServiceListWhitelistedDomains = (
   organization: string,
   signal?: AbortSignal,
 ) => {
   return httpClient<V1ListWhitelistedDomainsResponse>({
-    url: `/v1/organizations/${organization}/whitelisted`,
+    url: `/v1/orgs/${organization}/whitelisted`,
     method: "GET",
     signal,
   });
@@ -9215,7 +9213,7 @@ export const adminServiceListWhitelistedDomains = (
 export const getAdminServiceListWhitelistedDomainsQueryKey = (
   organization: string,
 ) => {
-  return [`/v1/organizations/${organization}/whitelisted`] as const;
+  return [`/v1/orgs/${organization}/whitelisted`] as const;
 };
 
 export const getAdminServiceListWhitelistedDomainsQueryOptions = <
@@ -9261,7 +9259,7 @@ export type AdminServiceListWhitelistedDomainsQueryResult = NonNullable<
 export type AdminServiceListWhitelistedDomainsQueryError = RpcStatus;
 
 /**
- * @summary ListWhitelistedDomains lists all the whitelisted domains for the organization
+ * @summary ListWhitelistedDomains lists all the whitelisted domains for the org
  */
 
 export function createAdminServiceListWhitelistedDomains<
@@ -9306,7 +9304,7 @@ export const adminServiceCreateWhitelistedDomain = (
   signal?: AbortSignal,
 ) => {
   return httpClient<V1CreateWhitelistedDomainResponse>({
-    url: `/v1/organizations/${organization}/whitelisted`,
+    url: `/v1/orgs/${organization}/whitelisted`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
     data: adminServiceCreateProjectWhitelistedDomainBodyBody,
@@ -9408,7 +9406,7 @@ export const adminServiceRemoveWhitelistedDomain = (
   domain: string,
 ) => {
   return httpClient<V1RemoveWhitelistedDomainResponse>({
-    url: `/v1/organizations/${organization}/whitelisted/${domain}`,
+    url: `/v1/orgs/${organization}/whitelisted/${domain}`,
     method: "DELETE",
   });
 };
@@ -9492,7 +9490,7 @@ export const adminServiceCreateAsset = (
   signal?: AbortSignal,
 ) => {
   return httpClient<V1CreateAssetResponse>({
-    url: `/v1/organizations/${organizationName}/create_asset`,
+    url: `/v1/orgs/${organizationName}/create_asset`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
     data: adminServiceCreateAssetBody,
@@ -9570,7 +9568,7 @@ export const createAdminServiceCreateAsset = <
   return createMutation(mutationOptions, queryClient);
 };
 /**
- * @summary ListProjectsForOrganization lists all the projects currently available for given organizations.
+ * @summary ListProjectsForOrganization lists all the projects currently available for given orgs.
  */
 export const adminServiceListProjectsForOrganization = (
   organizationName: string,
@@ -9578,7 +9576,7 @@ export const adminServiceListProjectsForOrganization = (
   signal?: AbortSignal,
 ) => {
   return httpClient<V1ListProjectsForOrganizationResponse>({
-    url: `/v1/organizations/${organizationName}/projects`,
+    url: `/v1/orgs/${organizationName}/projects`,
     method: "GET",
     params,
     signal,
@@ -9590,7 +9588,7 @@ export const getAdminServiceListProjectsForOrganizationQueryKey = (
   params?: AdminServiceListProjectsForOrganizationParams,
 ) => {
   return [
-    `/v1/organizations/${organizationName}/projects`,
+    `/v1/orgs/${organizationName}/projects`,
     ...(params ? [params] : []),
   ] as const;
 };
@@ -9643,7 +9641,7 @@ export type AdminServiceListProjectsForOrganizationQueryResult = NonNullable<
 export type AdminServiceListProjectsForOrganizationQueryError = RpcStatus;
 
 /**
- * @summary ListProjectsForOrganization lists all the projects currently available for given organizations.
+ * @summary ListProjectsForOrganization lists all the projects currently available for given orgs.
  */
 
 export function createAdminServiceListProjectsForOrganization<
@@ -9690,7 +9688,7 @@ export const adminServiceCreateProject = (
   signal?: AbortSignal,
 ) => {
   return httpClient<V1CreateProjectResponse>({
-    url: `/v1/organizations/${organizationName}/projects`,
+    url: `/v1/orgs/${organizationName}/projects`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
     data: adminServiceCreateProjectBody,
@@ -9778,7 +9776,7 @@ export const adminServiceGetProject = (
   signal?: AbortSignal,
 ) => {
   return httpClient<V1GetProjectResponse>({
-    url: `/v1/organizations/${organizationName}/projects/${name}`,
+    url: `/v1/orgs/${organizationName}/projects/${name}`,
     method: "GET",
     params,
     signal,
@@ -9791,7 +9789,7 @@ export const getAdminServiceGetProjectQueryKey = (
   params?: AdminServiceGetProjectParams,
 ) => {
   return [
-    `/v1/organizations/${organizationName}/projects/${name}`,
+    `/v1/orgs/${organizationName}/projects/${name}`,
     ...(params ? [params] : []),
   ] as const;
 };
@@ -9883,14 +9881,14 @@ export function createAdminServiceGetProject<
 }
 
 /**
- * @summary DeleteProject deletes an project
+ * @summary DeleteProject deletes a project
  */
 export const adminServiceDeleteProject = (
   organizationName: string,
   name: string,
 ) => {
   return httpClient<V1DeleteProjectResponse>({
-    url: `/v1/organizations/${organizationName}/projects/${name}`,
+    url: `/v1/orgs/${organizationName}/projects/${name}`,
     method: "DELETE",
   });
 };
@@ -9939,7 +9937,7 @@ export type AdminServiceDeleteProjectMutationResult = NonNullable<
 export type AdminServiceDeleteProjectMutationError = RpcStatus;
 
 /**
- * @summary DeleteProject deletes an project
+ * @summary DeleteProject deletes a project
  */
 export const createAdminServiceDeleteProject = <
   TError = RpcStatus,
@@ -9973,7 +9971,7 @@ export const adminServiceUpdateProject = (
   adminServiceUpdateProjectBody: AdminServiceUpdateProjectBody,
 ) => {
   return httpClient<V1UpdateProjectResponse>({
-    url: `/v1/organizations/${organizationName}/projects/${name}`,
+    url: `/v1/orgs/${organizationName}/projects/${name}`,
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     data: adminServiceUpdateProjectBody,
@@ -10080,7 +10078,7 @@ export const adminServiceListDeployments = (
   signal?: AbortSignal,
 ) => {
   return httpClient<V1ListDeploymentsResponse>({
-    url: `/v1/organizations/${organizationName}/projects/${projectName}/deployments`,
+    url: `/v1/orgs/${organizationName}/projects/${projectName}/deployments`,
     method: "GET",
     params,
     signal,
@@ -10093,7 +10091,7 @@ export const getAdminServiceListDeploymentsQueryKey = (
   params?: AdminServiceListDeploymentsParams,
 ) => {
   return [
-    `/v1/organizations/${organizationName}/projects/${projectName}/deployments`,
+    `/v1/orgs/${organizationName}/projects/${projectName}/deployments`,
     ...(params ? [params] : []),
   ] as const;
 };
@@ -10198,7 +10196,7 @@ export const adminServiceCreateDeployment = (
   signal?: AbortSignal,
 ) => {
   return httpClient<V1CreateDeploymentResponse>({
-    url: `/v1/organizations/${organizationName}/projects/${projectName}/deployments`,
+    url: `/v1/orgs/${organizationName}/projects/${projectName}/deployments`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
     data: adminServiceCreateDeploymentBody,
@@ -10298,7 +10296,7 @@ export const createAdminServiceCreateDeployment = <
   return createMutation(mutationOptions, queryClient);
 };
 /**
- * @summary ListProjectMemberServices returns all the services for the project for an organization
+ * @summary ListProjectMemberServices returns all the services for the project for an org
  */
 export const adminServiceListProjectMemberServices = (
   organizationName: string,
@@ -10306,7 +10304,7 @@ export const adminServiceListProjectMemberServices = (
   signal?: AbortSignal,
 ) => {
   return httpClient<V1ListProjectMemberServicesResponse>({
-    url: `/v1/organizations/${organizationName}/projects/${projectName}/services`,
+    url: `/v1/orgs/${organizationName}/projects/${projectName}/services`,
     method: "GET",
     signal,
   });
@@ -10317,7 +10315,7 @@ export const getAdminServiceListProjectMemberServicesQueryKey = (
   projectName: string,
 ) => {
   return [
-    `/v1/organizations/${organizationName}/projects/${projectName}/services`,
+    `/v1/orgs/${organizationName}/projects/${projectName}/services`,
   ] as const;
 };
 
@@ -10373,7 +10371,7 @@ export type AdminServiceListProjectMemberServicesQueryResult = NonNullable<
 export type AdminServiceListProjectMemberServicesQueryError = RpcStatus;
 
 /**
- * @summary ListProjectMemberServices returns all the services for the project for an organization
+ * @summary ListProjectMemberServices returns all the services for the project for an org
  */
 
 export function createAdminServiceListProjectMemberServices<
@@ -10420,7 +10418,7 @@ export const adminServiceRemoveProjectMemberService = (
   name: string,
 ) => {
   return httpClient<V1RemoveProjectMemberServiceResponse>({
-    url: `/v1/organizations/${organizationName}/projects/${projectName}/services/${name}`,
+    url: `/v1/orgs/${organizationName}/projects/${projectName}/services/${name}`,
     method: "DELETE",
   });
 };
@@ -10509,7 +10507,7 @@ export const adminServiceSetProjectMemberServiceRole = (
   adminServiceSetProjectMemberUserRoleBodyBody: AdminServiceSetProjectMemberUserRoleBodyBody,
 ) => {
   return httpClient<V1SetProjectMemberServiceRoleResponse>({
-    url: `/v1/organizations/${organizationName}/projects/${projectName}/services/${name}/role`,
+    url: `/v1/orgs/${organizationName}/projects/${projectName}/services/${name}/role`,
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     data: adminServiceSetProjectMemberUserRoleBodyBody,
@@ -10618,14 +10616,14 @@ export const createAdminServiceSetProjectMemberServiceRole = <
   return createMutation(mutationOptions, queryClient);
 };
 /**
- * @summary ListService returns all the services per organization
+ * @summary ListService returns all the services per org
  */
 export const adminServiceListServices = (
   organizationName: string,
   signal?: AbortSignal,
 ) => {
   return httpClient<V1ListServicesResponse>({
-    url: `/v1/organizations/${organizationName}/services`,
+    url: `/v1/orgs/${organizationName}/services`,
     method: "GET",
     signal,
   });
@@ -10634,7 +10632,7 @@ export const adminServiceListServices = (
 export const getAdminServiceListServicesQueryKey = (
   organizationName: string,
 ) => {
-  return [`/v1/organizations/${organizationName}/services`] as const;
+  return [`/v1/orgs/${organizationName}/services`] as const;
 };
 
 export const getAdminServiceListServicesQueryOptions = <
@@ -10680,7 +10678,7 @@ export type AdminServiceListServicesQueryResult = NonNullable<
 export type AdminServiceListServicesQueryError = RpcStatus;
 
 /**
- * @summary ListService returns all the services per organization
+ * @summary ListService returns all the services per org
  */
 
 export function createAdminServiceListServices<
@@ -10717,7 +10715,7 @@ export function createAdminServiceListServices<
 }
 
 /**
- * @summary CreateService creates a new service per organization
+ * @summary CreateService creates a new service per org
  */
 export const adminServiceCreateService = (
   organizationName: string,
@@ -10725,7 +10723,7 @@ export const adminServiceCreateService = (
   signal?: AbortSignal,
 ) => {
   return httpClient<V1CreateServiceResponse>({
-    url: `/v1/organizations/${organizationName}/services`,
+    url: `/v1/orgs/${organizationName}/services`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
     data: adminServiceCreateServiceBody,
@@ -10778,7 +10776,7 @@ export type AdminServiceCreateServiceMutationBody =
 export type AdminServiceCreateServiceMutationError = RpcStatus;
 
 /**
- * @summary CreateService creates a new service per organization
+ * @summary CreateService creates a new service per org
  */
 export const createAdminServiceCreateService = <
   TError = RpcStatus,
@@ -10812,7 +10810,7 @@ export const adminServiceGetService = (
   signal?: AbortSignal,
 ) => {
   return httpClient<V1GetServiceResponse>({
-    url: `/v1/organizations/${organizationName}/services/${name}`,
+    url: `/v1/orgs/${organizationName}/services/${name}`,
     method: "GET",
     signal,
   });
@@ -10822,7 +10820,7 @@ export const getAdminServiceGetServiceQueryKey = (
   organizationName: string,
   name: string,
 ) => {
-  return [`/v1/organizations/${organizationName}/services/${name}`] as const;
+  return [`/v1/orgs/${organizationName}/services/${name}`] as const;
 };
 
 export const getAdminServiceGetServiceQueryOptions = <
@@ -10908,14 +10906,14 @@ export function createAdminServiceGetService<
 }
 
 /**
- * @summary DeleteService deletes a service per organization
+ * @summary DeleteService deletes a service per org
  */
 export const adminServiceDeleteService = (
   organizationName: string,
   name: string,
 ) => {
   return httpClient<V1DeleteServiceResponse>({
-    url: `/v1/organizations/${organizationName}/services/${name}`,
+    url: `/v1/orgs/${organizationName}/services/${name}`,
     method: "DELETE",
   });
 };
@@ -10964,7 +10962,7 @@ export type AdminServiceDeleteServiceMutationResult = NonNullable<
 export type AdminServiceDeleteServiceMutationError = RpcStatus;
 
 /**
- * @summary DeleteService deletes a service per organization
+ * @summary DeleteService deletes a service per org
  */
 export const createAdminServiceDeleteService = <
   TError = RpcStatus,
@@ -10990,7 +10988,7 @@ export const createAdminServiceDeleteService = <
   return createMutation(mutationOptions, queryClient);
 };
 /**
- * @summary UpdateService updates a service per organization
+ * @summary UpdateService updates a service per org
  */
 export const adminServiceUpdateService = (
   organizationName: string,
@@ -10998,7 +10996,7 @@ export const adminServiceUpdateService = (
   adminServiceUpdateServiceBody: AdminServiceUpdateServiceBody,
 ) => {
   return httpClient<V1UpdateServiceResponse>({
-    url: `/v1/organizations/${organizationName}/services/${name}`,
+    url: `/v1/orgs/${organizationName}/services/${name}`,
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     data: adminServiceUpdateServiceBody,
@@ -11062,7 +11060,7 @@ export type AdminServiceUpdateServiceMutationBody =
 export type AdminServiceUpdateServiceMutationError = RpcStatus;
 
 /**
- * @summary UpdateService updates a service per organization
+ * @summary UpdateService updates a service per org
  */
 export const createAdminServiceUpdateService = <
   TError = RpcStatus,
@@ -11096,14 +11094,14 @@ export const createAdminServiceUpdateService = <
   return createMutation(mutationOptions, queryClient);
 };
 /**
- * @summary RemoveOrganizationMemberService removes the organization role for the service
+ * @summary RemoveOrganizationMemberService removes the org role for the service
  */
 export const adminServiceRemoveOrganizationMemberService = (
   organizationName: string,
   name: string,
 ) => {
   return httpClient<V1RemoveOrganizationMemberServiceResponse>({
-    url: `/v1/organizations/${organizationName}/services/${name}/role`,
+    url: `/v1/orgs/${organizationName}/services/${name}/role`,
     method: "DELETE",
   });
 };
@@ -11154,7 +11152,7 @@ export type AdminServiceRemoveOrganizationMemberServiceMutationError =
   RpcStatus;
 
 /**
- * @summary RemoveOrganizationMemberService removes the organization role for the service
+ * @summary RemoveOrganizationMemberService removes the org role for the service
  */
 export const createAdminServiceRemoveOrganizationMemberService = <
   TError = RpcStatus,
@@ -11181,7 +11179,7 @@ export const createAdminServiceRemoveOrganizationMemberService = <
   return createMutation(mutationOptions, queryClient);
 };
 /**
- * @summary SetOrganizationMemberServiceRole sets or updates the role of the service in the organization
+ * @summary SetOrganizationMemberServiceRole sets or updates the role of the service in the org
  */
 export const adminServiceSetOrganizationMemberServiceRole = (
   organizationName: string,
@@ -11189,7 +11187,7 @@ export const adminServiceSetOrganizationMemberServiceRole = (
   adminServiceSetProjectMemberUserRoleBodyBody: AdminServiceSetProjectMemberUserRoleBodyBody,
 ) => {
   return httpClient<V1SetOrganizationMemberServiceRoleResponse>({
-    url: `/v1/organizations/${organizationName}/services/${name}/role`,
+    url: `/v1/orgs/${organizationName}/services/${name}/role`,
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     data: adminServiceSetProjectMemberUserRoleBodyBody,
@@ -11259,7 +11257,7 @@ export type AdminServiceSetOrganizationMemberServiceRoleMutationError =
   RpcStatus;
 
 /**
- * @summary SetOrganizationMemberServiceRole sets or updates the role of the service in the organization
+ * @summary SetOrganizationMemberServiceRole sets or updates the role of the service in the org
  */
 export const createAdminServiceSetOrganizationMemberServiceRole = <
   TError = RpcStatus,
@@ -11302,7 +11300,7 @@ export const adminServiceListServiceAuthTokens = (
   signal?: AbortSignal,
 ) => {
   return httpClient<V1ListServiceAuthTokensResponse>({
-    url: `/v1/organizations/${organizationName}/services/${serviceName}/tokens`,
+    url: `/v1/orgs/${organizationName}/services/${serviceName}/tokens`,
     method: "GET",
     signal,
   });
@@ -11313,7 +11311,7 @@ export const getAdminServiceListServiceAuthTokensQueryKey = (
   serviceName: string,
 ) => {
   return [
-    `/v1/organizations/${organizationName}/services/${serviceName}/tokens`,
+    `/v1/orgs/${organizationName}/services/${serviceName}/tokens`,
   ] as const;
 };
 
@@ -11410,7 +11408,7 @@ export const adminServiceIssueServiceAuthToken = (
   signal?: AbortSignal,
 ) => {
   return httpClient<V1IssueServiceAuthTokenResponse>({
-    url: `/v1/organizations/${organizationName}/services/${serviceName}/tokens`,
+    url: `/v1/orgs/${organizationName}/services/${serviceName}/tokens`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
     data: adminServiceTriggerReconcileBodyBody,
@@ -13095,13 +13093,13 @@ export const createAdminServiceSetSuperuser = <
   return createMutation(mutationOptions, queryClient);
 };
 /**
- * @summary SudoUpdateOrganizationBillingCustomer update the billing customer for the organization
+ * @summary SudoUpdateOrganizationBillingCustomer update the billing customer for the org
  */
 export const adminServiceSudoUpdateOrganizationBillingCustomer = (
   v1SudoUpdateOrganizationBillingCustomerRequest: V1SudoUpdateOrganizationBillingCustomerRequest,
 ) => {
   return httpClient<V1SudoUpdateOrganizationBillingCustomerResponse>({
-    url: `/v1/superuser/organization/billing/customer_id`,
+    url: `/v1/superuser/org/billing/customer_id`,
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     data: v1SudoUpdateOrganizationBillingCustomerRequest,
@@ -13161,7 +13159,7 @@ export type AdminServiceSudoUpdateOrganizationBillingCustomerMutationError =
   RpcStatus;
 
 /**
- * @summary SudoUpdateOrganizationBillingCustomer update the billing customer for the organization
+ * @summary SudoUpdateOrganizationBillingCustomer update the billing customer for the org
  */
 export const createAdminServiceSudoUpdateOrganizationBillingCustomer = <
   TError = RpcStatus,
@@ -13192,7 +13190,7 @@ export const createAdminServiceSudoUpdateOrganizationBillingCustomer = <
   return createMutation(mutationOptions, queryClient);
 };
 /**
- * @summary SudoUpdateOrganizationCustomDomain updates the custom domain for an organization.
+ * @summary SudoUpdateOrganizationCustomDomain updates the custom domain for an org.
 It only updates the custom domain in the database, which is used to ensure correct redirects.
 The DNS records and ingress TLS must be configured separately.
  */
@@ -13200,7 +13198,7 @@ export const adminServiceSudoUpdateOrganizationCustomDomain = (
   v1SudoUpdateOrganizationCustomDomainRequest: V1SudoUpdateOrganizationCustomDomainRequest,
 ) => {
   return httpClient<V1SudoUpdateOrganizationCustomDomainResponse>({
-    url: `/v1/superuser/organization/custom-domain`,
+    url: `/v1/superuser/org/custom-domain`,
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     data: v1SudoUpdateOrganizationCustomDomainRequest,
@@ -13256,7 +13254,7 @@ export type AdminServiceSudoUpdateOrganizationCustomDomainMutationError =
   RpcStatus;
 
 /**
- * @summary SudoUpdateOrganizationCustomDomain updates the custom domain for an organization.
+ * @summary SudoUpdateOrganizationCustomDomain updates the custom domain for an org.
 It only updates the custom domain in the database, which is used to ensure correct redirects.
 The DNS records and ingress TLS must be configured separately.
  */
@@ -13287,14 +13285,14 @@ export const createAdminServiceSudoUpdateOrganizationCustomDomain = <
   return createMutation(mutationOptions, queryClient);
 };
 /**
- * @summary SudoExtendTrial extends the trial period for an organization
+ * @summary SudoExtendTrial extends the trial period for an org
  */
 export const adminServiceSudoExtendTrial = (
   v1SudoExtendTrialRequest: V1SudoExtendTrialRequest,
   signal?: AbortSignal,
 ) => {
   return httpClient<V1SudoExtendTrialResponse>({
-    url: `/v1/superuser/organization/trial/extend`,
+    url: `/v1/superuser/org/trial/extend`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
     data: v1SudoExtendTrialRequest,
@@ -13346,7 +13344,7 @@ export type AdminServiceSudoExtendTrialMutationBody = V1SudoExtendTrialRequest;
 export type AdminServiceSudoExtendTrialMutationError = RpcStatus;
 
 /**
- * @summary SudoExtendTrial extends the trial period for an organization
+ * @summary SudoExtendTrial extends the trial period for an org
  */
 export const createAdminServiceSudoExtendTrial = <
   TError = RpcStatus,
@@ -13373,7 +13371,7 @@ export const createAdminServiceSudoExtendTrial = <
   return createMutation(mutationOptions, queryClient);
 };
 /**
- * @summary SudoDeleteOrganizationBillingIssue deletes a billing issue of a type for the organization
+ * @summary SudoDeleteOrganizationBillingIssue deletes a billing issue of a type for the org
  */
 export const adminServiceSudoDeleteOrganizationBillingIssue = (
   organization: string,
@@ -13388,7 +13386,7 @@ export const adminServiceSudoDeleteOrganizationBillingIssue = (
     | "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED",
 ) => {
   return httpClient<V1SudoDeleteOrganizationBillingIssueResponse>({
-    url: `/v1/superuser/organizations/${organization}/billing/issues/${type}`,
+    url: `/v1/superuser/orgs/${organization}/billing/issues/${type}`,
     method: "DELETE",
   });
 };
@@ -13474,7 +13472,7 @@ export type AdminServiceSudoDeleteOrganizationBillingIssueMutationError =
   RpcStatus;
 
 /**
- * @summary SudoDeleteOrganizationBillingIssue deletes a billing issue of a type for the organization
+ * @summary SudoDeleteOrganizationBillingIssue deletes a billing issue of a type for the org
  */
 export const createAdminServiceSudoDeleteOrganizationBillingIssue = <
   TError = RpcStatus,
@@ -13713,7 +13711,7 @@ export const adminServiceSudoUpdateOrganizationQuotas = (
   v1SudoUpdateOrganizationQuotasRequest: V1SudoUpdateOrganizationQuotasRequest,
 ) => {
   return httpClient<V1SudoUpdateOrganizationQuotasResponse>({
-    url: `/v1/superuser/quotas/organization`,
+    url: `/v1/superuser/quotas/orgs`,
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     data: v1SudoUpdateOrganizationQuotasRequest,
@@ -14319,7 +14317,7 @@ export const createAdminServiceRevokeUserAuthToken = <
   return createMutation(mutationOptions, queryClient);
 };
 /**
- * @summary DeleteUser deletes the user from the organization by email
+ * @summary DeleteUser deletes the user from the org by email
  */
 export const adminServiceDeleteUser = (
   email: string,
@@ -14376,7 +14374,7 @@ export type AdminServiceDeleteUserMutationResult = NonNullable<
 export type AdminServiceDeleteUserMutationError = RpcStatus;
 
 /**
- * @summary DeleteUser deletes the user from the organization by email
+ * @summary DeleteUser deletes the user from the org by email
  */
 export const createAdminServiceDeleteUser = <
   TError = RpcStatus,
