@@ -351,21 +351,11 @@ func (s *Server) CreateDeployment(ctx context.Context, req *adminv1.CreateDeploy
 		ownerUserID = &id
 	}
 
-	vars, err := s.admin.ResolveVariables(ctx, proj.ID, req.Environment, true)
-	if err != nil {
-		return nil, err
-	}
-
 	depl, err := s.admin.CreateDeployment(ctx, &admin.CreateDeploymentOptions{
 		ProjectID:   proj.ID,
 		OwnerUserID: ownerUserID,
 		Environment: req.Environment,
-		Annotations: s.admin.NewDeploymentAnnotations(org, proj),
 		Branch:      branch,
-		Provisioner: proj.Provisioner,
-		Slots:       slots,
-		Version:     proj.ProdVersion,
-		Variables:   vars,
 	})
 	if err != nil {
 		return nil, err
@@ -432,33 +422,7 @@ func (s *Server) StartDeployment(ctx context.Context, req *adminv1.StartDeployme
 		}
 	}
 
-	org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-
-	var slots int
-	switch depl.Environment {
-	case "prod":
-		slots = proj.ProdSlots
-	case "dev":
-		slots = proj.DevSlots
-	default:
-		return nil, status.Error(codes.InvalidArgument, "invalid environment, must be 'prod' or 'dev'")
-	}
-
-	vars, err := s.admin.ResolveVariables(ctx, proj.ID, depl.Environment, true)
-	if err != nil {
-		return nil, err
-	}
-
-	depl, err = s.admin.StartDeployment(ctx, depl, &admin.StartDeploymentOptions{
-		Annotations: s.admin.NewDeploymentAnnotations(org, proj),
-		Provisioner: proj.Provisioner,
-		Slots:       slots,
-		Version:     proj.ProdVersion,
-		Variables:   vars,
-	})
+	depl, err = s.admin.StartDeployment(ctx, depl)
 	if err != nil {
 		return nil, err
 	}

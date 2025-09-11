@@ -28,6 +28,10 @@ func (n *noop) ResetAllDeployments(ctx context.Context) (*InsertResult, error) {
 	return nil, nil
 }
 
+func (n *noop) ReconcileDeployment(ctx context.Context, deploymentID string) (*InsertResult, error) {
+	return nil, nil
+}
+
 func (n *noop) PaymentMethodAdded(ctx context.Context, methodID, paymentCustomerID, typ string, eventTime time.Time) (*InsertResult, error) {
 	return nil, nil
 }
