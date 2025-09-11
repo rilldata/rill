@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/joho/godotenv"
 	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
@@ -45,17 +46,17 @@ func TestProjectPromptEvals(t *testing.T) {
 		t.Skip("OpenAI API key not set (checked RILL_ADMIN_OPENAI_API_KEY and OPENAI_API_KEY), skipping eval tests")
 	}
 
-	t.Run("follows_systematic_analysis_process", func(t *testing.T) {
+	t.Run("follows_prescribed_analysis_process", func(t *testing.T) {
 		server, instanceID := setupEvalServer(t)
 
-		response := runProjectChatCompletion(t, server, instanceID, "Analyze the programmatic advertising performance and find actionable insights")
+		response := runProjectChatCompletion(t, server, instanceID, "Analyze our advertising performance and find actionable insights")
 
 		// Debug: Print the actual response
 		for i, msg := range response {
 			t.Logf("Response message %d (role: %s): %v", i, msg.Role, msg.Content)
 		}
 
-		// Verify it follows the systematic 4-phase process from the prompt
+		// Verify it follows the prescribed 4-phase process from the prompt
 		assertContainsToolCall(t, response, "list_metrics_views", "Should discover available datasets")
 		assertContainsToolCall(t, response, "get_metrics_view", "Should understand metrics structure")
 		assertContainsToolCall(t, response, "query_metrics_view_time_range", "Should scope data availability")
@@ -66,60 +67,47 @@ func TestProjectPromptEvals(t *testing.T) {
 		require.GreaterOrEqual(t, queryCount, 4, "Should perform at least 4 analytical queries")
 	})
 
-	t.Run("provides_quantified_actionable_insights", func(t *testing.T) {
+	t.Run("provides_actionable_insights", func(t *testing.T) {
 		server, instanceID := setupEvalServer(t)
 
 		response := runProjectChatCompletion(t, server, instanceID, "What are the key trends in our programmatic advertising performance?")
 
-		// Use LLM-as-a-judge to evaluate insight quality
+		// Use LLM-as-a-judge to evaluate business insight quality
 		criteria := `
-		Evaluate if this response provides:
-		1. Specific, quantified insights (actual numbers from data)
-		2. Actionable business recommendations
-		3. Clear connection between data patterns and business implications
-		4. Surprising or non-obvious findings
+		Evaluate if this response provides actionable business insights:
+		1. Identifies specific business problems or opportunities
+		2. Recommends concrete actions (not just observations)
+		3. Prioritizes recommendations by impact/urgency
+		4. Connects findings to business outcomes (revenue, efficiency, etc.)
 		
-		Rate 1-10 where 10 = excellent actionable insights with specific numbers.`
+		Rate 1-10 where 10 = excellent actionable business recommendations.`
 
 		responseText := extractResponseText(response)
 		score := evaluateWithLLM(t, server, instanceID, responseText, criteria)
-		require.GreaterOrEqual(t, score, 7.0, "Response should provide high-quality actionable insights")
+		require.GreaterOrEqual(t, score, 7.0, "Response should provide actionable business insights")
 	})
 
-	t.Run("uses_comparison_features_for_time_analysis", func(t *testing.T) {
-		server, instanceID := setupEvalServer(t)
-
-		response := runProjectChatCompletion(t, server, instanceID, "How has performance changed over time?")
-
-		// Should use comparison features (delta_abs, delta_rel) for time-based analysis
-		responseText := extractResponseText(response)
-		require.True(t,
-			strings.Contains(responseText, "delta_abs") || strings.Contains(responseText, "delta_rel") ||
-				strings.Contains(responseText, "comparison"),
-			"Should use comparison features for time analysis")
-	})
-
-	t.Run("maintains_analytical_rigor", func(t *testing.T) {
+	t.Run("demonstrates_data_accuracy", func(t *testing.T) {
 		server, instanceID := setupEvalServer(t)
 
 		response := runProjectChatCompletion(t, server, instanceID, "Calculate the average bid price and win rate by advertiser")
 
-		// Use LLM-as-a-judge to verify analytical rigor
+		// Use LLM-as-a-judge to verify data accuracy and transparency
 		criteria := `
-		Evaluate if this response demonstrates analytical rigor by:
-		1. Only using numbers directly from tool results (no manual calculations)
-		2. Being precise about data sources and methodology
-		3. Acknowledging any limitations or caveats
-		4. Building insights systematically from data
+		Evaluate if this response demonstrates data accuracy:
+		1. Uses exact numbers from tool results (no rounding errors or approximations)
+		2. Shows calculations transparently when needed
+		3. Acknowledges data limitations or sample sizes
+		4. Avoids making claims beyond what the data supports
 		
-		Rate 1-10 where 10 = excellent analytical rigor.`
+		Rate 1-10 where 10 = perfect data accuracy and transparency.`
 
 		responseText := extractResponseText(response)
 		score := evaluateWithLLM(t, server, instanceID, responseText, criteria)
-		require.GreaterOrEqual(t, score, 7.0, "Should demonstrate strong analytical rigor")
+		require.GreaterOrEqual(t, score, 7.0, "Response should demonstrate data accuracy")
 	})
 
-	t.Run("formats_output_correctly", func(t *testing.T) {
+	t.Run("uses_proper_formatting", func(t *testing.T) {
 		server, instanceID := setupEvalServer(t)
 
 		response := runProjectChatCompletion(t, server, instanceID, "Summarize the key insights from our programmatic advertising data")
@@ -127,15 +115,247 @@ func TestProjectPromptEvals(t *testing.T) {
 		responseText := extractResponseText(response)
 
 		// Should follow the markdown format specified in the prompt
-		require.Contains(t, responseText, "Based on my systematic analysis", "Should include systematic analysis acknowledgment")
 		require.Contains(t, responseText, "##", "Should use markdown headers for insights")
 
-		// Should offer follow-up analysis options
+		// Should have structured content (not just a wall of text)
 		require.True(t,
-			strings.Contains(strings.ToLower(responseText), "follow-up") ||
-				strings.Contains(strings.ToLower(responseText), "next") ||
-				strings.Contains(strings.ToLower(responseText), "further"),
-			"Should offer follow-up analysis options")
+			strings.Contains(responseText, "**") || strings.Contains(responseText, "*") ||
+				strings.Contains(responseText, "-") || strings.Contains(responseText, "1."),
+			"Should use markdown formatting for structure (bold, lists, etc.)")
+	})
+
+	t.Run("suggests_follow_up_analysis", func(t *testing.T) {
+		server, instanceID := setupEvalServer(t)
+
+		response := runProjectChatCompletion(t, server, instanceID, "What does this advertising data tell us?")
+
+		responseText := extractResponseText(response)
+
+		// Use LLM-as-a-judge to evaluate follow-up suggestions
+		criteria := `
+		Evaluate if this response suggests helpful follow-up analysis:
+		1. Offers specific next steps or deeper analysis options
+		2. Suggests related questions the user might want to explore
+		3. Indicates areas that could benefit from further investigation
+		4. Helps continue the analytical conversation productively
+		
+		Rate 1-10 where 10 = excellent follow-up suggestions that guide further analysis.`
+
+		score := evaluateWithLLM(t, server, instanceID, responseText, criteria)
+		require.GreaterOrEqual(t, score, 7.0, "Response should suggest helpful follow-up analysis")
+	})
+
+	t.Run("rejects_unrelated_questions", func(t *testing.T) {
+		server, instanceID := setupEvalServer(t)
+
+		response := runProjectChatCompletion(t, server, instanceID, "Who is the president of India?")
+
+		responseText := extractResponseText(response)
+
+		// Use LLM-as-a-judge to evaluate proper guardrails
+		criteria := `
+		Evaluate if this response properly handles an unrelated question:
+		1. Politely declines to answer the unrelated question
+		2. Explains that it's designed for data analysis of the project
+		3. Redirects the conversation back to data-related topics
+		4. Does NOT attempt to answer the non-data question
+		
+		Rate 1-10 where 10 = perfectly handles unrelated questions with appropriate guardrails.`
+
+		score := evaluateWithLLM(t, server, instanceID, responseText, criteria)
+		require.GreaterOrEqual(t, score, 7.0, "Should politely reject unrelated questions and redirect to data analysis")
+	})
+
+	t.Run("uses_rill_comparison_features", func(t *testing.T) {
+		server, instanceID := setupEvalServer(t)
+
+		response := runProjectChatCompletion(t, server, instanceID, "How has performance changed over time?")
+
+		// Inspect tool calls to verify the AI uses comparison measures and time ranges
+		hasComparisonMeasures := false
+		hasComparisonTimeRange := false
+
+		for _, msg := range response {
+			for _, block := range msg.Content {
+				if toolCall := block.GetToolCall(); toolCall != nil && toolCall.Name == "query_metrics_view" {
+					if toolCall.Input == nil {
+						continue
+					}
+
+					inputMap := toolCall.Input.AsMap()
+
+					// Check for comparison measures in measures array
+					if measures, ok := inputMap["measures"].([]interface{}); ok {
+						for _, measure := range measures {
+							if measureMap, ok := measure.(map[string]interface{}); ok {
+								if compute, ok := measureMap["compute"].(map[string]interface{}); ok {
+									if _, hasCompDelta := compute["comparison_delta"]; hasCompDelta {
+										hasComparisonMeasures = true
+									}
+									if _, hasCompRatio := compute["comparison_ratio"]; hasCompRatio {
+										hasComparisonMeasures = true
+									}
+								}
+								// Also check for delta_abs/delta_rel in measure names
+								if name, ok := measureMap["name"].(string); ok {
+									if strings.Contains(name, "delta_abs") || strings.Contains(name, "delta_rel") {
+										hasComparisonMeasures = true
+									}
+								}
+							}
+						}
+					}
+
+					// Check for comparison_time_range parameter
+					if _, ok := inputMap["comparison_time_range"]; ok {
+						hasComparisonTimeRange = true
+					}
+				}
+			}
+		}
+
+		// Should use both comparison measures AND comparison_time_range for proper time-based analysis
+		require.True(t, hasComparisonMeasures && hasComparisonTimeRange,
+			"Should use both comparison measures and comparison_time_range for time analysis")
+	})
+
+	t.Run("uses_proper_comparison_time_ranges", func(t *testing.T) {
+		server, instanceID := setupEvalServer(t)
+
+		response := runProjectChatCompletion(t, server, instanceID, "Compare this month's performance to last month")
+
+		// Inspect tool calls to validate proper time range usage
+		var foundValidComparison bool
+
+		for _, msg := range response {
+			for _, block := range msg.Content {
+				if toolCall := block.GetToolCall(); toolCall != nil && toolCall.Name == "query_metrics_view" {
+					if toolCall.Input == nil {
+						continue
+					}
+
+					inputMap := toolCall.Input.AsMap()
+
+					// Only validate if this call uses comparison features
+					if _, ok := inputMap["comparison_time_range"]; !ok {
+						continue
+					}
+
+					timeRange, hasTimeRange := inputMap["time_range"].(map[string]interface{})
+					comparisonTimeRange, hasComparisonTimeRange := inputMap["comparison_time_range"].(map[string]interface{})
+
+					if !hasTimeRange || !hasComparisonTimeRange {
+						continue
+					}
+
+					// Extract time range boundaries
+					baseStart, _ := timeRange["start"].(string)
+					baseEnd, _ := timeRange["end"].(string)
+					compStart, _ := comparisonTimeRange["start"].(string)
+					compEnd, _ := comparisonTimeRange["end"].(string)
+
+					if baseStart == "" || baseEnd == "" || compStart == "" || compEnd == "" {
+						continue
+					}
+
+					// Parse times for validation
+					baseStartTime, err1 := time.Parse(time.RFC3339, baseStart)
+					baseEndTime, err2 := time.Parse(time.RFC3339, baseEnd)
+					compStartTime, err3 := time.Parse(time.RFC3339, compStart)
+					compEndTime, err4 := time.Parse(time.RFC3339, compEnd)
+
+					if err1 != nil || err2 != nil || err3 != nil || err4 != nil {
+						continue
+					}
+
+					// Validate time ranges
+					baseDuration := baseEndTime.Sub(baseStartTime)
+					compDuration := compEndTime.Sub(compStartTime)
+
+					// Check for non-overlapping ranges
+					noOverlap := baseEndTime.Before(compStartTime) || compEndTime.Before(baseStartTime) ||
+						baseEndTime.Equal(compStartTime) || compEndTime.Equal(baseStartTime)
+
+					// Check for similar duration (within 20% tolerance for practical comparisons)
+					durationRatio := float64(baseDuration) / float64(compDuration)
+					similarDuration := durationRatio >= 0.8 && durationRatio <= 1.2
+
+					if noOverlap && similarDuration {
+						foundValidComparison = true
+						break
+					}
+				}
+			}
+			if foundValidComparison {
+				break
+			}
+		}
+
+		require.True(t, foundValidComparison,
+			"Should use proper non-overlapping time ranges of similar length for comparisons")
+	})
+
+	t.Run("acknowledges_query_limitations", func(t *testing.T) {
+		server, instanceID := setupEvalServer(t)
+
+		response := runProjectChatCompletion(t, server, instanceID, "Show me performance by publisher")
+
+		// Check if any query_metrics_view calls use limits
+		hasLimitedQuery := false
+		for _, msg := range response {
+			for _, block := range msg.Content {
+				if toolCall := block.GetToolCall(); toolCall != nil && toolCall.Name == "query_metrics_view" {
+					if toolCall.Input == nil {
+						continue
+					}
+					inputMap := toolCall.Input.AsMap()
+					if limit, ok := inputMap["limit"]; ok && limit != nil {
+						hasLimitedQuery = true
+						break
+					}
+				}
+			}
+			if hasLimitedQuery {
+				break
+			}
+		}
+
+		// Only test acknowledgment if the AI actually used limits
+		if hasLimitedQuery {
+			responseText := extractResponseText(response)
+			criteria := `
+			Evaluate if this response properly acknowledges query limitations:
+			1. Explicitly mentions that results are limited/truncated (e.g., "showing top 10")
+			2. Indicates there may be additional data not shown
+			3. Explains the impact on analysis conclusions
+			4. Offers options to refine or expand the analysis
+			
+			Rate 1-10 where 10 = perfectly acknowledges limitations and their impact.`
+
+			score := evaluateWithLLM(t, server, instanceID, responseText, criteria)
+			require.GreaterOrEqual(t, score, 7.0, "Should acknowledge when using limited queries and explain impact")
+		}
+	})
+
+	t.Run("handles_high_cardinality_requests_responsibly", func(t *testing.T) {
+		server, instanceID := setupEvalServer(t)
+
+		response := runProjectChatCompletion(t, server, instanceID, "Analyze performance across all publishers in detail")
+
+		responseText := extractResponseText(response)
+
+		// Use LLM-as-a-judge to evaluate responsible handling of high-cardinality requests
+		criteria := `
+		Evaluate if this response responsibly handles a high-cardinality analysis request:
+		1. Recognizes that "all publishers" would be too broad/overwhelming
+		2. Suggests focused alternatives (e.g., "top performers", "bottom performers", specific segments)
+		3. Explains why a focused approach is more valuable than showing everything
+		4. Offers concrete next steps for targeted analysis
+		
+		Rate 1-10 where 10 = perfectly guides user toward focused, actionable analysis.`
+
+		score := evaluateWithLLM(t, server, instanceID, responseText, criteria)
+		require.GreaterOrEqual(t, score, 7.0, "Should guide users toward focused analysis instead of overwhelming high-cardinality dumps")
 	})
 }
 
