@@ -11,8 +11,6 @@
   import CaretDownFilledIcon from "@rilldata/web-common/components/icons/CaretDownFilledIcon.svelte";
   import CaretRightFilledIcon from "@rilldata/web-common/components/icons/CaretRightFilledIcon.svelte";
   import Github from "@rilldata/web-common/components/icons/Github.svelte";
-  import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics.ts";
-  import { BehaviourEventAction } from "@rilldata/web-common/metrics/service/BehaviourEventTypes.ts";
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
   import { object, string } from "yup";
@@ -38,19 +36,16 @@
     org: string;
     name: string;
     branch: string;
-    subpath: string;
   } = {
     org: "",
     name: project, // Initialize repo name with project name
     branch: "main",
-    subpath: "",
   };
   const schema = yup(
     object({
       org: string().required("Org is required"),
       name: string().required("Repo name is required"),
       branch: string().required("Branch is required"),
-      subpath: string(),
     }),
   );
 
@@ -72,7 +67,6 @@
           data: {
             remote,
             branch: values.branch,
-            subpath: values.subpath,
             create: true,
           },
         });
@@ -163,15 +157,6 @@
             id="branch"
             label="Branch"
             capitalizeLabel={false}
-          />
-
-          <Input
-            bind:value={$form.subpath}
-            errors={$errors?.subpath}
-            id="subpath"
-            label="Subpath"
-            capitalizeLabel={false}
-            optional
           />
         </Collapsible.Content>
       </Collapsible.Root>

@@ -302,6 +302,10 @@ func (s *Server) ConnectProjectToGithub(ctx context.Context, req *adminv1.Connec
 		attribute.Bool("args.create", req.Create),
 	)
 
+	if req.Create && req.Subpath != "" {
+		return nil, status.Error(codes.FailedPrecondition, "cannot create with a subpath")
+	}
+
 	// Backwards compatibility
 	req.Remote = normalizeGitRemote(req.Remote)
 
@@ -359,7 +363,7 @@ func (s *Server) ConnectProjectToGithub(ctx context.Context, req *adminv1.Connec
 		}
 
 		err = s.createRepo(ctx, client, org, repo, req.Branch)
-		if err != nil && (!strings.Contains(err.Error(), "name already exists on this account") || req.Subpath == "") {
+		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 	}
