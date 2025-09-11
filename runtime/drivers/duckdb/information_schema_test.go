@@ -29,50 +29,21 @@ func TestInformationSchema(t *testing.T) {
 
 func prepareData(t *testing.T, olap drivers.OLAPStore) {
 
-	err := olap.Exec(context.Background(), &drivers.Statement{
-		Query: "CREATE OR REPLACE VIEW model as (select 1, 2, 3)",
-	})
+	_, err := olap.(*connection).createTableAsSelect(context.Background(), "foo", "SELECT * FROM (VALUES ('a', 1), ('a', 2), ('b', 3), ('c', 4)) AS t(bar, baz)", &createTableOptions{})
 	require.NoError(t, err)
 
-	err = olap.Exec(context.Background(), &drivers.Statement{
-		Query: "CREATE TABLE foo(bar VARCHAR, baz INTEGER)",
-	})
+	_, err = olap.(*connection).createTableAsSelect(context.Background(), "bar", "SELECT * FROM (VALUES ('a', 1), ('a', 2), ('b', 3), ('c', 4)) AS t(bar, baz)", &createTableOptions{})
 	require.NoError(t, err)
 
-	err = olap.Exec(context.Background(), &drivers.Statement{
-		Query: "INSERT INTO foo VALUES ('a', 1), ('a', 2), ('b', 3), ('c', 4)",
-	})
+	_, err = olap.(*connection).createTableAsSelect(context.Background(), "foz", "SELECT * FROM (VALUES ('a', 1), ('a', 2), ('b', 3), ('c', 4)) AS t(bar, baz)", &createTableOptions{})
 	require.NoError(t, err)
 
-	err = olap.Exec(context.Background(), &drivers.Statement{
-		Query: "CREATE TABLE bar(bar VARCHAR, baz INTEGER)",
-	})
+	_, err = olap.(*connection).createTableAsSelect(context.Background(), "baz", "SELECT * FROM (VALUES ('a', 1), ('a', 2), ('b', 3), ('c', 4)) AS t(bar, baz)", &createTableOptions{})
 	require.NoError(t, err)
 
-	err = olap.Exec(context.Background(), &drivers.Statement{
-		Query: "INSERT INTO bar VALUES ('a', 1), ('a', 2), ('b', 3), ('c', 4)",
-	})
+	_, err = olap.(*connection).createTableAsSelect(context.Background(), "model", "SELECT 1,2,3", &createTableOptions{view: true})
 	require.NoError(t, err)
 
-	err = olap.Exec(context.Background(), &drivers.Statement{
-		Query: "CREATE TABLE foz(bar VARCHAR, baz INTEGER)",
-	})
-	require.NoError(t, err)
-
-	err = olap.Exec(context.Background(), &drivers.Statement{
-		Query: "INSERT INTO  foz VALUES ('a', 1), ('a', 2), ('b', 3), ('c', 4)",
-	})
-	require.NoError(t, err)
-
-	err = olap.Exec(context.Background(), &drivers.Statement{
-		Query: "CREATE TABLE baz(bar VARCHAR, baz INTEGER)",
-	})
-	require.NoError(t, err)
-
-	err = olap.Exec(context.Background(), &drivers.Statement{
-		Query: "INSERT INTO baz VALUES ('a', 1), ('a', 2), ('b', 3), ('c', 4)",
-	})
-	require.NoError(t, err)
 }
 
 func testInformationSchemaAll(t *testing.T, olap drivers.OLAPStore) {
@@ -95,7 +66,7 @@ func testInformationSchemaAll(t *testing.T, olap drivers.OLAPStore) {
 	require.Equal(t, "baz", bar.Schema.Fields[1].Name)
 	require.Equal(t, runtimev1.Type_CODE_INT32, bar.Schema.Fields[1].Type.Code)
 	require.Equal(t, false, bar.View)
-	require.Greater(t, bar.PhysicalSizeBytes, int64(0), "size should be greater than zero")
+	require.Greater(t, bar.PhysicalSizeBytes, int64(0))
 
 	model := tables[4]
 	require.Equal(t, 3, len(model.Schema.Fields))
