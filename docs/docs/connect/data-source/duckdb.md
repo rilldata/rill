@@ -30,9 +30,9 @@ When deploying to Rill Cloud, only the contents of the Rill data directory will 
 
 
 
-:::tip Live Connector (MotherDuck) vs. Connecting to local DuckDB
+:::tip Live Connector (MotherDuck)
 
-If you already have data in your MotherDuck instance or local DuckDB, and/or are thinking of using Rill as an application layer over an existing database, we recommend using a live connector with MotherDuck.
+If you already have data in your MotherDuck instance and are thinking of using Rill as an application layer to visualize your data, we recommend using a live connector with MotherDuck.
 
-Please review this documentation as well as our [MotherDuck live connector docs](/connect/olap/motherduck) for more information. 
+Please review our [MotherDuck live connector docs](/connect/olap/motherduck) for more information. 
 :::
