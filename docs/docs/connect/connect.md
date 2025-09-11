@@ -199,7 +199,7 @@ Rill is continually evaluating additional OLAP engines that can be added. For a 
 </div>
 
 ## Other Data Connectors
-
+### DuckDB as a Source
 ### Google Sheets
 ### HTTPS
 ### Local File
@@ -207,7 +207,13 @@ Rill is continually evaluating additional OLAP engines that can be added. For a 
 
 
 <div className="connector-icon-grid">
-
+  <ConnectorIcon
+    icon={<img src="/img/connect/icons/Logo-DuckDB-icon.svg" alt="Google Sheets" className="sheets-icon" />}
+    header="DuckDB"
+    content="Connect your local DuckDB database to Rill's embedded database."
+    link="/connect/data-source/duckdb"
+    linkLabel="Learn more"
+  />
   <ConnectorIcon
     icon={<img src="/img/connect/icons/Logo-Sheets.svg" alt="Google Sheets" className="sheets-icon" />}
     header="Google Sheets"
