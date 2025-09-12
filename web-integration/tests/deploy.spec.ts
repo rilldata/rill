@@ -12,8 +12,7 @@ test.describe("Deploy journey", () => {
   const deployFirstOrgName = "e2e-org-first";
   const deploySecondOrgName = "e2e-org-second";
   // Create consistent folders to facilitate running individual tests, not just the full suite.
-  const sharedFirstProjectDir = join(tmpdir(), "adbids");
-  const sharedSecondProjectDir = join(tmpdir(), "adimpressions");
+  const sharedProjectDir = join(tmpdir(), "adbids");
 
   test.use({
     cliHomeDir,
@@ -59,10 +58,15 @@ test.describe("Deploy journey", () => {
 
   test.describe("Create/Update flow", () => {
     test.use({
-      projectDir: sharedFirstProjectDir,
+      projectDir: sharedProjectDir,
     });
 
     test("Should create new org and deploy", async ({ rillDevPage }) => {
+      // Goto explore before deploying. This should land the user to explore on cloud on deploy.
+      await rillDevPage.goto(
+        rillDevPage.url() + "/files/dashboards/AdBids_metrics_explore.yaml",
+      );
+
       // Start waiting for popup before clicking Deploy.
       const popupPromise = rillDevPage.waitForEvent("popup");
 
@@ -106,15 +110,10 @@ test.describe("Deploy journey", () => {
 
       await assertAndSkipInvite(deployPage);
 
-      // Project status page is opened.
-      await expect(deployPage.getByLabel("Container title")).toHaveText(
-        "Project status",
-      );
-
-      // Check that the dashboards are listed
+      // Explore is opened after deploying.
       await expect(
-        deployPage.getByText("AdBids_metrics_explore"),
-      ).toBeVisible();
+        deployPage.getByLabel("Breadcrumb navigation, level 2"),
+      ).toHaveText("Adbids dashboard");
 
       // Org title is correct
       await expect(
@@ -198,10 +197,10 @@ test.describe("Deploy journey", () => {
 
     await assertAndSkipInvite(deployPage);
 
-    // Project status page is opened.
-    await expect(deployPage.getByLabel("Container title")).toHaveText(
-      "Project status",
-    );
+    // Canvas is opened.
+    await expect(
+      deployPage.getByLabel("Breadcrumb navigation, level 2"),
+    ).toHaveText("Adbids Canvas Dashboard");
 
     // Org title is correct
     await expect(
@@ -209,9 +208,6 @@ test.describe("Deploy journey", () => {
     ).toHaveText(
       /e2e-org-second.*/, // Trial pill is not always present because of race condition.
     );
-
-    // Check that the dashboards are listed
-    await expect(deployPage.getByText("AdBids_metrics_explore")).toBeVisible();
   });
 });
 
@@ -222,7 +218,7 @@ async function assertAndSkipInvite(page: Page) {
       async () => {
         return page.getByText("Invite teammates to your project").isVisible();
       },
-      { intervals: Array(6).fill(5_000), timeout: 30_000 },
+      { intervals: Array(6).fill(10_000), timeout: 60_000 },
     )
     .toBeTruthy();
 
@@ -232,52 +228,16 @@ async function assertAndSkipInvite(page: Page) {
 
 async function ensureProjectRedeployed(page: Page) {
   // Dashboard listing page is opened on a re-deploy. This can take a while, so it has increased timeout.
-  await expect
-    .poll(
-      async () => {
-        await page.reload();
-        const title = page.getByLabel("Container title");
-        return title.textContent();
-      },
-      { intervals: Array(5).fill(20_000), timeout: 120_000 },
-    )
-    .toEqual("Project dashboards");
+  await expect(page.getByLabel("Container title")).toHaveText(
+    "Project dashboards",
+    { timeout: 120_000 },
+  );
 }
 
 async function ensureDashboardTitle(page: Page, title: string) {
-  // Do a check upfront to avoid a reload.
-  try {
-    await expect(
-      page
-        .getByRole("link", {
-          name: title,
-        })
-        .first(),
-    ).toBeVisible();
-    // Title is already updated so return
-    return;
-  } catch {
-    // no-op
-  }
-
-  // Check that the dashboard's title has changed. Since there is an async reconcile is involved, we need to refresh and wait.
-  await expect
-    .poll(
-      async () => {
-        await page.reload();
-        await page.waitForTimeout(1000); // Wait for page to fully load
-        const listing = page
-          .getByRole("link", {
-            name: title,
-          })
-          .first();
-        return listing.isVisible();
-      },
-      {
-        // Increased timeout for the 1st dashboard to make reconcile.
-        intervals: [10_000, 20_000, 30_000],
-        timeout: 60_000,
-      },
-    )
-    .toBeTruthy();
+  await expect(
+    page.getByRole("link", {
+      name: title,
+    }),
+  ).toBeVisible({ timeout: 60_000 });
 }

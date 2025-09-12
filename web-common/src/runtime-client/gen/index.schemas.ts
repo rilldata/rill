@@ -1171,6 +1171,7 @@ export interface V1ListConversationsResponse {
 
 export interface V1ListDatabaseSchemasResponse {
   databaseSchemas?: V1DatabaseSchemaInfo[];
+  nextPageToken?: string;
 }
 
 export interface V1ListExamplesResponse {
@@ -1197,6 +1198,7 @@ export interface V1ListResourcesResponse {
 
 export interface V1ListTablesResponse {
   tables?: V1TableInfo[];
+  nextPageToken?: string;
 }
 
 export interface V1Log {
@@ -2407,6 +2409,8 @@ export type ConnectorServiceBigQueryListTablesParams = {
 export type ConnectorServiceListDatabaseSchemasParams = {
   instanceId?: string;
   connector?: string;
+  pageSize?: number;
+  pageToken?: string;
 };
 
 export type ConnectorServiceOLAPGetTableParams = {
@@ -2430,6 +2434,8 @@ export type ConnectorServiceListTablesParams = {
   connector?: string;
   database?: string;
   databaseSchema?: string;
+  pageSize?: number;
+  pageToken?: string;
 };
 
 export type ConnectorServiceGCSListObjectsParams = {

@@ -1,4 +1,4 @@
-package server
+package pagination
 
 import (
 	"reflect"
@@ -10,8 +10,8 @@ import (
 
 func TestPageToken(t *testing.T) {
 	tc := func(args []any, out ...any) {
-		token := marshalPageToken(args...)
-		err := unmarshalPageToken(token, out...)
+		token := MarshalPageToken(args...)
+		err := UnmarshalPageToken(token, out...)
 		require.NoError(t, err)
 		require.Equal(t, len(args), len(out))
 		for i := range args {
@@ -28,7 +28,8 @@ func TestPageToken(t *testing.T) {
 
 	var a3 string
 	var b3 time.Time
-	tc([]any{"a", must(time.Parse(time.DateOnly, "2024-01-01"))}, &a3, &b3)
+	tm, _ := time.Parse(time.DateOnly, "2024-01-01")
+	tc([]any{"a", tm}, &a3, &b3)
 
 	var a4 any
 	var b4 bool

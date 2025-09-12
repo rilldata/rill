@@ -257,8 +257,11 @@ _[boolean]_ - Controls whether to log raw SQL queries
 
 ### `query_settings_override`
 
-_[string]_ - override the default settings used in queries. Changing the default settings can lead to incorrect query results and is generally not recommended. If you need to add settings, append them to the defaults:  
-`cast_keep_nullable = 1, join_use_nulls = 1, session_timezone = 'UTC', prefer_global_in_and_join = 1, insert_distributed_sync = 1, <your additional settings>`
+_[string]_ - override the default settings used in queries. Changing the default settings can lead to incorrect query results and is generally not recommended. If you need to add settings, use `query_settings` 
+
+### `query_settings`
+
+_[string]_ - query settings to be set on dashboard queries. `query_settings_override` takes precedence over these settings and if set these are ignored. Each setting must be separated by a comma. Example `max_threads = 8, max_memory_usage = 10000000000` 
 
 ### `embed_port`
 
@@ -863,7 +866,7 @@ Example commands to generate and encode:
 openssl genrsa 2048 | openssl pkcs8 -topk8 -inform PEM -out rsa_key.p8 -nocrypt
 
 # Convert URL safe format for Snowflake
-cat rsa_key.p8 | grep -v "\----" | tr -d '\n' | tr '+/' '-_' | tr -d '='
+cat rsa_key.p8 | grep -v "\----" | tr -d '\n' | tr '+/' '-_'
 ```
 See: https://docs.snowflake.com/en/user-guide/key-pair-auth
 :::
