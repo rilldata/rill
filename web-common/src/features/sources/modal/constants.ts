@@ -25,7 +25,6 @@ export const SOURCES = [
   "athena",
   "redshift",
   "duckdb",
-  "motherduck",
   "postgres",
   "mysql",
   "sqlite",
@@ -35,6 +34,6 @@ export const SOURCES = [
   "https",
 ];
 
-export const OLAP_ENGINES = ["clickhouse", "druid", "pinot"];
+export const OLAP_ENGINES = ["clickhouse", "motherduck", "druid", "pinot"];
 
 export const ALL_CONNECTORS = [...SOURCES, ...OLAP_ENGINES];
