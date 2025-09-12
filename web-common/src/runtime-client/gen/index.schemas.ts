@@ -786,6 +786,7 @@ export interface V1DeleteInstanceResponse {
 export interface V1DirEntry {
   path?: string;
   isDir?: boolean;
+  size?: string;
 }
 
 export interface V1EditInstanceResponse {
@@ -1710,7 +1711,6 @@ export interface V1ModelSpec {
   stageProperties?: V1ModelSpecStageProperties;
   outputConnector?: string;
   outputProperties?: V1ModelSpecOutputProperties;
-  /** retry is optional. */
   retryAttempts?: number;
   retryDelaySeconds?: number;
   retryExponentialBackoff?: boolean;
@@ -2379,6 +2379,7 @@ export interface V1WatchFilesResponse {
   event?: V1FileEvent;
   path?: string;
   isDir?: boolean;
+  size?: string;
 }
 
 export interface V1WatchLogsResponse {

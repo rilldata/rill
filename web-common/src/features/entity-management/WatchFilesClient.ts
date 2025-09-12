@@ -1,5 +1,6 @@
 import { invalidate } from "$app/navigation";
 import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
+import { maybeSendLargeFileNotification } from "@rilldata/web-common/features/entity-management/file-selectors.ts";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
   getRuntimeServiceGetFileQueryKey,
@@ -53,6 +54,7 @@ export class WatchFilesClient {
             await invalidate("init");
           }
           this.seenFiles.add(res.path);
+          maybeSendLargeFileNotification(res);
           break;
 
         case V1FileEvent.FILE_EVENT_DELETE:
