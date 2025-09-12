@@ -172,7 +172,7 @@ func (s *Server) ListProjectsForFingerprint(ctx context.Context, req *adminv1.Li
 		return nil, err
 	}
 
-	if len(projects) == 0 {
+	if len(projects) == 0 && req.GitRemote != "" {
 		// if no project is found check if there is project user doesn't have access to
 		projects, err = s.admin.DB.FindProjectsByGitRemote(ctx, normalizeGitRemote(req.GitRemote))
 		if err != nil {
