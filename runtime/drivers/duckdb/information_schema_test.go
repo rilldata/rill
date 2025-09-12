@@ -28,8 +28,8 @@ func TestInformationSchema(t *testing.T) {
 	t.Run("testInformationSchemaAll", func(t *testing.T) { testInformationSchemaAll(t, olap) })
 	t.Run("testInformationSchemaAllLike", func(t *testing.T) { testInformationSchemaAllLike(t, olap) })
 	t.Run("testInformationSchemaLookup", func(t *testing.T) { testInformationSchemaLookup(t, olap) })
-	t.Run("testInformationSchemaPagination", func(t *testing.T) { testInformationSchemaPagination(t, olap) })
-	t.Run("testInformationSchemaPaginationWithLike", func(t *testing.T) { testInformationSchemaPaginationWithLike(t, olap) })
+	t.Run("testInformationSchemaPagination", func(t *testing.T) { testInformationSchemaAllPagination(t, olap) })
+	t.Run("testInformationSchemaPaginationWithLike", func(t *testing.T) { testInformationSchemaAllPaginationWithLike(t, olap) })
 }
 
 func TestInformationSchemaMotherduck(t *testing.T) {
@@ -60,8 +60,8 @@ func TestInformationSchemaMotherduck(t *testing.T) {
 	t.Run("testInformationSchemaAll", func(t *testing.T) { testInformationSchemaAll(t, olap) })
 	t.Run("testInformationSchemaAllLike", func(t *testing.T) { testInformationSchemaAllLike(t, olap) })
 	t.Run("testInformationSchemaLookup", func(t *testing.T) { testInformationSchemaLookup(t, olap) })
-	t.Run("testInformationSchemaPagination", func(t *testing.T) { testInformationSchemaPagination(t, olap) })
-	t.Run("testInformationSchemaPaginationWithLike", func(t *testing.T) { testInformationSchemaPaginationWithLike(t, olap) })
+	t.Run("testInformationSchemaPagination", func(t *testing.T) { testInformationSchemaAllPagination(t, olap) })
+	t.Run("testInformationSchemaPaginationWithLike", func(t *testing.T) { testInformationSchemaAllPaginationWithLike(t, olap) })
 }
 
 func prepareData(t *testing.T, olap drivers.OLAPStore) {
@@ -99,17 +99,9 @@ func testInformationSchemaAll(t *testing.T, olap drivers.OLAPStore) {
 	require.Equal(t, "foz", tables[4].Name)
 	require.Equal(t, "model", tables[5].Name)
 
-	bar := tables[1]
-	require.Equal(t, 2, len(bar.Schema.Fields))
-	require.Equal(t, "bar", bar.Name)
-	require.Equal(t, "bar", bar.Schema.Fields[0].Name)
-	require.Equal(t, runtimev1.Type_CODE_STRING, bar.Schema.Fields[0].Type.Code)
-	require.Equal(t, "baz", bar.Schema.Fields[1].Name)
-	require.Equal(t, runtimev1.Type_CODE_INT32, bar.Schema.Fields[1].Type.Code)
-	require.Equal(t, false, bar.View)
 	// add this condition to prevent size check for motherduck connector
-	if bar.DatabaseSchema != "integration_test" {
-		require.Greater(t, bar.PhysicalSizeBytes, int64(0))
+	if tables[1].DatabaseSchema != "integration_test" {
+		require.Greater(t, tables[1].PhysicalSizeBytes, int64(0))
 	}
 
 	model := tables[5]
@@ -136,19 +128,25 @@ func testInformationSchemaAllLike(t *testing.T, olap drivers.OLAPStore) {
 
 func testInformationSchemaLookup(t *testing.T, olap drivers.OLAPStore) {
 	ctx := context.Background()
-	table, err := olap.InformationSchema().Lookup(ctx, "", "", "foo")
+	bar, err := olap.InformationSchema().Lookup(ctx, "", "", "bar")
 	require.NoError(t, err)
-	require.Equal(t, "foo", table.Name)
+	require.Equal(t, "bar", bar.Name)
+	require.Equal(t, 2, len(bar.Schema.Fields))
+	require.Equal(t, "bar", bar.Schema.Fields[0].Name)
+	require.Equal(t, runtimev1.Type_CODE_STRING, bar.Schema.Fields[0].Type.Code)
+	require.Equal(t, "baz", bar.Schema.Fields[1].Name)
+	require.Equal(t, runtimev1.Type_CODE_INT32, bar.Schema.Fields[1].Type.Code)
+	require.Equal(t, false, bar.View)
 
 	_, err = olap.InformationSchema().Lookup(ctx, "", "", "nonexistent_table")
 	require.Equal(t, drivers.ErrNotFound, err)
 
-	table, err = olap.InformationSchema().Lookup(ctx, "", "", "model")
+	table, err := olap.InformationSchema().Lookup(ctx, "", "", "model")
 	require.NoError(t, err)
 	require.Equal(t, "model", table.Name)
 }
 
-func testInformationSchemaPagination(t *testing.T, olap drivers.OLAPStore) {
+func testInformationSchemaAllPagination(t *testing.T, olap drivers.OLAPStore) {
 	ctx := context.Background()
 	pageSize := 2
 
@@ -183,7 +181,7 @@ func testInformationSchemaPagination(t *testing.T, olap drivers.OLAPStore) {
 	require.Empty(t, nextToken)
 }
 
-func testInformationSchemaPaginationWithLike(t *testing.T, olap drivers.OLAPStore) {
+func testInformationSchemaAllPaginationWithLike(t *testing.T, olap drivers.OLAPStore) {
 	ctx := context.Background()
 	pageSize := 1
 	// Test first page

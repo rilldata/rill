@@ -30,7 +30,7 @@ func TestInformationSchema(t *testing.T) {
 	t.Run("testInformationSchemaAllLike", func(t *testing.T) { testInformationSchemaAllLike(t, olap, expectedTables) })
 	t.Run("testInformationSchemaAllPagination", func(t *testing.T) { testInformationSchemaAllPagination(t, olap, expectedTables) })
 	t.Run("testInformationSchemaAllPaginationWithLike", func(t *testing.T) { testInformationSchemaAllPaginationWithLike(t, olap, expectedTables) })
-	t.Run("testSchemaLookup", func(t *testing.T) { testSchemaLookup(t, olap, expectedTables) })
+	t.Run("testSchemaLookup", func(t *testing.T) { testInformationSchemaLookup(t, olap, expectedTables) })
 }
 
 type expectedTable struct {
@@ -161,7 +161,7 @@ func testInformationSchemaAllPaginationWithLike(t *testing.T, olap drivers.OLAPS
 	}
 }
 
-func testSchemaLookup(t *testing.T, olap drivers.OLAPStore, expected []expectedTable) {
+func testInformationSchemaLookup(t *testing.T, olap drivers.OLAPStore, expected []expectedTable) {
 	ctx := context.Background()
 
 	require.Len(t, expected, 1, "expected exactly one table for schema lookup test")

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -42,6 +43,9 @@ func (c *connection) All(ctx context.Context, like string, pageSize uint32, page
 	if err != nil {
 		return nil, "", err
 	}
+
+	// Sort the tables alphabetically required for pagination
+	sort.Strings(tablesResp.Tables)
 
 	// Poor man's conversion of a SQL ILIKE pattern to a Go regexp.
 	var likeRegexp *regexp.Regexp
@@ -102,6 +106,9 @@ func (c *connection) All(ctx context.Context, like string, pageSize uint32, page
 	if err := g.Wait(); err != nil {
 		return nil, "", err
 	}
+	sort.Slice(tables, func(i, j int) bool {
+		return tables[i].Name < tables[j].Name
+	})
 
 	next := ""
 	if endIndex < len(filteredTables) {

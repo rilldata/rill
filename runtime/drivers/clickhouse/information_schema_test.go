@@ -29,8 +29,8 @@ func TestInformationSchema(t *testing.T) {
 		testInformationSchemaSystemAllLike(t, conn)
 	})
 	t.Run("testInformationSchemaLookup", func(t *testing.T) { testInformationSchemaLookup(t, conn) })
-	t.Run("testInformationSchemaPagination", func(t *testing.T) { testInformationSchemaPagination(t, conn) })
-	t.Run("testInformationSchemaPaginationWithLike", func(t *testing.T) { testInformationSchemaPaginationWithLike(t, conn) })
+	t.Run("testInformationSchemaPagination", func(t *testing.T) { testInformationSchemaAllPagination(t, conn) })
+	t.Run("testInformationSchemaPaginationWithLike", func(t *testing.T) { testInformationSchemaAllPaginationWithLike(t, conn) })
 }
 
 func testInformationSchemaAll(t *testing.T, conn drivers.Handle) {
@@ -118,7 +118,7 @@ func testInformationSchemaLookup(t *testing.T, conn drivers.Handle) {
 	require.Equal(t, false, table.IsDefaultDatabaseSchema)
 }
 
-func testInformationSchemaPagination(t *testing.T, conn drivers.Handle) {
+func testInformationSchemaAllPagination(t *testing.T, conn drivers.Handle) {
 	olap, _ := conn.AsOLAP("")
 	ctx := context.Background()
 
@@ -155,7 +155,7 @@ func testInformationSchemaPagination(t *testing.T, conn drivers.Handle) {
 	require.Empty(t, nextToken)
 }
 
-func testInformationSchemaPaginationWithLike(t *testing.T, conn drivers.Handle) {
+func testInformationSchemaAllPaginationWithLike(t *testing.T, conn drivers.Handle) {
 	olap, _ := conn.AsOLAP("")
 	ctx := context.Background()
 
