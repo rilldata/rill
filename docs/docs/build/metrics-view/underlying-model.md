@@ -47,7 +47,7 @@ database_schema: default
 table: clickhouse_table # Choose a table to underpin your metrics view
 ```
 
-For more information, refer to our [metrics view YAML configuration](/reference/project-files/metrics-views) for more information.
+For more information, refer to our [metrics view YAML configuration](/reference/project-files/metrics-views).
 
 ## Visual Metrics Editor
 

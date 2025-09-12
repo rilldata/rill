@@ -75,10 +75,13 @@ features:
 
 ## Creating Valid Metrics Views
 
+### Underlying Model/Table
+
+Before creating any measures or dimensions, you'll need to select a single model or table to power you metrics view. For a full walkthrough on DuckDB vs Live Connectors, see our [Underlying Model/Table](/build/metrics-view/underlying-model) doc.
+
 ### Time Series
 
 Time is the most critical dimension in analytics and powers our dashboards. Understanding not just the "what," but how metrics evolve over hours, days, and months provides the narrative arc for decision-making. For a full walkthrough, see our [Time Series](/build/metrics-view/time-series) doc.
-
 
 ### Dimensions
 
