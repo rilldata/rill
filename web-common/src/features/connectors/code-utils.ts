@@ -222,13 +222,13 @@ export function deleteEnvVariable(
 }
 
 export function makeDotEnvConnectorKey(
-  connectorName: string,
+  driverName: string,
   key: string,
   connectorInstanceName?: string,
 ) {
-  // Note: The connector instance name is used when provided, otherwise fall back to connector name.
+  // Note: The connector instance name is used when provided, otherwise fall back to driver name.
   // This enables configuring multiple connectors that use the same driver with unique env keys.
-  const nameToUse = connectorInstanceName || connectorName;
+  const nameToUse = connectorInstanceName || driverName;
   return `connector.${nameToUse}.${key}`;
 }
 
