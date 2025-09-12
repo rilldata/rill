@@ -43,8 +43,8 @@ version: 1
 type: metrics_view
 
 connector: clickhouse
-database_schema: default
-table: clickhouse_table # Choose a table to underpin your metrics view
+database_schema: billing
+table: events # Choose a table to underpin your metrics view
 ```
 
 For more information, refer to our [metrics view YAML configuration](/reference/project-files/metrics-views).
