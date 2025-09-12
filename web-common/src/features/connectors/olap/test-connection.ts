@@ -5,18 +5,17 @@ import {
 } from "../../../runtime-client";
 import { humanReadableErrorMessage } from "../../sources/errors/errors";
 
-interface TestConnectorResult {
+export interface TestConnectorResult {
   success: boolean;
   error?: string;
   details?: string;
 }
 
+// Used for OLAP connectors (needs connection testing using `ListTables` API)
 export async function testOLAPConnector(
   instanceId: string,
   newConnectorName: string,
 ): Promise<TestConnectorResult> {
-  // Test the connection by calling `ListTables`
-
   const queryKey = getConnectorServiceOLAPListTablesQueryKey({
     instanceId,
     connector: newConnectorName,

@@ -112,6 +112,15 @@
     if ($dsnTainted) dsnError = null;
   }
 
+  // Clear errors when switching tabs
+  $: if (connectionTab === "dsn") {
+    paramsError = null;
+    paramsErrorDetails = undefined;
+  } else {
+    dsnError = null;
+    dsnErrorDetails = undefined;
+  }
+
   // Emit the submitting state to the parent
   $: dispatch("submitting", { submitting });
 
@@ -240,6 +249,9 @@
         error = humanReadable;
         details =
           humanReadable !== originalMessage ? originalMessage : undefined;
+      } else if (e?.message) {
+        error = e.message;
+        details = undefined;
       } else {
         error = "Unknown error";
         details = undefined;

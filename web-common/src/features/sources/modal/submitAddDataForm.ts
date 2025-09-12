@@ -23,7 +23,10 @@ import {
   updateRillYAMLWithOlapConnector,
 } from "../../connectors/code-utils";
 import { testOLAPConnector } from "../../connectors/olap/test-connection";
-import { runtimeServicePutFileAndWaitForReconciliation } from "../../entity-management/actions";
+import {
+  runtimeServicePutFileAndWaitForReconciliation,
+  runtimeServicePutConnectorFileAndWaitForResourceReconciliation,
+} from "../../entity-management/actions";
 import { getFileAPIPathFromNameAndType } from "../../entity-management/entity-mappers";
 import { fileArtifacts } from "../../entity-management/file-artifacts";
 import { getName } from "../../entity-management/name-utils";
@@ -39,10 +42,7 @@ interface AddDataFormValues {
   [key: string]: unknown;
 }
 
-/**
- * Handles submission for sources, including those that get rewritten to DuckDB
- * (GCS, S3, Azure, etc.) and actual source files.
- */
+// Source YAML - `type: model`
 export async function submitAddSourceForm(
   queryClient: QueryClient,
   connector: V1ConnectorDriver,
@@ -84,9 +84,7 @@ export async function submitAddSourceForm(
   await goto(`/files/${newSourceFilePath}`);
 }
 
-/**
- * Handles submission for all connector types: ImplementsOLAP, ImplementsWarehouse, ImplementsSQLStore
- */
+// Connector YAML - `type: connector`
 export async function submitAddConnectorForm(
   queryClient: QueryClient,
   connector: V1ConnectorDriver,
@@ -111,12 +109,39 @@ export async function submitAddConnectorForm(
     newConnectorName,
     EntityType.Connector,
   );
-  await runtimeServicePutFile(instanceId, {
-    path: newConnectorFilePath,
-    blob: compileConnectorYAML(connector, formValues),
-    create: true,
-    createOnly: false,
-  });
+
+  // For non-OLAP connectors, wait for connector reconciliation first
+  if (!OLAP_ENGINES.includes(connector.name as string)) {
+    try {
+      await runtimeServicePutConnectorFileAndWaitForResourceReconciliation(
+        instanceId,
+        {
+          path: newConnectorFilePath,
+          blob: compileConnectorYAML(connector, formValues),
+          create: true,
+          createOnly: false,
+        },
+        newConnectorName,
+      );
+    } catch (error) {
+      // The connector file was already created, so we need to delete it
+      await runtimeServiceDeleteFile(instanceId, {
+        path: newConnectorFilePath,
+      });
+      throw {
+        message: error.message || "Unable to establish a connection",
+        details: (error as any).details || error.message,
+      };
+    }
+  } else {
+    // For OLAP connectors, just create the file (will be tested later)
+    await runtimeServicePutFile(instanceId, {
+      path: newConnectorFilePath,
+      blob: compileConnectorYAML(connector, formValues),
+      create: true,
+      createOnly: false,
+    });
+  }
 
   // Check for an existing `.env` file
   // Store the original `.env` blob so we can restore it in case of errors
@@ -175,8 +200,8 @@ export async function submitAddConnectorForm(
     throw new Error(errorMessage);
   }
 
-  // Test the connection to the OLAP database (only for OLAP_ENGINES connectors)
-  // If the connection test fails, rollback the changes
+  // Test the connection for OLAP connectors only
+  // Non-OLAP connectors are already tested above
   if (OLAP_ENGINES.includes(connector.name as string)) {
     const result = await testOLAPConnector(
       instanceId,
