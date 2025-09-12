@@ -385,7 +385,7 @@ paths:
           type: string
       tags:
         - AdminService
-  /v1/organizations:
+  /v1/orgs:
     get:
       summary: ListOrganizations lists all the organizations currently managed by the admin
       operationId: AdminService_ListOrganizations
@@ -430,7 +430,7 @@ paths:
             $ref: '#/definitions/v1CreateOrganizationRequest'
       tags:
         - AdminService
-  /v1/organizations/{name}:
+  /v1/orgs/{name}:
     get:
       summary: GetOrganization returns information about a specific organization
       operationId: AdminService_GetOrganization
@@ -514,7 +514,7 @@ paths:
                 type: string
       tags:
         - AdminService
-  /v1/organizations/{organization}/billing/issues:
+  /v1/orgs/{organization}/billing/issues:
     get:
       summary: ListOrganizationBillingIssues lists all the billing issues for the organization
       operationId: AdminService_ListOrganizationBillingIssues
@@ -538,7 +538,7 @@ paths:
           type: boolean
       tags:
         - AdminService
-  /v1/organizations/{organization}/billing/payments/portal-url:
+  /v1/orgs/{organization}/billing/payments/portal-url:
     get:
       summary: GetPaymentsPortalURL returns the URL for the billing session to collect payment method
       operationId: AdminService_GetPaymentsPortalURL
@@ -566,7 +566,7 @@ paths:
           type: boolean
       tags:
         - AdminService
-  /v1/organizations/{organization}/billing/subscriptions:
+  /v1/orgs/{organization}/billing/subscriptions:
     get:
       summary: GetBillingSubscription lists the subscription for the organization
       operationId: AdminService_GetBillingSubscription
@@ -642,7 +642,7 @@ paths:
                 type: boolean
       tags:
         - AdminService
-  /v1/organizations/{organization}/billing/subscriptions/renew:
+  /v1/orgs/{organization}/billing/subscriptions/renew:
     post:
       summary: RenewBillingSubscription renews the billing plan for the organization once cancelled
       operationId: AdminService_RenewBillingSubscription
@@ -672,7 +672,7 @@ paths:
                 type: boolean
       tags:
         - AdminService
-  /v1/organizations/{organization}/create-managed-git-repo:
+  /v1/orgs/{organization}/create-managed-git-repo:
     put:
       summary: CreateManagedGitRepo creates a new rill managed git repo for the organization.
       operationId: AdminService_CreateManagedGitRepo
@@ -701,7 +701,7 @@ paths:
                 description: "name of the repo to create. \nNote: The final name will be suffixed with a random string to ensure uniqueness."
       tags:
         - AdminService
-  /v1/organizations/{organization}/invites:
+  /v1/orgs/{organization}/invites:
     get:
       summary: ListOrganizationInvites lists all the org invites
       operationId: AdminService_ListOrganizationInvites
@@ -730,7 +730,7 @@ paths:
           type: string
       tags:
         - AdminService
-  /v1/organizations/{organization}/members:
+  /v1/orgs/{organization}/members:
     get:
       summary: ListOrganizationMemberUsers lists all the org members
       operationId: AdminService_ListOrganizationMemberUsers
@@ -804,7 +804,7 @@ paths:
                 type: boolean
       tags:
         - AdminService
-  /v1/organizations/{organization}/members/{email}:
+  /v1/orgs/{organization}/members/{email}:
     delete:
       summary: RemoveOrganizationMemberUser removes member from the organization
       operationId: AdminService_RemoveOrganizationMemberUser
@@ -861,7 +861,7 @@ paths:
                 type: boolean
       tags:
         - AdminService
-  /v1/organizations/{organization}/members/current:
+  /v1/orgs/{organization}/members/current:
     delete:
       summary: LeaveOrganization removes the current user from the organization
       operationId: AdminService_LeaveOrganization
@@ -881,7 +881,7 @@ paths:
           type: string
       tags:
         - AdminService
-  /v1/organizations/{organization}/project/{project}/usergroups:
+  /v1/orgs/{organization}/project/{project}/usergroups:
     get:
       summary: ListProjectMemberUsergroups lists the project's user groups
       operationId: AdminService_ListProjectMemberUsergroups
@@ -919,7 +919,7 @@ paths:
           type: string
       tags:
         - AdminService
-  /v1/organizations/{organization}/projects-for-user:
+  /v1/orgs/{organization}/projects-for-user:
     get:
       summary: |-
         ListProjectsForOrganizationAndUser lists all the projects that an organization member user has access to.
@@ -954,7 +954,7 @@ paths:
           type: string
       tags:
         - AdminService
-  /v1/organizations/{organization}/projects/{project}/alerts:
+  /v1/orgs/{organization}/projects/{project}/alerts:
     post:
       summary: CreateAlert adds a virtual file for an alert, triggers a reconcile, and waits for the alert to be added to the runtime catalog
       operationId: AdminService_CreateAlert
@@ -986,7 +986,7 @@ paths:
                 $ref: '#/definitions/v1AlertOptions'
       tags:
         - AdminService
-  /v1/organizations/{organization}/projects/{project}/alerts/-/yaml:
+  /v1/orgs/{organization}/projects/{project}/alerts/-/yaml:
     post:
       summary: GenerateAlertYAML generates YAML for an alert to be copied into a project's Git repository
       operationId: AdminService_GenerateAlertYAML
@@ -1018,7 +1018,7 @@ paths:
                 $ref: '#/definitions/v1AlertOptions'
       tags:
         - AdminService
-  /v1/organizations/{organization}/projects/{project}/alerts/{name}:
+  /v1/orgs/{organization}/projects/{project}/alerts/{name}:
     delete:
       summary: DeleteAlert deletes the virtual file for a UI-managed alert, triggers a reconcile, and waits for the alert to be deleted in the runtime
       operationId: AdminService_DeleteAlert
@@ -1081,7 +1081,7 @@ paths:
                 $ref: '#/definitions/v1AlertOptions'
       tags:
         - AdminService
-  /v1/organizations/{organization}/projects/{project}/alerts/{name}/unsubscribe:
+  /v1/orgs/{organization}/projects/{project}/alerts/{name}/unsubscribe:
     post:
       summary: UnsubscribeAlert removes the calling user from a alert's recipients list
       operationId: AdminService_UnsubscribeAlert
@@ -1114,7 +1114,7 @@ paths:
             type: object
       tags:
         - AdminService
-  /v1/organizations/{organization}/projects/{project}/alerts/{name}/yaml:
+  /v1/orgs/{organization}/projects/{project}/alerts/{name}/yaml:
     get:
       summary: GenerateAlertYAML generates YAML for an alert to be copied into a project's Git repository
       operationId: AdminService_GetAlertYAML
@@ -1142,7 +1142,7 @@ paths:
           type: string
       tags:
         - AdminService
-  /v1/organizations/{organization}/projects/{project}/clone-credentials:
+  /v1/orgs/{organization}/projects/{project}/clone-credentials:
     get:
       summary: GetCloneCredentials returns credentials and other details for a project's Git repository or archive path if git repo is not configured.
       operationId: AdminService_GetCloneCredentials
@@ -1170,7 +1170,7 @@ paths:
           type: boolean
       tags:
         - AdminService
-  /v1/organizations/{organization}/projects/{project}/connect-to-github:
+  /v1/orgs/{organization}/projects/{project}/connect-to-github:
     post:
       summary: |-
         Connects a rill managed project to github.
@@ -1210,7 +1210,7 @@ paths:
                 type: boolean
       tags:
         - AdminService
-  /v1/organizations/{organization}/projects/{project}/credentials:
+  /v1/orgs/{organization}/projects/{project}/credentials:
     post:
       summary: |-
         GetDeploymentCredentials returns runtime info and access token on behalf of a specific user, or alternatively for a raw set of JWT attributes
@@ -1253,7 +1253,7 @@ paths:
                 type: object
       tags:
         - AdminService
-  /v1/organizations/{organization}/projects/{project}/hibernate:
+  /v1/orgs/{organization}/projects/{project}/hibernate:
     post:
       summary: HibernateProject hibernates a project by tearing down its deployments.
       operationId: AdminService_HibernateProject
@@ -1281,7 +1281,7 @@ paths:
           type: boolean
       tags:
         - AdminService
-  /v1/organizations/{organization}/projects/{project}/iframe:
+  /v1/orgs/{organization}/projects/{project}/iframe:
     post:
       summary: GetIFrame returns the iframe URL for the given project
       operationId: AdminService_GetIFrame
@@ -1353,7 +1353,7 @@ paths:
             description: GetIFrameRequest is the request payload for AdminService.GetIFrame.
       tags:
         - AdminService
-  /v1/organizations/{organization}/projects/{project}/invites:
+  /v1/orgs/{organization}/projects/{project}/invites:
     get:
       summary: ListProjectInvites lists all the project invites
       operationId: AdminService_ListProjectInvites
@@ -1386,7 +1386,7 @@ paths:
           type: string
       tags:
         - AdminService
-  /v1/organizations/{organization}/projects/{project}/members:
+  /v1/orgs/{organization}/projects/{project}/members:
     get:
       summary: ListProjectMemberUsers lists all the project members
       operationId: AdminService_ListProjectMemberUsers
@@ -1461,7 +1461,7 @@ paths:
                 type: string
       tags:
         - AdminService
-  /v1/organizations/{organization}/projects/{project}/members/{email}:
+  /v1/orgs/{organization}/projects/{project}/members/{email}:
     delete:
       summary: RemoveProjectMemberUser removes member from the project
       operationId: AdminService_RemoveProjectMemberUser
@@ -1524,7 +1524,7 @@ paths:
                 type: string
       tags:
         - AdminService
-  /v1/organizations/{organization}/projects/{project}/redeploy:
+  /v1/orgs/{organization}/projects/{project}/redeploy:
     post:
       summary: |-
         RedeployProject creates a new production deployment for a project.
@@ -1555,7 +1555,7 @@ paths:
           type: boolean
       tags:
         - AdminService
-  /v1/organizations/{organization}/projects/{project}/reports:
+  /v1/orgs/{organization}/projects/{project}/reports:
     post:
       summary: CreateReport adds a virtual file for a report, triggers a reconcile, and waits for the report to be added to the runtime catalog
       operationId: AdminService_CreateReport
@@ -1587,7 +1587,7 @@ paths:
                 $ref: '#/definitions/v1ReportOptions'
       tags:
         - AdminService
-  /v1/organizations/{organization}/projects/{project}/reports/-/yaml:
+  /v1/orgs/{organization}/projects/{project}/reports/-/yaml:
     post:
       summary: GenerateReportYAML generates YAML for a scheduled report to be copied into a project's Git repository
       operationId: AdminService_GenerateReportYAML
@@ -1619,7 +1619,7 @@ paths:
                 $ref: '#/definitions/v1ReportOptions'
       tags:
         - AdminService
-  /v1/organizations/{organization}/projects/{project}/reports/{name}:
+  /v1/orgs/{organization}/projects/{project}/reports/{name}:
     delete:
       summary: DeleteReport deletes the virtual file for a UI-managed report, triggers a reconcile, and waits for the report to be deleted in the runtime
       operationId: AdminService_DeleteReport
@@ -1682,7 +1682,7 @@ paths:
                 $ref: '#/definitions/v1ReportOptions'
       tags:
         - AdminService
-  /v1/organizations/{organization}/projects/{project}/reports/{name}/trigger:
+  /v1/orgs/{organization}/projects/{project}/reports/{name}/trigger:
     post:
       summary: TriggerReport triggers an ad-hoc report run
       operationId: AdminService_TriggerReport
@@ -1715,7 +1715,7 @@ paths:
             type: object
       tags:
         - AdminService
-  /v1/organizations/{organization}/projects/{project}/reports/{name}/unsubscribe:
+  /v1/orgs/{organization}/projects/{project}/reports/{name}/unsubscribe:
     post:
       summary: UnsubscribeReport removes the calling user from a reports recipients list
       operationId: AdminService_UnsubscribeReport
@@ -1753,7 +1753,7 @@ paths:
                 type: string
       tags:
         - AdminService
-  /v1/organizations/{organization}/projects/{project}/request-access:
+  /v1/orgs/{organization}/projects/{project}/request-access:
     post:
       operationId: AdminService_RequestProjectAccess
       responses:
@@ -1784,7 +1784,7 @@ paths:
                 type: string
       tags:
         - AdminService
-  /v1/organizations/{organization}/projects/{project}/tokens/magic:
+  /v1/orgs/{organization}/projects/{project}/tokens/magic:
     get:
       summary: ListMagicAuthTokens lists all the magic auth tokens for a specific project.
       operationId: AdminService_ListMagicAuthTokens
@@ -1882,7 +1882,7 @@ paths:
                 description: list of resources to grant access to.
       tags:
         - AdminService
-  /v1/organizations/{organization}/projects/{project}/upload-assets:
+  /v1/orgs/{organization}/projects/{project}/upload-assets:
     post:
       summary: Converts a project connected to github to a rill managed project.
       operationId: AdminService_DisconnectProjectFromGithub
@@ -1911,7 +1911,7 @@ paths:
             type: object
       tags:
         - AdminService
-  /v1/organizations/{organization}/projects/{project}/usergroups/{usergroup}/roles:
+  /v1/orgs/{organization}/projects/{project}/usergroups/{usergroup}/roles:
     delete:
       summary: RemoveProjectMemberUsergroup revokes the project-level role for the user group
       operationId: AdminService_RemoveProjectMemberUsergroup
@@ -2009,7 +2009,7 @@ paths:
                 type: string
       tags:
         - AdminService
-  /v1/organizations/{organization}/projects/{project}/users/search:
+  /v1/orgs/{organization}/projects/{project}/users/search:
     get:
       summary: SearchProjectUsers returns users who has access to to a project (including org members that have access through a usergroup)
       operationId: AdminService_SearchProjectUsers
@@ -2046,7 +2046,7 @@ paths:
           type: string
       tags:
         - AdminService
-  /v1/organizations/{organization}/projects/{project}/variables:
+  /v1/orgs/{organization}/projects/{project}/variables:
     get:
       summary: GetProjectVariables returns project variables.
       operationId: AdminService_GetProjectVariables
@@ -2134,7 +2134,7 @@ paths:
                 description: Variables to delete.
       tags:
         - AdminService
-  /v1/organizations/{organization}/projects/{project}/whitelisted:
+  /v1/orgs/{organization}/projects/{project}/whitelisted:
     get:
       summary: ListWhitelistedDomains lists all the whitelisted domains of the project
       operationId: AdminService_ListProjectWhitelistedDomains
@@ -2191,7 +2191,7 @@ paths:
                 type: string
       tags:
         - AdminService
-  /v1/organizations/{organization}/projects/{project}/whitelisted/{domain}:
+  /v1/orgs/{organization}/projects/{project}/whitelisted/{domain}:
     delete:
       summary: RemoveProjectWhitelistedDomain removes a domain from the project's whitelisted
       operationId: AdminService_RemoveProjectWhitelistedDomain
@@ -2219,7 +2219,7 @@ paths:
           type: string
       tags:
         - AdminService
-  /v1/organizations/{organization}/usergroups:
+  /v1/orgs/{organization}/usergroups:
     get:
       summary: ListOrganizationMemberUsergroups lists the org's user groups
       operationId: AdminService_ListOrganizationMemberUsergroups
@@ -2285,7 +2285,7 @@ paths:
                 type: string
       tags:
         - AdminService
-  /v1/organizations/{organization}/usergroups-for-user:
+  /v1/orgs/{organization}/usergroups-for-user:
     get:
       summary: ListUsergroupsForOrganizationAndUser lists the user groups that an organization member user has access to.
       operationId: AdminService_ListUsergroupsForOrganizationAndUser
@@ -2318,7 +2318,7 @@ paths:
           type: string
       tags:
         - AdminService
-  /v1/organizations/{organization}/usergroups/{usergroup}:
+  /v1/orgs/{organization}/usergroups/{usergroup}:
     get:
       summary: GetUsergroups returns the user group details
       operationId: AdminService_GetUsergroup
@@ -2436,7 +2436,7 @@ paths:
                 type: string
       tags:
         - AdminService
-  /v1/organizations/{organization}/usergroups/{usergroup}/members:
+  /v1/orgs/{organization}/usergroups/{usergroup}/members:
     get:
       summary: ListUsergroupMemberUsers lists all the user group members
       operationId: AdminService_ListUsergroupMemberUsers
@@ -2469,7 +2469,7 @@ paths:
           type: string
       tags:
         - AdminService
-  /v1/organizations/{organization}/usergroups/{usergroup}/members/{email}:
+  /v1/orgs/{organization}/usergroups/{usergroup}/members/{email}:
     delete:
       summary: RemoveUsergroupMemberUser removes member from the user group
       operationId: AdminService_RemoveUsergroupMemberUser
@@ -2529,7 +2529,7 @@ paths:
             type: object
       tags:
         - AdminService
-  /v1/organizations/{organization}/usergroups/{usergroup}/role:
+  /v1/orgs/{organization}/usergroups/{usergroup}/role:
     delete:
       summary: RemoveOrganizationMemberUsergroup revokes the organization-level role for the user group
       operationId: AdminService_RemoveOrganizationMemberUsergroup
@@ -2615,7 +2615,7 @@ paths:
                 type: string
       tags:
         - AdminService
-  /v1/organizations/{organization}/whitelisted:
+  /v1/orgs/{organization}/whitelisted:
     get:
       summary: ListWhitelistedDomains lists all the whitelisted domains for the organization
       operationId: AdminService_ListWhitelistedDomains
@@ -2664,7 +2664,7 @@ paths:
                 type: string
       tags:
         - AdminService
-  /v1/organizations/{organization}/whitelisted/{domain}:
+  /v1/orgs/{organization}/whitelisted/{domain}:
     delete:
       summary: RemoveWhitelistedDomain removes a domain from the whitelist list
       operationId: AdminService_RemoveWhitelistedDomain
@@ -2688,7 +2688,7 @@ paths:
           type: string
       tags:
         - AdminService
-  /v1/organizations/{organizationName}/create_asset:
+  /v1/orgs/{organizationName}/create_asset:
     post:
       summary: CreateAsset returns a one time signed URL using which any asset can be uploaded.
       operationId: AdminService_CreateAsset
@@ -2727,7 +2727,7 @@ paths:
                 format: int64
       tags:
         - AdminService
-  /v1/organizations/{organizationName}/projects:
+  /v1/orgs/{organizationName}/projects:
     get:
       summary: ListProjectsForOrganization lists all the projects currently available for given organizations.
       operationId: AdminService_ListProjectsForOrganization
@@ -2814,7 +2814,7 @@ paths:
                 type: boolean
       tags:
         - AdminService
-  /v1/organizations/{organizationName}/projects/{name}:
+  /v1/orgs/{organizationName}/projects/{name}:
     get:
       summary: GetProject returns information about a specific project
       operationId: AdminService_GetProject
@@ -2931,7 +2931,7 @@ paths:
                 type: boolean
       tags:
         - AdminService
-  /v1/organizations/{organizationName}/projects/{projectName}/deployments:
+  /v1/orgs/{organizationName}/projects/{projectName}/deployments:
     get:
       summary: ListDeployments lists deployments for a project.
       operationId: AdminService_ListDeployments
@@ -2994,7 +2994,7 @@ paths:
                 type: string
       tags:
         - AdminService
-  /v1/organizations/{organizationName}/projects/{projectName}/services:
+  /v1/orgs/{organizationName}/projects/{projectName}/services:
     get:
       summary: ListProjectMemberServices returns all the services for the project for an organization
       operationId: AdminService_ListProjectMemberServices
@@ -3018,7 +3018,7 @@ paths:
           type: string
       tags:
         - AdminService
-  /v1/organizations/{organizationName}/projects/{projectName}/services/{name}:
+  /v1/orgs/{organizationName}/projects/{projectName}/services/{name}:
     delete:
       summary: RemoveProjectMemberService removes the service from the project
       operationId: AdminService_RemoveProjectMemberService
@@ -3046,7 +3046,7 @@ paths:
           type: string
       tags:
         - AdminService
-  /v1/organizations/{organizationName}/projects/{projectName}/services/{name}/role:
+  /v1/orgs/{organizationName}/projects/{projectName}/services/{name}/role:
     put:
       summary: SetProjectMemberServiceRole updates the project role for the service
       operationId: AdminService_SetProjectMemberServiceRole
@@ -3082,7 +3082,7 @@ paths:
                 type: string
       tags:
         - AdminService
-  /v1/organizations/{organizationName}/services:
+  /v1/orgs/{organizationName}/services:
     get:
       summary: ListService returns all the services per organization
       operationId: AdminService_ListServices
@@ -3140,7 +3140,7 @@ paths:
                 type: object
       tags:
         - AdminService
-  /v1/organizations/{organizationName}/services/{name}:
+  /v1/orgs/{organizationName}/services/{name}:
     get:
       summary: GetService returns information about a specific service
       operationId: AdminService_GetService
@@ -3220,7 +3220,7 @@ paths:
                 type: object
       tags:
         - AdminService
-  /v1/organizations/{organizationName}/services/{name}/role:
+  /v1/orgs/{organizationName}/services/{name}/role:
     delete:
       summary: RemoveOrganizationMemberService removes the organization role for the service
       operationId: AdminService_RemoveOrganizationMemberService
@@ -3275,7 +3275,7 @@ paths:
                 type: string
       tags:
         - AdminService
-  /v1/organizations/{organizationName}/services/{serviceName}/tokens:
+  /v1/orgs/{organizationName}/services/{serviceName}/tokens:
     get:
       summary: ListServiceAuthTokens lists all the service auth tokens
       operationId: AdminService_ListServiceAuthTokens

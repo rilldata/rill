@@ -6144,7 +6144,6 @@ definitions:
       retryAttempts:
         type: integer
         format: int64
-        description: retry is optional.
       retryDelaySeconds:
         type: integer
         format: int64
