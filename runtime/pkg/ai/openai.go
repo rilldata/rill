@@ -73,6 +73,7 @@ func NewOpenAI(apiKey string, opts *Options) (Client, error) {
 	return &openAI{
 		client: c,
 		apiKey: apiKey,
+		opts:   opts,
 	}, nil
 }
 
@@ -108,6 +109,7 @@ func (c *openAI) Complete(ctx context.Context, msgs []*aiv1.CompletionMessage, t
 		responseFormat = &openai.ChatCompletionResponseFormat{
 			Type: openai.ChatCompletionResponseFormatTypeJSONSchema,
 			JSONSchema: &openai.ChatCompletionResponseFormatJSONSchema{
+				Name:   "llm_completion_result",
 				Schema: outputSchema,
 			},
 		}

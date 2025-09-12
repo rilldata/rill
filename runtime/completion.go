@@ -364,7 +364,7 @@ func (r *Runtime) executeAICompletion(ctx context.Context, instanceID string, al
 
 		// Call the AI service with individual timeout - returns structured ContentBlocks
 		aiCtx, aiCancel := context.WithTimeout(ctx, aiRequestTimeout)
-		res, err := ai.Complete(aiCtx, completionMessages, tools)
+		res, err := ai.Complete(aiCtx, completionMessages, tools, nil)
 		aiCancel()
 		if err != nil {
 			return nil, err
