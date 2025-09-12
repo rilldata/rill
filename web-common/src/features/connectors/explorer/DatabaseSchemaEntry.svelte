@@ -5,7 +5,6 @@
   import TableEntry from "./TableEntry.svelte";
   import {
     useTablesOLAP as useTablesLegacy,
-    useTablesForSchema,
   } from "../selectors";
   import type { ConnectorExplorerStore } from "./connector-explorer-store";
 
@@ -14,41 +13,28 @@
   export let database: string;
   export let databaseSchema: string;
   export let store: ConnectorExplorerStore;
-  export let useNewAPI: boolean = false;
 
   $: connectorName = connector?.name as string;
 
   $: expandedStore = store.getItem(connectorName, database, databaseSchema);
   $: expanded = $expandedStore;
 
-  // Use appropriate selector based on API version
-  $: tablesQuery = useNewAPI
-    ? useTablesForSchema(instanceId, connectorName, database, databaseSchema)
-    : useTablesLegacy(instanceId, connectorName, database, databaseSchema);
+  // Always use OLAP API for table listing
+  $: tablesQuery = useTablesLegacy(instanceId, connectorName, database, databaseSchema);
 
   $: ({ data, error, isLoading } = $tablesQuery);
 
-  // Handle data structure differences between APIs
-  $: typedData = useNewAPI
-    ? // New API returns V1TableInfo[]
-      (data as Array<{ name: string; view?: boolean }> | undefined)?.map(
-        (table) => ({
-          name: table.name,
-          database,
-          databaseSchema,
-          hasUnsupportedDataTypes: false, // Not available in new API
-          view: table.view ?? false,
-        }),
-      )
-    : // Legacy API returns V1OlapTableInfo[]
-      (data as
-        | Array<{
-            name: string;
-            database: string;
-            databaseSchema: string;
-            hasUnsupportedDataTypes: boolean;
-          }>
-        | undefined);
+  // OLAP API returns V1OlapTableInfo[]
+  $: typedData = data as
+    | Array<{
+        name: string;
+        database: string;
+        databaseSchema: string;
+        hasUnsupportedDataTypes: boolean;
+        isDefaultDatabase: boolean;
+        isDefaultDatabaseSchema: boolean;
+      }>
+    | undefined;
 </script>
 
 <li aria-label={`${database}.${databaseSchema}`} class="database-schema-entry">
@@ -114,7 +100,6 @@
             table={tableInfo.name}
             hasUnsupportedDataTypes={tableInfo.hasUnsupportedDataTypes ?? false}
             {store}
-            {useNewAPI}
           />
         {/each}
       </ol>

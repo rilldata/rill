@@ -2,49 +2,28 @@
   import Tooltip from "../../../components/tooltip/Tooltip.svelte";
   import TooltipContent from "../../../components/tooltip/TooltipContent.svelte";
   import { createQueryServiceTableColumns } from "../../../runtime-client";
-  import { useTableMetadata } from "../selectors";
   import { runtime } from "../../../runtime-client/runtime-store";
 
   export let connector: string;
   export let database: string = ""; // The backend interprets an empty string as the default database
   export let databaseSchema: string = ""; // The backend interprets an empty string as the default schema
   export let table: string;
-  export let useNewAPI: boolean = false;
 
   $: ({ instanceId } = $runtime);
 
-  // Use appropriate API based on connector type
-  $: legacyColumnsQuery = !useNewAPI
-    ? createQueryServiceTableColumns(instanceId, table, {
-        connector,
-        database,
-        databaseSchema,
-      })
-    : null;
+  // Always use legacy OLAP API for table columns
+  $: columnsQuery = createQueryServiceTableColumns(instanceId, table, {
+    connector,
+    database,
+    databaseSchema,
+  });
 
-  $: newTableQuery = useNewAPI
-    ? useTableMetadata(instanceId, connector, database, databaseSchema, table)
-    : null;
+  // Legacy API returns profileColumns array
+  $: columns = $columnsQuery?.data?.profileColumns ?? [];
 
-  // Normalize data from both APIs
-  $: columns = useNewAPI
-    ? // New API returns schema as { [columnName]: "type" }
-      $newTableQuery?.data?.schema
-      ? Object.entries($newTableQuery.data.schema).map(([name, type]) => ({
-          name,
-          type: type as string,
-        }))
-      : []
-    : // Legacy API returns profileColumns array
-      ($legacyColumnsQuery?.data?.profileColumns ?? []);
-
-  $: error = useNewAPI ? $newTableQuery?.error : $legacyColumnsQuery?.error;
-  $: isError = useNewAPI
-    ? !!$newTableQuery?.error
-    : !!$legacyColumnsQuery?.error;
-  $: isLoading = useNewAPI
-    ? $newTableQuery?.isLoading
-    : $legacyColumnsQuery?.isLoading;
+  $: error = $columnsQuery?.error;
+  $: isError = !!$columnsQuery?.error;
+  $: isLoading = $columnsQuery?.isLoading;
 
   function prettyPrintType(type: string) {
     // If the type starts with "CODE_", remove it

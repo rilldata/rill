@@ -18,7 +18,6 @@
   import {
     createConnectorServiceOLAPListTables,
     createQueryServiceTableColumns,
-    createRuntimeServiceAnalyzeConnectors,
     createRuntimeServiceGetInstance,
     type MetricsViewSpecDimension,
     type V1Resource,
@@ -32,12 +31,6 @@
   import { connectorExplorerStore } from "../connectors/explorer/connector-explorer-store";
   import { useIsModelingSupportedForConnectorOLAP as useIsModelingSupportedForConnector } from "../connectors/selectors";
   import { FileArtifact } from "../entity-management/file-artifact";
-  import {
-    ResourceKind,
-    useResource,
-  } from "../entity-management/resource-selectors";
-  import { useModels } from "../models/selectors";
-  import { useSources } from "../sources/selectors";
   import AlertConfirmation from "../visual-metrics-editing/AlertConfirmation.svelte";
   import MetricsTable from "../visual-metrics-editing/MetricsTable.svelte";
   import VisualMetricsSidebar from "../visual-metrics-editing/VisualMetricsSidebar.svelte";
@@ -51,15 +44,41 @@
 
   const store = connectorExplorerStore.duplicateStore(
     (connector, database, schema, table) => {
-      if (!table || !schema) return;
+      if (!table) return;
 
-      confirmation = {
-        action: "switch",
-        connector,
-        database,
-        schema,
-        model: table,
-      };
+      // Find the selected table info to check if it's in default database/schema
+      const selectedTable = tables.find(
+        (t) =>
+          t.name === table &&
+          t.database === database &&
+          t.databaseSchema === schema,
+      );
+
+      if (!selectedTable) return;
+
+      // Determine if we should use model or database/schema/table format
+      const isDefaultLocation = selectedTable.isDefaultDatabase && selectedTable.isDefaultDatabaseSchema;
+
+      if (isDefaultLocation) {
+        // Use model: <table_name> for tables in default database and schema
+        confirmation = {
+          action: "switch",
+          model: table,
+          connector: undefined,
+          database: undefined,
+          schema: undefined,
+        };
+      } else {
+        // Use database/database_schema/table for non-default locations
+        confirmation = {
+          action: "switch",
+          model: undefined,
+          connector,
+          database,
+          schema,
+          table,
+        };
+      }
 
       tableSelectionOpen = false;
     },
@@ -81,7 +100,6 @@
     measures: new Set<number>(),
     dimensions: new Set<number>(),
   };
-  let storedProperties: Record<string, unknown> = {};
 
   $: ({ instanceId } = $runtime);
 
@@ -125,64 +143,10 @@
 
   $: noTableProperties = !yamlConnector && !database && !databaseSchema;
 
-  $: modelsQuery = useModels(instanceId);
-  $: sourcesQuery = useSources(instanceId);
   $: metricsViewQuery = getResource(queryClient, instanceId);
-
-  $: modelNames = $modelsQuery?.data?.map(resourceToOption) ?? [];
-  $: sourceNames = $sourcesQuery?.data?.map(resourceToOption) ?? [];
   $: dimensions = $metricsViewQuery?.data?.metricsView?.spec?.dimensions ?? [];
-  $: hasSourceSelected =
-    noTableProperties &&
-    sourceNames.some(({ value }) => value === modelOrSourceOrTableName);
-  $: hasModelSelected =
-    noTableProperties &&
-    modelNames.some(({ value }) => value === modelOrSourceOrTableName);
 
-  $: modelAndSourceOptions = [...modelNames, ...sourceNames];
-
-  $: hasValidModelOrSourceSelection = hasSourceSelected || hasModelSelected;
-
-  $: hasNonDuckDBOLAPConnectorQuery = createRuntimeServiceAnalyzeConnectors(
-    instanceId,
-    {
-      query: {
-        select: (data) => {
-          if (!data?.connectors) return false;
-
-          const hasNonDuckDBOLAPConnector = data.connectors
-            .filter((connector) => !!connector.driver)
-            .filter((connector) => connector.driver!.implementsOlap)
-            .some((connector) => {
-              const isDuckDB = connector.driver!.name === "duckdb";
-              const isMotherDuck = isDuckDB && !!connector.config?.access_token;
-              const isDuckDBButNotMotherDuck = isDuckDB && !isMotherDuck;
-              return !isDuckDBButNotMotherDuck;
-            });
-
-          return hasNonDuckDBOLAPConnector;
-        },
-      },
-    },
-  );
-  $: hasNonDuckDBOLAPConnector = $hasNonDuckDBOLAPConnectorQuery.data;
-
-  $: resourceKind = hasSourceSelected
-    ? ResourceKind.Source
-    : hasModelSelected
-      ? ResourceKind.Model
-      : undefined;
-
-  $: resourceQuery =
-    resourceKind &&
-    useResource(instanceId, modelOrSourceOrTableName, resourceKind);
-
-  $: connector =
-    yamlConnector ||
-    (hasModelSelected
-      ? $resourceQuery?.data?.model?.spec?.outputConnector
-      : $resourceQuery?.data?.source?.spec?.sinkConnector) ||
-    olapConnector;
+  $: connector = yamlConnector || olapConnector;
 
   $: columnsQuery = createQueryServiceTableColumns(
     instanceId,
@@ -257,25 +221,27 @@
     },
     {
       query: {
-        enabled: !!instanceId && !!connector && !hasValidModelOrSourceSelection,
+        enabled: !!instanceId && !!connector,
       },
     },
   );
 
   $: tables = $tablesQuery.data?.tables ?? [];
 
-  $: hasValidOLAPTableSelected =
-    !hasValidModelOrSourceSelection &&
+  $: hasValidTableSelection = Boolean(
     modelOrSourceOrTableName &&
-    tables.find(
-      (table) =>
-        table.name === modelOrSourceOrTableName &&
-        table.database === database &&
-        (table.databaseSchema === databaseSchema ||
-          (!databaseSchema && table.databaseSchema === "default")),
-    );
-
-  $: tableMode = Boolean(hasValidOLAPTableSelected);
+      (
+        // Check if it's a model (in default database/schema)
+        (rawModel && !database && !yamlConnector && !databaseSchema) ||
+        // Check if it's a table with explicit database/schema
+        tables.find(
+          (table) =>
+            table.name === modelOrSourceOrTableName &&
+            table.database === database &&
+            table.databaseSchema === databaseSchema,
+        )
+      )
+  );
 
   function createDimensions(
     rawDimensions: YAMLSeq<YAMLMap<string, string>>,
@@ -346,13 +312,6 @@
     ? itemGroups[$editingItemData.type][$editingItemData?.index]
     : null;
 
-  function resourceToOption(resource: V1Resource) {
-    const value = resource.meta?.name?.name ?? "";
-    return {
-      value,
-      label: value,
-    };
-  }
 
   function reorderList(
     initIndexes: number[],
@@ -507,112 +466,46 @@
     });
   }
 
-  function switchTableMode() {
-    const mode = tableMode;
-
-    const currentProperties = {
-      model: rawModel,
-      database: rawDatabase,
-      connector: rawConnector,
-      database_schema: rawDatabaseSchema,
-    };
-    updateProperties(storedProperties);
-
-    storedProperties = currentProperties;
-    tableMode = !mode;
-  }
 </script>
 
 <div class="wrapper">
   <div class="main-area">
     <div class="flex gap-x-4 border-b pb-4">
-      {#if tableMode || !isModelingSupported}
-        <div class="flex flex-col gap-y-1 w-full">
-          <InputLabel label="Table" id="table">
-            <svelte:fragment slot="mode-switch">
-              {#if isModelingSupported}
-                <button
-                  on:click={switchTableMode}
-                  class="ml-auto text-primary-600 font-medium text-xs"
-                >
-                  Select model
-                </button>
-              {/if}
-            </svelte:fragment>
-          </InputLabel>
-          <DropdownMenu.Root bind:open={tableSelectionOpen}>
-            <DropdownMenu.Trigger asChild let:builder>
-              <button
-                use:builder.action
-                {...builder}
-                class="flex px-3 gap-x-2 h-8 max-w-full items-center text-sm border-gray-300 border rounded-[2px]
-                focus:ring-2 focus:ring-primary-100 focus:border-primary-600 break-all overflow-hidden
-               "
-              >
-                {#if !hasValidOLAPTableSelected}
-                  <span class="text-gray-400 truncate">Select table</span>
-                {:else}
-                  <span class="text-gray-700 truncate">
-                    {modelOrSourceOrTableName}
-                  </span>
-                {/if}
-                <CaretDownIcon
-                  size="12px"
-                  className="!fill-gray-600 ml-auto flex-none"
-                />
-              </button>
-            </DropdownMenu.Trigger>
-            <DropdownMenu.Content
-              sameWidth
-              align="start"
-              class="!min-w-64  overflow-hidden p-1"
+      <div class="flex flex-col gap-y-1 w-full">
+        <InputLabel label="Table" id="table" />
+        <DropdownMenu.Root bind:open={tableSelectionOpen}>
+          <DropdownMenu.Trigger asChild let:builder>
+            <button
+              use:builder.action
+              {...builder}
+              class="flex px-3 gap-x-2 h-8 max-w-full items-center text-sm border-gray-300 border rounded-[2px]
+              focus:ring-2 focus:ring-primary-100 focus:border-primary-600 break-all overflow-hidden
+             "
             >
-              <div class="size-full overflow-y-auto max-h-72">
-                <ConnectorExplorer {store} />
-              </div>
-            </DropdownMenu.Content>
-          </DropdownMenu.Root>
-        </div>
-      {:else}
-        {#key confirmation}
-          <Input
-            sameWidth
-            full
-            truncate
-            value={noTableProperties ? modelOrSourceOrTableName : undefined}
-            options={modelAndSourceOptions}
-            placeholder="Select a model"
-            label="Model"
-            onChange={async (newModelOrSourceName) => {
-              if (modelOrSourceOrTableName === newModelOrSourceName) return;
-              if (!modelOrSourceOrTableName) {
-                updateProperties({ model: newModelOrSourceName }, [
-                  "table",
-                  "database",
-                  "connector",
-                  "database_schema",
-                ]);
-              } else {
-                confirmation = {
-                  action: "switch",
-                  model: newModelOrSourceName,
-                };
-              }
-            }}
-          >
-            <svelte:fragment slot="mode-switch">
-              {#if hasNonDuckDBOLAPConnector}
-                <button
-                  on:click={switchTableMode}
-                  class="ml-auto text-primary-600 font-medium text-xs"
-                >
-                  Select table
-                </button>
+              {#if !hasValidTableSelection}
+                <span class="text-gray-400 truncate">Select table</span>
+              {:else}
+                <span class="text-gray-700 truncate">
+                  {modelOrSourceOrTableName}
+                </span>
               {/if}
-            </svelte:fragment>
-          </Input>
-        {/key}
-      {/if}
+              <CaretDownIcon
+                size="12px"
+                className="!fill-gray-600 ml-auto flex-none"
+              />
+            </button>
+          </DropdownMenu.Trigger>
+          <DropdownMenu.Content
+            sameWidth
+            align="start"
+            class="!min-w-64  overflow-hidden p-1"
+          >
+            <div class="size-full overflow-y-auto max-h-72">
+              <ConnectorExplorer {store} />
+            </div>
+          </DropdownMenu.Content>
+        </DropdownMenu.Root>
+      </div>
 
       <Input
         sameWidth
@@ -623,9 +516,9 @@
         options={timeOptions}
         placeholder="Select time column"
         label="Time column"
-        disabledMessage={!hasValidModelOrSourceSelection
-          ? "No model selected"
-          : "No timestamp columns in model"}
+        disabledMessage={!hasValidTableSelection
+          ? "No table selected"
+          : "No timestamp columns in table"}
         hint="Column from model that will be used as primary time dimension in dashboards"
         onChange={async (value) => {
           await updateProperties({ timeseries: value });
@@ -837,15 +730,26 @@
         );
         resetEditing();
       } else if (confirmation?.action === "switch") {
-        await updateProperties(
-          {
-            model: confirmation.model,
-            database: confirmation.database,
-            connector: confirmation.connector,
-            database_schema: confirmation.schema,
-          },
-          ["table"],
-        );
+        if (confirmation.model) {
+          // Use model format for tables in default database/schema
+          await updateProperties(
+            {
+              model: confirmation.model,
+            },
+            ["database", "connector", "database_schema", "table"],
+          );
+        } else {
+          // Use database/schema/table format for non-default locations
+          await updateProperties(
+            {
+              database: confirmation.database,
+              connector: confirmation.connector,
+              database_schema: confirmation.schema,
+              table: confirmation.table,
+            },
+            ["model"],
+          );
+        }
         resetEditing();
       } else if (confirmation?.action === "cancel") {
         if (

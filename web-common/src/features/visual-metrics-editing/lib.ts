@@ -21,6 +21,7 @@ export type Confirmation = {
   database?: string;
   connector?: string;
   schema?: string;
+  table?: string;
   index?: number;
   field?: string;
 };
