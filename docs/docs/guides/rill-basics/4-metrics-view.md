@@ -57,7 +57,7 @@ For now, you'll see a red box around the UI and the preview button grayed out. T
 
 ## Fixing the Metrics View
 From here, we have two options! 
-Starting from version 0.50, we have introduced the [visual-metric-editor](/build/metrics-view/#using-the-visual-metrics-editor), in the top right corner, you can select whether you want to modify the YAML directly or use a UI tool.
+Starting from version 0.50, we have introduced the [visual-metric-editor](/build/metrics-view/what-are-metrics-views#using-the-visual-metrics-editor), in the top right corner, you can select whether you want to modify the YAML directly or use a UI tool.
 
 ## Via the Visual Metrics Editor
 In the top right of the UI, select the viz button to navigate to the visual metrics editor. Below is an example of a completed visual metrics editor. We will make some modifications to our current file to build something similar.

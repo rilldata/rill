@@ -1,6 +1,7 @@
 ---
 sidebar_class_name: hidden
 title: Contact us
+hide_table_of_contents: true 
 ---
 
 Rill has a globally distributed team and we'd love to hear from you—whether you're a customer, prospect, or simply a Rill enthusiast. There are several ways to get in touch with the Rill team and engage with the community, which are described below.

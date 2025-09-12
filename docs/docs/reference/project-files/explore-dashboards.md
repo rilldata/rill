@@ -4,7 +4,7 @@ title: Explore Dashboard YAML
 sidebar_position: 36
 ---
 
-Explore dashboards provide an interactive way to explore data with predefined metrics and dimensions.
+Explore dashboards provide an interactive way to explore data with predefined measures and dimensions.
 
 ## Properties
 

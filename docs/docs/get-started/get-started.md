@@ -21,9 +21,6 @@ Take a look at our [Quick start](/get-started/quickstart) for a quick guide to g
 
 Or, if you're looking for more guides, check out our [Guides](/guides) section!
 
-<!-- <img src = 'https://storage.googleapis.com/prod-cdn.rilldata.com/docs/rill_hero.gif' class='rounded-gif' />
-<br /> -->
-
 ## Examples
 
 Browse our [repository of examples](https://github.com/rilldata/rill-examples) to find a project that suits your needs or see them in action in our demo project by hitting [Live Demo →](https://ui.rilldata.com/demo). Some projects have a walkthrough, too! 
