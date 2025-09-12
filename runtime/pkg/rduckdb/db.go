@@ -388,17 +388,17 @@ func (d *db) CreateTableAsSelect(ctx context.Context, name, query string, opts *
 	if err != nil {
 		return nil, fmt.Errorf("create: unable to create dir %q: %w", name, err)
 	}
+	defer func() {
+		if createErr != nil {
+			_ = d.deleteLocalTableFiles(name, newVersion)
+		}
+	}()
 	var dsn string
 	if opts.View {
 		dsn = ""
 		newMeta.SQL = query
 	} else {
 		dsn = d.localDBPath(name, newVersion)
-		defer func() {
-			if createErr != nil {
-				_ = d.deleteLocalTableFiles(name, newVersion)
-			}
-		}()
 	}
 
 	t := time.Now()
