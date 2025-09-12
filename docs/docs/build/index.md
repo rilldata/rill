@@ -32,7 +32,7 @@ Rill provides a comprehensive platform for building end-to-end data analytics so
 - [**Define Dashboard Access**](/build/dashboards#define-dashboard-access) - Set a SQL boolean query that defines access to dashboard
 
 ### Build Integrations with External Applications
-- [**Custom API**](/build/custom-apis) - Create custom API endpoints to retreive data outside of Rill
+- [**Custom API**](/build/custom-apis) - Create custom API endpoints to retrieve data outside of Rill
 
 
 ### Project Settings

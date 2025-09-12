@@ -82,7 +82,7 @@ Time is the most critical dimension in analytics and powers our dashboards. Unde
 
 ### Dimensions
 
-Dimensions are used for exploring segments and filtering. Valid dimensions can be any type and are selected using the drop-down menu. You can also add labels and descriptions to your dimensions to customize how they are displayed. See our dedicated examples and pages for more use cases.
+Dimensions are used for exploring segments and filtering. Valid dimensions can be any type and are selected using the drop-down menu. You can also add labels and descriptions to your dimensions to customize how they are displayed. See our dedicated examples and pages for more use cases. 
 
 - **[Clickable Dimension Links](/build/metrics-view/dimensions/dimension-uri)**
 - **[Unnest Dimensions](/build/metrics-view/dimensions/unnesting)**
@@ -104,7 +104,7 @@ As an example, if you have a table of sales events with the sales price and cust
 * Number of orders with order value more than $100: `count(*) FILTER (WHERE order_val > 100)`
 
 You can also add labels, descriptions, and your choice of number formatting to customize how they are shown. See our dedicated examples and pages for the following advanced measures!
-- **[Measure Formatting](/build/metrics-view/measures/measure-formatting)**
+- **[Measure Formatting](/build/metrics-view/measures/measures-formatting)**
 - **[Case Statements and Filters](/build/metrics-view/measures/case-statements)**
 - **[Referencing Measures](/build/metrics-view/measures/referencing)**
 - **[Quantiles](/build/metrics-view/measures/quantiles)**

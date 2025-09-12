@@ -18,7 +18,7 @@ Metrics Views are a key part of defining your measures and dimensions.
 - [**Lookup Dimensions**](/build/metrics-view/dimensions/lookup) - Create dimensions that reference data from other sources
 
 ### Measures
-- [**Format Measures**](/build/metrics-view/measures/measure-formatting) - Learn how to format and display your metrics effectively
+- [**Format Measures**](/build/metrics-view/measures/measures-formatting) - Learn how to format and display your metrics effectively
 - [**Case Statements and Filters**](/build/metrics-view/measures/case-statements) - Use conditional logic and filtering in your measures
 - [**Referencing Measures**](/build/metrics-view/measures/referencing) - Reference and combine existing measures in your calculations
 - [**Quantiles**](/build/metrics-view/measures/quantiles) - Calculate percentiles and quantiles for statistical analysis

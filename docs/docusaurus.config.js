@@ -488,7 +488,7 @@ const config = {
           },
           {
             from: '/build/metrics-view/advanced-expressions/metric-formatting',
-            to: '/build/metrics-view/measures/measure-formatting'
+            to: '/build/metrics-view/measures/measures-formatting'
           },
           {
             from: '/build/metrics-view/advanced-expressions/quantiles',

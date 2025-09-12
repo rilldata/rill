@@ -22,8 +22,6 @@ You can edit these files in any IDE, and Rill will automatically detect changes 
 <img src='https://cdn.rilldata.com/docs/release-notes/36_hot_reload.gif' class='rounded-gif' />
 <br />
 
-
-
 ## Using AI Agents to Help Build Rill Projects
 
 You can also use IDEs with integrated AI agents like Cursor or WindSurf to accelerate your Rill development workflow.
