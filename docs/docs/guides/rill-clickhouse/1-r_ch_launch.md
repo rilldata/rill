@@ -19,17 +19,17 @@ You need access to either a [locally running ClickHouse Server](https://clickhou
 :::
 ## Start Rill Developer
 
-```yaml
+```bash
 rill start my-rill-clickhouse
 ```
 
-After running the command, Rill Developer should automatically open in your default browser. If not, you can access it via the following url:
+After running the command, Rill Developer should automatically open in your default browser. If not, you can access it via the following URL:
 
 ```
 localhost:9009
 ``` 
 
-You should see the following webpage appear. 
+You should see the following webpage appear: 
 
 <img src = '/img/tutorials/rill-basics/new-rill-project.png' class='rounded-gif' />
 <br />
@@ -39,7 +39,7 @@ Let's go ahead and select `Start with an empty project`.
 <details>
   <summary>Where am I in the terminal?</summary>
   
-    You can use the `pwd` command to see which directory in the terminal you are. <br />
+    You can use the `pwd` command to see which directory you are in the terminal. <br />
     If this is not where you'd like to make the directory use the `cd` command to change directories.
 
 </details>
