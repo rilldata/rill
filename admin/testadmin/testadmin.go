@@ -6,11 +6,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
+	"os"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/google/go-github/v71/github"
+	"github.com/joho/godotenv"
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/billing"
 	"github.com/rilldata/rill/admin/billing/payment"
@@ -48,6 +51,26 @@ type Fixture struct {
 	Admin      *admin.Service
 	Server     *server.Server
 	ServerOpts *server.Options
+}
+
+// newGithub creates a new Github client. Usually this is a mock client which has no-op implementations of all methods.
+// If the USE_ACTUAL_GITHUB environment variable is set to true, it creates a real implementation that makes real API calls to Github.
+// The tests that use the real implementation should be run with env set and skipped otherwise.
+// Such tests are skipped in CI to avoid making real API calls to Github and only run in local development environments.
+func newGithub(t *testing.T) admin.Github {
+	err := godotenv.Load("../../../.env")
+	require.NoError(t, err)
+
+	ok, _ := strconv.ParseBool(os.Getenv("USE_ACTUAL_GITHUB"))
+	if !ok {
+		return &mockGithub{}
+	}
+	githubAppID, err := strconv.ParseInt(os.Getenv("RILL_ADMIN_GITHUB_APP_ID"), 10, 64)
+	require.NoError(t, err)
+
+	github, err := admin.NewGithub(t.Context(), githubAppID, os.Getenv("RILL_ADMIN_GITHUB_APP_PRIVATE_KEY"), os.Getenv("RILL_ADMIN_GITHUB_MANAGED_ACCOUNT"), zap.Must(zap.NewDevelopment()))
+	require.NoError(t, err)
+	return github
 }
 
 // New creates an ephemeral admin service and server for testing.
@@ -120,7 +143,7 @@ func New(t *testing.T) *Fixture {
 		AutoscalerCron:            "",
 		ScaleDownConstraint:       0,
 	}
-	adm, err := admin.New(ctx, admOpts, logger, issuer, emailClient, &mockGithub{}, ai.NewNoop(), nil, billing.NewNoop(), payment.NewNoop())
+	adm, err := admin.New(ctx, admOpts, logger, issuer, emailClient, newGithub(t), ai.NewNoop(), nil, billing.NewNoop(), payment.NewNoop())
 	require.NoError(t, err)
 	t.Cleanup(func() { adm.Close() })
 
