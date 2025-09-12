@@ -362,7 +362,7 @@ func (s *Server) ConnectProjectToGithub(ctx context.Context, req *adminv1.Connec
 			return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("invalid remote: %q", req.Remote))
 		}
 
-		err = s.createRepo(ctx, client, org, repo, req.Branch)
+		err = s.createRepo(ctx, client, user.GithubUsername, org, repo, req.Branch)
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
@@ -1180,8 +1180,13 @@ func (s *Server) fetchReposForInstallation(ctx context.Context, client *github.C
 	return repos, nil
 }
 
-func (s *Server) createRepo(ctx context.Context, client *github.Client, org, repo, branch string) error {
-	_, _, err := client.Repositories.Create(ctx, org, &github.Repository{Name: &repo, DefaultBranch: &branch})
+func (s *Server) createRepo(ctx context.Context, client *github.Client, user, org, repo, branch string) error {
+	// We need to pass empty org if the org to be created in is same as the authenticated user.
+	createOrg := org
+	if createOrg == user {
+		createOrg = ""
+	}
+	_, _, err := client.Repositories.Create(ctx, createOrg, &github.Repository{Name: &repo, DefaultBranch: &branch})
 	if err != nil {
 		return fmt.Errorf("failed to create repo: %w", err)
 	}
@@ -1195,7 +1200,7 @@ func (s *Server) createRepo(ctx context.Context, client *github.Client, org, rep
 		return nil
 	})
 	if err != nil {
-		return fmt.Errorf("failed to create repo: %w", err)
+		return fmt.Errorf("failed to verify repo creation: %w", err)
 	}
 
 	return nil

@@ -23,7 +23,7 @@ export function getGithubUserOrgs() {
         const hasWritePermissionToUserOrg =
           data.userInstallationPermission ===
           V1GithubPermission.GITHUB_PERMISSION_WRITE;
-        if (hasWritePermissionToUserOrg) {
+        if (hasWritePermissionToUserOrg && data.account) {
           orgs.push(data.account);
         }
 
@@ -44,7 +44,7 @@ export function getGithubUserRepos(enabled: boolean) {
           select: (data) => ({
             rawRepos: data.repos ?? [],
             repoOptions:
-              data.repos.map((repo) => ({
+              data.repos?.map((repo) => ({
                 value: repo.remote,
                 label: `${repo.owner}/${repo.name}`,
               })) ?? [],

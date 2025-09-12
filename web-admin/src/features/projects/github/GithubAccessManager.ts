@@ -46,7 +46,6 @@ export class GithubAccessManager {
     await waitUntil(() => !get(this.userStatus).isFetching);
     const userStatus = get(this.userStatus).data;
     if (!userStatus || userStatus?.hasAccess || !userStatus.grantAccessUrl) {
-      this.haveGithubAccess = userStatus?.hasAccess ?? false;
       return;
     }
 
