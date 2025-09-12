@@ -44,6 +44,20 @@ export class CircularChartComponent extends BaseChart<CircularChartSpec> {
   totalsValue: number | undefined = undefined;
 
   static chartInputParams: Record<string, ComponentInputParam> = {
+    measure: {
+      type: "positional",
+      label: "Measure",
+      meta: {
+        chartFieldInput: {
+          type: "measure",
+          totalSelector: true,
+        },
+      },
+    },
+    innerRadius: {
+      type: "number",
+      label: "Inner Radius (%)",
+    },
     color: {
       type: "positional",
       label: "Color",
@@ -62,19 +76,6 @@ export class CircularChartComponent extends BaseChart<CircularChartSpec> {
           colorMappingSelector: { enable: true },
         },
       },
-    },
-    measure: {
-      type: "positional",
-      label: "Measure",
-      meta: {
-        chartFieldInput: {
-          type: "measure",
-        },
-      },
-    },
-    innerRadius: {
-      type: "number",
-      label: "Inner Radius (%)",
     },
   };
 
@@ -108,6 +109,7 @@ export class CircularChartComponent extends BaseChart<CircularChartSpec> {
     let colorSort: V1MetricsViewAggregationSort | undefined;
     let limit: number;
     const colorDimensionName = config.color?.field;
+    const showTotal = config.measure?.showTotal;
 
     if (colorDimensionName) {
       limit = config.color?.limit || DEFAULT_COLOR_LIMIT;
@@ -156,7 +158,10 @@ export class CircularChartComponent extends BaseChart<CircularChartSpec> {
       ([runtime, $timeAndFilterStore]) => {
         const { timeRange, where } = $timeAndFilterStore;
         const enabled =
-          !!timeRange?.start && !!timeRange?.end && !!config.measure?.field;
+          !!showTotal &&
+          !!timeRange?.start &&
+          !!timeRange?.end &&
+          !!config.measure?.field;
 
         const totalWhere = getFilterWithNullHandling(where, config.color);
 
@@ -233,7 +238,7 @@ export class CircularChartComponent extends BaseChart<CircularChartSpec> {
           },
         );
 
-        if (config.measure?.field) {
+        if (showTotal && config.measure?.field) {
           this.totalsValue = $totalQuery?.data?.data?.[0]?.[
             config.measure?.field
           ] as number;
@@ -294,7 +299,7 @@ export class CircularChartComponent extends BaseChart<CircularChartSpec> {
           : undefined;
     }
 
-    if (this.totalsValue) {
+    if (config.measure?.showTotal && this.totalsValue) {
       result["total"] = [this.totalsValue];
     }
 
@@ -341,6 +346,7 @@ export class CircularChartComponent extends BaseChart<CircularChartSpec> {
       measure: {
         type: "quantitative",
         field: randomMeasure,
+        showTotal: true,
       },
     };
   }
