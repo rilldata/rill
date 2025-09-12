@@ -6,7 +6,7 @@ sidebar_position: 00
 ---
 
 
-A metrics view is a 'centralized framework' used to define and organize **key measures and dimensions** for your organization. Having a centralized layer allows an organization to easily manage and reuse calculations across various reports, dashboards, and data tools.
+A metrics view is a 'centralized framework' used to define and organize **key measures and dimensions** for your organization. Having a centralized layer allows an organization to easily manage and reuse calculations across various reports, dashboards, and data tools. Each metrics view is powered by a single [model or table](/build/metrics-view/underlying-model).
 
 
 <div style={{ textAlign: 'center' }}>
@@ -22,7 +22,7 @@ In Rill, your metrics view is defined by _metric definitions_. Metric definition
 
 ## Creating a Metrics view
 
-Once your model or underlying is ready to visualize, you'll need to create a metrics view to define your measures and dimensions. This can be done in a few ways. Either create a blank YAML file, use the Add metrics view button, or "Generate Metrics with AI" from the model.
+Once your [model or underlying table](/build/metrics-view/underlying-model) is ready to visualize, you'll need to create a metrics view to define your measures and dimensions. This can be done in a few ways. Either create a blank YAML file, use the Add metrics view button, or "Generate Metrics with AI" from the model.
 
 ### Create a Metrics view with Code
 Copy the below into a blank YAML or use the Add -> metrics view to create a blank metrics view. Here you can start to define dimensions and measures as seen below.
