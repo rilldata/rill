@@ -3,6 +3,7 @@ package gcs
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/blob"
@@ -12,6 +13,9 @@ import (
 
 // ListObjects implements drivers.ObjectStore.
 func (c *Connection) ListObjects(ctx context.Context, path string) ([]drivers.ObjectStoreEntry, error) {
+	if c.s3Conn != nil {
+		return c.s3Conn.ListObjects(ctx, rewriteToS3Path(path))
+	}
 	url, err := c.parseBucketURL(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse path %q: %w", path, err)
@@ -30,6 +34,9 @@ func (c *Connection) ListObjects(ctx context.Context, path string) ([]drivers.Ob
 // The credential json is read from config google_application_credentials.
 // Additionally in case `allow_host_credentials` is true it looks for "Application Default Credentials" as well
 func (c *Connection) DownloadFiles(ctx context.Context, path string) (drivers.FileIterator, error) {
+	if c.s3Conn != nil {
+		return c.s3Conn.DownloadFiles(ctx, rewriteToS3Path(path))
+	}
 	url, err := c.parseBucketURL(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse path %q: %w", path, err)
@@ -75,4 +82,14 @@ func (c *Connection) openBucket(ctx context.Context, bucket string) (*blob.Bucke
 	}
 
 	return blob.NewBucket(gcsBucket, c.logger)
+}
+
+func rewriteToS3Path(s string) string {
+	if after, ok := strings.CutPrefix(s, "gs://"); ok {
+		return "s3://" + after
+	}
+	if after, ok := strings.CutPrefix(s, "gcs://"); ok {
+		return "s3://" + after
+	}
+	return s
 }
