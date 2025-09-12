@@ -26,6 +26,8 @@ import {
 } from "./project-parser";
 import { ResourceKind } from "./resource-selectors";
 
+// 1. Create the file
+// 2. Wait for the parser version to increment to confirm file was processed
 export async function runtimeServicePutFileAndWaitForReconciliation(
   instanceId: string,
   runtimeServicePutFileBody: RuntimeServicePutFileBody,
@@ -40,6 +42,9 @@ export async function runtimeServicePutFileAndWaitForReconciliation(
   );
 }
 
+// 1. Create the file
+// 2. Wait for the parser version to increment to confirm file was processed
+// 3. Check the specific resource reconcile status
 export async function runtimeServicePutConnectorFileAndWaitForReconciliation(
   instanceId: string,
   runtimeServicePutFileBody: RuntimeServicePutFileBody,
