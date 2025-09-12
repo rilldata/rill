@@ -1,6 +1,7 @@
 package runtime
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -165,8 +166,8 @@ func PrettifyReconcileStatus(s runtimev1.ReconcileStatus) string {
 
 // ApplySecurityPolicy applies relevant security policies to the resource.
 // The input resource will not be modified in-place (so no need to set clone=true when obtaining it from the catalog).
-func (r *Runtime) ApplySecurityPolicy(instID string, claims *SecurityClaims, res *runtimev1.Resource) (*runtimev1.Resource, bool, error) {
-	security, err := r.ResolveSecurity(instID, claims, res)
+func (r *Runtime) ApplySecurityPolicy(ctx context.Context, instID string, claims *SecurityClaims, res *runtimev1.Resource) (*runtimev1.Resource, bool, error) {
+	security, err := r.ResolveSecurity(ctx, instID, claims, res)
 	if err != nil {
 		return nil, false, err
 	}

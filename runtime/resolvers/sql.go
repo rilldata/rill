@@ -172,6 +172,11 @@ func (r *sqlResolver) ResolveExport(ctx context.Context, w io.Writer, opts *runt
 	}
 }
 
+func (r *sqlResolver) InferRequiredSecurityRules() ([]*runtimev1.SecurityRule, error) {
+	// NOTE - This is the regular SQL resolver, not metrics SQL. So the only refs would be to models, which don't have security policies / access checks
+	return nil, nil
+}
+
 func (r *sqlResolver) generalExport(ctx context.Context, w io.Writer, filename string, opts *runtime.ExportOptions) error {
 	res, err := r.olap.Query(ctx, &drivers.Statement{
 		Query:    r.sql,

@@ -14,16 +14,17 @@ type Notifier interface {
 
 type AlertStatus struct {
 	// TODO: Remove ToEmail, ToName once email notifier is created
-	ToEmail        string
-	ToName         string
-	DisplayName    string
-	ExecutionTime  time.Time
-	Status         runtimev1.AssertionStatus
-	IsRecover      bool
-	FailRow        map[string]any
-	ExecutionError string
-	OpenLink       string
-	EditLink       string
+	ToEmail         string
+	ToName          string
+	DisplayName     string
+	ExecutionTime   time.Time
+	Status          runtimev1.AssertionStatus
+	IsRecover       bool
+	FailRow         map[string]any
+	ExecutionError  string
+	OpenLink        string
+	EditLink        string
+	UnsubscribeLink string
 }
 
 type ScheduledReport struct {

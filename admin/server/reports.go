@@ -37,8 +37,6 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 		attribute.Bool("args.anon_recipients", req.AnonRecipients),
 		attribute.String("args.owner_id", req.OwnerId),
 		attribute.String("args.web_open_mode", req.WebOpenMode),
-		attribute.String("args.where_filter_json", req.WhereFilterJson),
-		attribute.StringSlice("args.accessible_fields", req.AccessibleFields),
 	)
 
 	proj, err := s.admin.DB.FindProject(ctx, req.ProjectId)
@@ -73,8 +71,8 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 		recipients = append(recipients, "")
 	}
 
-	filterJSON := req.WhereFilterJson
-	accessibleFields := req.AccessibleFields
+	filterJSON := req.WhereFilterJson        // nolint:staticcheck // only needed for backwards compatibility during rollout otherwise update runtimes will always send empty string
+	accessibleFields := req.AccessibleFields // nolint:staticcheck // only needed for backwards compatibility during rollout otherwise update runtimes will always send nil
 	if webOpenMode != WebOpenModeFiltered {
 		// If web open mode is not filtered, we don't need to apply where filter or accessible fields
 		filterJSON = ""
@@ -313,9 +311,13 @@ func (s *Server) UnsubscribeReport(ctx context.Context, req *adminv1.Unsubscribe
 	}
 
 	if claims.OwnerType() == auth.OwnerTypeMagicAuthToken {
-		reportTkn, err := s.admin.DB.FindReportTokenForMagicAuthToken(ctx, claims.OwnerID())
+		reportTkn, err := s.admin.DB.FindNotificationTokenForMagicAuthToken(ctx, claims.OwnerID())
 		if err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "failed to find report token: %s", err.Error())
+			return nil, status.Errorf(codes.InvalidArgument, "failed to find notification token: %s", err.Error())
+		}
+
+		if reportTkn.ResourceKind != runtime.ResourceKindReport || reportTkn.ResourceName != req.Name {
+			return nil, status.Error(codes.InvalidArgument, "token is not valid for this report")
 		}
 
 		if reportTkn.RecipientEmail == "" {
@@ -691,8 +693,9 @@ func (s *Server) createMagicTokens(ctx context.Context, orgID, projectID, report
 
 		emailTokens[email] = tkn.Token().String()
 
-		_, err = s.admin.DB.InsertReportToken(cctx, &database.InsertReportTokenOptions{
-			ReportName:       reportName,
+		_, err = s.admin.DB.InsertNotificationToken(cctx, &database.InsertNotificationTokenOptions{
+			ResourceKind:     runtime.ResourceKindReport,
+			ResourceName:     reportName,
 			RecipientEmail:   email,
 			MagicAuthTokenID: tkn.Token().ID.String(),
 		})
