@@ -51,7 +51,7 @@ import {
  * @param preset The format preset to use
  * @param type The format context type (e.g., tooltip, big-number)
  */
-function humanizeDataType(
+export function humanizeDataType(
   value: number,
   preset: FormatPreset,
   type: FormatterContextSurface,
