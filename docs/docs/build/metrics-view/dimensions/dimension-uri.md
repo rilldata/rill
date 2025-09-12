@@ -32,5 +32,3 @@ dimensions:
     expression: CONCAT('https://bsky.app/profile/', profile_id)
     uri: true
 ```
-
-**Result:** Users see and click `https://bsky.app/profile/user123`
