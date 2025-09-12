@@ -11,7 +11,7 @@ export interface TestConnectorResult {
   details?: string;
 }
 
-// Test the connection by calling  `ListTables`
+// Used for OLAP connectors (needs connection testing using `ListTables` API)
 export async function testOLAPConnector(
   instanceId: string,
   newConnectorName: string,
