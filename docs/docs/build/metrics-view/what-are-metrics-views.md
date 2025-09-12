@@ -8,6 +8,8 @@ sidebar_position: 00
 
 A metrics view is a 'centralized framework' used to define and organize **key measures and dimensions** for your organization. Having a centralized layer allows an organization to easily manage and reuse calculations across various reports, dashboards, and data tools. Each metrics view is powered by a single [model or table](/build/metrics-view/underlying-model).
 
+Rill metrics views are analogous to the **semantic layer** and **metrics layer** concepts found in other business intelligence and analytics tools. It provides a consistent, reusable abstraction over your underlying data, enabling standardized definitions of business metrics that can be shared across different dashboards and reports.
+
 
 <div style={{ textAlign: 'center' }}>
   <img src="/img/concepts/metrics-view/metrics-view-components.png" width="100%" style={{ borderRadius: '15px', padding: '20px' }} />
@@ -72,50 +74,3 @@ In order to streamline the process and get to a dashboard as quickly as possible
 features:
   ai: false
 ```
-
-## Creating Valid Metrics Views
-
-### Underlying Model/Table
-
-Before creating any measures or dimensions, you'll need to select a single model or table to power you metrics view. For a full walkthrough on DuckDB vs Live Connectors, see our [Underlying Model/Table](/build/metrics-view/underlying-model) doc.
-
-### Time Series
-
-Time is the most critical dimension in analytics and powers our dashboards. Understanding not just the "what," but how metrics evolve over hours, days, and months provides the narrative arc for decision-making. For a full walkthrough, see our [Time Series](/build/metrics-view/time-series) doc.
-
-### Dimensions
-
-Dimensions are used for exploring segments and filtering. Valid dimensions can be any type and are selected using the drop-down menu. You can also add labels and descriptions to your dimensions to customize how they are displayed. See our dedicated examples and pages for more use cases. 
-
-- **[Clickable Dimension Links](/build/metrics-view/dimensions/dimension-uri)**
-- **[Unnest Dimensions](/build/metrics-view/dimensions/unnesting)**
-- **[Lookups](/build/metrics-view/dimensions/lookup)**
-
-
-### Measures
-
-Measures are numeric aggregates of columns from your data model. A measure must be defined with [DuckDB SQL](https://duckdb.org/docs/sql/introduction.html) aggregation functions and expressions on columns from your data model. The following operators and functions are allowed in measure expressions:
-
-* Any DuckDB SQL [numeric](https://duckdb.org/docs/sql/functions/numeric) operators and functions
-* This set of DuckDB SQL [aggregates](https://duckdb.org/docs/sql/aggregates): `AVG`, `COUNT`, `FAVG`, `FIRST`, `FSUM`, `LAST`, `MAX`, `MIN`, `PRODUCT`, `SUM`, `APPROX_COUNT_DISTINCT`, `APPROX_QUANTILE`, `STDDEV_POP`, `STDDEV_SAMP`, `VAR_POP`, `VAR_SAMP`.
-* [Filtered aggregates](https://duckdb.org/docs/sql/query_syntax/filter.html) can be used to filter the set of rows fed to the aggregate functions.
-
-As an example, if you have a table of sales events with the sales price and customer ID, you could calculate the following metrics with these aggregates and expressions:
-* Number of sales: `COUNT(*)`
-* Total revenue: `SUM(sales_price)` 
-* Revenue per customer: `CAST(SUM(sales_price) AS FLOAT)/CAST(COUNT(DISTINCT customer_id) AS FLOAT)`
-* Number of orders with order value more than $100: `count(*) FILTER (WHERE order_val > 100)`
-
-You can also add labels, descriptions, and your choice of number formatting to customize how they are shown. See our dedicated examples and pages for the following advanced measures!
-- **[Measure Formatting](/build/metrics-view/measures/measures-formatting)**
-- **[Case Statements and Filters](/build/metrics-view/measures/case-statements)**
-- **[Referencing Measures](/build/metrics-view/measures/referencing)**
-- **[Quantiles](/build/metrics-view/measures/quantiles)**
-- **[Fixed Measures](/build/metrics-view/measures/fixed-measures)**
-- **[Window Functions](/build/metrics-view/measures/windows)**
-
-  
-
-## Security
-
-Data access is an important part of Rill that allows you to create specified views of your dashboard depending on who's viewing the page. For a dedicated guide, see [Data Access](/build/metrics-view/security) for more information.

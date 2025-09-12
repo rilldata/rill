@@ -27,7 +27,7 @@ security:
 
 :::info Dashboard access
 
-`access` can be set on both the dashboard YAML and metrics view YAML and policies are binary logically ANDed. If no policies are defined on the dashboard, they are derived from the metrics view. For most set-ups, setting the access on the metrics view is sufficient.
+`access` can be set on both the dashboard YAML and metrics view YAML and policies are combined using logical AND operations. If no policies are defined on the dashboard, they are derived from the metrics view. For most set-ups, setting the access on the metrics view is sufficient.
 
 :::
 
@@ -111,7 +111,7 @@ security:
 
 :::tip Access Policy Behavior
 
-When combining access policies from project defaults and object-specific policies, remember that the object level policies will overwrite the project level ones. Dashboard and metrics view policies are binary logically ANDed.
+When combining access policies from project defaults and object-specific policies, remember that the object level policies will overwrite the project level ones. Dashboard and metrics view policies are combined using logical AND operations.
  
 
 :::
@@ -122,7 +122,7 @@ Dashboards also have an `access` key that can add additional security to the met
 
 ```yaml
 security:
-  access: true
+  access: "'{{ .user.domain }}' == 'example.com'"
 ```
 
 This will logically AND with your metrics view's access so ensure that a user who needs access to the dashboard passes **both** conditions.
@@ -133,7 +133,7 @@ Access Policies can get quite complicated as your use case grows and having to n
 
 A few recommendations:
 1. Only change project level access if absolutely necessary. (They get overwritten by object level security)
-2. Dashboard access is controlled in the metrics view, only add extra policies on the dashboard if absolutely necessary as this gets logically ANDed with the metrics view anyway.
+2. Dashboard access can be derived from the metrics view, only add extra policies on the dashboard if absolutely necessary as this gets combined with the metrics view using logical AND operations anyway.
 3. Solve project access issues higher up in the [user](/manage/user-management) / [usergroup](/manage/usergroup-management) settings, and keep default project security rules.
 
 :::
@@ -180,29 +180,6 @@ If you want to test what your users are seeing in Rill Cloud after deploying, yo
 When [requesting an embedded dashboard from Rill](/integrate/embedding) from your frontend, you can pass the `attributes` parameter with custom names to ensure that the resulting dashboard displays the correct information.
 
 For more information, see [our embedding docs](/integrate/embedding#backend-build-an-iframe-url).
-
-
-## Dashboard Access
-
-Dashboards also have an `access` key that can override the metrics view access rules. Both [explore](/build/dashboards/#define-dashboard-access) and [canvas](/build/canvas/#define-dashboard-access) dashboards can set the following:
-
-```yaml
-security:
-  access: true
-```
-
-This is useful if you want to apply specific rules to the metrics view for metrics SQL API access, but want different rules for the visual dashboard in Rill.
-
-:::tip complicated set-ups
-
-Access Policies can get quite complicated as your use case grows and having to navigate multiple files to figure out why a user is able to or unable to access certain dashboards. 
-
-A few recommendations:
-1. Only change project level access if absolutely necessary. (They get overwritten by object level security)
-2. Dashboard access is controlled in the metrics view, only add extra policies on the dashboard if absolutely necessary as this gets logically ANDed with the metrics view anyway.
-3. Solve project access issues higher up in the [user](/manage/user-management) / [usergroup](/manage/usergroup-management) settings, and keep default project security rules.
-
-:::
 
 
 ## Examples

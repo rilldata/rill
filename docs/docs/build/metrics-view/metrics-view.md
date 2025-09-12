@@ -9,7 +9,7 @@ Metrics Views are a key part of defining your measures and dimensions.
 
 ### Metrics 101
 - [**What are Metrics Views?**](/build/metrics-view/what-are-metrics-views) - Define your time series, measures, and dimensions using your OLAP engine aggregate functions
-- [**Underlying Model/Table**](/build/metrics-view/time-series) - When to use `model` or `table` in a metrics view
+- [**Underlying Model/Table**](/build/metrics-view/underlying-model) - When to use `model` or `table` in a metrics view
 - [**Time Series**](/build/metrics-view/time-series) - What is a time series column and how to use it in your metrics view
 
 ### Dimensions

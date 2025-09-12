@@ -42,6 +42,8 @@ If you're using live connectors such as ClickHouse, MotherDuck, or Druid, you'll
 version: 1
 type: metrics_view
 
+
+database: default
 connector: clickhouse
 database_schema: billing
 table: events # Choose a table to underpin your metrics view
