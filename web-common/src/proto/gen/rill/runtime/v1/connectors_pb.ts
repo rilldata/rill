@@ -846,6 +846,16 @@ export class OLAPListTablesRequest extends Message<OLAPListTablesRequest> {
    */
   searchPattern = "";
 
+  /**
+   * @generated from field: uint32 page_size = 4;
+   */
+  pageSize = 0;
+
+  /**
+   * @generated from field: string page_token = 5;
+   */
+  pageToken = "";
+
   constructor(data?: PartialMessage<OLAPListTablesRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -857,6 +867,8 @@ export class OLAPListTablesRequest extends Message<OLAPListTablesRequest> {
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "search_pattern", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "page_size", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 5, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): OLAPListTablesRequest {
@@ -885,6 +897,11 @@ export class OLAPListTablesResponse extends Message<OLAPListTablesResponse> {
    */
   tables: OlapTableInfo[] = [];
 
+  /**
+   * @generated from field: string next_page_token = 2;
+   */
+  nextPageToken = "";
+
   constructor(data?: PartialMessage<OLAPListTablesResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -894,6 +911,7 @@ export class OLAPListTablesResponse extends Message<OLAPListTablesResponse> {
   static readonly typeName = "rill.runtime.v1.OLAPListTablesResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "tables", kind: "message", T: OlapTableInfo, repeated: true },
+    { no: 2, name: "next_page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): OLAPListTablesResponse {

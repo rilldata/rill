@@ -160,7 +160,7 @@ func (r *Result) Close() error {
 type OLAPInformationSchema interface {
 	// All returns metadata about all tables and views.
 	// The like argument can optionally be passed to filter the tables by name.
-	All(ctx context.Context, like string) ([]*OlapTable, error)
+	All(ctx context.Context, like string, pageSize uint32, pageToken string) ([]*OlapTable, string, error)
 	// Lookup returns metadata about a specific tables and views.
 	Lookup(ctx context.Context, db, schema, name string) (*OlapTable, error)
 	// LoadPhysicalSize populates the PhysicalSizeBytes field of table metadata.
