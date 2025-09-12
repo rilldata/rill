@@ -100,6 +100,15 @@
     if ($paramsTainted) paramsError = null;
   }
 
+  // Clear errors when switching tabs
+  $: if (connectionTab === "dsn") {
+    paramsError = null;
+    paramsErrorDetails = undefined;
+  } else {
+    dsnError = null;
+    dsnErrorDetails = undefined;
+  }
+
   // Emit the submitting state to the parent
   $: dispatch("submitting", { submitting });
 
