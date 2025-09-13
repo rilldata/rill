@@ -258,7 +258,7 @@
             style:transform="translateX(-{percentage}%)"
             style:left="{percentage}%"
           >
-            <RangeDisplay {interval} />
+            <RangeDisplay {interval} {timeGrain} />
           </span>
         {/if}
       {:else if mappedData.length}
