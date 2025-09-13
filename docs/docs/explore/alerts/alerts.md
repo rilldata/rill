@@ -5,6 +5,8 @@ sidebar_label: "Alerts"
 sidebar_position: 40
 ---
 
+Alerting is a key element for any BI or analytics workflow. Because Rill's dashboards are typically built off of raw or near-raw data, we expose alerting on a wide range of filters and depth, including high cardinality fields. Alerts are accessible from any dashboard via the upper-right alarm bell icon and can be used to create context-based triggers or alerts to bring you back to an analysis if an alert is triggered. This allows the analyst or end user to then dive deeper and use Rill dashboards to interactively explore their data as needed.
+
 <div style={{ 
   position: "relative", 
   width: "100%", 
@@ -29,16 +31,6 @@ sidebar_position: 40
 </div>
 <br/>
 Prefer video? Check out our [YouTube playlist](https://www.youtube.com/watch?v=wTP46eOzoCk&list=PL_ZoDsg2yFKgi7ud_fOOD33AH8ONWQS7I&index=1) for a quick start!
-
-
-## Overview
-
-Alerting is a key element for any BI or analytics workflow. Because Rill's dashboards are typically built off of raw or near-raw data, we expose alerting on a wide range of filters and depth, including high cardinality fields. Alerts are accessible from any dashboard via the upper-right alarm bell icon and can be used to create context-based triggers or alerts to bring you back to an analysis if an alert is triggered. This allows the analyst or end user to then dive deeper and use Rill dashboards to interactively explore their data as needed.
-
-
-<img src = '/img/explore/alerts/alerts.gif' class='rounded-gif' />
-<br />
-
 
 ## Setting and managing alerts
 
@@ -101,7 +93,7 @@ Email is the default notification target for alerts and is automatically enabled
 
 ### Configuring Slack targets
 
-Slack is also an available target for alert notifications and Rill can be configured to send alerts to your workspace, either in specified Slack channels (public / private) or as private messages via a configured bot. However, Slack will <u>first need to be enabled</u> to show up as an available notification target for alerts. For more information, refer to our [Configuring Slack integration](slack.md) documentation.
+[Slack](https://slack.com/) is also an available target for alert notifications and Rill can be configured to send alerts to your workspace, either in specified Slack channels (public / private) or as private messages via a configured bot. However, Slack will <u>first need to be enabled</u> to show up as an available notification target for alerts. For more information, refer to our [Configuring Slack integration](#configuring-slack-targets) documentation.
 
 
 <img src = '/img/explore/alerts/slack-notifications.png' class='centered' />
@@ -112,6 +104,34 @@ Slack is also an available target for alert notifications and Rill can be config
 After having the Slack admin create the app / bot with appropriate permissions, please make sure to <u>first</u> add it to your target channels (using the */invite* command). Otherwise, the Slack alert will trigger an error that the channel can't be found when trying to post a notification!
 
 :::
+
+
+## Setting up the Slack integration
+
+In order to enable Slack to send alert notifications, you will need to create a Slack application configure it in your workspace with the necessary [permission scopes](https://api.slack.com/scopes). 
+
+To set up your Slack application, follow the steps provided in the [Slack documentation](https://api.slack.com/start/quickstart) and configure your app with the appropriate permissions depending on the notification type that you wish to use (see below).
+
+### Sending to Channels
+
+Sending notifications to a specific channel (public or private) requires the [`chat:write`](https://api.slack.com/scopes/chat:write) scope.
+
+
+### Direct messages
+
+Sending notifications via a direct message requires the [`chat:write`](https://api.slack.com/scopes/chat:write), [`users:read`](https://api.slack.com/scopes/users:read), and [`users:read.email`](https://api.slack.com/scopes/users:read.email) scopes. 
+
+:::tip 
+The last two scopes are required to find the user's ID by email.
+:::
+
+
+## Enabling the Slack integration in your project
+
+Once the Slack integration has been set up, the Slack destination will need to be enabled on a per project basis (note - alerts can only be configured on projects deployed to Rill Cloud). Create [a Slack connector](/connect/data-source/slack) to define your `connector.slack.bot_token` in your project to start.
+
+You can also create a [YAML based alert](/build/alerts) and use the notify key to send alerts to a Slack channel or direct message.
+
 
 ## Managing & Editing Alerts
 

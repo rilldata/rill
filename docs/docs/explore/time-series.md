@@ -1,8 +1,8 @@
 ---
 title: "Using Time Series Filters"
 description: Different ways to use Time
-sidebar_label: "Time Filter"
-sidebar_position: 03
+sidebar_label: "Rill Time"
+sidebar_position: 19
 ---
 
 <div style={{ 
@@ -48,6 +48,14 @@ Comparing performance across different periods is a key part of time series anal
 <img src = '/img/explore/filters/kpi_compare.png' class='rounded-gif' />
 <br />
 
+## Filter by Scrubbing 
+
+For a specific view into your time series graph, you can interactively scrub directly on the time series graph. 
+
+<img src = '/img/explore/filters/scrub.png' class='rounded-gif' />
+<br />
+
+This allows the ability for a more detailed view into your time series without having to change the overall time series filter for quick access to measures. Press Z to zoom into your selected range.
 
 ## _as of latest_
 
@@ -98,7 +106,7 @@ time_ranges:
   - rill-PYC
 ```
 
-Each time range is defined using [ISO 8601 duration](https://en.wikipedia.org/wiki/ISO_8601#Durations) syntax, or you can use [Rill’s ISO 8601 extensions](../../reference/rill-iso-extensions.md#extensions) for more flexibility. This allows you to precisely control the periods available to users.
+Each time range is defined using [ISO 8601 duration](https://en.wikipedia.org/wiki/ISO_8601#Durations) syntax, or you can use [Rill’s ISO 8601 extensions](/reference/rill-iso-extensions.md#extensions) for more flexibility. This allows you to precisely control the periods available to users.
 
 ---
 

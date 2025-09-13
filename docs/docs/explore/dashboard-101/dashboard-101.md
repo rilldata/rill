@@ -1,9 +1,14 @@
 ---
 title: "Dashboard Quickstart"
 description: Dashboard Quickstart
-sidebar_label: "Dashboard Quickstart"
+sidebar_label: "Explore Dashboard Quickstart"
 sidebar_position: 03
 ---
+
+
+
+
+After logging into [Rill Cloud](https://ui.rilldata.com), you should see all projects within your [organization](/manage/organization-management#organization) that is available and/or has been granted permissions to your user profile. Within each project, you'll then be able to access the corresponding individual dashboards that belong to a particular Rill project. 
 
 <div style={{ 
   position: "relative", 
@@ -29,14 +34,6 @@ sidebar_position: 03
 </div>
 <br/>
 Prefer video? Check out our [YouTube playlist](https://www.youtube.com/watch?v=wTP46eOzoCk&list=PL_ZoDsg2yFKgi7ud_fOOD33AH8ONWQS7I&index=1) for a quick start!
-
-
-## Overview
-
-After logging into [Rill Cloud](https://ui.rilldata.com), you should see all projects within your [organization](/manage/organization-management#organization) that is available and/or has been granted permissions to your user profile. Within each project, you'll then be able to access the corresponding individual dashboards that belong to a particular Rill project. 
-
-<img src = '/img/explore/dashboard101/rill-cloud-landing-page.png' class='rounded-gif' />
-<br />
 
 
 ## Navigating the Dashboard
@@ -96,7 +93,7 @@ The main screen of any Rill dashboard is called the _Explore_ page. As seen abov
 
 :::note Big Number Formatting
 
-[Formatting of your measures](/build/metrics-view/advanced-expressions/metric-formatting) will not change the granularity of the Big Number, but you'll see the formatting being applied to the TDD, Dimension Leaderboard, and Pivot tables. 
+[Formatting of your measures](/build/metrics-view#measures) will not change the granularity of the Big Number, but you'll see the formatting being applied to the TDD, Dimension Leaderboard, and Pivot tables. 
 :::
 
 ### Dimensions Leaderboard Panel

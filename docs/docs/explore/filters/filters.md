@@ -5,6 +5,8 @@ sidebar_label: "Filters & Comparisons"
 sidebar_position: 10
 ---
 
+Filters and Comparisons of measures and dimensions are another powerful tool in Rill that allows your to slice-and-dice your data to create curated, understandable views of your data. Adding Comparisons to this mix, allows you to further analyze changes over time and compare values at the same time.
+
 <div style={{ 
   position: "relative", 
   width: "100%", 
@@ -28,11 +30,15 @@ sidebar_position: 10
   ></iframe>
 </div>
 <br/>
+
+
+
 If videos are more your jam, take a look at [our series of YouTube videos](https://www.youtube.com/watch?v=wTP46eOzoCk&list=PL_ZoDsg2yFKgi7ud_fOOD33AH8ONWQS7I&index=1) to get started!
 
-## Overview
+## Dimension / Measure Filter
 
 Rill is particularly suited for exploratory analysis - to be able to slice & dice data quickly. As such, there are a variety of filter types and filter mechanisms throughout the app. The goal for each Rill dashboard is to provide users with all metrics and dimensions required for each use case and create an interactive experience to cut data in any form.
+
 
 :::tip Human readable URL
 With the release of v0.52, we have introduced an easy way to craft specific views by modifying the URL directly. As you select filters, time ranges, and default dimension and measures, the URL will change accordingly. 
@@ -40,7 +46,7 @@ With the release of v0.52, we have introduced an easy way to craft specific view
 .../explore/explore_dashboard?tr=P3M&compare_tr=rill-PP&f=dimension in ('exampleA', 'exampleB')
 :::
 
-## Add / Hide Dimensions and Metrics
+### Add / Hide Dimensions and Metrics
 
 Users can add or hide dimensions and metrics to a subset of fields they wish to see at any given time. At the top left, above the time series and above the top left leaderboard, you'll find the Measures & Dimensions selectors to add or hide from the page. In the example below, `network` and `country` are deselected so would be hidden from view.
 
@@ -53,7 +59,6 @@ You can also change settings in the dashboard configuration to hide certain fiel
 
 Or, an administrator can set the default view of a dashboard by [bookmarking the view](../bookmarks.md) as Home. 
 :::
-## Dimension & Measure & Time Filters 
 
 ### Filter by Dimensions
 
@@ -93,40 +98,6 @@ Metric filters are a good way to "sort" by two different metrics. First, apply y
 As an example - to see most active enterprise customers - filter all customers with revenue greater than $1000 then sorted by number of users increased descending.
 :::
 
-### Filter by Scrubbing 
-
-For a specific view into your time series graph, you can interactively scrub directly on the time series graph. 
-
-
-<img src = '/img/explore/filters/scrub-graph.gif' class='rounded-gif' />
-<br />
-
-This allows the ability for a more detailed view into your time series without having to change the overall time series filter for quick access to measures. 
-
-## Time & Dimension Comparisons
-
-<img src = '/img/explore/filters/time-series.png' class='rounded-gif' />
-<br />
-
-
-### Time Comparisons
-Time comparison is a key feature of Rill and is recommended to find insights quicker by highlighting differences between periods. To compare different periods, first select your time period for analysis - either a predefined period or a custom range in top left time picker. After selecting that range, select the toggle to enable Time Comparisons. For more information see our [time series filter documentation](/explore/filters/time-series).
-
-
-<img src = '/img/explore/alerts/time-series.gif' class='rounded-gif' />
-<br />
-:::note
-Default and comparison periods can be configured in your dashboard file. Visit [Dashboard Reference](/reference/project-files/explore-dashboards) for more details
-:::
-
-
-:::tip
-Rill provides different options for time period comparison - by time period or by selected hours. 
-
-For the former, you can let data "fill in" by selecting time period options like last day, previous 7 days, last week. Future periods will show 'no data.' Use cases here would be for pacing reports or seeing data refresh during business hours. 
-
-For the latter, you can compare the full period looking with options like last 24 hours vs. prior 24 hours. In this case, the time series will be fully complete, comparing up to the most recent period vs. the same hour/day/week in prior periods.  
-:::
 
 ### Dimension Comparisons
 In addition to time comparisons, you can select multiple dimension values to compare trends of those specific data points. Select the comparison option on the top left of any leaderboard and select multiple dimensions

@@ -276,13 +276,7 @@ ai_instructions: |
   [https://ui.rilldata.com/demo/rill-openrtb-prog-ads/explore/bids_explore?tr=2025-05-17T23%3A00%3A00.000Z%2C2025-05-19T23%3A00%3A00.000Z&tz=Europe%2FLondon&compare_tr=rill-PP&f=advertiser_name+IN+%28%27Hyundai%27%29&measures=overall_spend&dims=advertiser_name%2Ccampaign_name%2Csites_domain%2Cdevice_region](Explore Hyundai campaign spend and performance)
 ```
 
-
-## Using Rill MCP Server in Claude
-
-<img src='/img/explore/mcp/mcp-main.gif' class='rounded-gif'/>
-<br />
-
-### Supported Actions
+## Supported Actions
 
 - __*List metrics views*__ – Use `list_metrics_views` to discover available metrics views in the project.
 - __*Get metrics view spec*__ – Use `get_metrics_view` to fetch a metrics view's specification. This is important to understand all the dimensions and measures in a metrics view.
