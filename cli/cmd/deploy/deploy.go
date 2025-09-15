@@ -26,11 +26,11 @@ func DeployCmd(ch *cmdutil.Helper) *cobra.Command {
 			if len(args) > 0 {
 				opts.GitPath = args[0]
 			}
-
-			err := opts.ValidatePathAndSetupGit(ch)
+			err := opts.ValidateAndApplyDefaults(cmd.Context(), ch)
 			if err != nil {
 				return err
 			}
+
 			if !opts.Managed && !opts.ArchiveUpload && !opts.Github {
 				confirmed, err := cmdutil.ConfirmPrompt("Enable automatic deploys to Rill Cloud from GitHub?", "", false)
 				if err != nil {
@@ -54,7 +54,7 @@ func DeployCmd(ch *cmdutil.Helper) *cobra.Command {
 	}
 
 	deployCmd.Flags().SortFlags = false
-	deployCmd.Flags().StringVar(&opts.GitPath, "path", ".", "Path to project repository (default: current directory)") // This can also be a remote .git URL (undocumented feature)
+	deployCmd.Flags().StringVar(&opts.GitPath, "path", ".", "Path to project repository (default: current directory)")
 	deployCmd.Flags().StringVar(&opts.SubPath, "subpath", "", "Relative path to project in the repository (for monorepos)")
 	deployCmd.Flags().StringVar(&opts.RemoteName, "remote", "origin", "Remote name (default: origin)")
 	deployCmd.Flags().StringVar(&ch.Org, "org", ch.Org, "Org to deploy project in")
@@ -72,14 +72,15 @@ func DeployCmd(ch *cmdutil.Helper) *cobra.Command {
 	}
 
 	deployCmd.Flags().BoolVar(&opts.Managed, "managed", false, "Create project using rill managed repo")
-
 	deployCmd.Flags().BoolVar(&opts.ArchiveUpload, "archive", false, "Create project using tarballs(for testing only)")
 	err := deployCmd.Flags().MarkHidden("archive")
 	if err != nil {
 		panic(err)
 	}
-
 	deployCmd.Flags().BoolVar(&opts.Github, "github", false, "Use github repo to create the project")
+	// subpath cannot be used with archive or managed deploys
+	deployCmd.MarkFlagsMutuallyExclusive("managed", "archive", "subpath")
+	deployCmd.MarkFlagsMutuallyExclusive("managed", "archive", "github")
 
 	return deployCmd
 }
