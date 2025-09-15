@@ -5,9 +5,6 @@ sidebar_label: Create Explore Dashboards
 sidebar_position: 00
 ---
 
-<img src='/img/build/dashboard/explore-dashboard.gif' class='rounded-gif' />
-<br />
-
 In Rill, Explore dashboards are used to visually understand your data with real-time filtering, based on the dimensions and measures defined in your metrics view. In the Explore dashboard YAML, you can define which measures and dimensions are visible, as well as the default view when a user sees your dashboard.
 
 :::tip
@@ -56,11 +53,4 @@ For more details about available configurations and properties, check our [Dashb
 Once a dashboard is ready to preview, before [deploying to Rill Cloud](/deploy/deploy-dashboard), you can preview the dashboard in Rill Developer. Especially if you are setting up [dashboard policies](/build/metrics-view/security), it is recommended to preview and test the dashboard before deploying.
 
 <img src='/img/build/dashboard/preview-dashboard.png' class='rounded-gif' />
-<br />
-
-## Multi-Editor and External IDE Support
-
-Rill Developer is meant to be developer-friendly and has been built around the idea of keystroke-by-keystroke feedback when modeling your data, allowing live interactivity and a real-time feedback loop to iterate quickly (or make adjustments as necessary) with your models and dashboards. Additionally, Rill Developer supports "hot reloading", which means that you can keep two windows of Rill open at the same time and/or use a preferred editor, such as VS Code, side-by-side with the dashboard that you're actively developing!
-
-<img src='https://cdn.rilldata.com/docs/release-notes/36_hot_reload.gif' class='rounded-gif' />
 <br />

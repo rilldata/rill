@@ -96,7 +96,7 @@ If you are connecting to an existing [ClickHouse Cloud](https://clickhouse.com/c
 <img src='/img/connect/connector/clickhouse-cloud.png' class='rounded-gif' />
 <br />
 
-Using the information in the ClickHouse UI, populate the parameters of your connection. As ClickHouse Cloud requires a secure connection, keep the SSL option checked.
+Using the information in the ClickHouse UI, populate the parameters of your connection. 
 
 <img src='/img/connect/connector/clickhouse-ssl.png' class='rounded-gif' style={{width: '75%', display: 'block', margin: '0 auto'}}/>
 <br />

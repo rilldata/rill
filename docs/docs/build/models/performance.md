@@ -115,3 +115,50 @@ Subqueries can very often prove to be inefficient and result in suboptimal query
 
 Depending on the [OLAP engine](/connect/olap), `UNION` can be a very expensive operation and much more computationally intensive than `UNION ALL`. For example, when using [DuckDB](/connect/olap/duckdb), a `UNION` will require performing full duplicate eliminations _across all columns_ while a `UNION ALL` will simply concatenate the tables together. If a concatenation is sufficient (for the query), this will be both much quicker and significantly less resource intensive for the query to complete.
 
+
+## Time Series Transformation
+
+If your time series column is quite granular, this may affect your dashboards as the grain will define how granular the dashboards can be viewed. Instead of handling this in the metrics view by adding a `smallest_time_grain` key, you can use the modeling layer to roll up your data.
+
+:::note Query-time vs Model processing
+
+There are benefits to pre-procesing the data in the model layer but for some quick processing this can be done in the metrics view.
+
+**Query-time processing** (in metrics views):
+- Flexible and dynamic
+- No storage overhead
+- Slightly slower for complex calculations
+
+**Model-level processing** (in SQL models):
+- Pre-computed and optimized
+- Faster query performance
+- Requires model refresh for updates
+
+:::
+
+### DuckDB Time Functions
+
+DuckDB provides a comprehensive toolkit for temporal data manipulation:
+
+- **`DATE_TRUNC`**: Normalize timestamps to consistent intervals (day, week, month, quarter, year)
+- **`EXTRACT`**: Extract specific time components (year, quarter, month, day of week, hour)
+- **`LAG/LEAD`**: Reference prior or future rows for period-over-period comparisons
+- **`DATE_ADD/DATE_SUB`**: Perform date arithmetic for dynamic time ranges
+- **`STRFTME`**: Extract strings from a time column.
+
+For comprehensive documentation on all available time functions, see the [DuckDB time functions documentation](https://duckdb.org/docs/stable/sql/functions/timestamp.html).
+
+:::tip not using DuckDB?
+
+Each engine has slightly different functions and syntax for rolling up your data, see your OLAP engine's documentation for more examples.
+
+:::
+### Time Aggregation (Roll-ups)
+
+Roll-ups aggregate granular events into coarser intervals. For example, if your data arrives hourly but daily analysis suffices:
+
+```sql
+SELECT DATE_TRUNC('day', timestamp_column) AS time_series_column,
+        ...  
+FROM your_model
+```

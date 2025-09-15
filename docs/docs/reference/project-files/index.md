@@ -14,7 +14,7 @@ It is possible to define resources (such as [models](models.md), [metrics-views]
 
 :::
 
-Projects can simply be rehydrated from Rill project files into an explorable data application as long as there is sufficient access and credentials to the source data - figuring out the dependencies, pulling down data, & validating your model queries and metrics configurations. The result is a set of functioning exploratory dashboards.
+Projects can simply be rehydrated from Rill project files into an explorable data application as long as there is sufficient access and credentials to the source data - figuring out the dependencies, pulling down data, & validating your model queries and metrics view configurations. The result is a set of functioning exploratory dashboards.
 
 You can see a few different example projects by visiting our [example github repository](https://github.com/rilldata/rill-examples).
 
