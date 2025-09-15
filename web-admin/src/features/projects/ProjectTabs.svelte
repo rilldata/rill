@@ -87,7 +87,7 @@
   {#if $width && $position}
     <span
       style:width="{$width}px"
-      style:transform="translateX({$position}px) "
+      style:transform="translateX({$position}px)"
     />
   {/if}
 </div>

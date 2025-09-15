@@ -54,6 +54,10 @@ export type ChartFieldInput = {
    * If this key is not specified, legend selector will not be shown.
    */
   defaultLegendOrientation?: ChartLegend;
+  /**
+   * For measures toggle for displaying measure total value
+   */
+  totalSelector?: boolean;
 };
 
 export interface ComponentInputParam {
