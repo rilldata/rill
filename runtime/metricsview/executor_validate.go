@@ -152,6 +152,16 @@ func (e *Executor) ValidateAndNormalizeMetricsView(ctx context.Context) (*Valida
 		}
 	}
 
+	// now we have datatypes for dims populated, check time/date types for clickhouse
+	if e.olap.Dialect() == drivers.DialectClickHouse {
+		for _, d := range mv.Dimensions {
+			if d.DataType != nil && (d.DataType.Code == runtimev1.Type_CODE_TIMESTAMP || d.DataType.Code == runtimev1.Type_CODE_DATE) && strings.EqualFold(d.Name, d.Column) {
+				res.OtherErrs = append(res.OtherErrs, fmt.Errorf("invalid dimension %q: timestamp or date type dimensions cannot have the same name as a column in the underlying table when backed by clickhouse", d.Name))
+				continue
+			}
+		}
+	}
+
 	// Validate the cache key can be resolved
 	_, _, err = e.CacheKey(ctx)
 	if err != nil {
