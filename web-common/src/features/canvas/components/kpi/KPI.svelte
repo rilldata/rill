@@ -178,7 +178,7 @@
 
     {#if !showSparkline && timeGrain && interval.isValid}
       <span class="text-gray-500">
-        <RangeDisplay {interval} />
+        <RangeDisplay {interval} {timeGrain} />
       </span>
     {/if}
   </div>

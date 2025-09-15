@@ -113,7 +113,7 @@
         {:else}
           <b class="line-clamp-1">{label}</b>
           {#if interval?.isValid && showFullRange}
-            <RangeDisplay {interval} />
+            <RangeDisplay {interval} timeGrain={selectedComparison?.interval} />
           {/if}
         {/if}
       </div>

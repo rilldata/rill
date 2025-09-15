@@ -177,7 +177,7 @@
       </span>
 
       {#if subInterval?.isValid && timeGrain}
-        <RangeDisplay interval={subInterval} />
+        <RangeDisplay interval={subInterval} {timeGrain} />
       {/if}
 
       <span class="font-medium line-clamp-1 flex-none whitespace-nowrap">
