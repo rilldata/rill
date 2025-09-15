@@ -164,7 +164,7 @@ func TestProjectPromptEvals(t *testing.T) {
 	t.Run("uses_rill_comparison_features", func(t *testing.T) {
 		server, instanceID := setupEvalServer(t)
 
-		response := runProjectChatCompletion(t, server, instanceID, "How has performance changed over time?")
+		response := runProjectChatCompletion(t, server, instanceID, "How did Monday and Friday's performance compare?")
 
 		// Inspect tool calls to verify the AI uses comparison measures and time ranges
 		hasComparisonMeasures := false
@@ -217,7 +217,7 @@ func TestProjectPromptEvals(t *testing.T) {
 	t.Run("uses_proper_comparison_time_ranges", func(t *testing.T) {
 		server, instanceID := setupEvalServer(t)
 
-		response := runProjectChatCompletion(t, server, instanceID, "Compare this month's performance to last month")
+		response := runProjectChatCompletion(t, server, instanceID, "Compare the performance of the last two days in the dataset")
 
 		// Inspect tool calls to validate proper time range usage
 		var foundValidComparison bool
