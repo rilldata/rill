@@ -51,11 +51,6 @@ func TestProjectPromptEvals(t *testing.T) {
 
 		response := runProjectChatCompletion(t, server, instanceID, "Analyze our advertising performance and find actionable insights")
 
-		// Debug: Print the actual response
-		for i, msg := range response {
-			t.Logf("Response message %d (role: %s): %v", i, msg.Role, msg.Content)
-		}
-
 		// Verify it follows the prescribed 4-phase process from the prompt
 		assertContainsToolCall(t, response, "list_metrics_views", "Should discover available datasets")
 		assertContainsToolCall(t, response, "get_metrics_view", "Should understand metrics structure")
@@ -453,6 +448,9 @@ func runProjectChatCompletion(t *testing.T, server *Server, instanceID, userMess
 	})
 	require.NoError(t, err)
 
+	// Automatically log response details for debugging failed tests
+	logResponseOnFailure(t, result.Messages)
+
 	return result.Messages
 }
 
@@ -574,4 +572,25 @@ func parseScoreFromResponse(response string) float64 {
 	}
 
 	return 0.0 // Failed to parse
+}
+
+// logResponseOnFailure logs response details immediately for debugging
+// TODO: Make this conditional on test failure once we resolve t.Failed() timing issues
+func logResponseOnFailure(t *testing.T, response []*runtimev1.Message) {
+	t.Logf("=== Response Details for %s ===", t.Name())
+	for i, msg := range response {
+		t.Logf("Message %d (role: %s):", i, msg.Role)
+		for j, block := range msg.Content {
+			if text := block.GetText(); text != "" {
+				t.Logf("  Block %d (text): %s", j, text)
+			}
+			if toolCall := block.GetToolCall(); toolCall != nil {
+				t.Logf("  Block %d (tool): %s with input: %v", j, toolCall.Name, toolCall.Input)
+			}
+			if toolResult := block.GetToolResult(); toolResult != nil {
+				t.Logf("  Block %d (result): %v", j, toolResult.Content)
+			}
+		}
+	}
+	t.Logf("=== End Response Details ===")
 }
