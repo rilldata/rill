@@ -36,6 +36,7 @@ export function compileConnectorYAML(
   options?: {
     fieldFilter?: (property: ConnectorDriverProperty) => boolean;
     orderedProperties?: ConnectorDriverProperty[];
+    connectorName?: string; // Use this instead of connector.name for environment variable keys
   },
 ) {
   // Add instructions to the top of the file
@@ -96,8 +97,10 @@ driver: ${connector.name}`;
 
       const isSecretProperty = secretPropertyKeys.includes(key);
       if (isSecretProperty) {
+        const connectorName =
+          options?.connectorName || (connector.name as string);
         return `${key}: "{{ .env.${makeDotEnvConnectorKey(
-          connector.name as string,
+          connectorName,
           key,
         )} }}"`;
       }
@@ -120,6 +123,7 @@ export async function updateDotEnvWithSecrets(
   connector: V1ConnectorDriver,
   formValues: Record<string, unknown>,
   formType: "source" | "connector",
+  connectorName?: string, // Use this instead of connector.name for environment variable keys
 ): Promise<string> {
   const instanceId = get(runtime).instanceId;
 
@@ -161,7 +165,7 @@ export async function updateDotEnvWithSecrets(
     }
 
     const connectorSecretKey = makeDotEnvConnectorKey(
-      connector.name as string,
+      connectorName || (connector.name as string),
       key,
     );
 
