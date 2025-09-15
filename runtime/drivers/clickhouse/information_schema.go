@@ -10,80 +10,95 @@ import (
 	"github.com/jmoiron/sqlx"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/pagination"
 )
 
-func (c *Connection) ListDatabaseSchemas(ctx context.Context) ([]*drivers.DatabaseSchemaInfo, error) {
-	return nil, nil
-}
-
-func (c *Connection) ListTables(ctx context.Context, database, schema string) ([]*drivers.TableInfo, error) {
-	return nil, nil
-}
-
-func (c *Connection) GetTable(ctx context.Context, database, schema, table string) (*drivers.TableMetadata, error) {
-	return nil, nil
-}
-
-func (c *Connection) All(ctx context.Context, like string) ([]*drivers.OlapTable, error) {
+func (c *Connection) All(ctx context.Context, like string, pageSize uint32, pageToken string) ([]*drivers.OlapTable, string, error) {
 	conn, release, err := c.acquireMetaConn(ctx)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	defer func() { _ = release() }()
-
-	var likeClause string
 	var args []any
-	if like != "" {
-		likeClause = "AND (LOWER(T.name) LIKE LOWER(?) OR CONCAT(T.database, '.', T.name) LIKE LOWER(?))"
-		args = []any{like, like}
-	}
-
-	var dbFilter string
+	var filter string
 	if c.config.DatabaseWhitelist != "" {
 		dbs := strings.Split(c.config.DatabaseWhitelist, ",")
-		var filter strings.Builder
+		var sb strings.Builder
 		for i, db := range dbs {
 			if i > 0 {
-				filter.WriteString(", ")
+				sb.WriteString(", ")
 			}
-			filter.WriteString("?")
+			sb.WriteString("?")
 			args = append(args, strings.TrimSpace(db))
 		}
-		dbFilter = fmt.Sprintf("T.database IN (%s)", filter.String())
+		filter = fmt.Sprintf("(T.database IN (%s))", sb.String())
 	} else {
-		dbFilter = " T.database == currentDatabase() OR lower(T.database) NOT IN ('information_schema', 'system') "
+		filter = "(T.database == currentDatabase() OR lower(T.database) NOT IN ('information_schema', 'system'))"
 	}
+
+	if like != "" {
+		filter += " AND (LOWER(T.name) LIKE LOWER(?) OR CONCAT(T.database, '.', T.name) LIKE LOWER(?))"
+		args = append(args, like, like)
+	}
+
+	if pageToken != "" {
+		var startAfterSchema, startAfterName string
+		if err := pagination.UnmarshalPageToken(pageToken, &startAfterSchema, &startAfterName); err != nil {
+			return nil, "", fmt.Errorf("invalid page token: %w", err)
+		}
+		filter += " AND (T.database > ? OR (T.database = ? AND T.name > ?))"
+		args = append(args, startAfterSchema, startAfterSchema, startAfterName)
+	}
+
 	// Clickhouse does not have a concept of schemas. Both table_catalog and table_schema refer to the database where table is located.
 	// Given the usual way of querying table in clickhouse is `SELECT * FROM table_name` or `SELECT * FROM database.table_name`.
 	// We map clickhouse database to `database schema` and table_name to `table name`.
 	q := fmt.Sprintf(`
 		SELECT 
-			T.database AS SCHEMA,
-			T.database = currentDatabase() AS is_default_schema,
-			T.name AS NAME,
-			if(lower(T.engine) like '%%view%%', 'VIEW', 'TABLE') AS TABLE_TYPE,
+			LT.database AS SCHEMA,
+			LT.database = currentDatabase() AS is_default_schema,
+			LT.name AS NAME,
+			if(lower(LT.engine) like '%%view%%', 'VIEW', 'TABLE') AS TABLE_TYPE,
 			C.name AS COLUMNS,
 			C.type AS COLUMN_TYPE,
 			C.position AS ORDINAL_POSITION
-		FROM system.tables T
-		JOIN system.columns C ON T.database = C.database AND T.name = C.table
-		-- allow fetching tables from system or information_schema if it is current database
-		WHERE (%s)
-		%s
+		FROM (
+			SELECT 
+				T.database,
+				T.name,
+				T.engine
+			FROM system.tables T
+			-- allow fetching tables from system or information_schema if it is current database
+			WHERE %s
+			ORDER BY database, name, engine
+			LIMIT ?
+		) LT
+		JOIN system.columns C ON LT.database = C.database AND LT.name = C.table
 		ORDER BY SCHEMA, NAME, TABLE_TYPE, ORDINAL_POSITION
-	`, dbFilter, likeClause)
+	`, filter)
+
+	limit := pagination.ValidPageSize(pageSize, drivers.DefaultPageSize)
+	args = append(args, limit+1)
 
 	rows, err := conn.QueryxContext(ctx, q, args...)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	defer rows.Close()
 
 	tables, err := scanTables(rows)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
-	return tables, nil
+
+	next := ""
+	if len(tables) > limit {
+		tables = tables[:limit]
+		lastTable := tables[len(tables)-1]
+		next = pagination.MarshalPageToken(lastTable.DatabaseSchema, lastTable.Name)
+	}
+
+	return tables, next, nil
 }
 
 func (c *Connection) Lookup(ctx context.Context, db, schema, name string) (*drivers.OlapTable, error) {

@@ -67,7 +67,7 @@ type DB interface {
 	// Meta APIs
 
 	// Schema returns the schema of the database.
-	Schema(ctx context.Context, ilike, name string) ([]*Table, error)
+	Schema(ctx context.Context, ilike, name string, pageSize uint32, pageToken string) ([]*Table, string, error)
 }
 
 type DBOptions struct {
