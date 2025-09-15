@@ -43,8 +43,12 @@ func (d *db) Schema(ctx context.Context, ilike, name string, pageSize uint32, pa
 
 	// Add pagination filter
 	if pageToken != "" {
+		var startAfterName string
+		if err := pagination.UnmarshalPageToken(pageToken, &startAfterName); err != nil {
+			return nil, "", fmt.Errorf("invalid page token: %w", err)
+		}
 		whereClause += " AND t.table_name > ?"
-		args = append(args, pageToken)
+		args = append(args, startAfterName)
 	}
 
 	// the database schema changes with every ingestion
@@ -100,7 +104,7 @@ func (d *db) Schema(ctx context.Context, ilike, name string, pageSize uint32, pa
 	next := ""
 	if len(res) > limit {
 		res = res[:limit]
-		next = res[len(res)-1].Name
+		next = pagination.MarshalPageToken(res[len(res)-1].Name)
 	}
 
 	return res, next, nil

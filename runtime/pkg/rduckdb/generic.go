@@ -421,9 +421,14 @@ func (m *generic) schemaUsingConn(ctx context.Context, ilike, name string, pageS
 		args = []any{name}
 	}
 
+	// Add pagination filter
 	if pageToken != "" {
+		var startAfterName string
+		if err := pagination.UnmarshalPageToken(pageToken, &startAfterName); err != nil {
+			return nil, "", fmt.Errorf("invalid page token: %w", err)
+		}
 		whereClause += " AND t.table_name > ?"
-		args = append(args, pageToken)
+		args = append(args, startAfterName)
 	}
 
 	q := fmt.Sprintf(`
@@ -459,7 +464,7 @@ func (m *generic) schemaUsingConn(ctx context.Context, ilike, name string, pageS
 	next := ""
 	if len(res) > limit {
 		res = res[:limit]
-		next = res[len(res)-1].Name
+		next = pagination.MarshalPageToken(res[len(res)-1].Name)
 	}
 
 	return res, next, nil
