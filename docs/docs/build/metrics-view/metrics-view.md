@@ -13,11 +13,13 @@ Metrics Views are a key part of defining your measures and dimensions.
 - [**Time Series**](/build/metrics-view/time-series) - What is a time series column and how to use it in your metrics view
 
 ### Dimensions
-- [**Dimension URI**](/build/metrics-view/dimensions/dimension-uri) - Generate unique identifiers for your dimension values
+- [**Dimensions**](/build/metrics-view/dimensions) - Categorize and segment your data for analysis and filtering
+- [**Navigatable Dimensions**](/build/metrics-view/dimensions/dimension-uri) - Generate unique identifiers for your dimension values
 - [**Unnesting Arrays**](/build/metrics-view/dimensions/unnesting) - Work with array data by expanding nested structures
 - [**Lookup Dimensions**](/build/metrics-view/dimensions/lookup) - Create dimensions that reference data from other sources
 
 ### Measures
+- [**Measures**](/build/metrics-view/measures) - Define calculated metrics and aggregations for your data analysis
 - [**Format Measures**](/build/metrics-view/measures/measures-formatting) - Learn how to format and display your metrics effectively
 - [**Case Statements and Filters**](/build/metrics-view/measures/case-statements) - Use conditional logic and filtering in your measures
 - [**Referencing Measures**](/build/metrics-view/measures/referencing) - Reference and combine existing measures in your calculations

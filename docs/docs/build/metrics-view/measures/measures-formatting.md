@@ -1,6 +1,6 @@
 ---
 title: "Formatting your Measures"
-description: Tips & Tricks for Metric Formatting
+description: Tips & Tricks for Measure Formatting
 sidebar_label: "Measure Formatting"
 sidebar_position: 15
 ---

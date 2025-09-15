@@ -1,8 +1,17 @@
 ---
 title: "Define Your Measures"
+description: "Learn how to create and configure measures for quantitative analysis and business insights in your metrics views"
 ---
 
 Measures are the quantitative metrics that power your dashboards and reports. They represent numeric calculations derived from your underlying data through SQL aggregation functions and expressions. These measures transform raw data into meaningful business insights, such as total revenue, average order value, or customer count.
+
+Measures are the "how much" and "how many" of your data. They provide the numerical foundation for your analysis, enabling you to:
+
+- **Quantify performance**: Track key business metrics like revenue, growth, and efficiency
+- **Support decision-making**: Provide concrete numbers for business decisions
+
+
+## Supported SQL Functions
 
 * Standard SQL [numeric](https://www.w3schools.com/sql/sql_operators.asp) operators and functions
 * Common SQL [aggregates](https://www.w3schools.com/sql/sql_aggregate_functions.asp): `AVG`, `COUNT`, `MAX`, `MIN`, `SUM`, `STDDEV`, `VARIANCE`
@@ -20,14 +29,14 @@ Different OLAP engines support varying SQL dialects and functions. While standar
 
 :::
 
-As an example, if you have a table of sales events with the sales price and customer ID, you could calculate the following metrics with these aggregates and expressions:
+As an example, if you have a table of sales events with the sales price and customer ID, you could calculate the following measures with these aggregates and expressions:
 * Number of sales: `COUNT(*)`
 * Total revenue: `SUM(sales_price)` 
 * Revenue per customer: `CAST(SUM(sales_price) AS FLOAT)/CAST(COUNT(DISTINCT customer_id) AS FLOAT)`
 * Number of orders with order value more than $100: `COUNT(*) FILTER (WHERE order_val > 100)` (syntax may vary by engine)
 
 
-Explore the following pages for advanced measure techniques and specific use cases:
+Explore these advanced capabilities to enhance your measures:
 
 - **[Measure Formatting](/build/metrics-view/measures/measures-formatting)** - Learn how to format and display your measures effectively
 - **[Case Statements and Filters](/build/metrics-view/measures/case-statements)** - Use conditional logic and filtering in your measures

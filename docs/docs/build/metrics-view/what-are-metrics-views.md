@@ -17,10 +17,10 @@ Rill metrics views are analogous to the **semantic layer** and **metrics layer**
 
 
 In Rill, your metrics view is defined by _metric definitions_. Metric definitions are composed of:
-* _**model/table**_ - A data model or underlying table created with the concept of [One Big Table](/build/models/models-101#one-big-table-and-dashboarding) that will power the metrics view.
-* _**timeseries**_ - A column from your model that will underlie x-axis data in Rill's Explore dashboards and Canvas dashboards. Time can be truncated into different time periods.
-* _**measures**_ - Numerical aggregates of columns from your data model shown on the y-axis of the explore charts and canvas components and the "big number" summaries.
-* _**dimensions**_ - Categorical columns from your data model whose values are shown in _leaderboards_ in explore dashboard and allow you to look at segments or attributes of your data (and filter/slice accordingly) as well as selectable axis in Canvas dashboard components.
+* [_**model/table**_](/build/metrics-view/underlying-model) - A data model or underlying table created with the concept of [One Big Table](/build/models/models-101#one-big-table-and-dashboarding) that will power the metrics view.
+* [_**timeseries**_](/build/metrics-view/time-series) - A column from your model that will underlie x-axis data in Rill's Explore dashboards and Canvas dashboards. Time can be truncated into different time periods.
+* [_**dimensions**_](/build/metrics-view/dimensions) - Categorical columns from your data model whose values are shown in _leaderboards_ in explore dashboard and allow you to look at segments or attributes of your data (and filter/slice accordingly) as well as selectable axis in Canvas dashboard components.
+* _[**measures**](/build/metrics-view/measures)_ - Numerical aggregates of columns from your data model shown on the y-axis of the explore charts and canvas components and the "big number" summaries.
 
 ## Creating a Metrics view
 

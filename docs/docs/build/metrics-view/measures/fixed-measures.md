@@ -5,7 +5,7 @@ sidebar_label: "Fixed Measures"
 sidebar_position: 35
 ---
 
-Some measures may be at a different level of granularity where a sum across the metric is no longer accurate. As an example, perhaps you have a campaign with a daily budget of $5000 across five line items. Summing the `daily_budget` column would give an inaccurate total of $25,000 budget per day. For those familiar with Tableau, this is referred to as a `FIXED metric`. 
+Some measures may be at a different level of granularity where a sum across the measure is no longer accurate. As an example, perhaps you have a campaign with a daily budget of $5000 across five line items. Summing the `daily_budget` column would give an inaccurate total of $25,000 budget per day. For those familiar with Tableau, this is referred to as a `FIXED metric`. 
 
 <img src = '/img/build/metrics-view/examples/incorrect-sum.png' class='rounded-gif' />
 <br />

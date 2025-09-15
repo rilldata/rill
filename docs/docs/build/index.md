@@ -20,7 +20,8 @@ Rill provides a comprehensive platform for building end-to-end data analytics so
 
 ### Define Measures and Dimensions
 - [**What are Metrics Views?**](/build/metrics-view/what-are-metrics-views) - Learn about Metrics Views!
-- [**Time Series**](/build/metrics-view/time-series) - The backbone of Rill Dashboards, time
+- [**Underlying Model/Table**](/build/metrics-view/underlying-model) - Powering your metrics view with a `model` or `table`
+- [**Time Series**](/build/metrics-view/time-series) - The backbone of Rill Explore Dashboards, time
 - [**Dimensions**](/build/metrics-view/dimensions) - Expand your dimensions capabilities further in your metrics view
 - [**Measures**](/build/metrics-view/measures) - Aggregate your measures further in your metrics view
 - [**Define Data Access**](/build/metrics-view/security) - Define access and row access policies

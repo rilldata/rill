@@ -506,7 +506,14 @@ const config = {
             from: '/build/metrics-view/advanced-expressions/windows',
             to: '/build/metrics-view/measures/windows'
           },
-
+          {
+            from: '/build/metrics-view/advanced-expressions/advanced-expressions',
+            to: '/build/metrics-view/measures'
+          },
+          {
+            from: '/build/metrics-view/customize',
+            to: '/build/metrics-view'
+          },
           {
             from: '/deploy/performance',
             to: '/guides/performance'
