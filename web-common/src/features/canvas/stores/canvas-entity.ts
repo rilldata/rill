@@ -44,7 +44,6 @@ import { Filters } from "./filters";
 import { Grid } from "./grid";
 import { CanvasResolvedSpec } from "./spec";
 import { TimeControls } from "./time-control";
-import { yaml } from "@codemirror/lang-yaml";
 import { ReverseOperationShortHandMap } from "../../dashboards/filters/measure-filters/measure-filter-options";
 
 // Store for managing URL search parameters

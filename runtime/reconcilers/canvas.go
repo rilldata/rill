@@ -247,14 +247,12 @@ func (r *CanvasReconciler) validateCanvasFiltersAgainstMetricsViews(ctx context.
 
 		spec := mv.State.ValidSpec
 
-	
 		for _, dim := range spec.Dimensions {
 			if dim.Name != "" {
 				allDimensions[dim.Name] = true
 			}
 		}
 
-	
 		for _, measure := range spec.Measures {
 			if measure.Name != "" {
 				allMeasures[measure.Name] = true
@@ -270,7 +268,6 @@ func (r *CanvasReconciler) validateCanvasFiltersAgainstMetricsViews(ctx context.
 		}
 	}
 
-	
 	for _, measureFilter := range filters.Measures {
 		if measureFilter.Measure != "" {
 			if !allMeasures[measureFilter.Measure] {
