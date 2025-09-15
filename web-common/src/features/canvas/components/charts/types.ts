@@ -94,6 +94,7 @@ interface QuantitativeFieldConfig {
   zeroBasedOrigin?: boolean; // Default is false
   min?: number;
   max?: number;
+  showTotal?: boolean;
 }
 
 export interface FieldConfig

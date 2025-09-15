@@ -103,6 +103,15 @@ paths:
           in: query
           required: false
           type: string
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
+          in: query
+          required: false
+          type: string
       tags:
         - ConnectorService
   /v1/connectors/meta:
@@ -221,6 +230,15 @@ paths:
           required: false
           type: string
         - name: databaseSchema
+          in: query
+          required: false
+          type: string
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
           in: query
           required: false
           type: string
@@ -5114,6 +5132,8 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1DatabaseSchemaInfo'
+      nextPageToken:
+        type: string
   v1ListExamplesResponse:
     type: object
     properties:
@@ -5169,6 +5189,8 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1TableInfo'
+      nextPageToken:
+        type: string
   v1Log:
     type: object
     properties:
@@ -6122,7 +6144,6 @@ definitions:
       retryAttempts:
         type: integer
         format: int64
-        description: retry is optional.
       retryDelaySeconds:
         type: integer
         format: int64

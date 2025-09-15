@@ -1522,14 +1522,9 @@ export class ListProjectsForFingerprintRequest extends Message<ListProjectsForFi
   subPath = "";
 
   /**
-   * @generated from field: uint32 page_size = 4;
+   * @generated from field: string rill_mgd_git_remote = 6;
    */
-  pageSize = 0;
-
-  /**
-   * @generated from field: string page_token = 5;
-   */
-  pageToken = "";
+  rillMgdGitRemote = "";
 
   constructor(data?: PartialMessage<ListProjectsForFingerprintRequest>) {
     super();
@@ -1542,8 +1537,7 @@ export class ListProjectsForFingerprintRequest extends Message<ListProjectsForFi
     { no: 1, name: "directory_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "git_remote", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "sub_path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "page_size", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
-    { no: 5, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "rill_mgd_git_remote", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListProjectsForFingerprintRequest {
@@ -1573,9 +1567,11 @@ export class ListProjectsForFingerprintResponse extends Message<ListProjectsForF
   projects: Project[] = [];
 
   /**
-   * @generated from field: string next_page_token = 2;
+   * unauthorized_project is the name of a project that matches the git_remote+sub_path but the caller does not have access to.
+   *
+   * @generated from field: string unauthorized_project = 3;
    */
-  nextPageToken = "";
+  unauthorizedProject = "";
 
   constructor(data?: PartialMessage<ListProjectsForFingerprintResponse>) {
     super();
@@ -1586,7 +1582,7 @@ export class ListProjectsForFingerprintResponse extends Message<ListProjectsForF
   static readonly typeName = "rill.admin.v1.ListProjectsForFingerprintResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "projects", kind: "message", T: Project, repeated: true },
-    { no: 2, name: "next_page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "unauthorized_project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListProjectsForFingerprintResponse {

@@ -3936,22 +3936,7 @@ func (m *ListProjectsForFingerprintRequest) validate(all bool) error {
 
 	// no validation rules for SubPath
 
-	if m.GetPageSize() != 0 {
-
-		if m.GetPageSize() > 1000 {
-			err := ListProjectsForFingerprintRequestValidationError{
-				field:  "PageSize",
-				reason: "value must be less than or equal to 1000",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-
-	}
-
-	// no validation rules for PageToken
+	// no validation rules for RillMgdGitRemote
 
 	if len(errors) > 0 {
 		return ListProjectsForFingerprintRequestMultiError(errors)
@@ -4092,7 +4077,7 @@ func (m *ListProjectsForFingerprintResponse) validate(all bool) error {
 
 	}
 
-	// no validation rules for NextPageToken
+	// no validation rules for UnauthorizedProject
 
 	if len(errors) > 0 {
 		return ListProjectsForFingerprintResponseMultiError(errors)

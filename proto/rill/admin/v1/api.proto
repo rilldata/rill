@@ -1153,13 +1153,14 @@ message ListProjectsForFingerprintRequest {
   string directory_name = 1;
   string git_remote = 2;
   string sub_path = 3;
-  uint32 page_size = 4 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
-  string page_token = 5;
+  string rill_mgd_git_remote = 6;
 }
 
 message ListProjectsForFingerprintResponse {
   repeated Project projects = 1;
-  string next_page_token = 2;
+
+  // unauthorized_project is the name of a project that matches the git_remote+sub_path but the caller does not have access to.
+  string unauthorized_project = 3;
 }
 
 message GetProjectRequest {

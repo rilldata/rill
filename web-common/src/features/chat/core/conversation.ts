@@ -194,7 +194,20 @@ export class Conversation {
       return response;
     } catch (error) {
       console.error("Failed to start new conversation:", error);
-      throw error;
+
+      // Roll back the optimistic update
+      queryClient.removeQueries({ queryKey: getNewConversationQueryKey });
+
+      // Reset loading state and set error message
+      this.isSendingMessage.set(false);
+      const errorMessage = formatChatError(error);
+      this.errorMessage.set(errorMessage);
+
+      // Fire the error callback, if provided
+      options?.onError?.(initialMessage);
+
+      // Re-throw the error so the caller can handle it
+      throw new Error(errorMessage);
     }
   }
 
@@ -268,11 +281,12 @@ export class Conversation {
         queryClient.setQueryData(cacheKey, previousConversation);
       }
 
-      const errorMessage = formatChatError(error as Error);
-      this.errorMessage.set(errorMessage);
+      // Reset loading state and set error message
       this.isSendingMessage.set(false);
+      const errorMessage = formatChatError(error);
+      this.errorMessage.set(errorMessage);
 
-      // Fire the error callback
+      // Fire the error callback, if provided
       options?.onError?.(text);
 
       // Re-throw the error so the caller can handle it
