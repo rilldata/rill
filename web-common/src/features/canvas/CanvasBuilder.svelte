@@ -422,7 +422,6 @@
         e.target.tagName !== "TEXTAREA" &&
         !e.target.isContentEditable)
     ) {
-      console.log("what");
       pendingComponentDelete = selected;
     }
   }}
