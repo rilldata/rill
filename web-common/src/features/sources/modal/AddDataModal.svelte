@@ -154,8 +154,10 @@
   $: isModelingSupported = $isModelingSupportedForDefaultOlapDriver.data;
 
   // FIXME: excluding salesforce until we implement the table discovery APIs
+  // NOTE: DuckDB should not create connector files, only sources
   $: isConnectorType =
-    selectedConnector?.implementsOlap ||
+    (selectedConnector?.implementsOlap &&
+      selectedConnector?.name !== "duckdb") ||
     selectedConnector?.implementsSqlStore ||
     (selectedConnector?.implementsWarehouse &&
       selectedConnector?.name !== "salesforce");

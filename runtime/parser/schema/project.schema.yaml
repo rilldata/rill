@@ -1053,6 +1053,33 @@ definitions:
             description: Refers to a SQL query that is run after the main query, available for DuckDB-based models. (optional). Ensure post_exec queries are idempotent. Use IF EXISTS statements when applicable.
             examples: 
               - post_exec: DETACH DATABASE IF EXISTS postgres_db
+          retry:
+            type: object
+            description: Refers to the retry configuration for the model. (optional)
+            properties:
+              attempts:
+                type: integer
+                description: The number of attempts to retry the model.
+              delay:
+                type: string
+                description: The delay between attempts.
+              exponential_backoff:
+                type: boolean
+                description: Whether to use exponential backoff.
+              if_error_matches:
+                type: array
+                items:
+                  type: string
+                description: The error messages to match.
+            examples:
+              - retry:
+                  attempts: 5
+                  delay: 10s
+                  exponential_backoff: true
+                  if_error_matches:
+                    - ".*OvercommitTracker.*"
+                    - ".*Timeout.*"
+                    - ".*Bad Gateway.*"
           timeout:
             type: string
             description: The maximum time to wait for model ingestion

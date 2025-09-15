@@ -28,6 +28,32 @@ The YAML configuration file contains several key parameters:
 - **`sql`**: The actual SQL query to be executed. When nested under `dev:`, the query runs in the Rill Developer environment.
 - **`dev`**: Configuration for development mode. Rill Developer runs in dev mode by default, but when deployed to Rill Cloud, the root-level SQL configuration executes. See [Environment Templating](/build/models/templating) for more information.
 
+
+## Retry Configuration
+
+By default, a model will retry if the initial load fails. This helps ensure reliable data processing by automatically retrying failed operations. The default retry settings are:
+
+```yaml
+retry:
+  attempts: 3 
+  delay: 5s
+  exponential_backoff: true
+```
+
+You can customize the retry behavior to better suit your specific needs. For example, you might want to increase the number of attempts for critical models, adjust the delay between retries, or only retry on specific error types. Use the following configuration in your source YAML:
+
+```yaml
+retry:
+  attempts: 5
+  delay: 10s
+  exponential_backoff: true
+  if_error_matches:
+    - ".*OvercommitTracker.*"
+    - ".*Timeout.*"
+    - ".*Bad Gateway.*"
+```
+
+
 ## Examples
 
 ### BigQuery Model

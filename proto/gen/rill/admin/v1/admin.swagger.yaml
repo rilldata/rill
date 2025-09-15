@@ -580,6 +580,1076 @@ paths:
                 type: boolean
       tags:
         - AdminService
+  /v1/organizations/{organizationName}/projects/{projectName}/deployments:
+    get:
+      summary: ListDeployments lists deployments for a project.
+      operationId: AdminService_ListDeployments
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListDeploymentsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organizationName
+          in: path
+          required: true
+          type: string
+        - name: projectName
+          in: path
+          required: true
+          type: string
+        - name: environment
+          in: query
+          required: false
+          type: string
+        - name: userId
+          in: query
+          required: false
+          type: string
+      tags:
+        - AdminService
+    post:
+      summary: CreateDeployment creates a new deployment for a project.
+      operationId: AdminService_CreateDeployment
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1CreateDeploymentResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organizationName
+          in: path
+          required: true
+          type: string
+        - name: projectName
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              environment:
+                type: string
+      tags:
+        - AdminService
+  /v1/organizations/{organizationName}/projects/{projectName}/services:
+    get:
+      summary: ListProjectMemberServices returns all the services for the project for an organization
+      operationId: AdminService_ListProjectMemberServices
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListProjectMemberServicesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organizationName
+          in: path
+          required: true
+          type: string
+        - name: projectName
+          in: path
+          required: true
+          type: string
+      tags:
+        - AdminService
+  /v1/organizations/{organizationName}/projects/{projectName}/services/{name}:
+    delete:
+      summary: RemoveProjectMemberService removes the service from the project
+      operationId: AdminService_RemoveProjectMemberService
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1RemoveProjectMemberServiceResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organizationName
+          in: path
+          required: true
+          type: string
+        - name: projectName
+          in: path
+          required: true
+          type: string
+        - name: name
+          in: path
+          required: true
+          type: string
+      tags:
+        - AdminService
+  /v1/organizations/{organizationName}/projects/{projectName}/services/{name}/role:
+    put:
+      summary: SetProjectMemberServiceRole updates the project role for the service
+      operationId: AdminService_SetProjectMemberServiceRole
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1SetProjectMemberServiceRoleResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organizationName
+          in: path
+          required: true
+          type: string
+        - name: projectName
+          in: path
+          required: true
+          type: string
+        - name: name
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              role:
+                type: string
+      tags:
+        - AdminService
+  /v1/organizations/{organizationName}/services:
+    get:
+      summary: ListService returns all the services per organization
+      operationId: AdminService_ListServices
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListServicesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organizationName
+          in: path
+          required: true
+          type: string
+      tags:
+        - AdminService
+    post:
+      summary: CreateService creates a new service per organization
+      operationId: AdminService_CreateService
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1CreateServiceResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organizationName
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              name:
+                type: string
+              orgRoleName:
+                type: string
+                title: Optional org role to assign
+              projectName:
+                type: string
+                title: Optional project to assign role to
+              projectRoleName:
+                type: string
+                title: Optional project role to assign
+              attributes:
+                type: object
+      tags:
+        - AdminService
+  /v1/organizations/{organizationName}/services/{name}:
+    get:
+      summary: GetService returns information about a specific service
+      operationId: AdminService_GetService
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetServiceResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organizationName
+          in: path
+          required: true
+          type: string
+        - name: name
+          in: path
+          required: true
+          type: string
+      tags:
+        - AdminService
+    delete:
+      summary: DeleteService deletes a service per organization
+      operationId: AdminService_DeleteService
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1DeleteServiceResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organizationName
+          in: path
+          required: true
+          type: string
+        - name: name
+          in: path
+          required: true
+          type: string
+      tags:
+        - AdminService
+    patch:
+      summary: UpdateService updates a service per organization
+      operationId: AdminService_UpdateService
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1UpdateServiceResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organizationName
+          in: path
+          required: true
+          type: string
+        - name: name
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              newName:
+                type: string
+              attributes:
+                type: object
+      tags:
+        - AdminService
+  /v1/organizations/{organizationName}/services/{name}/role:
+    delete:
+      summary: RemoveOrganizationMemberService removes the organization role for the service
+      operationId: AdminService_RemoveOrganizationMemberService
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1RemoveOrganizationMemberServiceResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organizationName
+          in: path
+          required: true
+          type: string
+        - name: name
+          in: path
+          required: true
+          type: string
+      tags:
+        - AdminService
+    put:
+      summary: SetOrganizationMemberServiceRole sets or updates the role of the service in the organization
+      operationId: AdminService_SetOrganizationMemberServiceRole
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1SetOrganizationMemberServiceRoleResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organizationName
+          in: path
+          required: true
+          type: string
+        - name: name
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              role:
+                type: string
+      tags:
+        - AdminService
+  /v1/organizations/{organizationName}/services/{serviceName}/tokens:
+    get:
+      summary: ListServiceAuthTokens lists all the service auth tokens
+      operationId: AdminService_ListServiceAuthTokens
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListServiceAuthTokensResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organizationName
+          in: path
+          required: true
+          type: string
+        - name: serviceName
+          in: path
+          required: true
+          type: string
+      tags:
+        - AdminService
+    post:
+      summary: IssueServiceAuthToken issues an access token for a service
+      operationId: AdminService_IssueServiceAuthToken
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1IssueServiceAuthTokenResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organizationName
+          in: path
+          required: true
+          type: string
+        - name: serviceName
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+      tags:
+        - AdminService
+  /v1/ping:
+    get:
+      summary: Ping returns information about the server
+      operationId: AdminService_Ping
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1PingResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      tags:
+        - AdminService
+  /v1/project-access-request/{id}:
+    get:
+      operationId: AdminService_GetProjectAccessRequest
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetProjectAccessRequestResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: string
+      tags:
+        - AdminService
+  /v1/project-access-request/{id}/approve:
+    post:
+      operationId: AdminService_ApproveProjectAccess
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ApproveProjectAccessResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              role:
+                type: string
+      tags:
+        - AdminService
+  /v1/project-access-request/{id}/deny:
+    post:
+      operationId: AdminService_DenyProjectAccess
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1DenyProjectAccessResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+      tags:
+        - AdminService
+  /v1/projects:
+    get:
+      summary: ListProjectsForUserByName returns projects matching a name accessible by the logged in user
+      operationId: AdminService_ListProjectsForUserByName
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListProjectsForUserByNameResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: name
+          in: query
+          required: false
+          type: string
+      tags:
+        - AdminService
+  /v1/projects-for-fingerprint:
+    get:
+      summary: |-
+        ListProjectsForFingerprint lists all projects the current user has access to that match the provided local project details.
+        This can be used to produce a short list of cloud projects that are likely to have been deployed from a local project.
+      operationId: AdminService_ListProjectsForFingerprint
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListProjectsForFingerprintResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: directoryName
+          in: query
+          required: false
+          type: string
+        - name: gitRemote
+          in: query
+          required: false
+          type: string
+        - name: subPath
+          in: query
+          required: false
+          type: string
+        - name: rillMgdGitRemote
+          in: query
+          required: false
+          type: string
+      tags:
+        - AdminService
+  /v1/projects/-/redeploy:
+    post:
+      summary: |-
+        TriggerRedeploy is similar to RedeployProject.
+        DEPRECATED: Use RedeployProject instead.
+      operationId: AdminService_TriggerRedeploy
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1TriggerRedeployResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1TriggerRedeployRequest'
+      tags:
+        - AdminService
+  /v1/projects/{id}:
+    get:
+      summary: GetProject returns information about a specific project
+      operationId: AdminService_GetProjectByID
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetProjectByIDResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: string
+      tags:
+        - AdminService
+  /v1/projects/{projectId}/alerts/meta:
+    post:
+      summary: GetAlertMeta returns metadata for checking an alert. It's currently only called by the alert reconciler in the runtime.
+      operationId: AdminService_GetAlertMeta
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetAlertMetaResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              alert:
+                type: string
+              annotations:
+                type: object
+                additionalProperties:
+                  type: string
+              queryForUserId:
+                type: string
+              queryForUserEmail:
+                type: string
+      tags:
+        - AdminService
+  /v1/projects/{projectId}/repo/meta:
+    get:
+      summary: GetRepoMeta returns credentials and other metadata for accessing a project's repo
+      operationId: AdminService_GetRepoMeta
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetRepoMetaResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: projectId
+          description: The project ID to get repository metadata for.
+          in: path
+          required: true
+          type: string
+      tags:
+        - AdminService
+  /v1/projects/{projectId}/repo/virtual:
+    get:
+      summary: PullVirtualRepo fetches files from a project's virtual repo
+      operationId: AdminService_PullVirtualRepo
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1PullVirtualRepoResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: projectId
+          description: The project ID to pull virtual files for.
+          in: path
+          required: true
+          type: string
+        - name: environment
+          description: |-
+            The environment to pull virtual files for.
+            It is optional. If the call is made with a deployment access token, it defaults to the environment of the deployment. Otherwise, it defaults to "prod".
+          in: query
+          required: false
+          type: string
+        - name: pageSize
+          description: Page size for pagination.
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
+          description: Page token for pagination.
+          in: query
+          required: false
+          type: string
+      tags:
+        - AdminService
+  /v1/projects/{projectId}/reports/meta:
+    post:
+      summary: GetReportMeta returns metadata for generating a report. It's currently only called by the report reconciler in the runtime.
+      operationId: AdminService_GetReportMeta
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetReportMetaResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              report:
+                type: string
+              ownerId:
+                type: string
+              executionTime:
+                type: string
+                format: date-time
+              emailRecipients:
+                type: array
+                items:
+                  type: string
+              anonRecipients:
+                type: boolean
+              resources:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1ResourceName'
+              webOpenMode:
+                type: string
+              whereFilterJson:
+                type: string
+              accessibleFields:
+                type: array
+                items:
+                  type: string
+      tags:
+        - AdminService
+  /v1/roles:
+    get:
+      summary: ListRoles lists all the roles available for orgs and projects.
+      operationId: AdminService_ListRoles
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListRolesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      tags:
+        - AdminService
+  /v1/services/tokens/{tokenId}:
+    delete:
+      summary: RevokeServiceAuthToken revoke a service's access token
+      operationId: AdminService_RevokeServiceAuthToken
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1RevokeServiceAuthTokenResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: tokenId
+          in: path
+          required: true
+          type: string
+      tags:
+        - AdminService
+  /v1/superuser/billing/repair:
+    post:
+      summary: SudoTriggerBillingRepair triggers billing repair jobs for orgs that doesn't have billing info and puts them on trial
+      operationId: AdminService_SudoTriggerBillingRepair
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1SudoTriggerBillingRepairResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1SudoTriggerBillingRepairRequest'
+      tags:
+        - AdminService
+  /v1/superuser/deployments/manager-token:
+    post:
+      summary: SudoIssueRuntimeManagerToken returns a runtime JWT with full manager permissions for a runtime.
+      operationId: AdminService_SudoIssueRuntimeManagerToken
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1SudoIssueRuntimeManagerTokenResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1SudoIssueRuntimeManagerTokenRequest'
+      tags:
+        - AdminService
+  /v1/superuser/members:
+    get:
+      summary: ListSuperusers lists all the superusers
+      operationId: AdminService_ListSuperusers
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListSuperusersResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      tags:
+        - AdminService
+    post:
+      summary: SetSuperuser adds/remove a superuser
+      operationId: AdminService_SetSuperuser
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1SetSuperuserResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1SetSuperuserRequest'
+      tags:
+        - AdminService
+  /v1/superuser/organization/billing/customer_id:
+    patch:
+      summary: SudoUpdateOrganizationBillingCustomer update the billing customer for the organization
+      operationId: AdminService_SudoUpdateOrganizationBillingCustomer
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1SudoUpdateOrganizationBillingCustomerResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1SudoUpdateOrganizationBillingCustomerRequest'
+      tags:
+        - AdminService
+  /v1/superuser/organization/custom-domain:
+    patch:
+      summary: |-
+        SudoUpdateOrganizationCustomDomain updates the custom domain for an organization.
+        It only updates the custom domain in the database, which is used to ensure correct redirects.
+        The DNS records and ingress TLS must be configured separately.
+      operationId: AdminService_SudoUpdateOrganizationCustomDomain
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1SudoUpdateOrganizationCustomDomainResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1SudoUpdateOrganizationCustomDomainRequest'
+      tags:
+        - AdminService
+  /v1/superuser/organization/trial/extend:
+    post:
+      summary: SudoExtendTrial extends the trial period for an organization
+      operationId: AdminService_SudoExtendTrial
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1SudoExtendTrialResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1SudoExtendTrialRequest'
+      tags:
+        - AdminService
+  /v1/superuser/organizations/{organization}/billing/issues/{type}:
+    delete:
+      summary: SudoDeleteOrganizationBillingIssue deletes a billing issue of a type for the organization
+      operationId: AdminService_SudoDeleteOrganizationBillingIssue
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1SudoDeleteOrganizationBillingIssueResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: type
+          in: path
+          required: true
+          type: string
+          enum:
+            - BILLING_ISSUE_TYPE_UNSPECIFIED
+            - BILLING_ISSUE_TYPE_ON_TRIAL
+            - BILLING_ISSUE_TYPE_TRIAL_ENDED
+            - BILLING_ISSUE_TYPE_NO_PAYMENT_METHOD
+            - BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS
+            - BILLING_ISSUE_TYPE_PAYMENT_FAILED
+            - BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED
+            - BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED
+      tags:
+        - AdminService
+  /v1/superuser/projects/annotations:
+    patch:
+      summary: SudoUpdateAnnotations endpoint for superusers to update project annotations
+      operationId: AdminService_SudoUpdateAnnotations
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1SudoUpdateAnnotationsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1SudoUpdateAnnotationsRequest'
+      tags:
+        - AdminService
+  /v1/superuser/projects/search:
+    get:
+      summary: SearchProjectNames returns project names matching the pattern
+      operationId: AdminService_SearchProjectNames
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1SearchProjectNamesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: namePattern
+          in: query
+          required: false
+          type: string
+        - name: annotations
+          description: This is a request variable of the map type. The query format is "map_name[key]=value", e.g. If the map name is Age, the key type is string, and the value type is integer, the query parameter is expressed as Age["bob"]=18
+          in: query
+          required: false
+          type: string
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
+          in: query
+          required: false
+          type: string
+      tags:
+        - AdminService
+  /v1/superuser/quotas/organization:
+    patch:
+      summary: SudoUpdateOrganizationQuotas update the quotas available for orgs
+      operationId: AdminService_SudoUpdateOrganizationQuotas
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1SudoUpdateOrganizationQuotasResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1SudoUpdateOrganizationQuotasRequest'
+      tags:
+        - AdminService
+  /v1/superuser/quotas/user:
+    patch:
+      summary: SudoUpdateUserQuotas update the quotas for users
+      operationId: AdminService_SudoUpdateUserQuotas
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1SudoUpdateUserQuotasResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1SudoUpdateUserQuotasRequest'
+      tags:
+        - AdminService
+  /v1/superuser/resource:
+    get:
+      summary: SudoGetResource returns details about a resource by ID lookup
+      operationId: AdminService_SudoGetResource
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1SudoGetResourceResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: userId
+          in: query
+          required: false
+          type: string
+        - name: orgId
+          in: query
+          required: false
+          type: string
+        - name: projectId
+          in: query
+          required: false
+          type: string
+        - name: deploymentId
+          in: query
+          required: false
+          type: string
+        - name: instanceId
+          in: query
+          required: false
+          type: string
+      tags:
+        - AdminService
   /v1/telemetry/events:
     post:
       summary: |-
@@ -814,6 +1884,73 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1Organization'
+      nextPageToken:
+        type: string
+  v1ListProjectInvitesResponse:
+    type: object
+    properties:
+      invites:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ProjectInvite'
+      nextPageToken:
+        type: string
+  v1ListProjectMemberServicesResponse:
+    type: object
+    properties:
+      services:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ProjectMemberService'
+  v1ListProjectMemberUsergroupsResponse:
+    type: object
+    properties:
+      members:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1MemberUsergroup'
+      nextPageToken:
+        type: string
+  v1ListProjectMemberUsersResponse:
+    type: object
+    properties:
+      members:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ProjectMemberUser'
+      nextPageToken:
+        type: string
+  v1ListProjectWhitelistedDomainsResponse:
+    type: object
+    properties:
+      domains:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1WhitelistedDomain'
+  v1ListProjectsForFingerprintResponse:
+    type: object
+    properties:
+      projects:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1Project'
+      unauthorizedProject:
+        type: string
+        description: unauthorized_project is the name of a project that matches the git_remote+sub_path but the caller does not have access to.
+  v1ListProjectsForOrganizationAndUserResponse:
+    type: object
+    properties:
+      projects:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1Project'
       nextPageToken:
         type: string
   v1ListProjectsForOrganizationResponse:

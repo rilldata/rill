@@ -1827,6 +1827,7 @@ export interface V1OLAPGetTableResponse {
 
 export interface V1OLAPListTablesResponse {
   tables?: V1OlapTableInfo[];
+  nextPageToken?: string;
 }
 
 export interface V1OlapTableInfo {
@@ -3072,6 +3073,8 @@ Has the same syntax and behavior as ILIKE in SQL.
 If the connector supports schema/database names, it searches against both the plain table name and the fully qualified table name.
  */
   searchPattern?: string;
+  pageSize?: number;
+  pageToken?: string;
 };
 
 export type ConnectorServiceS3GetBucketMetadataParams = {
