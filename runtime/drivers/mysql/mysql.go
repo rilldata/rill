@@ -79,11 +79,11 @@ var spec = drivers.Spec{
 			Hint:        "Name of the MySQL database to connect to",
 		},
 		{
-			Key:         "sslmode",
+			Key:         "ssl-mode",
 			Type:        drivers.StringPropertyType,
 			DisplayName: "SSL Mode",
 			Placeholder: "require",
-			Hint:        "Options include disable, require, verify-ca, and verify-full",
+			Hint:        "Options include disabled, preferred or required",
 		},
 	},
 	ImplementsSQLStore: true,
@@ -98,7 +98,7 @@ type ConfigProperties struct {
 	Database string `mapstructure:"database"`
 	User     string `mapstructure:"user"`
 	Password string `mapstructure:"password"`
-	SSLMode  string `mapstructure:"ssl_mode"`
+	SSLMode  string `mapstructure:"ssl-mode"`
 }
 
 func (c *ConfigProperties) ResolveDSN() (string, error) {
@@ -109,15 +109,6 @@ func (c *ConfigProperties) ResolveDSN() (string, error) {
 		return c.DSN, nil
 	}
 
-	var userInfo *url.Userinfo
-	if c.User != "" {
-		if c.Password != "" {
-			userInfo = url.UserPassword(c.User, c.Password)
-		} else {
-			userInfo = url.User(c.User)
-		}
-	}
-
 	host := c.Host
 	if host == "" {
 		host = "localhost"
@@ -126,9 +117,18 @@ func (c *ConfigProperties) ResolveDSN() (string, error) {
 		host = fmt.Sprintf("%s:%d", host, c.Port)
 	}
 
-	var path string
+	var userInfo string
+	if c.User != "" {
+		userInfo = escape(c.User)
+		if c.Password != "" {
+			userInfo += ":" + escape(c.Password)
+		}
+		userInfo += "@"
+	}
+
+	path := ""
 	if c.Database != "" {
-		path = "/" + c.Database
+		path = "/" + escape(c.Database)
 	}
 
 	query := url.Values{}
@@ -136,15 +136,25 @@ func (c *ConfigProperties) ResolveDSN() (string, error) {
 		query.Set("ssl-mode", c.SSLMode)
 	}
 
-	u := &url.URL{
-		Scheme:   "mysql",
-		User:     userInfo,
-		Host:     host,
-		Path:     path,
-		RawQuery: query.Encode(),
+	dsn := fmt.Sprintf("mysql://%s%s%s", userInfo, host, path)
+	if q := query.Encode(); q != "" {
+		dsn += "?" + q
 	}
 
-	return u.String(), nil
+	return dsn, nil
+}
+
+func escape(s string) string {
+	var buf strings.Builder
+	for i := 0; i < len(s); i++ {
+		b := s[i]
+		if b == '@' || b == '/' || b == '?' || b == ':' || b == '&' || b == '=' {
+			buf.WriteString(fmt.Sprintf("%%%02X", b))
+		} else {
+			buf.WriteByte(b)
+		}
+	}
+	return buf.String()
 }
 
 func (c *ConfigProperties) resolveGoFormatDSN() (string, error) {
@@ -181,15 +191,13 @@ func (c *ConfigProperties) resolveGoFormatDSN() (string, error) {
 		return "", fmt.Errorf("unsupported ssl-mode: %s", sslMode)
 	}
 
-	cfg := mysql.Config{
-		User:      user,
-		Passwd:    pass,
-		Net:       "tcp",
-		Addr:      addr,
-		DBName:    dbName,
-		TLSConfig: tlsConfig,
-	}
-
+	cfg := mysql.NewConfig()
+	cfg.User = user
+	cfg.Passwd = pass
+	cfg.Net = "tcp"
+	cfg.Addr = addr
+	cfg.DBName = dbName
+	cfg.TLSConfig = tlsConfig
 	return cfg.FormatDSN(), nil
 }
 
