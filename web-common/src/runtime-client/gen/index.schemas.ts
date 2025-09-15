@@ -766,6 +766,10 @@ export interface V1CreateInstanceResponse {
   instance?: V1Instance;
 }
 
+export interface V1CreateResourceResponse {
+  resource?: V1Resource;
+}
+
 export interface V1CreateTriggerResponse {
   [key: string]: unknown;
 }
@@ -780,6 +784,10 @@ export interface V1DeleteFileResponse {
 }
 
 export interface V1DeleteInstanceResponse {
+  [key: string]: unknown;
+}
+
+export interface V1DeleteResourceResponse {
   [key: string]: unknown;
 }
 
@@ -2374,6 +2382,10 @@ export interface V1UnpackExampleResponse {
   [key: string]: unknown;
 }
 
+export interface V1UpdateResourceResponse {
+  resource?: V1Resource;
+}
+
 export interface V1WatchFilesResponse {
   event?: V1FileEvent;
   path?: string;
@@ -2389,6 +2401,10 @@ export interface V1WatchResourcesResponse {
   name?: V1ResourceName;
   resource?: V1Resource;
 }
+
+export type RuntimeServiceCreateResourceBodyBody = {
+  resource?: V1Resource;
+};
 
 export type ConnectorServiceBigQueryListDatasetsParams = {
   instanceId?: string;

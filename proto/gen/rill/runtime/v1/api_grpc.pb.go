@@ -46,6 +46,9 @@ const (
 	RuntimeService_ListResources_FullMethodName           = "/rill.runtime.v1.RuntimeService/ListResources"
 	RuntimeService_WatchResources_FullMethodName          = "/rill.runtime.v1.RuntimeService/WatchResources"
 	RuntimeService_GetResource_FullMethodName             = "/rill.runtime.v1.RuntimeService/GetResource"
+	RuntimeService_CreateResource_FullMethodName          = "/rill.runtime.v1.RuntimeService/CreateResource"
+	RuntimeService_UpdateResource_FullMethodName          = "/rill.runtime.v1.RuntimeService/UpdateResource"
+	RuntimeService_DeleteResource_FullMethodName          = "/rill.runtime.v1.RuntimeService/DeleteResource"
 	RuntimeService_GetExplore_FullMethodName              = "/rill.runtime.v1.RuntimeService/GetExplore"
 	RuntimeService_GetModelPartitions_FullMethodName      = "/rill.runtime.v1.RuntimeService/GetModelPartitions"
 	RuntimeService_CreateTrigger_FullMethodName           = "/rill.runtime.v1.RuntimeService/CreateTrigger"
@@ -121,6 +124,12 @@ type RuntimeServiceClient interface {
 	WatchResources(ctx context.Context, in *WatchResourcesRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[WatchResourcesResponse], error)
 	// GetResource looks up a specific catalog resource
 	GetResource(ctx context.Context, in *GetResourceRequest, opts ...grpc.CallOption) (*GetResourceResponse, error)
+	// CreateResource creates a new resource in the catalog
+	CreateResource(ctx context.Context, in *CreateResourceRequest, opts ...grpc.CallOption) (*CreateResourceResponse, error)
+	// UpdateResource updates an existing resource in the catalog
+	UpdateResource(ctx context.Context, in *UpdateResourceRequest, opts ...grpc.CallOption) (*UpdateResourceResponse, error)
+	// DeleteResource deletes a resource from the catalog
+	DeleteResource(ctx context.Context, in *DeleteResourceRequest, opts ...grpc.CallOption) (*DeleteResourceResponse, error)
 	// GetExplore is a convenience RPC that combines looking up an Explore resource and its underlying MetricsView into one network call.
 	GetExplore(ctx context.Context, in *GetExploreRequest, opts ...grpc.CallOption) (*GetExploreResponse, error)
 	// GetModelPartitions returns the partitions of a model
@@ -453,6 +462,36 @@ func (c *runtimeServiceClient) GetResource(ctx context.Context, in *GetResourceR
 	return out, nil
 }
 
+func (c *runtimeServiceClient) CreateResource(ctx context.Context, in *CreateResourceRequest, opts ...grpc.CallOption) (*CreateResourceResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateResourceResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_CreateResource_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeServiceClient) UpdateResource(ctx context.Context, in *UpdateResourceRequest, opts ...grpc.CallOption) (*UpdateResourceResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateResourceResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_UpdateResource_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeServiceClient) DeleteResource(ctx context.Context, in *DeleteResourceRequest, opts ...grpc.CallOption) (*DeleteResourceResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteResourceResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_DeleteResource_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *runtimeServiceClient) GetExplore(ctx context.Context, in *GetExploreRequest, opts ...grpc.CallOption) (*GetExploreResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetExploreResponse)
@@ -625,6 +664,12 @@ type RuntimeServiceServer interface {
 	WatchResources(*WatchResourcesRequest, grpc.ServerStreamingServer[WatchResourcesResponse]) error
 	// GetResource looks up a specific catalog resource
 	GetResource(context.Context, *GetResourceRequest) (*GetResourceResponse, error)
+	// CreateResource creates a new resource in the catalog
+	CreateResource(context.Context, *CreateResourceRequest) (*CreateResourceResponse, error)
+	// UpdateResource updates an existing resource in the catalog
+	UpdateResource(context.Context, *UpdateResourceRequest) (*UpdateResourceResponse, error)
+	// DeleteResource deletes a resource from the catalog
+	DeleteResource(context.Context, *DeleteResourceRequest) (*DeleteResourceResponse, error)
 	// GetExplore is a convenience RPC that combines looking up an Explore resource and its underlying MetricsView into one network call.
 	GetExplore(context.Context, *GetExploreRequest) (*GetExploreResponse, error)
 	// GetModelPartitions returns the partitions of a model
@@ -740,6 +785,15 @@ func (UnimplementedRuntimeServiceServer) WatchResources(*WatchResourcesRequest, 
 }
 func (UnimplementedRuntimeServiceServer) GetResource(context.Context, *GetResourceRequest) (*GetResourceResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetResource not implemented")
+}
+func (UnimplementedRuntimeServiceServer) CreateResource(context.Context, *CreateResourceRequest) (*CreateResourceResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateResource not implemented")
+}
+func (UnimplementedRuntimeServiceServer) UpdateResource(context.Context, *UpdateResourceRequest) (*UpdateResourceResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateResource not implemented")
+}
+func (UnimplementedRuntimeServiceServer) DeleteResource(context.Context, *DeleteResourceRequest) (*DeleteResourceResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteResource not implemented")
 }
 func (UnimplementedRuntimeServiceServer) GetExplore(context.Context, *GetExploreRequest) (*GetExploreResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetExplore not implemented")
@@ -1260,6 +1314,60 @@ func _RuntimeService_GetResource_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RuntimeService_CreateResource_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateResourceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).CreateResource(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_CreateResource_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).CreateResource(ctx, req.(*CreateResourceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_UpdateResource_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateResourceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).UpdateResource(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_UpdateResource_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).UpdateResource(ctx, req.(*UpdateResourceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_DeleteResource_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteResourceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).DeleteResource(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_DeleteResource_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).DeleteResource(ctx, req.(*DeleteResourceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _RuntimeService_GetExplore_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetExploreRequest)
 	if err := dec(in); err != nil {
@@ -1560,6 +1668,18 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetResource",
 			Handler:    _RuntimeService_GetResource_Handler,
+		},
+		{
+			MethodName: "CreateResource",
+			Handler:    _RuntimeService_CreateResource_Handler,
+		},
+		{
+			MethodName: "UpdateResource",
+			Handler:    _RuntimeService_UpdateResource_Handler,
+		},
+		{
+			MethodName: "DeleteResource",
+			Handler:    _RuntimeService_DeleteResource_Handler,
 		},
 		{
 			MethodName: "GetExplore",
