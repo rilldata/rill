@@ -47,6 +47,10 @@ func (c *connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, p
 		})
 	}
 
+	if err := rows.Err(); err != nil {
+		return nil, "", err
+	}
+
 	limit := pagination.ValidPageSize(pageSize, drivers.DefaultPageSize)
 	start := 0
 	if pageToken != "" {
@@ -62,7 +66,7 @@ func (c *connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, p
 	}
 
 	if start >= len(res) {
-		return []*drivers.DatabaseSchemaInfo{}, "", rows.Err()
+		return []*drivers.DatabaseSchemaInfo{}, "", nil
 	}
 
 	next := ""
@@ -70,7 +74,7 @@ func (c *connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, p
 		next = fmt.Sprintf("%d", end)
 	}
 
-	return res[start:end], next, rows.Err()
+	return res[start:end], next, nil
 }
 
 func (c *connection) ListTables(ctx context.Context, database, databaseSchema string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
