@@ -35,7 +35,7 @@ display_name: %s
 olap_connector: %s
 
 # These are example mock users to test your security policies.
-# Learn more: https://docs.rilldata.com/manage/security
+# Learn more: https://docs.rilldata.com/build/rill-project-file#mock-users
 mock_users:
 - email: john@yourcompany.com
 - email: jane@partnercompany.com

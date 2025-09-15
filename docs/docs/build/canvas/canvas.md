@@ -68,6 +68,16 @@ While we encourage creating Canvas dashboards via the visual editing experience 
 <img src = '/img/build/canvas/code-toggle.png' class='rounded-gif' />
 
 
+## Define Dashboard Access
+
+Along with [metrics views security policies](/build/metrics-view/security), you can set access on the dashboard level. Access policies will be combined with metrics view policies using a logical AND, so if a user doesn’t pass both, they won’t get access to the dashboard. For more information, see [Data Access](/build/metrics-view/security#dashboard-access) for more information.
+
+
+:::note Dashboard Properties
+
+For more details about available configurations and properties, check our [Dashboard YAML](/reference/project-files/canvas-dashboards) reference page.
+
+:::
 ## Example Canvas Dashboards 
 Here are a few deployed examples of Canvas dashboards that you can check out!
 

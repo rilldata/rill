@@ -1172,6 +1172,7 @@ export interface V1ListConnectorDriversResponse {
 
 export interface V1ListDatabaseSchemasResponse {
   databaseSchemas?: V1DatabaseSchemaInfo[];
+  nextPageToken?: string;
 }
 
 export interface V1ListExamplesResponse {
@@ -1198,6 +1199,7 @@ export interface V1ListResourcesResponse {
 
 export interface V1ListTablesResponse {
   tables?: V1TableInfo[];
+  nextPageToken?: string;
 }
 
 export interface V1Log {
@@ -1709,6 +1711,11 @@ export interface V1ModelSpec {
   stageProperties?: V1ModelSpecStageProperties;
   outputConnector?: string;
   outputProperties?: V1ModelSpecOutputProperties;
+  /** retry is optional. */
+  retryAttempts?: number;
+  retryDelaySeconds?: number;
+  retryExponentialBackoff?: boolean;
+  retryIfErrorMatches?: string[];
   changeMode?: V1ModelChangeMode;
   tests?: V1ModelTest[];
   trigger?: boolean;
@@ -2403,6 +2410,8 @@ export type ConnectorServiceBigQueryListTablesParams = {
 export type ConnectorServiceListDatabaseSchemasParams = {
   instanceId?: string;
   connector?: string;
+  pageSize?: number;
+  pageToken?: string;
 };
 
 export type ConnectorServiceOLAPGetTableParams = {
@@ -2426,6 +2435,8 @@ export type ConnectorServiceListTablesParams = {
   connector?: string;
   database?: string;
   databaseSchema?: string;
+  pageSize?: number;
+  pageToken?: string;
 };
 
 export type ConnectorServiceGCSListObjectsParams = {
