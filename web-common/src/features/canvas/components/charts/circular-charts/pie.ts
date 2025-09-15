@@ -29,13 +29,26 @@ function getInnerRadius(innerRadiusPercentage: number | undefined) {
   return { expr: `${decimal}*min(width,height)/2` };
 }
 
+function getTotalFontSize(innerRadiusPercentage: number | undefined) {
+  if (
+    !innerRadiusPercentage ||
+    innerRadiusPercentage <= 0 ||
+    innerRadiusPercentage >= 100
+  ) {
+    return 16;
+  }
+
+  const decimal = innerRadiusPercentage / 100;
+  return { expr: `max(11, min(32, ${decimal}*min(width,height)/4))` };
+}
+
 export function generateVLPieChartSpec(
   config: CircularChartSpec,
   data: ChartDataResult,
 ): VisualizationSpec {
   const totalValue = data.domainValues?.["total"]?.[0];
-  const hasInnerRadius = config.innerRadius && config.innerRadius > 0;
-  const shouldShowTotal = hasInnerRadius && totalValue !== undefined;
+  const shouldShowTotal =
+    totalValue !== undefined && config.measure?.showTotal === true;
 
   const measureMetaData = config.measure && data.fields[config.measure.field];
 
@@ -94,7 +107,7 @@ export function generateVLPieChartSpec(
         align: "center",
         baseline: "middle",
         fontWeight: "normal",
-        fontSize: 16,
+        fontSize: getTotalFontSize(config.innerRadius),
       },
       encoding: {
         text: {

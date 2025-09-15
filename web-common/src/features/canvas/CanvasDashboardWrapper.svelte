@@ -1,9 +1,8 @@
 <script lang="ts">
-  import { onDestroy, onMount } from "svelte";
+  import { onMount } from "svelte";
   import CanvasFilters from "./filters/CanvasFilters.svelte";
   import { getCanvasStore } from "./state-managers/state-managers";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { page } from "$app/stores";
 
   export let maxWidth: number;
   export let clientWidth = 0;
@@ -25,14 +24,6 @@
   } = getCanvasStore(canvasName, instanceId));
 
   $: ({ width: clientWidth } = contentRect);
-
-  onDestroy(() => {
-    // Temporary fix for embed scenario.
-    // TODO: cleanup when we move embed to a route based navigation
-    const url = new URL($page.url);
-    url.searchParams.delete("resource");
-    url.searchParams.delete("type");
-  });
 </script>
 
 <main class="size-full flex flex-col dashboard-theme-boundary overflow-hidden">

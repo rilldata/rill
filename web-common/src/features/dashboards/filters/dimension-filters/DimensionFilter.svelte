@@ -95,7 +95,10 @@
     name,
     {
       mode: curMode,
-      values: searchedBulkValues,
+      values:
+        curMode === DimensionFilterMode.Select
+          ? selectedValues
+          : searchedBulkValues,
       searchText: curSearchText,
       timeStart,
       timeEnd,
@@ -213,6 +216,7 @@
       case DimensionFilterMode.InList:
         curMode = DimensionFilterMode.InList;
         curSearchText = mergeDimensionSearchValues(selectedValues);
+        searchedBulkValues = selectedValues; // Ensure searchedBulkValues includes existing selections
         break;
 
       case DimensionFilterMode.Contains:
@@ -236,7 +240,11 @@
       }
       return;
     }
-    searchedBulkValues = values;
+
+    // When switching to InList mode, include both existing selected values and new search values
+    // This ensures the below-fold query can find existing selected values that might not be in top 250
+    const allRelevantValues = [...new Set([...selectedValues, ...values])];
+    searchedBulkValues = allRelevantValues;
     curMode = DimensionFilterMode.InList;
     inListTooLong = isUrlTooLongAfterInListFilter(values);
   }
@@ -558,14 +566,14 @@
                 {/if}
               </span>
             </svelte:component>
-          {:else}
-            <!-- Show "no results" only if both checked and unchecked are empty -->
-            {#if curMode !== DimensionFilterMode.Select || checkedItems.length === 0}
-              <div class="ui-copy-disabled text-center p-2 w-full">
-                no results
-              </div>
-            {/if}
           {/each}
+
+          <!-- Show "no results" only if both checked and unchecked are empty -->
+          {#if uncheckedItems.length === 0 && (curMode !== DimensionFilterMode.Select || checkedItems.length === 0)}
+            <div class="ui-copy-disabled text-center p-2 w-full">
+              no results
+            </div>
+          {/if}
         </DropdownMenu.Group>
       {/if}
     </div>

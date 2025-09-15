@@ -212,6 +212,10 @@ const config = {
             to: '/build/metrics-view/security'
           },
           {
+            from: '/manage/security',
+            to: '/build/metrics-view/security'
+          },
+          {
             from: '/deploy/credentials/',
             to: '/connect/credentials/'
           },
