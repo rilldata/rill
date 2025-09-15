@@ -771,6 +771,8 @@ func recreateReportOptionsFromSpec(spec *runtimev1.ReportSpec) (*adminv1.ReportO
 	default:
 		return nil, fmt.Errorf("unknown web open mode: %s", annotations.WebOpenMode)
 	}
+	opts.Explore = annotations.Explore
+	opts.Canvas = annotations.Canvas
 	return opts, nil
 }
 
