@@ -1,13 +1,11 @@
 ---
 title: "Quantiles"
-description: Tips & Tricks for Metric Formatting
+description: Tips & Tricks for Measure Quantiles
 sidebar_label: "Quantiles"
-sidebar_position: 03
+sidebar_position: 30
 ---
 
-### Quantiles
-
-In addition to common aggregates, you may wish to look at the value of a metric within a certain band or quantile. In the example below, we can measure the P95 of a given measure using `QUANTILE_CONT`.
+In addition to common aggregates, you may wish to look at the value of a measure within a certain band or quantile. In the example below, we can measure the P95 of a given measure using `QUANTILE_CONT`.
 
 <img src = '/img/build/metrics-view/examples/percentile-visual.png' class='rounded-gif' />
 <br />
@@ -18,7 +16,7 @@ Using [DuckDB aggregate function](https://duckdb.org/docs/stable/sql/functions/a
 :::tip Not on DuckDB?
 If you are using a different OLAP engine to power your dashboard, simply use the correct function for quantile calculation. 
 
-IE: [ClickHouse quantile](https://clickhouse.com/docs/sql-reference/aggregate-functions/reference/quantile), [Pinot percentile](https://docs.pinot.apache.org/configuration-reference/functions/percentile)
+E.g.: [ClickHouse quantile](https://clickhouse.com/docs/sql-reference/aggregate-functions/reference/quantile), [Pinot percentile](https://docs.pinot.apache.org/configuration-reference/functions/percentile)
 :::
 Please review the reference documentation, [here.](/reference/project-files/metrics-views)
 

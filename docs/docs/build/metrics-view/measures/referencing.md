@@ -1,8 +1,8 @@
 ---
 title: "Referencing Measures"
-description: Tips & Tricks for Metric Formatting
+description: Tips & Tricks for Referencing Measure
 sidebar_label: "Referencing Measures"
-sidebar_position: 02
+sidebar_position: 25
 ---
 
 Within a metrics view, it is possible for a measure to reference another by using the `requires` array parameter. By doing this, you can easily aggregate already existing measures to simplify the expressions. For example, get a percentage of two already summed values. 
