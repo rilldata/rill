@@ -103,6 +103,15 @@ paths:
           in: query
           required: false
           type: string
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
+          in: query
+          required: false
+          type: string
       tags:
         - ConnectorService
   /v1/connectors/meta:
@@ -221,6 +230,15 @@ paths:
           required: false
           type: string
         - name: databaseSchema
+          in: query
+          required: false
+          type: string
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
           in: query
           required: false
           type: string
@@ -3067,6 +3085,15 @@ paths:
           in: query
           required: false
           type: string
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
+          in: query
+          required: false
+          type: string
       tags:
         - ConnectorService
   /v1/ping:
@@ -5114,6 +5141,8 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1DatabaseSchemaInfo'
+      nextPageToken:
+        type: string
   v1ListExamplesResponse:
     type: object
     properties:
@@ -5169,6 +5198,8 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1TableInfo'
+      nextPageToken:
+        type: string
   v1Log:
     type: object
     properties:
@@ -6119,6 +6150,18 @@ definitions:
         type: string
       outputProperties:
         type: object
+      retryAttempts:
+        type: integer
+        format: int64
+      retryDelaySeconds:
+        type: integer
+        format: int64
+      retryExponentialBackoff:
+        type: boolean
+      retryIfErrorMatches:
+        type: array
+        items:
+          type: string
       changeMode:
         $ref: '#/definitions/v1ModelChangeMode'
         description: change_mode is the mode of change detection to use for the model.
@@ -6282,6 +6325,8 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1OlapTableInfo'
+      nextPageToken:
+        type: string
   v1OlapTableInfo:
     type: object
     properties:

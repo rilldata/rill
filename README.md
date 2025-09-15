@@ -28,7 +28,7 @@
 
 <div align="center">
 
-[Docs](https://docs.rilldata.com/) • [Install](https://docs.rilldata.com/home/install) • [Quickstart](https://docs.rilldata.com/home/get-started) • [Guides](https://docs.rilldata.com/guides) • [Reference](https://docs.rilldata.com/reference/project-files)
+[Docs](https://docs.rilldata.com/) • [Install](https://docs.rilldata.com/home/install) • [Quickstart](https://docs.rilldata.com/get-started/quickstart) • [Guides](https://docs.rilldata.com/guides) • [Reference](https://docs.rilldata.com/reference/project-files)
 
 </div>
 
@@ -134,8 +134,8 @@ For visual learners, take a look at our various playlists that explains what Ril
 <div align="center">
 
 [Getting Started with Rill Developer](https://www.youtube.com/watch?v=oQSok8Dy-D0) • [Exploring Data with Rill](https://www.youtube.com/watch?v=wTP46eOzoCk&list=PL_ZoDsg2yFKgi7ud_fOOD33AH8ONWQS7I&index=1)
- • [Data Talks on the Rocks](https://www.youtube.com/playlist?list=PL_ZoDsg2yFKgr_YEc4XOY0wlRLqzyR07q)
- 
+• [Data Talks on the Rocks](https://www.youtube.com/playlist?list=PL_ZoDsg2yFKgr_YEc4XOY0wlRLqzyR07q)
+
 </div>
 
 ## Production Examples
@@ -181,7 +181,7 @@ A compilation of projects with deep dives into Rill's features using ClickHouse'
 
 ## Get in touch!
 
-- **[Discord Community](https://discord.gg/TatjVY32)** - Join discussions and get help
+- **[Discord Community](https://discord.gg/2ubRfjC7Rh)** - Join discussions and get help
 - **[GitHub Issues](https://github.com/rilldata/rill/issues)** - Report bugs and request features
 - **[Rill Guru](https://gurubase.io/g/rill)** - Ask questions and get expert answers
 

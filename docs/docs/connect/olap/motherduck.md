@@ -5,12 +5,13 @@ sidebar_label: MotherDuck
 sidebar_position: 15
 ---
 
-## Overview
+[MotherDuck](https://motherduck.com/) is a cloud-native DuckDB service that provides scalable analytics and data processing capabilities. Built on the same core engine as DuckDB, MotherDuck offers the familiar SQL interface and performance characteristics while adding cloud-native features like serverless compute, automatic scaling, and collaborative data sharing.
+
+
 <img src='/img/reference/olap-engines/motherduck/rill-developer.png' class='rounded-gif' />
 <br />
 
 
-[MotherDuck](https://motherduck.com/) is a cloud-native DuckDB service that provides scalable analytics and data processing capabilities. Built on the same core engine as DuckDB, MotherDuck offers the familiar SQL interface and performance characteristics while adding cloud-native features like serverless compute, automatic scaling, and collaborative data sharing.
 
 Rill supports connecting to MotherDuck and using it as an OLAP engine to power dashboards. This is particularly useful when you want the performance and SQL compatibility of DuckDB with the scalability and collaboration features of a cloud service.
 
@@ -22,33 +23,12 @@ Rill supports connecting to MotherDuck using the latest DuckDB-compatible driver
 
 When using MotherDuck for local development, you can connect using your MotherDuck access token. The connection is established through MotherDuck's secure API endpoints.
 
-1. Connect to MotherDuck via modifying the existing /connectors/duckdb.yaml. 
+1. Connect to your OLAP engine via Add Data. This will automatically create the motherduck.yaml file in your connectors folder and populate the .env file with `.connector.motherduck.token`.
 
-```yaml
-# Connector YAML
-# Reference documentation: https://docs.rilldata.com/reference/project-files/connectors
+For more information on supported parameters, see our [MotherDuck connector YAML reference docs](/reference/project-files/connectors#motherduck).
 
-type: connector                                  # Must be `connector` (required)
-driver: duckdb                                   # Must be `duckdb` _(required)_
+<img src='/img/connect/olap-engines/motherduck/motherduck-connector.png' class='rounded-gif' style={{width: '75%', display: 'block', margin: '0 auto'}} />
 
-
-path: "md:my_db"                                # Path to your MD database
-
-init_sql: |                                     # SQL executed during database initialization.
-  INSTALL 'motherduck';                         -- Install motherduck extension
-  LOAD 'motherduck';                            -- Load the extensions
-  SET motherduck_token= '{{ .env.connector.motherduck.access_token }}' -- Define the motherduck token
-```
-
-:::tip Dont have an .env file?
-
-If it's your first time running Rill, a .env file wont exist yet. Either make a blank file and rename to .env and add your token or run `touch .env` from the project directory in the CLI.
-
-```
-connector.motherduck.access_token="TOKEN_HERE"
-```
-
-:::
 
 ## Getting Your MotherDuck Access Token
 
@@ -75,7 +55,7 @@ Your MotherDuck access token provides access to your data. Keep it secure and ne
 MotherDuck connections are established through secure API endpoints. The connection is automatically configured when you provide your access token:
 
 ```bash
-motherduck_token="your_motherduck_service_token_here"
+motherduck.token="your_motherduck_service_token_here"
 ```
 
 ## Configuring Rill Cloud
