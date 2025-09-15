@@ -120,7 +120,7 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 		return err
 	}
 	if !ok {
-		ch.PrintfBold("You can run `rill project connect-github` again when you have pushed your local changes to the remote.\n")
+		ch.PrintfBold("You can run `rill deploy` again when you have pushed your local changes to the remote.\n")
 		return nil
 	}
 
