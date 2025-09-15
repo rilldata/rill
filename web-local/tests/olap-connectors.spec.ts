@@ -96,7 +96,7 @@ test.describe("ClickHouse connector", () => {
 
     // Assert that the connector explorer now has a ClickHouse connector
     await expect(
-      page.getByRole("region", { name: "Table explorer" }).getByRole("button", {
+      page.getByRole("region", { name: "Data explorer" }).getByRole("button", {
         name: "clickhouse",
         exact: true,
       }),
@@ -157,7 +157,7 @@ test.describe("ClickHouse connector", () => {
 
     // Assert that the connector explorer now has a ClickHouse connector
     await expect(
-      page.getByRole("region", { name: "Table explorer" }).getByRole("button", {
+      page.getByRole("region", { name: "Data explorer" }).getByRole("button", {
         name: "clickhouse",
         exact: true,
       }),
