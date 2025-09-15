@@ -4,6 +4,21 @@
  * rill/admin/v1/ai.proto
  * OpenAPI spec version: version not set
  */
+export interface GetReportMetaResponseURLs {
+  openUrl?: string;
+  exportUrl?: string;
+  editUrl?: string;
+  unsubscribeUrl?: string;
+}
+
+export interface ListGithubUserReposResponseRepo {
+  name?: string;
+  owner?: string;
+  description?: string;
+  remote?: string;
+  defaultBranch?: string;
+}
+
 export interface ProtobufAny {
   "@type"?: string;
   [key: string]: unknown;
@@ -35,6 +50,182 @@ export interface V1AddOrganizationMemberUserResponse {
   pendingSignup?: boolean;
 }
 
+export interface V1AddOrganizationMemberUsergroupResponse {
+  [key: string]: unknown;
+}
+
+export interface V1AddProjectMemberUserResponse {
+  pendingSignup?: boolean;
+}
+
+export interface V1AddProjectMemberUsergroupResponse {
+  [key: string]: unknown;
+}
+
+export interface V1AddUsergroupMemberUserResponse {
+  [key: string]: unknown;
+}
+
+export type V1AlertOptionsResolverProperties = { [key: string]: unknown };
+
+export interface V1AlertOptions {
+  displayName?: string;
+  refreshCron?: string;
+  refreshTimeZone?: string;
+  intervalDuration?: string;
+  resolver?: string;
+  resolverProperties?: V1AlertOptionsResolverProperties;
+  /** DEPRECATED: Use resolver and resolver_properties instead. */
+  queryName?: string;
+  /** DEPRECATED: Use resolver and resolver_properties instead. */
+  queryArgsJson?: string;
+  metricsViewName?: string;
+  renotify?: boolean;
+  renotifyAfterSeconds?: number;
+  emailRecipients?: string[];
+  slackUsers?: string[];
+  slackChannels?: string[];
+  slackWebhooks?: string[];
+  /** Annotation for the subpath of <UI host>/org/project to open for the report. */
+  webOpenPath?: string;
+  /** Annotation for the base64-encoded UI state to open for the report. */
+  webOpenState?: string;
+}
+
+export interface V1ApproveProjectAccessResponse {
+  [key: string]: unknown;
+}
+
+export interface V1BillingIssue {
+  organization?: string;
+  type?: V1BillingIssueType;
+  level?: V1BillingIssueLevel;
+  metadata?: V1BillingIssueMetadata;
+  eventTime?: string;
+  createdOn?: string;
+}
+
+export type V1BillingIssueLevel =
+  (typeof V1BillingIssueLevel)[keyof typeof V1BillingIssueLevel];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1BillingIssueLevel = {
+  BILLING_ISSUE_LEVEL_UNSPECIFIED: "BILLING_ISSUE_LEVEL_UNSPECIFIED",
+  BILLING_ISSUE_LEVEL_WARNING: "BILLING_ISSUE_LEVEL_WARNING",
+  BILLING_ISSUE_LEVEL_ERROR: "BILLING_ISSUE_LEVEL_ERROR",
+} as const;
+
+export interface V1BillingIssueMetadata {
+  onTrial?: V1BillingIssueMetadataOnTrial;
+  trialEnded?: V1BillingIssueMetadataTrialEnded;
+  noPaymentMethod?: V1BillingIssueMetadataNoPaymentMethod;
+  noBillableAddress?: V1BillingIssueMetadataNoBillableAddress;
+  paymentFailed?: V1BillingIssueMetadataPaymentFailed;
+  subscriptionCancelled?: V1BillingIssueMetadataSubscriptionCancelled;
+  neverSubscribed?: V1BillingIssueMetadataNeverSubscribed;
+}
+
+export interface V1BillingIssueMetadataNeverSubscribed {
+  [key: string]: unknown;
+}
+
+export interface V1BillingIssueMetadataNoBillableAddress {
+  [key: string]: unknown;
+}
+
+export interface V1BillingIssueMetadataNoPaymentMethod {
+  [key: string]: unknown;
+}
+
+export interface V1BillingIssueMetadataOnTrial {
+  endDate?: string;
+  gracePeriodEndDate?: string;
+}
+
+export interface V1BillingIssueMetadataPaymentFailed {
+  invoices?: V1BillingIssueMetadataPaymentFailedMeta[];
+}
+
+export interface V1BillingIssueMetadataPaymentFailedMeta {
+  invoiceId?: string;
+  invoiceNumber?: string;
+  invoiceUrl?: string;
+  amountDue?: string;
+  currency?: string;
+  dueDate?: string;
+  failedOn?: string;
+  gracePeriodEndDate?: string;
+}
+
+export interface V1BillingIssueMetadataSubscriptionCancelled {
+  endDate?: string;
+}
+
+export interface V1BillingIssueMetadataTrialEnded {
+  endDate?: string;
+  gracePeriodEndDate?: string;
+}
+
+export type V1BillingIssueType =
+  (typeof V1BillingIssueType)[keyof typeof V1BillingIssueType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1BillingIssueType = {
+  BILLING_ISSUE_TYPE_UNSPECIFIED: "BILLING_ISSUE_TYPE_UNSPECIFIED",
+  BILLING_ISSUE_TYPE_ON_TRIAL: "BILLING_ISSUE_TYPE_ON_TRIAL",
+  BILLING_ISSUE_TYPE_TRIAL_ENDED: "BILLING_ISSUE_TYPE_TRIAL_ENDED",
+  BILLING_ISSUE_TYPE_NO_PAYMENT_METHOD: "BILLING_ISSUE_TYPE_NO_PAYMENT_METHOD",
+  BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS:
+    "BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS",
+  BILLING_ISSUE_TYPE_PAYMENT_FAILED: "BILLING_ISSUE_TYPE_PAYMENT_FAILED",
+  BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED:
+    "BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED",
+  BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED: "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED",
+} as const;
+
+export interface V1BillingPlan {
+  id?: string;
+  name?: string;
+  planType?: V1BillingPlanType;
+  displayName?: string;
+  description?: string;
+  trialPeriodDays?: number;
+  default?: boolean;
+  quotas?: V1Quotas;
+  public?: boolean;
+}
+
+export type V1BillingPlanType =
+  (typeof V1BillingPlanType)[keyof typeof V1BillingPlanType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1BillingPlanType = {
+  BILLING_PLAN_TYPE_UNSPECIFIED: "BILLING_PLAN_TYPE_UNSPECIFIED",
+  BILLING_PLAN_TYPE_TRIAL: "BILLING_PLAN_TYPE_TRIAL",
+  BILLING_PLAN_TYPE_TEAM: "BILLING_PLAN_TYPE_TEAM",
+  BILLING_PLAN_TYPE_MANAGED: "BILLING_PLAN_TYPE_MANAGED",
+  BILLING_PLAN_TYPE_ENTERPRISE: "BILLING_PLAN_TYPE_ENTERPRISE",
+} as const;
+
+export interface V1Bookmark {
+  id?: string;
+  displayName?: string;
+  description?: string;
+  data?: string;
+  resourceKind?: string;
+  resourceName?: string;
+  projectId?: string;
+  userId?: string;
+  default?: boolean;
+  shared?: boolean;
+  createdOn?: string;
+  updatedOn?: string;
+}
+
+export interface V1CancelBillingSubscriptionResponse {
+  [key: string]: unknown;
+}
+
 export interface V1CompleteRequest {
   messages?: V1CompletionMessage[];
   tools?: V1Tool[];
@@ -50,10 +241,58 @@ export interface V1CompletionMessage {
   content?: V1ContentBlock[];
 }
 
+export interface V1Condition {
+  op?: V1Operation;
+  exprs?: V1Expression[];
+}
+
+export interface V1ConnectProjectToGithubResponse {
+  [key: string]: unknown;
+}
+
 export interface V1ContentBlock {
   text?: string;
   toolCall?: V1ToolCall;
   toolResult?: V1ToolResult;
+}
+
+export interface V1CreateAlertResponse {
+  name?: string;
+}
+
+export type V1CreateAssetResponseSigningHeaders = { [key: string]: string };
+
+export interface V1CreateAssetResponse {
+  assetId?: string;
+  signedUrl?: string;
+  signingHeaders?: V1CreateAssetResponseSigningHeaders;
+}
+
+export interface V1CreateBookmarkRequest {
+  displayName?: string;
+  description?: string;
+  data?: string;
+  resourceKind?: string;
+  resourceName?: string;
+  projectId?: string;
+  default?: boolean;
+  shared?: boolean;
+}
+
+export interface V1CreateBookmarkResponse {
+  bookmark?: V1Bookmark;
+}
+
+export interface V1CreateDeploymentResponse {
+  deployment?: V1Deployment;
+}
+
+export interface V1CreateManagedGitRepoResponse {
+  remote?: string;
+  username?: string;
+  password?: string;
+  defaultBranch?: string;
+  passwordExpiresAt?: string;
 }
 
 export interface V1CreateOrganizationRequest {
@@ -70,12 +309,60 @@ export interface V1CreateProjectResponse {
   project?: V1Project;
 }
 
+export interface V1CreateProjectWhitelistedDomainResponse {
+  [key: string]: unknown;
+}
+
+export interface V1CreateReportResponse {
+  name?: string;
+}
+
+export interface V1CreateServiceResponse {
+  service?: V1Service;
+}
+
+export interface V1CreateUsergroupResponse {
+  usergroup?: V1Usergroup;
+}
+
+export interface V1CreateWhitelistedDomainResponse {
+  [key: string]: unknown;
+}
+
+export interface V1DeleteAlertResponse {
+  [key: string]: unknown;
+}
+
+export interface V1DeleteDeploymentResponse {
+  deploymentId?: string;
+}
+
 export interface V1DeleteOrganizationResponse {
   [key: string]: unknown;
 }
 
 export interface V1DeleteProjectResponse {
   id?: string;
+}
+
+export interface V1DeleteReportResponse {
+  [key: string]: unknown;
+}
+
+export interface V1DeleteServiceResponse {
+  service?: V1Service;
+}
+
+export interface V1DeleteUserResponse {
+  [key: string]: unknown;
+}
+
+export interface V1DeleteUsergroupResponse {
+  [key: string]: unknown;
+}
+
+export interface V1DenyProjectAccessResponse {
+  [key: string]: unknown;
 }
 
 export interface V1Deployment {
@@ -104,9 +391,165 @@ export const V1DeploymentStatus = {
   DEPLOYMENT_STATUS_STOPPED: "DEPLOYMENT_STATUS_STOPPED",
 } as const;
 
+export interface V1DisconnectProjectFromGithubResponse {
+  [key: string]: unknown;
+}
+
+export interface V1EditAlertResponse {
+  [key: string]: unknown;
+}
+
+export interface V1EditReportResponse {
+  [key: string]: unknown;
+}
+
+export interface V1EditUsergroupResponse {
+  [key: string]: unknown;
+}
+
+export type V1ExportFormat =
+  (typeof V1ExportFormat)[keyof typeof V1ExportFormat];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1ExportFormat = {
+  EXPORT_FORMAT_UNSPECIFIED: "EXPORT_FORMAT_UNSPECIFIED",
+  EXPORT_FORMAT_CSV: "EXPORT_FORMAT_CSV",
+  EXPORT_FORMAT_XLSX: "EXPORT_FORMAT_XLSX",
+  EXPORT_FORMAT_PARQUET: "EXPORT_FORMAT_PARQUET",
+} as const;
+
+export interface V1Expression {
+  ident?: string;
+  val?: unknown;
+  cond?: V1Condition;
+  subquery?: V1Subquery;
+}
+
+export interface V1GenerateAlertYAMLResponse {
+  yaml?: string;
+}
+
+export interface V1GenerateReportYAMLResponse {
+  yaml?: string;
+}
+
+export type V1GetAlertMetaResponseQueryForAttributes = {
+  [key: string]: unknown;
+};
+
+export interface V1GetAlertMetaResponse {
+  openUrl?: string;
+  editUrl?: string;
+  queryForAttributes?: V1GetAlertMetaResponseQueryForAttributes;
+}
+
+export interface V1GetAlertYAMLResponse {
+  yaml?: string;
+}
+
+export interface V1GetBillingProjectCredentialsRequest {
+  organization?: string;
+}
+
+export interface V1GetBillingProjectCredentialsResponse {
+  runtimeHost?: string;
+  instanceId?: string;
+  accessToken?: string;
+  ttlSeconds?: number;
+}
+
+export interface V1GetBillingSubscriptionResponse {
+  organization?: V1Organization;
+  subscription?: V1Subscription;
+  billingPortalUrl?: string;
+}
+
+export interface V1GetBookmarkResponse {
+  bookmark?: V1Bookmark;
+}
+
+export interface V1GetCloneCredentialsResponse {
+  gitRepoUrl?: string;
+  gitUsername?: string;
+  gitPassword?: string;
+  gitPasswordExpiresAt?: string;
+  gitSubpath?: string;
+  gitProdBranch?: string;
+  gitManagedRepo?: boolean;
+  archiveDownloadUrl?: string;
+}
+
+export interface V1GetCurrentMagicAuthTokenResponse {
+  token?: V1MagicAuthToken;
+}
+
+export interface V1GetCurrentUserResponse {
+  user?: V1User;
+  preferences?: V1UserPreferences;
+}
+
+export interface V1GetDeploymentCredentialsResponse {
+  runtimeHost?: string;
+  instanceId?: string;
+  accessToken?: string;
+  ttlSeconds?: number;
+}
+
+export interface V1GetDeploymentResponse {
+  runtimeHost?: string;
+  instanceId?: string;
+  accessToken?: string;
+  ttlSeconds?: number;
+}
+
+export interface V1GetGithubRepoStatusResponse {
+  hasAccess?: boolean;
+  grantAccessUrl?: string;
+  defaultBranch?: string;
+}
+
+export type V1GetGithubUserStatusResponseOrganizationInstallationPermissions = {
+  [key: string]: V1GithubPermission;
+};
+
+export interface V1GetGithubUserStatusResponse {
+  hasAccess?: boolean;
+  grantAccessUrl?: string;
+  accessToken?: string;
+  account?: string;
+  userInstallationPermission?: V1GithubPermission;
+  organizationInstallationPermissions?: V1GetGithubUserStatusResponseOrganizationInstallationPermissions;
+  /** DEPRECATED: Use organization_installation_permissions instead. */
+  organizations?: string[];
+}
+
+export interface V1GetIFrameResponse {
+  iframeSrc?: string;
+  runtimeHost?: string;
+  instanceId?: string;
+  accessToken?: string;
+  ttlSeconds?: number;
+}
+
+export interface V1GetOrganizationNameForDomainResponse {
+  name?: string;
+}
+
 export interface V1GetOrganizationResponse {
   organization?: V1Organization;
   permissions?: V1OrganizationPermissions;
+}
+
+export interface V1GetPaymentsPortalURLResponse {
+  url?: string;
+}
+
+export interface V1GetProjectAccessRequestResponse {
+  email?: string;
+}
+
+export interface V1GetProjectByIDResponse {
+  project?: V1Project;
 }
 
 export interface V1GetProjectResponse {
@@ -131,9 +574,121 @@ export interface V1GetProjectVariablesResponse {
   variablesMap?: V1GetProjectVariablesResponseVariablesMap;
 }
 
+export interface V1GetRepoMetaResponse {
+  /** How long the returned config is valid for. Clients should call GetRepoMeta again after this time. */
+  expiresOn?: string;
+  /** When the returned config was last modified. This covers all fields in the response except the ephemeral credentials embedded in git_url and archive_download_url. */
+  lastUpdatedOn?: string;
+  /** Git remote for cloning (and maybe pushing) a Git repository.
+The URL uses HTTPS with embedded username/password. */
+  gitUrl?: string;
+  /** Optional subpath within the Git repository to use as the project root. */
+  gitSubpath?: string;
+  /** The branch to use for the deployment. */
+  gitBranch?: string;
+  /** A unique branch name generated for temporary/ephemeral use in edit mode where files may be mutated.
+This enables checkpointing progress across hibernations and also more easily pinning to a specific commit of the base branch to delay conflict resolution. */
+  gitEditBranch?: string;
+  /** Signed URL for downloading a tarball of project files. If this is set, the git_* fields will be empty (and vice versa). */
+  archiveDownloadUrl?: string;
+  /** A stable ID for the archive returned from archive_download_url. */
+  archiveId?: string;
+  /** The creation time of the archive returned from archive_download_url. */
+  archiveCreatedOn?: string;
+}
+
+export type V1GetReportMetaResponseRecipientUrls = {
+  [key: string]: GetReportMetaResponseURLs;
+};
+
+export interface V1GetReportMetaResponse {
+  recipientUrls?: V1GetReportMetaResponseRecipientUrls;
+}
+
+export interface V1GetServiceResponse {
+  service?: V1OrganizationMemberService;
+  projectMemberships?: V1ProjectMemberService[];
+}
+
+export interface V1GetUserResponse {
+  user?: V1User;
+}
+
+export interface V1GetUsergroupResponse {
+  usergroup?: V1Usergroup;
+  nextPageToken?: string;
+}
+
+export type V1GithubPermission =
+  (typeof V1GithubPermission)[keyof typeof V1GithubPermission];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1GithubPermission = {
+  GITHUB_PERMISSION_UNSPECIFIED: "GITHUB_PERMISSION_UNSPECIFIED",
+  GITHUB_PERMISSION_READ: "GITHUB_PERMISSION_READ",
+  GITHUB_PERMISSION_WRITE: "GITHUB_PERMISSION_WRITE",
+} as const;
+
+export interface V1HibernateProjectResponse {
+  [key: string]: unknown;
+}
+
+export interface V1IssueMagicAuthTokenResponse {
+  token?: string;
+  url?: string;
+}
+
+export interface V1IssueRepresentativeAuthTokenRequest {
+  email?: string;
+  ttlMinutes?: string;
+}
+
+export interface V1IssueRepresentativeAuthTokenResponse {
+  token?: string;
+}
+
+export interface V1IssueServiceAuthTokenResponse {
+  token?: string;
+}
+
+export interface V1IssueUserAuthTokenResponse {
+  /** Newly issued auth token. */
+  token?: string;
+}
+
+export interface V1LeaveOrganizationResponse {
+  [key: string]: unknown;
+}
+
+export interface V1ListBookmarksResponse {
+  bookmarks?: V1Bookmark[];
+}
+
+export interface V1ListDeploymentsResponse {
+  deployments?: V1Deployment[];
+}
+
+export interface V1ListGithubUserReposResponse {
+  repos?: ListGithubUserReposResponseRepo[];
+}
+
+export interface V1ListMagicAuthTokensResponse {
+  tokens?: V1MagicAuthToken[];
+  nextPageToken?: string;
+}
+
+export interface V1ListOrganizationBillingIssuesResponse {
+  issues?: V1BillingIssue[];
+}
+
 export interface V1ListOrganizationInvitesResponse {
   invites?: V1OrganizationInvite[];
   totalCount?: number;
+  nextPageToken?: string;
+}
+
+export interface V1ListOrganizationMemberUsergroupsResponse {
+  members?: V1MemberUsergroup[];
   nextPageToken?: string;
 }
 
@@ -148,10 +703,141 @@ export interface V1ListOrganizationsResponse {
   nextPageToken?: string;
 }
 
+export interface V1ListProjectInvitesResponse {
+  invites?: V1ProjectInvite[];
+  nextPageToken?: string;
+}
+
+export interface V1ListProjectMemberServicesResponse {
+  services?: V1ProjectMemberService[];
+}
+
+export interface V1ListProjectMemberUsergroupsResponse {
+  members?: V1MemberUsergroup[];
+  nextPageToken?: string;
+}
+
+export interface V1ListProjectMemberUsersResponse {
+  members?: V1ProjectMemberUser[];
+  nextPageToken?: string;
+}
+
+export interface V1ListProjectWhitelistedDomainsResponse {
+  domains?: V1WhitelistedDomain[];
+}
+
+export interface V1ListProjectsForFingerprintResponse {
+  projects?: V1Project[];
+  /** unauthorized_project is the name of a project that matches the git_remote+sub_path but the caller does not have access to. */
+  unauthorizedProject?: string;
+}
+
+export interface V1ListProjectsForOrganizationAndUserResponse {
+  projects?: V1Project[];
+  nextPageToken?: string;
+}
+
 export interface V1ListProjectsForOrganizationResponse {
   projects?: V1Project[];
   nextPageToken?: string;
 }
+
+export interface V1ListProjectsForUserByNameResponse {
+  projects?: V1Project[];
+}
+
+export interface V1ListPublicBillingPlansResponse {
+  plans?: V1BillingPlan[];
+}
+
+export interface V1ListRolesResponse {
+  organizationRoles?: V1OrganizationRole[];
+  projectRoles?: V1ProjectRole[];
+}
+
+export interface V1ListServiceAuthTokensResponse {
+  tokens?: V1ServiceToken[];
+}
+
+export interface V1ListServicesResponse {
+  services?: V1OrganizationMemberService[];
+}
+
+export interface V1ListSuperusersResponse {
+  users?: V1User[];
+}
+
+export interface V1ListUserAuthTokensResponse {
+  /** List of auth tokens for the user. */
+  tokens?: V1UserAuthToken[];
+  /** Page token for the next page of results. If empty, there are no more pages. */
+  nextPageToken?: string;
+}
+
+export interface V1ListUsergroupMemberUsersResponse {
+  members?: V1UsergroupMemberUser[];
+  nextPageToken?: string;
+}
+
+export interface V1ListUsergroupsForOrganizationAndUserResponse {
+  usergroups?: V1Usergroup[];
+  nextPageToken?: string;
+}
+
+export interface V1ListWhitelistedDomainsResponse {
+  domains?: V1WhitelistedDomain[];
+}
+
+export type V1MagicAuthTokenAttributes = { [key: string]: unknown };
+
+export interface V1MagicAuthToken {
+  id?: string;
+  projectId?: string;
+  url?: string;
+  token?: string;
+  createdOn?: string;
+  expiresOn?: string;
+  usedOn?: string;
+  createdByUserId?: string;
+  createdByUserEmail?: string;
+  attributes?: V1MagicAuthTokenAttributes;
+  resources?: V1ResourceName[];
+  resourceType?: string;
+  resourceName?: string;
+  filter?: V1Expression;
+  fields?: string[];
+  state?: string;
+  displayName?: string;
+}
+
+export interface V1MemberUsergroup {
+  groupId?: string;
+  groupName?: string;
+  groupManaged?: boolean;
+  roleName?: string;
+  usersCount?: number;
+  createdOn?: string;
+  updatedOn?: string;
+}
+
+export type V1Operation = (typeof V1Operation)[keyof typeof V1Operation];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1Operation = {
+  OPERATION_UNSPECIFIED: "OPERATION_UNSPECIFIED",
+  OPERATION_EQ: "OPERATION_EQ",
+  OPERATION_NEQ: "OPERATION_NEQ",
+  OPERATION_LT: "OPERATION_LT",
+  OPERATION_LTE: "OPERATION_LTE",
+  OPERATION_GT: "OPERATION_GT",
+  OPERATION_GTE: "OPERATION_GTE",
+  OPERATION_OR: "OPERATION_OR",
+  OPERATION_AND: "OPERATION_AND",
+  OPERATION_IN: "OPERATION_IN",
+  OPERATION_NIN: "OPERATION_NIN",
+  OPERATION_LIKE: "OPERATION_LIKE",
+  OPERATION_NLIKE: "OPERATION_NLIKE",
+} as const;
 
 export interface V1Organization {
   id?: string;
@@ -177,6 +863,21 @@ export interface V1OrganizationInvite {
   email?: string;
   roleName?: string;
   invitedBy?: string;
+}
+
+export type V1OrganizationMemberServiceAttributes = { [key: string]: unknown };
+
+export interface V1OrganizationMemberService {
+  id?: string;
+  name?: string;
+  orgId?: string;
+  orgName?: string;
+  roleName?: string;
+  /** True if the user has a project role in any project in the organization. */
+  hasProjectRoles?: boolean;
+  attributes?: V1OrganizationMemberServiceAttributes;
+  createdOn?: string;
+  updatedOn?: string;
 }
 
 export interface V1OrganizationMemberUser {
@@ -213,6 +914,17 @@ export interface V1OrganizationQuotas {
   storageLimitBytesPerDeployment?: string;
 }
 
+export interface V1OrganizationRole {
+  id?: string;
+  name?: string;
+  permissions?: V1OrganizationPermissions;
+}
+
+export interface V1PingResponse {
+  version?: string;
+  time?: string;
+}
+
 export type V1ProjectAnnotations = { [key: string]: string };
 
 export interface V1Project {
@@ -243,6 +955,40 @@ export interface V1Project {
   updatedOn?: string;
 }
 
+export interface V1ProjectInvite {
+  email?: string;
+  roleName?: string;
+  orgRoleName?: string;
+  invitedBy?: string;
+}
+
+export type V1ProjectMemberServiceAttributes = { [key: string]: unknown };
+
+export interface V1ProjectMemberService {
+  id?: string;
+  name?: string;
+  orgId?: string;
+  orgName?: string;
+  orgRoleName?: string;
+  projectId?: string;
+  projectName?: string;
+  projectRoleName?: string;
+  attributes?: V1ProjectMemberServiceAttributes;
+  createdOn?: string;
+  updatedOn?: string;
+}
+
+export interface V1ProjectMemberUser {
+  userId?: string;
+  userEmail?: string;
+  userName?: string;
+  userPhotoUrl?: string;
+  roleName?: string;
+  orgRoleName?: string;
+  createdOn?: string;
+  updatedOn?: string;
+}
+
 export interface V1ProjectPermissions {
   admin?: boolean;
   readProject?: boolean;
@@ -268,6 +1014,12 @@ export interface V1ProjectPermissions {
   manageBookmarks?: boolean;
 }
 
+export interface V1ProjectRole {
+  id?: string;
+  name?: string;
+  permissions?: V1ProjectPermissions;
+}
+
 export interface V1ProjectVariable {
   /** Internal ID. */
   id?: string;
@@ -286,6 +1038,39 @@ If empty, the variable is shared for all environments. */
   updatedOn?: string;
 }
 
+export interface V1ProvisionResponse {
+  resource?: V1ProvisionerResource;
+}
+
+export type V1ProvisionerResourceArgs = { [key: string]: unknown };
+
+export type V1ProvisionerResourceConfig = { [key: string]: unknown };
+
+export interface V1ProvisionerResource {
+  id?: string;
+  deploymentId?: string;
+  type?: string;
+  name?: string;
+  args?: V1ProvisionerResourceArgs;
+  config?: V1ProvisionerResourceConfig;
+}
+
+export interface V1PullVirtualRepoResponse {
+  /** List of virtual files ordered by update time, most recent last. */
+  files?: V1VirtualFile[];
+  /** Next page token for pagination. */
+  nextPageToken?: string;
+}
+
+export interface V1Quotas {
+  projects?: string;
+  deployments?: string;
+  slotsTotal?: string;
+  slotsPerDeployment?: string;
+  outstandingInvites?: string;
+  storageLimitBytesPerDeployment?: string;
+}
+
 export type V1RecordEventsRequestEventsItem = { [key: string]: unknown };
 
 export interface V1RecordEventsRequest {
@@ -296,8 +1081,293 @@ export interface V1RecordEventsResponse {
   [key: string]: unknown;
 }
 
+export interface V1RedeployProjectResponse {
+  [key: string]: unknown;
+}
+
+export interface V1RemoveBookmarkResponse {
+  [key: string]: unknown;
+}
+
+export interface V1RemoveOrganizationMemberServiceResponse {
+  [key: string]: unknown;
+}
+
 export interface V1RemoveOrganizationMemberUserResponse {
   [key: string]: unknown;
+}
+
+export interface V1RemoveOrganizationMemberUsergroupResponse {
+  [key: string]: unknown;
+}
+
+export interface V1RemoveProjectMemberServiceResponse {
+  [key: string]: unknown;
+}
+
+export interface V1RemoveProjectMemberUserResponse {
+  [key: string]: unknown;
+}
+
+export interface V1RemoveProjectMemberUsergroupResponse {
+  [key: string]: unknown;
+}
+
+export interface V1RemoveProjectWhitelistedDomainResponse {
+  [key: string]: unknown;
+}
+
+export interface V1RemoveUsergroupMemberUserResponse {
+  [key: string]: unknown;
+}
+
+export interface V1RemoveWhitelistedDomainResponse {
+  [key: string]: unknown;
+}
+
+export interface V1RenameUsergroupResponse {
+  [key: string]: unknown;
+}
+
+export interface V1RenewBillingSubscriptionResponse {
+  organization?: V1Organization;
+  subscription?: V1Subscription;
+}
+
+export interface V1ReportOptions {
+  displayName?: string;
+  refreshCron?: string;
+  refreshTimeZone?: string;
+  intervalDuration?: string;
+  queryName?: string;
+  queryArgsJson?: string;
+  exportLimit?: string;
+  exportFormat?: V1ExportFormat;
+  exportIncludeHeader?: boolean;
+  emailRecipients?: string[];
+  slackUsers?: string[];
+  slackChannels?: string[];
+  slackWebhooks?: string[];
+  /** Annotation for the subpath of <UI host>/org/project to open for the report. */
+  webOpenPath?: string;
+  /** Annotation for the base64-encoded UI state to open for the report. */
+  webOpenState?: string;
+  explore?: string;
+  canvas?: string;
+  webOpenMode?: string;
+  filter?: V1Expression;
+}
+
+export interface V1RequestProjectAccessResponse {
+  [key: string]: unknown;
+}
+
+export interface V1ResourceName {
+  type?: string;
+  name?: string;
+}
+
+export interface V1RevokeCurrentAuthTokenResponse {
+  [key: string]: unknown;
+}
+
+export interface V1RevokeMagicAuthTokenResponse {
+  [key: string]: unknown;
+}
+
+export interface V1RevokeServiceAuthTokenResponse {
+  [key: string]: unknown;
+}
+
+export interface V1RevokeUserAuthTokenResponse {
+  [key: string]: unknown;
+}
+
+export interface V1SearchProjectNamesResponse {
+  names?: string[];
+  nextPageToken?: string;
+}
+
+export interface V1SearchProjectUsersResponse {
+  users?: V1User[];
+  nextPageToken?: string;
+}
+
+export interface V1SearchUsersResponse {
+  users?: V1User[];
+  nextPageToken?: string;
+}
+
+export type V1ServiceAttributes = { [key: string]: unknown };
+
+export interface V1Service {
+  id?: string;
+  name?: string;
+  orgId?: string;
+  orgName?: string;
+  attributes?: V1ServiceAttributes;
+  createdOn?: string;
+  updatedOn?: string;
+}
+
+export interface V1ServiceToken {
+  id?: string;
+  prefix?: string;
+  createdOn?: string;
+  expiresOn?: string;
+}
+
+export interface V1SetOrganizationMemberServiceRoleResponse {
+  [key: string]: unknown;
+}
+
+export interface V1SetOrganizationMemberUserRoleResponse {
+  [key: string]: unknown;
+}
+
+export interface V1SetOrganizationMemberUsergroupRoleResponse {
+  [key: string]: unknown;
+}
+
+export interface V1SetProjectMemberServiceRoleResponse {
+  [key: string]: unknown;
+}
+
+export interface V1SetProjectMemberUserRoleResponse {
+  [key: string]: unknown;
+}
+
+export interface V1SetProjectMemberUsergroupRoleResponse {
+  [key: string]: unknown;
+}
+
+export interface V1SetSuperuserRequest {
+  email?: string;
+  superuser?: boolean;
+}
+
+export interface V1SetSuperuserResponse {
+  [key: string]: unknown;
+}
+
+export interface V1StartDeploymentResponse {
+  deployment?: V1Deployment;
+}
+
+export interface V1StopDeploymentResponse {
+  deploymentId?: string;
+}
+
+export interface V1Subquery {
+  dimension?: string;
+  measures?: string[];
+  where?: V1Expression;
+  having?: V1Expression;
+}
+
+export interface V1Subscription {
+  id?: string;
+  plan?: V1BillingPlan;
+  startDate?: string;
+  endDate?: string;
+  currentBillingCycleStartDate?: string;
+  currentBillingCycleEndDate?: string;
+  trialEndDate?: string;
+}
+
+export interface V1SudoDeleteOrganizationBillingIssueResponse {
+  [key: string]: unknown;
+}
+
+export interface V1SudoExtendTrialRequest {
+  organization?: string;
+  days?: number;
+}
+
+export interface V1SudoExtendTrialResponse {
+  trialEnd?: string;
+}
+
+export interface V1SudoGetResourceResponse {
+  user?: V1User;
+  org?: V1Organization;
+  project?: V1Project;
+  deployment?: V1Deployment;
+  instance?: V1Deployment;
+}
+
+export interface V1SudoIssueRuntimeManagerTokenRequest {
+  host?: string;
+}
+
+export interface V1SudoIssueRuntimeManagerTokenResponse {
+  token?: string;
+}
+
+export interface V1SudoTriggerBillingRepairRequest {
+  [key: string]: unknown;
+}
+
+export interface V1SudoTriggerBillingRepairResponse {
+  [key: string]: unknown;
+}
+
+export type V1SudoUpdateAnnotationsRequestAnnotations = {
+  [key: string]: string;
+};
+
+export interface V1SudoUpdateAnnotationsRequest {
+  organization?: string;
+  project?: string;
+  annotations?: V1SudoUpdateAnnotationsRequestAnnotations;
+}
+
+export interface V1SudoUpdateAnnotationsResponse {
+  project?: V1Project;
+}
+
+export interface V1SudoUpdateOrganizationBillingCustomerRequest {
+  organization?: string;
+  billingCustomerId?: string;
+  paymentCustomerId?: string;
+}
+
+export interface V1SudoUpdateOrganizationBillingCustomerResponse {
+  organization?: V1Organization;
+  subscription?: V1Subscription;
+}
+
+export interface V1SudoUpdateOrganizationCustomDomainRequest {
+  name?: string;
+  customDomain?: string;
+}
+
+export interface V1SudoUpdateOrganizationCustomDomainResponse {
+  organization?: V1Organization;
+}
+
+export interface V1SudoUpdateOrganizationQuotasRequest {
+  organization?: string;
+  projects?: number;
+  deployments?: number;
+  slotsTotal?: number;
+  slotsPerDeployment?: number;
+  outstandingInvites?: number;
+  storageLimitBytesPerDeployment?: string;
+}
+
+export interface V1SudoUpdateOrganizationQuotasResponse {
+  organization?: V1Organization;
+}
+
+export interface V1SudoUpdateUserQuotasRequest {
+  email?: string;
+  singleuserOrgs?: number;
+  trialOrgs?: number;
+}
+
+export interface V1SudoUpdateUserQuotasResponse {
+  user?: V1User;
 }
 
 export interface V1Tool {
@@ -320,6 +1390,54 @@ export interface V1ToolResult {
   isError?: boolean;
 }
 
+export interface V1TriggerReconcileResponse {
+  [key: string]: unknown;
+}
+
+export interface V1TriggerRedeployRequest {
+  organization?: string;
+  project?: string;
+  deploymentId?: string;
+}
+
+export interface V1TriggerRedeployResponse {
+  [key: string]: unknown;
+}
+
+export interface V1TriggerRefreshSourcesResponse {
+  [key: string]: unknown;
+}
+
+export interface V1TriggerReportResponse {
+  [key: string]: unknown;
+}
+
+export interface V1UnsubscribeAlertResponse {
+  [key: string]: unknown;
+}
+
+export interface V1UnsubscribeReportResponse {
+  [key: string]: unknown;
+}
+
+export interface V1UpdateBillingSubscriptionResponse {
+  organization?: V1Organization;
+  subscription?: V1Subscription;
+}
+
+export interface V1UpdateBookmarkRequest {
+  bookmarkId?: string;
+  displayName?: string;
+  description?: string;
+  data?: string;
+  default?: boolean;
+  shared?: boolean;
+}
+
+export interface V1UpdateBookmarkResponse {
+  [key: string]: unknown;
+}
+
 export interface V1UpdateOrganizationResponse {
   organization?: V1Organization;
 }
@@ -332,6 +1450,141 @@ export interface V1UpdateProjectVariablesResponse {
   /** Variables that were created or updated by the request. */
   variables?: V1ProjectVariable[];
 }
+
+export interface V1UpdateServiceResponse {
+  service?: V1Service;
+}
+
+export interface V1UpdateUserPreferencesRequest {
+  preferences?: V1UserPreferences;
+}
+
+export interface V1UpdateUserPreferencesResponse {
+  preferences?: V1UserPreferences;
+}
+
+export interface V1User {
+  id?: string;
+  email?: string;
+  displayName?: string;
+  photoUrl?: string;
+  quotas?: V1UserQuotas;
+  createdOn?: string;
+  updatedOn?: string;
+}
+
+export interface V1UserAuthToken {
+  id?: string;
+  displayName?: string;
+  authClientId?: string;
+  authClientDisplayName?: string;
+  representingUserId?: string;
+  prefix?: string;
+  createdOn?: string;
+  expiresOn?: string;
+  usedOn?: string;
+}
+
+export interface V1UserPreferences {
+  timeZone?: string;
+}
+
+export interface V1UserQuotas {
+  singleuserOrgs?: number;
+  trialOrgs?: number;
+}
+
+export interface V1Usergroup {
+  groupId?: string;
+  groupName?: string;
+  groupDescription?: string;
+  managed?: boolean;
+  createdOn?: string;
+  updatedOn?: string;
+}
+
+export interface V1UsergroupMemberUser {
+  userId?: string;
+  userEmail?: string;
+  userName?: string;
+  userPhotoUrl?: string;
+  createdOn?: string;
+  updatedOn?: string;
+}
+
+export interface V1VirtualFile {
+  path?: string;
+  data?: string;
+  deleted?: boolean;
+  updatedOn?: string;
+}
+
+export interface V1WhitelistedDomain {
+  domain?: string;
+  role?: string;
+}
+
+export type AdminServiceUpdateBillingSubscriptionBodyBody = {
+  planName?: string;
+  superuserForceAccess?: boolean;
+};
+
+export type AdminServiceTriggerReconcileBodyBody = { [key: string]: unknown };
+
+export type AdminServiceSetProjectMemberUserRoleBodyBody = {
+  role?: string;
+};
+
+export type AdminServiceCreateProjectWhitelistedDomainBodyBody = {
+  domain?: string;
+  role?: string;
+};
+
+export type AdminServiceCreateAlertBodyBody = {
+  options?: V1AlertOptions;
+};
+
+export type AdminServiceCreateReportBodyBody = {
+  options?: V1ReportOptions;
+};
+
+export type AdminServiceCreateUsergroupBodyBody = {
+  name?: string;
+};
+
+export type AdminServiceGetDeploymentBodyAttributes = {
+  [key: string]: unknown;
+};
+
+export type AdminServiceGetDeploymentBody = {
+  accessTokenTtlSeconds?: number;
+  userId?: string;
+  userEmail?: string;
+  attributes?: AdminServiceGetDeploymentBodyAttributes;
+};
+
+/**
+ * Arguments for the provisioner call.
+ */
+export type AdminServiceProvisionBodyArgs = { [key: string]: unknown };
+
+export type AdminServiceProvisionBody = {
+  /** Type of resource to provision. */
+  type?: string;
+  /** Name of the resource to provision.
+It forms a unique key together with deployment and type, which is used to de-duplicate provision requests. */
+  name?: string;
+  /** Arguments for the provisioner call. */
+  args?: AdminServiceProvisionBodyArgs;
+};
+
+export type AdminServiceTriggerRefreshSourcesBody = {
+  sources?: string[];
+};
+
+export type AdminServiceGetGithubRepoStatusParams = {
+  remote?: string;
+};
 
 export type AdminServiceListOrganizationsParams = {
   pageSize?: number;
@@ -351,6 +1604,29 @@ export type AdminServiceUpdateOrganizationBody = {
   thumbnailAssetId?: string;
   defaultProjectRole?: string;
   billingEmail?: string;
+};
+
+export type AdminServiceListOrganizationBillingIssuesParams = {
+  superuserForceAccess?: boolean;
+};
+
+export type AdminServiceGetPaymentsPortalURLParams = {
+  returnUrl?: string;
+  superuserForceAccess?: boolean;
+};
+
+export type AdminServiceGetBillingSubscriptionParams = {
+  superuserForceAccess?: boolean;
+};
+
+export type AdminServiceCancelBillingSubscriptionParams = {
+  superuserForceAccess?: boolean;
+};
+
+export type AdminServiceCreateManagedGitRepoBody = {
+  /** name of the repo to create. 
+Note: The final name will be suffixed with a random string to ensure uniqueness. */
+  name?: string;
 };
 
 export type AdminServiceListOrganizationInvitesParams = {
@@ -376,6 +1652,152 @@ export type AdminServiceAddOrganizationMemberUserBody = {
   email?: string;
   role?: string;
   superuserForceAccess?: boolean;
+};
+
+export type AdminServiceSetOrganizationMemberUserRoleBody = {
+  role?: string;
+  superuserForceAccess?: boolean;
+};
+
+export type AdminServiceListProjectMemberUsergroupsParams = {
+  /**
+   * Optionally filter by role
+   */
+  role?: string;
+  pageSize?: number;
+  pageToken?: string;
+};
+
+export type AdminServiceListProjectsForOrganizationAndUserParams = {
+  userId?: string;
+  pageSize?: number;
+  pageToken?: string;
+};
+
+export type AdminServiceGetCloneCredentialsParams = {
+  superuserForceAccess?: boolean;
+};
+
+export type AdminServiceConnectProjectToGithubBody = {
+  remote?: string;
+  branch?: string;
+  subpath?: string;
+  force?: boolean;
+};
+
+export type AdminServiceGetDeploymentCredentialsBodyAttributes = {
+  [key: string]: unknown;
+};
+
+export type AdminServiceGetDeploymentCredentialsBody = {
+  branch?: string;
+  ttlSeconds?: number;
+  userId?: string;
+  userEmail?: string;
+  attributes?: AdminServiceGetDeploymentCredentialsBodyAttributes;
+};
+
+export type AdminServiceHibernateProjectParams = {
+  superuserForceAccess?: boolean;
+};
+
+/**
+ * If set, will use the provided attributes outright.
+ */
+export type AdminServiceGetIFrameBodyAttributes = { [key: string]: unknown };
+
+/**
+ * DEPRECATED: Additional parameters to set outright in the generated URL query.
+ */
+export type AdminServiceGetIFrameBodyQuery = { [key: string]: string };
+
+/**
+ * GetIFrameRequest is the request payload for AdminService.GetIFrame.
+ */
+export type AdminServiceGetIFrameBody = {
+  /** Branch to embed. If not set, the production branch is used. */
+  branch?: string;
+  /** TTL for the iframe's access token. If not set, defaults to 24 hours. */
+  ttlSeconds?: number;
+  /** If set, will use the attributes of the user with this ID. */
+  userId?: string;
+  /** If set, will generate attributes corresponding to a user with this email. */
+  userEmail?: string;
+  /** If set, will use the provided attributes outright. */
+  attributes?: AdminServiceGetIFrameBodyAttributes;
+  /** Type of resource to embed. If not set, defaults to "rill.runtime.v1.Explore". */
+  type?: string;
+  /** Deprecated: Alias for `type`. */
+  kind?: string;
+  /** Name of the resource to embed. This should identify a resource that is valid for embedding, such as a dashboard or component. */
+  resource?: string;
+  /** Theme to use for the embedded resource. */
+  theme?: string;
+  /** Navigation denotes whether navigation between different resources should be enabled in the embed. */
+  navigation?: boolean;
+  /** Blob containing UI state for rendering the initial embed. Not currently supported. */
+  state?: string;
+  /** DEPRECATED: Additional parameters to set outright in the generated URL query. */
+  query?: AdminServiceGetIFrameBodyQuery;
+};
+
+export type AdminServiceListProjectInvitesParams = {
+  pageSize?: number;
+  pageToken?: string;
+};
+
+export type AdminServiceListProjectMemberUsersParams = {
+  /**
+   * Optionally filter by role
+   */
+  role?: string;
+  pageSize?: number;
+  pageToken?: string;
+  superuserForceAccess?: boolean;
+};
+
+export type AdminServiceAddProjectMemberUserBody = {
+  email?: string;
+  role?: string;
+};
+
+export type AdminServiceRedeployProjectParams = {
+  superuserForceAccess?: boolean;
+};
+
+export type AdminServiceUnsubscribeReportBody = {
+  email?: string;
+  slackUser?: string;
+};
+
+export type AdminServiceListMagicAuthTokensParams = {
+  pageSize?: number;
+  pageToken?: string;
+};
+
+export type AdminServiceIssueMagicAuthTokenBody = {
+  /** TTL for the token in minutes. Set to 0 for no expiry. Defaults to no expiry. */
+  ttlMinutes?: string;
+  /** Type of resource to grant access to. */
+  resourceType?: string;
+  /** Name of the resource to grant access to. */
+  resourceName?: string;
+  filter?: V1Expression;
+  /** Optional list of fields to limit access to. If empty, no field access rule will be added.
+This will be translated to a rill.runtime.v1.SecurityRuleFieldAccess, which currently applies to dimension and measure names for explores and metrics views. */
+  fields?: string[];
+  /** Optional state to store with the token. Can be fetched with GetCurrentMagicAuthToken. */
+  state?: string;
+  /** Optional display name to store with the token. */
+  displayName?: string;
+  /** list of resources to grant access to. */
+  resources?: V1ResourceName[];
+};
+
+export type AdminServiceSearchProjectUsersParams = {
+  emailQuery?: string;
+  pageSize?: number;
+  pageToken?: string;
 };
 
 export type AdminServiceGetProjectVariablesParams = {
@@ -408,6 +1830,47 @@ It is NOT NECESSARY to pass all variables, existing variables not included in th
   variables?: AdminServiceUpdateProjectVariablesBodyVariables;
   /** Variables to delete. */
   unsetVariables?: string[];
+};
+
+export type AdminServiceListOrganizationMemberUsergroupsParams = {
+  /**
+   * Optionally filter by role
+   */
+  role?: string;
+  /**
+   * Optionally include counts
+   */
+  includeCounts?: boolean;
+  pageSize?: number;
+  pageToken?: string;
+};
+
+export type AdminServiceListUsergroupsForOrganizationAndUserParams = {
+  userId?: string;
+  pageSize?: number;
+  pageToken?: string;
+};
+
+export type AdminServiceGetUsergroupParams = {
+  pageSize?: number;
+  pageToken?: string;
+};
+
+export type AdminServiceEditUsergroupBody = {
+  description?: string;
+};
+
+export type AdminServiceListUsergroupMemberUsersParams = {
+  pageSize?: number;
+  pageToken?: string;
+};
+
+export type AdminServiceCreateAssetBody = {
+  type?: string;
+  name?: string;
+  extension?: string;
+  public?: boolean;
+  estimatedSizeBytes?: string;
 };
 
 export type AdminServiceListProjectsForOrganizationParams = {
@@ -456,4 +1919,156 @@ export type AdminServiceUpdateProjectBody = {
   prodTtlSeconds?: string;
   prodVersion?: string;
   superuserForceAccess?: boolean;
+};
+
+export type AdminServiceListDeploymentsParams = {
+  environment?: string;
+  userId?: string;
+};
+
+export type AdminServiceCreateDeploymentBody = {
+  environment?: string;
+};
+
+export type AdminServiceCreateServiceBodyAttributes = {
+  [key: string]: unknown;
+};
+
+export type AdminServiceCreateServiceBody = {
+  name?: string;
+  orgRoleName?: string;
+  projectName?: string;
+  projectRoleName?: string;
+  attributes?: AdminServiceCreateServiceBodyAttributes;
+};
+
+export type AdminServiceUpdateServiceBodyAttributes = {
+  [key: string]: unknown;
+};
+
+export type AdminServiceUpdateServiceBody = {
+  newName?: string;
+  attributes?: AdminServiceUpdateServiceBodyAttributes;
+};
+
+export type AdminServiceListProjectsForUserByNameParams = {
+  name?: string;
+};
+
+export type AdminServiceListProjectsForFingerprintParams = {
+  directoryName?: string;
+  gitRemote?: string;
+  subPath?: string;
+  rillMgdGitRemote?: string;
+};
+
+export type AdminServiceGetAlertMetaBodyAnnotations = { [key: string]: string };
+
+export type AdminServiceGetAlertMetaBody = {
+  alert?: string;
+  annotations?: AdminServiceGetAlertMetaBodyAnnotations;
+  queryForUserId?: string;
+  queryForUserEmail?: string;
+};
+
+export type AdminServicePullVirtualRepoParams = {
+  /**
+ * The environment to pull virtual files for.
+It is optional. If the call is made with a deployment access token, it defaults to the environment of the deployment. Otherwise, it defaults to "prod".
+ */
+  environment?: string;
+  /**
+   * Page size for pagination.
+   */
+  pageSize?: number;
+  /**
+   * Page token for pagination.
+   */
+  pageToken?: string;
+};
+
+export type AdminServiceGetReportMetaBody = {
+  report?: string;
+  ownerId?: string;
+  executionTime?: string;
+  emailRecipients?: string[];
+  anonRecipients?: boolean;
+  resources?: V1ResourceName[];
+  webOpenMode?: string;
+  whereFilterJson?: string;
+  accessibleFields?: string[];
+};
+
+export type AdminServiceSearchProjectNamesParams = {
+  namePattern?: string;
+  /**
+   * This is a request variable of the map type. The query format is "map_name[key]=value", e.g. If the map name is Age, the key type is string, and the value type is integer, the query parameter is expressed as Age["bob"]=18
+   */
+  annotations?: string;
+  pageSize?: number;
+  pageToken?: string;
+};
+
+export type AdminServiceSudoGetResourceParams = {
+  userId?: string;
+  orgId?: string;
+  projectId?: string;
+  deploymentId?: string;
+  instanceId?: string;
+};
+
+export type AdminServiceGetUserParams = {
+  email?: string;
+};
+
+export type AdminServiceRevokeUserAuthTokenParams = {
+  /**
+   * Flag for superusers to override normal access checks.
+   */
+  superuserForceAccess?: boolean;
+};
+
+export type AdminServiceDeleteUserParams = {
+  superuserForceAccess?: boolean;
+};
+
+export type AdminServiceListUserAuthTokensParams = {
+  /**
+   * Page size for pagination. If not set, a default page size will be used.
+   */
+  pageSize?: number;
+  /**
+   * Page token for pagination. If set, the first page of results will be returned.
+   */
+  pageToken?: string;
+  /**
+   * Flag for superusers to override normal access checks.
+   */
+  superuserForceAccess?: boolean;
+};
+
+export type AdminServiceIssueUserAuthTokenBody = {
+  /** Client ID to issue the token for. */
+  clientId?: string;
+  /** Optional display name for the auth token. */
+  displayName?: string;
+  /** Optional TTL for the auth token in minutes. Set to 0 for no expiry. Defaults to no expiry. */
+  ttlMinutes?: string;
+  /** Optional email of another user to assume the identity of.
+This is only allowed for superusers. */
+  representEmail?: string;
+  /** Flag for superusers to override normal access checks. */
+  superuserForceAccess?: boolean;
+};
+
+export type AdminServiceListBookmarksParams = {
+  projectId?: string;
+  resourceKind?: string;
+  resourceName?: string;
+};
+
+export type AdminServiceSearchUsersParams = {
+  emailPattern?: string;
+  pageSize?: number;
+  pageToken?: string;
 };
