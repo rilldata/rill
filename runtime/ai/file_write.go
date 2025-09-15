@@ -40,7 +40,20 @@ func (t *WriteFile) CheckAccess(claims *runtime.SecurityClaims) bool {
 func (t *WriteFile) Handler(ctx context.Context, args *WriteFileArgs) (*WriteFileResult, error) {
 	s := GetSession(ctx)
 
+	if !strings.HasPrefix(args.Path, "/") {
+		args.Path = "/" + args.Path
+	}
+
 	err := t.Runtime.PutFile(ctx, s.InstanceID(), args.Path, strings.NewReader(args.Contents), true, false)
+	if err != nil {
+		return nil, err
+	}
+
+	ctrl, err := t.Runtime.Controller(ctx, s.InstanceID())
+	if err != nil {
+		return nil, err
+	}
+	err = ctrl.Reconcile(ctx, runtime.GlobalProjectParserName) // TODO: Only if not streaming
 	if err != nil {
 		return nil, err
 	}
@@ -49,15 +62,6 @@ func (t *WriteFile) Handler(ctx context.Context, args *WriteFileArgs) (*WriteFil
 	case <-time.After(time.Millisecond * 500):
 	case <-ctx.Done():
 		return nil, ctx.Err()
-	}
-
-	ctrl, err := t.Runtime.Controller(ctx, s.InstanceID())
-	if err != nil {
-		return nil, err
-	}
-	err = ctrl.WaitUntilIdle(ctx, true)
-	if err != nil {
-		return nil, err
 	}
 
 	p, err := ctrl.Get(ctx, runtime.GlobalProjectParserName, false)
@@ -70,6 +74,11 @@ func (t *WriteFile) Handler(ctx context.Context, args *WriteFileArgs) (*WriteFil
 				ParseError: pe.Message,
 			}, nil
 		}
+	}
+
+	err = ctrl.WaitUntilIdle(ctx, true)
+	if err != nil {
+		return nil, err
 	}
 
 	rs, err := ctrl.List(ctx, "", args.Path, false)
@@ -85,7 +94,7 @@ func (t *WriteFile) Handler(ctx context.Context, args *WriteFileArgs) (*WriteFil
 		resources = append(resources, map[string]any{
 			"kind":             r.Meta.Name.Kind,
 			"name":             r.Meta.Name.Name,
-			"reconcile_status": r.Meta.ReconcileStatus,
+			"reconcile_status": r.Meta.ReconcileStatus.String(),
 			"reconcile_error":  r.Meta.ReconcileError,
 		})
 	}

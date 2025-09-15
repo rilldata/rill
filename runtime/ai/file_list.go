@@ -75,7 +75,7 @@ func (t *ListFiles) Handler(ctx context.Context, args *ListFilesArgs) (*ListFile
 			resources = append(resources, map[string]any{
 				"kind":             r.Meta.Name.Kind,
 				"name":             r.Meta.Name.Name,
-				"reconcile_status": r.Meta.ReconcileStatus,
+				"reconcile_status": r.Meta.ReconcileStatus.String(),
 				"reconcile_error":  r.Meta.ReconcileError,
 			})
 		}

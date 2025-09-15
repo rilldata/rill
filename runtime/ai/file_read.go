@@ -2,6 +2,7 @@ package ai
 
 import (
 	"context"
+	"strings"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/rilldata/rill/runtime"
@@ -35,6 +36,10 @@ func (t *ReadFile) CheckAccess(claims *runtime.SecurityClaims) bool {
 
 func (t *ReadFile) Handler(ctx context.Context, args *ReadFileArgs) (*ReadFileResult, error) {
 	s := GetSession(ctx)
+
+	if !strings.HasPrefix(args.Path, "/") {
+		args.Path = "/" + args.Path
+	}
 
 	blob, _, err := t.Runtime.GetFile(ctx, s.InstanceID(), args.Path)
 	if err != nil {

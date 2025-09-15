@@ -6,11 +6,9 @@ import (
 	"github.com/rilldata/rill/runtime/ai"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
-
-	_ "github.com/rilldata/rill/runtime/resolvers"
 )
 
-func TestRouter(t *testing.T) {
+func TestAnalystBasic(t *testing.T) {
 	// Setup a basic metrics view with an "event_time" time dimension, "country" dimension, and "count" and "revenue" measures.
 	rt, instanceID, s := newEval(t, testruntime.InstanceOptions{
 		TestConnectors: []string{"openai"},

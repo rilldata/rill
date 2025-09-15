@@ -18,6 +18,8 @@ import (
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
+
+	_ "github.com/rilldata/rill/runtime/resolvers"
 )
 
 // newEval sets up a new runtime instance and AI chat session for it.

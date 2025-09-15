@@ -41,6 +41,12 @@ func NewRunner(rt *runtime.Runtime) *Runner {
 	RegisterTool(r, &QueryMetricsViewTimeRange{Runtime: rt})
 	RegisterTool(r, &QueryMetricsView{Runtime: rt})
 
+	RegisterTool(r, &DevelopModel{Runtime: rt})
+	RegisterTool(r, &DevelopMetricsView{Runtime: rt})
+	RegisterTool(r, &ListFiles{Runtime: rt})
+	RegisterTool(r, &ReadFile{Runtime: rt})
+	RegisterTool(r, &WriteFile{Runtime: rt})
+
 	return r
 }
 
