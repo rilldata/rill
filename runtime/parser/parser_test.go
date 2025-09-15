@@ -1643,6 +1643,7 @@ theme:
 				},
 				FiltersEnabled:       true,
 				AllowCustomTimeRange: true,
+				AllowFilterAdd:       true,
 			},
 		},
 	}
