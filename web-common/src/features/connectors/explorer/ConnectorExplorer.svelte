@@ -34,7 +34,7 @@
   {:else if data?.connectors}
     {#if data.connectors.length === 0}
       <span class="message">
-        No connectors found. Add data to get started!
+        No tables found. Add data to get started!
       </span>
     {:else}
       <ol transition:slide={{ duration }}>
