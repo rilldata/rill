@@ -109,6 +109,15 @@ func (c *ConfigProperties) ResolveDSN() (string, error) {
 		return c.DSN, nil
 	}
 
+	var userInfo *url.Userinfo
+	if c.User != "" {
+		if c.Password != "" {
+			userInfo = url.UserPassword(c.User, c.Password)
+		} else {
+			userInfo = url.User(c.User)
+		}
+	}
+
 	host := c.Host
 	if host == "" {
 		host = "localhost"
@@ -117,38 +126,32 @@ func (c *ConfigProperties) ResolveDSN() (string, error) {
 		host = fmt.Sprintf("%s:%d", host, c.Port)
 	}
 
-	var userInfo string
-	if c.User != "" {
-		userInfo = escape(c.User)
-		if c.Password != "" {
-			userInfo += ":" + escape(c.Password)
-		}
-		userInfo += "@"
-	}
-
-	path := ""
+	var path string
 	if c.Database != "" {
-		path = "/" + escape(c.Database)
+		path = "/" + c.Database
+	}
+	u := &url.URL{
+		Scheme: "mysql",
+		User:   userInfo,
+		Host:   host,
+		Path:   path,
 	}
 
+	dsn := enocodeExtra(u.String())
 	query := url.Values{}
 	if c.SSLMode != "" {
 		query.Set("ssl-mode", c.SSLMode)
+		dsn = fmt.Sprintf("%s?%s", dsn, query.Encode())
 	}
-
-	dsn := fmt.Sprintf("mysql://%s%s%s", userInfo, host, path)
-	if q := query.Encode(); q != "" {
-		dsn += "?" + q
-	}
-
 	return dsn, nil
 }
 
-func escape(s string) string {
+// enocodeExtra convert & and = in the string to it's hex code. Required because duckdb does not handle properly.
+func enocodeExtra(s string) string {
 	var buf strings.Builder
 	for i := 0; i < len(s); i++ {
 		b := s[i]
-		if b == '@' || b == '/' || b == '?' || b == ':' || b == '&' || b == '=' {
+		if b == '&' || b == '=' {
 			buf.WriteString(fmt.Sprintf("%%%02X", b))
 		} else {
 			buf.WriteByte(b)
