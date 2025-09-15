@@ -177,7 +177,7 @@
     <Dialog.Content
       class={cn(
         "overflow-hidden",
-        step === 2 ? "max-w-4xl p-0 gap-0" : "max-w-4xl p-6 gap-4",
+        step === 2 ? "max-w-4xl p-0 gap-0" : "max-w-2xl md:max-w-3xl lg:max-w-4xl p-6 gap-4",
       )}
       noClose={step === 1}
     >
@@ -288,7 +288,7 @@
   }
 
   .connector-grid {
-    @apply grid grid-cols-4 gap-4;
+    @apply grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4;
   }
 
   .connector-tile-button {
