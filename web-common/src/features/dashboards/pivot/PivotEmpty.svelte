@@ -19,7 +19,7 @@
       Need help? Reach out to us on <a
         target="_blank"
         rel="noopener"
-        href="https://discord.gg/TatjVY32">Discord</a
+        href="https://discord.gg/2ubRfjC7Rh">Discord</a
       >
     </div>
   {:else if hasColumnAndNoMeasure}

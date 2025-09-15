@@ -39,7 +39,7 @@
     </svelte:fragment>
   </ProjectAccessControls>
   <p class="text-gray-500">
-    Need help? Reach out to us on <a href="https://discord.gg/TatjVY32"
+    Need help? Reach out to us on <a href="https://discord.gg/2ubRfjC7Rh"
       >Discord</a
     >
   </p>
