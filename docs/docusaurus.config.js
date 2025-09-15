@@ -437,6 +437,14 @@ const config = {
             from: '/integrate/custom-apis',
             to: '/build/custom-apis'
           },
+          {
+            from: '/explore/filters/filters',
+            to: '/explore/filters'
+          },
+          {
+            from: '/explore/filters/time-series',
+            to: '/explore/time-series'
+          },
           // {
           //   from: '/old-page',
           //   to: '/new-page',

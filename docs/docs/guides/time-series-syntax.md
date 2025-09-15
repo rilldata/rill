@@ -1,8 +1,7 @@
 ---
 title: "Time Series Filter"
-sidebar_label: "Time Series Filter"
+sidebar_label: "Time Series Syntax"
 hide_table_of_contents: false
-sidebar_position: 07
 tags:
     - Quickstart
     - Tutorial
@@ -160,15 +159,53 @@ This happens because the end date uses `now` (wallclock time) instead of a snapp
 
 **Solution:** Always specify the reference point explicitly
 
-## Time Comparisons
 
-## Filter by Scrubbing 
+<!-- 
+Unsure if defaults is added in this release
+### Duration-Based Ranges (Recommended)
 
-For a specific view into your time series graph, you can interactively scrub directly on the time series graph. 
+These are the most intuitive and commonly used patterns:
 
+```
+time_ranges:
+    # Last 7 calendar days
+    - 7d as of now/d
 
-<img src = '/img/explore/filters/scrub-graph.gif' class='rounded-gif' />
-<br />
+    # Last 30 calendar days  
+    - 30d as of now/d
 
-This allows the ability for a more detailed view into your time series without having to change the overall time series filter for quick access to measures. 
+    # Last 4 hours
+    - 4h as of now/h
 
+    # Last 2 weeks
+    - 14d as of now/d
+```
+
+### Fixed-Point Ranges
+
+Use these when you need specific start/end points:
+
+```
+time_ranges:
+    # From start of yesterday to start of today
+    - -1d/d to now/d
+
+    # From 4 days ago (wallclock) to start of current day
+    - -4d to now/d
+
+    # From start of day 4 days ago to start of current day
+    - -4d/d to now/d
+```
+
+### Data-Relative Ranges
+
+When working with data that might be stale:
+
+```
+time_ranges:
+    # Last 7 days relative to latest data
+    - 7d as of latest/d
+
+    # Last 30 days relative to latest data
+    - 30d as of latest/d
+``` -->
