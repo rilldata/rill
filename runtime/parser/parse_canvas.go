@@ -549,4 +549,3 @@ func isValidCanvasDimensionFilterMode(mode string) bool {
 		return false
 	}
 }
-
