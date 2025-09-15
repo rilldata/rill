@@ -113,7 +113,9 @@ export async function submitAddConnectorForm(
   );
   await runtimeServicePutFile(instanceId, {
     path: newConnectorFilePath,
-    blob: compileConnectorYAML(connector, formValues),
+    blob: compileConnectorYAML(connector, formValues, {
+      connectorInstanceName: newConnectorName,
+    }),
     create: true,
     createOnly: false,
   });
@@ -145,6 +147,7 @@ export async function submitAddConnectorForm(
     connector,
     formValues,
     "connector",
+    newConnectorName,
   );
   await runtimeServicePutFileAndWaitForReconciliation(instanceId, {
     path: ".env",
