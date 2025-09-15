@@ -27,8 +27,7 @@ export function extractGithubConnectError(err: AxiosError<RpcStatus>) {
     err.response.data?.message?.includes("name already exists on this account")
   ) {
     return {
-      message:
-        "This repo already exists. Please provide a subpath or choose a new repo name.",
+      message: "This repo already exists. Please choose a new repo name.",
     };
   }
 

@@ -428,6 +428,14 @@ func (s *Server) ConnectProjectToGithub(ctx context.Context, req *adminv1.Connec
 		return nil, err
 	}
 
+	// Mark the project as transferred so that the local project folder can detect the correct remote project
+	if proj.ManagedGitRepoID != nil && proj.GitRemote != nil {
+		_, err = s.admin.DB.InsertGitRepoTransfer(ctx, *proj.GitRemote, req.Remote)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return &adminv1.ConnectProjectToGithubResponse{}, nil
 }
 
