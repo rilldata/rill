@@ -25,7 +25,7 @@ Rill offers flexible connection strategies to fit different data architectures a
 
 - ### _[Bring Your Own OLAP (BYO OLAP)](/connect/olap)_: 
   
-  For large-scale datasets (100GB+) or existing OLAP infrastructure, connect to existing **ClickHouse**, **Druid**, **Pinot**, or **MotherDuck** instances. Use Rill's "live connectors" to ingest data directly into your OLAP engines.
+  For large-scale datasets (100GB+) or existing [OLAP infrastructure](/connect/olap#what-is-olap), connect to existing **ClickHouse**, **Druid**, **Pinot**, or **MotherDuck** instances. Use Rill's "live connectors" to ingest data directly into your OLAP engines.
 
 ## OLAP Engines
 
@@ -199,7 +199,7 @@ Rill is continually evaluating additional OLAP engines that can be added. For a 
 </div>
 
 ## Other Data Connectors
-
+### DuckDB as a Source
 ### Google Sheets
 ### HTTPS
 ### Local File
@@ -207,7 +207,13 @@ Rill is continually evaluating additional OLAP engines that can be added. For a 
 
 
 <div className="connector-icon-grid">
-
+  <ConnectorIcon
+    icon={<img src="/img/connect/icons/Logo-DuckDB-icon.svg" alt="DuckDB" className="duckdb-icon"/>}
+    header="DuckDB"
+    content="Connect your local DuckDB database to Rill's embedded database."
+    link="/connect/data-source/duckdb"
+    linkLabel="Learn more"
+  />
   <ConnectorIcon
     icon={<img src="/img/connect/icons/Logo-Sheets.svg" alt="Google Sheets" className="sheets-icon" />}
     header="Google Sheets"
@@ -257,7 +263,7 @@ We're constantly adding new data connectors. If you don't see what you need, [le
     icon={<img src="/img/connect/icons/Logo-AI.svg" alt="AI" className="sheets-icon" />}
     header="AI"
     content="Define your own OpenAI Connector and define your own API key."
-    link="/build/metrics-view/#creating-metrics-with-ai"
+    link="/build/metrics-view/#creating-metric-views-with-ai"
     linkLabel="Learn more"
     referenceLink="ai"
   />

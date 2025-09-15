@@ -25,6 +25,7 @@ rill project refresh [<project-name>] [flags]
       --metrics-view strings   Refresh a metrics view
       --alert strings          Refresh an alert
       --report strings         Refresh a report
+      --connector strings      Re-validate a connector
       --parser                 Refresh the parser (forces a pull from Github)
 ```
 

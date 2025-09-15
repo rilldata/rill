@@ -98,7 +98,10 @@ func StatusCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			res, err := rt.ListResources(cmd.Context(), &runtimev1.ListResourcesRequest{InstanceId: instanceID})
+			res, err := rt.ListResources(cmd.Context(), &runtimev1.ListResourcesRequest{
+				InstanceId:         instanceID,
+				SkipSecurityChecks: true,
+			})
 			if err != nil {
 				return fmt.Errorf("failed to list resources: %w", err)
 			}

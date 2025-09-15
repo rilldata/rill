@@ -13,7 +13,7 @@ import (
 func RefreshCmd(ch *cmdutil.Helper) *cobra.Command {
 	var project, path string
 	var local bool
-	var models, modelPartitions, sources, alerts, reports, metricViews []string
+	var models, modelPartitions, sources, metricViews, alerts, reports, connectors []string
 	var all, full, erroredPartitions, parser bool
 
 	refreshCmd := &cobra.Command{
@@ -66,8 +66,8 @@ func RefreshCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			// Build non-model resources
 			var resources []*runtimev1.ResourceName
-			for _, s := range sources {
-				resources = append(resources, &runtimev1.ResourceName{Kind: runtime.ResourceKindSource, Name: s})
+			for _, v := range metricViews {
+				resources = append(resources, &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: v})
 			}
 			for _, a := range alerts {
 				resources = append(resources, &runtimev1.ResourceName{Kind: runtime.ResourceKindAlert, Name: a})
@@ -75,9 +75,12 @@ func RefreshCmd(ch *cmdutil.Helper) *cobra.Command {
 			for _, r := range reports {
 				resources = append(resources, &runtimev1.ResourceName{Kind: runtime.ResourceKindReport, Name: r})
 			}
-			for _, v := range metricViews {
-				resources = append(resources, &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: v})
+			for _, c := range connectors {
+				resources = append(resources, &runtimev1.ResourceName{Kind: runtime.ResourceKindConnector, Name: c})
 			}
+
+			// Merge sources into models since sources have been deprecated and are no longer created on the backend.
+			models = append(models, sources...)
 
 			// Build model triggers
 			if len(modelPartitions) > 0 || erroredPartitions {
@@ -153,6 +156,7 @@ func RefreshCmd(ch *cmdutil.Helper) *cobra.Command {
 	refreshCmd.Flags().StringSliceVar(&metricViews, "metrics-view", nil, "Refresh a metrics view")
 	refreshCmd.Flags().StringSliceVar(&alerts, "alert", nil, "Refresh an alert")
 	refreshCmd.Flags().StringSliceVar(&reports, "report", nil, "Refresh a report")
+	refreshCmd.Flags().StringSliceVar(&connectors, "connector", nil, "Re-validate a connector")
 	refreshCmd.Flags().BoolVar(&parser, "parser", false, "Refresh the parser (forces a pull from Github)")
 
 	return refreshCmd

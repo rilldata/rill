@@ -6,8 +6,7 @@
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { flexRender, type Row } from "@tanstack/svelte-table";
-  import { createEventDispatcher } from "svelte";
+  import { flexRender } from "@tanstack/svelte-table";
   import Table from "../../../components/table/Table.svelte";
   import DashboardsTableCompositeCell from "./DashboardsTableCompositeCell.svelte";
   import { useDashboards } from "./selectors";
@@ -102,12 +101,6 @@
     lastRefreshed: false,
     description: false,
   };
-
-  const dispatch = createEventDispatcher();
-
-  function handleClickRow(e: CustomEvent<Row<V1Resource>>) {
-    dispatch("select-resource", e.detail.original.meta.name);
-  }
 </script>
 
 {#if isLoading}
@@ -125,13 +118,7 @@
       </svelte:fragment>
     </NoResourceCTA>
   {:else}
-    <Table
-      kind="dashboard"
-      data={dashboardsData}
-      {columns}
-      {columnVisibility}
-      on:click-row={handleClickRow}
-    >
+    <Table kind="dashboard" data={dashboardsData} {columns} {columnVisibility}>
       <ResourceHeader kind="dashboard" icon={ExploreIcon} slot="header" />
     </Table>
   {/if}

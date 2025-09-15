@@ -156,6 +156,7 @@ Rill supports connecting your data to both [DuckDB](/connect/olap/duckdb) and [C
 
 ## Other Data Connectors
 
+### DuckDB
 ### Google Sheets
 ### HTTPS
 ### Local File
@@ -164,6 +165,13 @@ Rill supports connecting your data to both [DuckDB](/connect/olap/duckdb) and [C
 
 
 <div className="connector-icon-grid">
+  <ConnectorIcon
+    icon={<img src="/img/connect/icons/Logo-DuckDB-icon.svg" alt="DuckDB" className="duckdb-icon" />}
+    header="DuckDB"
+    content="Connect your local DuckDB database to Rill's embedded database."
+    link="/connect/data-source/duckdb"
+    linkLabel="Learn more"
+  />
   <ConnectorIcon
     icon={<img src="/img/connect/icons/Logo-Sheets.svg" alt="Google Sheets" className="sheets-icon" />}
     header="Google Sheets"
@@ -210,6 +218,9 @@ If you have a firewall in front of your externally hosted service, you will need
 35.237.60.193
 ```
 
+<!-- ## Exploring the Connectors
+
+Add content here about how to explore the connector UI -->
 
 ## Managed OLAP Engine Caveats
 
@@ -221,9 +232,9 @@ When deciding on which managed OLAP engine to use with Rill, you'll need to deci
 
 In the case of **sub 100GB of data**, we recommend keeping the default engine, DuckDB, in order to minimize the integration complexity. The reason for this is that [DuckDB has built-in functions](https://duckdb.org/docs/stable/data/data_sources) to support the connectors listed on this page. 
 
-On the other hand, if you need to analyze **100s of GB of data**, we would recommend using Managed ClickHouse. This will add some complexity ([staging tables](/build/advanced-models/staging)), but will in turn provide better dashboard performance. 
+On the other hand, if you need to analyze **100s of GB of data**, we would recommend using Managed ClickHouse. This will add some complexity ([staging tables](/build/models/staging-models)), but will in turn provide better dashboard performance. 
 
-If data leans either way, a good deciding factor for which OLAP engine to use is your **familiarity with their SQL syntax**. Whether you're [creating models](/build/models#intermediate-processing) or using [arithmetic functions](/build/metrics-view/advanced-expressions) in the metrics view, you'll need to utilize the engine's built-in functions.
+If data leans either way, a good deciding factor for which OLAP engine to use is your **familiarity with their SQL syntax**. Whether you're [creating models](/build/models/models-101#intermediate-processing) or using [arithmetic functions](/build/metrics-view/advanced-expressions) in the metrics view, you'll need to utilize the engine's built-in functions.
 
 
 :::note Supported Connectors

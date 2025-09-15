@@ -31,7 +31,7 @@ import { ResourceKind } from "../../entity-management/resource-selectors";
 import { EntityType } from "../../entity-management/types";
 import { EMPTY_PROJECT_TITLE } from "../../welcome/constants";
 import { isProjectInitialized } from "../../welcome/is-project-initialized";
-import { compileSourceYAML, maybeRewriteToDuckDb } from "../sourceUtils";
+import { compileSourceYAML, prepareSourceFormData } from "../sourceUtils";
 import { OLAP_ENGINES } from "./constants";
 
 interface AddDataFormValues {
@@ -51,7 +51,7 @@ export async function submitAddSourceForm(
   const instanceId = get(runtime).instanceId;
   await beforeSubmitForm(instanceId);
 
-  const [rewrittenConnector, rewrittenFormValues] = maybeRewriteToDuckDb(
+  const [rewrittenConnector, rewrittenFormValues] = prepareSourceFormData(
     connector,
     formValues,
   );

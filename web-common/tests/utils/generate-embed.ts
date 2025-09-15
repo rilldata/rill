@@ -8,6 +8,7 @@ export async function generateEmbed(
   organization: string,
   project: string,
   resourceName: string,
+  resourceType: string,
   serviceToken: string,
 ): Promise<void> {
   try {
@@ -15,6 +16,7 @@ export async function generateEmbed(
       `http://localhost:8080/v1/organizations/${organization}/projects/${project}/iframe`,
       {
         resource: resourceName,
+        type: resourceType,
         navigation: true,
       },
       {

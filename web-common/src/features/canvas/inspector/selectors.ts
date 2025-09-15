@@ -24,6 +24,7 @@ export function useMetricFieldData(
   type: FieldType[],
   searchableItems: string[] | undefined = undefined,
   searchValue = "",
+  excludedValues: string[] | undefined = undefined,
 ) {
   const { spec, timeControls } = ctx.canvasEntity;
 
@@ -98,6 +99,11 @@ export function useMetricFieldData(
       const filteredItems = (
         searchableItems && searchValue ? searchableItems : items
       ).filter((item) => {
+        // Exclude items that are in the excludedValues list
+        if (excludedValues?.includes(item)) {
+          return false;
+        }
+
         const matches =
           displayMap[item]?.label
             ?.toLowerCase()

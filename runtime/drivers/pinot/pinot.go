@@ -316,8 +316,8 @@ func (c *connection) AsObjectStore() (drivers.ObjectStore, bool) {
 	return nil, false
 }
 
-func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
-	return nil, false
+func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, error) {
+	return nil, drivers.ErrNotImplemented
 }
 
 // AsModelManager implements drivers.Handle.

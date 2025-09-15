@@ -3,7 +3,6 @@
   import { page } from "$app/stores";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
-  import { Tag } from "@rilldata/web-common/components/tag";
   import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
   import { Database, Folder, PlusCircleIcon } from "lucide-svelte";
   import CaretDownIcon from "../../components/icons/CaretDownIcon.svelte";
@@ -270,7 +269,6 @@
           {/if}
         </div>
       </div>
-      <Tag height={16} color="blue">BETA</Tag>
     </DropdownMenu.Item>
     <DropdownMenu.Separator />
     <DropdownMenu.Sub>

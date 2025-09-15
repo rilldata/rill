@@ -29,7 +29,8 @@ export type SortSelectorConfig = {
 };
 
 export type ChartFieldInput = {
-  type: FieldType;
+  type: FieldType | "value";
+  excludedValues?: string[];
   axisTitleSelector?: boolean;
   hideTimeDimension?: boolean;
   originSelector?: boolean;
@@ -39,11 +40,20 @@ export type ChartFieldInput = {
   nullSelector?: boolean;
   labelAngleSelector?: boolean;
   axisRangeSelector?: boolean;
+  multiFieldSelector?: boolean;
+  /**
+   * For combo charts individual field can be a bar or line chart.
+   */
+  markTypeSelector?: boolean;
   /**
    * The default legend position for the chart.
    * If this key is not specified, legend selector will not be shown.
    */
   defaultLegendOrientation?: ChartLegend;
+  /**
+   * For measures toggle for displaying measure total value
+   */
+  totalSelector?: boolean;
 };
 
 export interface ComponentInputParam {
@@ -59,6 +69,8 @@ export interface ComponentInputParam {
     [key: string]: any;
   };
 }
+
+export type ColorMapping = { value: string; color: string }[];
 
 export interface FilterInputParam {
   type: FilterInputTypes;

@@ -11,6 +11,7 @@
   export let ghost = false;
   export let allowPointerEvents = true;
   export let editable = false;
+  export let navigationEnabled: boolean = true;
   export let onMouseDown: (e: MouseEvent) => void = () => {};
   export let onDuplicate: () => void = () => {};
   export let onDelete: () => void = () => {};
@@ -39,6 +40,7 @@
     {onDuplicate}
     {editable}
     bind:dropdownOpen={open}
+    {navigationEnabled}
   />
 
   <div

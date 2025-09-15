@@ -40,7 +40,7 @@
 
   const currentUser = createAdminServiceGetCurrentUser();
 
-  const PAGE_SIZE = 12;
+  const PAGE_SIZE = 50;
 
   $: orgMemberUsersInfiniteQuery =
     createAdminServiceListOrganizationMemberUsersInfinite(
@@ -163,6 +163,25 @@
     $orgInvitesInfiniteQuery?.data?.pages?.flatMap(
       (page) => page?.invites ?? [],
     ) ?? [];
+
+  async function ensureAllUsersLoaded() {
+    if (
+      $orgMemberUsersInfiniteQuery?.hasNextPage &&
+      !$orgMemberUsersInfiniteQuery?.isFetchingNextPage
+    ) {
+      await $orgMemberUsersInfiniteQuery.fetchNextPage();
+      // Recursively call until all pages are loaded
+      if ($orgMemberUsersInfiniteQuery?.hasNextPage) {
+        await ensureAllUsersLoaded();
+      }
+    }
+  }
+
+  // Load all users when popover opens
+  $: if (open) {
+    ensureAllUsersLoaded();
+  }
+
   $: orgMemberUsergroups =
     $listOrganizationMemberUsergroups?.data?.members ?? [];
   $: userGroupMemberUsers = $listUsergroupMemberUsers?.data?.members ?? [];

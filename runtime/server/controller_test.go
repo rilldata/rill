@@ -291,8 +291,8 @@ func createTableAsSelect(t *testing.T, rt *runtime.Runtime, instanceID, connecto
 		OutputConnector:             connector,
 		PreliminaryOutputProperties: map[string]any{"table": name},
 	}
-	me, ok := h.AsModelExecutor(instanceID, opts)
-	require.True(t, ok)
+	me, err := h.AsModelExecutor(instanceID, opts)
+	require.NoError(t, err)
 	_, err = me.Execute(context.Background(), &drivers.ModelExecuteOptions{
 		ModelExecutorOptions: opts,
 		InputProperties:      opts.PreliminaryInputProperties,

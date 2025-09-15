@@ -504,8 +504,8 @@ func TestClickhouseReadWriteMode(t *testing.T) {
 			OutputHandle:    conn,
 			OutputConnector: "clickhouse",
 		}
-		executor, ok := conn.AsModelExecutor("default", opts)
-		require.False(t, ok, "Model executor should not be available in read-only mode")
+		executor, err := conn.AsModelExecutor("default", opts)
+		require.ErrorContains(t, err, "model execution is disabled")
 		require.Nil(t, executor)
 
 		// Should not be able to get model manager in read-only mode
@@ -530,8 +530,8 @@ func TestClickhouseReadWriteMode(t *testing.T) {
 			OutputHandle:    conn,
 			OutputConnector: "clickhouse",
 		}
-		executor, ok := conn.AsModelExecutor("default", opts)
-		require.False(t, ok, "Model executor should not be available in explicit read-only mode")
+		executor, err := conn.AsModelExecutor("default", opts)
+		require.ErrorContains(t, err, "model execution is disabled")
 		require.Nil(t, executor)
 
 		// Should not be able to get model manager
@@ -556,8 +556,8 @@ func TestClickhouseReadWriteMode(t *testing.T) {
 			OutputHandle:    conn,
 			OutputConnector: "clickhouse",
 		}
-		executor, ok := conn.AsModelExecutor("default", opts)
-		require.True(t, ok, "Model executor should be available in readwrite mode")
+		executor, err := conn.AsModelExecutor("default", opts)
+		require.NoError(t, err, "Model executor should be available in readwrite mode")
 		require.NotNil(t, executor)
 
 		// Should be able to get model manager in readwrite mode

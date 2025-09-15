@@ -121,6 +121,10 @@ message ModelSpec {
   google.protobuf.Struct stage_properties = 17;
   string output_connector = 1;
   google.protobuf.Struct output_properties = 12;
+  optional uint32 retry_attempts = 26;
+  optional uint32 retry_delay_seconds = 27;
+  optional bool retry_exponential_backoff = 28;
+  repeated string retry_if_error_matches = 29;
   // change_mode is the mode of change detection to use for the model.
   ModelChangeMode change_mode = 24;
   repeated ModelTest tests = 25;

@@ -96,6 +96,7 @@ export class WatchRequestClient<Res extends WatchResponse> {
   };
 
   public throttle(prioritize: boolean = false) {
+    this.outOfFocusThrottler.cancel();
     this.outOfFocusThrottler.throttle(this.close, prioritize);
   }
 

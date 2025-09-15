@@ -626,9 +626,20 @@ function convertIsoToRillTime(iso: string): string {
   return result.join("");
 }
 
+const previousCompleteMap = {
+  PHC: "-1H/H to ref/H",
+  PDC: "-1D/D to ref/D",
+  PWC: "-1W/W to ref/W",
+  PMC: "-1M/M to ref/M",
+  PQC: "-1Q/Q to ref/Q",
+  PYC: "-1Y/Y to ref/Y",
+};
+
 export function convertLegacyTime(timeString: string) {
   if (timeString.startsWith("rill-")) {
+    const stripped = timeString.replace("rill-", "");
     if (timeString === "rill-TD") return "DTD";
+    if (previousCompleteMap[stripped]) return previousCompleteMap[stripped];
     return timeString.replace("rill-", "");
   } else if (timeString.startsWith("P") || timeString.startsWith("p")) {
     return convertIsoToRillTime(timeString);

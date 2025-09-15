@@ -6,9 +6,8 @@
     getCoreRowModel,
     getFilteredRowModel,
     getSortedRowModel,
-    type Row,
   } from "@tanstack/svelte-table";
-  import { createEventDispatcher, setContext } from "svelte";
+  import { setContext } from "svelte";
   import { writable } from "svelte/store";
   import Toolbar from "./Toolbar.svelte";
 
@@ -17,8 +16,6 @@
   export let columnVisibility: Record<string, boolean> = {};
   export let kind: string;
   export let toolbar: boolean = true;
-
-  const dispatch = createEventDispatcher();
 
   let sorting = [];
   function setSorting(updater) {
@@ -58,10 +55,6 @@
   // Expose the table API to the children components via Context
   setContext("table", table);
 
-  function handleClickRow(row: Row<unknown>) {
-    dispatch("click-row", row);
-  }
-
   function rerender() {
     options.update((options) => ({
       ...options,
@@ -83,7 +76,7 @@
   <slot name="header" />
   <tbody>
     {#each $table.getRowModel().rows as row (row.id)}
-      <tr on:click={() => handleClickRow(row)}>
+      <tr>
         {#each row.getVisibleCells() as cell (cell.id)}
           <td class="hover:bg-slate-50">
             <svelte:component

@@ -77,8 +77,8 @@ func TestHTTPToDuckDBTransfer(t *testing.T) {
 		},
 	}
 
-	me, ok := to.AsModelExecutor("default", opts)
-	require.True(t, ok)
+	me, err := to.AsModelExecutor("default", opts)
+	require.NoError(t, err)
 
 	execOpts := &drivers.ModelExecuteOptions{
 		ModelExecutorOptions: opts,

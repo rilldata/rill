@@ -35,5 +35,3 @@ Or, if you want to compare time periods 2022 to 2023's total transactions. In th
 
 <img src = '/img/tutorials/ch/time-compare.png' class='rounded-gif' />
 <br />
-
-These are just a few examples of what we can do with Rill, the options expand further and are discussed further in [Rill Advanced](https://docs.rilldata.com/tutorials/rill_learn_200/201_0). If you're interested I recommended reviewing the contents after finishing up this course.

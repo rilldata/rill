@@ -384,19 +384,15 @@ func (d *db) CreateTableAsSelect(ctx context.Context, name, query string, opts *
 		Version:        newVersion,
 		CreatedVersion: newVersion,
 	}
+	err = d.initLocalTable(name, newVersion)
+	if err != nil {
+		return nil, fmt.Errorf("create: unable to create dir %q: %w", name, err)
+	}
 	var dsn string
 	if opts.View {
 		dsn = ""
 		newMeta.SQL = query
-		err = d.initLocalTable(name, "")
-		if err != nil {
-			return nil, fmt.Errorf("create: unable to create dir %q: %w", name, err)
-		}
 	} else {
-		err = d.initLocalTable(name, newVersion)
-		if err != nil {
-			return nil, fmt.Errorf("create: unable to create dir %q: %w", name, err)
-		}
 		dsn = d.localDBPath(name, newVersion)
 		defer func() {
 			if createErr != nil {
@@ -756,6 +752,9 @@ func (d *db) localDBMonitor() {
 func (d *db) Size() int64 {
 	var paths []string
 	_ = d.iterateLocalTables(false, func(name string, meta *tableMeta) error {
+		if meta.Type == "VIEW" {
+			return nil
+		}
 		// this is to avoid counting temp tables during source ingestion
 		// in certain cases we only want to compute the size of the serving db files
 		if !strings.HasPrefix(name, "__rill_tmp_") {

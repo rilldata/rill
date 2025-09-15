@@ -160,6 +160,23 @@
       `copied dimension value "${truncatedLabel}" to clipboard`,
     );
   }
+
+  function onDimensionCellClick(e: MouseEvent) {
+    // Check if user has selected text
+    const selection = window.getSelection();
+    if (selection && selection.toString().length > 0) {
+      // User has selected text, don't trigger row selection
+      return;
+    }
+
+    // If no text is selected, proceed with normal click behavior
+    toggleDimensionValueSelection(
+      dimensionName,
+      dimensionValue,
+      false,
+      e.ctrlKey || e.metaKey,
+    );
+  }
 </script>
 
 <tr
@@ -174,12 +191,7 @@
   on:pointerout={() => (hovered = false)}
   on:click={(e) => {
     if (e.shiftKey) return;
-    toggleDimensionValueSelection(
-      dimensionName,
-      dimensionValue,
-      false,
-      e.ctrlKey || e.metaKey,
-    );
+    onDimensionCellClick(e);
   }}
 >
   <td data-comparison-cell>
@@ -214,7 +226,7 @@
     class="relative size-full flex flex-none justify-between items-center leaderboard-label"
     style:background={dimensionGradients}
   >
-    <span class="truncate">
+    <span class="truncate select-text">
       <FormattedDataType value={dimensionValue} truncate />
     </span>
 

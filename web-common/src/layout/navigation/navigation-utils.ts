@@ -29,5 +29,6 @@ export async function emitNavigationTelemetry(href: string, name: string) {
 }
 
 export function isEmbedPage(page: Page): boolean {
-  return page.route.id === "/-/embed";
+  if (!page.route.id) return false;
+  return page.route.id.startsWith("/-/embed");
 }

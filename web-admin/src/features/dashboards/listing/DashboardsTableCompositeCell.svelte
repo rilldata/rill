@@ -20,19 +20,13 @@
 
   $: lastRefreshedDate = lastRefreshed ? new Date(lastRefreshed) : null;
 
+  $: dashboardSlug = isMetricsExplorer ? "explore" : "canvas";
   $: href = isEmbedded
-    ? undefined
-    : isMetricsExplorer
-      ? `/${organization}/${project}/explore/${name}`
-      : `/${organization}/${project}/canvas/${name}`;
+    ? `/-/embed/${dashboardSlug}/${name}`
+    : `/${organization}/${project}/${dashboardSlug}/${name}`;
 </script>
 
-<svelte:element
-  this={isEmbedded ? "button" : "a"}
-  class="flex flex-col gap-y-0.5 group px-4 py-2 w-full"
-  {href}
-  role={isEmbedded ? "button" : "link"}
->
+<a class="flex flex-col gap-y-0.5 group px-4 py-2 w-full" {href}>
   <div class="flex gap-x-2 items-center">
     {#if isMetricsExplorer}
       <ExploreIcon size={"14px"} className="text-slate-500" />
@@ -65,4 +59,4 @@
       <span class="line-clamp-1">{description}</span>
     {/if}
   </div>
-</svelte:element>
+</a>

@@ -91,6 +91,7 @@
   <div
     class="data-wrapper overflow-hidden"
     style:min-width="{BIG_NUMBER_MIN_WIDTH - adjustment}px"
+    aria-label="{measure?.name ?? ''} KPI data"
   >
     <h2 class="measure-name" title={measure?.displayName || measure?.name}>
       {#if measure?.displayName}

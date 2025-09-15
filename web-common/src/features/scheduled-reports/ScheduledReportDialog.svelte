@@ -24,7 +24,7 @@
     aggregationRequestWithRowsAndColumns,
     aggregationRequestWithTimeRange,
     buildAggregationRequest,
-  } from "@rilldata/web-common/features/dashboards/aggregation-request-builder.ts";
+  } from "@rilldata/web-common/features/dashboards/aggregation-request-utils.ts";
   import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors.ts";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors.ts";
   import {

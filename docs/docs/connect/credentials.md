@@ -61,7 +61,7 @@ It's never a good idea to commit sensitive information to Git and it goes agains
 
 If you have configured your credentials via the `.env` file this will be deployed with your project. If not, follow the steps to deploy then configure your credentials via the CLI running [`rill env configure`](/deploy/deploy-credentials#configure-environmental-variables-and-credentials-for-rill-cloud).
 
-
+ 
 
 ## Pulling Credentials and Variables from a Deployed Project on Rill Cloud
 
@@ -93,6 +93,10 @@ If a credential and/or variable has already been configured in Rill Cloud, Rill 
 
 
 :::
+
+### Cloning an Existing Project from Rill Cloud
+
+If you cloned the project using `rill project clone <project-name>` and are an admin of that project, the credentials will be pulled automatically. Note that there are some limitations with monorepos where credentials may not be pulled correctly. In those cases, credentials are also pulled when running `rill start`, assuming you have already authenticated via the CLI with `rill login`.
 
 
 ### Credentials Naming Schema 

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/gorilla/securecookie"
 	"github.com/gorilla/sessions"
@@ -28,9 +29,13 @@ func New(logger *zap.Logger, keyPairs ...[]byte) *Store {
 func (s *Store) Get(r *http.Request, name string) *sessions.Session {
 	sess, err := s.CookieStore.Get(r, name)
 	if err != nil {
-		s.logger.Error("failed to get cookie", zap.String("cookie_name", name), zap.Error(err), observability.ZapCtx(r.Context()))
 		var cookieErr securecookie.Error
 		if errors.As(err, &cookieErr) && cookieErr.IsDecode() {
+			if strings.Contains(err.Error(), "expired timestamp") {
+				s.logger.Info("cookie expired", zap.String("cookie_name", name), zap.Error(err), observability.ZapCtx(r.Context()))
+			} else {
+				s.logger.Error("failed to get cookie", zap.String("cookie_name", name), zap.Error(err), observability.ZapCtx(r.Context()))
+			}
 			session := sessions.NewSession(s.CookieStore, name)
 			session.Options = s.CookieStore.Options
 			session.IsNew = true

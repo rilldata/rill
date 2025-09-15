@@ -81,9 +81,8 @@ func (e *Executor) resolveClickHouse(ctx context.Context, timeExpr string) (Time
 		watermarkExpr = fmt.Sprintf("max(%s)", timeExpr)
 	}
 
-	// if datetime column is not nullable then ch returns 0 value instead of NULL when there are no rows so set aggregate_functions_null_for_empty
 	rangeSQL := fmt.Sprintf(
-		"SELECT min(%[1]s) as \"min\", max(%[1]s) as \"max\", %[2]s as \"watermark\" FROM %[3]s %[4]s SETTINGS aggregate_functions_null_for_empty = 1",
+		"SELECT min(%[1]s) as \"min\", max(%[1]s) as \"max\", %[2]s as \"watermark\", count(1) > 0 AS count FROM %[3]s %[4]s",
 		timeExpr,
 		watermarkExpr,
 		escapedTableName,
@@ -102,9 +101,15 @@ func (e *Executor) resolveClickHouse(ctx context.Context, timeExpr string) (Time
 
 	if rows.Next() {
 		var minTime, maxTime, watermark *time.Time
-		err = rows.Scan(&minTime, &maxTime, &watermark)
+		var count int
+		err = rows.Scan(&minTime, &maxTime, &watermark, &count)
 		if err != nil {
 			return TimestampsResult{}, err
+		}
+		if count == 0 {
+			// if datetime column is not nullable then ch returns 0 value instead of NULL when there are no rows
+			// The 0 value thus returned does not return true for IsZero() check
+			return TimestampsResult{}, nil
 		}
 		return TimestampsResult{
 			Min:       safeTime(minTime),

@@ -3,12 +3,15 @@
   import ColorInput from "@rilldata/web-common/components/color-picker/ColorInput.svelte";
   import type { FieldConfig } from "@rilldata/web-common/features/canvas/components/charts/types";
   import { getColorForValues } from "@rilldata/web-common/features/canvas/components/charts/util";
-  import type { ChartFieldInput } from "@rilldata/web-common/features/canvas/inspector/types";
+  import type {
+    ChartFieldInput,
+    ColorMapping,
+  } from "@rilldata/web-common/features/canvas/inspector/types";
   import { COMPARIONS_COLORS } from "@rilldata/web-common/features/dashboards/config";
   import { ChevronDown, ChevronRight } from "lucide-svelte";
   import { slide } from "svelte/transition";
 
-  export let fieldConfig: FieldConfig;
+  export let colorMapping: ColorMapping | undefined;
   export let onChange: (property: keyof FieldConfig, value: any) => void;
   export let colorMapConfig: ChartFieldInput["colorMappingSelector"];
 
@@ -19,7 +22,7 @@
 
   $: colorValues = colorMapConfig?.values || [];
 
-  $: currentColorMapping = fieldConfig?.colorMapping || [];
+  $: currentColorMapping = colorMapping || [];
 
   $: allColorMappings =
     getColorForValues(colorValues, currentColorMapping) || [];
@@ -35,7 +38,7 @@
     const defaultColor =
       COMPARIONS_COLORS[valueIndex % COMPARIONS_COLORS.length];
 
-    let updatedMapping: { value: string; color: string }[];
+    let updatedMapping: ColorMapping;
 
     if (newColor === defaultColor) {
       // Remove from custom mappings if it's set back to default

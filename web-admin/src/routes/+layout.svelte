@@ -17,6 +17,7 @@
   import NotificationCenter from "@rilldata/web-common/components/notifications/NotificationCenter.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { initPylonWidget } from "@rilldata/web-common/features/help/initPylonWidget";
+  import { isEmbedPage } from "@rilldata/web-common/layout/navigation/navigation-utils.ts";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { errorEventHandler } from "@rilldata/web-common/metrics/initMetrics";
   import { type Query, QueryClientProvider } from "@tanstack/svelte-query";
@@ -76,7 +77,7 @@
     return () => removeJavascriptListeners?.();
   });
 
-  $: isEmbed = pathname === "/-/embed";
+  $: isEmbed = isEmbedPage($page);
 
   $: hideTopBar =
     // invite page shouldn't show the top bar because it is considered an onboard step

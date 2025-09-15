@@ -89,8 +89,8 @@ func TestExecute(t *testing.T) {
 		},
 	}
 
-	me, ok := fileHandle.AsModelExecutor("default", opts)
-	require.True(t, ok)
+	me, err := fileHandle.AsModelExecutor("default", opts)
+	require.NoError(t, err)
 
 	t.Run("test_parquet_export", func(t *testing.T) {
 		outPath := filepath.Join(tempDir, "out.parquet")
