@@ -178,7 +178,6 @@ export class FunnelChartComponent extends BaseChart<FunnelChartSpec> {
           newSpec.measure = {
             type: "quantitative",
             field: currentSpec.measure.field,
-            fields: [currentSpec.measure.field],
           };
         }
         newSpec.stage = undefined;

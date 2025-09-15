@@ -21,6 +21,7 @@ export function shouldShowPopover(
     "labelAngleSelector",
     "axisRangeSelector",
     "defaultLegendOrientation",
+    "totalSelector",
   ];
 
   const hasPopoverContent = popoverContributingProperties.some(

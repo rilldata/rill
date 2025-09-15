@@ -169,9 +169,12 @@
       <MultiPositionalFieldsInput
         {canvasName}
         metricName={metricsView}
-        selectedItems={fieldConfig.fields}
+        selectedItems={fieldConfig.fields?.length
+          ? fieldConfig.fields
+          : [fieldConfig.field]}
         types={isDimension ? ["dimension"] : ["measure"]}
         excludedValues={chartFieldInput?.excludedValues}
+        chipItems={fieldConfig.fields}
         onMultiSelect={handleMultiFieldUpdate}
       />
     {/if}
