@@ -147,6 +147,7 @@ func (s *Server) ListProjectsForFingerprint(ctx context.Context, req *adminv1.Li
 		attribute.String("args.directory_name", req.DirectoryName),
 		attribute.String("args.git_remote", req.GitRemote),
 		attribute.String("args.sub_path", req.SubPath),
+		attribute.String("args.rill_mgd_git_remote", req.RillMgdGitRemote),
 	)
 
 	claims := auth.GetClaims(ctx)
@@ -155,20 +156,41 @@ func (s *Server) ListProjectsForFingerprint(ctx context.Context, req *adminv1.Li
 	}
 	userID := claims.OwnerID()
 
-	pageToken, err := unmarshalPageToken(req.PageToken)
+	// check if rill mgd remote was transferred
+	// we do not support transfers from self hosted git repos so no need to check for that
+	rillMgdRemote := req.RillMgdGitRemote
+	transfer, err := s.admin.DB.FindGitRepoTransfer(ctx, rillMgdRemote)
+	if err != nil && !errors.Is(err, database.ErrNotFound) {
+		return nil, err
+	}
+	if transfer != nil {
+		rillMgdRemote = transfer.To
+	}
+
+	projects, err := s.admin.DB.FindProjectsForUserAndFingerprint(ctx, userID, req.DirectoryName, normalizeGitRemote(req.GitRemote), req.SubPath, rillMgdRemote)
 	if err != nil {
 		return nil, err
 	}
-	pageSize := validPageSize(req.PageSize)
 
-	projects, err := s.admin.DB.FindProjectsForUserAndFingerprint(ctx, userID, req.DirectoryName, req.GitRemote, req.SubPath, pageToken.Val, pageSize)
-	if err != nil {
-		return nil, err
-	}
-
-	nextToken := ""
-	if len(projects) >= pageSize {
-		nextToken = marshalPageToken(projects[len(projects)-1].ID)
+	if len(projects) == 0 && req.GitRemote != "" {
+		// if no project is found check if there is project user doesn't have access to
+		projects, err = s.admin.DB.FindProjectsByGitRemote(ctx, normalizeGitRemote(req.GitRemote))
+		if err != nil {
+			return nil, err
+		}
+		for _, p := range projects {
+			if p.Subpath != req.SubPath {
+				continue
+			}
+			org, err := s.admin.DB.FindOrganization(ctx, p.OrganizationID)
+			if err != nil {
+				return nil, err
+			}
+			return &adminv1.ListProjectsForFingerprintResponse{
+				UnauthorizedProject: fmt.Sprintf("%s/%s", org.Name, p.Name),
+			}, nil
+		}
+		return &adminv1.ListProjectsForFingerprintResponse{}, nil
 	}
 
 	dtos := make([]*adminv1.Project, len(projects))
@@ -188,8 +210,7 @@ func (s *Server) ListProjectsForFingerprint(ctx context.Context, req *adminv1.Li
 	}
 
 	return &adminv1.ListProjectsForFingerprintResponse{
-		Projects:      dtos,
-		NextPageToken: nextToken,
+		Projects: dtos,
 	}, nil
 }
 
