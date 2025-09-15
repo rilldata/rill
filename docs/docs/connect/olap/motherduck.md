@@ -23,12 +23,29 @@ Rill supports connecting to MotherDuck using the latest DuckDB-compatible driver
 
 When using MotherDuck for local development, you can connect using your MotherDuck access token. The connection is established through MotherDuck's secure API endpoints.
 
-1. Connect to your OLAP engine via Add Data. This will automatically create the motherduck.yaml file in your connectors folder and populate the .env file with `.connector.motherduck.token`.
+1. Connect to MotherDuck via modifying the existing /connectors/duckdb.yaml. 
 
-For more information on supported parameters, see our [MotherDuck connector YAML reference docs](/reference/project-files/connectors#motherduck).
+```yaml
+# Connector YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/connectors
 
-<img src='/img/connect/olap-engines/motherduck/motherduck-connector.png' class='rounded-gif' style={{width: '75%', display: 'block', margin: '0 auto'}} />
+type: connector 
+driver: motherduck 
 
+token: '{{ .env.connector.motherduck.token }}'
+path: "md:my_database"
+schema_name: "my_schema" 
+```
+
+:::tip Dont have an .env file?
+
+If it's your first time running Rill, a .env file wont exist yet. Either make a blank file and rename to .env and add your token or run `touch .env` from the project directory in the CLI.
+
+```
+connector.motherduck.token="TOKEN_HERE"
+```
+
+:::
 
 ## Getting Your MotherDuck Access Token
 
@@ -55,7 +72,7 @@ Your MotherDuck access token provides access to your data. Keep it secure and ne
 MotherDuck connections are established through secure API endpoints. The connection is automatically configured when you provide your access token:
 
 ```bash
-motherduck.token="your_motherduck_service_token_here"
+motherduck_token="your_motherduck_service_token_here"
 ```
 
 ## Configuring Rill Cloud
