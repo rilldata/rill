@@ -189,8 +189,9 @@ func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stre
 		_, err := session.CallTool(ctx, ai.RoleUser, "router_agent", &res, ai.RouterAgentArgs{
 			Prompt: req.Prompt,
 		})
-		callErrCh <- err
+		time.Sleep(time.Millisecond * 50) // Allow the last message to be sent. TODO: Find a non-hacky solution here.
 		cancel()
+		callErrCh <- err
 	}()
 
 	// Subscribe to session messages and stream them to the client

@@ -97,13 +97,13 @@ Rill projects often (but not always) organize files in directories by resource t
 {{ backticks }}
 connectors/duckdb.yaml
 models/orders.yaml
-metrics_views/orders.yaml
+metrics/orders.yaml
 rill.yaml
 {{ backticks }}
 
 The user might ask you to "Create a dashboard for my Github activity". You would notice that this does not relate to the current files, and proceed with the following plan:
 1. Add a new model in "models/git_commits.yaml" using the "develop_model" tool.
-2. Add a new metrics view in "metrics_views/git_commits.yaml" based on the new "git_commits" model using the "develop_metrics_view" tool.
+2. Add a new metrics view in "metrics/git_commits.yaml" based on the new "git_commits" model using the "develop_metrics_view" tool.
 </example>
 
 <process>

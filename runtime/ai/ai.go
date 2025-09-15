@@ -227,7 +227,7 @@ func (m *Message) ToProto() (*aiv1.CompletionMessage, error) {
 		}
 	case MessageTypeCall:
 		var args map[string]any
-		if m.ContentType == MessageContentTypeJSON {
+		if m.ContentType == MessageContentTypeJSON && m.Content != "" {
 			err := json.Unmarshal([]byte(m.Content), &args)
 			if err != nil {
 				return nil, fmt.Errorf("failed to unmarshal JSON args: %w", err)

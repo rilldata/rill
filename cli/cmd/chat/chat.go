@@ -3,6 +3,7 @@ package chat
 import (
 	"bufio"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -116,14 +117,16 @@ func ChatCmd(ch *cmdutil.Helper) *cobra.Command {
 						return err
 					}
 
+					// Print the message
+					text := formatMessage(resp.Message)
+					if text != formatMessage(lastMsg) { // Skip duplicates, usually happens for nested call chains passing back results
+						text = truncateString(text, terminalWidth()-4-len(resp.Message.Role))
+						fmt.Printf("\n◆ %s: %s\n", resp.Message.Role, text)
+					}
+
 					// Update state
 					conversationID = resp.ConversationId
 					lastMsg = resp.Message
-
-					// Print the message
-					text := formatMessage(resp.Message)
-					text = truncateString(text, terminalWidth()-2)
-					fmt.Printf("\n◆ %s\n", text)
 				}
 
 				// Print the last message untruncated
@@ -166,8 +169,19 @@ func formatMessage(msg *runtimev1.Message) string {
 	}
 
 	block := msg.Content[0]
+	if block == nil {
+		return ""
+	}
 	switch block := block.BlockType.(type) {
 	case *aiv1.ContentBlock_Text:
+		if strings.HasPrefix(block.Text, `{"response"`) { // TODO: Remove this hack when we propagate more metadata about final answers
+			var response struct {
+				Response string `json:"response"`
+			}
+			if err := json.Unmarshal([]byte(block.Text), &response); err == nil {
+				return response.Response
+			}
+		}
 		return block.Text
 	case *aiv1.ContentBlock_ToolCall:
 		args, _ := block.ToolCall.Input.MarshalJSON()
@@ -175,6 +189,14 @@ func formatMessage(msg *runtimev1.Message) string {
 	case *aiv1.ContentBlock_ToolResult:
 		if block.ToolResult.IsError {
 			return fmt.Sprintf("Error: %s", block.ToolResult.Content)
+		}
+		if strings.HasPrefix(block.ToolResult.Content, `{"response"`) { // TODO: Remove this hack when we propagate more metadata about final answers
+			var response struct {
+				Response string `json:"response"`
+			}
+			if err := json.Unmarshal([]byte(block.ToolResult.Content), &response); err == nil {
+				return response.Response
+			}
 		}
 		return block.ToolResult.Content
 	default:

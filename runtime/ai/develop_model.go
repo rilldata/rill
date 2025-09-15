@@ -121,6 +121,7 @@ At a high level, you should follow these steps:
 Additional instructions:
 - The user will often ask you to create or update models that require external data, such as from a SaaS application or their data warehouse. In these cases, you should generate a SQL query that emits mock data that resembles the expected structure and contents of the external data. You may generate up to 100 rows of mock data.
 - You should not attempt to reference other models in the project, unless the model already exists and already references them.
+- The SQL expression should be a plain SELECT query without a semicolon at the end.
 </process>
 
 <example>
