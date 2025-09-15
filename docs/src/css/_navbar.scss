@@ -2,104 +2,102 @@
 /* =========================
    Search Bar Custom Styles
    ========================= */
-.DocSearch-Button {
-  background: transparent !important;
-  border: 1px solid #e5e7eb !important;
-  border-radius: 8px !important;
-  padding: 8px 12px !important;
-  width: 250px !important; /* Adjust this value to change width */
-  min-width: 150px !important; /* Minimum width */
-  margin-left: 10px !important;
-  height: 40px !important;
-  position: relative !important;
+.navbar .navbar__items--right .DocSearch-Button {
+  background: transparent;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 8px 12px;
+  width: 250px; /* Adjust this value to change width */
+  min-width: 150px; /* Minimum width */
+  margin-left: 10px;
+  height: 40px;
+  position: relative;
   
   &::after {
-    content: "⌘K" !important;
-    position: absolute !important;
-    right: 8px !important;
-    top: 50% !important;
-    transform: translateY(-50%) !important;
-    font-size: 0.75rem !important;
-    color: var(--docsearch-muted-color) !important;
-    font-family: monospace !important;
-    pointer-events: none !important;
+    content: "⌘K";
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.75rem;
+    color: var(--docsearch-muted-color);
+    font-family: monospace;
+    pointer-events: none;
   }
 }
 
 /* Dark mode specific fixes */
-[data-theme='dark'] .DocSearch-Button {
-    background: transparent !important;
-    border: 1px solid var(--docsearch-muted-color) !important;
-    border-radius: 8px !important;
-    padding: 8px 12px !important;
-
+[data-theme='dark'] .navbar .navbar__items--right .DocSearch-Button {
+    background: transparent;
+    border: 1px solid var(--docsearch-muted-color);
+    border-radius: 8px;
+    padding: 8px 12px;
 } 
 
-.DocSearch-Button:hover,
-.DocSearch-Button:active,
-.DocSearch-Button:focus  {
-  box-shadow: none !important;
-  color: var(--docsearch-muted-color) !important;
-  outline: 1px solid var(--ifm-color-primary) !important;
+.navbar .navbar__items--right .DocSearch-Button:hover,
+.navbar .navbar__items--right .DocSearch-Button:active,
+.navbar .navbar__items--right .DocSearch-Button:focus {
+  box-shadow: none;
+  color: var(--docsearch-muted-color);
+  outline: 1px solid var(--ifm-color-primary);
 }
 
-.DocSearch-Search-Icon {
-  height: 16px !important;
-  width: 16px !important;
-  color: var(--docsearch-muted-color) !important;
+.navbar .navbar__items--right .DocSearch-Search-Icon {
+  height: 16px;
+  width: 16px;
+  color: var(--docsearch-muted-color);
 }
 
-.DocSearch-Button-Placeholder {
-  font-size: 0.875rem !important;
+.navbar .navbar__items--right .DocSearch-Button-Placeholder {
+  font-size: 0.875rem;
 }
 
-.DocSearch-Button-Keys {  
-    display: none !important;
+.navbar .navbar__items--right .DocSearch-Button-Keys {  
+    display: none;
 }
 
-.DocSearch-Button-Key {  
-    background: transparent !important; 
-    box-shadow: none !important;
-    margin-right: -0.6rem !important;    
+.navbar .navbar__items--right .DocSearch-Button-Key {  
+    background: transparent; 
+    box-shadow: none;
+    margin-right: -0.6rem;    
 }
 
-
-.DocSearch-Footer {
-    display: none !important;
+.DocSearch--active .DocSearch-Footer {
+    display: none;
 }
 
 /* Fix z-index for search modal to appear above navbar */
 .DocSearch-Modal {
-    z-index: 9999 !important;
+    z-index: 9999;
 }
 
 .DocSearch-Container {
-    z-index: 9999 !important;
+    z-index: 9999;
 }
 
 /* Ensure navbar doesn't interfere with search modal */
 .navbar {
-    z-index: 100 !important;
+    z-index: 100;
 }
 
 .custom-keyboard-shortcut {
-    background: transparent !important;
-    border: none !important;
-    font-size: 0.75rem !important;
-    color: var(--docsearch-muted-color) !important;
-    padding: 4px 6px !important;
-    border-radius: 4px !important;
-    cursor: pointer !important;
-    font-family: monospace !important;
-    transition: all 0.2s ease !important;
+    background: transparent;
+    border: none;
+    font-size: 0.75rem;
+    color: var(--docsearch-muted-color);
+    padding: 4px 6px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: monospace;
+    transition: all 0.2s ease;
 }
 
 @media (max-width: 600px) {
-  .DocSearch-Button {
-    width: 100% !important;
-    min-width: 0 !important;
-    margin-left: 0 !important;
-    height: 36px !important;
+  .navbar .navbar__items--right .DocSearch-Button {
+    width: 100%;
+    min-width: 0;
+    margin-left: 0;
+    height: 36px;
     box-sizing: border-box;
   }
 }
@@ -107,12 +105,12 @@
 /* =========================
    Release Notes Navbar Visibility
    ========================= */
-.navbar__items--right .navbar-release-notes-mobile {
-  display: none !important;
+.navbar .navbar__items--right .navbar-release-notes-mobile {
+  display: none;
 }
 @media (max-width: 996px) {
-  .navbar__items--right .navbar-release-notes-mobile {
-    display: flex !important;
+  .navbar .navbar__items--right .navbar-release-notes-mobile {
+    display: flex;
     width: 100%;
     justify-content: flex-start;
   }
@@ -120,13 +118,13 @@
 
 @media (max-width: 996px) {
   /* Make custom HTML navbar items look like menu__link in mobile menu */
-  .menu__list .navbar-icon-link {
-    display: block !important;
-    width: 100% !important;
-    padding: 2.5px 9px !important;
-    color: var(--ifm-menu-color) !important;
-    font-size: var(--default-font) !important;
-    text-decoration: none !important;
+  .navbar .menu__list .navbar-icon-link {
+    display: block;
+    width: 100%;
+    padding: 2.5px 9px;
+    color: var(--ifm-menu-color);
+    font-size: var(--default-font);
+    text-decoration: none;
     border-radius: 4px;
     margin: 0;
     background: none;
@@ -138,15 +136,15 @@
 /* =========================
    Navbar Icon Link Styles
    ========================= */
-.navbar-icon-link {
-  color: var(--ifm-menu-color) !important;
-  text-decoration: none !important;
+.navbar .navbar-icon-link {
+  color: var(--ifm-menu-color);
+  text-decoration: none;
   background: none;
   box-shadow: none;
   transition: color 0.2s;
 }
-.navbar-icon-link:hover,
-.navbar-icon-link:focus {
-  color: var(--ifm-menu-color-active) !important;
-  text-decoration: none !important;
+.navbar .navbar-icon-link:hover,
+.navbar .navbar-icon-link:focus {
+  color: var(--ifm-menu-color-active);
+  text-decoration: none;
 } 

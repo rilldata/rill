@@ -82,7 +82,6 @@ const config = {
           button: {
             buttonText: 'Search...',
             buttonAriaLabel: 'Open search',
-            shortcutLabel: ''
           },
         },
         placeholder: "Looking for something?",
