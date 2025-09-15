@@ -37,7 +37,7 @@ Copy the below into a blank YAML or use the Add -> metrics view to create a blan
 version: 1
 type: metrics_view
 
-model: example_model # Choose a table to underpin your metrics view
+model: example_model # Choose a model to underpin your metrics view
 timeseries: timestamp_column # Choose a timestamp column (if any) from your table
 
 dimensions:

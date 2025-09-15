@@ -4,21 +4,18 @@ sidebar_label: Underlying Model/Table
 sidebar_position: 05
 ---
 
-Once you have finished [building your model](/build/models), you can start to design your metrics view to create measures and dimensions that you can visualize in your dashboard. To do this effectively, you need to understand how to specify the underlying data source in your metrics view YAML, which depends on your OLAP engine.
+Once you have finished [building your model](/build/models), you can create a metrics view to define measures and dimensions for your dashboard. The way you specify the underlying data source depends on your OLAP engine.
 
-## One Big Table Approach
+## Choosing Your Data Source
 
-For optimal dashboard performance and flexibility, we recommend modeling your data sources into a "One Big Table" – a granular resource that contains as much information as possible and can be rolled up in meaningful ways. This flexible approach enables ad hoc slice-and-dice discovery through Rill's interactive dashboard.
+Rill supports [multiple OLAP engines](/connect/olap), and the engine you're using determines which YAML property you'll use in your metrics view:
 
+- **Use `model`** for DuckDB and Rill-managed ClickHouse
+- **Use `table`** for self-managed live connectors
 
-For more details on the One Big Table approach, see our [Models 101 guide](/build/models/models-101#one-big-table-and-dashboarding).
+## DuckDB and Rill-Managed ClickHouse
 
-## OLAP Engines 
-
-Rill supports [multiple OLAP engines](/connect/olap) and this is the key component that determines the YAML key you will use for your metrics view.
-
-### DuckDB
-If you are using DuckDB (i.e., you haven't added any custom live connectors), you'll continue to use the term "model" that you're familiar with from building models. In your metrics view YAML, you'll use `model` to define the model that powers your metrics view.
+For DuckDB (the default engine) and Rill-managed ClickHouse, use the `model` property to reference your data model:
 
 
 ```yaml
@@ -28,12 +25,12 @@ If you are using DuckDB (i.e., you haven't added any custom live connectors), yo
 version: 1
 type: metrics_view
 
-model: example_model # Choose a table to underpin your metrics view
+model: example_model # Choose a model to underpin your metrics view
 ```
 
-### Live Connectors
+## Self-Managed Live Connectors
 
-If you're using live connectors such as ClickHouse, MotherDuck, or Druid, you'll need to modify the default YAML configuration. Instead of using `model`, you'll use `table`. You'll also need to specify the `connector` and `database_schema` fields.
+For self-managed live connectors (like your own ClickHouse, MotherDuck, or Druid instance), use the `table` property and specify connection details:
 
 ```yaml
 # Metrics View YAML
