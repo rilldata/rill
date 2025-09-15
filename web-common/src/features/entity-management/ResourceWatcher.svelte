@@ -3,6 +3,7 @@
   import { WatchFilesClient } from "@rilldata/web-common/features/entity-management/WatchFilesClient";
   import { WatchResourcesClient } from "@rilldata/web-common/features/entity-management/WatchResourcesClient";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+  import { TabCommunicator } from "@rilldata/web-common/lib/tab-communicator.ts";
   import { onMount } from "svelte";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
   import Banner from "@rilldata/web-common/components/banner/Banner.svelte";
@@ -13,6 +14,7 @@
     fileWatcher;
   const { retryAttempts: resourceAttempts, closed: resourceWatcherClosed } =
     resourceWatcher;
+  const tabCommunicator = new TabCommunicator<void>("rill-dev");
 
   export let host: string;
   export let instanceId: string;
@@ -31,10 +33,13 @@
 
   onMount(() => {
     void fileArtifacts.init(queryClient, instanceId);
+    tabCommunicator.on("focused", handleAnotherRillDevFocused);
 
     return () => {
       fileWatcher.close();
       resourceWatcher.close();
+      tabCommunicator.close();
+      tabCommunicator.off("focused", handleAnotherRillDevFocused);
     };
   });
 
@@ -42,10 +47,16 @@
     if (document.visibilityState === "visible") {
       fileWatcher.heartbeat();
       resourceWatcher.heartbeat();
+      tabCommunicator.send("focused");
     } else {
       fileWatcher.throttle(true);
       resourceWatcher.throttle(true);
     }
+  }
+
+  function handleAnotherRillDevFocused() {
+    fileWatcher.close();
+    resourceWatcher.close();
   }
 </script>
 
