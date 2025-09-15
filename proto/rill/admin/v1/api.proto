@@ -12,6 +12,7 @@ import "google/api/visibility.proto";
 service AdminService {
   // Ping returns information about the server
   rpc Ping(PingRequest) returns (PingResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {get: "/v1/ping"};
   }
 
@@ -29,6 +30,7 @@ service AdminService {
   // If the application detects it is running on a non-default domain, it can use this to find the org to present.
   // It can be called without being authenticated.
   rpc GetOrganizationNameForDomain(GetOrganizationNameForDomainRequest) returns (GetOrganizationNameForDomainResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {get: "/v1/organization-for-domain/{domain}"};
   }
 
@@ -61,12 +63,14 @@ service AdminService {
   // ListProjectsForOrganizationAndUser lists all the projects that an organization member user has access to.
   // It does not include projects that the user has access to through a usergroup.
   rpc ListProjectsForOrganizationAndUser(ListProjectsForOrganizationAndUserRequest) returns (ListProjectsForOrganizationAndUserResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {get: "/v1/orgs/{organization}/projects-for-user"};
   }
 
   // ListProjectsForFingerprint lists all projects the current user has access to that match the provided local project details.
   // This can be used to produce a short list of cloud projects that are likely to have been deployed from a local project.
   rpc ListProjectsForFingerprint(ListProjectsForFingerprintRequest) returns (ListProjectsForFingerprintResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {get: "/v1/projects-for-fingerprint"};
   }
 
@@ -77,16 +81,19 @@ service AdminService {
 
   // ListProjectsForUserByName returns projects matching a name accessible by the logged in user
   rpc ListProjectsForUserByName(ListProjectsForUserByNameRequest) returns (ListProjectsForUserByNameResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {get: "/v1/projects"};
   }
 
   // GetProject returns information about a specific project
   rpc GetProjectByID(GetProjectByIDRequest) returns (GetProjectByIDResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {get: "/v1/projects/{id}"};
   }
 
   // SearchProjectNames returns project names matching the pattern
   rpc SearchProjectNames(SearchProjectNamesRequest) returns (SearchProjectNamesResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {get: "/v1/superuser/projects/search"};
   }
 
@@ -126,6 +133,7 @@ service AdminService {
 
   // CreateAsset returns a one time signed URL using which any asset can be uploaded.
   rpc CreateAsset(CreateAssetRequest) returns (CreateAssetResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/v1/orgs/{organization_name}/create_asset",
       body: "*"
@@ -136,16 +144,19 @@ service AdminService {
   // If the project currently has another production deployment, the old deployment will be deprovisioned.
   // This RPC can be used to redeploy a project that has been hibernated.
   rpc RedeployProject(RedeployProjectRequest) returns (RedeployProjectResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {post: "/v1/orgs/{organization}/projects/{project}/redeploy"};
   }
 
   // HibernateProject hibernates a project by tearing down its deployments.
   rpc HibernateProject(HibernateProjectRequest) returns (HibernateProjectResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {post: "/v1/orgs/{organization}/projects/{project}/hibernate"};
   }
 
   // ListDeployments lists deployments for a project.
   rpc ListDeployments(ListDeploymentsRequest) returns (ListDeploymentsResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/v1/orgs/{organization_name}/projects/{project_name}/deployments"
     };
@@ -153,6 +164,7 @@ service AdminService {
 
   // CreateDeployment creates a new deployment for a project.
   rpc CreateDeployment(CreateDeploymentRequest) returns (CreateDeploymentResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/v1/orgs/{organization_name}/projects/{project_name}/deployments",
       body: "*"
@@ -161,6 +173,7 @@ service AdminService {
 
   // GetDeployment returns runtime info and access token on behalf of a specific user, or alternatively for a raw set of JWT attributes
   rpc GetDeployment(GetDeploymentRequest) returns (GetDeploymentResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/v1/deployments/{deployment_id}/credentials",
       body: "*"
@@ -169,6 +182,7 @@ service AdminService {
 
   // StartDeployment starts a deployment.
   rpc StartDeployment(StartDeploymentRequest) returns (StartDeploymentResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/v1/deployments/{deployment_id}/start",
       body: "*"
@@ -177,6 +191,7 @@ service AdminService {
 
   // StopDeployment stops a deployment.
   rpc StopDeployment(StopDeploymentRequest) returns (StopDeploymentResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/v1/deployments/{deployment_id}/stop",
       body: "*"
@@ -185,6 +200,7 @@ service AdminService {
 
   // DeleteDeployment deletes a deployment.
   rpc DeleteDeployment(DeleteDeploymentRequest) returns (DeleteDeploymentResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       delete: "/v1/deployments/{deployment_id}"
     };
@@ -193,6 +209,7 @@ service AdminService {
   // TriggerReconcile triggers reconcile for the project's prod deployment.
   // DEPRECATED: Clients should call CreateTrigger directly on the deployed runtime instead.
   rpc TriggerReconcile(TriggerReconcileRequest) returns (TriggerReconcileResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/v1/deployments/{deployment_id}/reconcile",
       body: "*"
@@ -202,6 +219,7 @@ service AdminService {
   // TriggerRefreshSources refresh the source for production deployment.
   // DEPRECATED: Clients should call CreateTrigger directly on the deployed runtime instead.
   rpc TriggerRefreshSources(TriggerRefreshSourcesRequest) returns (TriggerRefreshSourcesResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/v1/deployments/{deployment_id}/refresh",
       body: "*"
@@ -211,6 +229,7 @@ service AdminService {
   // TriggerRedeploy is similar to RedeployProject.
   // DEPRECATED: Use RedeployProject instead.
   rpc TriggerRedeploy(TriggerRedeployRequest) returns (TriggerRedeployResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/v1/projects/-/redeploy",
       body: "*"
@@ -220,6 +239,7 @@ service AdminService {
   // Provision provisions a new resource for a deployment.
   // If an existing resource matches the request, it will be returned without provisioning a new resource.
   rpc Provision(ProvisionRequest) returns (ProvisionResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/v1/deployments/{deployment_id}/provision",
       body: "*"
@@ -228,6 +248,7 @@ service AdminService {
 
   // ListRoles lists all the roles available for orgs and projects.
   rpc ListRoles(ListRolesRequest) returns (ListRolesResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {get: "/v1/roles"};
   }
 
@@ -256,11 +277,13 @@ service AdminService {
 
   // LeaveOrganization removes the current user from the organization
   rpc LeaveOrganization(LeaveOrganizationRequest) returns (LeaveOrganizationResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {delete: "/v1/orgs/{organization}/members/current"};
   }
 
   // SetOrganizationMemberUserRole sets the role for the member
   rpc SetOrganizationMemberUserRole(SetOrganizationMemberUserRoleRequest) returns (SetOrganizationMemberUserRoleResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       put: "/v1/orgs/{organization}/members/{email}",
       body: "*"
@@ -269,16 +292,19 @@ service AdminService {
 
   // ListProjectMemberUsers lists all the project members
   rpc ListProjectMemberUsers(ListProjectMemberUsersRequest) returns (ListProjectMemberUsersResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {get: "/v1/orgs/{organization}/projects/{project}/members"};
   }
 
   // ListProjectInvites lists all the project invites
   rpc ListProjectInvites(ListProjectInvitesRequest) returns (ListProjectInvitesResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {get: "/v1/orgs/{organization}/projects/{project}/invites"};
   }
 
   // AddProjectMemberUser adds a member to the project
   rpc AddProjectMemberUser(AddProjectMemberUserRequest) returns (AddProjectMemberUserResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/v1/orgs/{organization}/projects/{project}/members",
       body: "*"
@@ -287,11 +313,13 @@ service AdminService {
 
   // RemoveProjectMemberUser removes member from the project
   rpc RemoveProjectMemberUser(RemoveProjectMemberUserRequest) returns (RemoveProjectMemberUserResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {delete: "/v1/orgs/{organization}/projects/{project}/members/{email}"};
   }
 
   // SetProjectMemberUserRole sets the role for the member
   rpc SetProjectMemberUserRole(SetProjectMemberUserRoleRequest) returns (SetProjectMemberUserRoleResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       put: "/v1/orgs/{organization}/projects/{project}/members/{email}",
       body: "*"
@@ -300,11 +328,13 @@ service AdminService {
 
   // ListUsergroupsForOrganizationAndUser lists the user groups that an organization member user has access to.
   rpc ListUsergroupsForOrganizationAndUser(ListUsergroupsForOrganizationAndUserRequest) returns (ListUsergroupsForOrganizationAndUserResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {get: "/v1/orgs/{organization}/usergroups-for-user"};
   }
 
   // CreateUsergroup creates a user group in the organization
   rpc CreateUsergroup(CreateUsergroupRequest) returns (CreateUsergroupResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/v1/orgs/{organization}/usergroups",
       body: "*"
@@ -313,11 +343,13 @@ service AdminService {
 
   // GetUsergroups returns the user group details
   rpc GetUsergroup(GetUsergroupRequest) returns (GetUsergroupResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {get: "/v1/orgs/{organization}/usergroups/{usergroup}"};
   }
 
   // RenameUsergroup renames the user group
   rpc RenameUsergroup(RenameUsergroupRequest) returns (RenameUsergroupResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/v1/orgs/{organization}/usergroups/{usergroup}",
       body: "*"
@@ -326,6 +358,7 @@ service AdminService {
 
   // EditUsergroup renames the user group
   rpc EditUsergroup(EditUsergroupRequest) returns (EditUsergroupResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       put: "/v1/orgs/{organization}/usergroups/{usergroup}",
       body: "*"
@@ -334,21 +367,25 @@ service AdminService {
 
   // ListOrganizationMemberUsergroups lists the org's user groups
   rpc ListOrganizationMemberUsergroups(ListOrganizationMemberUsergroupsRequest) returns (ListOrganizationMemberUsergroupsResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {get: "/v1/orgs/{organization}/usergroups"};
   }
 
   // ListProjectMemberUsergroups lists the project's user groups
   rpc ListProjectMemberUsergroups(ListProjectMemberUsergroupsRequest) returns (ListProjectMemberUsergroupsResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {get: "/v1/orgs/{organization}/project/{project}/usergroups"};
   }
 
   // DeleteUsergroup deletes the user group from the organization
   rpc DeleteUsergroup(DeleteUsergroupRequest) returns (DeleteUsergroupResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {delete: "/v1/orgs/{organization}/usergroups/{usergroup}"};
   }
 
   // AddOrganizationMemberUsergroupRole adds the role for the user group
   rpc AddOrganizationMemberUsergroup(AddOrganizationMemberUsergroupRequest) returns (AddOrganizationMemberUsergroupResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/v1/orgs/{organization}/usergroups/{usergroup}/role",
       body: "*"
@@ -357,6 +394,7 @@ service AdminService {
 
   // SetOrganizationMemberUsergroupRole sets the role for the user group
   rpc SetOrganizationMemberUsergroupRole(SetOrganizationMemberUsergroupRoleRequest) returns (SetOrganizationMemberUsergroupRoleResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       put: "/v1/orgs/{organization}/usergroups/{usergroup}/role",
       body: "*"
@@ -365,11 +403,13 @@ service AdminService {
 
   // RemoveOrganizationMemberUsergroup revokes the organization-level role for the user group
   rpc RemoveOrganizationMemberUsergroup(RemoveOrganizationMemberUsergroupRequest) returns (RemoveOrganizationMemberUsergroupResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {delete: "/v1/orgs/{organization}/usergroups/{usergroup}/role"};
   }
 
   // AddProjectMemberUsergroupRole adds the role for the user group
   rpc AddProjectMemberUsergroup(AddProjectMemberUsergroupRequest) returns (AddProjectMemberUsergroupResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/v1/orgs/{organization}/projects/{project}/usergroups/{usergroup}/roles",
       body: "*"
@@ -378,6 +418,7 @@ service AdminService {
 
   // SetProjectMemberUsergroupRole sets the role for the user group
   rpc SetProjectMemberUsergroupRole(SetProjectMemberUsergroupRoleRequest) returns (SetProjectMemberUsergroupRoleResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       put: "/v1/orgs/{organization}/projects/{project}/usergroups/{usergroup}/roles",
       body: "*"
@@ -386,13 +427,15 @@ service AdminService {
 
   // RemoveProjectMemberUsergroup revokes the project-level role for the user group
   rpc RemoveProjectMemberUsergroup(RemoveProjectMemberUsergroupRequest) returns (RemoveProjectMemberUsergroupResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
-      delete: "/v1/orgs/{organization}/projects/{project}/usergroups/{usergroup}/roles",
+      delete: "/v1/orgs/{organization}/projects/{project}/usergroups/{usergroup}/roles"
     };
   }
 
   // AddUsergroupMemberUser adds a member to the user group
   rpc AddUsergroupMemberUser(AddUsergroupMemberUserRequest) returns (AddUsergroupMemberUserResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       put: "/v1/orgs/{organization}/usergroups/{usergroup}/members/{email}",
       body: "*"
@@ -401,21 +444,25 @@ service AdminService {
 
   // ListUsergroupMemberUsers lists all the user group members
   rpc ListUsergroupMemberUsers(ListUsergroupMemberUsersRequest) returns (ListUsergroupMemberUsersResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {get: "/v1/orgs/{organization}/usergroups/{usergroup}/members"};
   }
 
   // RemoveUsergroupMemberUser removes member from the user group
   rpc RemoveUsergroupMemberUser(RemoveUsergroupMemberUserRequest) returns (RemoveUsergroupMemberUserResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {delete: "/v1/orgs/{organization}/usergroups/{usergroup}/members/{email}"};
   }
 
   // GetUser returns user by email
   rpc GetUser(GetUserRequest) returns (GetUserResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {get: "/v1/users"};
   }
 
   // GetCurrentUser returns the currently authenticated user (if any)
   rpc GetCurrentUser(GetCurrentUserRequest) returns (GetCurrentUserResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       get: "/v1/users/current"
     };
@@ -423,18 +470,21 @@ service AdminService {
 
   // DeleteUser deletes the user from the organization by email
   rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {delete: "/v1/users/{email}"};
   }
 
   // ListUserAuthTokens lists the current user's auth tokens.
   // You can optionally pass "current" instead of the user ID to list the current user's tokens.
   rpc ListUserAuthTokens(ListUserAuthTokensRequest) returns (ListUserAuthTokensResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {get: "/v1/users/{user_id}/tokens"};
   }
 
   // IssueUserAuthToken issues an access token for the current user.
   // You can optionally pass "current" instead of the user ID to issue a token for the current user.
   rpc IssueUserAuthToken(IssueUserAuthTokenRequest) returns (IssueUserAuthTokenResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/v1/users/{user_id}/tokens",
       body: "*"
@@ -444,12 +494,14 @@ service AdminService {
   // RevokeUserAuthToken revokes a user access token.
   // You can optionally pass "current" instead of the token ID to revoke the current token.
   rpc RevokeUserAuthToken(RevokeUserAuthTokenRequest) returns (RevokeUserAuthTokenResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {delete: "/v1/users/-/tokens/{token_id}"};
   }
 
   // IssueRepresentativeAuthToken returns the temporary token for given email.
   // Deprecated: Use IssueUserAuthToken with the represent_email option instead.
   rpc IssueRepresentativeAuthToken(IssueRepresentativeAuthTokenRequest) returns (IssueRepresentativeAuthTokenResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/v1/tokens/represent",
       body: "*"
@@ -459,28 +511,33 @@ service AdminService {
   // RevokeCurrentAuthToken revoke the current auth token.
   // Deprecated: Use RevokeUserAuthToken with ID set to "current" instead.
   rpc RevokeCurrentAuthToken(RevokeCurrentAuthTokenRequest) returns (RevokeCurrentAuthTokenResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {delete: "/v1/tokens/current"};
   }
 
   // GetGithubRepoRequest returns info about a Github repo based on the caller's installations.
   // If the caller has not granted access to the repository, instructions for granting access are returned.
   rpc GetGithubRepoStatus(GetGithubRepoStatusRequest) returns (GetGithubRepoStatusResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {get: "/v1/github/repositories"};
   }
 
   // GetGithubUserStatus returns info about a Github user account based on the caller's installations.
   // If we don't have access to user's personal account tokens or it is expired, instructions for granting access are returned.
   rpc GetGithubUserStatus(GetGithubUserStatusRequest) returns (GetGithubUserStatusResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {get: "/v1/github/user"};
   }
 
   rpc ListGithubUserRepos(ListGithubUserReposRequest) returns (ListGithubUserReposResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {get: "/v1/github/user/repositories"};
   }
 
   // Connects a rill managed project to github.
   // Replaces the contents of the remote repo with the contents of the project.
   rpc ConnectProjectToGithub(ConnectProjectToGithubRequest) returns (ConnectProjectToGithubResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/v1/orgs/{organization}/projects/{project}/connect-to-github",
       body: "*"
@@ -489,6 +546,7 @@ service AdminService {
 
   // CreateManagedGitRepo creates a new rill managed git repo for the organization.
   rpc CreateManagedGitRepo(CreateManagedGitRepoRequest) returns (CreateManagedGitRepoResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       put: "/v1/orgs/{organization}/create-managed-git-repo",
       body: "*"
@@ -497,6 +555,7 @@ service AdminService {
 
   // Converts a project connected to github to a rill managed project.
   rpc DisconnectProjectFromGithub(DisconnectProjectFromGithubRequest) returns (DisconnectProjectFromGithubResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       // the path is still called `upload-assets` for backward compatibility
       post: "/v1/orgs/{organization}/projects/{project}/upload-assets",
@@ -506,11 +565,13 @@ service AdminService {
 
   // GetCloneCredentials returns credentials and other details for a project's Git repository or archive path if git repo is not configured.
   rpc GetCloneCredentials(GetCloneCredentialsRequest) returns (GetCloneCredentialsResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {get: "/v1/orgs/{organization}/projects/{project}/clone-credentials"};
   }
 
   // CreateWhitelistedDomain adds a domain to the whitelist
   rpc CreateWhitelistedDomain(CreateWhitelistedDomainRequest) returns (CreateWhitelistedDomainResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/v1/orgs/{organization}/whitelisted",
       body: "*"
@@ -519,32 +580,38 @@ service AdminService {
 
   // RemoveWhitelistedDomain removes a domain from the whitelist list
   rpc RemoveWhitelistedDomain(RemoveWhitelistedDomainRequest) returns (RemoveWhitelistedDomainResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {delete: "/v1/orgs/{organization}/whitelisted/{domain}"};
   }
 
   // ListWhitelistedDomains lists all the whitelisted domains for the organization
   rpc ListWhitelistedDomains(ListWhitelistedDomainsRequest) returns (ListWhitelistedDomainsResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {get: "/v1/orgs/{organization}/whitelisted"};
   }
 
   // GetUsersByEmail returns users by email
   rpc SearchUsers(SearchUsersRequest) returns (SearchUsersResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {get: "/v1/users/search"};
   }
 
   // SearchProjectUsers returns users who has access to to a project (including org members that have access through a usergroup)
   rpc SearchProjectUsers(SearchProjectUsersRequest) returns (SearchProjectUsersResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {get: "/v1/orgs/{organization}/projects/{project}/users/search"};
   }
 
   // ListSuperusers lists all the superusers
   rpc ListSuperusers(ListSuperusersRequest) returns (ListSuperusersResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {get: "/v1/superuser/members"};
   }
 
   // GetDeploymentCredentials returns runtime info and access token on behalf of a specific user, or alternatively for a raw set of JWT attributes
   // DEPRECATED: Clients should call GetDeployment instead.
   rpc GetDeploymentCredentials(GetDeploymentCredentialsRequest) returns (GetDeploymentCredentialsResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/v1/orgs/{organization}/projects/{project}/credentials",
       body: "*"
@@ -553,6 +620,7 @@ service AdminService {
 
   // GetIFrame returns the iframe URL for the given project
   rpc GetIFrame(GetIFrameRequest) returns (GetIFrameResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/v1/orgs/{organization}/projects/{project}/iframe",
       body: "*"
@@ -561,6 +629,7 @@ service AdminService {
 
   // SetSuperuser adds/remove a superuser
   rpc SetSuperuser(SetSuperuserRequest) returns (SetSuperuserResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/v1/superuser/members",
       body: "*"
@@ -569,11 +638,13 @@ service AdminService {
 
   // SudoGetResource returns details about a resource by ID lookup
   rpc SudoGetResource(SudoGetResourceRequest) returns (SudoGetResourceResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {get: "/v1/superuser/resource"};
   }
 
   // SudoUpdateUserQuotas update the quotas for users
   rpc SudoUpdateUserQuotas(SudoUpdateUserQuotasRequest) returns (SudoUpdateUserQuotasResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       patch: "/v1/superuser/quotas/user",
       body: "*"
@@ -582,6 +653,7 @@ service AdminService {
 
   // SudoUpdateOrganizationQuotas update the quotas available for orgs
   rpc SudoUpdateOrganizationQuotas(SudoUpdateOrganizationQuotasRequest) returns (SudoUpdateOrganizationQuotasResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       patch: "/v1/superuser/quotas/organization",
       body: "*"
@@ -590,6 +662,7 @@ service AdminService {
 
   // SudoUpdateOrganizationBillingCustomer update the billing customer for the organization
   rpc SudoUpdateOrganizationBillingCustomer(SudoUpdateOrganizationBillingCustomerRequest) returns (SudoUpdateOrganizationBillingCustomerResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       patch: "/v1/superuser/organization/billing/customer_id",
       body: "*"
@@ -598,6 +671,7 @@ service AdminService {
 
   // SudoExtendTrial extends the trial period for an organization
   rpc SudoExtendTrial(SudoExtendTrialRequest) returns (SudoExtendTrialResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/v1/superuser/organization/trial/extend",
       body: "*"
@@ -608,6 +682,7 @@ service AdminService {
   // It only updates the custom domain in the database, which is used to ensure correct redirects.
   // The DNS records and ingress TLS must be configured separately.
   rpc SudoUpdateOrganizationCustomDomain(SudoUpdateOrganizationCustomDomainRequest) returns (SudoUpdateOrganizationCustomDomainResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       patch: "/v1/superuser/organization/custom-domain",
       body: "*"
@@ -617,6 +692,7 @@ service AdminService {
 
   // SudoUpdateAnnotations endpoint for superusers to update project annotations
   rpc SudoUpdateAnnotations(SudoUpdateAnnotationsRequest) returns (SudoUpdateAnnotationsResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       patch: "/v1/superuser/projects/annotations",
       body: "*"
@@ -625,6 +701,7 @@ service AdminService {
 
   // SudoIssueRuntimeManagerToken returns a runtime JWT with full manager permissions for a runtime.
   rpc SudoIssueRuntimeManagerToken(SudoIssueRuntimeManagerTokenRequest) returns (SudoIssueRuntimeManagerTokenResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/v1/superuser/deployments/manager-token",
       body: "*"
@@ -633,13 +710,15 @@ service AdminService {
 
   // SudoDeleteOrganizationBillingIssue deletes a billing issue of a type for the organization
   rpc SudoDeleteOrganizationBillingIssue(SudoDeleteOrganizationBillingIssueRequest) returns (SudoDeleteOrganizationBillingIssueResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
-      delete: "/v1/superuser/organizations/{organization}/billing/issues/{type}",
+      delete: "/v1/superuser/organizations/{organization}/billing/issues/{type}"
     };
   }
 
   // SudoTriggerBillingRepair triggers billing repair jobs for orgs that doesn't have billing info and puts them on trial
   rpc SudoTriggerBillingRepair(SudoTriggerBillingRepairRequest) returns (SudoTriggerBillingRepairResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/v1/superuser/billing/repair",
       body: "*"
@@ -648,6 +727,7 @@ service AdminService {
 
   // CreateProjectWhitelistedDomain adds a domain to the project's whitelisted
   rpc CreateProjectWhitelistedDomain(CreateProjectWhitelistedDomainRequest) returns (CreateProjectWhitelistedDomainResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/v1/orgs/{organization}/projects/{project}/whitelisted",
       body: "*"
@@ -656,26 +736,31 @@ service AdminService {
 
   // RemoveProjectWhitelistedDomain removes a domain from the project's whitelisted
   rpc RemoveProjectWhitelistedDomain(RemoveProjectWhitelistedDomainRequest) returns (RemoveProjectWhitelistedDomainResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {delete: "/v1/orgs/{organization}/projects/{project}/whitelisted/{domain}"};
   }
 
   // ListWhitelistedDomains lists all the whitelisted domains of the project
   rpc ListProjectWhitelistedDomains(ListProjectWhitelistedDomainsRequest) returns (ListProjectWhitelistedDomainsResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {get: "/v1/orgs/{organization}/projects/{project}/whitelisted"};
   }
 
   // ListService returns all the services per organization
   rpc ListServices(ListServicesRequest) returns (ListServicesResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {get: "/v1/orgs/{organization_name}/services"};
   }
 
   // ListProjectMemberServices returns all the services for the project for an organization
   rpc ListProjectMemberServices(ListProjectMemberServicesRequest) returns (ListProjectMemberServicesResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {get: "/v1/orgs/{organization_name}/projects/{project_name}/services"};
   }
 
   // CreateService creates a new service per organization
   rpc CreateService(CreateServiceRequest) returns (CreateServiceResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/v1/orgs/{organization_name}/services",
       body: "*"
@@ -684,11 +769,13 @@ service AdminService {
 
   // GetService returns information about a specific service
   rpc GetService(GetServiceRequest) returns (GetServiceResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {get: "/v1/orgs/{organization_name}/services/{name}"};
   }
 
   // UpdateService updates a service per organization
   rpc UpdateService(UpdateServiceRequest) returns (UpdateServiceResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       patch: "/v1/orgs/{organization_name}/services/{name}",
       body: "*"
@@ -697,6 +784,7 @@ service AdminService {
 
   // SetOrganizationMemberServiceRole sets or updates the role of the service in the organization
   rpc SetOrganizationMemberServiceRole(SetOrganizationMemberServiceRoleRequest) returns (SetOrganizationMemberServiceRoleResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       put: "/v1/orgs/{organization_name}/services/{name}/role",
       body: "*"
@@ -705,11 +793,13 @@ service AdminService {
 
   // RemoveOrganizationMemberService removes the organization role for the service
   rpc RemoveOrganizationMemberService(RemoveOrganizationMemberServiceRequest) returns (RemoveOrganizationMemberServiceResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {delete: "/v1/orgs/{organization_name}/services/{name}/role"};
   }
 
   // SetProjectMemberServiceRole updates the project role for the service
   rpc SetProjectMemberServiceRole(SetProjectMemberServiceRoleRequest) returns (SetProjectMemberServiceRoleResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       put: "/v1/orgs/{organization_name}/projects/{project_name}/services/{name}/role",
       body: "*"
@@ -718,21 +808,25 @@ service AdminService {
 
   // RemoveProjectMemberService removes the service from the project
   rpc RemoveProjectMemberService(RemoveProjectMemberServiceRequest) returns (RemoveProjectMemberServiceResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {delete: "/v1/orgs/{organization_name}/projects/{project_name}/services/{name}"};
   }
 
   // DeleteService deletes a service per organization
   rpc DeleteService(DeleteServiceRequest) returns (DeleteServiceResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {delete: "/v1/orgs/{organization_name}/services/{name}"};
   }
 
   // ListServiceAuthTokens lists all the service auth tokens
   rpc ListServiceAuthTokens(ListServiceAuthTokensRequest) returns (ListServiceAuthTokensResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {get: "/v1/orgs/{organization_name}/services/{service_name}/tokens"};
   }
 
   // IssueServiceAuthToken issues an access token for a service
   rpc IssueServiceAuthToken(IssueServiceAuthTokenRequest) returns (IssueServiceAuthTokenResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/v1/orgs/{organization_name}/services/{service_name}/tokens",
       body: "*"
@@ -741,11 +835,13 @@ service AdminService {
 
   // RevokeServiceAuthToken revoke a service's access token
   rpc RevokeServiceAuthToken(RevokeServiceAuthTokenRequest) returns (RevokeServiceAuthTokenResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {delete: "/v1/services/tokens/{token_id}"};
   }
 
   // IssueMagicAuthToken creates a "magic" auth token that provides limited access to a specific filtered dashboard in a specific project.
   rpc IssueMagicAuthToken(IssueMagicAuthTokenRequest) returns (IssueMagicAuthTokenResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/v1/orgs/{organization}/projects/{project}/tokens/magic",
       body: "*"
@@ -754,21 +850,25 @@ service AdminService {
 
   // ListMagicAuthTokens lists all the magic auth tokens for a specific project.
   rpc ListMagicAuthTokens(ListMagicAuthTokensRequest) returns (ListMagicAuthTokensResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {get: "/v1/orgs/{organization}/projects/{project}/tokens/magic"};
   }
 
   // GetCurrentMagicAuthToken returns information about the current magic auth token.
   rpc GetCurrentMagicAuthToken(GetCurrentMagicAuthTokenRequest) returns (GetCurrentMagicAuthTokenResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {get: "/v1/magic-tokens/current"};
   }
 
   // RevokeMagicAuthToken revokes a magic auth token.
   rpc RevokeMagicAuthToken(RevokeMagicAuthTokenRequest) returns (RevokeMagicAuthTokenResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {delete: "/v1/magic-tokens/{token_id}"};
   }
 
   // UpdateUserPreferences updates the preferences for the user
   rpc UpdateUserPreferences(UpdateUserPreferencesRequest) returns (UpdateUserPreferencesResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       put: "/v1/users/preferences",
       body: "*"
@@ -777,16 +877,19 @@ service AdminService {
 
   // ListBookmarks lists all the bookmarks for the user and global ones for dashboard
   rpc ListBookmarks(ListBookmarksRequest) returns (ListBookmarksResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {get: "/v1/users/bookmarks"};
   }
 
   // GetBookmark returns the bookmark for the given user for the given project
   rpc GetBookmark(GetBookmarkRequest) returns (GetBookmarkResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {get: "/v1/users/bookmarks/{bookmark_id}"};
   }
 
   // CreateBookmark creates a bookmark for the given user or for all users for the dashboard
   rpc CreateBookmark(CreateBookmarkRequest) returns (CreateBookmarkResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/v1/users/bookmarks",
       body: "*"
@@ -795,6 +898,7 @@ service AdminService {
 
   // UpdateBookmark updates a bookmark for the given user for the given project
   rpc UpdateBookmark(UpdateBookmarkRequest) returns (UpdateBookmarkResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       put: "/v1/users/bookmarks",
       body: "*"
@@ -803,21 +907,25 @@ service AdminService {
 
   // RemoveBookmark removes the bookmark for the given user or all users
   rpc RemoveBookmark(RemoveBookmarkRequest) returns (RemoveBookmarkResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {delete: "/v1/users/bookmarks/{bookmark_id}"};
   }
 
   // GetRepoMeta returns credentials and other metadata for accessing a project's repo
   rpc GetRepoMeta(GetRepoMetaRequest) returns (GetRepoMetaResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {get: "/v1/projects/{project_id}/repo/meta"};
   }
 
   // PullVirtualRepo fetches files from a project's virtual repo
   rpc PullVirtualRepo(PullVirtualRepoRequest) returns (PullVirtualRepoResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {get: "/v1/projects/{project_id}/repo/virtual"};
   }
 
   // GetReportMeta returns metadata for generating a report. It's currently only called by the report reconciler in the runtime.
   rpc GetReportMeta(GetReportMetaRequest) returns (GetReportMetaResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/v1/projects/{project_id}/reports/meta",
       body: "*"
@@ -826,6 +934,7 @@ service AdminService {
 
   // GetAlertMeta returns metadata for checking an alert. It's currently only called by the alert reconciler in the runtime.
   rpc GetAlertMeta(GetAlertMetaRequest) returns (GetAlertMetaResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/v1/projects/{project_id}/alerts/meta",
       body: "*"
@@ -834,6 +943,7 @@ service AdminService {
 
   // CreateReport adds a virtual file for a report, triggers a reconcile, and waits for the report to be added to the runtime catalog
   rpc CreateReport(CreateReportRequest) returns (CreateReportResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/v1/orgs/{organization}/projects/{project}/reports",
       body: "*"
@@ -842,6 +952,7 @@ service AdminService {
 
   // EditReport edits a virtual file for a UI-managed report, triggers a reconcile, and waits for the report to be updated in the runtime
   rpc EditReport(EditReportRequest) returns (EditReportResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       put: "/v1/orgs/{organization}/projects/{project}/reports/{name}",
       body: "*"
@@ -850,6 +961,7 @@ service AdminService {
 
   // UnsubscribeReport removes the calling user from a reports recipients list
   rpc UnsubscribeReport(UnsubscribeReportRequest) returns (UnsubscribeReportResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/v1/orgs/{organization}/projects/{project}/reports/{name}/unsubscribe",
       body: "*"
@@ -858,11 +970,13 @@ service AdminService {
 
   // DeleteReport deletes the virtual file for a UI-managed report, triggers a reconcile, and waits for the report to be deleted in the runtime
   rpc DeleteReport(DeleteReportRequest) returns (DeleteReportResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {delete: "/v1/orgs/{organization}/projects/{project}/reports/{name}"};
   }
 
   // TriggerReport triggers an ad-hoc report run
   rpc TriggerReport(TriggerReportRequest) returns (TriggerReportResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/v1/orgs/{organization}/projects/{project}/reports/{name}/trigger",
       body: "*"
@@ -871,6 +985,7 @@ service AdminService {
 
   // GenerateReportYAML generates YAML for a scheduled report to be copied into a project's Git repository
   rpc GenerateReportYAML(GenerateReportYAMLRequest) returns (GenerateReportYAMLResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/v1/orgs/{organization}/projects/{project}/reports/-/yaml",
       body: "*"
@@ -879,6 +994,7 @@ service AdminService {
 
   // CreateAlert adds a virtual file for an alert, triggers a reconcile, and waits for the alert to be added to the runtime catalog
   rpc CreateAlert(CreateAlertRequest) returns (CreateAlertResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/v1/orgs/{organization}/projects/{project}/alerts",
       body: "*"
@@ -887,6 +1003,7 @@ service AdminService {
 
   // EditAlert edits a virtual file for a UI-managed alert, triggers a reconcile, and waits for the alert to be updated in the runtime
   rpc EditAlert(EditAlertRequest) returns (EditAlertResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       put: "/v1/orgs/{organization}/projects/{project}/alerts/{name}",
       body: "*"
@@ -899,15 +1016,18 @@ service AdminService {
       post: "/v1/orgs/{organization}/projects/{project}/alerts/{name}/unsubscribe",
       body: "*"
     };
+    option (google.api.method_visibility).restriction = "INTERNAL";
   }
 
   // DeleteAlert deletes the virtual file for a UI-managed alert, triggers a reconcile, and waits for the alert to be deleted in the runtime
   rpc DeleteAlert(DeleteAlertRequest) returns (DeleteAlertResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {delete: "/v1/orgs/{organization}/projects/{project}/alerts/{name}"};
   }
 
   // GenerateAlertYAML generates YAML for an alert to be copied into a project's Git repository
   rpc GenerateAlertYAML(GenerateAlertYAMLRequest) returns (GenerateAlertYAMLResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/v1/orgs/{organization}/projects/{project}/alerts/-/yaml",
       body: "*"
@@ -916,18 +1036,21 @@ service AdminService {
 
   // GenerateAlertYAML generates YAML for an alert to be copied into a project's Git repository
   rpc GetAlertYAML(GetAlertYAMLRequest) returns (GetAlertYAMLResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
-      get: "/v1/orgs/{organization}/projects/{project}/alerts/{name}/yaml",
+      get: "/v1/orgs/{organization}/projects/{project}/alerts/{name}/yaml"
     };
   }
 
   // GetBillingSubscription lists the subscription for the organization
   rpc GetBillingSubscription(GetBillingSubscriptionRequest) returns (GetBillingSubscriptionResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {get: "/v1/orgs/{organization}/billing/subscriptions"};
   }
 
   // UpdateBillingSubscription updates the billing plan for the organization
   rpc UpdateBillingSubscription(UpdateBillingSubscriptionRequest) returns (UpdateBillingSubscriptionResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       patch: "/v1/orgs/{organization}/billing/subscriptions",
       body: "*"
@@ -936,13 +1059,15 @@ service AdminService {
 
   // CancelBillingSubscription cancels the billing subscription for the organization
   rpc CancelBillingSubscription(CancelBillingSubscriptionRequest) returns (CancelBillingSubscriptionResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
-      delete: "/v1/orgs/{organization}/billing/subscriptions",
+      delete: "/v1/orgs/{organization}/billing/subscriptions"
     };
   }
 
   // RenewBillingSubscription renews the billing plan for the organization once cancelled
   rpc RenewBillingSubscription(RenewBillingSubscriptionRequest) returns (RenewBillingSubscriptionResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/v1/orgs/{organization}/billing/subscriptions/renew",
       body: "*"
@@ -951,16 +1076,19 @@ service AdminService {
 
   // GetPaymentsPortalURL returns the URL for the billing session to collect payment method
   rpc GetPaymentsPortalURL(GetPaymentsPortalURLRequest) returns (GetPaymentsPortalURLResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {get: "/v1/orgs/{organization}/billing/payments/portal-url"};
   }
 
   // ListPublicBillingPlans lists all public billing plans
   rpc ListPublicBillingPlans(ListPublicBillingPlansRequest) returns (ListPublicBillingPlansResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {get: "/v1/billing/plans"};
   }
 
   // GetBillingProjectCredentials returns credentials for the configured cloud metrics project filtered by request organization
   rpc GetBillingProjectCredentials(GetBillingProjectCredentialsRequest) returns (GetBillingProjectCredentialsResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/v1/billing/metrics-project-credentials",
       body: "*"
@@ -968,6 +1096,7 @@ service AdminService {
   }
 
   rpc RequestProjectAccess(RequestProjectAccessRequest) returns (RequestProjectAccessResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/v1/orgs/{organization}/projects/{project}/request-access",
       body: "*"
@@ -975,10 +1104,12 @@ service AdminService {
   }
 
   rpc GetProjectAccessRequest(GetProjectAccessRequestRequest) returns (GetProjectAccessRequestResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {get: "/v1/project-access-request/{id}"};
   }
 
   rpc ApproveProjectAccess(ApproveProjectAccessRequest) returns (ApproveProjectAccessResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/v1/project-access-request/{id}/approve",
       body: "*"
@@ -986,6 +1117,7 @@ service AdminService {
   }
 
   rpc DenyProjectAccess(DenyProjectAccessRequest) returns (DenyProjectAccessResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/v1/project-access-request/{id}/deny",
       body: "*"
@@ -994,6 +1126,7 @@ service AdminService {
 
   // ListOrganizationBillingIssues lists all the billing issues for the organization
   rpc ListOrganizationBillingIssues(ListOrganizationBillingIssuesRequest) returns (ListOrganizationBillingIssuesResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {get: "/v1/orgs/{organization}/billing/issues"};
   }
 }
