@@ -143,7 +143,7 @@ func (s *Server) OLAPListTables(ctx context.Context, req *runtimev1.OLAPListTabl
 	defer release()
 
 	i := olap.InformationSchema()
-	tables, err := i.All(ctx, req.SearchPattern)
+	tables, next, err := i.All(ctx, req.SearchPattern, req.PageSize, req.PageToken)
 	if err != nil {
 		return nil, err
 	}
@@ -162,7 +162,8 @@ func (s *Server) OLAPListTables(ctx context.Context, req *runtimev1.OLAPListTabl
 		}
 	}
 	return &runtimev1.OLAPListTablesResponse{
-		Tables: res,
+		Tables:        res,
+		NextPageToken: next,
 	}, nil
 }
 
