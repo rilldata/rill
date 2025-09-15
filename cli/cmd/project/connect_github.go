@@ -2,15 +2,12 @@ package project
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"net/url"
 	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/AlecAivazis/survey/v2"
-	"github.com/go-git/go-git/v5"
 	"github.com/google/go-github/v71/github"
 	"github.com/rilldata/rill/cli/cmd/org"
 	"github.com/rilldata/rill/cli/pkg/browser"
@@ -69,122 +66,72 @@ func GitPushCmd(ch *cmdutil.Helper) *cobra.Command {
 func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts) error {
 	// Set a default org for the user if necessary
 	// (If user is not in an org, we'll create one based on their Github account later in the flow.)
+	// TODO : similar to UI workflow create a org taking user input
 	if ch.Org == "" {
 		if err := org.SetDefaultOrg(ctx, ch); err != nil {
 			return err
 		}
 	}
 
-	// The gitPath can be either a local path or a remote .git URL.
-	// Determine which it is.
-	var isLocalGitPath bool
-	var gitRemote string
-	if opts.GitPath != "" {
-		u, err := url.Parse(opts.GitPath)
-		if err != nil || u.Scheme == "" {
-			isLocalGitPath = true
-		} else {
-			gitRemote, err = gitutil.NormalizeGithubRemote(opts.GitPath)
-			if err != nil {
-				return fmt.Errorf("failed to parse path as a Github remote: %w", err)
-			}
-		}
+	err := opts.ValidateAndApplyDefaults(ctx, ch)
+	if err != nil {
+		return err
 	}
 
-	var localGitPath string
-	var localProjectPath string
-	var err error
-	if isLocalGitPath {
-		err = opts.ValidatePathAndSetupGit(ch)
-		if err != nil {
-			return err
-		}
-		// If it's a local path, we need to do some extra validation and rewrites.
-		localGitPath, localProjectPath, err = ValidateLocalProject(ch, opts.GitPath, opts.SubPath)
-		if err != nil {
-			if errors.Is(err, ErrInvalidProject) {
-				return nil
-			}
-			return err
-		}
+	localGitPath := opts.GitPath
+	localProjectPath := opts.LocalProjectPath()
+
+	if opts.pushToProject != nil {
+		return redeployProject(ctx, ch, opts)
 	}
 
-	if ch.Org != "" {
-		projects, err := ch.InferProjects(ctx, ch.Org, localProjectPath)
-		if err != nil && !errors.Is(err, cmdutil.ErrNoMatchingProject) {
-			return err
-		}
-		var proj *adminv1.Project
-		for _, p := range projects {
-			if p.GitRemote != "" && p.ManagedGitId == "" {
-				proj = p
-				break
-			}
-		}
-		if proj != nil {
-			ch.PrintfError("Found existing project. But it is already connected to a Github repository.\nPlease visit %s to update the Github repository.\n", proj.FrontendUrl)
-			return nil
-		}
-	}
-
-	if isLocalGitPath {
-		// Extract and infer the gitRemote.
-		remote, err := gitutil.ExtractGitRemote(localGitPath, opts.RemoteName, false)
-		if err != nil {
-			if !errors.Is(err, gitutil.ErrGitRemoteNotFound) && !errors.Is(err, git.ErrRepositoryNotExists) {
-				return err
-			}
-
-			// first check if user wants to create a github repo
-			ch.Print("No git remote was found.\n")
-			ok, confirmErr := cmdutil.ConfirmPrompt("Do you want to create a Github repository?", "", true)
-			if confirmErr != nil {
-				return confirmErr
-			}
-			if !ok {
-				return nil
-			}
-
-			if err := createGithubRepoFlow(ctx, ch, localGitPath); err != nil {
-				return err
-			}
-
-			// In the rest of the flow we still check for the github access.
-			// It just adds some delay and no user action should be required and handles any improbable edge case where we don't have access to newly created repository.
-			// Also keeps the code clean.
-			remote, err = gitutil.ExtractGitRemote(localGitPath, opts.RemoteName, false)
-			if err != nil {
-				return err
-			}
-		}
-
-		// Error if the repository is not in sync with the remote
-		ok, err := repoInSyncFlow(ch, localGitPath, opts.ProdBranch, remote.Name)
-		if err != nil {
-			return err
+	if opts.remoteURL == "" {
+		// first check if user wants to create a github repo
+		ch.Print("No git remote was found.\n")
+		ok, confirmErr := cmdutil.ConfirmPrompt("Do you want to create a Github repository?", "", true)
+		if confirmErr != nil {
+			return confirmErr
 		}
 		if !ok {
-			ch.PrintfBold("You can run `rill project connect-github` again when you have pushed your local changes to the remote.\n")
 			return nil
 		}
 
-		// Set the gitRemote to the normalized Github URL.
-		gitRemote, err = remote.Github()
+		if err := createGithubRepoFlow(ctx, ch, localGitPath); err != nil {
+			return err
+		}
+
+		// In the rest of the flow we still check for the github access.
+		// It just adds some delay and no user action should be required and handles any improbable edge case where we don't have access to newly created repository.
+		// Also keeps the code clean.
+		remote, err := gitutil.ExtractGitRemote(localGitPath, opts.RemoteName, false)
+		if err != nil {
+			return err
+		}
+		opts.remoteURL, err = remote.Github()
+		opts.RemoteName = remote.Name
 		if err != nil {
 			return err
 		}
 	}
 
-	// We now have a gitRemote.
+	// Error if the repository is not in sync with the remote
+	ok, err := repoInSyncFlow(ch, localGitPath, opts.ProdBranch, opts.RemoteName)
+	if err != nil {
+		return err
+	}
+	if !ok {
+		ch.PrintfBold("You can run `rill deploy` again when you have pushed your local changes to the remote.\n")
+		return nil
+	}
 
 	// Extract Github account and repo name from the gitRemote
-	ghAccount, ghRepo, ok := gitutil.SplitGithubRemote(gitRemote)
+	ghAccount, ghRepo, ok := gitutil.SplitGithubRemote(opts.remoteURL)
 	if !ok {
-		return fmt.Errorf("remote %q is not a valid github.com remote", gitRemote)
+		return fmt.Errorf("remote %q is not a valid github.com remote", opts.remoteURL)
 	}
 
 	// Run flow for access to the Github remote (if necessary)
-	ghRes, err := githubFlow(ctx, ch, gitRemote)
+	ghRes, err := githubFlow(ctx, ch, opts.remoteURL)
 	if err != nil {
 		return fmt.Errorf("failed Github flow: %w", err)
 	}
@@ -210,23 +157,6 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 		ch.PrintfBold("Using org %q.\n\n", ch.Org)
 	}
 
-	// Check if a project matching gitRemote already exists in this org
-	projects, err := ch.ProjectNamesByGitRemote(ctx, ch.Org, gitRemote, opts.SubPath)
-	if err == nil && len(projects) != 0 { // ignoring error since this is just for a confirmation prompt
-		for _, p := range projects {
-			if strings.EqualFold(opts.Name, p) {
-				ch.PrintfWarn("Can't deploy project %q.\n", opts.Name)
-				ch.PrintfWarn("It is connected to Github and continuously deploys when you commit to %q\n", gitRemote)
-				ch.PrintfWarn("If you want to deploy to a new project, use `rill project connect-github --name new-name`\n")
-				return nil
-			}
-		}
-	}
-
-	var dirName string
-	if localProjectPath != "" {
-		dirName = filepath.Base(localProjectPath)
-	}
 	// Create the project (automatically deploys prod branch)
 	res, err := createProjectFlow(ctx, ch, &adminv1.CreateProjectRequest{
 		OrganizationName: ch.Org,
@@ -238,8 +168,8 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 		Subpath:          opts.SubPath,
 		ProdBranch:       opts.ProdBranch,
 		Public:           opts.Public,
-		DirectoryName:    dirName,
-		GitRemote:        gitRemote,
+		DirectoryName:    filepath.Base(localProjectPath),
+		GitRemote:        opts.remoteURL,
 	})
 	if err != nil {
 		if s, ok := status.FromError(err); ok && s.Code() == codes.PermissionDenied {
@@ -254,23 +184,21 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 	ch.PrintfSuccess("Rill projects deploy continuously when you push changes to Github.\n")
 
 	// Upload .env
-	if isLocalGitPath {
-		vars, err := local.ParseDotenv(ctx, localProjectPath)
+	vars, err := local.ParseDotenv(ctx, localProjectPath)
+	if err != nil {
+		ch.PrintfWarn("Failed to parse .env: %v\n", err)
+	} else if len(vars) > 0 {
+		c, err := ch.Client()
 		if err != nil {
-			ch.PrintfWarn("Failed to parse .env: %v\n", err)
-		} else if len(vars) > 0 {
-			c, err := ch.Client()
-			if err != nil {
-				return err
-			}
-			_, err = c.UpdateProjectVariables(ctx, &adminv1.UpdateProjectVariablesRequest{
-				Organization: ch.Org,
-				Project:      opts.Name,
-				Variables:    vars,
-			})
-			if err != nil {
-				ch.PrintfWarn("Failed to upload .env: %v\n", err)
-			}
+			return err
+		}
+		_, err = c.UpdateProjectVariables(ctx, &adminv1.UpdateProjectVariablesRequest{
+			Organization: ch.Org,
+			Project:      opts.Name,
+			Variables:    vars,
+		})
+		if err != nil {
+			ch.PrintfWarn("Failed to upload .env: %v\n", err)
 		}
 	}
 

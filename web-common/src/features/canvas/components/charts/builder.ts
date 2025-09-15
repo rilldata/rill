@@ -303,9 +303,9 @@ export function createCartesianMultiValueTooltipChannel(
 
   let multiValueTooltipChannel: TooltipValue[] | undefined;
 
-  multiValueTooltipChannel = data.data?.map((value) => ({
-    field: sanitizeValueForVega(value?.[colorField] as string),
-    type: "quantitative",
+  multiValueTooltipChannel = data.domainValues?.[colorField]?.map((value) => ({
+    field: sanitizeValueForVega(value as string),
+    type: "quantitative" as const,
     formatType: sanitizeFieldName(sanitizedYField),
   }));
 
