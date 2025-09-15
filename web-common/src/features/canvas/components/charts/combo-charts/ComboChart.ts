@@ -310,7 +310,15 @@ export class ComboChartComponent extends BaseChart<ComboChartSpec> {
             dimensions,
             where: combinedWhere,
             timeRange,
-            limit: config.x?.limit?.toString(),
+            fillMissing: config.x?.type === "temporal",
+            sort:
+              config.x?.type === "temporal"
+                ? [{ name: config.x?.field, desc: false }]
+                : undefined,
+            limit:
+              config.x?.type === "temporal"
+                ? "5000"
+                : config.x?.limit?.toString(),
           },
           {
             query: {
