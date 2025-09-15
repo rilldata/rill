@@ -288,7 +288,7 @@
   }
 
   .connector-grid {
-    @apply grid grid-cols-3 gap-4;
+    @apply grid grid-cols-4 gap-4;
   }
 
   .connector-tile-button {
