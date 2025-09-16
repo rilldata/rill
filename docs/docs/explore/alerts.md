@@ -74,7 +74,7 @@ Afterwards, click **Create** to finish creating the alert.
 
 Rill Cloud currently supports the following notification targets:
 - Email (default)
-- Slack (can be enabled)
+- Slack (can be [enabled](/connect/data-source/slack))
 
 When creating an alert, all available notification targets that can be configured for an alert will be presented in the **Delivery** tab.
 
@@ -93,7 +93,7 @@ Email is the default notification target for alerts and is automatically enabled
 
 ### Configuring Slack targets
 
-[Slack](https://slack.com/) is also an available target for alert notifications and Rill can be configured to send alerts to your workspace, either in specified Slack channels (public / private) or as private messages via a configured bot. However, Slack will <u>first need to be enabled</u> to show up as an available notification target for alerts. For more information, refer to our [Configuring Slack integration](#configuring-slack-targets) documentation.
+[Slack](https://slack.com/) is also an available target for alert notifications and Rill can be configured to send alerts to your workspace, either in specified Slack channels (public / private) or as private messages via a configured bot. However, Slack will <u>first need to be enabled</u> to show up as an available notification target for alerts. For more information, refer to our [configuring Slack integration](/connect/data-source/slack) documentation.
 
 
 <img src = '/img/explore/alerts/slack-notifications.png' class='centered' />
@@ -104,52 +104,3 @@ Email is the default notification target for alerts and is automatically enabled
 After having the Slack admin create the app / bot with appropriate permissions, please make sure to <u>first</u> add it to your target channels (using the */invite* command). Otherwise, the Slack alert will trigger an error that the channel can't be found when trying to post a notification!
 
 :::
-
-
-## Setting up the Slack integration
-
-In order to enable Slack to send alert notifications, you will need to create a Slack application configure it in your workspace with the necessary [permission scopes](https://api.slack.com/scopes). 
-
-To set up your Slack application, follow the steps provided in the [Slack documentation](https://api.slack.com/start/quickstart) and configure your app with the appropriate permissions depending on the notification type that you wish to use (see below).
-
-### Sending to Channels
-
-Sending notifications to a specific channel (public or private) requires the [`chat:write`](https://api.slack.com/scopes/chat:write) scope.
-
-
-### Direct messages
-
-Sending notifications via a direct message requires the [`chat:write`](https://api.slack.com/scopes/chat:write), [`users:read`](https://api.slack.com/scopes/users:read), and [`users:read.email`](https://api.slack.com/scopes/users:read.email) scopes. 
-
-:::tip 
-The last two scopes are required to find the user's ID by email.
-:::
-
-
-## Enabling the Slack integration in your project
-
-Once the Slack integration has been set up, the Slack destination will need to be enabled on a per project basis (note - alerts can only be configured on projects deployed to Rill Cloud). Create [a Slack connector](/connect/data-source/slack) to define your `connector.slack.bot_token` in your project to start.
-
-You can also create a [YAML based alert](/build/alerts) and use the notify key to send alerts to a Slack channel or direct message.
-
-
-## Managing & Editing Alerts
-
-To view or make changes to existing alerts, navigate to the project home page and select the `Alerts` tab. Selecting an alert will give details on the configured alert criteria, including frequency and filters. You will also have the option to edit the alert settings.
-
-<img src = '/img/explore/alerts/project_home_alerts.png' class='rounded-gif' />
-<br />
-
-## Common use cases
-
-### Troubleshooting 
-Alerts for troubleshooting purposes are useful for making sure that applications are running as expected, campaigns are set up correctly, or any use case where the outcome is binary. For these alerts, the criteria is often: is the amount > 0 or is the amount below a threshold. These alerts are best mixed with dimension filters to be alerted on any instance or split (e.g. Impressions > 0 for all Campaign_ID).
-
-### Pacing 
-Alerts for pacing purposes are good for budgeting and threshold use cases - where a pre-defined range can be applied to evaluate progress towards a goal. There alerts tend to be more specific (setting up filters and criteria for specific values) and marking progress towards that goal. Consider setting up multiple threshold alerts like 50%, 75% attainment.
-
-### Monitoring & Comparison
-Alerts for monitoring purposes are probably the most common alerting use case, i.e. wanting to be alerted based on relative values to prior periods. For these alerts, rather than absolutes, create criteria for % change of values. 
-
-
-

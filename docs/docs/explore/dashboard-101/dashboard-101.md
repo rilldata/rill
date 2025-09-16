@@ -57,7 +57,7 @@ The main screen of any Rill dashboard is called the _Explore_ page. As seen abov
 
 - _**Explore or Pivot:**_ You can switch the view from _explore_ to [_pivot_](https://docs.rilldata.com/explore/filters/pivot) by selecting either from the UI (see `pink` box)
 
-- _**Alerts, Bookmarks and Sharing:**_ You can create an [alert](/explore/alerts/alerts.md) by selecting the bell, customizing the default view of the dashboard (see `purple` box) to a predefined set of metrics, dimensions, and filters by selecting the [bookmark](../bookmarks.md), or share the dashboard ([internally by clicking the `Share` button](/manage/user-management#admin-invites-user-from-rill-cloud) or [externally via Public URLs](../public-url.md)) .
+- _**Alerts, Bookmarks and Sharing:**_ You can create an [alert](/explore/alerts) by selecting the bell, customizing the default view of the dashboard (see `purple` box) to a predefined set of metrics, dimensions, and filters by selecting the [bookmark](../bookmarks.md), or share the dashboard ([internally by clicking the `Share` button](/manage/user-management#admin-invites-user-from-rill-cloud) or [externally via Public URLs](../public-url.md)) .
 
 
 ### KPI Widget (Measures) Panel
@@ -178,4 +178,4 @@ banner: Your custom message here!
 - [Bookmarks & Sharing](../bookmarks.md)
 - [Exports & Scheduled Reports](../exports.md)
 - [Public URL](../public-url.md)
-- [Alerts](/explore/alerts/alerts.md)
+- [Alerts](/explore/alerts)

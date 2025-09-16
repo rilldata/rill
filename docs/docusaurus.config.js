@@ -492,7 +492,7 @@ const config = {
           },
           {
             from: '/explore/alerts/slack',
-            to: '/explore/alerts#configuring-slack-targets'
+            to: '/connect/data-source/slack'
           },
           // {
           //   from: '/old-page',

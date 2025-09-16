@@ -4,6 +4,7 @@ description: Different ways to use Time
 sidebar_label: "Rill Time"
 sidebar_position: 19
 ---
+<!-- adding temp, replaceing with #7876 Rill Time Syntax -->
 
 <div style={{ 
   position: "relative", 
@@ -151,3 +152,5 @@ Rill automatically adjusts the available grains based on the selected time range
 
 
 
+<!-- adding temp, replaceing with #7876 Rill Time Syntax -->
+## Time Comparisons

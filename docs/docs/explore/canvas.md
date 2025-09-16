@@ -55,7 +55,7 @@ Similar to our [Explore dashboards](/explore/dashboard-101), Canvas Dashboards a
  If your dimensions or measures have the same name in your metrics view, filters will apply to all components, regardless if it's in a different metrics view.
  :::
 
-<!-- - _**Alerts, Bookmarks and Sharing:**_ You can create an [alert](/explore/alerts/alerts.md) by selecting the bell, customizing the default view of the dashboard (see `purple` box) to a predefined set of metrics, dimensions, and filters by selecting the [bookmark](/explore/bookmarks.md), or share the dashboard ([internally by clicking the `Share` button](/manage/user-management#admin-invites-user-from-rill-cloud) or [externally via Public URLs](/explore/public-url.md)) . -->
+<!-- - _**Alerts, Bookmarks and Sharing:**_ You can create an [alert](/explore/alerts) by selecting the bell, customizing the default view of the dashboard (see `purple` box) to a predefined set of metrics, dimensions, and filters by selecting the [bookmark](/explore/bookmarks.md), or share the dashboard ([internally by clicking the `Share` button](/manage/user-management#admin-invites-user-from-rill-cloud) or [externally via Public URLs](/explore/public-url.md)) . -->
 
 ## Component Navigation
 <img src = '/img/explore/canvas/canvas-navigaton.png' class='rounded-gif' />
