@@ -68,18 +68,93 @@ export async function submitAddSourceForm(
     createOnly: false,
   });
 
+  // Check for an existing `.env` file
+  // Store the original `.env` blob so we can restore it in case of errors
+  let originalEnvBlob: string | undefined;
+  try {
+    const envFile = await queryClient.fetchQuery({
+      queryKey: getRuntimeServiceGetFileQueryKey(instanceId, { path: ".env" }),
+      queryFn: () => runtimeServiceGetFile(instanceId, { path: ".env" }),
+    });
+    originalEnvBlob = envFile.blob;
+  } catch (error) {
+    const fileNotFound =
+      error?.response?.data?.message?.includes("no such file");
+    if (fileNotFound) {
+      // Do nothing. We'll create the `.env` file below.
+    } else {
+      // We have a problem. Throw the error.
+      throw error;
+    }
+  }
+
   // Create or update the `.env` file
-  await runtimeServicePutFile(instanceId, {
+  const newEnvBlob = await updateDotEnvWithSecrets(
+    queryClient,
+    rewrittenConnector,
+    rewrittenFormValues,
+    "source",
+  );
+
+  // Make sure the file has reconciled before testing the connection
+  await runtimeServicePutFileAndWaitForReconciliation(instanceId, {
     path: ".env",
-    blob: await updateDotEnvWithSecrets(
-      queryClient,
-      rewrittenConnector,
-      rewrittenFormValues,
-      "source",
-    ),
+    blob: newEnvBlob,
     create: true,
     createOnly: false,
   });
+
+  // Wait for source resource reconciliation
+  // This must happen after .env reconciliation since sources depend on secrets
+  try {
+    await waitForResourceReconciliation(
+      instanceId,
+      formValues.name as string,
+      ResourceKind.Model,
+    );
+  } catch (error) {
+    // The source file was already created, so we need to delete it
+    await rollbackSourceChanges(instanceId, newSourceFilePath, originalEnvBlob);
+    const errorDetails = (error as any).details;
+
+    // Provide more helpful error messages for specific connectors
+    let errorMessage = error.message || "Unable to establish a connection";
+    if (
+      errorMessage.includes(
+        "Resource configuration failed to reconcile and was automatically deleted",
+      )
+    ) {
+      if (connector.name === "gcs") {
+        errorMessage =
+          "GCS connection failed. Please check your credentials and bucket permissions.";
+      } else if (connector.name === "s3") {
+        errorMessage =
+          "S3 connection failed. Please check your credentials and bucket permissions.";
+      } else {
+        errorMessage = `${connector.name} connection failed. Please check your connection details and credentials.`;
+      }
+    }
+
+    throw {
+      message: errorMessage,
+      details:
+        errorDetails && errorDetails !== error.message
+          ? errorDetails
+          : undefined,
+    };
+  }
+
+  // Check for file errors
+  // If the source file has errors, rollback the changes
+  const errorMessage = await fileArtifacts.checkFileErrors(
+    queryClient,
+    instanceId,
+    newSourceFilePath,
+  );
+  if (errorMessage) {
+    await rollbackSourceChanges(instanceId, newSourceFilePath, originalEnvBlob);
+    throw new Error(errorMessage);
+  }
 
   await goto(`/files/${newSourceFilePath}`);
 }
@@ -265,6 +340,33 @@ async function rollbackConnectorChanges(
   // Clean-up the `connector.yaml` file
   await runtimeServiceDeleteFile(instanceId, {
     path: newConnectorFilePath,
+  });
+
+  // Clean-up the `.env` file
+  if (!originalEnvBlob) {
+    // If .env file didn't exist before, delete it
+    await runtimeServiceDeleteFile(instanceId, {
+      path: ".env",
+    });
+  } else {
+    // If .env file existed before, restore its original content
+    await runtimeServicePutFile(instanceId, {
+      path: ".env",
+      blob: originalEnvBlob,
+      create: true,
+      createOnly: false,
+    });
+  }
+}
+
+async function rollbackSourceChanges(
+  instanceId: string,
+  newSourceFilePath: string,
+  originalEnvBlob: string | undefined,
+) {
+  // Clean-up the `source.yaml` file
+  await runtimeServiceDeleteFile(instanceId, {
+    path: newSourceFilePath,
   });
 
   // Clean-up the `.env` file
