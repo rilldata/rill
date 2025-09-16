@@ -21,7 +21,7 @@ service AdminService {
 
   // GetOrganization returns information about a specific organization
   rpc GetOrganization(GetOrganizationRequest) returns (GetOrganizationResponse) {
-    option (google.api.http) = {get: "/v1/orgs/{name}"};
+    option (google.api.http) = {get: "/v1/orgs/{organization}"};
   }
 
   // GetOrganizationNameForDomain finds the org name for a custom domain.
@@ -39,22 +39,22 @@ service AdminService {
     };
   }
 
-  // DeleteOrganization deletes an organizations
+  // DeleteOrganization deletes an organization
   rpc DeleteOrganization(DeleteOrganizationRequest) returns (DeleteOrganizationResponse) {
-    option (google.api.http) = {delete: "/v1/orgs/{name}"};
+    option (google.api.http) = {delete: "/v1/orgs/{organization}"};
   }
 
   // UpdateOrganization deletes an organizations
   rpc UpdateOrganization(UpdateOrganizationRequest) returns (UpdateOrganizationResponse) {
     option (google.api.http) = {
-      patch: "/v1/orgs/{name}",
+      patch: "/v1/orgs/{organization}",
       body: "*"
     };
   }
 
   // ListProjectsForOrganization lists all the projects currently available for given organizations.
   rpc ListProjectsForOrganization(ListProjectsForOrganizationRequest) returns (ListProjectsForOrganizationResponse) {
-    option (google.api.http) = {get: "/v1/orgs/{organization_name}/projects"};
+    option (google.api.http) = {get: "/v1/orgs/{organization}/projects"};
   }
 
   // ListProjectsForOrganizationAndUser lists all the projects that an organization member user has access to.
@@ -71,7 +71,7 @@ service AdminService {
 
   // GetProject returns information about a specific project
   rpc GetProject(GetProjectRequest) returns (GetProjectResponse) {
-    option (google.api.http) = {get: "/v1/orgs/{organization_name}/projects/{name}"};
+    option (google.api.http) = {get: "/v1/orgs/{organization}/projects/{project}"};
   }
 
   // ListProjectsForUserByName returns projects matching a name accessible by the logged in user
@@ -92,20 +92,20 @@ service AdminService {
   // CreateProject creates a new project
   rpc CreateProject(CreateProjectRequest) returns (CreateProjectResponse) {
     option (google.api.http) = {
-      post: "/v1/orgs/{organization_name}/projects",
+      post: "/v1/orgs/{organization}/projects",
       body: "*"
     };
   }
 
   // DeleteProject deletes an project
   rpc DeleteProject(DeleteProjectRequest) returns (DeleteProjectResponse) {
-    option (google.api.http) = {delete: "/v1/orgs/{organization_name}/projects/{name}"};
+    option (google.api.http) = {delete: "/v1/orgs/{organization}/projects/{project}"};
   }
 
   // UpdateProject updates a project
   rpc UpdateProject(UpdateProjectRequest) returns (UpdateProjectResponse) {
     option (google.api.http) = {
-      patch: "/v1/orgs/{organization_name}/projects/{name}",
+      patch: "/v1/orgs/{organization}/projects/{project}",
       body: "*"
     };
   }
@@ -126,7 +126,7 @@ service AdminService {
   // CreateAsset returns a one time signed URL using which any asset can be uploaded.
   rpc CreateAsset(CreateAssetRequest) returns (CreateAssetResponse) {
     option (google.api.http) = {
-      post: "/v1/orgs/{organization_name}/create_asset",
+      post: "/v1/orgs/{organization}/create_asset",
       body: "*"
     };
   }
@@ -146,14 +146,14 @@ service AdminService {
   // ListDeployments lists deployments for a project.
   rpc ListDeployments(ListDeploymentsRequest) returns (ListDeploymentsResponse) {
     option (google.api.http) = {
-      get: "/v1/orgs/{organization_name}/projects/{project_name}/deployments"
+      get: "/v1/orgs/{organization}/projects/{project}/deployments"
     };
   }
 
   // CreateDeployment creates a new deployment for a project.
   rpc CreateDeployment(CreateDeploymentRequest) returns (CreateDeploymentResponse) {
     option (google.api.http) = {
-      post: "/v1/orgs/{organization_name}/projects/{project_name}/deployments",
+      post: "/v1/orgs/{organization}/projects/{project}/deployments",
       body: "*"
     };
   }
@@ -665,31 +665,31 @@ service AdminService {
 
   // ListService returns all the services per organization
   rpc ListServices(ListServicesRequest) returns (ListServicesResponse) {
-    option (google.api.http) = {get: "/v1/orgs/{organization_name}/services"};
+    option (google.api.http) = {get: "/v1/orgs/{organization}/services"};
   }
 
   // ListProjectMemberServices returns all the services for the project for an organization
   rpc ListProjectMemberServices(ListProjectMemberServicesRequest) returns (ListProjectMemberServicesResponse) {
-    option (google.api.http) = {get: "/v1/orgs/{organization_name}/projects/{project_name}/services"};
+    option (google.api.http) = {get: "/v1/orgs/{organization}/projects/{project}/services"};
   }
 
   // CreateService creates a new service per organization
   rpc CreateService(CreateServiceRequest) returns (CreateServiceResponse) {
     option (google.api.http) = {
-      post: "/v1/orgs/{organization_name}/services",
+      post: "/v1/orgs/{organization}/services",
       body: "*"
     };
   }
 
   // GetService returns information about a specific service
   rpc GetService(GetServiceRequest) returns (GetServiceResponse) {
-    option (google.api.http) = {get: "/v1/orgs/{organization_name}/services/{name}"};
+    option (google.api.http) = {get: "/v1/orgs/{organization}/services/{name}"};
   }
 
   // UpdateService updates a service per organization
   rpc UpdateService(UpdateServiceRequest) returns (UpdateServiceResponse) {
     option (google.api.http) = {
-      patch: "/v1/orgs/{organization_name}/services/{name}",
+      patch: "/v1/orgs/{organization}/services/{name}",
       body: "*"
     };
   }
@@ -697,43 +697,43 @@ service AdminService {
   // SetOrganizationMemberServiceRole sets or updates the role of the service in the organization
   rpc SetOrganizationMemberServiceRole(SetOrganizationMemberServiceRoleRequest) returns (SetOrganizationMemberServiceRoleResponse) {
     option (google.api.http) = {
-      put: "/v1/orgs/{organization_name}/services/{name}/role",
+      put: "/v1/orgs/{organization}/services/{name}/role",
       body: "*"
     };
   }
 
   // RemoveOrganizationMemberService removes the organization role for the service
   rpc RemoveOrganizationMemberService(RemoveOrganizationMemberServiceRequest) returns (RemoveOrganizationMemberServiceResponse) {
-    option (google.api.http) = {delete: "/v1/orgs/{organization_name}/services/{name}/role"};
+    option (google.api.http) = {delete: "/v1/orgs/{organization}/services/{name}/role"};
   }
 
   // SetProjectMemberServiceRole updates the project role for the service
   rpc SetProjectMemberServiceRole(SetProjectMemberServiceRoleRequest) returns (SetProjectMemberServiceRoleResponse) {
     option (google.api.http) = {
-      put: "/v1/orgs/{organization_name}/projects/{project_name}/services/{name}/role",
+      put: "/v1/orgs/{organization}/projects/{project}/services/{name}/role",
       body: "*"
     };
   }
 
   // RemoveProjectMemberService removes the service from the project
   rpc RemoveProjectMemberService(RemoveProjectMemberServiceRequest) returns (RemoveProjectMemberServiceResponse) {
-    option (google.api.http) = {delete: "/v1/orgs/{organization_name}/projects/{project_name}/services/{name}"};
+    option (google.api.http) = {delete: "/v1/orgs/{organization}/projects/{project}/services/{name}"};
   }
 
   // DeleteService deletes a service per organization
   rpc DeleteService(DeleteServiceRequest) returns (DeleteServiceResponse) {
-    option (google.api.http) = {delete: "/v1/orgs/{organization_name}/services/{name}"};
+    option (google.api.http) = {delete: "/v1/orgs/{organization}/services/{name}"};
   }
 
   // ListServiceAuthTokens lists all the service auth tokens
   rpc ListServiceAuthTokens(ListServiceAuthTokensRequest) returns (ListServiceAuthTokensResponse) {
-    option (google.api.http) = {get: "/v1/orgs/{organization_name}/services/{service_name}/tokens"};
+    option (google.api.http) = {get: "/v1/orgs/{organization}/services/{service_name}/tokens"};
   }
 
   // IssueServiceAuthToken issues an access token for a service
   rpc IssueServiceAuthToken(IssueServiceAuthTokenRequest) returns (IssueServiceAuthTokenResponse) {
     option (google.api.http) = {
-      post: "/v1/orgs/{organization_name}/services/{service_name}/tokens",
+      post: "/v1/orgs/{organization}/services/{service_name}/tokens",
       body: "*"
     };
   }
@@ -1015,7 +1015,7 @@ message ListOrganizationsResponse {
 }
 
 message GetOrganizationRequest {
-  string name = 1;
+  string organization = 1;
   bool superuser_force_access = 2;
 }
 
@@ -1043,13 +1043,13 @@ message CreateOrganizationResponse {
 }
 
 message DeleteOrganizationRequest {
-  string name = 1;
+  string organization = 1;
 }
 
 message DeleteOrganizationResponse {}
 
 message UpdateOrganizationRequest {
-  string name = 1 [(validate.rules).string.min_len = 1];
+  string organization = 1 [(validate.rules).string.min_len = 1];
   optional string description = 2;
   optional string new_name = 3;
   optional string display_name = 5;
@@ -1065,14 +1065,14 @@ message UpdateOrganizationResponse {
 }
 
 message ListProjectsForOrganizationRequest {
-  string organization_name = 1 [(validate.rules).string.min_len = 1];
+  string organization = 1 [(validate.rules).string.min_len = 1];
   uint32 page_size = 2 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
   string page_token = 3;
 }
 
 message ListDeploymentsRequest {
-  string organization_name = 1 [(validate.rules).string.min_len = 1];
-  string project_name = 2 [(validate.rules).string.min_len = 1];
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string project = 2 [(validate.rules).string.min_len = 1];
   string environment = 3;
   string user_id = 4;
 }
@@ -1082,8 +1082,8 @@ message ListDeploymentsResponse {
 }
 
 message CreateDeploymentRequest {
-  string organization_name = 1 [(validate.rules).string.min_len = 1];
-  string project_name = 2 [(validate.rules).string.min_len = 1];
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string project = 2 [(validate.rules).string.min_len = 1];
   string environment = 3 [(validate.rules).string.min_len = 1];
 }
 
@@ -1164,8 +1164,8 @@ message ListProjectsForFingerprintResponse {
 }
 
 message GetProjectRequest {
-  string organization_name = 1;
-  string name = 2;
+  string organization = 1;
+  string project = 2;
   uint32 access_token_ttl_seconds = 3;
   bool superuser_force_access = 5;
   bool issue_superuser_token = 4;
@@ -1340,7 +1340,7 @@ message GetIFrameResponse {
 }
 
 message ListServicesRequest {
-  string organization_name = 1 [(validate.rules).string.min_len = 1];
+  string organization = 1 [(validate.rules).string.min_len = 1];
 }
 
 message ListServicesResponse {
@@ -1348,8 +1348,8 @@ message ListServicesResponse {
 }
 
 message ListProjectMemberServicesRequest {
-  string organization_name = 1 [(validate.rules).string.min_len = 1];
-  string project_name = 2 [(validate.rules).string.min_len = 1];
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string project = 2 [(validate.rules).string.min_len = 1];
 }
 
 message ListProjectMemberServicesResponse {
@@ -1358,9 +1358,9 @@ message ListProjectMemberServicesResponse {
 
 message CreateServiceRequest {
   string name = 1 [(validate.rules).string.min_len = 1];
-  string organization_name = 2 [(validate.rules).string.min_len = 1];
+  string organization = 2 [(validate.rules).string.min_len = 1];
   string org_role_name = 3; // Optional org role to assign
-  string project_name = 4; // Optional project to assign role to
+  string project = 4; // Optional project to assign role to
   string project_role_name = 5; // Optional project role to assign
   optional google.protobuf.Struct attributes = 6;
 }
@@ -1371,7 +1371,7 @@ message CreateServiceResponse {
 
 message GetServiceRequest {
   string name = 1 [(validate.rules).string.min_len = 1];
-  string organization_name = 2 [(validate.rules).string.min_len = 1];
+  string organization = 2 [(validate.rules).string.min_len = 1];
 }
 
 message GetServiceResponse {
@@ -1381,7 +1381,7 @@ message GetServiceResponse {
 
 message UpdateServiceRequest {
   string name = 1 [(validate.rules).string.min_len = 1];
-  string organization_name = 2 [(validate.rules).string.min_len = 1];
+  string organization = 2 [(validate.rules).string.min_len = 1];
   optional string new_name = 3;
   optional google.protobuf.Struct attributes = 4;
 }
@@ -1392,7 +1392,7 @@ message UpdateServiceResponse {
 
 message SetOrganizationMemberServiceRoleRequest {
   string name = 1 [(validate.rules).string.min_len = 1];
-  string organization_name = 2 [(validate.rules).string.min_len = 1];
+  string organization = 2 [(validate.rules).string.min_len = 1];
   string role = 3 [(validate.rules).string.min_len = 1];
 }
 
@@ -1400,23 +1400,23 @@ message SetOrganizationMemberServiceRoleResponse {}
 
 message RemoveOrganizationMemberServiceRequest {
   string name = 1 [(validate.rules).string.min_len = 1];
-  string organization_name = 2 [(validate.rules).string.min_len = 1];
+  string organization = 2 [(validate.rules).string.min_len = 1];
 }
 
 message RemoveOrganizationMemberServiceResponse {}
 
 message RemoveProjectMemberServiceRequest {
   string name = 1 [(validate.rules).string.min_len = 1];
-  string organization_name = 2 [(validate.rules).string.min_len = 1];
-  string project_name = 3 [(validate.rules).string.min_len = 1];
+  string organization = 2 [(validate.rules).string.min_len = 1];
+  string project = 3 [(validate.rules).string.min_len = 1];
 }
 
 message RemoveProjectMemberServiceResponse {}
 
 message SetProjectMemberServiceRoleRequest {
   string name = 1 [(validate.rules).string.min_len = 1];
-  string organization_name = 2 [(validate.rules).string.min_len = 1];
-  string project_name = 3 [(validate.rules).string.min_len = 1];
+  string organization = 2 [(validate.rules).string.min_len = 1];
+  string project = 3 [(validate.rules).string.min_len = 1];
   string role = 5 [(validate.rules).string.min_len = 1];
 }
 
@@ -1424,7 +1424,7 @@ message SetProjectMemberServiceRoleResponse {}
 
 message DeleteServiceRequest {
   string name = 1 [(validate.rules).string.min_len = 1];
-  string organization_name = 2 [(validate.rules).string.min_len = 1];
+  string organization = 2 [(validate.rules).string.min_len = 1];
 }
 
 message DeleteServiceResponse {
@@ -1432,8 +1432,8 @@ message DeleteServiceResponse {
 }
 
 message CreateProjectRequest {
-  string organization_name = 1 [(validate.rules).string.min_len = 1];
-  string name = 2 [(validate.rules).string.min_len = 1];
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string project = 2 [(validate.rules).string.min_len = 1];
   string description = 3;
   bool public = 4;
   // directory_name should be the most recently observed local directory name for the project.
@@ -1460,8 +1460,8 @@ message CreateProjectResponse {
 }
 
 message DeleteProjectRequest {
-  string organization_name = 1;
-  string name = 2;
+  string organization = 1;
+  string project = 2;
 }
 
 message DeleteProjectResponse {
@@ -1469,8 +1469,8 @@ message DeleteProjectResponse {
 }
 
 message UpdateProjectRequest {
-  string organization_name = 1 [(validate.rules).string.min_len = 1];
-  string name = 2 [(validate.rules).string.min_len = 1];
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string project = 2 [(validate.rules).string.min_len = 1];
   optional string description = 3;
   optional bool public = 4;
   optional string directory_name = 15;
@@ -1491,7 +1491,7 @@ message UpdateProjectResponse {
 }
 
 message CreateAssetRequest {
-  string organization_name = 1 [(validate.rules).string.min_len = 1];
+  string organization = 1 [(validate.rules).string.min_len = 1];
   string type = 2 [(validate.rules).string = {in: ["deploy", "image"]}];
   string name = 3 [(validate.rules).string.min_len = 1]; // Eg. "rilldata__project_name"
   string extension = 4; // Eg. ".tar.gz"
@@ -1644,7 +1644,7 @@ message SetSuperuserResponse {}
 message SudoGetResourceRequest {
   oneof id {
     string user_id = 1;
-    string org_id = 2;
+    string organization_id = 2;
     string project_id = 3;
     string deployment_id = 4;
     string instance_id = 5;
@@ -2123,7 +2123,7 @@ message RevokeServiceAuthTokenRequest {
 message RevokeServiceAuthTokenResponse {}
 
 message IssueServiceAuthTokenRequest {
-  string organization_name = 1 [(validate.rules).string.min_len = 1];
+  string organization = 1 [(validate.rules).string.min_len = 1];
   string service_name = 2;
 }
 
@@ -2132,7 +2132,7 @@ message IssueServiceAuthTokenResponse {
 }
 
 message ListServiceAuthTokensRequest {
-  string organization_name = 1 [(validate.rules).string.min_len = 1];
+  string organization = 1 [(validate.rules).string.min_len = 1];
   string service_name = 2;
 }
 
