@@ -42,6 +42,7 @@ interface AddDataFormValues {
   [key: string]: unknown;
 }
 
+// FIXME: consolidate this
 // Source YAML - `type: model`
 export async function submitAddSourceForm(
   queryClient: QueryClient,
@@ -230,26 +231,26 @@ export async function submitAddConnectorForm(
     createOnly: false,
   });
 
-  // For non-OLAP connectors, wait for connector resource reconciliation
+  // Wait for connector resource-level reconciliation
   // This must happen after .env reconciliation since connectors depend on secrets
-  if (!OLAP_ENGINES.includes(connector.name as string)) {
-    try {
-      await waitForResourceReconciliation(
-        instanceId,
-        newConnectorName,
-        ResourceKind.Connector,
-      );
-    } catch (error) {
-      // The connector file was already created, so we need to delete it
-      await runtimeServiceDeleteFile(instanceId, {
-        path: newConnectorFilePath,
-      });
-      throw {
-        message: error.message || "Unable to establish a connection",
-        details: (error as any).details || error.message,
-      };
-    }
+  // if (!OLAP_ENGINES.includes(connector.name as string)) {
+  try {
+    await waitForResourceReconciliation(
+      instanceId,
+      newConnectorName,
+      ResourceKind.Connector,
+    );
+  } catch (error) {
+    // The connector file was already created, so we need to delete it
+    await runtimeServiceDeleteFile(instanceId, {
+      path: newConnectorFilePath,
+    });
+    throw {
+      message: error.message || "Unable to establish a connection",
+      details: (error as any).details || error.message,
+    };
   }
+  // }
 
   // Check for file errors
   // If the connector file has errors, rollback the changes
@@ -269,23 +270,23 @@ export async function submitAddConnectorForm(
 
   // Test connection for OLAP connectors
   // If the connection test fails, rollback the changes
-  if (OLAP_ENGINES.includes(connector.name as string)) {
-    const result = await testOLAPConnector(
-      instanceId,
-      connector.name as string,
-    );
-    if (!result.success) {
-      await rollbackConnectorChanges(
-        instanceId,
-        newConnectorFilePath,
-        originalEnvBlob,
-      );
-      throw {
-        message: result.error || "Unable to establish a connection",
-        details: result.details,
-      };
-    }
-  }
+  // if (OLAP_ENGINES.includes(connector.name as string)) {
+  //   const result = await testOLAPConnector(
+  //     instanceId,
+  //     connector.name as string,
+  //   );
+  //   if (!result.success) {
+  //     await rollbackConnectorChanges(
+  //       instanceId,
+  //       newConnectorFilePath,
+  //       originalEnvBlob,
+  //     );
+  //     throw {
+  //       message: result.error || "Unable to establish a connection",
+  //       details: result.details,
+  //     };
+  //   }
+  // }
 
   /**
    * Connection successful: Complete the setup
@@ -332,6 +333,7 @@ async function beforeSubmitForm(instanceId: string) {
   }
 }
 
+// FIXME: consolidate this
 async function rollbackConnectorChanges(
   instanceId: string,
   newConnectorFilePath: string,
