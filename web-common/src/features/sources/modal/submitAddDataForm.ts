@@ -22,7 +22,6 @@ import {
   updateDotEnvWithSecrets,
   updateRillYAMLWithOlapConnector,
 } from "../../connectors/code-utils";
-import { testOLAPConnector } from "../../connectors/olap/test-connection";
 import {
   runtimeServicePutFileAndWaitForReconciliation,
   waitForResourceReconciliation,
@@ -112,6 +111,7 @@ export async function submitAddSourceForm(
       instanceId,
       formValues.name as string,
       ResourceKind.Model,
+      connector.name as string,
     );
   } catch (error) {
     // The source file was already created, so we need to delete it
@@ -233,12 +233,12 @@ export async function submitAddConnectorForm(
 
   // Wait for connector resource-level reconciliation
   // This must happen after .env reconciliation since connectors depend on secrets
-  // if (!OLAP_ENGINES.includes(connector.name as string)) {
   try {
     await waitForResourceReconciliation(
       instanceId,
       newConnectorName,
       ResourceKind.Connector,
+      connector.name as string,
     );
   } catch (error) {
     // The connector file was already created, so we need to delete it
@@ -268,25 +268,8 @@ export async function submitAddConnectorForm(
     throw new Error(errorMessage);
   }
 
-  // Test connection for OLAP connectors
-  // If the connection test fails, rollback the changes
-  // if (OLAP_ENGINES.includes(connector.name as string)) {
-  //   const result = await testOLAPConnector(
-  //     instanceId,
-  //     connector.name as string,
-  //   );
-  //   if (!result.success) {
-  //     await rollbackConnectorChanges(
-  //       instanceId,
-  //       newConnectorFilePath,
-  //       originalEnvBlob,
-  //     );
-  //     throw {
-  //       message: result.error || "Unable to establish a connection",
-  //       details: result.details,
-  //     };
-  //   }
-  // }
+  // Connection testing is now handled by resource reconciliation above
+  // No need for separate OLAP-specific testing since reconciliation includes Ping() calls
 
   /**
    * Connection successful: Complete the setup

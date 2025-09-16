@@ -46,8 +46,13 @@ export async function waitForResourceReconciliation(
   instanceId: string,
   resourceName: string,
   resourceKind: ResourceKind,
+  connectorType?: string,
 ) {
-  const maxAttempts = 10; // 20 seconds total (2s * 10)
+  // Use longer timeout for OLAP connectors since they take longer to establish connections
+  const isOLAP =
+    connectorType &&
+    ["clickhouse", "motherduck", "druid", "pinot"].includes(connectorType);
+  const maxAttempts = isOLAP ? 30 : 10; // 60 seconds for OLAP, 20 seconds for others
   const pollInterval = 2000; // 2 seconds
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
