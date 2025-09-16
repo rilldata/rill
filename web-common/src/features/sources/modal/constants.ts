@@ -23,6 +23,7 @@ export const SOURCES = [
   "azure",
   "bigquery",
   "duckdb",
+  "gcs",
   "postgres",
   "mysql",
   "postgres",
