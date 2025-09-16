@@ -1,9 +1,15 @@
+export type ClickHouseConnectorType =
+  | "rill-managed"
+  | "self-hosted"
+  | "clickhouse-cloud";
+
 export const CONNECTOR_TYPE_OPTIONS: {
-  value: boolean;
+  value: ClickHouseConnectorType;
   label: string;
 }[] = [
-  { value: true, label: "Rill-managed ClickHouse" },
-  { value: false, label: "Self-hosted ClickHouse" },
+  { value: "rill-managed", label: "Rill-managed ClickHouse" },
+  { value: "self-hosted", label: "Self-hosted ClickHouse" },
+  { value: "clickhouse-cloud", label: "ClickHouse Cloud" },
 ];
 
 export const CONNECTION_TAB_OPTIONS: { value: string; label: string }[] = [
@@ -19,7 +25,6 @@ export const SOURCES = [
   "athena",
   "redshift",
   "duckdb",
-  "motherduck",
   "postgres",
   "mysql",
   "sqlite",
@@ -29,6 +34,6 @@ export const SOURCES = [
   "https",
 ];
 
-export const OLAP_ENGINES = ["clickhouse", "druid", "pinot"];
+export const OLAP_ENGINES = ["clickhouse", "motherduck", "druid", "pinot"];
 
 export const ALL_CONNECTORS = [...SOURCES, ...OLAP_ENGINES];

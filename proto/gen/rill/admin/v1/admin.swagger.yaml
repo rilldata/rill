@@ -1208,6 +1208,8 @@ paths:
                 type: string
               force:
                 type: boolean
+              create:
+                type: boolean
       tags:
         - AdminService
   /v1/organizations/{organization}/projects/{project}/credentials:
@@ -3460,12 +3462,7 @@ paths:
           in: query
           required: false
           type: string
-        - name: pageSize
-          in: query
-          required: false
-          type: integer
-          format: int64
-        - name: pageToken
+        - name: rillMgdGitRemote
           in: query
           required: false
           type: string
@@ -5408,8 +5405,9 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1Project'
-      nextPageToken:
+      unauthorizedProject:
         type: string
+        description: unauthorized_project is the name of a project that matches the git_remote+sub_path but the caller does not have access to.
   v1ListProjectsForOrganizationAndUserResponse:
     type: object
     properties:

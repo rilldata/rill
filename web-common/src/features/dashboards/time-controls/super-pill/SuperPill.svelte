@@ -76,6 +76,7 @@
       {defaultTimeRange}
       timeString={v2TimeString || selectedRangeAlias}
       {interval}
+      timeGrain={activeTimeGrain}
       zone={activeTimeZone}
       {lockTimeZone}
       {availableTimeZones}

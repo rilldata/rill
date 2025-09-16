@@ -37,6 +37,54 @@ var spec = drivers.Spec{
 			Hint:        "Can be configured here or by setting the 'connector.mysql.dsn' environment variable (using '.env' or '--env')",
 			Secret:      true,
 		},
+		{
+			Key:         "user",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Username",
+			Placeholder: "mysql",
+			Required:    true,
+			Hint:        "MySQL username for authentication",
+		},
+		{
+			Key:         "password",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Password",
+			Placeholder: "your_password",
+			Hint:        "MySQL password for authentication",
+			Secret:      true,
+		},
+		{
+			Key:         "host",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Host",
+			Placeholder: "localhost",
+			Required:    true,
+			Hint:        "MySQL server hostname or IP address",
+		},
+		{
+			Key:         "port",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Port",
+			Placeholder: "3306",
+			Default:     "3306",
+			Hint:        "MySQL server port (default is 3306)",
+		},
+
+		{
+			Key:         "database",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Database",
+			Placeholder: "your_database",
+			Required:    true,
+			Hint:        "Name of the MySQL database to connect to",
+		},
+		{
+			Key:         "sslmode",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "SSL Mode",
+			Placeholder: "require",
+			Hint:        "Options include disable, require, verify-ca, and verify-full",
+		},
 	},
 	ImplementsSQLStore: true,
 }
@@ -248,8 +296,8 @@ func (c *connection) AsObjectStore() (drivers.ObjectStore, bool) {
 }
 
 // AsModelExecutor implements drivers.Handle.
-func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
-	return nil, false
+func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, error) {
+	return nil, drivers.ErrNotImplemented
 }
 
 // AsModelManager implements drivers.Handle.

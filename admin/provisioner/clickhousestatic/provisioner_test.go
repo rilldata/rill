@@ -12,6 +12,7 @@ import (
 	"github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/google/uuid"
 	"github.com/rilldata/rill/admin/provisioner"
+	"github.com/rilldata/rill/runtime/drivers/clickhouse/testclickhouse"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	testcontainersclickhouse "github.com/testcontainers/testcontainers-go/modules/clickhouse"
@@ -109,43 +110,6 @@ func TestClickHouseStatic(t *testing.T) {
 	require.Error(t, err)
 	_, err = db2.Exec("SELECT 1")
 	require.Error(t, err)
-}
-
-func provisionClickHouse(t *testing.T, p provisioner.Provisioner) (*provisioner.Resource, *sql.DB) {
-	// Provision a new resource
-	in := &provisioner.Resource{
-		ID:     uuid.New().String(),
-		Type:   provisioner.ResourceTypeClickHouse,
-		State:  nil,
-		Config: nil,
-	}
-	opts := &provisioner.ResourceOptions{
-		Args:        nil,
-		Annotations: map[string]string{"organization": "test", "project": "test"},
-		RillVersion: "dev",
-	}
-	out, err := p.Provision(context.Background(), in, opts)
-	require.NoError(t, err)
-
-	// Check the resource
-	require.Equal(t, in.ID, out.ID)
-	require.Equal(t, in.Type, out.Type)
-	require.Empty(t, out.State)
-	require.NotEmpty(t, out.Config)
-
-	// Check the resource
-	_, err = p.CheckResource(context.Background(), out, opts)
-	require.NoError(t, err)
-
-	// Open a connection to the database
-	db, err := sql.Open("clickhouse", out.Config["dsn"].(string))
-	require.NoError(t, err)
-
-	// Ping
-	err = db.Ping()
-	require.NoError(t, err)
-
-	return out, db
 }
 
 func TestClickHouseStaticWithEnvVar(t *testing.T) {
@@ -451,4 +415,81 @@ func TestGenerateDatabaseName(t *testing.T) {
 			require.LessOrEqual(t, len(result), 63, "database name should not exceed 63 characters")
 		})
 	}
+}
+
+func TestClickhouseCluster(t *testing.T) {
+	// Create a Clickhouse cluster and provisioner
+	dsn, cluster := testclickhouse.StartCluster(t)
+	specJSON, err := json.Marshal(&Spec{
+		DSN:     dsn,
+		Cluster: cluster,
+	})
+	require.NoError(t, err)
+	p, err := New(specJSON, nil, zap.NewNop())
+	require.NoError(t, err)
+
+	// Provision a resource
+	r, db := provisionClickHouse(t, p)
+	defer db.Close()
+
+	// Create a table with the connection
+	_, err = db.Exec(fmt.Sprintf("CREATE TABLE test ON CLUSTER %s (id UInt64) ENGINE = ReplicatedMergeTree ORDER BY id", cluster))
+	require.NoError(t, err)
+	_, err = db.Exec("INSERT INTO test VALUES (1)")
+	require.NoError(t, err)
+	rows, err := db.Query("SELECT COUNT(*) FROM system.tables WHERE database <> 'system'")
+	require.NoError(t, err)
+	for rows.Next() {
+		var count int
+		err = rows.Scan(&count)
+		require.NoError(t, err)
+		require.Equal(t, count, 1)
+	}
+	require.NoError(t, err)
+	rows.Close()
+
+	// Deprovision the resource
+	err = p.Deprovision(context.Background(), r)
+	require.NoError(t, err)
+
+	// Check the connections are deficient
+	_, err = db.Exec("SELECT 1")
+	require.Error(t, err)
+}
+
+func provisionClickHouse(t *testing.T, p provisioner.Provisioner) (*provisioner.Resource, *sql.DB) {
+	// Provision a new resource
+	in := &provisioner.Resource{
+		ID:     uuid.New().String(),
+		Type:   provisioner.ResourceTypeClickHouse,
+		State:  nil,
+		Config: nil,
+	}
+	opts := &provisioner.ResourceOptions{
+		Args:        nil,
+		Annotations: map[string]string{"organization": "test", "project": "test"},
+		RillVersion: "dev",
+	}
+	out, err := p.Provision(context.Background(), in, opts)
+	require.NoError(t, err)
+
+	// Check the resource
+	require.Equal(t, in.ID, out.ID)
+	require.Equal(t, in.Type, out.Type)
+	require.Empty(t, out.State)
+	require.NotEmpty(t, out.Config)
+
+	// Check the resource
+	_, err = p.CheckResource(context.Background(), out, opts)
+	require.NoError(t, err)
+
+	// Open a connection to the database
+	db, err := sql.Open("clickhouse", out.Config["dsn"].(string))
+	require.NoError(t, err)
+
+	// Ping
+	err = db.Ping()
+	require.NoError(t, err)
+
+	return out, db
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/md5"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -324,6 +325,10 @@ func (h *Helper) CurrentUserID(ctx context.Context) (string, error) {
 }
 
 func (h *Helper) ProjectNamesByGitRemote(ctx context.Context, org, remote, subPath string) ([]string, error) {
+	if org == "" || remote == "" {
+		return nil, errors.New("org, remote cannot be blank")
+	}
+
 	c, err := h.Client()
 	if err != nil {
 		return nil, err
@@ -394,18 +399,14 @@ func (h *Helper) InferProjects(ctx context.Context, org, path string) ([]*adminv
 	remote, err := gitutil.ExtractRemotes(repoRoot, false)
 	if err == nil {
 		for _, r := range remote {
-			if r.Name == "origin" {
-				// if origin is set, use it as the git remote
-				// rill managed projects are detected using directory name so it is fine to ignore __rill_remote
-				// this leaves an edge case where older rill managed projects did not set `directory_name`
-				// so if the directory had both `origin` and `__rill_remote` set rill managed projects would not be detected
-				req.GitRemote = r.URL
-				break
+			if r.Name == "__rill_remote" {
+				req.RillMgdGitRemote = r.URL
+			} else {
+				req.GitRemote, err = r.Github()
+				if err != nil {
+					return nil, err
+				}
 			}
-		}
-		// if no remote is set, use the first one
-		if req.GitRemote == "" && len(remote) > 0 {
-			req.GitRemote = remote[0].URL
 		}
 	}
 	c, err := h.Client()
