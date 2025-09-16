@@ -41,6 +41,7 @@
   export let onAttemptRemoveBillingContactUser: () => void;
   export let onAttemptChangeBillingContactUserRole: () => void;
   export let onEditUserGroup: (groupName: string) => void;
+  export let onShareProject: (projectName: string) => void;
 
   $: safeData = Array.isArray(data) ? data : [];
 
@@ -100,6 +101,7 @@
         flexRender(OrgUsersTableProjectsCell, {
           userId: row.original.userId,
           organization,
+          onShareProject,
         }),
       meta: {
         widthPercent: 40,

@@ -14,13 +14,18 @@
   import OrgUsersFilters from "@rilldata/web-admin/features/organizations/users/OrgUsersFilters.svelte";
   import OrgUsersTable from "@rilldata/web-admin/features/organizations/users/OrgUsersTable.svelte";
   import RemovingBillingContactDialog from "@rilldata/web-admin/features/organizations/users/RemovingBillingContactDialog.svelte";
+  import ShareProjectDialog from "@rilldata/web-admin/features/projects/user-management/ShareProjectDialog.svelte";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import { Search } from "@rilldata/web-common/components/search";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import { OrgUserRoles } from "@rilldata/web-common/features/users/roles.ts";
   import { Plus } from "lucide-svelte";
+  import type { PageData } from "./$types";
 
   const PAGE_SIZE = 12;
+
+  export let data: PageData;
+  $: ({ organizationPermissions } = data);
 
   let userEmail = "";
   let userRole = "";
@@ -32,6 +37,8 @@
   let isUpdateBillingContactDialogOpen = false;
   let isEditUserGroupDialogOpen = false;
   let editingUserGroupName = "";
+  let isShareProjectDialogOpen = false;
+  let sharingProject = "";
 
   let searchText = "";
   let filterSelection: "all" | "members" | "guests" | "pending" = "all";
@@ -198,6 +205,10 @@
             editingUserGroupName = groupName;
             isEditUserGroupDialogOpen = true;
           }}
+          onShareProject={(projectName) => {
+            sharingProject = projectName;
+            isShareProjectDialogOpen = true;
+          }}
         />
       </div>
       {#if filteredUsers.length > 0}
@@ -242,5 +253,15 @@
     groupName={editingUserGroupName}
     organizationUsers={allOrgMemberUsersRows}
     currentUserEmail={$currentUser.data?.user.email}
+  />
+{/if}
+
+{#if sharingProject}
+  <ShareProjectDialog
+    bind:open={isShareProjectDialogOpen}
+    {organization}
+    project={sharingProject}
+    manageOrgAdmins={organizationPermissions?.manageOrgAdmins}
+    manageOrgMembers={organizationPermissions?.manageOrgMembers}
   />
 {/if}

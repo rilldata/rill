@@ -1,6 +1,7 @@
 <script lang="ts">
-  import * as Popover from "@rilldata/web-common/components/popover";
+  import * as Dropdown from "@rilldata/web-common/components/dropdown-menu";
   import {
+    createAdminServiceListProjectsForOrganization,
     createAdminServiceListProjectsForOrganizationAndUser,
     type V1Project,
   } from "@rilldata/web-admin/client";
@@ -9,9 +10,12 @@
 
   export let organization: string;
   export let userId: string;
+  export let onShareProject: (projectName: string) => void;
 
   let isDropdownOpen = false;
 
+  const allProjectsQuery =
+    createAdminServiceListProjectsForOrganization(organization);
   const userProjectsQuery =
     createAdminServiceListProjectsForOrganizationAndUser(organization, {
       userId,
@@ -19,34 +23,40 @@
   $: ({ data, isPending, error } = $userProjectsQuery);
   let projects: V1Project[];
   $: projects = data?.projects ?? [];
+  $: accessToAllProjects =
+    $allProjectsQuery.data?.projects.length === projects.length;
 </script>
 
-<Popover.Root bind:open={isDropdownOpen}>
-  <Popover.Trigger
+<Dropdown.Root bind:open={isDropdownOpen}>
+  <Dropdown.Trigger
     class="w-18 flex flex-row gap-1 items-center rounded-sm {isDropdownOpen
       ? 'bg-slate-200'
       : 'hover:bg-slate-100'} px-2 py-1"
   >
-    <span class="capitalize"
-      >{projects.length} Project{projects.length > 1 ? "s" : ""}</span
-    >
+    <span class="capitalize">
+      {#if accessToAllProjects}
+        All projects
+      {:else}
+        {projects.length} Project{projects.length > 1 ? "s" : ""}
+      {/if}
+    </span>
     {#if isDropdownOpen}
       <CaretUpIcon size="12px" />
     {:else}
       <CaretDownIcon size="12px" />
     {/if}
-  </Popover.Trigger>
-  <Popover.Content>
+  </Dropdown.Trigger>
+  <Dropdown.Content>
     {#if isPending}
       Loading...
     {:else if error}
       Error
     {:else}
-      <div class="flex flex-col gap-y-1">
-        {#each projects as project (project.id)}
-          <div class="text-gray-700 text-xs">{project.name}</div>
-        {/each}
-      </div>
+      {#each projects as project (project.id)}
+        <Dropdown.Item on:click={() => onShareProject(project.name)}>
+          {project.name}
+        </Dropdown.Item>
+      {/each}
     {/if}
-  </Popover.Content>
-</Popover.Root>
+  </Dropdown.Content>
+</Dropdown.Root>
