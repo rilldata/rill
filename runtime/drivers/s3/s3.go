@@ -4,11 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
+	"strings"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/sts"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
@@ -155,29 +158,31 @@ var _ drivers.Handle = &Connection{}
 
 // Ping implements drivers.Handle.
 func (c *Connection) Ping(ctx context.Context) error {
-	creds, err := c.newCredentials()
+	cfg, err := c.GetAWSConfig(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to get AWS credentials: %w", err)
+		return err
 	}
 
-	cfg := aws.NewConfig().WithCredentials(creds)
-	if c.config.Region != "" {
-		cfg = cfg.WithRegion(c.config.Region)
-	}
+	if isAWSEndpoint(c.config.Endpoint) {
+		// AWS: use STS
+		stsClient := c.GetSTSClient(cfg, c.config.Region)
+		_, err = stsClient.GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{})
+		if err != nil {
+			return fmt.Errorf("GetCallerIdentity failed: %w", err)
+		}
+	} else {
+		// Non-AWS: use S3 ListObjectsV2 with MaxKeys=1
+		s3Client := c.GetS3Client(cfg, c.config.Region)
+		p := s3.NewListBucketsPaginator(s3Client, &s3.ListBucketsInput{
+			MaxBuckets: aws.Int32(1),
+		})
 
-	if c.config.Endpoint != "" {
-		cfg = cfg.WithEndpoint(c.config.Endpoint).WithS3ForcePathStyle(true)
-	}
-
-	sess, err := session.NewSession(cfg)
-	if err != nil {
-		return fmt.Errorf("failed to create AWS session: %w", err)
-	}
-
-	stsClient := sts.New(sess)
-	_, err = stsClient.GetCallerIdentityWithContext(ctx, &sts.GetCallerIdentityInput{})
-	if err != nil {
-		return fmt.Errorf("GetCallerIdentity failed: %w", err)
+		if p.HasMorePages() {
+			_, err := p.NextPage(ctx)
+			if err != nil {
+				return fmt.Errorf("ListBuckets failed: %w", err)
+			}
+		}
 	}
 
 	return nil
@@ -284,81 +289,137 @@ func (c *Connection) AsNotifier(properties map[string]any) (drivers.Notifier, er
 	return nil, drivers.ErrNotNotifier
 }
 
+func (c *Connection) s3Client(ctx context.Context) (*s3.Client, error) {
+	cfg, err := c.GetAWSConfig(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return s3.NewFromConfig(cfg, func(o *s3.Options) {
+		if c.config.Endpoint != "" {
+			o.BaseEndpoint = aws.String(c.config.Endpoint)
+			o.UsePathStyle = true
+		}
+		// if region != "" {
+		// 	o.Region = region
+		// }
+	}), nil
+}
+
+func (c *Connection) GetS3Client(cfg aws.Config, region string) *s3.Client {
+	return s3.NewFromConfig(cfg, func(o *s3.Options) {
+		if c.config.Endpoint != "" {
+			o.BaseEndpoint = aws.String(c.config.Endpoint)
+			o.UsePathStyle = true
+		}
+		if region != "" {
+			o.Region = region
+		}
+	})
+}
+
+func (c *Connection) GetSTSClient(cfg aws.Config, region string) *sts.Client {
+	return sts.NewFromConfig(cfg, func(o *sts.Options) {
+		if c.config.Endpoint != "" {
+			o.BaseEndpoint = aws.String(c.config.Endpoint)
+		}
+		if region != "" {
+			o.Region = region
+		}
+	})
+}
+
+func (c *Connection) GetAWSConfig(ctx context.Context) (aws.Config, error) {
+	provider, err := c.newCredentials(ctx)
+	if err != nil {
+		return aws.Config{}, fmt.Errorf("failed to get AWS credentials: %w", err)
+	}
+
+	opts := []func(*config.LoadOptions) error{
+		config.WithCredentialsProvider(provider),
+	}
+	if c.config.Region != "" {
+		opts = append(opts, config.WithRegion(c.config.Region))
+	}
+
+	cfg, err := config.LoadDefaultConfig(ctx, opts...)
+	if err != nil {
+		return aws.Config{}, fmt.Errorf("failed to load AWS config: %w", err)
+	}
+
+	return cfg, nil
+}
+
 // newCredentials returns credentials for connecting to AWS.
-func (c *Connection) newCredentials() (*credentials.Credentials, error) {
-	// If a role ARN is provided, assume the role and return the credentials.
+func (c *Connection) newCredentials(ctx context.Context) (aws.CredentialsProvider, error) {
+	// If a role ARN is provided, assume the role and return the credentials provider.
 	if c.config.RoleARN != "" {
-		assumedCreds, err := c.assumeRole()
+		provider, err := c.assumeRole(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("failed to assume role: %w", err)
 		}
-		return assumedCreds, nil
+		return provider, nil
 	}
 
-	providers := make([]credentials.Provider, 0)
+	var provider aws.CredentialsProvider
 
-	staticProvider := &credentials.StaticProvider{}
-	staticProvider.AccessKeyID = c.config.AccessKeyID
-	staticProvider.SecretAccessKey = c.config.SecretAccessKey
-	staticProvider.SessionToken = c.config.SessionToken
-	staticProvider.ProviderName = credentials.StaticProviderName
-	// in case user doesn't set access key id and secret access key the credentials retreival will fail
-	// the credential lookup will proceed to next provider in chain
-	providers = append(providers, staticProvider)
-
-	if c.config.AllowHostAccess {
-		// allowed to access host credentials so we add them in chain
-		// The chain used here is a duplicate of defaults.CredProviders(), but without the remote credentials lookup (since they resolve too slowly).
-		providers = append(providers, &credentials.EnvProvider{}, &credentials.SharedCredentialsProvider{Filename: "", Profile: ""})
-	}
-	// Find credentials to use.
-	creds := credentials.NewChainCredentials(providers)
-	if _, err := creds.Get(); err != nil {
-		if !errors.Is(err, credentials.ErrNoValidProvidersFoundInChain) {
-			return nil, err
+	if c.config.AccessKeyID != "" && c.config.SecretAccessKey != "" {
+		provider = credentials.NewStaticCredentialsProvider(
+			c.config.AccessKeyID,
+			c.config.SecretAccessKey,
+			c.config.SessionToken,
+		)
+	} else if c.config.AllowHostAccess {
+		// Allow host-based credentials (env vars, shared config, etc.)
+		cfg, err := config.LoadDefaultConfig(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to load default AWS config: %w", err)
 		}
-		// If no local credentials are found, you must explicitly set AnonymousCredentials to fetch public objects.
-		// AnonymousCredentials can't be chained, so we try to resolve local creds, and use anon if none were found.
-		creds = credentials.AnonymousCredentials
+		provider = cfg.Credentials
+	} else {
+		// Fall back to anonymous creds
+		provider = aws.AnonymousCredentials{}
 	}
 
-	return creds, nil
+	if _, err := provider.Retrieve(ctx); err != nil {
+		return aws.AnonymousCredentials{}, nil
+	}
+
+	// Fallback to anonymous
+	return provider, nil
 }
 
-// assumeRole returns a new credentials object that assumes the role specified by the ARN.
-func (c *Connection) assumeRole() (*credentials.Credentials, error) {
+// assumeRole returns a credentials provider that assumes the role specified by the ARN using AWS SDK v2.
+func (c *Connection) assumeRole(ctx context.Context) (aws.CredentialsProvider, error) {
 	// Add session name if specified
 	sessionName := c.config.RoleSessionName
 	if sessionName == "" {
 		sessionName = "rill-session"
 	}
 
-	sessOpts := session.Options{
-		SharedConfigState: session.SharedConfigDisable, // Disable shared config to prevent loading default config
-	}
+	loadOpts := []func(*config.LoadOptions) error{}
 
 	// Add region if specified
 	if c.config.Region != "" {
-		sessOpts.Config.Region = &c.config.Region
+		loadOpts = append(loadOpts, config.WithRegion(c.config.Region))
 	}
 
 	// Add credentials if provided
 	if c.config.AccessKeyID != "" && c.config.SecretAccessKey != "" {
-		sessOpts.Config.Credentials = credentials.NewStaticCredentials(
+		loadOpts = append(loadOpts, config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(
 			c.config.AccessKeyID,
 			c.config.SecretAccessKey,
 			c.config.SessionToken,
-		)
+		)))
 	}
 
-	// Create session with explicit configuration
-	s, err := session.NewSessionWithOptions(sessOpts)
+	// Create config with explicit configuration
+	cfg, err := config.LoadDefaultConfig(ctx, loadOpts...)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create AWS session: %w", err)
+		return nil, fmt.Errorf("failed to create AWS config:  %w", err)
 	}
 
 	// Create STS client with explicit session
-	stsClient := sts.New(s)
+	stsClient := sts.NewFromConfig(cfg)
 
 	// Create assume role input with explicit parameters
 	assumeRoleInput := &sts.AssumeRoleInput{
@@ -372,15 +433,28 @@ func (c *Connection) assumeRole() (*credentials.Credentials, error) {
 	}
 
 	// Assume the role
-	result, err := stsClient.AssumeRole(assumeRoleInput)
+	result, err := stsClient.AssumeRole(ctx, assumeRoleInput)
 	if err != nil {
 		return nil, fmt.Errorf("failed to assume role: %w", err)
 	}
 
 	// Return static credentials from the assumed role
-	return credentials.NewStaticCredentials(
-		*result.Credentials.AccessKeyId,
-		*result.Credentials.SecretAccessKey,
-		*result.Credentials.SessionToken,
-	), nil
+	return aws.NewCredentialsCache(credentials.StaticCredentialsProvider{Value: aws.Credentials{
+		AccessKeyID:     *result.Credentials.AccessKeyId,
+		SecretAccessKey: *result.Credentials.SecretAccessKey,
+		SessionToken:    *result.Credentials.SessionToken,
+	}}), nil
+}
+
+func isAWSEndpoint(endpoint string) bool {
+	if endpoint == "" {
+		return true // default AWS
+	}
+	u, err := url.Parse(endpoint)
+	if err != nil {
+		return false
+	}
+	host := u.Hostname()
+	return strings.HasSuffix(host, ".amazonaws.com") ||
+		strings.HasSuffix(host, ".aws") // covers partition endpoints
 }

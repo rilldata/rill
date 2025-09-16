@@ -2,54 +2,23 @@ package s3
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"net/http"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"gocloud.dev/blob"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func (c *Connection) ListBuckets(ctx context.Context) ([]string, error) {
-	creds, err := c.newCredentials()
+	client, err := c.s3Client(ctx)
 	if err != nil {
 		return nil, err
 	}
-	if creds == credentials.AnonymousCredentials {
-		return nil, fmt.Errorf("no credentials exist")
-	}
-
-	sharedConfigState := session.SharedConfigDisable
-	if c.config.AllowHostAccess {
-		sharedConfigState = session.SharedConfigEnable // Tells to look for default region set with `aws configure`
-	}
-	// Create a session that tries to infer the region from the environment
-	sess, err := session.NewSessionWithOptions(session.Options{
-		SharedConfigState: sharedConfigState,
-		Config: aws.Config{
-			Credentials: creds,
-		},
-	})
+	output, err := client.ListBuckets(ctx, &s3.ListBucketsInput{})
 	if err != nil {
 		return nil, err
 	}
-
-	// no region found, default to us-east-1
-	if sess.Config.Region == nil || *sess.Config.Region == "" {
-		sess = sess.Copy(&aws.Config{Region: aws.String("us-east-1")})
-	}
-	svc := s3.New(sess)
-	output, err := svc.ListBuckets(&s3.ListBucketsInput{})
-	if err != nil {
-		return nil, err
-	}
-
 	buckets := make([]string, 0, len(output.Buckets))
 	for _, bucket := range output.Buckets {
 		if bucket.Name != nil {
@@ -72,7 +41,7 @@ func (c *Connection) ListObjectsRaw(ctx context.Context, req *runtimev1.S3ListOb
 		pageSize = defaultPageSize
 	}
 
-	bucket, err := c.openBucket(ctx, req.Bucket, false)
+	bucket, err := c.openBucket(ctx, req.Bucket)
 	if err != nil {
 		return nil, "", err
 	}
@@ -80,12 +49,9 @@ func (c *Connection) ListObjectsRaw(ctx context.Context, req *runtimev1.S3ListOb
 
 	objects, nextToken, err := fetchObjects(ctx, bucket.Underlying(), pageToken, pageSize, req)
 	if err != nil {
-		var failureErr awserr.RequestFailure
-		if !errors.As(err, &failureErr) {
-			return nil, "", err
-		}
-		if failureErr.StatusCode() == http.StatusForbidden || failureErr.StatusCode() == http.StatusBadRequest {
-			bucket, err = c.openBucket(ctx, req.Bucket, true)
+		// Check if it's a permission error that might be resolved with anonymous access
+		if isPermissionError(err) {
+			bucket, err = c.openBucket(ctx, req.Bucket)
 			if err != nil {
 				return nil, "", fmt.Errorf("failed to open bucket %q, %w", req.Bucket, err)
 			}
@@ -111,20 +77,27 @@ func (c *Connection) ListObjectsRaw(ctx context.Context, req *runtimev1.S3ListOb
 }
 
 func (c *Connection) GetCredentialsInfo(ctx context.Context) (provider string, exist bool, err error) {
-	creds, err := c.newCredentials()
-	if creds == credentials.AnonymousCredentials {
+	prov, err := c.newCredentials(ctx)
+	if err != nil {
+		return "", false, err
+	}
+
+	if prov == nil {
 		return "", false, nil
 	}
+
+	// Try to retrieve credentials to check if they exist
+	creds, err := prov.Retrieve(ctx)
 	if err != nil {
 		return "", false, err
 	}
 
-	val, err := creds.Get()
-	if err != nil {
-		return "", false, err
+	// Check if it's anonymous credentials
+	if creds.AccessKeyID == "" && creds.SecretAccessKey == "" {
+		return "", false, nil
 	}
 
-	return val.ProviderName, true, nil
+	return creds.Source, true, nil
 }
 
 func fetchObjects(ctx context.Context, bucket *blob.Bucket, pageToken []byte, pageSize int, req *runtimev1.S3ListObjectsRequest) ([]*blob.ListObject, []byte, error) {
@@ -143,4 +116,15 @@ func fetchObjects(ctx context.Context, bucket *blob.Bucket, pageToken []byte, pa
 		},
 	})
 	return objects, nextToken, err
+}
+
+// isPermissionError checks if the error is a permission-related error
+func isPermissionError(err error) bool {
+	// Check for common permission error patterns
+	errStr := err.Error()
+	return errStr == "403" ||
+		errStr == "Forbidden" ||
+		errStr == "Access Denied" ||
+		errStr == "400" ||
+		errStr == "Bad Request"
 }
