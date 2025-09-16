@@ -2451,8 +2451,210 @@ definitions:
           output:
             description: Output variable that the component produces
             $ref: '#/definitions/component_variable_properties'
+          # Renderer properties - exactly one must be specified
+          line_chart:
+            $ref: '#/definitions/chart_properties'
+          bar_chart:
+            $ref: '#/definitions/chart_properties'
+          stacked_bar_chart:
+            $ref: '#/definitions/chart_properties'
+          vega_lite:
+            type: object
+            properties:
+              spec:
+                type: string
+                description: Vega-Lite specification as a string
+            required:
+              - spec
+            additionalProperties: false
+          kpi:
+            $ref: '#/definitions/kpi_properties'
+          table:
+            $ref: '#/definitions/table_properties'
+          markdown:
+            $ref: '#/definitions/markdown_properties'
+          image:
+            $ref: '#/definitions/image_properties'
         required:
           - type
+        additionalProperties: false
+
+  # Chart Properties
+  chart_properties:
+    type: object
+    properties:
+      config:
+        $ref: '#/definitions/chart_config'
+      title:
+        type: string
+        description: Chart title
+      description:
+        type: string
+        description: Chart description
+    required:
+      - config
+    additionalProperties: false
+
+  # Chart Config
+  chart_config:
+    type: object
+    properties:
+      metrics_view:
+        type: string
+        description: Reference to the metrics view to use
+      x:
+        $ref: '#/definitions/field_config'
+      y:
+        $ref: '#/definitions/field_config'
+      color:
+        oneOf:
+          - $ref: '#/definitions/field_config'
+          - type: string
+      tooltip:
+        $ref: '#/definitions/field_config'
+    required:
+      - metrics_view
+    additionalProperties: false
+
+  # Field Config
+  field_config:
+    type: object
+    properties:
+      field:
+        type: string
+        description: Field name from the metrics view
+      title:
+        type: string
+        description: Display title for the field
+      format:
+        type: string
+        description: Format string for the field
+      type:
+        type: string
+        enum: ["quantitative", "ordinal", "nominal", "temporal", "geojson"]
+        description: Data type of the field
+      timeUnit:
+        type: string
+        description: Time unit for temporal fields
+    required:
+      - field
+      - type
+    additionalProperties: false
+
+  # KPI Properties
+  kpi_properties:
+    type: object
+    properties:
+      metrics_view:
+        type: string
+        description: Reference to the metrics view to use
+      measure:
+        type: string
+        description: Measure to display
+      time_range:
+        type: string
+        description: Time range for the KPI
+      comparison_range:
+        type: string
+        description: Comparison time range
+      filter:
+        type: string
+        description: Filter expression
+      title:
+        type: string
+        description: KPI title
+      description:
+        type: string
+        description: KPI description
+    required:
+      - metrics_view
+      - measure
+      - time_range
+    additionalProperties: false
+
+  # Table Properties
+  table_properties:
+    type: object
+    properties:
+      metrics_view:
+        type: string
+        description: Reference to the metrics view to use
+      measures:
+        type: array
+        items:
+          type: string
+        description: List of measures to display
+      time_range:
+        type: string
+        description: Time range for the table
+      row_dimensions:
+        type: array
+        items:
+          type: string
+        description: Dimensions for table rows
+      col_dimensions:
+        type: array
+        items:
+          type: string
+        description: Dimensions for table columns
+      comparison_range:
+        type: string
+        description: Comparison time range
+      filter:
+        type: string
+        description: Filter expression
+      title:
+        type: string
+        description: Table title
+      description:
+        type: string
+        description: Table description
+    required:
+      - metrics_view
+      - measures
+      - time_range
+    additionalProperties: false
+
+  # Markdown Properties
+  markdown_properties:
+    type: object
+    properties:
+      content:
+        type: string
+        description: Markdown content
+      css:
+        type: object
+        description: CSS styles
+      title:
+        type: string
+        description: Markdown title
+      description:
+        type: string
+        description: Markdown description
+    required:
+      - content
+    additionalProperties: false
+
+  # Image Properties
+  image_properties:
+    type: object
+    properties:
+      url:
+        type: string
+        description: Image URL
+      css:
+        type: object
+        description: CSS styles
+      title:
+        type: string
+        description: Image title
+      description:
+        type: string
+        description: Image description
+    required:
+      - url
+    additionalProperties: false
+
 
   # Common Properties
   common_properties:
@@ -2962,24 +3164,3 @@ definitions:
   
   
 
-    # component_variable_properties:
-    #   type: object
-    #   properties:
-    #     name:
-    #       type: string
-    #       description: Unique identifier for the variable
-    #     type:
-    #       type: string
-    #       description: Data type of the variable (e.g., string, number, boolean)
-    #     value:
-    #       description: Default value for the variable. Can be any valid JSON value type
-    #       type:
-    #         - string
-    #         - number
-    #         - boolean
-    #         - object
-    #         - array
-    #   required:
-    #     - name
-    #     - type
-    #   additionalProperties: false 

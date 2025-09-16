@@ -6,7 +6,7 @@ sidebar_position: 20
 
 import ImageCodeToggle from '@site/src/components/ImageCodeToggle';
 
-Miscellaneous components in Rill Canvas provide additional functionality for text, images, and other non-data elements. These components help enhance your dashboards with rich content.
+Miscellaneous components in Rill Canvas provide additional functionality for text, images, and other non-data elements. These components help enhance your dashboards with rich content. For more information, refer to our [Components reference doc](/reference/project-files/component).
 
 ## Text/Markdown
 

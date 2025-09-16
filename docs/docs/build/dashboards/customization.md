@@ -132,8 +132,8 @@ For more details about configuring themes, you can refer to our [Theme YAML](/re
 ```yaml
 type: explore
 
-title: Title of your explore dashboard
-description: a description
+title: "Title of your explore dashboard"
+description: "The description of your dashboard"
 metrics_view: <your-metric-view-file-name>
 
 dimensions: '*' # can use expressions
