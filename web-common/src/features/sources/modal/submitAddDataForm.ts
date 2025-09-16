@@ -25,7 +25,7 @@ import {
 import { testOLAPConnector } from "../../connectors/olap/test-connection";
 import {
   runtimeServicePutFileAndWaitForReconciliation,
-  runtimeServicePutConnectorFileAndWaitForResourceReconciliation,
+  runtimeServicePutFileAndWaitForResourceReconciliation,
 } from "../../entity-management/actions";
 import { getFileAPIPathFromNameAndType } from "../../entity-management/entity-mappers";
 import { fileArtifacts } from "../../entity-management/file-artifacts";
@@ -113,7 +113,7 @@ export async function submitAddConnectorForm(
   // For non-OLAP connectors, wait for connector reconciliation first
   if (!OLAP_ENGINES.includes(connector.name as string)) {
     try {
-      await runtimeServicePutConnectorFileAndWaitForResourceReconciliation(
+      await runtimeServicePutFileAndWaitForResourceReconciliation(
         instanceId,
         {
           path: newConnectorFilePath,
@@ -124,6 +124,7 @@ export async function submitAddConnectorForm(
           createOnly: false,
         },
         newConnectorName,
+        ResourceKind.Connector,
       );
     } catch (error) {
       // The connector file was already created, so we need to delete it

@@ -43,14 +43,15 @@ export async function runtimeServicePutFileAndWaitForReconciliation(
   );
 }
 
-// Used for non-OLAP connectors (needs connection testing during reconciliation)
+// Used for any resource that needs reconciliation testing (non-OLAP connectors, etc.)
 // 1. Create the file
 // 2. Wait for the parser version to increment to confirm file was processed
 // 3. Check the specific resource reconcile status
-export async function runtimeServicePutConnectorFileAndWaitForResourceReconciliation(
+export async function runtimeServicePutFileAndWaitForResourceReconciliation(
   instanceId: string,
   runtimeServicePutFileBody: RuntimeServicePutFileBody,
-  connectorName: string,
+  resourceName: string,
+  resourceKind: ResourceKind,
 ) {
   const projectParserStartingVersion = getProjectParserVersion(instanceId);
 
@@ -61,7 +62,7 @@ export async function runtimeServicePutConnectorFileAndWaitForResourceReconcilia
     projectParserStartingVersion + 1,
   );
 
-  // Now check the specific connector resource reconcile status
+  // Now check the specific resource reconcile status
   // The parser version increment means files were processed, but individual resources
   // might still be reconciling or have failed to reconcile
   const maxAttempts = 10; // 20 seconds total (2s * 10)
@@ -70,13 +71,13 @@ export async function runtimeServicePutConnectorFileAndWaitForResourceReconcilia
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
       const resource = await runtimeServiceGetResource(instanceId, {
-        "name.kind": ResourceKind.Connector,
-        "name.name": connectorName,
+        "name.kind": resourceKind,
+        "name.name": resourceName,
       });
 
       // Check if there's a reconcile error
       if (resource.resource?.meta?.reconcileError) {
-        const error = new Error("Connector configuration failed to reconcile");
+        const error = new Error("Resource configuration failed to reconcile");
         (error as any).details = resource.resource.meta.reconcileError;
         throw error;
       }
@@ -95,7 +96,7 @@ export async function runtimeServicePutConnectorFileAndWaitForResourceReconcilia
 
       // Last attempt and still not idle
       throw new Error(
-        `Connector reconciliation timeout. Current status: ${reconcileStatus || "unknown"}`,
+        `Resource reconciliation timeout. Current status: ${reconcileStatus || "unknown"}`,
       );
     } catch (error) {
       // Resource not found could mean it was deleted due to reconcile failure
@@ -103,7 +104,7 @@ export async function runtimeServicePutConnectorFileAndWaitForResourceReconcilia
         if (attempt >= 3) {
           // After 6 seconds, assume reconcile failure
           throw new Error(
-            `Connector configuration failed to reconcile and was automatically deleted. This usually indicates a connection or configuration error.`,
+            `Resource configuration failed to reconcile and was automatically deleted. This usually indicates a connection or configuration error.`,
           );
         }
 
