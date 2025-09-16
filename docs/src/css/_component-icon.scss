@@ -17,13 +17,14 @@
   background: #fff;
   box-shadow: 0 1px 2px rgba(0,0,0,0.03);
   height: 100%;
+  min-height: 200px;
   text-decoration: none;
   transition: all 0.2s ease;
-  display: block;
+  display: flex;
+  flex-direction: column;
   
   &:hover {
     box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    transform: translateY(-2px);
     text-decoration: none;
   }
 }
@@ -34,6 +35,11 @@
   margin-bottom: 1.25rem;
   line-height: 1.4;
   margin-left: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  border-radius: 16px;
+  height: 96px;
 }
 
 .component-icon-header {
@@ -41,14 +47,20 @@
   font-size: 1em;
   font-weight: 550;
   display: flex;
+  padding-bottom: 0.5rem;
   flex-direction: column;
 }
 
-.component-icon-header-icon-top {
-  margin-bottom: 0.5rem;
+.component-icon-header:hover {
+  color: var(--ifm-color-primary);
+  text-decoration: none;
+}
+
+.component-image {
   display: flex;
   justify-content: center;
   align-items: center;
+  flex: 1;
   
   img {
     max-width: 100%;
@@ -57,10 +69,12 @@
   }
 }
 
-.component-icon-header:hover {
-  color: var(--ifm-color-primary);
-  text-decoration: none;
+.component-icon-multiple-measures {
+  color: var(--palette_slate_600);
+  font-size: 0.75rem;
+  text-align: left;
 }
+
 
 [data-theme='dark'] {
   .component-icon {
@@ -91,6 +105,11 @@
   
   .component-icon-link {
     color: #e5e5e5;
+  }
+  
+  .component-icon-multiple-measures {
+    color: #a3a3a3;
+    border-top-color: #404040;
   }
 } 
 

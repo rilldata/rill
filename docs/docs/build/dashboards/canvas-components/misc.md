@@ -49,3 +49,14 @@ Image components let you embed images, logos, and visual elements into your dash
     width: 6`}
   codeLanguage="yaml"
 />
+
+## Component
+
+Reference a reusable component created outside of the canvas dashboard.
+
+<ImageCodeToggle
+  image="/img/build/canvas/components/component.png"
+  imageAlt="Table showing detailed data columns"
+  code={`- component: my_component`}
+  codeLanguage="yaml"
+/>
