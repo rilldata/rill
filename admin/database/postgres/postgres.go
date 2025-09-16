@@ -283,16 +283,15 @@ func (c *connection) FindProjectsForUser(ctx context.Context, userID string) ([]
 }
 
 // FindProjectsForUserAndFingerprint returns projects for the user based on fingerprint.
-// The fingerprint is simply directory_name for managed git repos and git_remote + subpath for user managed git repos.
-// For backward compatibility when directory_name was not set when creating projects we fallback to git_remote for rill managed git repos.
-// For archive projects, we use directory_name directly since they are only used for testing and backward compatibility is not required.
-func (c *connection) FindProjectsForUserAndFingerprint(ctx context.Context, userID, directoryName, gitRemote, subpath, afterID string, limit int) ([]*database.Project, error) {
+// The fingerprint is simply git_remote + subpath for git based projects.
+// For archive projects it is directory_name.
+func (c *connection) FindProjectsForUserAndFingerprint(ctx context.Context, userID, directoryName, gitRemote, subpath, rillMgdRemote string) ([]*database.Project, error) {
 	// Shouldn't happen, but just to be safe and not return all projects.
 	if directoryName == "" && gitRemote == "" {
 		return nil, nil
 	}
 
-	args := []any{userID, directoryName, gitRemote, subpath}
+	args := []any{userID, directoryName, gitRemote, subpath, rillMgdRemote}
 	qry := `
 		SELECT p.* FROM projects p
 		WHERE p.id IN (
@@ -301,20 +300,13 @@ func (c *connection) FindProjectsForUserAndFingerprint(ctx context.Context, user
 			SELECT ugpr.project_id FROM usergroups_projects_roles ugpr JOIN usergroups_users ugu ON ugpr.usergroup_id = ugu.usergroup_id WHERE ugu.user_id = $1
 		)
 		AND (
-			(p.managed_git_repo_id IS NOT NULL AND ( (p.directory_name != '' AND p.directory_name = $2 ) OR (p.git_remote != '' AND p.git_remote = $3) ) )
+			(p.archive_asset_id IS NULL AND p.git_remote = $3 AND p.subpath = $4)
 			OR
-			(p.managed_git_repo_id IS NULL AND p.git_remote = $3 AND p.subpath = $4)
+			(p.archive_asset_id IS NULL AND p.git_remote = $5)
 			OR
 			(p.archive_asset_id IS NOT NULL AND p.directory_name = $2)
 		)
 	`
-	if afterID != "" {
-		qry += " AND p.id > $5 ORDER BY p.id LIMIT $6"
-		args = append(args, afterID, limit)
-	} else {
-		qry += " ORDER BY p.id LIMIT $5"
-		args = append(args, limit)
-	}
 
 	var res []*projectDTO
 	err := c.getDB(ctx).SelectContext(ctx, &res, qry, args...)
@@ -2997,6 +2989,28 @@ func (c *connection) InsertManagedGitRepo(ctx context.Context, opts *database.In
 func (c *connection) DeleteManagedGitRepos(ctx context.Context, ids []string) error {
 	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM managed_git_repos WHERE id = ANY($1)", ids)
 	return parseErr("managed git repo", err)
+}
+
+func (c *connection) FindGitRepoTransfer(ctx context.Context, remote string) (*database.GitRepoTransfer, error) {
+	res := &database.GitRepoTransfer{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM git_repo_transfers WHERE from_git_remote = $1", remote).StructScan(res)
+	if err != nil {
+		return nil, parseErr("git repo transfer", err)
+	}
+	return res, nil
+}
+
+func (c *connection) InsertGitRepoTransfer(ctx context.Context, fromRemote, toRemote string) (*database.GitRepoTransfer, error) {
+	res := &database.GitRepoTransfer{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, `
+		INSERT INTO git_repo_transfers (from_git_remote, to_git_remote)
+		VALUES ($1, $2) RETURNING *`,
+		fromRemote, toRemote,
+	).StructScan(res)
+	if err != nil {
+		return nil, parseErr("git repo transfer", err)
+	}
+	return res, nil
 }
 
 // projectDTO wraps database.Project, using the pgtype package to handle types that pgx can't read directly into their native Go types.

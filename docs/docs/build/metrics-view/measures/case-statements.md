@@ -1,8 +1,8 @@
 ---
 title: "Case Statements and Filters"
-description: Tips & Tricks for Metric Formatting
+description: Tips & Tricks for Case Statements
 sidebar_label: "Case Statements and Filters"
-sidebar_position: 02
+sidebar_position: 20
 ---
 
 One of the most common advanced measure expressions is the use of [`case`](https://duckdb.org/docs/stable/sql/expressions/case.html) statements and [`filters`](https://duckdb.org/docs/stable/sql/query_syntax/filter.html) to filter or apply logic to part of the result set. Use cases for case statements include filtered sums (e.g., only sum if a flag is true) and bucketing data (e.g., if between threshold x and y, then apply an aggregate). While similar, case statements give you a bit more flexibility as they allow you to set a custom value depending on the case. See below for some examples!
@@ -76,5 +76,5 @@ Similar to the above case statements, you can use the filter expression to filte
     format_preset: humanize
     valid_percent_of_total: true
 ```
-    ## Demo
+## Demo
 [See this project live in our demo!](https://ui.rilldata.com/demo/rill-kaggle-elec-consumption/explore/household_power_consumption_metrics_explore)

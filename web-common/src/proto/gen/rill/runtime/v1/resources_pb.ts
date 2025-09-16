@@ -966,8 +966,6 @@ export class ModelSpec extends Message<ModelSpec> {
   outputProperties?: Struct;
 
   /**
-   * retry is optional.
-   *
    * @generated from field: optional uint32 retry_attempts = 26;
    */
   retryAttempts?: number;
