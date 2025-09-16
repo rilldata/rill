@@ -15,10 +15,15 @@ func IsInit(ctx context.Context, repo drivers.RepoStore, instanceID string) bool
 }
 
 // InitEmpty initializes an empty project
-func InitEmpty(ctx context.Context, repo drivers.RepoStore, instanceID, displayName string) error {
+func InitEmpty(ctx context.Context, repo drivers.RepoStore, instanceID, displayName, olap string) error {
 	// If display name doesn't start with a letter, quote it
 	if !isAlphabetic(displayName[0]) {
 		displayName = fmt.Sprintf("%q", displayName)
+	}
+
+	// If olap is not specified we can default to duckdb
+	if olap == "" {
+		olap = "duckdb"
 	}
 
 	rillYAML := fmt.Sprintf(`compiler: %s
@@ -27,14 +32,14 @@ display_name: %s
 
 # The project's default OLAP connector.
 # Learn more: https://docs.rilldata.com/reference/olap-engines
-olap_connector: duckdb 
+olap_connector: %s
 
 # These are example mock users to test your security policies.
-# Learn more: https://docs.rilldata.com/manage/security
+# Learn more: https://docs.rilldata.com/build/rill-project-file#mock-users
 mock_users:
 - email: john@yourcompany.com
 - email: jane@partnercompany.com
-`, Version, displayName)
+`, Version, displayName, olap)
 
 	err := repo.Put(ctx, "rill.yaml", strings.NewReader(rillYAML))
 	if err != nil {
@@ -52,11 +57,6 @@ mock_users:
 		return err
 	}
 
-	duckdbYAML := "type: connector\ndriver: duckdb"
-	err = repo.Put(ctx, "connectors/duckdb.yaml", strings.NewReader(duckdbYAML))
-	if err != nil {
-		return err
-	}
 	return nil
 }
 

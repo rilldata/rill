@@ -1208,6 +1208,8 @@ paths:
                 type: string
               force:
                 type: boolean
+              create:
+                type: boolean
       tags:
         - AdminService
   /v1/organizations/{organization}/projects/{project}/credentials:
@@ -2785,6 +2787,11 @@ paths:
                 type: string
               public:
                 type: boolean
+              directoryName:
+                type: string
+                description: |-
+                  directory_name should be the most recently observed local directory name for the project.
+                  See ListProjectsForFingerprint for more context.
               provisioner:
                 type: string
               prodSlots:
@@ -2900,6 +2907,8 @@ paths:
                 type: string
               public:
                 type: boolean
+              directoryName:
+                type: string
               prodBranch:
                 type: string
               gitRemote:
@@ -3420,6 +3429,40 @@ paths:
             $ref: '#/definitions/rpcStatus'
       parameters:
         - name: name
+          in: query
+          required: false
+          type: string
+      tags:
+        - AdminService
+  /v1/projects-for-fingerprint:
+    get:
+      summary: |-
+        ListProjectsForFingerprint lists all projects the current user has access to that match the provided local project details.
+        This can be used to produce a short list of cloud projects that are likely to have been deployed from a local project.
+      operationId: AdminService_ListProjectsForFingerprint
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListProjectsForFingerprintResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: directoryName
+          in: query
+          required: false
+          type: string
+        - name: gitRemote
+          in: query
+          required: false
+          type: string
+        - name: subPath
+          in: query
+          required: false
+          type: string
+        - name: rillMgdGitRemote
           in: query
           required: false
           type: string
@@ -5354,6 +5397,17 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1WhitelistedDomain'
+  v1ListProjectsForFingerprintResponse:
+    type: object
+    properties:
+      projects:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1Project'
+      unauthorizedProject:
+        type: string
+        description: unauthorized_project is the name of a project that matches the git_remote+sub_path but the caller does not have access to.
   v1ListProjectsForOrganizationAndUserResponse:
     type: object
     properties:
@@ -5725,6 +5779,8 @@ definitions:
       public:
         type: boolean
       createdByUserId:
+        type: string
+      directoryName:
         type: string
       provisioner:
         type: string

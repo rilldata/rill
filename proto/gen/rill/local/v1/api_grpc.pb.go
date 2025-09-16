@@ -23,6 +23,7 @@ const (
 	LocalService_GetMetadata_FullMethodName                         = "/rill.local.v1.LocalService/GetMetadata"
 	LocalService_GetVersion_FullMethodName                          = "/rill.local.v1.LocalService/GetVersion"
 	LocalService_GitStatus_FullMethodName                           = "/rill.local.v1.LocalService/GitStatus"
+	LocalService_GithubRepoStatus_FullMethodName                    = "/rill.local.v1.LocalService/GithubRepoStatus"
 	LocalService_GitPull_FullMethodName                             = "/rill.local.v1.LocalService/GitPull"
 	LocalService_GitPush_FullMethodName                             = "/rill.local.v1.LocalService/GitPush"
 	LocalService_PushToGithub_FullMethodName                        = "/rill.local.v1.LocalService/PushToGithub"
@@ -49,6 +50,8 @@ type LocalServiceClient interface {
 	GetVersion(ctx context.Context, in *GetVersionRequest, opts ...grpc.CallOption) (*GetVersionResponse, error)
 	// GitStatus returns the curren status of the local git repo. This is equivalent to doing a `git fetch` followed by running `git status`.
 	GitStatus(ctx context.Context, in *GitStatusRequest, opts ...grpc.CallOption) (*GitStatusResponse, error)
+	// GithubRepoStatus returns info about a Github user account based on the caller's installations. Forwards to admin API of the same name.
+	GithubRepoStatus(ctx context.Context, in *GithubRepoStatusRequest, opts ...grpc.CallOption) (*GithubRepoStatusResponse, error)
 	// GitPull fetches the latest changes from the remote git repo equivalent to `git pull` command.
 	// If there are any merge conflicts the pull is aborted.
 	// Force can be set to true to force the pull and overwrite any local changes.
@@ -66,6 +69,7 @@ type LocalServiceClient interface {
 	// GetCurrentUser returns the locally logged in user
 	GetCurrentUser(ctx context.Context, in *GetCurrentUserRequest, opts ...grpc.CallOption) (*GetCurrentUserResponse, error)
 	// GetCurrentProject returns the rill cloud project connected to the local project
+	// Deprecated: Use ListMatchingProjects instead.
 	GetCurrentProject(ctx context.Context, in *GetCurrentProjectRequest, opts ...grpc.CallOption) (*GetCurrentProjectResponse, error)
 	// ListOrganizationsAndBillingMetadata returns metadata about the current user's orgs.
 	ListOrganizationsAndBillingMetadata(ctx context.Context, in *ListOrganizationsAndBillingMetadataRequest, opts ...grpc.CallOption) (*ListOrganizationsAndBillingMetadataResponse, error)
@@ -121,6 +125,16 @@ func (c *localServiceClient) GitStatus(ctx context.Context, in *GitStatusRequest
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GitStatusResponse)
 	err := c.cc.Invoke(ctx, LocalService_GitStatus_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *localServiceClient) GithubRepoStatus(ctx context.Context, in *GithubRepoStatusRequest, opts ...grpc.CallOption) (*GithubRepoStatusResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GithubRepoStatusResponse)
+	err := c.cc.Invoke(ctx, LocalService_GithubRepoStatus_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -259,6 +273,8 @@ type LocalServiceServer interface {
 	GetVersion(context.Context, *GetVersionRequest) (*GetVersionResponse, error)
 	// GitStatus returns the curren status of the local git repo. This is equivalent to doing a `git fetch` followed by running `git status`.
 	GitStatus(context.Context, *GitStatusRequest) (*GitStatusResponse, error)
+	// GithubRepoStatus returns info about a Github user account based on the caller's installations. Forwards to admin API of the same name.
+	GithubRepoStatus(context.Context, *GithubRepoStatusRequest) (*GithubRepoStatusResponse, error)
 	// GitPull fetches the latest changes from the remote git repo equivalent to `git pull` command.
 	// If there are any merge conflicts the pull is aborted.
 	// Force can be set to true to force the pull and overwrite any local changes.
@@ -276,6 +292,7 @@ type LocalServiceServer interface {
 	// GetCurrentUser returns the locally logged in user
 	GetCurrentUser(context.Context, *GetCurrentUserRequest) (*GetCurrentUserResponse, error)
 	// GetCurrentProject returns the rill cloud project connected to the local project
+	// Deprecated: Use ListMatchingProjects instead.
 	GetCurrentProject(context.Context, *GetCurrentProjectRequest) (*GetCurrentProjectResponse, error)
 	// ListOrganizationsAndBillingMetadata returns metadata about the current user's orgs.
 	ListOrganizationsAndBillingMetadata(context.Context, *ListOrganizationsAndBillingMetadataRequest) (*ListOrganizationsAndBillingMetadataResponse, error)
@@ -308,6 +325,9 @@ func (UnimplementedLocalServiceServer) GetVersion(context.Context, *GetVersionRe
 }
 func (UnimplementedLocalServiceServer) GitStatus(context.Context, *GitStatusRequest) (*GitStatusResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GitStatus not implemented")
+}
+func (UnimplementedLocalServiceServer) GithubRepoStatus(context.Context, *GithubRepoStatusRequest) (*GithubRepoStatusResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GithubRepoStatus not implemented")
 }
 func (UnimplementedLocalServiceServer) GitPull(context.Context, *GitPullRequest) (*GitPullResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GitPull not implemented")
@@ -434,6 +454,24 @@ func _LocalService_GitStatus_Handler(srv interface{}, ctx context.Context, dec f
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(LocalServiceServer).GitStatus(ctx, req.(*GitStatusRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _LocalService_GithubRepoStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GithubRepoStatusRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LocalServiceServer).GithubRepoStatus(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LocalService_GithubRepoStatus_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LocalServiceServer).GithubRepoStatus(ctx, req.(*GithubRepoStatusRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -676,6 +714,10 @@ var LocalService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GitStatus",
 			Handler:    _LocalService_GitStatus_Handler,
+		},
+		{
+			MethodName: "GithubRepoStatus",
+			Handler:    _LocalService_GithubRepoStatus_Handler,
 		},
 		{
 			MethodName: "GitPull",

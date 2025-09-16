@@ -22,7 +22,11 @@
   import { dsnSchema, getYupSchema } from "./yupSchemas";
   import Checkbox from "@rilldata/web-common/components/forms/Checkbox.svelte";
   import { isEmpty, normalizeErrors } from "./utils";
-  import { CONNECTOR_TYPE_OPTIONS, CONNECTION_TAB_OPTIONS } from "./constants";
+  import {
+    CONNECTOR_TYPE_OPTIONS,
+    CONNECTION_TAB_OPTIONS,
+    type ClickHouseConnectorType,
+  } from "./constants";
   import ConnectorTypeSelector from "@rilldata/web-common/components/forms/ConnectorTypeSelector.svelte";
   import { getInitialFormValuesFromProperties } from "../sourceUtils";
 
@@ -30,7 +34,7 @@
   export let formId: string;
   export let submitting: boolean;
   export let isSubmitDisabled: boolean;
-  export let managed: boolean;
+  export let connectorType: ClickHouseConnectorType = "self-hosted";
   export let onClose: () => void;
   export let setError: (
     error: string | null,
@@ -41,7 +45,7 @@
 
   const dispatch = createEventDispatcher();
 
-  // Always include 'managed' in the schema for ClickHouse
+  // ClickHouse schema includes the 'managed' property for backend compatibility
   const clickhouseSchema = yup(getYupSchema["clickhouse"]);
   const initialFormValues = getInitialFormValuesFromProperties(
     connector.configProperties ?? [],
@@ -84,39 +88,88 @@
   let dsnError: string | null = null;
   let dsnErrorDetails: string | undefined = undefined;
 
-  $: managed = $paramsForm.managed;
-  $: submitting = connectionTab === "dsn" ? $dsnSubmitting : $paramsSubmitting;
-  $: formId = connectionTab === "dsn" ? dsnFormId : paramsFormId;
+  $: submitting =
+    connectionTab === "parameters" ? $paramsSubmitting : $dsnSubmitting;
+  $: formId = connectionTab === "parameters" ? paramsFormId : dsnFormId;
 
   // Reset connectionTab if switching to Rill-managed
-  $: if ($paramsForm.managed) {
+  $: if (connectorType === "rill-managed") {
     connectionTab = "parameters";
   }
 
   // Reset errors when form is modified
-  $: if (connectionTab === "dsn") {
-    if ($dsnTainted) dsnError = null;
-  } else {
+  $: if (connectionTab === "parameters") {
     if ($paramsTainted) paramsError = null;
+  } else if (connectionTab === "dsn") {
+    if ($dsnTainted) dsnError = null;
   }
 
   // Emit the submitting state to the parent
   $: dispatch("submitting", { submitting });
 
-  let prevManaged = $paramsForm.managed;
+  let prevConnectorType = connectorType;
   $: {
-    // Switching to managed: strip all but managed
-    if ($paramsForm.managed && Object.keys($paramsForm).length > 1) {
+    // Switching to Rill-managed: set managed=true and clear other properties
+    if (
+      connectorType === "rill-managed" &&
+      Object.keys($paramsForm).length > 1
+    ) {
       paramsForm.update(() => ({ managed: true }), { taint: false });
       resetError();
     }
-    // Switching to self-managed: restore defaults
-    else if (prevManaged && !$paramsForm.managed) {
+    // Switching to self-managed: restore defaults and set managed=false
+    else if (
+      prevConnectorType === "rill-managed" &&
+      connectorType === "self-hosted"
+    ) {
       paramsForm.update(() => ({ ...initialFormValues, managed: false }), {
         taint: false,
       });
     }
-    prevManaged = $paramsForm.managed;
+    // Switching to ClickHouse Cloud: set specific defaults
+    else if (
+      prevConnectorType !== "clickhouse-cloud" &&
+      connectorType === "clickhouse-cloud"
+    ) {
+      paramsForm.update(
+        () => ({
+          ...initialFormValues,
+          managed: false,
+          port: "8443",
+          ssl: true,
+        }),
+        {
+          taint: false,
+        },
+      );
+    }
+    // Switching from ClickHouse Cloud to self-hosted: restore defaults
+    else if (
+      prevConnectorType === "clickhouse-cloud" &&
+      connectorType === "self-hosted"
+    ) {
+      paramsForm.update(() => ({ ...initialFormValues, managed: false }), {
+        taint: false,
+      });
+    }
+    // Switching from self-hosted to ClickHouse Cloud: set ClickHouse Cloud defaults
+    else if (
+      prevConnectorType === "self-hosted" &&
+      connectorType === "clickhouse-cloud"
+    ) {
+      paramsForm.update(
+        () => ({
+          ...initialFormValues,
+          managed: false,
+          port: "8443",
+          ssl: true,
+        }),
+        {
+          taint: false,
+        },
+      );
+    }
+    prevConnectorType = connectorType;
   }
 
   function onStringInputChange(event: Event) {
@@ -142,7 +195,6 @@
     In extends Record<string, unknown> = T,
   >(event: {
     form: SuperValidated<T, M, In>;
-    formEl: HTMLFormElement;
     cancel: () => void;
     result: Extract<
       import("@sveltejs/kit").ActionResult,
@@ -150,7 +202,18 @@
     >;
   }) {
     if (!event.form.valid) return;
-    const values = event.form.data;
+    const values = { ...event.form.data };
+
+    // Ensure ClickHouse Cloud specific requirements are met
+    // Only apply these when using parameters tab, not DSN tab
+    if (
+      connectorType === "clickhouse-cloud" &&
+      connectionTab === "parameters"
+    ) {
+      (values as any).ssl = true;
+      (values as any).port = "8443";
+    }
+
     try {
       await submitAddConnectorForm(queryClient, connector, values);
       onClose();
@@ -177,39 +240,46 @@
         error = "Unknown error";
         details = undefined;
       }
-      if (connectionTab === "dsn") {
-        dsnError = error;
-        dsnErrorDetails = details;
-        setError(dsnError, dsnErrorDetails);
-      } else {
+      if (connectionTab === "parameters") {
         paramsError = error;
         paramsErrorDetails = details;
         setError(paramsError, paramsErrorDetails);
+      } else if (connectionTab === "dsn") {
+        dsnError = error;
+        dsnErrorDetails = details;
+        setError(dsnError, dsnErrorDetails);
       }
     }
   }
 
-  $: properties = $paramsForm.managed
-    ? (connector.sourceProperties ?? [])
-    : (connector.configProperties?.filter((p) =>
+  $: properties = (() => {
+    if (connectorType === "rill-managed") {
+      return connector.sourceProperties ?? [];
+    } else if (connectorType === "clickhouse-cloud") {
+      // ClickHouse Cloud: show all config properties except dsn (same as self-hosted)
+      return (connector.configProperties ?? []).filter((p) =>
         connectionTab !== "dsn" ? p.key !== "dsn" : true,
-      ) ?? []);
+      );
+    } else {
+      // Self-managed: show all config properties except dsn
+      return (connector.configProperties ?? []).filter((p) =>
+        connectionTab !== "dsn" ? p.key !== "dsn" : true,
+      );
+    }
+  })();
+
   $: filteredProperties = properties.filter(
     (property) => !property.noPrompt && property.key !== "managed",
   );
 
   // TODO: move to utils.ts
   // Compute disabled state for the submit button
-  // Refer to `runtime/drivers/clickhouse/clickhouse.go` for the required
-  // Account for the managed property and the dsn property can be either true or false
+  // Refer to `runtime/drivers/clickhouse/clickhouse.go` for the required properties
   $: isSubmitDisabled = (() => {
-    if ($paramsForm.managed) {
-      // Managed form: only check required properties where property.key === 'managed' or property.key is not 'managed'
+    if (connectorType === "rill-managed") {
+      // Rill-managed form: check all required properties including 'managed'
       for (const property of filteredProperties) {
-        if (
-          property.required &&
-          (property.key === "managed" || property.key !== "managed")
-        ) {
+        if (property.required) {
           const key = String(property.key);
           const value = $paramsForm[key];
           if (isEmpty(value) || $paramsErrors[key]?.length) return true;
@@ -217,7 +287,7 @@
       }
       return false;
     } else if (connectionTab === "dsn") {
-      // Self-managed DSN form
+      // Self-managed or Cloud DSN form
       for (const property of dsnProperties) {
         if (property.required) {
           const key = String(property.key);
@@ -227,7 +297,7 @@
       }
       return false;
     } else {
-      // Self-managed parameters form: only check required properties where property.key !== 'managed'
+      // Parameters form: check required properties based on connector type
       for (const property of filteredProperties) {
         if (property.required && property.key !== "managed") {
           const key = String(property.key);
@@ -235,6 +305,12 @@
           if (isEmpty(value) || $paramsErrors[key]?.length) return true;
         }
       }
+
+      // For ClickHouse Cloud, ensure SSL is enabled
+      if (connectorType === "clickhouse-cloud") {
+        if (!$paramsForm.ssl) return true;
+      }
+
       return false;
     }
   })();
@@ -251,27 +327,32 @@
 <div class="h-full w-full flex flex-col">
   <div>
     <ConnectorTypeSelector
-      bind:value={$paramsForm.managed}
+      bind:value={connectorType}
       options={CONNECTOR_TYPE_OPTIONS}
     />
-    {#if $paramsForm.managed}
-      <InformationalField
-        description="This option uses ClickHouse as an OLAP engine with Rill-managed infrastructure. No additional configuration is required - Rill will handle the setup and management of your ClickHouse instance."
-      />
+    {#if connectorType === "rill-managed"}
+      <div class="mt-4">
+        <InformationalField
+          description="This option uses ClickHouse as an OLAP engine with Rill-managed infrastructure. No additional configuration is required - Rill will handle the setup and management of your ClickHouse instance."
+        />
+      </div>
     {/if}
   </div>
 
-  {#if !$paramsForm.managed}
+  {#if connectorType === "self-hosted" || connectorType === "clickhouse-cloud"}
     <Tabs bind:value={connectionTab} options={CONNECTION_TAB_OPTIONS}>
       <TabsContent value="parameters">
         <form
           id={paramsFormId}
-          class="pb-5 flex-grow overflow-y-auto"
+          class="flex-grow overflow-y-auto"
           use:paramsEnhance
           on:submit|preventDefault={paramsSubmit}
         >
           {#each filteredProperties as property (property.key)}
             {@const propertyKey = property.key ?? ""}
+            {@const isPortField = propertyKey === "port"}
+            {@const isSSLField = propertyKey === "ssl"}
+
             <div class="py-1.5 first:pt-0 last:pb-0">
               {#if property.type === ConnectorDriverPropertyType.TYPE_STRING || property.type === ConnectorDriverPropertyType.TYPE_NUMBER}
                 <Input
@@ -285,6 +366,7 @@
                   bind:value={$paramsForm[propertyKey]}
                   onInput={(_, e) => onStringInputChange(e)}
                   alwaysShowError
+                  disabled={connectorType === "clickhouse-cloud" && isPortField}
                 />
               {:else if property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN}
                 <Checkbox
@@ -292,7 +374,10 @@
                   bind:checked={$paramsForm[propertyKey]}
                   label={property.displayName}
                   hint={property.hint}
-                  optional={!property.required}
+                  optional={connectorType === "clickhouse-cloud" && isSSLField
+                    ? false
+                    : !property.required}
+                  disabled={connectorType === "clickhouse-cloud" && isSSLField}
                 />
               {:else if property.type === ConnectorDriverPropertyType.TYPE_INFORMATIONAL}
                 <InformationalField
@@ -308,13 +393,13 @@
       <TabsContent value="dsn">
         <form
           id={dsnFormId}
-          class="pb-5 flex-grow overflow-y-auto"
+          class="flex-grow overflow-y-auto"
           use:dsnEnhance
           on:submit|preventDefault={dsnSubmit}
         >
           {#each dsnProperties as property (property.key)}
             {@const propertyKey = property.key ?? ""}
-            <div class="py-1.5 first:pt-0 last:pb-0">
+            <div class="py-1.0 first:pt-0 last:pb-0">
               <Input
                 id={propertyKey}
                 label={property.displayName}
@@ -334,7 +419,7 @@
     <!-- Only managed form -->
     <form
       id={paramsFormId}
-      class="pb-5 flex-grow overflow-y-auto"
+      class="flex-grow overflow-y-auto"
       use:paramsEnhance
       on:submit|preventDefault={paramsSubmit}
     >

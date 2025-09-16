@@ -1503,6 +1503,106 @@ export class ListProjectsForOrganizationAndUserResponse extends Message<ListProj
 }
 
 /**
+ * @generated from message rill.admin.v1.ListProjectsForFingerprintRequest
+ */
+export class ListProjectsForFingerprintRequest extends Message<ListProjectsForFingerprintRequest> {
+  /**
+   * @generated from field: string directory_name = 1;
+   */
+  directoryName = "";
+
+  /**
+   * @generated from field: string git_remote = 2;
+   */
+  gitRemote = "";
+
+  /**
+   * @generated from field: string sub_path = 3;
+   */
+  subPath = "";
+
+  /**
+   * @generated from field: string rill_mgd_git_remote = 6;
+   */
+  rillMgdGitRemote = "";
+
+  constructor(data?: PartialMessage<ListProjectsForFingerprintRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.ListProjectsForFingerprintRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "directory_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "git_remote", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "sub_path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "rill_mgd_git_remote", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListProjectsForFingerprintRequest {
+    return new ListProjectsForFingerprintRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListProjectsForFingerprintRequest {
+    return new ListProjectsForFingerprintRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListProjectsForFingerprintRequest {
+    return new ListProjectsForFingerprintRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListProjectsForFingerprintRequest | PlainMessage<ListProjectsForFingerprintRequest> | undefined, b: ListProjectsForFingerprintRequest | PlainMessage<ListProjectsForFingerprintRequest> | undefined): boolean {
+    return proto3.util.equals(ListProjectsForFingerprintRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.ListProjectsForFingerprintResponse
+ */
+export class ListProjectsForFingerprintResponse extends Message<ListProjectsForFingerprintResponse> {
+  /**
+   * @generated from field: repeated rill.admin.v1.Project projects = 1;
+   */
+  projects: Project[] = [];
+
+  /**
+   * unauthorized_project is the name of a project that matches the git_remote+sub_path but the caller does not have access to.
+   *
+   * @generated from field: string unauthorized_project = 3;
+   */
+  unauthorizedProject = "";
+
+  constructor(data?: PartialMessage<ListProjectsForFingerprintResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.ListProjectsForFingerprintResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "projects", kind: "message", T: Project, repeated: true },
+    { no: 3, name: "unauthorized_project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListProjectsForFingerprintResponse {
+    return new ListProjectsForFingerprintResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListProjectsForFingerprintResponse {
+    return new ListProjectsForFingerprintResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListProjectsForFingerprintResponse {
+    return new ListProjectsForFingerprintResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListProjectsForFingerprintResponse | PlainMessage<ListProjectsForFingerprintResponse> | undefined, b: ListProjectsForFingerprintResponse | PlainMessage<ListProjectsForFingerprintResponse> | undefined): boolean {
+    return proto3.util.equals(ListProjectsForFingerprintResponse, a, b);
+  }
+}
+
+/**
  * @generated from message rill.admin.v1.GetProjectRequest
  */
 export class GetProjectRequest extends Message<GetProjectRequest> {
@@ -3500,6 +3600,14 @@ export class CreateProjectRequest extends Message<CreateProjectRequest> {
   public = false;
 
   /**
+   * directory_name should be the most recently observed local directory name for the project.
+   * See ListProjectsForFingerprint for more context.
+   *
+   * @generated from field: string directory_name = 16;
+   */
+  directoryName = "";
+
+  /**
    * @generated from field: string provisioner = 5;
    */
   provisioner = "";
@@ -3557,6 +3665,7 @@ export class CreateProjectRequest extends Message<CreateProjectRequest> {
     { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "public", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 16, name: "directory_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "provisioner", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "prod_slots", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 12, name: "subpath", kind: "scalar", T: 9 /* ScalarType.STRING */ },
@@ -3726,6 +3835,11 @@ export class UpdateProjectRequest extends Message<UpdateProjectRequest> {
   public?: boolean;
 
   /**
+   * @generated from field: optional string directory_name = 15;
+   */
+  directoryName?: string;
+
+  /**
    * @generated from field: optional string prod_branch = 5;
    */
   prodBranch?: string;
@@ -3787,6 +3901,7 @@ export class UpdateProjectRequest extends Message<UpdateProjectRequest> {
     { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 4, name: "public", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
+    { no: 15, name: "directory_name", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 5, name: "prod_branch", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 6, name: "git_remote", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 13, name: "subpath", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
@@ -10377,6 +10492,11 @@ export class ConnectProjectToGithubRequest extends Message<ConnectProjectToGithu
    */
   force = false;
 
+  /**
+   * @generated from field: bool create = 7;
+   */
+  create = false;
+
   constructor(data?: PartialMessage<ConnectProjectToGithubRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -10391,6 +10511,7 @@ export class ConnectProjectToGithubRequest extends Message<ConnectProjectToGithu
     { no: 4, name: "branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "subpath", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "force", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 7, name: "create", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ConnectProjectToGithubRequest {
@@ -14543,6 +14664,11 @@ export class Project extends Message<Project> {
   createdByUserId = "";
 
   /**
+   * @generated from field: string directory_name = 26;
+   */
+  directoryName = "";
+
+  /**
    * @generated from field: string provisioner = 7;
    */
   provisioner = "";
@@ -14636,6 +14762,7 @@ export class Project extends Message<Project> {
     { no: 5, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "public", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 22, name: "created_by_user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 26, name: "directory_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 7, name: "provisioner", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "git_remote", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 24, name: "managed_git_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },

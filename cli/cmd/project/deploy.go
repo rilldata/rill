@@ -10,16 +10,14 @@ import (
 	"time"
 
 	"github.com/AlecAivazis/survey/v2"
-	"github.com/rilldata/rill/admin/client"
+	"github.com/go-git/go-git/v5"
 	"github.com/rilldata/rill/cli/cmd/org"
 	"github.com/rilldata/rill/cli/pkg/browser"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/dotrillcloud"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/local"
 	"github.com/rilldata/rill/cli/pkg/printer"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
-	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/spf13/cobra"
@@ -49,13 +47,26 @@ type DeployOpts struct {
 	Managed bool
 	// Github indicates if the project should be connected to GitHub for automatic deploys.
 	Github bool
+
+	// remoteURL is the git remote url of the repository if detected. Set internally.
+	remoteURL string
+	// pushToProject is set if the deploy should push current changes to this existing project. Set internally.
+	pushToProject *adminv1.Project
 }
 
-func (o *DeployOpts) ValidatePathAndSetupGit(ch *cmdutil.Helper) error {
-	if o.SubPath != "" && (o.ArchiveUpload || o.Managed) {
-		return fmt.Errorf("`subpath` flag cannot be used with `archive` or `managed` deploys")
+func (o *DeployOpts) LocalProjectPath() string {
+	if o.SubPath != "" {
+		return filepath.Join(o.GitPath, o.SubPath)
 	}
+	return o.GitPath
+}
 
+func (o *DeployOpts) ValidateAndApplyDefaults(ctx context.Context, ch *cmdutil.Helper) error {
+	if o.remoteURL != "" {
+		// already validated
+		// just a hack to avoid re-validation when `rill project deploy` internally calls `rill project connect-github`
+		return nil
+	}
 	// expand project directory and get absolute path
 	var err error
 	o.GitPath, err = fileutil.ExpandHome(o.GitPath)
@@ -67,59 +78,164 @@ func (o *DeployOpts) ValidatePathAndSetupGit(ch *cmdutil.Helper) error {
 		return err
 	}
 
-	if o.Managed || o.ArchiveUpload {
-		return nil
-	}
-	if o.SubPath != "" {
-		// subpath is already set
-		o.Github = true
-		return nil
-	}
-
-	// detect subpath
-	repoRoot, err := gitutil.InferGitRepoRoot(o.GitPath)
-	if err != nil {
-		// Not a git repository, no need to connect to GitHub
-		return nil
-	}
-
-	remote, err := gitutil.ExtractGitRemote(repoRoot, o.RemoteName, false)
+	_, _, err = ValidateLocalProject(ch, o.GitPath, o.SubPath)
 	if err != nil {
 		return err
 	}
-	if remote.URL == "" {
-		// no remote configured
-		return nil
-	}
-	if !strings.HasPrefix(remote.URL, "https://github.com") {
-		// not a GitHub repo should not prompt for GitHub connection
+
+	if o.ArchiveUpload {
 		return nil
 	}
 
-	subPath, err := filepath.Rel(repoRoot, o.GitPath)
-	if err == nil {
-		ch.PrintfBold("Detected git repository at: ")
-		ch.Printf("%s\n", repoRoot)
-		ch.PrintfBold("Connected to Github repository: ")
-		ch.Printf("%s\n", remote.URL)
-		if subPath != "." {
-			ch.PrintfBold("Project location within repo: ")
-			ch.Printf("%s\n", subPath)
+	// detect repo root and subpath
+	var repoRoot, subpath string
+	if o.SubPath != "" {
+		repoRoot = o.GitPath
+		subpath = o.SubPath
+	} else {
+		// detect subpath
+		repoRoot, subpath, err = gitutil.InferRepoRootAndSubpath(o.GitPath)
+		if err != nil {
+			// Not a git repository
+			return nil
 		}
-		confirmed, err := cmdutil.ConfirmPrompt("Enable automatic deploys to Rill Cloud from GitHub?", "", true)
+	}
+
+	// extract remote and check if project already exists
+	err = o.detectGitRemoteAndProject(ctx, ch, repoRoot, subpath)
+	if err != nil {
+		return err
+	}
+
+	// if there is a project already connected to this repo+subpath offer to push changes to it
+	if o.pushToProject != nil {
+		if o.pushToProject.ManagedGitId == "" && o.Managed {
+			ch.PrintfError("Project %s/%s is already connected to this GitHub repository. Cannot use --managed flag.\n", o.pushToProject.OrgName, o.pushToProject.Name)
+			return fmt.Errorf("aborting deploy")
+		}
+		if o.pushToProject.ManagedGitId != "" && o.Github {
+			ch.PrintfError("Found another rill managed project %s/%s connected to this folder\n", o.pushToProject.OrgName, o.pushToProject.Name)
+			return fmt.Errorf("aborting deploy")
+		}
+		if o.pushToProject.OrgName != ch.Org {
+			ch.PrintfError("A project in another org deploys from this repository. Please switch to org %q to push changes to the project %q.\n", o.pushToProject.OrgName, o.pushToProject.Name)
+			return fmt.Errorf("aborting deploy")
+		}
+		// set flags based on existing project
+		o.Managed = o.pushToProject.ManagedGitId != ""
+		o.Github = o.pushToProject.ManagedGitId == "" && o.pushToProject.GitRemote != ""
+		o.ArchiveUpload = o.pushToProject.ArchiveAssetId != ""
+
+		ch.PrintfBold("\nFound existing project: ")
+		ch.Printf("%s/%s\n", o.pushToProject.OrgName, o.pushToProject.Name)
+		if !ch.Interactive {
+			return nil
+		}
+		ok, err := cmdutil.ConfirmPrompt("Do you want to push current changes to the existing project?", "", true)
 		if err != nil {
 			return err
 		}
-		if confirmed {
-			o.SubPath = subPath
-			o.GitPath = repoRoot
-			o.Github = true
+		if !ok {
+			return fmt.Errorf("aborting deploy")
+		}
+		return nil
+	}
+
+	if o.remoteURL == "" {
+		// no remote configured
+		return nil
+	}
+
+	// there is a self hosted git repo but no project connected to it
+	connectToGithub := true
+	ch.PrintfBold("Detected git repository at: ")
+	ch.Printf("%s\n", repoRoot)
+	ch.PrintfBold("Connected to Github repository: ")
+	ch.Printf("%s\n", o.remoteURL)
+	if subpath != "" {
+		ch.PrintfBold("Project location within repo: ")
+		ch.Printf("%s\n", subpath)
+	}
+	if o.Managed {
+		// if user explicitly wants managed deploys confirm if they want to really skip github connection
+		ok, err := cmdutil.ConfirmPrompt("Do you want to skip connecting to GitHub and use Rill managed deploys? (Note: Subsequent deploys/push from Rill will not push changes to your GitHub repo)", "", true)
+		if err != nil {
+			return err
+		}
+		connectToGithub = !ok
+	} else if !o.Github {
+		// still confirm if user wants to connect to github
+		connectToGithub, err = cmdutil.ConfirmPrompt("Enable automatic deploys to Rill Cloud from GitHub?", "", true)
+		if err != nil {
+			return err
+		}
+	}
+	if connectToGithub {
+		o.SubPath = subpath
+		o.GitPath = repoRoot
+		o.Github = true
+		return nil
+	}
+	o.Managed = true
+	return nil
+}
+
+func (o *DeployOpts) detectGitRemoteAndProject(ctx context.Context, ch *cmdutil.Helper, repoRoot, subpath string) error {
+	remotes, err := gitutil.ExtractRemotes(repoRoot, false)
+	if err != nil && !errors.Is(err, gitutil.ErrGitRemoteNotFound) {
+		return err
+	}
+	c, err := ch.Client()
+	if err != nil {
+		return err
+	}
+
+	// find matching projects
+	req := &adminv1.ListProjectsForFingerprintRequest{
+		DirectoryName: filepath.Base(o.LocalProjectPath()),
+		SubPath:       subpath,
+	}
+	for _, remote := range remotes {
+		switch remote.Name {
+		case "__rill_remote":
+			req.RillMgdGitRemote = remote.URL
+		case o.RemoteName:
+			req.GitRemote, err = remote.Github()
+			if err != nil {
+				return err
+			}
+		}
+	}
+	resp, err := c.ListProjectsForFingerprint(ctx, req)
+	if err != nil {
+		// TODO: check for not found error
+		return err
+	}
+	if resp.UnauthorizedProject != "" {
+		ch.PrintfWarn("You do not have access to the project %q which is connected to this repository. Please reach out to your Rill admin\n", resp.UnauthorizedProject)
+		return fmt.Errorf("aborting deploy")
+	}
+	for _, p := range resp.Projects {
+		if p.ManagedGitId != "" {
+			o.pushToProject = p
+			o.remoteURL = p.GitRemote
 			return nil
 		}
-		if !o.Github {
-			ch.Printf("Skipping GitHub connection. You can connect later using `rill project connect-github`.\n")
-			o.Managed = true
+		o.pushToProject = p
+		o.remoteURL = p.GitRemote
+		// do not return yet, there might be a managed project
+		// this is not possible with new flow but keeping it for consistency
+	}
+
+	if req.RillMgdGitRemote != "" {
+		// if no project found remove `__rill_remote`. This can happen if managed repo was provisioned but project was not created/failed.
+		err = removeRemote(repoRoot, "__rill_remote")
+		if err != nil {
+			return err
 		}
+	}
+	if req.GitRemote != "" {
+		o.remoteURL = req.GitRemote
 	}
 	return nil
 }
@@ -135,7 +251,7 @@ func DeployCmd(ch *cmdutil.Helper) *cobra.Command {
 				opts.GitPath = args[0]
 			}
 			opts.Managed = true
-			err := opts.ValidatePathAndSetupGit(ch)
+			err := opts.ValidateAndApplyDefaults(cmd.Context(), ch)
 			if err != nil {
 				return err
 			}
@@ -183,10 +299,7 @@ func ValidateLocalProject(ch *cmdutil.Helper, localGitPath, subPath string) (str
 }
 
 func DeployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts) error {
-	_, localProjectPath, err := ValidateLocalProject(ch, opts.GitPath, opts.SubPath)
-	if err != nil {
-		return err
-	}
+	localProjectPath := opts.LocalProjectPath()
 	// If no project name was provided, default to dir name
 	if opts.Name == "" {
 		opts.Name = filepath.Base(localProjectPath)
@@ -206,6 +319,7 @@ func DeployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployO
 
 	// If no default org is set, it means the user is not in an org yet.
 	// We create a default org based on the user name.
+	// TODO : Ask user prompt similar to UI instead of silently creating org based on email
 	if ch.Org == "" {
 		user, err := adminClient.GetCurrentUser(ctx, &adminv1.GetCurrentUserRequest{})
 		if err != nil {
@@ -234,26 +348,11 @@ func DeployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployO
 		return fmt.Errorf("failed to set up .gitignore: %w", err)
 	}
 
-	projResp, err := adminClient.GetProject(ctx, &adminv1.GetProjectRequest{OrganizationName: ch.Org, Name: opts.Name})
-	if err != nil {
-		if st, ok := status.FromError(err); !ok || st.Code() != codes.NotFound {
-			return err
-		}
+	if opts.pushToProject != nil {
+		return redeployProject(ctx, ch, opts)
 	}
 
-	// check if the project already exists
-	if projResp != nil {
-		err = redeployUploadedProject(ctx, projResp, ch, adminClient, localProjectPath, opts, repo)
-		if err != nil {
-			if s, ok := status.FromError(err); ok && s.Code() == codes.PermissionDenied {
-				ch.PrintfError("You do not have the permissions needed to update a project in org %q. Please reach out to your Rill admin.\n", ch.Org)
-				return nil
-			}
-			return fmt.Errorf("update project failed with error %w", err)
-		}
-		return nil
-	}
-
+	// Create a new project
 	req := &adminv1.CreateProjectRequest{
 		OrganizationName: ch.Org,
 		Name:             opts.Name,
@@ -262,6 +361,7 @@ func DeployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployO
 		ProdVersion:      opts.ProdVersion,
 		ProdSlots:        int64(opts.Slots),
 		Public:           opts.Public,
+		DirectoryName:    filepath.Base(localProjectPath),
 	}
 
 	ch.Printer.Println("Starting upload.")
@@ -289,20 +389,6 @@ func DeployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployO
 			return nil
 		}
 		return fmt.Errorf("create project failed with error %w", err)
-	}
-
-	err = dotrillcloud.SetAll(localProjectPath, ch.AdminURL(), &dotrillcloud.Config{
-		ProjectID: res.Project.Id,
-	})
-	if err != nil {
-		return err
-	}
-	if req.GitRemote != "" {
-		// also commit dotrillcloud to the repo
-		err = ch.GitHelper(ch.Org, opts.Name, localProjectPath).PushToManagedRepo(ctx)
-		if err != nil {
-			return err
-		}
 	}
 
 	// Success!
@@ -336,35 +422,46 @@ func DeployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployO
 	return nil
 }
 
-func redeployUploadedProject(ctx context.Context, projResp *adminv1.GetProjectResponse, ch *cmdutil.Helper, adminClient *client.Client, localProjectPath string, opts *DeployOpts, repo drivers.RepoStore) error {
-	if projResp.Project.GitRemote != "" && projResp.Project.ManagedGitId == "" {
-		// connected to user managed github
-		ch.PrintfError("Found existing project. But it is already connected to a Github repository.\nPush changes to %q to deploy.\n", projResp.Project.GitRemote)
-		return nil
+func redeployProject(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts) error {
+	c, err := ch.Client()
+	if err != nil {
+		return err
 	}
-	ch.Printer.Println("Found existing project. Starting re-upload.")
-	var updateProjReq *adminv1.UpdateProjectRequest
-	if projResp.Project.GitRemote != "" {
-		// rill managed git
-		err := ch.GitHelper(ch.Org, opts.Name, localProjectPath).PushToManagedRepo(ctx)
+	proj := opts.pushToProject
+	if proj.ManagedGitId != "" {
+		err := ch.GitHelper(ch.Org, proj.Name, opts.LocalProjectPath()).PushToManagedRepo(ctx)
+		if err != nil {
+			return err
+		}
+	} else if proj.GitRemote != "" {
+		config := &gitutil.Config{
+			Remote:        opts.pushToProject.GitRemote,
+			DefaultBranch: opts.pushToProject.ProdBranch,
+		}
+		err := gitutil.CommitAndForcePush(ctx, opts.LocalProjectPath(), config, "", nil)
 		if err != nil {
 			return err
 		}
 	} else {
-		// test tarball flow
+		// tarball flow
+		var updateProjReq *adminv1.UpdateProjectRequest
 		if opts.ArchiveUpload {
+			repo, _, err := cmdutil.RepoForProjectPath(opts.LocalProjectPath())
+			if err != nil {
+				return err
+			}
 			assetID, err := cmdutil.UploadRepo(ctx, repo, ch, ch.Org, opts.Name)
 			if err != nil {
 				return err
 			}
 			updateProjReq = &adminv1.UpdateProjectRequest{
 				OrganizationName: ch.Org,
-				Name:             projResp.Project.Name,
+				Name:             proj.Name,
 				ArchiveAssetId:   &assetID,
 			}
 		} else {
 			// need to migrate to rill managed git
-			gitRepo, err := ch.GitHelper(ch.Org, opts.Name, localProjectPath).PushToNewManagedRepo(ctx)
+			gitRepo, err := ch.GitHelper(ch.Org, opts.Name, opts.LocalProjectPath()).PushToNewManagedRepo(ctx)
 			if err != nil {
 				return err
 			}
@@ -374,12 +471,9 @@ func redeployUploadedProject(ctx context.Context, projResp *adminv1.GetProjectRe
 				GitRemote:        &gitRepo.Remote,
 			}
 		}
-	}
-
-	if updateProjReq != nil {
 		// Update the project
 		// Silently ignores other flags like description etc which are handled with project update.
-		_, err := adminClient.UpdateProject(ctx, updateProjReq)
+		_, err = c.UpdateProject(ctx, updateProjReq)
 		if err != nil {
 			if s, ok := status.FromError(err); ok && s.Code() == codes.PermissionDenied {
 				ch.PrintfError("You do not have the permissions needed to update a project in org %q. Please reach out to your Rill admin.\n", ch.Org)
@@ -389,17 +483,15 @@ func redeployUploadedProject(ctx context.Context, projResp *adminv1.GetProjectRe
 		}
 	}
 
-	printer.ColorGreenBold.Printf("All files uploaded successfully.\n\n")
-	ch.Telemetry(ctx).RecordBehavioralLegacy(activity.BehavioralEventDeploySuccess)
-
+	// Also updated .env vars
 	// Fetch vars from .env
-	vars, err := local.ParseDotenv(ctx, localProjectPath)
+	vars, err := local.ParseDotenv(ctx, opts.LocalProjectPath())
 	if err != nil {
 		ch.PrintfWarn("Failed to parse .env: %v\n", err)
 	} else if len(vars) > 0 {
-		_, err = adminClient.UpdateProjectVariables(ctx, &adminv1.UpdateProjectVariablesRequest{
+		_, err = c.UpdateProjectVariables(ctx, &adminv1.UpdateProjectVariablesRequest{
 			Organization: ch.Org,
-			Project:      projResp.Project.Name,
+			Project:      proj.Name,
 			Variables:    vars,
 		})
 		if err != nil {
@@ -408,7 +500,7 @@ func redeployUploadedProject(ctx context.Context, projResp *adminv1.GetProjectRe
 	}
 
 	// Success
-	ch.PrintfSuccess("Updated project \"%s/%s\".\n\n", ch.Org, projResp.Project.Name)
+	ch.PrintfSuccess("Updated project \"%s/%s\".\n\n", ch.Org, proj.Name)
 	return nil
 }
 
@@ -530,4 +622,17 @@ func errMsgContains(err error, msg string) bool {
 		return strings.Contains(st.Message(), msg)
 	}
 	return false
+}
+
+func removeRemote(path, remoteName string) error {
+	repo, err := git.PlainOpen(path)
+	if err != nil {
+		return fmt.Errorf("failed to open git repository: %w", err)
+	}
+
+	err = repo.DeleteRemote(remoteName)
+	if err != nil && !errors.Is(err, git.ErrRemoteNotFound) {
+		return err
+	}
+	return nil
 }

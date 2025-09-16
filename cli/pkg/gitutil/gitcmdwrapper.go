@@ -169,9 +169,36 @@ func InferGitRepoRoot(path string) (string, error) {
 	cmd := exec.Command("git", "-C", path, "rev-parse", "--show-toplevel")
 	data, err := cmd.Output()
 	if err != nil {
-		return "", err
+		var execErr *exec.ExitError
+		if !errors.As(err, &execErr) {
+			return "", err
+		}
+		errStr := strings.TrimSpace(string(execErr.Stderr))
+		if strings.Contains(errStr, "not a git repository") {
+			return "", ErrNotAGitRepository
+		}
+		return "", errors.New(string(execErr.Stderr))
 	}
 	return strings.TrimSpace(string(data)), nil
+}
+
+func isGitIgnored(repoRoot, subpath string) (bool, error) {
+	cmd := exec.Command("git", "-C", repoRoot, "check-ignore", subpath)
+	err := cmd.Run()
+	if err != nil {
+		var execErr *exec.ExitError
+		if errors.As(err, &execErr) {
+			// exit code 1 means the file is not ignored
+			if execErr.ExitCode() == 1 {
+				return false, nil
+			}
+			// any other exit code is an error
+			return false, fmt.Errorf("git check-ignore failed: %s", string(execErr.Stderr))
+		}
+		return false, fmt.Errorf("git check-ignore failed: %w", err)
+	}
+	// exit code 0 means the file is ignored
+	return true, nil
 }
 
 // countCommitsAhead counts the number of commits in `from` branch not present in `to` branch.

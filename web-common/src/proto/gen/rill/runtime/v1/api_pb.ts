@@ -2065,6 +2065,11 @@ export class UnpackEmptyRequest extends Message$1<UnpackEmptyRequest> {
   displayName = "";
 
   /**
+   * @generated from field: string olap = 4;
+   */
+  olap = "";
+
+  /**
    * @generated from field: bool force = 3;
    */
   force = false;
@@ -2079,6 +2084,7 @@ export class UnpackEmptyRequest extends Message$1<UnpackEmptyRequest> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "olap", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "force", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 

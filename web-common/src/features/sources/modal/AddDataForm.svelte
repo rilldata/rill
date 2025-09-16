@@ -16,7 +16,11 @@
     type SuperValidated,
   } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
-  import { inferSourceName } from "../sourceUtils";
+  import {
+    inferSourceName,
+    prepareSourceFormData,
+    compileSourceYAML,
+  } from "../sourceUtils";
   import { humanReadableErrorMessage } from "../errors/errors";
   import {
     submitAddConnectorForm,
@@ -30,7 +34,10 @@
   import Tabs from "@rilldata/web-common/components/forms/Tabs.svelte";
   import { TabsContent } from "@rilldata/web-common/components/tabs";
   import { isEmpty, normalizeErrors } from "./utils";
-  import { CONNECTION_TAB_OPTIONS } from "./constants";
+  import {
+    CONNECTION_TAB_OPTIONS,
+    type ClickHouseConnectorType,
+  } from "./constants";
   import { getInitialFormValuesFromProperties } from "../sourceUtils";
   import { compileConnectorYAML } from "../../connectors/code-utils";
   import CopyIcon from "@rilldata/web-common/components/icons/CopyIcon.svelte";
@@ -89,7 +96,6 @@
     connector.configProperties?.filter((property) => property.key === "dsn") ??
     [];
 
-  // FIXME: APP-209
   const filteredDsnProperties = dsnProperties;
   const dsnYupSchema = yup(dsnSchema);
   const {
@@ -114,7 +120,7 @@
   let clickhouseFormId: string = "";
   let clickhouseSubmitting: boolean;
   let clickhouseIsSubmitDisabled: boolean;
-  let clickhouseManaged: boolean;
+  let clickhouseConnectorType: ClickHouseConnectorType = "self-hosted";
   let clickhouseParamsForm;
   let clickhouseDsnForm;
 
@@ -127,7 +133,6 @@
     );
   }
 
-  // TODO: move to utils.ts
   // Compute disabled state for the submit button
   $: isSubmitDisabled = (() => {
     if (hasOnlyDsn() || connectionTab === "dsn") {
@@ -181,40 +186,87 @@
   // Emit the submitting state to the parent
   $: dispatch("submitting", { submitting });
 
-  // ClickHouse requires special handling because it supports both managed and self-managed modes:
-  // - When managed=true: uses sourceProperties and minimal configuration
-  // - When managed=false: uses configProperties and full connection details
-  // - The form state is managed by the child AddClickHouseForm component
-  // - Other connectors use a simpler single-form approach
+  function getClickHouseYamlPreview(
+    values: Record<string, unknown>,
+    connectorType: ClickHouseConnectorType,
+  ) {
+    // Convert connectorType to managed boolean for YAML compatibility
+    const managed = connectorType === "rill-managed";
+
+    // Ensure ClickHouse Cloud specific requirements are met in preview
+    const previewValues = { ...values, managed } as Record<string, unknown>;
+    if (connectorType === "clickhouse-cloud") {
+      previewValues.ssl = true;
+      previewValues.port = "8443";
+    }
+
+    return compileConnectorYAML(connector, previewValues, {
+      fieldFilter: (property) => {
+        // When in DSN mode, don't filter out noPrompt properties
+        // because the DSN field itself might have noPrompt: true
+        if (hasOnlyDsn() || connectionTab === "dsn") {
+          return true; // Show all DSN properties
+        }
+        return !property.noPrompt;
+      },
+      orderedProperties:
+        connectionTab === "dsn"
+          ? filteredDsnProperties
+          : filteredParamsProperties,
+    });
+  }
+
+  function getConnectorYamlPreview(values: Record<string, unknown>) {
+    return compileConnectorYAML(connector, values, {
+      fieldFilter: (property) => {
+        // When in DSN mode, don't filter out noPrompt properties
+        // because the DSN field itself might have noPrompt: true
+        if (hasOnlyDsn() || connectionTab === "dsn") {
+          return true; // Show all DSN properties
+        }
+        return !property.noPrompt;
+      },
+      orderedProperties:
+        hasOnlyDsn() || connectionTab === "dsn"
+          ? filteredDsnProperties
+          : filteredParamsProperties,
+    });
+  }
+
+  function getSourceYamlPreview(values: Record<string, unknown>) {
+    const [rewrittenConnector, rewrittenFormValues] = prepareSourceFormData(
+      connector,
+      values,
+    );
+
+    // Check if the connector was rewritten to DuckDB
+    const isRewrittenToDuckDb = rewrittenConnector.name === "duckdb";
+
+    if (isRewrittenToDuckDb) {
+      return compileSourceYAML(rewrittenConnector, rewrittenFormValues);
+    } else {
+      return getConnectorYamlPreview(rewrittenFormValues);
+    }
+  }
+
   $: yamlPreview = (() => {
+    // ClickHouse special case
     if (connector.name === "clickhouse") {
-      // Use the value of the child form state for clickhouse
+      // Reactive form values
       const values =
         connectionTab === "dsn" ? $clickhouseDsnForm : $clickhouseParamsForm;
-      return compileConnectorYAML(
-        connector,
-        {
-          ...values,
-          managed: clickhouseManaged,
-        },
-        {
-          fieldFilter: (property) => !property.noPrompt,
-          orderedProperties:
-            connectionTab === "dsn"
-              ? filteredDsnProperties
-              : filteredParamsProperties,
-        },
-      );
+      return getClickHouseYamlPreview(values, clickhouseConnectorType);
+    }
+
+    const values =
+      hasOnlyDsn() || connectionTab === "dsn" ? $dsnForm : $paramsForm;
+
+    if (isConnectorForm) {
+      // Connector form
+      return getConnectorYamlPreview(values);
     } else {
-      const values =
-        hasOnlyDsn() || connectionTab === "dsn" ? $dsnForm : $paramsForm;
-      return compileConnectorYAML(connector, values, {
-        fieldFilter: (property) => !property.noPrompt,
-        orderedProperties:
-          hasOnlyDsn() || connectionTab === "dsn"
-            ? filteredDsnProperties
-            : filteredParamsProperties,
-      });
+      // Source form
+      return getSourceYamlPreview(values);
     }
   })();
 
@@ -308,7 +360,9 @@
     class="add-data-form-panel flex-1 flex flex-col min-w-0 md:pr-0 pr-0 relative"
   >
     <div
-      class="flex flex-col flex-grow max-h-[552px] min-h-[552px] overflow-y-auto p-6"
+      class="flex flex-col flex-grow {connector.name === 'clickhouse'
+        ? 'max-h-[38.5rem] min-h-[38.5rem]'
+        : 'max-h-[34.5rem] min-h-[34.5rem]'} overflow-y-auto p-6"
     >
       {#if connector.name === "clickhouse"}
         <AddClickHouseForm
@@ -321,7 +375,7 @@
           bind:formId={clickhouseFormId}
           bind:submitting={clickhouseSubmitting}
           bind:isSubmitDisabled={clickhouseIsSubmitDisabled}
-          bind:managed={clickhouseManaged}
+          bind:connectorType={clickhouseConnectorType}
           bind:connectionTab
           bind:paramsForm={clickhouseParamsForm}
           bind:dsnForm={clickhouseDsnForm}
@@ -486,7 +540,7 @@
         type="primary"
       >
         {#if connector.name === "clickhouse"}
-          {#if clickhouseManaged}
+          {#if clickhouseConnectorType === "rill-managed"}
             {#if clickhouseSubmitting}
               Connecting...
             {:else}

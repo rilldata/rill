@@ -40,13 +40,13 @@
   import Calendar from "@rilldata/web-common/components/icons/Calendar.svelte";
   import {
     constructAsOfString,
-    isUsingLegacyTime,
     constructNewString,
   } from "../../new-time-controls";
   import PrimaryRangeTooltip from "./PrimaryRangeTooltip.svelte";
 
   export let timeString: string | undefined;
   export let interval: Interval<true>;
+  export let timeGrain: V1TimeGrain | undefined;
   export let zone: string;
   export let showDefaultItem: boolean;
   export let context: string;
@@ -77,20 +77,19 @@
     try {
       parsedTime = parseRillTime(timeString);
     } catch {
-      // This is not necessarily an error as the parser does not work with Legacy syntax
       parsedTime = undefined;
     }
   }
 
   $: hideTruncationSelector = parsedTime?.interval instanceof RillIsoInterval;
 
-  $: usingLegacyTime = isUsingLegacyTime(timeString);
+  $: usingLegacyTime = parsedTime?.isOldFormat;
 
   $: snapToEnd = usingLegacyTime ? true : !!parsedTime?.asOfLabel?.offset;
   $: ref = usingLegacyTime ? "latest" : (parsedTime?.asOfLabel?.label ?? "now");
 
   $: truncationGrain = usingLegacyTime
-    ? timeString?.startsWith("rill")
+    ? timeString?.startsWith("rill") && !timeString.endsWith("C")
       ? V1TimeGrain.TIME_GRAIN_DAY
       : getSmallestGrainFromISODuration(timeString ?? "PT1M")
     : parsedTime?.asOfLabel?.snap
@@ -249,7 +248,7 @@
           {/if}
 
           {#if showFullRange}
-            <RangeDisplay {interval} />
+            <RangeDisplay {interval} {timeGrain} />
 
             <div
               class="font-bold bg-gray-100 rounded-[2px] p-1 py-0 text-gray-600 text-[11px]"

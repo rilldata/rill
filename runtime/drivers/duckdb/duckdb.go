@@ -38,24 +38,13 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "DuckDB",
 	Description: "DuckDB SQL connector.",
-	DocsURL:     "https://docs.rilldata.com/connect/olap/motherduck",
-	ConfigProperties: []*drivers.PropertySpec{
-		{
-			Key:         "path",
-			Type:        drivers.StringPropertyType,
-			Required:    true,
-			DisplayName: "Path",
-			Description: "Path to external DuckDB database.",
-			Placeholder: "/path/to/main.db",
-		},
-	},
-	// NOTE: reinstated SourceProperties to address https://github.com/rilldata/rill/pull/7726#discussion_r2271449022
+	DocsURL:     "https://docs.rilldata.com/connect/olap/duckdb",
 	SourceProperties: []*drivers.PropertySpec{
 		{
-			Key:         "path",
+			Key:         "db",
 			Type:        drivers.StringPropertyType,
 			Required:    true,
-			DisplayName: "Path",
+			DisplayName: "DB",
 			Description: "Path to DuckDB database",
 			Placeholder: "/path/to/duckdb.db",
 		},
@@ -85,49 +74,31 @@ var motherduckSpec = drivers.Spec{
 	DocsURL:     "https://docs.rilldata.com/connect/olap/motherduck",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
-			Key:    "token",
-			Type:   drivers.StringPropertyType,
-			Secret: true,
-		},
-		{
-			Key:  "db",
-			Type: drivers.StringPropertyType,
-		},
-	},
-	SourceProperties: []*drivers.PropertySpec{
-		{
-			Key:         "dsn",
-			Type:        drivers.StringPropertyType,
-			Required:    true,
-			DisplayName: "MotherDuck Connection String",
-			Placeholder: "md:motherduck.db",
-		},
-		{
-			Key:         "sql",
-			Type:        drivers.StringPropertyType,
-			Required:    true,
-			DisplayName: "SQL",
-			Description: "Query to extract data from MotherDuck.",
-			Placeholder: "select * from table;",
-		},
-		{
 			Key:         "token",
 			Type:        drivers.StringPropertyType,
 			Required:    true,
 			DisplayName: "Access token",
 			Description: "MotherDuck access token",
-			Placeholder: "your.access_token.here",
+			Placeholder: "your_access_token",
 			Secret:      true,
 		},
 		{
-			Key:         "name",
+			Key:         "path",
 			Type:        drivers.StringPropertyType,
-			DisplayName: "Source name",
-			Description: "The name of the source",
-			Placeholder: "my_new_source",
 			Required:    true,
+			DisplayName: "MotherDuck Connection String",
+			Placeholder: "md:my_db",
+		},
+		{
+			Key:         "schema_name",
+			Type:        drivers.StringPropertyType,
+			Required:    true,
+			DisplayName: "Schema name",
+			Placeholder: "your_schema_name",
+			Hint:        "Set the default schema used by the MotherDuck database",
 		},
 	},
+	ImplementsOLAP: true,
 }
 
 type Driver struct {
@@ -383,41 +354,41 @@ func (c *connection) AsObjectStore() (drivers.ObjectStore, bool) {
 }
 
 // AsModelExecutor implements drivers.Handle.
-func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
+func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, error) {
 	if opts.InputHandle == c && opts.OutputHandle == c {
-		return &selfToSelfExecutor{c}, true
+		return &selfToSelfExecutor{c}, nil
 	}
 	if opts.OutputHandle == c {
 		if w, ok := opts.InputHandle.AsWarehouse(); ok {
-			return &warehouseToSelfExecutor{c, w}, true
+			return &warehouseToSelfExecutor{c, w}, nil
 		}
 		if f, ok := opts.InputHandle.AsFileStore(); ok && opts.InputConnector == "local_file" {
-			return &localFileToSelfExecutor{c, f}, true
+			return &localFileToSelfExecutor{c, f}, nil
 		}
 		switch opts.InputHandle.Driver() {
 		case "mysql", "postgres":
-			return &sqlStoreToSelfExecutor{c}, true
+			return &sqlStoreToSelfExecutor{c}, nil
 		case "https":
-			return &httpsToSelfExecutor{c}, true
+			return &httpsToSelfExecutor{c}, nil
 		case "motherduck":
-			return &mdToSelfExecutor{c}, true
+			return &mdToSelfExecutor{c}, nil
 		}
 		if _, ok := opts.InputHandle.AsObjectStore(); ok {
-			return &objectStoreToSelfExecutor{c}, true
+			return &objectStoreToSelfExecutor{c}, nil
 		}
 	}
 	if opts.InputHandle == c {
 		if opts.OutputHandle.Driver() == "file" {
 			outputProps := &file.ModelOutputProperties{}
 			if err := mapstructure.WeakDecode(opts.PreliminaryOutputProperties, outputProps); err != nil {
-				return nil, false
+				return nil, drivers.ErrNotImplemented
 			}
 			if supportsExportFormat(outputProps.Format, outputProps.Headers) {
-				return &selfToFileExecutor{c}, true
+				return &selfToFileExecutor{c}, nil
 			}
 		}
 	}
-	return nil, false
+	return nil, drivers.ErrNotImplemented
 }
 
 // AsModelManager implements drivers.Handle.
@@ -464,6 +435,18 @@ func (c *connection) reopenDB(ctx context.Context) error {
 		dbInitQueries   []string
 		connInitQueries []string
 	)
+
+	if c.driverName == "motherduck" {
+		dbInitQueries = append(dbInitQueries,
+			"INSTALL 'motherduck'",
+			"LOAD 'motherduck'",
+		)
+		if c.config.Token != "" {
+			dbInitQueries = append(dbInitQueries,
+				fmt.Sprintf("SET motherduck_token = '%s'", c.config.Token),
+			)
+		}
+	}
 
 	// Add custom InitSQL queries before any other (e.g. to override the extensions repository)
 	// BootQueries is deprecated. Use InitSQL instead. Retained for backward compatibility.

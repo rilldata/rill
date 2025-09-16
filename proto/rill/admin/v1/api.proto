@@ -63,6 +63,12 @@ service AdminService {
     option (google.api.http) = {get: "/v1/organizations/{organization}/projects-for-user"};
   }
 
+  // ListProjectsForFingerprint lists all projects the current user has access to that match the provided local project details.
+  // This can be used to produce a short list of cloud projects that are likely to have been deployed from a local project.
+  rpc ListProjectsForFingerprint(ListProjectsForFingerprintRequest) returns (ListProjectsForFingerprintResponse) {
+    option (google.api.http) = {get: "/v1/projects-for-fingerprint"};
+  }
+
   // GetProject returns information about a specific project
   rpc GetProject(GetProjectRequest) returns (GetProjectResponse) {
     option (google.api.http) = {get: "/v1/organizations/{organization_name}/projects/{name}"};
@@ -1143,6 +1149,20 @@ message ListProjectsForOrganizationAndUserResponse {
   string next_page_token = 2;
 }
 
+message ListProjectsForFingerprintRequest {
+  string directory_name = 1;
+  string git_remote = 2;
+  string sub_path = 3;
+  string rill_mgd_git_remote = 6;
+}
+
+message ListProjectsForFingerprintResponse {
+  repeated Project projects = 1;
+
+  // unauthorized_project is the name of a project that matches the git_remote+sub_path but the caller does not have access to.
+  string unauthorized_project = 3;
+}
+
 message GetProjectRequest {
   string organization_name = 1;
   string name = 2;
@@ -1416,6 +1436,9 @@ message CreateProjectRequest {
   string name = 2 [(validate.rules).string.min_len = 1];
   string description = 3;
   bool public = 4;
+  // directory_name should be the most recently observed local directory name for the project.
+  // See ListProjectsForFingerprint for more context.
+  string directory_name = 16;
   string provisioner = 5;
   int64 prod_slots = 8;
   string subpath = 12;
@@ -1450,6 +1473,7 @@ message UpdateProjectRequest {
   string name = 2 [(validate.rules).string.min_len = 1];
   optional string description = 3;
   optional bool public = 4;
+  optional string directory_name = 15;
   optional string prod_branch = 5;
   optional string git_remote = 6;
   optional string subpath = 13;
@@ -2218,6 +2242,7 @@ message ConnectProjectToGithubRequest {
   string branch = 4;
   string subpath = 5;
   bool force = 6;
+  bool create = 7;
 }
 
 message ConnectProjectToGithubResponse {}
@@ -2735,6 +2760,7 @@ message Project {
   string description = 5;
   bool public = 6;
   string created_by_user_id = 22;
+  string directory_name = 26;
   string provisioner = 7;
   string git_remote = 8;
   // managed_git_id is set if the project is connected to a rill-managed git repo.
