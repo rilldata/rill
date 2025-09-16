@@ -179,6 +179,7 @@
       </div>
       <div class="mt-6">
         <OrgUsersTable
+          {organization}
           data={filteredUsers}
           usersQuery={$orgMemberUsersInfiniteQuery}
           invitesQuery={$orgInvitesInfiniteQuery}
