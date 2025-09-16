@@ -10,6 +10,7 @@
   import { getOrganizationBillingContactUser } from "@rilldata/web-admin/features/billing/contact/selectors";
   import AddUsersDialog from "@rilldata/web-admin/features/organizations/users/AddUsersDialog.svelte";
   import ChangingBillingContactRoleDialog from "@rilldata/web-admin/features/organizations/users/ChangingBillingContactRoleDialog.svelte";
+  import EditUserGroupDialog from "@rilldata/web-admin/features/organizations/users/EditUserGroupDialog.svelte";
   import OrgUsersFilters from "@rilldata/web-admin/features/organizations/users/OrgUsersFilters.svelte";
   import OrgUsersTable from "@rilldata/web-admin/features/organizations/users/OrgUsersTable.svelte";
   import RemovingBillingContactDialog from "@rilldata/web-admin/features/organizations/users/RemovingBillingContactDialog.svelte";
@@ -29,6 +30,8 @@
   let isRemovingBillingContactDialogOpen = false;
   let isChangingBillingContactRoleDialogOpen = false;
   let isUpdateBillingContactDialogOpen = false;
+  let isEditUserGroupDialogOpen = false;
+  let editingUserGroupName = "";
 
   let searchText = "";
   let filterSelection: "all" | "members" | "guests" | "pending" = "all";
@@ -191,6 +194,10 @@
             (isRemovingBillingContactDialogOpen = true)}
           onAttemptChangeBillingContactUserRole={() =>
             (isChangingBillingContactRoleDialogOpen = true)}
+          onEditUserGroup={(groupName) => {
+            editingUserGroupName = groupName;
+            isEditUserGroupDialogOpen = true;
+          }}
         />
       </div>
       {#if filteredUsers.length > 0}
@@ -228,3 +235,12 @@
   {organization}
   currentBillingContact={$billingContactUser?.email}
 />
+
+{#if editingUserGroupName}
+  <EditUserGroupDialog
+    bind:open={isEditUserGroupDialogOpen}
+    groupName={editingUserGroupName}
+    organizationUsers={allOrgMemberUsersRows}
+    currentUserEmail={$currentUser.data?.user.email}
+  />
+{/if}

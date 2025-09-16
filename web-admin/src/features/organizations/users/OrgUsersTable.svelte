@@ -40,6 +40,7 @@
 
   export let onAttemptRemoveBillingContactUser: () => void;
   export let onAttemptChangeBillingContactUserRole: () => void;
+  export let onEditUserGroup: (groupName: string) => void;
 
   $: safeData = Array.isArray(data) ? data : [];
 
@@ -85,6 +86,7 @@
         flexRender(OrgUsersTableGroupsCell, {
           userId: row.original.userId,
           organization,
+          onEditUserGroup,
         }),
       meta: {
         widthPercent: 40,

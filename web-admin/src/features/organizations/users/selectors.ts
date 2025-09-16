@@ -34,9 +34,10 @@ export function getUserGroupsForUsersInOrg(
       const isPending =
         allOrgGroupsResp.isPending || groupsForUserResp.isPending;
       const error = allOrgGroupsResp.error ?? groupsForUserResp.error;
-      if (isPending || error) return { isPending, error, data: [] };
 
-      const groups = groupsForUserResp.data?.usergroups.map((g) => {
+      const nonManagedGroups =
+        groupsForUserResp.data?.usergroups.filter((g) => !g.managed) ?? [];
+      const groups = nonManagedGroups.map((g) => {
         const orgGroup = allOrgGroupsResp.data?.members?.find(
           (m) => m.groupId === g.groupId,
         );
@@ -50,7 +51,7 @@ export function getUserGroupsForUsersInOrg(
       return {
         isPending,
         error,
-        data: groups ?? [],
+        data: groups,
       };
     },
   );
