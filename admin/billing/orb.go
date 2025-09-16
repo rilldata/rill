@@ -64,7 +64,7 @@ func (o *Orb) DefaultQuotas() Quotas {
 func (o *Orb) DefaultUserQuotas() UserQuotas {
 	return UserQuotas{
 		SingleuserOrgs: toPtr(100),
-		TrialOrgs:      toPtr(2),
+		TrialOrgs:      toPtr(100),
 	}
 }
 
