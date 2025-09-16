@@ -1,0 +1,51 @@
+---
+title: "Misc Components"
+sidebar_label: "Misc"
+sidebar_position: 20
+---
+
+import ImageCodeToggle from '@site/src/components/ImageCodeToggle';
+
+Miscellaneous components in Rill Canvas provide additional functionality for text, images, and other non-data elements. These components help enhance your dashboards with rich content.
+
+## Text/Markdown
+
+Text components allow you to add formatted text, markdown content, and documentation directly to your dashboards.
+
+<ImageCodeToggle
+  image="/img/build/canvas/components/text.png"
+  imageAlt="Text component showing markdown formatting"
+  code={`- markdown:
+      alignment:
+        horizontal: left
+        vertical: middle
+      content: |-
+        # Markdown
+        *Italic*  
+        **Bold**  
+        ***Bold Italic***  
+        ~~Strikethrough~~
+
+        [Rill Home](https://rilldata.com)
+        Inline code: \`print("Hello")\`
+
+        Block code:
+        \`\`\`python
+        def greet():
+            return "Hello, Markdown!"
+      width: 6`}
+  codeLanguage="yaml"
+/>
+
+## Image
+
+Image components let you embed images, logos, and visual elements into your dashboards. Put files in your public/ folder and reference them directly in the `url` as `public/image.png`.
+
+<ImageCodeToggle
+  image="/img/build/canvas/components/image.png"
+  imageAlt="Image component showing embedded logo"
+  code={`- image:
+      url: https://cdn.prod.website-files.com/659ddac460dbacbdc813b204/660b0f85094eb576187342cf_rill_logo_sq_gradient.svg
+    width: 6`}
+  codeLanguage="yaml"
+/>

@@ -1,56 +1,26 @@
 ---
-title: Create Explore Dashboards
-description: Create dashboards using source data and models with time, dimensions, and measures
-sidebar_label: Create Explore Dashboards
+title: Create Dashboards
+description: Create and customize interactive dashboards for data exploration and analysis
 sidebar_position: 00
 ---
 
-In Rill, Explore dashboards are used to visually understand your data with real-time filtering, based on the dimensions and measures defined in your metrics view. In the Explore dashboard YAML, you can define which measures and dimensions are visible, as well as the default view when a user sees your dashboard.
+Rill provides powerful dashboard capabilities to visualize and explore your data. Choose the right dashboard type for your needs:
 
-:::tip
+### Dashboard Types
 
-Starting in version 0.50, metrics views have been separated from Explore dashboards. This allows for a cleaner, more accessible metrics layer and the ability to build various dashboards and components on top of a single metrics view. For more information on what a metrics view is, please see: [What is a Metrics View?](/build/metrics-view)
+- [**Dashboards Types**](/build/dashboards/dashboards-101) - What are the visualization options in Rill, and how are they different?
 
-For migration steps, see [Migrations](/other/v50-dashboard-changes#how-to-migrate-your-current-dashboards).
 
-:::
+### Explore Dashboards
 
-* _**metrics_view**_ - A metrics view that powers the dashboard
-* _**measures**_ - `*` Which measures to include or exclude from the metrics view; using a wildcard will include all.
-* _**dimensions**_ - `*` Which dimensions to include or exclude from the metrics view; using a wildcard will include all.
+- [**Create an Explore Dashboard**](/build/dashboards/explore) - Interactive, slice-and-dice interfaces for dynamic data exploration and analysis. Built on top of a single metrics view, they provide real-time filtering, drilling, and comparison capabilities.
 
-When including dimensions and measures, only the named resources will be included.
-Rill also supports the ability to exclude a set of named dimensions and measures.
 
-```yaml
-type: explore
+### Canvas Dashboards
 
-title: Title of your Explore Dashboard
-description: a description for your explore dashboard
-metrics_view: my_metricsview
+- [**Create a Canvas Dashboard**](/build/dashboards/canvas) - Traditional dashboard, can be built on multiple metrics views allow you to conslidate key measures in a single view.
+- [**Canvas Components**](/build/dashboards/canvas-components) - See all of our supported components!
 
-dimensions: '*' # can use expressions
-measures: '*' # can use expressions
+### Customize Dashboards
 
-defaults: # define all the defaults within here, was default_* in previous dashboard YAML
-    dimensions: 
-    measures:
-    ...
-```
-
-## Define Dashboard Access
-
-Along with [metrics views security policies](/build/metrics-view/security), you can set access on the dashboard level. Access policies will be combined with metrics view policies using a logical AND, so if a user doesn’t pass both, they won’t get access to the dashboard. For more information, see [Data Access](/build/metrics-view/security#dashboard-access) for more information.
-
-:::note Dashboard Properties
-
-For more details about available configurations and properties, check our [Dashboard YAML](/reference/project-files/explore-dashboards) reference page.
-
-:::
-
-### Preview a Dashboard in Rill Developer
-
-Once a dashboard is ready to preview, before [deploying to Rill Cloud](/deploy/deploy-dashboard), you can preview the dashboard in Rill Developer. Especially if you are setting up [dashboard policies](/build/metrics-view/security), it is recommended to preview and test the dashboard before deploying.
-
-<img src='/img/build/dashboard/preview-dashboard.png' class='rounded-gif' />
-<br />
+- [**Customize Dashboard**](/build/dashboards/customization) - Customize your dashboards available dimensions, measures and create a default view for your viewers.
