@@ -35,9 +35,9 @@ Both dashboard types share common capabilities that make them powerful for data 
 - **Time filtering and Comaparisons** - Navigate through time periods and compare different time ranges
 - **Dimension filtering** - Filter data by specific dimensions and values
 
-## Learn More About Using Explore Dashboards
+## Learn More About Using Dashboards
 
-For comprehensive guidance on using dashboards as an analyst, see our [Analyst's Guide to Explore Dashboards](/explore/dashboard-101), which covers:
+For comprehensive guidance on using dashboards as an analyst, see our [Analyst's Guide to Dashboards](/explore/dashboard-101), which covers:
 
 - [Dashboard navigation and interface](/explore/dashboard-101)
 - [Filtering and comparisons](/explore/filters)
@@ -45,6 +45,10 @@ For comprehensive guidance on using dashboards as an analyst, see our [Analyst's
 - [Time dimension details](/explore/dashboard-101/tdd)
 - [Bookmarks and sharing](/explore/bookmarks)
 - [Alerts and notifications](/explore/alerts)
+
+<!-- Separate this list into two once explore changes merged -->
+<!-- Canvas Dashboard Specific: -->
+  
 ## Live Demo
 
 See both dashboard types in action with our interactive demos:
