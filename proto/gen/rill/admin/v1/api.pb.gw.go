@@ -86,7 +86,7 @@ func local_request_AdminService_ListOrganizations_0(ctx context.Context, marshal
 }
 
 var (
-	filter_AdminService_GetOrganization_0 = &utilities.DoubleArray{Encoding: map[string]int{"name": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
+	filter_AdminService_GetOrganization_0 = &utilities.DoubleArray{Encoding: map[string]int{"organization": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
 )
 
 func request_AdminService_GetOrganization_0(ctx context.Context, marshaler runtime.Marshaler, client AdminServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
@@ -100,14 +100,14 @@ func request_AdminService_GetOrganization_0(ctx context.Context, marshaler runti
 		_   = err
 	)
 
-	val, ok = pathParams["name"]
+	val, ok = pathParams["organization"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization")
 	}
 
-	protoReq.Name, err = runtime.String(val)
+	protoReq.Organization, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization", err)
 	}
 
 	if err := req.ParseForm(); err != nil {
@@ -133,14 +133,14 @@ func local_request_AdminService_GetOrganization_0(ctx context.Context, marshaler
 		_   = err
 	)
 
-	val, ok = pathParams["name"]
+	val, ok = pathParams["organization"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization")
 	}
 
-	protoReq.Name, err = runtime.String(val)
+	protoReq.Organization, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization", err)
 	}
 
 	if err := req.ParseForm(); err != nil {
@@ -244,14 +244,14 @@ func request_AdminService_DeleteOrganization_0(ctx context.Context, marshaler ru
 		_   = err
 	)
 
-	val, ok = pathParams["name"]
+	val, ok = pathParams["organization"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization")
 	}
 
-	protoReq.Name, err = runtime.String(val)
+	protoReq.Organization, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization", err)
 	}
 
 	msg, err := client.DeleteOrganization(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -270,14 +270,14 @@ func local_request_AdminService_DeleteOrganization_0(ctx context.Context, marsha
 		_   = err
 	)
 
-	val, ok = pathParams["name"]
+	val, ok = pathParams["organization"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization")
 	}
 
-	protoReq.Name, err = runtime.String(val)
+	protoReq.Organization, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization", err)
 	}
 
 	msg, err := server.DeleteOrganization(ctx, &protoReq)
@@ -300,14 +300,14 @@ func request_AdminService_UpdateOrganization_0(ctx context.Context, marshaler ru
 		_   = err
 	)
 
-	val, ok = pathParams["name"]
+	val, ok = pathParams["organization"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization")
 	}
 
-	protoReq.Name, err = runtime.String(val)
+	protoReq.Organization, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization", err)
 	}
 
 	msg, err := client.UpdateOrganization(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -330,14 +330,14 @@ func local_request_AdminService_UpdateOrganization_0(ctx context.Context, marsha
 		_   = err
 	)
 
-	val, ok = pathParams["name"]
+	val, ok = pathParams["organization"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization")
 	}
 
-	protoReq.Name, err = runtime.String(val)
+	protoReq.Organization, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization", err)
 	}
 
 	msg, err := server.UpdateOrganization(ctx, &protoReq)
@@ -346,7 +346,7 @@ func local_request_AdminService_UpdateOrganization_0(ctx context.Context, marsha
 }
 
 var (
-	filter_AdminService_ListProjectsForOrganization_0 = &utilities.DoubleArray{Encoding: map[string]int{"organization_name": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
+	filter_AdminService_ListProjectsForOrganization_0 = &utilities.DoubleArray{Encoding: map[string]int{"organization": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
 )
 
 func request_AdminService_ListProjectsForOrganization_0(ctx context.Context, marshaler runtime.Marshaler, client AdminServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
@@ -360,14 +360,14 @@ func request_AdminService_ListProjectsForOrganization_0(ctx context.Context, mar
 		_   = err
 	)
 
-	val, ok = pathParams["organization_name"]
+	val, ok = pathParams["organization"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization_name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization")
 	}
 
-	protoReq.OrganizationName, err = runtime.String(val)
+	protoReq.Organization, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization_name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization", err)
 	}
 
 	if err := req.ParseForm(); err != nil {
@@ -393,14 +393,14 @@ func local_request_AdminService_ListProjectsForOrganization_0(ctx context.Contex
 		_   = err
 	)
 
-	val, ok = pathParams["organization_name"]
+	val, ok = pathParams["organization"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization_name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization")
 	}
 
-	protoReq.OrganizationName, err = runtime.String(val)
+	protoReq.Organization, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization_name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization", err)
 	}
 
 	if err := req.ParseForm(); err != nil {
@@ -522,7 +522,7 @@ func local_request_AdminService_ListProjectsForFingerprint_0(ctx context.Context
 }
 
 var (
-	filter_AdminService_GetProject_0 = &utilities.DoubleArray{Encoding: map[string]int{"organization_name": 0, "name": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 1, 2, 3}}
+	filter_AdminService_GetProject_0 = &utilities.DoubleArray{Encoding: map[string]int{"organization": 0, "project": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 1, 2, 3}}
 )
 
 func request_AdminService_GetProject_0(ctx context.Context, marshaler runtime.Marshaler, client AdminServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
@@ -536,24 +536,24 @@ func request_AdminService_GetProject_0(ctx context.Context, marshaler runtime.Ma
 		_   = err
 	)
 
-	val, ok = pathParams["organization_name"]
+	val, ok = pathParams["organization"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization_name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization")
 	}
 
-	protoReq.OrganizationName, err = runtime.String(val)
+	protoReq.Organization, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization_name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization", err)
 	}
 
-	val, ok = pathParams["name"]
+	val, ok = pathParams["project"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "project")
 	}
 
-	protoReq.Name, err = runtime.String(val)
+	protoReq.Project, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "project", err)
 	}
 
 	if err := req.ParseForm(); err != nil {
@@ -579,24 +579,24 @@ func local_request_AdminService_GetProject_0(ctx context.Context, marshaler runt
 		_   = err
 	)
 
-	val, ok = pathParams["organization_name"]
+	val, ok = pathParams["organization"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization_name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization")
 	}
 
-	protoReq.OrganizationName, err = runtime.String(val)
+	protoReq.Organization, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization_name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization", err)
 	}
 
-	val, ok = pathParams["name"]
+	val, ok = pathParams["project"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "project")
 	}
 
-	protoReq.Name, err = runtime.String(val)
+	protoReq.Project, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "project", err)
 	}
 
 	if err := req.ParseForm(); err != nil {
@@ -750,14 +750,14 @@ func request_AdminService_CreateProject_0(ctx context.Context, marshaler runtime
 		_   = err
 	)
 
-	val, ok = pathParams["organization_name"]
+	val, ok = pathParams["organization"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization_name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization")
 	}
 
-	protoReq.OrganizationName, err = runtime.String(val)
+	protoReq.Organization, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization_name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization", err)
 	}
 
 	msg, err := client.CreateProject(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -780,14 +780,14 @@ func local_request_AdminService_CreateProject_0(ctx context.Context, marshaler r
 		_   = err
 	)
 
-	val, ok = pathParams["organization_name"]
+	val, ok = pathParams["organization"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization_name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization")
 	}
 
-	protoReq.OrganizationName, err = runtime.String(val)
+	protoReq.Organization, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization_name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization", err)
 	}
 
 	msg, err := server.CreateProject(ctx, &protoReq)
@@ -806,24 +806,24 @@ func request_AdminService_DeleteProject_0(ctx context.Context, marshaler runtime
 		_   = err
 	)
 
-	val, ok = pathParams["organization_name"]
+	val, ok = pathParams["organization"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization_name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization")
 	}
 
-	protoReq.OrganizationName, err = runtime.String(val)
+	protoReq.Organization, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization_name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization", err)
 	}
 
-	val, ok = pathParams["name"]
+	val, ok = pathParams["project"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "project")
 	}
 
-	protoReq.Name, err = runtime.String(val)
+	protoReq.Project, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "project", err)
 	}
 
 	msg, err := client.DeleteProject(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -842,24 +842,24 @@ func local_request_AdminService_DeleteProject_0(ctx context.Context, marshaler r
 		_   = err
 	)
 
-	val, ok = pathParams["organization_name"]
+	val, ok = pathParams["organization"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization_name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization")
 	}
 
-	protoReq.OrganizationName, err = runtime.String(val)
+	protoReq.Organization, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization_name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization", err)
 	}
 
-	val, ok = pathParams["name"]
+	val, ok = pathParams["project"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "project")
 	}
 
-	protoReq.Name, err = runtime.String(val)
+	protoReq.Project, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "project", err)
 	}
 
 	msg, err := server.DeleteProject(ctx, &protoReq)
@@ -882,24 +882,24 @@ func request_AdminService_UpdateProject_0(ctx context.Context, marshaler runtime
 		_   = err
 	)
 
-	val, ok = pathParams["organization_name"]
+	val, ok = pathParams["organization"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization_name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization")
 	}
 
-	protoReq.OrganizationName, err = runtime.String(val)
+	protoReq.Organization, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization_name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization", err)
 	}
 
-	val, ok = pathParams["name"]
+	val, ok = pathParams["project"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "project")
 	}
 
-	protoReq.Name, err = runtime.String(val)
+	protoReq.Project, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "project", err)
 	}
 
 	msg, err := client.UpdateProject(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -922,24 +922,24 @@ func local_request_AdminService_UpdateProject_0(ctx context.Context, marshaler r
 		_   = err
 	)
 
-	val, ok = pathParams["organization_name"]
+	val, ok = pathParams["organization"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization_name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization")
 	}
 
-	protoReq.OrganizationName, err = runtime.String(val)
+	protoReq.Organization, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization_name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization", err)
 	}
 
-	val, ok = pathParams["name"]
+	val, ok = pathParams["project"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "project")
 	}
 
-	protoReq.Name, err = runtime.String(val)
+	protoReq.Project, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "project", err)
 	}
 
 	msg, err := server.UpdateProject(ctx, &protoReq)
@@ -1132,14 +1132,14 @@ func request_AdminService_CreateAsset_0(ctx context.Context, marshaler runtime.M
 		_   = err
 	)
 
-	val, ok = pathParams["organization_name"]
+	val, ok = pathParams["organization"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization_name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization")
 	}
 
-	protoReq.OrganizationName, err = runtime.String(val)
+	protoReq.Organization, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization_name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization", err)
 	}
 
 	msg, err := client.CreateAsset(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -1162,14 +1162,14 @@ func local_request_AdminService_CreateAsset_0(ctx context.Context, marshaler run
 		_   = err
 	)
 
-	val, ok = pathParams["organization_name"]
+	val, ok = pathParams["organization"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization_name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization")
 	}
 
-	protoReq.OrganizationName, err = runtime.String(val)
+	protoReq.Organization, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization_name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization", err)
 	}
 
 	msg, err := server.CreateAsset(ctx, &protoReq)
@@ -1358,7 +1358,7 @@ func local_request_AdminService_HibernateProject_0(ctx context.Context, marshale
 }
 
 var (
-	filter_AdminService_ListDeployments_0 = &utilities.DoubleArray{Encoding: map[string]int{"organization_name": 0, "project_name": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 1, 2, 3}}
+	filter_AdminService_ListDeployments_0 = &utilities.DoubleArray{Encoding: map[string]int{"organization": 0, "project": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 1, 2, 3}}
 )
 
 func request_AdminService_ListDeployments_0(ctx context.Context, marshaler runtime.Marshaler, client AdminServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
@@ -1372,24 +1372,24 @@ func request_AdminService_ListDeployments_0(ctx context.Context, marshaler runti
 		_   = err
 	)
 
-	val, ok = pathParams["organization_name"]
+	val, ok = pathParams["organization"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization_name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization")
 	}
 
-	protoReq.OrganizationName, err = runtime.String(val)
+	protoReq.Organization, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization_name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization", err)
 	}
 
-	val, ok = pathParams["project_name"]
+	val, ok = pathParams["project"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "project_name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "project")
 	}
 
-	protoReq.ProjectName, err = runtime.String(val)
+	protoReq.Project, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "project_name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "project", err)
 	}
 
 	if err := req.ParseForm(); err != nil {
@@ -1415,24 +1415,24 @@ func local_request_AdminService_ListDeployments_0(ctx context.Context, marshaler
 		_   = err
 	)
 
-	val, ok = pathParams["organization_name"]
+	val, ok = pathParams["organization"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization_name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization")
 	}
 
-	protoReq.OrganizationName, err = runtime.String(val)
+	protoReq.Organization, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization_name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization", err)
 	}
 
-	val, ok = pathParams["project_name"]
+	val, ok = pathParams["project"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "project_name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "project")
 	}
 
-	protoReq.ProjectName, err = runtime.String(val)
+	protoReq.Project, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "project_name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "project", err)
 	}
 
 	if err := req.ParseForm(); err != nil {
@@ -1462,24 +1462,24 @@ func request_AdminService_CreateDeployment_0(ctx context.Context, marshaler runt
 		_   = err
 	)
 
-	val, ok = pathParams["organization_name"]
+	val, ok = pathParams["organization"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization_name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization")
 	}
 
-	protoReq.OrganizationName, err = runtime.String(val)
+	protoReq.Organization, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization_name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization", err)
 	}
 
-	val, ok = pathParams["project_name"]
+	val, ok = pathParams["project"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "project_name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "project")
 	}
 
-	protoReq.ProjectName, err = runtime.String(val)
+	protoReq.Project, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "project_name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "project", err)
 	}
 
 	msg, err := client.CreateDeployment(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -1502,24 +1502,24 @@ func local_request_AdminService_CreateDeployment_0(ctx context.Context, marshale
 		_   = err
 	)
 
-	val, ok = pathParams["organization_name"]
+	val, ok = pathParams["organization"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization_name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization")
 	}
 
-	protoReq.OrganizationName, err = runtime.String(val)
+	protoReq.Organization, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization_name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization", err)
 	}
 
-	val, ok = pathParams["project_name"]
+	val, ok = pathParams["project"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "project_name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "project")
 	}
 
-	protoReq.ProjectName, err = runtime.String(val)
+	protoReq.Project, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "project_name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "project", err)
 	}
 
 	msg, err := server.CreateDeployment(ctx, &protoReq)
@@ -6098,14 +6098,14 @@ func request_AdminService_ListServices_0(ctx context.Context, marshaler runtime.
 		_   = err
 	)
 
-	val, ok = pathParams["organization_name"]
+	val, ok = pathParams["organization"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization_name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization")
 	}
 
-	protoReq.OrganizationName, err = runtime.String(val)
+	protoReq.Organization, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization_name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization", err)
 	}
 
 	msg, err := client.ListServices(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -6124,14 +6124,14 @@ func local_request_AdminService_ListServices_0(ctx context.Context, marshaler ru
 		_   = err
 	)
 
-	val, ok = pathParams["organization_name"]
+	val, ok = pathParams["organization"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization_name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization")
 	}
 
-	protoReq.OrganizationName, err = runtime.String(val)
+	protoReq.Organization, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization_name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization", err)
 	}
 
 	msg, err := server.ListServices(ctx, &protoReq)
@@ -6150,24 +6150,24 @@ func request_AdminService_ListProjectMemberServices_0(ctx context.Context, marsh
 		_   = err
 	)
 
-	val, ok = pathParams["organization_name"]
+	val, ok = pathParams["organization"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization_name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization")
 	}
 
-	protoReq.OrganizationName, err = runtime.String(val)
+	protoReq.Organization, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization_name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization", err)
 	}
 
-	val, ok = pathParams["project_name"]
+	val, ok = pathParams["project"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "project_name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "project")
 	}
 
-	protoReq.ProjectName, err = runtime.String(val)
+	protoReq.Project, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "project_name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "project", err)
 	}
 
 	msg, err := client.ListProjectMemberServices(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -6186,24 +6186,24 @@ func local_request_AdminService_ListProjectMemberServices_0(ctx context.Context,
 		_   = err
 	)
 
-	val, ok = pathParams["organization_name"]
+	val, ok = pathParams["organization"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization_name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization")
 	}
 
-	protoReq.OrganizationName, err = runtime.String(val)
+	protoReq.Organization, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization_name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization", err)
 	}
 
-	val, ok = pathParams["project_name"]
+	val, ok = pathParams["project"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "project_name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "project")
 	}
 
-	protoReq.ProjectName, err = runtime.String(val)
+	protoReq.Project, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "project_name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "project", err)
 	}
 
 	msg, err := server.ListProjectMemberServices(ctx, &protoReq)
@@ -6226,14 +6226,14 @@ func request_AdminService_CreateService_0(ctx context.Context, marshaler runtime
 		_   = err
 	)
 
-	val, ok = pathParams["organization_name"]
+	val, ok = pathParams["organization"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization_name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization")
 	}
 
-	protoReq.OrganizationName, err = runtime.String(val)
+	protoReq.Organization, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization_name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization", err)
 	}
 
 	msg, err := client.CreateService(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -6256,14 +6256,14 @@ func local_request_AdminService_CreateService_0(ctx context.Context, marshaler r
 		_   = err
 	)
 
-	val, ok = pathParams["organization_name"]
+	val, ok = pathParams["organization"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization_name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization")
 	}
 
-	protoReq.OrganizationName, err = runtime.String(val)
+	protoReq.Organization, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization_name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization", err)
 	}
 
 	msg, err := server.CreateService(ctx, &protoReq)
@@ -6282,14 +6282,14 @@ func request_AdminService_GetService_0(ctx context.Context, marshaler runtime.Ma
 		_   = err
 	)
 
-	val, ok = pathParams["organization_name"]
+	val, ok = pathParams["organization"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization_name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization")
 	}
 
-	protoReq.OrganizationName, err = runtime.String(val)
+	protoReq.Organization, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization_name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization", err)
 	}
 
 	val, ok = pathParams["name"]
@@ -6318,14 +6318,14 @@ func local_request_AdminService_GetService_0(ctx context.Context, marshaler runt
 		_   = err
 	)
 
-	val, ok = pathParams["organization_name"]
+	val, ok = pathParams["organization"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization_name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization")
 	}
 
-	protoReq.OrganizationName, err = runtime.String(val)
+	protoReq.Organization, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization_name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization", err)
 	}
 
 	val, ok = pathParams["name"]
@@ -6358,14 +6358,14 @@ func request_AdminService_UpdateService_0(ctx context.Context, marshaler runtime
 		_   = err
 	)
 
-	val, ok = pathParams["organization_name"]
+	val, ok = pathParams["organization"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization_name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization")
 	}
 
-	protoReq.OrganizationName, err = runtime.String(val)
+	protoReq.Organization, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization_name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization", err)
 	}
 
 	val, ok = pathParams["name"]
@@ -6398,14 +6398,14 @@ func local_request_AdminService_UpdateService_0(ctx context.Context, marshaler r
 		_   = err
 	)
 
-	val, ok = pathParams["organization_name"]
+	val, ok = pathParams["organization"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization_name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization")
 	}
 
-	protoReq.OrganizationName, err = runtime.String(val)
+	protoReq.Organization, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization_name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization", err)
 	}
 
 	val, ok = pathParams["name"]
@@ -6438,14 +6438,14 @@ func request_AdminService_SetOrganizationMemberServiceRole_0(ctx context.Context
 		_   = err
 	)
 
-	val, ok = pathParams["organization_name"]
+	val, ok = pathParams["organization"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization_name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization")
 	}
 
-	protoReq.OrganizationName, err = runtime.String(val)
+	protoReq.Organization, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization_name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization", err)
 	}
 
 	val, ok = pathParams["name"]
@@ -6478,14 +6478,14 @@ func local_request_AdminService_SetOrganizationMemberServiceRole_0(ctx context.C
 		_   = err
 	)
 
-	val, ok = pathParams["organization_name"]
+	val, ok = pathParams["organization"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization_name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization")
 	}
 
-	protoReq.OrganizationName, err = runtime.String(val)
+	protoReq.Organization, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization_name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization", err)
 	}
 
 	val, ok = pathParams["name"]
@@ -6514,14 +6514,14 @@ func request_AdminService_RemoveOrganizationMemberService_0(ctx context.Context,
 		_   = err
 	)
 
-	val, ok = pathParams["organization_name"]
+	val, ok = pathParams["organization"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization_name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization")
 	}
 
-	protoReq.OrganizationName, err = runtime.String(val)
+	protoReq.Organization, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization_name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization", err)
 	}
 
 	val, ok = pathParams["name"]
@@ -6550,14 +6550,14 @@ func local_request_AdminService_RemoveOrganizationMemberService_0(ctx context.Co
 		_   = err
 	)
 
-	val, ok = pathParams["organization_name"]
+	val, ok = pathParams["organization"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization_name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization")
 	}
 
-	protoReq.OrganizationName, err = runtime.String(val)
+	protoReq.Organization, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization_name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization", err)
 	}
 
 	val, ok = pathParams["name"]
@@ -6590,24 +6590,24 @@ func request_AdminService_SetProjectMemberServiceRole_0(ctx context.Context, mar
 		_   = err
 	)
 
-	val, ok = pathParams["organization_name"]
+	val, ok = pathParams["organization"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization_name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization")
 	}
 
-	protoReq.OrganizationName, err = runtime.String(val)
+	protoReq.Organization, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization_name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization", err)
 	}
 
-	val, ok = pathParams["project_name"]
+	val, ok = pathParams["project"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "project_name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "project")
 	}
 
-	protoReq.ProjectName, err = runtime.String(val)
+	protoReq.Project, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "project_name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "project", err)
 	}
 
 	val, ok = pathParams["name"]
@@ -6640,24 +6640,24 @@ func local_request_AdminService_SetProjectMemberServiceRole_0(ctx context.Contex
 		_   = err
 	)
 
-	val, ok = pathParams["organization_name"]
+	val, ok = pathParams["organization"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization_name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization")
 	}
 
-	protoReq.OrganizationName, err = runtime.String(val)
+	protoReq.Organization, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization_name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization", err)
 	}
 
-	val, ok = pathParams["project_name"]
+	val, ok = pathParams["project"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "project_name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "project")
 	}
 
-	protoReq.ProjectName, err = runtime.String(val)
+	protoReq.Project, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "project_name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "project", err)
 	}
 
 	val, ok = pathParams["name"]
@@ -6686,24 +6686,24 @@ func request_AdminService_RemoveProjectMemberService_0(ctx context.Context, mars
 		_   = err
 	)
 
-	val, ok = pathParams["organization_name"]
+	val, ok = pathParams["organization"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization_name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization")
 	}
 
-	protoReq.OrganizationName, err = runtime.String(val)
+	protoReq.Organization, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization_name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization", err)
 	}
 
-	val, ok = pathParams["project_name"]
+	val, ok = pathParams["project"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "project_name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "project")
 	}
 
-	protoReq.ProjectName, err = runtime.String(val)
+	protoReq.Project, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "project_name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "project", err)
 	}
 
 	val, ok = pathParams["name"]
@@ -6732,24 +6732,24 @@ func local_request_AdminService_RemoveProjectMemberService_0(ctx context.Context
 		_   = err
 	)
 
-	val, ok = pathParams["organization_name"]
+	val, ok = pathParams["organization"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization_name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization")
 	}
 
-	protoReq.OrganizationName, err = runtime.String(val)
+	protoReq.Organization, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization_name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization", err)
 	}
 
-	val, ok = pathParams["project_name"]
+	val, ok = pathParams["project"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "project_name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "project")
 	}
 
-	protoReq.ProjectName, err = runtime.String(val)
+	protoReq.Project, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "project_name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "project", err)
 	}
 
 	val, ok = pathParams["name"]
@@ -6778,14 +6778,14 @@ func request_AdminService_DeleteService_0(ctx context.Context, marshaler runtime
 		_   = err
 	)
 
-	val, ok = pathParams["organization_name"]
+	val, ok = pathParams["organization"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization_name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization")
 	}
 
-	protoReq.OrganizationName, err = runtime.String(val)
+	protoReq.Organization, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization_name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization", err)
 	}
 
 	val, ok = pathParams["name"]
@@ -6814,14 +6814,14 @@ func local_request_AdminService_DeleteService_0(ctx context.Context, marshaler r
 		_   = err
 	)
 
-	val, ok = pathParams["organization_name"]
+	val, ok = pathParams["organization"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization_name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization")
 	}
 
-	protoReq.OrganizationName, err = runtime.String(val)
+	protoReq.Organization, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization_name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization", err)
 	}
 
 	val, ok = pathParams["name"]
@@ -6850,14 +6850,14 @@ func request_AdminService_ListServiceAuthTokens_0(ctx context.Context, marshaler
 		_   = err
 	)
 
-	val, ok = pathParams["organization_name"]
+	val, ok = pathParams["organization"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization_name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization")
 	}
 
-	protoReq.OrganizationName, err = runtime.String(val)
+	protoReq.Organization, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization_name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization", err)
 	}
 
 	val, ok = pathParams["service_name"]
@@ -6886,14 +6886,14 @@ func local_request_AdminService_ListServiceAuthTokens_0(ctx context.Context, mar
 		_   = err
 	)
 
-	val, ok = pathParams["organization_name"]
+	val, ok = pathParams["organization"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization_name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization")
 	}
 
-	protoReq.OrganizationName, err = runtime.String(val)
+	protoReq.Organization, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization_name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization", err)
 	}
 
 	val, ok = pathParams["service_name"]
@@ -6926,14 +6926,14 @@ func request_AdminService_IssueServiceAuthToken_0(ctx context.Context, marshaler
 		_   = err
 	)
 
-	val, ok = pathParams["organization_name"]
+	val, ok = pathParams["organization"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization_name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization")
 	}
 
-	protoReq.OrganizationName, err = runtime.String(val)
+	protoReq.Organization, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization_name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization", err)
 	}
 
 	val, ok = pathParams["service_name"]
@@ -6966,14 +6966,14 @@ func local_request_AdminService_IssueServiceAuthToken_0(ctx context.Context, mar
 		_   = err
 	)
 
-	val, ok = pathParams["organization_name"]
+	val, ok = pathParams["organization"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization_name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization")
 	}
 
-	protoReq.OrganizationName, err = runtime.String(val)
+	protoReq.Organization, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization_name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization", err)
 	}
 
 	val, ok = pathParams["service_name"]
@@ -9600,7 +9600,7 @@ func RegisterAdminServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.admin.v1.AdminService/GetOrganization", runtime.WithHTTPPathPattern("/v1/orgs/{name}"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.admin.v1.AdminService/GetOrganization", runtime.WithHTTPPathPattern("/v1/orgs/{organization}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -9675,7 +9675,7 @@ func RegisterAdminServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.admin.v1.AdminService/DeleteOrganization", runtime.WithHTTPPathPattern("/v1/orgs/{name}"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.admin.v1.AdminService/DeleteOrganization", runtime.WithHTTPPathPattern("/v1/orgs/{organization}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -9700,7 +9700,7 @@ func RegisterAdminServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.admin.v1.AdminService/UpdateOrganization", runtime.WithHTTPPathPattern("/v1/orgs/{name}"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.admin.v1.AdminService/UpdateOrganization", runtime.WithHTTPPathPattern("/v1/orgs/{organization}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -9725,7 +9725,7 @@ func RegisterAdminServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.admin.v1.AdminService/ListProjectsForOrganization", runtime.WithHTTPPathPattern("/v1/orgs/{organization_name}/projects"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.admin.v1.AdminService/ListProjectsForOrganization", runtime.WithHTTPPathPattern("/v1/orgs/{organization}/projects"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -9800,7 +9800,7 @@ func RegisterAdminServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.admin.v1.AdminService/GetProject", runtime.WithHTTPPathPattern("/v1/orgs/{organization_name}/projects/{name}"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.admin.v1.AdminService/GetProject", runtime.WithHTTPPathPattern("/v1/orgs/{organization}/projects/{project}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -9900,7 +9900,7 @@ func RegisterAdminServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.admin.v1.AdminService/CreateProject", runtime.WithHTTPPathPattern("/v1/orgs/{organization_name}/projects"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.admin.v1.AdminService/CreateProject", runtime.WithHTTPPathPattern("/v1/orgs/{organization}/projects"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -9925,7 +9925,7 @@ func RegisterAdminServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.admin.v1.AdminService/DeleteProject", runtime.WithHTTPPathPattern("/v1/orgs/{organization_name}/projects/{name}"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.admin.v1.AdminService/DeleteProject", runtime.WithHTTPPathPattern("/v1/orgs/{organization}/projects/{project}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -9950,7 +9950,7 @@ func RegisterAdminServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.admin.v1.AdminService/UpdateProject", runtime.WithHTTPPathPattern("/v1/orgs/{organization_name}/projects/{name}"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.admin.v1.AdminService/UpdateProject", runtime.WithHTTPPathPattern("/v1/orgs/{organization}/projects/{project}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -10025,7 +10025,7 @@ func RegisterAdminServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.admin.v1.AdminService/CreateAsset", runtime.WithHTTPPathPattern("/v1/orgs/{organization_name}/create_asset"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.admin.v1.AdminService/CreateAsset", runtime.WithHTTPPathPattern("/v1/orgs/{organization}/create_asset"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -10100,7 +10100,7 @@ func RegisterAdminServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.admin.v1.AdminService/ListDeployments", runtime.WithHTTPPathPattern("/v1/orgs/{organization_name}/projects/{project_name}/deployments"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.admin.v1.AdminService/ListDeployments", runtime.WithHTTPPathPattern("/v1/orgs/{organization}/projects/{project}/deployments"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -10125,7 +10125,7 @@ func RegisterAdminServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.admin.v1.AdminService/CreateDeployment", runtime.WithHTTPPathPattern("/v1/orgs/{organization_name}/projects/{project_name}/deployments"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.admin.v1.AdminService/CreateDeployment", runtime.WithHTTPPathPattern("/v1/orgs/{organization}/projects/{project}/deployments"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -12000,7 +12000,7 @@ func RegisterAdminServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.admin.v1.AdminService/ListServices", runtime.WithHTTPPathPattern("/v1/orgs/{organization_name}/services"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.admin.v1.AdminService/ListServices", runtime.WithHTTPPathPattern("/v1/orgs/{organization}/services"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -12025,7 +12025,7 @@ func RegisterAdminServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.admin.v1.AdminService/ListProjectMemberServices", runtime.WithHTTPPathPattern("/v1/orgs/{organization_name}/projects/{project_name}/services"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.admin.v1.AdminService/ListProjectMemberServices", runtime.WithHTTPPathPattern("/v1/orgs/{organization}/projects/{project}/services"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -12050,7 +12050,7 @@ func RegisterAdminServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.admin.v1.AdminService/CreateService", runtime.WithHTTPPathPattern("/v1/orgs/{organization_name}/services"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.admin.v1.AdminService/CreateService", runtime.WithHTTPPathPattern("/v1/orgs/{organization}/services"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -12075,7 +12075,7 @@ func RegisterAdminServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.admin.v1.AdminService/GetService", runtime.WithHTTPPathPattern("/v1/orgs/{organization_name}/services/{name}"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.admin.v1.AdminService/GetService", runtime.WithHTTPPathPattern("/v1/orgs/{organization}/services/{name}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -12100,7 +12100,7 @@ func RegisterAdminServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.admin.v1.AdminService/UpdateService", runtime.WithHTTPPathPattern("/v1/orgs/{organization_name}/services/{name}"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.admin.v1.AdminService/UpdateService", runtime.WithHTTPPathPattern("/v1/orgs/{organization}/services/{name}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -12125,7 +12125,7 @@ func RegisterAdminServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.admin.v1.AdminService/SetOrganizationMemberServiceRole", runtime.WithHTTPPathPattern("/v1/orgs/{organization_name}/services/{name}/role"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.admin.v1.AdminService/SetOrganizationMemberServiceRole", runtime.WithHTTPPathPattern("/v1/orgs/{organization}/services/{name}/role"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -12150,7 +12150,7 @@ func RegisterAdminServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.admin.v1.AdminService/RemoveOrganizationMemberService", runtime.WithHTTPPathPattern("/v1/orgs/{organization_name}/services/{name}/role"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.admin.v1.AdminService/RemoveOrganizationMemberService", runtime.WithHTTPPathPattern("/v1/orgs/{organization}/services/{name}/role"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -12175,7 +12175,7 @@ func RegisterAdminServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.admin.v1.AdminService/SetProjectMemberServiceRole", runtime.WithHTTPPathPattern("/v1/orgs/{organization_name}/projects/{project_name}/services/{name}/role"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.admin.v1.AdminService/SetProjectMemberServiceRole", runtime.WithHTTPPathPattern("/v1/orgs/{organization}/projects/{project}/services/{name}/role"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -12200,7 +12200,7 @@ func RegisterAdminServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.admin.v1.AdminService/RemoveProjectMemberService", runtime.WithHTTPPathPattern("/v1/orgs/{organization_name}/projects/{project_name}/services/{name}"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.admin.v1.AdminService/RemoveProjectMemberService", runtime.WithHTTPPathPattern("/v1/orgs/{organization}/projects/{project}/services/{name}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -12225,7 +12225,7 @@ func RegisterAdminServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.admin.v1.AdminService/DeleteService", runtime.WithHTTPPathPattern("/v1/orgs/{organization_name}/services/{name}"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.admin.v1.AdminService/DeleteService", runtime.WithHTTPPathPattern("/v1/orgs/{organization}/services/{name}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -12250,7 +12250,7 @@ func RegisterAdminServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.admin.v1.AdminService/ListServiceAuthTokens", runtime.WithHTTPPathPattern("/v1/orgs/{organization_name}/services/{service_name}/tokens"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.admin.v1.AdminService/ListServiceAuthTokens", runtime.WithHTTPPathPattern("/v1/orgs/{organization}/services/{service_name}/tokens"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -12275,7 +12275,7 @@ func RegisterAdminServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.admin.v1.AdminService/IssueServiceAuthToken", runtime.WithHTTPPathPattern("/v1/orgs/{organization_name}/services/{service_name}/tokens"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.admin.v1.AdminService/IssueServiceAuthToken", runtime.WithHTTPPathPattern("/v1/orgs/{organization}/services/{service_name}/tokens"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -13358,7 +13358,7 @@ func RegisterAdminServiceHandlerClient(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.admin.v1.AdminService/GetOrganization", runtime.WithHTTPPathPattern("/v1/orgs/{name}"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.admin.v1.AdminService/GetOrganization", runtime.WithHTTPPathPattern("/v1/orgs/{organization}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -13424,7 +13424,7 @@ func RegisterAdminServiceHandlerClient(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.admin.v1.AdminService/DeleteOrganization", runtime.WithHTTPPathPattern("/v1/orgs/{name}"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.admin.v1.AdminService/DeleteOrganization", runtime.WithHTTPPathPattern("/v1/orgs/{organization}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -13446,7 +13446,7 @@ func RegisterAdminServiceHandlerClient(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.admin.v1.AdminService/UpdateOrganization", runtime.WithHTTPPathPattern("/v1/orgs/{name}"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.admin.v1.AdminService/UpdateOrganization", runtime.WithHTTPPathPattern("/v1/orgs/{organization}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -13468,7 +13468,7 @@ func RegisterAdminServiceHandlerClient(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.admin.v1.AdminService/ListProjectsForOrganization", runtime.WithHTTPPathPattern("/v1/orgs/{organization_name}/projects"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.admin.v1.AdminService/ListProjectsForOrganization", runtime.WithHTTPPathPattern("/v1/orgs/{organization}/projects"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -13534,7 +13534,7 @@ func RegisterAdminServiceHandlerClient(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.admin.v1.AdminService/GetProject", runtime.WithHTTPPathPattern("/v1/orgs/{organization_name}/projects/{name}"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.admin.v1.AdminService/GetProject", runtime.WithHTTPPathPattern("/v1/orgs/{organization}/projects/{project}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -13622,7 +13622,7 @@ func RegisterAdminServiceHandlerClient(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.admin.v1.AdminService/CreateProject", runtime.WithHTTPPathPattern("/v1/orgs/{organization_name}/projects"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.admin.v1.AdminService/CreateProject", runtime.WithHTTPPathPattern("/v1/orgs/{organization}/projects"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -13644,7 +13644,7 @@ func RegisterAdminServiceHandlerClient(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.admin.v1.AdminService/DeleteProject", runtime.WithHTTPPathPattern("/v1/orgs/{organization_name}/projects/{name}"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.admin.v1.AdminService/DeleteProject", runtime.WithHTTPPathPattern("/v1/orgs/{organization}/projects/{project}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -13666,7 +13666,7 @@ func RegisterAdminServiceHandlerClient(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.admin.v1.AdminService/UpdateProject", runtime.WithHTTPPathPattern("/v1/orgs/{organization_name}/projects/{name}"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.admin.v1.AdminService/UpdateProject", runtime.WithHTTPPathPattern("/v1/orgs/{organization}/projects/{project}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -13732,7 +13732,7 @@ func RegisterAdminServiceHandlerClient(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.admin.v1.AdminService/CreateAsset", runtime.WithHTTPPathPattern("/v1/orgs/{organization_name}/create_asset"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.admin.v1.AdminService/CreateAsset", runtime.WithHTTPPathPattern("/v1/orgs/{organization}/create_asset"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -13798,7 +13798,7 @@ func RegisterAdminServiceHandlerClient(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.admin.v1.AdminService/ListDeployments", runtime.WithHTTPPathPattern("/v1/orgs/{organization_name}/projects/{project_name}/deployments"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.admin.v1.AdminService/ListDeployments", runtime.WithHTTPPathPattern("/v1/orgs/{organization}/projects/{project}/deployments"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -13820,7 +13820,7 @@ func RegisterAdminServiceHandlerClient(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.admin.v1.AdminService/CreateDeployment", runtime.WithHTTPPathPattern("/v1/orgs/{organization_name}/projects/{project_name}/deployments"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.admin.v1.AdminService/CreateDeployment", runtime.WithHTTPPathPattern("/v1/orgs/{organization}/projects/{project}/deployments"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -15470,7 +15470,7 @@ func RegisterAdminServiceHandlerClient(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.admin.v1.AdminService/ListServices", runtime.WithHTTPPathPattern("/v1/orgs/{organization_name}/services"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.admin.v1.AdminService/ListServices", runtime.WithHTTPPathPattern("/v1/orgs/{organization}/services"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -15492,7 +15492,7 @@ func RegisterAdminServiceHandlerClient(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.admin.v1.AdminService/ListProjectMemberServices", runtime.WithHTTPPathPattern("/v1/orgs/{organization_name}/projects/{project_name}/services"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.admin.v1.AdminService/ListProjectMemberServices", runtime.WithHTTPPathPattern("/v1/orgs/{organization}/projects/{project}/services"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -15514,7 +15514,7 @@ func RegisterAdminServiceHandlerClient(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.admin.v1.AdminService/CreateService", runtime.WithHTTPPathPattern("/v1/orgs/{organization_name}/services"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.admin.v1.AdminService/CreateService", runtime.WithHTTPPathPattern("/v1/orgs/{organization}/services"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -15536,7 +15536,7 @@ func RegisterAdminServiceHandlerClient(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.admin.v1.AdminService/GetService", runtime.WithHTTPPathPattern("/v1/orgs/{organization_name}/services/{name}"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.admin.v1.AdminService/GetService", runtime.WithHTTPPathPattern("/v1/orgs/{organization}/services/{name}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -15558,7 +15558,7 @@ func RegisterAdminServiceHandlerClient(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.admin.v1.AdminService/UpdateService", runtime.WithHTTPPathPattern("/v1/orgs/{organization_name}/services/{name}"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.admin.v1.AdminService/UpdateService", runtime.WithHTTPPathPattern("/v1/orgs/{organization}/services/{name}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -15580,7 +15580,7 @@ func RegisterAdminServiceHandlerClient(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.admin.v1.AdminService/SetOrganizationMemberServiceRole", runtime.WithHTTPPathPattern("/v1/orgs/{organization_name}/services/{name}/role"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.admin.v1.AdminService/SetOrganizationMemberServiceRole", runtime.WithHTTPPathPattern("/v1/orgs/{organization}/services/{name}/role"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -15602,7 +15602,7 @@ func RegisterAdminServiceHandlerClient(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.admin.v1.AdminService/RemoveOrganizationMemberService", runtime.WithHTTPPathPattern("/v1/orgs/{organization_name}/services/{name}/role"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.admin.v1.AdminService/RemoveOrganizationMemberService", runtime.WithHTTPPathPattern("/v1/orgs/{organization}/services/{name}/role"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -15624,7 +15624,7 @@ func RegisterAdminServiceHandlerClient(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.admin.v1.AdminService/SetProjectMemberServiceRole", runtime.WithHTTPPathPattern("/v1/orgs/{organization_name}/projects/{project_name}/services/{name}/role"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.admin.v1.AdminService/SetProjectMemberServiceRole", runtime.WithHTTPPathPattern("/v1/orgs/{organization}/projects/{project}/services/{name}/role"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -15646,7 +15646,7 @@ func RegisterAdminServiceHandlerClient(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.admin.v1.AdminService/RemoveProjectMemberService", runtime.WithHTTPPathPattern("/v1/orgs/{organization_name}/projects/{project_name}/services/{name}"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.admin.v1.AdminService/RemoveProjectMemberService", runtime.WithHTTPPathPattern("/v1/orgs/{organization}/projects/{project}/services/{name}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -15668,7 +15668,7 @@ func RegisterAdminServiceHandlerClient(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.admin.v1.AdminService/DeleteService", runtime.WithHTTPPathPattern("/v1/orgs/{organization_name}/services/{name}"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.admin.v1.AdminService/DeleteService", runtime.WithHTTPPathPattern("/v1/orgs/{organization}/services/{name}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -15690,7 +15690,7 @@ func RegisterAdminServiceHandlerClient(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.admin.v1.AdminService/ListServiceAuthTokens", runtime.WithHTTPPathPattern("/v1/orgs/{organization_name}/services/{service_name}/tokens"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.admin.v1.AdminService/ListServiceAuthTokens", runtime.WithHTTPPathPattern("/v1/orgs/{organization}/services/{service_name}/tokens"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -15712,7 +15712,7 @@ func RegisterAdminServiceHandlerClient(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.admin.v1.AdminService/IssueServiceAuthToken", runtime.WithHTTPPathPattern("/v1/orgs/{organization_name}/services/{service_name}/tokens"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.admin.v1.AdminService/IssueServiceAuthToken", runtime.WithHTTPPathPattern("/v1/orgs/{organization}/services/{service_name}/tokens"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -16594,23 +16594,23 @@ var (
 
 	pattern_AdminService_ListOrganizations_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "orgs"}, ""))
 
-	pattern_AdminService_GetOrganization_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"v1", "orgs", "name"}, ""))
+	pattern_AdminService_GetOrganization_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"v1", "orgs", "organization"}, ""))
 
 	pattern_AdminService_GetOrganizationNameForDomain_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"v1", "organization-for-domain", "domain"}, ""))
 
 	pattern_AdminService_CreateOrganization_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "orgs"}, ""))
 
-	pattern_AdminService_DeleteOrganization_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"v1", "orgs", "name"}, ""))
+	pattern_AdminService_DeleteOrganization_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"v1", "orgs", "organization"}, ""))
 
-	pattern_AdminService_UpdateOrganization_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"v1", "orgs", "name"}, ""))
+	pattern_AdminService_UpdateOrganization_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"v1", "orgs", "organization"}, ""))
 
-	pattern_AdminService_ListProjectsForOrganization_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3}, []string{"v1", "orgs", "organization_name", "projects"}, ""))
+	pattern_AdminService_ListProjectsForOrganization_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3}, []string{"v1", "orgs", "organization", "projects"}, ""))
 
 	pattern_AdminService_ListProjectsForOrganizationAndUser_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3}, []string{"v1", "orgs", "organization", "projects-for-user"}, ""))
 
 	pattern_AdminService_ListProjectsForFingerprint_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "projects-for-fingerprint"}, ""))
 
-	pattern_AdminService_GetProject_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"v1", "orgs", "organization_name", "projects", "name"}, ""))
+	pattern_AdminService_GetProject_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"v1", "orgs", "organization", "projects", "project"}, ""))
 
 	pattern_AdminService_ListProjectsForUserByName_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "projects"}, ""))
 
@@ -16618,25 +16618,25 @@ var (
 
 	pattern_AdminService_SearchProjectNames_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"v1", "superuser", "projects", "search"}, ""))
 
-	pattern_AdminService_CreateProject_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3}, []string{"v1", "orgs", "organization_name", "projects"}, ""))
+	pattern_AdminService_CreateProject_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3}, []string{"v1", "orgs", "organization", "projects"}, ""))
 
-	pattern_AdminService_DeleteProject_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"v1", "orgs", "organization_name", "projects", "name"}, ""))
+	pattern_AdminService_DeleteProject_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"v1", "orgs", "organization", "projects", "project"}, ""))
 
-	pattern_AdminService_UpdateProject_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"v1", "orgs", "organization_name", "projects", "name"}, ""))
+	pattern_AdminService_UpdateProject_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"v1", "orgs", "organization", "projects", "project"}, ""))
 
 	pattern_AdminService_GetProjectVariables_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4, 2, 5}, []string{"v1", "orgs", "organization", "projects", "project", "variables"}, ""))
 
 	pattern_AdminService_UpdateProjectVariables_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4, 2, 5}, []string{"v1", "orgs", "organization", "projects", "project", "variables"}, ""))
 
-	pattern_AdminService_CreateAsset_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3}, []string{"v1", "orgs", "organization_name", "create_asset"}, ""))
+	pattern_AdminService_CreateAsset_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3}, []string{"v1", "orgs", "organization", "create_asset"}, ""))
 
 	pattern_AdminService_RedeployProject_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4, 2, 5}, []string{"v1", "orgs", "organization", "projects", "project", "redeploy"}, ""))
 
 	pattern_AdminService_HibernateProject_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4, 2, 5}, []string{"v1", "orgs", "organization", "projects", "project", "hibernate"}, ""))
 
-	pattern_AdminService_ListDeployments_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4, 2, 5}, []string{"v1", "orgs", "organization_name", "projects", "project_name", "deployments"}, ""))
+	pattern_AdminService_ListDeployments_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4, 2, 5}, []string{"v1", "orgs", "organization", "projects", "project", "deployments"}, ""))
 
-	pattern_AdminService_CreateDeployment_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4, 2, 5}, []string{"v1", "orgs", "organization_name", "projects", "project_name", "deployments"}, ""))
+	pattern_AdminService_CreateDeployment_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4, 2, 5}, []string{"v1", "orgs", "organization", "projects", "project", "deployments"}, ""))
 
 	pattern_AdminService_GetDeployment_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3}, []string{"v1", "deployments", "deployment_id", "credentials"}, ""))
 
@@ -16786,29 +16786,29 @@ var (
 
 	pattern_AdminService_ListProjectWhitelistedDomains_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4, 2, 5}, []string{"v1", "orgs", "organization", "projects", "project", "whitelisted"}, ""))
 
-	pattern_AdminService_ListServices_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3}, []string{"v1", "orgs", "organization_name", "services"}, ""))
+	pattern_AdminService_ListServices_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3}, []string{"v1", "orgs", "organization", "services"}, ""))
 
-	pattern_AdminService_ListProjectMemberServices_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4, 2, 5}, []string{"v1", "orgs", "organization_name", "projects", "project_name", "services"}, ""))
+	pattern_AdminService_ListProjectMemberServices_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4, 2, 5}, []string{"v1", "orgs", "organization", "projects", "project", "services"}, ""))
 
-	pattern_AdminService_CreateService_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3}, []string{"v1", "orgs", "organization_name", "services"}, ""))
+	pattern_AdminService_CreateService_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3}, []string{"v1", "orgs", "organization", "services"}, ""))
 
-	pattern_AdminService_GetService_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"v1", "orgs", "organization_name", "services", "name"}, ""))
+	pattern_AdminService_GetService_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"v1", "orgs", "organization", "services", "name"}, ""))
 
-	pattern_AdminService_UpdateService_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"v1", "orgs", "organization_name", "services", "name"}, ""))
+	pattern_AdminService_UpdateService_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"v1", "orgs", "organization", "services", "name"}, ""))
 
-	pattern_AdminService_SetOrganizationMemberServiceRole_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4, 2, 5}, []string{"v1", "orgs", "organization_name", "services", "name", "role"}, ""))
+	pattern_AdminService_SetOrganizationMemberServiceRole_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4, 2, 5}, []string{"v1", "orgs", "organization", "services", "name", "role"}, ""))
 
-	pattern_AdminService_RemoveOrganizationMemberService_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4, 2, 5}, []string{"v1", "orgs", "organization_name", "services", "name", "role"}, ""))
+	pattern_AdminService_RemoveOrganizationMemberService_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4, 2, 5}, []string{"v1", "orgs", "organization", "services", "name", "role"}, ""))
 
-	pattern_AdminService_SetProjectMemberServiceRole_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4, 2, 5, 1, 0, 4, 1, 5, 6, 2, 7}, []string{"v1", "orgs", "organization_name", "projects", "project_name", "services", "name", "role"}, ""))
+	pattern_AdminService_SetProjectMemberServiceRole_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4, 2, 5, 1, 0, 4, 1, 5, 6, 2, 7}, []string{"v1", "orgs", "organization", "projects", "project", "services", "name", "role"}, ""))
 
-	pattern_AdminService_RemoveProjectMemberService_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4, 2, 5, 1, 0, 4, 1, 5, 6}, []string{"v1", "orgs", "organization_name", "projects", "project_name", "services", "name"}, ""))
+	pattern_AdminService_RemoveProjectMemberService_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4, 2, 5, 1, 0, 4, 1, 5, 6}, []string{"v1", "orgs", "organization", "projects", "project", "services", "name"}, ""))
 
-	pattern_AdminService_DeleteService_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"v1", "orgs", "organization_name", "services", "name"}, ""))
+	pattern_AdminService_DeleteService_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"v1", "orgs", "organization", "services", "name"}, ""))
 
-	pattern_AdminService_ListServiceAuthTokens_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4, 2, 5}, []string{"v1", "orgs", "organization_name", "services", "service_name", "tokens"}, ""))
+	pattern_AdminService_ListServiceAuthTokens_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4, 2, 5}, []string{"v1", "orgs", "organization", "services", "service_name", "tokens"}, ""))
 
-	pattern_AdminService_IssueServiceAuthToken_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4, 2, 5}, []string{"v1", "orgs", "organization_name", "services", "service_name", "tokens"}, ""))
+	pattern_AdminService_IssueServiceAuthToken_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4, 2, 5}, []string{"v1", "orgs", "organization", "services", "service_name", "tokens"}, ""))
 
 	pattern_AdminService_RevokeServiceAuthToken_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"v1", "services", "tokens", "token_id"}, ""))
 

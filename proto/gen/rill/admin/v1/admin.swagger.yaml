@@ -430,7 +430,7 @@ paths:
             $ref: '#/definitions/v1CreateOrganizationRequest'
       tags:
         - AdminService
-  /v1/orgs/{name}:
+  /v1/orgs/{organization}:
     get:
       summary: GetOrganization returns information about a specific organization
       operationId: AdminService_GetOrganization
@@ -444,7 +444,7 @@ paths:
           schema:
             $ref: '#/definitions/rpcStatus'
       parameters:
-        - name: name
+        - name: organization
           in: path
           required: true
           type: string
@@ -455,7 +455,7 @@ paths:
       tags:
         - AdminService
     delete:
-      summary: DeleteOrganization deletes an organizations
+      summary: DeleteOrganization deletes an organization
       operationId: AdminService_DeleteOrganization
       responses:
         "200":
@@ -467,7 +467,7 @@ paths:
           schema:
             $ref: '#/definitions/rpcStatus'
       parameters:
-        - name: name
+        - name: organization
           in: path
           required: true
           type: string
@@ -486,7 +486,7 @@ paths:
           schema:
             $ref: '#/definitions/rpcStatus'
       parameters:
-        - name: name
+        - name: organization
           in: path
           required: true
           type: string
@@ -699,6 +699,45 @@ paths:
               name:
                 type: string
                 description: "name of the repo to create. \nNote: The final name will be suffixed with a random string to ensure uniqueness."
+      tags:
+        - AdminService
+  /v1/orgs/{organization}/create_asset:
+    post:
+      summary: CreateAsset returns a one time signed URL using which any asset can be uploaded.
+      operationId: AdminService_CreateAsset
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1CreateAssetResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              type:
+                type: string
+              name:
+                type: string
+                title: Eg. "rilldata__project_name"
+              extension:
+                type: string
+                title: Eg. ".tar.gz"
+              public:
+                type: boolean
+              estimatedSizeBytes:
+                type: string
+                format: int64
       tags:
         - AdminService
   /v1/orgs/{organization}/invites:
@@ -919,6 +958,93 @@ paths:
           type: string
       tags:
         - AdminService
+  /v1/orgs/{organization}/projects:
+    get:
+      summary: ListProjectsForOrganization lists all the projects currently available for given organizations.
+      operationId: AdminService_ListProjectsForOrganization
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListProjectsForOrganizationResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
+          in: query
+          required: false
+          type: string
+      tags:
+        - AdminService
+    post:
+      summary: CreateProject creates a new project
+      operationId: AdminService_CreateProject
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1CreateProjectResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              project:
+                type: string
+              description:
+                type: string
+              public:
+                type: boolean
+              directoryName:
+                type: string
+                description: |-
+                  directory_name should be the most recently observed local directory name for the project.
+                  See ListProjectsForFingerprint for more context.
+              provisioner:
+                type: string
+              prodSlots:
+                type: string
+                format: int64
+              subpath:
+                type: string
+              prodBranch:
+                type: string
+              gitRemote:
+                type: string
+                description: |-
+                  git_remote is set for projects whose project files are stored in Git.
+                  It currently only supports Github remotes. It should be a HTTPS remote ending in .git for github.com.
+                  Either git_remote or archive_asset_id should be set.
+              archiveAssetId:
+                type: string
+                description: archive_asset_id is set for projects whose project files are not stored in github but are managed by rill.
+              prodVersion:
+                type: string
+              skipDeploy:
+                type: boolean
+      tags:
+        - AdminService
   /v1/orgs/{organization}/projects-for-user:
     get:
       summary: |-
@@ -952,6 +1078,123 @@ paths:
           in: query
           required: false
           type: string
+      tags:
+        - AdminService
+  /v1/orgs/{organization}/projects/{project}:
+    get:
+      summary: GetProject returns information about a specific project
+      operationId: AdminService_GetProject
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetProjectResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: accessTokenTtlSeconds
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: superuserForceAccess
+          in: query
+          required: false
+          type: boolean
+        - name: issueSuperuserToken
+          in: query
+          required: false
+          type: boolean
+      tags:
+        - AdminService
+    delete:
+      summary: DeleteProject deletes an project
+      operationId: AdminService_DeleteProject
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1DeleteProjectResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+      tags:
+        - AdminService
+    patch:
+      summary: UpdateProject updates a project
+      operationId: AdminService_UpdateProject
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1UpdateProjectResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              description:
+                type: string
+              public:
+                type: boolean
+              directoryName:
+                type: string
+              prodBranch:
+                type: string
+              gitRemote:
+                type: string
+              subpath:
+                type: string
+              archiveAssetId:
+                type: string
+              prodSlots:
+                type: string
+                format: int64
+              provisioner:
+                type: string
+              newName:
+                type: string
+              prodTtlSeconds:
+                type: string
+                format: int64
+              prodVersion:
+                type: string
+              superuserForceAccess:
+                type: boolean
       tags:
         - AdminService
   /v1/orgs/{organization}/projects/{project}/alerts:
@@ -1251,6 +1494,69 @@ paths:
                 type: string
               attributes:
                 type: object
+      tags:
+        - AdminService
+  /v1/orgs/{organization}/projects/{project}/deployments:
+    get:
+      summary: ListDeployments lists deployments for a project.
+      operationId: AdminService_ListDeployments
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListDeploymentsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: environment
+          in: query
+          required: false
+          type: string
+        - name: userId
+          in: query
+          required: false
+          type: string
+      tags:
+        - AdminService
+    post:
+      summary: CreateDeployment creates a new deployment for a project.
+      operationId: AdminService_CreateDeployment
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1CreateDeploymentResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              environment:
+                type: string
       tags:
         - AdminService
   /v1/orgs/{organization}/projects/{project}/hibernate:
@@ -1784,6 +2090,94 @@ paths:
                 type: string
       tags:
         - AdminService
+  /v1/orgs/{organization}/projects/{project}/services:
+    get:
+      summary: ListProjectMemberServices returns all the services for the project for an organization
+      operationId: AdminService_ListProjectMemberServices
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListProjectMemberServicesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+      tags:
+        - AdminService
+  /v1/orgs/{organization}/projects/{project}/services/{name}:
+    delete:
+      summary: RemoveProjectMemberService removes the service from the project
+      operationId: AdminService_RemoveProjectMemberService
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1RemoveProjectMemberServiceResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: name
+          in: path
+          required: true
+          type: string
+      tags:
+        - AdminService
+  /v1/orgs/{organization}/projects/{project}/services/{name}/role:
+    put:
+      summary: SetProjectMemberServiceRole updates the project role for the service
+      operationId: AdminService_SetProjectMemberServiceRole
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1SetProjectMemberServiceRoleResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: name
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              role:
+                type: string
+      tags:
+        - AdminService
   /v1/orgs/{organization}/projects/{project}/tokens/magic:
     get:
       summary: ListMagicAuthTokens lists all the magic auth tokens for a specific project.
@@ -2217,6 +2611,251 @@ paths:
           in: path
           required: true
           type: string
+      tags:
+        - AdminService
+  /v1/orgs/{organization}/services:
+    get:
+      summary: ListService returns all the services per organization
+      operationId: AdminService_ListServices
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListServicesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+      tags:
+        - AdminService
+    post:
+      summary: CreateService creates a new service per organization
+      operationId: AdminService_CreateService
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1CreateServiceResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              name:
+                type: string
+              orgRoleName:
+                type: string
+                title: Optional org role to assign
+              project:
+                type: string
+                title: Optional project to assign role to
+              projectRoleName:
+                type: string
+                title: Optional project role to assign
+              attributes:
+                type: object
+      tags:
+        - AdminService
+  /v1/orgs/{organization}/services/{name}:
+    get:
+      summary: GetService returns information about a specific service
+      operationId: AdminService_GetService
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetServiceResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: name
+          in: path
+          required: true
+          type: string
+      tags:
+        - AdminService
+    delete:
+      summary: DeleteService deletes a service per organization
+      operationId: AdminService_DeleteService
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1DeleteServiceResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: name
+          in: path
+          required: true
+          type: string
+      tags:
+        - AdminService
+    patch:
+      summary: UpdateService updates a service per organization
+      operationId: AdminService_UpdateService
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1UpdateServiceResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: name
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              newName:
+                type: string
+              attributes:
+                type: object
+      tags:
+        - AdminService
+  /v1/orgs/{organization}/services/{name}/role:
+    delete:
+      summary: RemoveOrganizationMemberService removes the organization role for the service
+      operationId: AdminService_RemoveOrganizationMemberService
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1RemoveOrganizationMemberServiceResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: name
+          in: path
+          required: true
+          type: string
+      tags:
+        - AdminService
+    put:
+      summary: SetOrganizationMemberServiceRole sets or updates the role of the service in the organization
+      operationId: AdminService_SetOrganizationMemberServiceRole
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1SetOrganizationMemberServiceRoleResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: name
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              role:
+                type: string
+      tags:
+        - AdminService
+  /v1/orgs/{organization}/services/{serviceName}/tokens:
+    get:
+      summary: ListServiceAuthTokens lists all the service auth tokens
+      operationId: AdminService_ListServiceAuthTokens
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListServiceAuthTokensResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: serviceName
+          in: path
+          required: true
+          type: string
+      tags:
+        - AdminService
+    post:
+      summary: IssueServiceAuthToken issues an access token for a service
+      operationId: AdminService_IssueServiceAuthToken
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1IssueServiceAuthTokenResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: serviceName
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
       tags:
         - AdminService
   /v1/orgs/{organization}/usergroups:
@@ -2686,645 +3325,6 @@ paths:
           in: path
           required: true
           type: string
-      tags:
-        - AdminService
-  /v1/orgs/{organizationName}/create_asset:
-    post:
-      summary: CreateAsset returns a one time signed URL using which any asset can be uploaded.
-      operationId: AdminService_CreateAsset
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1CreateAssetResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: organizationName
-          in: path
-          required: true
-          type: string
-        - name: body
-          in: body
-          required: true
-          schema:
-            type: object
-            properties:
-              type:
-                type: string
-              name:
-                type: string
-                title: Eg. "rilldata__project_name"
-              extension:
-                type: string
-                title: Eg. ".tar.gz"
-              public:
-                type: boolean
-              estimatedSizeBytes:
-                type: string
-                format: int64
-      tags:
-        - AdminService
-  /v1/orgs/{organizationName}/projects:
-    get:
-      summary: ListProjectsForOrganization lists all the projects currently available for given organizations.
-      operationId: AdminService_ListProjectsForOrganization
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1ListProjectsForOrganizationResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: organizationName
-          in: path
-          required: true
-          type: string
-        - name: pageSize
-          in: query
-          required: false
-          type: integer
-          format: int64
-        - name: pageToken
-          in: query
-          required: false
-          type: string
-      tags:
-        - AdminService
-    post:
-      summary: CreateProject creates a new project
-      operationId: AdminService_CreateProject
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1CreateProjectResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: organizationName
-          in: path
-          required: true
-          type: string
-        - name: body
-          in: body
-          required: true
-          schema:
-            type: object
-            properties:
-              name:
-                type: string
-              description:
-                type: string
-              public:
-                type: boolean
-              directoryName:
-                type: string
-                description: |-
-                  directory_name should be the most recently observed local directory name for the project.
-                  See ListProjectsForFingerprint for more context.
-              provisioner:
-                type: string
-              prodSlots:
-                type: string
-                format: int64
-              subpath:
-                type: string
-              prodBranch:
-                type: string
-              gitRemote:
-                type: string
-                description: |-
-                  git_remote is set for projects whose project files are stored in Git.
-                  It currently only supports Github remotes. It should be a HTTPS remote ending in .git for github.com.
-                  Either git_remote or archive_asset_id should be set.
-              archiveAssetId:
-                type: string
-                description: archive_asset_id is set for projects whose project files are not stored in github but are managed by rill.
-              prodVersion:
-                type: string
-              skipDeploy:
-                type: boolean
-      tags:
-        - AdminService
-  /v1/orgs/{organizationName}/projects/{name}:
-    get:
-      summary: GetProject returns information about a specific project
-      operationId: AdminService_GetProject
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1GetProjectResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: organizationName
-          in: path
-          required: true
-          type: string
-        - name: name
-          in: path
-          required: true
-          type: string
-        - name: accessTokenTtlSeconds
-          in: query
-          required: false
-          type: integer
-          format: int64
-        - name: superuserForceAccess
-          in: query
-          required: false
-          type: boolean
-        - name: issueSuperuserToken
-          in: query
-          required: false
-          type: boolean
-      tags:
-        - AdminService
-    delete:
-      summary: DeleteProject deletes an project
-      operationId: AdminService_DeleteProject
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1DeleteProjectResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: organizationName
-          in: path
-          required: true
-          type: string
-        - name: name
-          in: path
-          required: true
-          type: string
-      tags:
-        - AdminService
-    patch:
-      summary: UpdateProject updates a project
-      operationId: AdminService_UpdateProject
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1UpdateProjectResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: organizationName
-          in: path
-          required: true
-          type: string
-        - name: name
-          in: path
-          required: true
-          type: string
-        - name: body
-          in: body
-          required: true
-          schema:
-            type: object
-            properties:
-              description:
-                type: string
-              public:
-                type: boolean
-              directoryName:
-                type: string
-              prodBranch:
-                type: string
-              gitRemote:
-                type: string
-              subpath:
-                type: string
-              archiveAssetId:
-                type: string
-              prodSlots:
-                type: string
-                format: int64
-              provisioner:
-                type: string
-              newName:
-                type: string
-              prodTtlSeconds:
-                type: string
-                format: int64
-              prodVersion:
-                type: string
-              superuserForceAccess:
-                type: boolean
-      tags:
-        - AdminService
-  /v1/orgs/{organizationName}/projects/{projectName}/deployments:
-    get:
-      summary: ListDeployments lists deployments for a project.
-      operationId: AdminService_ListDeployments
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1ListDeploymentsResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: organizationName
-          in: path
-          required: true
-          type: string
-        - name: projectName
-          in: path
-          required: true
-          type: string
-        - name: environment
-          in: query
-          required: false
-          type: string
-        - name: userId
-          in: query
-          required: false
-          type: string
-      tags:
-        - AdminService
-    post:
-      summary: CreateDeployment creates a new deployment for a project.
-      operationId: AdminService_CreateDeployment
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1CreateDeploymentResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: organizationName
-          in: path
-          required: true
-          type: string
-        - name: projectName
-          in: path
-          required: true
-          type: string
-        - name: body
-          in: body
-          required: true
-          schema:
-            type: object
-            properties:
-              environment:
-                type: string
-      tags:
-        - AdminService
-  /v1/orgs/{organizationName}/projects/{projectName}/services:
-    get:
-      summary: ListProjectMemberServices returns all the services for the project for an organization
-      operationId: AdminService_ListProjectMemberServices
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1ListProjectMemberServicesResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: organizationName
-          in: path
-          required: true
-          type: string
-        - name: projectName
-          in: path
-          required: true
-          type: string
-      tags:
-        - AdminService
-  /v1/orgs/{organizationName}/projects/{projectName}/services/{name}:
-    delete:
-      summary: RemoveProjectMemberService removes the service from the project
-      operationId: AdminService_RemoveProjectMemberService
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1RemoveProjectMemberServiceResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: organizationName
-          in: path
-          required: true
-          type: string
-        - name: projectName
-          in: path
-          required: true
-          type: string
-        - name: name
-          in: path
-          required: true
-          type: string
-      tags:
-        - AdminService
-  /v1/orgs/{organizationName}/projects/{projectName}/services/{name}/role:
-    put:
-      summary: SetProjectMemberServiceRole updates the project role for the service
-      operationId: AdminService_SetProjectMemberServiceRole
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1SetProjectMemberServiceRoleResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: organizationName
-          in: path
-          required: true
-          type: string
-        - name: projectName
-          in: path
-          required: true
-          type: string
-        - name: name
-          in: path
-          required: true
-          type: string
-        - name: body
-          in: body
-          required: true
-          schema:
-            type: object
-            properties:
-              role:
-                type: string
-      tags:
-        - AdminService
-  /v1/orgs/{organizationName}/services:
-    get:
-      summary: ListService returns all the services per organization
-      operationId: AdminService_ListServices
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1ListServicesResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: organizationName
-          in: path
-          required: true
-          type: string
-      tags:
-        - AdminService
-    post:
-      summary: CreateService creates a new service per organization
-      operationId: AdminService_CreateService
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1CreateServiceResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: organizationName
-          in: path
-          required: true
-          type: string
-        - name: body
-          in: body
-          required: true
-          schema:
-            type: object
-            properties:
-              name:
-                type: string
-              orgRoleName:
-                type: string
-                title: Optional org role to assign
-              projectName:
-                type: string
-                title: Optional project to assign role to
-              projectRoleName:
-                type: string
-                title: Optional project role to assign
-              attributes:
-                type: object
-      tags:
-        - AdminService
-  /v1/orgs/{organizationName}/services/{name}:
-    get:
-      summary: GetService returns information about a specific service
-      operationId: AdminService_GetService
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1GetServiceResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: organizationName
-          in: path
-          required: true
-          type: string
-        - name: name
-          in: path
-          required: true
-          type: string
-      tags:
-        - AdminService
-    delete:
-      summary: DeleteService deletes a service per organization
-      operationId: AdminService_DeleteService
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1DeleteServiceResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: organizationName
-          in: path
-          required: true
-          type: string
-        - name: name
-          in: path
-          required: true
-          type: string
-      tags:
-        - AdminService
-    patch:
-      summary: UpdateService updates a service per organization
-      operationId: AdminService_UpdateService
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1UpdateServiceResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: organizationName
-          in: path
-          required: true
-          type: string
-        - name: name
-          in: path
-          required: true
-          type: string
-        - name: body
-          in: body
-          required: true
-          schema:
-            type: object
-            properties:
-              newName:
-                type: string
-              attributes:
-                type: object
-      tags:
-        - AdminService
-  /v1/orgs/{organizationName}/services/{name}/role:
-    delete:
-      summary: RemoveOrganizationMemberService removes the organization role for the service
-      operationId: AdminService_RemoveOrganizationMemberService
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1RemoveOrganizationMemberServiceResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: organizationName
-          in: path
-          required: true
-          type: string
-        - name: name
-          in: path
-          required: true
-          type: string
-      tags:
-        - AdminService
-    put:
-      summary: SetOrganizationMemberServiceRole sets or updates the role of the service in the organization
-      operationId: AdminService_SetOrganizationMemberServiceRole
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1SetOrganizationMemberServiceRoleResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: organizationName
-          in: path
-          required: true
-          type: string
-        - name: name
-          in: path
-          required: true
-          type: string
-        - name: body
-          in: body
-          required: true
-          schema:
-            type: object
-            properties:
-              role:
-                type: string
-      tags:
-        - AdminService
-  /v1/orgs/{organizationName}/services/{serviceName}/tokens:
-    get:
-      summary: ListServiceAuthTokens lists all the service auth tokens
-      operationId: AdminService_ListServiceAuthTokens
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1ListServiceAuthTokensResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: organizationName
-          in: path
-          required: true
-          type: string
-        - name: serviceName
-          in: path
-          required: true
-          type: string
-      tags:
-        - AdminService
-    post:
-      summary: IssueServiceAuthToken issues an access token for a service
-      operationId: AdminService_IssueServiceAuthToken
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1IssueServiceAuthTokenResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: organizationName
-          in: path
-          required: true
-          type: string
-        - name: serviceName
-          in: path
-          required: true
-          type: string
-        - name: body
-          in: body
-          required: true
-          schema:
-            type: object
       tags:
         - AdminService
   /v1/ping:
@@ -3983,7 +3983,7 @@ paths:
           in: query
           required: false
           type: string
-        - name: orgId
+        - name: organizationId
           in: query
           required: false
           type: string

@@ -1629,6 +1629,14 @@ Note: The final name will be suffixed with a random string to ensure uniqueness.
   name?: string;
 };
 
+export type AdminServiceCreateAssetBody = {
+  type?: string;
+  name?: string;
+  extension?: string;
+  public?: boolean;
+  estimatedSizeBytes?: string;
+};
+
 export type AdminServiceListOrganizationInvitesParams = {
   pageSize?: number;
   pageToken?: string;
@@ -1668,10 +1676,58 @@ export type AdminServiceListProjectMemberUsergroupsParams = {
   pageToken?: string;
 };
 
+export type AdminServiceListProjectsForOrganizationParams = {
+  pageSize?: number;
+  pageToken?: string;
+};
+
+export type AdminServiceCreateProjectBody = {
+  project?: string;
+  description?: string;
+  public?: boolean;
+  /** directory_name should be the most recently observed local directory name for the project.
+See ListProjectsForFingerprint for more context. */
+  directoryName?: string;
+  provisioner?: string;
+  prodSlots?: string;
+  subpath?: string;
+  prodBranch?: string;
+  /** git_remote is set for projects whose project files are stored in Git.
+It currently only supports Github remotes. It should be a HTTPS remote ending in .git for github.com.
+Either git_remote or archive_asset_id should be set. */
+  gitRemote?: string;
+  /** archive_asset_id is set for projects whose project files are not stored in github but are managed by rill. */
+  archiveAssetId?: string;
+  prodVersion?: string;
+  skipDeploy?: boolean;
+};
+
 export type AdminServiceListProjectsForOrganizationAndUserParams = {
   userId?: string;
   pageSize?: number;
   pageToken?: string;
+};
+
+export type AdminServiceGetProjectParams = {
+  accessTokenTtlSeconds?: number;
+  superuserForceAccess?: boolean;
+  issueSuperuserToken?: boolean;
+};
+
+export type AdminServiceUpdateProjectBody = {
+  description?: string;
+  public?: boolean;
+  directoryName?: string;
+  prodBranch?: string;
+  gitRemote?: string;
+  subpath?: string;
+  archiveAssetId?: string;
+  prodSlots?: string;
+  provisioner?: string;
+  newName?: string;
+  prodTtlSeconds?: string;
+  prodVersion?: string;
+  superuserForceAccess?: boolean;
 };
 
 export type AdminServiceGetCloneCredentialsParams = {
@@ -1695,6 +1751,15 @@ export type AdminServiceGetDeploymentCredentialsBody = {
   userId?: string;
   userEmail?: string;
   attributes?: AdminServiceGetDeploymentCredentialsBodyAttributes;
+};
+
+export type AdminServiceListDeploymentsParams = {
+  environment?: string;
+  userId?: string;
+};
+
+export type AdminServiceCreateDeploymentBody = {
+  environment?: string;
 };
 
 export type AdminServiceHibernateProjectParams = {
@@ -1832,6 +1897,27 @@ It is NOT NECESSARY to pass all variables, existing variables not included in th
   unsetVariables?: string[];
 };
 
+export type AdminServiceCreateServiceBodyAttributes = {
+  [key: string]: unknown;
+};
+
+export type AdminServiceCreateServiceBody = {
+  name?: string;
+  orgRoleName?: string;
+  project?: string;
+  projectRoleName?: string;
+  attributes?: AdminServiceCreateServiceBodyAttributes;
+};
+
+export type AdminServiceUpdateServiceBodyAttributes = {
+  [key: string]: unknown;
+};
+
+export type AdminServiceUpdateServiceBody = {
+  newName?: string;
+  attributes?: AdminServiceUpdateServiceBodyAttributes;
+};
+
 export type AdminServiceListOrganizationMemberUsergroupsParams = {
   /**
    * Optionally filter by role
@@ -1863,92 +1949,6 @@ export type AdminServiceEditUsergroupBody = {
 export type AdminServiceListUsergroupMemberUsersParams = {
   pageSize?: number;
   pageToken?: string;
-};
-
-export type AdminServiceCreateAssetBody = {
-  type?: string;
-  name?: string;
-  extension?: string;
-  public?: boolean;
-  estimatedSizeBytes?: string;
-};
-
-export type AdminServiceListProjectsForOrganizationParams = {
-  pageSize?: number;
-  pageToken?: string;
-};
-
-export type AdminServiceCreateProjectBody = {
-  name?: string;
-  description?: string;
-  public?: boolean;
-  /** directory_name should be the most recently observed local directory name for the project.
-See ListProjectsForFingerprint for more context. */
-  directoryName?: string;
-  provisioner?: string;
-  prodSlots?: string;
-  subpath?: string;
-  prodBranch?: string;
-  /** git_remote is set for projects whose project files are stored in Git.
-It currently only supports Github remotes. It should be a HTTPS remote ending in .git for github.com.
-Either git_remote or archive_asset_id should be set. */
-  gitRemote?: string;
-  /** archive_asset_id is set for projects whose project files are not stored in github but are managed by rill. */
-  archiveAssetId?: string;
-  prodVersion?: string;
-  skipDeploy?: boolean;
-};
-
-export type AdminServiceGetProjectParams = {
-  accessTokenTtlSeconds?: number;
-  superuserForceAccess?: boolean;
-  issueSuperuserToken?: boolean;
-};
-
-export type AdminServiceUpdateProjectBody = {
-  description?: string;
-  public?: boolean;
-  directoryName?: string;
-  prodBranch?: string;
-  gitRemote?: string;
-  subpath?: string;
-  archiveAssetId?: string;
-  prodSlots?: string;
-  provisioner?: string;
-  newName?: string;
-  prodTtlSeconds?: string;
-  prodVersion?: string;
-  superuserForceAccess?: boolean;
-};
-
-export type AdminServiceListDeploymentsParams = {
-  environment?: string;
-  userId?: string;
-};
-
-export type AdminServiceCreateDeploymentBody = {
-  environment?: string;
-};
-
-export type AdminServiceCreateServiceBodyAttributes = {
-  [key: string]: unknown;
-};
-
-export type AdminServiceCreateServiceBody = {
-  name?: string;
-  orgRoleName?: string;
-  projectName?: string;
-  projectRoleName?: string;
-  attributes?: AdminServiceCreateServiceBodyAttributes;
-};
-
-export type AdminServiceUpdateServiceBodyAttributes = {
-  [key: string]: unknown;
-};
-
-export type AdminServiceUpdateServiceBody = {
-  newName?: string;
-  attributes?: AdminServiceUpdateServiceBodyAttributes;
 };
 
 export type AdminServiceListProjectsForUserByNameParams = {
@@ -2011,7 +2011,7 @@ export type AdminServiceSearchProjectNamesParams = {
 
 export type AdminServiceSudoGetResourceParams = {
   userId?: string;
-  orgId?: string;
+  organizationId?: string;
   projectId?: string;
   deploymentId?: string;
   instanceId?: string;

@@ -186,7 +186,7 @@ type AdminServiceClient interface {
 	GetOrganizationNameForDomain(ctx context.Context, in *GetOrganizationNameForDomainRequest, opts ...grpc.CallOption) (*GetOrganizationNameForDomainResponse, error)
 	// CreateOrganization creates a new organization
 	CreateOrganization(ctx context.Context, in *CreateOrganizationRequest, opts ...grpc.CallOption) (*CreateOrganizationResponse, error)
-	// DeleteOrganization deletes an organizations
+	// DeleteOrganization deletes an organization
 	DeleteOrganization(ctx context.Context, in *DeleteOrganizationRequest, opts ...grpc.CallOption) (*DeleteOrganizationResponse, error)
 	// UpdateOrganization deletes an organizations
 	UpdateOrganization(ctx context.Context, in *UpdateOrganizationRequest, opts ...grpc.CallOption) (*UpdateOrganizationResponse, error)
@@ -2004,7 +2004,7 @@ type AdminServiceServer interface {
 	GetOrganizationNameForDomain(context.Context, *GetOrganizationNameForDomainRequest) (*GetOrganizationNameForDomainResponse, error)
 	// CreateOrganization creates a new organization
 	CreateOrganization(context.Context, *CreateOrganizationRequest) (*CreateOrganizationResponse, error)
-	// DeleteOrganization deletes an organizations
+	// DeleteOrganization deletes an organization
 	DeleteOrganization(context.Context, *DeleteOrganizationRequest) (*DeleteOrganizationResponse, error)
 	// UpdateOrganization deletes an organizations
 	UpdateOrganization(context.Context, *UpdateOrganizationRequest) (*UpdateOrganizationResponse, error)

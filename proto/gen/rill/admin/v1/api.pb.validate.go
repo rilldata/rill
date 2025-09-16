@@ -547,7 +547,7 @@ func (m *GetOrganizationRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Name
+	// no validation rules for Organization
 
 	// no validation rules for SuperuserForceAccess
 
@@ -1284,7 +1284,7 @@ func (m *DeleteOrganizationRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Name
+	// no validation rules for Organization
 
 	if len(errors) > 0 {
 		return DeleteOrganizationRequestMultiError(errors)
@@ -1490,9 +1490,9 @@ func (m *UpdateOrganizationRequest) validate(all bool) error {
 
 	var errors []error
 
-	if utf8.RuneCountInString(m.GetName()) < 1 {
+	if utf8.RuneCountInString(m.GetOrganization()) < 1 {
 		err := UpdateOrganizationRequestValidationError{
-			field:  "Name",
+			field:  "Organization",
 			reason: "value length must be at least 1 runes",
 		}
 		if !all {
@@ -1829,9 +1829,9 @@ func (m *ListProjectsForOrganizationRequest) validate(all bool) error {
 
 	var errors []error
 
-	if utf8.RuneCountInString(m.GetOrganizationName()) < 1 {
+	if utf8.RuneCountInString(m.GetOrganization()) < 1 {
 		err := ListProjectsForOrganizationRequestValidationError{
-			field:  "OrganizationName",
+			field:  "Organization",
 			reason: "value length must be at least 1 runes",
 		}
 		if !all {
@@ -1961,9 +1961,9 @@ func (m *ListDeploymentsRequest) validate(all bool) error {
 
 	var errors []error
 
-	if utf8.RuneCountInString(m.GetOrganizationName()) < 1 {
+	if utf8.RuneCountInString(m.GetOrganization()) < 1 {
 		err := ListDeploymentsRequestValidationError{
-			field:  "OrganizationName",
+			field:  "Organization",
 			reason: "value length must be at least 1 runes",
 		}
 		if !all {
@@ -1972,9 +1972,9 @@ func (m *ListDeploymentsRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	if utf8.RuneCountInString(m.GetProjectName()) < 1 {
+	if utf8.RuneCountInString(m.GetProject()) < 1 {
 		err := ListDeploymentsRequestValidationError{
-			field:  "ProjectName",
+			field:  "Project",
 			reason: "value length must be at least 1 runes",
 		}
 		if !all {
@@ -2225,9 +2225,9 @@ func (m *CreateDeploymentRequest) validate(all bool) error {
 
 	var errors []error
 
-	if utf8.RuneCountInString(m.GetOrganizationName()) < 1 {
+	if utf8.RuneCountInString(m.GetOrganization()) < 1 {
 		err := CreateDeploymentRequestValidationError{
-			field:  "OrganizationName",
+			field:  "Organization",
 			reason: "value length must be at least 1 runes",
 		}
 		if !all {
@@ -2236,9 +2236,9 @@ func (m *CreateDeploymentRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	if utf8.RuneCountInString(m.GetProjectName()) < 1 {
+	if utf8.RuneCountInString(m.GetProject()) < 1 {
 		err := CreateDeploymentRequestValidationError{
-			field:  "ProjectName",
+			field:  "Project",
 			reason: "value length must be at least 1 runes",
 		}
 		if !all {
@@ -4183,9 +4183,9 @@ func (m *GetProjectRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for OrganizationName
+	// no validation rules for Organization
 
-	// no validation rules for Name
+	// no validation rules for Project
 
 	// no validation rules for AccessTokenTtlSeconds
 
@@ -6889,9 +6889,9 @@ func (m *ListServicesRequest) validate(all bool) error {
 
 	var errors []error
 
-	if utf8.RuneCountInString(m.GetOrganizationName()) < 1 {
+	if utf8.RuneCountInString(m.GetOrganization()) < 1 {
 		err := ListServicesRequestValidationError{
-			field:  "OrganizationName",
+			field:  "Organization",
 			reason: "value length must be at least 1 runes",
 		}
 		if !all {
@@ -7139,9 +7139,9 @@ func (m *ListProjectMemberServicesRequest) validate(all bool) error {
 
 	var errors []error
 
-	if utf8.RuneCountInString(m.GetOrganizationName()) < 1 {
+	if utf8.RuneCountInString(m.GetOrganization()) < 1 {
 		err := ListProjectMemberServicesRequestValidationError{
-			field:  "OrganizationName",
+			field:  "Organization",
 			reason: "value length must be at least 1 runes",
 		}
 		if !all {
@@ -7150,9 +7150,9 @@ func (m *ListProjectMemberServicesRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	if utf8.RuneCountInString(m.GetProjectName()) < 1 {
+	if utf8.RuneCountInString(m.GetProject()) < 1 {
 		err := ListProjectMemberServicesRequestValidationError{
-			field:  "ProjectName",
+			field:  "Project",
 			reason: "value length must be at least 1 runes",
 		}
 		if !all {
@@ -7415,9 +7415,9 @@ func (m *CreateServiceRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	if utf8.RuneCountInString(m.GetOrganizationName()) < 1 {
+	if utf8.RuneCountInString(m.GetOrganization()) < 1 {
 		err := CreateServiceRequestValidationError{
-			field:  "OrganizationName",
+			field:  "Organization",
 			reason: "value length must be at least 1 runes",
 		}
 		if !all {
@@ -7428,7 +7428,7 @@ func (m *CreateServiceRequest) validate(all bool) error {
 
 	// no validation rules for OrgRoleName
 
-	// no validation rules for ProjectName
+	// no validation rules for Project
 
 	// no validation rules for ProjectRoleName
 
@@ -7709,9 +7709,9 @@ func (m *GetServiceRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	if utf8.RuneCountInString(m.GetOrganizationName()) < 1 {
+	if utf8.RuneCountInString(m.GetOrganization()) < 1 {
 		err := GetServiceRequestValidationError{
-			field:  "OrganizationName",
+			field:  "Organization",
 			reason: "value length must be at least 1 runes",
 		}
 		if !all {
@@ -7998,9 +7998,9 @@ func (m *UpdateServiceRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	if utf8.RuneCountInString(m.GetOrganizationName()) < 1 {
+	if utf8.RuneCountInString(m.GetOrganization()) < 1 {
 		err := UpdateServiceRequestValidationError{
-			field:  "OrganizationName",
+			field:  "Organization",
 			reason: "value length must be at least 1 runes",
 		}
 		if !all {
@@ -8292,9 +8292,9 @@ func (m *SetOrganizationMemberServiceRoleRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	if utf8.RuneCountInString(m.GetOrganizationName()) < 1 {
+	if utf8.RuneCountInString(m.GetOrganization()) < 1 {
 		err := SetOrganizationMemberServiceRoleRequestValidationError{
-			field:  "OrganizationName",
+			field:  "Organization",
 			reason: "value length must be at least 1 runes",
 		}
 		if !all {
@@ -8537,9 +8537,9 @@ func (m *RemoveOrganizationMemberServiceRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	if utf8.RuneCountInString(m.GetOrganizationName()) < 1 {
+	if utf8.RuneCountInString(m.GetOrganization()) < 1 {
 		err := RemoveOrganizationMemberServiceRequestValidationError{
-			field:  "OrganizationName",
+			field:  "Organization",
 			reason: "value length must be at least 1 runes",
 		}
 		if !all {
@@ -8770,9 +8770,9 @@ func (m *RemoveProjectMemberServiceRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	if utf8.RuneCountInString(m.GetOrganizationName()) < 1 {
+	if utf8.RuneCountInString(m.GetOrganization()) < 1 {
 		err := RemoveProjectMemberServiceRequestValidationError{
-			field:  "OrganizationName",
+			field:  "Organization",
 			reason: "value length must be at least 1 runes",
 		}
 		if !all {
@@ -8781,9 +8781,9 @@ func (m *RemoveProjectMemberServiceRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	if utf8.RuneCountInString(m.GetProjectName()) < 1 {
+	if utf8.RuneCountInString(m.GetProject()) < 1 {
 		err := RemoveProjectMemberServiceRequestValidationError{
-			field:  "ProjectName",
+			field:  "Project",
 			reason: "value length must be at least 1 runes",
 		}
 		if !all {
@@ -9013,9 +9013,9 @@ func (m *SetProjectMemberServiceRoleRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	if utf8.RuneCountInString(m.GetOrganizationName()) < 1 {
+	if utf8.RuneCountInString(m.GetOrganization()) < 1 {
 		err := SetProjectMemberServiceRoleRequestValidationError{
-			field:  "OrganizationName",
+			field:  "Organization",
 			reason: "value length must be at least 1 runes",
 		}
 		if !all {
@@ -9024,9 +9024,9 @@ func (m *SetProjectMemberServiceRoleRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	if utf8.RuneCountInString(m.GetProjectName()) < 1 {
+	if utf8.RuneCountInString(m.GetProject()) < 1 {
 		err := SetProjectMemberServiceRoleRequestValidationError{
-			field:  "ProjectName",
+			field:  "Project",
 			reason: "value length must be at least 1 runes",
 		}
 		if !all {
@@ -9266,9 +9266,9 @@ func (m *DeleteServiceRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	if utf8.RuneCountInString(m.GetOrganizationName()) < 1 {
+	if utf8.RuneCountInString(m.GetOrganization()) < 1 {
 		err := DeleteServiceRequestValidationError{
-			field:  "OrganizationName",
+			field:  "Organization",
 			reason: "value length must be at least 1 runes",
 		}
 		if !all {
@@ -9510,9 +9510,9 @@ func (m *CreateProjectRequest) validate(all bool) error {
 
 	var errors []error
 
-	if utf8.RuneCountInString(m.GetOrganizationName()) < 1 {
+	if utf8.RuneCountInString(m.GetOrganization()) < 1 {
 		err := CreateProjectRequestValidationError{
-			field:  "OrganizationName",
+			field:  "Organization",
 			reason: "value length must be at least 1 runes",
 		}
 		if !all {
@@ -9521,9 +9521,9 @@ func (m *CreateProjectRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	if utf8.RuneCountInString(m.GetName()) < 1 {
+	if utf8.RuneCountInString(m.GetProject()) < 1 {
 		err := CreateProjectRequestValidationError{
-			field:  "Name",
+			field:  "Project",
 			reason: "value length must be at least 1 runes",
 		}
 		if !all {
@@ -9787,9 +9787,9 @@ func (m *DeleteProjectRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for OrganizationName
+	// no validation rules for Organization
 
-	// no validation rules for Name
+	// no validation rules for Project
 
 	if len(errors) > 0 {
 		return DeleteProjectRequestMultiError(errors)
@@ -9997,9 +9997,9 @@ func (m *UpdateProjectRequest) validate(all bool) error {
 
 	var errors []error
 
-	if utf8.RuneCountInString(m.GetOrganizationName()) < 1 {
+	if utf8.RuneCountInString(m.GetOrganization()) < 1 {
 		err := UpdateProjectRequestValidationError{
-			field:  "OrganizationName",
+			field:  "Organization",
 			reason: "value length must be at least 1 runes",
 		}
 		if !all {
@@ -10008,9 +10008,9 @@ func (m *UpdateProjectRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	if utf8.RuneCountInString(m.GetName()) < 1 {
+	if utf8.RuneCountInString(m.GetProject()) < 1 {
 		err := UpdateProjectRequestValidationError{
-			field:  "Name",
+			field:  "Project",
 			reason: "value length must be at least 1 runes",
 		}
 		if !all {
@@ -10302,9 +10302,9 @@ func (m *CreateAssetRequest) validate(all bool) error {
 
 	var errors []error
 
-	if utf8.RuneCountInString(m.GetOrganizationName()) < 1 {
+	if utf8.RuneCountInString(m.GetOrganization()) < 1 {
 		err := CreateAssetRequestValidationError{
-			field:  "OrganizationName",
+			field:  "Organization",
 			reason: "value length must be at least 1 runes",
 		}
 		if !all {
@@ -14283,7 +14283,7 @@ func (m *SudoGetResourceRequest) validate(all bool) error {
 			errors = append(errors, err)
 		}
 		// no validation rules for UserId
-	case *SudoGetResourceRequest_OrgId:
+	case *SudoGetResourceRequest_OrganizationId:
 		if v == nil {
 			err := SudoGetResourceRequestValidationError{
 				field:  "Id",
@@ -14294,7 +14294,7 @@ func (m *SudoGetResourceRequest) validate(all bool) error {
 			}
 			errors = append(errors, err)
 		}
-		// no validation rules for OrgId
+		// no validation rules for OrganizationId
 	case *SudoGetResourceRequest_ProjectId:
 		if v == nil {
 			err := SudoGetResourceRequestValidationError{
@@ -26892,9 +26892,9 @@ func (m *IssueServiceAuthTokenRequest) validate(all bool) error {
 
 	var errors []error
 
-	if utf8.RuneCountInString(m.GetOrganizationName()) < 1 {
+	if utf8.RuneCountInString(m.GetOrganization()) < 1 {
 		err := IssueServiceAuthTokenRequestValidationError{
-			field:  "OrganizationName",
+			field:  "Organization",
 			reason: "value length must be at least 1 runes",
 		}
 		if !all {
@@ -27113,9 +27113,9 @@ func (m *ListServiceAuthTokensRequest) validate(all bool) error {
 
 	var errors []error
 
-	if utf8.RuneCountInString(m.GetOrganizationName()) < 1 {
+	if utf8.RuneCountInString(m.GetOrganization()) < 1 {
 		err := ListServiceAuthTokensRequestValidationError{
-			field:  "OrganizationName",
+			field:  "Organization",
 			reason: "value length must be at least 1 runes",
 		}
 		if !all {
