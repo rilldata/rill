@@ -26,9 +26,6 @@ import {
 } from "./project-parser";
 import { ResourceKind } from "./resource-selectors";
 
-// Used for .env file (needs reconciliation for secrets)
-// 1. Create the file
-// 2. Wait for the parser version to increment to confirm file was processed
 export async function runtimeServicePutFileAndWaitForReconciliation(
   instanceId: string,
   runtimeServicePutFileBody: RuntimeServicePutFileBody,
@@ -37,34 +34,19 @@ export async function runtimeServicePutFileAndWaitForReconciliation(
 
   await runtimeServicePutFile(instanceId, runtimeServicePutFileBody);
 
+  // Wait for the file to be processed by the parser
   await waitForProjectParserVersion(
     instanceId,
     projectParserStartingVersion + 1,
   );
 }
 
-// Used for any resource that needs reconciliation testing (non-OLAP connectors, etc.)
-// 1. Create the file
-// 2. Wait for the parser version to increment to confirm file was processed
-// 3. Check the specific resource reconcile status
-export async function runtimeServicePutFileAndWaitForResourceReconciliation(
+// Resource-level reconciliation
+export async function waitForResourceReconciliation(
   instanceId: string,
-  runtimeServicePutFileBody: RuntimeServicePutFileBody,
   resourceName: string,
   resourceKind: ResourceKind,
 ) {
-  const projectParserStartingVersion = getProjectParserVersion(instanceId);
-
-  await runtimeServicePutFile(instanceId, runtimeServicePutFileBody);
-
-  await waitForProjectParserVersion(
-    instanceId,
-    projectParserStartingVersion + 1,
-  );
-
-  // Now check the specific resource reconcile status
-  // The parser version increment means files were processed, but individual resources
-  // might still be reconciling or have failed to reconcile
   const maxAttempts = 10; // 20 seconds total (2s * 10)
   const pollInterval = 2000; // 2 seconds
 

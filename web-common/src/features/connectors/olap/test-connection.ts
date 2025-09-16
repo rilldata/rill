@@ -11,6 +11,9 @@ export interface TestConnectorResult {
   details?: string;
 }
 
+// TODO: Check if we still need to test OLAP connectors using ListTables API
+// Can we just use the resource reconciliation status?
+
 // Used for OLAP connectors (needs connection testing using `ListTables` API)
 export async function testOLAPConnector(
   instanceId: string,

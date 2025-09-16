@@ -25,7 +25,7 @@ import {
 import { testOLAPConnector } from "../../connectors/olap/test-connection";
 import {
   runtimeServicePutFileAndWaitForReconciliation,
-  runtimeServicePutFileAndWaitForResourceReconciliation,
+  waitForResourceReconciliation,
 } from "../../entity-management/actions";
 import { getFileAPIPathFromNameAndType } from "../../entity-management/entity-mappers";
 import { fileArtifacts } from "../../entity-management/file-artifacts";
@@ -109,42 +109,14 @@ export async function submitAddConnectorForm(
     newConnectorName,
     EntityType.Connector,
   );
-
-  // For non-OLAP connectors, wait for connector reconciliation first
-  if (!OLAP_ENGINES.includes(connector.name as string)) {
-    try {
-      await runtimeServicePutFileAndWaitForResourceReconciliation(
-        instanceId,
-        {
-          path: newConnectorFilePath,
-          blob: compileConnectorYAML(connector, formValues, {
-            connectorInstanceName: newConnectorName,
-          }),
-          create: true,
-          createOnly: false,
-        },
-        newConnectorName,
-        ResourceKind.Connector,
-      );
-    } catch (error) {
-      // The connector file was already created, so we need to delete it
-      await runtimeServiceDeleteFile(instanceId, {
-        path: newConnectorFilePath,
-      });
-      throw {
-        message: error.message || "Unable to establish a connection",
-        details: (error as any).details || error.message,
-      };
-    }
-  } else {
-    // For OLAP connectors, just create the file (will be tested later)
-    await runtimeServicePutFile(instanceId, {
-      path: newConnectorFilePath,
-      blob: compileConnectorYAML(connector, formValues),
-      create: true,
-      createOnly: false,
-    });
-  }
+  await runtimeServicePutFile(instanceId, {
+    path: newConnectorFilePath,
+    blob: compileConnectorYAML(connector, formValues, {
+      connectorInstanceName: newConnectorName,
+    }),
+    create: true,
+    createOnly: false,
+  });
 
   // Check for an existing `.env` file
   // Store the original `.env` blob so we can restore it in case of errors
@@ -167,7 +139,6 @@ export async function submitAddConnectorForm(
   }
 
   // Create or update the `.env` file
-  // Make sure the file has reconciled before testing the connection
   const newEnvBlob = await updateDotEnvWithSecrets(
     queryClient,
     connector,
@@ -175,6 +146,8 @@ export async function submitAddConnectorForm(
     "connector",
     newConnectorName,
   );
+
+  // Make sure the file has reconciled before testing the connection
   await runtimeServicePutFileAndWaitForReconciliation(instanceId, {
     path: ".env",
     blob: newEnvBlob,
@@ -182,11 +155,26 @@ export async function submitAddConnectorForm(
     createOnly: false,
   });
 
-  /**
-   * Test the new OLAP connector:
-   * 1. Ensure the file has reconciled and has no errors
-   * 2. Test the connection to the OLAP database
-   */
+  // For non-OLAP connectors, wait for connector resource reconciliation
+  // This must happen after .env reconciliation since connectors depend on secrets
+  if (!OLAP_ENGINES.includes(connector.name as string)) {
+    try {
+      await waitForResourceReconciliation(
+        instanceId,
+        newConnectorName,
+        ResourceKind.Connector,
+      );
+    } catch (error) {
+      // The connector file was already created, so we need to delete it
+      await runtimeServiceDeleteFile(instanceId, {
+        path: newConnectorFilePath,
+      });
+      throw {
+        message: error.message || "Unable to establish a connection",
+        details: (error as any).details || error.message,
+      };
+    }
+  }
 
   // Check for file errors
   // If the connector file has errors, rollback the changes
@@ -204,8 +192,8 @@ export async function submitAddConnectorForm(
     throw new Error(errorMessage);
   }
 
-  // Test the connection for OLAP connectors only
-  // Non-OLAP connectors are already tested above
+  // Test connection for OLAP connectors
+  // If the connection test fails, rollback the changes
   if (OLAP_ENGINES.includes(connector.name as string)) {
     const result = await testOLAPConnector(
       instanceId,
