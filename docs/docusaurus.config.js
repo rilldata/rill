@@ -491,6 +491,42 @@ const config = {
             to: '/explore/time-series'
           },
           {    
+            from: '/build/metrics-view/advanced-expressions/case-statements',
+            to: '/build/metrics-view/measures/case-statements'
+          },
+          {
+            from: '/build/metrics-view/advanced-expressions/fixed-metrics',
+            to: '/build/metrics-view/measures/fixed-measures'
+          },
+          {
+            from: '/build/metrics-view/advanced-expressions/metric-formatting',
+            to: '/build/metrics-view/measures/measures-formatting'
+          },
+          {
+            from: '/build/metrics-view/advanced-expressions/quantiles',
+            to: '/build/metrics-view/measures/quantiles'
+          },
+          {
+            from: '/build/metrics-view/advanced-expressions/referencing',
+            to: '/build/metrics-view/measures/referencing'
+          },
+          {
+            from: '/build/metrics-view/advanced-expressions/unnesting',
+            to: '/build/metrics-view/dimensions/unnesting'
+          },
+          {
+            from: '/build/metrics-view/advanced-expressions/windows',
+            to: '/build/metrics-view/measures/windows'
+          },
+          {
+            from: '/build/metrics-view/advanced-expressions/advanced-expressions',
+            to: '/build/metrics-view/measures'
+          },
+          {
+            from: '/build/metrics-view/customize',
+            to: '/build/metrics-view'
+          },
+          {
             from: '/deploy/performance',
             to: '/guides/performance'
           },

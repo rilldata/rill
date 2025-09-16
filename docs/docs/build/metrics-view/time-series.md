@@ -66,7 +66,6 @@ The time picker automatically adjusts available time grains based on your select
 
 :::
 
-
 ### `watermark`
 
 The `watermark` parameter defines the data freshness threshold for your metrics view. It determines the latest point in time where data is considered "complete" and reliable for analysis.

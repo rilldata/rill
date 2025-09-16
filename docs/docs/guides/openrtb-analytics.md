@@ -181,7 +181,7 @@ dimensions:
 ai_instructions: ...
 ```
 
-**What this metrics file does:**
+**What this metric view does:**
 
 - **Measures** define the key RTB performance indicators:
   - `Total Requests` - Total number of bid requests processed
