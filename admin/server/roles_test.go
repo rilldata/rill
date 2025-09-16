@@ -57,10 +57,10 @@ func TestListRoles(t *testing.T) {
 
 		// Create a project and check the autogroup:members group has the default viewer role
 		proj1, err := c.CreateProject(ctx, &adminv1.CreateProjectRequest{
-			OrganizationName: org.Organization.Name,
-			Name:             "proj1",
-			ProdSlots:        1,
-			SkipDeploy:       true,
+			Organization: org.Organization.Name,
+			Project:      "proj1",
+			ProdSlots:    1,
+			SkipDeploy:   true,
 		})
 		require.NoError(t, err)
 		groups1, err := c.ListProjectMemberUsergroups(ctx, &adminv1.ListProjectMemberUsergroupsRequest{
@@ -75,17 +75,17 @@ func TestListRoles(t *testing.T) {
 
 		// Update the default role to editor
 		_, err = c.UpdateOrganization(ctx, &adminv1.UpdateOrganizationRequest{
-			Name:               org.Organization.Name,
+			Organization:       org.Organization.Name,
 			DefaultProjectRole: toPtr("editor"),
 		})
 		require.NoError(t, err)
 
 		// Create another project and check the autogroup:members group now has the editor role
 		proj2, err := c.CreateProject(ctx, &adminv1.CreateProjectRequest{
-			OrganizationName: org.Organization.Name,
-			Name:             "proj2",
-			ProdSlots:        1,
-			SkipDeploy:       true,
+			Organization: org.Organization.Name,
+			Project:      "proj2",
+			ProdSlots:    1,
+			SkipDeploy:   true,
 		})
 		require.NoError(t, err)
 		groups2, err := c.ListProjectMemberUsergroups(ctx, &adminv1.ListProjectMemberUsergroupsRequest{
@@ -100,17 +100,17 @@ func TestListRoles(t *testing.T) {
 
 		// Update the default role to none
 		_, err = c.UpdateOrganization(ctx, &adminv1.UpdateOrganizationRequest{
-			Name:               org.Organization.Name,
+			Organization:       org.Organization.Name,
 			DefaultProjectRole: toPtr(""),
 		})
 		require.NoError(t, err)
 
 		// Create another project and check the autogroup:members group now has no role
 		proj3, err := c.CreateProject(ctx, &adminv1.CreateProjectRequest{
-			OrganizationName: org.Organization.Name,
-			Name:             "proj3",
-			ProdSlots:        1,
-			SkipDeploy:       true,
+			Organization: org.Organization.Name,
+			Project:      "proj3",
+			ProdSlots:    1,
+			SkipDeploy:   true,
 		})
 		require.NoError(t, err)
 		groups3, err := c.ListProjectMemberUsergroups(ctx, &adminv1.ListProjectMemberUsergroupsRequest{

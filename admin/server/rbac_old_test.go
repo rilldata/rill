@@ -61,7 +61,7 @@ func TestRBACOld(t *testing.T) {
 	for _, tt := range getTests {
 		t.Run(tt.name, func(t *testing.T) {
 			resp, err := tt.client.GetOrganization(ctx, &adminv1.GetOrganizationRequest{
-				Name: adminOrg.Organization.Name,
+				Organization: adminOrg.Organization.Name,
 			})
 
 			if tt.wantErr {
@@ -360,7 +360,7 @@ func TestRBACOld(t *testing.T) {
 	t.Run("test remove last admin", func(t *testing.T) {
 		testEmail := "test@example.com"
 		_, err := adminClient.UpdateOrganization(ctx, &adminv1.UpdateOrganizationRequest{
-			Name:         adminOrg.Organization.Name,
+			Organization: adminOrg.Organization.Name,
 			BillingEmail: &testEmail,
 		})
 		require.NoError(t, err)
@@ -377,7 +377,7 @@ func TestRBACOld(t *testing.T) {
 	t.Run("test leave last admin", func(t *testing.T) {
 		testEmail := "test@example.com"
 		_, err := adminClient.UpdateOrganization(ctx, &adminv1.UpdateOrganizationRequest{
-			Name:         adminOrg.Organization.Name,
+			Organization: adminOrg.Organization.Name,
 			BillingEmail: &testEmail,
 		})
 		_, err = adminClient.LeaveOrganization(ctx, &adminv1.LeaveOrganizationRequest{

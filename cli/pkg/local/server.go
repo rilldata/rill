@@ -288,7 +288,7 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 
 	// check if rill org exists
 	_, err = c.GetOrganization(ctx, &adminv1.GetOrganizationRequest{
-		Name: r.Msg.Org,
+		Organization: r.Msg.Org,
 	})
 	if err != nil {
 		st, ok := status.FromError(err)
@@ -342,15 +342,15 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 
 		// create project request
 		projRequest = &adminv1.CreateProjectRequest{
-			OrganizationName: r.Msg.Org,
-			Name:             r.Msg.ProjectName,
-			Description:      "Auto created by Rill",
-			Provisioner:      "",
-			ProdVersion:      "",
-			ProdSlots:        int64(DefaultProdSlots(s.app.ch)),
-			Public:           false,
-			DirectoryName:    directoryName,
-			ArchiveAssetId:   assetID,
+			Organization:   r.Msg.Org,
+			Project:        r.Msg.ProjectName,
+			Description:    "Auto created by Rill",
+			Provisioner:    "",
+			ProdVersion:    "",
+			ProdSlots:      int64(DefaultProdSlots(s.app.ch)),
+			Public:         false,
+			DirectoryName:  directoryName,
+			ArchiveAssetId: assetID,
 		}
 	} else if r.Msg.Upload { // upload repo to rill managed storage instead of github
 		ghRepo, err := s.app.ch.GitHelper(r.Msg.Org, r.Msg.ProjectName, s.app.ProjectPath).PushToNewManagedRepo(ctx)
@@ -360,15 +360,15 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 
 		// create project request
 		projRequest = &adminv1.CreateProjectRequest{
-			OrganizationName: r.Msg.Org,
-			Name:             r.Msg.ProjectName,
-			Description:      "Auto created by Rill",
-			Provisioner:      "",
-			ProdVersion:      "",
-			ProdSlots:        int64(DefaultProdSlots(s.app.ch)),
-			Public:           false,
-			DirectoryName:    directoryName,
-			GitRemote:        ghRepo.Remote,
+			Organization:  r.Msg.Org,
+			Project:       r.Msg.ProjectName,
+			Description:   "Auto created by Rill",
+			Provisioner:   "",
+			ProdVersion:   "",
+			ProdSlots:     int64(DefaultProdSlots(s.app.ch)),
+			Public:        false,
+			DirectoryName: directoryName,
+			GitRemote:     ghRepo.Remote,
 		}
 	} else {
 		userStatus, err := c.GetGithubUserStatus(ctx, &adminv1.GetGithubUserStatusRequest{})
@@ -417,17 +417,17 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 			return nil, fmt.Errorf("need access to the repository before deploying, please visit %s to grant access", repoStatus.GrantAccessUrl)
 		}
 		projRequest = &adminv1.CreateProjectRequest{
-			OrganizationName: r.Msg.Org,
-			Name:             r.Msg.ProjectName,
-			Description:      "Auto created by Rill",
-			Provisioner:      "",
-			ProdVersion:      "",
-			ProdSlots:        int64(DefaultProdSlots(s.app.ch)),
-			Public:           false,
-			DirectoryName:    directoryName,
-			GitRemote:        githubRemote,
-			Subpath:          subPath,
-			ProdBranch:       repoStatus.DefaultBranch,
+			Organization:  r.Msg.Org,
+			Project:       r.Msg.ProjectName,
+			Description:   "Auto created by Rill",
+			Provisioner:   "",
+			ProdVersion:   "",
+			ProdSlots:     int64(DefaultProdSlots(s.app.ch)),
+			Public:        false,
+			DirectoryName: directoryName,
+			GitRemote:     githubRemote,
+			Subpath:       subPath,
+			ProdBranch:    repoStatus.DefaultBranch,
 		}
 	}
 
@@ -439,7 +439,7 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 		if suffix > 0 {
 			name = fmt.Sprintf("%s-%d", r.Msg.ProjectName, suffix)
 		}
-		projRequest.Name = name
+		projRequest.Project = name
 		projResp, err = c.CreateProject(ctx, projRequest)
 		suffix++
 		return err
@@ -510,9 +510,9 @@ func (s *Server) RedeployProject(ctx context.Context, r *connect.Request[localv1
 			return nil, err
 		}
 		_, err = c.UpdateProject(ctx, &adminv1.UpdateProjectRequest{
-			ArchiveAssetId:   &assetID,
-			OrganizationName: projResp.Project.OrgName,
-			Name:             projResp.Project.Name,
+			ArchiveAssetId: &assetID,
+			Organization:   projResp.Project.OrgName,
+			Project:        projResp.Project.Name,
 		})
 		if err != nil {
 			return nil, err
@@ -531,9 +531,9 @@ func (s *Server) RedeployProject(ctx context.Context, r *connect.Request[localv1
 				return nil, err
 			}
 			_, err = c.UpdateProject(ctx, &adminv1.UpdateProjectRequest{
-				OrganizationName: projResp.Project.OrgName,
-				Name:             projResp.Project.Name,
-				GitRemote:        &ghRepo.Remote,
+				Organization: projResp.Project.OrgName,
+				Project:      projResp.Project.Name,
+				GitRemote:    &ghRepo.Remote,
 			})
 			if err != nil {
 				return nil, err
@@ -749,9 +749,9 @@ func (s *Server) ListProjectsForOrg(ctx context.Context, r *connect.Request[loca
 	}
 
 	projsResp, err := c.ListProjectsForOrganization(ctx, &adminv1.ListProjectsForOrganizationRequest{
-		OrganizationName: r.Msg.Org,
-		PageToken:        r.Msg.PageToken,
-		PageSize:         r.Msg.PageSize,
+		Organization: r.Msg.Org,
+		PageToken:    r.Msg.PageToken,
+		PageSize:     r.Msg.PageSize,
 	})
 	if err != nil {
 		return nil, err
@@ -773,8 +773,8 @@ func (s *Server) GetProject(ctx context.Context, r *connect.Request[localv1.GetP
 	}
 
 	projResp, err := c.GetProject(ctx, &adminv1.GetProjectRequest{
-		OrganizationName: r.Msg.OrganizationName,
-		Name:             r.Msg.Name,
+		Organization: r.Msg.OrganizationName,
+		Project:      r.Msg.Name,
 	})
 	if err != nil {
 		return nil, err

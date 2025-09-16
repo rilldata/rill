@@ -399,11 +399,11 @@ func (s *Server) ConnectProjectToGithub(ctx context.Context, req *adminv1.Connec
 	}
 
 	_, err = s.UpdateProject(ctx, &adminv1.UpdateProjectRequest{
-		OrganizationName: org.Name,
-		Name:             proj.Name,
-		ProdBranch:       &req.Branch,
-		GitRemote:        &req.Remote,
-		Subpath:          &req.Subpath,
+		Organization: org.Name,
+		Project:      proj.Name,
+		ProdBranch:   &req.Branch,
+		GitRemote:    &req.Remote,
+		Subpath:      &req.Subpath,
 	})
 	if err != nil {
 		return nil, err
@@ -527,12 +527,12 @@ func (s *Server) DisconnectProjectFromGithub(ctx context.Context, req *adminv1.D
 	branch := "main"
 	subpath := ""
 	_, err = s.UpdateProject(ctx, &adminv1.UpdateProjectRequest{
-		OrganizationName: req.Organization,
-		Name:             req.Project,
-		GitRemote:        repo.CloneURL,
-		ProdBranch:       &branch,
-		Subpath:          &subpath,
-		ArchiveAssetId:   nil,
+		Organization:   req.Organization,
+		Project:        req.Project,
+		GitRemote:      repo.CloneURL,
+		ProdBranch:     &branch,
+		Subpath:        &subpath,
+		ArchiveAssetId: nil,
 	})
 	if err != nil {
 		return nil, err

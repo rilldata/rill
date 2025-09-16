@@ -100,13 +100,13 @@ func (s *Server) TriggerRefreshSources(ctx context.Context, req *adminv1.Trigger
 // ListDeployments returns a list of deployments for a given project.
 func (s *Server) ListDeployments(ctx context.Context, req *adminv1.ListDeploymentsRequest) (*adminv1.ListDeploymentsResponse, error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.organization_name", req.OrganizationName),
-		attribute.String("args.project_name", req.ProjectName),
+		attribute.String("args.organization_name", req.Organization),
+		attribute.String("args.project_name", req.Project),
 		attribute.String("args.environment", req.Environment),
 		attribute.String("args.user_id", req.UserId),
 	)
 
-	proj, err := s.admin.DB.FindProjectByName(ctx, req.OrganizationName, req.ProjectName)
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -276,12 +276,12 @@ func (s *Server) GetDeployment(ctx context.Context, req *adminv1.GetDeploymentRe
 // CreateDeployment creates a new deployment for a project.
 func (s *Server) CreateDeployment(ctx context.Context, req *adminv1.CreateDeploymentRequest) (*adminv1.CreateDeploymentResponse, error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.organization_name", req.OrganizationName),
-		attribute.String("args.project_name", req.ProjectName),
+		attribute.String("args.organization_name", req.Organization),
+		attribute.String("args.project_name", req.Project),
 		attribute.String("args.environment", req.Environment),
 	)
 
-	proj, err := s.admin.DB.FindProjectByName(ctx, req.OrganizationName, req.ProjectName)
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}

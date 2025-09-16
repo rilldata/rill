@@ -92,8 +92,8 @@ func validateExplore(ctx context.Context, ch *cmdutil.Helper, project, explore s
 	}
 
 	proj, err := client.GetProject(ctx, &adminv1.GetProjectRequest{
-		OrganizationName: ch.Org,
-		Name:             project,
+		Organization: ch.Org,
+		Project:      project,
 	})
 	if err != nil {
 		return err

@@ -52,9 +52,9 @@ func (s *Server) ListOrganizations(ctx context.Context, req *adminv1.ListOrganiz
 }
 
 func (s *Server) GetOrganization(ctx context.Context, req *adminv1.GetOrganizationRequest) (*adminv1.GetOrganizationResponse, error) {
-	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.Name))
+	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.Organization))
 
-	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Name)
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
 	if err != nil {
 		return nil, err
 	}
@@ -145,9 +145,9 @@ func (s *Server) CreateOrganization(ctx context.Context, req *adminv1.CreateOrga
 }
 
 func (s *Server) DeleteOrganization(ctx context.Context, req *adminv1.DeleteOrganizationRequest) (*adminv1.DeleteOrganizationResponse, error) {
-	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.Name))
+	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.Organization))
 
-	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Name)
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -166,7 +166,7 @@ func (s *Server) DeleteOrganization(ctx context.Context, req *adminv1.DeleteOrga
 }
 
 func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrganizationRequest) (*adminv1.UpdateOrganizationResponse, error) {
-	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.Name))
+	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.Organization))
 	if req.Description != nil {
 		observability.AddRequestAttributes(ctx, attribute.String("args.description", *req.Description))
 	}
@@ -180,7 +180,7 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 		observability.AddRequestAttributes(ctx, attribute.String("args.display_name", *req.DisplayName))
 	}
 
-	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Name)
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}

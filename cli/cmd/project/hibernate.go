@@ -51,8 +51,8 @@ func HibernateCmd(ch *cmdutil.Helper) *cobra.Command {
 			// Redeploy
 			if !force {
 				res, err := client.GetProject(cmd.Context(), &adminv1.GetProjectRequest{
-					OrganizationName: ch.Org,
-					Name:             project,
+					Organization: ch.Org,
+					Project:      project,
 				})
 				if err != nil {
 					return err

@@ -354,14 +354,14 @@ func DeployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployO
 
 	// Create a new project
 	req := &adminv1.CreateProjectRequest{
-		OrganizationName: ch.Org,
-		Name:             opts.Name,
-		Description:      opts.Description,
-		Provisioner:      opts.Provisioner,
-		ProdVersion:      opts.ProdVersion,
-		ProdSlots:        int64(opts.Slots),
-		Public:           opts.Public,
-		DirectoryName:    filepath.Base(localProjectPath),
+		Organization:  ch.Org,
+		Project:       opts.Name,
+		Description:   opts.Description,
+		Provisioner:   opts.Provisioner,
+		ProdVersion:   opts.ProdVersion,
+		ProdSlots:     int64(opts.Slots),
+		Public:        opts.Public,
+		DirectoryName: filepath.Base(localProjectPath),
 	}
 
 	ch.Printer.Println("Starting upload.")
@@ -455,9 +455,9 @@ func redeployProject(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts) 
 				return err
 			}
 			updateProjReq = &adminv1.UpdateProjectRequest{
-				OrganizationName: ch.Org,
-				Name:             proj.Name,
-				ArchiveAssetId:   &assetID,
+				Organization:   ch.Org,
+				Project:        proj.Name,
+				ArchiveAssetId: &assetID,
 			}
 		} else {
 			// need to migrate to rill managed git
@@ -466,9 +466,9 @@ func redeployProject(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts) 
 				return err
 			}
 			updateProjReq = &adminv1.UpdateProjectRequest{
-				OrganizationName: ch.Org,
-				Name:             opts.Name,
-				GitRemote:        &gitRepo.Remote,
+				Organization: ch.Org,
+				Project:      opts.Name,
+				GitRemote:    &gitRepo.Remote,
 			}
 		}
 		// Update the project
@@ -587,7 +587,7 @@ func orgExists(ctx context.Context, ch *cmdutil.Helper, name string) (bool, erro
 		return false, err
 	}
 
-	_, err = c.GetOrganization(ctx, &adminv1.GetOrganizationRequest{Name: name})
+	_, err = c.GetOrganization(ctx, &adminv1.GetOrganizationRequest{Organization: name})
 	if err != nil {
 		if st, ok := status.FromError(err); ok {
 			if st.Code() == codes.NotFound {
@@ -605,7 +605,7 @@ func projectExists(ctx context.Context, ch *cmdutil.Helper, orgName, projectName
 		return false, err
 	}
 
-	_, err = c.GetProject(ctx, &adminv1.GetProjectRequest{OrganizationName: orgName, Name: projectName})
+	_, err = c.GetProject(ctx, &adminv1.GetProjectRequest{Organization: orgName, Project: projectName})
 	if err != nil {
 		if st, ok := status.FromError(err); ok {
 			if st.Code() == codes.NotFound {

@@ -68,7 +68,7 @@ func AdvanceSubscriptionTimeCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			orgResp, err := adminClient.GetOrganization(ctx, &adminv1.GetOrganizationRequest{
-				Name: ch.Org,
+				Organization: ch.Org,
 			})
 			if err != nil {
 				return err

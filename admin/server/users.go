@@ -407,8 +407,8 @@ func (s *Server) SudoGetResource(ctx context.Context, req *adminv1.SudoGetResour
 			return nil, err
 		}
 		res.Resource = &adminv1.SudoGetResourceResponse_User{User: userToPB(user)}
-	case *adminv1.SudoGetResourceRequest_OrgId:
-		org, err := s.admin.DB.FindOrganization(ctx, id.OrgId)
+	case *adminv1.SudoGetResourceRequest_OrganizationId:
+		org, err := s.admin.DB.FindOrganization(ctx, id.OrganizationId)
 		if err != nil {
 			return nil, err
 		}

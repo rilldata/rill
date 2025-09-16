@@ -26,17 +26,17 @@ func TestRBAC(t *testing.T) {
 		r1, err := c1.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{Name: randomName()})
 		require.NoError(t, err)
 		r4, err := c1.CreateProject(ctx, &adminv1.CreateProjectRequest{
-			OrganizationName: r1.Organization.Name,
-			Name:             "proj1",
-			ProdSlots:        1,
-			SkipDeploy:       true,
+			Organization: r1.Organization.Name,
+			Project:      "proj1",
+			ProdSlots:    1,
+			SkipDeploy:   true,
 		})
 		require.NoError(t, err)
 
 		// Check u2 cannot get or list the org or project
-		_, err = c2.GetOrganization(ctx, &adminv1.GetOrganizationRequest{Name: r1.Organization.Name})
+		_, err = c2.GetOrganization(ctx, &adminv1.GetOrganizationRequest{Organization: r1.Organization.Name})
 		require.Error(t, err)
-		_, err = c2.GetProject(ctx, &adminv1.GetProjectRequest{OrganizationName: r1.Organization.Name, Name: r4.Project.Name})
+		_, err = c2.GetProject(ctx, &adminv1.GetProjectRequest{Organization: r1.Organization.Name, Project: r4.Project.Name})
 		require.Error(t, err)
 		r5, err := c2.ListOrganizations(ctx, &adminv1.ListOrganizationsRequest{})
 		require.NoError(t, err)
@@ -52,14 +52,14 @@ func TestRBAC(t *testing.T) {
 		require.NoError(t, err)
 
 		// Check u2 can get and list the org and project
-		_, err = c2.GetOrganization(ctx, &adminv1.GetOrganizationRequest{Name: r1.Organization.Name})
+		_, err = c2.GetOrganization(ctx, &adminv1.GetOrganizationRequest{Organization: r1.Organization.Name})
 		require.NoError(t, err)
-		_, err = c2.GetProject(ctx, &adminv1.GetProjectRequest{OrganizationName: r1.Organization.Name, Name: r4.Project.Name})
+		_, err = c2.GetProject(ctx, &adminv1.GetProjectRequest{Organization: r1.Organization.Name, Project: r4.Project.Name})
 		require.NoError(t, err)
 		r7, err := c2.ListOrganizations(ctx, &adminv1.ListOrganizationsRequest{})
 		require.NoError(t, err)
 		require.Len(t, r7.Organizations, 1)
-		r8, err := c2.ListProjectsForOrganization(ctx, &adminv1.ListProjectsForOrganizationRequest{OrganizationName: r1.Organization.Name})
+		r8, err := c2.ListProjectsForOrganization(ctx, &adminv1.ListProjectsForOrganizationRequest{Organization: r1.Organization.Name})
 		require.NoError(t, err)
 		require.Len(t, r8.Projects, 1)
 
@@ -121,9 +121,9 @@ func TestRBAC(t *testing.T) {
 		require.Equal(t, u1.Email, r11.Members[0].UserEmail)
 
 		// Check they can't get or list the org or project
-		_, err = c2.GetOrganization(ctx, &adminv1.GetOrganizationRequest{Name: r1.Organization.Name})
+		_, err = c2.GetOrganization(ctx, &adminv1.GetOrganizationRequest{Organization: r1.Organization.Name})
 		require.Error(t, err)
-		_, err = c2.GetProject(ctx, &adminv1.GetProjectRequest{OrganizationName: r1.Organization.Name, Name: r4.Project.Name})
+		_, err = c2.GetProject(ctx, &adminv1.GetProjectRequest{Organization: r1.Organization.Name, Project: r4.Project.Name})
 		require.Error(t, err)
 		r12, err := c2.ListOrganizations(ctx, &adminv1.ListOrganizationsRequest{})
 		require.NoError(t, err)
@@ -145,10 +145,10 @@ func TestRBAC(t *testing.T) {
 		r1, err := c1.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{Name: randomName()})
 		require.NoError(t, err)
 		r2, err := c1.CreateProject(ctx, &adminv1.CreateProjectRequest{
-			OrganizationName: r1.Organization.Name,
-			Name:             "proj1",
-			ProdSlots:        1,
-			SkipDeploy:       true,
+			Organization: r1.Organization.Name,
+			Project:      "proj1",
+			ProdSlots:    1,
+			SkipDeploy:   true,
 		})
 		require.NoError(t, err)
 		r3, err := c1.CreateUsergroup(ctx, &adminv1.CreateUsergroupRequest{
@@ -245,17 +245,17 @@ func TestRBAC(t *testing.T) {
 		r1, err := c1.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{Name: randomName()})
 		require.NoError(t, err)
 		r2, err := c1.CreateProject(ctx, &adminv1.CreateProjectRequest{
-			OrganizationName: r1.Organization.Name,
-			Name:             "proj1",
-			ProdSlots:        1,
-			SkipDeploy:       true,
+			Organization: r1.Organization.Name,
+			Project:      "proj1",
+			ProdSlots:    1,
+			SkipDeploy:   true,
 		})
 		require.NoError(t, err)
 		_, err = c1.CreateProject(ctx, &adminv1.CreateProjectRequest{
-			OrganizationName: r1.Organization.Name,
-			Name:             "proj2",
-			ProdSlots:        1,
-			SkipDeploy:       true,
+			Organization: r1.Organization.Name,
+			Project:      "proj2",
+			ProdSlots:    1,
+			SkipDeploy:   true,
 		})
 		require.NoError(t, err)
 		r4, err := c1.CreateUsergroup(ctx, &adminv1.CreateUsergroupRequest{
@@ -389,45 +389,45 @@ func TestRBAC(t *testing.T) {
 		r1, err := c1.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{Name: randomName()})
 		require.NoError(t, err)
 		r2, err := c1.CreateProject(ctx, &adminv1.CreateProjectRequest{
-			OrganizationName: r1.Organization.Name,
-			Name:             "public",
-			ProdSlots:        1,
-			SkipDeploy:       true,
-			Public:           true,
+			Organization: r1.Organization.Name,
+			Project:      "public",
+			ProdSlots:    1,
+			SkipDeploy:   true,
+			Public:       true,
 		})
 		require.NoError(t, err)
 		r3, err := c1.CreateProject(ctx, &adminv1.CreateProjectRequest{
-			OrganizationName: r1.Organization.Name,
-			Name:             "private",
-			ProdSlots:        1,
-			SkipDeploy:       true,
-			Public:           false,
+			Organization: r1.Organization.Name,
+			Project:      "private",
+			ProdSlots:    1,
+			SkipDeploy:   true,
+			Public:       false,
 		})
 		require.NoError(t, err)
 
 		// Check u2 can access the org and the public project
-		_, err = c2.GetOrganization(ctx, &adminv1.GetOrganizationRequest{Name: r1.Organization.Name})
+		_, err = c2.GetOrganization(ctx, &adminv1.GetOrganizationRequest{Organization: r1.Organization.Name})
 		require.NoError(t, err)
-		_, err = c2.GetProject(ctx, &adminv1.GetProjectRequest{OrganizationName: r1.Organization.Name, Name: r2.Project.Name})
+		_, err = c2.GetProject(ctx, &adminv1.GetProjectRequest{Organization: r1.Organization.Name, Project: r2.Project.Name})
 		require.NoError(t, err)
 
 		// Check u2 can't access or list the private project
-		_, err = c2.GetProject(ctx, &adminv1.GetProjectRequest{OrganizationName: r1.Organization.Name, Name: r3.Project.Name})
+		_, err = c2.GetProject(ctx, &adminv1.GetProjectRequest{Organization: r1.Organization.Name, Project: r3.Project.Name})
 		require.Error(t, err)
-		r4, err := c2.ListProjectsForOrganization(ctx, &adminv1.ListProjectsForOrganizationRequest{OrganizationName: r1.Organization.Name})
+		r4, err := c2.ListProjectsForOrganization(ctx, &adminv1.ListProjectsForOrganizationRequest{Organization: r1.Organization.Name})
 		require.NoError(t, err)
 		require.Len(t, r4.Projects, 1)
 		require.Equal(t, r2.Project.Name, r4.Projects[0].Name)
 
 		// Delete the public project
 		_, err = c1.DeleteProject(ctx, &adminv1.DeleteProjectRequest{
-			OrganizationName: r1.Organization.Name,
-			Name:             r2.Project.Name,
+			Organization: r1.Organization.Name,
+			Project:      r2.Project.Name,
 		})
 		require.NoError(t, err)
 
 		// Check u2 can't access the org any more
-		_, err = c2.GetOrganization(ctx, &adminv1.GetOrganizationRequest{Name: r1.Organization.Name})
+		_, err = c2.GetOrganization(ctx, &adminv1.GetOrganizationRequest{Organization: r1.Organization.Name})
 		require.Error(t, err)
 	})
 
@@ -437,10 +437,10 @@ func TestRBAC(t *testing.T) {
 		org1, err := c1.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{Name: randomName()})
 		require.NoError(t, err)
 		proj1, err := c1.CreateProject(ctx, &adminv1.CreateProjectRequest{
-			OrganizationName: org1.Organization.Name,
-			Name:             "proj1",
-			ProdSlots:        1,
-			SkipDeploy:       true,
+			Organization: org1.Organization.Name,
+			Project:      "proj1",
+			ProdSlots:    1,
+			SkipDeploy:   true,
 		})
 		require.NoError(t, err)
 		group1, err := c1.CreateUsergroup(ctx, &adminv1.CreateUsergroupRequest{
@@ -499,9 +499,9 @@ func TestRBAC(t *testing.T) {
 
 		// Create the user and check they can access the org and project, and check they are in the list of members
 		_, c2 := fix.NewUserWithEmail(t, userEmail)
-		_, err = c2.GetOrganization(ctx, &adminv1.GetOrganizationRequest{Name: org1.Organization.Name})
+		_, err = c2.GetOrganization(ctx, &adminv1.GetOrganizationRequest{Organization: org1.Organization.Name})
 		require.NoError(t, err)
-		_, err = c2.GetProject(ctx, &adminv1.GetProjectRequest{OrganizationName: org1.Organization.Name, Name: proj1.Project.Name})
+		_, err = c2.GetProject(ctx, &adminv1.GetProjectRequest{Organization: org1.Organization.Name, Project: proj1.Project.Name})
 		require.NoError(t, err)
 		orgMembers, err := c1.ListOrganizationMemberUsers(ctx, &adminv1.ListOrganizationMemberUsersRequest{Organization: org1.Organization.Name})
 		require.NoError(t, err)
@@ -557,10 +557,10 @@ func TestRBAC(t *testing.T) {
 		org1, err := c1.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{Name: randomName()})
 		require.NoError(t, err)
 		proj1, err := c1.CreateProject(ctx, &adminv1.CreateProjectRequest{
-			OrganizationName: org1.Organization.Name,
-			Name:             "proj1",
-			ProdSlots:        1,
-			SkipDeploy:       true,
+			Organization: org1.Organization.Name,
+			Project:      "proj1",
+			ProdSlots:    1,
+			SkipDeploy:   true,
 		})
 		require.NoError(t, err)
 
@@ -604,10 +604,10 @@ func TestRBAC(t *testing.T) {
 		org1, err := c1.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{Name: randomName()})
 		require.NoError(t, err)
 		proj1, err := c1.CreateProject(ctx, &adminv1.CreateProjectRequest{
-			OrganizationName: org1.Organization.Name,
-			Name:             "proj1",
-			ProdSlots:        1,
-			SkipDeploy:       true,
+			Organization: org1.Organization.Name,
+			Project:      "proj1",
+			ProdSlots:    1,
+			SkipDeploy:   true,
 		})
 		require.NoError(t, err)
 
@@ -791,19 +791,19 @@ func TestRBAC(t *testing.T) {
 		org1, err := c1.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{Name: randomName()})
 		require.NoError(t, err)
 		proj1, err := c1.CreateProject(ctx, &adminv1.CreateProjectRequest{
-			OrganizationName: org1.Organization.Name,
-			Name:             "proj1",
-			ProdSlots:        1,
-			SkipDeploy:       true,
+			Organization: org1.Organization.Name,
+			Project:      "proj1",
+			ProdSlots:    1,
+			SkipDeploy:   true,
 		})
 		require.NoError(t, err)
 		org2, err := c1.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{Name: randomName()})
 		require.NoError(t, err)
 		proj2, err := c1.CreateProject(ctx, &adminv1.CreateProjectRequest{
-			OrganizationName: org2.Organization.Name,
-			Name:             "proj2",
-			ProdSlots:        1,
-			SkipDeploy:       true,
+			Organization: org2.Organization.Name,
+			Project:      "proj2",
+			ProdSlots:    1,
+			SkipDeploy:   true,
 		})
 		require.NoError(t, err)
 
@@ -1016,10 +1016,10 @@ func TestRBAC(t *testing.T) {
 		org1, err := c1.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{Name: randomName()})
 		require.NoError(t, err)
 		proj1, err := c1.CreateProject(ctx, &adminv1.CreateProjectRequest{
-			OrganizationName: org1.Organization.Name,
-			Name:             "proj1",
-			ProdSlots:        1,
-			SkipDeploy:       true,
+			Organization: org1.Organization.Name,
+			Project:      "proj1",
+			ProdSlots:    1,
+			SkipDeploy:   true,
 		})
 		require.NoError(t, err)
 		group1, err := c1.CreateUsergroup(ctx, &adminv1.CreateUsergroupRequest{
@@ -1263,10 +1263,10 @@ func TestRBAC(t *testing.T) {
 		org1, err := c1.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{Name: randomName()})
 		require.NoError(t, err)
 		proj1, err := c1.CreateProject(ctx, &adminv1.CreateProjectRequest{
-			OrganizationName: org1.Organization.Name,
-			Name:             "proj1",
-			ProdSlots:        1,
-			SkipDeploy:       true,
+			Organization: org1.Organization.Name,
+			Project:      "proj1",
+			ProdSlots:    1,
+			SkipDeploy:   true,
 		})
 		require.NoError(t, err)
 		group1, err := c1.CreateUsergroup(ctx, &adminv1.CreateUsergroupRequest{

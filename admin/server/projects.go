@@ -48,10 +48,10 @@ const runtimeAccessTokenEmbedTTL = 24 * time.Hour
 
 func (s *Server) ListProjectsForOrganization(ctx context.Context, req *adminv1.ListProjectsForOrganizationRequest) (*adminv1.ListProjectsForOrganizationResponse, error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.org", req.OrganizationName),
+		attribute.String("args.org", req.Organization),
 	)
 
-	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrganizationName)
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
 	if err != nil {
 		return nil, err
 	}
@@ -250,16 +250,16 @@ func (s *Server) ListProjectsForUserByName(ctx context.Context, req *adminv1.Lis
 
 func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest) (*adminv1.GetProjectResponse, error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.org", req.OrganizationName),
-		attribute.String("args.project", req.Name),
+		attribute.String("args.org", req.Organization),
+		attribute.String("args.project", req.Project),
 	)
 
-	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrganizationName)
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	proj, err := s.admin.DB.FindProjectByName(ctx, req.OrganizationName, req.Name)
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
 	if err != nil {
 		return nil, err
 	}
@@ -534,8 +534,8 @@ func (s *Server) SearchProjectNames(ctx context.Context, req *adminv1.SearchProj
 
 func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRequest) (*adminv1.CreateProjectResponse, error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.org", req.OrganizationName),
-		attribute.String("args.project", req.Name),
+		attribute.String("args.org", req.Organization),
+		attribute.String("args.project", req.Project),
 		attribute.String("args.description", req.Description),
 		attribute.Bool("args.public", req.Public),
 		attribute.String("args.directory_name", req.DirectoryName),
@@ -553,7 +553,7 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 	req.GitRemote = normalizeGitRemote(req.GitRemote)
 
 	// Find parent org
-	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrganizationName)
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -616,7 +616,7 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 	// Prepare the project options
 	opts := &database.InsertProjectOptions{
 		OrganizationID:       org.ID,
-		Name:                 req.Name,
+		Name:                 req.Project,
 		Description:          req.Description,
 		Public:               req.Public,
 		CreatedByUserID:      userID,
@@ -691,11 +691,11 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 
 func (s *Server) DeleteProject(ctx context.Context, req *adminv1.DeleteProjectRequest) (*adminv1.DeleteProjectResponse, error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.org", req.OrganizationName),
-		attribute.String("args.project", req.Name),
+		attribute.String("args.org", req.Organization),
+		attribute.String("args.project", req.Project),
 	)
 
-	proj, err := s.admin.DB.FindProjectByName(ctx, req.OrganizationName, req.Name)
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -717,8 +717,8 @@ func (s *Server) DeleteProject(ctx context.Context, req *adminv1.DeleteProjectRe
 
 func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRequest) (*adminv1.UpdateProjectResponse, error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.org", req.OrganizationName),
-		attribute.String("args.project", req.Name),
+		attribute.String("args.org", req.Organization),
+		attribute.String("args.project", req.Project),
 	)
 	if req.NewName != nil {
 		observability.AddRequestAttributes(ctx, attribute.String("args.new_name", *req.NewName))
@@ -769,7 +769,7 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 	}
 
 	// Find project
-	proj, err := s.admin.DB.FindProjectByName(ctx, req.OrganizationName, req.Name)
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -808,7 +808,7 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 	}
 	if req.ArchiveAssetId != nil {
 		archiveAssetID = req.ArchiveAssetId
-		org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrganizationName)
+		org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
 		if err != nil {
 			return nil, err
 		}
@@ -857,7 +857,7 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 	}
 
 	return &adminv1.UpdateProjectResponse{
-		Project: s.projToDTO(proj, req.OrganizationName),
+		Project: s.projToDTO(proj, req.Organization),
 	}, nil
 }
 
