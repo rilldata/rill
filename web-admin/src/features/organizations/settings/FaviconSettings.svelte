@@ -18,7 +18,7 @@
 
   async function onSave(assetId: string) {
     await mutateAsync({
-      name: organization,
+      organization,
       data: {
         faviconAssetId: assetId,
       },
@@ -31,7 +31,7 @@
 
   async function onRemove() {
     await mutateAsync({
-      name: organization,
+      organization,
       data: {
         faviconAssetId: "",
       },
