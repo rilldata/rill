@@ -109,7 +109,7 @@ Rill Canvas dashboards are built using a variety of components that can display 
     /> 
     <ComponentTile
         header="Component"
-        link="/build/dashboards/canvas-components/data#component"
+        link="/build/dashboards/canvas-components/misc#component"
         multiple_measures="False"
         image={<img src="/img/build/canvas/components/component.png" alt="Component" />}
     />
