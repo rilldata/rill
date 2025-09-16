@@ -10,7 +10,7 @@ tags:
 
 Once you've [built your metrics view](/build/metrics-view) and assigned a time series column, you'll be able to start visualizing your measures and dimensions in either an Explore dashboard or Canvas dashboard. This guide will discuss all the features in the time navigator that exists at the top of all dashboards and how to customize it to your needs.
 
-## Time Pill
+## Time Series Filter Component
 
 The time series navigation is divided into four main sections:
 
@@ -79,6 +79,14 @@ Many users expect `-4d to now/d` and `4d as of now/d` to be equivalent, but they
 :::
 
 ### ISO 8601 Ranges
+
+ISO 8601 ranges use the standard date format for specifying exact time periods:
+
+- `2024-01-01 to 2024-01-05` - From January 1st to January 5th, 2024
+- `2024-01-01T00:00:00Z to 2024-01-01T23:59:59Z` - Full day with explicit timestamps
+- `2024-01-01T09:00:00 to 2024-01-01T17:00:00` - Business hours on a specific day
+
+These ranges are useful when you need precise control over the exact start and end times, especially for reporting on specific events or periods.
 
 ### Snapping 
 
@@ -162,13 +170,24 @@ This happens because the end date uses `now` (wallclock time) instead of a snapp
 
 ## Time Comparisons
 
-## Filter by Scrubbing 
+Along with setting time ranges, you have the ability to set a comparison period in the "Comparing" section of the time pill. This allows you to analyze trends and changes by comparing your current time period against a previous period.
 
-For a specific view into your time series graph, you can interactively scrub directly on the time series graph. 
+### Comparison Types
 
+1. **Previous Period**: Compares against the immediately preceding period of the same duration
+2. **Previous ...**: Compares current selected period vs a set period (day, week, month, year)
+3. **Custom Comparison**: Set a specific comparison period using the same time range syntax
 
-<img src = '/img/explore/filters/scrub-graph.gif' class='rounded-gif' />
+### Understanding Comparison Results
+
+Once comparison is enabled, you'll see slightly different information in your dashboard. Along with the current value, you'll see both change in value as well as % change over periods. This gives you a quick glance at how your metrics are performing compared to the previous period.
+
+<img src = '/img/explore/filters/comparison.png' class='rounded-gif' />
 <br />
 
-This allows the ability for a more detailed view into your time series without having to change the overall time series filter for quick access to measures. 
+## Filter by Scrubbing 
 
+For a specific view into your time series graph, you can interactively scrub directly on the time series graph. This feature allows you to zoom into specific time periods by clicking and dragging across the chart.
+
+<img src = '/img/explore/filters/scrub.png' class='rounded-gif' />
+<br />
