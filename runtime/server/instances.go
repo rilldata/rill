@@ -8,7 +8,6 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
-	"github.com/rilldata/rill/runtime/parser"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"go.opentelemetry.io/otel/attribute"
@@ -29,9 +28,15 @@ func (s *Server) ListInstances(ctx context.Context, req *runtimev1.ListInstances
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
+	claims := auth.GetClaims(ctx).SecurityClaims()
+
 	pbs := make([]*runtimev1.Instance, len(instances))
 	for i, inst := range instances {
-		pbs[i] = instanceToPB(inst, auth.GetClaims(ctx).SecurityClaims(), true)
+		featureFlags, err := runtime.ResolveFeatureFlags(inst, claims)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+		pbs[i] = instanceToPB(inst, featureFlags, true)
 	}
 
 	return &runtimev1.ListInstancesResponse{Instances: pbs}, nil
@@ -67,8 +72,13 @@ func (s *Server) GetInstance(ctx context.Context, req *runtimev1.GetInstanceRequ
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
+	featureFlags, err := runtime.ResolveFeatureFlags(inst, auth.GetClaims(ctx).SecurityClaims())
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
 	return &runtimev1.GetInstanceResponse{
-		Instance: instanceToPB(inst, auth.GetClaims(ctx).SecurityClaims(), req.Sensitive),
+		Instance: instanceToPB(inst, featureFlags, req.Sensitive),
 	}, nil
 }
 
@@ -105,8 +115,13 @@ func (s *Server) CreateInstance(ctx context.Context, req *runtimev1.CreateInstan
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
+	featureFlags, err := runtime.ResolveFeatureFlags(inst, auth.GetClaims(ctx).SecurityClaims())
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
 	return &runtimev1.CreateInstanceResponse{
-		Instance: instanceToPB(inst, auth.GetClaims(ctx).SecurityClaims(), true),
+		Instance: instanceToPB(inst, featureFlags, true),
 	}, nil
 }
 
@@ -166,7 +181,7 @@ func (s *Server) EditInstance(ctx context.Context, req *runtimev1.EditInstanceRe
 		ProjectConnectors:    oldInst.ProjectConnectors,
 		Variables:            variables,
 		ProjectVariables:     oldInst.ProjectVariables,
-		FeatureFlagTemplates: oldInst.FeatureFlagTemplates,
+		FeatureFlags:         oldInst.FeatureFlags,
 		Annotations:          annotations,
 		AIInstructions:       oldInst.AIInstructions,
 	}
@@ -189,8 +204,13 @@ func (s *Server) EditInstance(ctx context.Context, req *runtimev1.EditInstanceRe
 		s.logger.Error("failed to acquire repo after editing instance", zap.String("instance_id", req.InstanceId), zap.Error(err), observability.ZapCtx(ctx))
 	}
 
+	featureFlags, err := runtime.ResolveFeatureFlags(inst, auth.GetClaims(ctx).SecurityClaims())
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
 	return &runtimev1.EditInstanceResponse{
-		Instance: instanceToPB(inst, auth.GetClaims(ctx).SecurityClaims(), true),
+		Instance: instanceToPB(inst, featureFlags, true),
 	}, nil
 }
 
@@ -281,27 +301,7 @@ func (s *Server) WatchLogs(req *runtimev1.WatchLogsRequest, srv runtimev1.Runtim
 	}, lvl)
 }
 
-func instanceToPB(inst *drivers.Instance, claims *runtime.SecurityClaims, sensitive bool) *runtimev1.Instance {
-	vars := inst.ResolveVariables(false)
-	attrs := claims.UserAttributes
-	if attrs == nil {
-		attrs = make(map[string]any)
-	}
-	templateData := parser.TemplateData{
-		Environment: inst.Environment,
-		User:        attrs,
-		Variables:   vars,
-	}
-	featureFlags := make(map[string]bool)
-	for f, v := range inst.FeatureFlagTemplates {
-		rv, _ := parser.ResolveTemplate(v, templateData, false)
-		if rv == "true" {
-			featureFlags[f] = true
-		} else if rv == "false" {
-			featureFlags[f] = false
-		}
-	}
-
+func instanceToPB(inst *drivers.Instance, featureFlags map[string]bool, sensitive bool) *runtimev1.Instance {
 	pb := &runtimev1.Instance{
 		InstanceId:     inst.ID,
 		CreatedOn:      timestamppb.New(inst.CreatedOn),

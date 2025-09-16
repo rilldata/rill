@@ -56,8 +56,7 @@ type Instance struct {
 	// (NOTE: This can always be reproduced from rill.yaml, so it's really just a handy cache of the values.)
 	ProjectVariables map[string]string `db:"project_variables"`
 	// FeatureFlags contains feature flags configured in rill.yaml
-	FeatureFlags         map[string]bool   `db:"feature_flags"`
-	FeatureFlagTemplates map[string]string `db:"feature_flag_templates"`
+	FeatureFlags map[string]string `db:"feature_flags"`
 	// Annotations to enrich activity events (like usage tracking)
 	Annotations map[string]string
 	// Paths to expose over HTTP (defaults to ./public)

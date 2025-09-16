@@ -114,14 +114,14 @@ func (c *connection) findInstances(_ context.Context, whereClause string, args .
 
 		featureFlagBools, err := mapFromJSON[bool](featureFlags)
 		if err != nil {
-			i.FeatureFlagTemplates, err = mapFromJSON[string](featureFlags)
+			i.FeatureFlags, err = mapFromJSON[string](featureFlags)
 			if err != nil {
 				return nil, err
 			}
 		} else {
-			i.FeatureFlagTemplates = map[string]string{}
+			i.FeatureFlags = map[string]string{}
 			for f, v := range featureFlagBools {
-				i.FeatureFlagTemplates[f] = fmt.Sprintf("%v", v)
+				i.FeatureFlags[f] = fmt.Sprintf("%v", v)
 			}
 		}
 
@@ -174,7 +174,7 @@ func (c *connection) CreateInstance(_ context.Context, inst *drivers.Instance) e
 		return err
 	}
 
-	featureFlags, err := mapToJSON(inst.FeatureFlagTemplates)
+	featureFlags, err := mapToJSON(inst.FeatureFlags)
 	if err != nil {
 		return err
 	}
@@ -272,7 +272,7 @@ func (c *connection) EditInstance(_ context.Context, inst *drivers.Instance) err
 		return err
 	}
 
-	featureFlags, err := mapToJSON(inst.FeatureFlagTemplates)
+	featureFlags, err := mapToJSON(inst.FeatureFlags)
 	if err != nil {
 		return err
 	}

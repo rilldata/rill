@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -146,6 +147,40 @@ func (r *Runtime) DataDir(instanceID string, elem ...string) (string, error) {
 // Storage usage in the returned directory will be reported in the instance's heartbeat events.
 func (r *Runtime) TempDir(instanceID string, elem ...string) (string, error) {
 	return r.storage.WithPrefix(instanceID).TempDir(elem...)
+}
+
+func ResolveFeatureFlags(inst *drivers.Instance, claims *SecurityClaims) (map[string]bool, error) {
+	vars := inst.ResolveVariables(false)
+	attrs := claims.UserAttributes
+	if attrs == nil {
+		attrs = make(map[string]any)
+	}
+
+	templateData := parser.TemplateData{
+		Environment: inst.Environment,
+		User:        attrs,
+		Variables:   vars,
+	}
+
+	featureFlags := make(map[string]bool)
+	for f, v := range inst.FeatureFlags {
+		rv, err := parser.ResolveTemplate(v, templateData, false)
+		if err != nil {
+			return nil, fmt.Errorf("failed to resolve feature flag template %q: %w", f, err)
+		}
+		rv = strings.TrimSpace(rv)
+		if rv == "" || rv == "<no value>" {
+			continue
+		}
+
+		bv, err := parser.EvaluateBoolExpression(rv)
+		if err != nil {
+			return nil, fmt.Errorf("failed to evaluate feature flag template %q: %w", f, err)
+		}
+		featureFlags[f] = bv
+	}
+
+	return featureFlags, nil
 }
 
 // registryCache caches all the runtime's instances and manages the life-cycle of their controllers.
