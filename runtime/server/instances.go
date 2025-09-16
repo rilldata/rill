@@ -6,7 +6,9 @@ import (
 	"fmt"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/parser"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"go.opentelemetry.io/otel/attribute"
@@ -29,7 +31,7 @@ func (s *Server) ListInstances(ctx context.Context, req *runtimev1.ListInstances
 
 	pbs := make([]*runtimev1.Instance, len(instances))
 	for i, inst := range instances {
-		pbs[i] = instanceToPB(inst, true)
+		pbs[i] = instanceToPB(inst, auth.GetClaims(ctx).SecurityClaims(), true)
 	}
 
 	return &runtimev1.ListInstancesResponse{Instances: pbs}, nil
@@ -66,7 +68,7 @@ func (s *Server) GetInstance(ctx context.Context, req *runtimev1.GetInstanceRequ
 	}
 
 	return &runtimev1.GetInstanceResponse{
-		Instance: instanceToPB(inst, req.Sensitive),
+		Instance: instanceToPB(inst, auth.GetClaims(ctx).SecurityClaims(), req.Sensitive),
 	}, nil
 }
 
@@ -104,7 +106,7 @@ func (s *Server) CreateInstance(ctx context.Context, req *runtimev1.CreateInstan
 	}
 
 	return &runtimev1.CreateInstanceResponse{
-		Instance: instanceToPB(inst, true),
+		Instance: instanceToPB(inst, auth.GetClaims(ctx).SecurityClaims(), true),
 	}, nil
 }
 
@@ -164,7 +166,7 @@ func (s *Server) EditInstance(ctx context.Context, req *runtimev1.EditInstanceRe
 		ProjectConnectors:    oldInst.ProjectConnectors,
 		Variables:            variables,
 		ProjectVariables:     oldInst.ProjectVariables,
-		FeatureFlags:         oldInst.FeatureFlags,
+		FeatureFlagTemplates: oldInst.FeatureFlagTemplates,
 		Annotations:          annotations,
 		AIInstructions:       oldInst.AIInstructions,
 	}
@@ -188,7 +190,7 @@ func (s *Server) EditInstance(ctx context.Context, req *runtimev1.EditInstanceRe
 	}
 
 	return &runtimev1.EditInstanceResponse{
-		Instance: instanceToPB(inst, true),
+		Instance: instanceToPB(inst, auth.GetClaims(ctx).SecurityClaims(), true),
 	}, nil
 }
 
@@ -279,12 +281,32 @@ func (s *Server) WatchLogs(req *runtimev1.WatchLogsRequest, srv runtimev1.Runtim
 	}, lvl)
 }
 
-func instanceToPB(inst *drivers.Instance, sensitive bool) *runtimev1.Instance {
+func instanceToPB(inst *drivers.Instance, claims *runtime.SecurityClaims, sensitive bool) *runtimev1.Instance {
+	vars := inst.ResolveVariables(false)
+	attrs := claims.UserAttributes
+	if attrs == nil {
+		attrs = make(map[string]any)
+	}
+	templateData := parser.TemplateData{
+		Environment: inst.Environment,
+		User:        attrs,
+		Variables:   vars,
+	}
+	featureFlags := make(map[string]bool)
+	for f, v := range inst.FeatureFlagTemplates {
+		rv, _ := parser.ResolveTemplate(v, templateData, false)
+		if rv == "true" {
+			featureFlags[f] = true
+		} else if rv == "false" {
+			featureFlags[f] = false
+		}
+	}
+
 	pb := &runtimev1.Instance{
 		InstanceId:     inst.ID,
 		CreatedOn:      timestamppb.New(inst.CreatedOn),
 		UpdatedOn:      timestamppb.New(inst.UpdatedOn),
-		FeatureFlags:   inst.FeatureFlags,
+		FeatureFlags:   featureFlags,
 		AiInstructions: inst.AIInstructions,
 	}
 

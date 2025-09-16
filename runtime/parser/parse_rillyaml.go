@@ -25,7 +25,7 @@ type RillYAML struct {
 	Connectors     []*ConnectorDef
 	Variables      []*VariableDef
 	Defaults       map[ResourceKind]yaml.Node
-	FeatureFlags   map[string]bool
+	FeatureFlags   map[string]string
 	PublicPaths    []string
 }
 
@@ -243,8 +243,8 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 		}
 	}
 
-	// For backwards compatibility, we allow "features" to be either a map of bools (preferred) or a sequence of strings.
-	var featureFlags map[string]bool
+	// For backwards compatibility, we allow "features" to be either a map of strings (preferred) or a sequence of strings.
+	var featureFlags map[string]string
 	if !tmp.Features.IsZero() {
 		switch tmp.Features.Kind {
 		case yaml.MappingNode:
@@ -257,9 +257,9 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 				return newYAMLError(err)
 			}
 
-			featureFlags = map[string]bool{}
+			featureFlags = map[string]string{}
 			for _, f := range fs {
-				featureFlags[f] = true
+				featureFlags[f] = "true"
 			}
 		default:
 			return fmt.Errorf(`invalid property "features": must be a map or a sequence`)
