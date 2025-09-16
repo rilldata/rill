@@ -1,4 +1,8 @@
-import type { CanvasResolvedSpec } from "@rilldata/web-common/features/canvas/stores/spec";
+import {
+  getAllDimensions,
+  getAllMeasures,
+  type CanvasResolvedSpec,
+} from "@rilldata/web-common/features/canvas/stores/spec";
 import {
   DimensionFilterMode,
   dimensionFilterModeMap,
@@ -338,12 +342,22 @@ export class Filters {
 
     if (!defaultPreset) return;
 
+    const allDimensions = getAllDimensions(response.metricsViews || {});
+    const allMeasures = getAllMeasures(response.metricsViews || {});
+
     const {
       dimensionMap,
       measureMap,
       defaultFilterProperties,
       temporaryFilters,
-    } = this.processDefaults(defaultPreset);
+    } = this.processDefaults(
+      defaultPreset,
+      getMapFromArray(
+        allDimensions,
+        (dimension) => (dimension.name || dimension.column) as string,
+      ),
+      getMapFromArray(allMeasures, (m) => m.name as string),
+    );
 
     this.setDefaults(
       dimensionMap,
@@ -364,6 +378,8 @@ export class Filters {
       );
       this.temporaryFilters.set(new Set(tempFilters?.split(",") ?? []));
     }
+
+    this.searchParamsStore.set(searchParams);
 
     this.filterText.set(filterText ?? "");
 
@@ -465,10 +481,11 @@ export class Filters {
     );
   };
 
-  private processDefaults(defaultPreset: V1CanvasPreset | undefined) {
-    const allDimensions = get(this.allDimensions);
-    const allMeasures = get(this.allMeasures);
-
+  private processDefaults(
+    defaultPreset: V1CanvasPreset | undefined,
+    allDimensions: Map<string, MetricsViewSpecDimension>,
+    allMeasures: Map<string, MetricsViewSpecMeasure>,
+  ) {
     const defaultFilterProperties = new Map<string, FilterProperties>();
     const dimensionMap: Map<string, DimensionFilterItem> = new Map();
     const measureMap: Map<string, MeasureFilterItem> = new Map();
@@ -934,15 +951,32 @@ export class Filters {
   clearAllFilters = () => {
     this.temporaryFilters.set(new Set());
 
+    if (this.componentName) {
+      this.searchParamsCallback(ExploreStateURLParams.Filters, undefined);
+      return;
+    }
+
     if (!this.specStore) return;
-    const defaultPreset = get(this.specStore).data?.canvas?.defaultPreset;
+    const spec = get(this.specStore);
+    const metricsViews = spec.data?.metricsViews || {};
+    const defaultPreset = spec.data?.canvas?.defaultPreset;
+
+    const allDimensions = getAllDimensions(metricsViews);
+    const allMeasures = getAllMeasures(metricsViews);
 
     const {
       dimensionMap,
       measureMap,
       defaultFilterProperties,
       temporaryFilters,
-    } = this.processDefaults(defaultPreset);
+    } = this.processDefaults(
+      defaultPreset,
+      getMapFromArray(
+        allDimensions,
+        (dimension) => (dimension.name || dimension.column) as string,
+      ),
+      getMapFromArray(allMeasures, (m) => m.name as string),
+    );
 
     this.setDefaults(
       dimensionMap,

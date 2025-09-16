@@ -189,8 +189,17 @@ export class CanvasEntity {
 
       const parsed = parseDocument(yamlContent ?? "");
 
-      parsed.setIn(["defaults", "filters", "dimensions"], yamlDimensions);
-      parsed.setIn(["defaults", "filters", "measures"], yamlMeasures);
+      if (yamlDimensions.length) {
+        parsed.setIn(["defaults", "filters", "dimensions"], yamlDimensions);
+      } else {
+        parsed.deleteIn(["defaults", "filters", "dimensions"]);
+      }
+
+      if (yamlMeasures.length) {
+        parsed.setIn(["defaults", "filters", "measures"], yamlMeasures);
+      } else {
+        parsed.deleteIn(["defaults", "filters", "measures"]);
+      }
 
       if (timeRange) {
         parsed.setIn(["defaults", "time_range"], timeRange);

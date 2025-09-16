@@ -5,6 +5,7 @@ import {
   type MetricsViewSpecMeasure,
   type V1CanvasSpec,
   type V1ComponentSpec,
+  type V1MetricsView,
   type V1MetricsViewSpec,
   type V1Resource,
 } from "@rilldata/web-common/runtime-client";
@@ -124,40 +125,23 @@ export class CanvasResolvedSpec {
         const metricsViewData =
           $validSpecStore.data?.metricsViews[metricViewName];
 
-        return this.filterSimpleMeasures(
+        return filterSimpleMeasures(
           metricsViewData?.state?.validSpec?.measures,
         );
       });
 
     this.allSimpleMeasures = derived(validSpecStore, ($validSpecStore) => {
-      if (!$validSpecStore.data) return [];
-      const measures = Object.values(
-        $validSpecStore.data.metricsViews || {},
-      ).flatMap((metricsView) =>
-        this.filterSimpleMeasures(metricsView?.state?.validSpec?.measures),
-      );
-      const uniqueByName = new Map<string, MetricsViewSpecMeasure>();
-      for (const measure of measures) {
-        uniqueByName.set(measure.name as string, measure);
-      }
-      return [...uniqueByName.values()];
+      const metricsViews = $validSpecStore.data?.metricsViews;
+      if (!metricsViews) return [];
+
+      return getAllMeasures(metricsViews);
     });
 
     this.allDimensions = derived(validSpecStore, ($validSpecStore) => {
-      if (!$validSpecStore.data) return [];
-      const dimensions = Object.values(
-        $validSpecStore.data.metricsViews || {},
-      ).flatMap(
-        (metricsView) => metricsView?.state?.validSpec?.dimensions || [],
-      );
-      const uniqueByName = new Map<string, MetricsViewSpecDimension>();
-      for (const dimension of dimensions) {
-        uniqueByName.set(
-          (dimension.name || dimension.column) as string,
-          dimension,
-        );
-      }
-      return [...uniqueByName.values()];
+      const metricsViews = $validSpecStore.data?.metricsViews;
+      if (!metricsViews) return [];
+
+      return getAllDimensions(metricsViews);
     });
 
     this.getDimensionsForMetricView = (metricViewName: string) =>
@@ -255,16 +239,42 @@ export class CanvasResolvedSpec {
     }
     return metricViewNames;
   };
+}
 
-  private filterSimpleMeasures = (
-    measures: MetricsViewSpecMeasure[] | undefined,
-  ): MetricsViewSpecMeasure[] => {
-    return (
-      measures?.filter(
-        (m) =>
-          !m.window &&
-          m.type !== MetricsViewSpecMeasureType.MEASURE_TYPE_TIME_COMPARISON,
-      ) || []
-    );
-  };
+const filterSimpleMeasures = (
+  measures: MetricsViewSpecMeasure[] | undefined,
+): MetricsViewSpecMeasure[] => {
+  return (
+    measures?.filter(
+      (m) =>
+        !m.window &&
+        m.type !== MetricsViewSpecMeasureType.MEASURE_TYPE_TIME_COMPARISON,
+    ) || []
+  );
+};
+
+export function getAllDimensions(
+  metricsViews: Record<string, V1MetricsView | undefined>,
+) {
+  const dimensions = Object.values(metricsViews).flatMap(
+    (metricsView) => metricsView?.state?.validSpec?.dimensions || [],
+  );
+  const uniqueByName = new Map<string, MetricsViewSpecDimension>();
+  for (const dimension of dimensions) {
+    uniqueByName.set((dimension.name || dimension.column) as string, dimension);
+  }
+  return [...uniqueByName.values()];
+}
+
+export function getAllMeasures(
+  metricsViews: Record<string, V1MetricsView | undefined>,
+) {
+  const measures = Object.values(metricsViews).flatMap((metricsView) =>
+    filterSimpleMeasures(metricsView?.state?.validSpec?.measures),
+  );
+  const uniqueByName = new Map<string, MetricsViewSpecMeasure>();
+  for (const measure of measures) {
+    uniqueByName.set(measure.name as string, measure);
+  }
+  return [...uniqueByName.values()];
 }

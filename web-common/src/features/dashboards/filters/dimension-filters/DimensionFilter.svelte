@@ -393,7 +393,7 @@
   closeOnItemClick={false}
   onOpenChange={handleOpenChange}
 >
-  <DropdownMenu.Trigger asChild let:builder>
+  <DropdownMenu.Trigger asChild let:builder disabled={locked}>
     <Tooltip
       activeDelay={60}
       alignment="start"
@@ -438,7 +438,9 @@
             <svelte:fragment slot="name">{name}</svelte:fragment>
             <svelte:fragment slot="description">dimension</svelte:fragment>
           </TooltipTitle>
-          Click to edit the the filters in this dimension
+          {#if !locked}
+            Click to edit the the filters in this dimension
+          {/if}
         </TooltipContent>
       </div>
     </Tooltip>
@@ -519,7 +521,7 @@
                 role="menuitem"
                 checked={selected}
                 showXForSelected={curExcludeMode}
-                disabled={!selected && atLimit && !limitIsOne}
+                disabled={locked || (!selected && atLimit && !limitIsOne)}
                 on:click={() => handleItemClick(name)}
               >
                 <span>
@@ -554,7 +556,8 @@
               role="menuitem"
               checked={curMode === DimensionFilterMode.Select && selected}
               showXForSelected={curExcludeMode}
-              disabled={curMode !== DimensionFilterMode.Select ||
+              disabled={locked ||
+                curMode !== DimensionFilterMode.Select ||
                 (!selected && atLimit && !limitIsOne)}
               on:click={() => handleItemClick(name)}
             >
@@ -579,6 +582,7 @@
     </div>
 
     <DimensionFilterFooter
+      {locked}
       mode={curMode}
       excludeMode={curExcludeMode}
       {allSelected}

@@ -51,7 +51,7 @@
     class:exclude
     class:compact
     class:fullWidth
-    class:pointer-events-none={readOnly && !allowPointerEvents}
+    class:pointer-events-none={(locked || readOnly) && !allowPointerEvents}
     {...getAttrs(builders)}
     use:builderActions={{ builders }}
     aria-label={label}
@@ -90,7 +90,7 @@
         on:click
         on:mousedown
         class:cursor-not-allowed={locked}
-        aria-label={`Open ${label}`}
+        aria-label="Open {label}"
         class="text-inherit w-full select-none flex items-center justify-between gap-x-1 px-0.5"
         type="button"
       >
