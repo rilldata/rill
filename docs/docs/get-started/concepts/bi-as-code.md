@@ -36,7 +36,7 @@ This approach allows engineering teams to maintain control over their analytics 
 - Maintain a clear history of how metrics and dashboards evolve over time
 - Collaborate effectively across teams
 
-### [Automation & CI/CD](/deploy/github-101)
+### [Automation & CI/CD](/guides/github-101)
 - Automate the deployment of analytics changes
 - Integrate analytics testing into your CI/CD pipeline
 - Ensure consistency across environments

@@ -20,7 +20,7 @@ You can see a few different example projects by visiting our [example github rep
 
 :::tip
 
-For more information about using Git or cloning projects locally, please see our page on [GitHub Basics](/deploy/github-101).
+For more information about using Git or cloning projects locally, please see our page on [GitHub Basics](/guides/github-101).
 
 :::
 

@@ -50,7 +50,7 @@ If you are on an older version of Rill, it is **strongly recommended** to [upgra
 
 ## Sync Rill Project to GitHub
 
-We recommend syncing your Rill project to your own [GitHub repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/creating-a-new-repository), which allows you to maintain your files with all of GitHub's features such as version control and code review requirements. For some basic tips, see our [GitHub Basics](/deploy/github-101) page!
+We recommend syncing your Rill project to your own [GitHub repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/creating-a-new-repository), which allows you to maintain your files with all of GitHub's features such as version control and code review requirements. For some basic tips, see our [GitHub Basics](/guides/github-101) page!
 
 ### Syncing your GitHub Repository
 
@@ -170,7 +170,7 @@ Likewise, if using the UI by selecting the `Deploy` button, Rill will detect the
 
 :::tip Interested in using Gitlab?
 
-Check out our documentation on deploying a [Rill project using GitLab](deploy-from-cli)!
+Check out our documentation on deploying a [Rill project using GitLab](/guides/deploy-from-cli)!
 
 :::
 

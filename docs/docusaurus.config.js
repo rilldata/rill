@@ -490,6 +490,14 @@ const config = {
             from: '/home/get-started',
             to: '/get-started/quickstart'
           },
+          {
+            from: '/deploy/deploy-dashboard/deploy-from-cli',
+            to: '/guides/deploy-from-cli'
+          },
+          {
+            from: '/deploy/deploy-dashboard/github-101',
+            to: '/guides/github-101'
+          },
           // {
           //   from: '/old-page',
           //   to: '/new-page',
