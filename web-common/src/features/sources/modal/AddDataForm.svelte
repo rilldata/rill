@@ -573,7 +573,7 @@
           {:else}
             Test and Connect
           {/if}
-        {:else if isConnectorForm}
+        {:else if isConnectorForm || (connector.name !== "https" && connector.name !== "local_file")}
           {#if submitting}
             Testing connection...
           {:else}
