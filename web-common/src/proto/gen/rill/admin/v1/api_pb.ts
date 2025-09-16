@@ -10492,6 +10492,11 @@ export class ConnectProjectToGithubRequest extends Message<ConnectProjectToGithu
    */
   force = false;
 
+  /**
+   * @generated from field: bool create = 7;
+   */
+  create = false;
+
   constructor(data?: PartialMessage<ConnectProjectToGithubRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -10506,6 +10511,7 @@ export class ConnectProjectToGithubRequest extends Message<ConnectProjectToGithu
     { no: 4, name: "branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "subpath", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "force", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 7, name: "create", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ConnectProjectToGithubRequest {

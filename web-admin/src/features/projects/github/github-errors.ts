@@ -18,14 +18,22 @@ export function extractGithubConnectError(err: AxiosError<RpcStatus>) {
     err.response.data?.message?.includes("worktree has additional contents")
   ) {
     return {
-      message: "",
-      notEmpty: true,
+      message:
+        "The subpath you specified already exists in this repo. Please use a different subpath or remove the existing folder before pushing.",
+    };
+  }
+
+  if (
+    err.response.data?.message?.includes("name already exists on this account")
+  ) {
+    return {
+      message: "This repo already exists. Please choose a new repo name.",
     };
   }
 
   return {
-    message: err.response.data?.message,
-    notEmpty: false,
+    message:
+      "Unable to complete push. Please check your repo and subpath settings and try again.",
   };
 }
 
