@@ -63,7 +63,7 @@ export class TimeControls {
   minMaxTimeStamps: Readable<MinMax | undefined>;
   isReady: Readable<boolean>;
   hasTimeSeries = writable(false);
-  minTimeGrain = writable<V1TimeGrain>(V1TimeGrain.TIME_GRAIN_UNSPECIFIED);
+  minTimeGrain = maybeWritable<V1TimeGrain>();
 
   _showTimeComparison = writable(false);
   _comparisonRange = maybeWritable<string>();
@@ -203,6 +203,11 @@ export class TimeControls {
     if (currentValue === minTimeGrain) return minTimeGrain;
 
     this.minTimeGrain.set(minTimeGrain);
+    const currentGrain = get(this.grain);
+    console.log({ currentGrain, minTimeGrain });
+    if (!currentGrain) {
+      this.grain.set(minTimeGrain);
+    }
     return minTimeGrain;
   }
 
@@ -424,7 +429,7 @@ export function parseSearchParams(urlParams: URLSearchParams) {
   let comparisonRange: string | undefined;
 
   let timeZone: string = "UTC";
-  let grain: V1TimeGrain = V1TimeGrain.TIME_GRAIN_UNSPECIFIED;
+  let grain: V1TimeGrain | undefined = undefined;
 
   if (preset.timeRange) {
     timeRange = preset.timeRange;

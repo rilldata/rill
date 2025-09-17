@@ -326,7 +326,7 @@ export async function deriveInterval(
   minMaxTimeStamps: MinMax,
   metricsViewName: string,
   activeTimeZone: string,
-  minTimeGrain: V1TimeGrain,
+  minTimeGrain: V1TimeGrain | undefined,
 ): Promise<{
   interval: Interval;
   grain?: V1TimeGrain | undefined;
@@ -342,7 +342,10 @@ export async function deriveInterval(
 
   // This needs to be handled by the API - bgh
   if (name === ALL_TIME_RANGE_ALIAS || name === "allTime") {
-    const dateTimeUnit = V1TimeGrainToDateTimeUnit[minTimeGrain];
+    const dateTimeUnit =
+      V1TimeGrainToDateTimeUnit[
+        minTimeGrain || V1TimeGrain.TIME_GRAIN_UNSPECIFIED
+      ];
 
     const interval = Interval.fromDateTimes(
       minMaxTimeStamps.min.setZone(activeTimeZone),
