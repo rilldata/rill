@@ -76,6 +76,15 @@ const config = {
         appId: "4U01DM4NS4",
         apiKey: "c0399915ae21a35c6d34a473d017c15b",
         indexName: "rilldata",
+
+        // Navbar button text (before clicking)
+        translations: {
+          button: {
+            buttonText: 'Search...',
+            buttonAriaLabel: 'Open search',
+          },
+        },
+        placeholder: "Looking for something?",
         debug: false // Set debug to true if you want to inspect the modal        
       },
       metadata: [
