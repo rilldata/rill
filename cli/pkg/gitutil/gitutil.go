@@ -366,8 +366,9 @@ func SetRemote(path string, config *Config) error {
 		return fmt.Errorf("failed to get remote: %w", err)
 	}
 	if remote != nil {
-		if remote.Config().URLs[0] == config.Remote {
+		if remote.Config().URLs[0] == config.Remote || !config.ManagedRepo {
 			// remote already exists with the same URL, no need to create it again
+			// remote other than managed git exists, can't overwrite user's remote
 			return nil
 		}
 		// if the remote already exists with a different URL, delete it
@@ -423,4 +424,17 @@ func InferRepoRootAndSubpath(path string) (string, string, error) {
 		return "", "", ErrNotAGitRepository
 	}
 	return repoRoot, subPath, nil
+}
+
+func RemoveRemote(path, remoteName string) error {
+	repo, err := git.PlainOpen(path)
+	if err != nil {
+		return fmt.Errorf("failed to open git repository: %w", err)
+	}
+
+	err = repo.DeleteRemote(remoteName)
+	if err != nil && !errors.Is(err, git.ErrRemoteNotFound) {
+		return err
+	}
+	return nil
 }

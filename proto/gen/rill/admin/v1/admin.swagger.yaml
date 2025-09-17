@@ -1202,14 +1202,6 @@ paths:
             properties:
               remote:
                 type: string
-              branch:
-                type: string
-              subpath:
-                type: string
-              force:
-                type: boolean
-              create:
-                type: boolean
       tags:
         - AdminService
   /v1/organizations/{organization}/projects/{project}/credentials:
@@ -1882,35 +1874,6 @@ paths:
                   type: object
                   $ref: '#/definitions/v1ResourceName'
                 description: list of resources to grant access to.
-      tags:
-        - AdminService
-  /v1/organizations/{organization}/projects/{project}/upload-assets:
-    post:
-      summary: Converts a project connected to github to a rill managed project.
-      operationId: AdminService_DisconnectProjectFromGithub
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1DisconnectProjectFromGithubResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: organization
-          in: path
-          required: true
-          type: string
-        - name: project
-          in: path
-          required: true
-          type: string
-        - name: body
-          in: body
-          required: true
-          schema:
-            type: object
       tags:
         - AdminService
   /v1/organizations/{organization}/projects/{project}/usergroups/{usergroup}/roles:
@@ -4916,8 +4879,6 @@ definitions:
       - DEPLOYMENT_STATUS_ERROR
       - DEPLOYMENT_STATUS_STOPPED
     default: DEPLOYMENT_STATUS_UNSPECIFIED
-  v1DisconnectProjectFromGithubResponse:
-    type: object
   v1EditAlertResponse:
     type: object
   v1EditReportResponse:

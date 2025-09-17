@@ -434,6 +434,10 @@ func (h *Helper) InferProjects(ctx context.Context, org, path string) ([]*adminv
 	if len(orgFiltered) == 0 {
 		return nil, ErrNoMatchingProject
 	}
+	// cleanup rill managed remote
+	if len(orgFiltered) == 1 && orgFiltered[0].ManagedGitId == "" && req.RillMgdGitRemote != "" {
+		h.handleRepoTransfer(repoRoot, req.RillMgdGitRemote)
+	}
 	return orgFiltered, nil
 }
 
@@ -529,6 +533,40 @@ func (h *Helper) GitSignature(ctx context.Context, path string) (*object.Signatu
 		Email: userResp.User.Email,
 		When:  time.Now(),
 	}, nil
+}
+
+func (h *Helper) handleRepoTransfer(path string, remote string) error {
+	repo, err := git.PlainOpen(path)
+	if err != nil {
+		return err
+	}
+
+	// clear cache
+	h.gitHelperMu.Lock()
+	h.gitHelper = nil
+	h.gitHelperMu.Unlock()
+
+	// remove rill managed remote
+	err = gitutil.RemoveRemote(path, "__rill_remote")
+	if err != nil {
+		return err
+	}
+
+	// if origin is already set then do nothing
+	_, err = repo.Remote("origin")
+	if err == nil {
+		return nil
+	}
+
+	// set origin to remote
+	err = gitutil.SetRemote(path, &gitutil.Config{
+		Remote: remote,
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func hashStr(ss ...string) string {
