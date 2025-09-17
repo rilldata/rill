@@ -148,10 +148,13 @@ export function getTotalsRowSkeleton(
  */
 function getFirstDimensionForFlat(config: PivotDataStoreConfig): string | null {
   const { rowDimensionNames, pivot } = config;
-  
+
   // Go through the columns in order and find the first dimension
   for (const column of pivot.columns) {
-    if (column.type === PivotChipType.Dimension || column.type === PivotChipType.Time) {
+    if (
+      column.type === PivotChipType.Dimension ||
+      column.type === PivotChipType.Time
+    ) {
       // For time dimensions, we need to construct the actual dimension name
       if (column.type === PivotChipType.Time) {
         const timeDimension = config.time?.timeDimension;
@@ -170,7 +173,7 @@ function getFirstDimensionForFlat(config: PivotDataStoreConfig): string | null {
       }
     }
   }
-  
+
   // Fallback to the first row dimension if we can't find one in the column order
   return rowDimensionNames[0] || null;
 }
