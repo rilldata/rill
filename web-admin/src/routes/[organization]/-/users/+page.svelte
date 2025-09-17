@@ -46,6 +46,7 @@
       organization,
       {
         pageSize: PAGE_SIZE,
+        includeCounts: true,
       },
       {
         query: {
@@ -97,6 +98,11 @@
     ...allOrgMemberUsersRows,
     ...coerceInvitesToUsers(allOrgInvitesRows),
   ];
+
+  // Calculate total counts from API responses
+  $: totalMemberCount = $orgMemberUsersInfiniteQuery.data?.pages?.[0]?.totalCount ?? 0;
+  $: totalInviteCount = $orgInvitesInfiniteQuery.data?.pages?.[0]?.totalCount ?? 0;
+  $: totalUserCount = totalMemberCount + totalInviteCount;
 
   $: currentUserRole = allOrgMemberUsersRows.find(
     (member) => member.userEmail === $currentUser.data?.user.email,
@@ -192,15 +198,16 @@
             (isChangingBillingContactRoleDialogOpen = true)}
         />
       </div>
-      {#if filteredUsers.length > 0}
-        <div class="px-2 py-3">
-          <span class="font-medium text-sm text-gray-500">
-            {filteredUsers.length} total user{filteredUsers.length === 1
-              ? ""
-              : "s"}
-          </span>
-        </div>
-      {/if}
+      <div class="px-2 py-3">
+        <span class="font-medium text-sm text-gray-500">
+          {totalUserCount} total user{totalUserCount === 1 ? "" : "s"}
+          {#if totalMemberCount > 0 && totalInviteCount > 0}
+            ({totalMemberCount} member{totalMemberCount === 1 ? "" : "s"}, {totalInviteCount} pending invitation{totalInviteCount === 1 ? "" : "s"})
+          {:else if totalInviteCount > 0}
+            ({totalInviteCount} pending invitation{totalInviteCount === 1 ? "" : "s"})
+          {/if}
+        </span>
+      </div>
     </div>
   {/if}
 </div>
