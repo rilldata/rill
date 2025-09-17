@@ -79,7 +79,7 @@
       <AlertDialogTitle>Delete this environment variable?</AlertDialogTitle>
       <AlertDialogDescription>
         <div class="mt-1">
-          This environment variable will no longer be available to the project.
+          {name} will no longer be available for this project.
         </div>
       </AlertDialogDescription>
     </AlertDialogHeader>
