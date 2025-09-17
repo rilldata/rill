@@ -24,7 +24,7 @@
   import { humanReadableErrorMessage } from "../errors/errors";
   import {
     submitAddConnectorForm,
-    submitAddSourceForm,
+    submitAddModelForm,
   } from "./submitAddDataForm";
   import type { AddDataFormType, ConnectorType } from "./types";
   import { dsnSchema, getYupSchema } from "./yupSchemas";
@@ -324,7 +324,7 @@
 
     try {
       if (formType === "source") {
-        await submitAddSourceForm(queryClient, connector, values);
+        await submitAddModelForm(queryClient, connector, values);
       } else {
         await submitAddConnectorForm(queryClient, connector, values);
       }

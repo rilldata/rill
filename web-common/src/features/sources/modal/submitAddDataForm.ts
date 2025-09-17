@@ -41,9 +41,59 @@ interface AddDataFormValues {
   [key: string]: unknown;
 }
 
+async function beforeSubmitForm(instanceId: string) {
+  // Emit telemetry
+  behaviourEvent?.fireSourceTriggerEvent(
+    BehaviourEventAction.SourceAdd,
+    BehaviourEventMedium.Button,
+    getScreenNameFromPage(),
+    MetricsEventSpace.Modal,
+  );
+
+  // If project is uninitialized, initialize an empty project
+  const projectInitialized = await isProjectInitialized(instanceId);
+  if (!projectInitialized) {
+    await runtimeServiceUnpackEmpty(instanceId, {
+      displayName: EMPTY_PROJECT_TITLE,
+    });
+
+    // Race condition: invalidate("init") must be called before we navigate to
+    // `/files/${newFilePath}`. invalidate("init") is also called in the
+    // `WatchFilesClient`, but there it's not guaranteed to get invoked before we need it.
+    await invalidate("init");
+  }
+}
+
+async function rollbackChanges(
+  instanceId: string,
+  newFilePath: string,
+  originalEnvBlob: string | undefined,
+) {
+  // Clean-up the file
+  await runtimeServiceDeleteFile(instanceId, {
+    path: newFilePath,
+  });
+
+  // Clean-up the `.env` file
+  if (!originalEnvBlob) {
+    // If .env file didn't exist before, delete it
+    await runtimeServiceDeleteFile(instanceId, {
+      path: ".env",
+    });
+  } else {
+    // If .env file existed before, restore its original content
+    await runtimeServicePutFile(instanceId, {
+      path: ".env",
+      blob: originalEnvBlob,
+      create: true,
+      createOnly: false,
+    });
+  }
+}
+
 // FIXME: consolidate this
 // Source YAML - `type: model`
-export async function submitAddSourceForm(
+export async function submitAddModelForm(
   queryClient: QueryClient,
   connector: V1ConnectorDriver,
   formValues: AddDataFormValues,
@@ -284,54 +334,4 @@ export async function submitAddConnectorForm(
 
   // Go to the new connector file
   await goto(`/files/${newConnectorFilePath}`);
-}
-
-async function beforeSubmitForm(instanceId: string) {
-  // Emit telemetry
-  behaviourEvent?.fireSourceTriggerEvent(
-    BehaviourEventAction.SourceAdd,
-    BehaviourEventMedium.Button,
-    getScreenNameFromPage(),
-    MetricsEventSpace.Modal,
-  );
-
-  // If project is uninitialized, initialize an empty project
-  const projectInitialized = await isProjectInitialized(instanceId);
-  if (!projectInitialized) {
-    await runtimeServiceUnpackEmpty(instanceId, {
-      displayName: EMPTY_PROJECT_TITLE,
-    });
-
-    // Race condition: invalidate("init") must be called before we navigate to
-    // `/files/${newFilePath}`. invalidate("init") is also called in the
-    // `WatchFilesClient`, but there it's not guaranteed to get invoked before we need it.
-    await invalidate("init");
-  }
-}
-
-async function rollbackChanges(
-  instanceId: string,
-  newFilePath: string,
-  originalEnvBlob: string | undefined,
-) {
-  // Clean-up the file
-  await runtimeServiceDeleteFile(instanceId, {
-    path: newFilePath,
-  });
-
-  // Clean-up the `.env` file
-  if (!originalEnvBlob) {
-    // If .env file didn't exist before, delete it
-    await runtimeServiceDeleteFile(instanceId, {
-      path: ".env",
-    });
-  } else {
-    // If .env file existed before, restore its original content
-    await runtimeServicePutFile(instanceId, {
-      path: ".env",
-      blob: originalEnvBlob,
-      create: true,
-      createOnly: false,
-    });
-  }
 }
