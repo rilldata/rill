@@ -23,12 +23,7 @@
       <div class="h-px w-full bg-gray-200 my-1" />
     {/if}
     {#each filtered as option, i (i)}
-      <TimeRangeMenuItem
-        range={option.interval.toString()}
-        selected={!!timeString?.startsWith(option.interval.toString())}
-        label={option.getLabel()}
-        {onClick}
-      />
+      <TimeRangeMenuItem rillTime={option} {timeString} {onClick} />
     {/each}
 
     {#if !hideDivider}

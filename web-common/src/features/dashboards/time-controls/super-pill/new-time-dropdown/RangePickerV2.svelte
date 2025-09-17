@@ -22,7 +22,6 @@
     RillPeriodToGrainInterval,
     type RillTime,
   } from "../../../url-state/time-ranges/RillTime";
-  // import { getTimeRangeOptionsByGrain } from "@rilldata/web-common/lib/time/defaults";
   import {
     getGrainOrder,
     getLowerOrderGrain,
@@ -30,7 +29,6 @@
     GrainAliasToV1TimeGrain,
   } from "@rilldata/web-common/lib/time/new-grains";
   import * as Popover from "@rilldata/web-common/components/popover";
-  // import type { TimeGrainOptions } from "@rilldata/web-common/lib/time/defaults";
   import TimeRangeOptionGroup from "./TimeRangeOptionGroup.svelte";
   import RangeDisplay from "../components/RangeDisplay.svelte";
   import TruncationSelector from "./TruncationSelector.svelte";
