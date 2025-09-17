@@ -86,7 +86,13 @@
   }
 
   function back() {
-    window.history.back();
+    // Try to go back in browser history
+    if (window.history.length > 1) {
+      window.history.back();
+    } else {
+      // If no history to go back to, close the modal
+      resetModal();
+    }
   }
 
   function handleSubmittingChange(event: CustomEvent) {
