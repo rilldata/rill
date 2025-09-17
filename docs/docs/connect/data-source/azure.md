@@ -11,7 +11,7 @@ sidebar_position: 05
 [Azure Blob Storage (ABS)](https://learn.microsoft.com/en-us/azure/storage/blobs/storage-blobs-introduction) is a scalable, fully managed, and highly reliable object storage solution offered by Microsoft Azure, designed to store and access data from anywhere in the world. It provides a secure and cost-effective way to store data, including common storage formats such as CSV and Parquet. Rill supports connecting to and reading from Azure Blob Storage using the following Resource URI syntax:
 
 ```bash
-azure://<BUCKET>/<GLOB_PATTERN>
+azure://<account>.blob.core.windows.net/<container>/path/file.csv
 ```
 
 <img src='/img/reference/connectors/azure/abs.png' class='centered' />
@@ -22,6 +22,8 @@ azure://<BUCKET>/<GLOB_PATTERN>
 When using Rill Developer on your local machine (i.e., `rill start`), Rill will either use the credentials configured in your local environment using the Azure CLI (`az`) or the explicitly defined [credentials in a connector YAML](/reference/project-files/connectors#azure).
 
 Assuming you have the Azure CLI installed, follow the steps below to configure it:
+
+### Inferred Credentials
 
 1. Open a terminal window and run the following command to log in to your Azure account:
 
@@ -44,6 +46,7 @@ Assuming you have the Azure CLI installed, follow the steps below to configure i
     :::
 
 2. Once you are logged in, Rill will automatically use the credentials obtained from `az login` to authenticate with Azure Blob Storage when you interact with Azure Blob Storage sources.
+
 
 ### Using Connection String
 
@@ -93,12 +96,9 @@ For more details, see our [Dev/Prod setup docs](/connect/templating).
 
 ## Cloud deployment
 
-When deploying a project to Rill Cloud, Rill requires either an Azure Blob Storage connection string, Azure Storage Key, or Azure Storage SAS token to be explicitly provided for the Azure Blob Storage containers used in your project.
+When deploying a project to Rill Cloud, Rill requires either an Azure Blob Storage connection string, Azure Storage Key, or Azure Storage SAS token to be explicitly provided for the Azure Blob Storage containers used in your project. If this already exists in your `.env` file, this will be pushed with your project automatically. If you are using inferred credentials, your deployment will result in errored dashboards.
 
-When you first deploy a project using `rill deploy`, you will be prompted to provide credentials for the remote sources in your project that require authentication.
-
-If you subsequently add sources that require new credentials (or if you enter the wrong credentials during the initial deploy), you can update the credentials used by Rill Cloud by running:
-
+If you want to manually configure your environment variables, run the following command:
 ```bash
 rill env configure
 ```

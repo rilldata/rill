@@ -51,12 +51,10 @@ For more details, see our [Dev/Prod setup docs](/connect/templating).
 
 ## Rill Cloud Deployment
 
-When deploying a project to Rill Cloud, Rill requires a JSON key file to be explicitly provided for a Google Cloud service account with appropriate read access/permissions to the buckets used in your project.
+When deploying a project to Rill Cloud, Rill requires a JSON key file to be explicitly provided for a Google Cloud service account with appropriate read access/permissions to the buckets used in your project. If this already exists in your `.env` file, this will be pushed with your project automatically. If you are using inferred credentials, your deployment will result in errored dashboards.
 
-When you first deploy a project using `rill deploy`, you will be prompted to provide credentials for the remote sources in your project that require authentication.
-
-If you subsequently add sources that require new credentials (or if you enter the wrong credentials during the initial deploy), you can update the credentials used by Rill Cloud by running:
-```
+If you want to manually configure your environment variables, run the following command:
+```bash
 rill env configure
 ```
 
