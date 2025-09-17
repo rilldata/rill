@@ -26,7 +26,7 @@ test.describe("Test Connection", () => {
     // Click the "Add data" button to test the connection
     await page
       .getByRole("dialog")
-      .getByRole("button", { name: "Add data" })
+      .getByRole("button", { name: "Test and Add data" })
       .click();
 
     // Wait for success message
@@ -50,7 +50,7 @@ test.describe("Test Connection", () => {
     // Click the "Add data" button to test the connection
     await page
       .getByRole("dialog")
-      .getByRole("button", { name: "Add data" })
+      .getByRole("button", { name: "Test and Add data" })
       .click();
 
     // Wait for error container to appear

@@ -580,7 +580,7 @@
             Test and Connect
           {/if}
         {:else}
-          Add data
+          Test and Add data
         {/if}
       </Button>
     </div>
