@@ -729,7 +729,8 @@ export interface V1ListProjectWhitelistedDomainsResponse {
 
 export interface V1ListProjectsForFingerprintResponse {
   projects?: V1Project[];
-  nextPageToken?: string;
+  /** unauthorized_project is the name of a project that matches the git_remote+sub_path but the caller does not have access to. */
+  unauthorizedProject?: string;
 }
 
 export interface V1ListProjectsForOrganizationAndUserResponse {
@@ -1683,6 +1684,7 @@ export type AdminServiceConnectProjectToGithubBody = {
   branch?: string;
   subpath?: string;
   force?: boolean;
+  create?: boolean;
 };
 
 export type AdminServiceGetDeploymentCredentialsBodyAttributes = {
@@ -1959,8 +1961,7 @@ export type AdminServiceListProjectsForFingerprintParams = {
   directoryName?: string;
   gitRemote?: string;
   subPath?: string;
-  pageSize?: number;
-  pageToken?: string;
+  rillMgdGitRemote?: string;
 };
 
 export type AdminServiceGetAlertMetaBodyAnnotations = { [key: string]: string };
