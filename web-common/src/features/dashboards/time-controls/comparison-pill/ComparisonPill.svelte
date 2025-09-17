@@ -49,6 +49,17 @@
 
   $: activeTimeGrain = selectedTimeRange?.interval;
 
+  $: comparisonInterval =
+    selectedComparisonTimeRange &&
+    Interval.fromDateTimes(
+      DateTime.fromJSDate(selectedComparisonTimeRange?.start).setZone(
+        activeTimeZone,
+      ),
+      DateTime.fromJSDate(selectedComparisonTimeRange?.end).setZone(
+        activeTimeZone,
+      ),
+    );
+
   function onSelectComparisonRange(
     name: TimeComparisonOption,
     start: Date,
@@ -109,14 +120,18 @@
   </button>
   {#if activeTimeGrain && interval.isValid}
     <Elements.Comparison
-      maxDate={DateTime.fromJSDate(allTimeRange.end)}
       minDate={DateTime.fromJSDate(allTimeRange.start)}
-      timeComparisonOptionsState={$timeComparisonOptionsState}
-      selectedComparison={selectedComparisonTimeRange}
+      maxDate={DateTime.fromJSDate(allTimeRange.end)}
+      comparisonOptions={$timeComparisonOptionsState}
+      comparisonRange={selectedComparisonTimeRange?.name}
+      comparisonInterval={comparisonInterval?.isValid
+        ? comparisonInterval
+        : undefined}
       showComparison={showTimeComparison}
       currentInterval={interval}
+      grain={activeTimeGrain}
       zone={activeTimeZone}
-      showFullRange={true}
+      showFullRange
       {onSelectComparisonRange}
       disabled={disabled ?? false}
     />

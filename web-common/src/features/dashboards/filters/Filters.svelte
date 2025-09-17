@@ -15,9 +15,9 @@
     TimeRangePreset,
     type DashboardTimeControls,
   } from "@rilldata/web-common/lib/time/types";
-  import type {
-    V1ExploreTimeRange,
+  import {
     V1TimeGrain,
+    type V1ExploreTimeRange,
   } from "@rilldata/web-common/runtime-client";
   import { DateTime, Interval } from "luxon";
   import { flip } from "svelte/animate";
@@ -117,8 +117,6 @@
     showTimeComparison,
     selectedComparisonTimeRange,
     minTimeGrain,
-    timeStart,
-    timeEnd,
     ready: timeControlsReady,
   } = $timeControlsStore);
 
@@ -173,12 +171,14 @@
     ? possibleAllTimeInterval
     : undefined;
 
-  $: interval = selectedTimeRange
+  $: maybeInterval = selectedTimeRange
     ? Interval.fromDateTimes(
         DateTime.fromJSDate(selectedTimeRange.start).setZone(activeTimeZone),
         DateTime.fromJSDate(selectedTimeRange.end).setZone(activeTimeZone),
       )
     : (allTimeInterval ?? Interval.invalid("Unable to parse time range"));
+
+  $: interval = maybeInterval?.isValid ? maybeInterval : undefined;
 
   $: baseTimeRange = selectedTimeRange?.start &&
     selectedTimeRange?.end && {
@@ -186,6 +186,11 @@
       start: selectedTimeRange.start,
       end: selectedTimeRange.end,
     };
+
+  $: minMaxTimeStamps = allTimeInterval && {
+    min: allTimeInterval.start,
+    max: allTimeInterval.end,
+  };
 
   function handleMeasureFilterApply(
     dimension: string,
@@ -226,7 +231,7 @@
 
   async function onSelectRange(alias: string) {
     // If we don't have a valid time range, early return
-    if (!allTimeInterval || !allTimeRange) return;
+    if (!minMaxTimeStamps || !allTimeRange) return;
 
     if (alias === ALL_TIME_RANGE_ALIAS) {
       makeTimeSeriesTimeRangeAndUpdateAppState(
@@ -247,9 +252,10 @@
 
     const { interval, grain } = await deriveInterval(
       alias,
-      allTimeInterval,
+      minMaxTimeStamps,
       metricsViewName,
       activeTimeZone,
+      minTimeGrain ?? V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
     );
 
     if (interval.isValid) {
@@ -325,6 +331,9 @@
     !selectedRangeAlias?.startsWith("P") &&
     !selectedRangeAlias?.startsWith("rill-");
 
+  $: min = allTimeRange?.start && DateTime.fromJSDate(allTimeRange.start);
+  $: max = allTimeRange?.end && DateTime.fromJSDate(allTimeRange.end);
+
   function onTimeGrainSelect(timeGrain: V1TimeGrain) {
     if (usingRillTime && selectedRangeAlias) {
       metricsExplorerStore.setTimeGrain($exploreName, timeGrain);
@@ -362,16 +371,12 @@
           <Calendar size="16px" />
         </Tooltip.Trigger>
         <Tooltip.Content side="bottom" sideOffset={10}>
-          <Metadata
-            timeZone={activeTimeZone}
-            timeStart={allTimeRange?.start}
-            timeEnd={allTimeRange?.end}
-          />
+          <Metadata timeZone={activeTimeZone} {min} {max} />
         </Tooltip.Content>
       </Tooltip.Root>
       {#if allTimeRange?.start && allTimeRange?.end}
         <SuperPill
-          allTime={allTimeInterval}
+          {minMaxTimeStamps}
           {selectedRangeAlias}
           showPivot={$showPivot}
           {minTimeGrain}
@@ -381,8 +386,6 @@
           complete={false}
           {interval}
           context={$exploreName}
-          {timeStart}
-          {timeEnd}
           lockTimeZone={exploreSpec.lockTimeZone}
           allowCustomTimeRange={exploreSpec.allowCustomTimeRange}
           {activeTimeGrain}
@@ -421,11 +424,7 @@
             </span>
           </Tooltip.Trigger>
           <Tooltip.Content side="bottom" sideOffset={10}>
-            <Metadata
-              timeZone={activeTimeZone}
-              timeStart={allTimeRange?.start}
-              timeEnd={allTimeRange?.end}
-            />
+            <Metadata timeZone={activeTimeZone} {min} {max} />
           </Tooltip.Content>
         </Tooltip.Root>
       {/if}
@@ -464,8 +463,7 @@
                 {mode}
                 {selectedValues}
                 {inputText}
-                {timeStart}
-                {timeEnd}
+                {interval}
                 {timeControlsReady}
                 excludeMode={$isFilterExcludeMode(name)}
                 onRemove={() => removeDimensionFilter(name)}

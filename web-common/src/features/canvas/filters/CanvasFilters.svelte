@@ -12,11 +12,12 @@
   import { isExpressionUnsupported } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
   import SuperPill from "@rilldata/web-common/features/dashboards/time-controls/super-pill/SuperPill.svelte";
   import { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
-  import { DateTime, Interval } from "luxon";
   import { flip } from "svelte/animate";
   import { fly } from "svelte/transition";
   import CanvasComparisonPill from "./CanvasComparisonPill.svelte";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { Tooltip } from "bits-ui";
+  import Metadata from "../../dashboards/time-controls/super-pill/components/Metadata.svelte";
 
   export let readOnly = false;
   export let maxWidth: number;
@@ -50,36 +51,36 @@
       },
       spec: { canvasSpec, allDimensions, allSimpleMeasures },
       timeControls: {
-        allTimeRange,
-        timeRangeStateStore,
-        comparisonRangeStateStore,
-        selectedTimezone,
+        _comparisonInterval,
+        _comparisonRange,
+        isReady,
+        minMaxTimeStamps,
+        _interval,
+        _range,
+        grain,
+        _showTimeComparison,
+        _zone,
         minTimeGrain,
         set,
       },
     },
   } = getCanvasStore(canvasName, instanceId));
 
-  $: ({ selectedTimeRange, timeStart, timeEnd } = $timeRangeStateStore || {});
+  $: activeTimeZone = $_zone;
 
-  $: activeTimeZone = $selectedTimezone;
+  $: showTimeComparison = $_showTimeComparison;
 
-  $: selectedComparisonTimeRange =
-    $comparisonRangeStateStore?.selectedComparisonTimeRange;
+  $: comparisonRange = $_comparisonRange;
 
-  $: selectedRangeAlias = selectedTimeRange?.name;
-  $: activeTimeGrain = selectedTimeRange?.interval;
+  $: comparisonInterval = $_comparisonInterval;
+
+  $: selectedRangeAlias = $_range;
+  $: activeTimeGrain = $grain;
   $: defaultTimeRange = $canvasSpec?.defaultPreset?.timeRange;
   $: availableTimeZones = $canvasSpec?.timeZones ?? [];
   $: timeRanges = $canvasSpec?.timeRanges ?? [];
-  $: allTime = $allTimeRange;
 
-  $: interval = selectedTimeRange
-    ? Interval.fromDateTimes(
-        DateTime.fromJSDate(selectedTimeRange.start).setZone(activeTimeZone),
-        DateTime.fromJSDate(selectedTimeRange.end).setZone(activeTimeZone),
-      )
-    : Interval.invalid("Unable to parse time range");
+  $: interval = $_interval;
 
   $: allDimensionFilters = $allDimensionFilterItems;
 
@@ -127,10 +128,22 @@
   <div
     class="flex flex-row flex-wrap gap-x-2 gap-y-1.5 items-center ml-2 pointer-events-auto w-fit"
   >
-    <Calendar size="16px" />
+    <Tooltip.Root openDelay={0}>
+      <Tooltip.Trigger class="cursor-default">
+        <Calendar size="16px" />
+      </Tooltip.Trigger>
+      <Tooltip.Content class="z-50" side="bottom" sideOffset={10}>
+        <Metadata
+          timeZone={activeTimeZone}
+          min={$minMaxTimeStamps?.min}
+          max={$minMaxTimeStamps?.max}
+          smallestTimeGrain={$minTimeGrain}
+        />
+      </Tooltip.Content>
+    </Tooltip.Root>
     <SuperPill
       context={canvasName}
-      {allTime}
+      minMaxTimeStamps={$minMaxTimeStamps}
       {selectedRangeAlias}
       showPivot={false}
       minTimeGrain={$minTimeGrain}
@@ -139,8 +152,6 @@
       {timeRanges}
       complete={false}
       {interval}
-      {timeStart}
-      {timeEnd}
       {activeTimeGrain}
       {activeTimeZone}
       watermark={undefined}
@@ -159,21 +170,15 @@
       {onPan}
     />
     <CanvasComparisonPill
-      allTimeRange={allTime}
-      {selectedTimeRange}
-      {selectedComparisonTimeRange}
-      showTimeComparison={$comparisonRangeStateStore?.showTimeComparison ??
-        false}
-      onDisplayTimeComparison={set.comparison}
-      onSetSelectedComparisonRange={(range) => {
-        if (range.name === "CUSTOM_COMPARISON_RANGE") {
-          const stringRange = `${range.start.toISOString()},${range.end.toISOString()}`;
-          set.comparison(stringRange);
-        } else if (range.name) {
-          set.comparison(range.name);
-        }
-      }}
+      {comparisonInterval}
+      {comparisonRange}
+      {activeTimeGrain}
+      minMaxTimeStamps={$minMaxTimeStamps}
+      {interval}
+      range={selectedRangeAlias}
+      {showTimeComparison}
       {activeTimeZone}
+      setComparison={set.comparison}
     />
   </div>
   <div class="relative flex flex-row gap-x-2 gap-y-2 items-start ml-2">
@@ -209,10 +214,9 @@
                 {mode}
                 {selectedValues}
                 {inputText}
-                {timeStart}
-                {timeEnd}
+                {interval}
                 openOnMount={justAdded}
-                timeControlsReady={!!$timeRangeStateStore}
+                timeControlsReady={$isReady}
                 excludeMode={!isInclude}
                 whereFilter={$whereFilter}
                 onRemove={() => removeDimensionFilter(name)}

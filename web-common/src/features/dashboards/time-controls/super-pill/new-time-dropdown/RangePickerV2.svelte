@@ -43,14 +43,15 @@
     constructNewString,
   } from "../../new-time-controls";
   import PrimaryRangeTooltip from "./PrimaryRangeTooltip.svelte";
+  import type { MinMax } from "@rilldata/web-common/features/canvas/stores/time-control";
 
   export let timeString: string | undefined;
-  export let interval: Interval<true>;
+  export let interval: Interval<true> | undefined;
   export let timeGrain: V1TimeGrain | undefined;
   export let zone: string;
   export let showDefaultItem: boolean;
   export let context: string;
-  export let allTime: Interval<true> | undefined;
+  export let minMaxTimeStamps: MinMax | undefined;
   export let watermark: DateTime | undefined;
   export let smallestTimeGrain: V1TimeGrain | undefined;
   export let defaultTimeRange: NamedRange | ISODurationString | undefined;
@@ -62,7 +63,7 @@
   export let onSelectRange: (range: string) => void;
   export let onTimeGrainSelect: (grain: V1TimeGrain) => void;
 
-  let firstVisibleMonth: DateTime<true> = interval.start;
+  let firstVisibleMonth = interval?.start;
   let open = false;
   let allTimeAllowed = true;
   let searchComponent: TimeRangeSearch;
@@ -80,7 +81,10 @@
     }
   }
 
-  $: hideTruncationSelector = parsedTime?.interval instanceof RillIsoInterval;
+  $: hideTruncationSelector =
+    parsedTime?.interval instanceof RillIsoInterval ||
+    timeString === ALL_TIME_RANGE_ALIAS ||
+    timeString === "alltime";
 
   $: usingLegacyTime = parsedTime?.isOldFormat;
 
@@ -105,7 +109,7 @@
 
   $: if (truncationGrain) onTimeGrainSelect(truncationGrain);
 
-  $: zoneAbbreviation = getAbbreviationForIANA(allTime?.end, zone);
+  $: zoneAbbreviation = getAbbreviationForIANA(minMaxTimeStamps?.max, zone);
 
   $: groups = allOptions.reduce(
     (acc, options) => {
@@ -193,9 +197,9 @@
 
   // Zone is taken as a param to make it reactive
   function returnAnchor(asOf: string, zone: string): DateTime | undefined {
-    if (!allTime) return DateTime.now().setZone(zone);
+    if (!minMaxTimeStamps) return DateTime.now().setZone(zone);
     if (asOf === "latest") {
-      return allTime?.end.setZone(zone);
+      return minMaxTimeStamps?.max.setZone(zone);
     } else if (asOf === "watermark" && watermark) {
       return watermark.setZone(zone);
     } else if (asOf === "now") {
@@ -220,7 +224,7 @@
   bind:open
   onOpenChange={(open) => {
     if (open) {
-      firstVisibleMonth = interval.start;
+      firstVisibleMonth = interval?.start;
     }
   }}
 >
@@ -237,15 +241,15 @@
           class="flex gap-x-1.5"
           aria-label="Select time range"
         >
-          {#if timeString}
-            <b class="line-clamp-1 flex-none">
-              {#if selectedLabel?.startsWith("-") || !isNaN(Number(selectedLabel?.[0]))}
-                Custom
-              {:else}
-                {selectedLabel}
-              {/if}
-            </b>
-          {/if}
+          <!-- {#if timeString} -->
+          <b class="line-clamp-1 flex-none">
+            {#if selectedLabel?.startsWith("-") || !isNaN(Number(selectedLabel?.[0]))}
+              Custom
+            {:else}
+              {selectedLabel}
+            {/if}
+          </b>
+          <!-- {/if} -->
 
           {#if showFullRange}
             <RangeDisplay {interval} {timeGrain} />
@@ -423,8 +427,8 @@
             {firstVisibleMonth}
             {interval}
             {zone}
-            minDate={allTime?.start}
-            maxDate={allTime?.end}
+            minDate={minMaxTimeStamps?.min}
+            maxDate={minMaxTimeStamps?.max}
             applyRange={(interval) => {
               const string = `${interval.start.toFormat("yyyy-MM-dd")} to ${interval.end.toFormat("yyyy-MM-dd")}`;
               onSelectRange(string);
@@ -444,7 +448,7 @@
     rangeGrain={parsedTime?.rangeGrain ?? truncationGrain}
     isPeriodToDate={parsedTime?.interval instanceof RillPeriodToGrainInterval}
     {watermark}
-    latest={allTime?.end}
+    latest={minMaxTimeStamps?.max}
     {smallestTimeGrain}
     {snapToEnd}
     {ref}

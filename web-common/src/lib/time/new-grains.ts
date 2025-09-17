@@ -1,5 +1,6 @@
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
-import type { DateTimeUnit } from "luxon";
+import type { DateTimeUnit, Duration } from "luxon";
+import type { TimeComparisonOption } from "./types";
 
 type Order = 0 | 1 | 2 | 3 | 4 | 5 | 6 | typeof Infinity;
 

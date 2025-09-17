@@ -19,12 +19,12 @@ import {
   type DateTimeUnit,
   Duration,
   type DurationObjectUnits,
-  IANAZone,
+  // IANAZone,
   Interval,
   type WeekdayNumbers,
 } from "luxon";
 import { queryServiceMetricsViewTimeRanges } from "@rilldata/web-common/runtime-client";
-import { get, writable, type Writable } from "svelte/store";
+import { get } from "svelte/store";
 
 // CONSTANTS -> time-control-constants.ts
 
@@ -125,180 +125,180 @@ export type NamedRange =
 
 // STORES -> time-control-stores.ts
 
-class IntervalStore {
-  private _interval: Writable<Interval> = writable(
-    Interval.invalid("Uninitialized"),
-  );
+// class IntervalStore {
+//   private _interval: Writable<Interval> = writable(
+//     Interval.invalid("Uninitialized"),
+//   );
 
-  subscribe = this._interval.subscribe;
+//   subscribe = this._interval.subscribe;
 
-  clear = () => {
-    this._interval.set(Interval.invalid("Uninitialized"));
-  };
+//   clear = () => {
+//     this._interval.set(Interval.invalid("Uninitialized"));
+//   };
 
-  updateInterval(interval: Interval) {
-    this._interval.set(interval);
-  }
+//   updateInterval(interval: Interval) {
+//     this._interval.set(interval);
+//   }
 
-  updateEnd(end: DateTime) {
-    this._interval.update((i) => i.set({ end }));
-  }
+//   updateEnd(end: DateTime) {
+//     this._interval.update((i) => i.set({ end }));
+//   }
 
-  updateStart(start: DateTime) {
-    this._interval.update((i) => i.set({ start }));
-  }
+//   updateStart(start: DateTime) {
+//     this._interval.update((i) => i.set({ start }));
+//   }
 
-  updateZone(zone: IANAZone, keepLocalTime = false) {
-    this._interval.update((i) =>
-      i.mapEndpoints((e) => e.setZone(zone, { keepLocalTime: keepLocalTime })),
-    );
-  }
-}
+//   updateZone(zone: IANAZone, keepLocalTime = false) {
+//     this._interval.update((i) =>
+//       i.mapEndpoints((e) => e.setZone(zone, { keepLocalTime: keepLocalTime })),
+//     );
+//   }
+// }
 
-class MetricsTimeControls {
-  private _maxRange = new IntervalStore();
-  private _zone: Writable<IANAZone> = writable(new IANAZone("UTC"));
-  private _selected = writable<NamedRange | ISODurationString>(
-    ALL_TIME_RANGE_ALIAS,
-  );
-  private _visibleRange = new IntervalStore();
-  private _subrange = new IntervalStore();
-  private _comparisonRange = new IntervalStore();
-  private _showComparison: Writable<boolean> = writable(false);
-  private _metricsViewName: string;
+// class MetricsTimeControls {
+//   private _maxRange = new IntervalStore();
+//   private _zone: Writable<IANAZone> = writable(new IANAZone("UTC"));
+//   private _selected = writable<NamedRange | ISODurationString>(
+//     ALL_TIME_RANGE_ALIAS,
+//   );
+//   private _visibleRange = new IntervalStore();
+//   private _subrange = new IntervalStore();
+//   private _comparisonRange = new IntervalStore();
+//   private _showComparison: Writable<boolean> = writable(false);
+//   private _metricsViewName: string;
 
-  constructor(maxStart: DateTime, maxEnd: DateTime, metricsViewName: string) {
-    this._metricsViewName = metricsViewName;
-    const maxInterval = Interval.fromDateTimes(
-      maxStart.setZone("UTC"),
-      maxEnd.setZone("UTC"),
-    );
-    this._maxRange.updateInterval(maxInterval);
-    this._visibleRange.updateInterval(maxInterval);
-  }
+//   constructor(maxStart: DateTime, maxEnd: DateTime, metricsViewName: string) {
+//     this._metricsViewName = metricsViewName;
+//     const maxInterval = Interval.fromDateTimes(
+//       maxStart.setZone("UTC"),
+//       maxEnd.setZone("UTC"),
+//     );
+//     this._maxRange.updateInterval(maxInterval);
+//     this._visibleRange.updateInterval(maxInterval);
+//   }
 
-  private applySubrange = () => {
-    this._visibleRange.updateInterval(get(this._subrange));
-    this._selected.set(CUSTOM_TIME_RANGE_ALIAS);
-    this._subrange.clear();
-  };
+//   private applySubrange = () => {
+//     this._visibleRange.updateInterval(get(this._subrange));
+//     this._selected.set(CUSTOM_TIME_RANGE_ALIAS);
+//     this._subrange.clear();
+//   };
 
-  private applyISODuration = async (iso: ISODurationString) => {
-    const rightAnchor = get(this._maxRange).end;
-    if (rightAnchor) {
-      const interval = await deriveInterval(
-        iso,
-        get(this._maxRange),
-        this._metricsViewName,
-        get(this._zone).name,
-      );
-      if (interval?.interval.isValid) {
-        this._visibleRange.updateInterval(interval.interval);
-        this._selected.set(iso);
-      }
-    }
-  };
+//   private applyISODuration = async (iso: ISODurationString) => {
+//     const rightAnchor = get(this._maxRange).end;
+//     if (rightAnchor) {
+//       const interval = await deriveInterval(
+//         iso,
+//         get(this._maxRange),
+//         this._metricsViewName,
+//         get(this._zone).name,
+//       );
+//       if (interval?.interval.isValid) {
+//         this._visibleRange.updateInterval(interval.interval);
+//         this._selected.set(iso);
+//       }
+//     }
+//   };
 
-  private applyNamedRange = async (name: NamedRange) => {
-    const rightAnchor = get(this._maxRange).end;
-    if (rightAnchor) {
-      const interval = await deriveInterval(
-        name,
-        get(this._maxRange),
-        this._metricsViewName,
-        get(this._zone).name,
-      );
-      if (interval?.interval.isValid) {
-        this._visibleRange.updateInterval(interval.interval);
-        this._selected.set(name);
-      }
-    }
-  };
+//   private applyNamedRange = async (name: NamedRange) => {
+//     const rightAnchor = get(this._maxRange).end;
+//     if (rightAnchor) {
+//       const interval = await deriveInterval(
+//         name,
+//         get(this._maxRange),
+//         this._metricsViewName,
+//         get(this._zone).name,
+//       );
+//       if (interval?.interval.isValid) {
+//         this._visibleRange.updateInterval(interval.interval);
+//         this._selected.set(name);
+//       }
+//     }
+//   };
 
-  private applyCustomRange = (start: DateTime, end: DateTime) => {
-    this._visibleRange.updateInterval(Interval.fromDateTimes(start, end));
-    this._selected.set(CUSTOM_TIME_RANGE_ALIAS);
-  };
+//   private applyCustomRange = (start: DateTime, end: DateTime) => {
+//     this._visibleRange.updateInterval(Interval.fromDateTimes(start, end));
+//     this._selected.set(CUSTOM_TIME_RANGE_ALIAS);
+//   };
 
-  private applyRange = (string: NamedRange | ISODurationString | undefined) => {
-    if (!string) return;
+//   private applyRange = (string: NamedRange | ISODurationString | undefined) => {
+//     if (!string) return;
 
-    if (string === ALL_TIME_RANGE_ALIAS) {
-      this.applyAllTime();
-    } else if (isRillPeriodToDate(string) || isRillPreviousPeriod(string)) {
-      this.applyNamedRange(string);
-    } else if (isValidISODuration(string)) {
-      this.applyISODuration(string);
-    } else if (string === CUSTOM_TIME_RANGE_ALIAS) {
-      throw new Error("Custom time range requires start and end dates");
-    } else {
-      throw new Error("Invalid time range");
-    }
-  };
+//     if (string === ALL_TIME_RANGE_ALIAS) {
+//       this.applyAllTime();
+//     } else if (isRillPeriodToDate(string) || isRillPreviousPeriod(string)) {
+//       this.applyNamedRange(string);
+//     } else if (isValidISODuration(string)) {
+//       this.applyISODuration(string);
+//     } else if (string === CUSTOM_TIME_RANGE_ALIAS) {
+//       throw new Error("Custom time range requires start and end dates");
+//     } else {
+//       throw new Error("Invalid time range");
+//     }
+//   };
 
-  private applyAllTime = () => {
-    const maxInterval = get(this._maxRange);
-    if (maxInterval) {
-      this._visibleRange.updateInterval(maxInterval);
-      this._selected.set(ALL_TIME_RANGE_ALIAS);
-    }
-  };
+//   private applyAllTime = () => {
+//     const maxInterval = get(this._maxRange);
+//     if (maxInterval) {
+//       this._visibleRange.updateInterval(maxInterval);
+//       this._selected.set(ALL_TIME_RANGE_ALIAS);
+//     }
+//   };
 
-  updateZone = (zone: IANAZone) => {
-    this._zone.set(zone);
-    const rangeAlias = get(this._selected);
-    this._maxRange.updateZone(zone);
+//   updateZone = (zone: IANAZone) => {
+//     this._zone.set(zone);
+//     const rangeAlias = get(this._selected);
+//     this._maxRange.updateZone(zone);
 
-    if (rangeAlias === CUSTOM_TIME_RANGE_ALIAS) {
-      // If you've specified a custom range
-      // We want to maintain the local time of the start and end
-      this._visibleRange.updateZone(zone, true);
-    } else {
-      // Otherwise, we need to re-derive the interval based on the selection
-      this.applyRange(rangeAlias);
-    }
-  };
+//     if (rangeAlias === CUSTOM_TIME_RANGE_ALIAS) {
+//       // If you've specified a custom range
+//       // We want to maintain the local time of the start and end
+//       this._visibleRange.updateZone(zone, true);
+//     } else {
+//       // Otherwise, we need to re-derive the interval based on the selection
+//       this.applyRange(rangeAlias);
+//     }
+//   };
 
-  apply = {
-    subrange: this.applySubrange,
-    customRange: this.applyCustomRange,
-    range: this.applyRange,
-    allTime: this.applyAllTime,
-  };
+//   apply = {
+//     subrange: this.applySubrange,
+//     customRange: this.applyCustomRange,
+//     range: this.applyRange,
+//     allTime: this.applyAllTime,
+//   };
 
-  switchComparison(bool?: boolean) {
-    if (bool === undefined) {
-      this._showComparison.update((b) => !b);
-    } else {
-      this._showComparison.set(bool);
-    }
-  }
+//   switchComparison(bool?: boolean) {
+//     if (bool === undefined) {
+//       this._showComparison.update((b) => !b);
+//     } else {
+//       this._showComparison.set(bool);
+//     }
+//   }
 
-  zone = this._zone;
-  selected = this._selected;
-  subrange = this._subrange;
-  visibleRange = this._visibleRange;
-  comparisonRange = this._comparisonRange;
-}
+//   zone = this._zone;
+//   selected = this._selected;
+//   subrange = this._subrange;
+//   visibleRange = this._visibleRange;
+//   comparisonRange = this._comparisonRange;
+// }
 
-class TimeControls {
-  private _timeControls = new Map<string, MetricsTimeControls>();
+// class TimeControls {
+//   private _timeControls = new Map<string, MetricsTimeControls>();
 
-  get(metricsViewName: string, maxStart?: DateTime, maxEnd?: DateTime) {
-    let store = this._timeControls.get(metricsViewName);
+//   get(metricsViewName: string, maxStart?: DateTime, maxEnd?: DateTime) {
+//     let store = this._timeControls.get(metricsViewName);
 
-    if (!store && maxStart && maxEnd) {
-      store = new MetricsTimeControls(maxStart, maxEnd, metricsViewName);
-      this._timeControls.set(metricsViewName, store);
-    } else if (!store) {
-      throw new Error("TimeControls.get() called without maxStart and maxEnd");
-    }
+//     if (!store && maxStart && maxEnd) {
+//       store = new MetricsTimeControls(maxStart, maxEnd, metricsViewName);
+//       this._timeControls.set(metricsViewName, store);
+//     } else if (!store) {
+//       throw new Error("TimeControls.get() called without maxStart and maxEnd");
+//     }
 
-    return store;
-  }
-}
+//     return store;
+//   }
+// }
 
-export const timeControls = new TimeControls();
+// export const timeControls = new TimeControls();
 
 // UTILS -> time-control-utils.ts
 
@@ -316,53 +316,43 @@ import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import {
   GrainAliasToV1TimeGrain,
   V1TimeGrainToAlias,
+  V1TimeGrainToDateTimeUnit,
 } from "@rilldata/web-common/lib/time/new-grains";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+import type { MinMax } from "../../canvas/stores/time-control";
 
 export async function deriveInterval(
   name: RillPeriodToDate | RillPreviousPeriod | ISODurationString,
-  allTimeRange: Interval,
+  minMaxTimeStamps: MinMax,
   metricsViewName: string,
   activeTimeZone: string,
+  minTimeGrain: V1TimeGrain,
 ): Promise<{
   interval: Interval;
   grain?: V1TimeGrain | undefined;
   error?: string;
 }> {
-  if (name === ALL_TIME_RANGE_ALIAS || name === CUSTOM_TIME_RANGE_ALIAS) {
+  if (name === CUSTOM_TIME_RANGE_ALIAS) {
     return {
-      interval: allTimeRange,
+      interval: Interval.invalid("Cannot derive interval for custom range"),
       grain: undefined,
-      error: "Cannot derive interval for all time or custom range",
+      error: "Cannot derive interval for custom range",
     };
   }
 
-  if (!allTimeRange.isValid || !allTimeRange.end) {
+  // This needs to be handled by the API - bgh
+  if (name === ALL_TIME_RANGE_ALIAS || name === "allTime") {
+    const dateTimeUnit = V1TimeGrainToDateTimeUnit[minTimeGrain];
+
+    const interval = Interval.fromDateTimes(
+      minMaxTimeStamps.min.setZone(activeTimeZone),
+      minMaxTimeStamps.max.setZone(activeTimeZone).plus({ [dateTimeUnit]: 1 }),
+    );
+
     return {
-      interval: Interval.invalid("Invalid all time range"),
-      grain: undefined,
-      error: "Invalid all time range",
-    };
-  }
-
-  if (isRillPeriodToDate(name)) {
-    const period = RILL_TO_UNIT[name];
-    return {
-      interval: getPeriodToDate(allTimeRange.end, period),
-      grain: V1TimeGrain.TIME_GRAIN_DAY,
-    };
-  }
-
-  if (isRillPreviousPeriod(name)) {
-    const period = RILL_TO_UNIT[name];
-    return { interval: getPreviousPeriodComplete(allTimeRange.end, period, 1) };
-  }
-
-  const duration = isValidISODuration(name);
-
-  if (duration) {
-    return {
-      interval: getInterval(duration, allTimeRange.end),
+      interval,
+      grain: minTimeGrain,
+      error: undefined,
     };
   }
 

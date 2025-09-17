@@ -73,6 +73,7 @@
     allTimeRange,
     timeRangeStateStore,
     comparisonRangeStateStore,
+    minTimeGrain,
     setTimeZone,
     selectTimeRange,
     setSelectedComparisonRange,
@@ -191,12 +192,13 @@
 
     const { interval, grain } = await deriveInterval(
       name,
-      Interval.fromDateTimes(
-        DateTime.fromJSDate($allTimeRange.start),
-        DateTime.fromJSDate($allTimeRange.end),
-      ),
+      {
+        min: DateTime.fromJSDate($allTimeRange.start),
+        max: DateTime.fromJSDate($allTimeRange.end),
+      },
       metricsViewName,
       $selectedTimezone,
+      $minTimeGrain,
     );
 
     if (interval?.isValid) {

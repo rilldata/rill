@@ -188,12 +188,12 @@ export type AvailableTimeGrain = Exclude<
 
 export enum TimeComparisonOption {
   CONTIGUOUS = "rill-PP",
-  CUSTOM = "CUSTOM_COMPARISON_RANGE",
   DAY = "rill-PD",
   WEEK = "rill-PW",
   MONTH = "rill-PM",
   QUARTER = "rill-PQ",
   YEAR = "rill-PY",
+  CUSTOM = "CUSTOM_COMPARISON_RANGE",
 }
 
 export enum TimeRoundingStrategy {

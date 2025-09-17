@@ -8,54 +8,44 @@ import {
   TimeRangePreset,
   type DashboardTimeControls,
 } from "@rilldata/web-common/lib/time/types";
+import type { Duration, Interval } from "luxon";
+import { ALL_TIME_RANGE_ALIAS } from "../../dashboards/time-controls/new-time-controls";
+
+const okay = [
+  TimeComparisonOption.DAY,
+  TimeComparisonOption.WEEK,
+  TimeComparisonOption.MONTH,
+  TimeComparisonOption.QUARTER,
+  TimeComparisonOption.YEAR,
+  TimeComparisonOption.CUSTOM,
+];
+
+function durationToIndex(duration: Duration) {
+  if (duration.as("days") <= 1) return 0;
+  if (duration.as("weeks") <= 1) return 1;
+  if (duration.as("months") <= 1) return 2;
+  if (duration.as("quarters") <= 1) return 3;
+  return 4;
+}
 
 export function getComparisonOptionsForCanvas(
-  selectedTimeRange: DashboardTimeControls | undefined,
-  allowCustomTimeRange: boolean,
+  interval: Interval<true> | undefined,
+  range: string | undefined,
+  // allowCustomTimeRange: boolean,
 ) {
-  if (!selectedTimeRange) {
+  if (!interval || range == ALL_TIME_RANGE_ALIAS) {
     return [];
   }
-  const allTimeRange = {
-    name: TimeRangePreset.ALL_TIME,
-    start: new Date(0),
-    end: new Date(),
-  };
 
-  let allOptions = [...Object.values(TimeComparisonOption)];
-  if (!allowCustomTimeRange) {
-    allOptions = allOptions.filter((o) => o !== TimeComparisonOption.CUSTOM);
-  }
+  const options: TimeComparisonOption[] = [TimeComparisonOption.CONTIGUOUS];
 
-  if (
-    selectedTimeRange?.name &&
-    selectedTimeRange?.name in PREVIOUS_COMPLETE_DATE_RANGES
-  ) {
-    // Previous complete ranges should only have previous period.
-    // Other options dont make sense with our current wording of the comparison ranges.
-    allOptions = [TimeComparisonOption.CONTIGUOUS];
-    if (allowCustomTimeRange) allOptions.push(TimeComparisonOption.CUSTOM);
-  }
+  const duration = interval.toDuration();
 
-  const timeComparisonOptions = getAvailableComparisonsForTimeRange(
-    allTimeRange.start,
-    allTimeRange.end,
-    selectedTimeRange.start,
-    selectedTimeRange.end,
-    allOptions,
-  );
+  const index = durationToIndex(duration);
 
-  return timeComparisonOptions.map((co, i) => {
-    const comparisonTimeRange = getComparisonRange(
-      selectedTimeRange.start,
-      selectedTimeRange.end,
-      co,
-    );
-    return {
-      name: co,
-      key: i,
-      start: comparisonTimeRange.start,
-      end: comparisonTimeRange.end,
-    };
-  });
+  const slicedOptions = okay.slice(index, -1);
+
+  options.push(...slicedOptions);
+
+  return options;
 }

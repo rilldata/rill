@@ -31,6 +31,7 @@
     useAllSearchResultsCount,
     useDimensionSearch,
   } from "web-common/src/features/dashboards/filters/dimension-filters/dimension-filter-values";
+  import type { Interval } from "luxon";
 
   export let name: string;
   export let metricsViewNames: string[];
@@ -41,8 +42,7 @@
   export let excludeMode: boolean;
   export let openOnMount: boolean = true;
   export let readOnly: boolean = false;
-  export let timeStart: string | undefined;
-  export let timeEnd: string | undefined;
+  export let interval: Interval<true> | undefined;
   export let timeControlsReady: boolean | undefined;
   export let smallChip = false;
   export let whereFilter: V1Expression;
@@ -97,8 +97,7 @@
           ? selectedValues
           : searchedBulkValues,
       searchText: curSearchText,
-      timeStart,
-      timeEnd,
+      interval,
       enabled: enableSearchQuery,
       additionalFilter: sanitiseExpression(
         mergeDimensionAndMeasureFilters(
@@ -130,8 +129,7 @@
       mode: curMode,
       values: searchedBulkValues,
       searchText: curSearchText,
-      timeStart,
-      timeEnd,
+      interval,
       enabled: enableSearchCountQuery,
       additionalFilter: sanitiseExpression(
         mergeDimensionAndMeasureFilters(

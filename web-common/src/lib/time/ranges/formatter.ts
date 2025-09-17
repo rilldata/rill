@@ -7,8 +7,11 @@ import { DateTime, type DateTimeFormatOptions, Interval } from "luxon";
  * NOTE: this is primarily used for the time range picker. We might want to
  * colocate the code w/ the component.
  */
-export function prettyFormatTimeRange(interval: Interval, grain: V1TimeGrain) {
-  if (!interval.isValid || !interval.start || !interval.end)
+export function prettyFormatTimeRange(
+  interval: Interval | undefined,
+  grain: V1TimeGrain,
+) {
+  if (!interval?.isValid || !interval.start || !interval.end)
     return "Invalid interval";
 
   const datePart = formatDatePartOfTimeRange(interval, grain);
@@ -22,6 +25,7 @@ export function prettyFormatTimeRange(interval: Interval, grain: V1TimeGrain) {
 
 const yearGrainOrder = V1TimeGrainToOrder[V1TimeGrain.TIME_GRAIN_YEAR];
 const monthGrainOrder = V1TimeGrainToOrder[V1TimeGrain.TIME_GRAIN_MONTH];
+const dayGrainOrder = V1TimeGrainToOrder[V1TimeGrain.TIME_GRAIN_DAY];
 function formatDatePartOfTimeRange(interval: Interval, grain: V1TimeGrain) {
   if (!interval.start?.isValid || !interval.end?.isValid) return ""; // type safety
 
@@ -41,7 +45,14 @@ function formatDatePartOfTimeRange(interval: Interval, grain: V1TimeGrain) {
 
   if (showDay) format.day = "numeric";
 
-  return interval.toLocaleString(format);
+  const displayAsExclusiveEnd = grainOrder < dayGrainOrder;
+
+  return displayAsExclusiveEnd
+    ? interval.toLocaleString(format)
+    : Interval.fromDateTimes(
+        interval.start,
+        interval.end.minus({ millisecond: 1 }),
+      ).toLocaleString(format);
 }
 
 const hourGrainOrder = V1TimeGrainToOrder[V1TimeGrain.TIME_GRAIN_HOUR];

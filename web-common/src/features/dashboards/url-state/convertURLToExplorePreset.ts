@@ -42,6 +42,7 @@ import {
   type V1MetricsViewSpec,
   V1Operation,
 } from "@rilldata/web-common/runtime-client";
+import { Interval } from "luxon";
 
 export function convertURLToExplorePreset(
   searchParams: URLSearchParams,
@@ -318,7 +319,11 @@ export function fromTimeRangesParams(
     const ctr = searchParams.get(
       ExploreStateURLParams.ComparisonTimeRange,
     ) as string;
-    if (ctr in TIME_COMPARISON || CustomTimeRangeRegex.test(ctr)) {
+
+    const replaced = ctr.replace(",", "/");
+    const customComparison = Interval.fromISO(replaced);
+
+    if (ctr in TIME_COMPARISON || customComparison.isValid) {
       preset.compareTimeRange = ctr;
       preset.comparisonMode ??=
         V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME;

@@ -8,11 +8,11 @@
   } from "@rilldata/web-common/lib/time/grains";
   import type { AvailableTimeGrain } from "@rilldata/web-common/lib/time/types";
   import type { V1TimeGrain } from "../../../runtime-client";
+  import type { Interval } from "luxon";
 
   export let tdd = false;
   export let activeTimeGrain: V1TimeGrain | undefined;
-  export let timeStart: string | undefined;
-  export let timeEnd: string | undefined;
+  export let interval: Interval<true> | undefined;
   export let minTimeGrain: V1TimeGrain | undefined;
   export let onTimeGrainSelect: (timeGrain: V1TimeGrain) => void;
   export let complete: boolean = false;
@@ -20,10 +20,9 @@
 
   let open = false;
 
-  $: timeGrainOptions =
-    timeStart && timeEnd
-      ? getAllowedTimeGrains(new Date(timeStart), new Date(timeEnd))
-      : [];
+  $: timeGrainOptions = interval
+    ? getAllowedTimeGrains(interval.start.toJSDate(), interval.end.toJSDate())
+    : [];
   $: activeTimeGrainLabel =
     activeTimeGrain && TIME_GRAIN[activeTimeGrain as AvailableTimeGrain]?.label;
 

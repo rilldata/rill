@@ -43,6 +43,8 @@ import type { Readable } from "svelte/store";
 import { derived, get } from "svelte/store";
 import { memoizeMetricsStore } from "../state-managers/memoize-metrics-store";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+import type { DateTimeUnit } from "luxon";
+import { V1TimeGrainToDateTimeUnit } from "@rilldata/web-common/lib/time/new-grains";
 
 export type TimeRangeState = {
   // Selected ranges with start and end filled based on time range type
@@ -260,11 +262,14 @@ export function calculateTimeRangePartial(
 ): TimeRangeState | undefined {
   if (!currentSelectedTimeRange) return undefined;
 
+  const minTimeUnit = V1TimeGrainToDateTimeUnit[minTimeGrain] || "millisecond";
+
   const selectedTimeRange = getTimeRange(
     currentSelectedTimeRange,
     selectedTimezone,
     allTimeRange,
     defaultTimeRange,
+    minTimeUnit,
   );
   if (!selectedTimeRange) return undefined;
 
@@ -382,6 +387,7 @@ export function getTimeRange(
   selectedTimezone: string | undefined,
   allTimeRange: DashboardTimeControls,
   defaultTimeRange: DashboardTimeControls,
+  minTimeGrain: DateTimeUnit | undefined = "millisecond",
 ) {
   if (!selectedTimeRange) return undefined;
 
@@ -402,6 +408,7 @@ export function getTimeRange(
         allTimeRange.start,
         allTimeRange.end,
         selectedTimezone,
+        minTimeGrain,
       );
     } else if (selectedTimeRange.start) {
       timeRange = {

@@ -17,8 +17,9 @@
   import * as Elements from "./components";
   import RangePickerV2 from "./new-time-dropdown/RangePickerV2.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
+  import type { MinMax } from "@rilldata/web-common/features/canvas/stores/time-control";
 
-  export let allTime: Interval<true> | undefined;
+  export let minMaxTimeStamps: MinMax | undefined;
   export let selectedRangeAlias: string | undefined;
   export let showPivot: boolean;
   export let minTimeGrain: V1TimeGrain | undefined;
@@ -29,7 +30,7 @@
   export let activeTimeGrain: V1TimeGrain | undefined;
   export let canPanLeft: boolean;
   export let canPanRight: boolean;
-  export let interval: Interval;
+  export let interval: Interval<true> | undefined;
   export let showPan = false;
   export let lockTimeZone = false;
   export let allowCustomTimeRange = true;
@@ -37,8 +38,6 @@
   export let complete: boolean;
   export let context = "dashboard";
   export let activeTimeZone: string;
-  export let timeStart: string | undefined;
-  export let timeEnd: string | undefined;
   export let watermark: DateTime | undefined = undefined;
   export let side: "top" | "right" | "bottom" | "left" = "bottom";
   export let onSelectRange: (range: NamedRange | ISODurationString) => void;
@@ -70,7 +69,7 @@
     <RangePickerV2
       {context}
       smallestTimeGrain={minTimeGrain}
-      {allTime}
+      {minMaxTimeStamps}
       {watermark}
       {showDefaultItem}
       {defaultTimeRange}
@@ -85,9 +84,9 @@
       {onSelectRange}
       {onTimeGrainSelect}
     />
-  {:else if interval.isValid && activeTimeGrain}
+  {:else if interval?.isValid && activeTimeGrain}
     <Elements.RangePicker
-      {allTime}
+      minMax={minMaxTimeStamps}
       ranges={rangeBuckets}
       {showDefaultItem}
       {showFullRange}
@@ -111,7 +110,7 @@
   {#if availableTimeZones.length && !$newPicker}
     <Elements.Zone
       {context}
-      watermark={interval.end ?? DateTime.fromJSDate(new Date())}
+      reference={interval?.end ?? DateTime.now()}
       {activeTimeZone}
       {lockTimeZone}
       {availableTimeZones}
@@ -124,8 +123,7 @@
     <TimeGrainSelector
       {activeTimeGrain}
       {minTimeGrain}
-      {timeStart}
-      {timeEnd}
+      {interval}
       {complete}
       {side}
       {onTimeGrainSelect}

@@ -128,7 +128,7 @@ export class CanvasEntity {
     this.spec = new CanvasResolvedSpec(this.specStore);
     this.timeControls = new TimeControls(
       this.specStore,
-      searchParamsStore,
+      searchParamsStore.set,
       undefined,
       this.name,
     );
@@ -139,6 +139,8 @@ export class CanvasEntity {
       if (themeFromUrl) {
         this.processAndSetTheme(themeFromUrl, undefined).catch(console.error);
       }
+
+      this.timeControls.onUrlChange(searchParams);
     });
 
     this.unsubscriber = this.specStore.subscribe((spec) => {
@@ -174,6 +176,7 @@ export class CanvasEntity {
 
       if (spec.data) {
         this.processRows(spec.data);
+        this.timeControls.onSpecChange(spec.data);
       }
     });
   }

@@ -3,57 +3,27 @@
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import { getComparisonOptionsForCanvas } from "@rilldata/web-common/features/canvas/filters/util";
   import { Comparison } from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components";
-  import {
-    TimeComparisonOption,
-    TimeRangePreset,
-    type DashboardTimeControls,
-    type TimeRange,
-  } from "@rilldata/web-common/lib/time/types";
-  import { DateTime, Interval } from "luxon";
+  import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
+  import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+  import { Interval } from "luxon";
+  import type { MinMax } from "../stores/time-control";
 
-  export let allTimeRange: Interval<true> | undefined;
-  export let selectedTimeRange: DashboardTimeControls | undefined;
-  export let selectedComparisonTimeRange: DashboardTimeControls | undefined;
+  export let interval: Interval<true> | undefined;
+  export let range: string | undefined;
+  export let comparisonRange: string | undefined;
+  export let comparisonInterval: Interval<true> | undefined;
+  export let minMaxTimeStamps: MinMax | undefined;
+  export let activeTimeGrain: V1TimeGrain | undefined;
   export let showFullRange = true;
   export let showTimeComparison = false;
   export let activeTimeZone: string;
-  export let onDisplayTimeComparison: (show: boolean) => void;
-  export let onSetSelectedComparisonRange: (range: TimeRange) => void;
   export let allowCustomTimeRange: boolean = true;
   export let side: "top" | "right" | "bottom" | "left" = "bottom";
+  export let setComparison: (range: boolean | string) => void;
 
-  $: interval = selectedTimeRange
-    ? Interval.fromDateTimes(
-        DateTime.fromJSDate(selectedTimeRange.start).setZone(activeTimeZone),
-        DateTime.fromJSDate(selectedTimeRange.end).setZone(activeTimeZone),
-      )
-    : allTimeRange;
+  $: comparisonOptions = getComparisonOptionsForCanvas(interval, range);
 
-  $: activeTimeGrain = selectedTimeRange?.interval;
-
-  $: comparisonOptions = getComparisonOptionsForCanvas(
-    selectedTimeRange,
-    allowCustomTimeRange,
-  );
-
-  function onSelectComparisonRange(
-    name: TimeComparisonOption,
-    start: Date,
-    end: Date,
-  ) {
-    onSetSelectedComparisonRange({
-      name,
-      start,
-      end,
-    });
-
-    if (!showTimeComparison) {
-      onDisplayTimeComparison(!showTimeComparison);
-    }
-  }
-
-  $: disabled =
-    selectedTimeRange?.name === TimeRangePreset.ALL_TIME || undefined;
+  $: disabled = range === TimeRangePreset.ALL_TIME || undefined;
 </script>
 
 <div
@@ -64,7 +34,7 @@
     {disabled}
     class="flex gap-x-1.5 cursor-pointer"
     on:click={() => {
-      onDisplayTimeComparison(!showTimeComparison);
+      setComparison(!showTimeComparison);
     }}
     type="button"
     aria-label="Toggle time comparison"
@@ -84,18 +54,20 @@
   </button>
   {#if activeTimeGrain && interval?.isValid}
     <Comparison
-      maxDate={allTimeRange?.end}
-      minDate={allTimeRange?.start}
-      timeComparisonOptionsState={comparisonOptions}
-      selectedComparison={selectedComparisonTimeRange}
+      minDate={minMaxTimeStamps?.min}
+      maxDate={minMaxTimeStamps?.max}
+      {comparisonOptions}
+      {comparisonInterval}
+      {comparisonRange}
       showComparison={showTimeComparison}
       currentInterval={interval}
+      grain={activeTimeGrain}
       zone={activeTimeZone}
-      {onSelectComparisonRange}
       {showFullRange}
       disabled={disabled ?? false}
       {allowCustomTimeRange}
       {side}
+      onSelectComparisonString={setComparison}
     />
   {/if}
 </div>
