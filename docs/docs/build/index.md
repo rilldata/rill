@@ -6,6 +6,9 @@ sidebar_position: 0
 
 Rill provides a comprehensive platform for building end-to-end data analytics solutions. Once you've connected to your source data or connected to your own OLAP database, you can start building with Rill. Don't forget to check out the [reference documentation!](/reference/project-files)
 
+### What is a Rill project?
+- [**rill.yaml**](/build/rill-project-file) - Get started on your Rill project
+
 ### Modeling and Last Mile ETL
 - [**Models Overview**](/build/models) - Overview of models available in Rill
 - [**Getting Started with Models**](/build/models/models-101) - What are models and important topics to remember as you create your own.
@@ -15,8 +18,6 @@ Rill provides a comprehensive platform for building end-to-end data analytics so
 - [**YAML Models**](/build/models/model-differences#yaml-models) - Incremental ingestion, data partitions, and more
 - [**Additional Model Templating**](/build/models/templating) - Separate your production and development settings 
 - [**Performance Optimization**](/build/models/performance) - Optimize model performance and data refresh strategies
-
-
 
 ### Define Measures and Dimensions
 - [**What are Metrics Views?**](/build/metrics-view/what-are-metrics-views) - Learn about Metrics Views!
@@ -38,7 +39,6 @@ Rill provides a comprehensive platform for building end-to-end data analytics so
 
 ### Project Settings
 
-- [**rill.yaml**](/build/rill-project-file) - Configure your Rill project defaults
 - [**Structure your Project**](/build/structure) - Structure folder architecture in Rill
 - [**Use your favorite IDE**](/build/ide) - Utilize your favorite IDE to build Rill projects
 - [**Debugging Rill Developer**](/build/debugging/trace-viewer) - Troubleshoot dashboard access, trace your reconciled resources, and understand project logs  
