@@ -102,29 +102,9 @@
 
   $: selectedLabel = getRangeLabel(timeString);
 
-  // $: timeGrainOptions = getAllowedGrains(smallestTimeGrain);
-
-  // $: allOptions = timeGrainOptions.map(getTimeRangeOptionsByGrain);
-
   $: if (truncationGrain) onTimeGrainSelect(truncationGrain);
 
   $: zoneAbbreviation = getAbbreviationForIANA(maxDate, zone);
-
-  // $: groups = allOptions.reduce(
-  //   (acc, options) => {
-  //     acc.lastN.push(...options.lastN);
-  //     acc.this.push(...options.this);
-  //     acc.previous.push(...options.previous);
-
-  //     return acc;
-  //   },
-  //   {
-  //     lastN: [],
-  //     this: [],
-  //     previous: [],
-  //     grainBy: [],
-  //   } as TimeGrainOptions,
-  // );
 
   function handleRangeSelect(range: string, ignoreSnap?: boolean) {
     if (range === ALL_TIME_RANGE_ALIAS) {
