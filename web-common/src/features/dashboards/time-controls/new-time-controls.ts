@@ -314,10 +314,21 @@ export function isRillPeriodToDate(value: string): value is RillPeriodToDate {
 
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import {
+  getAllowedGrains,
   GrainAliasToV1TimeGrain,
   V1TimeGrainToAlias,
 } from "@rilldata/web-common/lib/time/new-grains";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+import {
+  RillAllTimeInterval,
+  RillLegacyDaxInterval,
+  RillLegacyIsoInterval,
+  RillPeriodToGrainInterval,
+  RillShorthandInterval,
+  RillTimeStartEndInterval,
+  type RillTime,
+} from "../url-state/time-ranges/RillTime";
+import { getDefaultRangeBuckets } from "@rilldata/web-common/lib/time/defaults";
 
 export async function deriveInterval(
   name: RillPeriodToDate | RillPreviousPeriod | ISODurationString,
@@ -529,62 +540,93 @@ export function getRangeLabel(range: string | undefined): string {
   }
 }
 
-// BUCKETS FOR DISPLAYING IN DROPDOWN (yaml spec may make this unnecessary)
 export type RangeBuckets = {
-  latest: { label: string; range: ISODurationString }[];
-  previous: { range: RillPreviousPeriod; label: string }[];
-  periodToDate: { range: RillPeriodToDate; label: string }[];
+  custom: RillTime[];
+  latest: RillTime[];
+  periodToDate: RillTime[];
+  previous: RillTime[];
   allTime: boolean;
 };
 
-const defaultBuckets = {
-  previous: RILL_PREVIOUS_PERIOD.map((range) => ({
-    range,
-    label: RILL_TO_LABEL[range],
-  })),
-  latest: RILL_LATEST.map((range) => ({
-    range,
-    label: getDurationLabel(range),
-  })),
-  periodToDate: RILL_PERIOD_TO_DATE.map((range) => ({
-    range,
-    label: RILL_TO_LABEL[range],
-  })),
-  allTime: false,
+const defaultBuckets: RangeBuckets = {
+  latest: RILL_LATEST.map((r) => parseRillTime(r)),
+  periodToDate: RILL_PERIOD_TO_DATE.map((r) => parseRillTime(r)),
+  previous: RILL_PREVIOUS_PERIOD.map((r) => parseRillTime(r)),
+  custom: [],
+  allTime: true,
 };
 
+const previousPeriodRegex =
+  /-\d+[sSmMhHdDwWqQYy]\/[sSmMhHdDwWqQYy]\s+to\s+ref\/[sSmMhHdDwWqQYy]/;
+
 export function bucketYamlRanges(
-  availableRanges: V1ExploreTimeRange[],
+  yamlRanges: V1ExploreTimeRange[],
+  minTimeGrain: V1TimeGrain | undefined,
+  usingRillTime: boolean,
 ): RangeBuckets {
-  const showDefaults = !availableRanges.length;
+  const showDefaults = !yamlRanges.length;
 
   if (showDefaults) {
-    return defaultBuckets;
+    if (!usingRillTime) return defaultBuckets;
+
+    const timeGrainOptions = getAllowedGrains(minTimeGrain);
+
+    return getDefaultRangeBuckets(timeGrainOptions);
   }
 
-  return availableRanges.reduce(
-    (record, { range }) => {
-      if (!range) return record;
+  const skeleton: RangeBuckets = {
+    previous: [],
+    latest: [],
+    periodToDate: [],
+    custom: [],
+    allTime: false,
+  };
 
-      if (isRillPeriodToDate(range)) {
-        record.periodToDate.push({ range, label: RILL_TO_LABEL[range] });
-      } else if (isRillPreviousPeriod(range)) {
-        record.previous.push({ range, label: RILL_TO_LABEL[range] });
-      } else if (isValidISODuration(range)) {
-        record.latest.push({ range, label: getDurationLabel(range) });
-      } else if (range === ALL_TIME_RANGE_ALIAS) {
-        record.allTime = true;
+  yamlRanges.forEach(({ range }) => {
+    if (!range) return;
+
+    if (range === "inf") {
+      skeleton.allTime = true;
+      return;
+    }
+
+    try {
+      const parsed = parseRillTime(range);
+
+      const { interval } = parsed;
+
+      if (
+        interval instanceof RillLegacyIsoInterval ||
+        interval instanceof RillShorthandInterval
+      ) {
+        skeleton.latest.push(parsed);
+      } else if (interval instanceof RillTimeStartEndInterval) {
+        if (previousPeriodRegex.test(range)) {
+          skeleton.previous.push(parsed);
+        } else {
+          skeleton.custom.push(parsed);
+        }
+      } else if (interval instanceof RillPeriodToGrainInterval) {
+        skeleton.periodToDate.push(parsed);
+      } else if (interval instanceof RillLegacyDaxInterval) {
+        if (isRillPreviousPeriod(range)) {
+          skeleton.previous.push(parsed);
+        } else if (isRillPeriodToDate(range)) {
+          skeleton.periodToDate.push(parsed);
+        } else {
+          skeleton.custom.push(parsed);
+        }
+      } else {
+        skeleton.custom.push(parsed);
       }
 
-      return record;
-    },
-    <RangeBuckets>{
-      previous: [],
-      latest: [],
-      periodToDate: [],
-      allTime: false,
-    },
-  );
+      console.log(parsed);
+    } catch (e) {
+      console.error("Error parsing RillTime", e);
+    }
+  });
+
+  return skeleton;
 }
 
 function convertIsoToRillTime(iso: string): string {

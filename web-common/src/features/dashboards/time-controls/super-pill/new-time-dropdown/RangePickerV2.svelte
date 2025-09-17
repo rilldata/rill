@@ -2,7 +2,11 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import { DateTime, Interval } from "luxon";
-  import type { ISODurationString, NamedRange } from "../../new-time-controls";
+  import type {
+    ISODurationString,
+    NamedRange,
+    RangeBuckets,
+  } from "../../new-time-controls";
   import {
     ALL_TIME_RANGE_ALIAS,
     getRangeLabel,
@@ -18,16 +22,15 @@
     RillPeriodToGrainInterval,
     type RillTime,
   } from "../../../url-state/time-ranges/RillTime";
-  import { getTimeRangeOptionsByGrain } from "@rilldata/web-common/lib/time/defaults";
+  // import { getTimeRangeOptionsByGrain } from "@rilldata/web-common/lib/time/defaults";
   import {
-    getAllowedGrains,
     getGrainOrder,
     getLowerOrderGrain,
     getSmallestGrainFromISODuration,
     GrainAliasToV1TimeGrain,
   } from "@rilldata/web-common/lib/time/new-grains";
   import * as Popover from "@rilldata/web-common/components/popover";
-  import type { TimeGrainOptions } from "@rilldata/web-common/lib/time/defaults";
+  // import type { TimeGrainOptions } from "@rilldata/web-common/lib/time/defaults";
   import TimeRangeOptionGroup from "./TimeRangeOptionGroup.svelte";
   import RangeDisplay from "../components/RangeDisplay.svelte";
   import TruncationSelector from "./TruncationSelector.svelte";
@@ -52,6 +55,7 @@
   export let context: string;
   export let minDate: DateTime;
   export let maxDate: DateTime;
+  export let rangeBuckets: RangeBuckets;
   export let watermark: DateTime | undefined;
   export let smallestTimeGrain: V1TimeGrain | undefined;
   export let defaultTimeRange: NamedRange | ISODurationString | undefined;
@@ -100,29 +104,29 @@
 
   $: selectedLabel = getRangeLabel(timeString);
 
-  $: timeGrainOptions = getAllowedGrains(smallestTimeGrain);
+  // $: timeGrainOptions = getAllowedGrains(smallestTimeGrain);
 
-  $: allOptions = timeGrainOptions.map(getTimeRangeOptionsByGrain);
+  // $: allOptions = timeGrainOptions.map(getTimeRangeOptionsByGrain);
 
   $: if (truncationGrain) onTimeGrainSelect(truncationGrain);
 
   $: zoneAbbreviation = getAbbreviationForIANA(maxDate, zone);
 
-  $: groups = allOptions.reduce(
-    (acc, options) => {
-      acc.lastN.push(...options.lastN);
-      acc.this.push(...options.this);
-      acc.previous.push(...options.previous);
+  // $: groups = allOptions.reduce(
+  //   (acc, options) => {
+  //     acc.lastN.push(...options.lastN);
+  //     acc.this.push(...options.this);
+  //     acc.previous.push(...options.previous);
 
-      return acc;
-    },
-    {
-      lastN: [],
-      this: [],
-      previous: [],
-      grainBy: [],
-    } as TimeGrainOptions,
-  );
+  //     return acc;
+  //   },
+  //   {
+  //     lastN: [],
+  //     this: [],
+  //     previous: [],
+  //     grainBy: [],
+  //   } as TimeGrainOptions,
+  // );
 
   function handleRangeSelect(range: string, ignoreSnap?: boolean) {
     if (range === ALL_TIME_RANGE_ALIAS) {
@@ -311,21 +315,28 @@
           <TimeRangeOptionGroup
             {filter}
             {timeString}
-            options={groups.lastN}
+            options={rangeBuckets.custom}
             onClick={handleRangeSelect}
           />
 
           <TimeRangeOptionGroup
             {filter}
             {timeString}
-            options={groups.this}
+            options={rangeBuckets.latest}
             onClick={handleRangeSelect}
           />
 
           <TimeRangeOptionGroup
             {filter}
             {timeString}
-            options={groups.previous}
+            options={rangeBuckets.periodToDate}
+            onClick={handleRangeSelect}
+          />
+
+          <TimeRangeOptionGroup
+            {filter}
+            {timeString}
+            options={rangeBuckets.previous}
             onClick={(r) => {
               handleRangeSelect(r, true);
             }}
