@@ -43,7 +43,7 @@ In various locations throughout the platform, you have the opportunity to create
 
 ## Preview a Dashboard in Rill Developer
 
-Once a dashboard is ready to preview, before [deploying to Rill Cloud](/deploy/deploy-dashboard), you can preview the dashboard in Rill Developer. Especially if you are setting up [dashboard policies](/build/metrics-view/security), it is recommended to preview and test the dashboard before deploying.
+Once a dashboard is ready to preview, before [deploying to Rill Cloud](/deploy/deploy-dashboard), you can preview the dashboard in Rill Developer. Especially if you are setting up [dashboard policies](/build/dashboards/customization#define-dashboard-access), it is recommended to preview and test the dashboard before deploying.
 
 <img src='/img/build/dashboard/preview-dashboard.png' class='rounded-gif' />
 <br />

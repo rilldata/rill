@@ -130,24 +130,49 @@ For more details about configuring themes, you can refer to our [Theme YAML](/re
 ## Example
 
 ```yaml
+# Explore YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/explores
+
 type: explore
 
-title: "Title of your explore dashboard"
-description: "The description of your dashboard"
-metrics_view: <your-metric-view-file-name>
+display_name: "Programmatic Ads Auction"
+metrics_view: auction_metrics
 
-dimensions: '*' # can use expressions
-measures: '*' # can use expressions
+dimensions:
+  expr: "*"
+measures:
+  - requests
+  - avg_bid_floor
+  - 1d_qps
 
-theme: # your default theme
+defaults:
+  measures:
+    - avg_bid_floor
+    - requests
+  dimensions:
+    - app_site_cat
+    - app_site_domain
+    - app_site_name
+    - pub_name
+  comparison_mode: time
+  time_range: P7D
 
-time_ranges: # was available_time_ranges
-time_zones: # was available_time_zones
-
-defaults: # define all the defaults within here
-    dimensions:
-  ...
+time_ranges:
+  - rill-TD
+  - rill-WTD
+  - rill-MTD
+  - rill-QTD
+  - rill-YTD
+  - rill-PDC
+  - rill-PWC
+  - rill-PMC
+  - rill-PQC
+  - rill-PYC
+theme:
+  colors:
+    primary: hsl(180, 100%, 50%)
+    secondary: lightgreen
 
 security:
-    access: "{{ .user.admin }} OR '{{ .user.domain }}' == 'example.com'"  # only access can be set on dashboard level, see metric view for detailed access policies
+    access: "{{ .user.admin }} OR '{{ .user.domain }}' == 'example.com'"  # only access can be set on dashboard level, see metric view for detailed access policies '{{ .user.domain }}' == 'example.com'"  # only access can be set on dashboard level, see metric view for detailed access policies
 ```

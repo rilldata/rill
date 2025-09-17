@@ -1,11 +1,17 @@
 import React from 'react';
 import PropTypes from 'prop-types';
+import { Highlight } from 'prism-react-renderer';
+import { themes } from 'prism-react-renderer';
+import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 
 /**
  * ImageCodeToggle component for documentation.
  * Displays a sample image and corresponding code side by side in two columns.
  */
 function ImageCodeToggle({ image, code, imageAlt = "Sample image", codeLanguage = "yaml" }) {
+    const { colorMode } = useDocusaurusContext();
+    const theme = colorMode === 'dark' ? themes.dracula : themes.github;
+
     return (
         <div className="image-code-toggle">
             <div className="image-code-toggle-content">
@@ -29,7 +35,23 @@ function ImageCodeToggle({ image, code, imageAlt = "Sample image", codeLanguage 
                         </svg>
                         <span>Inline Code</span>
                     </div>
-                    <pre><code className={`language-${codeLanguage}`}>{code}</code></pre>
+                    <Highlight
+                        code={code}
+                        language={codeLanguage}
+                        theme={theme}
+                    >
+                        {({ className, style, tokens, getLineProps, getTokenProps }) => (
+                            <pre className={className} style={style}>
+                                {tokens.map((line, i) => (
+                                    <div key={i} {...getLineProps({ line })}>
+                                        {line.map((token, key) => (
+                                            <span key={key} {...getTokenProps({ token })} />
+                                        ))}
+                                    </div>
+                                ))}
+                            </pre>
+                        )}
+                    </Highlight>
                 </div>
             </div>
         </div>

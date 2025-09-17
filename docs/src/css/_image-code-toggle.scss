@@ -49,7 +49,6 @@
       background: transparent;
       padding: 0;
       font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
-      color: #24292e;
     }
   }
 }
@@ -67,6 +66,7 @@
     height: 16px;
   }
 }
+
 
 // Dark theme support
 [data-theme='dark'] {
@@ -89,7 +89,7 @@
       background: #1f1f1f;
       
       code {
-        color: #e5e5e5;
+        // Allow syntax highlighting to work
       }
     }
   }

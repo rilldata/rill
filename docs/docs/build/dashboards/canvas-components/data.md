@@ -33,12 +33,12 @@ Leaderboards show ranked data with the top performers highlighted.
   image="/img/build/canvas/components/leaderboard.png"
   imageAlt="Leaderboard showing top performers"
   code={`- leaderboard:
-    measures:
-      - requests
-    metrics_view: auction_metrics
-    num_rows: 7
-    dimensions:
-      - app_site_name`}
+     measures:
+       - requests
+     metrics_view: auction_metrics
+     num_rows: 7
+     dimensions:
+       - app_site_name`}
   codeLanguage="yaml"
 />
 

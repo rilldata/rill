@@ -1,6 +1,6 @@
 ---
-title: "Misc Components"
-sidebar_label: "Misc"
+title: "Miscellaneous Components"
+sidebar_label: "Miscellaneous"
 sidebar_position: 20
 ---
 
