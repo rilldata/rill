@@ -49,6 +49,8 @@ type CatalogStore interface {
 	UpdateModelPartitionsPendingIfError(ctx context.Context, modelID string) error
 	DeleteModelPartitions(ctx context.Context, modelID string) error
 
+	FindModelPartitionsWithErrors(ctx context.Context, modelID string) ([]ModelPartition, error)
+
 	FindInstanceHealth(ctx context.Context, instanceID string) (*InstanceHealth, error)
 	UpsertInstanceHealth(ctx context.Context, h *InstanceHealth) error
 

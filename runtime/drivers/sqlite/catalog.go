@@ -462,3 +462,51 @@ func (c *catalogStore) InsertMessage(ctx context.Context, conversationID, role s
   `, c.instanceID, conversationID, c.instanceID, conversationID, messageID, role, msg.ContentJSON)
 	return messageID, err
 }
+
+// FindModelPartitionByKey fetches a model partition by its key.
+func (c *catalogStore) FindModelPartitionByKey(ctx context.Context, modelID, partitionKey string) (drivers.ModelPartition, error) {
+	row := c.db.QueryRowxContext(ctx, `
+		SELECT key, data_json, idx, watermark, executed_on, error, elapsed_ms
+		FROM model_partitions
+		WHERE instance_id = ? AND model_id = ? AND key = ?
+	`, c.instanceID, modelID, partitionKey)
+
+	var elapsedMs int64
+	var r drivers.ModelPartition
+	if err := row.Scan(&r.Key, &r.DataJSON, &r.Index, &r.Watermark, &r.ExecutedOn, &r.Error, &elapsedMs); err != nil {
+		return drivers.ModelPartition{}, err
+	}
+	r.Elapsed = time.Duration(elapsedMs) * time.Millisecond
+	return r, nil
+}
+
+// FindModelPartitionsWithErrors fetches all model partitions that have errors.
+func (c *catalogStore) FindModelPartitionsWithErrors(ctx context.Context, modelID string) ([]drivers.ModelPartition, error) {
+	rows, err := c.db.QueryxContext(ctx, `
+		SELECT key, data_json, idx, watermark, executed_on, error, elapsed_ms
+		FROM model_partitions
+		WHERE instance_id = ? AND model_id = ? AND error != ''
+		ORDER BY executed_on DESC, key
+	`, c.instanceID, modelID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var result []drivers.ModelPartition
+	for rows.Next() {
+		var elapsedMs int64
+		var r drivers.ModelPartition
+		if err := rows.Scan(&r.Key, &r.DataJSON, &r.Index, &r.Watermark, &r.ExecutedOn, &r.Error, &elapsedMs); err != nil {
+			return nil, err
+		}
+		r.Elapsed = time.Duration(elapsedMs) * time.Millisecond
+		result = append(result, r)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}

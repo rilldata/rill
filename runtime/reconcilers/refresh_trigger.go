@@ -129,6 +129,25 @@ func (r *RefreshTriggerReconciler) Reconcile(ctx context.Context, n *runtimev1.R
 				continue
 			}
 
+			// Store triggered partitions in model state for targeted execution
+			var triggeredPartitions []string
+			if len(mt.Partitions) > 0 {
+				triggeredPartitions = mt.Partitions
+			} else if mt.AllErroredPartitions {
+				erroredPartitions, err := catalog.FindModelPartitionsWithErrors(ctx, modelID)
+				if err != nil {
+					return runtime.ReconcileResult{Err: fmt.Errorf("failed to find errored partitions for model %s: %w", mt.Model, err)}
+				}
+				for _, p := range erroredPartitions {
+					triggeredPartitions = append(triggeredPartitions, p.Key)
+				}
+			}
+			mdl.State.TriggeredPartitions = triggeredPartitions
+			err = r.C.UpdateState(ctx, mr.Meta.Name, mr)
+			if err != nil {
+				return runtime.ReconcileResult{Err: err}
+			}
+
 			if mt.AllErroredPartitions {
 				err := catalog.UpdateModelPartitionsPendingIfError(ctx, modelID)
 				if err != nil {
