@@ -630,6 +630,11 @@ export interface V1CompleteResponse {
   messages?: V1Message[];
 }
 
+export interface V1CompleteStreamingResponse {
+  conversationId?: string;
+  message?: V1Message;
+}
+
 export interface V1Component {
   spec?: V1ComponentSpec;
   state?: V1ComponentState;
@@ -1163,10 +1168,6 @@ export interface V1IssueDevJWTResponse {
 
 export interface V1ListConnectorDriversResponse {
   connectors?: V1ConnectorDriver[];
-}
-
-export interface V1ListConversationsResponse {
-  conversations?: V1Conversation[];
 }
 
 export interface V1ListDatabaseSchemasResponse {
@@ -2498,6 +2499,16 @@ export type RuntimeServiceCompleteBody = {
   messages?: V1Message[];
   toolNames?: string[];
   appContext?: V1AppContext;
+};
+
+export type RuntimeServiceCompleteStreamingBody = {
+  conversationId?: string;
+  prompt?: string;
+};
+
+export type RuntimeServiceCompleteStreaming200 = {
+  result?: V1CompleteStreamingResponse;
+  error?: RpcStatus;
 };
 
 export type RuntimeServiceGetConversationParams = {

@@ -614,15 +614,21 @@ paths:
             title: Request message for RuntimeService.Complete
       tags:
         - RuntimeService
-  /v1/instances/{instanceId}/ai/conversations:
-    get:
-      summary: ListConversations lists all AI chat conversations for an instance.
-      operationId: RuntimeService_ListConversations
+  /v1/instances/{instanceId}/ai/complete/stream:
+    post:
+      summary: CompleteStreaming runs an AI-powered chat completion, optionally invoking agents or tool calls available in Rill.
+      operationId: RuntimeService_CompleteStreaming
       responses:
         "200":
-          description: A successful response.
+          description: A successful response.(streaming responses)
           schema:
-            $ref: '#/definitions/v1ListConversationsResponse'
+            type: object
+            properties:
+              result:
+                $ref: '#/definitions/v1CompleteStreamingResponse'
+              error:
+                $ref: '#/definitions/rpcStatus'
+            title: Stream result of v1CompleteStreamingResponse
         default:
           description: An unexpected error response.
           schema:
@@ -632,6 +638,18 @@ paths:
           in: path
           required: true
           type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              conversationId:
+                type: string
+                title: If not provided, creates a new conversation
+              prompt:
+                type: string
+            title: Request message for RuntimeService.CompleteStreaming
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/ai/conversations/{conversationId}:
@@ -4311,6 +4329,14 @@ definitions:
           type: object
           $ref: '#/definitions/v1Message'
     title: Response message for RuntimeService.Complete
+  v1CompleteStreamingResponse:
+    type: object
+    properties:
+      conversationId:
+        type: string
+      message:
+        $ref: '#/definitions/v1Message'
+    title: Response message for RuntimeService.CompleteStreaming
   v1Component:
     type: object
     properties:
@@ -5124,15 +5150,6 @@ definitions:
           type: object
           $ref: '#/definitions/v1ConnectorDriver'
     title: Response message for RuntimeService.ListConnectorDrivers
-  v1ListConversationsResponse:
-    type: object
-    properties:
-      conversations:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/v1Conversation'
-    title: Response message for RuntimeService.ListConversations
   v1ListDatabaseSchemasResponse:
     type: object
     properties:
