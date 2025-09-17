@@ -72,7 +72,14 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 		recipients = append(recipients, "")
 	}
 
-	tokens, ownerEmail, err := s.createMagicTokens(ctx, proj.OrganizationID, proj.ID, req.Report, req.OwnerId, req.WhereFilterJson, req.AccessibleFields, recipients, req.Resources)
+	var tokens map[string]string
+	var ownerEmail string
+	if webOpenMode == WebOpenModeRecipient {
+		// in this mode, tokens are used only for unsubscribe links, so no access to resources or owner attributes
+		tokens, ownerEmail, err = s.createMagicTokens(ctx, proj.OrganizationID, proj.ID, req.Report, "", "", nil, recipients, nil)
+	} else {
+		tokens, ownerEmail, err = s.createMagicTokens(ctx, proj.OrganizationID, proj.ID, req.Report, req.OwnerId, req.WhereFilterJson, req.AccessibleFields, recipients, req.Resources)
+	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to issue magic auth tokens: %w", err)
 	}
@@ -257,14 +264,6 @@ func (s *Server) UnsubscribeReport(ctx context.Context, req *adminv1.Unsubscribe
 	}
 
 	claims := auth.GetClaims(ctx)
-	permissions := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
-	if !permissions.ReadProd {
-		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project repo")
-	}
-
-	if proj.ProdDeploymentID == nil {
-		return nil, status.Error(codes.FailedPrecondition, "project does not have a production deployment")
-	}
 
 	depl, err := s.admin.DB.FindDeployment(ctx, *proj.ProdDeploymentID)
 	if err != nil {
