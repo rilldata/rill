@@ -106,10 +106,7 @@
   }
 
   function onPan(direction: "left" | "right") {
-    const getPanRange = getPanRangeForTimeRange(
-      selectedTimeRange,
-      activeTimeZone,
-    );
+    const getPanRange = getPanRangeForTimeRange(interval, activeTimeZone);
     const panRange = getPanRange(direction);
     if (!panRange) return;
     const { start, end } = panRange;

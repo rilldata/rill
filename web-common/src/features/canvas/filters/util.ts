@@ -1,17 +1,8 @@
-import {
-  getAvailableComparisonsForTimeRange,
-  getComparisonRange,
-} from "@rilldata/web-common/lib/time/comparisons";
-import { PREVIOUS_COMPLETE_DATE_RANGES } from "@rilldata/web-common/lib/time/config";
-import {
-  TimeComparisonOption,
-  TimeRangePreset,
-  type DashboardTimeControls,
-} from "@rilldata/web-common/lib/time/types";
+import { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
 import type { Duration, Interval } from "luxon";
 import { ALL_TIME_RANGE_ALIAS } from "../../dashboards/time-controls/new-time-controls";
 
-const okay = [
+const comparisonOtions = [
   TimeComparisonOption.DAY,
   TimeComparisonOption.WEEK,
   TimeComparisonOption.MONTH,
@@ -31,7 +22,6 @@ function durationToIndex(duration: Duration) {
 export function getComparisonOptionsForCanvas(
   interval: Interval<true> | undefined,
   range: string | undefined,
-  // allowCustomTimeRange: boolean,
 ) {
   if (!interval || range == ALL_TIME_RANGE_ALIAS) {
     return [];
@@ -43,7 +33,7 @@ export function getComparisonOptionsForCanvas(
 
   const index = durationToIndex(duration);
 
-  const slicedOptions = okay.slice(index, -1);
+  const slicedOptions = comparisonOtions.slice(index, -1);
 
   options.push(...slicedOptions);
 

@@ -1,7 +1,6 @@
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import {
   getAvailableComparisonsForTimeRange,
-  getComparisonRange,
   getTimeComparisonParametersForComponent,
 } from "@rilldata/web-common/lib/time/comparisons";
 import {
