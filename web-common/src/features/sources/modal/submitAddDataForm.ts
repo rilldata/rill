@@ -115,7 +115,7 @@ export async function submitAddSourceForm(
     );
   } catch (error) {
     // The source file was already created, so we need to delete it
-    await rollbackSourceChanges(instanceId, newSourceFilePath, originalEnvBlob);
+    await rollbackChanges(instanceId, newSourceFilePath, originalEnvBlob);
     const errorDetails = (error as any).details;
 
     // Provide more helpful error messages for specific connectors
@@ -153,7 +153,7 @@ export async function submitAddSourceForm(
     newSourceFilePath,
   );
   if (errorMessage) {
-    await rollbackSourceChanges(instanceId, newSourceFilePath, originalEnvBlob);
+    await rollbackChanges(instanceId, newSourceFilePath, originalEnvBlob);
     throw new Error(errorMessage);
   }
 
@@ -260,16 +260,9 @@ export async function submitAddConnectorForm(
     newConnectorFilePath,
   );
   if (errorMessage) {
-    await rollbackConnectorChanges(
-      instanceId,
-      newConnectorFilePath,
-      originalEnvBlob,
-    );
+    await rollbackChanges(instanceId, newConnectorFilePath, originalEnvBlob);
     throw new Error(errorMessage);
   }
-
-  // Connection testing is now handled by resource reconciliation above
-  // No need for separate OLAP-specific testing since reconciliation includes Ping() calls
 
   /**
    * Connection successful: Complete the setup
@@ -316,42 +309,14 @@ async function beforeSubmitForm(instanceId: string) {
   }
 }
 
-// FIXME: consolidate this
-async function rollbackConnectorChanges(
+async function rollbackChanges(
   instanceId: string,
-  newConnectorFilePath: string,
+  newFilePath: string,
   originalEnvBlob: string | undefined,
 ) {
-  // Clean-up the `connector.yaml` file
+  // Clean-up the file
   await runtimeServiceDeleteFile(instanceId, {
-    path: newConnectorFilePath,
-  });
-
-  // Clean-up the `.env` file
-  if (!originalEnvBlob) {
-    // If .env file didn't exist before, delete it
-    await runtimeServiceDeleteFile(instanceId, {
-      path: ".env",
-    });
-  } else {
-    // If .env file existed before, restore its original content
-    await runtimeServicePutFile(instanceId, {
-      path: ".env",
-      blob: originalEnvBlob,
-      create: true,
-      createOnly: false,
-    });
-  }
-}
-
-async function rollbackSourceChanges(
-  instanceId: string,
-  newSourceFilePath: string,
-  originalEnvBlob: string | undefined,
-) {
-  // Clean-up the `source.yaml` file
-  await runtimeServiceDeleteFile(instanceId, {
-    path: newSourceFilePath,
+    path: newFilePath,
   });
 
   // Clean-up the `.env` file
