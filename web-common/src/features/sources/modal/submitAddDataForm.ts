@@ -91,8 +91,19 @@ async function rollbackChanges(
   }
 }
 
-// FIXME: consolidate this
-// Source YAML - `type: model`
+async function setOlapConnectorInRillYAML(
+  queryClient: QueryClient,
+  instanceId: string,
+  newConnectorName: string,
+): Promise<void> {
+  await runtimeServicePutFile(instanceId, {
+    path: "rill.yaml",
+    blob: await updateRillYAMLWithOlapConnector(queryClient, newConnectorName),
+    create: true,
+    createOnly: false,
+  });
+}
+
 export async function submitAddModelForm(
   queryClient: QueryClient,
   connector: V1ConnectorDriver,
@@ -210,7 +221,6 @@ export async function submitAddModelForm(
   await goto(`/files/${newSourceFilePath}`);
 }
 
-// Connector YAML - `type: connector`
 export async function submitAddConnectorForm(
   queryClient: QueryClient,
   connector: V1ConnectorDriver,
@@ -300,7 +310,6 @@ export async function submitAddConnectorForm(
       details: (error as any).details || error.message,
     };
   }
-  // }
 
   // Check for file errors
   // If the connector file has errors, rollback the changes
@@ -319,17 +328,8 @@ export async function submitAddConnectorForm(
    * Update the project configuration and navigate to the new connector
    */
 
-  // Update the `rill.yaml` file only for actual OLAP connectors (ClickHouse, Druid, Pinot)
   if (OLAP_ENGINES.includes(connector.name as string)) {
-    await runtimeServicePutFile(instanceId, {
-      path: "rill.yaml",
-      blob: await updateRillYAMLWithOlapConnector(
-        queryClient,
-        newConnectorName,
-      ),
-      create: true,
-      createOnly: false,
-    });
+    await setOlapConnectorInRillYAML(queryClient, instanceId, newConnectorName);
   }
 
   // Go to the new connector file
