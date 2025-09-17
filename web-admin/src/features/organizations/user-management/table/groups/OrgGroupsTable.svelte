@@ -15,6 +15,7 @@
   export let hasNextPage: boolean;
   export let isFetchingNextPage: boolean;
   export let onLoadMore: () => void;
+  export let ensureAllUsersLoaded: (() => Promise<void>) | undefined = undefined;
 
   function transformGroupName(groupName: string) {
     return groupName
@@ -63,6 +64,7 @@
           groupName: row.original.groupName,
           currentUserEmail: currentUserEmail,
           searchUsersList: searchUsersList,
+          ensureAllUsersLoaded: ensureAllUsersLoaded,
         }),
       meta: {
         widthPercent: 5,

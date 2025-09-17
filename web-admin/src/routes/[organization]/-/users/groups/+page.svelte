@@ -132,6 +132,7 @@
           {hasNextPage}
           {isFetchingNextPage}
           onLoadMore={handleLoadMore}
+          {ensureAllUsersLoaded}
         />
       </div>
       {#if filteredGroups.length > 0}
