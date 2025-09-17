@@ -137,7 +137,7 @@ export async function submitAddSourceForm(
   const instanceId = get(runtime).instanceId;
   await beforeSubmitForm(instanceId);
 
-  const newModelName = formValues.name as string;
+  const newSourceName = formValues.name as string;
 
   const [rewrittenConnector, rewrittenFormValues] = prepareSourceFormData(
     connector,
@@ -146,7 +146,7 @@ export async function submitAddSourceForm(
 
   // Make a new <source>.yaml file
   const newSourceFilePath = getFileAPIPathFromNameAndType(
-    newModelName,
+    newSourceName,
     EntityType.Table,
   );
   await runtimeServicePutFile(instanceId, {
@@ -179,7 +179,7 @@ export async function submitAddSourceForm(
   try {
     await waitForResourceReconciliation(
       instanceId,
-      newModelName,
+      newSourceName,
       ResourceKind.Model,
       connector.name as string,
     );
@@ -298,11 +298,6 @@ export async function submitAddConnectorForm(
     await rollbackChanges(instanceId, newConnectorFilePath, originalEnvBlob);
     throw new Error(errorMessage);
   }
-
-  /**
-   * Connection successful: Complete the setup
-   * Update the project configuration and navigate to the new connector
-   */
 
   if (OLAP_ENGINES.includes(connector.name as string)) {
     await setOlapConnectorInRillYAML(queryClient, instanceId, newConnectorName);
