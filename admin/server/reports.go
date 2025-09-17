@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"path"
 	"regexp"
@@ -73,61 +72,45 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 		recipients = append(recipients, "")
 	}
 
-	filterJSON := req.WhereFilterJson
-	accessibleFields := req.AccessibleFields
-	if webOpenMode != WebOpenModeFiltered {
-		// If web open mode is not filtered, we don't need to apply where filter or accessible fields
-		filterJSON = ""
-		accessibleFields = nil
-	}
-	tokens, ownerEmail, err := s.createMagicTokens(ctx, proj.OrganizationID, proj.ID, req.Report, req.OwnerId, filterJSON, accessibleFields, recipients, req.Resources)
+	tokens, ownerEmail, err := s.createMagicTokens(ctx, proj.OrganizationID, proj.ID, req.Report, req.OwnerId, req.WhereFilterJson, req.AccessibleFields, recipients, req.Resources)
 	if err != nil {
 		return nil, fmt.Errorf("failed to issue magic auth tokens: %w", err)
 	}
 
-	canOpenReport := make(map[string]bool)
-	if webOpenMode == WebOpenModeRecipient {
-		for _, email := range req.EmailRecipients {
-			usr, err := s.admin.DB.FindUserByEmail(ctx, email)
-			if err != nil {
-				if errors.Is(err, database.ErrNotFound) {
-					canOpenReport[email] = false
-					continue
-				}
-				return nil, fmt.Errorf("failed to find user by email: %w", err)
-			}
-			// check user's project permissions
-			orgPerms, err := s.admin.OrganizationPermissionsForUser(ctx, proj.OrganizationID, usr.ID)
-			if err != nil {
-				return nil, fmt.Errorf("failed to get organization permissions for user: %w", err)
-			}
-			projectPermissions, err := s.admin.ProjectPermissionsForUser(ctx, proj.ID, usr.ID, orgPerms)
-			if err != nil {
-				return nil, fmt.Errorf("failed to get project permissions for user: %w", err)
-			}
-			canOpenReport[email] = projectPermissions.ReadProject && projectPermissions.ReadProd
-			// there's still an edge case where user has access to project but not to the metrics view because of security policy but report creator needs to take care of this consistency
-		}
-	}
-
+	// Generate URLs for each recipient based on web open mode, and whether they are the owner -
+	// 	Owner does not need a token and does not get an unsubscribe link.
+	// 	Recipients in creator mode get a token and an unsubscribe link.
+	// 	Recipients in recipient mode get an unsubscribe link with token but no token for open/export.
+	// 	Recipients in none web open mode do not get an open link.
+	// 	Recipients other than owner do not get an edit link, they can edit from the project UI if they have permissions.
 	for _, recipient := range recipients {
 		if recipient == ownerEmail {
+			// no token needed for owner and no unsubscribe link
 			urls[recipient] = &adminv1.GetReportMetaResponse_URLs{
-				OpenUrl:        s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, tokens[recipient], req.ExecutionTime.AsTime()),
-				ExportUrl:      s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportExport(org.Name, proj.Name, req.Report, tokens[recipient]),
-				EditUrl:        s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportEdit(org.Name, proj.Name, req.Report),
-				UnsubscribeUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportUnsubscribe(org.Name, proj.Name, req.Report, tokens[recipient], recipient),
+				OpenUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, "", req.ExecutionTime.AsTime()),
+				ExportUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportExport(org.Name, proj.Name, req.Report, ""),
+				EditUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportEdit(org.Name, proj.Name, req.Report),
 			}
 			continue
 		}
-		urls[recipient] = &adminv1.GetReportMetaResponse_URLs{
-			ExportUrl:      s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportExport(org.Name, proj.Name, req.Report, tokens[recipient]),
-			UnsubscribeUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportUnsubscribe(org.Name, proj.Name, req.Report, tokens[recipient], recipient),
-		}
-		if webOpenMode == WebOpenModeCreator || webOpenMode == WebOpenModeFiltered {
-			urls[recipient].OpenUrl = s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, tokens[recipient], req.ExecutionTime.AsTime())
-		} else if webOpenMode == WebOpenModeRecipient && canOpenReport[recipient] {
-			urls[recipient].OpenUrl = s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, "", req.ExecutionTime.AsTime())
+		if webOpenMode == WebOpenModeCreator {
+			urls[recipient] = &adminv1.GetReportMetaResponse_URLs{
+				OpenUrl:        s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, tokens[recipient], req.ExecutionTime.AsTime()),
+				ExportUrl:      s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportExport(org.Name, proj.Name, req.Report, tokens[recipient]),
+				UnsubscribeUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportUnsubscribe(org.Name, proj.Name, req.Report, tokens[recipient], recipient),
+			}
+		} else if webOpenMode == WebOpenModeRecipient {
+			urls[recipient] = &adminv1.GetReportMetaResponse_URLs{
+				OpenUrl:        s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, "", req.ExecutionTime.AsTime()),
+				ExportUrl:      s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportExport(org.Name, proj.Name, req.Report, ""),
+				UnsubscribeUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportUnsubscribe(org.Name, proj.Name, req.Report, tokens[recipient], recipient), // still use token for unsubscribe so that it works seamlessly for non Rill users
+			}
+		} else {
+			// same as recipient but no open url
+			urls[recipient] = &adminv1.GetReportMetaResponse_URLs{
+				ExportUrl:      s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportExport(org.Name, proj.Name, req.Report, ""),
+				UnsubscribeUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportUnsubscribe(org.Name, proj.Name, req.Report, tokens[recipient], recipient), // still use token for unsubscribe so that it works seamlessly for non Rill users
+			}
 		}
 	}
 
@@ -766,8 +749,6 @@ func recreateReportOptionsFromSpec(spec *runtimev1.ReportSpec) (*adminv1.ReportO
 		opts.WebOpenMode = "creator"
 	case WebOpenModeNone:
 		opts.WebOpenMode = "none"
-	case WebOpenModeFiltered:
-		opts.WebOpenMode = "filtered"
 	default:
 		return nil, fmt.Errorf("unknown web open mode: %s", annotations.WebOpenMode)
 	}
@@ -827,12 +808,11 @@ const (
 	WebOpenModeRecipient WebOpenMode = "recipient"
 	WebOpenModeCreator   WebOpenMode = "creator"
 	WebOpenModeNone      WebOpenMode = "none"
-	WebOpenModeFiltered  WebOpenMode = "filtered"
 )
 
 func (m WebOpenMode) Valid() bool {
 	switch m {
-	case WebOpenModeRecipient, WebOpenModeCreator, WebOpenModeNone, WebOpenModeFiltered:
+	case WebOpenModeRecipient, WebOpenModeCreator, WebOpenModeNone:
 		return true
 	}
 	return false
@@ -858,8 +838,6 @@ func parseReportAnnotations(annotations map[string]string) reportAnnotations {
 		res.WebOpenMode = WebOpenModeCreator
 	case "none":
 		res.WebOpenMode = WebOpenModeNone
-	case "filtered":
-		res.WebOpenMode = WebOpenModeFiltered
 	case "": // backwards compatibility
 		res.WebOpenMode = WebOpenModeRecipient
 	}
