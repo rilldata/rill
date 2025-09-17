@@ -13,6 +13,7 @@ import {
   RillIsoInterval,
   RillLegacyIsoInterval,
   RillLegacyDaxInterval,
+  RillAllTimeInterval,
   RillPointInTime,
   RillPointInTimeWithSnap,
   RillLabelledPointInTime,
@@ -231,6 +232,18 @@ let ParserRules = [
   { name: "interval", symbols: ["start_end_interval"], postprocess: id },
   { name: "interval", symbols: ["ordinal_interval"], postprocess: id },
   { name: "interval", symbols: ["iso_interval"], postprocess: id },
+  {
+    name: "interval$subexpression$1",
+    symbols: [/[iI]/, /[nN]/, /[fF]/],
+    postprocess: function (d) {
+      return d.join("");
+    },
+  },
+  {
+    name: "interval",
+    symbols: ["interval$subexpression$1"],
+    postprocess: () => new RillAllTimeInterval(),
+  },
   {
     name: "shorthand_interval",
     symbols: ["grain_duration"],

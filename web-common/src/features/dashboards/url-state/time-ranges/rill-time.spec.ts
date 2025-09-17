@@ -183,6 +183,8 @@ describe("rill time", () => {
         undefined,
         undefined,
       ],
+
+      ["inf", "All time", false, undefined, undefined],
     ];
 
     const compiledGrammar = nearley.Grammar.fromCompiled(grammar);

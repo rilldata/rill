@@ -13,6 +13,7 @@
     RillIsoInterval,
     RillLegacyIsoInterval,
     RillLegacyDaxInterval,
+    RillAllTimeInterval,
 
     RillPointInTime,
     RillPointInTimeWithSnap,
@@ -40,6 +41,7 @@ interval => shorthand_interval         {% id %}
           | start_end_interval         {% id %}
           | ordinal_interval           {% id %}
           | iso_interval               {% id %}
+          | "inf"i                     {% () => new RillAllTimeInterval() %}
 
 shorthand_interval => grain_duration {% ([parts]) => new RillShorthandInterval(parts) %}
 
