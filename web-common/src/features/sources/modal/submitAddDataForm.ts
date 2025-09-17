@@ -34,6 +34,7 @@ import { EntityType } from "../../entity-management/types";
 import { EMPTY_PROJECT_TITLE } from "../../welcome/constants";
 import { isProjectInitialized } from "../../welcome/is-project-initialized";
 import { compileSourceYAML, prepareSourceFormData } from "../sourceUtils";
+import { humanReadableErrorMessage } from "../errors/errors";
 import { OLAP_ENGINES } from "./constants";
 
 interface AddDataFormValues {
@@ -137,7 +138,7 @@ export async function submitAddSourceForm(
   const instanceId = get(runtime).instanceId;
   await beforeSubmitForm(instanceId);
 
-  const newModelName = formValues.name as string;
+  const newSourceName = formValues.name as string;
 
   const [rewrittenConnector, rewrittenFormValues] = prepareSourceFormData(
     connector,
@@ -146,7 +147,7 @@ export async function submitAddSourceForm(
 
   // Make a new <source>.yaml file
   const newSourceFilePath = getFileAPIPathFromNameAndType(
-    newModelName,
+    newSourceName,
     EntityType.Table,
   );
   await runtimeServicePutFile(instanceId, {
@@ -179,21 +180,23 @@ export async function submitAddSourceForm(
   try {
     await waitForResourceReconciliation(
       instanceId,
-      newModelName,
+      newSourceName,
       ResourceKind.Model,
       connector.name as string,
     );
   } catch (error) {
     // The source file was already created, so we need to delete it
     await rollbackChanges(instanceId, newSourceFilePath, originalEnvBlob);
-    const errorDetails = (error as any).details;
+    const originalMessage = error?.response?.data?.message;
+    const errorCode = error?.response?.data?.code;
 
     throw {
-      message: error.message || "Unable to establish a connection",
-      details:
-        errorDetails && errorDetails !== error.message
-          ? errorDetails
-          : undefined,
+      message: humanReadableErrorMessage(
+        connector.name as string,
+        errorCode,
+        originalMessage,
+      ),
+      details: originalMessage,
     };
   }
 
@@ -276,14 +279,16 @@ export async function submitAddConnectorForm(
   } catch (error) {
     // The connector file was already created, so we need to delete it
     await rollbackChanges(instanceId, newConnectorFilePath, originalEnvBlob);
-    const errorDetails = (error as any).details;
+    const originalMessage = error?.response?.data?.message;
+    const errorCode = error?.response?.data?.code;
 
     throw {
-      message: error.message || "Unable to establish a connection",
-      details:
-        errorDetails && errorDetails !== error.message
-          ? errorDetails
-          : undefined,
+      message: humanReadableErrorMessage(
+        connector.name as string,
+        errorCode,
+        originalMessage,
+      ),
+      details: originalMessage,
     };
   }
 
@@ -298,11 +303,6 @@ export async function submitAddConnectorForm(
     await rollbackChanges(instanceId, newConnectorFilePath, originalEnvBlob);
     throw new Error(errorMessage);
   }
-
-  /**
-   * Connection successful: Complete the setup
-   * Update the project configuration and navigate to the new connector
-   */
 
   if (OLAP_ENGINES.includes(connector.name as string)) {
     await setOlapConnectorInRillYAML(queryClient, instanceId, newConnectorName);
