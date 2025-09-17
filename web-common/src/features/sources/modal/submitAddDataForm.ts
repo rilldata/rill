@@ -104,6 +104,31 @@ async function setOlapConnectorInRillYAML(
   });
 }
 
+// Check for an existing `.env` file
+// Store the original `.env` blob so we can restore it in case of errors
+async function getOriginalEnvBlob(
+  queryClient: QueryClient,
+  instanceId: string,
+): Promise<string | undefined> {
+  try {
+    const envFile = await queryClient.fetchQuery({
+      queryKey: getRuntimeServiceGetFileQueryKey(instanceId, { path: ".env" }),
+      queryFn: () => runtimeServiceGetFile(instanceId, { path: ".env" }),
+    });
+    return envFile.blob;
+  } catch (error) {
+    const fileNotFound =
+      error?.response?.data?.message?.includes("no such file");
+    if (fileNotFound) {
+      // Do nothing. We'll create the `.env` file below.
+      return undefined;
+    } else {
+      // We have a problem. Throw the error.
+      throw error;
+    }
+  }
+}
+
 export async function submitAddModelForm(
   queryClient: QueryClient,
   connector: V1ConnectorDriver,
@@ -112,6 +137,8 @@ export async function submitAddModelForm(
   const instanceId = get(runtime).instanceId;
   await beforeSubmitForm(instanceId);
 
+  const newModelName = formValues.name as string;
+
   const [rewrittenConnector, rewrittenFormValues] = prepareSourceFormData(
     connector,
     formValues,
@@ -119,7 +146,7 @@ export async function submitAddModelForm(
 
   // Make a new <source>.yaml file
   const newSourceFilePath = getFileAPIPathFromNameAndType(
-    formValues.name as string,
+    newModelName,
     EntityType.Table,
   );
   await runtimeServicePutFile(instanceId, {
@@ -129,25 +156,7 @@ export async function submitAddModelForm(
     createOnly: false,
   });
 
-  // Check for an existing `.env` file
-  // Store the original `.env` blob so we can restore it in case of errors
-  let originalEnvBlob: string | undefined;
-  try {
-    const envFile = await queryClient.fetchQuery({
-      queryKey: getRuntimeServiceGetFileQueryKey(instanceId, { path: ".env" }),
-      queryFn: () => runtimeServiceGetFile(instanceId, { path: ".env" }),
-    });
-    originalEnvBlob = envFile.blob;
-  } catch (error) {
-    const fileNotFound =
-      error?.response?.data?.message?.includes("no such file");
-    if (fileNotFound) {
-      // Do nothing. We'll create the `.env` file below.
-    } else {
-      // We have a problem. Throw the error.
-      throw error;
-    }
-  }
+  const originalEnvBlob = await getOriginalEnvBlob(queryClient, instanceId);
 
   // Create or update the `.env` file
   const newEnvBlob = await updateDotEnvWithSecrets(
@@ -170,7 +179,7 @@ export async function submitAddModelForm(
   try {
     await waitForResourceReconciliation(
       instanceId,
-      formValues.name as string,
+      newModelName,
       ResourceKind.Model,
       connector.name as string,
     );
@@ -236,25 +245,7 @@ export async function submitAddConnectorForm(
     createOnly: false,
   });
 
-  // Check for an existing `.env` file
-  // Store the original `.env` blob so we can restore it in case of errors
-  let originalEnvBlob: string | undefined;
-  try {
-    const envFile = await queryClient.fetchQuery({
-      queryKey: getRuntimeServiceGetFileQueryKey(instanceId, { path: ".env" }),
-      queryFn: () => runtimeServiceGetFile(instanceId, { path: ".env" }),
-    });
-    originalEnvBlob = envFile.blob;
-  } catch (error) {
-    const fileNotFound =
-      error?.response?.data?.message?.includes("no such file");
-    if (fileNotFound) {
-      // Do nothing. We'll create the `.env` file below.
-    } else {
-      // We have a problem. Throw the error.
-      throw error;
-    }
-  }
+  const originalEnvBlob = await getOriginalEnvBlob(queryClient, instanceId);
 
   // Create or update the `.env` file
   const newEnvBlob = await updateDotEnvWithSecrets(
