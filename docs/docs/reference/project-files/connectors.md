@@ -136,15 +136,15 @@ _[string]_ - Refers to the driver type and must be driver `azure` _(required)_
 
 ### `azure_storage_account`
 
-_[string]_ - Azure storage account name 
+_[string]_ - Azure storage account name _(required)_
 
 ### `azure_storage_key`
 
-_[string]_ - Azure storage access key 
+_[string]_ - Azure storage access key _(required)_
 
 ### `azure_storage_bucket`
 
-_[string]_ - Name of the Azure Blob Storage container (equivalent to an S3 bucket) _(required)_
+_[string]_ - Name of the Azure Blob Storage container (equivalent to an S3 bucket) 
 
 ### `azure_storage_sas_token`
 
@@ -162,12 +162,11 @@ _[boolean]_ - Allow access to host environment configuration
 # Example: Azure connector configuration
 type: connector # Must be `connector` (required)
 driver: azure # Must be `azure` _(required)_
-azure_storage_account: "mystorageaccount" # Azure storage account name  
-azure_storage_key: "credentialjsonstring" # Azure storage access key  
-azure_storage_sas_token: "optionaltoken" # Optional SAS token for authentication  
-azure_storage_connection_string: "optionalconnectionstring" # Optional connection string  
-azure_storage_bucket: "mycontainer" # Azure Blob Storage container name _(required)_  
-allow_host_access: true # Allow host environment access
+azure_storage_account: "mystorageaccount" # Azure storage account name   _(required)_
+azure_storage_key: "credentialjsonstring" # Azure storage access key   _(required)_
+# azure_storage_sas_token: "optionaltoken"         # Optional SAS token for authentication  
+# azure_storage_connection_string: "optionalconnectionstring" # Or use the connection string instead of storage account and key
+azure_storage_bucket: "mycontainer" # Azure Blob Storage container name  
 ```
 
 ## BigQuery
