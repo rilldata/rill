@@ -165,7 +165,7 @@ export async function submitAddModelForm(
     createOnly: false,
   });
 
-  // Wait for source resource reconciliation
+  // Wait for source resource-level reconciliation
   // This must happen after .env reconciliation since sources depend on secrets
   try {
     await waitForResourceReconciliation(
@@ -179,26 +179,8 @@ export async function submitAddModelForm(
     await rollbackChanges(instanceId, newSourceFilePath, originalEnvBlob);
     const errorDetails = (error as any).details;
 
-    // Provide more helpful error messages for specific connectors
-    let errorMessage = error.message || "Unable to establish a connection";
-    if (
-      errorMessage.includes(
-        "Resource configuration failed to reconcile and was automatically deleted",
-      )
-    ) {
-      if (connector.name === "gcs") {
-        errorMessage =
-          "GCS connection failed. Please check your credentials and bucket permissions.";
-      } else if (connector.name === "s3") {
-        errorMessage =
-          "S3 connection failed. Please check your credentials and bucket permissions.";
-      } else {
-        errorMessage = `${connector.name} connection failed. Please check your connection details and credentials.`;
-      }
-    }
-
     throw {
-      message: errorMessage,
+      message: error.message || "Unable to establish a connection",
       details:
         errorDetails && errorDetails !== error.message
           ? errorDetails
@@ -207,7 +189,7 @@ export async function submitAddModelForm(
   }
 
   // Check for file errors
-  // If the source file has errors, rollback the changes
+  // If the model file has errors, rollback the changes
   const errorMessage = await fileArtifacts.checkFileErrors(
     queryClient,
     instanceId,
@@ -302,12 +284,15 @@ export async function submitAddConnectorForm(
     );
   } catch (error) {
     // The connector file was already created, so we need to delete it
-    await runtimeServiceDeleteFile(instanceId, {
-      path: newConnectorFilePath,
-    });
+    await rollbackChanges(instanceId, newConnectorFilePath, originalEnvBlob);
+    const errorDetails = (error as any).details;
+
     throw {
       message: error.message || "Unable to establish a connection",
-      details: (error as any).details || error.message,
+      details:
+        errorDetails && errorDetails !== error.message
+          ? errorDetails
+          : undefined,
     };
   }
 
