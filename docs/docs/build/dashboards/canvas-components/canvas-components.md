@@ -1,16 +1,19 @@
 ---
-title: Canvas Components
+title: All Canvas Components
 description: Complete guide to all available components in Rill Canvas Dashboards
+toc_max_heading_level: 3
+className: connect-connect
 ---
 
 import ComponentTile from '@site/src/components/ComponentTile';
 
 Rill Canvas dashboards are built using a variety of components that can display data, create visualizations, and add rich content. Each component can be created dynamically through the visual Canvas dashboard editor or defined in individual YAML files. For more information, refer to our [Components reference doc](/reference/project-files/component).
 
+## Data 
 
-## All Components
-
-### Data 
+### KPI
+### Leaderboard
+### Pivot / Table
 
 <div className="component-icon-grid">
     <ComponentTile
@@ -33,7 +36,17 @@ Rill Canvas dashboards are built using a variety of components that can display 
     />
 </div>
 
-### Chart 
+## Chart 
+
+### Bar
+### Line
+### Stacked Area
+### Stacked Bar
+### Stacked Bar Normalized
+### Donut
+### Funnel
+### Heat Map
+### Combo
 
 <div className="component-icon-grid">
     <ComponentTile
@@ -92,7 +105,11 @@ Rill Canvas dashboards are built using a variety of components that can display 
     />
 </div>
 
-### Miscellaneous 
+## Miscellaneous 
+
+### Markdown Text
+### Image
+### Component
 
 <div className="component-icon-grid">
     <ComponentTile
