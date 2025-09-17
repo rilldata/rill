@@ -44,7 +44,12 @@
     {
       accessorKey: "user",
       header: "User",
-      enableSorting: false,
+      enableSorting: true,
+      sortDescFirst: false, // Default to ASC first, then DESC on second click
+      accessorFn: (row) => {
+        // Sort by display name first, then by email as fallback
+        return (row.userName ?? row.userEmail ?? row.email ?? "").toLowerCase();
+      },
       cell: ({ row }) =>
         flexRender(OrgUsersTableUserCompositeCell, {
           name: row.original.userName ?? row.original.email,
