@@ -129,7 +129,7 @@ async function getOriginalEnvBlob(
   }
 }
 
-export async function submitAddModelForm(
+export async function submitAddSourceForm(
   queryClient: QueryClient,
   connector: V1ConnectorDriver,
   formValues: AddDataFormValues,
