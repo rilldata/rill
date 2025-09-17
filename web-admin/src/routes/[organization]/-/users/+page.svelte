@@ -183,7 +183,20 @@
           <span>Add users</span>
         </Button>
       </div>
-      <div class="mt-6">
+      
+      <!-- Total count display - always visible at top -->
+      <div class="mt-4 px-4 py-3 bg-slate-100 rounded-sm border border-slate-200">
+        <span class="font-semibold text-sm text-gray-500">
+          {totalUserCount} total user{totalUserCount === 1 ? "" : "s"}
+          {#if totalMemberCount > 0 && totalInviteCount > 0}
+            ({totalMemberCount} member{totalMemberCount === 1 ? "" : "s"}, {totalInviteCount} pending invitation{totalInviteCount === 1 ? "" : "s"})
+          {:else if totalInviteCount > 0}
+            ({totalInviteCount} pending invitation{totalInviteCount === 1 ? "" : "s"})
+          {/if}
+        </span>
+      </div>
+      
+      <div class="mt-4">
         <OrgUsersTable
           data={filteredUsers}
           usersQuery={$orgMemberUsersInfiniteQuery}
@@ -197,16 +210,6 @@
           onAttemptChangeBillingContactUserRole={() =>
             (isChangingBillingContactRoleDialogOpen = true)}
         />
-      </div>
-      <div class="px-2 py-3">
-        <span class="font-medium text-sm text-gray-500">
-          {totalUserCount} total user{totalUserCount === 1 ? "" : "s"}
-          {#if totalMemberCount > 0 && totalInviteCount > 0}
-            ({totalMemberCount} member{totalMemberCount === 1 ? "" : "s"}, {totalInviteCount} pending invitation{totalInviteCount === 1 ? "" : "s"})
-          {:else if totalInviteCount > 0}
-            ({totalInviteCount} pending invitation{totalInviteCount === 1 ? "" : "s"})
-          {/if}
-        </span>
       </div>
     </div>
   {/if}
