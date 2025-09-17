@@ -37,10 +37,10 @@
   <DropdownMenu.Separator />
 {/if}
 
-{#each ranges.latest as rillTime (rillTime.interval.toString())}
+{#each ranges.latest as rillTime, i (i)}
   <DropdownMenu.Item
-    on:click={handleClick}
     data-range={rillTime.interval.toString()}
+    on:click={handleClick}
   >
     <span class:font-bold={selected === rillTime.interval.toString()}>
       {rillTime.getLabel()}
@@ -52,10 +52,10 @@
   <DropdownMenu.Separator />
 {/if}
 
-{#each ranges.periodToDate as rillTime (rillTime.interval.toString())}
+{#each ranges.periodToDate as rillTime, i (i)}
   <DropdownMenu.Item
-    on:click={handleClick}
     data-range={rillTime.interval.toString()}
+    on:click={handleClick}
   >
     <span class:font-bold={selected === rillTime.interval.toString()}>
       {rillTime.getLabel()}
@@ -67,10 +67,10 @@
   <DropdownMenu.Separator />
 {/if}
 
-{#each ranges.previous as rillTime (rillTime.interval.toString())}
+{#each ranges.previous as rillTime, i (i)}
   <DropdownMenu.Item
-    on:click={handleClick}
     data-range={rillTime.interval.toString()}
+    on:click={handleClick}
   >
     <span class:font-bold={selected === rillTime.interval.toString()}>
       {rillTime.getLabel()}
