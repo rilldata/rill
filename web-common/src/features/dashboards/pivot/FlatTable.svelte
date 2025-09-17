@@ -198,7 +198,7 @@
               cell.getValue() !== undefined}
             class:text-right={getMeasureColumn(cell.column)}
             class:border-r={hasBorderRight(cell.column.id)}
-            class:totals-label={cell.getValue() === "Totals"}
+            class:total-label={cell.getValue() === "Total"}
             data-value={cell.getValue()}
             data-rowid={cell.row.id}
             data-columnid={cell.column.id}
@@ -304,7 +304,7 @@
   }
 
   /* The totals row label - make it bold for flat tables */
-  .totals-label {
+  .total-label {
     @apply font-semibold;
   }
 

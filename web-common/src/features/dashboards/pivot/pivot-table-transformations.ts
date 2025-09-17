@@ -134,7 +134,7 @@ export function getTotalsRowSkeleton(
       // For flat tables, find the first dimension column to place the Totals label
       const firstDimensionName = getFirstDimensionForFlat(config);
       if (firstDimensionName) {
-        totalsRow[firstDimensionName] = "Totals";
+        totalsRow[firstDimensionName] = "Total";
       }
     }
   }

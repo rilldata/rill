@@ -524,7 +524,7 @@ const expectSortedDeltaCol = [
 
 const expectedFlatTable = [
   [],
-  ["Totals", "", "100.0k", "300.6k"],
+  ["Total", "", "100.0k", "300.6k"],
   ["facebook.com", "Facebook", "10.5k", "32.9k"],
   ["msn.com", "Microsoft", "10.4k", "32.5k"],
   ["google.com", "Google", "10.1k", "31.3k"],
