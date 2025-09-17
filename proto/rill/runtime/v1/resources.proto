@@ -152,6 +152,8 @@ message ModelState {
   string test_hash = 27;
   // test_errors contains the results of the model's tests.
   repeated string test_errors = 28;
+  // repeated string of partition keys that were explicitly triggered
+  repeated string triggered_partitions = 29;
   // refreshed_on is the time the model was last executed.
   google.protobuf.Timestamp refreshed_on = 4;
   // incremental_state contains the result of the most recent invocation of the model's incremental state resolver.

@@ -6206,6 +6206,11 @@ definitions:
         items:
           type: string
         description: test_errors contains the results of the model's tests.
+      triggeredPartitions:
+        type: array
+        items:
+          type: string
+        title: repeated string of partition keys that were explicitly triggered
       refreshedOn:
         type: string
         format: date-time

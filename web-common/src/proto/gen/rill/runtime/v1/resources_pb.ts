@@ -1126,6 +1126,13 @@ export class ModelState extends Message<ModelState> {
   testErrors: string[] = [];
 
   /**
+   * repeated string of partition keys that were explicitly triggered
+   *
+   * @generated from field: repeated string triggered_partitions = 29;
+   */
+  triggeredPartitions: string[] = [];
+
+  /**
    * refreshed_on is the time the model was last executed.
    *
    * @generated from field: google.protobuf.Timestamp refreshed_on = 4;
@@ -1192,6 +1199,7 @@ export class ModelState extends Message<ModelState> {
     { no: 9, name: "refs_hash", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 27, name: "test_hash", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 28, name: "test_errors", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 29, name: "triggered_partitions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 4, name: "refreshed_on", kind: "message", T: Timestamp },
     { no: 7, name: "incremental_state", kind: "message", T: Struct },
     { no: 8, name: "incremental_state_schema", kind: "message", T: StructType },
