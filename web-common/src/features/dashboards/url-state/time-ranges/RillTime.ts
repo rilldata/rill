@@ -49,7 +49,8 @@ export class RillTime {
     this.rangeGrain = this.interval.getGrain();
     this.isOldFormat =
       interval instanceof RillLegacyIsoInterval ||
-      interval instanceof RillLegacyDaxInterval;
+      interval instanceof RillLegacyDaxInterval ||
+      interval instanceof RillAllTimeInterval;
   }
 
   public withGrain(grain: string) {
@@ -394,6 +395,24 @@ export class RillIsoInterval implements RillTimeInterval {
       timeRange += ` to ${this.end.toString()}`;
     }
     return timeRange;
+  }
+}
+
+export class RillAllTimeInterval implements RillTimeInterval {
+  public isComplete() {
+    return false;
+  }
+
+  public getLabel(): [label: string, supported: boolean] {
+    return ["All time", true];
+  }
+
+  public getGrain() {
+    return undefined;
+  }
+
+  public toString() {
+    return "inf";
   }
 }
 
