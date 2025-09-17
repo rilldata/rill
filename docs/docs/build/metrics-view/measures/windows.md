@@ -1,8 +1,8 @@
 ---
 title: "Window Functions"
-description: Tips & Tricks for Metric Formatting
+description: Tips & Tricks for Window Measures
 sidebar_label: "Window Functions"
-sidebar_position: 05
+sidebar_position: 40
 ---
 
 In addition to standard metrics, it is possible to define running window calculations on your data, whether you are looking to monitor a cumulative trend, smooth out fluctuations, etc. You'll need to navigate to the Code view in order to create a windowed measure.
