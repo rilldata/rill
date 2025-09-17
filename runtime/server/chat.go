@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"log"
 	"net/http"
 
 	"github.com/r3labs/sse/v2"
@@ -232,16 +231,23 @@ func (s *Server) CompleteStreamingHandler(w http.ResponseWriter, req *http.Reque
 		return
 	}
 
-	// Parse body
-	body, err := io.ReadAll(req.Body)
-	if err != nil {
-		http.Error(w, "failed to read request body", http.StatusBadRequest)
-		return
-	}
+	// Build request. Note we try to support both GET and POST.
 	completeReq := &runtimev1.CompleteStreamingRequest{}
-	if err := protojson.Unmarshal(body, completeReq); err != nil {
-		http.Error(w, "failed to parse request body", http.StatusBadRequest)
-		return
+	if req.Method == http.MethodGet {
+		// Parse from query parameters
+		completeReq.ConversationId = req.URL.Query().Get("conversationId")
+		completeReq.Prompt = req.URL.Query().Get("prompt")
+	} else {
+		// Parse from JSON body
+		body, err := io.ReadAll(req.Body)
+		if err != nil {
+			http.Error(w, "failed to read request body", http.StatusBadRequest)
+			return
+		}
+		if err := protojson.Unmarshal(body, completeReq); err != nil {
+			http.Error(w, "failed to parse request body", http.StatusBadRequest)
+			return
+		}
 	}
 	completeReq.InstanceId = instanceID // Set instance ID from path
 
@@ -283,7 +289,6 @@ func (s *Server) CompleteStreamingHandler(w http.ResponseWriter, req *http.Reque
 	}()
 
 	// Serve the SSE stream
-	log.Printf("GOT HERE %s %s", instanceID, completeReq.Prompt)
 	eventServer.ServeHTTP(w, req)
 }
 
