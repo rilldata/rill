@@ -18,6 +18,7 @@ sidebar_position: 10
 
 When using Rill Developer on your local machine (i.e., `rill start`), Rill will use either the credentials configured in your local environment using the Google Cloud CLI (`gcloud`) or an [explicitly defined connector YAML](/reference/project-files/connectors#bigquery). 
 
+### Inferred Credentials
 Follow these steps to configure you local environemnt credentials:
 
 1. Open a terminal window and run `gcloud auth list` to check if you already have the Google Cloud CLI installed and authenticated.
@@ -25,6 +26,27 @@ Follow these steps to configure you local environemnt credentials:
 2. If it does not print information about your user, follow the steps on [Install the Google Cloud CLI](https://cloud.google.com/sdk/docs/install-sdk). Make sure to run `gcloud init` after installation as described in the tutorial.
 
 You have now configured Google Cloud access from your local environment. Rill will detect and use your credentials the next time you try to ingest a source.
+
+### google_application_credentials
+
+Alternatively, we recommend creating explicit credentials in plug into Rill as this will facilitate an easier deploy to Rill Cloud. Assuming you've followed step 1 and 2 above, you'll need to create your json credential with the following command.
+
+```bash
+gcloud iam service-accounts keys create ~/key.json \
+  --iam-account=my-service-account@PROJECT_ID.iam.gserviceaccount.com
+```
+
+:::note Permission denied?
+You'll need to contact your internal cloud admin to create your JSON credentials for you.
+:::
+
+To configure Rill to use these credentials, create a `.env` file in your project directory (if one doesn't already exist) and add your service account JSON credentials as a single-line string:
+
+```bash
+google_application_credentials='{"type": "service_account", "project_id": "your-project", ...}'
+```
+
+Once configured, Rill will automatically use these credentials for all Google Cloud Platform connections, including [GCS](/connect/data-source/gcs).
 
 :::tip Did you know?
 
