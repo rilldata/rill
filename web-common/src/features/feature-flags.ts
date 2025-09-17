@@ -58,7 +58,7 @@ class FeatureFlags {
   reports = new FeatureFlag("user", true);
   darkMode = new FeatureFlag("user", false);
   chat = new FeatureFlag("user", false);
-  dashboardChat = new FeatureFlag("user", false);
+  dashboardChat = new FeatureFlag("user", true);
 
   constructor() {
     this.ready = new Promise<void>((resolve) => {
