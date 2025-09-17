@@ -256,18 +256,19 @@
   }
 
   .connector-grid {
-    @apply grid grid-cols-3 gap-4;
+    @apply grid grid-cols-4 gap-x-4 gap-y-2;
   }
 
   .connector-tile-button {
-    aspect-ratio: 2/1;
-    @apply basis-40;
+    width: 8rem;
+    height: 4rem;
     @apply border border-gray-300 rounded;
     @apply cursor-pointer overflow-hidden;
   }
 
   .connector-wrapper {
-    @apply py-3 px-7 size-full;
+    @apply px-5 py-2;
+    @apply size-full;
     @apply flex items-center justify-center;
   }
 
