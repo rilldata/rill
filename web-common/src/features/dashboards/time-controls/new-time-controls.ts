@@ -320,7 +320,6 @@ import {
 } from "@rilldata/web-common/lib/time/new-grains";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
-  RillAllTimeInterval,
   RillLegacyDaxInterval,
   RillLegacyIsoInterval,
   RillPeriodToGrainInterval,

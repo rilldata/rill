@@ -2,7 +2,6 @@ import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import { V1TimeGrainToAlias } from "@rilldata/web-common/lib/time/new-grains";
 import { parseRillTime } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser";
 import type { RangeBuckets } from "@rilldata/web-common/features/dashboards/time-controls/new-time-controls";
-import type { RillTime } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/RillTime";
 
 const defaultLastNValues: Record<V1TimeGrain, number[]> = {
   [V1TimeGrain.TIME_GRAIN_MILLISECOND]: [],
