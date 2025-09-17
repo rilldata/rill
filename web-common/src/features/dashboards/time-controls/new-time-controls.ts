@@ -552,7 +552,7 @@ const defaultBuckets: RangeBuckets = {
   periodToDate: RILL_PERIOD_TO_DATE.map((r) => parseRillTime(r)),
   previous: RILL_PREVIOUS_PERIOD.map((r) => parseRillTime(r)),
   custom: [],
-  allTime: true,
+  allTime: false,
 };
 
 const previousPeriodRegex =

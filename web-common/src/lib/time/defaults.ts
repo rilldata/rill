@@ -16,11 +16,6 @@ const defaultLastNValues: Record<V1TimeGrain, number[]> = {
   [V1TimeGrain.TIME_GRAIN_UNSPECIFIED]: [],
 };
 
-export interface TimeRangeAlt {
-  string: string;
-  label: string;
-}
-
 export function getDefaultRangeBuckets(
   allowedGrains: V1TimeGrain[],
 ): RangeBuckets {
@@ -29,7 +24,7 @@ export function getDefaultRangeBuckets(
     periodToDate: [],
     previous: [],
     custom: [],
-    allTime: true,
+    allTime: false,
   };
 
   allowedGrains.forEach((grain) => {
