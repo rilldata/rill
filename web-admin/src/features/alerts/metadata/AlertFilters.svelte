@@ -8,6 +8,7 @@
   import { getDimensionFilters } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
   import { getMeasureFilters } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measure-filters";
   import type { DimensionThresholdFilter } from "@rilldata/web-common/features/dashboards/stores/explore-state";
+  import { convertToInterval } from "@rilldata/web-common/features/dashboards/time-controls/new-time-controls";
   import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
   import type {
     V1Expression,
@@ -37,6 +38,8 @@
     havingFilter = dimensionThresholdFilters;
   }
   $: ({ instanceId } = $runtime);
+
+  $: interval = convertToInterval(timeRange);
 
   $: metricsView = useMetricsView(instanceId, metricsViewName);
   $: dimensionIdMap = getMapFromArray(
@@ -75,8 +78,7 @@
               values={selectedValues}
               {inputText}
               {isInclude}
-              timeStart={timeRange?.start}
-              timeEnd={timeRange?.end}
+              {interval}
             />
           {/if}
         </div>

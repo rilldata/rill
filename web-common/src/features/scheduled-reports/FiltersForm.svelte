@@ -12,6 +12,7 @@
   import { isExpressionUnsupported } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
   import {
     ALL_TIME_RANGE_ALIAS,
+    convertToInterval,
     deriveInterval,
   } from "@rilldata/web-common/features/dashboards/time-controls/new-time-controls.ts";
   import SuperPill from "@rilldata/web-common/features/dashboards/time-controls/super-pill/SuperPill.svelte";
@@ -72,8 +73,9 @@
     selectedTimezone,
     allTimeRange,
     timeRangeStateStore,
-    comparisonRangeStateStore,
     minTimeGrain,
+
+    comparisonRangeStateStore,
     setTimeZone,
     selectTimeRange,
     setSelectedComparisonRange,
@@ -114,20 +116,20 @@
     v1TimeRange,
   );
 
-  $: possibleAllTimeInterval =
-    $allTimeRange &&
-    Interval.fromDateTimes($allTimeRange.start, $allTimeRange.end);
+  $: interval = convertToInterval(selectedTimeRange, $selectedTimezone);
 
-  $: allTimeInterval = possibleAllTimeInterval?.isValid
-    ? possibleAllTimeInterval
-    : undefined;
-
-  $: interval = selectedTimeRange
-    ? Interval.fromDateTimes(
-        DateTime.fromJSDate(selectedTimeRange.start).setZone($selectedTimezone),
-        DateTime.fromJSDate(selectedTimeRange.end).setZone($selectedTimezone),
-      )
-    : (allTimeInterval ?? Interval.invalid("Unable to parse time range"));
+  $: comparisonRange =
+    $comparisonRangeStateStore?.selectedComparisonTimeRange?.name;
+  $: comparisonInterval =
+    $comparisonRangeStateStore?.selectedComparisonTimeRange &&
+    Interval.fromDateTimes(
+      DateTime.fromJSDate(
+        $comparisonRangeStateStore.selectedComparisonTimeRange.start,
+      ).setZone($selectedTimezone),
+      DateTime.fromJSDate(
+        $comparisonRangeStateStore.selectedComparisonTimeRange.end,
+      ).setZone($selectedTimezone),
+    );
 
   function handleMeasureFilterApply(
     dimension: string,
@@ -168,8 +170,21 @@
     } as DashboardTimeControls);
   }
 
+  $: allTime = $allTimeRange;
+
+  $: min = allTime && DateTime.fromJSDate(allTime.start);
+  $: max = allTime && DateTime.fromJSDate(allTime.end);
+
+  $: minMaxTimeStamps =
+    min?.isValid && max?.isValid
+      ? {
+          min,
+          max,
+        }
+      : undefined;
+
   async function onSelectRange(name: string) {
-    if (!$allTimeRange?.end) {
+    if (!$allTimeRange?.end || !minMaxTimeStamps) {
       return;
     }
 
@@ -192,10 +207,7 @@
 
     const { interval, grain } = await deriveInterval(
       name,
-      {
-        min: DateTime.fromJSDate($allTimeRange.start),
-        max: DateTime.fromJSDate($allTimeRange.end),
-      },
+      minMaxTimeStamps,
       metricsViewName,
       $selectedTimezone,
       $minTimeGrain,
@@ -264,7 +276,7 @@
       <Calendar size="16px" />
       {#if $allTimeRange}
         <SuperPill
-          allTime={allTimeInterval}
+          {minMaxTimeStamps}
           {selectedRangeAlias}
           showPivot={false}
           {defaultTimeRange}
@@ -272,8 +284,6 @@
           {timeRanges}
           complete={false}
           {interval}
-          {timeStart}
-          {timeEnd}
           {activeTimeGrain}
           activeTimeZone={$selectedTimezone}
           allowCustomTimeRange={false}
@@ -289,9 +299,9 @@
           {side}
         />
         <CanvasComparisonPill
-          allTimeRange={allTimeInterval}
-          {selectedTimeRange}
-          {selectedComparisonTimeRange}
+          {minMaxTimeStamps}
+          {comparisonInterval}
+          {comparisonRange}
           showTimeComparison={$comparisonRangeStateStore?.showTimeComparison ??
             false}
           activeTimeZone={$selectedTimezone}
@@ -299,6 +309,19 @@
           onSetSelectedComparisonRange={setSelectedComparisonRange}
           allowCustomTimeRange={false}
           {side}
+        />
+
+        <CanvasComparisonPill
+          {comparisonInterval}
+          {comparisonRange}
+          {activeTimeGrain}
+          {minMaxTimeStamps}
+          {interval}
+          range={selectedRangeAlias}
+          showTimeComparison={$comparisonRangeStateStore?.showTimeComparison ??
+            false}
+          activeTimeZone={$selectedTimezone}
+          setComparison={setSelectedComparisonRange}
         />
       {/if}
     </div>
@@ -335,8 +358,7 @@
                 {mode}
                 {selectedValues}
                 {inputText}
-                {timeStart}
-                {timeEnd}
+                {interval}
                 {side}
                 timeControlsReady
                 excludeMode={$isFilterExcludeMode(name)}

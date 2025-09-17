@@ -1,8 +1,4 @@
 import type {
-  ComparisonTimeRangeState,
-  TimeRangeState,
-} from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-import type {
   V1Expression,
   V1TimeGrain,
   V1TimeRange,
@@ -10,11 +6,9 @@ import type {
 
 export interface TimeAndFilterStore {
   timeRange: V1TimeRange;
+  showTimeComparison: boolean;
   comparisonTimeRange: V1TimeRange | undefined;
   where: V1Expression | undefined;
   timeGrain: V1TimeGrain | undefined;
-  showTimeComparison: boolean;
-  timeRangeState: TimeRangeState | undefined;
-  comparisonTimeRangeState: ComparisonTimeRangeState | undefined;
   hasTimeSeries: boolean | undefined;
 }

@@ -7,6 +7,7 @@
     useDimensionSearch,
   } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/dimension-filter-values";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import type { Interval } from "luxon";
 
   export let name: string;
   export let metricsViewNames: string[];
@@ -15,8 +16,7 @@
   export let values: string[];
   export let inputText: string | undefined;
   export let isInclude: boolean;
-  export let timeStart: string | undefined;
-  export let timeEnd: string | undefined;
+  export let interval: Interval<true> | undefined;
 
   $: ({ instanceId } = $runtime);
 
@@ -35,8 +35,7 @@
       mode,
       values,
       searchText: inputText ?? "",
-      timeStart,
-      timeEnd,
+      interval,
       enabled: enableSearchQuery,
     },
   );
@@ -54,8 +53,7 @@
       mode,
       values,
       searchText: inputText ?? "",
-      timeStart,
-      timeEnd,
+      interval,
       enabled: enableSearchCountQuery,
     },
   );

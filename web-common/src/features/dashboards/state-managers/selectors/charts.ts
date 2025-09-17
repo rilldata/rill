@@ -4,9 +4,11 @@ import {
   getOffset,
   getTimeWidth,
 } from "@rilldata/web-common/lib/time/transforms";
-import { TimeOffsetType } from "@rilldata/web-common/lib/time/types";
+import {
+  TimeOffsetType,
+  type DashboardTimeControls,
+} from "@rilldata/web-common/lib/time/types";
 import type { DashboardDataSources } from "./types";
-import { Interval } from "luxon";
 
 export const chartSelectors = {
   canPanLeft: (dashData: DashboardDataSources) => {
@@ -29,20 +31,12 @@ export const chartSelectors = {
   getNewPanRange: (dashData: DashboardDataSources) => {
     const timeControls = timeControlsState(dashData);
     const timeZone = dashData.dashboard?.selectedTimezone;
-    const interval =
-      timeControls.selectedTimeRange &&
-      Interval.fromDateTimes(
-        timeControls.selectedTimeRange?.start,
-        timeControls.selectedTimeRange?.end,
-      );
-    if (!interval?.isValid || !timeZone) return;
-
-    return getPanRangeForTimeRange(interval, timeZone);
+    return getPanRangeForTimeRange(timeControls.selectedTimeRange, timeZone);
   },
 };
 
 export function getPanRangeForTimeRange(
-  timeRange: Interval<true> | undefined,
+  timeRange: DashboardTimeControls | undefined,
   timeZone: string,
 ) {
   return (direction: "left" | "right") => {
@@ -54,16 +48,11 @@ export function getPanRangeForTimeRange(
     const offsetType =
       direction === "left" ? TimeOffsetType.SUBTRACT : TimeOffsetType.ADD;
 
-    const currentRangeWidth = getTimeWidth(start.toJSDate(), end.toJSDate());
+    const currentRangeWidth = getTimeWidth(start, end);
     const panAmount = getDurationFromMS(currentRangeWidth);
 
-    const newStart = getOffset(
-      start.toJSDate(),
-      panAmount,
-      offsetType,
-      timeZone,
-    );
-    const newEnd = getOffset(end.toJSDate(), panAmount, offsetType, timeZone);
+    const newStart = getOffset(start, panAmount, offsetType, timeZone);
+    const newEnd = getOffset(end, panAmount, offsetType, timeZone);
 
     return { start: newStart, end: newEnd };
   };

@@ -31,6 +31,7 @@
   import ComparisonPill from "../time-controls/comparison-pill/ComparisonPill.svelte";
   import {
     ALL_TIME_RANGE_ALIAS,
+    convertToInterval,
     CUSTOM_TIME_RANGE_ALIAS,
     deriveInterval,
   } from "../time-controls/new-time-controls";
@@ -171,14 +172,7 @@
     ? possibleAllTimeInterval
     : undefined;
 
-  $: maybeInterval = selectedTimeRange
-    ? Interval.fromDateTimes(
-        DateTime.fromJSDate(selectedTimeRange.start).setZone(activeTimeZone),
-        DateTime.fromJSDate(selectedTimeRange.end).setZone(activeTimeZone),
-      )
-    : (allTimeInterval ?? Interval.invalid("Unable to parse time range"));
-
-  $: interval = maybeInterval?.isValid ? maybeInterval : undefined;
+  $: interval = convertToInterval(selectedTimeRange, activeTimeZone);
 
   $: baseTimeRange = selectedTimeRange?.start &&
     selectedTimeRange?.end && {

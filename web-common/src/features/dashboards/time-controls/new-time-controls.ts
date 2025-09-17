@@ -9,7 +9,10 @@ import {
   parseRillTime,
 } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser";
 import { humaniseISODuration } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
-import type { V1ExploreTimeRange } from "@rilldata/web-common/runtime-client";
+import type {
+  V1ExploreTimeRange,
+  V1TimeRange,
+} from "@rilldata/web-common/runtime-client";
 import {
   getQueryServiceMetricsViewTimeRangesQueryKey,
   V1TimeGrain,
@@ -320,6 +323,7 @@ import {
 } from "@rilldata/web-common/lib/time/new-grains";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import type { MinMax } from "../../canvas/stores/time-control";
+import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
 
 export async function deriveInterval(
   name: RillPeriodToDate | RillPreviousPeriod | ISODurationString,
@@ -401,7 +405,7 @@ export async function deriveInterval(
       ),
       grain: parsed.asOfLabel?.snap
         ? GrainAliasToV1TimeGrain[parsed.asOfLabel?.snap]
-        : parsed.rangeGrain,
+        : parsed.rangeGrain || timeRange.roundToGrain,
     };
   } catch (error) {
     console.error("Error deriving interval:", error);
@@ -418,6 +422,28 @@ export function getPeriodToDate(date: DateTime, period: DateTimeUnit) {
   const exclusiveEnd = date.endOf("day").plus({ millisecond: 1 });
 
   return Interval.fromDateTimes(periodStart, exclusiveEnd);
+}
+
+export function convertToInterval(
+  timeRange: V1TimeRange | DashboardTimeControls | undefined,
+  timeZone: string = "UTC",
+): Interval<true> | undefined {
+  if (!timeRange?.start || !timeRange?.end) return undefined;
+
+  const start =
+    typeof timeRange.start === "string"
+      ? DateTime.fromISO(timeRange.start, { zone: timeZone })
+      : DateTime.fromJSDate(timeRange.start, { zone: timeZone });
+  const end =
+    typeof timeRange.end === "string"
+      ? DateTime.fromISO(timeRange.end, { zone: timeZone })
+      : DateTime.fromJSDate(timeRange.end, { zone: timeZone });
+
+  const interval = Interval.fromDateTimes(start, end);
+
+  if (!interval.isValid) return undefined;
+
+  return interval;
 }
 
 export function normalizeWeekday(

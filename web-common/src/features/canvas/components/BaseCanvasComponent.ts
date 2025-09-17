@@ -268,7 +268,6 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
           comparisonTimeRange,
           where,
           timeGrain,
-
           hasTimeSeries,
         };
       },

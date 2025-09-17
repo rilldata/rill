@@ -32,6 +32,7 @@ import {
 } from "../../dashboards/time-controls/new-time-controls";
 import { type CanvasResponse } from "../selector";
 import { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
+import { parseRillTime } from "../../dashboards/url-state/time-ranges/parser";
 
 export type MinMax = {
   min: DateTime<true>;
@@ -136,6 +137,8 @@ export class TimeControls {
           .then((result) => {
             if (result.interval.isValid) {
               set(result.interval as Interval<true>);
+
+              if (result.grain) this.set.grain(result.grain, true);
             } else {
               set(undefined);
             }
@@ -164,7 +167,17 @@ export class TimeControls {
     if (this.componentName && !timeRange) return;
 
     if (timeRange) this._range.set(timeRange);
-    if (grain) this.grain.set(grain);
+    if (grain) {
+      this.grain.set(grain);
+    } else {
+      try {
+        const parsed = parseRillTime(timeRange || "");
+
+        this.grain.set(parsed.interval.getGrain());
+      } catch {
+        // no-op
+      }
+    }
     if (timeZone) this._zone.set(timeZone);
 
     const defaultComparisonRange = getDefaultComparisonRange(timeRange);
@@ -204,7 +217,7 @@ export class TimeControls {
 
     this.minTimeGrain.set(minTimeGrain);
     const currentGrain = get(this.grain);
-    console.log({ currentGrain, minTimeGrain });
+
     if (!currentGrain) {
       this.grain.set(minTimeGrain);
     }

@@ -4,7 +4,6 @@
   import CanvasComparisonPill from "@rilldata/web-common/features/canvas/filters/CanvasComparisonPill.svelte";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import SuperPill from "@rilldata/web-common/features/dashboards/time-controls/super-pill/SuperPill.svelte";
-
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import type { TimeControls } from "../../stores/time-control";
 
@@ -33,13 +32,13 @@
     minTimeGrain,
     set,
     _showTimeComparison,
-    searchParamsStore,
+
     clearAll,
   } = localTimeControls);
 
-  $: localFiltersEnabled = Boolean($searchParamsStore.size);
-
   $: interval = $_interval;
+
+  $: localFiltersEnabled = Boolean(interval);
 
   $: comparisonInterval = $_comparisonInterval;
   $: comparisonRange = $_comparisonRange;
