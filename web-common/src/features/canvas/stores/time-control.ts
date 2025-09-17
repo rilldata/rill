@@ -137,7 +137,10 @@ export class TimeControls {
           .then((result) => {
             if (result.interval.isValid) {
               set(result.interval as Interval<true>);
-
+              console.log(
+                result.interval.start?.toString(),
+                result.interval.end?.toString(),
+              );
               if (result.grain) this.set.grain(result.grain, true);
             } else {
               set(undefined);

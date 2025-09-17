@@ -182,7 +182,7 @@
       range={selectedRangeAlias}
       {showTimeComparison}
       {activeTimeZone}
-      setComparison={set.comparison}
+      onSelectComparisonString={set.comparison}
     />
   </div>
   <div class="relative flex flex-row gap-x-2 gap-y-2 items-start ml-2">

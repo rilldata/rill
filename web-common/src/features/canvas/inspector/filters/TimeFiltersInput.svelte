@@ -123,7 +123,7 @@
           range={selectedRangeAlias}
           {showTimeComparison}
           {activeTimeZone}
-          setComparison={set.comparison}
+          onSelectComparisonString={set.comparison}
         />
       {/if}
     </div>

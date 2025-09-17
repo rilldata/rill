@@ -19,7 +19,14 @@
   export let activeTimeZone: string;
   export let allowCustomTimeRange: boolean = true;
   export let side: "top" | "right" | "bottom" | "left" = "bottom";
-  export let setComparison: (range: boolean | string) => void;
+  export let onDisplayTimeComparison: ((show: boolean) => void) | undefined =
+    undefined;
+  export let onSelectComparisonString:
+    | ((range: boolean | string) => void)
+    | undefined = undefined;
+  export let onSelectComparisonRange:
+    | ((name: string, start: Date, end: Date) => void)
+    | undefined = undefined;
 
   $: comparisonOptions = getComparisonOptionsForCanvas(interval, range);
 
@@ -34,7 +41,8 @@
     {disabled}
     class="flex gap-x-1.5 cursor-pointer"
     on:click={() => {
-      setComparison(!showTimeComparison);
+      onDisplayTimeComparison?.(!showTimeComparison);
+      onSelectComparisonString?.(!showTimeComparison);
     }}
     type="button"
     aria-label="Toggle time comparison"
@@ -67,7 +75,8 @@
       disabled={disabled ?? false}
       {allowCustomTimeRange}
       {side}
-      onSelectComparisonString={setComparison}
+      {onSelectComparisonString}
+      {onSelectComparisonRange}
     />
   {/if}
 </div>

@@ -74,7 +74,6 @@
     allTimeRange,
     timeRangeStateStore,
     minTimeGrain,
-
     comparisonRangeStateStore,
     setTimeZone,
     selectTimeRange,
@@ -88,7 +87,7 @@
 
   $: isComplexFilter = isExpressionUnsupported($whereFilter);
 
-  $: ({ selectedTimeRange, timeStart, timeEnd } = $timeRangeStateStore || {});
+  $: ({ selectedTimeRange } = $timeRangeStateStore || {});
   $: selectedComparisonTimeRange =
     $comparisonRangeStateStore?.selectedComparisonTimeRange;
 
@@ -104,10 +103,11 @@
   $: defaultTimeRange = exploreSpec.defaultPreset?.timeRange;
   $: availableTimeZones = exploreSpec.timeZones ?? [];
   $: timeRanges = exploreSpec.timeRanges ?? [];
+  $: timeZone = $selectedTimezone;
 
   $: v1TimeRange = mapSelectedTimeRangeToV1TimeRange(
     selectedTimeRange,
-    $selectedTimezone,
+    timeZone,
     exploreSpec,
   );
   $: v1ComparisonTimeRange = mapSelectedComparisonTimeRangeToV1TimeRange(
@@ -116,20 +116,14 @@
     v1TimeRange,
   );
 
-  $: interval = convertToInterval(selectedTimeRange, $selectedTimezone);
+  $: interval = convertToInterval(selectedTimeRange, timeZone);
 
   $: comparisonRange =
     $comparisonRangeStateStore?.selectedComparisonTimeRange?.name;
-  $: comparisonInterval =
-    $comparisonRangeStateStore?.selectedComparisonTimeRange &&
-    Interval.fromDateTimes(
-      DateTime.fromJSDate(
-        $comparisonRangeStateStore.selectedComparisonTimeRange.start,
-      ).setZone($selectedTimezone),
-      DateTime.fromJSDate(
-        $comparisonRangeStateStore.selectedComparisonTimeRange.end,
-      ).setZone($selectedTimezone),
-    );
+  $: comparisonInterval = convertToInterval(
+    $comparisonRangeStateStore?.selectedComparisonTimeRange,
+    timeZone,
+  );
 
   function handleMeasureFilterApply(
     dimension: string,
@@ -209,7 +203,7 @@
       name,
       minMaxTimeStamps,
       metricsViewName,
-      $selectedTimezone,
+      timeZone,
       $minTimeGrain,
     );
 
@@ -285,7 +279,7 @@
           complete={false}
           {interval}
           {activeTimeGrain}
-          activeTimeZone={$selectedTimezone}
+          activeTimeZone={timeZone}
           allowCustomTimeRange={false}
           showDefaultItem
           applyRange={selectRange}
@@ -298,18 +292,6 @@
           minTimeGrain={undefined}
           {side}
         />
-        <CanvasComparisonPill
-          {minMaxTimeStamps}
-          {comparisonInterval}
-          {comparisonRange}
-          showTimeComparison={$comparisonRangeStateStore?.showTimeComparison ??
-            false}
-          activeTimeZone={$selectedTimezone}
-          onDisplayTimeComparison={displayTimeComparison}
-          onSetSelectedComparisonRange={setSelectedComparisonRange}
-          allowCustomTimeRange={false}
-          {side}
-        />
 
         <CanvasComparisonPill
           {comparisonInterval}
@@ -320,8 +302,11 @@
           range={selectedRangeAlias}
           showTimeComparison={$comparisonRangeStateStore?.showTimeComparison ??
             false}
-          activeTimeZone={$selectedTimezone}
-          setComparison={setSelectedComparisonRange}
+          activeTimeZone={timeZone}
+          onDisplayTimeComparison={displayTimeComparison}
+          onSelectComparisonRange={(name, start, end) => {
+            setSelectedComparisonRange({ name, start, end });
+          }}
         />
       {/if}
     </div>
