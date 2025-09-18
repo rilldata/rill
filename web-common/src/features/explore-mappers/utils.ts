@@ -47,17 +47,21 @@ export function fillTimeRange(
   reqTimeRange: V1TimeRange | undefined,
   reqComparisonTimeRange: V1TimeRange | undefined,
   timeRangeSummary: V1TimeRangeSummary,
-  executionTime: string,
+  executionTime: string | undefined,
 ) {
+  const endTime =
+    executionTime ?? timeRangeSummary.max ?? new Date().toISOString();
+
   if (reqTimeRange) {
     exploreState.selectedTimeRange = mapV1TimeRangeToSelectedTimeRange(
       reqTimeRange,
       timeRangeSummary,
-      executionTime,
+      endTime,
     );
     if (
       exploreState.selectedTimeRange?.start &&
-      exploreState.selectedTimeRange?.end
+      exploreState.selectedTimeRange?.end &&
+      executionTime
     ) {
       exploreState.selectedTimeRange.name = TimeRangePreset.CUSTOM;
     }
@@ -80,7 +84,7 @@ export function fillTimeRange(
         mapV1TimeRangeToSelectedComparisonTimeRange(
           reqComparisonTimeRange,
           timeRangeSummary,
-          executionTime,
+          endTime,
         );
     }
 
