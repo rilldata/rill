@@ -12,12 +12,12 @@
     expandedBlocks[index] = !expandedBlocks[index];
   }
 
-  // Group tool calls with their results
+  // Group tool calls with their results within this message
   function groupToolCallsWithResults(content: any[]) {
     const groups: any[] = [];
     const toolResults = new Map();
 
-    // First pass: collect all tool results by ID
+    // First pass: collect all tool results by ID within this message
     content.forEach((block) => {
       if (block.toolResult && block.toolResult.id) {
         toolResults.set(block.toolResult.id, block.toolResult);
@@ -29,15 +29,15 @@
       if (block.text) {
         groups.push({ type: "text", content: block.text, index });
       } else if (block.toolCall) {
-        const toolResult = toolResults.get(block.toolCall.id);
+        // Tool result should already be merged into this block by the data layer
         groups.push({
           type: "tool",
           toolCall: block.toolCall,
-          toolResult: toolResult,
+          toolResult: block.toolResult || toolResults.get(block.toolCall.id),
           index,
         });
       }
-      // Skip standalone toolResult blocks as they're now grouped with toolCalls
+      // Skip standalone toolResult blocks as they should be merged with toolCalls
     });
 
     return groups;

@@ -1,13 +1,14 @@
 import { Throttler } from "@rilldata/web-common/lib/throttler";
 import { streamingFetchWrapper } from "@rilldata/web-common/runtime-client/fetch-streaming-wrapper";
 import type {
+  V1CompleteStreamingResponse,
   V1WatchFilesResponse,
   V1WatchLogsResponse,
   V1WatchResourcesResponse,
 } from "@rilldata/web-common/runtime-client/index";
 import { get, writable } from "svelte/store";
-import { runtime } from "./runtime-store";
 import { asyncWait } from "../lib/waitUtils";
+import { runtime } from "./runtime-store";
 
 const MAX_RETRIES = 5;
 const BACKOFF_DELAY = 1000;
@@ -17,7 +18,8 @@ const RECONNECT_CALLBACK_DELAY = 150;
 type WatchResponse =
   | V1WatchFilesResponse
   | V1WatchResourcesResponse
-  | V1WatchLogsResponse;
+  | V1WatchLogsResponse
+  | V1CompleteStreamingResponse;
 
 type StreamingFetchResponse<Res extends WatchResponse> = {
   result?: Res;

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { runtime } from "../../../../runtime-client/runtime-store";
-  import { Chat } from "../../core/chat";
+  import { getChatInstance } from "../../core/chat";
   import ChatFooter from "../../core/input/ChatFooter.svelte";
   import ChatInput from "../../core/input/ChatInput.svelte";
   import ChatMessages from "../../core/messages/ChatMessages.svelte";
@@ -9,7 +9,7 @@
 
   $: ({ instanceId } = $runtime);
 
-  $: chat = new Chat(instanceId, {
+  $: chat = getChatInstance(instanceId, {
     conversationState: "url",
   });
 

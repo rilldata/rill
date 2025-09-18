@@ -1,7 +1,7 @@
 <script lang="ts">
   import Resizer from "../../../../layout/Resizer.svelte";
   import { runtime } from "../../../../runtime-client/runtime-store";
-  import { Chat } from "../../core/chat";
+  import { getChatInstance } from "../../core/chat";
   import ChatFooter from "../../core/input/ChatFooter.svelte";
   import ChatInput from "../../core/input/ChatInput.svelte";
   import ChatMessages from "../../core/messages/ChatMessages.svelte";
@@ -15,7 +15,7 @@
   $: ({ instanceId } = $runtime);
 
   // Initialize chat with browser storage for conversation management
-  $: chat = new Chat(instanceId, {
+  $: chat = getChatInstance(instanceId, {
     conversationState: "browserStorage",
   });
 
