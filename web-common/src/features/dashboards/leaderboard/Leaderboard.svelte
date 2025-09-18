@@ -33,6 +33,7 @@
   import {
     cleanUpComparisonValue,
     compareLeaderboardValues,
+    formatDimensionValue,
     getSort,
     prepareLeaderboardItemData,
   } from "./leaderboard-utils";
@@ -209,6 +210,7 @@
       slice,
       $selectedValues?.data ?? [],
       leaderboardTotals,
+      dimension?.dataType,
     ));
 
   $: belowTheFoldDataLimit = maxValuesToShow - aboveTheFold.length;
@@ -267,8 +269,9 @@
       leaderboardMeasureNames,
       leaderboardTotals,
       $selectedValues?.data?.findIndex((value) =>
-        compareLeaderboardValues(value, item[dimensionName]),
+        compareLeaderboardValues(value, formatDimensionValue(item[dimensionName], dimension?.dataType)),
       ) ?? -1,
+      dimension?.dataType,
     ),
   );
 
