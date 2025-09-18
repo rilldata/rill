@@ -366,8 +366,9 @@ func SetRemote(path string, config *Config) error {
 		return fmt.Errorf("failed to get remote: %w", err)
 	}
 	if remote != nil {
-		if remote.Config().URLs[0] == config.Remote {
+		if remote.Config().URLs[0] == config.Remote || !config.ManagedRepo {
 			// remote already exists with the same URL, no need to create it again
+			// remote other than managed git exists, can't overwrite user's remote
 			return nil
 		}
 		// if the remote already exists with a different URL, delete it
