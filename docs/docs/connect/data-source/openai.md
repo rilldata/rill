@@ -28,7 +28,7 @@ To configure OpenAI access, you'll need to obtain an API key from your OpenAI ac
    ```yaml
    type: connector
    driver: openai
-   openai_api_key: '{{ .env.connector.openai.openai_api_key }}'
+   api_key: '{{ .env.connector.openai.openai_api_key }}'
    ```
 :::tip Security Best Practice
 
