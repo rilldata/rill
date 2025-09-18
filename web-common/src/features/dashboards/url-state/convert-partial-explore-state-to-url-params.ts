@@ -180,6 +180,13 @@ function toTimeRangesUrl(
     searchParams.set(ExploreStateURLParams.TimeGrain, mappedTimeGrain);
   }
 
+  if (partialExploreState.selectedTimeColumn) {
+    searchParams.set(
+      ExploreStateURLParams.TimeColumn,
+      partialExploreState.selectedTimeColumn,
+    );
+  }
+
   maybeSetParam(
     searchParams,
     partialExploreState,
