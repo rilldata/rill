@@ -161,9 +161,9 @@
                   <button
                     id={connector.name}
                     on:click={() => goToConnectorForm(connector)}
-                    class="connector-tile-button size-full min-w-24 min-h-16"
+                    class="connector-tile-button size-full min-w-24 min-h-16 h-20"
                   >
-                    <div class="connector-wrapper">
+                    <div class="connector-wrapper px-6 py-4 md:px-4 md:py-2">
                       <svelte:component this={ICONS[connector.name]} />
                     </div>
                   </button>
@@ -185,10 +185,10 @@
               {#if connector.name}
                 <button
                   id={connector.name}
-                  class="connector-tile-button size-full min-w-24 min-h-16"
+                  class="connector-tile-button size-full min-w-24 min-h-16 h-20"
                   on:click={() => goToConnectorForm(connector)}
                 >
-                  <div class="connector-wrapper">
+                  <div class="connector-wrapper px-6 py-4 md:px-4 md:py-2">
                     <svelte:component this={ICONS[connector.name]} />
                   </div>
                 </button>
@@ -265,7 +265,6 @@
   }
 
   .connector-wrapper {
-    @apply px-5 py-2;
     @apply size-full;
     @apply flex items-center justify-center;
   }
