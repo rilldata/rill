@@ -8,7 +8,7 @@ sidebar_position: 15
 [MotherDuck](https://motherduck.com/) is a cloud-native DuckDB service that provides scalable analytics and data processing capabilities. Built on the same core engine as DuckDB, MotherDuck offers the familiar SQL interface and performance characteristics while adding cloud-native features like serverless compute, automatic scaling, and collaborative data sharing.
 
 
-<img src='/img/reference/olap-engines/motherduck/rill-developer.png' class='rounded-gif' />
+<img src='/img/connect/olap-engines/motherduck/rill-developer.png' class='rounded-gif' />
 <br />
 
 
@@ -32,7 +32,7 @@ For more information on supported parameters, see our [MotherDuck connector YAML
 
 ## Getting Your MotherDuck Access Token
 
-<img src='/img/reference/olap-engines/motherduck/service-token.png' class='rounded-gif' />
+<img src='/img/connect/olap-engines/motherduck/service-token.png' class='rounded-gif' />
 <br />
 
 
