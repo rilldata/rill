@@ -58,7 +58,7 @@ func (s *Server) GitStatus(ctx context.Context, r *connect.Request[localv1.GitSt
 	}
 
 	// to avoid asking user for inputs on UI simply used the last updated project for now
-	project, err := inferProject(ctx, s.app.ch, s.app.ch.Org, s.app.ProjectPath)
+	projects, err := s.app.ch.InferProjects(ctx, s.app.ch.Org, s.app.ProjectPath)
 	if err != nil {
 		if !errors.Is(err, cmdutil.ErrNoMatchingProject) {
 			return nil, err
@@ -74,6 +74,7 @@ func (s *Server) GitStatus(ctx context.Context, r *connect.Request[localv1.GitSt
 			Subpath:   subPath,
 		}), nil
 	}
+	project := projects[0]
 
 	// get ephemeral git credentials
 	config, err := s.app.ch.GitHelper(s.app.ch.Org, project.Name, gitPath).GitConfig(ctx)
@@ -153,13 +154,14 @@ func (s *Server) GitPull(ctx context.Context, r *connect.Request[localv1.GitPull
 		return nil, errors.New("must authenticate before performing this action")
 	}
 
-	project, err := inferProject(ctx, s.app.ch, s.app.ch.Org, s.app.ProjectPath)
+	projects, err := s.app.ch.InferProjects(ctx, s.app.ch.Org, s.app.ProjectPath)
 	if err != nil {
 		if !errors.Is(err, cmdutil.ErrNoMatchingProject) {
 			return nil, err
 		}
 		return nil, errors.New("git credentials not set and repo is not connected to a project")
 	}
+	project := projects[0]
 
 	config, err := s.app.ch.GitHelper(s.app.ch.Org, project.Name, gitPath).GitConfig(ctx)
 	if err != nil {
@@ -217,13 +219,14 @@ func (s *Server) GitPush(ctx context.Context, r *connect.Request[localv1.GitPush
 		return nil, errors.New("must authenticate before performing this action")
 	}
 
-	project, err := inferProject(ctx, s.app.ch, s.app.ch.Org, s.app.ProjectPath)
+	projects, err := s.app.ch.InferProjects(ctx, s.app.ch.Org, s.app.ProjectPath)
 	if err != nil {
 		if !errors.Is(err, cmdutil.ErrNoMatchingProject) {
 			return nil, err
 		}
 		return nil, errors.New("git credentials not set and repo is not connected to a project")
 	}
+	project := projects[0]
 
 	author, err := s.app.ch.GitSignature(ctx, gitPath)
 	if err != nil {
@@ -254,14 +257,4 @@ func (s *Server) GitPush(ctx context.Context, r *connect.Request[localv1.GitPush
 	}
 
 	return connect.NewResponse(&localv1.GitPushResponse{}), nil
-}
-
-func inferProject(ctx context.Context, h *cmdutil.Helper, org, pathToProject string) (*adminv1.Project, error) {
-	// Get the project name from the path
-	projects, err := h.InferProjects(ctx, org, pathToProject)
-	if err != nil {
-		return nil, err
-	}
-
-	return projects[0], nil
 }

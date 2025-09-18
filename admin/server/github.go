@@ -1019,6 +1019,7 @@ func (s *Server) createRepo(ctx context.Context, remote, branch string, user *da
 
 	var err error
 	var token, ghAcct string
+	var client *github.Client
 	if org == user.GithubUsername {
 		// if expectation is to create in user's personal account then we need to use user access token
 		token, err = s.userAccessToken(ctx, user)
@@ -1027,6 +1028,7 @@ func (s *Server) createRepo(ctx context.Context, remote, branch string, user *da
 		}
 		// We need to pass empty org if the org to be created in is same as the authenticated user.
 		ghAcct = ""
+		client = github.NewTokenClient(ctx, token)
 	} else {
 		// get the installation access token for that org
 		token, _, err = s.admin.Github.InstallationTokenForOrg(ctx, org)
@@ -1034,8 +1036,17 @@ func (s *Server) createRepo(ctx context.Context, remote, branch string, user *da
 			return "", err
 		}
 		ghAcct = org
+		client = github.NewTokenClient(ctx, token)
+		// check user should be a member of the org to create a repo
+		ok, _, err := client.Organizations.IsMember(ctx, ghAcct, user.GithubUsername)
+		if err != nil {
+			return "", err
+		}
+		if !ok {
+			return "", status.Errorf(codes.PermissionDenied, "user is not a member of the organization %q", org)
+		}
 	}
-	client := github.NewTokenClient(ctx, token)
+
 	_, _, err = client.Repositories.Create(ctx, ghAcct, &github.Repository{
 		Name:          &repo,
 		DefaultBranch: &branch,
