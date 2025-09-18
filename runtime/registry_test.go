@@ -496,7 +496,8 @@ func Test_ResolveFeatureFlags(t *testing.T) {
 		"rillTime":         `'{{.user.domain}}' = 'rilldata.com'`,
 		"canvasDashboards": `{{if eq (.user.domain) "rilldata.com"}}true{{end}}`,
 		"chat":             `'{{.user.domain}}' in ['rilldata.com', 'gmail.com']`,
-		"embedTest":        `{{.user.embed}}`,
+		"embed":            `{{.user.embed}}`,
+		"inverseEmbed":     `{{not .user.embed}}`,
 	}
 
 	tests := []struct {
@@ -513,6 +514,7 @@ func Test_ResolveFeatureFlags(t *testing.T) {
 				"rillTime":         true,
 				"canvasDashboards": true,
 				"chat":             true,
+				"inverseEmbed":     true,
 			},
 		},
 		{
@@ -521,8 +523,9 @@ func Test_ResolveFeatureFlags(t *testing.T) {
 				"domain": "gmail.com",
 			},
 			featureFlags: map[string]bool{
-				"rillTime": false,
-				"chat":     true,
+				"rillTime":     false,
+				"chat":         true,
+				"inverseEmbed": true,
 			},
 		},
 		{
@@ -531,8 +534,9 @@ func Test_ResolveFeatureFlags(t *testing.T) {
 				"domain": "yahoo.com",
 			},
 			featureFlags: map[string]bool{
-				"rillTime": false,
-				"chat":     false,
+				"rillTime":     false,
+				"chat":         false,
+				"inverseEmbed": true,
 			},
 		},
 		{
@@ -541,9 +545,10 @@ func Test_ResolveFeatureFlags(t *testing.T) {
 				"embed": true,
 			},
 			featureFlags: map[string]bool{
-				"rillTime":  false,
-				"chat":      false,
-				"embedTest": true,
+				"rillTime":     false,
+				"chat":         false,
+				"embed":        true,
+				"inverseEmbed": false,
 			},
 		},
 	}

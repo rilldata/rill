@@ -174,7 +174,7 @@ func (r *Runtime) UpdateInstanceWithRillYAML(ctx context.Context, instanceID str
 		vars[k] = v
 	}
 	inst.ProjectVariables = vars
-	inst.FeatureFlags = rillYAML.FeatureFlags
+	inst.SetFeatureFlags(rillYAML.FeatureFlags)
 	inst.PublicPaths = rillYAML.PublicPaths
 	inst.AIInstructions = rillYAML.AIInstructions
 	inst.ProjectAIConnector = rillYAML.AIConnector
