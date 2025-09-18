@@ -828,6 +828,7 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 
 		gitRemote = req.GitRemote
 		managedGitRepoID = nil
+		archiveAssetID = nil
 		if proj.ManagedGitRepoID != nil {
 			transferRepo = true
 			oldRemote = *proj.GitRemote
