@@ -227,7 +227,7 @@ func (o *DeployOpts) detectGitRemoteAndProject(ctx context.Context, ch *cmdutil.
 	}
 
 	if len(resp.Projects) == 1 && resp.Projects[0].ManagedGitId == "" && req.RillMgdGitRemote != "" {
-		err = ch.HandleRepoTransfer(repoRoot, "__rill_remote")
+		err = ch.HandleRepoTransfer(repoRoot, req.GitRemote)
 		if err != nil {
 			return err
 		}
