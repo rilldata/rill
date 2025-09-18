@@ -791,8 +791,29 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 	prodBranch := valOrDefault(req.ProdBranch, proj.ProdBranch)
 	archiveAssetID := proj.ArchiveAssetID
 	if req.GitRemote != nil {
-		// If changing the Git remote, check the Github app is installed and caller has access on the repo
 		if safeStr(proj.GitRemote) != *req.GitRemote {
+			if proj.ManagedGitRepoID != nil {
+				return nil, status.Errorf(codes.FailedPrecondition, "cannot edit git remote for a project connected to a managed git repo. Connect project to Github instead")
+			}
+			// check if another project deploys using the same git remote + subpath
+			projects, err := s.admin.DB.FindProjectsByGitRemote(ctx, *req.GitRemote)
+			if err != nil {
+				return nil, err
+			}
+			for _, p := range projects {
+				if p.ID == proj.ID {
+					continue
+				}
+				if p.Subpath == subpath {
+					org, err := s.admin.DB.FindOrganization(ctx, p.OrganizationID)
+					if err != nil {
+						return nil, err
+					}
+					return nil, status.Errorf(codes.FailedPrecondition, "another project %q in org %q is already using the same git remote and subpath", p.Name, org.Name)
+				}
+			}
+
+			// check the Github app is installed and caller has access on the repo
 			var userID *string
 			if claims.OwnerType() == auth.OwnerTypeUser {
 				tmp := claims.OwnerID()
