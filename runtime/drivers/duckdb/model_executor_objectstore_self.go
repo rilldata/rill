@@ -205,8 +205,8 @@ func objectStoreSecretSQL(ctx context.Context, opts *drivers.ModelExecuteOptions
 			// duckdb will use default defaultazurecredential https://github.com/Azure/azure-sdk-for-cpp/blob/azure-identity_1.6.0/sdk/identity/azure-identity/README.md#defaultazurecredential
 			sb.WriteString(", PROVIDER CREDENTIAL_CHAIN")
 		}
-		if azureConfig.Account != "" {
-			fmt.Fprintf(&sb, ", ACCOUNT_NAME %s", safeSQLString(azureConfig.Account))
+		if azureConfig.GetAccount() != "" {
+			fmt.Fprintf(&sb, ", ACCOUNT_NAME %s", safeSQLString(azureConfig.GetAccount()))
 		}
 		sb.WriteRune(')')
 		return sb.String(), nil
