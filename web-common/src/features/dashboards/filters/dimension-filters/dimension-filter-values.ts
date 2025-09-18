@@ -11,13 +11,14 @@ import {
   V1BuiltinMeasure,
 } from "@rilldata/web-common/runtime-client";
 import type { V1Expression } from "@rilldata/web-common/runtime-client";
+import type { Interval } from "luxon";
 
 type DimensionSearchArgs = {
   mode: DimensionFilterMode;
   searchText: string;
   values: string[];
-  timeStart?: string;
-  timeEnd?: string;
+
+  interval: Interval<true> | undefined;
   enabled?: boolean;
   additionalFilter?: V1Expression;
 };
@@ -38,8 +39,7 @@ export function useDimensionSearch(
     mode,
     searchText,
     values,
-    timeStart,
-    timeEnd,
+    interval,
     enabled,
     additionalFilter,
   }: DimensionSearchArgs,
@@ -49,6 +49,7 @@ export function useDimensionSearch(
     searchText,
     values,
     additionalFilter,
+    interval,
   });
 
   // Main query: Get top 250 results (above the fold)
@@ -58,7 +59,10 @@ export function useDimensionSearch(
       mvName,
       {
         dimensions: [{ name: dimensionName }],
-        timeRange: { start: timeStart, end: timeEnd },
+        timeRange: {
+          start: interval?.start.toISO(),
+          end: interval?.end.toISO(),
+        },
         limit: "250",
         offset: "0",
         sort: [{ name: dimensionName }],
@@ -117,8 +121,7 @@ export function useAllSearchResultsCount(
     mode,
     searchText,
     values,
-    timeStart,
-    timeEnd,
+    interval,
     enabled,
     additionalFilter,
   }: DimensionSearchArgs,
@@ -128,6 +131,7 @@ export function useAllSearchResultsCount(
     searchText,
     values,
     additionalFilter,
+    interval,
   });
 
   const queries = metricsViewNames.map((mvName) =>
@@ -142,7 +146,10 @@ export function useAllSearchResultsCount(
             builtinMeasureArgs: [dimensionName],
           },
         ],
-        timeRange: { start: timeStart, end: timeEnd },
+        timeRange: {
+          start: interval?.start.toISO(),
+          end: interval?.end.toISO(),
+        },
         limit: "250",
         offset: "0",
         where,

@@ -1,72 +1,74 @@
 <script lang="ts">
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
-  import { getComparisonRange } from "@rilldata/web-common/lib/time/comparisons";
   import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config";
-  import {
-    type DashboardTimeControls,
-    TimeComparisonOption,
-  } from "@rilldata/web-common/lib/time/types";
+  import { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
   import { DateTime, Interval } from "luxon";
   import CalendarPlusDateInput from "./CalendarPlusDateInput.svelte";
   import RangeDisplay from "./RangeDisplay.svelte";
+  import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+  import WarningIcon from "@rilldata/web-common/components/icons/WarningIcon.svelte";
+  import { Tooltip } from "bits-ui";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { getComparisonRange } from "@rilldata/web-common/lib/time/comparisons";
 
-  type Option = {
-    name: TimeComparisonOption;
-    key: number;
-    start: Date;
-    end: Date;
-  };
-
-  export let currentInterval: Interval<true>;
-  export let timeComparisonOptionsState: Option[];
+  export let comparisonOptions: TimeComparisonOption[];
   export let showComparison: boolean | undefined;
-  export let selectedComparison: DashboardTimeControls | undefined;
+  export let currentInterval: Interval<true> | undefined;
+  export let comparisonInterval: Interval<true> | undefined;
+  export let comparisonRange: string | undefined;
+  export let grain: V1TimeGrain | undefined;
   export let zone: string;
   export let disabled: boolean;
   export let showFullRange: boolean;
   export let minDate: DateTime | undefined = undefined;
   export let maxDate: DateTime | undefined = undefined;
-  export let onSelectComparisonRange: (
-    name: string,
-    start: Date,
-    end: Date,
-  ) => void;
   export let allowCustomTimeRange: boolean = true;
   export let side: "top" | "right" | "bottom" | "left" = "bottom";
+  export let onSelectComparisonString: ((name: string) => void) | undefined =
+    undefined;
+  export let onSelectComparisonRange:
+    | ((name: string, start: Date, end: Date) => void)
+    | undefined = undefined;
 
   let open = false;
   let showSelector = false;
 
-  $: interval = selectedComparison?.start
-    ? Interval.fromDateTimes(
-        DateTime.fromJSDate(selectedComparison.start).setZone(zone),
-        DateTime.fromJSDate(selectedComparison.end).setZone(zone),
-      )
-    : undefined;
+  $: firstVisibleMonth =
+    comparisonInterval?.start ?? currentInterval?.end ?? DateTime.now();
 
-  $: firstVisibleMonth = interval?.start ?? currentInterval.end;
-
-  $: comparisonOption =
-    (selectedComparison?.name as TimeComparisonOption | undefined) || null;
-  $: firstOption = timeComparisonOptionsState[0];
+  $: firstOption = comparisonOptions[0];
   $: label =
-    TIME_COMPARISON[comparisonOption ?? firstOption?.name]?.label ??
-    "Custom range";
+    TIME_COMPARISON[comparisonRange ?? firstOption]?.label ?? "Custom range";
 
-  $: selectedLabel = comparisonOption ?? firstOption?.name ?? "Custom range";
+  $: selectedLabel = comparisonRange ?? firstOption ?? "Custom range";
+
+  $: intervalsOverlap =
+    currentInterval && comparisonInterval?.overlaps(currentInterval);
+  $: comparisonIntervalIsOutsideOfRange =
+    showComparison &&
+    comparisonRange &&
+    comparisonInterval &&
+    minDate &&
+    maxDate &&
+    (comparisonInterval.end <= minDate || comparisonInterval.start >= maxDate);
 
   function applyRange(range: Interval<true>) {
-    onSelectComparisonRange(
-      TimeComparisonOption.CUSTOM,
-      range.start.toJSDate(),
-      range.end.toJSDate(),
-    );
+    const string = `${range.start.toISODate()},${range.end.toISODate()}`;
+    if (onSelectComparisonString) {
+      onSelectComparisonString?.(string);
+    } else if (onSelectComparisonRange) {
+      onSelectComparisonRange?.(
+        TimeComparisonOption.CUSTOM,
+        range.start.toJSDate(),
+        range.end.toJSDate(),
+      );
+    }
   }
 
   function onCompareRangeSelect(comparisonOption: TimeComparisonOption) {
     if (
-      currentInterval.isValid &&
+      currentInterval?.isValid &&
       currentInterval.start &&
       currentInterval.end
     ) {
@@ -76,7 +78,7 @@
         comparisonOption,
       );
 
-      onSelectComparisonRange(
+      onSelectComparisonRange?.(
         comparisonOption,
         comparisonTimeRange.start,
         comparisonTimeRange.end,
@@ -89,11 +91,11 @@
   bind:open
   closeOnItemClick={false}
   onOpenChange={(open) => {
-    if (open && interval && interval?.isValid) {
-      firstVisibleMonth = interval.start;
+    if (open && comparisonInterval && comparisonInterval?.isValid) {
+      firstVisibleMonth = comparisonInterval.start;
     }
     showSelector = !!(
-      comparisonOption === TimeComparisonOption.CUSTOM && showComparison
+      comparisonRange === TimeComparisonOption.CUSTOM && showComparison
     );
   }}
   typeahead={!showSelector}
@@ -108,13 +110,29 @@
       type="button"
     >
       <div class="gap-x-2 flex" class:opacity-50={!showComparison}>
-        {#if !timeComparisonOptionsState.length && !showComparison}
+        {#if !comparisonOptions.length && !showComparison}
           <p>no comparison period</p>
         {:else}
           <b class="line-clamp-1">{label}</b>
-          {#if interval?.isValid && showFullRange}
-            <RangeDisplay {interval} timeGrain={selectedComparison?.interval} />
+          {#if comparisonInterval?.isValid && showFullRange}
+            <RangeDisplay interval={comparisonInterval} timeGrain={grain} />
           {/if}
+        {/if}
+        {#if intervalsOverlap || comparisonIntervalIsOutsideOfRange}
+          <Tooltip.Root portal="#rill-portal">
+            <Tooltip.Trigger>
+              <WarningIcon className="text-yellow-500" />
+            </Tooltip.Trigger>
+            <Tooltip.Content class="z-50" sideOffset={8}>
+              <TooltipContent>
+                {#if comparisonIntervalIsOutsideOfRange}
+                  No data for comparison period
+                {:else if intervalsOverlap}
+                  The selected comparison range overlaps with the primary range.
+                {/if}
+              </TooltipContent>
+            </Tooltip.Content>
+          </Tooltip.Root>
         {/if}
       </div>
       <span
@@ -130,26 +148,31 @@
   <DropdownMenu.Content align="start" {side} class="p-0 overflow-hidden">
     <div class="flex">
       <div class="flex flex-col border-r w-48 p-1">
-        {#each timeComparisonOptionsState as option (option.name)}
-          {@const preset = TIME_COMPARISON[option.name]}
-          {@const selected = selectedLabel === option.name}
+        {#each comparisonOptions as option (option)}
+          {@const preset = TIME_COMPARISON[option]}
+          {@const selected = selectedLabel === option}
           <DropdownMenu.Item
             class="flex gap-x-2"
             on:click={() => {
-              onCompareRangeSelect(option.name);
+              if (onSelectComparisonString) {
+                onSelectComparisonString(option);
+              }
+              if (onSelectComparisonRange) {
+                onCompareRangeSelect(option);
+              }
               open = false;
             }}
           >
             <span class:font-bold={selected}>
-              {preset?.label || option.name}
+              {preset?.label || option}
             </span>
           </DropdownMenu.Item>
-          {#if option.name === TimeComparisonOption.CONTIGUOUS && timeComparisonOptionsState.length > 2}
+          {#if option === TimeComparisonOption.CONTIGUOUS && comparisonOptions.length > 2}
             <DropdownMenu.Separator />
           {/if}
         {/each}
         {#if allowCustomTimeRange}
-          {#if timeComparisonOptionsState.length}
+          {#if comparisonOptions.length}
             <DropdownMenu.Separator />
           {/if}
 
@@ -160,7 +183,7 @@
             }}
           >
             <span
-              class:font-bold={comparisonOption ===
+              class:font-bold={comparisonRange ===
                 TimeComparisonOption.CUSTOM && showComparison}
             >
               Custom
@@ -170,12 +193,12 @@
       </div>
       {#if showSelector}
         <div class="bg-slate-50 flex flex-col w-64 px-2 py-1">
-          {#if !interval || interval?.isValid}
+          {#if !comparisonInterval || comparisonInterval?.isValid}
             <CalendarPlusDateInput
               {maxDate}
               {minDate}
               {firstVisibleMonth}
-              {interval}
+              interval={comparisonInterval}
               {zone}
               {applyRange}
               closeMenu={() => (open = false)}

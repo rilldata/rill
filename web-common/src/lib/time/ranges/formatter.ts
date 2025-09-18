@@ -7,8 +7,11 @@ import { DateTime, type DateTimeFormatOptions, Interval } from "luxon";
  * NOTE: this is primarily used for the time range picker. We might want to
  * colocate the code w/ the component.
  */
-export function prettyFormatTimeRange(interval: Interval, grain: V1TimeGrain) {
-  if (!interval.isValid || !interval.start || !interval.end)
+export function prettyFormatTimeRange(
+  interval: Interval<true> | undefined,
+  grain: V1TimeGrain,
+) {
+  if (!interval?.isValid || !interval.start || !interval.end)
     return "Invalid interval";
 
   const datePart = formatDatePartOfTimeRange(interval, grain);

@@ -11,14 +11,14 @@
   import CalendarPlusDateInput from "./CalendarPlusDateInput.svelte";
   import RangeDisplay from "./RangeDisplay.svelte";
   import TimeRangeMenu from "./TimeRangeMenu.svelte";
+  import type { MinMax } from "@rilldata/web-common/features/canvas/stores/time-control";
 
   export let ranges: RangeBuckets;
   export let selected: NamedRange | ISODurationString;
   export let interval: Interval<true>;
   export let zone: string;
   export let showDefaultItem: boolean;
-  export let minDate: DateTime | undefined = undefined;
-  export let maxDate: DateTime | undefined = undefined;
+  export let minMax: MinMax | undefined;
   export let showFullRange: boolean;
   export let allowCustomTimeRange = true;
   export let defaultTimeRange: NamedRange | ISODurationString | undefined;
@@ -83,8 +83,8 @@
             {firstVisibleMonth}
             {interval}
             {zone}
-            {maxDate}
-            {minDate}
+            minDate={minMax?.min}
+            maxDate={minMax?.max}
             applyRange={applyCustomRange}
             closeMenu={() => (open = false)}
           />

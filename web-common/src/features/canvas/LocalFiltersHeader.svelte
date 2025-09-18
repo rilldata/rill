@@ -31,16 +31,16 @@
     dimensions = getDimensionsForMetricView(metricsViewName);
   }
 
-  $: ({ showTimeComparison, timeRangeStateStore } = localTimeControls);
+  $: ({ _showTimeComparison, _range, _interval } = localTimeControls);
 
-  $: selectedTimeRange = $timeRangeStateStore?.selectedTimeRange;
+  $: interval = $_interval;
 
   $: ({ whereFilter, dimensionThresholdFilters, dimensionsWithInlistFilter } =
     localFilters);
 
   $: displayTimeRange = {
     ...$timeAndFilterStore.timeRange,
-    isoDuration: selectedTimeRange?.name,
+    isoDuration: $_range,
   };
 
   $: displayComparisonTimeRange = $timeAndFilterStore.comparisonTimeRange;
@@ -60,12 +60,12 @@
       dimensionThresholdFilters={$dimensionThresholdFilters}
       dimensionsWithInlistFilter={$dimensionsWithInlistFilter}
       filters={$whereFilter}
-      displayComparisonTimeRange={$showTimeComparison
+      displayComparisonTimeRange={$_showTimeComparison
         ? displayComparisonTimeRange
         : undefined}
       displayTimeRange={hasTimeFilters ? displayTimeRange : undefined}
-      queryTimeStart={selectedTimeRange?.start?.toISOString()}
-      queryTimeEnd={selectedTimeRange?.end?.toISOString()}
+      queryTimeStart={interval?.start.toISO()}
+      queryTimeEnd={interval?.end.toISO()}
       hasBoldTimeRange={false}
       chipLayout="scroll"
     />

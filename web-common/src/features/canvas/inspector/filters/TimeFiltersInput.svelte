@@ -4,7 +4,6 @@
   import CanvasComparisonPill from "@rilldata/web-common/features/canvas/filters/CanvasComparisonPill.svelte";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import SuperPill from "@rilldata/web-common/features/dashboards/time-controls/super-pill/SuperPill.svelte";
-  import { DateTime, Interval } from "luxon";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import type { TimeControls } from "../../stores/time-control";
 
@@ -23,36 +22,35 @@
   } = getCanvasStore(canvasName, instanceId));
 
   $: ({
-    allTimeRange,
-    timeRangeStateStore,
-    comparisonRangeStateStore,
-    selectedTimezone,
+    minMaxTimeStamps,
+    _range,
+    _interval,
+    grain,
+    _comparisonRange,
+    _comparisonInterval,
+    _zone,
     minTimeGrain,
     set,
-    searchParamsStore,
+    _showTimeComparison,
+
     clearAll,
   } = localTimeControls);
 
-  $: ({ selectedTimeRange, timeStart, timeEnd } = $timeRangeStateStore || {});
+  $: interval = $_interval;
 
-  $: localFiltersEnabled = Boolean($searchParamsStore.size);
+  $: localFiltersEnabled = Boolean(interval);
 
-  $: selectedComparisonTimeRange =
-    $comparisonRangeStateStore?.selectedComparisonTimeRange;
+  $: comparisonInterval = $_comparisonInterval;
+  $: comparisonRange = $_comparisonRange;
+  $: showTimeComparison = $_showTimeComparison;
 
-  $: selectedRangeAlias = selectedTimeRange?.name;
-  $: activeTimeGrain = selectedTimeRange?.interval;
-  $: defaultTimeRange = $canvasSpec?.defaultPreset?.timeRange;
-  $: timeRanges = $canvasSpec?.timeRanges ?? [];
+  $: selectedRangeAlias = $_range;
+  $: activeTimeGrain = $grain;
 
-  $: activeTimeZone = $selectedTimezone;
+  $: ({ defaultPreset: { timeRange: defaultTimeRange } = {}, timeRanges = [] } =
+    $canvasSpec ?? {});
 
-  $: interval = selectedTimeRange
-    ? Interval.fromDateTimes(
-        DateTime.fromJSDate(selectedTimeRange.start).setZone(activeTimeZone),
-        DateTime.fromJSDate(selectedTimeRange.end).setZone(activeTimeZone),
-      )
-    : Interval.fromDateTimes($allTimeRange.start, $allTimeRange.end);
+  $: activeTimeZone = $_zone;
 </script>
 
 <div class="flex flex-col gap-y-1 pt-1">
@@ -90,7 +88,7 @@
     <div class="flex flex-row flex-wrap pt-2 gap-y-1.5 items-center">
       <SuperPill
         context="filters-input"
-        allTimeRange={$allTimeRange}
+        minMaxTimeStamps={$minMaxTimeStamps}
         {selectedRangeAlias}
         showPivot={!showGrain}
         minTimeGrain={$minTimeGrain}
@@ -99,8 +97,6 @@
         {timeRanges}
         complete={false}
         {interval}
-        {timeStart}
-        {timeEnd}
         {activeTimeGrain}
         {activeTimeZone}
         canPanLeft={false}
@@ -119,22 +115,15 @@
 
       {#if showComparison}
         <CanvasComparisonPill
-          allTimeRange={$allTimeRange}
-          {selectedTimeRange}
-          showFullRange={false}
-          {selectedComparisonTimeRange}
-          showTimeComparison={$comparisonRangeStateStore?.showTimeComparison ??
-            false}
-          activeTimeZone={$selectedTimezone}
-          onDisplayTimeComparison={set.comparison}
-          onSetSelectedComparisonRange={(range) => {
-            if (range.name === "CUSTOM_COMPARISON_RANGE") {
-              const stringRange = `${range.start.toISOString()},${range.end.toISOString()}`;
-              set.comparison(stringRange);
-            } else if (range.name) {
-              set.comparison(range.name);
-            }
-          }}
+          {comparisonInterval}
+          {comparisonRange}
+          {activeTimeGrain}
+          minMaxTimeStamps={$minMaxTimeStamps}
+          {interval}
+          range={selectedRangeAlias}
+          {showTimeComparison}
+          {activeTimeZone}
+          onSelectComparisonString={set.comparison}
         />
       {/if}
     </div>

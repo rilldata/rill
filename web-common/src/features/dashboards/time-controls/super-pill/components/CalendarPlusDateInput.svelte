@@ -1,11 +1,9 @@
-<script context="module" lang="ts">
+<script lang="ts">
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import Calendar from "@rilldata/web-common/components/date-picker/Calendar.svelte";
   import DateInput from "@rilldata/web-common/components/date-picker/DateInput.svelte";
   import { DateTime, Interval } from "luxon";
-</script>
 
-<script lang="ts">
   export let interval: Interval<true> | undefined;
   export let zone: string;
   export let firstVisibleMonth: DateTime<true>;

@@ -1,7 +1,6 @@
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import {
   getAvailableComparisonsForTimeRange,
-  getComparisonRange,
   getTimeComparisonParametersForComponent,
 } from "@rilldata/web-common/lib/time/comparisons";
 import {
@@ -148,12 +147,7 @@ export function timeComparisonOptionsSelector([
   QueryObserverResult<V1MetricsViewTimeRangeResponse, unknown>,
   ExploreState,
   DashboardTimeControls | undefined,
-]): Array<{
-  name: TimeComparisonOption;
-  key: number;
-  start: Date;
-  end: Date;
-}> {
+]): Array<TimeComparisonOption> {
   if (
     !metricsView ||
     !explore ||
@@ -202,19 +196,7 @@ export function timeComparisonOptionsSelector([
     allOptions,
   );
 
-  return timeComparisonOptions.map((co, i) => {
-    const comparisonTimeRange = getComparisonRange(
-      selectedTimeRange.start,
-      selectedTimeRange.end,
-      co,
-    );
-    return {
-      name: co,
-      key: i,
-      start: comparisonTimeRange.start,
-      end: comparisonTimeRange.end,
-    };
-  });
+  return timeComparisonOptions;
 }
 
 export function getValidComparisonOption(

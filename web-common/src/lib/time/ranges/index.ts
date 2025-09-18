@@ -34,6 +34,7 @@ import {
   type TimeRangeOption,
   TimeRangePreset,
 } from "../types";
+import { DateTime, type DateTimeUnit } from "luxon";
 
 // Loop through all presets to check if they can be a part of subset of given start and end date
 export function getChildTimeRanges(
@@ -139,12 +140,15 @@ export function convertTimeRangePreset(
   start: Date,
   end: Date,
   zone: string | undefined,
+  smallestTimeGrain: DateTimeUnit | undefined,
 ): TimeRange {
   if (timeRangePreset === TimeRangePreset.ALL_TIME) {
     return {
       name: timeRangePreset,
       start,
-      end: new Date(end.getTime() + 1),
+      end: DateTime.fromJSDate(end)
+        .plus({ [smallestTimeGrain || "millisecond"]: 1 })
+        .toJSDate(),
     };
   }
   const timeRange = DEFAULT_TIME_RANGES[timeRangePreset];

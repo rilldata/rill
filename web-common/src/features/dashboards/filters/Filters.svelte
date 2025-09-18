@@ -15,9 +15,9 @@
     TimeRangePreset,
     type DashboardTimeControls,
   } from "@rilldata/web-common/lib/time/types";
-  import type {
-    V1ExploreTimeRange,
+  import {
     V1TimeGrain,
+    type V1ExploreTimeRange,
   } from "@rilldata/web-common/runtime-client";
   import { DateTime, Interval } from "luxon";
   import { flip } from "svelte/animate";
@@ -31,6 +31,7 @@
   import ComparisonPill from "../time-controls/comparison-pill/ComparisonPill.svelte";
   import {
     ALL_TIME_RANGE_ALIAS,
+    convertToInterval,
     CUSTOM_TIME_RANGE_ALIAS,
     deriveInterval,
   } from "../time-controls/new-time-controls";
@@ -117,8 +118,6 @@
     showTimeComparison,
     selectedComparisonTimeRange,
     minTimeGrain,
-    timeStart,
-    timeEnd,
     ready: timeControlsReady,
   } = $timeControlsStore);
 
@@ -165,18 +164,15 @@
 
   $: availableTimeZones = getPinnedTimeZones(exploreSpec);
 
-  $: allTimeRangeInterval = allTimeRange
-    ? Interval.fromDateTimes(allTimeRange.start, allTimeRange.end)
-    : Interval.invalid("Invalid interval");
+  $: possibleAllTimeInterval =
+    allTimeRange &&
+    Interval.fromDateTimes(allTimeRange.start, allTimeRange.end);
 
-  $: interval = selectedTimeRange
-    ? Interval.fromDateTimes(
-        DateTime.fromJSDate(selectedTimeRange.start).setZone(activeTimeZone),
-        DateTime.fromJSDate(selectedTimeRange.end).setZone(activeTimeZone),
-      )
-    : allTimeRange
-      ? Interval.fromDateTimes(allTimeRange.start, allTimeRange.end)
-      : Interval.invalid("Invalid interval");
+  $: allTimeInterval = possibleAllTimeInterval?.isValid
+    ? possibleAllTimeInterval
+    : undefined;
+
+  $: interval = convertToInterval(selectedTimeRange, activeTimeZone);
 
   $: baseTimeRange = selectedTimeRange?.start &&
     selectedTimeRange?.end && {
@@ -184,6 +180,11 @@
       start: selectedTimeRange.start,
       end: selectedTimeRange.end,
     };
+
+  $: minMaxTimeStamps = allTimeInterval && {
+    min: allTimeInterval.start,
+    max: allTimeInterval.end,
+  };
 
   function handleMeasureFilterApply(
     dimension: string,
@@ -224,7 +225,7 @@
 
   async function onSelectRange(alias: string) {
     // If we don't have a valid time range, early return
-    if (!allTimeRange?.end) return;
+    if (!minMaxTimeStamps || !allTimeRange) return;
 
     if (alias === ALL_TIME_RANGE_ALIAS) {
       makeTimeSeriesTimeRangeAndUpdateAppState(
@@ -245,12 +246,10 @@
 
     const { interval, grain } = await deriveInterval(
       alias,
-      Interval.fromDateTimes(
-        DateTime.fromJSDate(allTimeRange.start),
-        DateTime.fromJSDate(allTimeRange.end),
-      ),
+      minMaxTimeStamps,
       metricsViewName,
       activeTimeZone,
+      minTimeGrain ?? V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
     );
 
     if (interval.isValid) {
@@ -305,7 +304,7 @@
   }
 
   function onSelectTimeZone(timeZone: string) {
-    if (!interval.isValid) return;
+    if (!interval?.isValid) return;
 
     if (selectedRangeAlias === TimeRangePreset.CUSTOM) {
       selectRange({
@@ -325,6 +324,9 @@
   $: usingRillTime =
     !selectedRangeAlias?.startsWith("P") &&
     !selectedRangeAlias?.startsWith("rill-");
+
+  $: min = allTimeRange?.start && DateTime.fromJSDate(allTimeRange.start);
+  $: max = allTimeRange?.end && DateTime.fromJSDate(allTimeRange.end);
 
   function onTimeGrainSelect(timeGrain: V1TimeGrain) {
     if (usingRillTime && selectedRangeAlias) {
@@ -363,16 +365,12 @@
           <Calendar size="16px" />
         </Tooltip.Trigger>
         <Tooltip.Content side="bottom" sideOffset={10}>
-          <Metadata
-            timeZone={activeTimeZone}
-            timeStart={allTimeRange?.start}
-            timeEnd={allTimeRange?.end}
-          />
+          <Metadata timeZone={activeTimeZone} {min} {max} />
         </Tooltip.Content>
       </Tooltip.Root>
       {#if allTimeRange?.start && allTimeRange?.end}
         <SuperPill
-          {allTimeRange}
+          {minMaxTimeStamps}
           {selectedRangeAlias}
           showPivot={$showPivot}
           {minTimeGrain}
@@ -382,8 +380,6 @@
           complete={false}
           {interval}
           context={$exploreName}
-          {timeStart}
-          {timeEnd}
           lockTimeZone={exploreSpec.lockTimeZone}
           allowCustomTimeRange={exploreSpec.allowCustomTimeRange}
           {activeTimeGrain}
@@ -407,7 +403,7 @@
         />
       {/if}
 
-      {#if !$rillTime && allTimeRangeInterval?.end?.isValid}
+      {#if !$rillTime && allTimeInterval?.end?.isValid}
         <Tooltip.Root openDelay={0}>
           <Tooltip.Trigger>
             <span class="text-gray-600 italic">
@@ -416,17 +412,13 @@
                 italic
                 suppress
                 showDate={false}
-                date={allTimeRangeInterval.end}
+                date={allTimeInterval.end}
                 zone={activeTimeZone}
               />
             </span>
           </Tooltip.Trigger>
           <Tooltip.Content side="bottom" sideOffset={10}>
-            <Metadata
-              timeZone={activeTimeZone}
-              timeStart={allTimeRange?.start}
-              timeEnd={allTimeRange?.end}
-            />
+            <Metadata timeZone={activeTimeZone} {min} {max} />
           </Tooltip.Content>
         </Tooltip.Root>
       {/if}
@@ -465,8 +457,7 @@
                 {mode}
                 {selectedValues}
                 {inputText}
-                {timeStart}
-                {timeEnd}
+                {interval}
                 {timeControlsReady}
                 excludeMode={$isFilterExcludeMode(name)}
                 onRemove={() => removeDimensionFilter(name)}
