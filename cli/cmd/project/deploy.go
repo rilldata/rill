@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/AlecAivazis/survey/v2"
-	"github.com/go-git/go-git/v5"
 	"github.com/rilldata/rill/cli/cmd/org"
 	"github.com/rilldata/rill/cli/pkg/browser"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
@@ -229,7 +228,7 @@ func (o *DeployOpts) detectGitRemoteAndProject(ctx context.Context, ch *cmdutil.
 
 	if req.RillMgdGitRemote != "" {
 		// if no project found remove `__rill_remote`. This can happen if managed repo was provisioned but project was not created/failed.
-		err = removeRemote(repoRoot, "__rill_remote")
+		err = ch.HandleRepoTransfer(repoRoot, "__rill_remote")
 		if err != nil {
 			return err
 		}
@@ -622,17 +621,4 @@ func errMsgContains(err error, msg string) bool {
 		return strings.Contains(st.Message(), msg)
 	}
 	return false
-}
-
-func removeRemote(path, remoteName string) error {
-	repo, err := git.PlainOpen(path)
-	if err != nil {
-		return fmt.Errorf("failed to open git repository: %w", err)
-	}
-
-	err = repo.DeleteRemote(remoteName)
-	if err != nil && !errors.Is(err, git.ErrRemoteNotFound) {
-		return err
-	}
-	return nil
 }

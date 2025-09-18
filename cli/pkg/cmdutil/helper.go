@@ -436,7 +436,7 @@ func (h *Helper) InferProjects(ctx context.Context, org, path string) ([]*adminv
 	}
 	// cleanup rill managed remote
 	if len(orgFiltered) == 1 && orgFiltered[0].ManagedGitId == "" && req.RillMgdGitRemote != "" {
-		h.handleRepoTransfer(repoRoot, req.RillMgdGitRemote)
+		h.HandleRepoTransfer(repoRoot, req.GitRemote)
 	}
 	return orgFiltered, nil
 }
@@ -535,27 +535,16 @@ func (h *Helper) GitSignature(ctx context.Context, path string) (*object.Signatu
 	}, nil
 }
 
-func (h *Helper) handleRepoTransfer(path string, remote string) error {
-	repo, err := git.PlainOpen(path)
-	if err != nil {
-		return err
-	}
-
+func (h *Helper) HandleRepoTransfer(path string, remote string) error {
 	// clear cache
 	h.gitHelperMu.Lock()
 	h.gitHelper = nil
 	h.gitHelperMu.Unlock()
 
 	// remove rill managed remote
-	err = gitutil.RemoveRemote(path, "__rill_remote")
+	err := removeRemote(path, "__rill_remote")
 	if err != nil {
 		return err
-	}
-
-	// if origin is already set then do nothing
-	_, err = repo.Remote("origin")
-	if err == nil {
-		return nil
 	}
 
 	// set origin to remote
@@ -566,6 +555,19 @@ func (h *Helper) handleRepoTransfer(path string, remote string) error {
 		return err
 	}
 
+	return nil
+}
+
+func removeRemote(path, remoteName string) error {
+	repo, err := git.PlainOpen(path)
+	if err != nil {
+		return fmt.Errorf("failed to open git repository: %w", err)
+	}
+
+	err = repo.DeleteRemote(remoteName)
+	if err != nil && !errors.Is(err, git.ErrRemoteNotFound) {
+		return err
+	}
 	return nil
 }
 

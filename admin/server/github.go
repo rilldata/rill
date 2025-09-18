@@ -1021,7 +1021,7 @@ func (s *Server) createRepo(ctx context.Context, remote, branch string, user *da
 	}
 
 	var err error
-	var token string
+	var token, ghAcct string
 	if org == user.GithubUsername {
 		// if expectation is to create in user's personal account then we need to use user access token
 		token, err = s.userAccessToken(ctx, user)
@@ -1029,14 +1029,14 @@ func (s *Server) createRepo(ctx context.Context, remote, branch string, user *da
 			return "", err
 		}
 		// We need to pass empty org if the org to be created in is same as the authenticated user.
-		org = ""
-
+		ghAcct = ""
 	} else {
 		// get the installation access token for that org
 		token, _, err = s.admin.Github.InstallationTokenForOrg(ctx, org)
+		ghAcct = org
 	}
 	client := github.NewTokenClient(ctx, token)
-	_, _, err = client.Repositories.Create(ctx, org, &github.Repository{
+	_, _, err = client.Repositories.Create(ctx, ghAcct, &github.Repository{
 		Name:          &repo,
 		DefaultBranch: &branch,
 		Private:       github.Ptr(true),

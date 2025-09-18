@@ -425,16 +425,3 @@ func InferRepoRootAndSubpath(path string) (string, string, error) {
 	}
 	return repoRoot, subPath, nil
 }
-
-func RemoveRemote(path, remoteName string) error {
-	repo, err := git.PlainOpen(path)
-	if err != nil {
-		return fmt.Errorf("failed to open git repository: %w", err)
-	}
-
-	err = repo.DeleteRemote(remoteName)
-	if err != nil && !errors.Is(err, git.ErrRemoteNotFound) {
-		return err
-	}
-	return nil
-}
