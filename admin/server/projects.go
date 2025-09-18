@@ -793,7 +793,7 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 	if req.GitRemote != nil {
 		if safeStr(proj.GitRemote) != *req.GitRemote {
 			if proj.ManagedGitRepoID != nil {
-				return nil, status.Errorf(codes.FailedPrecondition, "cannot edit git remote for a project connected to a managed git repo. Connect project to Github instead")
+				return nil, status.Errorf(codes.FailedPrecondition, "cannot edit git remote for rill managed projects")
 			}
 			// check if another project deploys using the same git remote + subpath
 			projects, err := s.admin.DB.FindProjectsByGitRemote(ctx, *req.GitRemote)
