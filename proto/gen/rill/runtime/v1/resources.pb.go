@@ -1342,15 +1342,14 @@ type ModelSpec struct {
 	InputConnector                     string           `protobuf:"bytes,10,opt,name=input_connector,json=inputConnector,proto3" json:"input_connector,omitempty"`
 	InputProperties                    *structpb.Struct `protobuf:"bytes,11,opt,name=input_properties,json=inputProperties,proto3" json:"input_properties,omitempty"`
 	// stage_connector is optional.
-	StageConnector   string           `protobuf:"bytes,16,opt,name=stage_connector,json=stageConnector,proto3" json:"stage_connector,omitempty"`
-	StageProperties  *structpb.Struct `protobuf:"bytes,17,opt,name=stage_properties,json=stageProperties,proto3" json:"stage_properties,omitempty"`
-	OutputConnector  string           `protobuf:"bytes,1,opt,name=output_connector,json=outputConnector,proto3" json:"output_connector,omitempty"`
-	OutputProperties *structpb.Struct `protobuf:"bytes,12,opt,name=output_properties,json=outputProperties,proto3" json:"output_properties,omitempty"`
-	// retry is optional.
-	RetryAttempts           *uint32  `protobuf:"varint,26,opt,name=retry_attempts,json=retryAttempts,proto3,oneof" json:"retry_attempts,omitempty"`
-	RetryDelaySeconds       *uint32  `protobuf:"varint,27,opt,name=retry_delay_seconds,json=retryDelaySeconds,proto3,oneof" json:"retry_delay_seconds,omitempty"`
-	RetryExponentialBackoff *bool    `protobuf:"varint,28,opt,name=retry_exponential_backoff,json=retryExponentialBackoff,proto3,oneof" json:"retry_exponential_backoff,omitempty"`
-	RetryIfErrorMatches     []string `protobuf:"bytes,29,rep,name=retry_if_error_matches,json=retryIfErrorMatches,proto3" json:"retry_if_error_matches,omitempty"`
+	StageConnector          string           `protobuf:"bytes,16,opt,name=stage_connector,json=stageConnector,proto3" json:"stage_connector,omitempty"`
+	StageProperties         *structpb.Struct `protobuf:"bytes,17,opt,name=stage_properties,json=stageProperties,proto3" json:"stage_properties,omitempty"`
+	OutputConnector         string           `protobuf:"bytes,1,opt,name=output_connector,json=outputConnector,proto3" json:"output_connector,omitempty"`
+	OutputProperties        *structpb.Struct `protobuf:"bytes,12,opt,name=output_properties,json=outputProperties,proto3" json:"output_properties,omitempty"`
+	RetryAttempts           *uint32          `protobuf:"varint,26,opt,name=retry_attempts,json=retryAttempts,proto3,oneof" json:"retry_attempts,omitempty"`
+	RetryDelaySeconds       *uint32          `protobuf:"varint,27,opt,name=retry_delay_seconds,json=retryDelaySeconds,proto3,oneof" json:"retry_delay_seconds,omitempty"`
+	RetryExponentialBackoff *bool            `protobuf:"varint,28,opt,name=retry_exponential_backoff,json=retryExponentialBackoff,proto3,oneof" json:"retry_exponential_backoff,omitempty"`
+	RetryIfErrorMatches     []string         `protobuf:"bytes,29,rep,name=retry_if_error_matches,json=retryIfErrorMatches,proto3" json:"retry_if_error_matches,omitempty"`
 	// change_mode is the mode of change detection to use for the model.
 	ChangeMode  ModelChangeMode `protobuf:"varint,24,opt,name=change_mode,json=changeMode,proto3,enum=rill.runtime.v1.ModelChangeMode" json:"change_mode,omitempty"`
 	Tests       []*ModelTest    `protobuf:"bytes,25,rep,name=tests,proto3" json:"tests,omitempty"`

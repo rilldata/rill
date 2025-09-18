@@ -1,8 +1,8 @@
 ---
-title: "Formatting your Measures!"
-description: Tips & Tricks for Metric Formatting
-sidebar_label: "Metric Formatting"
-sidebar_position: 01
+title: "Formatting your Measures"
+description: Tips & Tricks for Measure Formatting
+sidebar_label: "Measure Formatting"
+sidebar_position: 15
 ---
 
 When creating your measures in Rill, you have the option to pick from a preset of formats that we provide to you or use the [d3-format](https://d3js.org/d3-format) parameter to format your data in any way you like. While the big number in the explore dashboard won't apply all the decimals changes (it will add currency or percentage if that is the type), you will be able to see the changes in the dimension leaderboard and pivot tables. 
@@ -15,13 +15,11 @@ When creating your measures in Rill, you have the option to pick from a preset o
 Using `format_d3` to control the format of a measure in the metrics view allows for further customization. 
 
 :::tip Invalid format Strings
-If an invalid format string is supplied, measures will be formatted with `format_preset: humanize`. If neither `format_preset` nor `format_d3` is supplied, measures will be formatted with the `humanize` preset).
+If an invalid format string is supplied, measures will be formatted with `format_preset: humanize`. Measures cannot have both `format_preset` and `format_d3` entries. If neither `format_preset` nor `format_d3` is supplied, measures will be formatted with the `humanize` preset.
 
 :::
 
-:::warning Cannot have both
- Measures cannot have both `format_preset` and `format_d3` entries.
-:::
+
 Please review the reference documentation, [here.](/reference/project-files/metrics-views)
 
 ## Customization

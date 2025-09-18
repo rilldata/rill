@@ -34,6 +34,7 @@
             DateTime.fromISO(timeRange.start).setZone(timeRange.timeZone),
             DateTime.fromISO(timeRange.end).setZone(timeRange.timeZone),
           )}
+          timeGrain={timeRange.roundToGrain}
         />
       {/if}
     </div>

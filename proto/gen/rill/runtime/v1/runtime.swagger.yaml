@@ -3085,6 +3085,15 @@ paths:
           in: query
           required: false
           type: string
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
+          in: query
+          required: false
+          type: string
       tags:
         - ConnectorService
   /v1/ping:
@@ -6203,7 +6212,6 @@ definitions:
       retryAttempts:
         type: integer
         format: int64
-        description: retry is optional.
       retryDelaySeconds:
         type: integer
         format: int64
@@ -6376,6 +6384,8 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1OlapTableInfo'
+      nextPageToken:
+        type: string
   v1OlapTableInfo:
     type: object
     properties:

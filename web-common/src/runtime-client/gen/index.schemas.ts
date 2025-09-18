@@ -1738,7 +1738,6 @@ export interface V1ModelSpec {
   stageProperties?: V1ModelSpecStageProperties;
   outputConnector?: string;
   outputProperties?: V1ModelSpecOutputProperties;
-  /** retry is optional. */
   retryAttempts?: number;
   retryDelaySeconds?: number;
   retryExponentialBackoff?: boolean;
@@ -1848,6 +1847,7 @@ export interface V1OLAPGetTableResponse {
 
 export interface V1OLAPListTablesResponse {
   tables?: V1OlapTableInfo[];
+  nextPageToken?: string;
 }
 
 export interface V1OlapTableInfo {
@@ -3085,6 +3085,8 @@ Has the same syntax and behavior as ILIKE in SQL.
 If the connector supports schema/database names, it searches against both the plain table name and the fully qualified table name.
  */
   searchPattern?: string;
+  pageSize?: number;
+  pageToken?: string;
 };
 
 export type ConnectorServiceS3GetBucketMetadataParams = {

@@ -3,6 +3,7 @@
   import CanvasFilters from "./filters/CanvasFilters.svelte";
   import { getCanvasStore } from "./state-managers/state-managers";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { updateThemeVariables } from "../themes/actions";
 
   export let maxWidth: number;
   export let clientWidth = 0;
@@ -20,8 +21,10 @@
   $: ({ instanceId } = $runtime);
 
   $: ({
-    canvasEntity: { restoreSnapshot },
+    canvasEntity: { restoreSnapshot, themeSpec },
   } = getCanvasStore(canvasName, instanceId));
+
+  $: updateThemeVariables($themeSpec);
 
   $: ({ width: clientWidth } = contentRect);
 </script>

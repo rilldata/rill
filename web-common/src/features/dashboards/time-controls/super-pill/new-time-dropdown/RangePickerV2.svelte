@@ -46,6 +46,7 @@
 
   export let timeString: string | undefined;
   export let interval: Interval<true>;
+  export let timeGrain: V1TimeGrain | undefined;
   export let zone: string;
   export let showDefaultItem: boolean;
   export let context: string;
@@ -246,7 +247,7 @@
           {/if}
 
           {#if showFullRange}
-            <RangeDisplay {interval} />
+            <RangeDisplay {interval} {timeGrain} />
 
             <div
               class="font-bold bg-gray-100 rounded-[2px] p-1 py-0 text-gray-600 text-[11px]"
