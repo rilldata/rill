@@ -27,6 +27,8 @@ import type {
 import type {
   RpcStatus,
   RuntimeServiceCompleteBody,
+  RuntimeServiceCompleteStreaming200,
+  RuntimeServiceCompleteStreamingBody,
   RuntimeServiceCreateDirectoryBody,
   RuntimeServiceCreateTriggerBody,
   RuntimeServiceDeleteFileParams,
@@ -81,7 +83,6 @@ import type {
   V1IssueDevJWTRequest,
   V1IssueDevJWTResponse,
   V1ListConnectorDriversResponse,
-  V1ListConversationsResponse,
   V1ListExamplesResponse,
   V1ListFilesResponse,
   V1ListInstancesResponse,
@@ -1085,104 +1086,93 @@ export const createRuntimeServiceComplete = <
   return createMutation(mutationOptions, queryClient);
 };
 /**
- * @summary ListConversations lists all AI chat conversations for an instance.
+ * @summary CompleteStreaming runs an AI-powered chat completion, optionally invoking agents or tool calls available in Rill.
  */
-export const runtimeServiceListConversations = (
+export const runtimeServiceCompleteStreaming = (
   instanceId: string,
+  runtimeServiceCompleteStreamingBody: RuntimeServiceCompleteStreamingBody,
   signal?: AbortSignal,
 ) => {
-  return httpClient<V1ListConversationsResponse>({
-    url: `/v1/instances/${instanceId}/ai/conversations`,
-    method: "GET",
+  return httpClient<RuntimeServiceCompleteStreaming200>({
+    url: `/v1/instances/${instanceId}/ai/complete/stream`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: runtimeServiceCompleteStreamingBody,
     signal,
   });
 };
 
-export const getRuntimeServiceListConversationsQueryKey = (
-  instanceId: string,
-) => {
-  return [`/v1/instances/${instanceId}/ai/conversations`] as const;
-};
-
-export const getRuntimeServiceListConversationsQueryOptions = <
-  TData = Awaited<ReturnType<typeof runtimeServiceListConversations>>,
+export const getRuntimeServiceCompleteStreamingMutationOptions = <
   TError = ErrorType<RpcStatus>,
->(
-  instanceId: string,
-  options?: {
-    query?: Partial<
-      CreateQueryOptions<
-        Awaited<ReturnType<typeof runtimeServiceListConversations>>,
-        TError,
-        TData
-      >
-    >;
-  },
-) => {
-  const { query: queryOptions } = options ?? {};
-
-  const queryKey =
-    queryOptions?.queryKey ??
-    getRuntimeServiceListConversationsQueryKey(instanceId);
-
-  const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof runtimeServiceListConversations>>
-  > = ({ signal }) => runtimeServiceListConversations(instanceId, signal);
-
-  return {
-    queryKey,
-    queryFn,
-    enabled: !!instanceId,
-    ...queryOptions,
-  } as CreateQueryOptions<
-    Awaited<ReturnType<typeof runtimeServiceListConversations>>,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof runtimeServiceCompleteStreaming>>,
     TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> };
+    { instanceId: string; data: RuntimeServiceCompleteStreamingBody },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof runtimeServiceCompleteStreaming>>,
+  TError,
+  { instanceId: string; data: RuntimeServiceCompleteStreamingBody },
+  TContext
+> => {
+  const mutationKey = ["runtimeServiceCompleteStreaming"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof runtimeServiceCompleteStreaming>>,
+    { instanceId: string; data: RuntimeServiceCompleteStreamingBody }
+  > = (props) => {
+    const { instanceId, data } = props ?? {};
+
+    return runtimeServiceCompleteStreaming(instanceId, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
 };
 
-export type RuntimeServiceListConversationsQueryResult = NonNullable<
-  Awaited<ReturnType<typeof runtimeServiceListConversations>>
+export type RuntimeServiceCompleteStreamingMutationResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceCompleteStreaming>>
 >;
-export type RuntimeServiceListConversationsQueryError = ErrorType<RpcStatus>;
+export type RuntimeServiceCompleteStreamingMutationBody =
+  RuntimeServiceCompleteStreamingBody;
+export type RuntimeServiceCompleteStreamingMutationError = ErrorType<RpcStatus>;
 
 /**
- * @summary ListConversations lists all AI chat conversations for an instance.
+ * @summary CompleteStreaming runs an AI-powered chat completion, optionally invoking agents or tool calls available in Rill.
  */
-
-export function createRuntimeServiceListConversations<
-  TData = Awaited<ReturnType<typeof runtimeServiceListConversations>>,
+export const createRuntimeServiceCompleteStreaming = <
   TError = ErrorType<RpcStatus>,
+  TContext = unknown,
 >(
-  instanceId: string,
   options?: {
-    query?: Partial<
-      CreateQueryOptions<
-        Awaited<ReturnType<typeof runtimeServiceListConversations>>,
-        TError,
-        TData
-      >
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof runtimeServiceCompleteStreaming>>,
+      TError,
+      { instanceId: string; data: RuntimeServiceCompleteStreamingBody },
+      TContext
     >;
   },
   queryClient?: QueryClient,
-): CreateQueryResult<TData, TError> & {
-  queryKey: DataTag<QueryKey, TData, TError>;
-} {
-  const queryOptions = getRuntimeServiceListConversationsQueryOptions(
-    instanceId,
-    options,
-  );
+): CreateMutationResult<
+  Awaited<ReturnType<typeof runtimeServiceCompleteStreaming>>,
+  TError,
+  { instanceId: string; data: RuntimeServiceCompleteStreamingBody },
+  TContext
+> => {
+  const mutationOptions =
+    getRuntimeServiceCompleteStreamingMutationOptions(options);
 
-  const query = createQuery(queryOptions, queryClient) as CreateQueryResult<
-    TData,
-    TError
-  > & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  query.queryKey = queryOptions.queryKey;
-
-  return query;
-}
-
+  return createMutation(mutationOptions, queryClient);
+};
 /**
  * @summary GetConversation returns a specific AI chat conversation.
  */

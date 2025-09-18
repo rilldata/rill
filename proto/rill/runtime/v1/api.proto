@@ -238,9 +238,12 @@ service RuntimeService {
     };
   }
 
-  // ListConversations lists all AI chat conversations for an instance.
-  rpc ListConversations(ListConversationsRequest) returns (ListConversationsResponse) {
-    option (google.api.http) = {get: "/v1/instances/{instance_id}/ai/conversations"};
+  // CompleteStreaming runs an AI-powered chat completion, optionally invoking agents or tool calls available in Rill.
+  rpc CompleteStreaming(CompleteStreamingRequest) returns (stream CompleteStreamingResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/ai/complete/stream",
+      body: "*"
+    };
   }
 
   // GetConversation returns a specific AI chat conversation.
@@ -934,6 +937,19 @@ message CompleteRequest {
 message CompleteResponse {
   string conversation_id = 1;
   repeated Message messages = 2;
+}
+
+// Request message for RuntimeService.CompleteStreaming
+message CompleteStreamingRequest {
+  string instance_id = 1;
+  string conversation_id = 2; // If not provided, creates a new conversation
+  string prompt = 3;
+}
+
+// Response message for RuntimeService.CompleteStreaming
+message CompleteStreamingResponse {
+  string conversation_id = 1;
+  Message message = 2;
 }
 
 // Request message for RuntimeService.ListConversations
