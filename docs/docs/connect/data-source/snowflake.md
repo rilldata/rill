@@ -17,9 +17,8 @@ Snowflake has issued a [deprecation notice](https://www.snowflake.com/en/blog/bl
 
 [Snowflake](https://docs.snowflake.com/en/user-guide-intro) is a cloud-based data platform designed to facilitate data warehousing, data lakes, data engineering, data science, data application development, and data sharing. It separates compute and storage, enabling users to scale up or down instantly without downtime, providing a cost-effective solution for data management. With its unique architecture and support for multi-cloud environments, including AWS, Azure, and Google Cloud Platform, Snowflake offers seamless data integration, secure data sharing across organizations, and real-time access to data insights, making it a common choice to power many business intelligence applications and use cases. Rill supports natively connecting to and reading from Snowflake as a source using the [Go Snowflake Driver](https://pkg.go.dev/github.com/snowflakedb/gosnowflake).
 
-<img src='/img/connect/data-sources/snowflake.png' class='rounded-gif' style={{width: '75%', display: 'block', margin: '0 auto'}}/>
+<img src='/img/reference/connectors/snowflake/snowflake.png' class='centered' />
 <br />
-
 
 ## Local credentials
 
@@ -40,7 +39,7 @@ Rill uses the following syntax when defining a connection string using a private
 ```
 See the full documentation to set up [private key authentication](#using-keypair-authentication).
 
-<img src='/img/connect/data-sources/snowflake_conn_strings.png' class='rounded-gif' />
+<img src='/img/reference/connectors/snowflake/snowflake_conn_strings.png' class='rounded-gif' />
 <br />
 
 :::info Finding the Snowflake account identifier

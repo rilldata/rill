@@ -23,9 +23,8 @@ When connecting to MySQL, an appropriate Data Source Name (DSN) must be specifie
 
 For more details, see the [MySQL documentation on DSN formats](https://dev.mysql.com/doc/refman/8.4/en/connecting-using-uri-or-key-value-pairs.html#connecting-using-uri).
 
-<img src='/img/connect/data-sources/mysql.png' class='rounded-gif' style={{width: '75%', display: 'block', margin: '0 auto'}}/>
+<img src='/img/reference/connectors/mysql/mysql.png' class='centered' />
 <br />
-
 
 ## Local credentials
 

@@ -19,7 +19,7 @@ In order to import your data into Rill, Rill will first need to be able to acces
 
 If creating a new DuckDB source from the UI, you should provide the appropriate path to the DuckDB database file under **DB** and use the appropriate [DuckDB select statement](https://duckdb.org/docs/sql/statements/select.html) to read the table under **SQL**:
 
-<img src='/img/connect/data-sources/duckdb.png' class='rounded-gif' style={{width: '75%', display: 'block', margin: '0 auto'}}/>
+<img src='/img/reference/olap-engines/duckdb/duckdb.png' class='centered' />
 <br />
 
 
