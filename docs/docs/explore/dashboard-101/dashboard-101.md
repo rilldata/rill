@@ -56,11 +56,11 @@ The main screen of any Rill dashboard is called the _Explore_ page. As seen abov
 
 - _**Time Selector and Time Selector Comparison:**_ You can change the period of analysis to different ranges of time (see `red` box), either by selecting from a pre-defined period (such as last week) or choosing a custom date range. Along with this, you can enable a comparison filter to compare range of dates with 1 click.
 
-- _**Filtering:**_ Underneath the time selector, you'll also be able to find your filter bar (see `orange` box) where you can [add filters](/explore/filters/filters.md) for metrics (e.g. `campaigns>1000`) or for dimensions (e.g. `campaign_name = Instacart`).
+- _**Filtering:**_ Underneath the time selector, you'll also be able to find your filter bar (see `orange` box) where you can [add filters](/explore/filters) for metrics (e.g. `campaigns>1000`) or for dimensions (e.g. `campaign_name = Instacart`).
 
-- _**Explore or Pivot:**_ You can switch the view from _explore_ to [_pivot_](https://docs.rilldata.com/explore/filters/pivot) by selecting either from the UI (see `pink` box)
+- _**Explore or Pivot:**_ You can switch the view from _explore_ to [_pivot_](/explore/dashboard-101/pivot) by selecting either from the UI (see `pink` box)
 
-- _**Alerts, Bookmarks and Sharing:**_ You can create an [alert](/explore/alerts/alerts.md) by selecting the bell, customizing the default view of the dashboard (see `purple` box) to a predefined set of metrics, dimensions, and filters by selecting the [bookmark](../bookmarks.md), or share the dashboard ([internally by clicking the `Share` button](/manage/user-management#admin-invites-user-from-rill-cloud) or [externally via Public URLs](../public-url.md)) .
+- _**Alerts, Bookmarks and Sharing:**_ You can create an [alert](/explore/alerts/alerts.md) by selecting the bell, customizing the default view of the dashboard (see `purple` box) to a predefined set of metrics, dimensions, and filters by selecting the [bookmark](/explore/bookmarks), or share the dashboard ([internally by clicking the `Share` button](/manage/user-management#admin-invites-user-from-rill-cloud) or [externally via Public URLs](/explore/public-url.md)) .
 
 
 ### KPI Widget (Measures) Panel
@@ -177,8 +177,8 @@ banner: Your custom message here!
 
 ## Reference
 
-- [Filters & Comparisons](/explore/filters/filters.md)
-- [Bookmarks & Sharing](../bookmarks.md)
-- [Exports & Scheduled Reports](../exports.md)
-- [Public URL](../public-url.md)
+- [Filters & Comparisons](/explore/filters)
+- [Bookmarks & Sharing](/explore/bookmarks.md)
+- [Exports & Scheduled Reports](/explore/exports.md)
+- [Public URL](/explore/public-url.md)
 - [Alerts](/explore/alerts/alerts.md)

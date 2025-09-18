@@ -51,9 +51,9 @@ Users can add or hide dimensions and metrics to a subset of fields they wish to 
 :::tip hiding metrics and dimensions by default
 You can also change settings in the dashboard configuration to hide certain fields by default. You may want to do this to make dashboards easier to use (less complicated, narrowed to most commonly used) and to improve performance (hide high cardinality dimensions or complicated expressions in metrics). For more details, check out [dashboard customizations](/build/dashboards/customize.md#setting-default-views-for-dashboards).
 
-Or, an administrator can set the default view of a dashboard by [bookmarking the view](../bookmarks.md) as Home. 
+Or, an administrator can set the default view of a dashboard by [bookmarking the view](bookmarks.md) as Home. 
 :::
-## Dimension & Measure & Time Filters 
+## Dimensions
 
 ### Filter by Dimensions
 
@@ -68,8 +68,23 @@ Any filter applied in the Leaderboard will also show up in the filter bar at nex
 <img src = '/img/explore/filters/filter.gif' class='rounded-gif' />
 <br />
 
+### Dimension Comparisons
 
-### Filter by Metrics
+In addition to time comparisons, you can select multiple dimension values to compare trends of those specific data points. Select the comparison option on the top left of any leaderboard and select multiple dimensions
+
+Deselect the comparison option or clear the filter bar to remove your comparisons.
+
+<img src = '/img/explore/filters/comparison.gif' class='rounded-gif' />
+<br />
+:::note
+For more advanced time and dimension comparisons, visit the [Time Dimension Detail](/explore/dashboard-101/tdd) page.
+:::
+
+
+## Measures
+
+
+### Filter by Measures
 
 There are also use cases where you want to filter by the metric values returned. As an example - all customers over $1000 in revenue, all campaigns with at least 1 million impressions, all delivery locations with late times over 4%, etc. 
 
@@ -93,49 +108,4 @@ Metric filters are a good way to "sort" by two different metrics. First, apply y
 As an example - to see most active enterprise customers - filter all customers with revenue greater than $1000 then sorted by number of users increased descending.
 :::
 
-### Filter by Scrubbing 
-
-For a specific view into your time series graph, you can interactively scrub directly on the time series graph. 
-
-
-<img src = '/img/explore/filters/scrub-graph.gif' class='rounded-gif' />
-<br />
-
-This allows the ability for a more detailed view into your time series without having to change the overall time series filter for quick access to measures. 
-
-## Time & Dimension Comparisons
-
-<img src = '/img/explore/filters/time-series.png' class='rounded-gif' />
-<br />
-
-
-### Time Comparisons
-Time comparison is a key feature of Rill and is recommended to find insights quicker by highlighting differences between periods. To compare different periods, first select your time period for analysis - either a predefined period or a custom range in top left time picker. After selecting that range, select the toggle to enable Time Comparisons. For more information see our [time series filter documentation](/explore/filters/time-series).
-
-
-<img src = '/img/explore/alerts/time-series.gif' class='rounded-gif' />
-<br />
-:::note
-Default and comparison periods can be configured in your dashboard file. Visit [Dashboard Reference](/reference/project-files/explore-dashboards) for more details
-:::
-
-
-:::tip
-Rill provides different options for time period comparison - by time period or by selected hours. 
-
-For the former, you can let data "fill in" by selecting time period options like last day, previous 7 days, last week. Future periods will show 'no data.' Use cases here would be for pacing reports or seeing data refresh during business hours. 
-
-For the latter, you can compare the full period looking with options like last 24 hours vs. prior 24 hours. In this case, the time series will be fully complete, comparing up to the most recent period vs. the same hour/day/week in prior periods.  
-:::
-
-### Dimension Comparisons
-In addition to time comparisons, you can select multiple dimension values to compare trends of those specific data points. Select the comparison option on the top left of any leaderboard and select multiple dimensions
-
-Deselect the comparison option or clear the filter bar to remove your comparisons.
-
-<img src = '/img/explore/filters/comparison.gif' class='rounded-gif' />
-<br />
-:::note
-For more advanced time and dimension comparisons, visit the [Time Dimension Detail](/explore/dashboard-101/tdd) page.
-:::
 

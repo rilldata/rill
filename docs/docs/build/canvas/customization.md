@@ -62,7 +62,7 @@ The value must be either a valid [ISO 8601 duration](https://en.wikipedia.org/wi
 
 ### Default Comparison Modes
 
-It is also possible to set up a default comparison mode for your dashboard. For Canvas Dashboards, we support [time comparisons](/explore/filters/#time-comparisons). 
+It is also possible to set up a default comparison mode for your dashboard. For Canvas Dashboards, we support [time comparisons](/explore/time-series#time-comparisons). 
 
 ```yaml
 defaults:
