@@ -153,13 +153,15 @@
         {#if isModelingSupported}
           <Dialog.Title>Add a source</Dialog.Title>
           <section class="mb-1">
-            <div class="connector-grid">
+            <div
+              class="connector-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-x-4 gap-y-2"
+            >
               {#each connectors.filter((c) => c.name && SOURCES.includes(c.name)) as connector (connector.name)}
                 {#if connector.name}
                   <button
                     id={connector.name}
                     on:click={() => goToConnectorForm(connector)}
-                    class="connector-tile-button"
+                    class="connector-tile-button size-full min-w-24 min-h-16"
                   >
                     <div class="connector-wrapper">
                       <svelte:component this={ICONS[connector.name]} />
@@ -176,12 +178,14 @@
         <section>
           <Dialog.Title>Connect an OLAP engine</Dialog.Title>
 
-          <div class="connector-grid">
+          <div
+            class="connector-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-x-4 gap-y-2"
+          >
             {#each connectors?.filter((c) => c.name && OLAP_ENGINES.includes(c.name)) as connector (connector.name)}
               {#if connector.name}
                 <button
                   id={connector.name}
-                  class="connector-tile-button"
+                  class="connector-tile-button size-full min-w-24 min-h-16"
                   on:click={() => goToConnectorForm(connector)}
                 >
                   <div class="connector-wrapper">
@@ -255,13 +259,7 @@
     @apply flex flex-col gap-y-3;
   }
 
-  .connector-grid {
-    @apply grid grid-cols-4 gap-x-4 gap-y-2;
-  }
-
   .connector-tile-button {
-    width: 8rem;
-    height: 4rem;
     @apply border border-gray-300 rounded;
     @apply cursor-pointer overflow-hidden;
   }
