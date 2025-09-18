@@ -53,6 +53,7 @@ const (
 	RuntimeService_AnalyzeConnectors_FullMethodName       = "/rill.runtime.v1.RuntimeService/AnalyzeConnectors"
 	RuntimeService_ListNotifierConnectors_FullMethodName  = "/rill.runtime.v1.RuntimeService/ListNotifierConnectors"
 	RuntimeService_Complete_FullMethodName                = "/rill.runtime.v1.RuntimeService/Complete"
+	RuntimeService_CompleteStreaming_FullMethodName       = "/rill.runtime.v1.RuntimeService/CompleteStreaming"
 	RuntimeService_ListConversations_FullMethodName       = "/rill.runtime.v1.RuntimeService/ListConversations"
 	RuntimeService_GetConversation_FullMethodName         = "/rill.runtime.v1.RuntimeService/GetConversation"
 	RuntimeService_IssueDevJWT_FullMethodName             = "/rill.runtime.v1.RuntimeService/IssueDevJWT"
@@ -138,6 +139,8 @@ type RuntimeServiceClient interface {
 	ListNotifierConnectors(ctx context.Context, in *ListNotifierConnectorsRequest, opts ...grpc.CallOption) (*ListNotifierConnectorsResponse, error)
 	// Complete runs a language model completion (LLM chat) using the configured AI connector.
 	Complete(ctx context.Context, in *CompleteRequest, opts ...grpc.CallOption) (*CompleteResponse, error)
+	// CompleteStreaming runs an AI-powered chat completion, optionally invoking agents or tool calls available in Rill.
+	CompleteStreaming(ctx context.Context, in *CompleteStreamingRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[CompleteStreamingResponse], error)
 	// ListConversations lists all AI chat conversations for an instance.
 	ListConversations(ctx context.Context, in *ListConversationsRequest, opts ...grpc.CallOption) (*ListConversationsResponse, error)
 	// GetConversation returns a specific AI chat conversation.
@@ -523,6 +526,25 @@ func (c *runtimeServiceClient) Complete(ctx context.Context, in *CompleteRequest
 	return out, nil
 }
 
+func (c *runtimeServiceClient) CompleteStreaming(ctx context.Context, in *CompleteStreamingRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[CompleteStreamingResponse], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &RuntimeService_ServiceDesc.Streams[3], RuntimeService_CompleteStreaming_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[CompleteStreamingRequest, CompleteStreamingResponse]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type RuntimeService_CompleteStreamingClient = grpc.ServerStreamingClient[CompleteStreamingResponse]
+
 func (c *runtimeServiceClient) ListConversations(ctx context.Context, in *ListConversationsRequest, opts ...grpc.CallOption) (*ListConversationsResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListConversationsResponse)
@@ -642,6 +664,8 @@ type RuntimeServiceServer interface {
 	ListNotifierConnectors(context.Context, *ListNotifierConnectorsRequest) (*ListNotifierConnectorsResponse, error)
 	// Complete runs a language model completion (LLM chat) using the configured AI connector.
 	Complete(context.Context, *CompleteRequest) (*CompleteResponse, error)
+	// CompleteStreaming runs an AI-powered chat completion, optionally invoking agents or tool calls available in Rill.
+	CompleteStreaming(*CompleteStreamingRequest, grpc.ServerStreamingServer[CompleteStreamingResponse]) error
 	// ListConversations lists all AI chat conversations for an instance.
 	ListConversations(context.Context, *ListConversationsRequest) (*ListConversationsResponse, error)
 	// GetConversation returns a specific AI chat conversation.
@@ -761,6 +785,9 @@ func (UnimplementedRuntimeServiceServer) ListNotifierConnectors(context.Context,
 }
 func (UnimplementedRuntimeServiceServer) Complete(context.Context, *CompleteRequest) (*CompleteResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Complete not implemented")
+}
+func (UnimplementedRuntimeServiceServer) CompleteStreaming(*CompleteStreamingRequest, grpc.ServerStreamingServer[CompleteStreamingResponse]) error {
+	return status.Errorf(codes.Unimplemented, "method CompleteStreaming not implemented")
 }
 func (UnimplementedRuntimeServiceServer) ListConversations(context.Context, *ListConversationsRequest) (*ListConversationsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListConversations not implemented")
@@ -1386,6 +1413,17 @@ func _RuntimeService_Complete_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RuntimeService_CompleteStreaming_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(CompleteStreamingRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(RuntimeServiceServer).CompleteStreaming(m, &grpc.GenericServerStream[CompleteStreamingRequest, CompleteStreamingResponse]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type RuntimeService_CompleteStreamingServer = grpc.ServerStreamingServer[CompleteStreamingResponse]
+
 func _RuntimeService_ListConversations_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListConversationsRequest)
 	if err := dec(in); err != nil {
@@ -1620,6 +1658,11 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			StreamName:    "WatchResources",
 			Handler:       _RuntimeService_WatchResources_Handler,
+			ServerStreams: true,
+		},
+		{
+			StreamName:    "CompleteStreaming",
+			Handler:       _RuntimeService_CompleteStreaming_Handler,
 			ServerStreams: true,
 		},
 	},
