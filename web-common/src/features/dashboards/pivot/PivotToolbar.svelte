@@ -101,18 +101,23 @@
 </script>
 
 <div class="flex items-center gap-x-4 select-none pointer-events-none">
-  <Button
-    square
-    type="secondary"
-    theme
-    selected={showPanels}
-    onClick={(e) => {
-      showPanels = !showPanels;
-      blurCurrentTarget(e);
-    }}
-  >
-    <PivotPanel size="18px" open={showPanels} colorClass="fill-theme-800" />
-  </Button>
+  <Tooltip location="bottom" alignment="start" distance={8}>
+    <Button
+      square
+      type="secondary"
+      theme
+      selected={showPanels}
+      onClick={(e) => {
+        showPanels = !showPanels;
+        blurCurrentTarget(e);
+      }}
+    >
+      <PivotPanel size="18px" open={showPanels} colorClass="fill-theme-800" />
+    </Button>
+    <TooltipContent slot="tooltip-content">
+      {showPanels ? "Hide panels" : "Show panels"}
+    </TooltipContent>
+  </Tooltip>
 
   <div class="flex items-center gap-x-1">
     <Tooltip location="bottom" alignment="start" distance={8}>
