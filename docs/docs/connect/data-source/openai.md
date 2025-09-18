@@ -8,9 +8,9 @@ sidebar_position: 42
 
 [OpenAI](https://openai.com/) provides powerful AI services including language models, embeddings, and other machine learning capabilities. Rill supports connecting to OpenAI services using your own API key and configuration parameters to enable AI-powered conversations and data analysis features.
 
-## Local credentials
+## API Key
 
-When using Rill Developer on your local machine (i.e., `rill start`), Rill will use your configured OpenAI API key if available, or fall back to our internal key if no custom configuration is provided. You can configure your API key in your project's `.env` file or explicitly define [credentials in a connector YAML](/reference/project-files/connectors#openai).
+Rill will use your configured OpenAI API Connector if available, or fall back to our internal key if no custom configuration is provided. You can configure your API key in your project's `.env` file and referencing the [credentials in a connector YAML](/reference/project-files/connectors#openai).
 
 ### OpenAI API Key
 
