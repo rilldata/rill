@@ -312,6 +312,6 @@ mock_users:
     custom_variable_1: Value_1 #this is passed at embed creation
     custom_variable_2: Value_2 #this is passed at embed creation
 
-  features:
-    - cloudDataViewer
+features:
+  - cloudDataViewer
 ```
