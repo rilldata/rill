@@ -792,9 +792,6 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 	archiveAssetID := proj.ArchiveAssetID
 	if req.GitRemote != nil {
 		if safeStr(proj.GitRemote) != *req.GitRemote {
-			if proj.ManagedGitRepoID != nil {
-				return nil, status.Errorf(codes.FailedPrecondition, "cannot edit git remote for rill managed projects")
-			}
 			// check if another project deploys using the same git remote + subpath
 			projects, err := s.admin.DB.FindProjectsByGitRemote(ctx, *req.GitRemote)
 			if err != nil {
@@ -823,7 +820,11 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 			if err != nil {
 				return nil, err
 			}
+			if managedGitRepoID != nil {
+				return nil, status.Error(codes.InvalidArgument, "invalid git remote: cannot switch to a rill managed git repo")
+			}
 			gitRemote = req.GitRemote
+			managedGitRepoID = nil
 		}
 		archiveAssetID = nil
 	}
