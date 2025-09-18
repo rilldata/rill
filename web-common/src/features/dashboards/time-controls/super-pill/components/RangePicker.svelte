@@ -32,7 +32,6 @@
 </script>
 
 <DropdownMenu.Root
-  portal="#rill-portal"
   bind:open
   onOpenChange={(open) => {
     if (open) {
@@ -61,11 +60,7 @@
       </span>
     </button>
   </DropdownMenu.Trigger>
-  <DropdownMenu.Content
-    align="start"
-    {side}
-    class="p-0 z-[100] overflow-hidden"
-  >
+  <DropdownMenu.Content align="start" {side} class="p-0 overflow-hidden">
     <div class="flex">
       <div class="flex flex-col w-48 p-1">
         <TimeRangeMenu
