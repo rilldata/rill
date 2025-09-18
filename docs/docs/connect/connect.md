@@ -248,7 +248,7 @@ We're constantly adding new data connectors. If you don't see what you need, [le
 
 ## Other Integrations
 
-### Open AI
+### OpenAI
 ### Slack
 
 
