@@ -66,8 +66,6 @@
           organization: organization,
           data: {
             remote,
-            branch: values.branch,
-            create: true,
           },
         });
       },
