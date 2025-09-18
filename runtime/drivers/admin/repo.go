@@ -112,6 +112,12 @@ func (r *repo) ListGlob(ctx context.Context, glob string, skipDirs bool) ([]driv
 			if len(entries) == drivers.RepoListLimit {
 				return drivers.ErrRepoListLimitExceeded
 			}
+
+			f, err := d.Info()
+			if err != nil {
+				return err
+			}
+
 			p = path.Join("/", p) // p is already relative to the root, not absolute
 			if drivers.IsIgnored(p, r.ignorePaths) {
 				return nil
@@ -119,6 +125,7 @@ func (r *repo) ListGlob(ctx context.Context, glob string, skipDirs bool) ([]driv
 			entries = append(entries, drivers.DirEntry{
 				Path:  p,
 				IsDir: d.IsDir(),
+				Size:  f.Size(),
 			})
 			return nil
 		})
@@ -416,6 +423,7 @@ func (r *repo) Watch(ctx context.Context, cb drivers.WatchCallback) error {
 				Type: e.Type,
 				Path: e.RelPath,
 				Dir:  e.Dir,
+				Size: e.Size,
 			})
 		}
 		cb(watchEvents)
