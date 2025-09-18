@@ -86,7 +86,7 @@ export class CanvasEntity {
 
     const themeFromUrl = searchParams.get("theme");
     if (themeFromUrl) {
-      this.processAndSetTheme(themeFromUrl, undefined).catch(console.error);
+      this.processTheme(themeFromUrl, undefined).catch(console.error);
     }
 
     this.filters.onUrlChange(searchParams);
@@ -241,23 +241,13 @@ export class CanvasEntity {
       undefined,
       this.name,
     );
-<<<<<<< HEAD
+
     this.filters = new Filters(
       this.spec,
       this.searchParamsCallback,
       this.specStore,
       undefined,
     );
-=======
-    this.filters = new Filters(this.spec, searchParamsStore);
-
-    searchParamsStore.subscribe((searchParams) => {
-      const themeFromUrl = searchParams.get("theme");
-      if (themeFromUrl) {
-        this.processTheme(themeFromUrl, undefined).catch(console.error);
-      }
-    });
->>>>>>> main
 
     this.unsubscriber = this.specStore.subscribe((spec) => {
       if (!spec.data) return;
