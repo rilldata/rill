@@ -425,11 +425,11 @@ const config = {
           },
           {
             from: '/concepts/developerVsCloud',
-            to: '/get-started/concepts/cloud-vs-developer'
+            to: '/deploy/cloud-vs-developer'
           },
           {
             from: '/home/concepts/developerVsCloud',
-            to: '/get-started/concepts/cloud-vs-developer'
+            to: '/deploy/cloud-vs-developer'
           },
           {
             from: '/concepts/OLAP',
@@ -538,6 +538,14 @@ const config = {
           {
             from: '/home/get-started',
             to: '/get-started/quickstart'
+          },
+          {
+            from: '/deploy/deploy-dashboard/deploy-from-cli',
+            to: '/guides/deploy-from-cli'
+          },
+          {
+            from: '/deploy/deploy-dashboard/github-101',
+            to: '/guides/github-101'
           },
           // {
           //   from: '/old-page',

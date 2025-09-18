@@ -1,7 +1,7 @@
 ---
 title: Rill Cloud vs Rill Developer 
 sidebar_label: Rill Cloud vs Rill Developer 
-sidebar_position: 13
+sidebar_position: 10
 hide_table_of_contents: false
 ---
 
