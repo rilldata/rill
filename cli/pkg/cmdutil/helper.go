@@ -436,7 +436,10 @@ func (h *Helper) InferProjects(ctx context.Context, org, path string) ([]*adminv
 	}
 	// cleanup rill managed remote
 	if len(orgFiltered) == 1 && orgFiltered[0].ManagedGitId == "" && req.RillMgdGitRemote != "" {
-		h.HandleRepoTransfer(repoRoot, req.GitRemote)
+		err := h.HandleRepoTransfer(repoRoot, req.GitRemote)
+		if err != nil {
+			return nil, err
+		}
 	}
 	return orgFiltered, nil
 }
@@ -535,7 +538,7 @@ func (h *Helper) GitSignature(ctx context.Context, path string) (*object.Signatu
 	}, nil
 }
 
-func (h *Helper) HandleRepoTransfer(path string, remote string) error {
+func (h *Helper) HandleRepoTransfer(path, remote string) error {
 	// clear cache
 	h.gitHelperMu.Lock()
 	h.gitHelper = nil

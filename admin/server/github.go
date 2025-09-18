@@ -49,12 +49,6 @@ const (
 	createRetries             = 3
 )
 
-var allowedPaths = []string{
-	".git",
-	"README.md",
-	"LICENSE",
-}
-
 func (s *Server) GetGithubUserStatus(ctx context.Context, req *adminv1.GetGithubUserStatusRequest) (*adminv1.GetGithubUserStatusResponse, error) {
 	// Check the request is made by an authenticated user
 	claims := auth.GetClaims(ctx)
@@ -297,7 +291,10 @@ func (s *Server) ConnectProjectToGithub(ctx context.Context, req *adminv1.Connec
 			Name:  user.GithubUsername,
 			Email: user.Email,
 		}
-		s.pushAssetToGit(ctx, *proj.ArchiveAssetID, req.Remote, branch, token, author)
+		err := s.pushAssetToGit(ctx, *proj.ArchiveAssetID, req.Remote, branch, token, author)
+		if err != nil {
+			return nil, err
+		}
 	} else if proj.GitRemote != nil {
 		mgdRepoToken, _, err := s.admin.Github.InstallationToken(ctx, *proj.GithubInstallationID, *proj.GithubRepoID)
 		if err != nil {
@@ -1033,6 +1030,9 @@ func (s *Server) createRepo(ctx context.Context, remote, branch string, user *da
 	} else {
 		// get the installation access token for that org
 		token, _, err = s.admin.Github.InstallationTokenForOrg(ctx, org)
+		if err != nil {
+			return "", err
+		}
 		ghAcct = org
 	}
 	client := github.NewTokenClient(ctx, token)
@@ -1060,7 +1060,7 @@ func (s *Server) createRepo(ctx context.Context, remote, branch string, user *da
 	return token, nil
 }
 
-func (s *Server) mirrorGitRepo(ctx context.Context, srcGitRemote, destGitRemote string, srcToken, destToken string) error {
+func (s *Server) mirrorGitRepo(ctx context.Context, srcGitRemote, destGitRemote, srcToken, destToken string) error {
 	gitPath, err := os.MkdirTemp(os.TempDir(), "projects")
 	if err != nil {
 		return err
@@ -1097,7 +1097,7 @@ func (s *Server) mirrorGitRepo(ctx context.Context, srcGitRemote, destGitRemote 
 	return nil
 }
 
-func (s *Server) pushAssetToGit(ctx context.Context, assetID string, remote, branch, token string, author *object.Signature) error {
+func (s *Server) pushAssetToGit(ctx context.Context, assetID, remote, branch, token string, author *object.Signature) error {
 	asset, err := s.admin.DB.FindAsset(ctx, assetID)
 	if err != nil {
 		return err
@@ -1141,34 +1141,6 @@ func (s *Server) githubAppInstallationURL(state githubConnectState) (string, err
 	}
 
 	return urlutil.MustWithQuery(res, map[string]string{"state": string(stateJSON)}), nil
-}
-
-func (s *Server) gitSignFromClaims(ctx context.Context, claims auth.Claims) (*object.Signature, error) {
-	switch claims.OwnerType() {
-	case auth.OwnerTypeUser:
-		user, err := s.admin.DB.FindUser(ctx, claims.OwnerID())
-		if err != nil {
-			return nil, err
-		}
-
-		return &object.Signature{
-			Name:  user.DisplayName,
-			Email: user.Email,
-			When:  time.Now(),
-		}, nil
-	case auth.OwnerTypeService:
-		svc, err := s.admin.DB.FindService(ctx, claims.OwnerID())
-		if err != nil {
-			return nil, err
-		}
-		return &object.Signature{
-			Name:  svc.Name,
-			Email: "noreply@rilldata.com",
-			When:  time.Now(),
-		}, nil
-	default:
-		return nil, status.Errorf(codes.InvalidArgument, "can not generate signature for owner type %q", claims.OwnerType())
-	}
 }
 
 func fromStringPtr(s *string) string {
