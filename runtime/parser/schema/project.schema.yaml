@@ -69,7 +69,7 @@ definitions:
 
       ### _Other_
       - [**HTTPS**](#https) - Public files via HTTP/HTTPS
-      - [**OpenAPI**](#openapi) - OpenAPI data
+      - [**OpenAI**](#openai) - OpenAI data
       - [**Salesforce**](#salesforce) - Salesforce data
       - [**Slack**](#slack) - Slack data
 
@@ -519,11 +519,11 @@ definitions:
           required:
             - driver
         - type: object
-          title: OpenAPI
+          title: OpenAI
           properties:
             driver:
               type: string
-              description: The driver type, must be set to "openapi"
+              description: The driver type, must be set to "openai"
             api_key:
               type: string
               description: API key for connecting to OpenAI
@@ -540,9 +540,9 @@ definitions:
               type: string
               description: The version of the OpenAI API to use (e.g., '2023-05-15'). Required when API Type is AZURE or AZURE_AD
           examples:
-            - # Example: OpenAPI connector configuration
+            - # Example: OpenAI connector configuration
               type: connector                                  # Must be `connector` (required)
-              driver: openapi                                  # Must be `openapi` _(required)_
+              driver: openai                                  # Must be `openai` _(required)_
 
               api_key: "my-api-key"                            # API key for connecting to OpenAI  
               model: "gpt-4o"                                  # The OpenAI model to use (e.g., 'gpt-4o')  
@@ -2324,9 +2324,9 @@ definitions:
             type: string
             const: api
             description: Refers to the resource type and must be `api`
-          openapi:
+          openai:
             type: object
-            description: OpenAPI specification for the API endpoint
+            description: OpenAI specification for the API endpoint
             properties:
               summary:
                 type: string
