@@ -8,34 +8,34 @@ describe("prettyFormatTimeRange", () => {
     const singlePointTestCases = [
       {
         test: "Non-zero minute, minute grain",
-        time: "2025-09-04T08:10:20.000Z",
+        time: "2025-09-04T13:55:20.000Z",
         grain: V1TimeGrain.TIME_GRAIN_MINUTE,
-        formattedTime: "Sep 4, 2025 (8:10:20AM)",
+        formattedTime: "Sep 4, 2025 (1:55:20PM)",
       },
       {
         test: "Non-zero minute, hour grain",
-        time: "2025-09-04T08:10:20.000Z",
+        time: "2025-09-04T13:55:20.000Z",
         grain: V1TimeGrain.TIME_GRAIN_HOUR,
-        formattedTime: "Sep 4, 2025 (8:10:20AM)",
+        formattedTime: "Sep 4, 2025 (1:55:20PM)",
       },
 
       {
         test: "Non-zero hour, zero minute, minute grain",
-        time: "2025-09-04T08:00:00.000Z",
+        time: "2025-09-04T14:00:00.000Z",
         grain: V1TimeGrain.TIME_GRAIN_MINUTE,
-        formattedTime: "Sep 4, 2025 (8:00AM)",
+        formattedTime: "Sep 4, 2025 (2:00PM)",
       },
       {
         test: "Non-zero hour, zero minute, hour grain",
-        time: "2025-09-04T08:00:00.000Z",
+        time: "2025-09-04T14:00:00.000Z",
         grain: V1TimeGrain.TIME_GRAIN_HOUR,
-        formattedTime: "Sep 4, 2025 (8AM)",
+        formattedTime: "Sep 4, 2025 (2PM)",
       },
       {
         test: "Non-zero hour, zero minute, day grain",
-        time: "2025-09-04T08:00:00.000Z",
+        time: "2025-09-04T14:00:00.000Z",
         grain: V1TimeGrain.TIME_GRAIN_DAY,
-        formattedTime: "Sep 4, 2025 (8AM)",
+        formattedTime: "Sep 4, 2025 (2PM)",
       },
 
       {
@@ -59,27 +59,27 @@ describe("prettyFormatTimeRange", () => {
 
       {
         test: "1st of month at midnight, hour grain",
-        time: "2025-08-01T00:00:00.000Z",
+        time: "2025-09-01T00:00:00.000Z",
         grain: V1TimeGrain.TIME_GRAIN_HOUR,
-        formattedTime: "Aug 1, 2025 (12AM)",
+        formattedTime: "Sep 1, 2025 (12AM)",
       },
       {
         test: "1st of month at midnight, day grain",
-        time: "2025-08-01T00:00:00.000Z",
+        time: "2025-09-01T00:00:00.000Z",
         grain: V1TimeGrain.TIME_GRAIN_DAY,
-        formattedTime: "Aug 1, 2025",
+        formattedTime: "Sep 1, 2025",
       },
       {
         test: "1st of month at midnight, month grain",
-        time: "2025-08-01T00:00:00.000Z",
+        time: "2025-09-01T00:00:00.000Z",
         grain: V1TimeGrain.TIME_GRAIN_MONTH,
-        formattedTime: "Aug 2025",
+        formattedTime: "Sep 2025",
       },
       {
         test: "1st of month at midnight, quarter grain",
-        time: "2025-08-01T00:00:00.000Z",
+        time: "2025-09-01T00:00:00.000Z",
         grain: V1TimeGrain.TIME_GRAIN_QUARTER,
-        formattedTime: "Aug 2025",
+        formattedTime: "Sep 2025",
       },
 
       {
