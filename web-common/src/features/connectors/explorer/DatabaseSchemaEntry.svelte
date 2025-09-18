@@ -23,8 +23,20 @@
 
   // Use appropriate selector based on API version
   $: tablesQuery = useNewAPI
-    ? useTablesForSchema(instanceId, connectorName, database, databaseSchema)
-    : useTablesLegacy(instanceId, connectorName, database, databaseSchema);
+    ? useTablesForSchema(
+        instanceId,
+        connectorName,
+        database,
+        databaseSchema,
+        expanded,
+      )
+    : useTablesLegacy(
+        instanceId,
+        connectorName,
+        database,
+        databaseSchema,
+        expanded,
+      );
 
   $: ({ data, error, isLoading } = $tablesQuery);
 

@@ -160,6 +160,7 @@ export function useTablesOLAP(
   connector: string,
   database: string,
   databaseSchema: string,
+  enabled: boolean = true,
 ): CreateQueryResult<V1OlapTableInfo[]> {
   return createConnectorServiceOLAPListTables(
     {
@@ -168,7 +169,7 @@ export function useTablesOLAP(
     },
     {
       query: {
-        enabled: !!instanceId && !!connector,
+        enabled: enabled && !!instanceId && !!connector,
         select: (data) => {
           return (
             data.tables?.filter(
@@ -290,6 +291,7 @@ export function useTablesForSchema(
   connector: string,
   database: string,
   databaseSchema: string,
+  enabled: boolean = true,
 ): CreateQueryResult<V1TableInfo[]> {
   return createConnectorServiceListTables(
     {
@@ -301,6 +303,7 @@ export function useTablesForSchema(
     {
       query: {
         enabled:
+          enabled &&
           !!instanceId &&
           !!connector &&
           !!database &&
