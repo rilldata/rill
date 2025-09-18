@@ -33,7 +33,7 @@ Connector YAML files define how Rill connects to external data sources and OLAP 
 
 ### _Other_
 - [**HTTPS**](#https) - Public files via HTTP/HTTPS
-- [**OpenAPI**](#openapi) - OpenAPI data
+- [**OpenAI**](#openai) - OpenAI data
 - [**Salesforce**](#salesforce) - Salesforce data
 - [**Slack**](#slack) - Slack data
 
@@ -540,11 +540,11 @@ password: "mypassword" # Password for authentication
 ssl_mode: "DISABLED" # SSL mode can be DISABLED, PREFERRED or REQUIRED
 ```
 
-## OpenAPI
+## OpenAI
 
 ### `driver`
 
-_[string]_ - The driver type, must be set to "openapi" 
+_[string]_ - The driver type, must be set to "openai" 
 
 ### `api_key`
 
@@ -567,9 +567,9 @@ _[string]_ - The type of OpenAI API to use
 _[string]_ - The version of the OpenAI API to use (e.g., '2023-05-15'). Required when API Type is AZURE or AZURE_AD 
 
 ```yaml
-# Example: OpenAPI connector configuration
+# Example: OpenAI connector configuration
 type: connector # Must be `connector` (required)
-driver: openapi # Must be `openapi` _(required)_
+driver: openai # Must be `openai` _(required)_
 api_key: "my-api-key" # API key for connecting to OpenAI  
 model: "gpt-4o" # The OpenAI model to use (e.g., 'gpt-4o')  
 base_url: "https://api.openai.com/v1" # The base URL for the OpenAI API (e.g., 'https://api.openai.com/v1')  
