@@ -13,7 +13,7 @@ Miscellaneous components in Rill Canvas provide additional functionality for tex
 Text components allow you to add formatted text, markdown content, and documentation directly to your dashboards.
 
 <ImageCodeToggle
-  image="/img/build/canvas/components/text.png"
+  image="/img/build/dashboard/canvas/components/text.png"
   imageAlt="Text component showing markdown formatting"
   code={`- markdown:
       alignment:
@@ -42,7 +42,7 @@ Text components allow you to add formatted text, markdown content, and documenta
 Image components let you embed images, logos, and visual elements into your dashboards. Put files in your public/ folder and reference them directly in the `url` as `public/image.png`.
 
 <ImageCodeToggle
-  image="/img/build/canvas/components/image.png"
+  image="/img/build/dashboard/canvas/components/image.png"
   imageAlt="Image component showing embedded logo"
   code={`- image:
       url: https://cdn.prod.website-files.com/659ddac460dbacbdc813b204/660b0f85094eb576187342cf_rill_logo_sq_gradient.svg
@@ -55,7 +55,7 @@ Image components let you embed images, logos, and visual elements into your dash
 Reference a reusable component created outside of the canvas dashboard.
 
 <ImageCodeToggle
-  image="/img/build/canvas/components/component.png"
+  image="/img/build/dashboard/canvas/components/component.png"
   imageAlt="Table showing detailed data columns"
   code={`- component: my_component`}
   codeLanguage="yaml"

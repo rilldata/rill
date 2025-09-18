@@ -14,6 +14,9 @@ Rill offers two distinct dashboard experiences, each optimized for different use
 ## Built on Metrics Views
 
 All dashboards in Rill are built on [metrics views](/build/metrics-view/metrics-view.md). This ensures that your defined measures and dimensions are standard throughout all of your visualizations. The primary difference between Explore and Canvas dashboards is that **Explore is built on a single metrics view**, while **Canvas can combine multiple metrics views** in one dashboard.
+<img src = '/img/build/dashboard/explore-metrics.png'  style={{width: '75%', display: 'block', margin: '0 auto'}} />
+
+<img src = '/img/build/dashboard/canvas-metrics.png'  style={{width: '75%', display: 'block', margin: '0 auto'}} />
 
 ## Explore Dashboards
 
@@ -30,7 +33,7 @@ All dashboards in Rill are built on [metrics views](/build/metrics-view/metrics-
 **[Canvas dashboards](/build/dashboards/canvas)** provide a traditional dashboard experience where you can combine multiple metrics views and create custom layouts. See our [list of components](/build/dashboards/canvas-components) to start creating your custom dashboard.
 
 
-<img src = '/img/build/canvas/RTBAds-Canvas-2.png' class='rounded-gif' />
+<img src = '/img/build/dashboard/canvas/RTBAds-Canvas-2.png' class='rounded-gif' />
 
 ## Key Features
 

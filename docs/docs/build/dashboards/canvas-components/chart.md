@@ -13,7 +13,7 @@ Chart components in Rill Canvas allow you to visualize your data in various form
 Bar charts are ideal for comparing values across different categories.
 
 <ImageCodeToggle
-  image="/img/build/canvas/components/bar.png"
+  image="/img/build/dashboard/canvas/components/bar.png"
   imageAlt="Bar chart example showing sales data"
   code={`- bar_chart:
       metrics_view: bids_metrics
@@ -37,7 +37,7 @@ Bar charts are ideal for comparing values across different categories.
 Line charts are perfect for showing trends over time.
 
 <ImageCodeToggle
-  image="/img/build/canvas/components/line.png"
+  image="/img/build/dashboard/canvas/components/line.png"
   imageAlt="Line chart example showing revenue trends"
   code={`- line_chart:
       metrics_view: bids_metrics
@@ -62,7 +62,7 @@ Line charts are perfect for showing trends over time.
 Area charts show the magnitude of change over time with filled areas.
 
 <ImageCodeToggle
-  image="/img/build/canvas/components/stacked-area.png"
+  image="/img/build/dashboard/canvas/components/stacked-area.png"
   imageAlt="Area chart showing filled areas over time"
   code={`- area_chart:
       color:
@@ -86,7 +86,7 @@ Area charts show the magnitude of change over time with filled areas.
 Stacked bar charts show multiple data series stacked on top of each other.
 
 <ImageCodeToggle
-  image="/img/build/canvas/components/stacked-bar.png"
+  image="/img/build/dashboard/canvas/components/stacked-bar.png"
   imageAlt="Stacked bar chart showing multiple measures"
   code={`- stacked_bar:
       color:
@@ -117,7 +117,7 @@ Stacked bar charts show multiple data series stacked on top of each other.
 Normalized stacked bars show proportions instead of absolute values.
 
 <ImageCodeToggle
-  image="/img/build/canvas/components/stacked-bar-normalized.png"
+  image="/img/build/dashboard/canvas/components/stacked-bar-normalized.png"
   imageAlt="Normalized stacked bar chart showing proportions"
   code={`- stacked_bar_normalized:
       color:
@@ -141,7 +141,7 @@ Normalized stacked bars show proportions instead of absolute values.
 Donut charts display data as segments of a circle with a hollow center.
 
 <ImageCodeToggle
-  image="/img/build/canvas/components/donut.png"
+  image="/img/build/dashboard/canvas/components/donut.png"
   imageAlt="Donut chart showing data segments"
   code={`- donut_chart:
       color:
@@ -161,7 +161,7 @@ Donut charts display data as segments of a circle with a hollow center.
 Funnel charts show the flow through a process with decreasing values at each stage.
 
 <ImageCodeToggle
-  image="/img/build/canvas/components/funnel.png"
+  image="/img/build/dashboard/canvas/components/funnel.png"
   imageAlt="Funnel chart showing process flow"
   code={`- funnel_chart:
       color: stage
@@ -182,7 +182,7 @@ Funnel charts show the flow through a process with decreasing values at each sta
 Heat maps visualize data density using color intensity across two dimensions.
 
 <ImageCodeToggle
-  image="/img/build/canvas/components/heatmap.png"
+  image="/img/build/dashboard/canvas/components/heatmap.png"
   imageAlt="Heat map showing data density"
   code={`- heatmap:
       color:
@@ -214,7 +214,7 @@ Heat maps visualize data density using color intensity across two dimensions.
 Combo charts combine different chart types (like bars and lines) in a single visualization.
 
 <ImageCodeToggle
-  image="/img/build/canvas/components/combo.png"
+  image="/img/build/dashboard/canvas/components/combo.png"
   imageAlt="Combo chart combining bars and lines"
   code={`- combo_chart:
       color:

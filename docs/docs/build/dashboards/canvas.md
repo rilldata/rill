@@ -27,28 +27,85 @@ For a complete overview of all available components, see our [**Canvas Component
 
 To modify any single widget, click to select it and use the righthand panel to change its associated properties. Click outside the widget to view global properties associated with the overall Canvas.
 
-<img src = '/img/build/canvas/selected-widget.png' class='rounded-gif' />
+<img src = '/img/build/dashboard/canvas/selected-widget.png' class='rounded-gif' />
 <br/>
 
 
 ### Local Filters
 Optionally toggle on the filter bar under Canvas properties to give dashboard viewers access to the same time and dimension filters available on Explore dashboards.
 
-<img src = '/img/build/canvas/global-filter-bar.png' class='rounded-gif' />
+<img src = '/img/build/dashboard/canvas/global-filter-bar.png' class='rounded-gif' />
 <br/>
 
 Filters for a single KPI, Chart, or Table can be separated from the global filters via the "Filters" tab in the properties panel, where you can set filters that are local to just that widget.
 
 
-<img src = '/img/build/canvas/local-filters.png' class='rounded-gif' />
+<img src = '/img/build/dashboard/canvas/local-filters.png' class='rounded-gif' />
 
 
 ### Making changes to the YAML 
 While we encourage creating Canvas dashboards via the visual editing experience described above, you can always edit the YAML file directly using the code view by toggling the switch next to the filename at the top of the page. Please see our [customization page](/build/dashboards/customization) and [reference documentation](/reference/project-files/canvas-dashboards) for more information.
 
 
-<img src = '/img/build/canvas/code-toggle.png' class='rounded-gif' />
+<img src = '/img/build/dashboard/canvas/code-toggle.png' class='rounded-gif' />
 
+## Default Filters
+
+Dashboard creators can configure default dimension and measure filters to establish a consistent starting point for viewers. This feature enables you to pre-configure the most relevant data views, ensuring users begin their analysis with the most appropriate context and reducing the need for manual filter configuration.
+
+### Dimension Filters
+
+<img src = '/img/build/dashboard/canvas/dimension-default-filters.png' class='rounded-gif' /> <br/>
+
+Additional parameters can be configured to control filter behavior, including locking filters, hiding values, and setting default selections.
+
+```yaml
+defaults:
+  filters:
+    dimensions:
+      # Exclude "Not Available" values and lock the filter
+      - dimension: app_site_domain
+        exclude: true
+        locked: true
+        values:
+          - "Not Available"
+      
+      # Make filter non-removable but allow value changes
+      - dimension: app_site_name
+        removable: false
+      
+      # Standard dimension filter
+      - dimension: device_state
+```
+
+### Measure Filters
+
+Measure filters can be configured in the same way:
+
+```yaml
+defaults:
+  filters:
+    measures:
+      # Lock impressions filter with greater than 10 threshold
+      - measure: impressions
+        locked: true
+        # hidden: true  # Uncomment to hide from UI
+        by_dimension: app_site_domain
+        operator: gt  # Available: gt, lt, gte, lte, bt, nbt, eq, neq
+        values:
+          - "10"
+      
+      # Configure total_bids filter with less than or equal to 10
+      - measure: total_bids
+        by_dimension: app_site_name
+        operator: lte  # Available: gt, lt, gte, lte, bt, nbt, eq, neq
+        values:
+          - "10"
+```
+
+<img src = '/img/build/dashboard/canvas/measure-default-filters.png' class='rounded-gif' /> <br/>
+
+For detailed YAML configurations, see the [`filters`](/reference/project-files/canvas-dashboards#defaults) section in our reference documentation.
 
 ## Example Canvas Dashboards 
 Here are a few deployed examples of Canvas dashboards that you can check out!

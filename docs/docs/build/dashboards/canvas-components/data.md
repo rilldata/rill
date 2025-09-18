@@ -13,7 +13,7 @@ Data components in Rill Canvas allow you to display raw data in various formats.
 KPI grids display key performance indicators in a compact grid format with comparison capabilities.
 
 <ImageCodeToggle
-  image="/img/build/canvas/components/kpi.png"
+  image="/img/build/dashboard/canvas/components/kpi.png"
   imageAlt="KPI Grid showing metrics with comparisons"
   code={`- kpi_grid:
     comparison:
@@ -30,7 +30,7 @@ KPI grids display key performance indicators in a compact grid format with compa
 Leaderboards show ranked data with the top performers highlighted.
 
 <ImageCodeToggle
-  image="/img/build/canvas/components/leaderboard.png"
+  image="/img/build/dashboard/canvas/components/leaderboard.png"
   imageAlt="Leaderboard showing top performers"
   code={`- leaderboard:
      measures:
@@ -47,7 +47,7 @@ Leaderboards show ranked data with the top performers highlighted.
 Tables display detailed data in a structured format with customizable columns.
 
 <ImageCodeToggle
-  image="/img/build/canvas/components/table.png"
+  image="/img/build/dashboard/canvas/components/table.png"
   imageAlt="Table showing detailed data columns"
   code={`- table:
     columns:
