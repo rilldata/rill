@@ -14,7 +14,7 @@ sidebar_position: 05
 azure://<account>.blob.core.windows.net/<container>/path/file.csv
 ```
 
-<img src='/img/reference/connectors/azure/abs.png' class='centered' />
+<img src='/img/connect/data-sources/abs.png' class='rounded-gif' style={{width: '75%', display: 'block', margin: '0 auto'}}/>
 <br />
 
 ## Rill Developer (Local credentials)
