@@ -226,8 +226,7 @@ func (o *DeployOpts) detectGitRemoteAndProject(ctx context.Context, ch *cmdutil.
 		// this is not possible with new flow but keeping it for consistency
 	}
 
-	if req.RillMgdGitRemote != "" {
-		// if no project found remove `__rill_remote`. This can happen if managed repo was provisioned but project was not created/failed.
+	if len(resp.Projects) == 1 && resp.Projects[0].ManagedGitId == "" && req.RillMgdGitRemote != "" {
 		err = ch.HandleRepoTransfer(repoRoot, "__rill_remote")
 		if err != nil {
 			return err
