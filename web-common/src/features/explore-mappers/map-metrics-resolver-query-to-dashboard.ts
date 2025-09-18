@@ -5,6 +5,7 @@ import {
 } from "@rilldata/web-common/features/dashboards/pivot/types.ts";
 import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types.ts";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state.ts";
+import { maybeConvertEqualityToInExpressions } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types.ts";
 import { DateTimeUnitToV1TimeGrain } from "@rilldata/web-common/lib/time/new-grains.ts";
 import {
@@ -152,18 +153,18 @@ function mapResolverTimeRangeToDashboardControls(
 
 const OperationMap: Record<string, V1Operation> = {
   "": V1Operation.OPERATION_UNSPECIFIED,
-  eq: V1Operation.OPERATION_UNSPECIFIED,
-  neq: V1Operation.OPERATION_UNSPECIFIED,
-  lt: V1Operation.OPERATION_UNSPECIFIED,
-  lte: V1Operation.OPERATION_UNSPECIFIED,
-  gt: V1Operation.OPERATION_UNSPECIFIED,
-  gte: V1Operation.OPERATION_UNSPECIFIED,
-  in: V1Operation.OPERATION_UNSPECIFIED,
-  nin: V1Operation.OPERATION_UNSPECIFIED,
-  ilike: V1Operation.OPERATION_UNSPECIFIED,
-  nilike: V1Operation.OPERATION_UNSPECIFIED,
-  or: V1Operation.OPERATION_UNSPECIFIED,
-  and: V1Operation.OPERATION_UNSPECIFIED,
+  eq: V1Operation.OPERATION_EQ,
+  neq: V1Operation.OPERATION_NEQ,
+  lt: V1Operation.OPERATION_LT,
+  lte: V1Operation.OPERATION_LTE,
+  gt: V1Operation.OPERATION_GT,
+  gte: V1Operation.OPERATION_GTE,
+  in: V1Operation.OPERATION_IN,
+  nin: V1Operation.OPERATION_NIN,
+  ilike: V1Operation.OPERATION_LIKE,
+  nilike: V1Operation.OPERATION_NLIKE,
+  or: V1Operation.OPERATION_OR,
+  and: V1Operation.OPERATION_AND,
 };
 function mapResolverExpressionToV1Expression(
   expr: Expression | undefined,
@@ -174,19 +175,19 @@ function mapResolverExpressionToV1Expression(
     return { ident: expr.name };
   }
 
-  if (expr.value) {
-    return { val: expr.value };
+  if (expr.val) {
+    return { val: expr.val };
   }
 
   if (expr.cond) {
-    return {
+    return maybeConvertEqualityToInExpressions({
       cond: {
         op: OperationMap[expr.cond.op] || V1Operation.OPERATION_UNSPECIFIED,
         exprs: expr.cond.exprs
           ?.map(mapResolverExpressionToV1Expression)
           .filter(Boolean) as V1Expression[] | undefined,
       },
-    };
+    });
   }
 
   if (expr.subquery) {

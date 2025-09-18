@@ -174,7 +174,7 @@ func TestMCPQueryMetricsView_IncludesURL(t *testing.T) {
 
 	// Verify the URL has the expected format for cloud deployment
 	require.Contains(t, openURL, "https://ui.rilldata.com/test-org/test-project", "URL should use configured frontend URL")
-	require.Contains(t, openURL, "/-/open-query?mcp_query=", "URL should route to frontend query processor")
+	require.Contains(t, openURL, "/-/open-query?query=", "URL should route to frontend query processor")
 
 	t.Logf("Generated cloud open URL: %s", openURL)
 }

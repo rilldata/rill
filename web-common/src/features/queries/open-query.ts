@@ -1,29 +1,15 @@
-import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.js";
 import { generateExploreLink } from "@rilldata/web-common/features/explore-mappers/generate-explore-link";
 import { mapMetricsResolverQueryToDashboard } from "@rilldata/web-common/features/explore-mappers/map-metrics-resolver-query-to-dashboard.ts";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
-  type DashboardTimeControls,
-  TimeRangePreset,
-} from "@rilldata/web-common/lib/time/types";
-import { DashboardState_LeaderboardSortType } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb.ts";
-import {
   getRuntimeServiceGetExploreQueryKey,
   getRuntimeServiceListResourcesQueryKey,
   runtimeServiceGetExplore,
   runtimeServiceListResources,
-  type V1Expression,
-  V1Operation,
 } from "@rilldata/web-common/runtime-client";
-import type {
-  Expression,
-  Measure,
-  Schema as MetricsResolverQuery,
-  Sort,
-  TimeRange,
-} from "@rilldata/web-common/runtime-client/gen/resolvers/metrics/schema.ts";
+import type { Schema as MetricsResolverQuery } from "@rilldata/web-common/runtime-client/gen/resolvers/metrics/schema.ts";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { error, redirect } from "@sveltejs/kit";
 import { get } from "svelte/store";
@@ -75,7 +61,6 @@ export async function openQuery({
       organization,
       project,
     );
-    console.log("exploreURL", exploreURL);
   } catch (e) {
     console.error("Failed to process open-query:", e);
 
@@ -99,7 +84,6 @@ async function findExploreForMetricsView(
   metricsViewName: string,
 ): Promise<string> {
   const instanceId = get(runtime).instanceId;
-  console.log("instanceId", instanceId);
 
   // List all explore resources
   const exploreResources = await queryClient.fetchQuery({
