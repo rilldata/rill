@@ -1,6 +1,6 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import { page } from "$app/stores";
+  import { navigating, page } from "$app/stores";
   import ContentContainer from "@rilldata/web-admin/components/layout/ContentContainer.svelte";
   import DashboardBuilding from "@rilldata/web-admin/features/dashboards/DashboardBuilding.svelte";
   import DashboardErrored from "@rilldata/web-admin/features/dashboards/DashboardErrored.svelte";
@@ -29,25 +29,32 @@
     deployingDashboard,
   );
   $: ({ isPending, data: deployingDashboardsData } = $deployingDashboards);
-  $: ({ redirectToDashboardUrl, dashboardsReconciling, dashboardsErrored } =
+  $: ({ redirectToDashboardPath, dashboardsReconciling, dashboardsErrored } =
     deployingDashboardsData ?? {
-      redirectToDashboardUrl: null,
+      redirectToDashboardPath: null,
       dashboardsReconciling: false,
       dashboardsErrored: false,
     });
 
-  $: if (redirectToDashboardUrl) {
-    void goto(redirectToDashboardUrl);
+  $: if (redirectToDashboardPath) {
+    void goto(redirectToDashboardPath);
   }
+  // Continue showing a spinner when redirecting to target dashboard after deploy.
+  // This prevents a flash just after dashboard has loaded and before the dashboard components get mounted.
+  $: redirecting = $navigating?.to?.url.pathname === redirectToDashboardPath;
+
+  $: showSpinner =
+    dashboardsReconciling || (deploying && isPending) || redirecting;
+  $: showError = dashboardsErrored && !redirecting;
 </script>
 
 <svelte:head>
   <title>{project} overview - Rill</title>
 </svelte:head>
 
-{#if dashboardsErrored}
+{#if showError}
   <DashboardErrored {organization} {project} />
-{:else if dashboardsReconciling || (deploying && isPending)}
+{:else if showSpinner}
   <DashboardBuilding multipleDashboards />
 {:else}
   <ContentContainer
