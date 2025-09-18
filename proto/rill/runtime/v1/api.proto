@@ -246,6 +246,11 @@ service RuntimeService {
     };
   }
 
+  // ListConversations lists all AI chat conversations for an instance.
+  rpc ListConversations(ListConversationsRequest) returns (ListConversationsResponse) {
+     option (google.api.http) = {get: "/v1/instances/{instance_id}/ai/conversations"};
+  }
+
   // GetConversation returns a specific AI chat conversation.
   rpc GetConversation(GetConversationRequest) returns (GetConversationResponse) {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/ai/conversations/{conversation_id}"};

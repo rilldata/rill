@@ -652,6 +652,26 @@ paths:
             title: Request message for RuntimeService.CompleteStreaming
       tags:
         - RuntimeService
+  /v1/instances/{instanceId}/ai/conversations:
+    get:
+      summary: ListConversations lists all AI chat conversations for an instance.
+      operationId: RuntimeService_ListConversations
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListConversationsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+      tags:
+        - RuntimeService
   /v1/instances/{instanceId}/ai/conversations/{conversationId}:
     get:
       summary: GetConversation returns a specific AI chat conversation.
@@ -5150,6 +5170,15 @@ definitions:
           type: object
           $ref: '#/definitions/v1ConnectorDriver'
     title: Response message for RuntimeService.ListConnectorDrivers
+  v1ListConversationsResponse:
+    type: object
+    properties:
+      conversations:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1Conversation'
+    title: Response message for RuntimeService.ListConversations
   v1ListDatabaseSchemasResponse:
     type: object
     properties:

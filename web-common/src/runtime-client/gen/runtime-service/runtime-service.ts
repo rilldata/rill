@@ -83,6 +83,7 @@ import type {
   V1IssueDevJWTRequest,
   V1IssueDevJWTResponse,
   V1ListConnectorDriversResponse,
+  V1ListConversationsResponse,
   V1ListExamplesResponse,
   V1ListFilesResponse,
   V1ListInstancesResponse,
@@ -1173,6 +1174,105 @@ export const createRuntimeServiceCompleteStreaming = <
 
   return createMutation(mutationOptions, queryClient);
 };
+/**
+ * @summary ListConversations lists all AI chat conversations for an instance.
+ */
+export const runtimeServiceListConversations = (
+  instanceId: string,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1ListConversationsResponse>({
+    url: `/v1/instances/${instanceId}/ai/conversations`,
+    method: "GET",
+    signal,
+  });
+};
+
+export const getRuntimeServiceListConversationsQueryKey = (
+  instanceId: string,
+) => {
+  return [`/v1/instances/${instanceId}/ai/conversations`] as const;
+};
+
+export const getRuntimeServiceListConversationsQueryOptions = <
+  TData = Awaited<ReturnType<typeof runtimeServiceListConversations>>,
+  TError = ErrorType<RpcStatus>,
+>(
+  instanceId: string,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof runtimeServiceListConversations>>,
+        TError,
+        TData
+      >
+    >;
+  },
+) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getRuntimeServiceListConversationsQueryKey(instanceId);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof runtimeServiceListConversations>>
+  > = ({ signal }) => runtimeServiceListConversations(instanceId, signal);
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!instanceId,
+    ...queryOptions,
+  } as CreateQueryOptions<
+    Awaited<ReturnType<typeof runtimeServiceListConversations>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type RuntimeServiceListConversationsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceListConversations>>
+>;
+export type RuntimeServiceListConversationsQueryError = ErrorType<RpcStatus>;
+
+/**
+ * @summary ListConversations lists all AI chat conversations for an instance.
+ */
+
+export function createRuntimeServiceListConversations<
+  TData = Awaited<ReturnType<typeof runtimeServiceListConversations>>,
+  TError = ErrorType<RpcStatus>,
+>(
+  instanceId: string,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof runtimeServiceListConversations>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getRuntimeServiceListConversationsQueryOptions(
+    instanceId,
+    options,
+  );
+
+  const query = createQuery(queryOptions, queryClient) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
 /**
  * @summary GetConversation returns a specific AI chat conversation.
  */

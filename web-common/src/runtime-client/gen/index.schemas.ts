@@ -1170,6 +1170,10 @@ export interface V1ListConnectorDriversResponse {
   connectors?: V1ConnectorDriver[];
 }
 
+export interface V1ListConversationsResponse {
+  conversations?: V1Conversation[];
+}
+
 export interface V1ListDatabaseSchemasResponse {
   databaseSchemas?: V1DatabaseSchemaInfo[];
   nextPageToken?: string;
