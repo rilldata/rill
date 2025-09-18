@@ -57,7 +57,7 @@
 </script>
 
 <form on:submit|preventDefault={submit} id="request-connector-form" use:enhance>
-  <span class="text-slate-500 text-sm">
+  <span class="text-slate-500 text-sm mt-2">
     Don't see the connector you're looking for? Let us know what we're missing!
   </span>
   <Input
