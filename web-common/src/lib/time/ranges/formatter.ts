@@ -39,7 +39,8 @@ function formatDatePartOfTimeRange(interval: Interval, grain: V1TimeGrain) {
 
   if (showDay) format.day = "numeric";
 
-  const displayAsInclusiveEnd = grainOrder >= dayGrainOrder;
+  const displayAsInclusiveEnd =
+    grainOrder >= dayGrainOrder && interval.end > interval.start;
 
   return displayAsInclusiveEnd
     ? Interval.fromDateTimes(
