@@ -7,93 +7,15 @@ sidebar_position: 00
 
 The `rill.yaml` file is automatically generated when you start any project in Rill and serves as the central configuration hub for your entire project. While often overlooked, this powerful file enables you to set project-wide defaults, configure environment variables, define connector settings, create test users, and establish security policies across all your metrics views and dashboards.
 
-Let's walk through the key capabilities of `rill.yaml`, including setting up [`mock_users`](/build/metrics-view/security#testing-policies-in-rill-developer) to test row access policies, configuring default security settings for your metrics views and explore dashboards, establishing refresh schedules, defining MCP `ai_instructions`, and setting the default OLAP connector and more.
-
-Here is an example YAML that uses many of our features.
-```yaml
-compiler: rillv1
-
-display_name: Rill Project Dev
-
-# The project's default OLAP connector.
-# Learn more: https://docs.rilldata.com/reference/olap-engines
-olap_connector: duckdb
-
-#Project Defaults
-models:
-    refresh:
-        cron: '0 * * * *'
-        run_in_dev: true
-metrics_views:
-    first_day_of_week: 1
-    smallest_time_grain: month
-explores:
-    defaults:
-        time_range: P24M
-    time_zones:
-        - UTC
-        - America/Los_Angeles
-        - America/New_York
-        - Europe/London
-        - Europe/Paris
-        - Asia/Tokyo
-        - Australia/Sydney
-    time_ranges:
-        - PT24H
-        - P6M
-        - P12M
-canvases:
-  defaults:
-      time_range: P24M
-  time_zones:
-      - UTC
-      - America/Los_Angeles
-      - America/New_York
-      - Europe/London
-      - Europe/Paris
-      - Asia/Tokyo
-  time_ranges:
-      - PT24H
-      - P7D
-      - P14D
-      - P30D
-      - P3M
-      - P6M
-      - P12M
-        
-ai_instructions: |
-  Greet the user and remind them that not all AI answers should be used to make decisions without checking the underlying dashboard first.
-  When you run queries with rill, you will include corresponding Rill Explore URLs in your answer. All URLs should start with the BASE_URL, which is defined below. 
-  The full URL should include the time range (tr) used in the report, the timezone (tz), and any measures or dimensions that are relevant to the report. See the examples below.
-  # Example
-  URL for an explore with multiple metrics and dimensions
-  ## Description
-  A link to an online dashboard from Rill. Contains all selected metrics in the report, all dimensions used in the report, and up to 1-3 additional dimensions. Time range includes the range used as the focus of the report, plus a comparison period for enriched visualization. It is in markdown format, and has a link that describes the purpose of the link.
-  ## Format 
-  Markdown
-  ## Link
-  [https://ui.rilldata.com/demo/rill-openrtb-prog-ads/explore/bids_explore?tr=2025-05-17T23%3A00%3A00.000Z%2C2025-05-19T23%3A00%3A00.000Z&tz=Europe%2FLondon&compare_tr=rill-PP&measures=overall_spend%2Ctotal_bids%2Cwin_rate%2Cvideo_completes%2Cavg_bid_floor&dims=advertiser_name%2Csites_domain%2Capp_site_name%2Cdevice_type%2Ccreative_type%2Cpub_name](Explore change in advertising bids due to composition of advertisers)
-
-# These are example mock users to test your security policies.
-# Learn more: https://docs.rilldata.com/manage/security
-mock_users:
-  - email: john@yourcompany.com
-  - email: jane@partnercompany.com
-  - email: your_email@domain.com
-    groups:
-      - tutorial-admin
-  - email: embed@rilldata.com
-    name: embed
-    custom_variable_1: Value_1 #this is passed at embed creation
-    custom_variable_2: Value_2 #this is passed at embed creation
-
-  features:
-    - cloudDataViewer
-```
+Let's walk through the key capabilities of `rill.yaml`, including setting up [`mock_users`](/build/metrics-view/security#testing-policies-in-rill-developer) to test row access policies, configuring default [security settings](#metrics-views-security-policy) for your metrics views and explore dashboards, establishing [refresh schedules](#model-refresh-schedule), defining MCP [`ai_instructions`](#ai_instructions), setting the [default OLAP connector](#olap-connector) and more.
 
 For a list of all supported settings, see our [project YAML reference page](/reference/project-files/rill-yaml).
 ##  OLAP Connector
 When adding an OLAP connector to your project, this will automatically populate with the new OLAP connector. e.g., `ClickHouse`, `Druid` If you create multiple connectors, we will append "_#" to the file name and use this as the default connector.
+
+```yaml
+olap_connector: clickhouse
+```
 
 The default OLAP connector is used as the default `output` for all of your models unless otherwise specified.
 
@@ -124,8 +46,8 @@ By default, Rill is open to access (to your organization users), unless otherwis
 ```yaml
 metrics_views:
   security:
-    access: {boolean expression}
-    row_filter: {SQL expression}
+    access: '{{ has "partners" .user.groups }}'
+    row_filter: "domain = '{{ .user.domain }}'"
 ```
 
 
@@ -137,13 +59,17 @@ For detailed guide on security policies, review our [data access policies](/buil
 :::
 
 
-### Explore Security Policy
-Similar to metrics views, you can set [security for an explore dashboard](/build/dashboards/#define-dashboard-access). (Note that only `access` can be set at the dashboard level.)
+### Dashboard Security Policy
+Similar to metrics views, you can set [security for a dashboard](/build/dashboards/#define-dashboard-access). (Note that only `access` can be set at the dashboard level.)
 
 ```yaml
 explores:
   security:
-    access: {boolean expression}
+    access: "'{{ .user.domain }}' == 'example.com'"
+canvases
+explores:
+  security:
+    access:  '{{ has "dev" .user.groups }}'
 ```
 
 ### Dashboard Defaults
@@ -234,7 +160,7 @@ Let's assume that the following are applied to the metrics view.
 
 ```yaml
 security:
-    access: "{{ .user.admin }} OR '{{ .user.domain }}' == 'example.com'"
+    access: "{{ .user.admin }} OR '{{ .user.domain }}' == 'rilldata.com'"
     row_filter: "domain = '{{ .user.domain }}'"
 ```
 
@@ -249,6 +175,8 @@ mock_users:
       - tutorial-admin
   - email: your_email2@another_domain.com
 ```
+
+See our embedded example, [here](https://rill-embedding-example.netlify.app/rowaccesspolicy/basic).
 
 ### Custom Attributes
 other type of dashboard that you'll want to test in Rill Developer, mainly because there is no way to pass custom variables in Rill Cloud to ensure that access and data are being presented correctly. To do this, you'll need to add the following to your `mock_users`:
@@ -288,6 +216,7 @@ You can create a test mock user to ensure that this dashboard is working as desi
 <img src = '/img/tutorials/admin/custom-attribute-mock-user.png' class='rounded-gif' />
 <br />
 
+
 ## Feature Flags
 
 If you are interested in testing our upcoming features and experimental functionality, you can enable feature flags in your `rill.yaml` file. These flags allow you to access beta features and provide early feedback on new capabilities before they become generally available.
@@ -298,4 +227,91 @@ To enable feature flags, add the `features` section to your `rill.yaml`:
 ```yaml
 features:
   - cloudDataViewer
+```
+
+For a list of the current available feature flag, see our code base, [here](https://github.com/rilldata/rill/blob/db9a17259716f4b0fc70b01fb5f63d906849268e/web-common/src/features/feature-flags.ts#L36).
+
+## Example
+
+
+Here is an example YAML that uses many of our features.
+```yaml
+compiler: rillv1
+
+display_name: Rill Project Dev
+
+# The project's default OLAP connector.
+# Learn more: https://docs.rilldata.com/reference/olap-engines
+olap_connector: duckdb
+
+#Project Defaults
+models:
+    refresh:
+        cron: '0 * * * *'
+        run_in_dev: true
+metrics_views:
+    first_day_of_week: 1
+    smallest_time_grain: month
+explores:
+    defaults:
+        time_range: P24M
+    time_zones:
+        - UTC
+        - America/Los_Angeles
+        - America/New_York
+        - Europe/London
+        - Europe/Paris
+        - Asia/Tokyo
+        - Australia/Sydney
+    time_ranges:
+        - PT24H
+        - P6M
+        - P12M
+canvases:
+  defaults:
+      time_range: P24M
+  time_zones:
+      - UTC
+      - America/Los_Angeles
+      - America/New_York
+      - Europe/London
+      - Europe/Paris
+      - Asia/Tokyo
+  time_ranges:
+      - PT24H
+      - P7D
+      - P14D
+      - P30D
+      - P3M
+      - P6M
+      - P12M
+        
+ai_instructions: |
+  Greet the user and remind them that not all AI answers should be used to make decisions without checking the underlying dashboard first.
+  When you run queries with rill, you will include corresponding Rill Explore URLs in your answer. All URLs should start with the BASE_URL, which is defined below. 
+  The full URL should include the time range (tr) used in the report, the timezone (tz), and any measures or dimensions that are relevant to the report. See the examples below.
+  # Example
+  URL for an explore with multiple metrics and dimensions
+  ## Description
+  A link to an online dashboard from Rill. Contains all selected metrics in the report, all dimensions used in the report, and up to 1-3 additional dimensions. Time range includes the range used as the focus of the report, plus a comparison period for enriched visualization. It is in markdown format, and has a link that describes the purpose of the link.
+  ## Format 
+  Markdown
+  ## Link
+  [https://ui.rilldata.com/demo/rill-openrtb-prog-ads/explore/bids_explore?tr=2025-05-17T23%3A00%3A00.000Z%2C2025-05-19T23%3A00%3A00.000Z&tz=Europe%2FLondon&compare_tr=rill-PP&measures=overall_spend%2Ctotal_bids%2Cwin_rate%2Cvideo_completes%2Cavg_bid_floor&dims=advertiser_name%2Csites_domain%2Capp_site_name%2Cdevice_type%2Ccreative_type%2Cpub_name](Explore change in advertising bids due to composition of advertisers)
+
+# These are example mock users to test your security policies.
+# Learn more: https://docs.rilldata.com/manage/security
+mock_users:
+  - email: john@yourcompany.com
+  - email: jane@partnercompany.com
+  - email: your_email@domain.com
+    groups:
+      - tutorial-admin
+  - email: embed@rilldata.com
+    name: embed
+    custom_variable_1: Value_1 #this is passed at embed creation
+    custom_variable_2: Value_2 #this is passed at embed creation
+
+  features:
+    - cloudDataViewer
 ```
