@@ -149,6 +149,7 @@ func (r *Runtime) TempDir(instanceID string, elem ...string) (string, error) {
 	return r.storage.WithPrefix(instanceID).TempDir(elem...)
 }
 
+// ResolveFeatureFlags resolves the feature flag templates for the given instance and a request's security claims.
 func ResolveFeatureFlags(inst *drivers.Instance, claims *SecurityClaims) (map[string]bool, error) {
 	vars := inst.ResolveVariables(false)
 	attrs := claims.UserAttributes
@@ -166,7 +167,7 @@ func ResolveFeatureFlags(inst *drivers.Instance, claims *SecurityClaims) (map[st
 	for f, v := range inst.FeatureFlags {
 		rv, err := parser.ResolveTemplate(v, templateData, false)
 		if err != nil {
-			return nil, fmt.Errorf("failed to resolve feature flag template %q: %w", f, err)
+			return nil, fmt.Errorf("failed to resolve feature flag %q with template %q: %w", f, v, err)
 		}
 		rv = strings.TrimSpace(rv)
 		if rv == "" || rv == "<no value>" {
@@ -175,7 +176,7 @@ func ResolveFeatureFlags(inst *drivers.Instance, claims *SecurityClaims) (map[st
 
 		bv, err := parser.EvaluateBoolExpression(rv)
 		if err != nil {
-			return nil, fmt.Errorf("failed to evaluate feature flag template %q: %w", f, err)
+			return nil, fmt.Errorf("failed to evaluate feature flag %q with template %q: %w", f, v, err)
 		}
 		featureFlags[f] = bv
 	}

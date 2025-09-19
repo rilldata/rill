@@ -265,6 +265,13 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 			return fmt.Errorf(`invalid property "features": must be a map or a sequence`)
 		}
 	}
+	// Validate the feature flags to give upfront error.
+	for f, v := range featureFlags {
+		_, err := ResolveTemplate(v, validationTemplateData, false)
+		if err != nil {
+			return fmt.Errorf(`invalid property "features": invalid value %q for %q: %w`, v, f, err)
+		}
+	}
 
 	if len(tmp.PublicPaths) == 0 {
 		tmp.PublicPaths = []string{"public"}

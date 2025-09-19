@@ -188,7 +188,7 @@ var defaultFeatureFlags = map[string]string{
 	"cloudDataViewer":     "false",
 	"dimensionSearch":     "false",
 	"twoTieredNavigation": "false",
-	"rillTime":            "true",
+	"rillTime":            "false",
 	"hidePublicUrl":       "{{.user.embed}}",
 	"exportHeader":        "false",
 	"alerts":              "true",
@@ -199,6 +199,9 @@ var defaultFeatureFlags = map[string]string{
 
 // SetFeatureFlags sets the feature flags for the instance. It replaces missing values with the ones from defaultFeatureFlags
 func (i *Instance) SetFeatureFlags(flags map[string]string) {
+	if flags == nil {
+		flags = make(map[string]string)
+	}
 	for f, v := range defaultFeatureFlags {
 		if _, ok := flags[f]; ok {
 			continue
