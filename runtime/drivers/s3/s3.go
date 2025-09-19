@@ -4,8 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/url"
-	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -162,29 +160,11 @@ func (c *Connection) Ping(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-
-	if isAWSEndpoint(c.config.Endpoint) {
-		// AWS: use STS
-		stsClient := c.GetSTSClient(cfg, c.config.Region)
-		_, err = stsClient.GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{})
-		if err != nil {
-			return fmt.Errorf("GetCallerIdentity failed: %w", err)
-		}
-	} else {
-		// Non-AWS: use S3 ListObjectsV2 with MaxKeys=1
-		s3Client := c.GetS3Client(cfg, c.config.Region)
-		p := s3.NewListBucketsPaginator(s3Client, &s3.ListBucketsInput{
-			MaxBuckets: aws.Int32(1),
-		})
-
-		if p.HasMorePages() {
-			_, err := p.NextPage(ctx)
-			if err != nil {
-				return fmt.Errorf("ListBuckets failed: %w", err)
-			}
-		}
+	stsClient := c.GetSTSClient(cfg)
+	_, err = stsClient.GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{})
+	if err != nil {
+		return fmt.Errorf("GetCallerIdentity failed: %w", err)
 	}
-
 	return nil
 }
 
@@ -289,41 +269,41 @@ func (c *Connection) AsNotifier(properties map[string]any) (drivers.Notifier, er
 	return nil, drivers.ErrNotNotifier
 }
 
-func (c *Connection) s3Client(ctx context.Context) (*s3.Client, error) {
-	cfg, err := c.GetAWSConfig(ctx)
-	if err != nil {
-		return nil, err
+func (c *Connection) GetS3Client(cfg aws.Config) *s3.Client {
+	if cfg.Region == "" {
+		cfg.Region = "us-east-1"
 	}
 	return s3.NewFromConfig(cfg, func(o *s3.Options) {
 		if c.config.Endpoint != "" {
 			o.BaseEndpoint = aws.String(c.config.Endpoint)
 			o.UsePathStyle = true
 		}
-		// if region != "" {
-		// 	o.Region = region
-		// }
-	}), nil
-}
-
-func (c *Connection) GetS3Client(cfg aws.Config, region string) *s3.Client {
-	return s3.NewFromConfig(cfg, func(o *s3.Options) {
-		if c.config.Endpoint != "" {
-			o.BaseEndpoint = aws.String(c.config.Endpoint)
-			o.UsePathStyle = true
-		}
-		if region != "" {
-			o.Region = region
-		}
 	})
 }
 
-func (c *Connection) GetSTSClient(cfg aws.Config, region string) *sts.Client {
+func (c *Connection) GetSTSClient(cfg aws.Config) *sts.Client {
+	if cfg.Region == "" {
+		cfg.Region = "us-east-1"
+	}
 	return sts.NewFromConfig(cfg, func(o *sts.Options) {
 		if c.config.Endpoint != "" {
 			o.BaseEndpoint = aws.String(c.config.Endpoint)
 		}
-		if region != "" {
-			o.Region = region
+	})
+}
+
+func (c *Connection) GetAnonymousS3Client(region string) *s3.Client {
+	if region == "" {
+		region = "us-east-1"
+	}
+	cfg := aws.Config{
+		Region:      region,
+		Credentials: aws.AnonymousCredentials{},
+	}
+	return s3.NewFromConfig(cfg, func(o *s3.Options) {
+		if c.config.Endpoint != "" {
+			o.BaseEndpoint = aws.String(c.config.Endpoint)
+			o.UsePathStyle = true
 		}
 	})
 }
@@ -345,7 +325,6 @@ func (c *Connection) GetAWSConfig(ctx context.Context) (aws.Config, error) {
 	if err != nil {
 		return aws.Config{}, fmt.Errorf("failed to load AWS config: %w", err)
 	}
-
 	return cfg, nil
 }
 
@@ -401,6 +380,8 @@ func (c *Connection) assumeRole(ctx context.Context) (aws.CredentialsProvider, e
 	// Add region if specified
 	if c.config.Region != "" {
 		loadOpts = append(loadOpts, config.WithRegion(c.config.Region))
+	} else {
+		loadOpts = append(loadOpts, config.WithRegion("us-east-1"))
 	}
 
 	// Add credentials if provided
@@ -444,17 +425,4 @@ func (c *Connection) assumeRole(ctx context.Context) (aws.CredentialsProvider, e
 		SecretAccessKey: *result.Credentials.SecretAccessKey,
 		SessionToken:    *result.Credentials.SessionToken,
 	}}), nil
-}
-
-func isAWSEndpoint(endpoint string) bool {
-	if endpoint == "" {
-		return true // default AWS
-	}
-	u, err := url.Parse(endpoint)
-	if err != nil {
-		return false
-	}
-	host := u.Hostname()
-	return strings.HasSuffix(host, ".amazonaws.com") ||
-		strings.HasSuffix(host, ".aws") // covers partition endpoints
 }

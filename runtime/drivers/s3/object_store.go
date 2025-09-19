@@ -19,7 +19,7 @@ func (c *Connection) ListObjects(ctx context.Context, path string) ([]drivers.Ob
 		return nil, fmt.Errorf("failed to parse path %q: %w", path, err)
 	}
 
-	bucket, err := c.openBucket(ctx, url.Host)
+	bucket, err := c.openBucket(ctx, url.Host, false)
 	if err != nil {
 		return nil, err
 	}
@@ -35,7 +35,7 @@ func (c *Connection) DownloadFiles(ctx context.Context, path string) (drivers.Fi
 		return nil, fmt.Errorf("failed to parse path %q: %w", path, err)
 	}
 
-	bucket, err := c.openBucket(ctx, url.Host)
+	bucket, err := c.openBucket(ctx, url.Host, false)
 	if err != nil {
 		return nil, err
 	}
@@ -54,32 +54,17 @@ func (c *Connection) DownloadFiles(ctx context.Context, path string) (drivers.Fi
 
 // BucketRegion returns the region to use for the given bucket.
 func (c *Connection) BucketRegion(ctx context.Context, bucket string) (string, error) {
-	// If custom endpoint is set, use the configured region
-	if c.config.Endpoint != "" {
-		if c.config.Region != "" {
-			return c.config.Region, nil
-		}
-		return "us-east-1", nil // default for S3-compatible endpoints
-	}
-
-	// For AWS endpoints, try to get the bucket region
 	cfg, err := c.GetAWSConfig(ctx)
-	client := c.GetS3Client(cfg, c.config.Region)
+	if err != nil {
+		return "", err
+	}
+	client := c.GetS3Client(cfg)
 
-	// Try to get bucket location
-	result, err := client.GetBucketLocation(ctx, &s3.GetBucketLocationInput{
-		Bucket: aws.String(bucket),
-	})
+	result, err := client.HeadBucket(ctx, &s3.HeadBucketInput{Bucket: aws.String(bucket)})
 	if err != nil {
 		return "", fmt.Errorf("failed to get bucket location: %w", err)
 	}
-
-	// AWS returns "us-east-1" as null for the default region
-	if result.LocationConstraint == "" {
-		return "us-east-1", nil
-	}
-
-	return string(result.LocationConstraint), nil
+	return *result.BucketRegion, nil
 }
 
 func (c *Connection) parseBucketURL(path string) (*globutil.URL, error) {
@@ -93,19 +78,24 @@ func (c *Connection) parseBucketURL(path string) (*globutil.URL, error) {
 	return url, nil
 }
 
-func (c *Connection) openBucket(ctx context.Context, bucket string) (*blob.Bucket, error) {
-	// Determine region if needed (AWS endpoints only)
+func (c *Connection) openBucket(ctx context.Context, bucket string, anonymous bool) (*blob.Bucket, error) {
 	region := c.config.Region
 	if c.config.Endpoint == "" && region == "" {
 		if r, err := c.BucketRegion(ctx, bucket); err == nil && r != "" {
 			region = r
 		}
 	}
-	cfg, err := c.GetAWSConfig(ctx)
-	if err != nil {
-		return nil, err
+	var s3client *s3.Client
+	if anonymous {
+		s3client = c.GetAnonymousS3Client(region)
+	} else {
+		cfg, err := c.GetAWSConfig(ctx)
+		if err != nil {
+			return nil, err
+		}
+		cfg.Region = region
+		s3client = c.GetS3Client(cfg)
 	}
-	s3client := c.GetS3Client(cfg, region)
 
 	s3Bucket, err := s3blob.OpenBucketV2(ctx, s3client, bucket, nil)
 	if err != nil {

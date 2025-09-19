@@ -11,10 +11,11 @@ import (
 )
 
 func (c *Connection) ListBuckets(ctx context.Context) ([]string, error) {
-	client, err := c.s3Client(ctx)
+	cfg, err := c.GetAWSConfig(ctx)
 	if err != nil {
 		return nil, err
 	}
+	client := c.GetS3Client(cfg)
 	output, err := client.ListBuckets(ctx, &s3.ListBucketsInput{})
 	if err != nil {
 		return nil, err
@@ -41,7 +42,7 @@ func (c *Connection) ListObjectsRaw(ctx context.Context, req *runtimev1.S3ListOb
 		pageSize = defaultPageSize
 	}
 
-	bucket, err := c.openBucket(ctx, req.Bucket)
+	bucket, err := c.openBucket(ctx, req.Bucket, false)
 	if err != nil {
 		return nil, "", err
 	}
@@ -49,9 +50,8 @@ func (c *Connection) ListObjectsRaw(ctx context.Context, req *runtimev1.S3ListOb
 
 	objects, nextToken, err := fetchObjects(ctx, bucket.Underlying(), pageToken, pageSize, req)
 	if err != nil {
-		// Check if it's a permission error that might be resolved with anonymous access
 		if isPermissionError(err) {
-			bucket, err = c.openBucket(ctx, req.Bucket)
+			bucket, err = c.openBucket(ctx, req.Bucket, true)
 			if err != nil {
 				return nil, "", fmt.Errorf("failed to open bucket %q, %w", req.Bucket, err)
 			}
@@ -118,9 +118,7 @@ func fetchObjects(ctx context.Context, bucket *blob.Bucket, pageToken []byte, pa
 	return objects, nextToken, err
 }
 
-// isPermissionError checks if the error is a permission-related error
 func isPermissionError(err error) bool {
-	// Check for common permission error patterns
 	errStr := err.Error()
 	return errStr == "403" ||
 		errStr == "Forbidden" ||

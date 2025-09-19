@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/bmatcuk/doublestar/v4"
@@ -35,34 +34,18 @@ func (c *Connection) Delete(ctx context.Context, res *drivers.ModelResult) error
 	if err != nil {
 		return err
 	}
-
-	prov, err := c.newCredentials(ctx)
+	region := c.config.Region
+	if c.config.Endpoint == "" && region == "" {
+		if r, err := c.BucketRegion(ctx, u.Host); err == nil && r != "" {
+			region = r
+		}
+	}
+	cfg, err := c.GetAWSConfig(ctx)
 	if err != nil {
 		return err
 	}
-
-	loadOpts := []func(*config.LoadOptions) error{}
-	if c.config.Region != "" {
-		loadOpts = append(loadOpts, config.WithRegion(c.config.Region))
-	}
-	if prov != nil {
-		loadOpts = append(loadOpts, config.WithCredentialsProvider(prov))
-	}
-
-	cfg, err := config.LoadDefaultConfig(ctx, loadOpts...)
-	if err != nil {
-		return fmt.Errorf("failed to load AWS config: %w", err)
-	}
-
-	client := s3.NewFromConfig(cfg, func(o *s3.Options) {
-		if c.config.Endpoint != "" {
-			o.UsePathStyle = true
-			o.BaseEndpoint = aws.String(c.config.Endpoint)
-		}
-		if c.config.Region != "" {
-			o.Region = c.config.Region
-		}
-	})
+	cfg.Region = region
+	client := c.GetS3Client(cfg)
 
 	base, _ := doublestar.SplitPattern(strings.TrimPrefix(u.Path, "/"))
 	return deleteObjectsInPrefix(ctx, client, u.Host, base)
