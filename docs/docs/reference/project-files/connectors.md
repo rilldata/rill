@@ -400,12 +400,13 @@ _[boolean]_ - Whether to log raw SQL queries executed through OLAP
 
 ### `mode`
 
-_[string]_ - Set the mode for the DuckDB connection. By default, it is set to 'read' which allows only read operations. Set to 'readwrite' to enable model creation and table mutations. 
+_[string]_ - Set the mode for the DuckDB connection. 
 
 ```yaml
 # Example: DuckDB connector configuration
 type: connector # Must be `connector` (required)
 driver: duckdb # Must be `duckdb` _(required)_
+mode: "readwrite" # Set the mode for the DuckDB connection. 
 allow_host_access: true # Whether access to the local environment and file system is allowed  
 cpu: 4 # Number of CPU cores available to the database  
 memory_limit_gb: 16 # Amount of memory in GB available to the database
