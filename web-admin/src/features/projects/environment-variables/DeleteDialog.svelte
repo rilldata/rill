@@ -79,7 +79,9 @@
       <AlertDialogTitle>Delete this environment variable?</AlertDialogTitle>
       <AlertDialogDescription>
         <div class="mt-1">
-          The environment variable <span class="source-code text-sm font-medium">{name}</span> will no longer be available for this project.
+          The environment variable <span class="source-code text-sm font-medium"
+            >{name}</span
+          > will no longer be available for this project.
         </div>
       </AlertDialogDescription>
     </AlertDialogHeader>
