@@ -98,13 +98,6 @@ connector.gcs.secret=wRu6iE...
 
 :::
 
-
-## Separating Dev and Prod Environments
-
-When ingesting data locally, consider setting parameters in your connector file to limit how much data is retrieved, since costs can scale with the data source. This also helps other developers clone the project and iterate quickly by reducing ingestion time.
-
-For more details, see our [Dev/Prod setup docs](/connect/templating).
-
 ## Rill Cloud Deployment
 
 When deploying a project to Rill Cloud, Rill requires a JSON key file to be explicitly provided for a Google Cloud service account with appropriate read access/permissions to the buckets used in your project. If this already exists in your `.env` file, this will be pushed with your project automatically. If you are using inferred credentials, your deployment will result in errored dashboards.

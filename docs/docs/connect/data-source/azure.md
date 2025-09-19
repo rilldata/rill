@@ -29,9 +29,9 @@ When using Rill Developer on your local machine, Rill will use credentials confi
 
 You have now configured Azure access from your local environment. Rill will detect and use your credentials the next time you try to ingest a source.
 
-### Using Storage Account Keys
+### Using Storage Account Key
 
-For seamless deployment to Rill Cloud, you can configure Azure Storage Account credentials directly in your project's `.env` file instead of relying solely on Azure CLI authentication, which only configures credentials for local usage.
+For seamless deployment to Rill Cloud, you can configure Azure Storage Account Key directly in your project's `.env` file instead of relying solely on Azure CLI authentication, which only configures credentials for local usage.
 
 Create or update your `.env` file with the following Azure Storage Account credentials:
 
@@ -40,7 +40,7 @@ azure_storage_account=your_storage_account_name
 azure_storage_key=oFUw8vZplXd...
 ```
 
-This approach ensures that your Azure Blob Storage sources can authenticate consistently across both local development and cloud deployment environments.
+This approach ensures that your Azure Blob Storage sources can authenticate consistently across both local development and cloud deployment environments. Please review [Azure Documentation](https://learn.microsoft.com/en-us/azure/storage/common/storage-account-keys-manage?tabs=azure-portal) on how to retrieve your storage account keys.
 
 ### Using Connection String
 
@@ -52,7 +52,7 @@ Create or update your `.env` file with the following Azure Storage connection st
 azure_storage_connection_string='DefaultEndpointsProtocol=https;AccountName=your_account;AccountKey=your_key;EndpointSuffix=core.windows.net'
 ```
 
-This approach ensures that your Azure Blob Storage sources can authenticate consistently across both local development and cloud deployment environments.
+This approach ensures that your Azure Blob Storage sources can authenticate consistently across both local development and cloud deployment environments. Please review [Azure Documentation](https://learn.microsoft.com/en-us/azure/storage/common/storage-account-keys-manage?tabs=azure-portal) on how to retrieve your connection string.
 
 ### Using Shared Access Signature (SAS) Token
 
@@ -75,12 +75,6 @@ This method provides fine-grained access control and enhanced security for your 
 If your project has already been deployed to Rill Cloud with configured credentials, you can use `rill env pull` to [retrieve and sync these cloud credentials](/connect/credentials/#rill-env-pull) to your local `.env` file. Note that this operation will overwrite any existing local credentials for this source.
 
 :::
-
-## Separating Dev and Prod Environments
-
-When ingesting data locally, consider setting parameters in your connector file to limit how much data is retrieved, since costs can scale with the data source. This also helps other developers clone the project and iterate quickly by reducing ingestion time.
-
-For more details, see our [Dev/Prod setup docs](/connect/templating).
 
 ## Cloud deployment
 
