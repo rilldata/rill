@@ -30,17 +30,17 @@ var (
 )
 
 type DeployOpts struct {
-	GitPath         string
-	SubPath         string
-	RemoteName      string
-	Name            string
-	Description     string
-	Public          bool
-	Provisioner     string
-	ProdVersion     string
-	ProdBranch      string
-	Slots           int
-	UploadVariables bool
+	GitPath     string
+	SubPath     string
+	RemoteName  string
+	Name        string
+	Description string
+	Public      bool
+	Provisioner string
+	ProdVersion string
+	ProdBranch  string
+	Slots       int
+	PushEnv     bool
 
 	ArchiveUpload bool
 	// Managed indicates if the project should be deployed using Rill Managed Git.
@@ -269,6 +269,7 @@ func DeployCmd(ch *cmdutil.Helper) *cobra.Command {
 	deployCmd.Flags().StringVar(&opts.ProdVersion, "prod-version", "latest", "Rill version (default: the latest release version)")
 	deployCmd.Flags().StringVar(&opts.ProdBranch, "prod-branch", "", "Git branch to deploy from (default: the default Git branch)")
 	deployCmd.Flags().IntVar(&opts.Slots, "prod-slots", local.DefaultProdSlots(ch), "Slots to allocate for production deployments")
+	deployCmd.Flags().BoolVar(&opts.PushEnv, "push-env", true, "Push local .env file to Rill Cloud")
 	if !ch.IsDev() {
 		if err := deployCmd.Flags().MarkHidden("prod-slots"); err != nil {
 			panic(err)
@@ -394,7 +395,7 @@ func DeployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployO
 	ch.PrintfSuccess("Created project \"%s/%s\". Use `rill project rename` to change name if required.\n\n", ch.Org, res.Project.Name)
 
 	// Upload .env
-	if opts.UploadVariables {
+	if opts.PushEnv {
 		vars, err := local.ParseDotenv(ctx, localProjectPath)
 		if err != nil {
 			ch.PrintfWarn("Failed to parse .env: %v\n", err)
@@ -485,7 +486,7 @@ func redeployProject(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts) 
 	}
 
 	// Upload .env
-	if opts.UploadVariables {
+	if opts.PushEnv {
 		vars, err := local.ParseDotenv(ctx, opts.LocalProjectPath())
 		if err != nil {
 			ch.PrintfWarn("Failed to parse .env: %v\n", err)

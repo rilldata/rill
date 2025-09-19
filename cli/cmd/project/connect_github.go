@@ -54,7 +54,7 @@ func GitPushCmd(ch *cmdutil.Helper) *cobra.Command {
 	deployCmd.Flags().StringVar(&opts.ProdVersion, "prod-version", "latest", "Rill version (default: the latest release version)")
 	deployCmd.Flags().StringVar(&opts.ProdBranch, "prod-branch", "", "Git branch to deploy from (default: the default Git branch)")
 	deployCmd.Flags().IntVar(&opts.Slots, "prod-slots", local.DefaultProdSlots(ch), "Slots to allocate for production deployments")
-	deployCmd.Flags().BoolVar(&opts.UploadVariables, "upload-variables", true, "Upload local .env file to Rill Cloud")
+	deployCmd.Flags().BoolVar(&opts.PushEnv, "push-env", true, "Push local .env file to Rill Cloud")
 	if !ch.IsDev() {
 		if err := deployCmd.Flags().MarkHidden("prod-slots"); err != nil {
 			panic(err)
@@ -185,7 +185,7 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 	ch.PrintfSuccess("Rill projects deploy continuously when you push changes to Github.\n")
 
 	// Upload .env
-	if opts.UploadVariables {
+	if opts.PushEnv {
 		vars, err := local.ParseDotenv(ctx, localProjectPath)
 		if err != nil {
 			ch.PrintfWarn("Failed to parse .env: %v\n", err)
