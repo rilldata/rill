@@ -4,7 +4,7 @@ project_files:
   all_datatypes_duckdb.yaml:
     type: model
     connector: motherduck
-    dsn: "md:_share/rilldata/25169ce8-45af-4ac5-9174-00c859d5aa77"
+    path: "md:_share/rilldata/25169ce8-45af-4ac5-9174-00c859d5aa77"
     sql: "select * from rilldata.integration_test.all_datatypes"
     output:
       connector: duckdb
