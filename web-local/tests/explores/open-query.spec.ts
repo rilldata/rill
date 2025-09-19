@@ -1,7 +1,7 @@
 import { expect } from "@playwright/test";
 import { test } from "../setup/base";
 
-test.describe("Metrics view queries", () => {
+test.describe("Query-to-Explore routing", () => {
   test.use({ project: "AdBids" });
 
   test("Can open a complex metrics view query", async ({ page }) => {
