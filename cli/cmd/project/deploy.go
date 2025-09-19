@@ -30,16 +30,17 @@ var (
 )
 
 type DeployOpts struct {
-	GitPath     string
-	SubPath     string
-	RemoteName  string
-	Name        string
-	Description string
-	Public      bool
-	Provisioner string
-	ProdVersion string
-	ProdBranch  string
-	Slots       int
+	GitPath         string
+	SubPath         string
+	RemoteName      string
+	Name            string
+	Description     string
+	Public          bool
+	Provisioner     string
+	ProdVersion     string
+	ProdBranch      string
+	Slots           int
+	UploadVariables bool
 
 	ArchiveUpload bool
 	// Managed indicates if the project should be deployed using Rill Managed Git.
@@ -393,17 +394,19 @@ func DeployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployO
 	ch.PrintfSuccess("Created project \"%s/%s\". Use `rill project rename` to change name if required.\n\n", ch.Org, res.Project.Name)
 
 	// Upload .env
-	vars, err := local.ParseDotenv(ctx, localProjectPath)
-	if err != nil {
-		ch.PrintfWarn("Failed to parse .env: %v\n", err)
-	} else if len(vars) > 0 {
-		_, err = adminClient.UpdateProjectVariables(ctx, &adminv1.UpdateProjectVariablesRequest{
-			Organization: ch.Org,
-			Project:      opts.Name,
-			Variables:    vars,
-		})
+	if opts.UploadVariables {
+		vars, err := local.ParseDotenv(ctx, localProjectPath)
 		if err != nil {
-			ch.PrintfWarn("Failed to upload .env: %v\n", err)
+			ch.PrintfWarn("Failed to parse .env: %v\n", err)
+		} else if len(vars) > 0 {
+			_, err = adminClient.UpdateProjectVariables(ctx, &adminv1.UpdateProjectVariablesRequest{
+				Organization: ch.Org,
+				Project:      opts.Name,
+				Variables:    vars,
+			})
+			if err != nil {
+				ch.PrintfWarn("Failed to upload .env: %v\n", err)
+			}
 		}
 	}
 
@@ -481,19 +484,20 @@ func redeployProject(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts) 
 		}
 	}
 
-	// Also updated .env vars
-	// Fetch vars from .env
-	vars, err := local.ParseDotenv(ctx, opts.LocalProjectPath())
-	if err != nil {
-		ch.PrintfWarn("Failed to parse .env: %v\n", err)
-	} else if len(vars) > 0 {
-		_, err = c.UpdateProjectVariables(ctx, &adminv1.UpdateProjectVariablesRequest{
-			Organization: ch.Org,
-			Project:      proj.Name,
-			Variables:    vars,
-		})
+	// Upload .env
+	if opts.UploadVariables {
+		vars, err := local.ParseDotenv(ctx, opts.LocalProjectPath())
 		if err != nil {
-			ch.PrintfWarn("Failed to upload .env: %v\n", err)
+			ch.PrintfWarn("Failed to parse .env: %v\n", err)
+		} else if len(vars) > 0 {
+			_, err = c.UpdateProjectVariables(ctx, &adminv1.UpdateProjectVariablesRequest{
+				Organization: ch.Org,
+				Project:      proj.Name,
+				Variables:    vars,
+			})
+			if err != nil {
+				ch.PrintfWarn("Failed to upload .env: %v\n", err)
+			}
 		}
 	}
 
