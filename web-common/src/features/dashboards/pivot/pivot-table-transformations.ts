@@ -2,6 +2,7 @@ import { NUM_ROWS_PER_PAGE } from "@rilldata/web-common/features/dashboards/pivo
 import type { V1MetricsViewAggregationResponseDataItem } from "@rilldata/web-common/runtime-client";
 import { createIndexMap, getAccessorForCell } from "./pivot-utils";
 import type { PivotDataRow, PivotDataStoreConfig } from "./types";
+import { PivotChipType } from "./types";
 
 /**
  * During the phase when queries are still being resolved, we don't have enough
@@ -127,12 +128,54 @@ export function getTotalsRowSkeleton(
 
     totalsRow = totalsRowTable[0] || {};
 
-    if (anchorDimensionName) {
+    if (anchorDimensionName && !config.isFlat) {
       totalsRow[anchorDimensionName] = "Total";
+    } else if (config.isFlat && anchorDimensionName) {
+      // For flat tables, find the first dimension column to place the Totals label
+      const firstDimensionName = getFirstDimensionForFlat(config);
+      if (firstDimensionName) {
+        totalsRow[firstDimensionName] = "Total";
+      }
     }
   }
 
   return totalsRow;
+}
+
+/**
+ * For flat tables, find the first dimension column to place the Totals label.
+ * This handles the case where measures might come before dimensions in the column order.
+ */
+function getFirstDimensionForFlat(config: PivotDataStoreConfig): string | null {
+  const { rowDimensionNames, pivot } = config;
+
+  // Go through the columns in order and find the first dimension
+  for (const column of pivot.columns) {
+    if (
+      column.type === PivotChipType.Dimension ||
+      column.type === PivotChipType.Time
+    ) {
+      // For time dimensions, we need to construct the actual dimension name
+      if (column.type === PivotChipType.Time) {
+        const timeDimension = config.time?.timeDimension;
+        if (timeDimension) {
+          const timeDimensionName = `${timeDimension}_rill_${column.id}`;
+          // Check if this time dimension is in our row dimensions
+          if (rowDimensionNames.includes(timeDimensionName)) {
+            return timeDimensionName;
+          }
+        }
+      } else {
+        // Regular dimension
+        if (rowDimensionNames.includes(column.id)) {
+          return column.id;
+        }
+      }
+    }
+  }
+
+  // Fallback to the first row dimension if we can't find one in the column order
+  return rowDimensionNames[0] || null;
 }
 
 export function getTotalsRow(
@@ -163,6 +206,12 @@ export function getTotalsRow(
 
     if (anchorDimensionName && !config.isFlat) {
       totalsRow[anchorDimensionName] = "Total";
+    } else if (config.isFlat && anchorDimensionName) {
+      // For flat tables, find the first dimension column to place the Totals label
+      const firstDimensionName = getFirstDimensionForFlat(config);
+      if (firstDimensionName) {
+        totalsRow[firstDimensionName] = "Total";
+      }
     }
   }
 
