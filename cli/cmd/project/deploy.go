@@ -47,6 +47,8 @@ type DeployOpts struct {
 	Managed bool
 	// Github indicates if the project should be connected to GitHub for automatic deploys.
 	Github bool
+	// Skips the deployment of the project after creation.
+	SkipDeploy bool
 
 	// SkipDeploy skips the runtime deployment step. Used for testing.
 	SkipDeploy bool
@@ -99,19 +101,22 @@ func (o *DeployOpts) ValidateAndApplyDefaults(ctx context.Context, ch *cmdutil.H
 		// detect subpath
 		repoRoot, subpath, err = gitutil.InferRepoRootAndSubpath(o.GitPath)
 		if err != nil {
+			fmt.Println("Error detecting git repo: ", err)
 			// Not a git repository
 			return nil
 		}
 	}
 
+	fmt.Println("repoRoot: ", repoRoot, " subpath: ", subpath)
 	// extract remote and check if project already exists
 	err = o.detectGitRemoteAndProject(ctx, ch, repoRoot, subpath)
 	if err != nil {
 		return err
 	}
-
+	fmt.Printf("detected remoteURL: %s\n", o.remoteURL)
 	// if there is a project already connected to this repo+subpath offer to push changes to it
 	if o.pushToProject != nil {
+		fmt.Println("Found existing project: ", o.pushToProject.Name, " in org: ", o.pushToProject.OrgName, " managedGitId: ", o.pushToProject.ManagedGitId, " gitRemote: ", o.pushToProject.GitRemote)
 		if o.pushToProject.ManagedGitId == "" && o.Managed {
 			ch.PrintfError("Project %s/%s is already connected to this GitHub repository. Cannot use --managed flag.\n", o.pushToProject.OrgName, o.pushToProject.Name)
 			return fmt.Errorf("aborting deploy")
@@ -166,13 +171,14 @@ func (o *DeployOpts) ValidateAndApplyDefaults(ctx context.Context, ch *cmdutil.H
 			return err
 		}
 		connectToGithub = !ok
-	} else if !o.Github {
+	} else if !o.Github && ch.Interactive {
 		// still confirm if user wants to connect to github
 		connectToGithub, err = cmdutil.ConfirmPrompt("Enable automatic deploys to Rill Cloud from GitHub?", "", true)
 		if err != nil {
 			return err
 		}
 	}
+	fmt.Printf("connectToGithub: %v\n", connectToGithub)
 	if connectToGithub {
 		o.SubPath = subpath
 		o.GitPath = repoRoot
@@ -209,6 +215,7 @@ func (o *DeployOpts) detectGitRemoteAndProject(ctx context.Context, ch *cmdutil.
 			}
 		}
 	}
+	fmt.Printf("Request: %+v\n", req)
 	resp, err := c.ListProjectsForFingerprint(ctx, req)
 	if err != nil {
 		// TODO: check for not found error
@@ -284,6 +291,12 @@ func DeployCmd(ch *cmdutil.Helper) *cobra.Command {
 		if err := deployCmd.Flags().MarkHidden("prod-slots"); err != nil {
 			panic(err)
 		}
+	}
+
+	deployCmd.Flags().BoolVar(&opts.SkipDeploy, "skip-deploy", false, "Skip the runtime deployment step (for testing only)")
+	err := deployCmd.Flags().MarkHidden("skip-deploy")
+	if err != nil {
+		panic(err)
 	}
 
 	return deployCmd

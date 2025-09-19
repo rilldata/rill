@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 	"strings"
 )
@@ -166,7 +167,7 @@ func RunGitPush(ctx context.Context, path, remoteName, branchName string, force 
 }
 
 func InferGitRepoRoot(path string) (string, error) {
-	cmd := exec.Command("git", "-C", path, "rev-parse", "--show-toplevel")
+	cmd := exec.Command("git", "-C", path, "rev-parse", "--show-cdup")
 	data, err := cmd.Output()
 	if err != nil {
 		var execErr *exec.ExitError
@@ -179,7 +180,7 @@ func InferGitRepoRoot(path string) (string, error) {
 		}
 		return "", errors.New(string(execErr.Stderr))
 	}
-	return strings.TrimSpace(string(data)), nil
+	return filepath.Join(path, strings.TrimSpace(string(data))), nil
 }
 
 func isGitIgnored(repoRoot, subpath string) (bool, error) {
@@ -193,9 +194,9 @@ func isGitIgnored(repoRoot, subpath string) (bool, error) {
 				return false, nil
 			}
 			// any other exit code is an error
-			return false, fmt.Errorf("git check-ignore failed: %s", string(execErr.Stderr))
+			return false, fmt.Errorf("git check-ignore failed for path %q, subpath: %q : %s", repoRoot, subpath, string(execErr.Stderr))
 		}
-		return false, fmt.Errorf("git check-ignore failed: %w", err)
+		return false, fmt.Errorf("git check-ignore failed for path %q, subpath: %q : %w", repoRoot, subpath, err)
 	}
 	// exit code 0 means the file is ignored
 	return true, nil

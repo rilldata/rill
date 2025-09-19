@@ -114,6 +114,7 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 		}
 	}
 
+	fmt.Printf("starting remote sync with remoteURL: %s\n", opts.remoteURL)
 	// Error if the repository is not in sync with the remote
 	ok, err := repoInSyncFlow(ch, localGitPath, opts.ProdBranch, opts.RemoteName)
 	if err != nil {
@@ -123,6 +124,7 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 		ch.PrintfBold("You can run `rill deploy` again when you have pushed your local changes to the remote.\n")
 		return nil
 	}
+	fmt.Printf("repo in sync with remoteURL: %s\n", opts.remoteURL)
 
 	// Extract Github account and repo name from the gitRemote
 	ghAccount, ghRepo, ok := gitutil.SplitGithubRemote(opts.remoteURL)
@@ -131,10 +133,12 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 	}
 
 	// Run flow for access to the Github remote (if necessary)
+	fmt.Printf("connecting to github with remoteURL: %s\n", opts.remoteURL)
 	ghRes, err := githubFlow(ctx, ch, opts.remoteURL)
 	if err != nil {
 		return fmt.Errorf("failed Github flow: %w", err)
 	}
+	fmt.Printf("connected to github with remoteURL: %s\n", opts.remoteURL)
 
 	if opts.ProdBranch == "" {
 		opts.ProdBranch = ghRes.DefaultBranch
@@ -158,6 +162,7 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 	}
 
 	// Create the project (automatically deploys prod branch)
+	fmt.Printf("creating project with remoteURL: %s\n", opts.remoteURL)
 	res, err := createProjectFlow(ctx, ch, &adminv1.CreateProjectRequest{
 		OrganizationName: ch.Org,
 		Name:             opts.Name,
@@ -170,6 +175,7 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 		Public:           opts.Public,
 		DirectoryName:    filepath.Base(localProjectPath),
 		GitRemote:        opts.remoteURL,
+		SkipDeploy:       opts.SkipDeploy,
 	})
 	if err != nil {
 		if s, ok := status.FromError(err); ok && s.Code() == codes.PermissionDenied {
@@ -178,6 +184,7 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 		}
 		return fmt.Errorf("create project failed with error %w", err)
 	}
+	fmt.Printf("created project with remoteURL: %s\n", opts.remoteURL)
 
 	// Success!
 	ch.PrintfSuccess("Created project \"%s/%s\". Use `rill project rename` to change name if required.\n\n", ch.Org, res.Project.Name)
@@ -417,7 +424,7 @@ func githubFlow(ctx context.Context, ch *cmdutil.Helper, gitRemote string) (*adm
 	if !res.HasAccess {
 		// Emit start telemetry
 		ch.Telemetry(ctx).RecordBehavioralLegacy(activity.BehavioralEventGithubConnectedStart)
-
+		fmt.Printf("access to github not found for remoteURL: %s\n", res.GrantAccessUrl)
 		// Print instructions to grant access
 		ch.Print("Rill projects deploy continuously when you push changes to Github.\n")
 		ch.Print("You need to grant Rill read only access to your repository on Github.\n\n")
