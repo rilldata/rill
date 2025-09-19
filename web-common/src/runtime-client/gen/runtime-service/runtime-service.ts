@@ -28,7 +28,6 @@ import type {
   RpcStatus,
   RuntimeServiceCompleteBody,
   RuntimeServiceCreateDirectoryBody,
-  RuntimeServiceCreateResourceBodyBody,
   RuntimeServiceCreateTriggerBody,
   RuntimeServiceDeleteFileParams,
   RuntimeServiceDeleteInstanceBody,
@@ -63,11 +62,9 @@ import type {
   V1CreateDirectoryResponse,
   V1CreateInstanceRequest,
   V1CreateInstanceResponse,
-  V1CreateResourceResponse,
   V1CreateTriggerResponse,
   V1DeleteFileResponse,
   V1DeleteInstanceResponse,
-  V1DeleteResourceResponse,
   V1EditInstanceResponse,
   V1GenerateMetricsViewFileResponse,
   V1GenerateRendererResponse,
@@ -96,7 +93,6 @@ import type {
   V1RenameFileResponse,
   V1UnpackEmptyResponse,
   V1UnpackExampleResponse,
-  V1UpdateResourceResponse,
 } from "../index.schemas";
 
 import { httpClient } from "../../http-client";
@@ -3361,94 +3357,6 @@ export function createRuntimeServiceListResources<
 }
 
 /**
- * @summary CreateResource creates a new resource in the catalog
- */
-export const runtimeServiceCreateResource = (
-  instanceId: string,
-  runtimeServiceCreateResourceBodyBody: RuntimeServiceCreateResourceBodyBody,
-  signal?: AbortSignal,
-) => {
-  return httpClient<V1CreateResourceResponse>({
-    url: `/v1/instances/${instanceId}/resources`,
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    data: runtimeServiceCreateResourceBodyBody,
-    signal,
-  });
-};
-
-export const getRuntimeServiceCreateResourceMutationOptions = <
-  TError = ErrorType<RpcStatus>,
-  TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof runtimeServiceCreateResource>>,
-    TError,
-    { instanceId: string; data: RuntimeServiceCreateResourceBodyBody },
-    TContext
-  >;
-}): CreateMutationOptions<
-  Awaited<ReturnType<typeof runtimeServiceCreateResource>>,
-  TError,
-  { instanceId: string; data: RuntimeServiceCreateResourceBodyBody },
-  TContext
-> => {
-  const mutationKey = ["runtimeServiceCreateResource"];
-  const { mutation: mutationOptions } = options
-    ? options.mutation &&
-      "mutationKey" in options.mutation &&
-      options.mutation.mutationKey
-      ? options
-      : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey } };
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof runtimeServiceCreateResource>>,
-    { instanceId: string; data: RuntimeServiceCreateResourceBodyBody }
-  > = (props) => {
-    const { instanceId, data } = props ?? {};
-
-    return runtimeServiceCreateResource(instanceId, data);
-  };
-
-  return { mutationFn, ...mutationOptions };
-};
-
-export type RuntimeServiceCreateResourceMutationResult = NonNullable<
-  Awaited<ReturnType<typeof runtimeServiceCreateResource>>
->;
-export type RuntimeServiceCreateResourceMutationBody =
-  RuntimeServiceCreateResourceBodyBody;
-export type RuntimeServiceCreateResourceMutationError = ErrorType<RpcStatus>;
-
-/**
- * @summary CreateResource creates a new resource in the catalog
- */
-export const createRuntimeServiceCreateResource = <
-  TError = ErrorType<RpcStatus>,
-  TContext = unknown,
->(
-  options?: {
-    mutation?: CreateMutationOptions<
-      Awaited<ReturnType<typeof runtimeServiceCreateResource>>,
-      TError,
-      { instanceId: string; data: RuntimeServiceCreateResourceBodyBody },
-      TContext
-    >;
-  },
-  queryClient?: QueryClient,
-): CreateMutationResult<
-  Awaited<ReturnType<typeof runtimeServiceCreateResource>>,
-  TError,
-  { instanceId: string; data: RuntimeServiceCreateResourceBodyBody },
-  TContext
-> => {
-  const mutationOptions =
-    getRuntimeServiceCreateResourceMutationOptions(options);
-
-  return createMutation(mutationOptions, queryClient);
-};
-/**
  * @summary WatchResources streams updates to catalog resources (including creation and deletion events)
  */
 export const runtimeServiceWatchResources = (
@@ -3556,203 +3464,6 @@ export function createRuntimeServiceWatchResources<
   return query;
 }
 
-/**
- * @summary DeleteResource deletes a resource from the catalog
- */
-export const runtimeServiceDeleteResource = (
-  instanceId: string,
-  kind: string,
-  name: string,
-) => {
-  return httpClient<V1DeleteResourceResponse>({
-    url: `/v1/instances/${instanceId}/resources/${kind}/${name}`,
-    method: "DELETE",
-  });
-};
-
-export const getRuntimeServiceDeleteResourceMutationOptions = <
-  TError = ErrorType<RpcStatus>,
-  TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof runtimeServiceDeleteResource>>,
-    TError,
-    { instanceId: string; kind: string; name: string },
-    TContext
-  >;
-}): CreateMutationOptions<
-  Awaited<ReturnType<typeof runtimeServiceDeleteResource>>,
-  TError,
-  { instanceId: string; kind: string; name: string },
-  TContext
-> => {
-  const mutationKey = ["runtimeServiceDeleteResource"];
-  const { mutation: mutationOptions } = options
-    ? options.mutation &&
-      "mutationKey" in options.mutation &&
-      options.mutation.mutationKey
-      ? options
-      : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey } };
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof runtimeServiceDeleteResource>>,
-    { instanceId: string; kind: string; name: string }
-  > = (props) => {
-    const { instanceId, kind, name } = props ?? {};
-
-    return runtimeServiceDeleteResource(instanceId, kind, name);
-  };
-
-  return { mutationFn, ...mutationOptions };
-};
-
-export type RuntimeServiceDeleteResourceMutationResult = NonNullable<
-  Awaited<ReturnType<typeof runtimeServiceDeleteResource>>
->;
-
-export type RuntimeServiceDeleteResourceMutationError = ErrorType<RpcStatus>;
-
-/**
- * @summary DeleteResource deletes a resource from the catalog
- */
-export const createRuntimeServiceDeleteResource = <
-  TError = ErrorType<RpcStatus>,
-  TContext = unknown,
->(
-  options?: {
-    mutation?: CreateMutationOptions<
-      Awaited<ReturnType<typeof runtimeServiceDeleteResource>>,
-      TError,
-      { instanceId: string; kind: string; name: string },
-      TContext
-    >;
-  },
-  queryClient?: QueryClient,
-): CreateMutationResult<
-  Awaited<ReturnType<typeof runtimeServiceDeleteResource>>,
-  TError,
-  { instanceId: string; kind: string; name: string },
-  TContext
-> => {
-  const mutationOptions =
-    getRuntimeServiceDeleteResourceMutationOptions(options);
-
-  return createMutation(mutationOptions, queryClient);
-};
-/**
- * @summary UpdateResource updates an existing resource in the catalog
- */
-export const runtimeServiceUpdateResource = (
-  instanceId: string,
-  kind: string,
-  name: string,
-  runtimeServiceCreateResourceBodyBody: RuntimeServiceCreateResourceBodyBody,
-) => {
-  return httpClient<V1UpdateResourceResponse>({
-    url: `/v1/instances/${instanceId}/resources/${kind}/${name}`,
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    data: runtimeServiceCreateResourceBodyBody,
-  });
-};
-
-export const getRuntimeServiceUpdateResourceMutationOptions = <
-  TError = ErrorType<RpcStatus>,
-  TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof runtimeServiceUpdateResource>>,
-    TError,
-    {
-      instanceId: string;
-      kind: string;
-      name: string;
-      data: RuntimeServiceCreateResourceBodyBody;
-    },
-    TContext
-  >;
-}): CreateMutationOptions<
-  Awaited<ReturnType<typeof runtimeServiceUpdateResource>>,
-  TError,
-  {
-    instanceId: string;
-    kind: string;
-    name: string;
-    data: RuntimeServiceCreateResourceBodyBody;
-  },
-  TContext
-> => {
-  const mutationKey = ["runtimeServiceUpdateResource"];
-  const { mutation: mutationOptions } = options
-    ? options.mutation &&
-      "mutationKey" in options.mutation &&
-      options.mutation.mutationKey
-      ? options
-      : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey } };
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof runtimeServiceUpdateResource>>,
-    {
-      instanceId: string;
-      kind: string;
-      name: string;
-      data: RuntimeServiceCreateResourceBodyBody;
-    }
-  > = (props) => {
-    const { instanceId, kind, name, data } = props ?? {};
-
-    return runtimeServiceUpdateResource(instanceId, kind, name, data);
-  };
-
-  return { mutationFn, ...mutationOptions };
-};
-
-export type RuntimeServiceUpdateResourceMutationResult = NonNullable<
-  Awaited<ReturnType<typeof runtimeServiceUpdateResource>>
->;
-export type RuntimeServiceUpdateResourceMutationBody =
-  RuntimeServiceCreateResourceBodyBody;
-export type RuntimeServiceUpdateResourceMutationError = ErrorType<RpcStatus>;
-
-/**
- * @summary UpdateResource updates an existing resource in the catalog
- */
-export const createRuntimeServiceUpdateResource = <
-  TError = ErrorType<RpcStatus>,
-  TContext = unknown,
->(
-  options?: {
-    mutation?: CreateMutationOptions<
-      Awaited<ReturnType<typeof runtimeServiceUpdateResource>>,
-      TError,
-      {
-        instanceId: string;
-        kind: string;
-        name: string;
-        data: RuntimeServiceCreateResourceBodyBody;
-      },
-      TContext
-    >;
-  },
-  queryClient?: QueryClient,
-): CreateMutationResult<
-  Awaited<ReturnType<typeof runtimeServiceUpdateResource>>,
-  TError,
-  {
-    instanceId: string;
-    kind: string;
-    name: string;
-    data: RuntimeServiceCreateResourceBodyBody;
-  },
-  TContext
-> => {
-  const mutationOptions =
-    getRuntimeServiceUpdateResourceMutationOptions(options);
-
-  return createMutation(mutationOptions, queryClient);
-};
 /**
  * @summary GetExplore is a convenience RPC that combines looking up an Explore resource and its underlying MetricsView into one network call.
  */

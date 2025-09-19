@@ -2915,33 +2915,6 @@ paths:
           type: boolean
       tags:
         - RuntimeService
-    post:
-      summary: CreateResource creates a new resource in the catalog
-      operationId: RuntimeService_CreateResource
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1CreateResourceResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: instanceId
-          in: path
-          required: true
-          type: string
-        - name: body
-          in: body
-          required: true
-          schema:
-            type: object
-            properties:
-              resource:
-                $ref: '#/definitions/v1Resource'
-      tags:
-        - RuntimeService
   /v1/instances/{instanceId}/resources/-/watch:
     get:
       summary: WatchResources streams updates to catalog resources (including creation and deletion events)
@@ -2978,69 +2951,6 @@ paths:
           in: query
           required: false
           type: string
-      tags:
-        - RuntimeService
-  /v1/instances/{instanceId}/resources/{kind}/{name}:
-    delete:
-      summary: DeleteResource deletes a resource from the catalog
-      operationId: RuntimeService_DeleteResource
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1DeleteResourceResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: instanceId
-          in: path
-          required: true
-          type: string
-        - name: kind
-          in: path
-          required: true
-          type: string
-        - name: name
-          in: path
-          required: true
-          type: string
-      tags:
-        - RuntimeService
-    put:
-      summary: UpdateResource updates an existing resource in the catalog
-      operationId: RuntimeService_UpdateResource
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1UpdateResourceResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: instanceId
-          in: path
-          required: true
-          type: string
-        - name: kind
-          in: path
-          required: true
-          type: string
-        - name: name
-          in: path
-          required: true
-          type: string
-        - name: body
-          in: body
-          required: true
-          schema:
-            type: object
-            properties:
-              resource:
-                $ref: '#/definitions/v1Resource'
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/resources/explore:
@@ -4633,11 +4543,6 @@ definitions:
       instance:
         $ref: '#/definitions/v1Instance'
     title: Response message for RuntimeService.CreateInstance
-  v1CreateResourceResponse:
-    type: object
-    properties:
-      resource:
-        $ref: '#/definitions/v1Resource'
   v1CreateTriggerResponse:
     type: object
   v1DatabaseSchemaInfo:
@@ -4653,8 +4558,6 @@ definitions:
   v1DeleteInstanceResponse:
     type: object
     title: Response message for RuntimeService.DeleteInstance
-  v1DeleteResourceResponse:
-    type: object
   v1DirEntry:
     type: object
     properties:
@@ -7312,11 +7215,6 @@ definitions:
   v1UnpackExampleResponse:
     type: object
     title: Response message for RuntimeService.UnpackExample
-  v1UpdateResourceResponse:
-    type: object
-    properties:
-      resource:
-        $ref: '#/definitions/v1Resource'
   v1WatchFilesResponse:
     type: object
     properties:

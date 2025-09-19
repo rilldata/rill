@@ -190,29 +190,6 @@ service RuntimeService {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/resource"};
   }
 
-  // CreateResource creates a new resource in the catalog
-  rpc CreateResource(CreateResourceRequest) returns (CreateResourceResponse) {
-    option (google.api.http) = {
-      post: "/v1/instances/{instance_id}/resources",
-      body: "*"
-    };
-  }
-
-  // UpdateResource updates an existing resource in the catalog
-  rpc UpdateResource(UpdateResourceRequest) returns (UpdateResourceResponse) {
-    option (google.api.http) = {
-      put: "/v1/instances/{instance_id}/resources/{kind}/{name}",
-      body: "*"
-    };
-  }
-
-  // DeleteResource deletes a resource from the catalog
-  rpc DeleteResource(DeleteResourceRequest) returns (DeleteResourceResponse) {
-    option (google.api.http) = {
-      delete: "/v1/instances/{instance_id}/resources/{kind}/{name}"
-    };
-  }
-
   // GetExplore is a convenience RPC that combines looking up an Explore resource and its underlying MetricsView into one network call.
   rpc GetExplore(GetExploreRequest) returns (GetExploreResponse) {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/resources/explore"};
@@ -742,34 +719,6 @@ message GetResourceRequest {
 message GetResourceResponse {
   Resource resource = 1;
 }
-
-message CreateResourceRequest {
-  string instance_id = 1;
-  Resource resource = 2;
-}
-
-message CreateResourceResponse {
-  Resource resource = 1;
-}
-
-message UpdateResourceRequest {
-  string instance_id = 1;
-  string kind = 2;
-  string name = 3;
-  Resource resource = 4;
-}
-
-message UpdateResourceResponse {
-  Resource resource = 1;
-}
-
-message DeleteResourceRequest {
-  string instance_id = 1;
-  string kind = 2;
-  string name = 3;
-}
-
-message DeleteResourceResponse {}
 
 message GetExploreRequest {
   string instance_id = 1;
