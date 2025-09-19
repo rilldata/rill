@@ -288,7 +288,7 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 
 	// check if rill org exists
 	_, err = c.GetOrganization(ctx, &adminv1.GetOrganizationRequest{
-		Organization: r.Msg.Org,
+		Org: r.Msg.Org,
 	})
 	if err != nil {
 		st, ok := status.FromError(err)
@@ -342,7 +342,7 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 
 		// create project request
 		projRequest = &adminv1.CreateProjectRequest{
-			Organization:   r.Msg.Org,
+			Org:            r.Msg.Org,
 			Project:        r.Msg.ProjectName,
 			Description:    "Auto created by Rill",
 			Provisioner:    "",
@@ -360,7 +360,7 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 
 		// create project request
 		projRequest = &adminv1.CreateProjectRequest{
-			Organization:  r.Msg.Org,
+			Org:           r.Msg.Org,
 			Project:       r.Msg.ProjectName,
 			Description:   "Auto created by Rill",
 			Provisioner:   "",
@@ -417,7 +417,7 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 			return nil, fmt.Errorf("need access to the repository before deploying, please visit %s to grant access", repoStatus.GrantAccessUrl)
 		}
 		projRequest = &adminv1.CreateProjectRequest{
-			Organization:  r.Msg.Org,
+			Org:           r.Msg.Org,
 			Project:       r.Msg.ProjectName,
 			Description:   "Auto created by Rill",
 			Provisioner:   "",
@@ -455,9 +455,9 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 	}
 	if len(dotenv) > 0 {
 		_, err = c.UpdateProjectVariables(ctx, &adminv1.UpdateProjectVariablesRequest{
-			Organization: r.Msg.Org,
-			Project:      r.Msg.ProjectName,
-			Variables:    dotenv,
+			Org:       r.Msg.Org,
+			Project:   r.Msg.ProjectName,
+			Variables: dotenv,
 		})
 		if err != nil {
 			return nil, err
@@ -511,7 +511,7 @@ func (s *Server) RedeployProject(ctx context.Context, r *connect.Request[localv1
 		}
 		_, err = c.UpdateProject(ctx, &adminv1.UpdateProjectRequest{
 			ArchiveAssetId: &assetID,
-			Organization:   projResp.Project.OrgName,
+			Org:            projResp.Project.OrgName,
 			Project:        projResp.Project.Name,
 		})
 		if err != nil {
@@ -531,9 +531,9 @@ func (s *Server) RedeployProject(ctx context.Context, r *connect.Request[localv1
 				return nil, err
 			}
 			_, err = c.UpdateProject(ctx, &adminv1.UpdateProjectRequest{
-				Organization: projResp.Project.OrgName,
-				Project:      projResp.Project.Name,
-				GitRemote:    &ghRepo.Remote,
+				Org:       projResp.Project.OrgName,
+				Project:   projResp.Project.Name,
+				GitRemote: &ghRepo.Remote,
 			})
 			if err != nil {
 				return nil, err
@@ -562,9 +562,9 @@ func (s *Server) RedeployProject(ctx context.Context, r *connect.Request[localv1
 	}
 	if len(dotenv) > 0 {
 		_, err = c.UpdateProjectVariables(ctx, &adminv1.UpdateProjectVariablesRequest{
-			Organization: projResp.Project.OrgName,
-			Project:      projResp.Project.Name,
-			Variables:    dotenv,
+			Org:       projResp.Project.OrgName,
+			Project:   projResp.Project.Name,
+			Variables: dotenv,
 		})
 		if err != nil {
 			return nil, err
@@ -676,7 +676,7 @@ func (s *Server) ListOrganizationsAndBillingMetadata(ctx context.Context, r *con
 	orgsMetadata := make([]*localv1.ListOrganizationsAndBillingMetadataResponse_OrgMetadata, len(resp.Organizations))
 	for i, org := range resp.Organizations {
 		issues, err := c.ListOrganizationBillingIssues(ctx, &adminv1.ListOrganizationBillingIssuesRequest{
-			Organization: org.Name,
+			Org: org.Name,
 		})
 		if err != nil {
 			return nil, err
@@ -749,9 +749,9 @@ func (s *Server) ListProjectsForOrg(ctx context.Context, r *connect.Request[loca
 	}
 
 	projsResp, err := c.ListProjectsForOrganization(ctx, &adminv1.ListProjectsForOrganizationRequest{
-		Organization: r.Msg.Org,
-		PageToken:    r.Msg.PageToken,
-		PageSize:     r.Msg.PageSize,
+		Org:       r.Msg.Org,
+		PageToken: r.Msg.PageToken,
+		PageSize:  r.Msg.PageSize,
 	})
 	if err != nil {
 		return nil, err
@@ -773,8 +773,8 @@ func (s *Server) GetProject(ctx context.Context, r *connect.Request[localv1.GetP
 	}
 
 	projResp, err := c.GetProject(ctx, &adminv1.GetProjectRequest{
-		Organization: r.Msg.OrganizationName,
-		Project:      r.Msg.Name,
+		Org:     r.Msg.OrganizationName,
+		Project: r.Msg.Name,
 	})
 	if err != nil {
 		return nil, err

@@ -138,11 +138,11 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 
 func (s *Server) CreateReport(ctx context.Context, req *adminv1.CreateReportRequest) (*adminv1.CreateReportResponse, error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.organization", req.Organization),
+		attribute.String("args.organization", req.Org),
 		attribute.String("args.project", req.Project),
 	)
 
-	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
 	if err != nil {
 		return nil, err
 	}
@@ -198,12 +198,12 @@ func (s *Server) CreateReport(ctx context.Context, req *adminv1.CreateReportRequ
 
 func (s *Server) EditReport(ctx context.Context, req *adminv1.EditReportRequest) (*adminv1.EditReportResponse, error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.organization", req.Organization),
+		attribute.String("args.organization", req.Org),
 		attribute.String("args.project", req.Project),
 		attribute.String("args.name", req.Name),
 	)
 
-	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
 	if err != nil {
 		return nil, err
 	}
@@ -263,12 +263,12 @@ func (s *Server) EditReport(ctx context.Context, req *adminv1.EditReportRequest)
 
 func (s *Server) UnsubscribeReport(ctx context.Context, req *adminv1.UnsubscribeReportRequest) (*adminv1.UnsubscribeReportResponse, error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.organization", req.Organization),
+		attribute.String("args.organization", req.Org),
 		attribute.String("args.project", req.Project),
 		attribute.String("args.name", req.Name),
 	)
 
-	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
 	if err != nil {
 		return nil, err
 	}
@@ -391,12 +391,12 @@ func (s *Server) UnsubscribeReport(ctx context.Context, req *adminv1.Unsubscribe
 
 func (s *Server) DeleteReport(ctx context.Context, req *adminv1.DeleteReportRequest) (*adminv1.DeleteReportResponse, error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.organization", req.Organization),
+		attribute.String("args.organization", req.Org),
 		attribute.String("args.project", req.Project),
 		attribute.String("args.name", req.Name),
 	)
 
-	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
 	if err != nil {
 		return nil, err
 	}
@@ -446,12 +446,12 @@ func (s *Server) DeleteReport(ctx context.Context, req *adminv1.DeleteReportRequ
 
 func (s *Server) TriggerReport(ctx context.Context, req *adminv1.TriggerReportRequest) (*adminv1.TriggerReportResponse, error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.organization", req.Organization),
+		attribute.String("args.organization", req.Org),
 		attribute.String("args.project", req.Project),
 		attribute.String("args.name", req.Name),
 	)
 
-	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
 	if err != nil {
 		return nil, err
 	}
@@ -492,7 +492,7 @@ func (s *Server) TriggerReport(ctx context.Context, req *adminv1.TriggerReportRe
 
 func (s *Server) GenerateReportYAML(ctx context.Context, req *adminv1.GenerateReportYAMLRequest) (*adminv1.GenerateReportYAMLResponse, error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.organization", req.Organization),
+		attribute.String("args.organization", req.Org),
 		attribute.String("args.project", req.Project),
 	)
 

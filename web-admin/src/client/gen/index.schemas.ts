@@ -97,7 +97,7 @@ export interface V1ApproveProjectAccessResponse {
 }
 
 export interface V1BillingIssue {
-  organization?: string;
+  org?: string;
   type?: V1BillingIssueType;
   level?: V1BillingIssueLevel;
   metadata?: V1BillingIssueMetadata;
@@ -448,7 +448,7 @@ export interface V1GetAlertYAMLResponse {
 }
 
 export interface V1GetBillingProjectCredentialsRequest {
-  organization?: string;
+  org?: string;
 }
 
 export interface V1GetBillingProjectCredentialsResponse {
@@ -520,7 +520,7 @@ export interface V1GetGithubUserStatusResponse {
   userInstallationPermission?: V1GithubPermission;
   organizationInstallationPermissions?: V1GetGithubUserStatusResponseOrganizationInstallationPermissions;
   /** DEPRECATED: Use organization_installation_permissions instead. */
-  organizations?: string[];
+  orgs?: string[];
 }
 
 export interface V1GetIFrameResponse {
@@ -1280,7 +1280,7 @@ export interface V1SudoDeleteOrganizationBillingIssueResponse {
 }
 
 export interface V1SudoExtendTrialRequest {
-  organization?: string;
+  org?: string;
   days?: number;
 }
 
@@ -1317,7 +1317,7 @@ export type V1SudoUpdateAnnotationsRequestAnnotations = {
 };
 
 export interface V1SudoUpdateAnnotationsRequest {
-  organization?: string;
+  org?: string;
   project?: string;
   annotations?: V1SudoUpdateAnnotationsRequestAnnotations;
 }
@@ -1327,7 +1327,7 @@ export interface V1SudoUpdateAnnotationsResponse {
 }
 
 export interface V1SudoUpdateOrganizationBillingCustomerRequest {
-  organization?: string;
+  org?: string;
   billingCustomerId?: string;
   paymentCustomerId?: string;
 }
@@ -1347,7 +1347,7 @@ export interface V1SudoUpdateOrganizationCustomDomainResponse {
 }
 
 export interface V1SudoUpdateOrganizationQuotasRequest {
-  organization?: string;
+  org?: string;
   projects?: number;
   deployments?: number;
   slotsTotal?: number;
@@ -1395,7 +1395,7 @@ export interface V1TriggerReconcileResponse {
 }
 
 export interface V1TriggerRedeployRequest {
-  organization?: string;
+  org?: string;
   project?: string;
   deploymentId?: string;
 }
@@ -2012,7 +2012,7 @@ export type AdminServiceSearchProjectNamesParams = {
 
 export type AdminServiceSudoGetResourceParams = {
   userId?: string;
-  organizationId?: string;
+  orgId?: string;
   projectId?: string;
   deploymentId?: string;
   instanceId?: string;

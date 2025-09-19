@@ -30,7 +30,7 @@ func CloneCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			// get project
-			res, err := client.GetProject(cmd.Context(), &adminv1.GetProjectRequest{Organization: ch.Org, Project: name})
+			res, err := client.GetProject(cmd.Context(), &adminv1.GetProjectRequest{Org: ch.Org, Project: name})
 			if err != nil {
 				return err
 			}

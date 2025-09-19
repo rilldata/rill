@@ -62,7 +62,7 @@ func getUser(ctx context.Context, c *client.Client, userID string) error {
 
 func getOrganization(ctx context.Context, c *client.Client, orgID string) error {
 	res, err := c.SudoGetResource(ctx, &adminv1.SudoGetResourceRequest{
-		Id: &adminv1.SudoGetResourceRequest_OrganizationId{OrganizationId: orgID},
+		Id: &adminv1.SudoGetResourceRequest_OrgId{OrgId: orgID},
 	})
 	if err != nil {
 		return err

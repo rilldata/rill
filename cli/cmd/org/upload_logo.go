@@ -51,8 +51,8 @@ func UploadLogoCmd(ch *cmdutil.Helper) *cobra.Command {
 
 				empty := ""
 				_, err = client.UpdateOrganization(cmd.Context(), &adminv1.UpdateOrganizationRequest{
-					Organization: ch.Org,
-					LogoAssetId:  &empty,
+					Org:         ch.Org,
+					LogoAssetId: &empty,
 				})
 				if err != nil {
 					return err
@@ -94,7 +94,7 @@ func UploadLogoCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			// Generate the asset upload URL
 			asset, err := client.CreateAsset(cmd.Context(), &adminv1.CreateAssetRequest{
-				Organization:       ch.Org,
+				Org:                ch.Org,
 				Type:               "image",
 				Name:               "logo",
 				Extension:          ext,
@@ -125,8 +125,8 @@ func UploadLogoCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			// Update the logo
 			_, err = client.UpdateOrganization(cmd.Context(), &adminv1.UpdateOrganizationRequest{
-				Organization: ch.Org,
-				LogoAssetId:  &asset.AssetId,
+				Org:         ch.Org,
+				LogoAssetId: &asset.AssetId,
 			})
 			if err != nil {
 				return fmt.Errorf("failed to update: %w", err)

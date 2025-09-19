@@ -354,7 +354,7 @@ func DeployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployO
 
 	// Create a new project
 	req := &adminv1.CreateProjectRequest{
-		Organization:  ch.Org,
+		Org:           ch.Org,
 		Project:       opts.Name,
 		Description:   opts.Description,
 		Provisioner:   opts.Provisioner,
@@ -400,9 +400,9 @@ func DeployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployO
 		ch.PrintfWarn("Failed to parse .env: %v\n", err)
 	} else if len(vars) > 0 {
 		_, err = adminClient.UpdateProjectVariables(ctx, &adminv1.UpdateProjectVariablesRequest{
-			Organization: ch.Org,
-			Project:      opts.Name,
-			Variables:    vars,
+			Org:       ch.Org,
+			Project:   opts.Name,
+			Variables: vars,
 		})
 		if err != nil {
 			ch.PrintfWarn("Failed to upload .env: %v\n", err)
@@ -455,7 +455,7 @@ func redeployProject(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts) 
 				return err
 			}
 			updateProjReq = &adminv1.UpdateProjectRequest{
-				Organization:   ch.Org,
+				Org:            ch.Org,
 				Project:        proj.Name,
 				ArchiveAssetId: &assetID,
 			}
@@ -466,9 +466,9 @@ func redeployProject(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts) 
 				return err
 			}
 			updateProjReq = &adminv1.UpdateProjectRequest{
-				Organization: ch.Org,
-				Project:      opts.Name,
-				GitRemote:    &gitRepo.Remote,
+				Org:       ch.Org,
+				Project:   opts.Name,
+				GitRemote: &gitRepo.Remote,
 			}
 		}
 		// Update the project
@@ -490,9 +490,9 @@ func redeployProject(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts) 
 		ch.PrintfWarn("Failed to parse .env: %v\n", err)
 	} else if len(vars) > 0 {
 		_, err = c.UpdateProjectVariables(ctx, &adminv1.UpdateProjectVariablesRequest{
-			Organization: ch.Org,
-			Project:      proj.Name,
-			Variables:    vars,
+			Org:       ch.Org,
+			Project:   proj.Name,
+			Variables: vars,
 		})
 		if err != nil {
 			ch.PrintfWarn("Failed to upload .env: %v\n", err)
@@ -587,7 +587,7 @@ func orgExists(ctx context.Context, ch *cmdutil.Helper, name string) (bool, erro
 		return false, err
 	}
 
-	_, err = c.GetOrganization(ctx, &adminv1.GetOrganizationRequest{Organization: name})
+	_, err = c.GetOrganization(ctx, &adminv1.GetOrganizationRequest{Org: name})
 	if err != nil {
 		if st, ok := status.FromError(err); ok {
 			if st.Code() == codes.NotFound {
@@ -605,7 +605,7 @@ func projectExists(ctx context.Context, ch *cmdutil.Helper, orgName, projectName
 		return false, err
 	}
 
-	_, err = c.GetProject(ctx, &adminv1.GetProjectRequest{Organization: orgName, Project: projectName})
+	_, err = c.GetProject(ctx, &adminv1.GetProjectRequest{Org: orgName, Project: projectName})
 	if err != nil {
 		if st, ok := status.FromError(err); ok {
 			if st.Code() == codes.NotFound {

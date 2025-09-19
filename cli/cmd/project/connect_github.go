@@ -159,7 +159,7 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 
 	// Create the project (automatically deploys prod branch)
 	res, err := createProjectFlow(ctx, ch, &adminv1.CreateProjectRequest{
-		Organization:  ch.Org,
+		Org:           ch.Org,
 		Project:       opts.Name,
 		Description:   opts.Description,
 		Provisioner:   opts.Provisioner,
@@ -193,9 +193,9 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 			return err
 		}
 		_, err = c.UpdateProjectVariables(ctx, &adminv1.UpdateProjectVariablesRequest{
-			Organization: ch.Org,
-			Project:      opts.Name,
-			Variables:    vars,
+			Org:       ch.Org,
+			Project:   opts.Name,
+			Variables: vars,
 		})
 		if err != nil {
 			ch.PrintfWarn("Failed to upload .env: %v\n", err)
@@ -480,10 +480,10 @@ func createProjectFlow(ctx context.Context, ch *cmdutil.Helper, req *adminv1.Cre
 		}
 
 		ch.PrintfWarn("Rill project names are derived from your Github repository name.\n")
-		ch.PrintfWarn("The %q project already exists under org %q. Please enter a different name.\n", req.Project, req.Organization)
+		ch.PrintfWarn("The %q project already exists under org %q. Please enter a different name.\n", req.Project, req.Org)
 
 		// project name already exists, prompt for project name and create project with new name again
-		name, err := projectNamePrompt(ctx, ch, req.Organization)
+		name, err := projectNamePrompt(ctx, ch, req.Org)
 		if err != nil {
 			return nil, err
 		}

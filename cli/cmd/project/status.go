@@ -44,8 +44,8 @@ func StatusCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 				// Project info and deployment info not available --local mode
 				proj, err := client.GetProject(cmd.Context(), &adminv1.GetProjectRequest{
-					Organization: ch.Org,
-					Project:      name,
+					Org:     ch.Org,
+					Project: name,
 				})
 				if err != nil {
 					return err

@@ -407,8 +407,8 @@ func (s *Server) SudoGetResource(ctx context.Context, req *adminv1.SudoGetResour
 			return nil, err
 		}
 		res.Resource = &adminv1.SudoGetResourceResponse_User{User: userToPB(user)}
-	case *adminv1.SudoGetResourceRequest_OrganizationId:
-		org, err := s.admin.DB.FindOrganization(ctx, id.OrganizationId)
+	case *adminv1.SudoGetResourceRequest_OrgId:
+		org, err := s.admin.DB.FindOrganization(ctx, id.OrgId)
 		if err != nil {
 			return nil, err
 		}
@@ -518,12 +518,12 @@ func (s *Server) SudoUpdateUserQuotas(ctx context.Context, req *adminv1.SudoUpda
 // SearchProjectUsers returns a list of users that match the given search/email query.
 func (s *Server) SearchProjectUsers(ctx context.Context, req *adminv1.SearchProjectUsersRequest) (*adminv1.SearchProjectUsersResponse, error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.org", req.Organization),
+		attribute.String("args.org", req.Org),
 		attribute.String("args.project", req.Project),
 		attribute.String("args.email_query", req.EmailQuery),
 	)
 
-	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
 	if err != nil {
 		return nil, err
 	}

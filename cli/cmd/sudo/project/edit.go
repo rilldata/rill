@@ -19,7 +19,7 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 			ctx := cmd.Context()
 
 			req := &adminv1.UpdateProjectRequest{
-				Organization:         args[0],
+				Org:                  args[0],
 				Project:              args[1],
 				SuperuserForceAccess: true,
 			}

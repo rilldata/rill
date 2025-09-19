@@ -34,8 +34,8 @@ func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			req := &adminv1.CreateServiceRequest{
-				Name:         args[0],
-				Organization: ch.Org,
+				Name: args[0],
+				Org:  ch.Org,
 			}
 
 			if ch.Interactive && orgRole == "" {
@@ -94,8 +94,8 @@ func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			res2, err := client.IssueServiceAuthToken(cmd.Context(), &adminv1.IssueServiceAuthTokenRequest{
-				Organization: ch.Org,
-				ServiceName:  res1.Service.Name,
+				Org:         ch.Org,
+				ServiceName: res1.Service.Name,
 			})
 			if err != nil {
 				return err

@@ -167,7 +167,7 @@ func (s *Server) GetGithubUserStatus(ctx context.Context, req *adminv1.GetGithub
 		GrantAccessUrl:                      s.admin.URLs.GithubConnect(""),
 		AccessToken:                         token,
 		Account:                             user.GithubUsername,
-		Organizations:                       allOrgs,
+		Orgs:                                allOrgs,
 		UserInstallationPermission:          userInstallationPermission,
 		OrganizationInstallationPermissions: orgInstallationPermission,
 	}, nil
@@ -293,7 +293,7 @@ func (s *Server) ListGithubUserRepos(ctx context.Context, req *adminv1.ListGithu
 
 func (s *Server) ConnectProjectToGithub(ctx context.Context, req *adminv1.ConnectProjectToGithubRequest) (*adminv1.ConnectProjectToGithubResponse, error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.organization", req.Organization),
+		attribute.String("args.organization", req.Org),
 		attribute.String("args.project", req.Project),
 		attribute.String("args.remote", req.Remote),
 		attribute.String("args.branch", req.Branch),
@@ -310,7 +310,7 @@ func (s *Server) ConnectProjectToGithub(ctx context.Context, req *adminv1.Connec
 	req.Remote = normalizeGitRemote(req.Remote)
 
 	// Find project
-	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -418,11 +418,11 @@ func (s *Server) ConnectProjectToGithub(ctx context.Context, req *adminv1.Connec
 	}
 
 	_, err = s.UpdateProject(ctx, &adminv1.UpdateProjectRequest{
-		Organization: org.Name,
-		Project:      proj.Name,
-		ProdBranch:   &req.Branch,
-		GitRemote:    &req.Remote,
-		Subpath:      &req.Subpath,
+		Org:        org.Name,
+		Project:    proj.Name,
+		ProdBranch: &req.Branch,
+		GitRemote:  &req.Remote,
+		Subpath:    &req.Subpath,
 	})
 	if err != nil {
 		return nil, err
@@ -441,12 +441,12 @@ func (s *Server) ConnectProjectToGithub(ctx context.Context, req *adminv1.Connec
 
 func (s *Server) CreateManagedGitRepo(ctx context.Context, req *adminv1.CreateManagedGitRepoRequest) (*adminv1.CreateManagedGitRepoResponse, error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.organization", req.Organization),
+		attribute.String("args.organization", req.Org),
 		attribute.String("args.name", req.Name),
 	)
 
 	// Find org
-	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
 	if err != nil {
 		return nil, err
 	}
@@ -482,7 +482,7 @@ func (s *Server) CreateManagedGitRepo(ctx context.Context, req *adminv1.CreateMa
 // DisconnectProjectFromGithub disconnects a project from Github by uploading the contents of a Github repository to a rill managed repository.
 func (s *Server) DisconnectProjectFromGithub(ctx context.Context, req *adminv1.DisconnectProjectFromGithubRequest) (*adminv1.DisconnectProjectFromGithubResponse, error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.organization", req.Organization),
+		attribute.String("args.organization", req.Org),
 		attribute.String("args.project", req.Project),
 	)
 
@@ -493,7 +493,7 @@ func (s *Server) DisconnectProjectFromGithub(ctx context.Context, req *adminv1.D
 	}
 
 	// Find parent org
-	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -554,7 +554,7 @@ func (s *Server) DisconnectProjectFromGithub(ctx context.Context, req *adminv1.D
 	branch := "main"
 	subpath := ""
 	_, err = s.UpdateProject(ctx, &adminv1.UpdateProjectRequest{
-		Organization:   req.Organization,
+		Org:            req.Org,
 		Project:        req.Project,
 		GitRemote:      repo.CloneURL,
 		ProdBranch:     &branch,

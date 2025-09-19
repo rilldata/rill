@@ -25,8 +25,8 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			req := &adminv1.UpdateServiceRequest{
-				Name:         args[0],
-				Organization: ch.Org,
+				Name: args[0],
+				Org:  ch.Org,
 			}
 
 			if newName != "" {
