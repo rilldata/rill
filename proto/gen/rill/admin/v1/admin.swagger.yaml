@@ -2270,7 +2270,7 @@ paths:
                 description: list of resources to grant access to.
       tags:
         - AdminService
-  /v1/organizations/{organization}/projects/{project}/usergroups/{usergroup}/roles:
+  /v1/orgs/{org}/projects/{project}/usergroups/{usergroup}/roles:
     delete:
       summary: RemoveProjectMemberUsergroup revokes the project-level role for the user group
       operationId: AdminService_RemoveProjectMemberUsergroup

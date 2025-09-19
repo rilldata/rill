@@ -401,9 +401,9 @@ func DeployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployO
 			ch.PrintfWarn("Failed to parse .env: %v\n", err)
 		} else if len(vars) > 0 {
 			_, err = adminClient.UpdateProjectVariables(ctx, &adminv1.UpdateProjectVariablesRequest{
-				Organization: ch.Org,
-				Project:      opts.Name,
-				Variables:    vars,
+				Org:       ch.Org,
+				Project:   opts.Name,
+				Variables: vars,
 			})
 			if err != nil {
 				ch.PrintfWarn("Failed to upload .env: %v\n", err)
@@ -492,9 +492,9 @@ func redeployProject(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts) 
 			ch.PrintfWarn("Failed to parse .env: %v\n", err)
 		} else if len(vars) > 0 {
 			_, err = c.UpdateProjectVariables(ctx, &adminv1.UpdateProjectVariablesRequest{
-				Organization: ch.Org,
-				Project:      proj.Name,
-				Variables:    vars,
+				Org:       ch.Org,
+				Project:   proj.Name,
+				Variables: vars,
 			})
 			if err != nil {
 				ch.PrintfWarn("Failed to upload .env: %v\n", err)
