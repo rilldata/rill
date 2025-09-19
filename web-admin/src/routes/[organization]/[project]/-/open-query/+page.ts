@@ -1,4 +1,4 @@
-import { openQuery } from "@rilldata/web-common/features/queries/open-query";
+import { openQuery } from "@rilldata/web-common/features/explore-mappers/open-query";
 import type { PageLoad } from "./$types";
 
 export const load: PageLoad = async ({ params, url, parent }) => {
