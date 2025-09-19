@@ -12,10 +12,12 @@ import (
 )
 
 const (
-	// DefaultSummaryLimit is the maximum number of dimensions to summarize.
-	DefaultSummaryLimit = 15
-	// DefaultSampleTimeWindow is the time window used for sampling values
-	DefaultSampleTimeWindow = 24 * time.Hour
+	// SummaryDimensionsLimit is the maximum number of dimensions to summarize.
+	SummaryDimensionsLimit = 15
+	// SummaryTimeDimensionsLimit is the maximum number of time dimensions to summarize.
+	SummaryTimeDimensionsLimit = 2
+	// SummarySampleInterval is the time offset from the max timestamp used for sampling values.
+	SummarySampleInterval = 24 * time.Hour
 )
 
 // SummaryResult is the statistics for a single metrics view.
@@ -40,21 +42,12 @@ func (e *Executor) Summary(ctx context.Context) (*SummaryResult, error) {
 		return nil, runtime.ErrForbidden
 	}
 
-	dimensions := make([]*runtimev1.MetricsViewSpec_Dimension, 0, DefaultSummaryLimit)
-	timeDimensions := make([]*runtimev1.MetricsViewSpec_Dimension, 0, 2)
-
-	// Track the default time dimension name to ensure it's included
-	defaultTimeDimName := e.metricsView.TimeDimension
-
+	// Gather the categorical and time dimensions
+	var dimensions, timeDimensions []*runtimev1.MetricsViewSpec_Dimension
 	for _, dim := range e.metricsView.Dimensions {
 		// Skip dimensions that the user cannot access first
 		if !e.security.CanAccessField(dim.Name) {
 			continue
-		}
-
-		// If we have reached the limit, stop adding dimensions
-		if len(dimensions)+len(timeDimensions) >= DefaultSummaryLimit {
-			break
 		}
 
 		// Check if this dimension is a time dimension (has timestamp data type)
@@ -73,136 +66,115 @@ func (e *Executor) Summary(ctx context.Context) (*SummaryResult, error) {
 		}
 	}
 
-	// Ensure the default time dimension is included even if it's not in the dimensions list
-	defaultTimeDimFound := false
-	if defaultTimeDimName != "" {
+	// Add the default time dimension if it wasn't in the list (it's not currently guaranteed to be included in the dimensions list).
+	if e.metricsView.TimeDimension != "" {
+		var found bool
 		for _, dim := range timeDimensions {
-			if dim.Name == defaultTimeDimName {
-				defaultTimeDimFound = true
+			if dim.Name == e.metricsView.TimeDimension {
+				found = true
 				break
 			}
 		}
-	}
 
-	// Get the default time range for the metrics view using the default time dimension
-	// This will be used for time range filtering in other queries
-	var defaultTimeRange TimestampsResult
-	var err error
-	if defaultTimeDimName != "" {
-		defaultTimeRange, err = e.Timestamps(ctx, defaultTimeDimName)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get default time range for dimension %q: %w", defaultTimeDimName, err)
+		if !found {
+			// Prepend it so it doesn't get truncated
+			head := []*runtimev1.MetricsViewSpec_Dimension{{
+				Name:     e.metricsView.TimeDimension,
+				DataType: &runtimev1.Type{Code: runtimev1.Type_CODE_TIMESTAMP},
+			}}
+			timeDimensions = append(head, timeDimensions...)
 		}
 	}
 
-	timeDimensionSummaries := make([]DimensionSummary, 0, len(timeDimensions)+1)
-	if !defaultTimeDimFound && defaultTimeDimName != "" && e.security.CanAccessField(defaultTimeDimName) {
-		timeDimensions = append(timeDimensions, &runtimev1.MetricsViewSpec_Dimension{
-			Name:     defaultTimeDimName,
-			DataType: &runtimev1.Type{Code: runtimev1.Type_CODE_TIMESTAMP},
-		})
+	// Apply the default dimension limits
+	if len(dimensions) > SummaryDimensionsLimit {
+		dimensions = dimensions[0:SummaryDimensionsLimit]
+	}
+	if len(timeDimensions) > SummaryTimeDimensionsLimit {
+		timeDimensions = timeDimensions[0:SummaryTimeDimensionsLimit]
 	}
 
+	// Compute the time dimension summaries
+	var summaries []DimensionSummary
+	var defaultTimeDimensionSummary DimensionSummary
 	for _, dim := range timeDimensions {
-		var timeRange TimestampsResult
-		if dim.Name == defaultTimeDimName {
-			timeRange = defaultTimeRange
-		} else {
-			timeRange, err = e.Timestamps(ctx, dim.Name)
-			if err != nil {
-				return nil, fmt.Errorf("failed to get time range for dimension %s: %w", dim.Name, err)
-			}
+		timeRange, err := e.Timestamps(ctx, dim.Name)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get time range for dimension %q: %w", dim.Name, err)
 		}
-
-		var dataType string
-		if dim.DataType != nil {
-			dataType = dim.DataType.Code.String()
-		}
-
 		summary := DimensionSummary{
-			Name:     dim.Name,
-			DataType: dataType,
+			Name: dim.Name,
 		}
-
-		// Only populate min/max if we have time data
+		if dim.DataType != nil {
+			summary.DataType = dim.DataType.Code.String()
+		}
 		if !timeRange.Min.IsZero() {
 			summary.MinValue = timeRange.Min
 		}
 		if !timeRange.Max.IsZero() {
 			summary.MaxValue = timeRange.Max
 		}
-
-		timeDimensionSummaries = append(timeDimensionSummaries, summary)
+		summaries = append(summaries, summary)
+		if dim.Name == e.metricsView.TimeDimension {
+			defaultTimeDimensionSummary = summary
+		}
 	}
 
 	// Create summaries for normal dimensions
 	if len(dimensions) == 0 {
 		return &SummaryResult{
-			Dimensions:           timeDimensionSummaries,
-			DefaultTimeDimension: createDefaultTimeDimensionSummary(defaultTimeDimName, defaultTimeRange),
+			Dimensions:           summaries,
+			DefaultTimeDimension: defaultTimeDimensionSummary,
 		}, nil
 	}
 
 	// Build and execute the summary query
 	selectClauses := make([]string, 0, len(dimensions)*4)
-	var failedDimensions []string
-
 	for _, dim := range dimensions {
-		dimName := dim.Name
 		expr, err := e.olap.Dialect().MetricsViewDimensionExpression(dim)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get expression for dimension %s: %w", dimName, err)
+			return nil, fmt.Errorf("failed to get expression for dimension %s: %w", dim.Name, err)
 		}
 
-		dialect := e.olap.Dialect()
-
 		// Add select clauses for min, max, has_nulls, and sample value
+		dialect := e.olap.Dialect()
 		selectClauses = append(selectClauses,
-			fmt.Sprintf("MIN(%s) AS %s", expr, dialect.EscapeIdentifier(dimName+"__min")),
-			fmt.Sprintf("MAX(%s) AS %s", expr, dialect.EscapeIdentifier(dimName+"__max")),
-			fmt.Sprintf("COUNT(*) - COUNT(%s) > 0 AS %s", expr, dialect.EscapeIdentifier(dimName+"__has_nulls")),
-			fmt.Sprintf("ANY_VALUE(%s) AS %s", expr, dialect.EscapeIdentifier(dimName+"__example")),
+			fmt.Sprintf("MIN(%s) AS %s", expr, dialect.EscapeIdentifier(dim.Name+"__min")),
+			fmt.Sprintf("MAX(%s) AS %s", expr, dialect.EscapeIdentifier(dim.Name+"__max")),
+			fmt.Sprintf("COUNT(*) - COUNT(%s) > 0 AS %s", expr, dialect.EscapeIdentifier(dim.Name+"__has_nulls")),
+			fmt.Sprintf("ANY_VALUE(%s) AS %s", expr, dialect.EscapeIdentifier(dim.Name+"__example")),
 		)
 	}
 
-	if len(selectClauses) == 0 {
-		if len(failedDimensions) > 0 {
-			return nil, fmt.Errorf("failed to get expressions for dimensions: %v", failedDimensions)
-		}
-		return nil, fmt.Errorf("no dimensions to summarize")
-	}
-
+	// Determine the default time dimension expression
 	var timeDimExpr string
-	if defaultTimeDimName != "" {
-		timeDimExpr = e.olap.Dialect().EscapeIdentifier(defaultTimeDimName)
-		for _, dim := range e.metricsView.Dimensions {
-			if dim.Name == defaultTimeDimName {
-				expr, err := e.olap.Dialect().MetricsViewDimensionExpression(dim)
-				if err == nil {
-					timeDimExpr = expr
-				}
-				break
+	for _, dim := range timeDimensions {
+		if dim.Name == e.metricsView.TimeDimension {
+			expr, err := e.olap.Dialect().MetricsViewDimensionExpression(dim)
+			if err == nil {
+				timeDimExpr = expr
 			}
+			break
 		}
 	}
 
-	// Use a recent time window with proper timestamp formatting
-	// Use the default time dimension for filtering to ensure it's likely indexed
+	// Create a where clause that applies the SummarySampleInterval to the default time dimension
 	var whereClause string
 	var args []any
-	if defaultTimeDimName != "" && !defaultTimeRange.Max.IsZero() {
-		whereClause = fmt.Sprintf("WHERE %s >= ?", timeDimExpr)
-		args = []any{defaultTimeRange.Max.Add(-DefaultSampleTimeWindow)}
-	} else {
-		whereClause = "" // No time filtering if no default time dimension
+	if timeDimExpr != "" && defaultTimeDimensionSummary.MaxValue != nil {
+		maxTime, _ := defaultTimeDimensionSummary.MaxValue.(time.Time)
+		if !maxTime.IsZero() {
+			whereClause = fmt.Sprintf("WHERE %s >= ?", timeDimExpr)
+			args = []any{maxTime.Add(-SummarySampleInterval)}
+		}
 	}
 
-	escapedTableName := e.olap.Dialect().EscapeTable(e.metricsView.Database, e.metricsView.DatabaseSchema, e.metricsView.Table)
+	// Build the SQL query
 	var sqlBuilder strings.Builder
 	sqlBuilder.WriteString("SELECT ")
 	sqlBuilder.WriteString(strings.Join(selectClauses, ", "))
 	sqlBuilder.WriteString(" FROM ")
-	sqlBuilder.WriteString(escapedTableName)
+	sqlBuilder.WriteString(e.olap.Dialect().EscapeTable(e.metricsView.Database, e.metricsView.DatabaseSchema, e.metricsView.Table))
 	if whereClause != "" {
 		sqlBuilder.WriteString(" ")
 		sqlBuilder.WriteString(whereClause)
@@ -210,6 +182,7 @@ func (e *Executor) Summary(ctx context.Context) (*SummaryResult, error) {
 	sqlBuilder.WriteString(" LIMIT 1")
 	sql := sqlBuilder.String()
 
+	// Execute the SQL query
 	rows, err := e.olap.Query(ctx, &drivers.Statement{
 		Query:            sql,
 		Args:             args,
@@ -220,77 +193,48 @@ func (e *Executor) Summary(ctx context.Context) (*SummaryResult, error) {
 		return nil, fmt.Errorf("failed to execute dimension summary query: %w", err)
 	}
 	defer rows.Close()
-
 	if !rows.Next() {
 		return nil, fmt.Errorf("dimension summary query returned no results")
 	}
 
-	values := make([]interface{}, len(dimensions)*4)
-
-	// Create scan targets
+	// Scan the results
+	values := make([]any, len(dimensions)*4)
 	for i := range values {
-		values[i] = new(interface{})
+		values[i] = new(any)
 	}
-
 	if err := rows.Scan(values...); err != nil {
 		return nil, fmt.Errorf("failed to scan dimension summary results: %w", err)
 	}
 
 	// Build the result summaries
-	summaries := make([]DimensionSummary, len(dimensions))
-
 	for i, dim := range dimensions {
-		dataType := getDimensionDataType(dim)
+		var dataType string
+		if dim.DataType != nil {
+			dataType = dim.DataType.Code.String()
+		}
 
 		index := i * 4
-		minValue := *values[index].(*interface{})
-		maxValue := *values[index+1].(*interface{})
-		hasNullsInterface := *values[index+2].(*interface{})
+		minValue := *values[index].(*any)
+		maxValue := *values[index+1].(*any)
+		hasNullsInterface := *values[index+2].(*any)
 		hasNulls, ok := hasNullsInterface.(bool)
 		if !ok {
 			hasNulls = false
 		}
+		exampleValue := *values[index+3].(*any)
 
-		exampleValue := *values[index+3].(*interface{})
-
-		summaries[i] = DimensionSummary{
+		summaries = append(summaries, DimensionSummary{
 			Name:         dim.Name,
 			DataType:     dataType,
 			MinValue:     minValue,
 			MaxValue:     maxValue,
 			HasNulls:     hasNulls,
 			ExampleValue: exampleValue,
-		}
+		})
 	}
 
 	return &SummaryResult{
-		Dimensions:           append(timeDimensionSummaries, summaries...),
-		DefaultTimeDimension: createDefaultTimeDimensionSummary(defaultTimeDimName, defaultTimeRange),
+		Dimensions:           summaries,
+		DefaultTimeDimension: defaultTimeDimensionSummary,
 	}, nil
-}
-
-func getDimensionDataType(dim *runtimev1.MetricsViewSpec_Dimension) string {
-	if dim.DataType != nil {
-		return dim.DataType.Code.String()
-	}
-	return ""
-}
-
-func createDefaultTimeDimensionSummary(defaultTimeDimName string, timeRange TimestampsResult) DimensionSummary {
-	summary := DimensionSummary{}
-
-	if defaultTimeDimName != "" {
-		summary.Name = defaultTimeDimName
-		summary.DataType = runtimev1.Type_CODE_TIMESTAMP.String()
-
-		// Only populate min/max values if we have time data
-		if !timeRange.Min.IsZero() {
-			summary.MinValue = timeRange.Min
-		}
-		if !timeRange.Max.IsZero() {
-			summary.MaxValue = timeRange.Max
-		}
-	}
-
-	return summary
 }

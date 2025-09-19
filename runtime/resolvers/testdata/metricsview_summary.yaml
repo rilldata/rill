@@ -205,6 +205,10 @@ tests:
       role: "viewer"
     result:
       - dimensions:
+          - data_type: CODE_TIMESTAMP
+            max_value: "2024-01-06T00:00:00Z"
+            min_value: "2024-01-01T00:00:00Z"
+            name: event_time
           - data_type: CODE_STRING
             example_value: Clothing
             max_value: Home
