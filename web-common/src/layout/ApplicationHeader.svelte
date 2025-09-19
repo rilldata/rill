@@ -4,6 +4,7 @@
   import Breadcrumbs from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
   import type { PathOption } from "@rilldata/web-common/components/navigation/breadcrumbs/types";
   import LocalAvatarButton from "@rilldata/web-common/features/authentication/LocalAvatarButton.svelte";
+  import CanvasPreviewCTAs from "@rilldata/web-common/features/canvas/CanvasPreviewCTAs.svelte";
   import { getBreadcrumbOptions } from "@rilldata/web-common/features/dashboards/dashboard-utils";
   import {
     useValidCanvases,
@@ -116,6 +117,8 @@
     {#if mode === "Preview"}
       {#if route.id?.includes("explore")}
         <ExplorePreviewCTAs exploreName={dashboardName} />
+      {:else if route.id?.includes("canvas")}
+        <CanvasPreviewCTAs canvasName={dashboardName} />
       {/if}
     {/if}
     {#if !onDeployPage}
