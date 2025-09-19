@@ -6,6 +6,7 @@
   import MultiPositionalFieldsInput from "@rilldata/web-common/features/canvas/inspector/fields/MultiPositionalFieldsInput.svelte";
   import SingleFieldInput from "@rilldata/web-common/features/canvas/inspector/fields/SingleFieldInput.svelte";
   import type { ComponentInputParam } from "@rilldata/web-common/features/canvas/inspector/types";
+  import { shouldShowPopover } from "@rilldata/web-common/features/canvas/inspector/util";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import FieldConfigPopover from "./field-config/FieldConfigPopover.svelte";
@@ -32,7 +33,7 @@
   $: colorMapConfig = chartFieldInput?.colorMappingSelector;
 
   $: isDimension = chartFieldInput?.type === "dimension";
-  $: hasMultipleMeasures = fieldConfig.fields && fieldConfig.fields.length > 1;
+  $: hasMultipleMeasures = fieldConfig.fields && fieldConfig.fields.length;
 
   $: timeDimension = getTimeDimensionForMetricView(metricsView);
 
@@ -122,13 +123,14 @@
   }
 
   $: popoverKey = `${$selectedComponent}-${metricsView}-${fieldConfig.field}`;
+  $: hasPopoverContent = shouldShowPopover(chartFieldInput);
 </script>
 
 <div class="gap-y-1">
   <div class="flex justify-between items-center">
     <InputLabel small label={config.label ?? key} id={key} />
     {#key popoverKey}
-      {#if Object.keys(chartFieldInput ?? {}).length > 1}
+      {#if hasPopoverContent}
         <FieldConfigPopover
           {fieldConfig}
           label={config.label ?? key}
@@ -167,9 +169,12 @@
       <MultiPositionalFieldsInput
         {canvasName}
         metricName={metricsView}
-        selectedItems={fieldConfig.fields}
+        selectedItems={fieldConfig.fields?.length
+          ? fieldConfig.fields
+          : [fieldConfig.field]}
         types={isDimension ? ["dimension"] : ["measure"]}
         excludedValues={chartFieldInput?.excludedValues}
+        chipItems={fieldConfig.fields}
         onMultiSelect={handleMultiFieldUpdate}
       />
     {/if}

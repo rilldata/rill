@@ -8,6 +8,7 @@
   import { PivotCanvasComponent } from "../components/pivot";
   import type { ComponentSpec } from "../components/types";
   import AlignmentInput from "./AlignmentInput.svelte";
+  import CanvasFieldSwitcher from "./CanvasFieldSwitcher.svelte";
   import ChartTypeSelector from "./chart/ChartTypeSelector.svelte";
   import MarkSelector from "./chart/MarkSelector.svelte";
   import PositionalFieldConfig from "./chart/PositionalFieldConfig.svelte";
@@ -157,6 +158,18 @@
             size="sm"
             sameWidth
             fontSize={12}
+            onChange={(newValue) => {
+              component.updateProperty(key, newValue);
+            }}
+          />
+
+          <!-- SWITCHER TABS -->
+        {:else if config.type === "switcher_tab"}
+          <CanvasFieldSwitcher
+            {key}
+            label={config.label ?? key}
+            options={config.meta?.options ?? []}
+            value={localParamValues[key] ?? config.meta?.default}
             onChange={(newValue) => {
               component.updateProperty(key, newValue);
             }}

@@ -1,7 +1,4 @@
-import {
-  sanitizeFieldName,
-  sanitizeValueForVega,
-} from "@rilldata/web-common/components/vega/util";
+import { sanitizeValueForVega } from "@rilldata/web-common/components/vega/util";
 import type { VisualizationSpec } from "svelte-vega";
 import type { Field } from "vega-lite/build/src/channeldef";
 import type { UnitSpec } from "vega-lite/build/src/spec";
@@ -12,73 +9,79 @@ import {
   createMultiLayerBaseSpec,
   createPositionEncoding,
 } from "../builder";
-import type { ChartDataResult, ChartSortDirection } from "../types";
+import type { ChartDataResult } from "../types";
 import type { FunnelChartSpec } from "./FunnelChart";
+import {
+  createFunnelSortEncoding,
+  getFormatType,
+  getMultiMeasures,
+} from "./util";
 
-function createFunnelSortEncoding(sort: ChartSortDirection | undefined) {
-  if (sort && Array.isArray(sort)) {
-    return sort;
+function createModeTransforms(
+  mode: string | undefined,
+  measureField: string | undefined,
+  isMultiMeasure: boolean,
+): Transform[] {
+  if (mode === "order") {
+    return [
+      {
+        window: [{ op: "row_number", as: "funnel_rank" }],
+        sort: [
+          {
+            field: isMultiMeasure ? "value" : measureField!,
+            order: "descending",
+          },
+        ],
+      },
+      {
+        calculate: `pow(0.85, datum.funnel_rank - 1)`,
+        as: "funnel_width",
+      },
+    ];
+  } else {
+    return [
+      {
+        calculate: isMultiMeasure
+          ? `datum.value`
+          : `datum['${sanitizeValueForVega(measureField!)}']`,
+        as: "funnel_width",
+      },
+    ];
   }
-  return null;
 }
 
-export function generateVLFunnelChartSpec(
-  config: FunnelChartSpec,
-  data: ChartDataResult,
-): VisualizationSpec {
-  const spec = createMultiLayerBaseSpec();
-  spec.height = 500;
+function createPercentageTransforms(
+  measureField: string | undefined,
+  funnelSort: string[] | null,
+  stageField: string | undefined,
+  isMultiMeasure: boolean,
+): Transform[] {
+  if (isMultiMeasure) {
+    return [
+      {
+        window: [
+          {
+            op: "first_value",
+            field: "value",
+            as: "reference_value",
+          },
+        ],
+      },
+      {
+        calculate: `round((datum.value / datum.reference_value) * 100) + '%'`,
+        as: "percentage",
+      },
+    ];
+  } else {
+    const transforms: Transform[] = [];
 
-  const colorField =
-    config.color === "measure" ? config.measure?.field : config.stage?.field;
-  const colorType =
-    config.color === "measure"
-      ? config.measure?.type || "quantitative"
-      : "nominal";
-
-  const vegaConfig = createConfig(config);
-
-  const yEncoding = createPositionEncoding(config.stage, data);
-  const tooltip = createDefaultTooltipEncoding(
-    [config.stage, config.measure],
-    data,
-  );
-
-  const funnelSort = createFunnelSortEncoding(config.stage?.sort);
-
-  if (config.measure?.field) {
-    const modeTransforms: Transform[] =
-      config.mode === "order"
-        ? [
-            {
-              window: [{ op: "row_number", as: "funnel_rank" }],
-              sort: [{ field: config.measure.field, order: "descending" }],
-            },
-            {
-              calculate: `pow(0.85, datum.funnel_rank - 1)`,
-              as: "funnel_width",
-            },
-          ]
-        : [
-            {
-              calculate: `datum['${sanitizeValueForVega(config.measure.field)}']`,
-              as: "funnel_width",
-            },
-          ];
-
-    const percentageTransforms: Transform[] = [];
-
-    if (
-      Array.isArray(funnelSort) &&
-      funnelSort.length > 0 &&
-      config.stage?.field
-    ) {
+    if (Array.isArray(funnelSort) && funnelSort.length > 0 && stageField) {
       // Use joinaggregate to create a reference value field
       const firstStageInSort = funnelSort[0];
-      percentageTransforms.push(
+      transforms.push(
         {
           // Mark rows that match the first stage in custom sort
-          calculate: `datum['${sanitizeValueForVega(config.stage.field)}'] === '${sanitizeValueForVega(firstStageInSort)}' ? datum['${sanitizeValueForVega(config.measure.field)}'] : 0`,
+          calculate: `datum['${sanitizeValueForVega(stageField)}'] === '${sanitizeValueForVega(firstStageInSort)}' ? datum['${sanitizeValueForVega(measureField!)}'] : 0`,
           as: "is_reference_stage",
         },
         {
@@ -95,22 +98,126 @@ export function generateVLFunnelChartSpec(
       );
     } else {
       // For non-custom sort, use the first value in data order
-      percentageTransforms.push({
+      transforms.push({
         window: [
           {
             op: "first_value",
-            field: config.measure.field,
+            field: measureField!,
             as: "reference_value",
           },
         ],
       });
     }
 
-    percentageTransforms.push({
-      calculate: `round((datum['${sanitizeValueForVega(config.measure.field)}'] / datum.reference_value) * 100) + '%'`,
+    transforms.push({
+      calculate: `round((datum['${sanitizeValueForVega(measureField!)}'] / datum.reference_value) * 100) + '%'`,
       as: "percentage",
     });
-    spec.transform = [...modeTransforms, ...percentageTransforms];
+
+    return transforms;
+  }
+}
+
+export function generateVLFunnelChartSpec(
+  config: FunnelChartSpec,
+  data: ChartDataResult,
+): VisualizationSpec {
+  const spec = createMultiLayerBaseSpec();
+  spec.height = 500;
+
+  const isMultiMeasure = config.breakdownMode === "measures";
+
+  const measureDisplayNames: Record<string, string> = {};
+  if (isMultiMeasure && config.measure?.field) {
+    const measures = getMultiMeasures(config.measure);
+    measures.forEach((measure) => {
+      measureDisplayNames[measure] =
+        data.fields[measure]?.displayName || measure;
+    });
+  }
+  let colorField: string | undefined;
+  let colorType: string = "nominal";
+
+  if (isMultiMeasure) {
+    if (config.color === "name") {
+      colorField = "Measure";
+      colorType = "nominal";
+    } else if (config.color === "value") {
+      colorField = "value";
+      colorType = "quantitative";
+    }
+  } else {
+    // In dimension mode, color by stage or measure
+    colorField =
+      config.color === "measure" ? config.measure?.field : config.stage?.field;
+    colorType =
+      config.color === "measure"
+        ? config.measure?.type || "quantitative"
+        : "nominal";
+  }
+
+  const vegaConfig = createConfig(config);
+
+  const yEncoding = isMultiMeasure
+    ? { field: "Measure", type: "nominal" as const }
+    : createPositionEncoding(config.stage, data);
+
+  const tooltip = isMultiMeasure
+    ? [
+        {
+          field: "measure_label",
+          type: "nominal" as const,
+          title: "Measure",
+        },
+        { field: "value", title: "Value", type: "quantitative" as const },
+      ]
+    : createDefaultTooltipEncoding([config.stage, config.measure], data);
+
+  const funnelSort = isMultiMeasure
+    ? getMultiMeasures(config.measure)
+    : createFunnelSortEncoding(config.stage?.sort);
+
+  // Add transforms
+  const transforms: Transform[] = [];
+
+  if (isMultiMeasure) {
+    const measures = getMultiMeasures(config.measure);
+
+    // Transform data for multi-measure funnel
+    transforms.push(
+      {
+        fold: measures,
+        as: ["Measure", "value"],
+      },
+      {
+        calculate:
+          Object.entries(measureDisplayNames)
+            .map(([key, value]) => `datum.Measure === '${key}' ? '${value}' : `)
+            .join("") + "datum.Measure",
+        as: "measure_label",
+      },
+    );
+  }
+
+  if (config.measure?.field || isMultiMeasure) {
+    const modeTransforms = createModeTransforms(
+      config.mode,
+      config.measure?.field,
+      isMultiMeasure,
+    );
+
+    const percentageTransforms = createPercentageTransforms(
+      config.measure?.field,
+      Array.isArray(funnelSort) ? funnelSort : null,
+      config.stage?.field,
+      isMultiMeasure,
+    );
+
+    transforms.push(...modeTransforms, ...percentageTransforms);
+  }
+
+  if (transforms.length > 0) {
+    spec.transform = transforms;
   }
 
   spec.encoding = {
@@ -144,7 +251,11 @@ export function generateVLFunnelChartSpec(
       },
       color: {
         field: colorField,
-        type: colorType === "value" ? "nominal" : colorType,
+        type: (colorType === "value" ? "nominal" : colorType) as
+          | "quantitative"
+          | "ordinal"
+          | "nominal"
+          | "temporal",
         legend: null,
       },
     },
@@ -190,15 +301,13 @@ export function generateVLFunnelChartSpec(
         stack: "center",
       },
       text: {
-        field: config.measure?.field,
-        type:
-          config.measure?.type === "value"
+        field: isMultiMeasure ? "value" : config.measure?.field,
+        type: isMultiMeasure
+          ? "quantitative"
+          : config.measure?.type === "value"
             ? "nominal"
             : config.measure?.type || "quantitative",
-        ...(config.measure?.type === "quantitative" &&
-          config.measure?.field && {
-            formatType: sanitizeFieldName(config.measure.field),
-          }),
+        formatType: getFormatType(config.measure, isMultiMeasure),
       },
     },
   };
@@ -218,10 +327,15 @@ export function generateVLFunnelChartSpec(
         type: "quantitative",
         stack: "center",
       },
-      text: {
-        field: config.stage?.field,
-        type: "nominal",
-      },
+      text: isMultiMeasure
+        ? {
+            field: "measure_label",
+            type: "nominal",
+          }
+        : {
+            field: config.stage?.field,
+            type: "nominal",
+          },
     },
   };
 
