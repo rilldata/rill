@@ -64,7 +64,28 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 					return err
 				}
 
-				if currentDir == homeDir {
+				// Check for WSL-specific issues
+				if cmdutil.IsWSL() && cmdutil.IsWindowsPathInWSL(currentDir) {
+					ch.PrintfWarn("WSL Warning: You appear to be running Rill from a Windows directory while in WSL.\n\n")
+					ch.PrintfWarn("This can cause issues with file permissions and path handling. For the best experience, please:\n")
+					ch.PrintfWarn("1. Navigate to your WSL home directory: cd ~\n")
+					ch.PrintfWarn("2. Or navigate to a WSL directory: cd /home/yourusername/your-project\n")
+					ch.PrintfWarn("3. Then run rill start again.\n\n")
+					ch.PrintfWarn("Current directory: %s\n", currentDir)
+					ch.PrintfWarn("Suggested WSL directory: %s\n\n", cmdutil.GetWSLHomeDirectory())
+					
+					confirm, err := cmdutil.ConfirmPrompt(
+						"Would you like to continue anyway? (This may cause issues)",
+						"", false,
+					)
+					if err != nil {
+						return err
+					}
+					if !confirm {
+						ch.PrintfWarn("Aborted. Please navigate to a WSL directory and try again.\n")
+						return nil
+					}
+				} else if currentDir == homeDir {
 					confirm, err := cmdutil.ConfirmPrompt(
 						"You are trying to start Rill in your home directory, which is not recommended. Are you sure you want to continue?",
 						"", false,
