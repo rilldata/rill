@@ -17,7 +17,7 @@ When using Rill for local development, there are a few options to configure Rill
 
 For more information on supported parameters, see our [Druid connector YAML reference docs](/reference/project-files/connectors#druid).
 
-<img src='/img/reference/olap-engines/druid/druid-parameters.png' class='rounded-gif' />
+<img src='/img/connect/olap-engines/druid/druid-parameters.png' class='rounded-gif' style={{width: '75%', display: 'block', margin: '0 auto'}}/>
 <br />
 
 ```yaml
@@ -48,7 +48,7 @@ If you are facing issues related to DSN connection errors in your dashboards eve
 
 ## Connection String (DSN)
 
-<img src='/img/reference/olap-engines/druid/druid-dsn.png' class='rounded-gif' />
+<img src='/img/connect/olap-engines/druid/druid-dsn.png' class='rounded-gif' style={{width: '75%', display: 'block', margin: '0 auto'}}/>
 <br />
 
 Rill connects to Druid using the [HTTP API](https://druid.apache.org/docs/latest/api-reference/sql-api) and requires a connection string of the following format: `http://<user>:<password>@<host>:<port>/druid/v2/sql`. If `user` or `password` contain special characters, they should be URL encoded (i.e., `p@ssword` -> `p%40ssword`). This should be set in the `connector.druid.dsn` property in Rill.
