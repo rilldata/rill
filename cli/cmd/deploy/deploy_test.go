@@ -10,6 +10,7 @@ import (
 	"github.com/google/go-github/v71/github"
 	"github.com/google/uuid"
 	"github.com/joho/godotenv"
+	"github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/testadmin"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
@@ -75,6 +76,9 @@ olap_connector: duckdb`), 0644)
 	verifyGithubRepoContents(t, ghClient, resp.Project.GitRemote)
 }
 
+// This test require a Github personal access token and refresh token to work
+// Those can be generated using command `rill devtool gh-token` command
+// The refresh token can only be used once to generate a new personal access token and refresh token so the command should be executed everytime before running this test
 func TestGithubDeploy(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping integration test in short mode")
@@ -82,19 +86,21 @@ func TestGithubDeploy(t *testing.T) {
 	err := godotenv.Load("../../../.env")
 	require.NoError(t, err)
 
-	personalAccessToken := os.Getenv("GITHUB_PERSONAL_ACCESS_TOKEN")
+	err = godotenv.Load("../../../.github_env")
+	require.NoError(t, err)
+
+	personalAccessToken := os.Getenv("GH_ACCESS_TOKEN")
 	if personalAccessToken == "" {
-		t.Log("Personal access token required to run this test")
-		t.Log("Get personal access token using `gh auth token` and set `GITHUB_PERSONAL_ACCESS_TOKEN` env.")
-		t.Log("Use `gh auth refresh -s repo,delete_repo to get required scope for this test")
-		t.Fatal("Personal access token not found")
+		t.Fatal("Personal access token not found. Run `rill devtool gh-token` to generate one")
 	}
-	refreshToken := os.Getenv("GITHUB_REFRESH_TOKEN")
+	refreshToken := os.Getenv("GH_REFRESH_TOKEN")
 	if refreshToken == "" {
-		t.Log("Refresh token required to run this test")
-		t.Log("Get refresh token using the script in cli/cmd/deploy and set `GITHUB_REFRESH_TOKEN` env.")
-		t.Fatal("Refresh token not found")
+		t.Fatal("Refresh token not found. Run `rill devtool gh-token` to generate one")
 	}
+
+	// remove .github_env since refresh token can only be used once
+	err = os.Remove("../../../.github_env")
+	require.NoError(t, err)
 
 	// github client
 	ghClient := github.NewTokenClient(t.Context(), personalAccessToken)
@@ -112,12 +118,17 @@ func TestGithubDeploy(t *testing.T) {
 	})
 	u1 := testcli.New(t, adm, c.Token)
 
-	result := u1.Run(t, "org", "create", "github-test")
+	t.Run("self-hosted git deploy", func(t *testing.T) {
+		testSelfHostedDeploy(t, c, ghClient, u1)
+	})
+}
+func testSelfHostedDeploy(t *testing.T, adminClient *client.Client, ghClient *github.Client, adm *testcli.Fixture) {
+	result := adm.Run(t, "org", "create", "github-test")
 	require.Equal(t, 0, result.ExitCode)
 
 	// create a rill project
 	tempDir := t.TempDir()
-	err = os.WriteFile(filepath.Join(tempDir, "rill.yaml"), []byte(`compiler: rillv1
+	err := os.WriteFile(filepath.Join(tempDir, "rill.yaml"), []byte(`compiler: rillv1
 display_name: Untitled Rill Project
 olap_connector: duckdb`), 0644)
 	require.NoError(t, err)
@@ -151,11 +162,11 @@ olap_connector: duckdb`), 0644)
 	require.NoError(t, err, "failed to push to github repo")
 
 	// deploy project backed by github
-	result = u1.Run(t, "deploy", "--interactive=false", "--org=github-test", "--project=self-hosted-deploy", "--skip-deploy=true", "--path="+tempDir)
+	result = adm.Run(t, "deploy", "--interactive=false", "--org=github-test", "--project=self-hosted-deploy", "--skip-deploy=true", "--path="+tempDir)
 	require.Equal(t, 0, result.ExitCode, result.Output)
 
 	// verify the project is correctly created
-	resp, err := c.GetProject(t.Context(), &adminv1.GetProjectRequest{
+	resp, err := adminClient.GetProject(t.Context(), &adminv1.GetProjectRequest{
 		OrganizationName: "github-test",
 		Name:             "self-hosted-deploy",
 	})
@@ -163,12 +174,17 @@ olap_connector: duckdb`), 0644)
 	require.Equal(t, "self-hosted-deploy", resp.Project.Name)
 	require.True(t, resp.Project.ManagedGitId == "")
 
+	// check remote configured in directory
+	remote, err := gitutil.ExtractGitRemote(tempDir, "origin", false)
+	require.NoError(t, err)
+	require.Equal(t, *repo.CloneURL, remote.URL)
+
 	// redeploy the same project with changes
 	err = os.Mkdir(filepath.Join(tempDir, "models"), 0755)
 	require.NoError(t, err)
 	err = os.WriteFile(filepath.Join(tempDir, "models/model.sql"), []byte(`SELECT 1 AS one`), 0644)
 	require.NoError(t, err)
-	result = u1.Run(t, "project", "deploy", "--interactive=false", "--org=github-test", "--project=self-hosted-deploy", "--skip-deploy=true", "--path="+tempDir)
+	result = adm.Run(t, "deploy", "--interactive=false", "--org=github-test", "--project=self-hosted-deploy", "--skip-deploy=true", "--path="+tempDir)
 	require.Equal(t, 0, result.ExitCode, result.Output)
 
 	// verify changes are pushed to Github repo
