@@ -341,6 +341,8 @@
       }),
     );
 
+    console.log("this one", curExcludeMode, excludeMode);
+
     // Handle exclude mode toggle
     if (curExcludeMode !== excludeMode) {
       onToggleFilterMode();
