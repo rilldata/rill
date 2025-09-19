@@ -565,7 +565,7 @@ type DeploymentAnnotations struct {
 }
 
 func (da *DeploymentAnnotations) ToMap() map[string]string {
-	res := make(map[string]string, len(da.projAnnotations)+8)
+	res := make(map[string]string, len(da.projAnnotations)+7)
 	for k, v := range da.projAnnotations {
 		res[k] = v
 	}
