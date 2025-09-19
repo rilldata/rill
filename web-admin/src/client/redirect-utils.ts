@@ -1,6 +1,4 @@
-import {
-  ADMIN_URL,
-} from "@rilldata/web-admin/client/http-client";
+import { ADMIN_URL } from "@rilldata/web-admin/client/http-client";
 import { redirect } from "@sveltejs/kit";
 
 /**
