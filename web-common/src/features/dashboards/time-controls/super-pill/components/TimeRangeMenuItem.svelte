@@ -1,19 +1,24 @@
 <script lang="ts">
   import Calendar from "@rilldata/web-common/components/icons/Calendar.svelte";
   import SyntaxElement from "./SyntaxElement.svelte";
+  import type { RillTime } from "../../../url-state/time-ranges/RillTime";
 
-  export let range: string;
-  export let label: string;
-  export let selected: boolean;
+  export let rillTime: RillTime;
+  export let timeString: string | undefined;
   export let onClick: (range: string) => void;
+
+  $: label = rillTime.getLabel();
+  $: range = rillTime.interval.toString();
+
+  $: selected = !!timeString?.startsWith(range);
 </script>
 
 <div
   role="presentation"
+  class="group h-7 pr-2 overflow-hidden hover:bg-gray-100 rounded-sm w-full select-none flex items-center"
   on:click={() => {
     onClick(range);
   }}
-  class="group h-7 pr-2 overflow-hidden hover:bg-gray-100 rounded-sm w-full select-none flex items-center"
 >
   <button
     class:font-bold={selected}

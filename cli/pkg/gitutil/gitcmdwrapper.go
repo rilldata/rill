@@ -116,8 +116,8 @@ func RunGitPull(ctx context.Context, path string, discardLocal bool, remote, rem
 		if st.LocalCommits > 0 {
 			// reset the local commits and stash the changes
 			cmd := exec.CommandContext(ctx, "git", "-C", path, "reset", "--mixed", fmt.Sprintf("HEAD~%d", st.LocalCommits))
-			if err := cmd.Run(); err != nil {
-				return "", fmt.Errorf("failed to reset local commits: %w", err)
+			if out, err := cmd.CombinedOutput(); err != nil {
+				return "", fmt.Errorf("failed to reset local commits: %s (%w)", string(out), err)
 			}
 			// stash the changes
 			cmd = exec.CommandContext(ctx, "git", "-C", path, "stash", "--include-untracked")
