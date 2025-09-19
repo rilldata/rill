@@ -4,19 +4,10 @@ import {
   getDimensionDisplayName,
   getMeasureDisplayName,
 } from "@rilldata/web-common/features/dashboards/filters/getDisplayName";
-import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import { isGrainBigger } from "@rilldata/web-common/lib/time/grains";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import { derived } from "svelte/store";
-import { parseDocument } from "yaml";
-
-export function getParsedDocument(fileArtifact: FileArtifact) {
-  const { editorContent } = fileArtifact;
-  return derived([editorContent], ([$localContent]) => {
-    return parseDocument($localContent ?? "");
-  });
-}
 
 export function useMetricFieldData(
   ctx: CanvasStore,

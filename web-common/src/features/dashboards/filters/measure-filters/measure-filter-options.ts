@@ -18,6 +18,24 @@ export enum MeasureFilterOperation {
   NotBetween = "NotBetween",
 }
 
+export const OperationShortHandMap: Map<string, MeasureFilterOperation> =
+  new Map([
+    ["eq", MeasureFilterOperation.Equals],
+    ["neq", MeasureFilterOperation.NotEquals],
+    ["gt", MeasureFilterOperation.GreaterThan],
+    ["gte", MeasureFilterOperation.GreaterThanOrEquals],
+    ["lt", MeasureFilterOperation.LessThan],
+    ["lte", MeasureFilterOperation.LessThanOrEquals],
+    ["bt", MeasureFilterOperation.Between],
+    ["nbt", MeasureFilterOperation.NotBetween],
+  ]);
+
+export const ReverseOperationShortHandMap: Map<MeasureFilterOperation, string> =
+  new Map();
+for (const [key, value] of OperationShortHandMap) {
+  ReverseOperationShortHandMap.set(value, key);
+}
+
 export const MeasureFilterToProtoOperation = {
   [MeasureFilterOperation.Equals]: V1Operation.OPERATION_EQ,
   [MeasureFilterOperation.NotEquals]: V1Operation.OPERATION_NEQ,

@@ -13,7 +13,6 @@
   import SuperPill from "@rilldata/web-common/features/dashboards/time-controls/super-pill/SuperPill.svelte";
   import { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
   import { DateTime, Interval } from "luxon";
-  import { flip } from "svelte/animate";
   import { fly } from "svelte/transition";
   import CanvasComparisonPill from "./CanvasComparisonPill.svelte";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -43,10 +42,10 @@
         setTemporaryFilterName,
         clearAllFilters,
         dimensionHasFilter,
-        temporaryFilters,
         allDimensionFilterItems,
         allMeasureFilterItems,
         measureHasFilter,
+        defaultFilterProperties,
       },
       spec: { canvasSpec, allDimensions, allSimpleMeasures },
       timeControls: {
@@ -64,14 +63,18 @@
 
   $: activeTimeZone = $selectedTimezone;
 
+  $: ({
+    allowFilterAdd,
+    defaultPreset: { timeRange: defaultTimeRange } = {},
+    timeZones: availableTimeZones = [],
+    timeRanges = [],
+  } = $canvasSpec || {});
+
   $: selectedComparisonTimeRange =
     $comparisonRangeStateStore?.selectedComparisonTimeRange;
 
   $: selectedRangeAlias = selectedTimeRange?.name;
   $: activeTimeGrain = selectedTimeRange?.interval;
-  $: defaultTimeRange = $canvasSpec?.defaultPreset?.timeRange;
-  $: availableTimeZones = $canvasSpec?.timeZones ?? [];
-  $: timeRanges = $canvasSpec?.timeRanges ?? [];
 
   $: interval = selectedTimeRange
     ? Interval.fromDateTimes(
@@ -84,10 +87,14 @@
 
   $: allMeasureFilters = $allMeasureFilterItems;
 
+  $: defaultProperties = $defaultFilterProperties;
+
   // hasFilter only checks for complete filters and excludes temporary ones
-  $: hasFilters =
-    allDimensionFilters.size + allMeasureFilters.length >
-    $temporaryFilters.size;
+  $: hasClearableFilters =
+    Array.from(allDimensionFilters.keys()).some(
+      (name) => !defaultProperties.get(name)?.locked,
+    ) ||
+    allMeasureFilters.some(({ name }) => !defaultProperties.get(name)?.locked);
 
   $: isComplexFilter = isExpressionUnsupported($whereFilter);
 
@@ -198,66 +205,73 @@
             (d) => d.name === name || d.column === name,
           )}
           {@const dimensionName = dimension?.name || dimension?.column}
-          <div animate:flip={{ duration: 200 }}>
-            {#if dimensionName && metricsViewNames?.length}
-              <DimensionFilter
-                {metricsViewNames}
-                {readOnly}
-                {name}
-                {label}
-                {mode}
-                {selectedValues}
-                {inputText}
-                {timeStart}
-                {timeEnd}
-                openOnMount={justAdded}
-                timeControlsReady={!!$timeRangeStateStore}
-                excludeMode={!isInclude}
-                whereFilter={$whereFilter}
-                onRemove={() => removeDimensionFilter(name)}
-                onToggleFilterMode={() => toggleDimensionFilterMode(name)}
-                onSelect={(value) =>
-                  toggleMultipleDimensionValueSelections(name, [value], true)}
-                onMultiSelect={(values) =>
-                  toggleMultipleDimensionValueSelections(name, values, true)}
-                onApplyInList={(values) =>
-                  applyDimensionInListMode(name, values)}
-                onApplyContainsMode={(searchText) =>
-                  applyDimensionContainsMode(name, searchText)}
-              />
-            {/if}
-          </div>
+          {@const properties = defaultProperties.get(name)}
+          {#if dimensionName && metricsViewNames?.length && !properties?.hidden}
+            <DimensionFilter
+              {readOnly}
+              locked={properties?.locked}
+              removable={!properties?.unremovable}
+              {metricsViewNames}
+              {name}
+              {label}
+              limit={properties?.limit}
+              {mode}
+              {selectedValues}
+              {inputText}
+              {timeStart}
+              {timeEnd}
+              openOnMount={justAdded}
+              timeControlsReady={!!$timeRangeStateStore}
+              excludeMode={!isInclude}
+              whereFilter={$whereFilter}
+              onRemove={() => removeDimensionFilter(name)}
+              onToggleFilterMode={() => toggleDimensionFilterMode(name)}
+              onSelect={(value) =>
+                toggleMultipleDimensionValueSelections(name, [value], true)}
+              onMultiSelect={(values) =>
+                toggleMultipleDimensionValueSelections(name, values, true)}
+              onApplyInList={(values) => applyDimensionInListMode(name, values)}
+              onApplyContainsMode={(searchText) =>
+                applyDimensionContainsMode(name, searchText)}
+            />
+          {/if}
         {/each}
         {#each allMeasureFilters as { name, label, dimensionName, filter, dimensions: dimensionsForMeasure } (name)}
-          <div animate:flip={{ duration: 200 }}>
+          {@const properties = defaultProperties.get(name)}
+          {#if !properties?.hidden}
             <MeasureFilter
+              locked={properties?.locked}
+              removable={!properties?.unremovable}
               allDimensions={dimensionsForMeasure || $allDimensions}
               {name}
               {label}
               {dimensionName}
+              removeOnOutsideClick={false}
               {filter}
               onRemove={() => removeMeasureFilter(dimensionName, name)}
               onApply={({ dimension, oldDimension, filter }) =>
                 handleMeasureFilterApply(dimension, name, oldDimension, filter)}
             />
-          </div>
+          {/if}
         {/each}
       {/if}
 
       {#if !readOnly}
-        <FilterButton
-          allDimensions={$allDimensions}
-          filteredSimpleMeasures={$allSimpleMeasures}
-          dimensionHasFilter={$dimensionHasFilter}
-          measureHasFilter={$measureHasFilter}
-          setTemporaryFilterName={(n) => {
-            justAdded = true;
-            setTemporaryFilterName(n);
-          }}
-        />
+        {#if allowFilterAdd}
+          <FilterButton
+            allDimensions={$allDimensions}
+            filteredSimpleMeasures={$allSimpleMeasures}
+            dimensionHasFilter={$dimensionHasFilter}
+            measureHasFilter={$measureHasFilter}
+            setTemporaryFilterName={(n) => {
+              justAdded = true;
+              setTemporaryFilterName(n, false);
+            }}
+          />
+        {/if}
         <!-- if filters are present, place a chip at the end of the flex container 
       that enables clearing all filters -->
-        {#if hasFilters}
+        {#if hasClearableFilters}
           <Button type="text" onClick={clearAllFilters}>Clear filters</Button>
         {/if}
       {/if}

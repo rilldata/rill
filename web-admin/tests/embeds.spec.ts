@@ -178,6 +178,8 @@ test.describe("Embeds", () => {
         );
       });
 
+      await embedPage.waitForTimeout(500);
+
       await expect(frame.getByLabel("overall_spend KPI data")).toContainText(
         /Advertising Spend Overall\s*\$2,066\s*\+\$1,926 \+1k%\s*vs previous week/,
       );

@@ -41,12 +41,15 @@
   export let excludeMode: boolean;
   export let openOnMount: boolean = true;
   export let readOnly: boolean = false;
+  export let limit: number | undefined = undefined;
   export let timeStart: string | undefined;
   export let timeEnd: string | undefined;
   export let timeControlsReady: boolean | undefined;
   export let smallChip = false;
   export let whereFilter: V1Expression;
   export let side: "top" | "right" | "bottom" | "left" = "bottom";
+  export let removable = true;
+  export let locked = false;
   export let onRemove: () => void;
   export let onApplyInList: (values: string[]) => void;
   export let onSelect: (value: string) => void;
@@ -109,11 +112,13 @@
       ),
     },
   );
+
   $: ({
     data: searchResults,
     error: errorFromSearchResults,
     isFetching: isFetchingFromSearchResults,
   } = $searchResultsQuery);
+
   $: correctedSearchResults = enableSearchQuery ? searchResults : [];
 
   $: enableSearchCountQuery =
@@ -142,11 +147,13 @@
       ),
     },
   );
+
   $: ({
     data: allSearchResultsCount,
     error: errorFromAllSearchResultsCount,
     isFetching: isFetchingFromAllSearchResultsCount,
   } = $allSearchResultsCountQuery);
+
   $: searchResultCountText = enableSearchCountQuery
     ? curMode === DimensionFilterMode.Contains
       ? `${allSearchResultsCount} results`
@@ -178,6 +185,8 @@
     inListTooLong,
   );
 
+  $: limitIsOne = limit === 1;
+
   // Split results into checked and unchecked for better UX (like SelectionDropdown)
   // Use actual selectedValues (not proxy) so items only sort after dropdown closes
   $: ({ checkedItems, uncheckedItems } = getItemLists(
@@ -186,6 +195,8 @@
     selectedValues,
     curSearchText,
   ));
+
+  $: atLimit = Boolean(limit && effectiveSelectedValues.length >= limit);
 
   /**
    * Reset filter settings based on params to the component.
@@ -353,9 +364,14 @@
     if (curMode === DimensionFilterMode.Select) {
       // Update proxy instead of calling onSelect immediately
       if (selectedValuesProxy.includes(name)) {
+        if (limitIsOne) return;
         selectedValuesProxy = selectedValuesProxy.filter((v) => v !== name);
       } else {
-        selectedValuesProxy = [...selectedValuesProxy, name];
+        if (limitIsOne) {
+          selectedValuesProxy = [name];
+        } else {
+          selectedValuesProxy = [...selectedValuesProxy, name];
+        }
       }
     } else {
       onSelect(name);
@@ -377,7 +393,7 @@
   closeOnItemClick={false}
   onOpenChange={handleOpenChange}
 >
-  <DropdownMenu.Trigger asChild let:builder>
+  <DropdownMenu.Trigger asChild let:builder disabled={locked}>
     <Tooltip
       activeDelay={60}
       alignment="start"
@@ -393,7 +409,8 @@
         label={`${name} filter`}
         theme
         on:remove={onRemove}
-        removable={!readOnly}
+        {locked}
+        removable={!readOnly && removable}
         {readOnly}
         removeTooltipText="remove {selectedValues.length} value{selectedValues.length !==
         1
@@ -421,7 +438,9 @@
             <svelte:fragment slot="name">{name}</svelte:fragment>
             <svelte:fragment slot="description">dimension</svelte:fragment>
           </TooltipTitle>
-          Click to edit the the filters in this dimension
+          {#if !locked}
+            Click to edit the the filters in this dimension
+          {/if}
         </TooltipContent>
       </div>
     </Tooltip>
@@ -436,11 +455,13 @@
   >
     <div class="flex flex-col px-3 pt-3">
       <div class="flex flex-row">
-        <DimensionFilterModeSelector
-          bind:mode={curMode}
-          onModeChange={handleModeChange}
-          size="md"
-        />
+        {#if limit !== 1}
+          <DimensionFilterModeSelector
+            bind:mode={curMode}
+            onModeChange={handleModeChange}
+            size="md"
+          />
+        {/if}
         <Search
           bind:value={curSearchText}
           label={`${name} search list`}
@@ -500,6 +521,7 @@
                 role="menuitem"
                 checked={selected}
                 showXForSelected={curExcludeMode}
+                disabled={locked || (!selected && atLimit && !limitIsOne)}
                 on:click={() => handleItemClick(name)}
               >
                 <span>
@@ -534,7 +556,9 @@
               role="menuitem"
               checked={curMode === DimensionFilterMode.Select && selected}
               showXForSelected={curExcludeMode}
-              disabled={curMode !== DimensionFilterMode.Select}
+              disabled={locked ||
+                curMode !== DimensionFilterMode.Select ||
+                (!selected && atLimit && !limitIsOne)}
               on:click={() => handleItemClick(name)}
             >
               <span>
@@ -558,10 +582,12 @@
     </div>
 
     <DimensionFilterFooter
+      {locked}
       mode={curMode}
       excludeMode={curExcludeMode}
       {allSelected}
       {disableApplyButton}
+      hideSelectAll={limit === 1}
       onToggleExcludeMode={handleToggleExcludeMode}
       {onToggleSelectAll}
       {onApply}

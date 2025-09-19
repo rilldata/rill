@@ -102,8 +102,6 @@
 
   $: selectedLabel = getRangeLabel(timeString);
 
-  $: if (truncationGrain) onTimeGrainSelect(truncationGrain);
-
   $: zoneAbbreviation = getAbbreviationForIANA(maxDate, zone);
 
   function handleRangeSelect(range: string, ignoreSnap?: boolean) {
@@ -155,6 +153,7 @@
       snapToEnd: grain === truncationGrain ? false : snapToEnd,
       ref: ref,
     });
+    if (grain) onTimeGrainSelect(grain);
 
     onSelectRange(newString);
   }
