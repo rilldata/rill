@@ -466,7 +466,7 @@ export class Filters {
 
     const excludeMode = get(this.dimensionFilterExcludeMode);
     const isExclude = !!excludeMode.get(dimensionName);
-    console.log("apply", { isExclude });
+
     const wf = get(this.whereFilter);
 
     // Use the derived selector:
@@ -571,7 +571,7 @@ export class Filters {
   toggleDimensionFilterMode = (dimensionName: string) => {
     const excludeMode = get(this.dimensionFilterExcludeMode);
     const newExclude = !excludeMode.get(dimensionName);
-    console.log({ newExclude });
+
     excludeMode.set(dimensionName, newExclude);
     this.dimensionFilterExcludeMode.set(excludeMode);
 
