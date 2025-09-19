@@ -187,10 +187,14 @@ message OLAPListTablesRequest {
   // Has the same syntax and behavior as ILIKE in SQL.
   // If the connector supports schema/database names, it searches against both the plain table name and the fully qualified table name.
   string search_pattern = 3;
+  uint32 page_size = 4 [(validate.rules).uint32 = {ignore_empty: true, lte: 100}];
+  string page_token = 5;
+
 }
 
 message OLAPListTablesResponse {
   repeated OlapTableInfo tables = 1;
+  string next_page_token = 2;
 }
 
 message OlapTableInfo { 
@@ -225,10 +229,13 @@ message OLAPGetTableResponse {
 message ListDatabaseSchemasRequest {
   string instance_id = 1;
   string connector = 2;
+  uint32 page_size = 3 [(validate.rules).uint32 = {ignore_empty: true, lte: 100}];
+  string page_token = 4;
 }
 
 message ListDatabaseSchemasResponse {
   repeated DatabaseSchemaInfo database_schemas = 1;
+  string next_page_token = 2;
 }
 
 message DatabaseSchemaInfo {
@@ -241,10 +248,13 @@ message ListTablesRequest {
   string connector = 2;
   string database = 3;
   string database_schema = 4;
+  uint32 page_size = 5 [(validate.rules).uint32 = {ignore_empty: true, lte: 100}];
+  string page_token = 6;
 }
 
 message ListTablesResponse {
   repeated TableInfo tables = 1;
+  string next_page_token = 2;
 }
 
 message TableInfo { 

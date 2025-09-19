@@ -5,30 +5,6 @@ sidebar_label: Create Canvas Dashboards
 sidebar_position: 05
 ---
 
-<div style={{ 
-  position: "relative", 
-  width: "100%", 
-  paddingTop: "56.25%", 
-  borderRadius: "15px",  /* Softer corners */
-  boxShadow: "0px 4px 15px rgba(0, 0, 0, 0.2)"  /* Shadow effect */
-}}>
-  <iframe credentialless="true"
-    src="https://www.youtube.com/embed/Idr2bvQw9_I?si=-xB0ppGOIavlmsE-"
-    frameBorder="0"
-    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-    allowFullScreen
-    style={{
-      position: "absolute",
-      top: 0,
-      left: 0,
-      width: "100%",
-      height: "100%",
-      borderRadius: "10px", 
-    }}
-  ></iframe>
-</div>
-<br/>
-----
 While Rill's signature **[Explore dashboards](/build/dashboards/dashboards.md)** let you slice, dice, and interact with your data in our suggested layout, **Canvas dashboards** let you define your own visualizations of data from multiple [metrics views](/build/metrics-view/metrics-view.md) and arrange them into your preferred layout. 
 
 You can add the following widgets to a Canvas dashboard:
@@ -68,6 +44,16 @@ While we encourage creating Canvas dashboards via the visual editing experience 
 <img src = '/img/build/canvas/code-toggle.png' class='rounded-gif' />
 
 
+## Define Dashboard Access
+
+Along with [metrics views security policies](/build/metrics-view/security), you can set access on the dashboard level. Access policies will be combined with metrics view policies using a logical AND, so if a user doesn’t pass both, they won’t get access to the dashboard. For more information, see [Data Access](/build/metrics-view/security#dashboard-access) for more information.
+
+
+:::note Dashboard Properties
+
+For more details about available configurations and properties, check our [Dashboard YAML](/reference/project-files/canvas-dashboards) reference page.
+
+:::
 ## Example Canvas Dashboards 
 Here are a few deployed examples of Canvas dashboards that you can check out!
 

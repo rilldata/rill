@@ -12,7 +12,9 @@
   import KeyboardKey from "@rilldata/web-common/components/calls-to-action/KeyboardKey.svelte";
   import GithubFail from "@rilldata/web-common/components/icons/GithubFail.svelte";
 
-  const remote = new URLSearchParams(window.location.search).get("remote");
+  const urlParams = new URLSearchParams(window.location.search);
+  const remote = urlParams.get("remote");
+  const redirect = urlParams.get("redirect");
 </script>
 
 <svelte:head>
@@ -33,7 +35,10 @@
       <KeyboardKey label="Control" /> + <KeyboardKey label="C" /> in the CLI to cancel
       the connect request.)
     </CtaMessage>
-    <CtaButton variant="primary" onClick={() => redirectToGithubLogin(remote)}>
+    <CtaButton
+      variant="primary"
+      onClick={() => redirectToGithubLogin(remote, redirect, "connect")}
+    >
       Connect to GitHub
     </CtaButton>
   </CtaContentContainer>

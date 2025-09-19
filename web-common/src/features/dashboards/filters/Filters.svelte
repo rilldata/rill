@@ -358,7 +358,18 @@
 <div class="flex flex-col gap-y-2 size-full">
   {#if hasTimeSeries}
     <div class="flex flex-row flex-wrap gap-x-2 gap-y-1.5 items-center">
-      <Calendar size="16px" />
+      <Tooltip.Root openDelay={0}>
+        <Tooltip.Trigger class="cursor-default">
+          <Calendar size="16px" />
+        </Tooltip.Trigger>
+        <Tooltip.Content side="bottom" sideOffset={10}>
+          <Metadata
+            timeZone={activeTimeZone}
+            timeStart={allTimeRange?.start}
+            timeEnd={allTimeRange?.end}
+          />
+        </Tooltip.Content>
+      </Tooltip.Root>
       {#if allTimeRange?.start && allTimeRange?.end}
         <SuperPill
           {allTimeRange}
@@ -401,6 +412,7 @@
           <Tooltip.Trigger>
             <span class="text-gray-600 italic">
               as of <Timestamp
+                id="filter-bar-as-of"
                 italic
                 suppress
                 showDate={false}

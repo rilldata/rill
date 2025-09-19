@@ -160,7 +160,7 @@ func (r *Result) Close() error {
 type OLAPInformationSchema interface {
 	// All returns metadata about all tables and views.
 	// The like argument can optionally be passed to filter the tables by name.
-	All(ctx context.Context, like string) ([]*OlapTable, error)
+	All(ctx context.Context, like string, pageSize uint32, pageToken string) ([]*OlapTable, string, error)
 	// Lookup returns metadata about a specific tables and views.
 	Lookup(ctx context.Context, db, schema, name string) (*OlapTable, error)
 	// LoadPhysicalSize populates the PhysicalSizeBytes field of table metadata.
@@ -555,7 +555,7 @@ func (d Dialect) IntervalSubtract(tsExpr, unitExpr string, grain runtimev1.TimeG
 	case DialectClickHouse, DialectDruid, DialectDuckDB:
 		return fmt.Sprintf("(%s - INTERVAL (%s) %s)", tsExpr, unitExpr, d.ConvertToDateTruncSpecifier(grain)), nil
 	case DialectPinot:
-		return fmt.Sprintf("(dateAdd('%s', -1 * %s, %s))", d.ConvertToDateTruncSpecifier(grain), unitExpr, tsExpr), nil
+		return fmt.Sprintf("CAST((dateAdd('%s', -1 * %s, %s)) AS TIMESTAMP)", d.ConvertToDateTruncSpecifier(grain), unitExpr, tsExpr), nil
 	default:
 		return "", fmt.Errorf("unsupported dialect %q", d)
 	}
@@ -579,7 +579,7 @@ func (d Dialect) SelectTimeRangeBins(start, end time.Time, grain runtimev1.TimeG
 		}
 		sb.WriteString(")")
 		return sb.String(), args, nil
-	case DialectDruid:
+	case DialectDruid, DialectPinot:
 		// generate select like - SELECT * FROM (
 		//  VALUES
 		//  (CAST('2006-01-02T15:04:05Z' AS TIMESTAMP)),

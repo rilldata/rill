@@ -33,7 +33,7 @@ Connector YAML files define how Rill connects to external data sources and OLAP 
 
 ### _Other_
 - [**HTTPS**](#https) - Public files via HTTP/HTTPS
-- [**OpenAPI**](#openapi) - OpenAPI data
+- [**OpenAI**](#openai) - OpenAI data
 - [**Salesforce**](#salesforce) - Salesforce data
 - [**Slack**](#slack) - Slack data
 
@@ -255,9 +255,13 @@ _[string]_ - Cluster name, required for running distributed queries
 
 _[boolean]_ - Controls whether to log raw SQL queries 
 
-### `settings_override`
+### `query_settings_override`
 
-_[string]_ - override the default settings used in queries. example `readonly = 1, session_timezone = 'UTC'` 
+_[string]_ - override the default settings used in queries. Changing the default settings can lead to incorrect query results and is generally not recommended. If you need to add settings, use `query_settings` 
+
+### `query_settings`
+
+_[string]_ - query settings to be set on dashboard queries. `query_settings_override` takes precedence over these settings and if set these are ignored. Each setting must be separated by a comma. Example `max_threads = 8, max_memory_usage = 10000000000` 
 
 ### `embed_port`
 
@@ -463,7 +467,7 @@ headers:
 
 ### `driver`
 
-_[string]_ - Refers to the driver type and must be driver `duckdb` _(required)_
+_[string]_ - Refers to the driver type and must be driver `motherduck` _(required)_
 
 ### `path`
 
@@ -473,17 +477,21 @@ _[string]_ - Path to your MD database _(required)_
 
 _[string]_ - Define your schema if not main, uses main by default 
 
+### `token`
+
+_[string]_ - MotherDuck token _(required)_
+
 ### `init_sql`
 
-_[string]_ - SQL executed during database initialization. _(required)_
+_[string]_ - SQL executed during database initialization. 
 
 ```yaml
 # Example: MotherDuck connector configuration
 type: connector # Must be `connector` (required)
-driver: duckdb # Must be `motherduck` _(required)_
+driver: motherduck # Must be `motherduck` _(required)_
+token: '{{ .env.connector.motherduck.token }}' # Set the MotherDuck token from your .env file _(required)_
 path: "md:my_database" # Path to your MD database  
 schema_name: "my_schema" # Define your schema if not main, uses main by default  
-init_sql: "INSTALL 'motherduck'; LOAD 'motherduck'; SET motherduck_token='{{ .env.motherduck_token }}';" # Install and load the MotherDuck extension                                 
 ```
 
 ## MySQL
@@ -532,11 +540,11 @@ password: "mypassword" # Password for authentication
 ssl_mode: "DISABLED" # SSL mode can be DISABLED, PREFERRED or REQUIRED
 ```
 
-## OpenAPI
+## OpenAI
 
 ### `driver`
 
-_[string]_ - The driver type, must be set to "openapi" 
+_[string]_ - The driver type, must be set to "openai" 
 
 ### `api_key`
 
@@ -559,9 +567,9 @@ _[string]_ - The type of OpenAI API to use
 _[string]_ - The version of the OpenAI API to use (e.g., '2023-05-15'). Required when API Type is AZURE or AZURE_AD 
 
 ```yaml
-# Example: OpenAPI connector configuration
+# Example: OpenAI connector configuration
 type: connector # Must be `connector` (required)
-driver: openapi # Must be `openapi` _(required)_
+driver: openai # Must be `openai` _(required)_
 api_key: "my-api-key" # API key for connecting to OpenAI  
 model: "gpt-4o" # The OpenAI model to use (e.g., 'gpt-4o')  
 base_url: "https://api.openai.com/v1" # The base URL for the OpenAI API (e.g., 'https://api.openai.com/v1')  
@@ -832,20 +840,94 @@ bot_token: "xoxb-my-bot-token" # Bot token used for authenticating Slack API req
 
 _[string]_ - Refers to the driver type and must be driver `snowflake` _(required)_
 
+### `account`
+
+_[string]_ - Snowflake account identifier. To find your Snowflake account identifier, look at your Snowflake account URL. The account identifier is everything before .snowflakecomputing.com 
+
+### `user`
+
+_[string]_ - Username for the Snowflake connection. 
+
+### `password`
+
+_[string]_ - Password for the Snowflake connection. _(deprecated, use privateKey instead)_ 
+
+### `privateKey`
+
+_[string]_ - Private key for JWT authentication.
+:::tip
+Private key must be generated as a **PKCS#8 (nocrypt) key**, since the Snowflake Go driver
+only supports unencrypted private keys. After generating, it must be **base64 URL encoded**.
+
+Example commands to generate and encode:
+
+```bash
+# Generate a 2048-bit unencrypted PKCS#8 private key
+openssl genrsa 2048 | openssl pkcs8 -topk8 -inform PEM -out rsa_key.p8 -nocrypt
+
+# Convert URL safe format for Snowflake
+cat rsa_key.p8 | grep -v "\----" | tr -d '\n' | tr '+/' '-_'
+```
+See: https://docs.snowflake.com/en/user-guide/key-pair-auth
+:::
+ 
+
+### `authenticator`
+
+_[string]_ - Optional authenticator type (e.g., SNOWFLAKE_JWT). 
+
+### `database`
+
+_[string]_ - Name of the Snowflake database. 
+
+### `schema`
+
+_[string]_ - Schema within the database to use. 
+
+### `warehouse`
+
+_[string]_ - Compute warehouse to use for queries. 
+
+### `role`
+
+_[string]_ - Snowflake role to use. 
+
 ### `dsn`
 
-_[string]_ - DSN (Data Source Name) for the Snowflake connection _(required)_
+_[string]_ - DSN (Data Source Name) for the Snowflake connection.
+
+This is intended for **advanced configuration** where you want to specify
+properties that are not explicitly defined above.  
+It can only be used when the other connection fields (account, user, password,
+database, schema, warehouse, role, authenticator, privateKey) are **not used**.
+
+For details on private key generation and encoding, see the `privateKey` property.
+ 
 
 ### `parallel_fetch_limit`
 
-_[integer]_ - Maximum number of concurrent fetches during query execution 
+_[integer]_ - Maximum number of concurrent fetches during query execution. 
 
 ```yaml
-# Example: Snowflake connector configuration
-type: connector # Must be `connector` (required)
-driver: snowflake # Must be `snowflake` _(required)_
-dsn: "tcp://localhost:9000" # DSN for the Snowflake connection  
-parallel_fetch_limit: 100 # Maximum number of concurrent fetches during query execution
+# Example: Snowflake connector basic configuration
+type: connector
+driver: snowflake
+account: my_account_identifier
+user: my_user
+privateKey: '{{ .env.SNOWFLAKE_PRIVATE_KEY }}' # define SNOWFLAKE_PRIVATE_KEY in .env file
+database: my_db
+schema: my_schema
+warehouse: my_wh
+role: my_role
+parallel_fetch_limit: 2
+```
+
+```yaml
+# Example: Snowflake connector advance configuration
+type: connector
+driver: snowflake
+dsn: '{{ .env.SNOWFLAKE_DSN }}' # define SNOWFLAKE_DSN in .env file like SNOWFLAKE_DSN='my_username@my_account/my_db/my_schema?warehouse=my_wh&role=my_role&authenticator=SNOWFLAKE_JWT&privateKey=my_private_key'
+parallel_fetch_limit: 2
 ```
 
 ## SQLite

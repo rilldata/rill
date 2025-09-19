@@ -3936,22 +3936,7 @@ func (m *ListProjectsForFingerprintRequest) validate(all bool) error {
 
 	// no validation rules for SubPath
 
-	if m.GetPageSize() != 0 {
-
-		if m.GetPageSize() > 1000 {
-			err := ListProjectsForFingerprintRequestValidationError{
-				field:  "PageSize",
-				reason: "value must be less than or equal to 1000",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-
-	}
-
-	// no validation rules for PageToken
+	// no validation rules for RillMgdGitRemote
 
 	if len(errors) > 0 {
 		return ListProjectsForFingerprintRequestMultiError(errors)
@@ -4092,7 +4077,7 @@ func (m *ListProjectsForFingerprintResponse) validate(all bool) error {
 
 	}
 
-	// no validation rules for NextPageToken
+	// no validation rules for UnauthorizedProject
 
 	if len(errors) > 0 {
 		return ListProjectsForFingerprintResponseMultiError(errors)
@@ -29188,12 +29173,6 @@ func (m *ConnectProjectToGithubRequest) validate(all bool) error {
 
 	// no validation rules for Remote
 
-	// no validation rules for Branch
-
-	// no validation rules for Subpath
-
-	// no validation rules for Force
-
 	if len(errors) > 0 {
 		return ConnectProjectToGithubRequestMultiError(errors)
 	}
@@ -29624,220 +29603,6 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = CreateManagedGitRepoResponseValidationError{}
-
-// Validate checks the field values on DisconnectProjectFromGithubRequest with
-// the rules defined in the proto definition for this message. If any rules
-// are violated, the first error encountered is returned, or nil if there are
-// no violations.
-func (m *DisconnectProjectFromGithubRequest) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on DisconnectProjectFromGithubRequest
-// with the rules defined in the proto definition for this message. If any
-// rules are violated, the result is a list of violation errors wrapped in
-// DisconnectProjectFromGithubRequestMultiError, or nil if none found.
-func (m *DisconnectProjectFromGithubRequest) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *DisconnectProjectFromGithubRequest) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	// no validation rules for Organization
-
-	// no validation rules for Project
-
-	if len(errors) > 0 {
-		return DisconnectProjectFromGithubRequestMultiError(errors)
-	}
-
-	return nil
-}
-
-// DisconnectProjectFromGithubRequestMultiError is an error wrapping multiple
-// validation errors returned by
-// DisconnectProjectFromGithubRequest.ValidateAll() if the designated
-// constraints aren't met.
-type DisconnectProjectFromGithubRequestMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m DisconnectProjectFromGithubRequestMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m DisconnectProjectFromGithubRequestMultiError) AllErrors() []error { return m }
-
-// DisconnectProjectFromGithubRequestValidationError is the validation error
-// returned by DisconnectProjectFromGithubRequest.Validate if the designated
-// constraints aren't met.
-type DisconnectProjectFromGithubRequestValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e DisconnectProjectFromGithubRequestValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e DisconnectProjectFromGithubRequestValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e DisconnectProjectFromGithubRequestValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e DisconnectProjectFromGithubRequestValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e DisconnectProjectFromGithubRequestValidationError) ErrorName() string {
-	return "DisconnectProjectFromGithubRequestValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e DisconnectProjectFromGithubRequestValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sDisconnectProjectFromGithubRequest.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = DisconnectProjectFromGithubRequestValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = DisconnectProjectFromGithubRequestValidationError{}
-
-// Validate checks the field values on DisconnectProjectFromGithubResponse with
-// the rules defined in the proto definition for this message. If any rules
-// are violated, the first error encountered is returned, or nil if there are
-// no violations.
-func (m *DisconnectProjectFromGithubResponse) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on DisconnectProjectFromGithubResponse
-// with the rules defined in the proto definition for this message. If any
-// rules are violated, the result is a list of violation errors wrapped in
-// DisconnectProjectFromGithubResponseMultiError, or nil if none found.
-func (m *DisconnectProjectFromGithubResponse) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *DisconnectProjectFromGithubResponse) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	if len(errors) > 0 {
-		return DisconnectProjectFromGithubResponseMultiError(errors)
-	}
-
-	return nil
-}
-
-// DisconnectProjectFromGithubResponseMultiError is an error wrapping multiple
-// validation errors returned by
-// DisconnectProjectFromGithubResponse.ValidateAll() if the designated
-// constraints aren't met.
-type DisconnectProjectFromGithubResponseMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m DisconnectProjectFromGithubResponseMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m DisconnectProjectFromGithubResponseMultiError) AllErrors() []error { return m }
-
-// DisconnectProjectFromGithubResponseValidationError is the validation error
-// returned by DisconnectProjectFromGithubResponse.Validate if the designated
-// constraints aren't met.
-type DisconnectProjectFromGithubResponseValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e DisconnectProjectFromGithubResponseValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e DisconnectProjectFromGithubResponseValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e DisconnectProjectFromGithubResponseValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e DisconnectProjectFromGithubResponseValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e DisconnectProjectFromGithubResponseValidationError) ErrorName() string {
-	return "DisconnectProjectFromGithubResponseValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e DisconnectProjectFromGithubResponseValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sDisconnectProjectFromGithubResponse.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = DisconnectProjectFromGithubResponseValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = DisconnectProjectFromGithubResponseValidationError{}
 
 // Validate checks the field values on GetCloneCredentialsRequest with the
 // rules defined in the proto definition for this message. If any rules are
