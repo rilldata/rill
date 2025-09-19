@@ -201,7 +201,7 @@
 
     try {
       await $mutation.mutateAsync({
-        organization,
+        org: organization,
         project,
         name: reportName,
         data: {

@@ -160,17 +160,17 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 
 	// Create the project (automatically deploys prod branch)
 	res, err := createProjectFlow(ctx, ch, &adminv1.CreateProjectRequest{
-		OrganizationName: ch.Org,
-		Name:             opts.Name,
-		Description:      opts.Description,
-		Provisioner:      opts.Provisioner,
-		ProdVersion:      opts.ProdVersion,
-		ProdSlots:        int64(opts.Slots),
-		Subpath:          opts.SubPath,
-		ProdBranch:       opts.ProdBranch,
-		Public:           opts.Public,
-		DirectoryName:    filepath.Base(localProjectPath),
-		GitRemote:        opts.remoteURL,
+		Org:           ch.Org,
+		Project:       opts.Name,
+		Description:   opts.Description,
+		Provisioner:   opts.Provisioner,
+		ProdVersion:   opts.ProdVersion,
+		ProdSlots:     int64(opts.Slots),
+		Subpath:       opts.SubPath,
+		ProdBranch:    opts.ProdBranch,
+		Public:        opts.Public,
+		DirectoryName: filepath.Base(localProjectPath),
+		GitRemote:     opts.remoteURL,
 	})
 	if err != nil {
 		if s, ok := status.FromError(err); ok && s.Code() == codes.PermissionDenied {
@@ -195,9 +195,9 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 				return err
 			}
 			_, err = c.UpdateProjectVariables(ctx, &adminv1.UpdateProjectVariablesRequest{
-				Organization: ch.Org,
-				Project:      opts.Name,
-				Variables:    vars,
+				Org:       ch.Org,
+				Project:   opts.Name,
+				Variables: vars,
 			})
 			if err != nil {
 				ch.PrintfWarn("Failed to upload .env: %v\n", err)
@@ -483,15 +483,15 @@ func createProjectFlow(ctx context.Context, ch *cmdutil.Helper, req *adminv1.Cre
 		}
 
 		ch.PrintfWarn("Rill project names are derived from your Github repository name.\n")
-		ch.PrintfWarn("The %q project already exists under org %q. Please enter a different name.\n", req.Name, req.OrganizationName)
+		ch.PrintfWarn("The %q project already exists under org %q. Please enter a different name.\n", req.Project, req.Org)
 
 		// project name already exists, prompt for project name and create project with new name again
-		name, err := projectNamePrompt(ctx, ch, req.OrganizationName)
+		name, err := projectNamePrompt(ctx, ch, req.Org)
 		if err != nil {
 			return nil, err
 		}
 
-		req.Name = name
+		req.Project = name
 		return c.CreateProject(ctx, req)
 	}
 	return res, err

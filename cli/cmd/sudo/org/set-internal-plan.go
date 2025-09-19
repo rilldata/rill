@@ -46,7 +46,7 @@ func SetInternalPlanCmd(ch *cmdutil.Helper) *cobra.Command {
 					return err
 				case <-ticker.C:
 					res, err := client.UpdateBillingSubscription(cmd.Context(), &adminv1.UpdateBillingSubscriptionRequest{
-						Organization:         name,
+						Org:                  name,
 						PlanName:             plan,
 						SuperuserForceAccess: true,
 					})

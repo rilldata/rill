@@ -26,7 +26,7 @@ const adminServiceUnsubscribeReportWithToken = (
   token: string,
 ) => {
   return httpClient<V1UnsubscribeReportResponse>({
-    url: `/v1/organizations/${organization}/projects/${project}/reports/${name}/unsubscribe`,
+    url: `/v1/orgs/${organization}/projects/${project}/reports/${name}/unsubscribe`,
     method: "post",
     data: adminServiceUnsubscribeReportBody,
     // We use the bearer token to authenticate the request

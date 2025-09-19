@@ -142,7 +142,7 @@ func (s *Server) GetGithubUserStatus(ctx context.Context, req *adminv1.GetGithub
 		GrantAccessUrl:                      s.admin.URLs.GithubConnect(""),
 		AccessToken:                         token,
 		Account:                             user.GithubUsername,
-		Organizations:                       allOrgs,
+		Orgs:                                allOrgs,
 		UserInstallationPermission:          userInstallationPermission,
 		OrganizationInstallationPermissions: orgInstallationPermission,
 	}, nil
@@ -253,13 +253,13 @@ func (s *Server) ListGithubUserRepos(ctx context.Context, req *adminv1.ListGithu
 
 func (s *Server) ConnectProjectToGithub(ctx context.Context, req *adminv1.ConnectProjectToGithubRequest) (*adminv1.ConnectProjectToGithubResponse, error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.organization", req.Organization),
+		attribute.String("args.organization", req.Org),
 		attribute.String("args.project", req.Project),
 		attribute.String("args.remote", req.Remote),
 	)
 
 	// Find project
-	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -315,10 +315,10 @@ func (s *Server) ConnectProjectToGithub(ctx context.Context, req *adminv1.Connec
 
 	// TODO : migrate to use service rather than calling UpdateProject directly
 	_, err = s.UpdateProject(ctx, &adminv1.UpdateProjectRequest{
-		OrganizationName: org.Name,
-		Name:             proj.Name,
-		ProdBranch:       &branch,
-		GitRemote:        &req.Remote,
+		Org:        org.Name,
+		Project:    proj.Name,
+		ProdBranch: &branch,
+		GitRemote:  &req.Remote,
 	})
 	if err != nil {
 		return nil, err
@@ -337,12 +337,12 @@ func (s *Server) ConnectProjectToGithub(ctx context.Context, req *adminv1.Connec
 
 func (s *Server) CreateManagedGitRepo(ctx context.Context, req *adminv1.CreateManagedGitRepoRequest) (*adminv1.CreateManagedGitRepoResponse, error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.organization", req.Organization),
+		attribute.String("args.organization", req.Org),
 		attribute.String("args.name", req.Name),
 	)
 
 	// Find org
-	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
 	if err != nil {
 		return nil, err
 	}

@@ -115,8 +115,8 @@ type projectStatusTableRow struct {
 
 func newProjectStatusTableRow(ctx context.Context, c *client.Client, org, project string) (*projectStatusTableRow, error) {
 	proj, err := c.GetProject(ctx, &adminv1.GetProjectRequest{
-		OrganizationName:     org,
-		Name:                 project,
+		Org:                  org,
+		Project:              project,
 		SuperuserForceAccess: true,
 		IssueSuperuserToken:  true,
 	})

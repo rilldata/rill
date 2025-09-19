@@ -28,8 +28,8 @@ func IssueCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			res, err := client.IssueServiceAuthToken(cmd.Context(), &adminv1.IssueServiceAuthTokenRequest{
-				OrganizationName: ch.Org,
-				ServiceName:      name,
+				Org:         ch.Org,
+				ServiceName: name,
 			})
 			if err != nil {
 				return err

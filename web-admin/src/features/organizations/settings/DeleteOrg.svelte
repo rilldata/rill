@@ -18,7 +18,7 @@
 
   async function deleteOrg() {
     await $deleteOrgMutation.mutateAsync({
-      name: organization,
+      organization,
     });
 
     void goto(`/`);

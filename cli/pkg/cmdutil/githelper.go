@@ -55,8 +55,8 @@ func (g *GitHelper) GitConfig(ctx context.Context) (*gitutil.Config, error) {
 	}
 
 	resp, err := c.GetCloneCredentials(ctx, &adminv1.GetCloneCredentialsRequest{
-		Organization: g.org,
-		Project:      g.project,
+		Org:     g.org,
+		Project: g.project,
 	})
 	if err != nil {
 		return nil, err
@@ -83,8 +83,8 @@ func (g *GitHelper) PushToNewManagedRepo(ctx context.Context) (*adminv1.CreateMa
 	}
 
 	gitRepo, err := c.CreateManagedGitRepo(ctx, &adminv1.CreateManagedGitRepoRequest{
-		Organization: g.org,
-		Name:         g.project,
+		Org:  g.org,
+		Name: g.project,
 	})
 	if err != nil {
 		return nil, err

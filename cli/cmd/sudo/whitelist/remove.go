@@ -26,8 +26,8 @@ func RemoveCmd(ch *cmdutil.Helper) *cobra.Command {
 				domain := args[1]
 
 				_, err = client.RemoveWhitelistedDomain(ctx, &adminv1.RemoveWhitelistedDomainRequest{
-					Organization: org,
-					Domain:       domain,
+					Org:    org,
+					Domain: domain,
 				})
 				if err != nil {
 					return err
@@ -44,9 +44,9 @@ func RemoveCmd(ch *cmdutil.Helper) *cobra.Command {
 			domain := args[2]
 
 			_, err = client.RemoveProjectWhitelistedDomain(ctx, &adminv1.RemoveProjectWhitelistedDomainRequest{
-				Organization: org,
-				Project:      project,
-				Domain:       domain,
+				Org:     org,
+				Project: project,
+				Domain:  domain,
 			})
 			if err != nil {
 				return err
