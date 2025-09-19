@@ -1,4 +1,4 @@
-import { reverseMap } from "@rilldata/web-common/lib/mapUtils.ts";
+import { reverseMap } from "@rilldata/web-common/lib/map-utils.ts";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import type { DateTimeUnit } from "luxon";
 

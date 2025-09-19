@@ -2,8 +2,8 @@ import { openQuery } from "@rilldata/web-common/features/queries/open-query";
 import type { PageLoad } from "./$types";
 
 export const load: PageLoad = async ({ params, url, parent }) => {
-  // Only proceed once the runtime is ready
-  const { runtime: _ } = await parent();
+  // Only proceed once the runtime in parent is ready
+  await parent();
 
   // Get the organization and project from the URL
   const organization = params.organization;
