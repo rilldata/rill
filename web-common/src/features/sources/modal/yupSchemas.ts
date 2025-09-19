@@ -36,17 +36,18 @@ export const getYupSchema = {
   }),
 
   duckdb: yup.object().shape({
-    path: yup.string().required("Path is required"),
-  }),
-
-  motherduck: yup.object().shape({
-    dsn: yup.string().required("Connection string is required"),
-    sql: yup.string().required("SQL is required"),
-    token: yup.string().required("Access token is required"),
+    db: yup.string().required("db is required"),
+    sql: yup.string().required("sql is required"),
     name: yup
       .string()
       .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
       .required("Source name is required"),
+  }),
+
+  motherduck: yup.object().shape({
+    token: yup.string().required("Token is required"),
+    path: yup.string().required("Path is required"),
+    schema_name: yup.string().required("Schema name is required"),
   }),
 
   sqlite: yup.object().shape({
@@ -79,11 +80,24 @@ export const getYupSchema = {
   }),
 
   postgres: yup.object().shape({
-    database_url: yup.string().required("Database URL is required"),
+    dsn: yup.string().optional(),
+    host: yup.string().optional(),
+    port: yup.string().optional(),
+    user: yup.string().optional(),
+    password: yup.string().optional(),
+    dbname: yup.string().optional(),
+    sslmode: yup.string().optional(),
   }),
 
   snowflake: yup.object().shape({
-    dsn: yup.string().required("DSN is required"),
+    dsn: yup.string().optional(),
+    account: yup.string().required("Account is required"),
+    user: yup.string().required("Username is required"),
+    password: yup.string().required("Password is required"),
+    database: yup.string().optional(),
+    schema: yup.string().optional(),
+    warehouse: yup.string().optional(),
+    role: yup.string().optional(),
   }),
 
   salesforce: yup.object().shape({
@@ -114,7 +128,13 @@ export const getYupSchema = {
   }),
 
   mysql: yup.object().shape({
-    dsn: yup.string().required("DSN is required"),
+    dsn: yup.string().optional(),
+    user: yup.string().optional(),
+    password: yup.string().optional(),
+    host: yup.string().optional(),
+    port: yup.string().optional(),
+    database: yup.string().optional(),
+    sslmode: yup.string().optional(),
   }),
 
   clickhouse: yup.object().shape({

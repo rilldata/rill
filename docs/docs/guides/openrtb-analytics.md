@@ -2,6 +2,7 @@
 title: "OpenRTB Analytics Demo"
 sidebar_label: "OpenRTB Analytics Demo"
 hide_table_of_contents: false
+sidebar_position: 20
 tags:
     - Tutorial
     - Quickstart
@@ -180,7 +181,7 @@ dimensions:
 ai_instructions: ...
 ```
 
-**What this metrics file does:**
+**What this metric view does:**
 
 - **Measures** define the key RTB performance indicators:
   - `Total Requests` - Total number of bid requests processed

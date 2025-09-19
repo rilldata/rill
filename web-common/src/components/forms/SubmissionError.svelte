@@ -12,12 +12,14 @@
 </script>
 
 <div class="error-container">
-  <div class="flex items-start gap-1">
+  <div class="flex items-start gap-1 min-w-0">
     <div class="flex-shrink-0 flex items-start">
       <AlertCircleIcon size={22} class="text-red-600" />
     </div>
-    <div class="flex-1">
-      <div class="message text-gray-700 font-normal text-sm">{message}</div>
+    <div class="flex-1 min-w-0">
+      <div class="message text-gray-700 font-normal text-sm">
+        {message}
+      </div>
       {#if details}
         <button
           class="flex items-center mt-2 cursor-pointer select-none"
@@ -66,6 +68,11 @@
   .error-container {
     @apply border-red-600 bg-red-50;
     @apply p-2 flex border rounded;
+    @apply max-h-48 overflow-y-auto;
+  }
+
+  .message {
+    @apply whitespace-pre-wrap break-words;
   }
 
   .details-section {

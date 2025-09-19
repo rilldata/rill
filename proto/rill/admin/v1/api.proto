@@ -502,15 +502,6 @@ service AdminService {
     };
   }
 
-  // Converts a project connected to github to a rill managed project.
-  rpc DisconnectProjectFromGithub(DisconnectProjectFromGithubRequest) returns (DisconnectProjectFromGithubResponse) {
-    option (google.api.http) = {
-      // the path is still called `upload-assets` for backward compatibility
-      post: "/v1/organizations/{organization}/projects/{project}/upload-assets",
-      body: "*"
-    };
-  }
-
   // GetCloneCredentials returns credentials and other details for a project's Git repository or archive path if git repo is not configured.
   rpc GetCloneCredentials(GetCloneCredentialsRequest) returns (GetCloneCredentialsResponse) {
     option (google.api.http) = {get: "/v1/organizations/{organization}/projects/{project}/clone-credentials"};
@@ -1161,13 +1152,14 @@ message ListProjectsForFingerprintRequest {
   string directory_name = 1;
   string git_remote = 2;
   string sub_path = 3;
-  uint32 page_size = 4 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
-  string page_token = 5;
+  string rill_mgd_git_remote = 6;
 }
 
 message ListProjectsForFingerprintResponse {
   repeated Project projects = 1;
-  string next_page_token = 2;
+
+  // unauthorized_project is the name of a project that matches the git_remote+sub_path but the caller does not have access to.
+  string unauthorized_project = 3;
 }
 
 message GetProjectRequest {
@@ -2254,9 +2246,6 @@ message ConnectProjectToGithubRequest {
   string organization = 1;
   string project = 2;
   string remote = 3;
-  string branch = 4;
-  string subpath = 5;
-  bool force = 6;
 }
 
 message ConnectProjectToGithubResponse {}
@@ -2275,13 +2264,6 @@ message CreateManagedGitRepoResponse {
   string default_branch = 4;
   google.protobuf.Timestamp password_expires_at = 5; 
 }
-
-message DisconnectProjectFromGithubRequest {
-  string organization = 1;
-  string project = 2;
-}
-
-message DisconnectProjectFromGithubResponse {}
 
 enum GithubPermission {
   GITHUB_PERMISSION_UNSPECIFIED = 0;

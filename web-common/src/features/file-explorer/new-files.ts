@@ -143,7 +143,7 @@ export function generateBlobForNewResourceFile(
       return ""; // This is constructed in the `features/sources/modal` directory
     case ResourceKind.Model:
       return `-- Model SQL
--- Reference documentation: https://docs.rilldata.com/reference/project-files/models
+-- Reference documentation: https://docs.rilldata.com/build/models
 
 SELECT 'Hello, World!' AS Greeting`;
     case ResourceKind.MetricsView:
@@ -153,8 +153,8 @@ SELECT 'Hello, World!' AS Greeting`;
 version: 1
 type: metrics_view
 
-model: # Choose a model to underpin your metrics
-timeseries: # Choose a timestamp column (if any) from your model
+model: # Choose a model to underpin your metrics view
+timeseries: # Choose a timestamp column (if any) from your model 
 
 dimensions:
 measures:

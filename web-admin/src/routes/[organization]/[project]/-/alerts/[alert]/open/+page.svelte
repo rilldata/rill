@@ -39,13 +39,13 @@
       | undefined) ??
     $alert.data?.resource?.alert?.spec?.queryArgsJson ??
     "";
-  $: dashboardStateForAlert = mapQueryToDashboard(
+  $: dashboardStateForAlert = mapQueryToDashboard({
     exploreName,
     queryName,
     queryArgsJson,
     executionTime,
-    $alert.data?.resource?.alert?.spec?.annotations ?? {},
-  );
+    annotations: $alert.data?.resource?.alert?.spec?.annotations ?? {},
+  });
 
   $: if ($alert.data?.resource?.alert?.spec && (!queryName || !queryArgsJson)) {
     goto(`/${organization}/${project}/-/alerts/${alertId}`);

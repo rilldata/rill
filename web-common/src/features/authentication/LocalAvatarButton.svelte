@@ -88,7 +88,7 @@
       <DropdownMenu.Separator />
 
       <DropdownMenu.Item
-        href="https://discord.gg/TatjVY32"
+        href="https://discord.gg/2ubRfjC7Rh"
         target="_blank"
         rel="noreferrer noopener"
         class="text-gray-800 font-normal"

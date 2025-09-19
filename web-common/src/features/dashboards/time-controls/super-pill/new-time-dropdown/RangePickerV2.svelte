@@ -2,7 +2,11 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import { DateTime, Interval } from "luxon";
-  import type { ISODurationString, NamedRange } from "../../new-time-controls";
+  import type {
+    ISODurationString,
+    NamedRange,
+    RangeBuckets,
+  } from "../../new-time-controls";
   import {
     ALL_TIME_RANGE_ALIAS,
     getRangeLabel,
@@ -18,16 +22,13 @@
     RillPeriodToGrainInterval,
     type RillTime,
   } from "../../../url-state/time-ranges/RillTime";
-  import { getTimeRangeOptionsByGrain } from "@rilldata/web-common/lib/time/defaults";
   import {
-    getAllowedGrains,
     getGrainOrder,
     getLowerOrderGrain,
     getSmallestGrainFromISODuration,
     GrainAliasToV1TimeGrain,
   } from "@rilldata/web-common/lib/time/new-grains";
   import * as Popover from "@rilldata/web-common/components/popover";
-  import type { TimeGrainOptions } from "@rilldata/web-common/lib/time/defaults";
   import TimeRangeOptionGroup from "./TimeRangeOptionGroup.svelte";
   import RangeDisplay from "../components/RangeDisplay.svelte";
   import TruncationSelector from "./TruncationSelector.svelte";
@@ -40,18 +41,19 @@
   import Calendar from "@rilldata/web-common/components/icons/Calendar.svelte";
   import {
     constructAsOfString,
-    isUsingLegacyTime,
     constructNewString,
   } from "../../new-time-controls";
   import PrimaryRangeTooltip from "./PrimaryRangeTooltip.svelte";
 
   export let timeString: string | undefined;
   export let interval: Interval<true>;
+  export let timeGrain: V1TimeGrain | undefined;
   export let zone: string;
   export let showDefaultItem: boolean;
   export let context: string;
   export let minDate: DateTime;
   export let maxDate: DateTime;
+  export let rangeBuckets: RangeBuckets;
   export let watermark: DateTime | undefined;
   export let smallestTimeGrain: V1TimeGrain | undefined;
   export let defaultTimeRange: NamedRange | ISODurationString | undefined;
@@ -77,20 +79,19 @@
     try {
       parsedTime = parseRillTime(timeString);
     } catch {
-      // This is not necessarily an error as the parser does not work with Legacy syntax
       parsedTime = undefined;
     }
   }
 
   $: hideTruncationSelector = parsedTime?.interval instanceof RillIsoInterval;
 
-  $: usingLegacyTime = isUsingLegacyTime(timeString);
+  $: usingLegacyTime = parsedTime?.isOldFormat;
 
   $: snapToEnd = usingLegacyTime ? true : !!parsedTime?.asOfLabel?.offset;
   $: ref = usingLegacyTime ? "latest" : (parsedTime?.asOfLabel?.label ?? "now");
 
   $: truncationGrain = usingLegacyTime
-    ? timeString?.startsWith("rill")
+    ? timeString?.startsWith("rill") && !timeString.endsWith("C")
       ? V1TimeGrain.TIME_GRAIN_DAY
       : getSmallestGrainFromISODuration(timeString ?? "PT1M")
     : parsedTime?.asOfLabel?.snap
@@ -101,29 +102,9 @@
 
   $: selectedLabel = getRangeLabel(timeString);
 
-  $: timeGrainOptions = getAllowedGrains(smallestTimeGrain);
-
-  $: allOptions = timeGrainOptions.map(getTimeRangeOptionsByGrain);
-
   $: if (truncationGrain) onTimeGrainSelect(truncationGrain);
 
   $: zoneAbbreviation = getAbbreviationForIANA(maxDate, zone);
-
-  $: groups = allOptions.reduce(
-    (acc, options) => {
-      acc.lastN.push(...options.lastN);
-      acc.this.push(...options.this);
-      acc.previous.push(...options.previous);
-
-      return acc;
-    },
-    {
-      lastN: [],
-      this: [],
-      previous: [],
-      grainBy: [],
-    } as TimeGrainOptions,
-  );
 
   function handleRangeSelect(range: string, ignoreSnap?: boolean) {
     if (range === ALL_TIME_RANGE_ALIAS) {
@@ -249,7 +230,7 @@
           {/if}
 
           {#if showFullRange}
-            <RangeDisplay {interval} />
+            <RangeDisplay {interval} {timeGrain} />
 
             <div
               class="font-bold bg-gray-100 rounded-[2px] p-1 py-0 text-gray-600 text-[11px]"
@@ -312,21 +293,28 @@
           <TimeRangeOptionGroup
             {filter}
             {timeString}
-            options={groups.lastN}
+            options={rangeBuckets.custom}
             onClick={handleRangeSelect}
           />
 
           <TimeRangeOptionGroup
             {filter}
             {timeString}
-            options={groups.this}
+            options={rangeBuckets.latest}
             onClick={handleRangeSelect}
           />
 
           <TimeRangeOptionGroup
             {filter}
             {timeString}
-            options={groups.previous}
+            options={rangeBuckets.periodToDate}
+            onClick={handleRangeSelect}
+          />
+
+          <TimeRangeOptionGroup
+            {filter}
+            {timeString}
+            options={rangeBuckets.previous}
             onClick={(r) => {
               handleRangeSelect(r, true);
             }}
