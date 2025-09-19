@@ -162,6 +162,7 @@ func (a *Authenticator) authStart(w http.ResponseWriter, r *http.Request, signup
 		sess.Values[cookieFieldRedirect] = redirect
 	}
 
+	// If this is part of the custom domain login flow, save that info in the cookie since we need that info when handling the auth callback.
 	customDomainFlow := r.URL.Query().Get("custom_domain_flow")
 	if b, err := strconv.ParseBool(customDomainFlow); err == nil && b {
 		sess.Values[cookieFieldCustomDomainFlow] = true
@@ -308,8 +309,9 @@ func (a *Authenticator) authLoginCallback(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	// If it's part of a custom domain login flow, redirect back to the custom domain with a short-lived access token for the user.
 	customDomainFlow, ok := sess.Values[cookieFieldCustomDomainFlow].(bool)
-	delete(sess.Values, cookieFieldRedirect)
+	delete(sess.Values, cookieFieldCustomDomainFlow)
 	if ok && customDomainFlow {
 		// save the cookies
 		if err := sess.Save(r, w); err != nil {

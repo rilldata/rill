@@ -112,7 +112,11 @@ func (u *URLs) IsCustomDomain(domain string) bool {
 	if err != nil {
 		panic(fmt.Errorf("failed to parse external domain %q: %w", u.external, err))
 	}
-	return !strings.EqualFold(externalURL.Host, domain)
+	domainURL, err := url.Parse(domain)
+	if err != nil {
+		panic(fmt.Errorf("failed to parse provided domain %q: %w", domain, err))
+	}
+	return !strings.EqualFold(externalURL.Host, domainURL.Host)
 }
 
 // External returns the external URL for the admin service.
