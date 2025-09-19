@@ -9,7 +9,10 @@ import {
   parseRillTime,
 } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser";
 import { humaniseISODuration } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
-import type { V1ExploreTimeRange } from "@rilldata/web-common/runtime-client";
+import type {
+  V1ExploreTimeRange,
+  V1TimeRange,
+} from "@rilldata/web-common/runtime-client";
 import {
   getQueryServiceMetricsViewTimeRangesQueryKey,
   V1TimeGrain,
@@ -328,6 +331,7 @@ import {
   type RillTime,
 } from "../url-state/time-ranges/RillTime";
 import { getDefaultRangeBuckets } from "@rilldata/web-common/lib/time/defaults";
+import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
 
 export async function deriveInterval(
   name: RillPeriodToDate | RillPreviousPeriod | ISODurationString,

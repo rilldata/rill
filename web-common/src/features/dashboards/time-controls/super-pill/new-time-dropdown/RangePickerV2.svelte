@@ -18,6 +18,7 @@
   import TimeRangeSearch from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/TimeRangeSearch.svelte";
   import { parseRillTime } from "../../../url-state/time-ranges/parser";
   import {
+    RillAllTimeInterval,
     RillIsoInterval,
     RillPeriodToGrainInterval,
     type RillTime,
@@ -46,7 +47,7 @@
   import PrimaryRangeTooltip from "./PrimaryRangeTooltip.svelte";
 
   export let timeString: string | undefined;
-  export let interval: Interval<true>;
+  export let interval: Interval<true> | undefined;
   export let timeGrain: V1TimeGrain | undefined;
   export let zone: string;
   export let showDefaultItem: boolean;
@@ -65,7 +66,7 @@
   export let onSelectRange: (range: string) => void;
   export let onTimeGrainSelect: (grain: V1TimeGrain) => void;
 
-  let firstVisibleMonth: DateTime<true> = interval.start;
+  let firstVisibleMonth = interval?.start;
   let open = false;
   let allTimeAllowed = true;
   let searchComponent: TimeRangeSearch;
@@ -83,7 +84,9 @@
     }
   }
 
-  $: hideTruncationSelector = parsedTime?.interval instanceof RillIsoInterval;
+  $: hideTruncationSelector =
+    parsedTime?.interval instanceof RillIsoInterval ||
+    parsedTime?.interval instanceof RillAllTimeInterval;
 
   $: usingLegacyTime = parsedTime?.isOldFormat;
 
@@ -107,26 +110,26 @@
   $: zoneAbbreviation = getAbbreviationForIANA(maxDate, zone);
 
   function handleRangeSelect(range: string, ignoreSnap?: boolean) {
-    if (range === ALL_TIME_RANGE_ALIAS) {
-      onSelectRange(ALL_TIME_RANGE_ALIAS);
-      closeMenu();
-    } else {
-      try {
-        const parsed = parseRillTime(range);
+    try {
+      const parsed = parseRillTime(range);
 
-        const isPeriodToDate =
-          parsed.interval instanceof RillPeriodToGrainInterval;
+      const isPeriodToDate =
+        parsed.interval instanceof RillPeriodToGrainInterval;
 
-        const rangeGrainOrder =
-          getGrainOrder(parsed.rangeGrain) - (isPeriodToDate ? 1 : 0);
-        const asOfGrainOrder = getGrainOrder(truncationGrain);
+      const rangeGrainOrder =
+        getGrainOrder(parsed.rangeGrain) - (isPeriodToDate ? 1 : 0);
 
-        if (asOfGrainOrder > rangeGrainOrder && parsed.rangeGrain) {
-          truncationGrain = isPeriodToDate
-            ? getLowerOrderGrain(parsed.rangeGrain)
-            : parsed.rangeGrain;
-        }
+      const hasAsOfString = !!parsed.asOfLabel;
 
+      const asOfGrainOrder = getGrainOrder(truncationGrain);
+
+      if (asOfGrainOrder > rangeGrainOrder && parsed.rangeGrain) {
+        truncationGrain = isPeriodToDate
+          ? getLowerOrderGrain(parsed.rangeGrain)
+          : parsed.rangeGrain;
+      }
+
+      if (!hasAsOfString) {
         const newAsOfString = constructAsOfString(
           ref,
           ignoreSnap
@@ -138,11 +141,12 @@
         );
 
         overrideRillTimeRef(parsed, newAsOfString);
-        onSelectRange(parsed.toString());
-        closeMenu();
-      } catch {
-        // This function is called in a controlled manner and should not throw
       }
+
+      onSelectRange(parsed.toString());
+      closeMenu();
+    } catch {
+      // This function is called in a controlled manner and should not throw
     }
   }
 
@@ -263,7 +267,8 @@
       {timeString}
       onSelectRange={(range) => {
         open = false;
-        onSelectRange(range);
+        console.log({ range });
+        handleRangeSelect(range);
       }}
     />
 
