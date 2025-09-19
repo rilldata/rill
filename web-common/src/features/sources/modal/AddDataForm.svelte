@@ -183,6 +183,19 @@
     }
   })();
 
+  // Clear errors when switching tabs
+  $: (() => {
+    if (hasDsnFormOption) {
+      if (connectionTab === "dsn") {
+        paramsError = null;
+        paramsErrorDetails = undefined;
+      } else {
+        dsnError = null;
+        dsnErrorDetails = undefined;
+      }
+    }
+  })();
+
   // Emit the submitting state to the parent
   $: dispatch("submitting", { submitting });
 
@@ -337,13 +350,16 @@
         error = humanReadable;
         details =
           humanReadable !== originalMessage ? originalMessage : undefined;
+      } else if (e?.message) {
+        error = e.message;
+        details = undefined;
       } else {
         error = "Unknown error";
         details = undefined;
       }
 
-      // Keep error state for each form
-      if (connectionTab === "dsn") {
+      // Keep error state for each form - match the display logic
+      if (hasOnlyDsn() || connectionTab === "dsn") {
         dsnError = error;
         dsnErrorDetails = details;
       } else {
@@ -535,6 +551,12 @@
         disabled={connector.name === "clickhouse"
           ? clickhouseSubmitting || clickhouseIsSubmitDisabled
           : submitting || isSubmitDisabled}
+        loading={connector.name === "clickhouse"
+          ? clickhouseSubmitting
+          : submitting}
+        loadingCopy={connector.name === "clickhouse"
+          ? "Connecting..."
+          : "Testing connection..."}
         form={connector.name === "clickhouse" ? clickhouseFormId : formId}
         submitForm
         type="primary"
@@ -555,10 +577,10 @@
           {#if submitting}
             Testing connection...
           {:else}
-            Connect
+            Test and Connect
           {/if}
         {:else}
-          Add data
+          Test and Add data
         {/if}
       </Button>
     </div>

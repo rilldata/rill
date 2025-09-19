@@ -58,7 +58,7 @@ func (s *Server) GitStatus(ctx context.Context, r *connect.Request[localv1.GitSt
 	}
 
 	// to avoid asking user for inputs on UI simply used the last updated project for now
-	name, err := inferRillManagedProjectName(ctx, s.app.ch, s.app.ch.Org, s.app.ProjectPath)
+	projects, err := s.app.ch.InferProjects(ctx, s.app.ch.Org, s.app.ProjectPath)
 	if err != nil {
 		if !errors.Is(err, cmdutil.ErrNoMatchingProject) {
 			return nil, err
@@ -74,9 +74,10 @@ func (s *Server) GitStatus(ctx context.Context, r *connect.Request[localv1.GitSt
 			Subpath:   subPath,
 		}), nil
 	}
+	project := projects[0]
 
 	// get ephemeral git credentials
-	config, err := s.app.ch.GitHelper(s.app.ch.Org, name, gitPath).GitConfig(ctx)
+	config, err := s.app.ch.GitHelper(s.app.ch.Org, project.Name, gitPath).GitConfig(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -153,15 +154,16 @@ func (s *Server) GitPull(ctx context.Context, r *connect.Request[localv1.GitPull
 		return nil, errors.New("must authenticate before performing this action")
 	}
 
-	name, err := inferRillManagedProjectName(ctx, s.app.ch, s.app.ch.Org, s.app.ProjectPath)
+	projects, err := s.app.ch.InferProjects(ctx, s.app.ch.Org, s.app.ProjectPath)
 	if err != nil {
 		if !errors.Is(err, cmdutil.ErrNoMatchingProject) {
 			return nil, err
 		}
 		return nil, errors.New("git credentials not set and repo is not connected to a project")
 	}
+	project := projects[0]
 
-	config, err := s.app.ch.GitHelper(s.app.ch.Org, name, gitPath).GitConfig(ctx)
+	config, err := s.app.ch.GitHelper(s.app.ch.Org, project.Name, gitPath).GitConfig(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -217,20 +219,21 @@ func (s *Server) GitPush(ctx context.Context, r *connect.Request[localv1.GitPush
 		return nil, errors.New("must authenticate before performing this action")
 	}
 
-	name, err := inferRillManagedProjectName(ctx, s.app.ch, s.app.ch.Org, s.app.ProjectPath)
+	projects, err := s.app.ch.InferProjects(ctx, s.app.ch.Org, s.app.ProjectPath)
 	if err != nil {
 		if !errors.Is(err, cmdutil.ErrNoMatchingProject) {
 			return nil, err
 		}
 		return nil, errors.New("git credentials not set and repo is not connected to a project")
 	}
+	project := projects[0]
 
 	author, err := s.app.ch.GitSignature(ctx, gitPath)
 	if err != nil {
 		return nil, err
 	}
 
-	config, err := s.app.ch.GitHelper(s.app.ch.Org, name, gitPath).GitConfig(ctx)
+	config, err := s.app.ch.GitHelper(s.app.ch.Org, project.Name, gitPath).GitConfig(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -254,32 +257,4 @@ func (s *Server) GitPush(ctx context.Context, r *connect.Request[localv1.GitPush
 	}
 
 	return connect.NewResponse(&localv1.GitPushResponse{}), nil
-}
-
-func inferRillManagedProjectName(ctx context.Context, h *cmdutil.Helper, org, pathToProject string) (string, error) {
-	// Get the project name from the path
-	projects, err := h.InferProjects(ctx, org, pathToProject)
-	if err != nil {
-		return "", err
-	}
-
-	if len(projects) == 1 {
-		return projects[0].Name, nil
-	}
-
-	// in case of multiple projects, use the remote set in the current repo which will be set to the last used remote
-	// this is to avoid asking the user for input on UI
-	c := gitutil.Config{ManagedRepo: true}
-	remote, _ := gitutil.ExtractGitRemote(pathToProject, c.RemoteName(), false)
-	if remote.URL == "" {
-		return projects[0].Name, nil
-	}
-	// filter projects by remote URL
-	for _, p := range projects {
-		if p.GitRemote == remote.URL {
-			return p.Name, nil
-		}
-	}
-	// if no project matches the remote URL, return the first project
-	return projects[0].Name, nil
 }

@@ -68,6 +68,7 @@ var spec = drivers.Spec{
 			Key:         "database",
 			Type:        drivers.StringPropertyType,
 			DisplayName: "Database",
+			Required:    true,
 			Placeholder: "your_database",
 			Hint:        "The name of the Snowflake database you want to connect to. This database must exist in your Snowflake account and you must have access permissions to it.",
 		},
