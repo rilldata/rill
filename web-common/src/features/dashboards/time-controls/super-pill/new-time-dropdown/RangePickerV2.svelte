@@ -47,7 +47,7 @@
   import PrimaryRangeTooltip from "./PrimaryRangeTooltip.svelte";
 
   export let timeString: string | undefined;
-  export let interval: Interval<true> | undefined;
+  export let interval: Interval<true>;
   export let timeGrain: V1TimeGrain | undefined;
   export let zone: string;
   export let showDefaultItem: boolean;
@@ -267,7 +267,6 @@
       {timeString}
       onSelectRange={(range) => {
         open = false;
-        console.log({ range });
         handleRangeSelect(range);
       }}
     />
