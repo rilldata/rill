@@ -9,6 +9,7 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { hasValidMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors.ts";
+  import { getMappedExploreUrl } from "@rilldata/web-common/features/explore-mappers/get-mapped-explore-url.ts";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
   import ScheduledReportDialog from "@rilldata/web-common/features/scheduled-reports/ScheduledReportDialog.svelte";
   import { getRuntimeServiceListResourcesQueryKey } from "@rilldata/web-common/runtime-client";
@@ -61,6 +62,21 @@
 
   $: emailNotifier = extractNotifier(reportSpec?.notifiers, "email");
   $: slackNotifier = extractNotifier(reportSpec?.notifiers, "slack");
+
+  $: exploreUrl = getMappedExploreUrl(
+    {
+      exploreName: $exploreName.data ?? "",
+      queryName: reportSpec?.queryName,
+      queryArgsJson: reportSpec?.queryArgsJson,
+      annotations: reportSpec?.annotations ?? {},
+      forceOpenPivot: true,
+    },
+    {
+      instanceId,
+      organization,
+      project,
+    },
+  );
 
   // Actions
   const queryClient = useQueryClient();
@@ -157,9 +173,7 @@
                 </Tooltip>
               </div>
             {:else}
-              <a
-                href={`/${organization}/${project}/explore/${$exploreName.data}`}
-              >
+              <a href={$exploreUrl}>
                 {dashboardTitle}
               </a>
             {/if}
