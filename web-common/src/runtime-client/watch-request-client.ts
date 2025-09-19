@@ -1,7 +1,6 @@
 import { Throttler } from "@rilldata/web-common/lib/throttler";
 import { streamingFetchWrapper } from "@rilldata/web-common/runtime-client/fetch-streaming-wrapper";
 import type {
-  V1CompleteStreamingResponse,
   V1WatchFilesResponse,
   V1WatchLogsResponse,
   V1WatchResourcesResponse,
@@ -18,8 +17,7 @@ const RECONNECT_CALLBACK_DELAY = 150;
 type WatchResponse =
   | V1WatchFilesResponse
   | V1WatchResourcesResponse
-  | V1WatchLogsResponse
-  | V1CompleteStreamingResponse;
+  | V1WatchLogsResponse;
 
 type StreamingFetchResponse<Res extends WatchResponse> = {
   result?: Res;
