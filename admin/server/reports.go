@@ -17,9 +17,7 @@ import (
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
-	"github.com/rilldata/rill/runtime/drivers/slack"
 	"github.com/rilldata/rill/runtime/pkg/observability"
-	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"go.opentelemetry.io/otel/attribute"
 	"golang.org/x/exp/slices"
 	"google.golang.org/grpc/codes"
@@ -316,22 +314,29 @@ func (s *Server) UnsubscribeReport(ctx context.Context, req *adminv1.Unsubscribe
 		}
 	}
 
-	opts, err := recreateReportOptionsFromSpec(spec)
+	file, err := s.admin.DB.FindVirtualFile(ctx, proj.ID, "prod", virtualFilePathForManagedReport(req.Name))
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to recreate report options: %s", err.Error())
+		return nil, err
+	}
+
+	// Unmarshal file data to reportYAML
+	var report reportYAML
+	err = yaml.Unmarshal(file.Data, &report)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to unmarshal report YAML: %s", err.Error())
 	}
 
 	found := false
-	for idx, email := range opts.EmailRecipients {
+	for idx, email := range report.Notify.Email.Recipients {
 		if strings.EqualFold(userEmail, email) {
-			opts.EmailRecipients = slices.Delete(opts.EmailRecipients, idx, idx+1)
+			report.Notify.Email.Recipients = slices.Delete(report.Notify.Email.Recipients, idx, idx+1)
 			found = true
 			break
 		}
 	}
-	for idx, email := range opts.SlackUsers {
+	for idx, email := range report.Notify.Slack.Users {
 		if strings.EqualFold(slackEmail, email) {
-			opts.SlackUsers = slices.Delete(opts.SlackUsers, idx, idx+1)
+			report.Notify.Slack.Users = slices.Delete(report.Notify.Slack.Users, idx, idx+1)
 			found = true
 			break
 		}
@@ -341,13 +346,13 @@ func (s *Server) UnsubscribeReport(ctx context.Context, req *adminv1.Unsubscribe
 		return nil, status.Error(codes.InvalidArgument, "user is not subscribed to report")
 	}
 
-	if len(opts.EmailRecipients) == 0 && len(opts.SlackUsers) == 0 && len(opts.SlackChannels) == 0 && len(opts.SlackWebhooks) == 0 {
+	if len(report.Notify.Email.Recipients) == 0 && len(report.Notify.Slack.Users) == 0 && len(report.Notify.Slack.Channels) == 0 && len(report.Notify.Slack.Webhooks) == 0 {
 		err = s.admin.DB.UpdateVirtualFileDeleted(ctx, proj.ID, "prod", virtualFilePathForManagedReport(req.Name))
 		if err != nil {
 			return nil, fmt.Errorf("failed to update virtual file: %w", err)
 		}
 	} else {
-		data, err := s.yamlForManagedReport(opts, annotations.AdminOwnerUserID)
+		data, err := yaml.Marshal(report)
 		if err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "failed to generate report YAML: %s", err.Error())
 		}
@@ -706,52 +711,6 @@ func randomReportName(displayName string) string {
 		name = name + "-" + uuid.New().String()[0:8]
 	}
 	return name
-}
-
-func recreateReportOptionsFromSpec(spec *runtimev1.ReportSpec) (*adminv1.ReportOptions, error) {
-	annotations := parseReportAnnotations(spec.Annotations)
-
-	opts := &adminv1.ReportOptions{}
-	opts.DisplayName = spec.DisplayName
-	if spec.RefreshSchedule != nil && spec.RefreshSchedule.Cron != "" {
-		opts.RefreshCron = spec.RefreshSchedule.Cron
-		opts.RefreshTimeZone = spec.RefreshSchedule.TimeZone
-	}
-	opts.IntervalDuration = spec.IntervalsIsoDuration
-	opts.QueryName = spec.QueryName
-	opts.QueryArgsJson = spec.QueryArgsJson
-	opts.ExportLimit = spec.ExportLimit
-	opts.ExportFormat = spec.ExportFormat
-	opts.ExportIncludeHeader = spec.ExportIncludeHeader
-	for _, notifier := range spec.Notifiers {
-		switch notifier.Connector {
-		case "email":
-			opts.EmailRecipients = pbutil.ToSliceString(notifier.Properties.AsMap()["recipients"])
-		case "slack":
-			props, err := slack.DecodeProps(notifier.Properties.AsMap())
-			if err != nil {
-				return nil, err
-			}
-			opts.SlackUsers = props.Users
-			opts.SlackChannels = props.Channels
-			opts.SlackWebhooks = props.Webhooks
-		default:
-			return nil, fmt.Errorf("unknown notifier connector: %s", notifier.Connector)
-		}
-	}
-	opts.WebOpenPath = annotations.WebOpenPath
-	opts.WebOpenState = annotations.WebOpenState
-	switch annotations.WebOpenMode {
-	case WebOpenModeRecipient:
-		opts.WebOpenMode = "recipient"
-	case WebOpenModeCreator:
-		opts.WebOpenMode = "creator"
-	case WebOpenModeNone:
-		opts.WebOpenMode = "none"
-	default:
-		return nil, fmt.Errorf("unknown web open mode: %s", annotations.WebOpenMode)
-	}
-	return opts, nil
 }
 
 // reportYAML is derived from runtime/parser.ReportYAML, but adapted for generating (as opposed to parsing) the report YAML.

@@ -2,16 +2,15 @@ import { V1TimeGrainToOrder } from "@rilldata/web-common/lib/time/new-grains.ts"
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import { DateTime, type DateTimeFormatOptions, Interval } from "luxon";
 
-/**
- * Formats a start and end for usage in the application.
- * NOTE: this is primarily used for the time range picker. We might want to
- * colocate the code w/ the component.
- */
+// Formats a Luxon interval for human readable display throughout the application.
 export function prettyFormatTimeRange(interval: Interval, grain: V1TimeGrain) {
+  if (!interval?.isValid || !interval.start || !interval.end)
+    return "Invalid interval";
+
   const datePart = formatDatePartOfTimeRange(interval, grain);
   const timePart = formatTimePartOfTimeRange(
-    interval.start!,
-    interval.end!,
+    interval.start,
+    interval.end,
     grain,
   );
   return `${datePart}${timePart}`;
@@ -19,6 +18,8 @@ export function prettyFormatTimeRange(interval: Interval, grain: V1TimeGrain) {
 
 const yearGrainOrder = V1TimeGrainToOrder[V1TimeGrain.TIME_GRAIN_YEAR];
 const monthGrainOrder = V1TimeGrainToOrder[V1TimeGrain.TIME_GRAIN_MONTH];
+const dayGrainOrder = V1TimeGrainToOrder[V1TimeGrain.TIME_GRAIN_DAY];
+
 function formatDatePartOfTimeRange(interval: Interval, grain: V1TimeGrain) {
   if (!interval.start?.isValid || !interval.end?.isValid) return ""; // type safety
 
@@ -38,7 +39,15 @@ function formatDatePartOfTimeRange(interval: Interval, grain: V1TimeGrain) {
 
   if (showDay) format.day = "numeric";
 
-  return interval.toLocaleString(format);
+  const displayAsInclusiveEnd =
+    grainOrder >= dayGrainOrder && interval.end > interval.start;
+
+  return displayAsInclusiveEnd
+    ? Interval.fromDateTimes(
+        interval.start,
+        interval.end.minus({ millisecond: 1 }),
+      ).toLocaleString(format)
+    : interval.toLocaleString(format);
 }
 
 const hourGrainOrder = V1TimeGrainToOrder[V1TimeGrain.TIME_GRAIN_HOUR];
