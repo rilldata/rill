@@ -539,6 +539,18 @@ const config = {
             from: '/home/get-started',
             to: '/get-started/quickstart'
           },
+          {
+            from: '/build/canvas/canvas',
+            to: '/build/dashboards/canvas',
+          },
+          {
+            from: '/build/canvas/customization',
+            to: '/build/dashboards/customization',
+          },
+          {
+            from: '/build/canvas',
+            to: '/build/dashboards/canvas',
+          },
           // {
           //   from: '/old-page',
           //   to: '/new-page',

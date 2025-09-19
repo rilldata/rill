@@ -1,0 +1,129 @@
+.image-code-toggle {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  overflow: hidden;
+  margin: 1.5rem 0;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.image-code-toggle-content {
+  display: grid;
+  grid-template-columns: 60% 40%;
+  gap: 0;
+  min-height: 300px;
+}
+
+.image-code-toggle-image {
+  padding: 1.5rem;
+  border-right: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  
+  img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    margin-top: 0.75rem;
+  }
+}
+
+.image-code-toggle-code {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  
+  pre {
+    margin: 0;
+    margin-top: 0.75rem;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+    overflow-x: auto;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    flex: 1;
+    
+    code {
+      background: transparent;
+      padding: 0;
+      font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    }
+  }
+}
+
+.image-code-toggle-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #374151;
+  
+  svg {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+
+// Dark theme support
+[data-theme='dark'] {
+  .image-code-toggle {
+    border-color: #404040;
+    background: #262626;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  }
+  
+  .image-code-toggle-image {
+    border-right-color: #404040;
+  }
+  
+  .image-code-toggle-header {
+    color: #e5e5e5;
+  }
+  
+  .image-code-toggle-code {
+    pre {
+      background: #1f1f1f;
+      
+      code {
+        // Allow syntax highlighting to work
+      }
+    }
+  }
+}
+
+// Responsive design
+@media (max-width: 768px) {
+  .image-code-toggle-content {
+    grid-template-columns: 1fr;
+    min-height: auto;
+  }
+  
+  .image-code-toggle-image {
+    border-right: none;
+    border-bottom: 1px solid #e5e7eb;
+    padding: 1rem;
+  }
+  
+  .image-code-toggle-code {
+    padding: 1rem;
+  }
+  
+  .image-code-toggle-header {
+    font-size: 0.8rem;
+    
+    svg {
+      width: 14px;
+      height: 14px;
+    }
+  }
+  
+  [data-theme='dark'] {
+    .image-code-toggle-image {
+      border-bottom-color: #404040;
+    }
+  }
+}

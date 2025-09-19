@@ -16,7 +16,7 @@ Policies are based on user attributes such as **email address**, **domain**, or 
 
 ## How Does It Work?
 
-Access policies are defined in the **metrics view** and/or **[dashboard YAML](/build/dashboards/#define-dashboard-access)**.  
+Access policies are defined in the **metrics view** and/or **[dashboard YAML](/build/dashboards/customization#define-dashboard-access)**.  
 There are three types of rules:
 
 **General Access:** (`access`) A boolean expression deciding if a user can access the metrics view
@@ -80,7 +80,7 @@ There are two locations that control data access in Rill.
 
 ### Project Level Defaults
 
-By default, when a user is granted access to your project, they have access to all metrics views and, if there is [no dashboard policy](/build/dashboards/#define-dashboard-access), all dashboards. While this is the default behavior, it can be easily changed in the project's `rill.yaml`. This will lock down all metrics views and block all users who are not Rill Administrators or do not have 'example.com' as their domain.
+By default, when a user is granted access to your project, they have access to all metrics views and, if there is [no dashboard policy](/build/dashboards/customization#define-dashboard-access), all dashboards. While this is the default behavior, it can be easily changed in the project's `rill.yaml`. This will lock down all metrics views and block all users who are not Rill Administrators or do not have 'example.com' as their domain.
 
 ```yaml
 metrics_views:
@@ -118,7 +118,7 @@ When combining access policies from project defaults and object-specific policie
 
 ## Dashboard Access
 
-Dashboards also have an `access` key that can add additional security to the metrics view. Both [explore](/build/dashboards/#define-dashboard-access) and [canvas](/build/canvas/#define-dashboard-access) dashboards can set the following:
+Dashboards also have an `access` key that can add additional security to the metrics view. Both [explore](/build/dashboards/customization#define-dashboard-access) and [canvas](/build/dashboards/customization#define-dashboard-access) dashboards can set the following:
 
 ```yaml
 security:
