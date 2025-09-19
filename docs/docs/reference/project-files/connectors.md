@@ -32,6 +32,7 @@ Connector YAML files define how Rill connects to external data sources and OLAP 
 - [**S3**](#s3) - Amazon S3 storage
 
 ### _Other_
+- [**DuckDB as a source**](#duckdb-as-a-source) - DuckDB as a source
 - [**HTTPS**](#https) - Public files via HTTP/HTTPS
 - [**OpenAI**](#openai) - OpenAI data
 - [**Salesforce**](#salesforce) - Salesforce data
@@ -397,13 +398,40 @@ _[string]_ - Comma-separated list of other connector names to create temporary s
 
 _[boolean]_ - Whether to log raw SQL queries executed through OLAP 
 
+### `mode`
+
+_[string]_ - Set the mode for the DuckDB connection. 
+
 ```yaml
 # Example: DuckDB connector configuration
 type: connector # Must be `connector` (required)
 driver: duckdb # Must be `duckdb` _(required)_
+mode: "readwrite" # Set the mode for the DuckDB connection. 
 allow_host_access: true # Whether access to the local environment and file system is allowed  
 cpu: 4 # Number of CPU cores available to the database  
 memory_limit_gb: 16 # Amount of memory in GB available to the database
+```
+
+## DuckDB as a source
+
+### `driver`
+
+_[string]_ - Refers to the driver type and must be driver `duckdb` _(required)_
+
+### `db`
+
+_[string]_ - Name of the DuckDB database _(required)_
+
+### `sql`
+
+_[string]_ - SQL to execute _(required)_
+
+```yaml
+# Example: DuckDB as a source connector configuration
+type: connector # Must be `connector` (required)
+driver: duckdb # Must be `duckdb` _(required)_
+db: "/path/to/my-duckdb-database.db" # Name of the DuckDB database  
+sql: "select * from my-table" # SQL to execute  
 ```
 
 ## GCS
@@ -484,6 +512,10 @@ _[string]_ - MotherDuck token _(required)_
 ### `init_sql`
 
 _[string]_ - SQL executed during database initialization. 
+
+### `mode`
+
+_[string]_ - Set the mode for the MotherDuck connection. By default, it is set to 'read' which allows only read operations. Set to 'readwrite' to enable model creation and table mutations. 
 
 ```yaml
 # Example: MotherDuck connector configuration
