@@ -39,6 +39,27 @@ var spec = drivers.Spec{
 	DisplayName: "DuckDB",
 	Description: "DuckDB SQL connector.",
 	DocsURL:     "https://docs.rilldata.com/connect/olap/duckdb",
+	ConfigProperties: []*drivers.PropertySpec{
+		{
+			Key:         "path",
+			Type:        drivers.StringPropertyType,
+			Required:    true,
+			DisplayName: "Path",
+			Description: "Path to external DuckDB database.",
+			Placeholder: "/path/to/main.db",
+		},
+		{
+			Key:         "mode",
+			Type:        drivers.StringPropertyType,
+			Required:    false,
+			DisplayName: "Mode",
+			Description: "Set the mode for the DuckDB connection. By default, it is set to 'read' which allows only read operations. Set to 'readwrite' to enable model creation and table mutations.",
+			Placeholder: modeReadOnly,
+			Default:     modeReadOnly,
+			NoPrompt:    true,
+		},
+	},
+	// NOTE: reinstated SourceProperties to address https://github.com/rilldata/rill/pull/7726#discussion_r2271449022
 	SourceProperties: []*drivers.PropertySpec{
 		{
 			Key:         "db",
@@ -73,6 +94,42 @@ var motherduckSpec = drivers.Spec{
 	Description: "MotherDuck SQL connector.",
 	DocsURL:     "https://docs.rilldata.com/connect/olap/motherduck",
 	ConfigProperties: []*drivers.PropertySpec{
+		{
+			Key:    "token",
+			Type:   drivers.StringPropertyType,
+			Secret: true,
+		},
+		{
+			Key:  "db",
+			Type: drivers.StringPropertyType,
+		},
+		{
+			Key:         "mode",
+			Type:        drivers.StringPropertyType,
+			Required:    false,
+			DisplayName: "Mode",
+			Description: "Set the mode for the DuckDB connection. By default, it is set to 'read' which allows only read operations. Set to 'readwrite' to enable model creation and table mutations.",
+			Placeholder: modeReadOnly,
+			Default:     modeReadOnly,
+			NoPrompt:    true,
+		},
+	},
+	SourceProperties: []*drivers.PropertySpec{
+		{
+			Key:         "dsn",
+			Type:        drivers.StringPropertyType,
+			Required:    true,
+			DisplayName: "MotherDuck Connection String",
+			Placeholder: "md:motherduck.db",
+		},
+		{
+			Key:         "sql",
+			Type:        drivers.StringPropertyType,
+			Required:    true,
+			DisplayName: "SQL",
+			Description: "Query to extract data from MotherDuck.",
+			Placeholder: "select * from table;",
+		},
 		{
 			Key:         "token",
 			Type:        drivers.StringPropertyType,
@@ -355,6 +412,9 @@ func (c *connection) AsObjectStore() (drivers.ObjectStore, bool) {
 
 // AsModelExecutor implements drivers.Handle.
 func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, error) {
+	if c.config.Mode != modeReadWrite {
+		return nil, fmt.Errorf("model execution is disabled. To enable modeling on this ClickHouse database, set 'mode: readwrite' in your connector configuration. WARNING: This will allow Rill to create and overwrite tables in your database")
+	}
 	if opts.InputHandle == c && opts.OutputHandle == c {
 		return &selfToSelfExecutor{c}, nil
 	}
@@ -393,6 +453,10 @@ func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecu
 
 // AsModelManager implements drivers.Handle.
 func (c *connection) AsModelManager(instanceID string) (drivers.ModelManager, bool) {
+	if c.config.Mode != modeReadWrite {
+		c.logger.Warn("Model execution is disabled. To enable modeling on this DuckDB database, set 'mode: readwrite' in your connector configuration. WARNING: This will allow Rill to create and overwrite tables in your database.")
+		return nil, false
+	}
 	return c, true
 }
 
