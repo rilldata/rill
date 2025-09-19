@@ -371,13 +371,13 @@ Example: Get the top 10 demographic segments (by country, gender, and age group)
 			return nil, err
 		}
 
-		// Generate open URL for the query
+		// Generate an open URL for the query
 		openURL, err := s.generateOpenURL(ctx, instanceID, metricsProps)
 		if err != nil {
 			return nil, fmt.Errorf("failed to generate open URL: %w", err)
 		}
 
-		// Parse the response to add the URL
+		// Add the open URL to the response
 		response, err := s.addOpenURLToResponse(data, openURL)
 		if err != nil {
 			return nil, fmt.Errorf("failed to add open URL to response: %w", err)
@@ -397,9 +397,9 @@ func (s *Server) generateOpenURL(ctx context.Context, instanceID string, metrics
 		return "", fmt.Errorf("failed to get instance: %w", err)
 	}
 
-	// Use the instance's configured frontend URL (which includes org/project and custom domain for cloud, or the correct localhost URL)
+	// If there's no frontend URL (e.g. perhaps in test cases or during rollout), return an empty string
 	if instance.FrontendURL == "" {
-		return "", fmt.Errorf("instance %s has no frontend URL configured", instanceID)
+		return "", nil
 	}
 
 	// Build the complete URL for the query
