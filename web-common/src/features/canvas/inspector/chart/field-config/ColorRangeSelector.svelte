@@ -78,17 +78,6 @@
     return color;
   };
 
-  const getColorLabel = (color: string): string => {
-    switch (color) {
-      case "primary":
-        return "Primary";
-      case "secondary":
-        return "Secondary";
-      default:
-        return "";
-    }
-  };
-
   function handleModeSwitch(mode: "scheme" | "range") {
     let updatedRange: ColorRangeMapping;
 
