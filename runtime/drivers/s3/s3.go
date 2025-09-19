@@ -156,15 +156,15 @@ var _ drivers.Handle = &Connection{}
 
 // Ping implements drivers.Handle.
 func (c *Connection) Ping(ctx context.Context) error {
-	// cfg, err := c.GetAWSConfig(ctx)
-	// if err != nil {
-	// 	return err
-	// }
-	// stsClient := c.GetSTSClient(cfg)
-	// _, err = stsClient.GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{})
-	// if err != nil {
-	// 	return fmt.Errorf("GetCallerIdentity failed: %w", err)
-	// }
+	cfg, err := c.GetAWSConfig(ctx)
+	if err != nil {
+		return err
+	}
+	stsClient := c.GetSTSClient(cfg)
+	_, err = stsClient.GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{})
+	if err != nil {
+		return fmt.Errorf("GetCallerIdentity failed: %w", err)
+	}
 	return nil
 }
 
