@@ -14,6 +14,9 @@ import {
   type ConversationSelector,
 } from "./conversation-selector";
 
+// Chat instance singleton map
+const chatInstances = new Map<string, Chat>();
+
 export type ConversationStateType = "url" | "browserStorage";
 
 export interface ChatOptions {
@@ -51,7 +54,7 @@ export class Chat {
       NEW_CONVERSATION_ID,
       {
         onConversationCreated: (conversationId: string) => {
-          this.selectConversation(conversationId);
+          this.promoteNewConversation(conversationId);
         },
       },
     );
@@ -112,4 +115,38 @@ export class Chat {
   selectConversation(conversationId: string): void {
     this.conversationSelector.selectConversation(conversationId);
   }
+
+  /**
+   * Promotes the "new" conversation instance to a real conversation
+   */
+  private promoteNewConversation(conversationId: string): void {
+    // Store the streaming conversation instance in the map before updating the selector
+    this.conversations.set(conversationId, this.newConversation);
+
+    // Create a fresh "new" conversation instance
+    this.newConversation = new Conversation(
+      this.instanceId,
+      NEW_CONVERSATION_ID,
+      {
+        onConversationCreated: (conversationId: string) => {
+          this.promoteNewConversation(conversationId);
+        },
+      },
+    );
+
+    this.conversationSelector.selectConversation(conversationId);
+  }
+}
+
+/**
+ * Get or create a Chat instance for the given instanceId
+ */
+export function getChatInstance(
+  instanceId: string,
+  options: ChatOptions,
+): Chat {
+  if (!chatInstances.has(instanceId)) {
+    chatInstances.set(instanceId, new Chat(instanceId, options));
+  }
+  return chatInstances.get(instanceId)!;
 }
