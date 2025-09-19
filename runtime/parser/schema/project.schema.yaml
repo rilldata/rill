@@ -68,6 +68,7 @@ definitions:
       - [**S3**](#s3) - Amazon S3 storage
 
       ### _Other_
+      - [**DuckDB as a source**](#duckdb-as-a-source) - DuckDB as a source
       - [**HTTPS**](#https) - Public files via HTTP/HTTPS
       - [**OpenAI**](#openai) - OpenAI data
       - [**Salesforce**](#salesforce) - Salesforce data
@@ -395,6 +396,30 @@ definitions:
 
           required:
             - driver
+        - type: object
+          title: DuckDB as a source
+          properties:
+            driver:
+              type: string
+              description: Refers to the driver type and must be driver `duckdb`
+              const: duckdb
+            db:
+              type: string
+              description: Name of the DuckDB database
+            sql:
+              type: string
+              description: SQL to execute
+          examples:
+            - # Example: DuckDB as a source connector configuration
+              type: connector                                  # Must be `connector` (required)
+              driver: duckdb                                   # Must be `duckdb` _(required)_
+
+              db: "/path/to/my-duckdb-database.db"                         # Name of the DuckDB database  
+              sql: "select * from my-table"                    # SQL to execute  
+          required:
+            - driver
+            - db
+            - sql
         - type: object
           title: GCS
           properties:
