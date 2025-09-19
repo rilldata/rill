@@ -101,6 +101,7 @@ func (g *GitHelper) PushToNewManagedRepo(ctx context.Context) (*adminv1.CreateMa
 		DefaultBranch:     gitRepo.DefaultBranch,
 		ManagedRepo:       true,
 	}
+	fmt.Printf("Password :%v\n", config.Password)
 	err = gitutil.CommitAndForcePush(ctx, g.localPath, config, "", author)
 	if err != nil {
 		return nil, err
