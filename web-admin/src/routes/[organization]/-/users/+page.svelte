@@ -183,31 +183,38 @@
           <span>Add users</span>
         </Button>
       </div>
-      <div class="mt-6">
-        <OrgUsersTable
-          data={filteredUsers}
-          usersQuery={$orgMemberUsersInfiniteQuery}
-          invitesQuery={$orgInvitesInfiniteQuery}
-          currentUserEmail={$currentUser.data?.user.email}
-          {currentUserRole}
-          billingContact={$billingContactUser?.email}
-          {scrollToTopTrigger}
-          onAttemptRemoveBillingContactUser={() =>
-            (isRemovingBillingContactDialogOpen = true)}
-          onAttemptChangeBillingContactUserRole={() =>
-            (isChangingBillingContactRoleDialogOpen = true)}
-        />
-      </div>
-      <!-- Footer with total count - always visible -->
-      <div class="px-2 py-3">
-        <span class="font-medium text-sm text-gray-500">
-          {totalUserCount} total user{totalUserCount === 1 ? "" : "s"}
-          {#if totalMemberCount > 0 && totalInviteCount > 0}
-            ({totalMemberCount} member{totalMemberCount === 1 ? "" : "s"}, {totalInviteCount} pending invitation{totalInviteCount === 1 ? "" : "s"})
-          {:else if totalInviteCount > 0}
-            ({totalInviteCount} pending invitation{totalInviteCount === 1 ? "" : "s"})
-          {/if}
-        </span>
+      <!-- Sticky layout container -->
+      <div class="mt-6 flex flex-col h-[calc(100vh-200px)] border border-gray-200 rounded-sm overflow-hidden">
+        <!-- Sticky footer with total count -->
+        <div class="order-last bg-white border-t border-gray-200 px-2 py-3 flex-shrink-0">
+          <span class="font-medium text-sm text-gray-500">
+            {totalUserCount} total user{totalUserCount === 1 ? "" : "s"}
+            {#if totalMemberCount > 0 && totalInviteCount > 0}
+              ({totalMemberCount} member{totalMemberCount === 1 ? "" : "s"}, {totalInviteCount} pending invitation{totalInviteCount === 1 ? "" : "s"})
+            {:else if totalInviteCount > 0}
+              ({totalInviteCount} pending invitation{totalInviteCount === 1 ? "" : "s"})
+            {/if}
+          </span>
+        </div>
+        
+        <!-- Table with sticky header -->
+        <div class="flex-1 overflow-hidden">
+          <OrgUsersTable
+            data={filteredUsers}
+            usersQuery={$orgMemberUsersInfiniteQuery}
+            invitesQuery={$orgInvitesInfiniteQuery}
+            currentUserEmail={$currentUser.data?.user.email}
+            {currentUserRole}
+            billingContact={$billingContactUser?.email}
+            {scrollToTopTrigger}
+            maxHeight="100%"
+            stickyHeader={true}
+            onAttemptRemoveBillingContactUser={() =>
+              (isRemovingBillingContactDialogOpen = true)}
+            onAttemptChangeBillingContactUserRole={() =>
+              (isChangingBillingContactRoleDialogOpen = true)}
+          />
+        </div>
       </div>
     </div>
   {/if}

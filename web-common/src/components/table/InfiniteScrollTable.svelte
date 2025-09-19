@@ -26,6 +26,7 @@
   export let maxHeight = "auto";
   export let headerIcons: Record<string, { icon: any; href: string }> = {};
   export let scrollToTopTrigger: any = null;
+  export let stickyHeader: boolean = false;
 
   let virtualListEl: HTMLDivElement;
   let sorting: SortingState = [];
@@ -168,7 +169,7 @@
       : totalSize}px; width: 100%; position: relative;"
   >
     <table>
-      <thead>
+      <thead class={stickyHeader ? "sticky top-0 z-10 bg-white" : ""}>
         {#each $table.getHeaderGroups() as headerGroup}
           <tr class="h-10">
             {#each headerGroup.headers as header (header.id)}
@@ -177,7 +178,7 @@
               <th
                 colSpan={header.colSpan}
                 style={`width: ${widthPercent}%;`}
-                class="px-4 py-2 text-left"
+                class="px-4 py-2 text-left {stickyHeader ? 'bg-white border-b border-gray-200' : ''}"
                 on:click={header.column.getToggleSortingHandler()}
               >
                 {#if !header.isPlaceholder}

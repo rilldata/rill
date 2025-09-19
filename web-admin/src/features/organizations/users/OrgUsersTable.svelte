@@ -34,6 +34,8 @@
   export let currentUserRole: string;
   export let billingContact: string | undefined;
   export let scrollToTopTrigger: any = null;
+  export let maxHeight: string = "auto";
+  export let stickyHeader: boolean = false;
 
   export let onAttemptRemoveBillingContactUser: () => void;
   export let onAttemptChangeBillingContactUserRole: () => void;
@@ -126,8 +128,9 @@
   isFetchingNextPage={usersQuery.isFetchingNextPage ||
     invitesQuery.isFetchingNextPage}
   onLoadMore={handleLoadMore}
-  maxHeight={dynamicTableMaxHeight}
+  maxHeight={maxHeight !== "auto" ? maxHeight : dynamicTableMaxHeight}
   emptyStateMessage="No users found"
   {headerIcons}
   {scrollToTopTrigger}
+  {stickyHeader}
 />
