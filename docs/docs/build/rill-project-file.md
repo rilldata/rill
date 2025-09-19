@@ -5,7 +5,7 @@ sidebar_label: "Rill Project"
 sidebar_position: 00
 ---
 
-A Rill project consists of several code artifacts that are processed into a visual dashboard. The workflow begins with data ingestion via [models](/build/models), progresses to defining measures and dimensions in [metrics views](/build/metrics-view), and finally culminates in building your [visualizations](/build/dashboards) to consume the data.
+A Rill project consists of several code artifacts that are processed into a visual dashboard. The workflow begins with [creating a connection](/connect) to your data, data ingestion via [models](/build/models), progresses to defining measures and dimensions in [metrics views](/build/metrics-view), and finally culminates in building your [visualizations](/build/dashboards) to consume the data.
 
 When deploying to [Rill Cloud for the first time](/deploy/deploy-dashboard), your Rill Developer project will create a project in Rill Cloud. Updates to your local project via GitHub merge flows or pressing the Deploy button in the UI will automatically update the Rill Cloud deployment. Users can [clone the Rill Cloud project](/guides/clone-a-project) locally and also push changes back to the cloud instance. This allows for users to work on a single project async.
 
