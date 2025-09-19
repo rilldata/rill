@@ -115,7 +115,6 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 		}
 	}
 
-	fmt.Printf("starting remote sync with remoteURL: %s\n", opts.remoteURL)
 	// Error if the repository is not in sync with the remote
 	ok, err := repoInSyncFlow(ch, localGitPath, opts.ProdBranch, opts.RemoteName)
 	if err != nil {
@@ -125,7 +124,6 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 		ch.PrintfBold("You can run `rill deploy` again when you have pushed your local changes to the remote.\n")
 		return nil
 	}
-	fmt.Printf("repo in sync with remoteURL: %s\n", opts.remoteURL)
 
 	// Extract Github account and repo name from the gitRemote
 	ghAccount, ghRepo, ok := gitutil.SplitGithubRemote(opts.remoteURL)
@@ -134,7 +132,6 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 	}
 
 	// Run flow for access to the Github remote (if necessary)
-	fmt.Printf("connecting to github with remoteURL: %s\n", opts.remoteURL)
 	ghRes, err := githubFlow(ctx, ch, opts.remoteURL)
 	if err != nil {
 		return fmt.Errorf("failed Github flow: %w", err)
